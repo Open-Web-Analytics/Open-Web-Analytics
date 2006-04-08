@@ -95,7 +95,7 @@ class Log_observer_session extends wa_observer {
 	 */
 	function eval_request() {
 		
-		$s = new wa_session;
+		$s = new owa_session;
 		
 		if ($this->m->properties['is_entry_page'] == true):
 			

@@ -21,8 +21,8 @@ require_once 'wa_lib.php';
 require_once 'wa_env.php';
 require_once 'eventQueue.php';
 require_once (WA_PEARLOG_DIR . '/Log.php');
-require_once 'wa_session_class.php';
-require_once 'wa_request_class.php';
+require_once 'owa_session_class.php';
+require_once 'owa_request_class.php';
 
 /**
  * Asynchronous Event Processsor

@@ -18,7 +18,7 @@
 
 require_once 'wa_settings_class.php';
 require_once 'wa_comment_class.php';
-require_once 'wa_request_class.php';
+require_once 'owa_request_class.php';
 require_once 'wa_lib.php';
 
 /**
