@@ -9,7 +9,7 @@ Version: v1.0
 Author URI: http://www.openwebanalytics.com
 */
 
-require_once 'wa_controller.php';
+require_once 'owa_controller.php';
 require_once 'tables.php';
 require_once 'wa_env.php';
 

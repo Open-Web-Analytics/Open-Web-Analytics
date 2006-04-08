@@ -17,7 +17,7 @@
 //
 
 require_once 'wa_settings_class.php';
-require_once 'wa_controller.php';
+require_once 'owa_controller.php';
 
 define ('WA_BASE_URL', $_SERVER['SERVER_NAME']);
 define ('WA_GRAPH_URL', WA_BASE_URL);
@@ -63,7 +63,7 @@ $app_params['page_title'] = urldecode($_GET['page_title']);
 $app_params['site_id'] = $_GET['site_id'];
 	
 // Process the request
-wa::process_request($app_params);
+owa::process_request($app_params);
 	
 /////
 header('Content-type: image/gif');

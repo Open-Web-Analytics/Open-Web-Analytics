@@ -27,13 +27,13 @@ require_once 'ini_db.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 
-class wa_request {
+class owa_request {
 	
 	/**
 	 * Configuration
@@ -98,10 +98,10 @@ class wa_request {
 	/**
 	 * Constructor
 	 *
-	 * @return wa_request
+	 * @return owa_request
 	 * @access public
 	 */
-	function wa_request() {
+	function owa_request() {
 	
 		$this->config = &wa_settings::get_settings();
 		$this->debug = &wa_lib::get_debugmsgs();

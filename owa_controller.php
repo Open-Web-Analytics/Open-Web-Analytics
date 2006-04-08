@@ -71,7 +71,7 @@ class owa {
 		
 		// Create a new request object
 		
-		$r = new wa_request;
+		$r = new owa_request;
 		
 		// Apply application specific data to the request
 		
