@@ -64,53 +64,6 @@ class wa_metric_visitor extends wa_metric {
 		
 	}
 		
-	/*function visitor_history() {
-	
-		$sql = sprintf("select 
-			wa_sessions.month, 
-			wa_sessions.day, 
-			wa_sessions.year,
-			wa_sessions.hour,
-			wa_sessions.minute,
-			timestamp,
-			visitor_id, 
-			session_id, 
-			referer,
-			first_page_title,
-			first_page_id,
-			first_page_uri,
-			first_page_type,
-			ip_address,
-			num_pageviews,
-			is_new_visitor,
-			num_comments,
-			time_sinse_priorsession,
-			prior_session_id,
-			user_email,
-			user_name,
-			host 
-		FROM 
-			wa_sessions 
-		WHERE
-			site_id = %s
-			AND %s 
-			%s
-		ORDER BY
-			timestamp DESC
-		LIMIT 
-			%s",
-			
-			$this->config['site_id'],
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['limit']
-		);
-	
-	
-		return $this->db->get_results($sql);
-	
-	}
-	*/
 	
 	/**
 	 * Generates Visits
