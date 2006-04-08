@@ -17,7 +17,7 @@
 //
 
 require_once(WA_BASE_DIR ."/wa_settings_class.php");
-require_once(WA_BASE_DIR ."/wa_session_class.php");
+require_once(WA_BASE_DIR ."/owa_session_class.php");
 
 /**
  * Session Event Handler
