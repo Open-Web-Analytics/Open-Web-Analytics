@@ -40,13 +40,13 @@ define('WA_DB_HOST', DB_HOST);     // The host of your db
  * This is the main logger function that calls wa on each normal web request.
  * Application specific request data should be set here. as part of the $app_params array.
  */
-function wa_main() {
+function owa_main() {
 
 	// WORDPRESS SPECIFIC DATA //
 	
 	// Get the type of page
 	
-	$app_params['page_type'] = wa_get_page_type();
+	$app_params['page_type'] = owa_get_page_type();
 	
 	//Check to see if this is a Feed Reeder
 	
@@ -61,7 +61,7 @@ function wa_main() {
 	$app_params['user_name'] = $_COOKIE['wordpressuser_'.COOKIEHASH];
 	
 	// Get Title of Page
-	$app_params['page_title'] = wa_get_title($app_params['page_type']);
+	$app_params['page_title'] = owa_get_title($app_params['page_type']);
 	
 	// Get Feed Subscriber ID
 	$app_params['feed_subscription_id'] = $_GET['wa_sid'];
@@ -74,7 +74,7 @@ function wa_main() {
 	//$app_params['site_id'] = '';
 	
 	// Process the request by calling wa
-	wa::process_request($app_params);
+	owa::process_request($app_params);
 	
 	return;
 }
@@ -85,7 +85,7 @@ function wa_main() {
  * @param string $page_type
  * @return string $title
  */
-function wa_get_title($page_type) {
+function owa_get_title($page_type) {
 
 	if ($page_type == "Home"):
 		$title = get_bloginfo('name');
@@ -117,7 +117,7 @@ function wa_get_title($page_type) {
  *
  * @return string $type
  */
-function wa_get_page_type() {	
+function owa_get_page_type() {	
 	
 	if (is_home()):
 		$type = "Home";
@@ -173,9 +173,9 @@ function add_feed_sid($binfo) {
 
 }
 
-function wa_is_comment() {
+function owa_is_comment() {
 
-	wa::process_comment();
+	owa::process_comment();
 	
 	return;
 
@@ -187,7 +187,7 @@ function wa_is_comment() {
  * @param string $link
  * @return string
  */
-function wa_post_link($link) {
+function owa_post_link($link) {
 
 	global $doing_rss;
 	if($doing_rss):
@@ -207,7 +207,7 @@ function wa_post_link($link) {
  * Schema and setting installation
  *
  */
-function wa_install() {
+function owa_install() {
 
 	global $user_level, $wpdb;
 	
@@ -250,7 +250,7 @@ function wa_install() {
  * Adds Analytics sub tab to admin dashboard screens.
  *
  */
-function dashboard_view() {
+function owa_dashboard_view() {
 
 	if (function_exists('add_submenu_page')):
 		add_submenu_page('index.php', 'WA Dashboard', 'Analytics', 8, dirname(__FILE__) . '/reports/dashboard_report.php');
@@ -263,7 +263,7 @@ function dashboard_view() {
  * Inserts a web bug for new visitors that will process the special first_hit cookie
  *
  */
-function wa_tag() {
+function owa_tag() {
 
 	if (empty($_COOKIE['wa_v'])):
 		$bug = "<img src=\"".WA_BASE_URL."?first_hit=true\">";
@@ -278,13 +278,13 @@ function wa_tag() {
  * Handler for various special http requests
  *
  */
-function wa_intercept() {
+function owa_intercept() {
 
 	// First hit request handler
 	if (isset($_GET['first_hit'])):
 		
 		if (isset($_COOKIE['wa_first_hit'])):
-			wa_main();
+			owa_main();
 		endif;
 
 		header('Content-type: image/gif');
@@ -311,7 +311,7 @@ function wa_intercept() {
 			
 			);
 			
-		wa::get_graph($params);
+		owa::get_graph($params);
 		exit;
 	endif;
 	
@@ -328,7 +328,7 @@ function wa_intercept() {
  * @param integer $linenum
  * @param unknown_type $vars
  */
-function wa_err_mailer($errno, $errmsg, $filename, $linenum, $vars) {
+function owa_err_mailer($errno, $errmsg, $filename, $linenum, $vars) {
 
 	$vars2 = print_r($vars, false);
 
@@ -341,16 +341,16 @@ function wa_err_mailer($errno, $errmsg, $filename, $linenum, $vars) {
 
 if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
 
-	add_action('init', 'wa_install');
+	add_action('init', 'owa_install');
   
 endif;
 
-add_action('template_redirect', 'wa_main');
-add_action('wp_footer', 'wa_tag');
-add_filter('post_link', 'wa_post_link');
+add_action('template_redirect', 'owa_main');
+add_action('wp_footer', 'owa_tag');
+add_filter('post_link', 'owa_post_link');
 add_filter('bloginfo', 'add_feed_sid');
-add_action('admin_menu', 'dashboard_view');
-add_action('init', 'wa_intercept');
-add_action('comment_post', 'wa_is_comment');
+add_action('admin_menu', 'owa_dashboard_view');
+add_action('init', 'owa_intercept');
+add_action('comment_post', 'owa_is_comment');
 
 ?>

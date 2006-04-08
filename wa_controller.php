@@ -22,18 +22,18 @@ require_once 'wa_request_class.php';
 require_once 'wa_lib.php';
 
 /**
- * wa Controler
+ * owa Controler
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 
-class wa {
+class owa {
 	
 	/**
 	 * Configuration
@@ -52,9 +52,9 @@ class wa {
 	/**
 	 * Constructor
 	 *
-	 * @return wa
+	 * @return owa
 	 */
-	function wa() {
+	function owa() {
 		
 		return;
 	}
@@ -140,8 +140,6 @@ class wa {
 		// Sessionize
 		
 		if ($config['log_sessions'] == true):
-					
-			//$s = new wa_session;
 		
 			if (!empty($r->properties['inbound_session_id'])):
 				 
