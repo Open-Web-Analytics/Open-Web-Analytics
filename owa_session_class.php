@@ -19,7 +19,7 @@
 require_once 'wa_settings_class.php';
 require_once 'wa_env.php';
 require_once 'wa_db.php';
-require_once 'wa_location.php';
+require_once 'owa_location.php';
 
 /**
  * Session
@@ -319,7 +319,7 @@ class owa_session {
 	function get_location() {
 		
 		// makes the geo-location object from the service specified in the config
-		$location = wa_location::factory($this->config['plugin_dir']."location/", $this->config['geolocation_service']);
+		$location = owa_location::factory($this->config['plugin_dir']."location/", $this->config['geolocation_service']);
 		
 		// lookup
 		$location->get_location($this->properties['ip_address']);
