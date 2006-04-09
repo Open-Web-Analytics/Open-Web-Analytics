@@ -106,7 +106,7 @@
 		</fieldset>
 		
 		<fieldset id="graphs" class="options">
-			<legend>Recent Visits</legend>
+			<legend>Recent Visitors</legend>
 		
 			<?=$visit_data?>
 		</fieldset>

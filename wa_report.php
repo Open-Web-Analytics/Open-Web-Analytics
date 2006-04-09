@@ -76,11 +76,12 @@ class wa_report {
 	 * @return 	wa_report
 	 */
 	function wa_report() {
-	
-		$this->tpl = & new Template;
-		$this->metrics = wa_api::get_instance('metric');
-		$this->config = &wa_settings::get_settings();
 		
+		$this->config = &wa_settings::get_settings();
+		$this->tpl = & new Template;
+		$this->tpl->set_template($this->config['report_wrapper']);
+		$this->metrics = wa_api::get_instance('metric');
+	
 		return;
 	}
 	

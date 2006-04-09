@@ -50,7 +50,7 @@ $visitor_id = $_GET['wa_v'];
 	
 // Setup the templates
 	
-$report->tpl->set_template('wordpress.tpl'); // this is the outer template
+//$report->tpl->set_template('wordpress.tpl'); // this is the outer template
 
 $body = & new Template; 
 

@@ -13,13 +13,23 @@
 								<td><!-- at <?=$visit['hour'];?>:<?=$visit['minute'];?>--></td>
 							</tr>
 						</table>
-						
-						<div class="visitor_info_box pages_box">
-							<span class="large_number"><a href="<?=WA_REPORTING_URL;?>/session_report.php&wa_s=<?=$visit['session_id']?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a><!--	<? if (!empty($visit['num_comments'])):?>| <?=$visit['num_comments'];?><?endif;?>-->
-								
-							
-						</div>
 					</td>
+					<TD>	
+						<div class="visitor_info_box pages_box">
+							<span class="large_number"><a href="<?=WA_REPORTING_URL;?>/session_report.php&wa_s=<?=$visit['session_id']?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
+						</div>
+						
+					</td>
+					<TD>
+						<? if (!empty($visit['num_comments'])):?>
+						
+						<div class="comments_info_box">
+							<span class="large_number"><?=$visit['num_comments'];?></span><br /><span class="info_text"></span></a>
+						</div>
+						 
+						<?endif;?>
+					
+					</TD>
 					<TD>
 					<span class="h_label">Visitor:</span> <a href="<?=WA_REPORTING_URL;?>/visitor_report.php&wa_v=<?=$visit['visitor_id'] ?>"><span class="inline_h2"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> via <span class="info_text"><?=$visit['host'];?></span> located in <span class="info_text"><?=$visit['city'];?>, <?=$visit['country'];?></span>
 				

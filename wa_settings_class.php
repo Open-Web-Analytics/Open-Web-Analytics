@@ -90,7 +90,8 @@ class wa_settings {
 			'db_class_dir'					=> WA_BASE_DIR . '/db',
 			'templates_dir'					=> WA_BASE_DIR . '/reports/templates/',
 			'plugin_dir'					=> WA_BASE_DIR . '/plugins/',
-			'geolocation_service'			=> 'hostip'
+			'geolocation_service'			=> 'hostip',
+			'report_wrapper'				=> 'wordpress.tpl'
 			
 			);
 		

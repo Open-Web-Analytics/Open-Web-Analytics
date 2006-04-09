@@ -17,7 +17,7 @@
 //
 
 require_once 'wa_settings_class.php';
-require_once 'wa_comment_class.php';
+require_once 'owa_comment_class.php';
 require_once 'owa_request_class.php';
 require_once 'wa_lib.php';
 
@@ -198,7 +198,7 @@ class owa {
 	
 	function process_comment() {
 		
-		$comment = new wa_comment;
+		$comment = new owa_comment;
 		$comment->state = 'new_comment';
 		$comment->log();
 		return;

@@ -26,13 +26,13 @@ require_once 'eventQueue.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 
-class wa_comment {
+class owa_comment {
 	
 	/**
 	 * Configuration
@@ -62,7 +62,11 @@ class wa_comment {
 	 */
 	var $state;
 	
-	function wa_comment() {
+	/**
+	 * Constructor
+	 * @access public
+	 */
+	function owa_comment() {
 		
 		$this->config = &wa_settings::get_settings();
 		$this->debug = &wa_lib::get_debugmsgs();

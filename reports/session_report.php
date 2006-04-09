@@ -43,7 +43,7 @@ $session_id = $_GET['wa_s'];
 	
 // Setup the templates
 	
-$report->tpl->set_template('wordpress.tpl'); // this is the outer template
+//$report->tpl->set_template('wordpress.tpl'); // this is the outer template
 
 $body = & new Template; 
 

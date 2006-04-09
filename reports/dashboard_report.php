@@ -30,8 +30,6 @@ else:
 endif;
 		
 // Setup the templates
-	
-$report->tpl->set_template('wordpress.tpl'); // this is the outer template
 
 $body = & new Template; 
 
