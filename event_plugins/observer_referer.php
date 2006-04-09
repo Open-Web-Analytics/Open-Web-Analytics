@@ -138,7 +138,7 @@ class Log_observer_referer extends wa_observer {
 			
 			if (strstr($this->obj->properties['referer'], $this->obj->properties['site']) == false):
 				$this->query_terms = strtolower($this->get_query_terms($this->obj->properties['referer']));
-				print "hello";
+				
 				if (!empty($this->query_terms)):
 					$this->is_searchengine = true;
 				endif;

@@ -39,11 +39,9 @@ else:
 	$report->set_period('this_month');
 endif;
 
-$session_id = $_GET['wa_s'];
+$session_id =  $_GET[$report->config['ns'].$report->config['session_param']];
 	
 // Setup the templates
-	
-//$report->tpl->set_template('wordpress.tpl'); // this is the outer template
 
 $body = & new Template; 
 

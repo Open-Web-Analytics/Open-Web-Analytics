@@ -1,4 +1,4 @@
-<?=define('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/'); ?>  
+<?=define('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');?>
 
   <style>
   
@@ -26,15 +26,14 @@
   }
   
   .comments_info_box {
-	padding:4px 4px 4px 4px;
+		padding:4px 4px 4px 4px;
 	border:solid 0px #999999;
 	margin:0px 2px 2px 2px;
-	  width:40px;
-	  height:40px;
-	
-	  background-image: url('<?=OWA_IMAGES_PATH?>comment_background.jpg');
-	  background-repeat: no-repeat;
-	  text-align:center;
+	width:40px;
+	height:40px;
+	background-image: url('<?=OWA_IMAGES_PATH?>comment_background.jpg');
+	background-repeat: no-repeat;
+	text-align:center;
   }
   
   .date_box {

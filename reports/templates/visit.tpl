@@ -60,7 +60,7 @@
 				
 				<? if (!empty($visit['referer'])):?>
 				
-				<a href="<?=$visit['referer'];?>"><?=$this->truncate($visit['referer'], 70, '...');?></a>
+				<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referrer_page_title'])):?><?=$visit['referrer_page_title']?><? else:?><?=$this->truncate($visit['referer'], 70, '...');?><? endif;?></a> <span class="info_text">(<?=$this->truncate($visit['referer'], 70, '...');?>)</span>
 				
 				<? else: ?>
 				

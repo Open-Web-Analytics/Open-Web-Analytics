@@ -45,7 +45,7 @@ else:
 	$limit = 50;
 	endif;
 
-$visitor_id = $_GET['wa_v'];
+$visitor_id = $_GET[$report->config['ns'].$report->config['visitor_param']];
 	
 	
 // Setup the templates
