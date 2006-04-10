@@ -12,6 +12,7 @@ Author URI: http://www.openwebanalytics.com
 require_once 'owa_controller.php';
 require_once 'tables.php';
 require_once 'wa_env.php';
+require_once 'wa_settings_class.php';
 
 /**
  * WORDPRESS Constants
@@ -26,6 +27,9 @@ define ('WA_GRAPH_URL', WA_BASE_URL);
 
 // URL stem used for inter report navigation
 define ('WA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
+
+// Path to images used in reports
+define ('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');
 
 /**
  * These are set to pass wa the db connection params that wordpress uses. 
@@ -337,6 +341,42 @@ function owa_err_mailer($errno, $errmsg, $filename, $linenum, $vars) {
 	return;
 }
 
+/**
+ * Adds Options page to admin interface
+ *
+ */
+function owa_options() {
+	
+	if (function_exists('add_options_page')):
+		add_options_page('Options', 'OWA', 8, basename(__FILE__), 'owa_options_page');
+	endif;
+    
+    return;
+}
+
+function owa_options_page() {
+	
+	require_once 'template_class.php';
+	require_once 'wa_settings_class.php';
+	
+	// Fetch config
+	
+	$config = &wa_settings::get_settings();
+	
+	//Setup templates
+	$options_page = & new Template;
+	$options_page->set_template($options_page->config['report_wrapper']);
+	$body = & new Template; 
+	$body->set_template('options.tpl');// This is the inner template
+	$body->set('config', $config);
+	$body->set('page_title', 'OWA Options');
+	$options_page->set('content', $body);
+	// Make Page
+	echo $options_page->fetch();
+	
+	return;
+}
+
 // WORDPRESS Filter and action hooks.
 
 if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
@@ -352,5 +392,5 @@ add_filter('bloginfo', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_view');
 add_action('init', 'owa_intercept');
 add_action('comment_post', 'owa_is_comment');
-
+add_action('admin_menu', 'owa_options');
 ?>
