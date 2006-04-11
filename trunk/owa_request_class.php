@@ -73,7 +73,7 @@ class owa_request {
 	/**
 	 * First hit flag
 	 * 
-	 * Used to tell if this request was loaded fro mthe first hit cookie. 
+	 * Used to tell if this request was loaded from the first hit cookie. 
 	 *
 	 * @var boolean
 	 */
@@ -186,6 +186,7 @@ class owa_request {
 	 */
 	function load_first_hit_properties($properties) {
 	
+		$this->properties['inbound_first_hit_properties'] = $properties;
 		$array = explode(",", $properties);
 		
 		foreach ($array as $key => $value):

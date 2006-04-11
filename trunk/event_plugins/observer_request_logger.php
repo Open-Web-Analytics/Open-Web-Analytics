@@ -106,6 +106,7 @@ class Log_observer_request_logger extends wa_observer {
 					'session_id',
 					'inbound_visitor_id', 
 					'inbound_session_id',
+					'inbound_first_hit_properties',
 					'user_name',
 					'user_email',
 					'timestamp',

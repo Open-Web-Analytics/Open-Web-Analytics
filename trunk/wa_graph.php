@@ -160,9 +160,10 @@ class wa_graph {
 		$graph = new Graph($this->params['width'],$this->params['height'],"auto"); 
 		$graph->SetScale("textlin");
 		$graph->img->SetImgFormat($this->image_format);
+		$graph->SetBackgroundGradient('white','white'); 
 	
 		// Add a drop shadow
-		$graph->SetShadow();
+		//$graph->SetShadow();
 		
 		// Adjust the margin a bit to make more room for titles
 		$graph->img->SetMargin(40,30,20,40);
@@ -171,6 +172,7 @@ class wa_graph {
 		$bplot = new BarPlot($datay);
 		$bplot->SetFillColor('orange');
 		$bplot->SetWidth(1.0);
+		//$bplot->SetValuePos('top'); 
 		$graph->Add($bplot);
 		
 		// Setup the titles
@@ -203,11 +205,11 @@ class wa_graph {
 		$graph = new PieGraph($this->params['width'],$this->params['height']);
 		
 		// Set A title for the plot
-		$graph->title->Set($this->params['graph_title']);
+		//$graph->title->Set($this->params['graph_title']);
 		$graph->title->SetFont(FF_FONT1,FS_BOLD); 
 		$graph->title->SetColor("black");
-		$graph->legend->Pos(0.7,0.75);
-				
+		$graph->legend->SetAbsPos(10,10, 'right', 'top');
+		$graph->legend->SetColumns(3); 		
 		// Create pie plot
 		$p1 = new PiePlot($data);
 		$p1->SetCenter(0.5,0.55);
