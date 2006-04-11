@@ -186,9 +186,9 @@ class owa {
 	 */
 	function get_graph($params) {
 	
-		require_once 'wa_api.php';
+		require_once 'owa_api.php';
 	
-		$g_api = wa_api::get_instance('graph');
+		$g_api = owa_api::get_instance('graph');
 		
 		$g_api->get($params);
 			
