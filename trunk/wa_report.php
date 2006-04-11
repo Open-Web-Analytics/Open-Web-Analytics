@@ -19,10 +19,10 @@
 require_once 'wa_env.php';
 require_once 'template_class.php';
 require_once 'wa_settings_class.php';
-require_once 'wa_api.php';
+require_once 'owa_api.php';
 
 /**
- * Web Analytics Report 
+ * Web Analytics Report  
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -80,7 +80,7 @@ class wa_report {
 		$this->config = &wa_settings::get_settings();
 		$this->tpl = & new Template;
 		$this->tpl->set_template($this->config['report_wrapper']);
-		$this->metrics = wa_api::get_instance('metric');
+		$this->metrics = owa_api::get_instance('metric');
 	
 		return;
 	}

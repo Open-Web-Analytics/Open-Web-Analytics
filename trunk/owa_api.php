@@ -22,12 +22,12 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_api {
+class owa_api {
 	
 	/**
 	 * Plugins
@@ -67,9 +67,9 @@ class wa_api {
 	/**
 	 * Constructor
 	 *
-	 * @return wa_api
+	 * @return owa_api
 	 */
-	function wa_api() {
+	function owa_api() {
 
 		return;
 	}
@@ -83,7 +83,7 @@ class wa_api {
 	 */
 	function get_instance($api_type) {
 
-		$api = new wa_api;
+		$api = new owa_api;
 	
 		switch ($api_type) {
 		

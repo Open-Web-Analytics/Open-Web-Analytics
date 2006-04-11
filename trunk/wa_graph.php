@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once (WA_BASE_DIR . '/wa_api.php');
+require_once (WA_BASE_DIR . '/owa_api.php');
 require_once (WA_INCLUDE_DIR.'jpgraph/jpgraph.php');
 
 /**
@@ -107,7 +107,7 @@ class wa_graph {
 		$this->time_now = wa_lib::time_now();
 		
 		// Fetch all  metrics objects through the api
-		$this->metrics = wa_api::get_instance('metric');
+		$this->metrics = owa_api::get_instance('metric');
 		
 		return;
 	}

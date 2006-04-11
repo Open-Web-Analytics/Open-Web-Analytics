@@ -25,7 +25,8 @@ function create_tables() {
 	CREATE TABLE {$set['ns']}{$set['requests_table']} (
 			request_id bigint,
 			inbound_visitor_id bigint, 
-			invound_session_id bigint,
+			inbound_session_id bigint,
+			inbound_first_hit_properties varchar(255),
 			visitor_id bigint, 
 			session_id bigint,
 			user_name  varchar(255),
