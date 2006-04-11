@@ -82,7 +82,7 @@ class wa_settings {
 			'async_log_file'				=> WA_BASE_DIR . '/logs/events.txt',
 			'async_error_log_file'			=> WA_BASE_DIR . '/logs/events_error.txt',
 			'error_email'					=> true,
-			'error_email_address'			=> 'peter@oncefuture.com',
+			'notice_email'					=> 'peter@oncefuture.com',
 			'error_log_file'				=> WA_BASE_DIR . '/logs/errors.txt',
 			'search_engines.ini'			=> WA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> WA_BASE_DIR . '/conf/query_strings.ini',

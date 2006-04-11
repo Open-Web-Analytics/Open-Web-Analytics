@@ -24,7 +24,14 @@
 		<fieldset id="graphs" class="options">
 		<legend>Graphs</legend>
 		
-		<img src="<?=WA_GRAPH_URL;?>?graph=page_views&type=bar&period=<? 
+		<table>
+			<TR>
+				<th>Page Views</Th>
+				<th>New Vs. Repeat Users for <?=$period?></th>
+				<TH>Visitors By Source for <?=$period?></TH>
+			</TR>
+			<TR>
+				<TD><img src="<?=WA_GRAPH_URL;?>?graph=page_views&type=bar&period=<? 
 		if ($period == 'today' || 'yesterday'): 
 		
 			echo 'last_seven_days'; 
@@ -34,10 +41,17 @@
 			echo $period; 
 				
 		endif; 
-		?>">
+		?>"></TD>
+				<TD>	<img src="<?=WA_GRAPH_URL;?>?graph=visitors_pie&type=pie&period=<?=$period;?>" /></TD>
+				<TD><img src="<?=WA_GRAPH_URL;?>?graph=source_pie&type=pie&period=<?=$period;?>" /></TD>
+			</TR>
 		
-			<img src="<?=WA_GRAPH_URL;?>?graph=visitors_pie&type=pie&period=<?=$period;?>" />
-			<img src="<?=WA_GRAPH_URL;?>?graph=source_pie&type=pie&period=<?=$period;?>" />
+		</table>
+		
+		
+		
+		
+			
 								
 		<BR />
 		

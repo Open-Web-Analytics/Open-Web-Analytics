@@ -111,7 +111,7 @@ class wa_graph_source_pie extends wa_graph {
 		$this->params['graph_title'] = "Taffic Sources for \n" . $this->get_period_label($this->params['period']);
 		$this->params['legends'] = array('Feeds', 'Search Engines', 'Web Sites');
 		$this->params['height']	= 200;
-		$this->params['width']	= 340;
+		$this->params['width']	= 280;
 		
 		$this->pie_graph();
 		
