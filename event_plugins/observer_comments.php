@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(WA_BASE_DIR ."/wa_db.php");
+require_once(WA_BASE_DIR ."/owa_db.php");
 require_once(WA_BASE_DIR ."/wa_settings_class.php");
 
 /**
@@ -96,7 +96,7 @@ class Log_observer_comments extends owa_observer {
 	 */
 	function update_session() {	
 	
-		$this->db = &wa_db::get_instance();
+		$this->db = &owa_db::get_instance();
 	
 		$result = $this->db->query(
      		 sprintf(

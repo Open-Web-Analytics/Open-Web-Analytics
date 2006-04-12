@@ -22,22 +22,22 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_db_wordpress extends wa_db {
+class owa_db_wordpress extends owa_db {
 
 	/**
 	 * Constructor
 	 *
-	 * @return wa_db_mysql
+	 * @return owa_db_mysql
 	 * @access public
 	 */
-	function wa_db_wordpress() {
+	function owa_db_wordpress() {
 	
-		$this->wa_db();
+		$this->owa_db();
 		
 		$connectionString = sprintf(
 			'%s',

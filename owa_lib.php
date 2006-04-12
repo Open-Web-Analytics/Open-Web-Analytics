@@ -25,12 +25,12 @@ require_once (WA_PEARLOG_DIR . '/Log.php');
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_lib {
+class owa_lib {
 
 	/**
 	 * Convert Associative Array to String

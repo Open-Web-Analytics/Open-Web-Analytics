@@ -35,10 +35,10 @@ define ('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');
  * These are set to pass wa the db connection params that wordpress uses. 
  * These are also persisted when in async mode.
  */
-define('WA_DB_NAME', DB_NAME);     // The name of the database
-define('WA_DB_USER', DB_USER);     // Your db username
-define('WA_DB_PASSWORD', DB_PASSWORD); // ...and password
-define('WA_DB_HOST', DB_HOST);     // The host of your db
+define('OWA_DB_NAME', DB_NAME);     // The name of the database
+define('OWA_DB_USER', DB_USER);     // Your db username
+define('OWA_DB_PASSWORD', DB_PASSWORD); // ...and password
+define('OWA_DB_HOST', DB_HOST);     // The host of your db
 
 /**
  * This is the main logger function that calls wa on each normal web request.

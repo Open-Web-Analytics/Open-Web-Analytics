@@ -66,7 +66,7 @@ class Template {
      */
     function Template() {
     	$this->config = &wa_settings::get_settings();
-		$this->debug = &wa_lib::get_debugmsgs();
+		$this->debug = &owa_lib::get_debugmsgs();
         $this->template_dir = $this->config['templates_dir'];
         return;
     }

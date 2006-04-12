@@ -104,7 +104,7 @@ class owa_graph {
 	function owa_graph() {
 		
 		// Set current time
-		$this->time_now = wa_lib::time_now();
+		$this->time_now = owa_lib::time_now();
 		
 		// Fetch all  metrics objects through the api
 		$this->metrics = owa_api::get_instance('metric');

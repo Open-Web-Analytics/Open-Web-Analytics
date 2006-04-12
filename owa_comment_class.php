@@ -17,7 +17,7 @@
 //
 
 require_once 'wa_settings_class.php';
-require_once 'wa_lib.php';
+require_once 'owa_lib.php';
 require_once 'eventQueue.php';
 
 /**
@@ -69,7 +69,7 @@ class owa_comment {
 	function owa_comment() {
 		
 		$this->config = &wa_settings::get_settings();
-		$this->debug = &wa_lib::get_debugmsgs();
+		$this->debug = &owa_lib::get_debugmsgs();
 		$this->eq = &eventQueue::get_instance();
 		
 		// Retriece inbound vistor and session values	

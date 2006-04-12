@@ -17,8 +17,8 @@
 //
 
 require_once 'wa_settings_class.php';
-require_once 'wa_lib.php';
-require_once 'wa_db.php';
+require_once 'owa_lib.php';
+require_once 'owa_db.php';
 
 /**
  * Metric
@@ -98,10 +98,10 @@ class owa_metric {
 	function owa_metric() {
 	
 		$this->config = &wa_settings::get_settings();
-		$this->debug = &wa_lib::get_debugmsgs();
-		$this->db = &wa_db::get_instance();
+		$this->debug = &owa_lib::get_debugmsgs();
+		$this->db = &owa_db::get_instance();
 		// Setup time and query periods
-		$this->time_now = wa_lib::time_now();
+		$this->time_now = owa_lib::time_now();
 		
 		return;
 	}

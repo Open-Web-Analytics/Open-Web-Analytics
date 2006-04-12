@@ -17,7 +17,7 @@
 //
 
 require_once 'wa_settings_class.php';
-require_once 'wa_lib.php';
+require_once 'owa_lib.php';
 require_once 'eventQueue.php';
 require_once 'ini_db.php';
 
@@ -104,7 +104,7 @@ class owa_request {
 	function owa_request() {
 	
 		$this->config = &wa_settings::get_settings();
-		$this->debug = &wa_lib::get_debugmsgs();
+		$this->debug = &owa_lib::get_debugmsgs();
 		$this->eq = &eventQueue::get_instance();
 	
 		// Create GUID for this request
@@ -216,7 +216,7 @@ class owa_request {
 	 */
 	function log_first_hit() {
 		
-		$values = wa_lib::implode_assoc('=>', ',', $this->properties);
+		$values = owa_lib::implode_assoc('=>', ',', $this->properties);
 		
 		setcookie($this->config['ns'].$this->config['first_hit_param'], $values, time()+3600*24*365*30, "/", $this->properties['site']);
 		
