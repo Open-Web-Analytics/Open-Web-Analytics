@@ -279,6 +279,8 @@ class owa_session {
 		$this->properties['last_page_id'] = $request['document_id'];
 		$this->properties['last_page_title'] = $request['page_title'];
 		$this->properties['user_email'] = $request['user_email'];
+		$this->properties['user_name'] = $request['user_name'];
+		$this->properties['host'] = $request['host'];
 									
 		$this->db->query(
      		 sprintf(

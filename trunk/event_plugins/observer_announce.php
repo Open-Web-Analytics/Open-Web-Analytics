@@ -114,10 +114,22 @@ class Log_observer_announce extends owa_observer {
      */
     function announce_session_update() {
     	$this->_subject = 'WA Session Update';
-    	$this->_to = $this->config['error_email_address'];
+    	$this->_to = $this->config['notice_email'];
     	mail($this->_to, 
-    		 $this->_subject, 
-    		 $this->m->properties['visitor_id'] . ": " . $this->m->properties['last_page_uri']
+    		 $this->_subject,
+    		 sprintf('
+    		 Visitor: %s
+    		 Email or Username: %s | %s
+    		 Host: %s
+    		 Last page:%s (%s)', 
+    		 			$this->m->properties['visitor_id'],
+    		 			$this->m->properties['user_email'],
+    		 			$this->m->properties['user_name'],
+    		 			$this->m->properties['host'],
+    		 			$this->m->properties['last_page_title'],
+    		 			$this->m->properties['last_page_uri']
+    		 )
+    		 
     		 );
     	return;
     }
