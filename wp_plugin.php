@@ -23,7 +23,7 @@ require_once 'wa_settings_class.php';
 define ('WA_BASE_URL', get_bloginfo('url').'/index.php');
 
 // URL used for graph generation requests
-define ('WA_GRAPH_URL', WA_BASE_URL);
+define ('OWA_GRAPH_URL', WA_BASE_URL);
 
 // URL stem used for inter report navigation
 define ('WA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');

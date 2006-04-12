@@ -31,7 +31,7 @@
 				<TH>Visitors By Source for <?=$period?></TH>
 			</TR>
 			<TR>
-				<TD><img src="<?=WA_GRAPH_URL;?>?graph=page_views&type=bar&period=<? 
+				<TD><img src="<?=OWA_GRAPH_URL;?>?graph=page_views&type=bar&period=<? 
 		if ($period == 'today' || 'yesterday'): 
 		
 			echo 'last_seven_days'; 
@@ -42,8 +42,8 @@
 				
 		endif; 
 		?>"></TD>
-				<TD>	<img src="<?=WA_GRAPH_URL;?>?graph=visitors_pie&type=pie&period=<?=$period;?>" /></TD>
-				<TD><img src="<?=WA_GRAPH_URL;?>?graph=source_pie&type=pie&period=<?=$period;?>" /></TD>
+				<TD>	<img src="<?=OWA_GRAPH_URL;?>?graph=visitors_pie&type=pie&period=<?=$period;?>" /></TD>
+				<TD><img src="<?=OWA_GRAPH_URL;?>?graph=source_pie&type=pie&period=<?=$period;?>" /></TD>
 			</TR>
 		
 		</table>

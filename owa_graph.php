@@ -25,12 +25,12 @@ require_once (WA_INCLUDE_DIR.'jpgraph/jpgraph.php');
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_graph {
+class owa_graph {
 
 	/**
 	 * Current Time
@@ -98,10 +98,10 @@ class wa_graph {
 	/**
 	 * Constructor
 	 *
-	 * @return wa_graph
+	 * @return owa_graph
 	 * @access public
 	 */
-	function wa_graph() {
+	function owa_graph() {
 		
 		// Set current time
 		$this->time_now = wa_lib::time_now();
