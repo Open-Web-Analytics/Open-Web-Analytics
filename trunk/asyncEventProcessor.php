@@ -17,7 +17,7 @@
 //
 
 require_once 'wa_settings_class.php';
-require_once 'wa_lib.php';
+require_once 'owa_lib.php';
 require_once 'wa_env.php';
 require_once 'eventQueue.php';
 require_once (WA_PEARLOG_DIR . '/Log.php');
@@ -81,7 +81,7 @@ class asyncEventProcessor {
 	function asyncEventProcessor() {
 	
 		$this->config = &wa_settings::get_settings();
-		$this->debug = &wa_lib::get_debugmsgs();
+		$this->debug = &owa_lib::get_debugmsgs();
 		
 		// Turns off async setting so that the proper event queue is created
 		$this->config['async_db'] = false;

@@ -19,7 +19,7 @@
 require_once 'wa_settings_class.php';
 require_once 'owa_comment_class.php';
 require_once 'owa_request_class.php';
-require_once 'wa_lib.php';
+require_once 'owa_lib.php';
 
 /**
  * owa Controler
@@ -66,7 +66,7 @@ class owa {
 	 */
 	function process_request($app_params) {
 		
-		$debug = &wa_lib::get_debugmsgs();
+		$debug = &owa_lib::get_debugmsgs();
 		$config = &wa_settings::get_settings();
 		
 		// Create a new request object

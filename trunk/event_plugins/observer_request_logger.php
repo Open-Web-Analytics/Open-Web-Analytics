@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(WA_BASE_DIR ."/wa_db.php");
+require_once(WA_BASE_DIR ."/owa_db.php");
 require_once(WA_BASE_DIR ."/wa_settings_class.php");
 
 /**
@@ -98,7 +98,7 @@ class Log_observer_request_logger extends owa_observer {
 	function insert_request() {	
 		
 		// Setup databse acces object
-		$this->db = &wa_db::get_instance();
+		$this->db = &owa_db::get_instance();
 	
 		$request = array(
 					'request_id',

@@ -22,12 +22,12 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_db {
+class owa_db {
 	
 	/**
 	 * Connection string
@@ -88,13 +88,13 @@ class wa_db {
 	/**
 	 * Constructor
 	 *
-	 * @return 	wa_db
+	 * @return 	owa_db
 	 * @access 	public
 	 */
-	function wa_db() {
+	function owa_db() {
 	
 		$this->config = &wa_settings::get_settings();
-		$this->debug = &wa_lib::get_debugmsgs();
+		$this->debug = &owa_lib::get_debugmsgs();
 		
 		return;
 	}
@@ -114,7 +114,7 @@ class wa_db {
 		
 			$this->config = &wa_settings::get_settings();
 			
-			$connection_class = "wa_db_" . $this->config['db_type'];
+			$connection_class = "owa_db_" . $this->config['db_type'];
 			$connection_class_path = $this->config['db_class_dir'] . "/" . $connection_class . ".php";
 	
 	 		if (!@include($connection_class_path)):
@@ -156,7 +156,7 @@ class wa_db {
 	 */
 	function async_query($sql) {
 	
-		$async_db = new wa_db_async;
+		$async_db = new owa_db_async;
 		$result = $async_db->query($sql);
 		
 		return $result;
