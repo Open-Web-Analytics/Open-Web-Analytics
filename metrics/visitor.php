@@ -22,22 +22,22 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_metric_visitor extends wa_metric {
+class owa_metric_visitor extends owa_metric {
 
 	/**
 	 * Constructor
 	 *
 	 * @access public
-	 * @return wa_metric_visitor
+	 * @return owa_metric_visitor
 	 */
-	function wa_metric_visitor() {
+	function owa_metric_visitor() {
 
-		$this->wa_metric();
+		$this->owa_metric();
 
 		$this->api_calls = array('visitor_history', 'new_v_repeat', 'latest_visits');
 
