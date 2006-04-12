@@ -22,22 +22,22 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_graph_source_pie extends wa_graph {	
+class owa_graph_source_pie extends owa_graph {	
 
 	/**
 	 * Constructor
 	 *
 	 * @access 	public
-	 * @return 	wa_graph_visitors_pie
+	 * @return 	owa_graph_visitors_pie
 	 */
-	function wa_graph_source_pie() {
+	function owa_graph_source_pie() {
 		
-		$this->wa_graph();
+		$this->owa_graph();
 		$this->api_calls = array('source_pie');
 		
 		return;

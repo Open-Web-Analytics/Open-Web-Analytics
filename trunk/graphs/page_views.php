@@ -22,21 +22,21 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_graph_page_views extends wa_graph {	
+class owa_graph_page_views extends owa_graph {	
 
 	/**
 	 * Constructor
 	 *
-	 * @return wa_graph_page_views
+	 * @return owa_graph_page_views
 	 */
-	function wa_graph_page_views() {
+	function owa_graph_page_views() {
 	
-		$this->wa_graph();
+		$this->owa_graph();
 		$this->api_calls = array('page_views', 'swf_pv');
 	
 		return;

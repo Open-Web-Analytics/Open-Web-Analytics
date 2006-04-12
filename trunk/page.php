@@ -20,7 +20,7 @@ require_once 'wa_settings_class.php';
 require_once 'owa_controller.php';
 
 define ('WA_BASE_URL', $_SERVER['SERVER_NAME']);
-define ('WA_GRAPH_URL', WA_BASE_URL);
+define ('OWA_GRAPH_URL', WA_BASE_URL);
 
 define('WA_DB_NAME', DB_NAME);     // The name of the database
 define('WA_DB_USER', DB_USER);     // Your MySQL username

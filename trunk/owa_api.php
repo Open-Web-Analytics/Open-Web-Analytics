@@ -94,10 +94,10 @@ class owa_api {
 				$api->class_prefix = 'wa_metric_';
 				break;
 			case "graph":
-				require_once(WA_BASE_DIR.'/wa_graph.php');
+				require_once(WA_BASE_DIR.'/owa_graph.php');
 				$api->api_type = $api_type;
-				$api->plugins_dir = WA_GRAPHS_DIR;
-				$api->class_prefix = 'wa_graph_';
+				$api->plugins_dir = OWA_GRAPHS_DIR;
+				$api->class_prefix = 'owa_graph_';
 				break;
 		}
 	
