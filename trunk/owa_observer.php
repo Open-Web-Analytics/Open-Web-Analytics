@@ -24,13 +24,13 @@ require_once(WA_PEARLOG_DIR . '/Log/observer.php');
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 
-class wa_observer extends Log_observer {
+class owa_observer extends Log_observer {
 
 	 /**
      * The type of event that an observer would want to hear about.
@@ -57,7 +57,7 @@ class wa_observer extends Log_observer {
      *
      * @access public
      */
-    function wa_observer($priority = PEAR_LOG_INFO)
+    function owa_observer($priority = PEAR_LOG_INFO)
     {
         $this->Log_observer($priority);
     	//$this->_id = md5(microtime());

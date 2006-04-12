@@ -17,7 +17,7 @@
 //
 
 require_once WA_PEARLOG_DIR . '/Log.php';
-require_once 'wa_observer.php';
+require_once 'owa_observer.php';
 
 /**
  * Event Queue
@@ -25,10 +25,10 @@ require_once 'wa_observer.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 class eventQueue {
 
@@ -71,7 +71,7 @@ class eventQueue {
 				$eq->_filename	= $this->config['async_log_file'];
 					
 				// This observer will watch the queue and exec a new php process that will process the events
-				$async_helper = &wa_observer::factory(WA_REQ_PLUGINS_DIR.'/async', 'async_helper', PEAR_LOG_INFO);
+				$async_helper = &owa_observer::factory(WA_REQ_PLUGINS_DIR.'/async', 'async_helper', PEAR_LOG_INFO);
 				$eq->attach($async_helper);
 					
 			else:
@@ -84,7 +84,7 @@ class eventQueue {
 							substr($file, -1, 1) != "~" &&
 							substr($file,  0, 1) != "#"):
 								$class  = substr($file, 9, -4);
-								$plugin_name = &wa_observer::factory(WA_REQ_PLUGINS_DIR, $class, PEAR_LOG_INFO);
+								$plugin_name = &owa_observer::factory(WA_REQ_PLUGINS_DIR, $class, PEAR_LOG_INFO);
 								$eq->attach($plugin_name);
 						endif;
 						
