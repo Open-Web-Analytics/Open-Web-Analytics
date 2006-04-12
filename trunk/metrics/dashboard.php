@@ -22,16 +22,16 @@
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_metric_dashboard extends wa_metric {
+class owa_metric_dashboard extends owa_metric {
 
-	function wa_metric_dashboard() {
+	function owa_metric_dashboard() {
 
-		$this->wa_metric();
+		$this->owa_metric();
 
 		$this->api_calls = array('dash_core', 'page_views', 'page_view_count', 'dash_counts');
 		

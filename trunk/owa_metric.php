@@ -26,12 +26,12 @@ require_once 'wa_db.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_metric {
+class owa_metric {
 
 	/**
 	 * Current Time
@@ -93,9 +93,9 @@ class wa_metric {
 	 * Constructor
 	 *
 	 * @access public
-	 * @return wa_metric
+	 * @return owa_metric
 	 */
-	function wa_metric() {
+	function owa_metric() {
 	
 		$this->config = &wa_settings::get_settings();
 		$this->debug = &wa_lib::get_debugmsgs();
@@ -117,8 +117,8 @@ class wa_metric {
 			
 		$config = &wa_settings::get_settings();
 				
-		if (!require_once(WA_METRICS_DIR.$class_name . '.php')):
-			print "error locating proper class file from: " . WA_METRICS_DIR; //error
+		if (!require_once(OWA_METRICS_DIR.$class_name . '.php')):
+			print "error locating proper class file from: " . OWA_METRICS_DIR; //error
 		else:  
 			$o = new $class_name;
 			$o->params = $params;
@@ -300,7 +300,7 @@ class wa_metric {
 	 */
 	function get_metric($params) {
 	
-		$m = wa_metric::get_instance($params['metric_package'], $params);	
+		$m = owa_metric::get_instance($params['metric_package'], $params);	
 		$data = $m->generate($params);
 	
 		switch ($params['result_format']) {
