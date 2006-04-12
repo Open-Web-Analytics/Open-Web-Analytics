@@ -27,12 +27,12 @@ require_once 'owa_api.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
-class wa_report {
+class owa_report {
 	
 	/**
 	 * Template
@@ -73,9 +73,9 @@ class wa_report {
 	 * Constructor
 	 *
 	 * @access 	public
-	 * @return 	wa_report
+	 * @return 	owa_report
 	 */
-	function wa_report() {
+	function owa_report() {
 		
 		$this->config = &wa_settings::get_settings();
 		$this->tpl = & new Template;

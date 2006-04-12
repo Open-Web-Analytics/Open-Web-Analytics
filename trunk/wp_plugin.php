@@ -26,7 +26,7 @@ define ('WA_BASE_URL', get_bloginfo('url').'/index.php');
 define ('OWA_GRAPH_URL', WA_BASE_URL);
 
 // URL stem used for inter report navigation
-define ('WA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
+define ('OWA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
 
 // Path to images used in reports
 define ('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');
