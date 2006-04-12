@@ -17,9 +17,9 @@
 //
 
 include dirname(__FILE__).'/../wa_env.php';
-require_once(WA_BASE_DIR.'/wa_report.php');
+require_once(WA_BASE_DIR.'/owa_report.php');
 
-$report = new wa_report;
+$report = new owa_report;
 
 // Set the reporting period
 

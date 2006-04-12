@@ -17,7 +17,7 @@
 //
 
 include dirname(__FILE__).'/../wa_env.php';
-require_once(WA_BASE_DIR.'/wa_report.php');
+require_once(WA_BASE_DIR.'/owa_report.php');
 
 /**
  * Visitor Report
@@ -25,13 +25,13 @@ require_once(WA_BASE_DIR.'/wa_report.php');
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 
-$report = new wa_report;
+$report = new owa_report;
 
 if (!empty($_POST['period'])):
 	$report->set_period($_POST['period']);
