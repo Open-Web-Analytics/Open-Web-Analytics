@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 require_once 'owa_comment_class.php';
 require_once 'owa_request_class.php';
 require_once 'owa_lib.php';
@@ -67,7 +67,7 @@ class owa {
 	function process_request($app_params) {
 		
 		$debug = &owa_lib::get_debugmsgs();
-		$config = &wa_settings::get_settings();
+		$config = &owa_settings::get_settings();
 		
 		// Create a new request object
 		

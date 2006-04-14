@@ -59,7 +59,7 @@ class eventQueue {
 	
 		static $eq;
 	
-		$this->config = &wa_settings::get_settings();	
+		$this->config = &owa_settings::get_settings();	
 		
 		if (!isset($eq)):
 			// Create an async event queue

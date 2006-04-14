@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 require_once 'owa_controller.php';
 
 define ('WA_BASE_URL', $_SERVER['SERVER_NAME']);

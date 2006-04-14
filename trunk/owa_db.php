@@ -93,7 +93,7 @@ class owa_db {
 	 */
 	function owa_db() {
 	
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		$this->debug = &owa_lib::get_debugmsgs();
 		
 		return;
@@ -112,7 +112,7 @@ class owa_db {
 	
 		if (!isset($db)):
 		
-			$this->config = &wa_settings::get_settings();
+			$this->config = &owa_settings::get_settings();
 			
 			$connection_class = "owa_db_" . $this->config['db_type'];
 			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";

@@ -2,7 +2,7 @@
 
 // setup DB tables
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 
 
 class wa_schema {
@@ -14,7 +14,7 @@ function create_tables() {
 	global $wpdb, $set;
 	
 	$set = array();
-	$set = wa_settings::get_settings();
+	$set = owa_settings::get_settings();
 	
 	//print_r($set);
 

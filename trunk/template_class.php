@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 
 /**
  * Template
@@ -65,7 +65,7 @@ class Template {
      * @access public 
      */
     function Template() {
-    	$this->config = &wa_settings::get_settings();
+    	$this->config = &owa_settings::get_settings();
 		$this->debug = &owa_lib::get_debugmsgs();
         $this->template_dir = $this->config['templates_dir'];
         return;

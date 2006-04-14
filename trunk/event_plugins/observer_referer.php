@@ -103,7 +103,7 @@ class Log_observer_referer extends owa_observer {
         // Configure the observer
 		$this->_event_type = array('new_session');
 	
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		
 		return;
