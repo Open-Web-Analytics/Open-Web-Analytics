@@ -12,7 +12,7 @@ Author URI: http://www.openwebanalytics.com
 require_once 'owa_controller.php';
 require_once 'tables.php';
 require_once 'owa_env.php';
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 
 /**
  * WORDPRESS Constants
@@ -218,9 +218,9 @@ function owa_install() {
 
 	global $user_level, $wpdb;
 	
-	require_once 'wa_settings_class.php';
+	require_once 'owa_settings_class.php';
 	
-	$config = wa_settings::get_settings();
+	$config = owa_settings::get_settings();
 
 	//check to see if the user has permissions to install or not...
 	get_currentuserinfo();
@@ -362,10 +362,10 @@ function owa_options() {
 
 function owa_fetch_config() {
 
-	require_once 'wa_settings_class.php';
+	require_once 'owa_settings_class.php';
 	
 	// Fetch config
-	$config = &wa_settings::get_settings();
+	$config = &owa_settings::get_settings();
 	$wp_config = get_option('owa_options');
 	
 	foreach ($wp_config as $key => $value) {
@@ -425,8 +425,8 @@ endif;
 		if (isset($_POST['wa_reset_options'])):
 				
 			//create config array
-			require_once 'wa_settings_class.php';
-			$config = &wa_settings::get_settings();
+			require_once 'owa_settings_class.php';
+			$config = &owa_settings::get_settings();
 		
 			update_option('owa_options', $config);		
 			

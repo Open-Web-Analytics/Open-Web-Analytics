@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 require_once 'owa_lib.php';
 require_once 'owa_env.php';
 require_once 'eventQueue.php';
@@ -80,7 +80,7 @@ class asyncEventProcessor {
 	 */
 	function asyncEventProcessor() {
 	
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		$this->debug = &owa_lib::get_debugmsgs();
 		
 		// Turns off async setting so that the proper event queue is created

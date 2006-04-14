@@ -89,7 +89,7 @@ class Log_observer_ua extends owa_observer {
         // Configure the observer to handle certain events types
 		$this->_event_type = array('new_session');
 	
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		$this->debug = &owa_lib::get_debugmsgs();
 		

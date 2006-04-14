@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(WA_BASE_DIR.'/wa_settings_class.php');
+require_once(WA_BASE_DIR.'/owa_settings_class.php');
 
 /**
  * Geo-location abstract class
@@ -83,7 +83,7 @@ class owa_location {
 	 */
 	function owa_location() {
 		
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		
 		return;
 	}

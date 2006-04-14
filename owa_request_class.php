@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 require_once 'owa_lib.php';
 require_once 'eventQueue.php';
 require_once 'ini_db.php';
@@ -103,7 +103,7 @@ class owa_request {
 	 */
 	function owa_request() {
 	
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		$this->debug = &owa_lib::get_debugmsgs();
 		$this->eq = &eventQueue::get_instance();
 	

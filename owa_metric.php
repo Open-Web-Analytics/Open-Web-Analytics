@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_settings_class.php';
+require_once 'owa_settings_class.php';
 require_once 'owa_lib.php';
 require_once 'owa_db.php';
 
@@ -97,7 +97,7 @@ class owa_metric {
 	 */
 	function owa_metric() {
 	
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		$this->debug = &owa_lib::get_debugmsgs();
 		$this->db = &owa_db::get_instance();
 		// Setup time and query periods
@@ -115,7 +115,7 @@ class owa_metric {
 	 */
 	function get_instance($class_name, $params) {
 			
-		$config = &wa_settings::get_settings();
+		$config = &owa_settings::get_settings();
 				
 		if (!require_once(OWA_METRICS_DIR.$class_name . '.php')):
 			print "error locating proper class file from: " . OWA_METRICS_DIR; //error

@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once (WA_BASE_DIR.'/wa_settings_class.php');
+require_once (WA_BASE_DIR.'/owa_settings_class.php');
 
 /**
  * Email Announcement Event handler
@@ -83,7 +83,7 @@ class Log_observer_announce extends owa_observer {
 		$this->_event_type = array('session_update');
 
 		// Fetch config
-		$this->config = &wa_settings::get_settings();
+		$this->config = &owa_settings::get_settings();
 		
 		return;
     }
