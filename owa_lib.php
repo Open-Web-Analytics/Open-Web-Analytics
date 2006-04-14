@@ -17,7 +17,7 @@
 //
 
 require_once 'wa_env.php';
-require_once (WA_PEARLOG_DIR . '/Log.php');
+require_once (OWA_PEARLOG_DIR . '/Log.php');
 
 /**
  * Utility Functions

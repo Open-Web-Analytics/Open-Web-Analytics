@@ -115,7 +115,7 @@ class owa_db {
 			$this->config = &wa_settings::get_settings();
 			
 			$connection_class = "owa_db_" . $this->config['db_type'];
-			$connection_class_path = $this->config['db_class_dir'] . "/" . $connection_class . ".php";
+			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";
 	
 	 		if (!@include($connection_class_path)):
   				print "error locating proper db class at $connection_class_path"; //error

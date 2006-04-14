@@ -165,7 +165,9 @@ class owa_session {
 		$this->properties['city'] = $request['city'];
 		$this->properties['country'] = $request['country'];
 		
-		$this->get_location();
+		if ($this->config['geolocation_lookup'] == true):
+			$this->get_location();
+		endif;
 		
 		$this->log_initial_session();
 		
