@@ -18,7 +18,7 @@
 
 require_once 'wa_settings_class.php';
 require_once 'owa_lib.php';
-require_once 'wa_env.php';
+require_once 'owa_env.php';
 require_once 'eventQueue.php';
 require_once (OWA_PEARLOG_DIR . '/Log.php');
 require_once 'owa_session_class.php';
@@ -30,10 +30,10 @@ require_once 'owa_request_class.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
 class asyncEventProcessor {
 

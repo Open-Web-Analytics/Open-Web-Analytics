@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_env.php';
+require_once 'owa_env.php';
 require_once 'template_class.php';
 require_once 'wa_settings_class.php';
 require_once 'owa_api.php';
