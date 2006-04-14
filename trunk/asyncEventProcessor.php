@@ -20,7 +20,7 @@ require_once 'wa_settings_class.php';
 require_once 'owa_lib.php';
 require_once 'wa_env.php';
 require_once 'eventQueue.php';
-require_once (WA_PEARLOG_DIR . '/Log.php');
+require_once (OWA_PEARLOG_DIR . '/Log.php');
 require_once 'owa_session_class.php';
 require_once 'owa_request_class.php';
 
@@ -115,12 +115,12 @@ class asyncEventProcessor {
 	function process_events() {
 		
 		// check to see if file exisits
-		if (file_exists($this->config['async_log_file'])):
+		if (file_exists($this->config['async_log_dir'].$this->config['async_log_file'])):
 			
 			// Create a new log file name		
-			$new_file = WA_BASE_DIR."/logs/".posix_getpid().".".time().".txt";
+			$new_file = $this->config['async_log_dir'].posix_getpid().".".time().".txt";
 			// Rename current log file 
-			rename ($this->config['async_log_file'], $new_file ) or die ("Could not rename file");
+			rename ($this->config['async_log_dir'].$this->config['async_log_file'], $new_file ) or die ("Could not rename file");
 			// open file for reading
 			$handle = @fopen($new_file, "r");
 			if ($handle):

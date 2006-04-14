@@ -7,7 +7,7 @@
 			
 	<DIV class="setting">	
 		Resolve Host Names: 
-		<SELECT NAME="<?=$config['resolve_hosts']?>">
+		<SELECT NAME="resolve_hosts">
 	
 		<OPTION VALUE="0" <? if ($config['resolve_hosts'] == false):?>SELECTED<?endif;?>>
 		Off</OPTION>
@@ -20,7 +20,7 @@
 	
 	<DIV class="setting">	
 		Log Requests from Feed Readers: 
-		<SELECT NAME="<?=$config['log_feedreaders']?>">
+		<SELECT NAME="log_feedreaders">
 	
 		<OPTION VALUE="0" <? if ($config['log_feedreaders'] == false):?>SELECTED<?endif;?>>
 		Off</OPTION>
@@ -33,7 +33,7 @@
 	
 	<DIV class="setting">	
 		Log Requests from Known Robots: 
-		<SELECT NAME="<?=$config['log_robots']?>">
+		<SELECT NAME="log_robots">
 	
 		<OPTION VALUE="0" <? if ($config['log_robots'] == false):?>SELECTED<?endif;?>>
 		Off</OPTION>
@@ -51,7 +51,7 @@
 	
 	<DIV class="setting">	
 		Asynchronous Database Mode: 
-		<SELECT NAME="<?=$config['async_db']?>">
+		<SELECT NAME="async_db">
 	
 		<OPTION VALUE="0" <? if ($config['async_db'] == false):?>SELECTED<?endif;?>>
 		Off</OPTION>
@@ -62,6 +62,17 @@
 		</SELECT>
 	</DIV>
 	
+	<DIV class="setting">	
+
+	Log File Directory: <input type="text" name="async_log_dir" value="<?=$config['async_log_dir']?>"><BR>
+	
+	</DIV>
+	
+	<DIV class="setting">	
+
+	Event Log File Name: <input type="text" name="async_log_file" value="<?=$config['async_log_file']?>"><BR>
+	
+	</DIV>
 	
     </fieldset>
     
@@ -74,11 +85,55 @@
 	
 	</DIV>
     
+	</fieldset>
+	
+    <fieldset name="owa-geolocation-options" class="options">
+	<legend>Geolocation Options</legend>
+	
+	<DIV class="setting">	
+	
+		Perform Geo-location Lookup: 
+		<SELECT NAME="geolocation_lookup">
+	
+		<OPTION VALUE="0" <? if ($config['geolocation_lookup'] == false):?>SELECTED<?endif;?>>
+		Off</OPTION>
+		
+		<OPTION VALUE="1" <? if ($config['geolocation_lookup'] == true):?>SELECTED<?endif;?>>
+		On</OPTION>
+			
+		</SELECT>
+	</DIV>
+	<DIV class="setting">	
+		Geolocation Service: 
+		<SELECT NAME="geolocation_service">
+	
+		<OPTION VALUE="hostip" <? if ($config['geolocation_service'] == 'hostip'):?>SELECTED<?endif;?>>
+		Hostip.info Webservice</OPTION>
+			
+		</SELECT>
+	
+	</DIV>
+    
+	</fieldset>
+	
+	<fieldset name="owa-reports-options" class="options">
+	<legend>Reporting</legend>
+	
+	<DIV class="setting">	
+
+	Reporting Wrapper: <input type="text" name="report_wrapper" value="<?=$config['report_wrapper']?>"><BR>
+	
+	</DIV>
+    
+	</fieldset>
+	
+	
+	
      
      
 <BR>
-   <input type="submit" name="options_update" value="Save Options" />
-   <input type="submit" name="options_reset" value="Reset Options to Default" />
+   <input type="submit" name="wa_update_options" value="Save Options" />
+   <input type="submit" name="wa_reset_options" value="Reset Options to Default" />
   </form>
  </div>
  

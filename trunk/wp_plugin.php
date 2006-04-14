@@ -48,6 +48,9 @@ function owa_main() {
 
 	// WORDPRESS SPECIFIC DATA //
 	
+	//Load config from wp_database
+	owa_fetch_config();
+	
 	// Get the type of page
 	
 	$app_params['page_type'] = owa_get_page_type();
@@ -283,6 +286,9 @@ function owa_tag() {
  *
  */
 function owa_intercept() {
+	
+	//Load config from wp_database
+	owa_fetch_config();
 
 	// First hit request handler
 	if (isset($_GET['first_hit'])):
@@ -354,14 +360,29 @@ function owa_options() {
     return;
 }
 
-function owa_options_page() {
-	
-	require_once 'template_class.php';
+function owa_fetch_config() {
+
 	require_once 'wa_settings_class.php';
 	
 	// Fetch config
-	
 	$config = &wa_settings::get_settings();
+	$wp_config = get_option('owa_options');
+	
+	foreach ($wp_config as $key => $value) {
+		
+		$config[$key] = $value;
+		
+	}
+	return $config;
+}
+
+function owa_options_page() {
+	
+	require_once 'template_class.php';
+	
+	$config = owa_fetch_config();
+	print_r($config);
+	//update options
 	
 	//Setup templates
 	$options_page = & new Template;
@@ -384,6 +405,35 @@ if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
 	add_action('init', 'owa_install');
   
 endif;
+
+//if (is_plugin_page()):
+		if (isset($_POST['wa_update_options'])):
+				
+			//create config array
+			$new_config = array();
+			foreach ($_POST as $key => $value) {
+				
+				if ($key != 'update_options'):
+					$new_config[$key] = $value;
+				endif;
+			}
+		
+			update_option('owa_options', $new_config);		
+			
+		endif;
+		
+		if (isset($_POST['wa_reset_options'])):
+				
+			//create config array
+			require_once 'wa_settings_class.php';
+			$config = &wa_settings::get_settings();
+		
+			update_option('owa_options', $config);		
+			
+		endif;
+	//endif;
+
+
 
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_tag');

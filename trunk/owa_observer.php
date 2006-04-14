@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(WA_PEARLOG_DIR . '/Log/observer.php');
+require_once(OWA_PEARLOG_DIR . '/Log/observer.php');
 
 /**
  * WA Observer extends PEAR Log's observer to add event type.

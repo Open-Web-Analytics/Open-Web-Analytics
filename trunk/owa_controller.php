@@ -82,7 +82,7 @@ class owa {
 			if (get_cfg_var('browscap')):
 				$browser = get_browser(); //If available, use PHP native function
 			else:
-				require_once(WA_INCLUDE_DIR . 'php-local-browscap.php');
+				require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
 				$browser = get_browser_local();
 			endif;
 			
