@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'wa_env.php';
+require_once 'owa_env.php';
 require_once (OWA_PEARLOG_DIR . '/Log.php');
 
 /**

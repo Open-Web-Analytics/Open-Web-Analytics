@@ -11,7 +11,7 @@ Author URI: http://www.openwebanalytics.com
 
 require_once 'owa_controller.php';
 require_once 'tables.php';
-require_once 'wa_env.php';
+require_once 'owa_env.php';
 require_once 'wa_settings_class.php';
 
 /**

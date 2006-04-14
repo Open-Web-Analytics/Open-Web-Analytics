@@ -16,7 +16,7 @@
 // $Id$
 //
 
-include dirname(__FILE__).'/../wa_env.php';
+include dirname(__FILE__).'/../owa_env.php';
 require_once(WA_BASE_DIR.'/owa_report.php');
 
 /**

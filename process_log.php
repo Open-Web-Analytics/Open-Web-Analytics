@@ -18,7 +18,7 @@
 // $Id$
 //
 
-require_once 'wa_env.php';
+require_once 'owa_env.php';
 require_once 'asyncEventProcessor.php';
 
 /**
