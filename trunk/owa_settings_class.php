@@ -45,7 +45,7 @@ class owa_settings {
 		$settings = Array(
 	
 			'log_errors'				 	=> true,
-			'print_sql' 					=> true,
+			'print_sql' 					=> true, //not needed
 			'ns'							=> 'wa_',
 			'visitor_param'					=> 'v',
 			'session_param'					=> 's',
@@ -54,7 +54,7 @@ class owa_settings {
 			'feed_subscription_param'		=> 'sid',
 			'site_id'						=> '1',
 			'session_length'				=> '1800',
-			'debug_msgs'					=> true,
+			'debug_msgs'					=> true, //not needed
 			'debug_to_screen'				=> false,
 			'requests_table'				=> 'requests',
 			'sessions_table'				=> 'sessions',
@@ -80,6 +80,7 @@ class owa_settings {
 			'restore_db_conn'				=> true,
 			'async_log_dir'					=> WA_BASE_DIR . '/logs/',
 			'async_log_file'				=> 'events.txt',
+			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
 			'error_email'					=> true,
 			'notice_email'					=> 'peter@oncefuture.com',

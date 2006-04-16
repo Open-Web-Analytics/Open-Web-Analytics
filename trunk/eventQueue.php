@@ -64,11 +64,11 @@ class eventQueue {
 		if (!isset($eq)):
 			// Create an async event queue
 			if ($this->config['async_db'] == true):
-				$conf = array('mode' => 600, 'timeFormat' => '%X %x');
-				$eq = &Log::singleton('async_queue', $this->config['async_log_file'], 'ident', $conf);
+				$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
+				$eq = &Log::singleton('async_queue', $this->config['async_log_dir'].$this->config['async_log_file'], 'async_event_queue', $conf);
 				$eq->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
 				// not sure why this is needed but it is.
-				$eq->_filename	= $this->config['async_log_file'];
+				$eq->_filename	= $this->config['async_log_dir'].$this->config['async_log_file'];
 					
 				// This observer will watch the queue and exec a new php process that will process the events
 				$async_helper = &owa_observer::factory(OWA_REQ_PLUGINS_DIR.'/async', 'async_helper', PEAR_LOG_INFO);

@@ -80,7 +80,7 @@ class Log_observer_announce extends owa_observer {
         $this->Log_observer($priority);
 
         // Configure the observer to listen for event types
-		$this->_event_type = array('session_update');
+		$this->_event_type = array('new_session');
 
 		// Fetch config
 		$this->config = &owa_settings::get_settings();
@@ -99,7 +99,7 @@ class Log_observer_announce extends owa_observer {
     	$this->m = $event['message'];
 
     	switch ($event['event_type']) {
-    		case "session_update":
+    		case "new_session":
     			$this->announce_session_update();
     			break;
 
@@ -113,7 +113,7 @@ class Log_observer_announce extends owa_observer {
      *
      */
     function announce_session_update() {
-    	$this->_subject = 'WA Session Update';
+    	$this->_subject = 'WA New Session';
     	$this->_to = $this->config['notice_email'];
     	mail($this->_to, 
     		 $this->_subject,
@@ -121,13 +121,16 @@ class Log_observer_announce extends owa_observer {
     		 Visitor: %s
     		 Email or Username: %s | %s
     		 Host: %s
-    		 Last page:%s (%s)', 
+    		 City/Country: %s, %s
+    		 Entry page:%s (%s)', 
     		 			$this->m->properties['visitor_id'],
     		 			$this->m->properties['user_email'],
     		 			$this->m->properties['user_name'],
     		 			$this->m->properties['host'],
-    		 			$this->m->properties['last_page_title'],
-    		 			$this->m->properties['last_page_uri']
+    		 			$this->m->properties['city'],
+    		 			$this->m->properties['country'],
+    		 			$this->m->properties['first_page_title'],
+    		 			$this->m->properties['first_page_uri']
     		 )
     		 
     		 );

@@ -1,6 +1,6 @@
 <?php
 
-require_once WA_BASE_DIR .'/wa_env.php';
+require_once WA_BASE_DIR .'/owa_env.php';
 
 class Log_observer_async_helper extends Log_observer {
 
@@ -18,21 +18,14 @@ class Log_observer_async_helper extends Log_observer {
 		$this->_event_type = array('session_update');
 
 		/* Setup configuration */
-		
-		
-		
-		
-		
+		return;
     }
 
     function notify($event) {
 	
 	//	$this->execInBackground($this->processor_path, $this->processor_script, $this->shell_args);
-		
-		
-		
-		return;
 	
+		return;
 	}
 		
 		
