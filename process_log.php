@@ -20,6 +20,7 @@
 
 require_once 'owa_env.php';
 require_once 'asyncEventProcessor.php';
+//include_once OWA_CONF_DIR . 'owa_config.php';
 
 /**
  * Batch Event Processing Script
@@ -30,11 +31,12 @@ require_once 'asyncEventProcessor.php';
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    wa
- * @package     wa
+ * @category    owa
+ * @package     owa
  * @version		$Revision$	      
- * @since		wa 1.0.0
+ * @since		owa 1.0.0
  */
+
 
 $processor = new asyncEventProcessor;
 $processor->process_events();

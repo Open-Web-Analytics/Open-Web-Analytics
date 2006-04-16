@@ -62,7 +62,7 @@ function create_tables() {
 			is_browser tinyint(1),
 			is_feedreader tinyint(1),
 			
-			KEY request_id (request_id),
+			PRIMARY KEY (request_id),
 			KEY timestamp (timestamp)
 		);
 		
@@ -110,7 +110,7 @@ function create_tables() {
 			is_robot tinyint(1),
 			is_browser tinyint(1),
 			is_feedreader tinyint(1),
-			KEY session_id   (session_id),
+			PRIMARY KEY (session_id),
 			KEY timestamp      (timestamp)
 		);
 		
