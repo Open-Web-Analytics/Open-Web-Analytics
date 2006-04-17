@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once (WA_BASE_DIR . '/owa_api.php');
+require_once (OWA_BASE_DIR . '/owa_api.php');
 require_once (OWA_INCLUDE_DIR.'jpgraph/jpgraph.php');
 
 /**

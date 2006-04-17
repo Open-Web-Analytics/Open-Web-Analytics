@@ -53,7 +53,7 @@ $browscapPath=''; //Cached database
 function get_browser_local($user_agent=null,$return_array=false,$db='',$cache=true)
 {//http://alexandre.alapetite.net/doc-alex/php-local-browscap/
 
-$db = WA_BASE_DIR . '/conf/browscap.ini';
+$db = OWA_BASE_DIR . '/conf/browscap.ini';
 
  if (($user_agent==null)&&isset($_SERVER['HTTP_USER_AGENT'])) $user_agent=$_SERVER['HTTP_USER_AGENT'];
  

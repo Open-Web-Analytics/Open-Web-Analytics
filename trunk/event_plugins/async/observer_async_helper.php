@@ -1,10 +1,10 @@
 <?php
 
-require_once WA_BASE_DIR .'/owa_env.php';
+require_once OWA_BASE_DIR .'/owa_env.php';
 
 class Log_observer_async_helper extends Log_observer {
 
-	var $processor_path = WA_BASE_DIR;
+	var $processor_path = OWA_BASE_DIR;
 	var $processor_script = 'process_log.php';
 	var $shell_args;
 	var $config;

@@ -16,8 +16,8 @@
 // $Id$
 //
 
-require_once(WA_BASE_DIR ."/owa_db.php");
-require_once(WA_BASE_DIR ."/owa_settings_class.php");
+require_once(OWA_BASE_DIR ."/owa_db.php");
+require_once(OWA_BASE_DIR ."/owa_settings_class.php");
 
 /**
  * Request Event Handler

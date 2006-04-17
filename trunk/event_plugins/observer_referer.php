@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(WA_BASE_DIR.'/ini_db.php');
+require_once(OWA_BASE_DIR.'/ini_db.php');
 
 /**
  * Referer Traffic Source Event handler

@@ -17,7 +17,7 @@
 //
 
 include dirname(__FILE__).'/../owa_env.php';
-require_once(WA_BASE_DIR.'/owa_report.php');
+require_once(OWA_BASE_DIR.'/owa_report.php');
 
 /**
  * Session Report

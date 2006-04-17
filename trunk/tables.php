@@ -1,28 +1,97 @@
 <?php 
 
-// setup DB tables
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
 
 require_once 'owa_settings_class.php';
+require_once 'owa_db.php';
 
+/**
+ * OWA Installation class
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
 
-class wa_schema {
+class owa_install {
 
-var $set = array();
-
-function create_tables() {
-
-	global $wpdb, $set;
+	/**
+	 * Configuration
+	 *
+	 * @var array
+	 */
+	var $config = array();
 	
-	$set = array();
-	$set = owa_settings::get_settings();
+	/**
+	 * Data access object
+	 *
+	 * @var object
+	 */
+	var $db;
 	
-	//print_r($set);
+	/**
+	 * Version of string
+	 *
+	 * @var string
+	 */
+	var $version;
+	
+	/**
+	 * Constructor
+	 *
+	 * @return owa_install
+	 */
 
-	$schema_version - '1';
+	function owa_install() {
+		
+		$this->config = &owa_settings::get_settings();
+		$this->db = &owa_db::get_instance();
+		
+		return;
+	}
+	
+	function create_tables() {
+	
+		$this->create_requests_table();
+		$this->create_sessions_table();
+		$this->create_referers_table();
+		$this->create_documents_table();
+		$this->create_ua_table();
+		$this->create_hosts_table();
+		$this->create_os_table();
+		$this->create_optinfo_table();
+		$this->create_settings_table();
+		
+		$this->config['schema_version'] = $this->version;
+		$this->config->save();
+	
+		return;
+	}
+	
+	function create_requests_table() {
 
-	// requests
-	$sql = "DROP TABLE IF EXISTS {$set['ns']}{$set['requests_table']};
-	CREATE TABLE {$set['ns']}{$set['requests_table']} (
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			request_id bigint,
 			inbound_visitor_id bigint, 
 			inbound_session_id bigint,
@@ -63,11 +132,19 @@ function create_tables() {
 			is_feedreader tinyint(1),
 			
 			PRIMARY KEY (request_id),
-			KEY timestamp (timestamp)
+			KEY timestamp (timestamp));",
+			$this->config['ns'].$this->config['requests_table'])
 		);
 		
-		DROP TABLE IF EXISTS {$set['ns']}{$set['sessions_table']};
-		CREATE TABLE {$set['ns']}{$set['sessions_table']} (
+		return;
+	}
+	
+	function create_sessions_table() {
+		
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			session_id BIGINT,
 			visitor_id BIGINT,
 			user_name VARCHAR(255),
@@ -112,10 +189,19 @@ function create_tables() {
 			is_feedreader tinyint(1),
 			PRIMARY KEY (session_id),
 			KEY timestamp      (timestamp)
+			);",
+			$this->config['ns'].$this->config['sessions_table'])
 		);
 		
-  		DROP TABLE IF EXISTS {$set['ns']}{$set['referers_table']};
-		CREATE TABLE {$set['ns']}{$set['referers_table']} (
+		return;
+	}
+	
+	function create_referers_table() {
+		
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			id BIGINT,
 			url varchar(255),
 			site_name varchar(255),
@@ -124,51 +210,112 @@ function create_tables() {
 			page_title varchar(255),
 			is_searchengine tinyint(1),
 			PRIMARY KEY (id)
-		);	
+			);",
+			$this->config['ns'].$this->config['referers_table'])
+		);
+
+		return;
+	}
 		
-		DROP TABLE IF EXISTS {$set['ns']}{$set['documents_table']};
-		CREATE TABLE {$set['ns']}{$set['documents_table']} (
+	function create_documents_table() {
+		
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			id BIGINT,
 			url varchar(255),
 			page_title varchar(255),
 			page_type varchar(255),
 			PRIMARY KEY (id)
-		);	
+			);",
+			$this->config['ns'].$this->config['documents_table'])
+		);
 		
-		DROP TABLE IF EXISTS {$set['ns']}{$set['hosts_table']};
-		CREATE TABLE {$set['ns']}{$set['hosts_table']} (
+		return;
+	}
+  	
+	function create_hosts_table() {
+		
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			id BIGINT,
 			url varchar(255),
 			PRIMARY KEY (id)
-		);	
+			);",	
+			$this->config['ns'].$this->config['hosts_table'])
+		);
+		return;
+	}
+	
+	function create_os_table() {
 		
-			
-	  	DROP TABLE IF EXISTS {$set['ns']}{$set['os_table']};
-		CREATE TABLE {$set['ns']}{$set['os_table']} (
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			id BIGINT,
 			name varchar(255),
 			PRIMARY KEY (id)
-		);		
-	  	DROP TABLE IF EXISTS {$set['ns']}{$set['ua_table']};
-		CREATE TABLE {$set['ns']}{$set['ua_table']} (
+			);",	
+			$this->config['ns'].$this->config['os_table'])
+		);
+		return;
+	}
+
+	function create_ua_table() {
+		
+			$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			id BIGINT,
 			ua varchar(255),
 			browser_type varchar(255),
 			PRIMARY KEY (id)
-		);	
-		DROP TABLE IF EXISTS {$set['ns']}{$set['optinfo_table']};
-		CREATE TABLE {$set['ns']}{$set['optinfo_table']} (
+			);",	
+			$this->config['ns'].$this->config['ua_table'])
+		);
+		
+		
+		return;
+	}
+		
+	function create_optinfo_table() {
+		
+			$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
 			request_id BIGINT,
 			data_field VARCHAR(255),
 			data_value VARCHAR(255),
 			KEY (request_id)
+			);",	
+			$this->config['ns'].$this->config['optinfo_table'])
 		);
-		";
 		
-		return array($sql, $schema_version);
-		
-		}
-		
+		return;
 	}
+	
+	function create_settings_table() {
+		
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
+			id INT,
+			settings VARCHAR(255),
+			PRIMARY KEY (id)
+			);",	
+			$this->config['ns'].$this->config['settings_table'])
+		);
+		
+		return;
+	}
+				
+}
 
 ?>
