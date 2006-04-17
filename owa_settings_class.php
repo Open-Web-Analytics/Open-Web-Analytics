@@ -45,7 +45,6 @@ class owa_settings {
 		$settings = Array(
 	
 			'log_errors'				 	=> true,
-			'print_sql' 					=> true, //not needed
 			'ns'							=> 'wa_',
 			'visitor_param'					=> 'v',
 			'session_param'					=> 's',
@@ -54,7 +53,6 @@ class owa_settings {
 			'feed_subscription_param'		=> 'sid',
 			'site_id'						=> '1',
 			'session_length'				=> '1800',
-			'debug_msgs'					=> true, //not needed
 			'debug_to_screen'				=> false,
 			'requests_table'				=> 'requests',
 			'sessions_table'				=> 'sessions',
@@ -78,22 +76,23 @@ class owa_settings {
 			'delay_first_hit'				=> true,
 			'async_db'						=> false,
 			'restore_db_conn'				=> true,
-			'async_log_dir'					=> WA_BASE_DIR . '/logs/',
+			'async_log_dir'					=> OWA_BASE_DIR . '/logs/',
 			'async_log_file'				=> 'events.txt',
 			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
 			'error_email'					=> true,
 			'notice_email'					=> 'peter@oncefuture.com',
-			'error_log_file'				=> WA_BASE_DIR . '/logs/errors.txt',
-			'search_engines.ini'			=> WA_BASE_DIR . '/conf/search_engines.ini',
-			'query_strings.ini'				=> WA_BASE_DIR . '/conf/query_strings.ini',
-			'os.ini'						=> WA_BASE_DIR . '/conf/os.ini',
-			'db_class_dir'					=> WA_BASE_DIR . '/db/',
-			'templates_dir'					=> WA_BASE_DIR . '/reports/templates/',
-			'plugin_dir'					=> WA_BASE_DIR . '/plugins/',
+			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
+			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
+			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
+			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
+			'db_class_dir'					=> OWA_BASE_DIR . '/db/',
+			'templates_dir'					=> OWA_BASE_DIR . '/reports/templates/',
+			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
-			'report_wrapper'				=> 'wordpress.tpl'
+			'report_wrapper'				=> 'wordpress.tpl',
+			'schema_version'				=> '1.0'
 			
 			);
 		
@@ -105,6 +104,42 @@ class owa_settings {
 		endif;
 		
 		return $settings;
+	}
+	
+	/**
+	 * Save Config to database
+	 *
+	 * @param unknown_type $settings
+	 */
+	function save($settings) {
+		
+		$this->db->query(
+			sprintf("
+			INSERT into %s (id, settings) VALUES (%s, %s)",
+			$this->config['ns'].$this->config['settings_table'],
+			$settings['site_id'],
+			serialize($settings))
+			
+		);
+		return;
+	}
+	
+	/**
+	 * Fetch Config from database
+	 *
+	 * @return array
+	 */
+	function fetch() {
+		
+		$sql = sprintf("
+				SELECT settings from %s
+				WHERE
+				id = '%s'",
+				$site_id);
+		
+		$config = $this->db->get_row($sql);
+		
+		return $config;
 	}
 
 }

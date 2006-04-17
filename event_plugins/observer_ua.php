@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(WA_BASE_DIR.'/ini_db.php');
+require_once(OWA_BASE_DIR.'/ini_db.php');
 
 /**
  * User Agent Event handler
