@@ -272,7 +272,7 @@ function owa_dashboard_view() {
  */
 function owa_tag() {
 
-	if (empty($_COOKIE['wa_v'])):
+	if (empty($_COOKIE['wa_v']) && empty($_COOKIE['first_hit'])):
 		$bug = "<img src=\"".WA_BASE_URL."?first_hit=true\">";
 		echo $bug;
 	endif;
@@ -293,10 +293,6 @@ function owa_intercept() {
 	// First hit request handler
 	if (isset($_GET['first_hit'])):
 		
-		if (isset($_COOKIE['wa_first_hit'])):
-			owa_main();
-		endif;
-
 		header('Content-type: image/gif');
 		header('P3P: CP="NOI NID ADMa OUR IND UNI COM NAV"');
 		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
@@ -304,6 +300,10 @@ function owa_intercept() {
 		header('Cache-Control: no-store, no-cache, must-revalidate');
 		header('Cache-Control: post-check=0, pre-check=0', false);
 		header('Pragma: no-cache');
+		
+		if (isset($_COOKIE['wa_first_hit'])):
+			owa_main();
+		endif;
 		
 		printf(
 		  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
@@ -366,13 +366,7 @@ function owa_fetch_config() {
 	
 	// Fetch config
 	$config = &owa_settings::get_settings();
-	$wp_config = get_option('owa_options');
 	
-	foreach ($wp_config as $key => $value) {
-		
-		$config[$key] = $value;
-		
-	}
 	return $config;
 }
 

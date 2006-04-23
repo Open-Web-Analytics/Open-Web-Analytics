@@ -138,7 +138,7 @@ class ini_db {
 	function match($haystack) {
 		
 		foreach ($this->db as $key => $value) {
-        	
+        	//print_r($value);
 			if (preg_match($value, $haystack, $tmp)):
             	$needle = $tmp[1];
 			endif;

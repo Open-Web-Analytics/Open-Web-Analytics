@@ -132,11 +132,11 @@ class asyncEventProcessor {
 			//if it's not running remove the lock file and proceead.
 			else:
 				unlink ($this->config['async_log_dir'].$this->config['async_lock_file']);
-				$this->process_event_log();
+				$this->process_event_log($this->config['async_log_dir'].$this->config['async_log_file']);
 			endif;
 
 		else:
-			$this->process_event_log();
+			$this->process_event_log($this->config['async_log_dir'].$this->config['async_log_file']);
 		endif;
 		return;
 	}
@@ -154,16 +154,16 @@ class asyncEventProcessor {
 		return;
 	}
 	
-	function process_event_log() {
+	function process_event_log($file) {
 		// check to see if event log file exisits
-		if (file_exists($this->config['async_log_dir'].$this->config['async_log_file'])):
+		if (file_exists($file)):
 				
 			$this->create_lock_file();
 				
 			// Create a new log file name		
-			$new_file = $this->config['async_log_dir'].posix_getpid().".".time().".txt";
+			$new_file = $this->config['async_log_dir'].time().".".posix_getpid().".processing";
 			// Rename current log file 
-			rename ($this->config['async_log_dir'].$this->config['async_log_file'], $new_file ) or die ("Could not rename file");
+			rename ($file, $new_file ) or die ("Could not rename file");
 			// open file for reading
 			$handle = @fopen($new_file, "r");
 				if ($handle):

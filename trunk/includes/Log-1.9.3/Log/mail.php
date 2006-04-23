@@ -139,10 +139,11 @@ class Log_mail extends Log
     function close()
     {
         if ($this->_opened) {
+        	
             if (!empty($this->_message)) {
                 $headers = "From: $this->_from\r\n";
                 $headers .= "User-Agent: Log_mail";
-
+				 
                 if (mail($this->_recipient, $this->_subject, $this->_message,
                          $headers) == false) {
                     error_log("Log_mail: Failure executing mail()", 0);
@@ -210,7 +211,7 @@ class Log_mail extends Log
         $entry = sprintf("%s %s [%s] %s\r\n", strftime('%b %d %H:%M:%S'),
                          $this->_ident, Log::priorityToString($priority),
                          $message);
-
+		
         $this->_message .= $entry;
 
         $this->_announce(array('priority' => $priority, 'message' => $message));

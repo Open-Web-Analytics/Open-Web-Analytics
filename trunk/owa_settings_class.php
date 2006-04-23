@@ -42,7 +42,49 @@ class owa_settings {
 		
 		if(!isset($settings)):
 			
-		$settings = Array(
+			// get base config
+			$settings = owa_settings::get_default_config();
+			
+			//load overrides from config file
+			$OWA_CONFIG = $settings;
+			
+			include_once ($settings['config_file_path']);
+			
+			// fetch updated config from db if needed
+			if($OWA_CONFIG['fetch_config_from_db'] == true):
+				
+				$config_from_db = owa_settings::fetch();
+			
+				foreach ($config_from_db as $key => $value) {
+		
+					$OWA_CONFIG[$key] = $value;
+		
+				}
+				
+			endif;
+			
+			// switch variable names back
+			$settings = $OWA_CONFIG;
+			
+		endif;
+
+		// look for debug flag on url	
+		if (isset($_GET['debug'])):
+			$OWA_CONFIG['debug_to_screen'] = true;
+		endif;
+		
+		
+		return $settings;
+	}
+	
+	/**
+	 * Returns default settings array
+	 *
+	 * @return array
+	 */
+	function get_default_config() {
+		
+		return array(
 	
 			'log_errors'				 	=> true,
 			'ns'							=> 'wa_',
@@ -81,29 +123,24 @@ class owa_settings {
 			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
 			'error_email'					=> true,
-			'notice_email'					=> 'peter@oncefuture.com',
+			'notice_email'					=> '',
+			'error_handler'					=> 'production',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
 			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
+			'robots.ini'					=> OWA_BASE_DIR . '/conf/robots.ini',
 			'db_class_dir'					=> OWA_BASE_DIR . '/db/',
 			'templates_dir'					=> OWA_BASE_DIR . '/reports/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
 			'report_wrapper'				=> 'wordpress.tpl',
-			'schema_version'				=> '1.0'
+			'schema_version'				=> '1.0',
+			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
+			'fetch_config_from_db'			=> false
 			
 			);
-		
-		endif;
-
-		// look for debug flag on url	
-		if (isset($_GET['debug'])):
-			$settings['debug_to_screen'] = true;
-		endif;
-		
-		return $settings;
 	}
 	
 	/**
@@ -129,7 +166,7 @@ class owa_settings {
 	 *
 	 * @return array
 	 */
-	function fetch() {
+	function fetch($site_id = 1) {
 		
 		$sql = sprintf("
 				SELECT settings from %s

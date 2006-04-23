@@ -20,6 +20,8 @@ require_once 'owa_settings_class.php';
 require_once 'owa_lib.php';
 require_once 'eventQueue.php';
 require_once 'ini_db.php';
+require_once 'owa_error.php';
+require_once OWA_PEARLOG_DIR . '/Log.php';
 
 /**
  * Request
@@ -96,6 +98,13 @@ class owa_request {
 	var $time_since_lastreq;
 	
 	/**
+	 * Error Handler
+	 *
+	 * @var object
+	 */
+	var $e;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_request
@@ -106,9 +115,12 @@ class owa_request {
 		$this->config = &owa_settings::get_settings();
 		$this->debug = &owa_lib::get_debugmsgs();
 		$this->eq = &eventQueue::get_instance();
-	
+		$this->e = &owa_error::get_instance();
+		
 		// Create GUID for this request
 		$this->properties['request_id'] = $this->set_guid();
+		
+		$this->e->log('testing 123', PEAR_LOG_DEBUG);
 
 		// Retriece inbound vistor and session values	
 		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
@@ -480,6 +492,18 @@ class owa_request {
 	
 		return $browser;
 			
+	}
+	
+	function last_chance_robot_detect($user_agent) {
+		
+		$db = new ini_db($this->config['robots.ini']);
+		$string = $db->match($user_agent);
+		
+		if (!empty($string)):
+			$this->is_robot = true;
+		endif;
+		
+		return;
 	}
 	
 	/**

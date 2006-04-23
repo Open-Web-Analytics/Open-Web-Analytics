@@ -52,7 +52,8 @@ class owa_db_mysql extends owa_db {
     	);
 		
 		if (!$this->connection || !@mysql_select_db($this->config['db_name'], $this->connection)):
-			return print 'Could not connect to database.';
+			print 'Could not connect to database.';
+			die;
 		endif;
 	
 		return;
