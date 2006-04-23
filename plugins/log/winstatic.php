@@ -1,27 +1,40 @@
 <?php
-/**
- * $Header: /repository/pear/Log/Log/win.php,v 1.17 2005/02/26 14:48:59 chagenbu Exp $
- *
- * @version $Revision: 1.17 $
- * @package Log
- */
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+require_once(OWA_BASE_DIR.'/owa_error.php');
 
 /**
- * The Log_win class is a concrete implementation of the Log abstract
- * class that logs messages to a separate browser window.
+ * The Log_winstatic class is a concrete implementation of the Log abstract
+ * class that logs messages to a separate browser window. This version is different
+ * as it stores all output into a static variable that can then be printed after all
+ * other headers are sent.
  *
  * The concept for this log handler is based on part by Craig Davis' article
  * entitled "JavaScript Power PHP Debugging:
  *
  *  http://www.zend.com/zend/tut/tutorial-DebugLib.php
  *
- * @author  Jon Parise <jon@php.net>
- * @since   Log 1.7.0
- * @package Log
+ * @author  Peter Adams <peter@openwebanalytics>
+ * @since   OWA 1.0.0
+ * @package OWA
  *
- * @example win.php     Using the window handler.
+ * @example winstatic.php     Using the window handler.
  */
-class Log_win extends Log
+class Log_winstatic extends Log
 {
     /**
      * The name of the output window.
@@ -69,14 +82,18 @@ class Log_win extends Log
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_win($name, $ident = '', $conf = array(),
+    function Log_winstatic($name, $ident = '', $conf = array(),
                           $level = PEAR_LOG_DEBUG)
     {
+    	
         $this->_id = md5(microtime());
         $this->_name = $name;
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);
-
+        
+        // fetches the static array that will store output to be printed later
+        $this->debug = &owa_error::get_msgs();
+        
         if (isset($conf['title'])) {
             $this->_title = $conf['title'];
         }
@@ -90,7 +107,7 @@ class Log_win extends Log
     /**
      * Destructor
      */
-    function _Log_win()
+    function _Log_winstatic()
     {
         if ($this->_opened || (count($this->_buffer) > 0)) {
             $this->close();
@@ -116,7 +133,7 @@ class Log_win extends Log
                 $identHeader = '';
             }
 			
-            echo <<< END_OF_SCRIPT
+            $this->debug .= <<< END_OF_SCRIPT
 <script language="JavaScript">
 $win = window.open('', '{$this->_name}', 'toolbar=no,scrollbars,width=600,height=400');
 $win.document.writeln('<html>');
@@ -193,10 +210,10 @@ END_OF_SCRIPT;
         /* Drain the buffer to the output window. */
         $win = $this->_name;
         foreach ($this->_buffer as $line) {
-            echo "<script language='JavaScript'>\n";
-            echo "$win.document.writeln('" . addslashes($line) . "');\n";
-            echo "self.focus();\n";
-            echo "</script>\n";
+            $this->debug .= "<script language='JavaScript'>\n";
+            $this->debug .= "$win.document.writeln('" . addslashes($line) . "');\n";
+            $this->debug .= "self.focus();\n";
+            $this->debug .= "</script>\n";
         }
 
         /* Now that the buffer has been drained, clear it. */

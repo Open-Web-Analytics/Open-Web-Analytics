@@ -20,6 +20,7 @@ require_once 'owa_settings_class.php';
 require_once 'owa_comment_class.php';
 require_once 'owa_request_class.php';
 require_once 'owa_lib.php';
+require_once 'owa_error.php';
 
 /**
  * owa Controler
@@ -66,7 +67,7 @@ class owa {
 	 */
 	function process_request($app_params) {
 		
-		$debug = &owa_lib::get_debugmsgs();
+		$debug = &owa_error::get_msgs();
 		$config = &owa_settings::get_settings();
 		
 		// Create a new request object
@@ -84,11 +85,17 @@ class owa {
 			else:
 				require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
 				$browser = get_browser_local();
+				if ($browser->crawler == true):
+					$r->is_robot = true;
+				endif;
+				
+				// Regex check for robots
+				$r->last_chance_robot_detect($r->properties['ua']);
 			endif;
 			
 		// Log requests from known robots or else dump the request
 		
-			if ($browser->crawler == true):
+			if ($r->is_robot == true):
 				if ($config['log_robots'] == true):
 					$r->transform_request();
 					$r->state = 'robot_request';
@@ -109,6 +116,7 @@ class owa {
 				
 				if ($config['debug_to_screen'] == true):
 					print_r($debug);
+				
 				endif;
 				return;
 			endif;	

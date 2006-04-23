@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once('../owa_settings_class.php');
+//require_once('../owa_settings_class.php');
 
 /**
  * OWA Configuration File
@@ -29,7 +29,7 @@ require_once('../owa_settings_class.php');
  * Boolean values may be true or false (never quotes).
  */
 
-$OWA_CONFIG =  &owa_settings::get_settings();
+//$OWA_CONFIG =  &owa_settings::get_settings();
 
 
 // Logs errors to an error log file
@@ -39,7 +39,7 @@ $OWA_CONFIG['log_errors'] = true;
 
 // Namespace prefix for cookies and database tables
 // Default is 'owa_'
-$OWA_CONFIG['log_errors'] = 'owa_';
+$OWA_CONFIG['ns'] = 'wa_';
 
 // Feed subscription id
 // Default is 'sid'
@@ -69,17 +69,17 @@ $OWA_CONFIG['debug_level'] = 1;
 $OWA_CONFIG['db_type'] = 'wordpress';
 
 // Name of the database
-$OWA_CONFIG['db_name'] = '';
+//$OWA_CONFIG['db_name'] = '';
 
 // Database user name
-$OWA_CONFIG['db_user'] = '';
+//$OWA_CONFIG['db_user'] = '';
 
 // Password for database user
-$OWA_CONFIG['db_password'] = '';
+//$OWA_CONFIG['db_password'] = '';
 
 // Database host
 // Could be localhost but is usually
-$OWA_CONFIG['db_host'] = '';
+//$OWA_CONFIG['db_host'] = '';
 
 // Resolve host names
 // You might want to turn this off if you have a lot of traffic 
@@ -96,17 +96,32 @@ $OWA_CONFIG['log_robots'] = false;
 $OWA_CONFIG['log_sessions'] = true;
 
 // Run in asynchronous mode.
-$OWA_CONFIG['async_db'] = false;
+$OWA_CONFIG['async_db'] = true;
+
+// Error handler mode
+// Options: 'development' - loggs all errors to sperate window, 
+//			'production' - only logs real errors to a file. 
+// 			     			Mails critical ones to notice email.
+$OWA_CONFIG['error_handler'] = 'development';
 
 // Directory where event log is stored wen running in async mode
 // This directory must be read and writable by php or apache
-// Default is owa/logs/
-$OWA_CONFIG['async_log_dir'] = '';
+// This must be a full path to the directory. The default is /path/to/owa/logs/
+//$OWA_CONFIG['async_log_dir'] = '';
 
-			'async_log_file'				=> 'events.txt',
-			'async_error_log_file'			=> 'events_error.txt',
-			'error_email'					=> true,
-			'notice_email'					=> 'peter@oncefuture.com',
+// Name of Log file used to log events
+//$OWA_CONFIG['async__log_file'] = 'events.txt';
+
+// Name of Log file used to log events that the Async event processor had issues with
+//$OWA_CONFIG['async_error_log_file'] = 'events_error.txt';
+
+// Send crtical errors in email to notice address
+//$OWA_CONFIG['error_email'] = false;
+
+// Email address used to send various notices to
+$OWA_CONFIG['notice_email'] = 'peter@oncefuture.com';
+		/*	
+
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
@@ -118,7 +133,7 @@ $OWA_CONFIG['async_log_dir'] = '';
 			'geolocation_service'			=> 'hostip',
 			'report_wrapper'				=> 'wordpress.tpl'
 
-
+*/
 
 
 
