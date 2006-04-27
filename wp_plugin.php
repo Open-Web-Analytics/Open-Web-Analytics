@@ -49,7 +49,7 @@ function owa_main() {
 	// WORDPRESS SPECIFIC DATA //
 	
 	//Load config from wp_database
-	owa_fetch_config();
+	//owa_fetch_config();
 	
 	// Get the type of page
 	
@@ -80,8 +80,9 @@ function owa_main() {
 	// Provide an ID for this instance in case you want to track multiple blogs/sites seperately
 	//$app_params['site_id'] = '';
 	
-	// Process the request by calling wa
-	owa::process_request($app_params);
+	// Process the request by calling owa
+	$owa = new owa;
+	$owa->process_request($app_params);
 	
 	return;
 }
@@ -181,8 +182,8 @@ function add_feed_sid($binfo) {
 }
 
 function owa_is_comment() {
-
-	owa::process_comment();
+	$owa = new owa;
+	$owa->process_comment();
 	
 	return;
 
@@ -273,7 +274,10 @@ function owa_dashboard_view() {
 function owa_tag() {
 
 	if (empty($_COOKIE['wa_v']) && empty($_COOKIE['first_hit'])):
-		$bug = "<img src=\"".WA_BASE_URL."?first_hit=true\">";
+		$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
+		$bug .= "document.write('<img src=\"".WA_BASE_URL."?first_hit=true\">');</script>";
+		$bug .= "<noscript><img src=\"".WA_BASE_URL."?first_hit=true\"></noscript>";
+		
 		echo $bug;
 	endif;
 	
@@ -292,6 +296,11 @@ function owa_intercept() {
 
 	// First hit request handler
 	if (isset($_GET['first_hit'])):
+	
+		if (isset($_COOKIE['wa_first_hit'])):
+			$owa = new owa;
+			$owa->process_first_request();
+		endif;
 		
 		header('Content-type: image/gif');
 		header('P3P: CP="NOI NID ADMa OUR IND UNI COM NAV"');
@@ -300,11 +309,7 @@ function owa_intercept() {
 		header('Cache-Control: no-store, no-cache, must-revalidate');
 		header('Cache-Control: post-check=0, pre-check=0', false);
 		header('Pragma: no-cache');
-		
-		if (isset($_COOKIE['wa_first_hit'])):
-			owa_main();
-		endif;
-		
+			
 		printf(
 		  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
 		  71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
@@ -321,7 +326,9 @@ function owa_intercept() {
 			
 			);
 			
-		owa::get_graph($params);
+		$owa = new owa;
+		$owa->get_graph($params);
+		
 		exit;
 	endif;
 	

@@ -49,6 +49,13 @@ class owa {
 	 * @var string
 	 */
 	var $debug;
+	
+	/**
+	 * Error Handler
+	 *
+	 * @var object
+	 */
+	var $e;
 
 	/**
 	 * Constructor
@@ -57,6 +64,9 @@ class owa {
 	 */
 	function owa() {
 		
+		$this->debug = &owa_error::get_msgs();
+		$this->config = &owa_settings::get_settings();
+		$this->e = &owa_error::get_instance();
 		return;
 	}
 	
@@ -67,15 +77,10 @@ class owa {
 	 */
 	function process_request($app_params) {
 		
-		$debug = &owa_error::get_msgs();
-		$config = &owa_settings::get_settings();
-		
 		// Create a new request object
-		
 		$r = new owa_request;
 		
 		// Apply application specific data to the request
-		
 		$r->apply_app_specific($app_params);
 		
 		// Deterine if the request is from a known robot/crawler/spider
@@ -96,7 +101,7 @@ class owa {
 		// Log requests from known robots or else dump the request
 		
 			if ($r->is_robot == true):
-				if ($config['log_robots'] == true):
+				if ($this->config['log_robots'] == true):
 					$r->transform_request();
 					$r->state = 'robot_request';
 					$r->log_request();	
@@ -107,29 +112,23 @@ class owa {
 			endif;
 		
 		// Log requests from feed readers
-	
-		if ($config['log_feedreaders'] == true):
+		if ($this->config['log_feedreaders'] == true):
 			if (!empty($r->properties['is_feedreader'])):	
 				$r->transform_request();
 				$r->state = 'feed_request';
 				$r->log_request();
 				
-				if ($config['debug_to_screen'] == true):
-					print_r($debug);
+				//remove this
+				if ($this->config['debug_to_screen'] == true):
+					print_r($this->debug);
 				
 				endif;
 				return;
 			endif;	
 		endif;	
 		
-		//Load request properties from first_hit cookie if it exists
-		if (!empty($_COOKIE[$config['ns'].$config['first_hit_param']])):
-			$r->load_first_hit_properties($_COOKIE[$config['ns'].$config['first_hit_param']]);
-		endif;
-	
 		// Log first hit to cookie if no visitor cookie is already set
-		
-		if ($config['delay_first_hit'] == true):	
+		if ($this->config['delay_first_hit'] == true):	
 			//	Check to see if this request is a delayed hit being proceessed from the cookie.
 			if ($r->first_hit == false):	
 				// If not, then make sure that there is an inbound visitor_id
@@ -141,50 +140,74 @@ class owa {
 			endif;
 		endif;
 		
-		// Process the request data
+		$this->process($r);
+		
+		return;
+	}
 	
+	function process($r) {
+		
+		// Process the request data
 		$r->transform_request();
 	
 		// Sessionize
-		
-		if ($config['log_sessions'] == true):
-		
-			if (!empty($r->properties['inbound_session_id'])):
-				 
-				 if (!empty($r->properties['last_req'])):
-							
-					if ($r->time_sinse_lastreq < $r->config['session_length']):
-						$r->properties['session_id'] = $r->properties['inbound_session_id'];			
-					else:
-					//prev session expired, because no hits in half hour.
-						$r->create_new_session($r->properties['visitor_id']);
-					endif;
-				else:
-				//session_id, but no last_req value. whats up with that?  who cares. just make new session.
-					$r->create_new_session($r->properties['visitor_id']);
-				endif;
-			else:
-			//no session yet. make one.
-				$r->create_new_session($r->properties['visitor_id']);
-			endif;
+		if ($this->config['log_sessions'] == true):
+			$r->sessionize();
 		endif;
 
 		// Log the request
 		$r->state = 'new_request';
 		$r->log_request();
 		
-		// Print debug to screen
-		if ($config['debug_to_screen'] == true):
-			print_r($debug);
+		// Hook to kick off the async event processor
+  	 	if ($this->config['async_db'] == true):
+    		; // fork process to process async event log.
 		endif;
 		
-		// Hook to kick off the async event processor
-  	 	if ($config['async_db'] == true):
-    		; // fork process to process async event log.
+		// Print debug to screen
+		if ($this->config['error_handler'] == 'development'):
+			print_r($this->debug);
 		endif;
 		
 		return;			
 					
+	}
+	
+	function process_first_request() {
+		
+		// Create a new request object
+		$r = new owa_request;
+		
+		//Load request properties from first_hit cookie if it exists
+		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+			$r->load_first_hit_properties($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]);
+		endif;
+		
+		$this->process($r);
+
+		/* // Process the request data
+		$r->transform_request();
+	
+		// Sessionize
+		if ($this->config['log_sessions'] == true):
+			$r->sessionize();
+		endif;
+
+		// Log the request
+		$r->state = 'new_request';
+		$r->log_request();
+		
+		// Hook to kick off the async event processor
+  	 	if ($this->config['async_db'] == true):
+    		; // fork process to process async event log.
+		endif;
+		
+			// Print debug to screen
+		if ($this->config['debug_to_screen'] == true):
+			print_r($this->debug);
+		endif;
+		*/
+		return;
 	}
 	
 	/**

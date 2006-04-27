@@ -20,7 +20,7 @@
 
 require_once 'owa_env.php';
 require_once 'asyncEventProcessor.php';
-//include_once OWA_CONF_DIR . 'owa_config.php';
+require_once 'owa_settings_class.php';
 
 /**
  * Batch Event Processing Script
@@ -37,6 +37,7 @@ require_once 'asyncEventProcessor.php';
  * @since		owa 1.0.0
  */
 
+$config = &owa_settings::get_settings();
 
 $processor = new asyncEventProcessor;
 $processor->process_events();

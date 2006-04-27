@@ -310,7 +310,7 @@ class owa_install {
 			settings VARCHAR(255),
 			PRIMARY KEY (id)
 			);",	
-			$this->config['ns'].$this->config['settings_table'])
+			$this->config['ns'].$this->config['config_table'])
 		);
 		
 		return;
