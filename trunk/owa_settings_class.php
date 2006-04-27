@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once('owa_db.php');
+
 /**
  * Settings
  * 
@@ -30,6 +32,13 @@
 class owa_settings {
 	
 	/**
+	 * Databse access object
+	 *
+	 * @var unknown_type
+	 */
+	var $db;
+	
+	/**
 	 * Returns the configuration
 	 *
 	 * @return 	array
@@ -38,18 +47,17 @@ class owa_settings {
 	 */
 	function &get_settings() {
 	
-		static $settings;
+		static $OWA_CONFIG;
 		
-		if(!isset($settings)):
+		if(!isset($OWA_CONFIG)):
 			
 			// get base config
-			$settings = owa_settings::get_default_config();
+			
+			$OWA_CONFIG = &owa_settings::get_default_config();
 			
 			//load overrides from config file
-			$OWA_CONFIG = $settings;
-			
-			include_once ($settings['config_file_path']);
-			
+			include_once ($OWA_CONFIG['config_file_path']);
+				
 			// fetch updated config from db if needed
 			if($OWA_CONFIG['fetch_config_from_db'] == true):
 				
@@ -63,9 +71,6 @@ class owa_settings {
 				
 			endif;
 			
-			// switch variable names back
-			$settings = $OWA_CONFIG;
-			
 		endif;
 
 		// look for debug flag on url	
@@ -73,8 +78,7 @@ class owa_settings {
 			$OWA_CONFIG['debug_to_screen'] = true;
 		endif;
 		
-		
-		return $settings;
+		return $OWA_CONFIG;
 	}
 	
 	/**
@@ -86,7 +90,6 @@ class owa_settings {
 		
 		return array(
 	
-			'log_errors'				 	=> true,
 			'ns'							=> 'wa_',
 			'visitor_param'					=> 'v',
 			'session_param'					=> 's',
@@ -104,6 +107,7 @@ class owa_settings {
 			'documents_table'				=> 'documents',
 			'optinfo_table'					=> 'optinfo',
 			'hosts_table'					=> 'hosts',
+			'config_table'					=> 'settings',
 			'data_store'					=> 'db',
 			'debug_level'					=> '1',
 			'db_type'						=> 'wordpress',
@@ -122,7 +126,6 @@ class owa_settings {
 			'async_log_file'				=> 'events.txt',
 			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
-			'error_email'					=> true,
 			'notice_email'					=> '',
 			'error_handler'					=> 'production',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
@@ -150,10 +153,13 @@ class owa_settings {
 	 */
 	function save($settings) {
 		
+		$config = &owa_settings::get_settings();
+		$this->db = &owa_db::get_instance();
+		
 		$this->db->query(
 			sprintf("
 			INSERT into %s (id, settings) VALUES (%s, %s)",
-			$this->config['ns'].$this->config['settings_table'],
+			$config['ns'].$this->config['config_table'],
 			$settings['site_id'],
 			serialize($settings))
 			
@@ -168,15 +174,19 @@ class owa_settings {
 	 */
 	function fetch($site_id = 1) {
 		
+		$config = &owa_settings::get_settings();
+		$this->db = &owa_db::get_instance();
+		
 		$sql = sprintf("
 				SELECT settings from %s
 				WHERE
 				id = '%s'",
+				$config['ns'].$config['config_table'],
 				$site_id);
 		
-		$config = $this->db->get_row($sql);
+		$settings = $this->db->get_row($sql);
 		
-		return $config;
+		return $settings;
 	}
 
 }

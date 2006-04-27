@@ -120,7 +120,7 @@ class owa_request {
 		// Create GUID for this request
 		$this->properties['request_id'] = $this->set_guid();
 		
-		$this->e->log('testing 123', PEAR_LOG_DEBUG);
+		$this->e->log('testing from owa_request constructor', PEAR_LOG_DEBUG);
 
 		// Retriece inbound vistor and session values	
 		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
@@ -272,6 +272,31 @@ class owa_request {
 		
 		return;			
 		
+	}
+	
+	function sessionize() {
+		
+			// check for inbound session id
+			if (!empty($this->properties['inbound_session_id'])):
+				 
+				 if (!empty($this->properties['last_req'])):
+							
+					if ($this->time_sinse_lastreq < $this->config['session_length']):
+						$this->properties['session_id'] = $this->properties['inbound_session_id'];			
+					else:
+					//prev session expired, because no hits in half hour.
+						$this->create_new_session($this->properties['visitor_id']);
+					endif;
+				else:
+				//session_id, but no last_req value. whats up with that?  who cares. just make new session.
+					$this->create_new_session($this->properties['visitor_id']);
+				endif;
+			else:
+			//no session yet. make one.
+				$this->create_new_session($this->properties['visitor_id']);
+			endif;
+			
+		return;
 	}
 	
 	/**

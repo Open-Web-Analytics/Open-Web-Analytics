@@ -31,11 +31,28 @@
 
 //$OWA_CONFIG =  &owa_settings::get_settings();
 
+// Database type
+// Possible values: wordpress, mysql
+$OWA_CONFIG['db_type'] = 'wordpress';
 
-// Logs errors to an error log file
-// Possible values are true and false
-$OWA_CONFIG['log_errors'] = true;
+// Name of the database
+$OWA_CONFIG['db_name'] = 'oncefuture';
 
+// Database user name
+$OWA_CONFIG['db_user'] = 'oncefuture';
+
+// Password for database user
+$OWA_CONFIG['db_password'] = 'trin6006';
+
+// Database host
+// Could be localhost but is usually an actual host name (e.g. db.host.com)
+$OWA_CONFIG['db_host'] = 'oc.padams.dreamhosters.com';
+
+// Fetch settings from DB instead of this configuration file. 
+// IF SET TO TRUE THEN ALL CHANGES BELOW THIS LINE WILL BE IGNORED
+$OWA_CONFIG['fetch_config_from_db'] = false;
+
+////////////////////////////////////////////
 
 // Namespace prefix for cookies and database tables
 // Default is 'owa_'
@@ -64,23 +81,6 @@ $OWA_CONFIG['optinfo_table'] = 'optinfo';
 // Possible values: 0 = no debug, 1 - sql statements
 $OWA_CONFIG['debug_level'] = 1;
 
-// Database type
-// Possible values: wordpress, mysql
-$OWA_CONFIG['db_type'] = 'wordpress';
-
-// Name of the database
-//$OWA_CONFIG['db_name'] = '';
-
-// Database user name
-//$OWA_CONFIG['db_user'] = '';
-
-// Password for database user
-//$OWA_CONFIG['db_password'] = '';
-
-// Database host
-// Could be localhost but is usually
-//$OWA_CONFIG['db_host'] = '';
-
 // Resolve host names
 // You might want to turn this off if you have a lot of traffic 
 // and are NOT running OWA in async mode.
@@ -102,7 +102,7 @@ $OWA_CONFIG['async_db'] = true;
 // Options: 'development' - loggs all errors to sperate window, 
 //			'production' - only logs real errors to a file. 
 // 			     			Mails critical ones to notice email.
-$OWA_CONFIG['error_handler'] = 'development';
+$OWA_CONFIG['error_handler'] = 'production';
 
 // Directory where event log is stored wen running in async mode
 // This directory must be read and writable by php or apache
@@ -114,9 +114,6 @@ $OWA_CONFIG['error_handler'] = 'development';
 
 // Name of Log file used to log events that the Async event processor had issues with
 //$OWA_CONFIG['async_error_log_file'] = 'events_error.txt';
-
-// Send crtical errors in email to notice address
-//$OWA_CONFIG['error_email'] = false;
 
 // Email address used to send various notices to
 $OWA_CONFIG['notice_email'] = 'peter@oncefuture.com';

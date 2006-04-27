@@ -40,41 +40,6 @@ class owa_error {
 	var $config = array();
 	
 	/**
-	 * Instance of the screen logger
-	 *
-	 * @var object
-	 */
-	var $displayLogger;
-	
-	/**
-	 * Instance of the seperate window logger
-	 *
-	 * @var object
-	 */
-	var $windowLogger;
-	
-	/**
-	 * Instance of the file logger
-	 *
-	 * @var object
-	 */
-	var $fileLogger;
-
-	/**
-	 * Instance of the mail logger
-	 *
-	 * @var object
-	 */
-	var $mailLogger;
-	
-	/**
-	 * Instance of the syslog logger
-	 *
-	 * @var object
-	 */
-	var $syslogLogger;
-	
-	/**
 	 * Instance of the current logger
 	 *
 	 * @var object
@@ -87,13 +52,6 @@ class owa_error {
 	 * @var unknown_type
 	 */
 	var $priority;
-	
-	/**
-	 * Error Msgs
-	 *
-	 * @var unknown_type
-	 */
-	var $msgs;
 	
 	/**
 	 * Gets instanceof error logger
@@ -124,12 +82,11 @@ class owa_error {
 				case "production":
 					
 					$file = owa_error::make_file_logger();
-					//$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG);
-					$file_mask = PEAR_LOG_ALL;
+					$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG);
 					$file->setMask($file_mask);
 					
 					$mail = owa_error::make_mail_logger();
-					//$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_DEBUG);
+					$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 					$mail_mask = PEAR_LOG_ALL;
 					$mail->setMask($mail_mask);
 					

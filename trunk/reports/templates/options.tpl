@@ -50,6 +50,19 @@
 	<legend>Database Options</legend>
 	
 	<DIV class="setting">	
+		Fetch Configuration from Database 
+		<SELECT NAME="fetch_config_from_db">
+	
+		<OPTION VALUE="0" <? if ($config['fetch_config_from_db'] == false):?>SELECTED<?endif;?>>
+		Off</OPTION>
+		
+		<OPTION VALUE="1" <? if ($config['fetch_config_from_db'] == true):?>SELECTED<?endif;?>>
+		On</OPTION>
+			
+		</SELECT>
+	</DIV>
+	
+	<DIV class="setting">	
 		Asynchronous Database Mode: 
 		<SELECT NAME="async_db">
 	
@@ -127,7 +140,22 @@
     
 	</fieldset>
 	
+	<fieldset name="owa-error-options" class="options">
+	<legend>Error Reporting</legend>
 	
+	<DIV class="setting">	
+		Erorr Reporting Mode: 
+		<SELECT NAME="error_handler">
+	
+		<OPTION VALUE="production" <? if ($config['error_handler'] == 'production'):?>SELECTED<?endif;?>>
+		Production (errors logged to file with critcal alerts send via email)</OPTION>
+		<OPTION VALUE="development" <? if ($config['error_handler'] == 'development'):?>SELECTED<?endif;?>>
+		Development (errors logged to file and seperate browser window)</OPTION>
+		</SELECT>
+	
+	</DIV>
+	
+	</fieldset>
 	
      
      
