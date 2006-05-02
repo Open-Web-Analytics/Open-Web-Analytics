@@ -73,7 +73,8 @@ class eventQueue {
 				$eq->_filename	= $this->config['async_log_dir'].$this->config['async_log_file'];
 					
 				// This observer will watch the queue and exec a new php process that will process the events
-				$async_helper = &owa_observer::factory(OWA_REQ_PLUGINS_DIR.'/async', 'async_helper', PEAR_LOG_INFO);
+				require_once(OWA_REQ_PLUGINS_DIR.'async/observer_async_helper.php');
+				$async_helper = &owa_observer::factory('async_helper', PEAR_LOG_INFO);
 				$eq->attach($async_helper);
 					
 			else:
@@ -85,8 +86,9 @@ class eventQueue {
 						if (strstr($file, '.php') &&
 							substr($file, -1, 1) != "~" &&
 							substr($file,  0, 1) != "#"):
+								require_once(OWA_REQ_PLUGINS_DIR.$file);
 								$class  = substr($file, 9, -4);
-								$plugin_name = &owa_observer::factory(OWA_REQ_PLUGINS_DIR, $class, PEAR_LOG_INFO);
+								$plugin_name = &owa_observer::factory($class, PEAR_LOG_INFO);
 								$eq->attach($plugin_name);
 						endif;
 						
