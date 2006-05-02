@@ -68,7 +68,7 @@ class owa_install {
 		return;
 	}
 	
-	function create_tables() {
+	function create_all_tables() {
 	
 		$this->create_requests_table();
 		$this->create_sessions_table();
@@ -306,7 +306,7 @@ class owa_install {
 			sprintf("
 			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
-			id INT,
+			id BIGINT,
 			settings VARCHAR(255),
 			PRIMARY KEY (id)
 			);",	

@@ -113,7 +113,7 @@ class Log_observer_announce extends owa_observer {
      *
      */
     function announce_session_update() {
-    	$this->_subject = 'WA New Session';
+    	$this->_subject = 'OWA New Visit';
     	$this->_to = $this->config['notice_email'];
     	mail($this->_to, 
     		 $this->_subject,

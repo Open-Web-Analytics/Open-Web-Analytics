@@ -50,7 +50,7 @@ $OWA_CONFIG['db_host'] = 'oc.padams.dreamhosters.com';
 
 // Fetch settings from DB instead of this configuration file. 
 // IF SET TO TRUE THEN ALL CHANGES BELOW THIS LINE WILL BE IGNORED
-$OWA_CONFIG['fetch_config_from_db'] = false;
+$OWA_CONFIG['fetch_config_from_db'] = true;
 
 ////////////////////////////////////////////
 

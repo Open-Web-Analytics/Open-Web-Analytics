@@ -184,7 +184,7 @@
 				<?php foreach($top_visitors as $vis): ?>
 				
 				<TR>
-					<TD><a href="<? $_SERVER['PHP_SELF'] ?>?page=wa/reports/visitor_report.php&wa_v=<?=$vis['vis_id'] ?>"><span class=""><? if (!empty($vis['user_name'])):?><?=$vis['user_name'];?><?elseif (!empty($vis['user_email'])):?><?=$vis['user_email'];?><? else: ?><?=$vis['vis_id'];?><? endif; ?></span></a></TD>
+					<TD><a href="<?=OWA_REPORTING_URL;?>/visitor_report.php&wa_v=<?=$vis['vis_id'] ?>"><span class=""><? if (!empty($vis['user_name'])):?><?=$vis['user_name'];?><?elseif (!empty($vis['user_email'])):?><?=$vis['user_email'];?><? else: ?><?=$vis['vis_id'];?><? endif; ?></span></a></TD>
 					<TD><?=$vis['count']?></TD>
 				</TR>
 				

@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require 'owa_error.php';
+
 /**
  * Database Connection Class
  * 
@@ -84,6 +86,14 @@ class owa_db {
 	 * @var integer
 	 */
 	var $rows_affected;
+	
+	/**
+	 * Error Logger
+	 * 
+	 * @return object
+	 * @access private
+	 */
+	var $e;
 
 	/**
 	 * Constructor
@@ -94,7 +104,8 @@ class owa_db {
 	function owa_db() {
 	
 		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
+		//$this->debug = &owa_lib::get_debugmsgs();
+		$this->e = &owa_error::get_instance();
 		
 		return;
 	}
@@ -113,11 +124,13 @@ class owa_db {
 		if (!isset($db)):
 		
 			$this->config = &owa_settings::get_settings();
+			//$this->e = &owa_error::get_instance();
 			
 			$connection_class = "owa_db_" . $this->config['db_type'];
 			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";
 	
 	 		if (!@include($connection_class_path)):
+	 			//$this->e->log("error locating proper db class at $connection_class_path", PEAR_LOG_CRIT);
   				print "error locating proper db class at $connection_class_path"; //error
 			else:  	
 				$db = new $connection_class;

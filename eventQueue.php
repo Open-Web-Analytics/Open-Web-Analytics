@@ -17,6 +17,8 @@
 //
 
 require_once OWA_PEARLOG_DIR . '/Log.php';
+require_once OWA_PLUGINS_DIR . '/log/queue.php';
+require_once OWA_PLUGINS_DIR . '/log/async_queue.php';
 require_once 'owa_observer.php';
 
 /**
