@@ -1,20 +1,28 @@
 <?php
-/**
- * $Header: /repository/pear/Log/Log/null.php,v 1.4 2005/02/26 14:48:58 chagenbu Exp $
- *
- * @version $Revision: 1.4 $
- * @package Log
- */
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
 
 /**
- * The Log_null class is a concrete implementation of the Log:: abstract
+ * The Log_queue class is a concrete implementation of the Log:: abstract
  * class.  It simply consumes log events.
  *
- * @author  Jon Parise <jon@php.net>
- * @since   Log 1.8.2
- * @package Log
+ * @author  Peter Adams <peter@openwebanalytics.com>
+ * @since   OWA 1.0
+ * @package OWA
  *
- * @example null.php    Using the null handler.
  */
 class Log_queue extends Log
 {
@@ -73,7 +81,7 @@ class Log_queue extends Log
 		$this->_event_type = $event_type;
 		
         $this->_announce(array('event_type' => $event_type, 'priority' => $priority, 'message' => $message));
-
+		
         return true;
     }
 	

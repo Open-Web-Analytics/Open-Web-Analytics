@@ -79,7 +79,7 @@ class Log_observer_request_logger extends owa_observer {
      * @param 	object $event
      */
     function notify($event) {
-	
+		
 		$this->m = $event['message'];
 		
 		$this->config = &owa_settings::get_settings();
