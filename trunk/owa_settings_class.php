@@ -62,13 +62,15 @@ class owa_settings {
 			if($OWA_CONFIG['fetch_config_from_db'] == true):
 				
 				$config_from_db = owa_settings::fetch();
-			
-				foreach ($config_from_db as $key => $value) {
-		
-					$OWA_CONFIG[$key] = $value;
-		
-				}
 				
+				if (!empty($config_from_db)):
+			
+					foreach ($config_from_db as $key => $value) {
+			
+						$OWA_CONFIG[$key] = $value;
+			
+					}
+				endif;
 			endif;
 			
 		endif;
@@ -107,7 +109,7 @@ class owa_settings {
 			'documents_table'				=> 'documents',
 			'optinfo_table'					=> 'optinfo',
 			'hosts_table'					=> 'hosts',
-			'config_table'					=> 'settings',
+			'config_table'					=> 'configuration',
 			'data_store'					=> 'db',
 			'debug_level'					=> '1',
 			'db_type'						=> 'wordpress',
