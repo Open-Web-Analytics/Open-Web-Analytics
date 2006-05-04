@@ -97,13 +97,13 @@ class Log_observer_session extends owa_observer {
 		
 		$s = new owa_session;
 		
-		if ($this->m->properties['is_entry_page'] == true):
+		if ($this->m['is_entry_page'] == true):
 			
-			$s->process_new_session($this->m->properties);
+			$s->process_new_session($this->m);
 			
 		else:	
 			
-			$s->update_current_session($this->m->properties);
+			$s->update_current_session($this->m);
 			
 		endif;		
 						

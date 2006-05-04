@@ -81,13 +81,17 @@ class owa {
 		$r = new owa_request;
 		
 		// Apply application specific data to the request
+		$this->e->debug(sprintf('Calling Application provided the following request params for request %d:<BR>%s',
+						$r->properties['request_id'],
+						print_r($app_params, true)));
 		$r->apply_app_specific($app_params);
 		
 		// Deterine if the request is from a known robot/crawler/spider
-		
 			if (get_cfg_var('browscap')):
+				$this->e->debug('using php built in get_browser function to determin browser type');
 				$browser = get_browser(); //If available, use PHP native function
 			else:
+				$this->e->debug('Using get_browser_local to determine browser type');
 				require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
 				$browser = get_browser_local();
 				if ($browser->crawler == true):
@@ -99,7 +103,6 @@ class owa {
 			endif;
 			
 		// Log requests from known robots or else dump the request
-		
 			if ($r->is_robot == true):
 				if ($this->config['log_robots'] == true):
 					$r->transform_request();
@@ -117,12 +120,6 @@ class owa {
 				$r->transform_request();
 				$r->state = 'feed_request';
 				$r->log_request();
-				
-				//remove this
-				if ($this->config['debug_to_screen'] == true):
-					print_r($this->debug);
-				
-				endif;
 				return;
 			endif;	
 		endif;	
@@ -134,6 +131,7 @@ class owa {
 				// If not, then make sure that there is an inbound visitor_id
 				if (empty($r->properties['inbound_visitor_id'])):
 					// Log request properties to a cookie for processing by a second request and return
+					$this->e->debug('Logging this request to first hit cookie.');
 					$r->log_first_hit();
 					return;
 				endif;
@@ -153,11 +151,15 @@ class owa {
 		// Sessionize
 		if ($this->config['log_sessions'] == true):
 			$r->sessionize();
+			$this->e->debug(sprintf('Sessionization of request %d complete.', 
+									$r->properties['request_id']));
 		endif;
 
 		// Log the request
 		$r->state = 'new_request';
 		$r->log_request();
+		$this->e->debug(sprintf('Request %d logged to event queue',
+								$r->properties['request_id']));
 		
 		// Hook to kick off the async event processor
   	 	if ($this->config['async_db'] == true):
@@ -166,7 +168,9 @@ class owa {
 		
 		// Print debug to screen
 		if ($this->config['error_handler'] == 'development'):
-			print_r($this->debug);
+			if($r->properties['user_name'] == 'admin'):
+				print_r($this->debug);
+			endif;
 		endif;
 		
 		return;			

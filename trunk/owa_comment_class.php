@@ -84,7 +84,7 @@ class owa_comment {
 	
 	function log() {
 
-		$this->eq->log($this, $this->state);
+		$this->eq->log($this->properties, $this->state);
 		return;
 	}
 }

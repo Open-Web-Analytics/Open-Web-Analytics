@@ -107,7 +107,7 @@ class Log_observer_comments extends owa_observer {
 				 WHERE
 					session_id = '%s'",
 					$this->config['ns'].$this->config['sessions_table'],
-					$this->m->properties['inbound_session_id']
+					$this->m['inbound_session_id']
       		)
     	);
 		

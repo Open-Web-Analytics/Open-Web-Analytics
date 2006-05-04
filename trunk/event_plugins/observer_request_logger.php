@@ -144,7 +144,7 @@ class Log_observer_request_logger extends owa_observer {
 			foreach ($request as $key => $value) {
 			
 				$sql_cols = $sql_cols.$value;
-				$sql_values = $sql_values."'".$this->m->properties[$value]."'";
+				$sql_values = $sql_values."'".$this->m[$value]."'";
 				
 				if (!empty($request[$key+1])):
 				
@@ -177,10 +177,10 @@ class Log_observer_request_logger extends owa_observer {
 				sprintf(
 					"INSERT into %s (id, url, page_title, page_type) VALUES ('%s', '%s', '%s', '%s')",
 					$this->config['ns'].$this->config['documents_table'],
-					$this->m->properties['document_id'],
-					$this->m->properties['uri'],
-					$this->m->properties['page_title'],
-					$this->m->properties['page_type']
+					$this->m['document_id'],
+					$this->m['uri'],
+					$this->m['page_title'],
+					$this->m['page_type']
 				)
 			);	
 		return;
