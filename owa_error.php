@@ -54,19 +54,19 @@ class owa_error {
 	var $priority;
 	
 	/**
-	 * Gets instanceof error logger
+	 * Gets instance of error logger
 	 *
 	 * @return object $logger
 	 */
 	function &get_instance() {	
 		
-		$config = &owa_settings::get_settings();
-		
 		static $logger;
 		
 		if (!isset($logger)):
 		
-			switch ($this->config['error_handler']) {
+			$config = &owa_settings::get_settings();
+			
+			switch ($config['error_handler']) {
 				
 				case "development":
 					
@@ -76,6 +76,14 @@ class owa_error {
 					$logger = &Log::singleton('composite');
 					$logger->addChild($window);
 					$logger->addChild($file);
+					break;
+					
+				case "async_development":
+					$file = owa_error::make_file_logger();
+					$console = owa_error::make_console_logger();
+					$logger = &Log::singleton('composite');
+					$logger->addChild($file);
+					$logger->addChild($console);
 					
 					break;
 					
@@ -84,32 +92,50 @@ class owa_error {
 					$file = owa_error::make_file_logger();
 					$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG);
 					$file->setMask($file_mask);
-					
 					$mail = owa_error::make_mail_logger();
 					$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 					$mail_mask = PEAR_LOG_ALL;
 					$mail->setMask($mail_mask);
-					
 					$logger = &Log::singleton('composite');
 					$logger->addChild($mail);
 					$logger->addChild($file);
 					break;
-				
+					
 				default:
+					$file = owa_error::make_file_logger();
+					$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG);
+					$file->setMask($file_mask);
+					$mail = owa_error::make_mail_logger();
+					$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
+					$mail_mask = PEAR_LOG_ALL;
+					$mail->setMask($mail_mask);
+					$logger = &Log::singleton('composite');
+					$logger->addChild($mail);
+					$logger->addChild($file);
 					
 			}
 		
 		endif;
-		
+	
 		return $logger;
 	}
 	
+	/**
+	 * Returns the buffered error output
+	 *
+	 * @return unknown
+	 */
 	function &get_msgs() {
 		
 		static $msgs;
 		return $msgs;
 	}
 	
+	/**
+	 * Interface to build various loggers
+	 *
+	 * @param unknown_type $type
+	 */
 	function make_logger($type) {
 		
 		switch ($type) {
@@ -125,22 +151,35 @@ class owa_error {
 			case "syslog":
 				$this->make_syslog_logger();
 				break;
-				case "mail":
+			case "mail":
 				$this->make_mail_logger();
 				break;
-			default:
+			case "console":
+				$this->make_console_logger();
+				break;
 		}
 		
 		return;
 	}
 	
+	/**
+	 * Builds a logger that writes to a seperate browser window.
+	 * This uses a custom log handler that writes output to a temp static variable.
+	 *
+	 * @return object
+	 */
 	function make_window_logger() {
 		
 		$conf = array('title' => 'Error Log Output');
 		$logger = &Log::singleton('winstatic', 'LogWindow', 'error-window-logger', $conf);
 		return $logger;
 	}
-	
+	/**
+	 * Builds a logger that writes to the browser window.
+	 * 
+	 * @todo build a custom handler that writes output ot temp static varibale
+	 * @return object
+	 */
 	function make_display_logger() {
 		
 		$conf = array('error_prepend' => '<font color="#ff0000"><tt>', 'error_append'  => '</tt></font>');
@@ -148,6 +187,18 @@ class owa_error {
 		return $logger;
 	}
 	
+	function make_console_logger() {
+		define('STDOUT', fopen("php://stdout", "r"));
+		$conf = array('stream' => STDOUT, 'buffering' => false);
+		$logger = &Log::singleton('console', '', 'error-console-logger', $conf);
+		return $logger;
+	}
+	
+	/**
+	 * Builds a logger that writes to a file.
+	 *
+	 * @return unknown
+	 */
 	function make_file_logger() {
 		
 		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
@@ -155,6 +206,11 @@ class owa_error {
 		return $logger;
 	}
 	
+	/**
+	 * Builds a logger that sends lines via email
+	 *
+	 * @return unknown
+	 */
 	function make_mail_logger() {
 		
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
@@ -162,6 +218,12 @@ class owa_error {
 		return $logger;
 	}
 	
+	/**
+	 * Builds a composite logger object
+	 *
+	 * @param array $loggers
+	 * @return object
+	 */
 	function make_composite_logger($loggers) {
 		
 		$logger = &Log::singleton('composite');
@@ -174,6 +236,15 @@ class owa_error {
 		return $logger;	
 	}
 	
+	/**
+	 * Alternative ereor handler for PHP specific errors.
+	 *
+	 * @param string $errno
+	 * @param string $errmsg
+	 * @param string $filename
+	 * @param string $linenum
+	 * @param string $vars
+	 */
 	function handlePhpError($errno = null, $errmsg, $filename, $linenum, $vars) {
 		
 	    /* Map the PHP error to a Log priority. */
@@ -220,11 +291,12 @@ class owa_error {
 		
 		return;
 	}
-	
+	/*
 	function log($errmsg, $priority) {
 		
 		return $this->logger->log($errmsg, $priority);
 	}
+	*/
 }
 
 

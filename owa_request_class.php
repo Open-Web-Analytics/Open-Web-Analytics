@@ -327,7 +327,7 @@ class owa_request {
 	 */
 	function log_request() {
 	
-		$this->eq->log($this, $this->state);				
+		$this->eq->log($this->properties, $this->state);				
 					
 		return;
 	}

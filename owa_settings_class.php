@@ -73,13 +73,14 @@ class owa_settings {
 				endif;
 			endif;
 			
+		
 		endif;
 
 		// look for debug flag on url	
 		if (isset($_GET['debug'])):
 			$OWA_CONFIG['debug_to_screen'] = true;
 		endif;
-		
+	
 		return $OWA_CONFIG;
 	}
 	

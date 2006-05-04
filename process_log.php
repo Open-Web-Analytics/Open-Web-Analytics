@@ -38,8 +38,33 @@ require_once 'owa_settings_class.php';
  */
 
 $config = &owa_settings::get_settings();
+if ($config['error_handler'] = 'development'):
+	$config['error_handler'] = 'async_development';
+endif;
 
-$processor = new asyncEventProcessor;
-$processor->process_events();
+// parse args into it's own array
+if ($argv):
+   for ($i=1; $i<count($argv);$i++)
+   {
+       $it = split("=",$argv[$i]);
+       $_argv[$it[0]] = $it[1];
+   }
+
+endif;
+
+
+if(empty($_argv)):
+	$processor = new asyncEventProcessor;
+	$processor->process_standard();
+	return;   
+// Process a specific file
+elseif (!empty($_argv['file'])):
+	$processor = new asyncEventProcessor;
+	$processor->process_specific($config['async_log_dir'].$_argv['file']);
+	return;
+
+endif;
+
+
 
 ?>
