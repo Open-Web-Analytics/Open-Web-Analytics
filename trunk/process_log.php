@@ -38,7 +38,7 @@ require_once 'owa_settings_class.php';
  */
 
 $config = &owa_settings::get_settings();
-if ($config['error_handler'] = 'development'):
+if ($config['error_handler'] == 'development'):
 	$config['error_handler'] = 'async_development';
 endif;
 
@@ -52,7 +52,7 @@ if ($argv):
 
 endif;
 
-
+//normal run
 if(empty($_argv)):
 	$processor = new asyncEventProcessor;
 	$processor->process_standard();

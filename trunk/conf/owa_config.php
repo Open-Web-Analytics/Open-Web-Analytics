@@ -99,9 +99,9 @@ $OWA_CONFIG['log_sessions'] = true;
 $OWA_CONFIG['async_db'] = true;
 
 // Error handler mode
-// Options: 'development' - loggs all errors to sperate window, 
-//			'production' - only logs real errors to a file. 
-// 			     			Mails critical ones to notice email.
+// Options: 'development'	- logs all debug and errors to seperate window or stdout 
+//			'production' 	- only logs real errors to a file. 
+// 			     			  Mails critical ones to notice email.
 $OWA_CONFIG['error_handler'] = 'production';
 
 // Directory where event log is stored wen running in async mode
@@ -110,28 +110,23 @@ $OWA_CONFIG['error_handler'] = 'production';
 //$OWA_CONFIG['async_log_dir'] = '';
 
 // Name of Log file used to log events
-//$OWA_CONFIG['async__log_file'] = 'events.txt';
+//$OWA_CONFIG['async_log_file'] = 'events.txt';
 
 // Name of Log file used to log events that the Async event processor had issues with
 //$OWA_CONFIG['async_error_log_file'] = 'events_error.txt';
 
 // Email address used to send various notices to
 $OWA_CONFIG['notice_email'] = 'peter@oncefuture.com';
-		/*	
 
-			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
-			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
-			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
-			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
-			'db_class_dir'					=> OWA_BASE_DIR . '/db/',
-			'templates_dir'					=> OWA_BASE_DIR . '/reports/templates/',
-			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
-			'geolocation_lookup'            => true,
-			'geolocation_service'			=> 'hostip',
-			'report_wrapper'				=> 'wordpress.tpl'
+// Lookup Geo-location of visitors
+$OWA_CONFIG['geolocation_lookup']= true;
 
-*/
+// Geo-location Service to use for lookups
+// Possible options are: 'hostip'
+$OWA_CONFIG['geolocation_service']= 'hostip';
 
+// Report Wrapper Template
+$OWA_CONFIG['report_wrapper']= 'wordpress.tpl';
 
 
 ?>

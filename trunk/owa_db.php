@@ -122,17 +122,20 @@ class owa_db {
 		static $db;
 	
 		if (!isset($db)):
-			//$e = &owa_error::get_instance();
+			$this->e = &owa_error::get_instance();
 			$this->config = &owa_settings::get_settings();
 			
 			$connection_class = "owa_db_" . $this->config['db_type'];
 			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";
 	
 	 		if (!@include($connection_class_path)):
-	 		//	$e->log("error locating proper db class at $connection_class_path", PEAR_LOG_CRIT);
-  				print "error locating proper db class at $connection_class_path"; //error
+	 			$this->e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
+	 							$connection_class_path));
+	 			exit;
 			else:  	
 				$db = new $connection_class;
+				$this->e->debug(sprintf('Using db class at %s.',
+	 							$connection_class_path));
 			endif;	
 		endif;
 	

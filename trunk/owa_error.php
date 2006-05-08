@@ -70,7 +70,7 @@ class owa_error {
 				
 				case "development":
 					
-					$config['debug_to_screen'] = true;
+					//$config['debug_to_screen'] = true;
 					$window = owa_error::make_window_logger();
 					$file = owa_error::make_file_logger();
 					$logger = &Log::singleton('composite');
@@ -79,22 +79,21 @@ class owa_error {
 					break;
 					
 				case "async_development":
-					$file = owa_error::make_file_logger();
+					//$file = owa_error::make_file_logger();
 					$console = owa_error::make_console_logger();
 					$logger = &Log::singleton('composite');
-					$logger->addChild($file);
+					//$logger->addChild($file);
 					$logger->addChild($console);
-					
 					break;
 					
 				case "production":
 					
 					$file = owa_error::make_file_logger();
-					$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG);
+					$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG) ^ Log::MASK(PEAR_LOG_INFO);
 					$file->setMask($file_mask);
 					$mail = owa_error::make_mail_logger();
 					$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
-					$mail_mask = PEAR_LOG_ALL;
+					//$mail_mask = PEAR_LOG_ALL;
 					$mail->setMask($mail_mask);
 					$logger = &Log::singleton('composite');
 					$logger->addChild($mail);
@@ -171,7 +170,7 @@ class owa_error {
 	function make_window_logger() {
 		
 		$conf = array('title' => 'Error Log Output');
-		$logger = &Log::singleton('winstatic', 'LogWindow', 'error-window-logger', $conf);
+		$logger = &Log::singleton('winstatic', 'LogWindow', posix_getpid(), $conf);
 		return $logger;
 	}
 	/**
@@ -183,14 +182,14 @@ class owa_error {
 	function make_display_logger() {
 		
 		$conf = array('error_prepend' => '<font color="#ff0000"><tt>', 'error_append'  => '</tt></font>');
-		$logger = &Log::singleton('display', '', 'error-display-logger', $conf);
+		$logger = &Log::singleton('display', '', posix_getpid(), $conf);
 		return $logger;
 	}
 	
 	function make_console_logger() {
 		define('STDOUT', fopen("php://stdout", "r"));
 		$conf = array('stream' => STDOUT, 'buffering' => false);
-		$logger = &Log::singleton('console', '', 'error-console-logger', $conf);
+		$logger = &Log::singleton('console', '', posix_getpid(), $conf);
 		return $logger;
 	}
 	
@@ -202,7 +201,7 @@ class owa_error {
 	function make_file_logger() {
 		
 		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-		$logger = &Log::singleton('file', $this->config['error_log_file'], 'error-file-logger', $conf);
+		$logger = &Log::singleton('file', $this->config['error_log_file'], posix_getpid(), $conf);
 		return $logger;
 	}
 	
@@ -214,7 +213,7 @@ class owa_error {
 	function make_mail_logger() {
 		
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
-		$logger = &Log::singleton('mail', $this->config['notice_email'], 'error-mail-logger', $conf);
+		$logger = &Log::singleton('mail', $this->config['notice_email'], posix_getpid(), $conf);
 		return $logger;
 	}
 	

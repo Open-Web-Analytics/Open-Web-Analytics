@@ -72,7 +72,7 @@ class owa_comment {
 		$this->debug = &owa_lib::get_debugmsgs();
 		$this->eq = &eventQueue::get_instance();
 		
-		// Retriece inbound vistor and session values	
+		// Retrieve inbound visitor and session values	
 		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
 		$this->properties['inbound_session_id'] = $_COOKIE[$this->config['ns'].$this->config['session_param']];
 		
