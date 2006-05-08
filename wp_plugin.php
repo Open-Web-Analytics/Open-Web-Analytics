@@ -261,7 +261,7 @@ function owa_install() {
 function owa_dashboard_view() {
 
 	if (function_exists('add_submenu_page')):
-		add_submenu_page('index.php', 'WA Dashboard', 'Analytics', 8, dirname(__FILE__) . '/reports/dashboard_report.php');
+		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 8, dirname(__FILE__) . '/reports/dashboard_report.php');
     endif;
     
     return;
@@ -334,24 +334,6 @@ function owa_intercept() {
 	
 	return;
 
-}
-
-/**
- * Special mail based error handler
- *
- * @param integer $errno
- * @param string $errmsg
- * @param string $filename
- * @param integer $linenum
- * @param unknown_type $vars
- */
-function owa_err_mailer($errno, $errmsg, $filename, $linenum, $vars) {
-
-	$vars2 = print_r($vars, false);
-
-	print "Critical User Error" . $filename . " linenum: " . $linenum . " \n" . $errmsg . " \n" . $vars2;
-
-	return;
 }
 
 /**

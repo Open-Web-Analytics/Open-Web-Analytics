@@ -120,8 +120,6 @@ class owa_request {
 		// Create GUID for this request
 		$this->properties['request_id'] = $this->set_guid();
 		
-		$this->e->log('testing from owa_request constructor', PEAR_LOG_DEBUG);
-
 		// Retriece inbound vistor and session values	
 		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
 		$this->properties['inbound_session_id'] = $_COOKIE[$this->config['ns'].$this->config['session_param']];
@@ -237,12 +235,11 @@ class owa_request {
 	}
 	
 	/**
-	 * Transform current request. Assign IDs
+	 * Assigns visitor IDs
 	 *
-	 * @access 	public
 	 */
-	function transform_request() {
-			
+	function assign_visitor() {
+		
 		// is this new visitor?
 	
 		if (empty($this->properties['inbound_visitor_id'])):
@@ -251,6 +248,16 @@ class owa_request {
 			$this->properties['visitor_id'] = $this->properties['inbound_visitor_id'];
 			$this->properties['is_repeat_visitor'] = true;
 		endif;
+		
+		return;
+	}
+	
+	/**
+	 * Transform current request. Assign IDs
+	 *
+	 * @access 	public
+	 */
+	function transform_request() {
 			
 		// Make ua id
 		$this->properties['ua_id'] = $this->set_string_guid($this->properties['ua']);

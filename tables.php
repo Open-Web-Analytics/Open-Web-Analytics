@@ -68,6 +68,10 @@ class owa_install {
 		return;
 	}
 	
+	function get_instance() {
+		
+	}
+	
 	function create_all_tables() {
 	
 		$this->create_requests_table();

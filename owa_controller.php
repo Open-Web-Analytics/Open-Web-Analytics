@@ -145,6 +145,8 @@ class owa {
 	
 	function process($r) {
 		
+		// assign visitor id
+		$r->assign_visitor();
 		// Process the request data
 		$r->transform_request();
 	
@@ -168,6 +170,7 @@ class owa {
 		
 		// Print debug to screen
 		if ($this->config['error_handler'] == 'development'):
+			
 			if($r->properties['user_name'] == 'admin'):
 				print_r($this->debug);
 			endif;
@@ -189,28 +192,6 @@ class owa {
 		
 		$this->process($r);
 
-		/* // Process the request data
-		$r->transform_request();
-	
-		// Sessionize
-		if ($this->config['log_sessions'] == true):
-			$r->sessionize();
-		endif;
-
-		// Log the request
-		$r->state = 'new_request';
-		$r->log_request();
-		
-		// Hook to kick off the async event processor
-  	 	if ($this->config['async_db'] == true):
-    		; // fork process to process async event log.
-		endif;
-		
-			// Print debug to screen
-		if ($this->config['debug_to_screen'] == true):
-			print_r($this->debug);
-		endif;
-		*/
 		return;
 	}
 	
