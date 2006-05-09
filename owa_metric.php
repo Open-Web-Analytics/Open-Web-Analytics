@@ -173,8 +173,9 @@ class owa_metric {
 				
 			case "today":	
 				$where = sprintf(
-							"dayofyear = '%s' and year = '%s'",
-							$this->time_now['dayofyear'],
+							"day = '%s' and month = '%s' and year = '%s'",
+							$this->time_now['day'],
+							$this->time_now['month'],
 							$this->time_now['year']
 						);
 				break;
@@ -204,8 +205,9 @@ class owa_metric {
 				
 			case "yesterday":	
 				$where = sprintf(
-							"dayofyear = '%s' and year = '%s'",
-							$this->time_now['dayofyear'] - 1,
+							"day = '%s' and month = '%s' and year = '%s'",
+							$this->time_now['day'] - 1,
+							$this->time_now['month'],
 							$this->time_now['year']
 						);
 				break;
