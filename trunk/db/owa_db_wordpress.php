@@ -68,6 +68,9 @@ class owa_db_wordpress extends owa_db {
 	 * 
 	 */
 	function query($sql) {
+		
+		$this->e->debug(sprintf('Query: %s',
+			$sql));
   
 		if ($this->config['debug_level'] == 1):
 			$this->debug_sql($sql);
@@ -78,18 +81,13 @@ class owa_db_wordpress extends owa_db {
 		$this->new_result = '';
 		$this->new_result = @mysql_unbuffered_query($sql, $this->connection);
 		
+		// Log Errors
 		if (mysql_errno()):
 			$this->e->debug(sprintf('A MySQL error occured. Error: (%s) %s. Query: %s',
 			mysql_errno(),
 			mysql_error(),
 			$sql));
 		endif;			
-		/*$num_rows = 0;
-		
-		while ( $row = @mysql_fetch_object($this->new_result) ) {
-			$this->result[$num_rows] = $row;
-			$num_rows++;
-		}*/
 				
 		return;
 	}

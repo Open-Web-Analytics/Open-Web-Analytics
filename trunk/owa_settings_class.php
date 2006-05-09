@@ -136,7 +136,7 @@ class owa_settings {
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
 			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
 			'robots.ini'					=> OWA_BASE_DIR . '/conf/robots.ini',
-			'db_class_dir'					=> OWA_BASE_DIR . '/db/',
+			'db_class_dir'					=> OWA_BASE_DIR . '/plugins/db/',
 			'templates_dir'					=> OWA_BASE_DIR . '/reports/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'geolocation_lookup'            => true,
