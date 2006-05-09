@@ -68,27 +68,7 @@ class owa_install {
 		return;
 	}
 	
-	function get_instance() {
-		
-	}
 	
-	function create_all_tables() {
-	
-		$this->create_requests_table();
-		$this->create_sessions_table();
-		$this->create_referers_table();
-		$this->create_documents_table();
-		$this->create_ua_table();
-		$this->create_hosts_table();
-		$this->create_os_table();
-		$this->create_optinfo_table();
-		$this->create_settings_table();
-		
-		$this->config['schema_version'] = $this->version;
-		$this->config->save();
-	
-		return;
-	}
 	
 	function create_requests_table() {
 
