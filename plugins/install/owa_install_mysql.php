@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
-require_once 'owa_db.php';
-
 /**
  * OWA Installation class
  * 
@@ -31,45 +28,31 @@ require_once 'owa_db.php';
  * @since		owa 1.0.0
  */
 
-class owa_install {
+class owa_install_mysql extends owa_install {
 
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config = array();
-	
-	/**
-	 * Data access object
-	 *
-	 * @var object
-	 */
-	var $db;
-	
-	/**
-	 * Version of string
-	 *
-	 * @var string
-	 */
-	var $version;
-	
-	/**
-	 * Constructor
-	 *
-	 * @return owa_install
-	 */
-
-	function owa_install() {
+	function owa_install_mysql() {
 		
-		$this->config = &owa_settings::get_settings();
-		$this->db = &owa_db::get_instance();
-		
-		return;
+		$this->owa_install();
 	}
 	
+	function check_for_schema() {
+		
+		$check = $this->db->query(sprintf("show tables like '%s'",
+				$this->config['ns'].$this->config['requests_table']));
+		
+		if (!empty($check)):
+			return true;
+		else:
+			return false;
+		endif;
+	}
 	
-	
+	/**
+	 * Create requests table
+	 * 
+	 * @access private
+	 *
+	 */
 	function create_requests_table() {
 
 		$this->db->query(
@@ -284,7 +267,7 @@ class owa_install {
 		return;
 	}
 	
-	function create_settings_table() {
+	function create_config_table() {
 		
 		$this->db->query(
 			sprintf("
@@ -295,6 +278,22 @@ class owa_install {
 			PRIMARY KEY (id)
 			);",	
 			$this->config['ns'].$this->config['config_table'])
+		);
+		
+		return;
+	}
+	
+	function create_version_table() {
+		
+		$this->db->query(
+			sprintf("
+			DROP TABLE IF EXISTS %1\$s;
+			CREATE TABLE %1\$s (
+			id VARCHAR(255),
+			value VARCHAR(255),
+			PRIMARY KEY (id)
+			);",	
+			$this->config['ns'].$this->config['version_table'])
 		);
 		
 		return;

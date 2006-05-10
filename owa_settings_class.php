@@ -93,7 +93,7 @@ class owa_settings {
 		
 		return array(
 	
-			'ns'							=> 'wa_',
+			'ns'							=> 'owa_',
 			'visitor_param'					=> 'v',
 			'session_param'					=> 's',
 			'last_request_param'			=> 'last_req',
@@ -111,9 +111,10 @@ class owa_settings {
 			'optinfo_table'					=> 'optinfo',
 			'hosts_table'					=> 'hosts',
 			'config_table'					=> 'configuration',
+			'version_table'					=> 'version',
 			'data_store'					=> 'db',
 			'debug_level'					=> '1',
-			'db_type'						=> 'wordpress',
+			'db_type'						=> '',
 			'db_name'						=> OWA_DB_NAME,
 			'db_user'						=> OWA_DB_USER,
 			'db_password'					=> OWA_DB_PASSWORD,
@@ -124,7 +125,7 @@ class owa_settings {
 			'log_sessions'					=> true,
 			'delay_first_hit'				=> true,
 			'async_db'						=> false,
-			'restore_db_conn'				=> true,
+			//'restore_db_conn'				=> true,
 			'async_log_dir'					=> OWA_BASE_DIR . '/logs/',
 			'async_log_file'				=> 'events.txt',
 			'async_lock_file'				=> 'owa.lock',
@@ -139,10 +140,11 @@ class owa_settings {
 			'db_class_dir'					=> OWA_BASE_DIR . '/plugins/db/',
 			'templates_dir'					=> OWA_BASE_DIR . '/reports/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
+			'install_plugin_dir'			=> OWA_BASE_DIR . '/plugins/install/',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
-			'report_wrapper'				=> 'wordpress.tpl',
-			'schema_version'				=> '1.0',
+			'report_wrapper'				=> '',
+			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> false
 			
