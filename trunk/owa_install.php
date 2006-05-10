@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once (OWA_BASE_DIR.'/owa_settings_class.php');
+require_once (OWA_BASE_DIR.'/owa_db.php');
 
 /**
  * Installs core database schema
@@ -30,26 +32,110 @@
  */
 class owa_install {
 	
-	function get_instance() {
+	/**
+	 * Configuration
+	 *
+	 * @var array
+	 */
+	var $config = array();
+	
+	/**
+	 * Data access object
+	 *
+	 * @var object
+	 */
+	var $db;
+	
+	/**
+	 * Version of string
+	 *
+	 * @var string
+	 */
+	var $version = 1.0;
+	
+	/**
+	 * Error Handler
+	 *
+	 * @var object
+	 */
+	var $e;
+	
+	/**
+	 * Constructor
+	 *
+	 * @return owa_install
+	 */
+
+	function owa_install() {
+		
+		$this->config = &owa_settings::get_settings();
+		$this->db = &owa_db::get_instance();
+		$this->e = &owa_error::get_instance();
+		
+		return;
+	}
+	
+	function &get_instance($type) {
+		
+		$this->config = &owa_settings::get_settings();
+		
+        //$classfile = $class_path . $plugin . '.php';
+		$classfile = $this->config['install_plugin_dir'].'owa_install_'.$type. '.php';
+        $class = 'owa_install'.$type;
+        
+        /*
+         * Attempt to include our version of the named class, but don't treat
+         * a failure as fatal.  The caller may have already included their own
+         * version of the named class.
+         */
+        if (!class_exists($class)) {
+            include_once $classfile;
+        }
+
+        /* If the class exists, return a new instance of it. */
+        if (class_exists($class)) {
+            $obj = new $class;
+            return $obj;
+        }
+
+        return null;
 		
 	}
 	
 	function create_all_tables() {
 	
 		$this->create_requests_table();
+		$this->e->notice("Created requests table.");
 		$this->create_sessions_table();
+		$this->e->notice("Created sessions table.");
 		$this->create_referers_table();
+		$this->e->notice("Created referers table.");
 		$this->create_documents_table();
+		$this->e->notice("Created documents table.");
 		$this->create_ua_table();
+		$this->e->notice("Created user agents table.");
 		$this->create_hosts_table();
+		$this->e->notice("Created hosts table.");
 		$this->create_os_table();
-		$this->create_optinfo_table();
-		$this->create_settings_table();
+		$this->e->notice("Created operating systems table.");
+		//$this->create_optinfo_table();
+		$this->create_config_table();
+		$this->e->notice("Created configuration table.");
+		$this->create_version_table();
+		$this->e->notice("Created version table.");
 		
-		$this->config['schema_version'] = $this->version;
-		$this->config->save();
-	
+		$this->update_schema_version();
+		$this->e->notice("Schema version %s installation complete.");
+		
 		return;
+	}
+	
+	function update_schema_version() {
+		
+		return $this->db->query(sprintf("INSERT into %s (schema_version) VALUES ('%s')",
+										$this->config['ns'].$this->config['version_table'],
+										$this->version));
+		
 	}
 }
 

@@ -126,7 +126,7 @@ $OWA_CONFIG['geolocation_lookup']= true;
 $OWA_CONFIG['geolocation_service']= 'hostip';
 
 // Report Wrapper Template
-$OWA_CONFIG['report_wrapper']= 'wordpress.tpl';
+//$OWA_CONFIG['report_wrapper']= '';
 
 
 ?>

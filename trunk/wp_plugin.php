@@ -10,7 +10,7 @@ Author URI: http://www.openwebanalytics.com
 */
 
 require_once 'owa_controller.php';
-require_once 'tables.php';
+require_once 'owa_install.php';
 require_once 'owa_env.php';
 require_once 'owa_settings_class.php';
 
@@ -216,12 +216,14 @@ function owa_post_link($link) {
  *
  */
 function owa_install() {
+	
+	//return;
 
 	global $user_level, $wpdb;
 	
-	require_once 'owa_settings_class.php';
+	//require_once 'owa_settings_class.php';
 	
-	$config = owa_settings::get_settings();
+	//$config = owa_settings::get_settings();
 
 	//check to see if the user has permissions to install or not...
 	get_currentuserinfo();
@@ -229,9 +231,27 @@ function owa_install() {
 	if ($user_level < 8):
    
     	return;
-	
+    	
+    else:
+    	
+	    $installer = &owa_install::get_instance('mysql');	
+	    
+	    $install_check = $installer->check_for_schema();
+	    
+	    if ($install_check == false):
+		    
+		    //Install owa schema
+	    	$installer->create_all_tables();
+	    	
+	    else:
+	    	// owa already installed
+	    	return;
+    	
+	    endif;
+	    
 	endif;
 	
+	/*
 	// See if tables exist.
 	$table_name = $config['ns'].$config['requests_table'];
 	
@@ -247,11 +267,11 @@ function owa_install() {
 		return;
 	
 	endif;
-	
+
 	update_option('wa_schema_version', $sql[1], 'Version of the Schema in use');
-	
+	*/
+
 	return;
-   
 }
 
 /**
@@ -291,7 +311,7 @@ function owa_tag() {
  */
 function owa_intercept() {
 	
-	//Load config from wp_database
+	//Load config
 	owa_fetch_config();
 
 	// First hit request handler
@@ -355,6 +375,8 @@ function owa_fetch_config() {
 	
 	// Fetch config
 	$config = &owa_settings::get_settings();
+	$config['db_type'] = 'wordpress';
+	$config['report_wrapper'] = 'wordpress.tpl';
 	
 	return $config;
 }
@@ -383,11 +405,32 @@ function owa_options_page() {
 
 // WORDPRESS Filter and action hooks.
 
-if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
+
+function owa_parse_version($version) {
+	
+	list($major, $minor, $dot) = split(".", $version);
+   
+   return array($major, $minor, $dot);
+	
+}
+ 
+$owa_wp_version = owa_parse_version($wp_version);
+
+if ($owa_wp_version[0] == '1'):
+
+	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
 
 	add_action('init', 'owa_install');
   
+	endif;
+
+elseif ($owa_wp_version[0] == '2'):
+
+	add_action('activate_owa/wp_plugin.php', 'owa_install');
+
 endif;
+
+
 
 //if (is_plugin_page()):
 		if (isset($_POST['wa_update_options'])):
