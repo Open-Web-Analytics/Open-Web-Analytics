@@ -52,11 +52,10 @@ class owa_db_wordpress extends owa_db {
     	);
 		
 		if (!$this->connection || !@mysql_select_db($this->config['db_name'], $this->connection)):
-			$this->e->alert('Could not connect to database');
-			//print 'Could not connect to database.';
+			$this->e->alert('Could not connect to database. Terminating.');
 			die;
 		endif;
-	
+		
 		return;
 	}
 
@@ -71,10 +70,6 @@ class owa_db_wordpress extends owa_db {
 		
 		$this->e->debug(sprintf('Query: %s',
 			$sql));
-  
-		if ($this->config['debug_level'] == 1):
-			$this->debug_sql($sql);
-		endif;
 	
 		@mysql_free_result($this->new_result);
 		$this->result = '';

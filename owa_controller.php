@@ -219,6 +219,17 @@ class owa {
 		$comment->log();
 		return;
 	}
+	
+	/**
+	 * Fetch a vaue from the current configuration
+	 *
+	 * @param string $value
+	 * @return unknown
+	 */
+	function get_config_value($value) {
+		
+		return $this->config[$value];
+	}
 
 }
 

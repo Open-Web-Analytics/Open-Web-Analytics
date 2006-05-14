@@ -77,6 +77,13 @@ class owa_location {
 	var $config;
 	
 	/**
+	 * error handler
+	 *
+	 * @var object
+	 */
+	var $e;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_location
@@ -84,7 +91,7 @@ class owa_location {
 	function owa_location() {
 		
 		$this->config = &owa_settings::get_settings();
-		
+		$this->e = &owa_error::get_instance();
 		return;
 	}
 	

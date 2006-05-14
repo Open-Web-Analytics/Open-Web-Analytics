@@ -52,7 +52,7 @@ class owa_db_mysql extends owa_db {
     	);
 		
 		if (!$this->connection || !@mysql_select_db($this->config['db_name'], $this->connection)):
-			print 'Could not connect to database.';
+			$this->e->alert('Could not connect to database. Terminating.');
 			die;
 		endif;
 	
@@ -68,15 +68,22 @@ class owa_db_mysql extends owa_db {
 	 */
 	function query($sql) {
   
-		if ($this->config['debug_level'] == 1):
-			$this->debug_sql($sql);
-		endif;
+		$this->e->debug(sprintf('Query: %s',
+			$sql));
 	
 		@mysql_free_result($this->new_result);
 		$this->result = '';
 		$this->new_result = '';
 		$this->new_result = @mysql_unbuffered_query($sql, $this->connection);
 					
+		// Log Errors
+		if (mysql_errno()):
+			$this->e->debug(sprintf('A MySQL error occured. Error: (%s) %s. Query: %s',
+			mysql_errno(),
+			mysql_error(),
+			$sql));
+		endif;			
+		
 		/*$num_rows = 0;
 		
 		while ( $row = @mysql_fetch_object($this->new_result) ) {
