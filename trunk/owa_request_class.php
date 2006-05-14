@@ -164,6 +164,12 @@ class owa_request {
 		// Assume request is made by a browser. Can be overwriten by caller later on.
 		$this->properties['is_browser'] = true;
 		
+		// Feed subscription tracking code
+		$this->properties['feed_subscription_id'] = $_GET[$this->config['ns'].$this->config['feed_subscription_param']];
+		
+		// Traffic Source code
+		$this->properties['source'] = $_GET[$this->config['ns'].$this->config['source_param']];
+		
 		return;
 	
 	}

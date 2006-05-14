@@ -200,11 +200,12 @@ class Log_observer_referer extends owa_observer {
 		if(!in_array($url['scheme'],array('','http')))
 			return;
 
-		$fp = fsockopen ($url['host'], ($url['port'] > 0 ? $url['port'] : 80), $errno, $errstr, $timeout);
+		$fp = @fsockopen ($url['host'], ($url['port'] > 0 ? $url['port'] : 80), &$errno, &$errstr, $timeout);
 			
 		if (!$fp):
-       		return;
-       		// echo "$errstr ($errno)<br>\n";
+       		$this->e->err('$errstr ($errno)');
+			return;
+
    
   		else:
 			fputs ($fp, "GET ".$url['path'].($url['query'] ? '?'.$url['query'] : '')." HTTP/1.0\r\nHost: ".$url['host']."\r\n\r\n");

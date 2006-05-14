@@ -32,6 +32,13 @@
 class owa_hostip extends owa_location {
 	
 	/**
+	 * URL template for REST based web service
+	 *
+	 * @var unknown_type
+	 */
+	var $ws_url = "http://api.hostip.info/get_html.php?ip=%s&position=true";
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_hostip
@@ -50,19 +57,21 @@ class owa_hostip extends owa_location {
 	 */
 	function get_location($ip) {
 		
-		$url = "http://api.hostip.info/get_html.php?ip=".$ip."&position=true";
+		//$url = "http://api.hostip.info/get_html.php?ip=".$ip."&position=true";
+		
+		$url = sprintf($this->ws_url,
+						$ip);
 		
 		$url = parse_url($url);
 
 		if(!in_array($url['scheme'],array('','http')))
 			return;
 
-		$fp = fsockopen ($url['host'], ($url['port'] > 0 ? $url['port'] : 80), $errno, $errstr, $timeout);
+		$fp = @fsockopen ($url['host'], ($url['port'] > 0 ? $url['port'] : 80), &$errno, &$errstr, $timeout);
 			
 		if (!$fp):
-       		return;
-       		// echo "$errstr ($errno)<br>\n";
-   
+       		$this->e->err('$errstr ($errno)');
+   			return;
   		else:
 			fputs ($fp, "GET ".$url['path'].($url['query'] ? '?'.$url['query'] : '')." HTTP/1.0\r\nHost: ".$url['host']."\r\n\r\n");
 			$location = array();

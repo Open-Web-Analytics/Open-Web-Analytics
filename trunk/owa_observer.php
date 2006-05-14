@@ -48,6 +48,13 @@ class owa_observer extends Log_observer {
      * @access private
      */
     var $_plugin_path;
+    
+    /**
+     * Error handler
+     *
+     * @var object
+     */
+    var $e;
 
     /**
      * Creates a new basic Log_observer instance.
@@ -62,6 +69,7 @@ class owa_observer extends Log_observer {
         $this->Log_observer($priority);
     	//$this->_id = md5(microtime());
         //$this->_priority = $priority;
+        $this->e = &owa_error::get_instance();
     }
 
 }

@@ -38,6 +38,18 @@ class owa_settings {
 	 */
 	var $db;
 	
+	var $properties;
+	
+	var $e;
+	
+	function owa_settings() {
+		
+		$this->properties = $this->get_settings();
+		$this->e = owa_error::get_instance();
+		return;
+	}
+	
+	
 	/**
 	 * Returns the configuration
 	 *
@@ -52,35 +64,13 @@ class owa_settings {
 		if(!isset($OWA_CONFIG)):
 			
 			// get base config
-			
 			$OWA_CONFIG = &owa_settings::get_default_config();
 			
 			//load overrides from config file
 			include_once ($OWA_CONFIG['config_file_path']);
-				
-			// fetch updated config from db if needed
-			if($OWA_CONFIG['fetch_config_from_db'] == true):
-				
-				$config_from_db = owa_settings::fetch();
-				
-				if (!empty($config_from_db)):
 			
-					foreach ($config_from_db as $key => $value) {
-			
-						$OWA_CONFIG[$key] = $value;
-			
-					}
-				endif;
-			endif;
-			
-		
 		endif;
 
-		// look for debug flag on url	
-		if (isset($_GET['debug'])):
-			$OWA_CONFIG['debug_to_screen'] = true;
-		endif;
-	
 		return $OWA_CONFIG;
 	}
 	
@@ -99,6 +89,7 @@ class owa_settings {
 			'last_request_param'			=> 'last_req',
 			'first_hit_param'				=> 'first_hit',
 			'feed_subscription_param'		=> 'sid',
+			'source_param'					=> 'from',
 			'site_id'						=> '1',
 			'session_length'				=> '1800',
 			'debug_to_screen'				=> false,
@@ -146,7 +137,7 @@ class owa_settings {
 			'report_wrapper'				=> '',
 			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
-			'fetch_config_from_db'			=> false
+			'fetch_config_from_db'			=> true
 			
 			);
 	}
@@ -161,14 +152,37 @@ class owa_settings {
 		$config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		
+		$check = $this->db->query(
+			sprintf("SELECT settings from %s where id = '%s'",
+					$config['ns'].$config['config_table'],
+					$settings['site_id']
+					));
+					
+		if (empty($check)):			
+		
 		$this->db->query(
 			sprintf("
-			INSERT into %s (id, settings) VALUES (%s, %s)",
-			$config['ns'].$this->config['config_table'],
+			INSERT into %s (id, settings) VALUES ('%s', '%s')",
+			$config['ns'].$config['config_table'],
 			$settings['site_id'],
 			serialize($settings))
 			
 		);
+		
+		else:
+		
+		$this->db->query(
+			sprintf("
+			UPDATE %s SET settings = '%s' where id = '%s')",
+			$config['ns'].$config['config_table'],
+			serialize($settings),
+			$settings['site_id']
+			)
+			
+		);
+		
+		endif;
+		
 		return;
 	}
 	
@@ -189,7 +203,7 @@ class owa_settings {
 				$config['ns'].$config['config_table'],
 				$site_id);
 		
-		$settings = $this->db->get_row($sql);
+		$settings = unserialize($this->db->get_row($sql));
 		
 		return $settings;
 	}
