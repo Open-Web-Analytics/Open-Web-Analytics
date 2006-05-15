@@ -59,19 +59,33 @@ class owa_settings {
 	 */
 	function &get_settings() {
 	
-		static $OWA_CONFIG;
+		static $config;
 		
-		if(!isset($OWA_CONFIG)):
+		if(!isset($config)):
 			
 			// get base config
-			$OWA_CONFIG = &owa_settings::get_default_config();
+			$config = &owa_settings::get_default_config();
 			
 			//load overrides from config file
-			include_once ($OWA_CONFIG['config_file_path']);
+			if (file_exists($config['config_file_path'])):
+				include_once ($config['config_file_path']);
+			endif;
+			
+			foreach ($OWA_CONFIG as $key => $value) {
+				
+		//	if (($key == 'fetch_config_from_db') && ($value == true)):
+				// stop applying updates to current config and return
+			//	$config[$key] = $value;
+			//	return $config;
+			//else:
+				// update current config
+				$config[$key] = $value;
+			//endif;
+			}
 			
 		endif;
 
-		return $OWA_CONFIG;
+		return $config;
 	}
 	
 	/**
@@ -144,42 +158,45 @@ class owa_settings {
 	
 	/**
 	 * Save Config to database
+	 * Site_id needs to be in the array so that it can be changed via the options GUI
 	 *
-	 * @param unknown_type $settings
+	 * @param array $settings
 	 */
-	function save($settings) {
+	function save($new_config) {
 		
 		$config = &owa_settings::get_settings();
-		$this->db = &owa_db::get_instance();
 		
-		$check = $this->db->query(
+		$this->db = &owa_db::get_instance();
+		//print sprintf("Saving new config for site id: %s", $new_new_config['site_id']);
+		$check = $this->db->get_row(
 			sprintf("SELECT settings from %s where id = '%s'",
 					$config['ns'].$config['config_table'],
-					$settings['site_id']
+					$new_config['site_id']
 					));
+					
 					
 		if (empty($check)):			
 		
-		$this->db->query(
-			sprintf("
-			INSERT into %s (id, settings) VALUES ('%s', '%s')",
-			$config['ns'].$config['config_table'],
-			$settings['site_id'],
-			serialize($settings))
-			
-		);
+			$this->db->query(
+				sprintf("
+				INSERT into %s (id, settings) VALUES ('%s', '%s')",
+				$config['ns'].$config['config_table'],
+				$new_config['site_id'],
+				serialize($new_config))
+				
+			);
 		
 		else:
 		
-		$this->db->query(
-			sprintf("
-			UPDATE %s SET settings = '%s' where id = '%s')",
-			$config['ns'].$config['config_table'],
-			serialize($settings),
-			$settings['site_id']
-			)
-			
-		);
+			$this->db->query(
+				sprintf("
+				UPDATE %s SET settings = '%s' where id = '%s'",
+				$config['ns'].$config['config_table'],
+				serialize($new_config),
+				$new_config['site_id']
+				)
+				
+			);
 		
 		endif;
 		
@@ -197,15 +214,19 @@ class owa_settings {
 		$this->db = &owa_db::get_instance();
 		
 		$sql = sprintf("
-				SELECT settings from %s
+				SELECT 
+					settings 
+				from 
+					%s
 				WHERE
-				id = '%s'",
+					id = '%s'",
 				$config['ns'].$config['config_table'],
 				$site_id);
 		
-		$settings = unserialize($this->db->get_row($sql));
+		$settings = $this->db->get_row($sql);
 		
-		return $settings;
+		return unserialize($settings['settings']);
+		
 	}
 
 }

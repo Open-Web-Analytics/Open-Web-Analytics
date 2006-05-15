@@ -122,8 +122,8 @@ class owa_db {
 		static $db;
 	
 		if (!isset($db)):
-			$this->e = &owa_error::get_instance();
 			$this->config = &owa_settings::get_settings();
+			$this->e = &owa_error::get_instance();
 			
 			$connection_class = "owa_db_" . $this->config['db_type'];
 			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";
@@ -140,42 +140,6 @@ class owa_db {
 		endif;
 	
 		return $db;
-	}
-
-	/**
-	 * Print Debug
-	 *
-	 * @param 	string $sql
-	 * @access 	public
-	 */
-	function debug_sql($sql) {
-	
-		$this->debug = $this->debug.(sprintf(
-		  '<table class="debug" border="1" width="100%%"><tr><td valign="top" width="">%s</td><td valign="top">%s</td></tr>',
-	
-		  ++$this->num_queries,
-		  $sql
-		  
-		));
-		
-		return;
-	}
-  	
-	/**
-	 * Iniital async DB query
-	 *
-	 * @deprecated 
-	 * @param 	string $sql
-	 * @return 	array
-	 * @todo 	remove from this file
-	 */
-	function async_query($sql) {
-	
-		$async_db = new owa_db_async;
-		$result = $async_db->query($sql);
-		
-		return $result;
-	
 	}
 	
 	/**

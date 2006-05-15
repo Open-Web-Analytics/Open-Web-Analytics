@@ -23,6 +23,7 @@ require_once 'eventQueue.php';
 require_once (OWA_PEARLOG_DIR . '/Log.php');
 require_once 'owa_session_class.php';
 require_once 'owa_request_class.php';
+require_once 'owa_caller.php';
 
 /**
  * Asynchronous Event Processsor
@@ -35,21 +36,8 @@ require_once 'owa_request_class.php';
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class asyncEventProcessor {
+class asyncEventProcessor extends owa_caller {
 
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
-	 * Debug
-	 *
-	 * @var string
-	 */
-	var $debug;
 	
 	/**
 	 * Processing Errors
@@ -73,24 +61,20 @@ class asyncEventProcessor {
 	var $eq;
 	
 	/**
-	 * Error Handler
-	 *
-	 * @var object
-	 */
-	var $e;
-	
-	/**
 	 * Constructor
 	 *
 	 * @return asyncEventProcessor
 	 * @access public
 	 */
-	function asyncEventProcessor() {
-	
-		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
-		$this->e = &owa_error::get_instance();
+	function asyncEventProcessor($config = null) {
+		$this->owa_caller($config);
+				
+		if ($this->config['error_handler'] == 'development'):
+			$this->config['error_handler'] = 'async_development';
+		endif;
 		
+		$this->e = &owa_error::get_instance();
+
 		// Turns off async setting so that the proper event queue is created
 		$this->config['async_db'] = false;
 		$this->eq = &eventQueue::get_instance();
@@ -276,6 +260,7 @@ class asyncEventProcessor {
 						'event_obj'		=> unserialize(urldecode($raw_event[4]))
 				); 
 	}
+	
 
 }
 

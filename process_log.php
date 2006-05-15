@@ -20,7 +20,6 @@
 
 require_once 'owa_env.php';
 require_once 'asyncEventProcessor.php';
-require_once 'owa_settings_class.php';
 
 /**
  * Batch Event Processing Script
@@ -36,11 +35,6 @@ require_once 'owa_settings_class.php';
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
-$config = &owa_settings::get_settings();
-if ($config['error_handler'] == 'development'):
-	$config['error_handler'] = 'async_development';
-endif;
 
 // parse args into it's own array
 if ($argv):
@@ -58,6 +52,7 @@ if(empty($_argv)):
 	$processor->process_standard();
 	return;   
 // Process a specific file
+// syntax is: file=filename.txt
 elseif (!empty($_argv['file'])):
 	$processor = new asyncEventProcessor;
 	$processor->process_specific($config['async_log_dir'].$_argv['file']);

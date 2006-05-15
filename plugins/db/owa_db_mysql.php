@@ -68,8 +68,7 @@ class owa_db_mysql extends owa_db {
 	 */
 	function query($sql) {
   
-		$this->e->debug(sprintf('Query: %s',
-			$sql));
+		//$this->e->debug(sprintf('Query: %s', $sql));
 	
 		@mysql_free_result($this->new_result);
 		$this->result = '';
@@ -83,13 +82,6 @@ class owa_db_mysql extends owa_db {
 			mysql_error(),
 			$sql));
 		endif;			
-		
-		/*$num_rows = 0;
-		
-		while ( $row = @mysql_fetch_object($this->new_result) ) {
-			$this->result[$num_rows] = $row;
-			$num_rows++;
-		}*/
 				
 		return;
 	}
@@ -134,10 +126,6 @@ class owa_db_mysql extends owa_db {
 	 * @return array
 	 */
 	function get_row($sql) {
-	
-		if ($this->config['debug_level'] == 1):		
-			$this->debug_sql($sql);
-		endif;
 		
 		$this->query($sql);
 		
