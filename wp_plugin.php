@@ -9,11 +9,8 @@ Version: v1.0
 Author URI: http://www.openwebanalytics.com
 */
 
-require_once 'owa_controller.php';
-require_once 'owa_install.php';
 require_once 'owa_env.php';
 require_once 'owa_settings_class.php';
-require_once 'owa_error.php';
 require_once 'owa_wp.php';
 /**
  * WORDPRESS Constants
@@ -32,23 +29,65 @@ define ('OWA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
 // Path to images used in reports
 define ('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');
 
-/**
- * These are set to pass wa the db connection params that wordpress uses. 
- * These are also persisted when in async mode.
- 
-define('OWA_DB_NAME', DB_NAME);     // The name of the database
-define('OWA_DB_USER', DB_USER);     // Your db username
-define('OWA_DB_PASSWORD', DB_PASSWORD); // ...and password
-define('OWA_DB_HOST', DB_HOST);     // The host of your db
-*/
+// Check to see what version of wordpress is running
+$owa_wp_version = owa_parse_version($wp_version);
+
+// Caller Configuration overides
+$owa_config['report_wrapper'] = 'wordpress.tpl';
+$owa_config['db_name'] = DB_NAME;     // The name of the database
+$owa_config['db_user'] = DB_USER;     // Your db username
+$owa_config['db_password'] = DB_PASSWORD; // ...and password
+$owa_config['db_host'] = DB_HOST;     // The host of your db
+
+// Create new instance of caller class object
+$owa_wp = new owa_wp($owa_config);
+
+// WORDPRESS Filter and action hook assignment
+
+if ($owa_wp_version[0] == '1'):
+
+	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
+
+	add_action('init', 'owa_install');
+  
+	endif;
+
+elseif ($owa_wp_version[0] == '2'):
+
+	add_action('activate_owa/wp_plugin.php', 'owa_install');
+
+endif;
+
+
+add_action('template_redirect', 'owa_main');
+add_action('wp_footer', array(&$owa_wp, 'add_tag'));
+add_filter('post_link', 'owa_post_link');
+add_filter('bloginfo', 'add_feed_sid');
+add_action('admin_menu', 'owa_dashboard_view');
+add_action('init', array(&$owa_wp, 'init_action'));
+add_action('comment_post', array(&$owa_wp, 'process_comment'));
+add_action('admin_menu', 'owa_options');
+
+////////// FORM HANDLERS
+
+//if (is_plugin_page()):
+		if (isset($_POST['wa_update_options'])):
+						
+			$owa_wp->save_config($_POST);
+		endif;
+		
+		if (isset($_POST['wa_reset_options'])):
+		
+			$owa_wp->reset_config();	
+			
+		endif;
+	//endif;
 
 /**
  * This is the main logger function that calls wa on each normal web request.
  * Application specific request data should be set here. as part of the $app_params array.
  */
 function owa_main() {
-
-	$owa = new owa;
 	
 	// WORDPRESS SPECIFIC DATA //
 	
@@ -82,8 +121,8 @@ function owa_main() {
 	//$app_params['site_id'] = '';
 	
 	// Process the request by calling owa
-	$owa->process_request($app_params);
-	
+	$owa_wp = & new owa_wp;
+	$owa_wp->process_request($app_params);
 	return;
 }
 
@@ -168,7 +207,7 @@ function add_feed_sid($binfo) {
 	
 	if (strstr($binfo, "feed=")):
 
-		$owa_wp = new owa_wp;
+		$owa_wp = &new owa_wp;
 		$newbinfo = $owa_wp->add_feed_tracking($binfo);
 		
 	else: 
@@ -182,19 +221,7 @@ function add_feed_sid($binfo) {
 }
 
 /**
- * Logs comments to session
- *
- */
-function owa_is_comment() {
-	$owa = new owa;
-	$owa->process_comment();
-	
-	return;
-
-}
-
-/**
- * Adds tracking params to links in feeds
+ * Adds tracking source param to links in feeds
  *
  * @param string $link
  * @return string
@@ -207,8 +234,10 @@ function owa_post_link($link) {
 		$owa_wp = new owa_wp;
 		$tracked_link = $owa_wp->add_link_tracking($link);
 		return $tracked_link;
-		
+	else:
+		return $link;
 	endif;
+	
 
 }
 
@@ -226,19 +255,9 @@ function owa_install() {
 	if ($user_level < 8):
    
     	return;
-    	
     else:
-    	
-	    $installer = &owa_install::get_instance('mysql');	    
-	    $install_check = $installer->check_for_schema();
-	    
-	    if ($install_check == false):
-		    //Install owa schema
-	    	$installer->create_all_tables();
-	    else:
-	    	// owa already installed
-	    	return;
-	    endif;
+    	$owa_wp = &new owa_wp;
+    	$owa_wp->install('mysql');
 	endif;
 
 	return;
@@ -271,36 +290,14 @@ function owa_options() {
     return;
 }
 
-function owa_fetch_config() {
-
-	require_once 'owa_settings_class.php';
-	
-	// Fetch config
-	$config = &owa_settings::get_settings();
-	$config['db_type'] = 'wordpress';
-	$config['report_wrapper'] = 'wordpress.tpl';
-	
-	return $config;
-}
-
+/**
+ * Generates Options Management Page
+ *
+ */
 function owa_options_page() {
 	
-	require_once 'template_class.php';
-	
-	$config = owa_fetch_config();
-	print_r($config);
-	//update options
-	
-	//Setup templates
-	$options_page = & new Template;
-	$options_page->set_template($options_page->config['report_wrapper']);
-	$body = & new Template; 
-	$body->set_template('options.tpl');// This is the inner template
-	$body->set('config', $config);
-	$body->set('page_title', 'OWA Options');
-	$options_page->set('content', $body);
-	// Make Page
-	echo $options_page->fetch();
+	$owa_wp = &new owa_wp;
+	$owa_wp->options_page();
 	
 	return;
 }
@@ -319,67 +316,5 @@ function owa_parse_version($version) {
    return array($major, $minor, $dot);
 	
 }
-
-// WORDPRESS Filter and action hooks.
-
-// Check to see what version of wordpress is running
-$owa_wp_version = owa_parse_version($wp_version);
-
-$owa_config['report_wrapper'] = 'wordpress.tpl';
-$owa_config['db_name'] = DB_NAME;     // The name of the database
-$owa_config['db_user'] = DB_USER;     // Your db username
-$owa_config['db_password'] = DB_PASSWORD; // ...and password
-$owa_config['db_host'] = DB_HOST;     // The host of your db
-
-// Create new instance of caller class object
-$owa_wp = new owa_wp($owa_config);
-
-// fetch updated config from db if needed
-if($owa_wp->config['fetch_config_from_db'] == true):
-	$owa_wp->load_config_from_db();
-	
-endif;
-
-if ($owa_wp_version[0] == '1'):
-
-	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-
-	add_action('init', 'owa_install');
-  
-	endif;
-
-elseif ($owa_wp_version[0] == '2'):
-
-	add_action('activate_owa/wp_plugin.php', 'owa_install');
-
-endif;
-
-add_action('template_redirect', 'owa_main');
-add_action('wp_footer', array(&$owa_wp, 'add_tag'));
-add_filter('post_link', 'owa_post_link');
-add_filter('bloginfo', 'add_feed_sid');
-add_action('admin_menu', 'owa_dashboard_view');
-add_action('init', array(&$owa_wp, 'init_action'));
-add_action('comment_post', 'owa_is_comment');
-add_action('admin_menu', 'owa_options');
-
-////////// FORM HANDLERS
-
-//if (is_plugin_page()):
-		if (isset($_POST['wa_update_options'])):
-						
-			$owa_wp->save_config($_POST);
-		endif;
-		
-		if (isset($_POST['wa_reset_options'])):
-		
-			$owa_wp->reset_config();	
-			
-		endif;
-	//endif;
-
-	
-
-
 
 ?>
