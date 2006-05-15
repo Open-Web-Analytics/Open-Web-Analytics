@@ -130,7 +130,8 @@ class owa_request {
 		// Record HTTP request variables
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
 		$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
-		$this->properties['uri'] = $_SERVER['REQUEST_URI'];
+		$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
+		$this->properties['uri'] = $this->properties['inbound_uri'];
 		$this->properties['ip_address'] = $this->get_ip();
 		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
 		$this->properties['site'] = $_SERVER['SERVER_NAME'];
@@ -168,7 +169,7 @@ class owa_request {
 		$this->properties['feed_subscription_id'] = $_GET[$this->config['ns'].$this->config['feed_subscription_param']];
 		
 		// Traffic Source code
-		$this->properties['source'] = $_GET[$this->config['ns'].$this->config['source_param']];
+		$this->properties['source'] = $_GET[$this->config['source_param']];
 		
 		return;
 	
@@ -272,9 +273,8 @@ class owa_request {
 		$this->properties['os'] = $this->determine_os($this->properties['ua']);
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
-		// Make document id
-		$this->properties['document_id'] = $this->set_string_guid($this->properties['uri']);	
-		
+		// Make document id	
+		$this->properties['document_id'] = $this->make_document_id();
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):
 			$this->resolve_host();
@@ -633,6 +633,46 @@ class owa_request {
 	
 	}
 	
+	/**
+	 * Makes the id for the uri of the request
+	 *
+	 * @return integer
+	 */
+	function make_document_id() {
+		
+		if ($this->config['clean_query_string'] == true):
+		
+			if (!empty($this->config['query_string_filters'])):
+				$filters = str_replace(' ', '', $this->config['query_string_filters']);
+				$filters = explode(',', $this->config['query_string_filters']);
+			else:
+				$filters = array();
+			endif;
+			
+			// Add OWA specific params to filter list
+			$filters[] = $this->config['source_param'];
+			$filters[] = $this->config['ns'].$this->config['feed_subscriber_id'];
+			
+			foreach ($filters as $filter) {
+	          $this->properties['uri'] = preg_replace(
+	            '#\?' .
+	            $filter .
+	            '=.*$|&' .
+	            $filter .
+	            '=.*$|' .
+	            $filter .
+	            '=.*&#msiU',
+	            '',
+	            $this->properties['uri']
+	          );
+	          //print $this->properties['uri'];
+	        }
+		
+	    endif;
+     	
+        return $this->set_string_guid($this->properties['site'].$this->properties['uri']);
+		
+	}
 	
 	
 }
