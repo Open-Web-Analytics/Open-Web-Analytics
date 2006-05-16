@@ -84,6 +84,8 @@ class owa_graph_page_views extends owa_graph {
 						'is_robot' 	=> 0),
 					'group_by'			=> 'month'
 					));
+					
+				
 				
 				$this->data = array(
 		
@@ -108,12 +110,13 @@ class owa_graph_page_views extends owa_graph {
 						'is_robot' 	=> 0),
 					'group_by'			=> 'day'
 					));
-			
+					
+				
 				$this->data = array(
 		
 					'datay'		=> $result['page_views'],
 					'datax'		=> $result['day']	);
-					
+			
 				$this->params['xaxis_title'] = "Day";
 				
 				break;
