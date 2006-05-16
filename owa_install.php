@@ -125,17 +125,30 @@ class owa_install {
 		$this->e->notice("Created version table.");
 		
 		$this->update_schema_version();
-		$this->e->notice("Schema version %s installation complete.");
+		$this->e->notice(sprintf("Schema version %s installation complete.",
+							$this->version));
 		
 		return;
 	}
 	
 	function update_schema_version() {
 		
-		return $this->db->query(sprintf("INSERT into %s (schema_version) VALUES ('%s')",
+		$check = $this->db->get_row(sprintf("SELECT schema_version from %s",
+										$this->config['ns'].$this->config['version_table']
+										));
+
+		if (empty($check)):
+		
+			$this->db->query(sprintf("INSERT into %s (schema_version) VALUES ('%s')",
+										$this->config['ns'].$this->config['version_table'],
+										$this->version));
+		else:
+										
+			$this->db->query(sprintf("UPDATE %s SET schema_version = '%s'",
 										$this->config['ns'].$this->config['version_table'],
 										$this->version));
 		
+		endif;
 	}
 }
 
