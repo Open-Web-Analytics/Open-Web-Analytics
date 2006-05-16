@@ -166,7 +166,9 @@ class owa_metric_dashboard extends owa_metric {
 				$params['group_by']
 			);
 						
+		
 		return $this->db->get_results($sql);
+
 	}
 	
 	/**

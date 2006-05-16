@@ -41,7 +41,7 @@
 			echo $period; 
 				
 		endif; 
-		?>"></TD>
+		?>" /></TD>
 				<TD>	<img src="<?=OWA_GRAPH_URL;?>?owa_action=graph&graph=visitors_pie&type=pie&period=<?=$period;?>" /></TD>
 				<TD><img src="<?=OWA_GRAPH_URL;?>?owa_action=graph&graph=source_pie&type=pie&period=<?=$period;?>" /></TD>
 			</TR>

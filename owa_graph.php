@@ -17,6 +17,7 @@
 //
 
 require_once (OWA_BASE_DIR . '/owa_api.php');
+require_once (OWA_BASE_DIR . '/owa_error.php');
 require_once (OWA_INCLUDE_DIR.'jpgraph/jpgraph.php');
 
 /**
@@ -94,6 +95,20 @@ class owa_graph {
 	 * @var array
 	 */
 	var $api_calls = array();
+	
+	/**
+	 * Configuration
+	 *
+	 * @var array
+	 */
+	var $config;
+	
+	/**
+	 * Error handler
+	 *
+	 * @var object
+	 */
+	var $e;
 
 	/**
 	 * Constructor
@@ -102,6 +117,9 @@ class owa_graph {
 	 * @access public
 	 */
 	function owa_graph() {
+		
+		$this->config = &owa_settings::get_settings();
+		$this->e = &owa_error::get_instance();
 		
 		// Set current time
 		$this->time_now = owa_lib::time_now();
@@ -152,6 +170,8 @@ class owa_graph {
 	 */
 	function bar_graph() {
 	
+		
+		
 		require_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_bar.php');
 	
 		$datay = $this->data['datay'];
@@ -170,6 +190,7 @@ class owa_graph {
 		
 		// Create a bar pot
 		$bplot = new BarPlot($datay);
+		
 		$bplot->SetFillColor('orange');
 		$bplot->SetWidth(1.0);
 		//$bplot->SetValuePos('top'); 

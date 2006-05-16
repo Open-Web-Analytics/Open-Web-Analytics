@@ -88,6 +88,13 @@ class owa_metric {
 	 * @var array
 	 */
 	var $api_calls = array();
+	
+	/**
+	 * Error handler
+	 *
+	 * @var object
+	 */
+	var $e;
 
 	/**
 	 * Constructor
@@ -98,7 +105,7 @@ class owa_metric {
 	function owa_metric() {
 	
 		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
+		$this->e = &owa_error::get_instance();
 		$this->db = &owa_db::get_instance();
 		// Setup time and query periods
 		$this->time_now = owa_lib::time_now();
@@ -163,9 +170,9 @@ class owa_metric {
 				break;
 				
 			case "last_seven_days":	
-				$bound = $this->time_now['dayofyear'] - 7;
+				$bound = $this->time_now['timestamp'] - 3600*24*7;
 				$where = sprintf(
-							"dayofyear >= '%s' and year = '%s'",
+							"timestamp >= '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
