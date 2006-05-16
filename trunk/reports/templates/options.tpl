@@ -44,6 +44,19 @@
 		</SELECT>
 	</DIV>	
 	
+	<DIV class="setting">	
+		Announce New Visitors via E-mail: 
+		<SELECT NAME="announce_visitors">
+	
+		<OPTION VALUE="0" <? if ($config['announce_visitors'] == false):?>SELECTED<?endif;?>>
+		Off</OPTION>
+		
+		<OPTION VALUE="1" <? if ($config['announce_visitors'] == true):?>SELECTED<?endif;?>>
+		On</OPTION>
+			
+		</SELECT>
+	</DIV>
+	
     </fieldset>
      
     <fieldset name="owa-db-options" class="options">

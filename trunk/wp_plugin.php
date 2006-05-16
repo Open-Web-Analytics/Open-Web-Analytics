@@ -268,6 +268,8 @@ function owa_install_1() {
    
     	return;
     else:
+    	$conf = &owa_settings::get_settings();
+		$conf['fetch_config_from_db'] = false;
     	$owa_wp = &new owa_wp;
     	$owa_wp->install('mysql');
 	endif;
