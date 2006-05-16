@@ -101,8 +101,10 @@ class Log_observer_announce extends owa_observer {
     	switch ($event['event_type']) {
     		case "new_session":
     			if ($this->config['announce_visitors'] == true):
-	    			$this->announce_session_update();
-				endif;
+    				if (!empty($this->config['notice_email'])):	
+	    				$this->announce_session_update();
+	    			endif;
+	    		endif;
 	    	break;
 
     	}
