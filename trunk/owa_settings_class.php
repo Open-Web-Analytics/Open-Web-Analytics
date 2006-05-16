@@ -69,10 +69,10 @@ class owa_settings {
 			//load overrides from config file
 			if (file_exists($config['config_file_path'])):
 				include_once ($config['config_file_path']);
-			endif;
 			
 			foreach ($OWA_CONFIG as $key => $value) {
-				
+			
+		    
 		//	if (($key == 'fetch_config_from_db') && ($value == true)):
 				// stop applying updates to current config and return
 			//	$config[$key] = $value;
@@ -82,7 +82,7 @@ class owa_settings {
 				$config[$key] = $value;
 			//endif;
 			}
-			
+			endif;	
 		endif;
 
 		return $config;
