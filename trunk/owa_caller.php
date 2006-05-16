@@ -53,7 +53,7 @@ class owa_caller {
 		
 		$this->apply_caller_config($config);
 		
-		if ($this->config['fetch_config_from_db'] == 'true'):
+		if ($this->config['fetch_config_from_db'] == true):
 			$this->load_config_from_db();
 		endif;
 	
@@ -102,6 +102,7 @@ class owa_caller {
 	
 	function install($type) {
 		
+		$this->config['fetch_config_from_db'] = false;
 	    $installer = &owa_install::get_instance($type);	    
 	    $install_check = $installer->check_for_schema();
 	    

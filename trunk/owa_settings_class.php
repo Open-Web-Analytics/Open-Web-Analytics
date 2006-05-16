@@ -152,7 +152,8 @@ class owa_settings {
 			'report_wrapper'				=> '',
 			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
-			'fetch_config_from_db'			=> true
+			'fetch_config_from_db'			=> true,
+			'announce_visitors'				=> false
 			
 			);
 	}
@@ -212,6 +213,7 @@ class owa_settings {
 	function fetch($site_id = 1) {
 		
 		$config = &owa_settings::get_settings();
+		
 		$this->db = &owa_db::get_instance();
 		
 		$sql = sprintf("

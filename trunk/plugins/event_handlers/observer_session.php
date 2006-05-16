@@ -64,7 +64,7 @@ class Log_observer_session extends owa_observer {
     function Log_observer_session($priority, $conf) {
 
         // Call the base class constructor.
-        $this->Log_observer($priority);
+        $this->owa_observer($priority);
 
         // Configure the observer to listen for particular events.
 		$this->_event_type = array('new_request');
@@ -79,6 +79,8 @@ class Log_observer_session extends owa_observer {
      * @access 	public
      */
     function notify($event) {
+    	
+    	$this->e->debug('new session being handled');
 	
 		$this->m = $event['message'];
 	
