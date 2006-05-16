@@ -56,10 +56,11 @@ class owa_install_mysql extends owa_install {
 	 */
 	function check_for_schema() {
 		
-		$check = $this->db->query(sprintf("show tables like '%s'",
+		$check = $this->db->get_row(sprintf("show tables like '%s'",
 				$this->config['ns'].$this->config['requests_table']));
 		
 		if (!empty($check)):
+			$this->e->notice("Installation failed. Schema already exists.");
 			return true;
 		else:
 			return false;
