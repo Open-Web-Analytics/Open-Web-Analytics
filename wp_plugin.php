@@ -12,6 +12,7 @@ Author URI: http://www.openwebanalytics.com
 require_once 'owa_env.php';
 require_once 'owa_settings_class.php';
 require_once 'owa_wp.php';
+
 /**
  * WORDPRESS Constants
  * You should not need to change these.
@@ -32,29 +33,38 @@ define ('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
 
+// check to see if OWA is installed
+$current_plugins = get_option('active_plugins');
+
+// Needed to avoid a fetch of configuration from db during installation
+if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
+	$owa_config['fetch_config_from_db'] = false;
+endif;
+
+
 // Caller Configuration overides
 $owa_config['report_wrapper'] = 'wordpress.tpl';
 $owa_config['db_name'] = DB_NAME;     // The name of the database
 $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
+$owa_config['db_type'] = 'wordpress';     // The host of your db
 
 // Create new instance of caller class object
 $owa_wp = new owa_wp($owa_config);
-
 // WORDPRESS Filter and action hook assignment
+
 
 if ($owa_wp_version[0] == '1'):
 
 	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
 
-	add_action('init', 'owa_install');
+	add_action('init', 'owa_install_1');
   
 	endif;
 
 elseif ($owa_wp_version[0] == '2'):
-
-	add_action('activate_owa/wp_plugin.php', 'owa_install');
+	add_action('activate_owa/wp_plugin.php', 'owa_install_2');
 
 endif;
 
@@ -83,6 +93,8 @@ add_action('admin_menu', 'owa_options');
 		endif;
 	//endif;
 
+
+	
 /**
  * This is the main logger function that calls wa on each normal web request.
  * Application specific request data should be set here. as part of the $app_params array.
@@ -245,7 +257,7 @@ function owa_post_link($link) {
  * Schema and setting installation
  *
  */
-function owa_install() {
+function owa_install_1() {
 
 	global $user_level;
 	
@@ -259,6 +271,20 @@ function owa_install() {
     	$owa_wp = &new owa_wp;
     	$owa_wp->install('mysql');
 	endif;
+
+	return;
+}
+
+/**
+ * Schema and setting installation
+ *
+ */
+function owa_install_2() {
+
+		$conf = &owa_settings::get_settings();
+		$conf['fetch_config_from_db'] = false;
+    	$owa_wp = &new owa_wp;
+    	$owa_wp->install('mysql');
 
 	return;
 }
@@ -311,9 +337,9 @@ function owa_options_page() {
  */
 function owa_parse_version($version) {
 	
-	list($major, $minor, $dot) = split(".", $version);
+	$version_array = explode(".", $version);
    
-   return array($major, $minor, $dot);
+   return $version_array;
 	
 }
 

@@ -77,7 +77,7 @@ class Log_observer_announce extends owa_observer {
     function Log_observer_announce($priority, $conf) {
         
     	// Call the base class constructor.
-        $this->Log_observer($priority);
+        $this->owa_observer($priority);
 
         // Configure the observer to listen for event types
 		$this->_event_type = array('new_session');
@@ -100,8 +100,10 @@ class Log_observer_announce extends owa_observer {
 
     	switch ($event['event_type']) {
     		case "new_session":
-    			$this->announce_session_update();
-    			break;
+    			if ($this->config['announce_visitors'] == true):
+	    			$this->announce_session_update();
+				endif;
+	    	break;
 
     	}
 		

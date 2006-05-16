@@ -84,7 +84,7 @@ class Log_observer_ua extends owa_observer {
     function Log_observer_ua($priority, $conf) {
 				
         // Call the base class constructor
-        $this->Log_observer($priority);
+        $this->owa_observer($priority);
 
         // Configure the observer to handle certain events types
 		$this->_event_type = array('new_session');

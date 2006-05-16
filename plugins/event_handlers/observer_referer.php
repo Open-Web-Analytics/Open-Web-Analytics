@@ -98,7 +98,7 @@ class Log_observer_referer extends owa_observer {
     function Log_observer_referer($priority, $conf) {
 				
         // Call the base class constructor
-        $this->Log_observer($priority);
+        $this->owa_observer($priority);
 
         // Configure the observer
 		$this->_event_type = array('new_session');

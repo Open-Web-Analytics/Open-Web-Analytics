@@ -46,6 +46,7 @@ class owa_install_mysql extends owa_install {
 	function owa_install_mysql() {
 		
 		$this->owa_install();
+		return;
 	}
 	
 	/**
@@ -75,7 +76,6 @@ class owa_install_mysql extends owa_install {
 
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			request_id bigint,
 			inbound_visitor_id bigint, 
@@ -117,7 +117,7 @@ class owa_install_mysql extends owa_install {
 			is_feedreader tinyint(1),
 			
 			PRIMARY KEY (request_id),
-			KEY timestamp (timestamp));",
+			KEY timestamp (timestamp))",
 			$this->config['ns'].$this->config['requests_table'])
 		);
 		
@@ -128,7 +128,6 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			session_id BIGINT,
 			visitor_id BIGINT,
@@ -167,6 +166,8 @@ class owa_install_mysql extends owa_install {
 			host varchar(255),
 			host_id varchar(255),
 			source varchar(255),
+			city varchar(255),
+			country varchar(255),
 			site varchar(255),
 			site_id varchar(255),
 			is_robot tinyint(1),
@@ -174,7 +175,7 @@ class owa_install_mysql extends owa_install {
 			is_feedreader tinyint(1),
 			PRIMARY KEY (session_id),
 			KEY timestamp      (timestamp)
-			);",
+			)",
 			$this->config['ns'].$this->config['sessions_table'])
 		);
 		
@@ -185,7 +186,6 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
 			url varchar(255),
@@ -195,7 +195,7 @@ class owa_install_mysql extends owa_install {
 			page_title varchar(255),
 			is_searchengine tinyint(1),
 			PRIMARY KEY (id)
-			);",
+			)",
 			$this->config['ns'].$this->config['referers_table'])
 		);
 
@@ -206,14 +206,13 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
 			url varchar(255),
 			page_title varchar(255),
 			page_type varchar(255),
 			PRIMARY KEY (id)
-			);",
+			)",
 			$this->config['ns'].$this->config['documents_table'])
 		);
 		
@@ -224,12 +223,11 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
 			url varchar(255),
 			PRIMARY KEY (id)
-			);",	
+			)",	
 			$this->config['ns'].$this->config['hosts_table'])
 		);
 		return;
@@ -239,12 +237,11 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
 			name varchar(255),
 			PRIMARY KEY (id)
-			);",	
+			)",	
 			$this->config['ns'].$this->config['os_table'])
 		);
 		return;
@@ -254,13 +251,12 @@ class owa_install_mysql extends owa_install {
 		
 			$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
 			ua varchar(255),
 			browser_type varchar(255),
 			PRIMARY KEY (id)
-			);",	
+			)",	
 			$this->config['ns'].$this->config['ua_table'])
 		);
 		
@@ -272,13 +268,12 @@ class owa_install_mysql extends owa_install {
 		
 			$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			request_id BIGINT,
 			data_field VARCHAR(255),
 			data_value VARCHAR(255),
 			KEY (request_id)
-			);",	
+			)",	
 			$this->config['ns'].$this->config['optinfo_table'])
 		);
 		
@@ -289,12 +284,11 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
 			settings TEXT,
 			PRIMARY KEY (id)
-			);",	
+			)",	
 			$this->config['ns'].$this->config['config_table'])
 		);
 		
@@ -305,12 +299,11 @@ class owa_install_mysql extends owa_install {
 		
 		$this->db->query(
 			sprintf("
-			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id VARCHAR(255),
 			value VARCHAR(255),
 			PRIMARY KEY (id)
-			);",	
+			)",	
 			$this->config['ns'].$this->config['version_table'])
 		);
 		

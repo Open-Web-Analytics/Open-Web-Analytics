@@ -81,7 +81,7 @@ class owa_install {
 		
         //$classfile = $class_path . $plugin . '.php';
 		$classfile = $this->config['install_plugin_dir'].'owa_install_'.$type. '.php';
-        $class = 'owa_install'.$type;
+        $class = 'owa_install_'.$type;
         
         /*
          * Attempt to include our version of the named class, but don't treat
@@ -133,18 +133,18 @@ class owa_install {
 	
 	function update_schema_version() {
 		
-		$check = $this->db->get_row(sprintf("SELECT schema_version from %s",
+		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'schema_version'",
 										$this->config['ns'].$this->config['version_table']
 										));
 
 		if (empty($check)):
 		
-			$this->db->query(sprintf("INSERT into %s (schema_version) VALUES ('%s')",
+			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('schema_version', '%s')",
 										$this->config['ns'].$this->config['version_table'],
 										$this->version));
 		else:
 										
-			$this->db->query(sprintf("UPDATE %s SET schema_version = '%s'",
+			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'schema_version'",
 										$this->config['ns'].$this->config['version_table'],
 										$this->version));
 		

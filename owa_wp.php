@@ -37,6 +37,7 @@ class owa_wp extends owa_caller {
 	 * @return owa_wp
 	 */
 	function owa_wp($config = null) {
+		
 		$this->owa_caller($config);
 		$this->e = &owa_error::get_instance();
 		return;

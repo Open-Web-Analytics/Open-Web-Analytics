@@ -64,7 +64,7 @@ class Log_observer_comments extends owa_observer {
     function Log_observer_comments($priority, $conf) {
 	
         /* Call the base class constructor. */
-        $this->Log_observer($priority);
+        $this->owa_observer($priority);
 
         /* Configure the observer. */
 		$this->_event_type = array('new_comment');
