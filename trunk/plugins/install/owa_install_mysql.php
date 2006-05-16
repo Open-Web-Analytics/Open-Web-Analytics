@@ -30,11 +30,29 @@
 
 class owa_install_mysql extends owa_install {
 
+	/**
+	 * Version of the schema
+	 *
+	 * @var string
+	 */
+	var $version = '1.0';
+	
+	
+	/**
+	 * Constructor
+	 *
+	 * @return owa_install_mysql
+	 */
 	function owa_install_mysql() {
 		
 		$this->owa_install();
 	}
 	
+	/**
+	 * Check to see if schema is installed
+	 *
+	 * @return unknown
+	 */
 	function check_for_schema() {
 		
 		$check = $this->db->query(sprintf("show tables like '%s'",
@@ -274,7 +292,7 @@ class owa_install_mysql extends owa_install {
 			DROP TABLE IF EXISTS %1\$s;
 			CREATE TABLE %1\$s (
 			id BIGINT,
-			settings VARCHAR(255),
+			settings TEXT,
 			PRIMARY KEY (id)
 			);",	
 			$this->config['ns'].$this->config['config_table'])
