@@ -41,6 +41,13 @@ if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php'))
 	$owa_config['fetch_config_from_db'] = false;
 endif;
 
+// Needed for WP 1.x installs to avoid fetch of config from db duruign installation
+if ($owa_wp_version[0] == '1'):
+	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
+		$owa_config['fetch_config_from_db'] = false;
+	endif;
+endif;
+
 
 // Caller Configuration overides
 $owa_config['report_wrapper'] = 'wordpress.tpl';
@@ -55,14 +62,11 @@ $owa_wp = new owa_wp($owa_config);
 // WORDPRESS Filter and action hook assignment
 
 
+// Installation logic
 if ($owa_wp_version[0] == '1'):
-
-	//if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-	if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
-	owa_install_1();
-  
+	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
+		owa_install_2();
 	endif;
-
 elseif ($owa_wp_version[0] == '2'):
 	add_action('activate_owa/wp_plugin.php', 'owa_install_2');
 
@@ -265,11 +269,11 @@ function owa_install_1() {
 	get_currentuserinfo();
 	
 	if ($user_level < 8):
-   
     	return;
     else:
     	$conf = &owa_settings::get_settings();
 		$conf['fetch_config_from_db'] = false;
+		print_r($config);
     	$owa_wp = &new owa_wp;
     	$owa_wp->install('mysql');
 	endif;
