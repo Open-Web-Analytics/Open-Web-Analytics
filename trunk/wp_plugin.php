@@ -57,9 +57,9 @@ $owa_wp = new owa_wp($owa_config);
 
 if ($owa_wp_version[0] == '1'):
 
-	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-
-	add_action('init', 'owa_install_1');
+	//if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
+	if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
+	owa_install_1();
   
 	endif;
 
