@@ -68,7 +68,7 @@ class owa_db_wordpress extends owa_db {
 	 */
 	function query($sql) {
 		
-		//$this->e->debug(sprintf('Query: %s', $sql));
+		$this->e->debug(sprintf('Query: %s', $sql));
 	
 		@mysql_free_result($this->new_result);
 		$this->result = '';

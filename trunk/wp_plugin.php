@@ -138,7 +138,7 @@ function owa_main() {
 	
 	// Process the request by calling owa
 	$owa_wp = & new owa_wp;
-	$owa_wp->process_request($app_params);
+	$owa_wp->log($app_params);
 	return;
 }
 

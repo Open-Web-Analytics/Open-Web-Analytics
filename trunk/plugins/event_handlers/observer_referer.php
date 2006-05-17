@@ -128,8 +128,6 @@ class Log_observer_referer extends owa_observer {
      * @access private
      */
 	function process_referer() {
-	
-		if (!empty($this->obj->properties['referer'])):
 			
 			//	Look for match against Search engine groups
 			$this->referer_info = $this->get_referer_info($this->obj->properties['referer']);
@@ -150,8 +148,6 @@ class Log_observer_referer extends owa_observer {
 			
 			//write to DB
 			$this->save();
-		
-		endif;	
 		
 		return;
 	}

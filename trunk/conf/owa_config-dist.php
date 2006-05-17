@@ -16,8 +16,6 @@
 // $Id$
 //
 
-//require_once('../owa_settings_class.php');
-
 /**
  * OWA Configuration File
  * 
@@ -33,24 +31,24 @@
 
 // Database type
 // Possible values: wordpress, mysql
-$OWA_CONFIG['db_type'] = 'wordpress';
+// $OWA_CONFIG['db_type'] = '';
 
 // Name of the database
-$OWA_CONFIG['db_name'] = 'oncefuture';
+// $OWA_CONFIG['db_name'] = '';
 
 // Database user name
-$OWA_CONFIG['db_user'] = 'oncefuture';
+// $OWA_CONFIG['db_user'] = '';
 
 // Password for database user
-$OWA_CONFIG['db_password'] = 'trin6006';
+// $OWA_CONFIG['db_password'] = '';
 
 // Database host
 // Could be localhost but is usually an actual host name (e.g. db.host.com)
-$OWA_CONFIG['db_host'] = 'oc.padams.dreamhosters.com';
+// $OWA_CONFIG['db_host'] = '';
 
 // Fetch settings from DB instead of this configuration file. 
 // IF SET TO TRUE THEN ALL CHANGES BELOW THIS LINE WILL BE IGNORED
-$OWA_CONFIG['fetch_config_from_db'] = false;
+// $OWA_CONFIG['fetch_config_from_db'] = false;
 
 ////////////////////////////////////////////
 
@@ -64,15 +62,11 @@ $OWA_CONFIG['fetch_config_from_db'] = false;
 
 // Unique ID that you can use to track multiple sites with the same instance of OWA
 // Default value is 1
-$OWA_CONFIG['site_id'] = 1;
+// $OWA_CONFIG['site_id'] = 1;
 
 // Session Length (in seconds)
 // Default value: 1800
 // $OWA_CONFIG['session_length'] = 1800;
-
-// Print debug messages in the browser
-// Options: true or false
-$OWA_CONFIG['debug_to_screen'] = false;
 
 // Resolve host names
 // You might want to turn this off if you have a lot of traffic 
@@ -89,13 +83,13 @@ $OWA_CONFIG['debug_to_screen'] = false;
 // $OWA_CONFIG['log_sessions'] = true;
 
 // Run in asynchronous mode.
-$OWA_CONFIG['async_db'] = true;
+// $OWA_CONFIG['async_db'] = true;
 
 // Error handler mode. Default is 'production'.
 // Options: 'development'	- logs all debug and errors to seperate window or stdout 
 //			'production' 	- only logs real errors to a file. 
 // 			     			  Mails critical ones to notice email.
-$OWA_CONFIG['error_handler'] = 'production';
+// $OWA_CONFIG['error_handler'] = 'production';
 
 // Directory where event log is stored wen running in async mode
 // This directory must be read and writable by php or apache
@@ -109,7 +103,7 @@ $OWA_CONFIG['error_handler'] = 'production';
 // $OWA_CONFIG['async_error_log_file'] = 'events_error.txt';
 
 // Email address used to send various notices to
-$OWA_CONFIG['notice_email'] = 'peter@oncefuture.com';
+// $OWA_CONFIG['notice_email'] = '';
 
 // Lookup Geo-location of visitors
 // $OWA_CONFIG['geolocation_lookup']= true;
