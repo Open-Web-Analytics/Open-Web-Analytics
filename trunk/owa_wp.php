@@ -59,7 +59,7 @@ class owa_wp extends owa_caller {
 		
 		$guid = crc32(posix_getpid().microtime());
 		
-		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_id']."=".$guid;
+		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
 	}
 	
 	function add_tag() {
