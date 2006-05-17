@@ -158,7 +158,7 @@
 					<th scope="col">Query Terms</th>
 					<th scope="col">Is Search Engine</th>
 				</tr>
-				
+				<? if (!empty($top_referers)):?>
 				<?php foreach($top_referers as $referer): ?>
 				
 				<TR>
@@ -169,6 +169,9 @@
 				</TR>
 				
 			   <?php endforeach; ?>
+			   <?else:?>
+			   There are no referering sources for this time period.
+			   <?endif;?>
 			</table>	
 		</fieldset>
 		
