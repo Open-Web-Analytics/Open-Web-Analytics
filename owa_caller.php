@@ -93,7 +93,7 @@ class owa_caller {
 		return;
 	}
 	
-	function process_request($app_params) {
+	function log($app_params) {
 		
 		$owa = new owa;
 		$owa->process_request($app_params);
