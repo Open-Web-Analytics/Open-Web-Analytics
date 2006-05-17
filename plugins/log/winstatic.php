@@ -101,7 +101,7 @@ class Log_winstatic extends Log
             $this->_colors = $conf['colors'];
         }
 
-        register_shutdown_function(array(&$this, '_Log_win'));
+        register_shutdown_function(array(&$this, '_Log_winstatic'));
     }
 
     /**
