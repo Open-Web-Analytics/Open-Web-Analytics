@@ -302,7 +302,7 @@ function owa_install_2() {
 function owa_dashboard_view() {
 
 	if (function_exists('add_submenu_page')):
-		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 8, dirname(__FILE__) . '/reports/dashboard_report.php');
+		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__) . '/reports/dashboard_report.php');
     endif;
     
     return;
