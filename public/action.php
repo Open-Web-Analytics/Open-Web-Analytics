@@ -16,7 +16,11 @@
 // $Id$
 //
 
-require_once('owa_php.php');
+// You will need to change this if you move OWA's public
+// htdocs dir.
+include_once('../owa_env.php');
+
+require_once(OWA_BASE_DIR.'/owa_php.php');
 
 
 /**
@@ -39,7 +43,7 @@ switch ($_GET['owa_action']) {
 		$l->first_request_handler();		
 		break;
 	case $l->config['graph_param']:
-		$l->graph_request_handler()
+		$l->graph_request_handler();
 		break;
 }
 
