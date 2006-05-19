@@ -31,7 +31,7 @@
 				<TH>Visitors By Source for <?=$period?></TH>
 			</TR>
 			<TR>
-				<TD><img src="<?=OWA_GRAPH_URL;?>?owa_action=graph&graph=page_views&type=bar&period=<? 
+				<TD><img src="<?=$this->config['action_url'];?>?owa_action=graph&graph=page_views&type=bar&period=<? 
 		if ($period == 'today' || 'yesterday'): 
 		
 			echo 'last_seven_days'; 
@@ -42,8 +42,8 @@
 				
 		endif; 
 		?>" /></TD>
-				<TD>	<img src="<?=OWA_GRAPH_URL;?>?owa_action=graph&graph=visitors_pie&type=pie&period=<?=$period;?>" /></TD>
-				<TD><img src="<?=OWA_GRAPH_URL;?>?owa_action=graph&graph=source_pie&type=pie&period=<?=$period;?>" /></TD>
+				<TD>	<img src="<?=$this->config['action_url']?>?owa_action=graph&graph=visitors_pie&type=pie&period=<?=$period;?>" /></TD>
+				<TD><img src="<?=$this->config['action_url']?>?owa_action=graph&graph=source_pie&type=pie&period=<?=$period;?>" /></TD>
 			</TR>
 		
 		</table>
@@ -187,7 +187,7 @@
 				<?php foreach($top_visitors as $vis): ?>
 				
 				<TR>
-					<TD><a href="<?=OWA_REPORTING_URL;?>/visitor_report.php&<?=$this->config['ns'].$this->config['visitor_param']?>=<?=$vis['vis_id'] ?>"><span class=""><? if (!empty($vis['user_name'])):?><?=$vis['user_name'];?><?elseif (!empty($vis['user_email'])):?><?=$vis['user_email'];?><? else: ?><?=$vis['vis_id'];?><? endif; ?></span></a></TD>
+					<TD><a href="<?=$this->config['reporting_url'];?>/visitor_report.php&<?=$this->config['ns'].$this->config['visitor_param']?>=<?=$vis['vis_id'] ?>"><span class=""><? if (!empty($vis['user_name'])):?><?=$vis['user_name'];?><?elseif (!empty($vis['user_email'])):?><?=$vis['user_email'];?><? else: ?><?=$vis['vis_id'];?><? endif; ?></span></a></TD>
 					<TD><?=$vis['count']?></TD>
 				</TR>
 				
