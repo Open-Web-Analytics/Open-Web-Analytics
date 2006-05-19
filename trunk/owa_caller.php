@@ -19,6 +19,7 @@
 require_once 'owa_settings_class.php';
 require_once 'owa_controller.php';
 require_once 'owa_install.php';
+include_once('owa_env.php');
 
 /**
  * Abstract caller class
@@ -146,6 +147,8 @@ class owa_caller {
 	
 	function first_request_handler() {
 		
+		$this->e->debug('Received special OWA request. OWA action = first_hit');
+		
 		if (isset($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
 			$owa = new owa;
 			$owa->process_first_request();
@@ -170,8 +173,8 @@ class owa_caller {
 	function graph_request_handler() {
 		
 		$params = array(
-				'api_call' 		=> $_GET['graph'],
-				'period'			=> $_GET['period']
+				'api_call' 		=> $_GET[$this->config['graph_param']],
+				'period'			=> $_GET[$this->config['period_param']]
 			
 			);
 			
@@ -205,6 +208,20 @@ class owa_caller {
 		
 		return;
 	}
+	
+	function add_tag() {
+		
+		if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
+			$bug .= "document.write('<img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\">');</script>";
+			$bug .= "<noscript><img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
+			echo $bug;
+		endif;
+		
+		return;
+	}
+	
+	
 	
 }
 

@@ -28,7 +28,7 @@ define ('OWA_GRAPH_URL', OWA_BASE_URL);
 define ('OWA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
 
 // Path to images used in reports
-define ('OWA_IMAGES_PATH', '../wp-content/plugins/owa/reports/i/');
+define ('OWA_IMAGES_URL', '../wp-content/plugins/owa/reports/i/');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
@@ -56,7 +56,7 @@ $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
 $owa_config['db_type'] = 'wordpress';     // The host of your db
-
+$owa_config['action_url'] = OWA_BASE_URL;     // url of the special http request handler
 // Create new instance of caller class object
 $owa_wp = new owa_wp($owa_config);
 // WORDPRESS Filter and action hook assignment

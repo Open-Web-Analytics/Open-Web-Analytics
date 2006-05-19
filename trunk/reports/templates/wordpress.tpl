@@ -31,7 +31,7 @@
 	margin:0px 2px 2px 2px;
 	width:40px;
 	height:40px;
-	background-image: url('<?=OWA_IMAGES_PATH;?>comment_background.jpg');
+	background-image: url('<?=OWA_IMAGES_URL;?>comment_background.jpg');
 	background-repeat: no-repeat;
 	text-align:center;
   }

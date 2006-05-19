@@ -104,6 +104,8 @@ class owa_settings {
 			'first_hit_param'				=> 'first_hit',
 			'feed_subscription_param'		=> 'sid',
 			'source_param'					=> 'from',
+			'graph_param'					=> 'graph',
+			'period_param'					=> 'period',
 			'site_id'						=> '1',
 			'session_length'				=> '1800',
 			'debug_to_screen'				=> false,
@@ -131,7 +133,7 @@ class owa_settings {
 			'delay_first_hit'				=> true,
 			'async_db'						=> false,
 			'clean_query_string'			=> true,
-			'query_string_filters'			=> 'pa, paa',
+			'query_string_filters'			=> '',
 			'async_log_dir'					=> OWA_BASE_DIR . '/logs/',
 			'async_log_file'				=> 'events.txt',
 			'async_lock_file'				=> 'owa.lock',
@@ -153,7 +155,9 @@ class owa_settings {
 			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> true,
-			'announce_visitors'				=> false
+			'announce_visitors'				=> false,
+			'base_url'						=> OWA_BASE_URL,
+			'action_url'					=> OWA_BASE_URL.'/action.php'
 			
 			);
 	}
