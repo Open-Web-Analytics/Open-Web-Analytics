@@ -146,7 +146,7 @@ class owa_settings {
 			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
 			'robots.ini'					=> OWA_BASE_DIR . '/conf/robots.ini',
 			'db_class_dir'					=> OWA_BASE_DIR . '/plugins/db/',
-			'templates_dir'					=> OWA_BASE_DIR . '/reports/templates/',
+			'templates_dir'					=> OWA_BASE_DIR . '/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'install_plugin_dir'			=> OWA_BASE_DIR . '/plugins/install/',
 			'geolocation_lookup'            => true,
