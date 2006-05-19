@@ -19,16 +19,16 @@ require_once 'owa_wp.php';
  */
 
 // URL special requests can be intercepted on
-define ('OWA_BASE_URL', get_bloginfo('url').'/index.php');
+//define ('OWA_BASE_URL', get_bloginfo('url').'/index.php');
 
 // URL used for graph generation requests
-define ('OWA_GRAPH_URL', OWA_BASE_URL);
+//define ('OWA_GRAPH_URL', OWA_BASE_URL);
 
 // URL stem used for inter report navigation
-define ('OWA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
+//define ('OWA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
 
 // Path to images used in reports
-define ('OWA_IMAGES_URL', '../wp-content/plugins/owa/reports/i/');
+//define ('OWA_IMAGES_URL', '../wp-content/plugins/owa/public/i');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
@@ -56,7 +56,11 @@ $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
 $owa_config['db_type'] = 'wordpress';     // The host of your db
-$owa_config['action_url'] = OWA_BASE_URL;     // url of the special http request handler
+$owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
+$owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/reports';
+$owa_config['action_url'] = get_bloginfo('url').'/index.php';
+
+
 // Create new instance of caller class object
 $owa_wp = new owa_wp($owa_config);
 // WORDPRESS Filter and action hook assignment

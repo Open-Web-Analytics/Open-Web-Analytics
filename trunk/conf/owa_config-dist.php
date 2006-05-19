@@ -27,7 +27,10 @@
  * Boolean values may be true or false (never quotes).
  */
 
-//$OWA_CONFIG =  &owa_settings::get_settings();
+// The web accessible URI of OWA's public htdocs folder
+// This folder can be named whatever you'd like and placed anywhere 
+// in the document root of your web server.
+// $OWA_CONFIG['public_url'] = '/path/to/owa/public';
 
 // Database type
 // Possible values: wordpress, mysql

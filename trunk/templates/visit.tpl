@@ -16,7 +16,7 @@
 					</td>
 					<TD>	
 						<div class="visitor_info_box pages_box">
-							<span class="large_number"><a href="<?=OWA_REPORTING_URL;?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['session_id']?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
+							<span class="large_number"><a href="<?=$this->config['reporting_url'];?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['session_id']?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
 						</div>
 						
 					</td>
@@ -31,7 +31,7 @@
 					
 					</TD>
 					<TD>
-					<span class="h_label">Visitor:</span> <a href="<?=OWA_REPORTING_URL;?>/visitor_report.php&<?=$this->config['ns'].$this->config['visitor_param']?>=<?=$visit['visitor_id'] ?>"><span class="inline_h2"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> via <span class="info_text"><?=$visit['host'];?></span> located in <span class="info_text"><?=$visit['city'];?>, <?=$visit['country'];?></span>
+					<span class="h_label">Visitor:</span> <a href="<?=$this->config['reporting_url'];?>/visitor_report.php&<?=$this->config['ns'].$this->config['visitor_param']?>=<?=$visit['visitor_id'] ?>"><span class="inline_h2"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> via <span class="info_text"><?=$visit['host'];?></span> located in <span class="info_text"><?=$visit['city'];?>, <?=$visit['country'];?></span>
 				
 				<? if ($visit['is_new_visitor'] == true): ?>
 				
@@ -39,7 +39,7 @@
 					
 				<? else: ?>
 				
-				| <a href="<?=OWA_REPORTING_URL;?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['prior_session_id']?>">Last visit</a> was <?=round($visit['time_sinse_priorsession']/(3600*24));?> 
+				| <a href="<?=$this->config['reporting_url'];?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['prior_session_id']?>">Last visit</a> was <?=round($visit['time_sinse_priorsession']/(3600*24));?> 
 				
 					<? if (round($visit['time_sinse_priorsession']/(3600*24)) == 1): ?>
 						day ago.

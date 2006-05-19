@@ -70,18 +70,17 @@ class owa_settings {
 			if (file_exists($config['config_file_path'])):
 				include_once ($config['config_file_path']);
 			
-			foreach ($OWA_CONFIG as $key => $value) {
-			
-		    
-		//	if (($key == 'fetch_config_from_db') && ($value == true)):
-				// stop applying updates to current config and return
-			//	$config[$key] = $value;
-			//	return $config;
-			//else:
-				// update current config
-				$config[$key] = $value;
-			//endif;
-			}
+				foreach ($OWA_CONFIG as $key => $value) {
+		
+					// update current config
+					$config[$key] = $value;
+				
+				}
+				// Setup special public URLs
+				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
+				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
+				$config['reporting_url'] = $OWA_CONFIG['public_url']."/report.php";
+				
 			endif;	
 		endif;
 
@@ -156,8 +155,10 @@ class owa_settings {
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> true,
 			'announce_visitors'				=> false,
-			'base_url'						=> OWA_BASE_URL,
-			'action_url'					=> OWA_BASE_URL.'/action.php'
+			'public_url'					=> '',
+			'action_url'					=> '',
+			'images_url'					=> '',
+			'reporting_url'					=> ''
 			
 			);
 	}
