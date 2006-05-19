@@ -43,37 +43,6 @@ class owa_wp extends owa_caller {
 		return;
 	}
 	
-	function add_link_tracking($link) {
-	
-		if (!empty($_GET[$this->config['feed_subscription_id']])):
-			return $link."&amp;"."from=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
-		else:
-			return $link."&amp;"."from=feed";
-		endif;
-		
-		return;
-	
-	}
-	
-	function add_feed_tracking($binfo) {
-		
-		$guid = crc32(posix_getpid().microtime());
-		
-		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
-	}
-	
-	function add_tag() {
-		
-		if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
-			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
-			$bug .= "document.write('<img src=\"".OWA_BASE_URL."?owa_action=".$this->config['first_hit_param']."\">');</script>";
-			$bug .= "<noscript><img src=\"".OWA_BASE_URL."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
-			echo $bug;
-		endif;
-		
-		return;
-	}
-	
 	function init_action() {
 		
 		if (isset($_GET['owa_action'])):
@@ -96,6 +65,26 @@ class owa_wp extends owa_caller {
 		return;
 		
 	}
+	
+	function add_link_tracking($link) {
+	
+		if (!empty($_GET[$this->config['feed_subscription_id']])):
+			return $link."&amp;"."from=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
+		else:
+			return $link."&amp;"."from=feed";
+		endif;
+		
+		return;
+	
+	}
+	
+	function add_feed_tracking($binfo) {
+		
+		$guid = crc32(posix_getpid().microtime());
+		
+		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
+	}
+	
 	
 	function process_comment() {
 		

@@ -1,4 +1,4 @@
-<?php
+<?
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -16,8 +16,11 @@
 // $Id$
 //
 
+require_once('owa_php.php');
+
+
 /**
- * Environment Configuration
+ * Special HTTP Requests Controler
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,13 +31,18 @@
  * @since		owa 1.0.0
  */
 
-define('OWA_BASE_DIR', dirname(__FILE__));
-define('OWA_INCLUDE_DIR', OWA_BASE_DIR.'/includes/');
-define('OWA_CONF_DIR', OWA_BASE_DIR.'/conf/');
-define('OWA_PEARLOG_DIR', OWA_BASE_DIR.'/includes/Log-1.9.5');
-define('OWA_PLUGINS_DIR', OWA_BASE_DIR.'/plugins/');
-define('OWA_REQ_PLUGINS_DIR', OWA_BASE_DIR.'/plugins/event_handlers/');
-define('OWA_METRICS_DIR', OWA_BASE_DIR.'/plugins/metrics/');
-define('OWA_GRAPHS_DIR', OWA_BASE_DIR.'/plugins/graphs/');
+$l = new owa_php;
+
+switch ($_GET['owa_action']) {
+	
+	case $l->config['first_hit_param']:
+		$l->first_request_handler();		
+		break;
+	case $l->config['graph_param']:
+		$l->graph_request_handler()
+		break;
+}
+
+
 
 ?>
