@@ -27,8 +27,8 @@
 		<table>
 			<TR>
 				<th>Page Views</Th>
-				<th>New Vs. Repeat Users for <?=$period?></th>
-				<TH>Visitors By Source for <?=$period?></TH>
+				<th>New Vs. Repeat Users for <?=$period_label;?></th>
+				<TH>Visitors By Source for <?=$period_label;?></TH>
 			</TR>
 			<TR>
 				<TD><img src="<?=$this->config['action_url'];?>?owa_action=graph&graph=page_views&type=bar&period=<? 
@@ -99,11 +99,11 @@
 			
 				<? if ($period == 'this_year'): ?>
 				
-				<TD><?=$row['month'];?></TD>
+				<TD><?=$this->get_monh_label($row['month']);?></TD>
 				
 				<? else: ?>
 				
-				<TD><?=$row['month'];?></TD>
+				<TD><?=$this->get_month_label($row['month']);?></TD>
 				<TD><?=$row['day'];?></TD>
 				<TD><?=$row['year'];?></TD>
 				

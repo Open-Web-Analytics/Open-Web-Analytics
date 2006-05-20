@@ -147,7 +147,7 @@ class owa_request {
 		//determine time of request
 		$this->properties['timestamp'] = time();
 		$this->properties['year'] = date("Y", $this->properties['timestamp']);
-		$this->properties['month'] = date("M", $this->properties['timestamp']);
+		$this->properties['month'] = date("n", $this->properties['timestamp']);
 		$this->properties['day'] = date("d", $this->properties['timestamp']);
 		$this->properties['dayofweek'] = date("D", $this->properties['timestamp']);
 		$this->properties['dayofyear'] = date("z", $this->properties['timestamp']);

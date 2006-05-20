@@ -137,7 +137,7 @@ $from_feed = $report->metrics->get(array(
 // Assign Data to templates
 
 $body->set('headline', 'Analytics Dashboard');
-$body->set('period_label', $report->period_label);
+$body->set('period_label', $report->get_period_label($report->period));
 $body->set('top_visitors', $top_visitors);
 $body->set('from_feed', $from_feed);
 $body->set('config', $report->config);

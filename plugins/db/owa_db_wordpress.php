@@ -83,7 +83,7 @@ class owa_db_wordpress extends owa_db {
 			$sql));
 		endif;			
 				
-		return;
+		return $this->new_result;
 	}
 	
 	/**

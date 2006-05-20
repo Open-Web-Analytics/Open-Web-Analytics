@@ -104,7 +104,6 @@ class owa_db {
 	function owa_db() {
 	
 		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
 		$this->e = &owa_error::get_instance();
 		
 		return;
