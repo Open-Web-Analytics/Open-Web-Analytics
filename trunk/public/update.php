@@ -10,7 +10,7 @@ print "Schema version is ".$version['value']."\n";
 
 if ($version['value'] == '1.0'):
 	print "starting updated to 1.0.1";
-	$u->to_1_rc2();
+	$u->to_1_0_1();
 endif;
 
 print "upgrade complete";
