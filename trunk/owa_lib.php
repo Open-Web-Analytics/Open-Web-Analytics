@@ -85,7 +85,7 @@ class owa_lib {
 		return array(
 			
 				'year' 				=> date("Y", $timestamp),
-				'month' 			=> date("M", $timestamp),
+				'month' 			=> date("n", $timestamp),
 				'day' 				=> date("d", $timestamp),
 				'dayofweek' 		=> date("D", $timestamp),
 				'dayofyear' 		=> date("z", $timestamp),

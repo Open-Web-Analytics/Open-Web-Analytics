@@ -135,6 +135,7 @@ class owa_report {
 		return $label;
 	}
 	
+	
 }
 
 ?>
