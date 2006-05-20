@@ -18,18 +18,6 @@ require_once 'owa_wp.php';
  * You should not need to change these.
  */
 
-// URL special requests can be intercepted on
-//define ('OWA_BASE_URL', get_bloginfo('url').'/index.php');
-
-// URL used for graph generation requests
-//define ('OWA_GRAPH_URL', OWA_BASE_URL);
-
-// URL stem used for inter report navigation
-//define ('OWA_REPORTING_URL', $_SERVER['PHP_SELF'].'?page=owa/reports');
-
-// Path to images used in reports
-//define ('OWA_IMAGES_URL', '../wp-content/plugins/owa/public/i');
-
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
 
@@ -48,7 +36,6 @@ if ($owa_wp_version[0] == '1'):
 	endif;
 endif;
 
-
 // Caller Configuration overides
 $owa_config['report_wrapper'] = 'wordpress.tpl';
 $owa_config['db_name'] = DB_NAME;     // The name of the database
@@ -60,11 +47,9 @@ $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/reports';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
 
-
 // Create new instance of caller class object
 $owa_wp = new owa_wp($owa_config);
 // WORDPRESS Filter and action hook assignment
-
 
 // Installation logic
 if ($owa_wp_version[0] == '1'):
@@ -75,7 +60,6 @@ elseif ($owa_wp_version[0] == '2'):
 	add_action('activate_owa/wp_plugin.php', 'owa_install_2');
 
 endif;
-
 
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', array(&$owa_wp, 'add_tag'));
@@ -110,9 +94,6 @@ add_action('admin_menu', 'owa_options');
 function owa_main() {
 	
 	// WORDPRESS SPECIFIC DATA //
-	
-	//Load config from wp_database
-	//owa_fetch_config();
 	
 	// Get the type of page
 	$app_params['page_type'] = owa_get_page_type();
