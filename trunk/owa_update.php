@@ -103,7 +103,7 @@ class owa_update {
 		
 	}
 	
-	function to_1_rc2() {
+	function to_1_0_1() {
 	
 		// Rename month col to month_label
 		
