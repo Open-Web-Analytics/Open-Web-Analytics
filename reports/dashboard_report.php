@@ -32,12 +32,13 @@ endif;
 // Setup the templates
 
 $body = & new Template; 
-
 $body->set_template('index.tpl');// This is the inner template
 
 $visit = & new Template; 
-
 $visit->set_template('visit.tpl');// This is the inner template
+
+$top_pages = & new Template;
+$top_pages->set_template('top_pages.tpl');
 
 // Fetch metrics
 
@@ -100,7 +101,7 @@ $latest_visits = $report->metrics->get(array(
 
 ));
 
-$top_documents = $report->metrics->get(array(
+$top_pages_data = $report->metrics->get(array(
 	'api_call' 		=> 'top_documents',
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
@@ -146,7 +147,8 @@ $body->set('period', $report->period);
 $body->set('dash_counts', $dash_counts[0]);
 $visit->set('visits', $latest_visits);
 $body->set('visit_data', $visit);
-$body->set('top_documents', $top_documents);
+$top_pages->set('top_pages', $top_pages_data);
+$body->set('top_pages_table', $top_pages);
 $body->set('top_referers', $top_referers);
 
 $report->tpl->set('content', $body);

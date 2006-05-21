@@ -1,4 +1,8 @@
+<style>
 
+#recent_visitors {width: 600px;}
+#top_pages {width: 450px;}
+</style>
 
 
         <h2><?=$headline;?></h2>
@@ -99,7 +103,7 @@
 			
 				<? if ($period == 'this_year'): ?>
 				
-				<TD><?=$this->get_monh_label($row['month']);?></TD>
+				<TD><?=$this->get_month_label($row['month']);?></TD>
 				
 				<? else: ?>
 				
@@ -119,38 +123,21 @@
 		
 		</fieldset>
 		
-		<fieldset id="graphs" class="options">
+		<fieldset id="recent_visitors" class="options">
 			<legend>Recent Visitors</legend>
-		
-			<?=$visit_data?>
+			<?=$visit_data;?>
 		</fieldset>
 		
-		<fieldset class="options">
+		<fieldset id="top_pages" class="options">
 			<legend>Top Pages</legend>
 		
-			<table width="100%">
-				<tr>
-					<th scope="col">PageTitle</th>
-					<th scope="col">Page Type</th>
-					<th scope="col">Views</th>
-				</tr>
-				
-				<?php foreach($top_documents as $page): ?>
-				
-				<TR>
-					<TD><a href="<?=$page['uri'];?>"><?=$page['page_title'];?></a></TD>
-					<TD><?=$page['page_type'];?></TD>
-					<TD><?=$page['count']?></TD>
-				</TR>
-				
-	   			<?php endforeach; ?>
-			</table>
+			<?=$top_pages_table;?>
 		</fieldset>
 		
 		
 		<fieldset class="options">
 			<legend>Top Referers</legend>
-		
+			<? if (!empty($top_referers)):?>
 			<table width="100%">
 				<tr>
 					<th scope="col">Source</th>
@@ -158,7 +145,7 @@
 					<th scope="col">Query Terms</th>
 					<th scope="col">Is Search Engine</th>
 				</tr>
-				<? if (!empty($top_referers)):?>
+				
 				<?php foreach($top_referers as $referer): ?>
 				
 				<TR>
@@ -169,10 +156,11 @@
 				</TR>
 				
 			   <?php endforeach; ?>
-			   <?else:?>
-			   There are no referering sources for this time period.
-			   <?endif;?>
-			</table>	
+				</table>
+			<?else:?>
+				There are no referering sources for this time period.
+			<?endif;?>
+				
 		</fieldset>
 		
 		<fieldset class="options">
