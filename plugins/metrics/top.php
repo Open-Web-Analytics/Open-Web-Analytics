@@ -86,7 +86,7 @@ class owa_metric_top extends owa_metric {
 			%s as requests, %s as documents 
 		WHERE
 			site_id = '%s' 
-			AND %s
+			%s
 			%s AND documents.page_type != 'feed'
 			AND requests.document_id = documents.id
 		GROUP BY
@@ -129,7 +129,7 @@ class owa_metric_top extends owa_metric {
 			%s as sessions 
 		WHERE
 			site_id = '%s' 
-			AND %s
+			%s
 			AND referers.id != 0
 			AND referers.id = sessions.referer_id
 		GROUP BY
@@ -169,7 +169,7 @@ class owa_metric_top extends owa_metric {
 			%s
 		WHERE
 			site_id = '%s' 
-			AND %s
+			%s
 		GROUP BY
 			vis_id
 		ORDER BY

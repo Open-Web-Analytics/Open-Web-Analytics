@@ -37,7 +37,7 @@ class owa_graph_page_views extends owa_graph {
 	function owa_graph_page_views() {
 	
 		$this->owa_graph();
-		$this->api_calls = array('page_views', 'swf_pv');
+		$this->api_calls = array('page_views', 'swf_pv', 'pv_visits');
 	
 		return;
 	}
@@ -57,6 +57,8 @@ class owa_graph_page_views extends owa_graph {
 		
 			case "page_views":
 				return $this->graph_page_views();
+			case "pv_visits":
+				return $this->pv_visits();
 
 		}
 		
@@ -114,18 +116,18 @@ class owa_graph_page_views extends owa_graph {
 						
 						'is_browser' => 1,
 						'is_robot' 	=> 0),
-					'group_by'			=> 'day'
+					'group_by'			=> 'day',
+					'order'				=> 'ASC'
 					));
 					
-				$date = $this->make_date_label($result['day'], $result['month'][0]);
+				$date = $this->make_date_label($result['day'], $result['month']);
 				
 				$this->data = array(
 		
 					'datay'		=> $result['page_views'],
-					//'datax'		=> $result['day']	);
 					'datax'		=> $date);
 			
-				$this->params['xaxis_title'] = "Day";
+				$this->params['xaxis_title'] = "";
 				
 				break;
 		}
@@ -137,6 +139,41 @@ class owa_graph_page_views extends owa_graph {
 		
 		$this->params['width'] = 700;
 		$this->params['height'] = 200;
+		
+		$this->graph($this->params['type']);
+		
+		return;
+	}
+	
+	function pv_visits() {
+		
+		$result = $this->metrics->get(array(
+		
+					'api_call' 		=> 'dash_core',
+					'period'			=> $this->params['period'],
+					'result_format'		=> 'inverted_array',
+					'constraints'		=> array(
+						
+						'is_browser' => 1,
+						'is_robot' 	=> 0),
+					'group_by'			=> 'day',
+					'order'				=> 'ASC'
+					));
+					
+		$date = $this->make_date_label($result['day'], $result['month']);
+				
+		$this->data = array(
+							'y2'	=> $result['page_views'],
+							'y1'	=> $result['sessions'],
+							'x'		=> $date
+						);
+		
+	
+		$this->params['width'] = 900;
+		$this->params['height'] = 200;
+		$this->params['graph_title'] = "Page Views & Visits for " . $this->get_period_label($this->params['period']);
+		$this->params['y2_title'] = "PageViews";
+		$this->params['y1_title'] = "Visits";
 		
 		$this->graph($this->params['type']);
 		
