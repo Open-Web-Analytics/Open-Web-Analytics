@@ -86,11 +86,17 @@ class owa_graph_page_views extends owa_graph {
 					));
 					
 				
+				$date = array();
+				
+				foreach ($result['month'] as $key => $value) {
+					
+					$date[$key] = $this->get_month_label($value);
+				}
 				
 				$this->data = array(
 		
 					'datay'		=> $result['page_views'],
-					'datax'		=> $result['month']	);
+					'datax'		=> $date	);
 					
 					
 				$this->params['xaxis_title'] = "Month";
@@ -111,11 +117,13 @@ class owa_graph_page_views extends owa_graph {
 					'group_by'			=> 'day'
 					));
 					
+				$date = $this->make_date_label($result['day'], $result['month'][0]);
 				
 				$this->data = array(
 		
 					'datay'		=> $result['page_views'],
-					'datax'		=> $result['day']	);
+					//'datax'		=> $result['day']	);
+					'datax'		=> $date);
 			
 				$this->params['xaxis_title'] = "Day";
 				
@@ -127,10 +135,10 @@ class owa_graph_page_views extends owa_graph {
 		
 		$this->params['yaxis_title'] = "Page views";
 		
-		$this->params['width'] = 400;
+		$this->params['width'] = 700;
 		$this->params['height'] = 200;
 		
-		$this->bar_graph();
+		$this->graph($this->params['type']);
 		
 		return;
 	}

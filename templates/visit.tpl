@@ -51,7 +51,7 @@
 										</TR>
 										<TR>
 											<TD>
-												<span class="h_label">In:</span> <a href="<?=$visit['first_page_uri'];?>"><?=$visit['first_page_title'];?> (<?=$visit['first_page_type'];?>)</a> 
+												<span class="h_label">In:</span> <a href="<?=$visit['first_page_uri'];?>"><?=$visit['first_page_title'];?></a> (<?=$visit['first_page_type'];?>) 
 												<span class="info_text"><?=$visit['first_page_uri'];?></span>
 											</TD>
 										</TR>

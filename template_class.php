@@ -17,6 +17,7 @@
 //
 
 require_once 'owa_settings_class.php';
+require_once 'owa_lib.php';
 
 /**
  * Template
@@ -107,7 +108,7 @@ class Template {
 			$file = $this->template_dir.$file;
 		endif;
 
-        extract($this->vars);          // Extract the vars to local namespace
+        @extract($this->vars);          // Extract the vars to local namespace
         ob_start();                    // Start output buffering
         include($file);                // Include the file
         $contents = ob_get_contents(); // Get the contents of the buffer
@@ -140,50 +141,7 @@ class Template {
 	
 	function get_month_label($month) {
 		
-		switch ($month) {
-			
-			case '1':
-				$label = 'January';
-				break;
-			case '2':
-				$label = 'February';
-				break;
-			case '3':
-				$label = 'March';
-				break;
-			case '4':
-				$label = 'Apr.';
-				break;
-			case '5':
-				$label = 'May';
-				break;
-			case '6':
-				$label = 'June';
-				break;
-			case '7':
-				$label = 'July';
-				break;
-			case '8':
-				$label = 'August';
-				break;
-			case '9':
-				$label = 'September';
-				break;
-			case '10':
-				$label = 'October';
-				break;
-			case '11':
-				$label = 'November';
-				break;
-			case '12':
-				$label = 'December';
-				break;
-			default:
-				$label = 'Unknown Month';
-				break;
-		}
-		
-		return $label;
+		return owa_lib::get_month_label($month);
 	}
 	
 }

@@ -40,12 +40,28 @@ $visit->set_template('visit.tpl');// This is the inner template
 $top_pages = & new Template;
 $top_pages->set_template('top_pages.tpl');
 
+$top_referers = & new Template;
+$top_referers->set_template('top_referers.tpl');
+
+$top_visitors = & new Template;
+$top_visitors->set_template('top_visitors.tpl');
+
+$summary_stats = & new Template;
+$summary_stats->set_template('summary_stats.tpl');
+
+$periods_menu = & new Template;
+$periods_menu->set_template('periods_menu.tpl');
+
+$core_metrics = & new Template;
+$core_metrics->set_template('core_metrics.tpl');
+
+
 // Fetch metrics
 
 switch ($report->period) {
 
 	case "this_year":
-		$dash_result = $report->metrics->get(array(
+		$core_metrics_data = $report->metrics->get(array(
 			'api_call' 		=> 'dash_core',
 			'period'			=> $report->period,
 			'result_format'		=> 'assoc_array',
@@ -60,7 +76,7 @@ switch ($report->period) {
 	break;
 	
 	default:
-		$dash_result = $report->metrics->get(array(
+		$core_metrics_data = $report->metrics->get(array(
 		'api_call' 		=> 'dash_core',
 		'period'			=> $report->period,
 		'result_format'		=> 'assoc_array',
@@ -74,7 +90,7 @@ switch ($report->period) {
 	break;
 }
 
-$dash_counts = $report->metrics->get(array(
+$summary_stats_data = $report->metrics->get(array(
 	'api_call' 		=> 'dash_counts',
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
@@ -114,14 +130,14 @@ $top_pages_data = $report->metrics->get(array(
 	'limit'			=> '10'
 ));
 
-$top_referers = $report->metrics->get(array(
+$top_referers_data = $report->metrics->get(array(
 	'api_call' 		=> 'top_referers',
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'limit'			=> '10'
 ));
 
-$top_visitors = $report->metrics->get(array(
+$top_visitors_data = $report->metrics->get(array(
 	'api_call' 			=> 'top_visitors',
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
@@ -139,17 +155,24 @@ $from_feed = $report->metrics->get(array(
 
 $body->set('headline', 'Analytics Dashboard');
 $body->set('period_label', $report->get_period_label($report->period));
-$body->set('top_visitors', $top_visitors);
-$body->set('from_feed', $from_feed);
+$periods_menu->set('period', $report->period);
+$body->set('periods_menu', $periods_menu);
+$top_visitors->set('data', $top_visitors_data);
+$body->set('top_visitors_table', $top_visitors);
 $body->set('config', $report->config);
-$body->set('rows', $dash_result);
+$core_metrics->set('data', $core_metrics_data);
+$core_metrics->set('period', $report->period);
+$body->set('core_metrics_table', $core_metrics);
 $body->set('period', $report->period);
-$body->set('dash_counts', $dash_counts[0]);
+$summary_stats->set('data', $summary_stats_data);
+$summary_stats->set('from_feed', $from_feed);
+$body->set('summary_stats_table', $summary_stats);
 $visit->set('visits', $latest_visits);
 $body->set('visit_data', $visit);
 $top_pages->set('top_pages', $top_pages_data);
 $body->set('top_pages_table', $top_pages);
-$body->set('top_referers', $top_referers);
+$top_referers->set('data', $top_referers_data);
+$body->set('top_referers_table', $top_referers);
 
 $report->tpl->set('content', $body);
 

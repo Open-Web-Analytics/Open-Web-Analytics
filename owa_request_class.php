@@ -308,7 +308,7 @@ class owa_request {
 			//no session yet. make one.
 				$this->create_new_session($this->properties['visitor_id']);
 			endif;
-			
+						
 		return;
 	}
 	
@@ -373,7 +373,7 @@ class owa_request {
 	 */
 	function time_sinse_last_request() {
 	
-        return ($this->properties['sec'] - $this->properties['last_req']);
+        return ($this->properties['timestamp'] - $this->properties['last_req']);
 	
 	}
 	
