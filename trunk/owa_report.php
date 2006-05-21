@@ -20,6 +20,7 @@ require_once 'owa_env.php';
 require_once 'template_class.php';
 require_once 'owa_settings_class.php';
 require_once 'owa_api.php';
+require_once 'owa_lib.php';
 
 /**
  * Web Analytics Report  
@@ -108,31 +109,7 @@ class owa_report {
 	 */
 	function get_period_label($period) {
 	
-		switch ($period) {
-		
-			case "this_month";
-				$label = "This Month";
-				break;
-			case "this_week";
-				$label = "This Week";
-				break;
-			case "this_year";
-				$label = "This Year";
-				break;
-			case "today";
-				$label = "Today";
-				break;
-			case "last_seven_days";
-				$label = "The Last Seven Days";
-				break;
-			case "yesterday";
-				$label = "Yesterday";
-				break;
-			default:
-				$label = "Unknown Period";
-		}
-		
-		return $label;
+		return owa_lib::get_period_label($period);
 	}
 	
 	

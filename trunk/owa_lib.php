@@ -172,6 +172,38 @@ class owa_lib {
 		
 		return $label;
 	}
+	
+	function get_period_label($period) {
+	
+		switch ($period) {
+		
+			case "today";
+				$label = "Today";
+				break;
+			case "yesterday";
+				$label = "Yesterday";
+				break;
+			case "this_month";
+				$label = "This Month";
+				break;
+			case "this_week";
+				$label = "This Week";
+				break;
+			case "this_year";
+				$label = "This Year";
+				break;
+			case "last_seven_days";
+				$label = "The Last Seven Days";
+				break;
+			case "last_thirty_days";
+				$label = "The Last Thirty Days";
+				break;
+			default:
+				$label = 'Unknown Label';
+		}
+		
+		return $label;
+	}
 }
 
 ?>

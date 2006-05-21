@@ -19,29 +19,18 @@ td {padding: 2px 6px 2px 6px;}
 		
 		
 		<fieldset id="trends" class="options">
-		<legend>Trends</legend>
-		
-		<table>
-			<TR>
-				<TH>Page Views</TH>
-			</TR>
-			<TR>
-				<TD><img src="<?=$this->config['action_url'];?>?owa_action=graph&graph=page_views&type=bar&period=<? 
-		if ($period == 'today' || 'yesterday'): 
-		
-			echo $period; 
-		   
-		else: 
-		    
-			echo $period; 
-				
-		endif; 
-		?>" /></TD>
+			<legend>Trends</legend>
 			
-			</TR>
-		
-		</table>
-		
+			<table>
+				<!--<TR>
+					<TH>Page Views & Visits</TH>
+				</TR>-->
+				<TR>
+					<TD>
+						<img src="<?=$this->config['action_url'];?>?owa_action=graph&graph=pv_visits&type=bar_line&period=last_thirty_days" />				
+					</TD>
+				</TR>
+			</table>
 		</fieldset>
 		
 		<div id="summary_stats">

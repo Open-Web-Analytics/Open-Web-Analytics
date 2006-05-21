@@ -84,20 +84,21 @@ class owa_metric_dashboard extends owa_metric {
 			%s as sessions
 		where 
 			site_id = %s
-			AND %s 
+			%s 
 			%s
 		group by 
 			sessions.%s
 		ORDER BY
 			sessions.year, 
 			sessions.month, 
-			sessions.day DESC",
+			sessions.day %6\$s",
 			
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['site_id'],
 			$this->time_period($params['period']),
 			$this->add_constraints($params['constraints']),
-			$params['group_by']
+			$params['group_by'],
+			$params['order']
 		);
 	
 		return $this->db->get_results($sql);		
@@ -121,7 +122,7 @@ class owa_metric_dashboard extends owa_metric {
 			%s as sessions
 		where 
 			site_id = %s
-			AND %s 
+			%s 
 			%s",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['site_id'],
@@ -150,20 +151,21 @@ class owa_metric_dashboard extends owa_metric {
 				%s as sessions
 			where
 				site_id = %s
-				AND %s 
+				%s 
 				%s
 			group by 
 				sessions.%s
 			ORDER BY
-				sessions.year, 
-				sessions.month DESC, 
-				sessions.day",
+				sessions.year %6\$s, 
+				sessions.month %6\$s, 
+				sessions.day %6\$s",
 				
 				$this->config['ns'].$this->config['sessions_table'],	
 				$this->config['site_id'],
 				$this->time_period($params['period']),
 				$this->add_constraints($params['constraints']),
-				$params['group_by']
+				$params['group_by'],
+				$params['order']
 			);
 						
 		
@@ -186,7 +188,7 @@ class owa_metric_dashboard extends owa_metric {
 			%s as sessions
 		where
 			site_id = %s
-			AND %s 
+			%s 
 			%s
 		",
 			$this->config['ns'].$this->config['sessions_table'],

@@ -85,7 +85,7 @@ class owa_metric_source extends owa_metric {
 			%s as sessions
 		WHERE
 			site_id = %s 
-			AND	%s
+			%s
 			AND sessions.source = '%s'",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['site_id'],
@@ -112,7 +112,7 @@ class owa_metric_source extends owa_metric {
 			%s as referers
 		WHERE
 			site_id = %s 
-			AND	%s
+			%s
 			AND sessions.referer_id = referers.id
 			AND referers.is_searchengine = 1",
 			$this->config['ns'].$this->config['sessions_table'],
@@ -139,7 +139,7 @@ class owa_metric_source extends owa_metric {
 			%s as referers
 		WHERE
 			site_id = %s 
-			AND	%s
+			%s
 			AND sessions.referer_id = referers.id
 			AND referers.is_searchengine = 0",
 			$this->config['ns'].$this->config['sessions_table'],

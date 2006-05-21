@@ -110,7 +110,7 @@ class owa_metric_visitor extends owa_metric {
 			%s as documents
 		WHERE
 			site_id = %s
-			AND %s 
+			%s 
 			%s
 			AND sessions.first_page_id = documents.id
 			AND sessions.referer_id = referers.id
@@ -146,7 +146,7 @@ class owa_metric_visitor extends owa_metric {
 			%s 
 		WHERE
 			site_id = %s
-			AND %s 
+			%s 
 			%s",
 			
 			$this->config['ns'].$this->config['sessions_table'],

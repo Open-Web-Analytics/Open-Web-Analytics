@@ -144,6 +144,9 @@ class owa_graph {
 			case "pie":
 				$this->pie_graph();
 				break;
+			case "bar_line":
+				$this->bar_line_graph();
+				break;
 			default:
 				$this->bar_graph();
 			
@@ -220,6 +223,7 @@ class owa_graph {
 		// Setup the titles
 		$graph->title->Set($this->params['graph_title']);
 		$graph->xaxis->SetTickLabels($this->data['datax']);
+		$graph->xaxis->SetLabelAngle(90); 
 		$graph->xaxis->title->Set($this->params['xaxis_title']);
 		$graph->yaxis->title->Set($this->params['yaxis_title']);
 		
@@ -276,6 +280,63 @@ class owa_graph {
 		return;
 	}
 	
+	function bar_line_graph() {
+	
+		include_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_line.php');
+		include_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_bar.php');
+		
+		$data_y1 = $this->data['y1'];
+		$data_y2 = $this->data['y2'];
+		
+		$datax = $this->data['x'];
+		
+		// Create the graph. 
+		$graph = new Graph($this->params['width'],$this->params['height']);    
+		//$graph->img->SetAntiAliasing();
+		$graph->SetColor('white'); 
+		$graph->SetMarginColor('white'); 
+		$graph->SetFrame(true,'silver',1); 
+		$graph->SetScale("textlin");
+		$graph->SetMargin(40,40,20,40);
+		//$graph->SetShadow();
+		$graph->xaxis->SetTickLabels($datax);
+		$graph->xaxis->SetLabelAngle(90); 
+		
+		// Create the linear error plot
+		$l1plot = new LinePlot($data_y1);
+		$l1plot->SetColor("lightblue");
+		$l1plot->SetWeight(1);
+		$l1plot->SetFillColor("lightblue@0.2");
+		$l1plot->SetLegend($this->params['y1_title']);	
+		//Center the line plot in the center of the bars
+		$l1plot->SetBarCenter();
+	
+		// Create the bar plot
+		$bplot = new BarPlot($data_y2);
+		$bplot->SetFillColor("orange");
+		$bplot->SetWidth(1.0);
+		$bplot->SetLegend($this->params['y2_title']);
+		
+		// Add the plots to the graph
+		$graph->Add($bplot);
+		$graph->Add($l1plot);
+		
+		
+		$graph->title->Set($this->params['graph_title']);
+		$graph->xaxis->title->Set($this->params['xaxis_title']);
+		$graph->yaxis->title->Set($this->params['yaxis_title']);
+		
+		$graph->title->SetFont(FF_FONT1,FS_BOLD);
+		$graph->yaxis->title->SetFont(FF_FONT1,FS_BOLD);
+		$graph->xaxis->title->SetFont(FF_FONT1,FS_BOLD);
+		
+		
+		// Display the graph
+		$graph->Stroke();
+		
+		return;
+	}
+	
 	/**
 	 * Get Display Label for Reporting Period
 	 *
@@ -284,30 +345,8 @@ class owa_graph {
 	 * @access public
 	 */
 	function get_period_label($period) {
-	
-		switch ($period) {
 		
-			case "today";
-				$label = "Today";
-				break;
-			case "yesterday";
-				$label = "Yesterday";
-				break;
-			case "this_month";
-				$label = "This Month";
-				break;
-			case "this_week";
-				$label = "This Week";
-				break;
-			case "this_year";
-				$label = "This Year";
-				break;
-			case "last_seven_days";
-				$label = "The Last Seven Days";
-				break;
-		}
-		
-		return $label;
+		return owa_lib::get_period_label($period);
 	}
 	
 	/**
@@ -323,7 +362,7 @@ class owa_graph {
 		$date = array();
 		foreach ($variable as $key => $value) {
 					
-					$date[$key] = $label.$delim.$value;
+					$date[$key] = $label[$key].$delim.$value;
 					
 				}
 		
