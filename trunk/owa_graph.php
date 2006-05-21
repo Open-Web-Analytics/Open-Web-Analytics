@@ -18,6 +18,7 @@
 
 require_once (OWA_BASE_DIR . '/owa_api.php');
 require_once (OWA_BASE_DIR . '/owa_error.php');
+require_once (OWA_BASE_DIR . '/owa_lib.php');
 require_once (OWA_INCLUDE_DIR.'jpgraph/jpgraph.php');
 
 /**
@@ -129,6 +130,28 @@ class owa_graph {
 		
 		return;
 	}
+	
+	function graph($type) {
+		
+		switch ($type) {
+			
+			case "bar":
+				$this->bar_graph();
+				break;
+			case "line":
+				$this->line_graph();
+				break;
+			case "pie":
+				$this->pie_graph();
+				break;
+			default:
+				$this->bar_graph();
+			
+		}
+		
+		return;
+		
+	}
 
 	/**
 	 * Line Graph Wrapper
@@ -170,8 +193,6 @@ class owa_graph {
 	 */
 	function bar_graph() {
 	
-		
-		
 		require_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_bar.php');
 	
 		$datay = $this->data['datay'];
@@ -290,15 +311,28 @@ class owa_graph {
 	}
 	
 	/**
-	 * makelabel of some kind or another
+	 * makes linear date scale for x axis
 	 *
-	 * @param unknown_type $format
-	 * @param unknown_type $data
-	 * @todo decide what to do here.
+	 * @param array $variable
+	 * @param string $label
+	 * @param string $delim
+	 * @return array
 	 */
-	function make_date_label($format, $data) {
+	function make_date_label($variable, $label, $delim = '/') {
 	
-		return;
+		$date = array();
+		foreach ($variable as $key => $value) {
+					
+					$date[$key] = $label.$delim.$value;
+					
+				}
+		
+		return $date;
+	}
+	
+	function get_month_label($month) {
+		
+		return owa_lib::get_month_label($month);
 	}
 
 }

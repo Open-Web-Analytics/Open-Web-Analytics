@@ -174,7 +174,8 @@ class owa_caller {
 		
 		$params = array(
 				'api_call' 		=> $_GET[$this->config['graph_param']],
-				'period'			=> $_GET[$this->config['period_param']]
+				'period'			=> $_GET[$this->config['period_param']],
+				'type'			=> $_GET['type']
 			
 			);
 			

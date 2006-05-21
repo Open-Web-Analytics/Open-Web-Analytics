@@ -129,7 +129,7 @@ class owa_metric_dashboard extends owa_metric {
 			$this->add_constraints($params['constraints'])
 		);
 	
-		return $this->db->get_results($sql);
+		return $this->db->get_row($sql);
 	}
 	
 	/**

@@ -124,6 +124,54 @@ class owa_lib {
 		
 		return;
 	}
+	
+	function get_month_label($month) {
+		
+		switch ($month) {
+			
+			case '1':
+				$label = 'January';
+				break;
+			case '2':
+				$label = 'February';
+				break;
+			case '3':
+				$label = 'March';
+				break;
+			case '4':
+				$label = 'April';
+				break;
+			case '5':
+				$label = 'May';
+				break;
+			case '6':
+				$label = 'June';
+				break;
+			case '7':
+				$label = 'July';
+				break;
+			case '8':
+				$label = 'August';
+				break;
+			case '9':
+				$label = 'September';
+				break;
+			case '10':
+				$label = 'October';
+				break;
+			case '11':
+				$label = 'November';
+				break;
+			case '12':
+				$label = 'December';
+				break;
+			default:
+				$label = 'Unknown Month';
+				break;
+		}
+		
+		return $label;
+	}
 }
 
 ?>
