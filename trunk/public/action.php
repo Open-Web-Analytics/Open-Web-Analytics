@@ -40,10 +40,10 @@ switch ($_GET['owa_action']) {
 	
 	case $l->config['first_hit_param']:
 		$l->first_request_handler();		
-		break;
+		exit;
 	case $l->config['graph_param']:
 		$l->graph_request_handler();
-		break;
+		exit;
 }
 
 
