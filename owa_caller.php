@@ -149,7 +149,7 @@ class owa_caller {
 		
 		$this->e->debug('Received special OWA request. OWA action = first_hit');
 		
-		if (isset($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
 			$owa = new owa;
 			$owa->process_first_request();
 		endif;
