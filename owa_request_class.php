@@ -130,7 +130,8 @@ class owa_request {
 		// Record HTTP request variables
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
 		$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
-		$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
+		//$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
+		$this->properties['inbound_uri'] = $this->get_current_url();
 		$this->properties['uri'] = $this->properties['inbound_uri'];
 		$this->properties['ip_address'] = $this->get_ip();
 		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
@@ -633,6 +634,26 @@ class owa_request {
 	
 	}
 	
+	function get_current_url() {
+		
+		$url = 'http';	
+		
+		if($_SERVER['HTTPS']=='on'):
+			$url.= 's';
+		endif;
+		
+		$url .= '://'.$_SERVER['SERVER_NAME'];
+		
+		if($_SERVER['SERVER_PORT'] != 80):
+			$url .= ':'.$_SERVER['SERVER_PORT'];
+		endif;
+		
+		$url .= $_SERVER['REQUEST_URI'];
+		
+		return $url;
+	}
+	
+	
 	/**
 	 * Makes the id for the uri of the request
 	 *
@@ -670,7 +691,7 @@ class owa_request {
 		
 	    endif;
      	
-        return $this->set_string_guid($this->properties['site'].$this->properties['uri']);
+        return $this->set_string_guid($this->properties['uri']);
 		
 	}
 	
