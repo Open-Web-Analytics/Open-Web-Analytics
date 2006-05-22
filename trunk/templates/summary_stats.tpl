@@ -1,3 +1,4 @@
+<? if (!empty($data)):?>
 <table>
 	<TR>
 		<TH scope="row">Page Views:</TH>	
@@ -20,4 +21,7 @@
 		<TD><?=$from_feed['source_count'];?></TD>
 	</TR>
 </table>	
+<?else:?>
+	There are no statistics for this time period.
+<?endif;?>
 

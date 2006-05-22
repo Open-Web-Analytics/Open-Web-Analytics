@@ -1,3 +1,4 @@
+<? if (!empty($top_pages)):?>
 <table width="100%">
 	<tr>
 		<th scope="col">PageTitle</th>
@@ -14,3 +15,6 @@
 	<?php endforeach; ?>
 
 	</table>
+<?else:?>
+	There are no Page Views for this time period.
+<?endif;?>

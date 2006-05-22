@@ -1,3 +1,4 @@
+<? if (!empty($data)):?>
 <table>
 	<tr>
 		<th scope="col">Visitor</th>
@@ -13,3 +14,6 @@
 				
     <?php endforeach; ?>
 </table>	
+<?else:?>
+	There are no visitors for this time period.
+<?endif;?>
