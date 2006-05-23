@@ -172,7 +172,7 @@ class owa_metric {
 			case "last_seven_days":	
 				$bound = $this->time_now['dayofyear'] - 7;
 				$where = sprintf(
-							"AND dayofyear >= '%s' and year = '%s'",
+							"AND dayofyear > '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
