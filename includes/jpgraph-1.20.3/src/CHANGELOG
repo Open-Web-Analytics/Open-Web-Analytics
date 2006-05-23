@@ -1,0 +1,1224 @@
+r554: 2006-02-18 07:45  ljp
+
+	* Bumped version string to 1.20.3
+	Modified files: jpgraph.php
+
+r552: 2006-02-18 07:37  ljp
+
+	* Moved table examples to its own directory
+	Modified files: Examples/combgraphex1.php, Examples/tableex00.php,
+	  Examples/tableex01.php, Examples/tableex02.php,
+	  Examples/tableex03.php, table_examples,
+	  table_examples/tablebarex1.php, table_examples/tableex00.php,
+	  table_examples/tableex01.php, table_examples/tableex02.php,
+	  table_examples/tableex03.php, table_examples/tableex04.php,
+	  table_examples/tableex05.php
+
+r549: 2006-02-18 07:31  ljp
+
+	* Added some more test cases
+	Modified files: tests/test_0bar.php, tests/test_accbartable.php,
+	  tests/test_accbartable_csim.php, tests/test_barlinecenter.php,
+	  tests/test_dateinty2.php, tests/test_flag.php,
+	  tests/test_linefillnull.php, tests/test_linelargeval.php,
+	  tests/test_linesimple.php, tests/test_linetable.php,
+	  tests/test_php5date.php, tests/test_radaraxistitle.php,
+	  tests/test_table1.php, tests/test_table2.php,
+	  tests/test_table3.php, tests/test_table_flagex1.php,
+	  tests/test_table_howto1.php, tests/test_table_howto2.php,
+	  tests/test_table_howto3.php, tests/test_table_howto4.php,
+	  tests/test_table_howto5.php, tests/test_table_howto6.php,
+	  tests/test_table_howto7.php, tests/test_table_howto8.php,
+	  tests/test_table_howto9.php, tests/test_table_iconex1.php,
+	  tests/test_table_mex0.php, tests/test_table_mex00.php,
+	  tests/test_table_mex1.php, tests/test_table_mex2.php,
+	  tests/test_table_mex3.php, tests/test_y2grouobar.php,
+	  tests/test_y2groupbar.php, tests/test_y2synch.php,
+	  tests/test_y2synch2.php
+
+r543: 2006-02-14 20:10  ljp
+
+	* FS#308 - Make JpGraph classes extendable by using is_a() instead of get_class()
+	Modified files: jpgraph_gantt.php
+
+r542: 2006-02-14 20:10  ljp
+
+	* FS#308 - Make JpGraph classes extendable by using is_a() instead of get_class()
+	Modified files: jpgraph.php, jpgraph_bar.php, jpgraph_pie.php,
+	  jpgraph_windrose.php
+
+r540: 2006-02-14 17:27  ljp
+
+	* Some minor code layout changes
+	Modified files: jpgraph_table.php
+
+r538: 2006-02-14 06:51  ljp
+
+	* Added error check for number of data points in each in AccBar
+	Modified files: jpgraph_bar.php, lang/en.inc.php
+
+r536: 2006-02-13 06:42  ljp
+
+	* Removed HTML formatting in error message
+	Modified files: lang/en.inc.php
+
+r534: 2006-02-12 08:56  ljp
+
+	* Added new error message for GTextTable constrains
+	Modified files: lang/en.inc.php
+
+r532: 2006-02-12 08:27  ljp
+
+	* Added SetScalePos(), SetAnchorPos() and CSIM capabilities to tables
+	Modified files: jpgraph.php, jpgraph_table.php
+
+r531: 2006-02-11 10:32  ljp
+
+	* Fixed buffer overflow for long lines, prper mysql escaping of strings
+	Modified files: utils/jpdocgen/de_utils.php,
+	  utils/jpdocgen/jpgendb.php, utils/jpdocgen/jplintphp.php
+
+r529: 2006-02-11 08:33  ljp
+
+	* Updated table image API to follow the table setting pattern
+	Modified files: jpgraph_table.php
+
+r527: 2006-02-11 08:07  ljp
+
+	* Added possibility to use current scale to position GTextTable
+	Modified files: jpgraph_table.php
+
+r525: 2006-02-09 16:34  ljp
+
+	* Make sure padding API follow the general API design for GTextTable
+	Modified files: jpgraph_table.php
+
+r523: 2006-02-08 21:29  ljp
+
+	* Height and width calculation whould use max of value and image for table cell size
+	Modified files: jpgraph_table.php
+
+r521: 2006-02-08 21:22  ljp
+
+	* Added background images in individual cells for GTextTable
+	Modified files: jpgraph_iconplot.php, jpgraph_table.php
+
+r519: 2006-02-06 06:21  ljp
+
+	* Some more error checking for GTextTable and generalization of the SetNumberFormat() method to follow the practice of range setting
+	Modified files: jpgraph_table.php, lang/en.inc.php
+
+r517: 2006-02-05 20:48  ljp
+
+	* Added additional error check and default values for Tables
+	Modified files: jpgraph_table.php, lang/en.inc.php
+
+r515: 2006-02-05 16:46  ljp
+
+	* Update GTextTable SetAlign with new error message. Added check for invalid error message index.
+	Modified files: jpgraph.php, jpgraph_table.php, lang/en.inc.php
+
+r514: 2006-02-05 10:00  ljp
+
+	* Updated table example
+	Modified files: Examples/tableex03.php
+
+r512: 2006-02-05 09:53  ljp
+
+	* Make sure comparison is type safe for handling of parameterized error messages
+	Modified files: jpgraph.php
+
+r510: 2006-02-05 09:48  ljp
+
+	* Updated localized error messages for table
+	Modified files: lang/en.inc.php
+
+r509: 2006-02-05 09:44  ljp
+
+	* Added NumberFormat option for table formatting,
+	Modified files: jpgraph_table.php
+
+r505: 2006-02-04 15:53  ljp
+
+	* Directory cleanup
+	Modified files: tests/.xvpics
+
+r504: 2006-02-04 15:51  ljp
+
+	* Propset Id
+	Modified files: jpgraph_mgraph.php, jpgraph_pdf417.php,
+	  jpgraph_table.php, jpgraph_utils.inc, pdf417_backends.inc,
+	  pdf417_clusters.inc, pdf417_compressors.inc, pdf417_error.inc
+
+r503: 2006-02-04 12:46  ljp
+
+	* Removed extra exit()
+	Modified files: jpgraph.php
+
+r501: 2006-02-04 12:45  ljp
+
+	* Localized jpgraph_gradient
+	Modified files: jpgraph_gradient.php
+
+r499: 2006-02-04 12:44  ljp
+
+	* Localized Linear Barcode error messages
+	Modified files: jpgraph_barcode.php
+
+r497: 2006-02-04 12:33  ljp
+
+	* Localized PDF417
+	Modified files: jpgraph_pdf417.php, pdf417_backends.inc,
+	  pdf417_clusters.inc, pdf417_compressors.inc, pdf417_error.inc
+
+r495: 2006-02-04 12:31  ljp
+
+	* Localized error messages in jpgraph_utils.php
+	Modified files: jpgraph_utils.inc
+
+r493: 2006-02-04 12:29  ljp
+
+	* Localized error messages in jpgraph_stock.php
+	Modified files: jpgraph_stock.php
+
+r491: 2006-02-04 12:28  ljp
+
+	* Localized error messages in jpgraph_scatter.php
+	Modified files: jpgraph_scatter.php
+
+r489: 2006-02-04 12:26  ljp
+
+	* Localized error messages in jpgraph_radar.php
+	Modified files: jpgraph_radar.php
+
+r487: 2006-02-04 12:25  ljp
+
+	* Localized error messages in jpgraph_polar.php
+	Modified files: jpgraph_polar.php
+
+r485: 2006-02-04 12:20  ljp
+
+	* Localized error messages in jpgraph_plotmark.inc
+	Modified files: jpgraph_plotmark.inc
+
+r483: 2006-02-04 12:19  ljp
+
+	* Localized error messages in jpgraph_plotband.php
+	Modified files: jpgraph_plotband.php
+
+r481: 2006-02-04 12:18  ljp
+
+	* Localized error messages in jpgraph_mgraph.php
+	Modified files: jpgraph_mgraph.php
+
+r479: 2006-02-04 12:17  ljp
+
+	* Localized error messages in jpgraph_log.php
+	Modified files: jpgraph_log.php
+
+r477: 2006-02-04 12:16  ljp
+
+	* Localized error messages in jpgraph_imgtrans.php
+	Modified files: jpgraph_imgtrans.php
+
+r475: 2006-02-04 12:15  ljp
+
+	* Localized error messages in jpgraph_iconplot.php
+	Modified files: jpgraph_iconplot.php
+
+r473: 2006-02-04 12:14  ljp
+
+	* Localized error messages in jpgraph_gantt.php
+	Modified files: jpgraph_gantt.php
+
+r471: 2006-02-04 12:12  ljp
+
+	* Localized error messages in jpgraph_flags.php
+	Modified files: jpgraph_flags.php
+
+r469: 2006-02-04 12:11  ljp
+
+	* Localized error messages in jpgraph_date.php
+	Modified files: jpgraph_date.php
+
+r467: 2006-02-04 12:10  ljp
+
+	* Localized error messages in jpgraph_windrose.php
+	Modified files: jpgraph_windrose.php
+
+r465: 2006-02-04 12:09  ljp
+
+	* Localized error messages in jpgraph_odo.php
+	Modified files: jpgraph_odo.php
+
+r463: 2006-02-04 12:07  ljp
+
+	* Localized error messages in jpgraph_regstat.php
+	Modified files: jpgraph_regstat.php
+
+r461: 2006-02-04 12:06  ljp
+
+	* Localized error messages in jpgraph_error.php
+	Modified files: jpgraph_error.php
+
+r459: 2006-02-04 12:05  ljp
+
+	* Localized error messages in jpgraph_pie3d.php
+	Modified files: jpgraph_pie3d.php
+
+r457: 2006-02-04 12:04  ljp
+
+	* Localized error messages in jpgraph_pie.php
+	Modified files: jpgraph_pie.php
+
+r455: 2006-02-04 12:01  ljp
+
+	* Localized error messages in main jpgraph_line.php
+	Modified files: jpgraph_line.php
+
+r453: 2006-02-04 11:40  ljp
+
+	* Localized error messages in main jpgraph.php
+	Modified files: jpgraph.php
+
+r451: 2006-02-04 11:31  ljp
+
+	* Further english resource file update
+	Modified files: lang/en.inc.php
+
+r450: 2006-02-04 10:06  ljp
+
+	* Added localized error messages to jpgraph_bar.php
+	Modified files: jpgraph_bar.php
+
+r448: 2006-02-04 10:03  ljp
+
+	* Updated english resource file
+	Modified files: lang/en.inc.php
+
+r447: 2006-02-04 10:03  ljp
+
+	* Added localized error messages to jpgraph_table.php
+	Modified files: jpgraph_table.php
+
+r445: 2006-02-04 09:29  ljp
+
+	* Removed backup versions of english language resource files
+	Modified files: lang/en.inc.php.backup, lang/en.inc.php.backup2
+
+r444: 2006-02-04 09:28  ljp
+
+	* Added language resource files
+	Modified files: lang, lang/en.inc.php, lang/en.inc.php.backup,
+	  lang/en.inc.php.backup2
+
+r442: 2006-02-02 18:03  ljp
+
+	* Added align arguments for Merge() methods
+	Modified files: jpgraph_table.php
+
+r440: 2006-02-02 06:35  ljp
+
+	* Added error checking when merging table cells
+	Modified files: jpgraph_table.php
+
+r439: 2006-01-30 22:35  ljp
+
+	* Fix spelling error in error message
+	Modified files: jpgraph.php
+
+r437: 2006-01-30 21:52  ljp
+
+	* API restructuring in the GTextTable to make it easier to use ranges
+	Modified files: jpgraph_table.php
+
+r436: 2006-01-29 21:36  ljp
+
+	* Added examples on the use of GTextTable
+	Modified files: Examples/tableex00.php, Examples/tableex01.php,
+	  Examples/tableex02.php, Examples/tableex03.php
+
+r435: 2006-01-29 21:26  ljp
+
+	* PR#306 - Icons are not added as references
+	Modified files: jpgraph.php
+
+r433: 2006-01-29 20:42  ljp
+
+	* Fixed typos and a problem with the width calculation of merged cells
+	Modified files: jpgraph_table.php
+
+r431: 2006-01-29 19:17  ljp
+
+	* Adjusted vertical position calculation to avoid issue with baselining of TTF fonts
+	Modified files: jpgraph_table.php
+
+r429: 2006-01-29 16:10  ljp
+
+	* Added API in table handling so that all major settings now has the same structure, entire table, specific row, specific column or specific cell
+	Modified files: jpgraph_table.php
+
+r427: 2006-01-29 12:26  ljp
+
+	* GTextTable: Added API for table row and column font color setting
+	Modified files: jpgraph_table.php
+
+r425: 2006-01-29 09:10  ljp
+
+	* Major ovehaul of GTextTable. Added possibility to merge cells, Added range error check for all methods, Major refactoring of grid line drawing for tables (this is now the responsibility of the individual cells)
+	Modified files: jpgraph_table.php
+
+r422: 2006-01-26 21:45  ljp
+
+	* Changed column width/height handling so that the specification is interpretated as a min height/width
+	Modified files: jpgraph_table.php
+
+r420: 2006-01-26 21:22  ljp
+
+	* Added possibility to use different grid styles on graphic tables
+	Modified files: jpgraph_table.php
+
+r418: 2006-01-26 07:44  ljp
+
+	* CR#160 - Data tables on the graphs. Added jpgraph_table.php that implements GTextTable class that will allow text tables to be created as graphical objects and added to teh graphs. The tables have basic formatting capabilities as well as auto-sizing depending on the data in each cell.
+	Modified files: jpgraph.php, jpgraph_canvas.php,
+	  jpgraph_table.php, tests/test_flag.php, tests/test_ttf.php
+
+r404: 2006-01-21 17:34  ljp
+
+	* Adjust date format to comply with newer versions of PHP
+	Modified files: Examples/gantthourex1.php,
+	  Examples/gantthourminex1.php
+
+r397: 2006-01-18 19:06  ljp
+
+	* Fix PR#304 - Flag index for Replublic of Peru missing
+	Modified files: jpgraph_flags.php
+
+r396: 2006-01-18 18:42  ljp
+
+	* Fix PR#303 - E_STRICT not available in PHP4
+	Modified files: jpgraph.php
+
+r391: 2006-01-15 20:25  ljp
+
+	* Small modification to error checking when streaming image to a file
+	Modified files: jpgraph.php
+
+r390: 2006-01-15 20:24  ljp
+
+	* Removed a number of backup files that was acidentely comitted
+	Modified files: tests/data.csv~, tests/test_automin.php~,
+	  tests/test_barcode128.php~, tests/test_bargrad.php~,
+	  tests/test_bargrad2.php~, tests/test_barpattern.php~,
+	  tests/test_barsimple2.php~, tests/test_barsimple3.php~,
+	  tests/test_barsimple4.php~, tests/test_bug123.php~,
+	  tests/test_bug130.php~, tests/test_bug168.php~,
+	  tests/test_bug208.php~, tests/test_bug210.php~,
+	  tests/test_bug214.php~, tests/test_bug229.php~,
+	  tests/test_bug231.php~, tests/test_bug233.php~,
+	  tests/test_bug238.php~, tests/test_bug239.php~,
+	  tests/test_bug246.php~, tests/test_bug252.php~,
+	  tests/test_bug253.php~, tests/test_bug254.php~,
+	  tests/test_bug261.php~, tests/test_bug270.php~,
+	  tests/test_bug272.php~, tests/test_bug275.php~,
+	  tests/test_bug279.php~, tests/test_bug283.php~,
+	  tests/test_bug287.php~, tests/test_bug289.php~,
+	  tests/test_bug298.php~, tests/test_bug68.php~,
+	  tests/test_datetickposbug.php~, tests/test_dateweight.php~,
+	  tests/test_ganttpro.php~, tests/test_ganttweekbug.php~,
+	  tests/test_line.php~, tests/test_lineiconstring.php~,
+	  tests/test_logscale.php~, tests/test_manualticks5.php~,
+	  tests/test_markcsim.php~, tests/test_mgraph.php~,
+	  tests/test_mgraph2.php~, tests/test_mgraph3.php~,
+	  tests/test_mulyaxis.php~, tests/test_mulycsim.php~,
+	  tests/test_odo2.php~, tests/test_pie3d.php~,
+	  tests/test_pie3d_1.php~, tests/test_radarbug248.php~,
+	  tests/test_radarticks3.php~, tests/test_readcsv.php~,
+	  tests/test_symchar.php~, tests/test_text90.php~,
+	  tests/test_texttick.php~
+
+r389: 2006-01-15 20:23  ljp
+
+	* Comitted a number of test scripts to make a cleaner status message
+	Modified files: tests/bigredtigerfront.jpg, tests/csimcache,
+	  tests/csimcache/test_bug261.png,
+	  tests/csimcache/test_bug261_csim_.html, tests/data.csv,
+	  tests/data.csv~, tests/dataforbug253.txt, tests/test_automin.php,
+	  tests/test_automin.php~, tests/test_barcode128.php,
+	  tests/test_barcode128.php~, tests/test_bargrad.php,
+	  tests/test_bargrad.php~, tests/test_bargrad2.php,
+	  tests/test_bargrad2.php~, tests/test_barpattern.php,
+	  tests/test_barpattern.php~, tests/test_barsimple2.php,
+	  tests/test_barsimple2.php~, tests/test_barsimple3.php,
+	  tests/test_barsimple3.php~, tests/test_barsimple4.php,
+	  tests/test_barsimple4.php~, tests/test_bug123.php,
+	  tests/test_bug123.php~, tests/test_bug130.php,
+	  tests/test_bug130.php~, tests/test_bug168.php,
+	  tests/test_bug168.php~, tests/test_bug208.php,
+	  tests/test_bug208.php~, tests/test_bug210.php,
+	  tests/test_bug210.php~, tests/test_bug214.php,
+	  tests/test_bug214.php~, tests/test_bug229.php,
+	  tests/test_bug229.php~, tests/test_bug231.php,
+	  tests/test_bug231.php~, tests/test_bug233.php,
+	  tests/test_bug233.php~, tests/test_bug238.php,
+	  tests/test_bug238.php~, tests/test_bug238b.php,
+	  tests/test_bug239.php, tests/test_bug239.php~,
+	  tests/test_bug246.php, tests/test_bug246.php~,
+	  tests/test_bug252.php, tests/test_bug252.php~,
+	  tests/test_bug253.php, tests/test_bug253.php~,
+	  tests/test_bug254.php, tests/test_bug254.php~,
+	  tests/test_bug261.php, tests/test_bug261.php~,
+	  tests/test_bug270.php, tests/test_bug270.php~,
+	  tests/test_bug272.php, tests/test_bug272.php~,
+	  tests/test_bug275.php, tests/test_bug275.php~,
+	  tests/test_bug279.php, tests/test_bug279.php~,
+	  tests/test_bug283.php, tests/test_bug283.php~,
+	  tests/test_bug287.php, tests/test_bug287.php~,
+	  tests/test_bug289.php, tests/test_bug289.php~,
+	  tests/test_bug298.php, tests/test_bug298.php~,
+	  tests/test_bug68.php, tests/test_bug68.php~,
+	  tests/test_datetickposbug.php, tests/test_datetickposbug.php~,
+	  tests/test_dateweight.php, tests/test_dateweight.php~,
+	  tests/test_ganttpro.php, tests/test_ganttpro.php~,
+	  tests/test_ganttweekbug.php, tests/test_ganttweekbug.php~,
+	  tests/test_line.php, tests/test_line.php~,
+	  tests/test_lineiconstring.php~, tests/test_logscale.php,
+	  tests/test_logscale.php~, tests/test_manualticks.php,
+	  tests/test_manualticks2.php, tests/test_manualticks3.php,
+	  tests/test_manualticks4.php, tests/test_manualticks5.php,
+	  tests/test_manualticks5.php~, tests/test_markcsim.php,
+	  tests/test_markcsim.php~, tests/test_mgraph.php,
+	  tests/test_mgraph.php~, tests/test_mgraph2.php,
+	  tests/test_mgraph2.php~, tests/test_mgraph3.php,
+	  tests/test_mgraph3.php~, tests/test_mulyaxis.php,
+	  tests/test_mulyaxis.php~, tests/test_mulycsim.php,
+	  tests/test_mulycsim.php~, tests/test_odo2.php,
+	  tests/test_odo2.php~, tests/test_pie3d.php, tests/test_pie3d.php~,
+	  tests/test_pie3d_1.php, tests/test_pie3d_1.php~,
+	  tests/test_radarbug248.php, tests/test_radarbug248.php~,
+	  tests/test_radarticks3.php, tests/test_radarticks3.php~,
+	  tests/test_readcsv.php, tests/test_readcsv.php~,
+	  tests/test_symchar.php, tests/test_symchar.php~,
+	  tests/test_text90.php, tests/test_text90.php~,
+	  tests/test_texttick.php, tests/test_texttick.php~,
+	  tests/tiger1.jpg
+
+r388: 2006-01-15 20:21  ljp
+
+	* Moved MGraph from utils to it's own file. Added Utility class to read CSV file of data
+	Modified files: jpgraph_mgraph.php, jpgraph_utils.inc
+
+r379: 2006-01-14 11:26  ljp
+
+	* Fix PR#302 - Individual colors for labels and axis on radar plots
+	Modified files: jpgraph_radar.php
+
+r377: 2006-01-13 18:29  ljp
+
+	* Fix PR#298 - Multiple plots for polar graphs
+	Modified files: jpgraph_polar.php
+
+r374: 2006-01-13 18:20  ljp
+
+	* Add CR#299 - File and line number information for headers sent error
+	Modified files: jpgraph.php
+
+r370: 2006-01-09 18:19  ljp
+
+	* Fix PR#296 - Wrong stop character for I25
+	Modified files: jpgraph_barcode.php
+
+r369: 2006-01-06 03:54  ljp
+
+	* Fix PR#294- Function name misspelled in startup php_errormsg check
+	Modified files: jpgraph.php
+
+r366: 2006-01-05 07:03  ljp
+
+	* Copy and paste mistake in fix for #292
+	Modified files: jpgraph_bar.php
+
+r365: 2006-01-05 07:00  ljp
+
+	* Fix PR#292 - Incorrect calculation of Min value for AccBarPlot in some cases
+	Modified files: jpgraph_bar.php
+
+r364: 2005-12-31 10:08  ljp
+
+	* Added filledlineex03.php - Example with filled line and NULL values
+	Modified files: Examples/filledlineex03.php,
+	  Examples/piebkgex1.php
+
+r361: 2005-12-31 10:00  ljp
+
+	* Fix CR#283 - Gaps should be displayed for NULL values in filled line graphs
+	Modified files: jpgraph_line.php
+
+r359: 2005-12-30 20:59  ljp
+
+	* Fix CR#290 - Make it possible to use StrokeCSIM() without argument
+	Modified files: jpgraph.php
+
+r358: 2005-12-30 18:08  ljp
+
+	* Properly Fix PR#123 - Background gradient for rotated bar plots
+	Modified files: jpgraph.php
+
+r355: 2005-12-30 17:36  ljp
+
+	* Fix PR#123 - Background gradient for rotated bar plots
+	Modified files: jpgraph.php
+
+r353: 2005-12-30 17:22  ljp
+
+	* Fix CR#130 - Add option to use background gradient to Pie plots
+	Modified files: jpgraph_pie.php
+
+r351: 2005-12-30 16:26  ljp
+
+	* Fix PR#68 - Setting title side for X-axis title was not implemented
+	Modified files: jpgraph.php
+
+r350: 2005-12-30 14:31  ljp
+
+	* Fix PR#289 and improve performance by reducing the number of internal copies of class Image by using more references
+	Modified files: jpgraph.php, jpgraph_plotmark.inc
+
+r349: 2005-12-30 14:31  ljp
+
+	* Fix PR#289 and improve performance by reducing the number of internal copies of class Image by using more references
+	Modified files: jpgraph_gantt.php, jpgraph_gradient.php,
+	  jpgraph_iconplot.php, jpgraph_odo.php, jpgraph_polar.php,
+	  jpgraph_scatter.php, jpgraph_stock.php, jpgraph_windrose.php
+
+r346: 2005-12-29 09:32  ljp
+
+	* Renamed odo_examples odometer_examples
+	Modified files: odo_examples, odometer_examples
+
+r344: 2005-12-29 06:56  ljp
+
+	* Make ShowBorder() show a deprecated function error for 3D Pies
+	Modified files: jpgraph_pie3d.php
+
+r340: 2005-12-29 06:51  ljp
+
+	* Added additional error check to spline and bezier interpolation
+	Modified files: jpgraph_regstat.php
+
+r339: 2005-12-29 06:44  ljp
+
+	* Comitted multiple y-axis and combined graph examples
+	Modified files: Examples/combgraphex1.php,
+	  Examples/mulyaxiscsimex1.php, Examples/mulyaxisex1.php
+
+r338: 2005-12-29 06:43  ljp
+
+	* Added bezier example
+	Modified files: Examples/bezierex1.php
+
+r336: 2005-12-28 11:05  ljp
+
+	* PR #288. Dateline scale is not properly formatted
+	Modified files: jpgraph.php
+
+r334: 2005-12-15 22:34  ljp
+
+	* Remove HTML entitites encoding in CSIM targets for barplots
+	Modified files: jpgraph_bar.php
+
+r332: 2005-12-14 18:21  ljp
+
+	* Fix PR#280 - Wrong legends in some cases for 3D Pies
+	Modified files: jpgraph_pie3d.php
+
+r330: 2005-12-10 08:28  ljp
+
+	* Merged 328:329. Add possibility to use CSIM on multi Y-axes. Made it possibly to use 'auto' as special filename for CSIM to avoid having to supply file name.
+	Modified files: jpgraph.php
+
+r327: 2005-12-10 08:24  ljp
+
+	* Added Bezier interpolation class
+	Modified files: jpgraph_regstat.php
+
+r325: 2005-12-07 18:43  ljp
+
+	* Removed extra check for UPC-A barcodes. Allow 10 number systems (0-9) as the first specification.
+	Modified files: jpgraph_barcode.php
+
+r324: 2005-12-06 19:13  ljp
+
+	* Really Fixded PR #271. SetDateFormat()
+	Modified files: jpgraph.php
+
+r322: 2005-12-06 19:09  ljp
+
+	* Fixded PR #271. Problem with SetDateFormat()
+	Modified files: jpgraph.php
+
+r320: 2005-12-05 10:54  ljp
+
+	* Added error check for empty plots when client constructs group or acc bars
+	Modified files: jpgraph_bar.php
+
+r303: 2005-12-03 08:56  ljp
+
+	* Fixed lost startyear variable in DateScaleUtils
+	Modified files: jpgraph_utils.inc
+
+r297: 2005-11-30 22:12  ljp
+
+	* Rounding problem fixing. It turns out that according to PHP (a < b)==TRUE assuming a:INT and b:float. This could cause the last tick on an axis to not be shown in some rare cases
+	Modified files: jpgraph.php
+
+r296: 2005-11-30 19:55  ljp
+
+	* Fix PR #269. Make sure that the title of the axis is only stroken once
+	Modified files: jpgraph.php
+
+r287: 2005-11-28 22:12  ljp
+
+	* Fixed gantthourminex1.php example to be compatible with PHP 5.1.0
+	Modified files: Examples/gantthourminex1.php
+
+r286: 2005-11-28 22:09  ljp
+
+	* Added error check for too large width caused by a faulty input date
+	Modified files: jpgraph_gantt.php
+
+r282: 2005-11-27 20:34  ljp
+
+	* Updated math function examples to include jpgraph_utils.inc
+	Modified files: Examples/dupyaxisex1.php, Examples/funcex1.php,
+	  Examples/funcex2.php, Examples/funcex3.php, Examples/funcex4.php
+
+r279: 2005-11-27 11:13  ljp
+
+	* Added option to put the background image for MGraph at a specific x,y location
+	Modified files: jpgraph_utils.inc
+
+r278: 2005-11-27 11:12  ljp
+
+	* Updated and added manual tick examples
+	Modified files: Examples/manualtickex1.php,
+	  Examples/manualtickex2.php
+
+r276: 2005-11-26 15:42  ljp
+
+	* Moved class FuncGenerator from jpgraph.php to jpgraph_utility.inc
+	Modified files: jpgraph.php, jpgraph_utils.inc
+
+r274: 2005-11-26 14:42  ljp
+
+	* Simplified DateScaleUtils interface
+	Modified files: jpgraph_utils.inc
+
+r272: 2005-11-26 14:26  ljp
+
+	* Various minor adjustments in jpgraph.php * Added maj_tick_label as instance variable. That had always been missing !! * Adjusted the default margin fox X-axis labels slightly, slightly larger * Adjusted the left/right default graph margin (They were unecessarily large). * Added error checking when client specifies to few manual major ticks
+	Modified files: jpgraph.php
+
+r267: 2005-11-25 16:35  ljp
+
+	* Added option to use background images in MGraph (combined graphs)
+	Modified files: jpgraph_utils.inc
+
+r265: 2005-11-25 16:23  ljp
+
+	* Added Graph proxy method for Image::SetImgFormat()
+	Modified files: jpgraph.php
+
+r262: 2005-11-25 11:00  ljp
+
+	* Modified the MGraph::Add() method to accept Graph argument instead of just an image handler. Much more elegant and user friendly. Allso added the possibility for the MGraph::Stroke() method to return an image handler as well. This will allow MGraph to have MGraph as objects.
+	Modified files: jpgraph_utils.inc
+
+r261: 2005-11-24 06:51  ljp
+
+	* Borrowed some methods from class Graph to class MGraph in ordedr to avoid having to instantiate class Graph when using the MGraph functionality to save some memory. Added Class DateScaleUtils to jpgraph_utils.inc to make it easy to manually work with month scale where the tick positions are manually set
+	Modified files: jpgraph_utils.inc
+
+r260: 2005-11-23 19:52  ljp
+
+	* Added CR#266 "Add option to set a background fill for Axis labels" by adding a new method Graph::SetAxisLabelBackground() which will allow a client to specify a number of different variants of background for the labels on the primary X and Y axis.
+	Modified files: jpgraph.php
+
+r259: 2005-11-23 16:25  ljp
+
+	* Added Class MGraph in jpgraph_utils.inc. This is a utility class that can be used to easily combine several graphs into one image
+	Modified files: jpgraph_utils.inc
+
+r258: 2005-11-23 16:04  ljp
+
+	* Updated manual tick example to show X-grid as well to better illustrate the differenc between major and minor tick marks
+	Modified files: Examples/manualtickex1.php
+
+r256: 2005-11-23 05:38  ljp
+
+	* Updated the manual tick example to also make use of minor tick marks (without a label)
+	Modified files: Examples/manualtickex1.php
+
+r255: 2005-11-22 19:49  ljp
+
+	* Extended the manual tick positioning Axis::SetTickPosition() to also include the setting of the minor tick marks, i.e. tick marks without labels.
+	Modified files: jpgraph.php
+
+r253: 2005-11-21 19:35  ljp
+
+	* Added example for how to set manual tick positions
+	Modified files: Examples/manualtickex1.php
+
+r251: 2005-11-21 19:33  ljp
+
+	* Removed double entry in code table for greek characters
+	Modified files: jpgraph_utils.inc
+
+r246: 2005-11-20 12:11  ljp
+
+	* Adapted jpgraph_utils.inc for use in v1.x branch (for PHP4)
+	Modified files: jpgraph_utils.inc
+
+r245: 2005-11-20 12:07  ljp
+
+	* Copied jpgraph_utils to v1.x branch
+	Modified files: jpgraph_utils.inc
+
+r243: 2005-11-20 11:41  ljp
+
+	* Added CR#263. Possibility to have completely manual tick positions. One new method Axis::SetTickPositions($aTickPos,$aTickLabel) can be used to manually specify the exact positions for the ticks as well as an optional specified label. If no label array is specified then the labels will be determined by the scale value and any set formatting strings.
+	Modified files: jpgraph.php
+
+r242: 2005-11-20 11:34  ljp
+
+	* Removed newline at end of jpg-config.inc file since some Windows setups have problems with newlines
+	Modified files: jpg-config.inc
+
+r225: 2005-11-04 04:37  ljp
+
+	* Added parameter to SetTextLabelInterval()
+	Modified files: jpgraph.php
+
+r222: 2005-11-04 04:31  ljp
+
+	* Fix #253 Gradient in legends. Micro speeed improvement in min/max methods
+	Modified files: jpgraph_line.php
+
+r220: 2005-10-15 16:53  ljp
+
+	* Fix for issue #229. Special case when only having a single data point in date scale
+	Modified files: jpgraph_date.php
+
+r218: 2005-10-15 10:52  ljp
+
+	* Fix for issue #247 boundary check in while loop
+	Modified files: jpgraph_gantt.php
+
+r217: 2005-10-15 10:29  ljp
+
+	* Fix for feature request #243. Allow 1.x branch to be used in compatibility mode in PHP5
+	Modified files: jpgraph.php
+
+r215: 2005-10-14 17:39  ljp
+
+	* Fix for #251 where the ID attribute in the MAP tag makes it hard to save an CSIM image
+	Modified files: jpgraph.php
+
+r213: 2005-10-11 18:22  ljp
+
+	* Fix axis title positioning issue #248
+	Modified files: jpgraph_radar.php
+
+r211: 2005-10-06 16:29  ljp
+
+	* Fix for #244. Missing ALT value for CSIM for Bars
+	Modified files: jpgraph_bar.php
+
+r209: 2005-09-26 17:23  ljp
+
+	* Fix #231. Image markers are not rotated
+	Modified files: jpgraph_plotmark.inc
+
+r207: 2005-09-04 15:25  ljp
+
+	* PHP Bug workaround (#226)
+	Modified files: jpgraph.php
+
+r201: 2005-09-03 09:39  ljp
+
+	* Moved old directories up to dust
+	Modified files: barcode, jpgraph_gantt.php, pdf417, windrose
+
+r196: 2005-09-01 05:03  ljp
+
+	* Fixed #222 Gantt day header too small in some circumstances
+	Modified files: jpgraph_gantt.php
+
+r193: 2005-08-31 19:23  ljp
+
+	* Moved windrose word-doc to docs main directory
+	Modified files: windrose/windrose.doc
+
+r192: 2005-08-31 19:22  ljp
+
+	* Removed html dir in windrose
+	Modified files: windrose/html
+
+r191: 2005-08-31 19:21  ljp
+
+	* UTF8 directory from windrose and moved it to asian_lang instead
+	Modified files: windrose/utf8
+
+r190: 2005-08-31 19:19  ljp
+
+	* Moved Example in UTF8 windrose to asian_lang
+	Modified files: windrose/utf8/Examples, windrose/utf8/jpgraph.php,
+	  windrose/utf8/jpgraph_gradient.php,
+	  windrose/utf8/jpgraph_plotmark.inc,
+	  windrose/utf8/jpgraph_windrose.php
+
+r186: 2005-08-31 19:06  ljp
+
+	* Moved windrose img to main docs directory
+	Modified files: windrose/img
+
+r185: 2005-08-31 19:06  ljp
+
+	* Moved windrose docs to main docs directory
+	Modified files: windrose/manual.book, windrose/manualpdf.book,
+	  windrose/polar_function_3.gif, windrose/windrose.png,
+	  windrose/windrose_html_manual, windrose/windrose_manual.php
+
+r184: 2005-08-31 16:17  ljp
+
+	* Added possibility to create icons and backgrounds from strings
+	Modified files: jpgraph.php, jpgraph_iconplot.php,
+	  tests/test_lineiconstring.php
+
+r176: 2005-08-29 23:25  ljp
+
+	* Cleaned up windrose directory
+	Modified files: windrose/contour.gif, windrose/contour.png,
+	  windrose/dust, windrose/dust/contour.gif,
+	  windrose/dust/contour.png, windrose/dust/jpgraph_windrose-1.0.php,
+	  windrose/dust/jpgraph_windrose-1.05.php,
+	  windrose/dust/jpgraph_windrose-1.0beta.php,
+	  windrose/dust/mockup_ex1.png, windrose/dust/windchart_3.gif,
+	  windrose/dust/windrose-1.1.tar.gz,
+	  windrose/dust/windrose_manual-1.0.php,
+	  windrose/dust/windrose_manual-1.0beta.php,
+	  windrose/jpgraph_windrose-1.0.php,
+	  windrose/jpgraph_windrose-1.05.php,
+	  windrose/jpgraph_windrose-1.0beta.php, windrose/mockup_ex1.png,
+	  windrose/windchart_3.gif, windrose/windrose-1.0.tar.gz,
+	  windrose/windrose-1.1, windrose/windrose-1.1.tar.gz,
+	  windrose/windrose_manual-1.0.php,
+	  windrose/windrose_manual-1.0beta.php
+
+r175: 2005-08-29 23:18  ljp
+
+	* Removed wrong jpgtutlib link
+	Modified files: windrose/jpgtutlib.inc
+
+r174: 2005-08-29 23:13  ljp
+
+	* Removed old sym links to jpgraph.php etc
+	Modified files: barcode/jpgraph.php, barcode/jpgraph_canvas.php
+
+r173: 2005-08-29 23:12  ljp
+
+	* Removed wrong barcode demoapp directory
+	Modified files: barcode/barcode_demoapp
+
+r172: 2005-08-29 23:12  ljp
+
+	* Removed barcode examples from it's old location
+	Modified files: barcode/barcode_ex0.php, barcode/barcode_ex1.php,
+	  barcode/barcode_ex2.php, barcode/barcode_ex3.php,
+	  barcode/barcode_ex4.php
+
+r171: 2005-08-29 23:08  ljp
+
+	* Changed path for windrose examples
+	Modified files: windrose_examples/windrose_ex0.php,
+	  windrose_examples/windrose_ex1.php,
+	  windrose_examples/windrose_ex1b.php,
+	  windrose_examples/windrose_ex2.php,
+	  windrose_examples/windrose_ex3.php,
+	  windrose_examples/windrose_ex4.php,
+	  windrose_examples/windrose_ex5.php,
+	  windrose_examples/windrose_ex6.php,
+	  windrose_examples/windrose_ex7.php,
+	  windrose_examples/windrose_ex8.php,
+	  windrose_examples/windrose_ex9.php
+
+r170: 2005-08-29 23:05  ljp
+
+	* Changed path for all PDF417 examples
+	Modified files: pdf417_examples/pdf417_ex1.php,
+	  pdf417_examples/pdf417_ex2.php, pdf417_examples/pdf417_ex3.php,
+	  pdf417_examples/pdf417_ex4.php, pdf417_examples/pdf417_ex5.php,
+	  pdf417_examples/pdf417_ex6.php
+
+r169: 2005-08-29 22:50  ljp
+
+	* Removed .directory
+	Modified files: windrose_examples/.directory
+
+r168: 2005-08-29 22:46  ljp
+
+	* Updated directory structure to match release structure
+	Modified files: barcode/barcode_demoapp,
+	  barcode/barcode_image.php, barcode/barcode_menu.php,
+	  barcode/index.html, barcode/jpgraph_barcode.php, barcode_demoapp,
+	  barcode_demoapp/barcode_image.php,
+	  barcode_demoapp/barcode_menu.php, barcode_demoapp/index.html,
+	  barcode_examples, barcode_examples/barcode_ex0.php,
+	  barcode_examples/barcode_ex1.php,
+	  barcode_examples/barcode_ex2.php,
+	  barcode_examples/barcode_ex3.php,
+	  barcode_examples/barcode_ex4.php, jpgraph_barcode.php,
+	  jpgraph_pdf417.php, odo_examples, odoexamples, pdf417/Examples,
+	  pdf417/demoapp, pdf417/jpgraph_pdf417.php,
+	  pdf417/pdf417_backends.inc, pdf417/pdf417_clusters.inc,
+	  pdf417/pdf417_compressors.inc, pdf417/pdf417_error.inc,
+	  pdf417_backends.inc, pdf417_clusters.inc, pdf417_compressors.inc,
+	  pdf417_demoapp, pdf417_demoapp/pdf417_demo_image.php,
+	  pdf417_error.inc, pdf417_examples, windrose/examples,
+	  windrose_examples
+
+r167: 2005-08-29 22:41  ljp
+
+	* Made Y2 axis default always at the right end of X
+	Modified files: jpgraph.php
+
+r166: 2005-08-29 22:35  ljp
+
+	* Changed include path for pdf417 demo app
+	Modified files: pdf417/demoapp/pdf417_demo_image.php
+
+r91: 2005-08-27 23:03  ljp
+
+	* Updted jpdocgen to skip returning object with &
+	Modified files: utils/jpdocgen/jpgendb.php
+
+r90: 2005-08-27 23:02  ljp
+
+	* Added more test scripts
+	Modified files: tests/bug_axisy2title.php, tests/gdtest.php,
+	  tests/test_axisy2.php, tests/test_baraccint.php,
+	  tests/test_baraccnull.php, tests/test_bb2671.php,
+	  tests/test_bug144.php, tests/test_bug148.php,
+	  tests/test_bug189.php, tests/test_bug190.php,
+	  tests/test_bug191.php, tests/test_bug197.php,
+	  tests/test_bug203.php, tests/test_bug3.php, tests/test_bug58.php,
+	  tests/test_bug9.php, tests/test_dateaxis3.php,
+	  tests/test_dateaxisy2.php, tests/test_datesparse.php,
+	  tests/test_datesparsebug.php, tests/test_datprobug.php,
+	  tests/test_fieldrot.php, tests/test_gantt.php,
+	  tests/test_ganttcsim.php, tests/test_horizbarcsim.php,
+	  tests/test_legendbox.php, tests/test_line.php,
+	  tests/test_linebug-104.php, tests/test_linesimple.php,
+	  tests/test_logline.php, tests/test_multiline.php,
+	  tests/test_patternbug.php, tests/test_piecsim.php,
+	  tests/test_pietheme.php, tests/test_scattermark.php,
+	  tests/test_scatternulls.php, tests/test_textalign.php,
+	  tests/test_ttf.php, tests/test_ttfread.php
+
+r88: 2005-08-07 17:18  ljp
+
+	* Chnaged some count() in for loop to a variable instead. Minor formatting change to date class
+	Modified files: jpgraph.php, jpgraph_date.php, jpgraph_error.php,
+	  jpgraph_gantt.php, jpgraph_pie.php, jpgraph_radar.php
+
+r86: 2005-07-12 17:55  ljp
+
+	* Feature #208. Added WindrosePlot::SetRangeStyle()
+	Modified files: jpgraph_windrose.php,
+	  windrose/examples/windrose_ex1b.php
+
+r84: 2005-07-10 18:22  ljp
+
+	* Added debug lines in legend and fine-tuned calculation of legend height
+	Modified files: jpgraph.php
+
+r82: 2005-07-09 21:23  ljp
+
+	* Fixed #196 - Better layout for legend box
+	Modified files: jpgraph.php
+
+r76: 2005-06-25 21:59  ljp
+
+	* Final fix for bug #191 by commenting out some strange adjustment Stroke() for accbar plot
+	Modified files: jpgraph_bar.php
+
+r75: 2005-06-25 21:59  ljp
+
+	* Fix for possible undefined CSIM alt tag. Bumbped version number to 1.19dev
+	Modified files: jpgraph.php
+
+r73: 2005-06-25 11:16  ljp
+
+	* Make sure pie csim center coordinates are integers
+	Modified files: jpgraph_pie.php
+
+r72: 2005-06-22 21:28  ljp
+
+	* Added zero option to line interpolation
+	Modified files: jpgraph_line.php
+
+r69: 2005-06-17 19:46  ljp
+
+	* Added linear interpolation for acc lines (#189)
+	Modified files: jpgraph_line.php
+
+r68: 2005-06-16 21:29  ljp
+
+	* Propset Id
+	Modified files: barcode/jpgraph_barcode.php
+
+r67: 2005-06-16 21:24  ljp
+
+	* Added Id tag
+	Modified files: barcode/jpgraph_barcode.php
+
+r65: 2005-06-16 21:18  ljp
+
+	* Implemented multipe data chunks for EAN128
+	Modified files: barcode/jpgraph_barcode.php
+
+r63: 2005-06-10 04:55  ljp
+
+	* Added individual legend mark size for horiz/vert (#144)
+	Modified files: jpgraph.php
+
+r60: 2005-06-08 11:04  ljp
+
+	* Better handling of bars with an Absolute Width (#190)
+	Modified files: jpgraph.php, jpgraph_bar.php
+
+r58: 2005-06-08 09:21  ljp
+
+	* Compensation for handling of barcenter number of data points (#190)
+	Modified files: jpgraph.php
+
+r56: 2005-06-06 20:14  ljp
+
+	* Fixed HideTicks for log scale (#90)
+	Modified files: jpgraph_log.php
+
+r53: 2005-06-06 18:12  ljp
+
+	* Fix so that 'x' and '-' are interpretated as null in ScatterPlot
+	Modified files: jpgraph_scatter.php
+
+r51: 2005-06-06 16:08  ljp
+
+	* Fix for #188 CSIM for Titles in PieGraphs
+	Modified files: jpgraph_pie.php
+
+r49: 2005-06-06 14:46  ljp
+
+	* Fixed wrong parameter to imagefilledarc() in CakeSlice() #66
+	Modified files: jpgraph.php
+
+r46: 2005-06-06 13:59  ljp
+
+	* Fixed rounding problem #164
+	Modified files: jpgraph_windrose.php
+
+r45: 2005-06-06 13:48  ljp
+
+	* Fixed problem with AccBar PreStrokeAdjust #103
+	Modified files: jpgraph_bar.php
+
+r42: 2005-06-06 13:08  ljp
+
+	* Fixed remaining problem with single slice Pie and CSIM (#107)
+	Modified files: jpgraph_pie.php
+
+r41: 2005-06-06 10:46  ljp
+
+	* Better (X)HTML compliance for generated CSIM HTML
+	Modified files: jpgraph.php, jpgraph_bar.php, jpgraph_gantt.php,
+	  jpgraph_pie.php, jpgraph_pie3d.php, jpgraph_plotmark.inc,
+	  jpgraph_stock.php
+
+r38: 2005-06-06 10:12  ljp
+
+	* Added formatting callback #172
+	Modified files: jpgraph_radar.php
+
+r36: 2005-06-06 10:03  ljp
+
+	* Fixed anti-alias pie problem #71
+	Modified files: jpgraph_pie.php
+
+r35: 2005-06-05 23:05  ljp
+
+	* Test scale positioned icon
+	Modified files: tests/test_barscaleicon.php
+
+r28: 2005-06-05 16:36  ljp
+
+	* More example for guide-lines and date axis
+	Modified files: Examples/dateaxisex2.php,
+	  Examples/dateaxisex3.php, Examples/dateaxisex4.php,
+	  Examples/pielabelsex1.php, Examples/pielabelsex4.php,
+	  jpgraph_date.php, tests/test_barpattern.php,
+	  tests/test_ganttsimple.php, tests/test_pienewlabels.php
+
+r26: 2005-06-05 15:33  ljp
+
+	* Added SetTimeAlign() and adjusted constants
+	Modified files: jpgraph_date.php
+
+r24: 2005-06-05 11:51  ljp
+
+	* Some small backporting from v2 branch to handle arrays in Add()
+	Modified files: jpgraph_pie.php
+
+r23: 2005-06-05 11:31  ljp
+
+	* Added pie guide line examples
+	Modified files: Examples/pielabelsex1.php,
+	  Examples/pielabelsex2.php, Examples/pielabelsex3.php
+
+r21: 2005-05-30 20:35  ljp
+
+	* Added Id keyword property
+	Modified files: Todo, flags_full.inc, imgdata_balls.inc,
+	  imgdata_bevels.inc, imgdata_diamonds.inc, imgdata_pushpins.inc,
+	  imgdata_squares.inc, imgdata_stars.inc, jpg-config.inc,
+	  jpgraph.php, jpgraph_antispam-digits.php, jpgraph_antispam.php,
+	  jpgraph_bar.php, jpgraph_canvas.php, jpgraph_canvtools.php,
+	  jpgraph_date.php, jpgraph_error.php, jpgraph_flags.php,
+	  jpgraph_gantt.php, jpgraph_gb2312.php, jpgraph_gradient.php,
+	  jpgraph_iconplot.php, jpgraph_imgtrans.php, jpgraph_line.php,
+	  jpgraph_log.php, jpgraph_odo.php, jpgraph_pie.php,
+	  jpgraph_pie3d.php, jpgraph_plotband.php, jpgraph_plotmark.inc,
+	  jpgraph_polar.php, jpgraph_radar.php, jpgraph_regstat.php,
+	  jpgraph_scatter.php, jpgraph_stock.php, jpgraph_windrose.php
+
+r18: 2005-05-29 18:16  ljp
+
+	* Adaption for icon plot new behaviour in jpgraph.php
+	Modified files: jpgraph_gantt.php
+
+r17: 2005-05-29 15:30  ljp
+
+	* Fix icon positioning
+	Modified files: jpgraph.php, jpgraph_iconplot.php
+
+r13: 2005-05-29 10:40  ljp
+
+	* Added test_barsmallicon test_radarticks2
+	Modified files: tests/test_barsmallicon.php,
+	  tests/test_radarticks2.php
+
+r10: 2005-05-29 10:11  ljp
+
+	* Fixed #181, #182 Scale positions for icon plots and also add rotation of icons
+	Modified files: jpgraph.php, jpgraph_iconplot.php
+
