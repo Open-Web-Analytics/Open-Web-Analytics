@@ -19,7 +19,7 @@
 require_once (OWA_BASE_DIR . '/owa_api.php');
 require_once (OWA_BASE_DIR . '/owa_error.php');
 require_once (OWA_BASE_DIR . '/owa_lib.php');
-require_once (OWA_INCLUDE_DIR.'jpgraph/jpgraph.php');
+require_once (OWA_JPGRAPH_DIR.'/jpgraph.php');
 
 /**
  * Graph Generator
@@ -162,7 +162,7 @@ class owa_graph {
 	 */
 	function line_graph() {
 	
-		require_once (OWA_INCLUDE_DIR.'jpgraph/jpgraph_line.php');
+		require_once (OWA_JPGRAPH_DIR.'/jpgraph_line.php');
 		
 		$datay = $this->data['datay'];
 		$graph = new Graph($this->width,$this->height,"auto");
@@ -196,7 +196,7 @@ class owa_graph {
 	 */
 	function bar_graph() {
 	
-		require_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_bar.php');
+		require_once (OWA_JPGRAPH_DIR .'/jpgraph_bar.php');
 	
 		$datay = $this->data['datay'];
 	
@@ -243,7 +243,7 @@ class owa_graph {
 	 */
 	function pie_graph() {
 	
-		require_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_pie.php');
+		require_once (OWA_JPGRAPH_DIR .'/jpgraph_pie.php');
 
 		$data = $this->data['data_pie'];
 		
@@ -282,8 +282,8 @@ class owa_graph {
 	
 	function bar_line_graph() {
 	
-		include_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_line.php');
-		include_once (OWA_INCLUDE_DIR .'jpgraph/jpgraph_bar.php');
+		include_once (OWA_JPGRAPH_DIR .'/jpgraph_line.php');
+		include_once (OWA_JPGRAPH_DIR .'/jpgraph_bar.php');
 		
 		$data_y1 = $this->data['y1'];
 		$data_y2 = $this->data['y2'];
