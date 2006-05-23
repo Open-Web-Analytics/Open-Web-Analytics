@@ -31,6 +31,6 @@
 // Change this to point to the full filesystem path of the main OWA Directory.
 define('OWA_PATH', '..');
 
-include_once(OWA_PATH.'owa_env.php');
+include_once(OWA_PATH.'/owa_env.php');
 
 ?>
