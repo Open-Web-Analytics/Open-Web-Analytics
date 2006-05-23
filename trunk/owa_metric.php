@@ -170,9 +170,9 @@ class owa_metric {
 				break;
 				
 			case "last_seven_days":	
-				$bound = $this->time_now['timestamp'] - 3600*24*7;
+				$bound = $this->time_now['dayofyear'] - 7;
 				$where = sprintf(
-							"AND timestamp >= '%s' and year = '%s'",
+							"AND dayofyear >= '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
@@ -278,20 +278,20 @@ class owa_metric {
 				break;
 			
 			case "last_thirty_days":
-				$bound = $this->time_now['timestamp'] - 3600*24*30;
-				//$bound = date('z', $bound);
-				$where = sprintf(
+				//$bound = $this->time_now['timestamp'] - 3600*24*30;
+				$bound = $this->time_now['dayofyear'] - 30;
+				/*$where = sprintf(
 							"AND timestamp >= '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
-				
-				/*$where = sprintf(
-							"AND dayofyear >= '%s' and year = '%s'",
+				*/
+				$where = sprintf(
+							"AND dayofyear > '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
-				*/
+				
 				break;
 	
 		}
