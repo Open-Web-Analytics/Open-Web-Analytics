@@ -16,18 +16,28 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
-require_once 'owa_controller.php';
+include_once('set_env.php');
+require_once(OWA_BASE_DIR.'/owa_php.php');
 
-define ('OWA_BASE_URL', $_SERVER['SERVER_NAME']);
-define ('OWA_GRAPH_URL', OWA_BASE_URL);
+/**
+ * HTTP Invocation handler
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
 
-define('OWA_DB_NAME', DB_NAME);     // The name of the database
-define('OWA_DB_USER', DB_USER);     // Your MySQL username
-define('OWA_DB_PASSWORD', DB_PASSWORD); // ...and password
-define('OWA_DB_HOST', DB_HOST);     //
+// Turn off the delay first hit feature
+$config['delay_first_hit'] = false;
 
-// Set URI
+// Setup new OWA caller object
+$l = new owa_php($config);
+
+// Set page URL
 if (isset($_GET['uri']) && !empty($_GET['uri'])):
 	$app_params['uri'] = base64_decode($_GET['uri']);
 else: 
@@ -42,30 +52,27 @@ endif;
 $app_params['referer'] = base64_decode($_GET['referer']);
 	
 // Set page Type
-$app_params['page_type'] = $_GET['page_type'];
+$app_params['page_type'] = urldecode($_GET['page_type']);
 
 //Set page ID
-$app_params['page_id'] = $_GET['page_id'];
+$app_params['page_id'] = urldecode($_GET['page_id']);
 	
 // Track users by the email address
-$app_params['user_email'] = $_GET['user_email']; 
+$app_params['user_email'] = urldecode($_GET['user_email']); 
 	
 // Track users who have a named account
-$app_params['user_name'] = $_GET['user_name'];
+$app_params['user_name'] = urldecode($_GET['user_name']);
 
 // Set Page Title
 $app_params['page_title'] = urldecode($_GET['page_title']);
-
-// Track unique feeds	
-//$app_params['feed_subscription_id'] = ;
 	
 // Provide an ID for this instance
 $app_params['site_id'] = $_GET['site_id'];
 	
-// Process the request
-owa::process_request($app_params);
+// Track the request
+$l->log($app_params);
 	
-/////
+// Return 1x1 pixel
 header('Content-type: image/gif');
 header('P3P: CP="NOI NID ADMa OUR IND UNI COM NAV"');
 header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');

@@ -113,7 +113,6 @@ class owa_request {
 	function owa_request() {
 	
 		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
 		$this->eq = &eventQueue::get_instance();
 		$this->e = &owa_error::get_instance();
 		

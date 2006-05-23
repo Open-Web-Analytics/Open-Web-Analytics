@@ -40,13 +40,6 @@ class Log_observer_comments extends owa_observer {
 	var $db;
 	
 	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
 	 * Event Messsage
 	 *
 	 * @var object
@@ -81,8 +74,6 @@ class Log_observer_comments extends owa_observer {
     function notify($event) {
 	
 		$this->m = $event['message'];
-		
-		$this->config = &owa_settings::get_settings();
 				
 		$this->update_session();
 						

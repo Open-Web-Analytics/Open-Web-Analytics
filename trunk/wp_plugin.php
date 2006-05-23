@@ -48,7 +48,7 @@ $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/reports';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
 
 // Create new instance of caller class object
-$owa_wp = new owa_wp($owa_config);
+$owa_wp = &new owa_wp($owa_config);
 // WORDPRESS Filter and action hook assignment
 
 // Installation logic
@@ -122,7 +122,7 @@ function owa_main() {
 	//$app_params['site_id'] = '';
 	
 	// Process the request by calling owa
-	$owa_wp = & new owa_wp;
+	$owa_wp = &new owa_wp;
 	$owa_wp->log($app_params);
 	return;
 }
@@ -205,16 +205,19 @@ function owa_get_page_type() {
 function add_feed_sid($binfo) {
 
 	global $doing_rss;
+	global $owa_wp;
 	
-	if (strstr($binfo, "feed=")):
-
-		$owa_wp = &new owa_wp;
-		$newbinfo = $owa_wp->add_feed_tracking($binfo);
-		
+	if($doing_rss):
+	
+		if (strstr($binfo, "feed=")):
+	
+			$newbinfo = $owa_wp->add_feed_tracking($binfo);
+			
+		endif;
+	
 	else: 
-	
-		$newbinfo = $binfo;
-	
+		
+			$newbinfo = $binfo;
 	endif;
 	
 	return $newbinfo;
@@ -229,10 +232,11 @@ function add_feed_sid($binfo) {
  */
 function owa_post_link($link) {
 
+	global $owa_wp;
 	global $doing_rss;
+	
 	if($doing_rss):
 	
-		$owa_wp = new owa_wp;
 		$tracked_link = $owa_wp->add_link_tracking($link);
 		return $tracked_link;
 	else:
@@ -249,6 +253,7 @@ function owa_post_link($link) {
 function owa_install_1() {
 
 	global $user_level;
+	global $owa_wp;
 	
 	//check to see if the user has permissions to install or not...
 	get_currentuserinfo();
@@ -259,7 +264,7 @@ function owa_install_1() {
     	$conf = &owa_settings::get_settings();
 		$conf['fetch_config_from_db'] = false;
 		print_r($config);
-    	$owa_wp = &new owa_wp;
+    	//$owa_wp = &new owa_wp;
     	$owa_wp->install('mysql');
 	endif;
 
@@ -271,10 +276,12 @@ function owa_install_1() {
  *
  */
 function owa_install_2() {
+	
+	global $owa_wp;
 
 		$conf = &owa_settings::get_settings();
 		$conf['fetch_config_from_db'] = false;
-    	$owa_wp = &new owa_wp;
+    	//$owa_wp = &new owa_wp;
     	$owa_wp->install('mysql');
 
 	return;
@@ -313,7 +320,9 @@ function owa_options() {
  */
 function owa_options_page() {
 	
-	$owa_wp = &new owa_wp;
+	global $owa_wp;
+	
+	//$owa_wp = &new owa_wp;
 	$owa_wp->options_page();
 	
 	return;

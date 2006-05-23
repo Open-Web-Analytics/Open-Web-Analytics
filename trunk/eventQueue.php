@@ -73,7 +73,7 @@ class eventQueue {
 				$eq->_filename	= $this->config['async_log_dir'].$this->config['async_log_file'];
 					
 				// This observer will watch the queue and exec a new php process that will process the events
-				require_once(OWA_REQ_PLUGINS_DIR.'async/observer_async_helper.php');
+				require_once(OWA_PLUGINS_DIR.'/event_handlers/async/observer_async_helper.php');
 				$async_helper = &owa_observer::factory('async_helper', PEAR_LOG_INFO);
 				$eq->attach($async_helper);
 					
@@ -81,12 +81,12 @@ class eventQueue {
 				//Create a normal event queue using 'queue' which is an extension to PEAR LOG.
 				$eq = Log::singleton('queue', '', 'event_queue');
 			
-				if ($dir = @opendir(OWA_REQ_PLUGINS_DIR)):
+				if ($dir = @opendir(OWA_PLUGINS_DIR.'/event_handlers')):
 					while (($file = @readdir($dir)) !== false) {
 						if (strstr($file, '.php') &&
 							substr($file, -1, 1) != "~" &&
 							substr($file,  0, 1) != "#"):
-								require_once(OWA_REQ_PLUGINS_DIR.$file);
+								require_once(OWA_PLUGINS_DIR.'/event_handlers/'.$file);
 								$class  = substr($file, 9, -4);
 								$plugin_name = &owa_observer::factory($class, PEAR_LOG_INFO);
 								$eq->attach($plugin_name);

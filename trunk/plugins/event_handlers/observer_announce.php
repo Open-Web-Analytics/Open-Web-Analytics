@@ -81,9 +81,6 @@ class Log_observer_announce extends owa_observer {
 
         // Configure the observer to listen for event types
 		$this->_event_type = array('new_session');
-
-		// Fetch config
-		$this->config = &owa_settings::get_settings();
 		
 		return;
     }

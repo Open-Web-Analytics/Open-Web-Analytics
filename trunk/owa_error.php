@@ -17,7 +17,7 @@
 //
 require_once 'owa_env.php';
 require_once (OWA_PEARLOG_DIR . '/Log.php');
-require_once (OWA_PLUGINS_DIR . 'log/winstatic.php');
+require_once (OWA_PLUGINS_DIR . '/log/winstatic.php');
 
 /**
  * Error handler

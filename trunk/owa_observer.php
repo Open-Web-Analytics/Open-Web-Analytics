@@ -55,6 +55,13 @@ class owa_observer extends Log_observer {
      * @var object
      */
     var $e;
+    
+    /**
+     * Configuration
+     *
+     * @var array
+     */
+    var $config;
 
     /**
      * Creates a new basic Log_observer instance.
@@ -67,6 +74,7 @@ class owa_observer extends Log_observer {
     function owa_observer($priority = PEAR_LOG_INFO)
     {
         $this->Log_observer($priority);
+        $this->config = &owa_settings::get_settings();
     	//$this->_id = md5(microtime());
         //$this->_priority = $priority;
         $this->e = &owa_error::get_instance();

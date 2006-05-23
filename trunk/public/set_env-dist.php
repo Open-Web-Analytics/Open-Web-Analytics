@@ -1,4 +1,4 @@
-<?php
+<?
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -17,7 +17,7 @@
 //
 
 /**
- * Environment Configuration
+ * Set environment path to owa_env.php for all public htdocs to use
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,12 +28,9 @@
  * @since		owa 1.0.0
  */
 
-define('OWA_BASE_DIR', dirname(__FILE__));
-define('OWA_INCLUDE_DIR', OWA_BASE_DIR.'/includes/');
-define('OWA_PEARLOG_DIR', OWA_BASE_DIR.'/includes/Log-1.9.5');
-define('OWA_JPGRAPH_DIR', OWA_BASE_DIR.'/includes/jpgraph-1.20.3/src');
-define('OWA_PLUGINS_DIR', OWA_BASE_DIR.'/plugins');
-define('OWA_METRICS_DIR', OWA_BASE_DIR.'/plugins/metrics/');
-define('OWA_GRAPHS_DIR', OWA_BASE_DIR.'/plugins/graphs/');
+// Change this to point to the full filesystem path of the main OWA Directory.
+define('OWA_PATH', '..');
+
+include_once(OWA_PATH.'owa_env.php');
 
 ?>

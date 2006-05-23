@@ -45,7 +45,7 @@ class owa_settings {
 	function owa_settings() {
 		
 		$this->properties = $this->get_settings();
-		$this->e = owa_error::get_instance();
+		$this->e = &owa_error::get_instance();
 		return;
 	}
 	
@@ -232,6 +232,9 @@ class owa_settings {
 				$site_id);
 		
 		$settings = $this->db->get_row($sql);
+		
+		//$e = &owa_error::get_instance();
+		//$e->debug(debug_backtrace());
 		
 		return unserialize($settings['settings']);
 		

@@ -16,10 +16,7 @@
 // $Id$
 //
 
-// You will need to change this if you move OWA's public
-// htdocs dir.
-include_once('../owa_env.php');
-
+include_once('set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 
 /**
