@@ -53,13 +53,6 @@ class Log_observer_referer extends owa_observer {
 	var $db;
 	
 	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
 	 * Title of refering page
 	 *
 	 * @var unknown_type
@@ -103,7 +96,6 @@ class Log_observer_referer extends owa_observer {
         // Configure the observer
 		$this->_event_type = array('new_session');
 	
-		$this->config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		
 		return;
