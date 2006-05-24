@@ -204,6 +204,25 @@ class owa_lib {
 		
 		return $label;
 	}
+	
+	function get_current_url() {
+		
+		$url = 'http';	
+		
+		if($_SERVER['HTTPS']=='on'):
+			$url.= 's';
+		endif;
+		
+		$url .= '://'.$_SERVER['SERVER_NAME'];
+		
+		if($_SERVER['SERVER_PORT'] != 80):
+			$url .= ':'.$_SERVER['SERVER_PORT'];
+		endif;
+		
+		$url .= $_SERVER['REQUEST_URI'];
+		
+		return $url;
+	}
 }
 
 ?>
