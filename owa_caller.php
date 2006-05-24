@@ -215,14 +215,65 @@ class owa_caller {
 		if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
 			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
 			$bug .= "document.write('<img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\">');</script>";
-			$bug .= "<noscript><img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
+			//$bug .= "<noscript><img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
 			echo $bug;
 		endif;
 		
 		return;
+
 	}
 	
-	
+	function place_log_bug() {
+
+		$bug  = 'document.write(\'<img src=\"http';
+		
+		if($_SERVER['HTTPS']=='on'):
+			$bug.= 's';
+		endif;		
+		
+		$bug .= '://'.$_SERVER['SERVER_NAME'];
+		
+		if($_SERVER['SERVER_PORT'] != 80):
+			$bug .= ':'.$_SERVER['SERVER_PORT'];
+		endif;
+		
+		$bug .= $this->config['public_url'].'/page.php?';
+		
+		// Add site id
+		$bug .= 'site_id=\'+owa_site_id';
+		
+		// Set Referer
+		$bug .= '+\'&referer=\'+owa_referer';
+		
+		// Set page Type
+		$bug .= '+\'&page_type=\'+owa_page_type';
+
+		//Set page ID
+		$bug .= '+\'&page_id=\'+owa_page_id';
+		
+		// Track users by the email address
+		$bug .= '+\'&user_email=\'+owa_user_email';
+			
+		// Track users who have a named account
+		$bug .= '+\'&user_name=\'+owa_user_name';
+
+		// Set Page Title
+		$bug .= '+\'&page_title=\'+owa_page_title';
+		
+		$bug .='\">);';
+		
+		$js_functions = fopen(OWA_CONFIG_DIR.'/js_lib.js');
+		
+		$bug .= $js_functions;
+		
+		
+		
+		echo $bug;
+		
+		return;
+		
+		
+	}
 	
 }
 

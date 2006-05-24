@@ -130,7 +130,7 @@ class owa_request {
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
 		$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
 		//$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
-		$this->properties['inbound_uri'] = $this->get_current_url();
+		$this->properties['inbound_uri'] = owa_lib::get_current_url();
 		$this->properties['uri'] = $this->properties['inbound_uri'];
 		$this->properties['ip_address'] = $this->get_ip();
 		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
@@ -633,7 +633,7 @@ class owa_request {
 	
 	}
 	
-	function get_current_url() {
+	/*function get_current_url() {
 		
 		$url = 'http';	
 		
@@ -650,7 +650,7 @@ class owa_request {
 		$url .= $_SERVER['REQUEST_URI'];
 		
 		return $url;
-	}
+	}*/
 	
 	
 	/**
