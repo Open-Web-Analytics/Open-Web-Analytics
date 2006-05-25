@@ -71,10 +71,10 @@ class owa_error {
 				case "development":
 					
 					//$config['debug_to_screen'] = true;
-					$window = owa_error::make_window_logger();
+					//$window = owa_error::make_window_logger();
 					$file = owa_error::make_file_logger();
 					$logger = &Log::singleton('composite');
-					$logger->addChild($window);
+					//$logger->addChild($window);
 					$logger->addChild($file);
 					break;
 					

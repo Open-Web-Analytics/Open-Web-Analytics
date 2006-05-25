@@ -147,6 +147,16 @@ class owa_caller {
 	
 	function first_request_handler() {
 		
+		header('Content-type: image/gif');
+		//header('P3P: CP="'.$this->config['p3p_policy'].'"');
+		header('P3P: CP="IDC DSP COR CURa ADMa OUR IND PHY ONL COM STA"');
+		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
+		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+		header('Cache-Control: no-store, no-cache, must-revalidate');
+		header('Cache-Control: post-check=0, pre-check=0', false);
+		header('Pragma: no-cache');
+		
+		
 		$this->e->debug('Received special OWA request. OWA action = first_hit');
 		
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
@@ -154,13 +164,7 @@ class owa_caller {
 			$owa->process_first_request();
 		endif;
 			
-		header('Content-type: image/gif');
-		header('P3P: CP="NOI NID ADMa OUR IND UNI COM NAV"');
-		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-		header('Cache-Control: no-store, no-cache, must-revalidate');
-		header('Cache-Control: post-check=0, pre-check=0', false);
-		header('Pragma: no-cache');
+		
 				
 		printf(
 		  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
