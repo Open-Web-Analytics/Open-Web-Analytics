@@ -74,7 +74,7 @@ $l->log($app_params);
 	
 // Return 1x1 pixel
 header('Content-type: image/gif');
-header('P3P: CP="NOI NID ADMa OUR IND UNI COM NAV"');
+header('P3P: CP="'.$l->config['p3p_policy'].'"');
 header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
