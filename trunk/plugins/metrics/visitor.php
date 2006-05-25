@@ -103,17 +103,21 @@ class owa_metric_visitor extends owa_metric {
 			documents.id,
 			documents.page_title as first_page_title,
 			documents.url as first_page_uri,
-			documents.page_type as first_page_type
+			documents.page_type as first_page_type,
+			ua.ua,
+			ua.browser_type
 		FROM 
 			%s as sessions,
 			%s as referers,
-			%s as documents
+			%s as documents,
+			%s as ua
 		WHERE
 			site_id = %s
 			%s 
 			%s
 			AND sessions.first_page_id = documents.id
 			AND sessions.referer_id = referers.id
+			AND ua.id = sessions.ua_id
 		ORDER BY
 			sessions.timestamp DESC
 		LIMIT 
@@ -121,6 +125,7 @@ class owa_metric_visitor extends owa_metric {
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['ns'].$this->config['referers_table'],
 			$this->config['ns'].$this->config['documents_table'],
+			$this->config['ns'].$this->config['ua_table'],
 			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
