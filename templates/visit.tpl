@@ -23,6 +23,7 @@
 													<? endif; ?>
 													)</span>
 												<?endif;?>
+								<span class="info_text"><?=urldecode($visit['ua']);?></span> 
 								</TD>
 							</tr>
 							<TR>
