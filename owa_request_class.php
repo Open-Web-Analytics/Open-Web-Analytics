@@ -357,7 +357,7 @@ class owa_request {
         $this->properties['visitor_id'] = $this->set_guid();
 		
         // Set visitor cookie
-        setcookie($this->config['ns'].$this->config['visitor_param'], $this->properties['visitor_id'] , time()+3600*24*365*10, "/", $this->properties['site']);
+        setcookie($this->config['ns'].$this->config['visitor_param'], $this->properties['visitor_id'] , time()+3600*24*365*30, "/", $this->properties['site']);
 		
 		$this->properties['is_new_visitor'] = true;
 		

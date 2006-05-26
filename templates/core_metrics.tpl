@@ -18,7 +18,14 @@
 		<TD><?=$this->get_month_label($row['month']);?></TD>
 	<? else: ?>
 		<TD><?=$this->get_month_label($row['month']);?></TD>
-		<TD><?=$row['day'];?></TD>
+		
+		<a href="<?=$this->config['reporting_url'];?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['prior_session_id']?>">
+		
+		<TD>
+		<a href="<?=$this->config['reporting_url'];?>/dashdate_report.php&year=<?=$row['year'];?>&month=<?=$row['month'];?>&day=<?=$row['day'];?>">
+		<?=$row['day'];?>
+		</a>
+		</TD>
 		<TD><?=$row['year'];?></TD>
 	<? endif; ?>
 		<TD><?=$row['page_views'];?></TD>

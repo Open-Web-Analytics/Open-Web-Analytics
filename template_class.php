@@ -144,6 +144,37 @@ class Template {
 		return owa_lib::get_month_label($month);
 	}
 	
+	function choose_browser_icon($browser_type) {
+		
+		switch (strtolower($browser_type)) {
+			
+			case "ie":
+				$file = 'msie.png';
+				break;
+			case "firefox":
+				$file = 'firefox.png';
+				break;
+			case "safari":
+				$file = 'safari.png';
+				break;
+			case "opera":
+				$file = 'opera.png';
+				break;
+			case "netscape":
+				$file = 'netscape.png';
+				break;
+			
+			
+		}
+		if (!empty($file)):
+			return $icon = "<img src=\"".$this->config['images_url']."/".$file."\">";
+		else:
+			return $browser_type;
+		endif;
+		
+		return;
+	}
+	
 }
 
 /**
