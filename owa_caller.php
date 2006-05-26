@@ -148,9 +148,9 @@ class owa_caller {
 	function first_request_handler() {
 		
 		header('Content-type: image/gif');
-		//header('P3P: CP="'.$this->config['p3p_policy'].'"');
+		header('P3P: CP="'.$this->config['p3p_policy'].'"');
 		//header('P3P: CP="NOI NID ADMa OUR IND UNI COM NAV"');
-		header('P3P: CP="NOI NAV"');
+		//header('P3P: CP="NOI NAV"');
 		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 		header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -216,7 +216,8 @@ class owa_caller {
 	
 	function add_tag() {
 		
-		if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+		//if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+		if (empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):	
 			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
 			$bug .= "document.write('<img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\">');</script>";
 			//$bug .= "<noscript><img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
