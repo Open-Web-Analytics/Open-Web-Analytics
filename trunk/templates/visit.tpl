@@ -23,6 +23,7 @@
 													<? endif; ?>
 													)</span>
 												<?endif;?>
+												<?=$this->choose_browser_icon($visit['browser_type']);?>
 								<span class="info_text"><?=urldecode($visit['ua']);?></span> 
 								</TD>
 							</tr>

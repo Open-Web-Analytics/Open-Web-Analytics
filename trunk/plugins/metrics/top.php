@@ -103,9 +103,9 @@ class owa_metric_top extends owa_metric {
 			$this->params['limit']
 		);
 		
-		$results = $this->db->get_results($sql);
-		print mysql_error();
-		return $results;
+		return $this->db->get_results($sql);
+	
+		
 	}
 	
 	/**
@@ -130,6 +130,7 @@ class owa_metric_top extends owa_metric {
 		WHERE
 			site_id = '%s' 
 			%s
+			%s
 			AND referers.id != 0
 			AND referers.id = sessions.referer_id
 		GROUP BY
@@ -142,12 +143,13 @@ class owa_metric_top extends owa_metric {
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['site_id'],
 			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
 		);
 		
-		$results = $this->db->get_results($sql); 
-		print mysql_error();
-		return $results;
+	return $this->db->get_results($sql); 
+	
+	
 	
 	}
 	
@@ -170,6 +172,7 @@ class owa_metric_top extends owa_metric {
 		WHERE
 			site_id = '%s' 
 			%s
+			%s
 		GROUP BY
 			vis_id
 		ORDER BY
@@ -179,7 +182,7 @@ class owa_metric_top extends owa_metric {
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['site_id'],
 			$this->time_period($this->params['period']),
-			//$this->add_constraints($this->params['constraints']),
+			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
 		);
 		

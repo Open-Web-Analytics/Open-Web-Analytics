@@ -308,11 +308,18 @@ class owa_metric {
 	 */
 	function add_constraints($constraints) {
 	
-		foreach ($constraints as $key => $value) {
-			
-			$where .= " AND " . $key . ' = ' . "'$value'";
-			
-		}
+		if (!empty($constraints)):
+		
+			foreach ($constraints as $key => $value) {
+				
+				if (!empty($value)):
+					$where .= " AND " . $key . ' = ' . "'$value'";
+				//else:
+					//$where = '';
+				endif;		
+			}
+		
+		endif;
 		
 		return $where;
 	}

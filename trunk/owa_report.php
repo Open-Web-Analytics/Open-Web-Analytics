@@ -71,6 +71,13 @@ class owa_report {
 	var $config;
 	
 	/**
+	 * Date constraint of report
+	 *
+	 * @var array
+	 */
+	var $request_api_params = array();
+	
+	/**
 	 * Constructor
 	 *
 	 * @access 	public
@@ -82,6 +89,7 @@ class owa_report {
 		$this->tpl = & new Template;
 		$this->tpl->set_template($this->config['report_wrapper']);
 		$this->metrics = owa_api::get_instance('metric');
+		$this->request_api_params = owa_lib::get_api_params();
 	
 		return;
 	}

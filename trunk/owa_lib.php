@@ -223,6 +223,30 @@ class owa_lib {
 		
 		return $url;
 	}
+	
+	/**
+	 * Builds date param array from GET
+	 *
+	 * @return array
+	 */
+	function get_api_params() {
+		
+		$params = array();
+		
+		$params['month'] = $_GET['month'];
+		$params['year'] = $_GET['year'];
+		$params['day'] = $_GET['day'];
+		$params['dayofyear'] = $_GET['dayofyear'];
+		$params['weekofyear'] = $_GET['weekofyear'];
+		$params['hour'] = $_GET['hour'];
+		$params['minute'] = $_GET['minute'];
+		$params['limit'] = $_GET['limit'];
+		$params['offset'] = $_GET['offset'];
+		$params['sortby'] = $_GET['sortby'];
+	
+		return $params;
+		
+	}
 }
 
 ?>
