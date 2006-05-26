@@ -77,6 +77,14 @@ class owa {
 	 */
 	function process_request($app_params) {
 		
+		// Log first request just in case it was left over from prior page view.
+		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+			
+			$fh = new owa_request;
+			$this->log_first_request($fh);
+			
+		endif;
+		
 		// Create a new request object
 		$r = new owa_request;
 		
@@ -124,20 +132,6 @@ class owa {
 			endif;	
 		endif;	
 		
-		// Log first hit to cookie if no visitor cookie is already set
-		if ($this->config['delay_first_hit'] == true):	
-			//	Check to see if this request is a delayed hit being proceessed from the cookie.
-			if ($r->first_hit == false):	
-				// If not, then make sure that there is an inbound visitor_id
-				if (empty($r->properties['inbound_visitor_id'])):
-					// Log request properties to a cookie for processing by a second request and return
-					$this->e->debug('Logging this request to first hit cookie.');
-					$r->log_first_hit();
-					return;
-				endif;
-			endif;
-		endif;
-		
 		$this->process($r);
 		
 		return;
@@ -153,8 +147,19 @@ class owa {
 		// Sessionize
 		if ($this->config['log_sessions'] == true):
 			$r->sessionize();
-			$this->e->debug(sprintf('Sessionization of request %d complete.', 
-									$r->properties['request_id']));
+			$this->e->debug('Sessionization complete.');
+		endif;
+		
+		// Log first hit to cookie if no visitor cookie is already set
+		if ($this->config['delay_first_hit'] == true):	
+			// If not, then make sure that there is an inbound visitor_id
+			if (empty($r->properties['inbound_visitor_id'])):
+				// Log request properties to a cookie for processing by a second request and return
+				$this->e->debug('Logging this request to first hit cookie.');
+				$r->log_first_hit();
+				return;
+			endif;
+		
 		endif;
 
 		// Log the request
@@ -185,13 +190,24 @@ class owa {
 		// Create a new request object
 		$r = new owa_request;
 		
+		$this->log_first_request($r);
+
+		return;
+	}
+	
+	function log_first_request($r) {
+		
 		//Load request properties from first_hit cookie if it exists
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
 			$r->load_first_hit_properties($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]);
 		endif;
 		
-		$this->process($r);
-
+		// Log the request
+		$r->state = 'new_request';
+		$r->log_request();
+		$this->e->debug(sprintf('First hit Request %d logged to event queue',
+								$r->properties['request_id']));
+		
 		return;
 	}
 	
