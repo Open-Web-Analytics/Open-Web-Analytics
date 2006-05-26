@@ -177,15 +177,14 @@ class owa_caller {
 	
 	function graph_request_handler() {
 		
-		$params = array(
-				'api_call' 		=> $_GET[$this->config['graph_param']],
-				'period'			=> $_GET[$this->config['period_param']],
-				'type'			=> $_GET['type']
-			
-			);
-			
+		$params = owa_lib::get_api_params();
+		$params['api_call'] = $_GET[$this->config['graph_param']];
+		$params['type'] = $_GET['type'];
+				
 		$owa = new owa;
 		$owa->get_graph($params);
+			$this->e->debug('PARAMS GRAPH: '.serialize($params));
+		
 		return;
 	}
 	

@@ -243,6 +243,8 @@ class owa_lib {
 		$params['limit'] = $_GET['limit'];
 		$params['offset'] = $_GET['offset'];
 		$params['sortby'] = $_GET['sortby'];
+		$params['period'] = $_GET['period'];
+		
 	
 		return $params;
 		

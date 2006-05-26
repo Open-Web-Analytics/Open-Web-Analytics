@@ -207,6 +207,7 @@ class owa {
 		$g_api = owa_api::get_instance('graph');
 		
 		$g_api->get($params);
+	
 			
 		return;
 		

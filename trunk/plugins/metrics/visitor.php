@@ -160,6 +160,7 @@ class owa_metric_visitor extends owa_metric {
 			$this->add_constraints($this->params['constraints'])
 		);
 
+		
 		return $this->db->get_results($sql);	
 	}
 	
