@@ -86,10 +86,12 @@ class owa_metric_source extends owa_metric {
 		WHERE
 			site_id = %s 
 			%s
+			%s
 			AND sessions.source = '%s'",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['site_id'],
 			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
 			$source
 			
 		);
@@ -113,12 +115,14 @@ class owa_metric_source extends owa_metric {
 		WHERE
 			site_id = %s 
 			%s
+			%s
 			AND sessions.referer_id = referers.id
 			AND referers.is_searchengine = 1",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['ns'].$this->config['referers_table'],
 			$this->config['site_id'],
-			$this->time_period($this->params['period'])
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
 		);
 		
 		return $this->db->get_row($sql);
@@ -140,12 +144,14 @@ class owa_metric_source extends owa_metric {
 		WHERE
 			site_id = %s 
 			%s
+			%s
 			AND sessions.referer_id = referers.id
 			AND referers.is_searchengine = 0",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['ns'].$this->config['referers_table'],
 			$this->config['site_id'],
-			$this->time_period($this->params['period'])
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
 		);
 		
 		return $this->db->get_row($sql);

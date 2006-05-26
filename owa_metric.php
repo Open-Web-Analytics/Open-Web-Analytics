@@ -293,6 +293,9 @@ class owa_metric {
 						);	
 				
 				break;
+				
+			default:
+				$where = '';
 	
 		}
 		
@@ -309,19 +312,30 @@ class owa_metric {
 	function add_constraints($constraints) {
 	
 		if (!empty($constraints)):
+		//$this->e->debug(' CONSTRAINT: '. print_r($constraints));
+		
+		$where = '';
 		
 			foreach ($constraints as $key => $value) {
 				
-				if (!empty($value)):
+				if ($value):
 					$where .= " AND " . $key . ' = ' . "'$value'";
 				//else:
 					//$where = '';
 				endif;		
 			}
+		//$this->e->debug('WHERE CLAUSE FOR CONSTRAINT: '. $where);
 		
+			return $where;
+			
+		else:
+		
+			return;
+				
 		endif;
 		
-		return $where;
+		
+		
 	}
 	
 	/**
