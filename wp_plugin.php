@@ -57,7 +57,9 @@ if ($owa_wp_version[0] == '1'):
 	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
 		owa_install_2();
 	endif;
+
 elseif ($owa_wp_version[0] == '2'):
+
 	add_action('activate_owa/wp_plugin.php', 'owa_install_2');
 
 endif;
