@@ -53,15 +53,21 @@ $owa_wp = &new owa_wp($owa_config);
 
 // Installation logic
 if ($owa_wp_version[0] == '1'):
+	add_action('template_redirect', 'owa_main');
 	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
 		owa_install_2();
 	endif;
 elseif ($owa_wp_version[0] == '2'):
 	add_action('activate_owa/wp_plugin.php', 'owa_install_2');
 
+	if (!is_preview()):
+		add_action('template_redirect', 'owa_main');
+	endif;
+	
 endif;
 
-add_action('template_redirect', 'owa_main');
+
+
 add_action('wp_footer', array(&$owa_wp, 'add_tag'));
 add_filter('post_link', 'owa_post_link');
 add_filter('bloginfo', 'add_feed_sid');
