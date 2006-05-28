@@ -1,13 +1,32 @@
-// wa webbug
 
-<script language="JavaScript" type="text/javascript">
+// OWA wb Javascript lib - STATIC START
 
-
-
-
+if (typeof owa_site_id == 'undefined') {
+	var owa_site_id = '1';
+}
+if (typeof owa_user_email == 'undefined') {
+	var owa_user_email = '';
+}
+if (typeof owa_user_name == 'undefined') {
+	var owa_user_name = '';
+}
+if (typeof owa_page_uri == 'undefined') {
+	var owa_page_uri = owa_get_url();
+}
+if (typeof owa_page_title == 'undefined') {
+	var owa_page_title = owa_get_title();
+}
+if (typeof owa_page_type == 'undefined') {
+	var owa_page_type = '';
+}
+if (typeof owa_referer == 'undefined') {
+	var owa_referer = owa_get_referer();
+}
+owa_log();
+	
+// Base64 encodes strings
 // Taken from http://www.jan-winkler.de/hw/artikel/art_j02.htm
-
-function base64_encode(decStr) {
+function owa_base64_encode(decStr) {
   var base64s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   var bits;
   var dual;
@@ -40,23 +59,48 @@ function base64_encode(decStr) {
   return(encOut);
 }
 
+// Gets the resolution of the users screen from browser
+function owa_get_resolution() {
+	
+	var resolution = window.screen.width + 'x' + window.screen.height + 'x' + window.screen.colorDepth + 'bit';
+	return(resolution);  
+}               
 
-var site_id = 2;
-var resolution = window.screen.width + 'x' +
-                 window.screen.height + 'x' +
-                 window.screen.colorDepth + 'bit';
-				 
-var webbug_log_path = '/padams/wordpress-1.5.2/wp-content/plugins/wa/page.php';
+//Gets title of web page from browser
+function owa_get_title() {
+	
+	var title = document.title;	
+	return(title);
+}
 
-document.write(
-  '<img src="' + webbug_log_path + '?' +
-  'site_id='              + site_id + '&' +
-  'page_title='				+ document.title + '&' +
-  'uri='           + base64_encode(document.URL) + '&' +
-  'referer='                + base64_encode(document.referrer) + '&' +
-  'add_data[]=resolution::' + resolution +
-  '" alt="" width="1" height="1" />'
-);
+// Gets the url ro mthe address barof browser
+function owa_get_url() {
 
-</script>
-<!--<noscript><img alt="" src="/track/image.php?client_id=2" width="1" height="1" /></noscript>-->
+	var url = owa_base64_encode(document.URL);
+	return(url);
+}
+
+// Gets the referer url from browser
+function owa_get_referer() {
+	
+	var referer = owa_base64_encode(document.referrer);
+	return(referer);
+}
+
+function owa_log() {
+	
+	document.write(
+	  '<img src="'				+ owa_url +
+	  'site_id='				+ owa_site_id + '&' +
+	  'page_title='				+ owa_page_title + '&' +
+	  'page_uri='           	+ owa_page_uri + '&' +
+	  'referer='                + owa_referer + '&' +
+	  'user_email=' 			+ owa_user_email + '&' +
+	  'user_name='				+ owa_user_name + '&' +
+	  'page_type='				+ owa_page_type +
+	  '" alt="" width="1" height="1" />'
+	);		
+	
+}
+
+

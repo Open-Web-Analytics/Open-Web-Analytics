@@ -229,54 +229,28 @@ class owa_caller {
 	}
 	
 	function place_log_bug() {
-
-		$bug  = 'document.write(\'<img src=\"http';
+		
+		$base_url  = "http";
 		
 		if($_SERVER['HTTPS']=='on'):
-			$bug.= 's';
-		endif;		
-		
-		$bug .= '://'.$_SERVER['SERVER_NAME'];
+			$base_url .= 's';
+		endif;
+				
+		$base_url .= '://'.$_SERVER['SERVER_NAME'];
 		
 		if($_SERVER['SERVER_PORT'] != 80):
-			$bug .= ':'.$_SERVER['SERVER_PORT'];
+			$base_url .= ':'.$_SERVER['SERVER_PORT'];
 		endif;
 		
-		$bug .= $this->config['public_url'].'/page.php?';
+		$base_url .= $this->config['public_url'].'/page.php?';
 		
-		// Add site id
-		$bug .= 'site_id=\'+owa_site_id';
+		$bug = 'var owa_url = \'' . $base_url . '\';';
 		
-		// Set Referer
-		$bug .= '+\'&referer=\'+owa_referer';
-		
-		// Set page Type
-		$bug .= '+\'&page_type=\'+owa_page_type';
-
-		//Set page ID
-		$bug .= '+\'&page_id=\'+owa_page_id';
-		
-		// Track users by the email address
-		$bug .= '+\'&user_email=\'+owa_user_email';
-			
-		// Track users who have a named account
-		$bug .= '+\'&user_name=\'+owa_user_name';
-
-		// Set Page Title
-		$bug .= '+\'&page_title=\'+owa_page_title';
-		
-		$bug .='\">);';
-		
-		$js_functions = fopen(OWA_CONFIG_DIR.'/js_lib.js');
-		
-		$bug .= $js_functions;
-		
-		
+		$bug .= file_get_contents(OWA_INCLUDE_DIR.'/webbug.js');
 		
 		echo $bug;
 		
 		return;
-		
 		
 	}
 	

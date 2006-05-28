@@ -159,9 +159,8 @@ class owa_settings {
 			'action_url'					=> '',
 			'images_url'					=> '',
 			'reporting_url'					=> '',
-			//'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV'
-			'p3p_policy'					=> 'IDC DSP COR CURa ADMa OUR IND PHY ONL COM STA'
-			
+			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV'
+						
 			);
 	}
 	
