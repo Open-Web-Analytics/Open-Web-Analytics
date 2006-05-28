@@ -37,14 +37,24 @@ $config['delay_first_hit'] = false;
 // Setup new OWA caller object
 $l = new owa_php($config);
 
+// Return 1x1 pixel
+header('Content-type: image/gif');
+header('P3P: CP="'.$l->config['p3p_policy'].'"');
+header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+
 // Set page URL
-if (isset($_GET['uri']) && !empty($_GET['uri'])):
-	$app_params['uri'] = base64_decode($_GET['uri']);
+if (isset($_GET['page_uri']) && !empty($_GET['page_uri'])):
+	$app_params['uri'] = base64_decode($_GET['page_uri']);
 else: 
 	$app_params['uri'] = $_SERVER['HTTP_REFERER'];
 endif;
 
-if (!isset($app_params['uri'])):
+if (empty($app_params['uri'])):
+	print 'no uri';
 	exit;
 endif;
 
@@ -71,18 +81,10 @@ $app_params['site_id'] = $_GET['site_id'];
 	
 // Track the request
 $l->log($app_params);
-	
-// Return 1x1 pixel
-header('Content-type: image/gif');
-header('P3P: CP="'.$l->config['p3p_policy'].'"');
-header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Cache-Control: post-check=0, pre-check=0', false);
-header('Pragma: no-cache');
 
 printf(
   '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
   71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
 );
+
 ?>
