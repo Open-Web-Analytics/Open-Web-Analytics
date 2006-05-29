@@ -42,11 +42,11 @@ $session_id =  $_GET[$report->config['ns'].$report->config['session_param']];
 	
 // Setup the templates
 
-$body = & new Template; 
+$body = & new owa_template; 
 
 $body->set_template('session.tpl');// This is the inner template
 
-$visits = & new Template; 
+$visits = & new owa_template; 
 
 $visits->set_template('visit.tpl');// This is a sub template
 

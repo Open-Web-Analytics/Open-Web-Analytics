@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
-require_once 'owa_lib.php';
-
 /**
  * Template
  * 
