@@ -52,13 +52,6 @@ class Template {
      * @var string
      */
     var $file;
-    
-    /**
-     * Debug
-     *
-     * @var string
-     */
-    var $debug;
 
     /**
      * Constructor
@@ -66,8 +59,6 @@ class Template {
      * @access public 
      */
     function Template() {
-    	$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
         $this->template_dir = $this->config['templates_dir'];
         return;
     }
@@ -115,65 +106,6 @@ class Template {
         ob_end_clean();                // End buffering and discard
         return $contents;              // Return the contents
     }
-	
-	/**
-	 * Truncate string
-	 *
-	 * @param string $str
-	 * @param integer $length
-	 * @param string $trailing
-	 * @return string
-	 */
-	function truncate ($str, $length=10, $trailing='...')  {
-	 
-    	// take off chars for the trailing 
-    	$length-=strlen($trailing); 
-    	if (strlen($str) > $length):
-        	// string exceeded length, truncate and add trailing dots 
-         	return substr($str,0,$length).$trailing; 
-		else:  
-        	// string was already short enough, return the string 
-        	$res = $str;  
-      	endif;
-   
-      return $res; 
-	}
-	
-	function get_month_label($month) {
-		
-		return owa_lib::get_month_label($month);
-	}
-	
-	function choose_browser_icon($browser_type) {
-		
-		switch (strtolower($browser_type)) {
-			
-			case "ie":
-				$file = 'msie.png';
-				break;
-			case "firefox":
-				$file = 'firefox.png';
-				break;
-			case "safari":
-				$file = 'safari.png';
-				break;
-			case "opera":
-				$file = 'opera.png';
-				break;
-			case "netscape":
-				$file = 'netscape.png';
-				break;
-			
-			
-		}
-		if (!empty($file)):
-			return $icon = "<img src=\"".$this->config['images_url']."/".$file."\">";
-		else:
-			return $browser_type;
-		endif;
-		
-		return;
-	}
 	
 }
 

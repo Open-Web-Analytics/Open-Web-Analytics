@@ -44,7 +44,7 @@ $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
 $owa_config['db_type'] = 'wordpress';     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
-$owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/reports';
+$owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
 
 // Create new instance of caller class object
@@ -322,7 +322,7 @@ function owa_install_2() {
 function owa_dashboard_view() {
 
 	if (function_exists('add_submenu_page')):
-		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__) . '/reports/dashboard_report.php');
+		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__) . '/public/reports/dashboard_report.php');
     endif;
     
     return;
