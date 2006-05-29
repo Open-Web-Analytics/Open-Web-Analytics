@@ -22,28 +22,28 @@ $report = new owa_report;
 		
 // Setup the templates
 
-$body = & new Template; 
+$body = & new owa_template; 
 $body->set_template('date.tpl');// This is the inner template
 
-$visit = & new Template; 
+$visit = & new owa_template; 
 $visit->set_template('visit.tpl');// This is the inner template
 
-$top_pages = & new Template;
+$top_pages = & new owa_template;
 $top_pages->set_template('top_pages.tpl');
 
-$top_referers = & new Template;
+$top_referers = & new owa_template;
 $top_referers->set_template('top_referers.tpl');
 
-$top_visitors = & new Template;
+$top_visitors = & new owa_template;
 $top_visitors->set_template('top_visitors.tpl');
 
-$summary_stats = & new Template;
+$summary_stats = & new owa_template;
 $summary_stats->set_template('summary_stats.tpl');
 
-$periods_menu = & new Template;
+$periods_menu = & new owa_template;
 $periods_menu->set_template('periods_menu.tpl');
 
-$core_metrics = & new Template;
+$core_metrics = & new owa_template;
 $core_metrics->set_template('core_metrics.tpl');
 
 

@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_INCLUDE_DIR.'/template_class.php');
+require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 /**
  * OWA Wrapper for template class

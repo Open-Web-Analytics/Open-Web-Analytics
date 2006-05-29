@@ -51,11 +51,11 @@ $visitor_id = $_GET[$report->config['ns'].$report->config['visitor_param']];
 	
 //$report->tpl->set_template('wordpress.tpl'); // this is the outer template
 
-$body = & new Template; 
+$body = & new owa_template; 
 
 $body->set_template('visitor.tpl');// This is the inner template
 
-$visits = & new Template; 
+$visits = & new owa_template; 
 
 $visits->set_template('visit.tpl');// This is a sub template
 

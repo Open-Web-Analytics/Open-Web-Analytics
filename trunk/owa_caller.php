@@ -16,10 +16,10 @@
 // $Id$
 //
 
+include_once('owa_env.php');
 require_once 'owa_settings_class.php';
 require_once 'owa_controller.php';
 require_once 'owa_install.php';
-include_once('owa_env.php');
 
 /**
  * Abstract caller class
@@ -129,12 +129,12 @@ class owa_caller {
 	
 	function options_page() {
 	
-		require_once 'template_class.php';
+		require_once(OWA_BASE_DIR.'owa_template.php');
 	
 		//Setup templates
-		$options_page = & new Template;
+		$options_page = & new owa_template;
 		$options_page->set_template($options_page->config['report_wrapper']);
-		$body = & new Template; 
+		$body = & new owa_template; 
 		$body->set_template('options.tpl');// This is the inner template
 		$body->set('config', $this->config);
 		$body->set('page_title', 'OWA Options');

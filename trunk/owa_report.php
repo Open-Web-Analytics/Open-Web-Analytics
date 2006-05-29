@@ -17,7 +17,7 @@
 //
 
 require_once 'owa_env.php';
-require_once 'template_class.php';
+require_once 'owa_template.php';
 require_once 'owa_settings_class.php';
 require_once 'owa_api.php';
 require_once 'owa_lib.php';
@@ -86,7 +86,7 @@ class owa_report {
 	function owa_report() {
 		
 		$this->config = &owa_settings::get_settings();
-		$this->tpl = & new Template;
+		$this->tpl = & new owa_template;
 		$this->tpl->set_template($this->config['report_wrapper']);
 		$this->metrics = owa_api::get_instance('metric');
 		$this->request_api_params = owa_lib::get_api_params();
