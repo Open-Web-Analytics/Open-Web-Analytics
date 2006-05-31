@@ -56,7 +56,7 @@ class Template {
      * @access public 
      */
     function Template() {
-        $this->template_dir = $this->config['templates_dir'];
+        
         return;
     }
 	

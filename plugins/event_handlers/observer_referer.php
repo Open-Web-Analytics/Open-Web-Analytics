@@ -234,11 +234,11 @@ class Log_observer_referer extends owa_observer {
 				('%s', '%s', '%s', '%s', '%s', '%s', '%s')",
 			$this->config['ns'].$this->config['referers_table'],
 			$this->obj->properties['referer_id'],
-			$this->obj->properties['referer'],
+			$this->db->prepare($this->obj->properties['referer']),
 			trim($this->referer_info->name, '\"'),
-			$this->query_terms,
-			$this->page_title,
-			$this->refering_anchortext,
+			$this->db->prepare($this->query_terms),
+			$this->db->prepare($this->page_title),
+			$this->db->prepare($this->refering_anchortext),
 			$this->is_searchengine
 		
 			)

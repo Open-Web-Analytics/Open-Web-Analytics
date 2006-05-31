@@ -134,6 +134,18 @@ class owa_db_wordpress extends owa_db {
 		
 		return $row;
 	}
+	
+	/**
+	 * Prepares and escapes string
+	 *
+	 * @param string $string
+	 * @return string
+	 */
+	function prepare($string) {
+		
+		$string = mysql_real_escape_string($string, $this->connection); 
+		return $string;
+	}
 
 }
 

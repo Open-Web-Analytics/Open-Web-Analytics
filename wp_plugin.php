@@ -45,6 +45,7 @@ $owa_config['db_host'] = DB_HOST;     // The host of your db
 $owa_config['db_type'] = 'wordpress';     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
+$owa_config['inter_report_link_template'] = '%s/%s&%s';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
 
 // Create new instance of caller class object
