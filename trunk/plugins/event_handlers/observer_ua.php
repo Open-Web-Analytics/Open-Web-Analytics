@@ -124,8 +124,8 @@ class Log_observer_ua extends owa_observer {
 				('%s', '%s', '%s')",
 			$this->config['ns'].$this->config['ua_table'],
 			$this->obj->properties['ua_id'],
-			urlencode($this->obj->properties['ua']),
-			$this->obj->properties['browser_type']
+			$this->db->prepare($this->obj->properties['ua']),
+			$this->db->prepare($this->obj->properties['browser_type'])
 			
 			)
 		);	

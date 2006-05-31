@@ -231,7 +231,7 @@ class owa_session {
 			foreach ($browser_session as $key => $value) {
 			
 				$sql_cols = $sql_cols.$value;
-				$sql_values = $sql_values."'".$this->properties[$value]."'";
+				$sql_values = $sql_values."'".$this->db->prepare($this->properties[$value])."'";
 				
 				if (!empty($browser_session[$key+1])):
 				
@@ -302,7 +302,7 @@ class owa_session {
 					$this->properties['num_pageviews'],
 					$this->properties['num_comments'],
 					$this->properties['last_page_id'],
-					$this->properties['user_email'],
+					$this->db->prepare($this->properties['user_email']),
 					$this->properties['session_id']
       		)
     	);

@@ -42,7 +42,7 @@ class owa_template extends Template {
 	
 	function owa_template() {
 		$this->config = &owa_settings::get_settings();
-		$this->Template();
+		$this->template_dir = $this->config['templates_dir'];
 	}
 	
 	/**
@@ -108,6 +108,29 @@ class owa_template extends Template {
 		endif;
 		
 		return;
+	}
+	
+	/**
+	 * Generates a link betwen reports
+	 *
+	 * @param string $anchortext
+	 * @param array $query_params
+	 * @return string
+	 */
+	function make_report_link($report, $query_params = null) {
+		
+		$get = '';
+		
+		foreach ($query_params as $name => $value) {
+			
+			$get .= $name . "=" . $value . "&";	
+			
+		}
+		
+		return sprintf($this->config['inter_report_link_template'],
+				$this->config['reporting_url'],
+				$report,
+				$get);
 	}
 }
 

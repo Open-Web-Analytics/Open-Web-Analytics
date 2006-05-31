@@ -135,7 +135,7 @@ class Log_observer_request_logger extends owa_observer {
 			foreach ($request as $key => $value) {
 			
 				$sql_cols = $sql_cols.$value;
-				$sql_values = $sql_values."'".$this->m[$value]."'";
+				$sql_values = $sql_values."'".$this->m[$this->db->prepare($value)]."'";
 				
 				if (!empty($request[$key+1])):
 				

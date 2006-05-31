@@ -148,9 +148,10 @@ class owa_settings {
 			'templates_dir'					=> OWA_BASE_DIR . '/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'install_plugin_dir'			=> OWA_BASE_DIR . '/plugins/install/',
+			'reporting_dir'					=> OWA_BASE_DIR . '/public/reports/',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
-			'report_wrapper'				=> '',
+			'report_wrapper'				=> 'default_wrap.tpl',
 			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> true,
@@ -159,7 +160,8 @@ class owa_settings {
 			'action_url'					=> '',
 			'images_url'					=> '',
 			'reporting_url'					=> '',
-			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV'
+			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
+			'inter_report_link_template'	=> '%s?page=%s&%s' //base_url?report=report_name&get...
 						
 			);
 	}

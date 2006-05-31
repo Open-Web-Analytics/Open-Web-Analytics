@@ -14,7 +14,8 @@
 												New Visitor
 												<? else: ?>
 												Returning Visitor
-												<span class="info_text">(<a href="<?=$this->config['reporting_url'];?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['prior_session_id']?>">Last visit was</a> 
+												<span class="info_text">(<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['prior_session_id']));?>">Last visit was</a>
+																					
 												<?=round($visit['time_sinse_priorsession']/(3600*24));?> 
 													<? if (round($visit['time_sinse_priorsession']/(3600*24)) == 1): ?>
 													day ago.
@@ -30,7 +31,8 @@
 							<TR>
 								<TD>	
 									<div class="visitor_info_box pages_box">
-										<span class="large_number"><a href="<?=$this->config['reporting_url'];?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['session_id']?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
+										<span class="large_number">
+											<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['session_id']));?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
 									</div>
 									
 								</td>
