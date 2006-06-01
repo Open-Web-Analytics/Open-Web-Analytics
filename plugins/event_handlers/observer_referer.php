@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/ini_db.php');
+require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
 
 /**
  * Referer Traffic Source Event handler
@@ -81,6 +82,27 @@ class Log_observer_referer extends owa_observer {
 	var $is_searchengine;
 	
 	/**
+	 * Web crawler instance
+	 *
+	 * @var object
+	 */
+	var $crawler;
+	
+	/**
+	 * Snippet of page where the link that refered the user was found
+	 *
+	 * @var unknown_type
+	 */
+	var $snippet;
+	
+	/**
+	 * Anchor text of the link that refered the user.
+	 *
+	 * @var unknown_type
+	 */
+	var $anchor_text;
+	
+	/**
 	 * Constructor
 	 *
 	 * @param string $priority
@@ -133,10 +155,18 @@ class Log_observer_referer extends owa_observer {
 					$this->is_searchengine = true;
 				endif;
 			endif;
-			//get anchortext?
 			
-			//get title of page
-			$this->page_title = $this->get_url_title($this->obj->properties['referer']);
+			if ($this->config['fetch_refering_page_info'] = true):
+				
+				$this->crawler = new owa_http;
+				$this->crawler->fetch($this->obj->properties['referer']);
+				$this->snippet = $this->crawler->extract_anchor_snippet($this->obj->properties['inbound_uri']);
+				//$this->e->debug('Referering Snippet is: '. $this->snippet);
+				$this->anchor_text = $this->crawler->anchor_info['anchor_text'];
+				//$this->e->debug('Anchor text is: '. $this->anchor_text);
+				$this->page_title = $this->crawler->extract_title();
+				
+			endif;
 			
 			//write to DB
 			$this->save();
@@ -229,16 +259,18 @@ class Log_observer_referer extends owa_observer {
 				query_terms, 
 				page_title, 
 				refering_anchortext, 
+				snippet,
 				is_searchengine) 
 			VALUES 
-				('%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+				('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
 			$this->config['ns'].$this->config['referers_table'],
 			$this->obj->properties['referer_id'],
 			$this->db->prepare($this->obj->properties['referer']),
 			trim($this->referer_info->name, '\"'),
 			$this->db->prepare($this->query_terms),
 			$this->db->prepare($this->page_title),
-			$this->db->prepare($this->refering_anchortext),
+			$this->db->prepare($this->anchor_text),
+			$this->db->prepare($this->snippet),
 			$this->is_searchengine
 		
 			)
