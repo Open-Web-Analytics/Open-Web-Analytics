@@ -44,10 +44,6 @@ class owa_wp extends owa_caller {
 	}
 	
 	function init_action() {
-		
-		if (isset($_GET['owa_action'])):
-			$this->e->debug('Received special OWA request. OWA action = '.$_GET['owa_action']);
-		endif;
 			
 		switch ($_GET['owa_action']) {
 			

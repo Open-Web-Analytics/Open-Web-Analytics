@@ -135,7 +135,8 @@ class owa_session {
 		$this->properties['ua'] = $request['ua'];	
 		$this->properties['ua_id'] = $request['ua_id'];
 		$this->properties['browser_type'] = $request['browser_type'];
-	
+		
+		$this->properties['inbound_uri'] = $request['inbound_uri'];
 		$this->properties['first_page_uri'] = $request['uri'];
 		$this->properties['first_page_type'] = $request['page_type'];
 		$this->properties['first_page_id'] = $request['document_id'];

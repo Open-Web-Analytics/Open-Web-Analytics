@@ -132,6 +132,7 @@ class owa_settings {
 			'delay_first_hit'				=> true,
 			'async_db'						=> false,
 			'clean_query_string'			=> true,
+			'fetch_refering_page_info'		=> true,
 			'query_string_filters'			=> '',
 			'async_log_dir'					=> OWA_BASE_DIR . '/logs/',
 			'async_log_file'				=> 'events.txt',
@@ -161,8 +162,8 @@ class owa_settings {
 			'images_url'					=> '',
 			'reporting_url'					=> '',
 			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
-			'inter_report_link_template'	=> '%s?page=%s&%s' //base_url?report=report_name&get...
-						
+			'inter_report_link_template'	=> '%s?page=%s&%s', //base_url?report=report_name&get...
+			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION
 			);
 	}
 	
