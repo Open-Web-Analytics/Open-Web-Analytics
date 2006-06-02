@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_report.php');
+require_once(OWA_BASE_DIR.'/owa_news.php');
 
 $report = new owa_report;
 
@@ -149,9 +150,12 @@ $from_feed = $report->metrics->get(array(
 	'result_format'		=> 'assoc_array'
 ));
 
+//Fetch latest OWA news
+$rss = new owa_news;
+$news = $rss->Get($rss->config['owa_rss_url']);
 
 // Assign Data to templates
-
+$body->set('news', $news);
 $body->set('headline', 'Analytics Dashboard');
 $body->set('period_label', $report->get_period_label($report->period));
 $periods_menu->set('period', $report->period);

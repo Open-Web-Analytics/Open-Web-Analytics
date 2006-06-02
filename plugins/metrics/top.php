@@ -123,6 +123,8 @@ class owa_metric_top extends owa_metric {
 			page_title,
 			site_name,
 			query_terms,
+			snippet,
+			refering_anchortext,
 			is_searchengine
 		FROM 
 			%s as referers,

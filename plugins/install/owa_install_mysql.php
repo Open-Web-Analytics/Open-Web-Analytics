@@ -194,6 +194,7 @@ class owa_install_mysql extends owa_install {
 			query_terms varchar(255),
 			refering_anchortext varchar(255),
 			page_title varchar(255),
+			snippet TEXT,
 			is_searchengine tinyint(1),
 			PRIMARY KEY (id)
 			)",

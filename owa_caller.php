@@ -181,7 +181,7 @@ class owa_caller {
 				
 		$owa = new owa;
 		$owa->get_graph($params);
-			$this->e->debug('PARAMS GRAPH: '.serialize($params));
+		//$this->e->debug('PARAMS GRAPH: '.serialize($params));
 		
 		return;
 	}
