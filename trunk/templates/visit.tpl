@@ -25,11 +25,11 @@
 													)</span>
 												<?endif;?>
 												<?=$this->choose_browser_icon($visit['browser_type']);?>
-								<span class="info_text"><?=urldecode($visit['ua']);?></span> 
+							 
 								</TD>
 							</tr>
 							<TR>
-								<TD>	
+								<TD class="visit_box_stat">	
 									<div class="visitor_info_box pages_box">
 										<span class="large_number">
 											<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['session_id']));?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
@@ -61,14 +61,30 @@
 										</TR>
 										<TR>
 											<TD>
-											<span class="h_label">From: </span> 
-				
-											<? if (!empty($visit['referer'])):?>
-											<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referrer_page_title'])):?><?=$visit['referrer_page_title']?><? else:?><?=$this->truncate($visit['referer'], 70, '...');?><? endif;?></a> <span class="info_text"> 
+												<table>
+													<TR>
+														<TD>
+															<span class="h_label">From: </span>
+														</TD>
+														<TD>
+															<? if (!empty($visit['referer'])):?>
+											<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referer_page_title'])):?><?=$visit['referer_page_title']?><? else:?><?=$this->truncate($visit['referer'], 70, '...');?><? endif;?></a> <span class="info_text"> 
 											<?=$this->truncate($visit['referer'], 35, '...');?></span>
+											
 											<? else: ?>
 											None.
 											<? endif; ?>
+														</TD>
+													</TR>
+													<TR>
+														<TD>
+														
+														</TD>
+														<TD>
+															<span class="snippet_text"><?=$visit['referer_snippet'];?></span>
+														</TD>
+													</TR>
+												</table>
 											</TD>
 										</TR>
 									</table>

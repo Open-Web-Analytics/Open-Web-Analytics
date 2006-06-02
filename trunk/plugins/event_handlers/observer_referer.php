@@ -156,6 +156,8 @@ class Log_observer_referer extends owa_observer {
 				endif;
 			endif;
 			
+			$this->save();
+			
 			if ($this->config['fetch_refering_page_info'] = true):
 				
 				$this->crawler = new owa_http;
@@ -165,12 +167,11 @@ class Log_observer_referer extends owa_observer {
 				$this->anchor_text = $this->crawler->anchor_info['anchor_text'];
 				//$this->e->debug('Anchor text is: '. $this->anchor_text);
 				$this->page_title = $this->crawler->extract_title();
-				
+				//write to DB
+				$this->update();
+			
 			endif;
 			
-			//write to DB
-			$this->save();
-		
 		return;
 	}
 	
@@ -203,46 +204,6 @@ class Log_observer_referer extends owa_observer {
 		
 		return urldecode($db->match($referer));
 	}
-	
-	/**
-	 * Fetches the title of the referering web page
-	 *
-	 * @param string $url
-	 * @param integer $timeout
-	 * @return string
-	 */
-	function get_url_title($url, $timeout = 2) {
-	
-		$url = parse_url($url);
-
-		if(!in_array($url['scheme'],array('','http')))
-			return;
-
-		$fp = @fsockopen ($url['host'], ($url['port'] > 0 ? $url['port'] : 80), &$errno, &$errstr, $timeout);
-			
-		if (!$fp):
-       		$this->e->err('$errstr ($errno)');
-			return;
-
-   
-  		else:
-			fputs ($fp, "GET ".$url['path'].($url['query'] ? '?'.$url['query'] : '')." HTTP/1.0\r\nHost: ".$url['host']."\r\n\r\n");
-			$d = '';
-
-			while (!feof($fp)) {
-				$d .= fgets ($fp,2048);
-
-				if(preg_match('~(</head>|<body>|(<title>\s*(.*?)\s*</title>))~i', $d, $m))
-                break;
-       		}
-  	    		
-			fclose ($fp);
-
-       		return $m[3];
-   		endif;
-   		
-   		return;
-	}
 
 	/**
 	 * Save row to the database
@@ -273,6 +234,27 @@ class Log_observer_referer extends owa_observer {
 			$this->db->prepare($this->snippet),
 			$this->is_searchengine
 		
+			)
+		);	
+		
+		return;
+	}
+	
+	function update() {
+		
+		$this->db->query(sprintf(
+			"UPDATE %s 
+			SET 
+				page_title = '%s', 
+				refering_anchortext = '%s', 
+				snippet = '%s'
+			WHERE
+				id = '%s'",
+			$this->config['ns'].$this->config['referers_table'],
+			$this->db->prepare($this->page_title),
+			$this->db->prepare($this->anchor_text),
+			$this->db->prepare($this->snippet),
+			$this->obj->properties['referer_id']		
 			)
 		);	
 		
