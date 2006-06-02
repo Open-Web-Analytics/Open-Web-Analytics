@@ -55,7 +55,6 @@ class owa_news extends lastRSS{
 		$this->config = &owa_settings::get_settings();
 		$this->e = &owa_error::get_instance();
 		$this->crawler = new owa_http;
-		$this->crawler->agent = 'MSIE';
 		$this->cache_dir = '';
 		$this->date_format = "F j, Y";
 		$this->CDATA = 'content';
