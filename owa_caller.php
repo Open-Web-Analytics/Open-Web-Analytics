@@ -129,7 +129,7 @@ class owa_caller {
 	
 	function options_page() {
 	
-		require_once(OWA_BASE_DIR.'owa_template.php');
+		require_once(OWA_BASE_DIR.'/owa_template.php');
 	
 		//Setup templates
 		$options_page = & new owa_template;

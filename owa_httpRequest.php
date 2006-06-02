@@ -131,7 +131,7 @@ class owa_http extends Snoopy {
 			$part2 = substr($nohtml, $start+$atext_len, $this->snip_len);
 			
 			// Put humpty dumpy back together again and create actual snippet
-			$snippet =  $this->snip_str.' '.$part1.$this->anchor_info['anchor_tag'].' '.$part2.$this->snip_str;
+			$snippet =  $this->snip_str.$part1.' '.$this->anchor_info['anchor_tag'].' '.$part2.$this->snip_str;
 		
 		else:
 		
