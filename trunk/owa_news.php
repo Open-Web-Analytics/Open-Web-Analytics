@@ -62,10 +62,13 @@ class owa_news extends lastRSS{
 		return;	
 	}
 	
-	// -------------------------------------------------------------------
-	// Parse() is private method used by Get() to load and parse RSS file.
-	// Don't use Parse() in your scripts - use Get($rss_file) instead.
-	// -------------------------------------------------------------------
+	/**
+	 * This is a redefined Parse function that uses Snoopy to fetch
+	 * the file instead of fopen.
+	 *
+	 * @param unknown_type $rss_url
+	 * @return unknown
+	 */
 	function Parse ($rss_url) {
 		// Open and load RSS file
 		
