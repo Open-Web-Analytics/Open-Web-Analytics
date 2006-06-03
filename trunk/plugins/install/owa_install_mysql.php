@@ -37,6 +37,19 @@ class owa_install_mysql extends owa_install {
 	 */
 	var $version = '1.0';
 	
+	/**
+	 * Array of tables that will be installed
+	 *
+	 * @var unknown_type
+	 */
+	var $tables;
+	
+	/**
+	 * Description of what is being installed
+	 *
+	 * @var string
+	 */
+	var $description = 'This is the base OWA schema for MySQL 4 or greater.';
 	
 	/**
 	 * Constructor
@@ -46,13 +59,22 @@ class owa_install_mysql extends owa_install {
 	function owa_install_mysql() {
 		
 		$this->owa_install();
+		$this->tables = array($this->config['requests_table'],
+								$this->config['sessions_table'],
+								$this->config['referers_table'],
+								$this->config['documents_table'],
+								$this->config['ua_table'],
+								$this->config['hosts_table'],
+								$this->config['os_table'],
+								$this->config['configuration_table'],
+								$this->config['version_table']);
 		return;
 	}
 	
 	/**
 	 * Check to see if schema is installed
 	 *
-	 * @return unknown
+	 * @return boolean
 	 */
 	function check_for_schema() {
 		
@@ -60,11 +82,52 @@ class owa_install_mysql extends owa_install {
 				$this->config['ns'].$this->config['requests_table']));
 		
 		if (!empty($check)):
-			$this->e->notice("Installation failed. Schema already exists.");
+			$this->e->notice("Installation aborted. Schema already exists.");
 			return true;
 		else:
 			return false;
 		endif;
+	}
+	
+	/**
+	 * Interface to creation methods
+	 *
+	 * @param unknown_type $table
+	 */
+	function create($table) {
+		
+		switch ($table) {
+			
+			case 'requests':
+				$this->create_requests_table();
+				break;
+			case 'sessions':
+				$this->create_sessions_table();
+				break;
+			case 'documents':
+				$this->create_documents_table();
+				break;
+			case 'referers':
+				$this->create_referers_table();
+				break;
+			case 'hosts':
+				$this->create_hosts_table();
+				break;
+			case 'ua':
+				$this->create_ua_table();
+				break;
+			case 'os':
+				$this->create_os_table();
+				break;
+			case 'configuration':
+				$this->create_config_table();
+				break;
+			case 'version':
+				$this->create_version_table();
+				break;
+		}
+		
+		return;		
 	}
 	
 	/**
@@ -75,7 +138,7 @@ class owa_install_mysql extends owa_install {
 	 */
 	function create_requests_table() {
 
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			request_id bigint,
@@ -122,12 +185,12 @@ class owa_install_mysql extends owa_install {
 			$this->config['ns'].$this->config['requests_table'])
 		);
 		
-		return;
+		
 	}
 	
 	function create_sessions_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			session_id BIGINT,
@@ -179,13 +242,12 @@ class owa_install_mysql extends owa_install {
 			)",
 			$this->config['ns'].$this->config['sessions_table'])
 		);
-		
-		return;
+	
 	}
 	
 	function create_referers_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
@@ -201,12 +263,11 @@ class owa_install_mysql extends owa_install {
 			$this->config['ns'].$this->config['referers_table'])
 		);
 
-		return;
 	}
 		
 	function create_documents_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
@@ -218,12 +279,11 @@ class owa_install_mysql extends owa_install {
 			$this->config['ns'].$this->config['documents_table'])
 		);
 		
-		return;
 	}
   	
 	function create_hosts_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
@@ -232,12 +292,11 @@ class owa_install_mysql extends owa_install {
 			)",	
 			$this->config['ns'].$this->config['hosts_table'])
 		);
-		return;
 	}
 	
 	function create_os_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
@@ -246,12 +305,12 @@ class owa_install_mysql extends owa_install {
 			)",	
 			$this->config['ns'].$this->config['os_table'])
 		);
-		return;
+	
 	}
 
 	function create_ua_table() {
 		
-			$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
@@ -261,14 +320,12 @@ class owa_install_mysql extends owa_install {
 			)",	
 			$this->config['ns'].$this->config['ua_table'])
 		);
-		
-		
-		return;
+
 	}
 		
 	function create_optinfo_table() {
 		
-			$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			request_id BIGINT,
@@ -279,12 +336,11 @@ class owa_install_mysql extends owa_install {
 			$this->config['ns'].$this->config['optinfo_table'])
 		);
 		
-		return;
 	}
 	
 	function create_config_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
@@ -294,12 +350,11 @@ class owa_install_mysql extends owa_install {
 			$this->config['ns'].$this->config['config_table'])
 		);
 		
-		return;
 	}
 	
 	function create_version_table() {
 		
-		$this->db->query(
+		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			id VARCHAR(255),
@@ -308,8 +363,48 @@ class owa_install_mysql extends owa_install {
 			)",	
 			$this->config['ns'].$this->config['version_table'])
 		);
+
+	}
+	
+	function create_all_tables() {
+	
+		foreach ($this->tables as $table) {
+		
+			$status = $this->create($table);
+
+			if ($status == true):
+				$this->e->notice(sprintf("Created %s table.", $table));
+			else:
+				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
+				return;
+			endif;
+		}
+		
+		$this->update_schema_version();
+		$this->e->notice(sprintf("Schema version %s installation complete.",
+							$this->version));
 		
 		return;
+	}
+	
+	function update_schema_version() {
+		
+		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'schema_version'",
+										$this->config['ns'].$this->config['version_table']
+										));
+
+		if (empty($check)):
+		
+			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('schema_version', '%s')",
+										$this->config['ns'].$this->config['version_table'],
+										$this->version));
+		else:
+										
+			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'schema_version'",
+										$this->config['ns'].$this->config['version_table'],
+										$this->version));
+		
+		endif;
 	}
 				
 }

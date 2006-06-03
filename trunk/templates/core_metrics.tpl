@@ -1,3 +1,6 @@
+<? if (empty($data)):?>
+There are no metrics yet for this time period.
+<?else:?>
 <table width="100%">
 	<tr>
 	<? if ($period == 'this_year'): ?>		
@@ -15,7 +18,11 @@
 	<?php foreach($data as $row): ?>	
 	<TR>
 	<? if ($period == 'this_year'): ?>
-		<TD><?=$this->get_month_label($row['month']);?></TD>
+		<TD>
+		<a href="<?=$this->config['reporting_url'];?>/dashdate_report.php&year=<?=$row['year'];?>&month=<?=$row['month'];?>">
+		<?=$this->get_month_label($row['month']);?>
+		</a>
+		</TD>
 	<? else: ?>
 		<TD><?=$this->get_month_label($row['month']);?></TD>
 		
@@ -34,3 +41,4 @@
 	</TR>		
    <?php endforeach; ?>
 </table>
+<?endif;?>

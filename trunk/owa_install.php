@@ -102,54 +102,6 @@ class owa_install {
 		
 	}
 	
-	function create_all_tables() {
-	
-		$this->create_requests_table();
-		$this->e->notice("Created requests table.");
-		$this->create_sessions_table();
-		$this->e->notice("Created sessions table.");
-		$this->create_referers_table();
-		$this->e->notice("Created referers table.");
-		$this->create_documents_table();
-		$this->e->notice("Created documents table.");
-		$this->create_ua_table();
-		$this->e->notice("Created user agents table.");
-		$this->create_hosts_table();
-		$this->e->notice("Created hosts table.");
-		$this->create_os_table();
-		$this->e->notice("Created operating systems table.");
-		//$this->create_optinfo_table();
-		$this->create_config_table();
-		$this->e->notice("Created configuration table.");
-		$this->create_version_table();
-		$this->e->notice("Created version table.");
-		
-		$this->update_schema_version();
-		$this->e->notice(sprintf("Schema version %s installation complete.",
-							$this->version));
-		
-		return;
-	}
-	
-	function update_schema_version() {
-		
-		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'schema_version'",
-										$this->config['ns'].$this->config['version_table']
-										));
-
-		if (empty($check)):
-		
-			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('schema_version', '%s')",
-										$this->config['ns'].$this->config['version_table'],
-										$this->version));
-		else:
-										
-			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'schema_version'",
-										$this->config['ns'].$this->config['version_table'],
-										$this->version));
-		
-		endif;
-	}
 }
 
 ?>

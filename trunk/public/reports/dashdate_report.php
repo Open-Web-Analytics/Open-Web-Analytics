@@ -49,6 +49,27 @@ $core_metrics->set_template('core_metrics.tpl');
 
 // Fetch metrics
 
+if (!isset($_GET['day'])):
+
+	$core_metrics_data = $report->metrics->get(array(
+			'api_call' 		=> 'dash_core',
+			//'period'			=> $report->period,
+			'result_format'		=> 'assoc_array',
+			'constraints'		=> array(
+				
+				'is_browser' => 1,
+				'is_robot' 	=> 0,
+				'year'		=> $report->request_api_params['year'],
+				'month'		=> $report->request_api_params['month'],
+				'day'		=> $report->request_api_params['day']),
+			'group_by'			=> 'day'
+		
+		));
+
+		$date_label = $report->request_api_params['month'].'/'.$report->request_api_params['year'];
+
+else:
+
 		$core_metrics_data = $report->metrics->get(array(
 			'api_call' 		=> 'dash_core',
 			//'period'			=> $report->period,
@@ -63,7 +84,11 @@ $core_metrics->set_template('core_metrics.tpl');
 			'group_by'			=> 'month'
 		
 		));
+		
+		$date_label = $report->request_api_params['month'].'/'.$report->request_api_params['day'].'/'.$report->request_api_params['year'];
 	
+endif;
+
 $summary_stats_data = $report->metrics->get(array(
 	'api_call' 		=> 'dash_counts',
 	//'period'			=> $report->period,
@@ -162,7 +187,6 @@ $from_feed = $report->metrics->get(array(
 
 // Time Period Label
 
-$date_label = $report->request_api_params['month'].'/'.$report->request_api_params['day'].'/'.$report->request_api_params['year'];
 
 // Assign Data to templates
 
