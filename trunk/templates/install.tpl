@@ -7,8 +7,8 @@
 	    
 	    <TABLE border="1">
 	    	<TR>
-	    		<TH>Databse Name</TH>
-	    		<TH>Databse Host</TH>
+	    		<TH>Database Name</TH>
+	    		<TH>Database Host</TH>
 	    		<TH>Database User</TH>
 	    		<TH>Database Password</TH>
 	    	</TR>
@@ -37,6 +37,7 @@
     </fieldset>
     
     <DIV class="centered_buttons">	
+    	<input type="hidden" name="action" value="install" />
    		<input type="submit" name="install_but" value="Install OWA Now!" />
     </DIV>
     
