@@ -16,6 +16,8 @@
 // $Id$
 //
 
+
+
 include_once('set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
@@ -23,6 +25,7 @@ require_once(OWA_BASE_DIR.'/owa_template.php');
 $owa = new owa_php;
 $page = & new owa_template;
 $body = & new owa_template; 
+
 
 //Default page settings
 $body_tpl = 'install.tpl';
@@ -41,7 +44,7 @@ if($_POST['action'] == 'install'):
 	else:
 		$body->set('install_status', 'The installation failed. See error log for details.');
 	endif;
-	
+	$body->set('page_h1', 'Installation Complete ');
 	$body_tpl = 'install_sucess.tpl';
 
 endif;
