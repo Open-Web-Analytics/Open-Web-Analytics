@@ -6,7 +6,7 @@
 						<table cellpadding="0" cellspacing="0">
 							<TR>
 								
-								<TD colspan="2">
+								<TD colspan="3">
 								<span class="h_label"><?=$visit['month'];?>/<?=$visit['day'];?> @ at <?=$visit['hour'];?>:<?=$visit['minute'];?></span>
 								 - 
 								

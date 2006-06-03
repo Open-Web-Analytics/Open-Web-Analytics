@@ -1,23 +1,9 @@
 <style>
 
- th {
-  
-  text-align:left;
-  
-  }
-  
-  td {
-  
-  padding:2px;
-  
-  }
-  
-  .inline_h2 {
-  	font-size:18px;
-  
-  }
-  
-  .visitor_info_box {
+th {text-align:left;}
+td {padding:2px;}
+.inline_h2 {font-size:18px;}
+.visitor_info_box {
 	  width:40px;
 	  height:40px;
 	  text-align:center;
@@ -72,7 +58,7 @@
   
   }
 
-
+.centered_buttons {margin-left:auto;margin-right:auto;}
 #recent_visitors {width: 700px;}
 #top_pages {width: 450px;}
 #top_visitors {width: 250px;}

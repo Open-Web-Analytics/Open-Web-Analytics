@@ -136,7 +136,7 @@ DEFINE("INSTALL_PHP_ERR_HANDLER",false);
 // occasions when, for example, header files cannot be found and this results
 // in the graph not being created and just a "red-cross" image would be seen.
 // This should be turned off for a production site.
-DEFINE("CATCH_PHPERRMSG",true);
+DEFINE("CATCH_PHPERRMSG",false);
 
 // If the color palette is full should JpGraph try to allocate
 // the closest match? If you plan on using background images or

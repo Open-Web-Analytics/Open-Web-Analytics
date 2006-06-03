@@ -256,10 +256,12 @@ class owa_graph {
 		$graph->title->SetColor("black");
 		$graph->legend->SetAbsPos(10,10, 'right', 'top');
 		$graph->legend->SetColumns(3); 		
+		
 		// Create pie plot
 		$p1 = new PiePlot($data);
 		$p1->SetCenter(0.5,0.55);
 		$p1->SetSize(0.3);
+		$p1->value->HideZero();
 		
 		// Enable and set policy for guide-lines
 		$p1->SetGuideLines();
@@ -275,6 +277,7 @@ class owa_graph {
 		
 		// Add and stroke
 		$graph->Add($p1);
+		
 		$graph->Stroke();
 		
 		return;
