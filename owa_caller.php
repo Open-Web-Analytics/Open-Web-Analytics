@@ -19,7 +19,7 @@
 include_once('owa_env.php');
 require_once 'owa_settings_class.php';
 require_once 'owa_controller.php';
-require_once 'owa_install.php';
+require_once 'owa_installer.php';
 
 /**
  * Abstract caller class
