@@ -24,6 +24,20 @@ $owa_wp_version = owa_parse_version($wp_version);
 // check to see if OWA is installed
 $current_plugins = get_option('active_plugins');
 
+
+// Caller Configuration overides
+$owa_config['report_wrapper'] = 'wordpress.tpl';
+$owa_config['db_name'] = DB_NAME;     // The name of the database
+$owa_config['db_user'] = DB_USER;     // Your db username
+$owa_config['db_password'] = DB_PASSWORD; // ...and password
+$owa_config['db_host'] = DB_HOST;     // The host of your db
+$owa_config['db_type'] = 'wordpress';     // The host of your db
+$owa_config['fetch_config_from_db'] = true;     // The host of your db
+$owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
+$owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
+$owa_config['inter_report_link_template'] = '%s/%s&%s';
+$owa_config['action_url'] = get_bloginfo('url').'/index.php';
+
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
 	$owa_config['fetch_config_from_db'] = false;
@@ -36,17 +50,7 @@ if ($owa_wp_version[0] == '1'):
 	endif;
 endif;
 
-// Caller Configuration overides
-$owa_config['report_wrapper'] = 'wordpress.tpl';
-$owa_config['db_name'] = DB_NAME;     // The name of the database
-$owa_config['db_user'] = DB_USER;     // Your db username
-$owa_config['db_password'] = DB_PASSWORD; // ...and password
-$owa_config['db_host'] = DB_HOST;     // The host of your db
-$owa_config['db_type'] = 'wordpress';     // The host of your db
-$owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
-$owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
-$owa_config['inter_report_link_template'] = '%s/%s&%s';
-$owa_config['action_url'] = get_bloginfo('url').'/index.php';
+
 
 // Create new instance of caller class object
 $owa_wp = &new owa_wp($owa_config);
@@ -294,7 +298,8 @@ function owa_install_1() {
 		$conf['fetch_config_from_db'] = false;
 		print_r($config);
     	//$owa_wp = &new owa_wp;
-    	$owa_wp->install('mysql');
+    	$owa_wp->config['db_type'] = 'mysql';
+    	$owa_wp->install('base');
 	endif;
 
 	return;
@@ -311,7 +316,8 @@ function owa_install_2() {
 		$conf = &owa_settings::get_settings();
 		$conf['fetch_config_from_db'] = false;
     	//$owa_wp = &new owa_wp;
-    	$owa_wp->install('mysql');
+    	$owa_wp->config['db_type'] = 'mysql';
+    	$owa_wp->install('base');
 
 	return;
 }

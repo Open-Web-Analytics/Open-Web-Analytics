@@ -28,7 +28,7 @@
  * @since		owa 1.0.0
  */
 
-class owa_install_mysql extends owa_install {
+class owa_install_base extends owa_install {
 
 	/**
 	 * Version of the schema
@@ -56,7 +56,7 @@ class owa_install_mysql extends owa_install {
 	 *
 	 * @return owa_install_mysql
 	 */
-	function owa_install_mysql() {
+	function owa_install_base() {
 		
 		$this->owa_install();
 		$this->tables = array($this->config['requests_table'],

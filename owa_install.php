@@ -86,7 +86,7 @@ class owa_install {
 		$this->config = &owa_settings::get_settings();
 		
         //$classfile = $class_path . $plugin . '.php';
-		$classfile = $this->config['install_plugin_dir'].'owa_install_'.$type. '.php';
+		$classfile = $this->config['install_plugin_dir'].'/'.$this->config['db_type'].'/owa_install_'.$type. '.php';
         $class = 'owa_install_'.$type;
         
         /*
