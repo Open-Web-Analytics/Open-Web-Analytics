@@ -66,7 +66,7 @@ class owa_install_mysql extends owa_install {
 								$this->config['ua_table'],
 								$this->config['hosts_table'],
 								$this->config['os_table'],
-								$this->config['configuration_table'],
+								$this->config['config_table'],
 								$this->config['version_table']);
 		return;
 	}
@@ -79,7 +79,7 @@ class owa_install_mysql extends owa_install {
 	function check_for_schema() {
 		
 		$check = $this->db->get_row(sprintf("show tables like '%s'",
-				$this->config['ns'].$this->config['requests_table']));
+				$this->config['ns'].$this->config['version_table']));
 		
 		if (!empty($check)):
 			$this->e->notice("Installation aborted. Schema already exists.");
@@ -99,31 +99,31 @@ class owa_install_mysql extends owa_install {
 		switch ($table) {
 			
 			case 'requests':
-				$this->create_requests_table();
+				return $this->create_requests_table();
 				break;
 			case 'sessions':
-				$this->create_sessions_table();
+				return $this->create_sessions_table();
 				break;
 			case 'documents':
-				$this->create_documents_table();
+				return $this->create_documents_table();
 				break;
 			case 'referers':
-				$this->create_referers_table();
+				return $this->create_referers_table();
 				break;
 			case 'hosts':
-				$this->create_hosts_table();
+				return $this->create_hosts_table();
 				break;
 			case 'ua':
-				$this->create_ua_table();
+				return $this->create_ua_table();
 				break;
 			case 'os':
-				$this->create_os_table();
+				return $this->create_os_table();
 				break;
 			case 'configuration':
-				$this->create_config_table();
+				return $this->create_config_table();
 				break;
 			case 'version':
-				$this->create_version_table();
+				return $this->create_version_table();
 				break;
 		}
 		
@@ -366,41 +366,20 @@ class owa_install_mysql extends owa_install {
 
 	}
 	
-	function create_all_tables() {
-	
-		foreach ($this->tables as $table) {
-		
-			$status = $this->create($table);
-
-			if ($status == true):
-				$this->e->notice(sprintf("Created %s table.", $table));
-			else:
-				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
-				return;
-			endif;
-		}
-		
-		$this->update_schema_version();
-		$this->e->notice(sprintf("Schema version %s installation complete.",
-							$this->version));
-		
-		return;
-	}
-	
 	function update_schema_version() {
 		
-		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'schema_version'",
+		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'base_schema'",
 										$this->config['ns'].$this->config['version_table']
 										));
 
 		if (empty($check)):
 		
-			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('schema_version', '%s')",
+			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('base_schema', '%s')",
 										$this->config['ns'].$this->config['version_table'],
 										$this->version));
 		else:
 										
-			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'schema_version'",
+			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'base_schema'",
 										$this->config['ns'].$this->config['version_table'],
 										$this->version));
 		

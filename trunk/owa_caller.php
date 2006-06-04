@@ -109,7 +109,7 @@ class owa_caller {
 	    
 	    if ($install_check == false):
 		    //Install owa schema
-	    	$status = $installer->create_all_tables();
+	    	$status = $installer->create_all();
 	    else:
 	    	// owa already installed
 	    	$status = false;

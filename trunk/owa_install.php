@@ -75,6 +75,12 @@ class owa_install {
 		return;
 	}
 	
+	/**
+	 * Installation factory
+	 *
+	 * @param string $type
+	 * @return unknown
+	 */
 	function &get_instance($type) {
 		
 		$this->config = &owa_settings::get_settings();
@@ -100,6 +106,31 @@ class owa_install {
 
         return null;
 		
+	}
+	
+	/**
+	 * Creates all tables in base schema
+	 *
+	 */
+	function create_all() {
+	
+		foreach ($this->tables as $table) {
+		
+			$status = $this->create($table);
+			
+			if ($status == true):
+				$this->e->notice(sprintf("Created %s table.", $table));
+			else:
+				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
+				return;
+			endif;
+		}
+		
+		$this->update_schema_version();
+		$this->e->notice(sprintf("Schema version %s installation complete.",
+							$this->version));
+		
+		return;
 	}
 	
 }
