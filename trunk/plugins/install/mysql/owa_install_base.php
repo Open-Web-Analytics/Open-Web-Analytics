@@ -16,8 +16,10 @@
 // $Id$
 //
 
+require_once(OWA_BASE_DIR.'/owa_install.php');
+
 /**
- * OWA Installation class
+ * OWA Base Schema Installation class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,14 +30,7 @@
  * @since		owa 1.0.0
  */
 
-class owa_install_base {
-
-	
-	var $config;
-	
-	var $e;
-	
-	var $db;
+class owa_install_base extends owa_install {
 	
 	/**
 	 * Version of the schema
@@ -63,7 +58,7 @@ class owa_install_base {
 	 *
 	 * @var string
 	 */
-	var $package_display_name = 'OWA Base Schema';
+	var $package_display_name = 'OWA Base Schema for MySQL';
 	
 	/**
 	 * Description of what is being installed
@@ -78,10 +73,7 @@ class owa_install_base {
 	 * @return owa_install_mysql
 	 */
 	function owa_install_base() {
-		
-		$this->config = &owa_settings::get_settings();
-		$this->db = &owa_db::get_instance();
-		$this->e = &owa_error::get_instance();
+		$this->owa_install();
 		$this->tables = array($this->config['requests_table'],
 								$this->config['sessions_table'],
 								$this->config['referers_table'],
@@ -391,20 +383,26 @@ class owa_install_base {
 	
 	function update_schema_version() {
 		
-		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'base_schema'",
-										$this->config['ns'].$this->config['version_table']
+		$check = $this->db->get_row(sprintf("SELECT value from %s where id = '%s'",
+										$this->config['ns'].$this->config['version_table'],
+										$this->config['site_id']
 										));
 
 		if (empty($check)):
-		
-			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('base_schema', '%s')",
+			$packages = array();
+			$packages[$this->package] = $this->version;	
+			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('%s', '%s')",
 										$this->config['ns'].$this->config['version_table'],
-										$this->version));
+										$this->config['site_id'],
+										serialize($packages)
+										));
 		else:
-										
-			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'base_schema'",
+			$packages = unserialize($check);
+			$packages[$this->package] = $this->version;				
+			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = '%s'",
 										$this->config['ns'].$this->config['version_table'],
-										$this->version));
+										$this->version,
+										serialize($packages)));
 		
 		endif;
 		
@@ -428,12 +426,12 @@ class owa_install_base {
 				return;
 			endif;
 		}
-		
-		$this->update_schema_version();
-		$this->e->notice(sprintf("Schema version %s installation complete.",
+	
+			$this->update_schema_version();
+			$this->e->notice(sprintf("Schema version %s installation complete.",
 							$this->version));
 		
-		return;
+		return $status;
 	}
 	
 }

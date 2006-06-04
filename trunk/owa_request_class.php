@@ -105,6 +105,13 @@ class owa_request {
 	var $e;
 	
 	/**
+	 * Browsecap browser info object
+	 *
+	 * @var object
+	 */
+	var $browscap;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_request

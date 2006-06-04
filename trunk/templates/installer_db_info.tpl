@@ -28,16 +28,9 @@
     
     </fieldset>
     
-    <fieldset>
-    	<legend>Packages Available for Installation</legend>
-    	<?foreach ($available_packages as $package => $values):?>
-    	<input type="radio" name="package" value="<?=$package?>"> <?=$values['package_display_name'];?> - <?=$values['description'];?>
-    	<?endforeach;?>
-    </fieldset>
-    
     <DIV class="centered_buttons">	
-    	<input type="hidden" name="action" value="install" />
-   		<input type="submit" name="install_but" value="Install Package" />
+    	<input type="hidden" name="action" value="db_info" />
+   		<input type="submit" name="install_but" value="Next >>" />
     </DIV>
     
 </form>

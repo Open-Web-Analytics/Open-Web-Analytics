@@ -105,18 +105,17 @@ class owa_caller {
 		
 		$this->config['fetch_config_from_db'] = false;
 	    $installer = &owa_installer::get_instance();	   
-	    print_r($installer->plugins);
-	    $install_check = $installer->plugins['base_schema']->check_for_schema();
+	    $install_check = $installer->plugins[$type]->check_for_schema();
 	    
 	    if ($install_check == false):
 		    //Install owa schema
-	    	$status = $installer->plugins['base_schema']->install(); 
+	    	$status = $installer->plugins[$type]->install(); 
 	    else:
 	    	// owa already installed
 	    	$status = false;
 	    endif;
 	    
-	    return;
+	    return $status;
 		
 	}
 	

@@ -79,7 +79,6 @@ class owa_installer {
 	 *
 	 * @return owa_install
 	 */
-
 	function owa_installer() {
 		
 		$this->config = &owa_settings::get_settings();
@@ -95,38 +94,17 @@ class owa_installer {
 	 * Installation factory
 	 *
 	 * @param string $type
-	 * @return unknown
+	 * @return object
 	 */
 	function &get_instance() {
 		
-		//$this->config = &owa_settings::get_settings();
-		
-        //$classfile = $class_path . $plugin . '.php';
-		//$classfile = $this->config['install_plugin_dir'].'/'.$this->config['db_type'].'/owa_install_'.$type. '.php';
-        //$class = 'owa_install_'.$type;
         $class = new owa_installer;
         return $class;
-        /*
-         * Attempt to include our version of the named class, but don't treat
-         * a failure as fatal.  The caller may have already included their own
-         * version of the named class.
-         */
-        if (!class_exists($class)) {
-            return $class;
-        }
 
-        /* If the class exists, return a new instance of it.
-        if (class_exists($class)) {
-            $obj = new $class;
-            return $obj;
-        }
-		*/
-        return null;
-		
 	}
 	
 	/**
-	 * Load Plugins
+	 * Loads Package Plugins
 	 * 
 	 * @access private
 	 */
@@ -160,7 +138,50 @@ class owa_installer {
 		return;
   	}
 	
+  	/**
+  	 * Builds an array of available package plugins
+  	 *
+  	 * @return array
+  	 */
+  	function get_available_packages() {
+  		
+  		$packages = '';
+  		
+  		foreach ($this->plugins as $plugin => $value) {
+  			
+  			$packages[$plugin] = array('package_display_name' => $value->package_display_name, 'description' => $value->description);
+  			
+  		}
+  		
+  		return $packages;
+  	}
   	
+  	/**
+  	 * Builds an array of packages that are already installed
+  	 *
+  	 * @return array
+  	 */
+  	function get_installed_packages() {
+  		
+  		$installed_packages = $this->db->get_row(sprintf("SELECT value from %s where id = '%s'",
+										$this->config['ns'].$this->config['version_table'],
+										$this->config['site_id']
+										));
+										
+  		return unserialize($installed_packages);
+  	}
+  	
+  	/**
+  	 * Writes on the owa_config file
+  	 *
+  	 * @todo Need to design this
+  	 * @param array $config
+  	 */
+  	function write_config_file($config) {
+  		
+  		return;
+  		
+  	}
 }
 
 ?>
