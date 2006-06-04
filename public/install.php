@@ -16,42 +16,55 @@
 // $Id$
 //
 
-
-
 include_once('set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 
+/**
+ * OWA Installation Script
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
 $owa = new owa_php;
 $page = & new owa_template;
 $body = & new owa_template; 
-
-print_r($_POST);
 
 //Default page settings
 $body_tpl = 'install.tpl';
 $page->set('page_title', 'Installation');
 $body->set('page_h1', 'Welcome to the OWA Installation Guide');
 
-/////////// handler Over-rides
+/////////// handler Overrides ///////////
 
-// Base Installation
-if($_POST['action'] == 'install'):
-
-	$install_check = $owa->install('base');
+switch ($_POST['action']) {
 	
-	if ($install_check == true):
-		$body->set('install_status', 'The installation was a success.');
-	else:
-		$body->set('install_status', 'The installation failed. See error log for details.');
-	endif;
-	$body->set('page_h1', 'Installation Complete ');
-	$body_tpl = 'install_sucess.tpl';
-
-endif;
+	// Base Schema Installation
+	case "install":
+		
+		$install_check = $owa->install('base');
+	
+		if ($install_check == true):
+			$body->set('install_status', 'The installation was a success.');
+		else:
+			$body->set('install_status', 'The installation failed. See error log for details.');
+		endif;
+		$body->set('page_h1', 'Installation Complete ');
+		$body_tpl = 'install_sucess.tpl';
+		
+		break;
+	
+	
+}
 
 // Global Template assignments
-$page->set_template('default_wrap.tpl');// This is the inner template
+$page->set_template('default_wrap.tpl');// This is the outer template
 $body->set_template($body_tpl);// This is the inner template
 $body->set('config', $owa->config);
 $page->set('content', $body);

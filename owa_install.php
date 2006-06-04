@@ -20,7 +20,7 @@ require_once (OWA_BASE_DIR.'/owa_settings_class.php');
 require_once (OWA_BASE_DIR.'/owa_db.php');
 
 /**
- * Installs core database schema
+ * Installer Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -30,7 +30,7 @@ require_once (OWA_BASE_DIR.'/owa_db.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_install {
+class owa_installer {
 	
 	/**
 	 * Configuration
@@ -61,16 +61,32 @@ class owa_install {
 	var $e;
 	
 	/**
+	 * Plugin Directory
+	 *
+	 * @var unknown_type
+	 */
+	var $plugin_dir;
+	
+	/**
+	 * Array of plugins
+	 *
+	 * @var array
+	 */
+	var $plugins;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_install
 	 */
 
-	function owa_install() {
+	function owa_installer() {
 		
 		$this->config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		$this->e = &owa_error::get_instance();
+		$this->plugins_dir = $this->config['install_plugin_dir'].$this->config['db_type'];
+		$this->load_plugins();
 		
 		return;
 	}
@@ -81,58 +97,70 @@ class owa_install {
 	 * @param string $type
 	 * @return unknown
 	 */
-	function &get_instance($type) {
+	function &get_instance() {
 		
-		$this->config = &owa_settings::get_settings();
+		//$this->config = &owa_settings::get_settings();
 		
         //$classfile = $class_path . $plugin . '.php';
-		$classfile = $this->config['install_plugin_dir'].'/'.$this->config['db_type'].'/owa_install_'.$type. '.php';
-        $class = 'owa_install_'.$type;
-        
+		//$classfile = $this->config['install_plugin_dir'].'/'.$this->config['db_type'].'/owa_install_'.$type. '.php';
+        //$class = 'owa_install_'.$type;
+        $class = new owa_installer;
+        return $class;
         /*
          * Attempt to include our version of the named class, but don't treat
          * a failure as fatal.  The caller may have already included their own
          * version of the named class.
          */
         if (!class_exists($class)) {
-            include_once $classfile;
+            return $class;
         }
 
-        /* If the class exists, return a new instance of it. */
+        /* If the class exists, return a new instance of it.
         if (class_exists($class)) {
             $obj = new $class;
             return $obj;
         }
-
+		*/
         return null;
 		
 	}
 	
 	/**
-	 * Creates all tables in base schema
-	 *
+	 * Load Plugins
+	 * 
+	 * @access private
 	 */
-	function create_all() {
-	
-		foreach ($this->tables as $table) {
+	function load_plugins() {
 		
-			$status = $this->create($table);
-			
-			if ($status == true):
-				$this->e->notice(sprintf("Created %s table.", $table));
-			else:
-				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
-				return;
-			endif;
-		}
-		
-		$this->update_schema_version();
-		$this->e->notice(sprintf("Schema version %s installation complete.",
-							$this->version));
-		
+    	if ($dir = opendir($this->plugins_dir)):
+    		while (($file = readdir($dir)) !== false) {
+        		if (strstr($file, '.php') &&
+            		substr($file, -1, 1) != "~" &&
+            		substr($file,  0, 1) != "#"):
+          			if (require_once($this->plugins_dir . '/'. $file)):
+            			//$this->plugins[] = substr($file, 0, -4);
+						$class  = substr($file, 0, -4);
+						
+            			$plugin = new $class;
+					
+              			if (!isset($this->plugins[$package])):
+                			$this->plugins[$plugin->package] = $plugin;
+              			else:
+                			$this->e->err(sprintf('Package "%s" already registered.', $package));
+			            endif;
+            		endif;
+          		else:
+           			$this->e->err(sprintf('Cannot load plugin "%s".', substr($file, 0, -4)));
+				endif;
+			}
+      	endif;
+
+ 		@closedir($dir);
+    		
 		return;
-	}
+  	}
 	
+  	
 }
 
 ?>
