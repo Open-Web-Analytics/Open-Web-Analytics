@@ -16,7 +16,7 @@
 // $Id$
 //
 
-include_once('set_env.php');
+include_once('../set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_installer.php');
