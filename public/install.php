@@ -26,6 +26,7 @@ $owa = new owa_php;
 $page = & new owa_template;
 $body = & new owa_template; 
 
+print_r($_POST);
 
 //Default page settings
 $body_tpl = 'install.tpl';
