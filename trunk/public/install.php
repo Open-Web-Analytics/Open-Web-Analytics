@@ -38,7 +38,7 @@ $body->set('page_h1', 'Welcome to the OWA Installation Guide');
 // Base Installation
 if($_POST['action'] == 'install'):
 
-	$install_check = $owa->install($owa->config['db_type']);
+	$install_check = $owa->install('base');
 	
 	if ($install_check == true):
 		$body->set('install_status', 'The installation was a success.');
