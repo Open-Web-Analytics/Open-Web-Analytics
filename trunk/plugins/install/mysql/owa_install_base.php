@@ -28,8 +28,15 @@
  * @since		owa 1.0.0
  */
 
-class owa_install_base extends owa_install {
+class owa_install_base {
 
+	
+	var $config;
+	
+	var $e;
+	
+	var $db;
+	
 	/**
 	 * Version of the schema
 	 *
@@ -45,6 +52,20 @@ class owa_install_base extends owa_install {
 	var $tables;
 	
 	/**
+	 * Package Name
+	 *
+	 * @var string
+	 */
+	var $package = 'base_schema';
+	
+	/**
+	 * Package Display Name
+	 *
+	 * @var string
+	 */
+	var $package_display_name = 'OWA Base Schema';
+	
+	/**
 	 * Description of what is being installed
 	 *
 	 * @var string
@@ -58,7 +79,9 @@ class owa_install_base extends owa_install {
 	 */
 	function owa_install_base() {
 		
-		$this->owa_install();
+		$this->config = &owa_settings::get_settings();
+		$this->db = &owa_db::get_instance();
+		$this->e = &owa_error::get_instance();
 		$this->tables = array($this->config['requests_table'],
 								$this->config['sessions_table'],
 								$this->config['referers_table'],
@@ -384,8 +407,35 @@ class owa_install_base extends owa_install {
 										$this->version));
 		
 		endif;
+		
+		return;
 	}
-				
+	
+	/**
+	 * Creates all tables in base schema
+	 *
+	 */
+	function install() {
+	
+		foreach ($this->tables as $table) {
+		
+			$status = $this->create($table);
+			
+			if ($status == true):
+				$this->e->notice(sprintf("Created %s table.", $table));
+			else:
+				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
+				return;
+			endif;
+		}
+		
+		$this->update_schema_version();
+		$this->e->notice(sprintf("Schema version %s installation complete.",
+							$this->version));
+		
+		return;
+	}
+	
 }
 
 ?>
