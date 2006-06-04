@@ -155,7 +155,7 @@ class owa_settings {
 			'report_wrapper'				=> 'default_wrap.tpl',
 			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
-			'fetch_config_from_db'			=> false,
+			'fetch_config_from_db'			=> true,
 			'announce_visitors'				=> false,
 			'public_url'					=> '',
 			'action_url'					=> '',

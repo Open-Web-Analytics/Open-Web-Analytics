@@ -19,6 +19,7 @@
 include_once('set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
+require_once(OWA_BASE_DIR.'/owa_installer.php');
 
 /**
  * OWA Installation Script
@@ -32,31 +33,90 @@ require_once(OWA_BASE_DIR.'/owa_template.php');
  * @since		owa 1.0.0
  */
 
-$owa = new owa_php;
+// Initialize OWA with db fetch off as there is no db yet.
+$config['fetch_config_from_db'] = false;
+$owa = new owa_php($config);
+
+// Create Template Objects
 $page = & new owa_template;
 $body = & new owa_template; 
 
-//Default page settings
-$body_tpl = 'install.tpl';
-$page->set('page_title', 'Installation');
-$body->set('page_h1', 'Welcome to the OWA Installation Guide');
+if (!empty($owa->config['db_name']) && 
+	!empty($owa->config['db_password']) && 
+	!empty($owa->config['db_host']) &&
+	!empty($owa->config['db_user'])):
+	
+	//Load Installer Object
+	$installer = new owa_installer;
 
-/////////// handler Overrides ///////////
+	
+	// Perform DB connection check
+	if($installer->db->connection == false):
+		$db_state = false;
+		$status_msg = "Could not connect to the db. Please check your databse connection settings";
+	else:
+		$db_state = true;
+	endif;
+else: 
+	$db_state = false;
+endif;
+
+$page->set('page_title', 'Installation Wizard');
+$body->set('page_h1', 'Welcome to the OWA Installation Wizard');
+$body_tpl = 'installer_welcome.tpl';
+$body->set('db_state', $db_state);
+
+// Page Controlers
+
+switch ($_GET['page']) {
+	
+	case "db_info":
+		$body_tpl = 'installer_db_info.tpl';
+		$page->set('page_title', 'Database Connection Information');
+		$body->set('page_h1', 'Your Database Connection Information');
+		break;
+		
+	case "package_selection":
+		$body_tpl = 'installer_package_selection.tpl';
+		$page->set('page_title', 'Package selection');
+		$body->set('page_h1', 'Select a package to Install');
+		$available_packages = $installer->get_available_packages();
+		$body->set('available_packages', $available_packages);
+		break;
+		
+	case "success":
+		$body_tpl = 'installer_success.tpl';
+		$page->set('page_title', 'Installation Complete');
+		$body->set('page_h1', 'Installation Complete');
+		break;
+		
+	case "error":
+		$body_tpl = 'installer_error.tpl';
+		$page->set('page_title', 'Installation Error');
+		$body->set('page_h1', 'There was an Error During Installation');
+		break;
+	
+}
+
+// Form Handlers
 
 switch ($_POST['action']) {
 	
 	// Base Schema Installation
 	case "install":
 		
-		$install_check = $owa->install('base');
+		$install_check = $owa->install($_POST['package']);
 	
 		if ($install_check == true):
-			$body->set('install_status', 'The installation was a success.');
+			$body->set('status_msg', 'The installation was a success.');
 		else:
-			$body->set('install_status', 'The installation failed. See error log for details.');
+			$body->set('status_msg', 'The installation failed. See error log for details.');
 		endif;
-		$body->set('page_h1', 'Installation Complete ');
-		$body_tpl = 'install_sucess.tpl';
+		
+		$body->set('page_h1', 'Select Another Package to Install');
+		$body_tpl = 'installer_package_selection.tpl';
+		$available_packages = $installer->get_available_packages();
+		$body->set('available_packages', $available_packages);
 		
 		break;
 	
