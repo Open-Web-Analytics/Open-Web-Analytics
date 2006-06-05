@@ -1,5 +1,6 @@
-<h1><?=$page_h1;?></h1>
 
+
+<h1><?=$page_h1;?></h1>
 
 <DIV class="status_msg">
 	<?=$status_msg;?>
@@ -9,15 +10,17 @@
     
     <fieldset>
     	<legend>Packages Available for Installation</legend>
+    	<TABLE border ="1">
     	<?foreach ($available_packages as $package => $values):?>
-    	<input type="radio" name="package" value="<?=$package?>"> <?=$values['package_display_name'];?> - <?=$values['description'];?>
+    		<TR>
+    			<TD><?=$values['package_display_name'];?></TD>
+    			<TD><?=$values['description'];?></TD>
+    			<TD><a href="<?=$_SERVER['PHP_SELF'];?>?action=install&package=<?=$package;?>">Install</a></TD>
+    		</TR>
     	<?endforeach;?>
-    </fieldset>
+    	</TABLE>
     
-    <DIV class="centered_buttons">	
-    	<input type="hidden" name="action" value="install" />
-   		<input type="submit" name="install_but" value="Install Package" />
-    </DIV>
+    </fieldset>
     
 </form>
  

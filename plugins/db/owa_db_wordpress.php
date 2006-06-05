@@ -50,10 +50,14 @@ class owa_db_wordpress extends owa_db {
 			$this->config['db_password'],
 			false // avoids sharing the same link and having wordpress print all db errors.
     	);
+    	
+    	$this->database_selection = @mysql_select_db($this->config['db_name'], $this->connection);
 		
-		if (!$this->connection || !@mysql_select_db($this->config['db_name'], $this->connection)):
-			$this->e->alert('Could not connect to database. Terminating.');
-			die;
+		if (!$this->connection || !$this->database_selection):
+			$this->e->alert('Could not connect to database.');
+			$this->connection_status = false;
+		else:
+			$this->connection_status = true;
 		endif;
 		
 		return;

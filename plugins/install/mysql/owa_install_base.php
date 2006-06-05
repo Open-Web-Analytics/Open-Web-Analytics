@@ -383,25 +383,25 @@ class owa_install_base extends owa_install {
 	
 	function update_schema_version() {
 		
-		$check = $this->db->get_row(sprintf("SELECT value from %s where id = '%s'",
+		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'packages'",
 										$this->config['ns'].$this->config['version_table'],
 										$this->config['site_id']
 										));
 
+		$packages = array();								
+		
 		if (empty($check)):
-			$packages = array();
+			
 			$packages[$this->package] = $this->version;	
-			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('%s', '%s')",
+			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('packages', '%s')",
 										$this->config['ns'].$this->config['version_table'],
-										$this->config['site_id'],
 										serialize($packages)
 										));
 		else:
 			$packages = unserialize($check);
 			$packages[$this->package] = $this->version;				
-			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = '%s'",
+			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'packages'",
 										$this->config['ns'].$this->config['version_table'],
-										$this->version,
 										serialize($packages)));
 		
 		endif;

@@ -68,14 +68,16 @@
 			  }
 			
 			.centered_buttons {margin-left:auto;margin-right:auto;}
+			.owa_banner {background-color:#607B8B;font-size:16px;padding:4px;color:#ffffff;}
+			.status_msg {padding:10px;border:1px;font-size:20px;background-color:#FCF6CF;}
 
 		</style>
 	
-	   <div class="wrap">
-	        
+		
+		<DIV class="owa_banner">Open Web Analytics</DIV>
+		<div class="wrap">
 			<?=$content;?>
-					
-	   </div>
+		</div>
 	
 	</body>
 </html>

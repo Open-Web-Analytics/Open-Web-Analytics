@@ -67,11 +67,18 @@ class owa_db {
 	var $config = array();
 	
 	/**
-	 * Debug
+	 * Status of selecting a databse
 	 *
-	 * @var string
+	 * @var boolean
 	 */
-	var $debug;
+	var $database_selection;
+	
+	/**
+	 * Status of connection
+	 *
+	 * @var boolean
+	 */
+	var $connection_status;
 	
 	/**
 	 * Number of rows in result set
