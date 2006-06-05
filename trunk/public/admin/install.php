@@ -41,6 +41,7 @@ $owa = new owa_php($config);
 $page = & new owa_template;
 $body = & new owa_template; 
 
+
 if (!empty($owa->config['db_name']) && 
 	!empty($owa->config['db_password']) && 
 	!empty($owa->config['db_host']) &&
@@ -49,21 +50,36 @@ if (!empty($owa->config['db_name']) &&
 	//Load Installer Object
 	$installer = new owa_installer;
 
-	
 	// Perform DB connection check
-	if($installer->db->connection == false):
+	if ($installer->db->connection_status == false):
 		$db_state = false;
-		$status_msg = "Could not connect to the db. Please check your databse connection settings";
+		$status_msg = "Could not connect to the database. Please check your database connection settings and try again.";
+		$body_tpl = 'installer_error.tpl';
+		
 	else:
 		$db_state = true;
+		
+		// Perform schem fro base schema
+		$check = $installer->plugins['base_schema']->check_for_schema();
+		
+		// Check for prior install
+		if ($check == true):
+			$status_msg = "OWA appears to already be installed. If you would like to re-install OWA, drop the tables and try again.";
+			$db_state = false;
+			$body_tpl = 'installer_error.tpl';
+		else:
+			$page->set('page_title', 'Installation Wizard');
+			$body->set('page_h1', 'Welcome to the OWA Installer');
+			$body_tpl = 'installer_welcome.tpl';
+		endif;
 	endif;
 else: 
 	$db_state = false;
+	$status_msg = "Your database connection settings are not complete. Check the owa_config.php file and try again.";
+	$body_tpl = 'installer_error.tpl';
 endif;
 
-$page->set('page_title', 'Installation Wizard');
-$body->set('page_h1', 'Welcome to the OWA Installation Wizard');
-$body_tpl = 'installer_welcome.tpl';
+
 $body->set('db_state', $db_state);
 
 // Page Controlers
@@ -82,6 +98,8 @@ switch ($_GET['page']) {
 		$body->set('page_h1', 'Select a package to Install');
 		$available_packages = $installer->get_available_packages();
 		$body->set('available_packages', $available_packages);
+		$installed_packages = $installer->get_installed_packages();
+		$body->set('installed_packages', $installed_packages);
 		break;
 		
 	case "success":
@@ -100,33 +118,29 @@ switch ($_GET['page']) {
 
 // Form Handlers
 
-switch ($_POST['action']) {
+switch ($_GET['action']) {
 	
-	// Base Schema Installation
 	case "install":
-		
-		$install_check = $owa->install($_POST['package']);
+		$install_status = $owa->install($_GET['package']);
 	
-		if ($install_check == true):
-			$body->set('status_msg', 'The installation was a success.');
+		if ($install_status == true):
+			$status_msg = 'The installation was a success.';
+			$body->set('page_h1', 'Installation Complete');
+			$body_tpl = 'installer_success.tpl';
 		else:
-			$body->set('status_msg', 'The installation failed. See error log for details.');
+			$status_msg = 'The installation failed. See error log for details.';
+			$body->set('page_h1', 'Installation Problem');
+			$body_tpl = 'installer_error.tpl';
 		endif;
-		
-		$body->set('page_h1', 'Select Another Package to Install');
-		$body_tpl = 'installer_package_selection.tpl';
-		$available_packages = $installer->get_available_packages();
-		$body->set('available_packages', $available_packages);
-		
+
 		break;
-	
-	
 }
 
 // Global Template assignments
 $page->set_template('default_wrap.tpl');// This is the outer template
 $body->set_template($body_tpl);// This is the inner template
 $body->set('config', $owa->config);
+$body->set('status_msg', $status_msg);
 $page->set('content', $body);
 
 // Render Page

@@ -163,12 +163,11 @@ class owa_installer {
   	 */
   	function get_installed_packages() {
   		
-  		$installed_packages = $this->db->get_row(sprintf("SELECT value from %s where id = '%s'",
-										$this->config['ns'].$this->config['version_table'],
-										$this->config['site_id']
+  		$installed_packages = $this->db->get_row(sprintf("SELECT value from %s where id = 'packages'",
+										$this->config['ns'].$this->config['version_table']
 										));
-										
-  		return unserialize($installed_packages);
+				
+  		return unserialize($installed_packages['value']);
   	}
   	
   	/**
