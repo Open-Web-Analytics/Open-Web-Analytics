@@ -128,7 +128,7 @@ class owa_graph_source_pie extends owa_graph {
 		// Construct Data Array
 		$result_pie = array($from_feeds['source_count'], $from_se['se_count'], $from_sites['site_count']);
 		
-		if(empty($result_pie[0])):
+		if(array_sum($result_pie) == 0):
 		
 			$this->error_graph();
 		
