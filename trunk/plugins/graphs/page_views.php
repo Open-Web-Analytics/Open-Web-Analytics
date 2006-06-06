@@ -147,6 +147,9 @@ class owa_graph_page_views extends owa_graph {
 	
 	function pv_visits() {
 		
+		$this->params['width'] = 900;
+		$this->params['height'] = 200;
+			
 		$result = $this->metrics->get(array(
 		
 					'api_call' 		=> 'dash_core',
@@ -159,23 +162,31 @@ class owa_graph_page_views extends owa_graph {
 					'group_by'			=> 'day',
 					'order'				=> 'ASC'
 					));
-					
-		$date = $this->make_date_label($result['day'], $result['month']);
-				
-		$this->data = array(
+		
+		//Graph params
+	
+		$this->params['graph_title'] = "Page Views & Visits for " . $this->get_period_label($this->params['period']);
+		$this->params['y2_title'] = "PageViews";
+		$this->params['y1_title'] = "Visits";
+		
+		$this->e->debug(serialize($result['page_views']));
+		
+		//if(!empty($result['page_views'])):
+		//if((array_sum($result['page_views']) == 0)):
+		if(empty($result['page_views']) && empty($result['sessions'])):
+			$this->params['width'] = 250;
+			$this->params['height'] = 100;
+			$this->error_graph();
+		else:
+			$date = $this->make_date_label($result['day'], $result['month']);
+			$this->data = array(
 							'y2'	=> $result['page_views'],
 							'y1'	=> $result['sessions'],
 							'x'		=> $date
 						);
 		
-	
-		$this->params['width'] = 900;
-		$this->params['height'] = 200;
-		$this->params['graph_title'] = "Page Views & Visits for " . $this->get_period_label($this->params['period']);
-		$this->params['y2_title'] = "PageViews";
-		$this->params['y1_title'] = "Visits";
-		
-		$this->graph($this->params['type']);
+			$this->graph($this->params['type']);
+		endif;
 		
 		return;
 	}

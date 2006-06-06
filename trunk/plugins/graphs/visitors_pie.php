@@ -89,23 +89,26 @@ class owa_graph_visitors_pie extends owa_graph {
 	
 		));
 		
-		$result_pie = array($result[0]['new_visitor'], $result[0]['repeat_visitor']);
-		
-		$this->data = array(
-		
-			'data_pie'		=> $result_pie
-			
-			);
-			
-			//print_r($this->data);
-		
+		// Graph params
 		$this->params['graph_title'] = "New Vs. Repeat Visitors for \n" . $this->get_period_label($this->params['period']);
 		$this->params['legends'] = array('New', 'Repeat');
 		$this->params['height']	= 200;
 		$this->params['width']	= 260;
 		
-		$this->pie_graph();
+		// Graph Data Assignment
+		if (empty($result['new_visitor']) && empty($result['repeat_visitor'])):
+			$this->error_graph();
+			return;
+		else:
+			
+			$this->data = array(
 		
+			'data_pie'		=> array($result['new_visitor'], $result['repeat_visitor'])
+			
+			);
+			$this->pie_graph();
+		endif;
+				
 		return;
 	}
 	

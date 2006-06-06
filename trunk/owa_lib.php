@@ -60,6 +60,7 @@ class owa_lib {
 	 * @access public
 	 */
 	function deconstruct_assoc($a_array) {
+		
 		$data_arrays = array();
 	
 		foreach ($a_array as $key => $value) {
