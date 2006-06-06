@@ -163,7 +163,7 @@ class owa_metric_visitor extends owa_metric {
 		);
 
 		
-		return $this->db->get_results($sql);	
+		return $this->db->get_row($sql);	
 	}
 	
 }

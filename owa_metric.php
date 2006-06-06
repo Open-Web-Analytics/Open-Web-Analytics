@@ -353,6 +353,10 @@ class owa_metric {
 		switch ($params['result_format']) {
 			case 'a_array':
 				return $data;
+			case 'inverted_array':
+				return $data;
+			default:
+				return $data;
 		}
 		
 		return $data;

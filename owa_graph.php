@@ -340,6 +340,23 @@ class owa_graph {
 		return;
 	}
 	
+	function error_graph($msg = 'There is no Data to Graph') {
+		
+		include_once (OWA_JPGRAPH_DIR .'/jpgraph_canvas.php');
+		
+		$graph = new CanvasGraph($this->params['width'], $this->params['height']);    
+		
+		$t1 = new Text($msg); 
+		$t1->Pos(0.05, 0.1); 
+		$t1->SetOrientation('h'); 
+		$t1->SetFont(FF_FONT1, FS_BOLD); 
+		$t1->SetColor('orange'); 
+		$graph->AddText($t1); 
+		$graph->Stroke(); 
+		return; 
+	}
+			
+	
 	/**
 	 * Get Display Label for Reporting Period
 	 *

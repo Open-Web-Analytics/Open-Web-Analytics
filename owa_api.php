@@ -168,7 +168,12 @@ class owa_api {
 				return $result;
 				break;
 			case "inverted_array":
-				return owa_lib::deconstruct_assoc($result);
+				if ($result):
+					return owa_lib::deconstruct_assoc($result);
+				else:
+					return;
+				endif;
+				
 				break;
 		}
 	

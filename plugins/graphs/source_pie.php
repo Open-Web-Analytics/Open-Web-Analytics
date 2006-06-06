@@ -119,24 +119,31 @@ class owa_graph_source_pie extends owa_graph {
 	
 		));
 		
-		// Construct Data Array
-		$result_pie = array($from_feeds['source_count'], $from_se['se_count'], $from_sites['site_count']);
-		
-		// Asign Data to graph
-		$this->data = array(
-		
-			'data_pie'		=> $result_pie
-			
-			);
-			
-			//print_r($this->data);
-		
+		// Graph Params	
 		$this->params['graph_title'] = "Traffic Sources for \n" . $this->get_period_label($this->params['period']);
 		$this->params['legends'] = array('Feeds', 'Search Engines', 'Web Sites');
 		$this->params['height']	= 200;
 		$this->params['width']	= 280;
 		
-		$this->pie_graph();
+		// Construct Data Array
+		$result_pie = array($from_feeds['source_count'], $from_se['se_count'], $from_sites['site_count']);
+		
+		if(empty($result_pie[0])):
+		
+			$this->error_graph();
+		
+		else:
+		
+			// Asign Data to graph
+			$this->data = array(
+			
+				'data_pie'		=> $result_pie
+				
+				);
+				
+			$this->pie_graph();
+			
+		endif;
 		
 		return;
 	}
