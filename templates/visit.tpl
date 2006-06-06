@@ -1,3 +1,4 @@
+<? if(!empty($visits)):?>
 <?php foreach($visits as $visit): ?>
 		
 				<div>
@@ -95,3 +96,6 @@
 				</div>
 	
 <?php endforeach; ?>
+<?else:?>
+There were no visits during this time period.
+<? endif;?>
