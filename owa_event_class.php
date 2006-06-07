@@ -32,7 +32,7 @@ require_once 'eventQueue.php';
  * @since		owa 1.0.0
  */
 
-class owa_comment {
+class owa_event {
 	
 	/**
 	 * Configuration
@@ -42,11 +42,11 @@ class owa_comment {
 	var $config;
 	
 	/**
-	 * Comment Properties
+	 * Event Properties
 	 *
 	 * @var array
 	 */
-	var $properties;
+	var $properties = array();
 	
 	/**
 	 * Event Queue
@@ -54,6 +54,13 @@ class owa_comment {
 	 * @var object
 	 */
 	var $eq;
+	
+	/**
+	 * Error handler
+	 *
+	 * @var object
+	 */
+	var $e;
 	
 	/**
 	 * State
@@ -66,10 +73,10 @@ class owa_comment {
 	 * Constructor
 	 * @access public
 	 */
-	function owa_comment() {
+	function owa_event() {
 		
 		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
+		$this->e = &owa_error::get_instance();
 		$this->eq = &eventQueue::get_instance();
 		
 		// Retrieve inbound visitor and session values	
@@ -79,13 +86,56 @@ class owa_comment {
 		// Record time of last request
 		$this->properties['last_req'] = $_COOKIE[$this->config['ns'].$this->config['last_request_param']];
 		
+			//epoc time
+		list($msec, $sec) = explode(" ", microtime());
+		$this->properties['sec'] = $sec;
+		$this->properties['msec'] = $msec;
+		
+		//determine time of request
+		$this->properties['timestamp'] = time();
+		$this->properties['year'] = date("Y", $this->properties['timestamp']);
+		$this->properties['month'] = date("n", $this->properties['timestamp']);
+		$this->properties['day'] = date("d", $this->properties['timestamp']);
+		$this->properties['dayofweek'] = date("D", $this->properties['timestamp']);
+		$this->properties['dayofyear'] = date("z", $this->properties['timestamp']);
+		$this->properties['weekofyear'] = date("W", $this->properties['timestamp']);
+		$this->properties['hour'] = date("G", $this->properties['timestamp']);
+		$this->properties['minute'] = date("i", $this->properties['timestamp']);
+		$this->properties['second'] = date("s", $this->properties['timestamp']);
+		
+		//set default site id. Can be overwriten by caller if needed.
+		$this->properties['site_id'] = $this->config['site_id'];
+		
 		return;
 	}
 	
+	/**
+	 * Logs event to event queue
+	 *
+	 */
 	function log() {
 
 		$this->eq->log($this->properties, $this->state);
+		
 		return;
+	}
+	
+	/**
+	 * Applies calling application specific properties to request
+	 *
+	 * @access 	private
+	 * @param 	array $properties
+	 */
+	function _setProperties($properties) {
+	
+		if(!empty($properties)):
+			foreach ($properties as $key => $value) {
+			
+				$this->properties[$key] = $value;
+			}
+		endif;
+		
+		return;	
 	}
 }
 

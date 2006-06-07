@@ -72,9 +72,10 @@ class owa_db_wordpress extends owa_db {
 	 */
 	function query($sql) {
 		
-		$this->e->debug(sprintf('Query: %s', $sql));
-	
+		$this->_timerStart();
 		@mysql_free_result($this->new_result);
+		$this->_timerEnd();
+		$this->e->debug(sprintf('[%s seconds] Query: %s', $this->_total_time, $sql));
 		$this->result = '';
 		$this->new_result = '';
 		$this->new_result = @mysql_unbuffered_query($sql, $this->connection);
