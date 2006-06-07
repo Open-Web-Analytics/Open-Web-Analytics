@@ -39,11 +39,11 @@ class Log_observer_ua extends owa_observer {
     var $browser_type;
     
     /**
-     * Message Object
+     * Message
      *
-     * @var unknown_type
+     * @var array
      */
-	var $obj;
+	var $m;
 	
 	/**
 	 * Database Access Object
@@ -65,13 +65,6 @@ class Log_observer_ua extends owa_observer {
 	 * @var unknown_type
 	 */
 	var $os;
-	
-	/**
-	 * Debug
-	 *
-	 * @var string
-	 */
-	var $debug;
 	
 	/**
 	 * Constructor
@@ -101,7 +94,7 @@ class Log_observer_ua extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->obj = $event['message'];
+    	$this->m = $event['message'];
 		$this->save();
 
 		return;
@@ -123,9 +116,9 @@ class Log_observer_ua extends owa_observer {
 			values 
 				('%s', '%s', '%s')",
 			$this->config['ns'].$this->config['ua_table'],
-			$this->obj->properties['ua_id'],
-			$this->db->prepare($this->obj->properties['ua']),
-			$this->db->prepare($this->obj->properties['browser_type'])
+			$this->m['ua_id'],
+			$this->db->prepare($this->m['ua']),
+			$this->db->prepare($this->m['browser_type'])
 			
 			)
 		);	

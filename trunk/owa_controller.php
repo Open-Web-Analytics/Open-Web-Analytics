@@ -18,7 +18,6 @@
 
 require_once 'owa_event_class.php';
 require_once 'owa_settings_class.php';
-require_once 'owa_comment_class.php';
 require_once 'owa_request_class.php';
 require_once 'owa_lib.php';
 require_once 'owa_error.php';

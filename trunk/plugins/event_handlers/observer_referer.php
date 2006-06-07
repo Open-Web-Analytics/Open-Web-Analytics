@@ -40,11 +40,11 @@ class Log_observer_referer extends owa_observer {
     var $site_name;
     
     /**
-     * Message Object
+     * Message
      *
      * @var unknown_type
      */
-	var $obj;
+	var $m;
 	
 	/**
 	 * Database Access Object
@@ -130,7 +130,7 @@ class Log_observer_referer extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->obj = $event['message'];
+    	$this->m = $event['message'];
 		$this->process_referer();
 
 		return;
@@ -144,12 +144,12 @@ class Log_observer_referer extends owa_observer {
 	function process_referer() {
 			
 			//	Look for match against Search engine groups
-			$this->referer_info = $this->get_referer_info($this->obj->properties['referer']);
+			$this->referer_info = $this->get_referer_info($this->m['referer']);
 		
 			//	Look for query_terms
 			
-			if (strstr($this->obj->properties['referer'], $this->obj->properties['site']) == false):
-				$this->query_terms = strtolower($this->get_query_terms($this->obj->properties['referer']));
+			if (strstr($this->m['referer'], $this->m['site']) == false):
+				$this->query_terms = strtolower($this->get_query_terms($this->m['referer']));
 				
 				if (!empty($this->query_terms)):
 					$this->is_searchengine = true;
@@ -161,8 +161,8 @@ class Log_observer_referer extends owa_observer {
 			if ($this->config['fetch_refering_page_info'] = true):
 				
 				$this->crawler = new owa_http;
-				$this->crawler->fetch($this->obj->properties['referer']);
-				$this->snippet = $this->crawler->extract_anchor_snippet($this->obj->properties['inbound_uri']);
+				$this->crawler->fetch($this->m['referer']);
+				$this->snippet = $this->crawler->extract_anchor_snippet($this->m['inbound_uri']);
 				//$this->e->debug('Referering Snippet is: '. $this->snippet);
 				$this->anchor_text = $this->crawler->anchor_info['anchor_text'];
 				//$this->e->debug('Anchor text is: '. $this->anchor_text);
@@ -185,7 +185,7 @@ class Log_observer_referer extends owa_observer {
 	function get_referer_info($referer) {
 	
 		/*	Look for match against Search engine groups */
-		$db = new ini_db($this->obj->config['search_engines.ini'], $sections = true);
+		$db = new ini_db($this->config['search_engines.ini'], $sections = true);
 		return $db->fetch($referer);
 	
 	}
@@ -200,7 +200,7 @@ class Log_observer_referer extends owa_observer {
 	function get_query_terms($referer) {
 	
 		/*	Look for query_terms */
-		$db = new ini_db($this->obj->config['query_strings.ini']);
+		$db = new ini_db($this->config['query_strings.ini']);
 		
 		return urldecode($db->match($referer));
 	}
@@ -225,8 +225,8 @@ class Log_observer_referer extends owa_observer {
 			VALUES 
 				('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
 			$this->config['ns'].$this->config['referers_table'],
-			$this->obj->properties['referer_id'],
-			$this->db->prepare($this->obj->properties['referer']),
+			$this->m['referer_id'],
+			$this->db->prepare($this->m['referer']),
 			trim($this->referer_info->name, '\"'),
 			$this->db->prepare($this->query_terms),
 			$this->db->prepare($this->page_title),
@@ -254,7 +254,7 @@ class Log_observer_referer extends owa_observer {
 			$this->db->prepare($this->page_title),
 			$this->db->prepare($this->anchor_text),
 			$this->db->prepare($this->snippet),
-			$this->obj->properties['referer_id']		
+			$this->m['referer_id']		
 			)
 		);	
 		
