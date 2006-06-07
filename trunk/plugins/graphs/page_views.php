@@ -169,10 +169,6 @@ class owa_graph_page_views extends owa_graph {
 		$this->params['y2_title'] = "PageViews";
 		$this->params['y1_title'] = "Visits";
 		
-		$this->e->debug(serialize($result['page_views']));
-		
-		//if(!empty($result['page_views'])):
-		//if((array_sum($result['page_views']) == 0)):
 		if(empty($result['page_views']) && empty($result['sessions'])):
 			$this->params['width'] = 250;
 			$this->params['height'] = 100;

@@ -101,6 +101,20 @@ class owa_db {
 	 * @access private
 	 */
 	var $e;
+	
+	/**
+	 * Microtime Start of Query
+	 *
+	 * @var unknown_type
+	 */
+	var $_start_time;
+	
+	/**
+	 * Total Elapsed time of query
+	 *
+	 * @var unknown_type
+	 */
+	var $_total_time;
 
 	/**
 	 * Constructor
@@ -160,6 +174,35 @@ class owa_db {
 		return str_replace($chars, " ", $string);
 	}
 
+	/**
+	 * Starts the query microtimer
+	 *
+	 */
+	function _timerStart() {
+		
+	  $mtime = microtime(); 
+      //$mtime = explode(' ', $mtime); 
+      //$this->_start_time = $mtime[1].substr(round($mtime[0], 4), 1);
+	$this->_start_time = microtime();	
+	return;
+	}
+	
+	/**
+	 * Ends the query microtimer and populates $this->_total_time
+	 *
+	 */
+	function _timerEnd() {
+		
+		$mtime = microtime(); 
+    	//$mtime = explode(" ", $mtime); 
+    	//$endtime = $mtime[1].substr(round($mtime[0], 4), 1); 
+		$endtime = microtime();
+		//$this->_total_time = bcsub($endtime, $this->_start_time, 4); 
+		$this->_total_time = number_format(((substr($endtime,0,9)) + (substr($endtime,-10)) - (substr($this->_start_time,0,9)) - (substr($this->_start_time,-10))),6);
+		
+		return;
+		
+	}
 }
 
 ?>

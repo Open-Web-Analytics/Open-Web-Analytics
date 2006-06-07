@@ -16,12 +16,9 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
+require_once 'owa_event_class.php';
 require_once 'owa_lib.php';
-require_once 'eventQueue.php';
 require_once 'ini_db.php';
-require_once 'owa_error.php';
-require_once OWA_PEARLOG_DIR . '/Log.php';
 
 /**
  * Request
@@ -35,42 +32,7 @@ require_once OWA_PEARLOG_DIR . '/Log.php';
  * @since		owa 1.0.0
  */
 
-class owa_request {
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config = array();
-	
-	/**
-	 * Dubug
-	 *
-	 * @var string $debug
-	 */
-	var $debug;
-	
-	/**
-	 * Database access object
-	 *
-	 * @var object $db
-	 */
-	var $db;
-	
-	/**
-	 * Request properties
-	 *
-	 * @var array $properties
-	 */
-	var $properties = array();
-	
-	/**
-	 * Event Queue
-	 *
-	 * @var object $eq
-	 */
-	var $eq;
+class owa_request extends owa_event {
 	
 	/**
 	 * First hit flag
@@ -82,13 +44,6 @@ class owa_request {
 	var $first_hit = false;
 	
 	/**
-	 * State of request
-	 *
-	 * @var string $state
-	 */
-	var $state;
-	
-	/**
 	 * Time since last request.
 	 * 
 	 * Used to tell if a new session should be created.
@@ -96,13 +51,6 @@ class owa_request {
 	 * @var integer $time_since_lastreq
 	 */
 	var $time_since_lastreq;
-	
-	/**
-	 * Error Handler
-	 *
-	 * @var object
-	 */
-	var $e;
 	
 	/**
 	 * Browsecap browser info object
@@ -118,11 +66,10 @@ class owa_request {
 	 * @access public
 	 */
 	function owa_request() {
-	
-		$this->config = &owa_settings::get_settings();
-		$this->eq = &eventQueue::get_instance();
-		$this->e = &owa_error::get_instance();
 		
+		//Call to Parent Constructor
+		$this->owa_event();
+	
 		// Create GUID for this request
 		$this->properties['request_id'] = $this->set_guid();
 		
@@ -146,26 +93,6 @@ class owa_request {
 		// Determine Browser type
 		$this->determine_browser_type();
 		
-		//epoc time
-		list($msec, $sec) = explode(" ", microtime());
-		$this->properties['sec'] = $sec;
-		$this->properties['msec'] = $msec;
-		
-		//determine time of request
-		$this->properties['timestamp'] = time();
-		$this->properties['year'] = date("Y", $this->properties['timestamp']);
-		$this->properties['month'] = date("n", $this->properties['timestamp']);
-		$this->properties['day'] = date("d", $this->properties['timestamp']);
-		$this->properties['dayofweek'] = date("D", $this->properties['timestamp']);
-		$this->properties['dayofyear'] = date("z", $this->properties['timestamp']);
-		$this->properties['weekofyear'] = date("W", $this->properties['timestamp']);
-		$this->properties['hour'] = date("G", $this->properties['timestamp']);
-		$this->properties['minute'] = date("i", $this->properties['timestamp']);
-		$this->properties['second'] = date("s", $this->properties['timestamp']);
-		
-		//set default site id. Can be overwriten by caller if needed.
-		$this->properties['site_id'] = $this->config['site_id'];
-		
 		// Calc time sinse the last request
 		$this->time_sinse_lastreq = $this->time_sinse_last_request();
 		
@@ -180,26 +107,6 @@ class owa_request {
 		
 		return;
 	
-	}
-	
-	/**
-	 * Applies calling application specific properties to request
-	 *
-	 * @access 	public
-	 * @param 	array $app_params
-	 */
-	function apply_app_specific($app_params) {
-	
-		foreach ($app_params as $key => $value) {
-		
-			$this->properties[$key] = $value;
-		}
-			
-		if 	($this->properties['is_feedreader'] == true):
-			$this->properties['is_browser'] = false;	
-		endif;
-	
-		return;	
 	}
 	
 	/**
@@ -341,18 +248,6 @@ class owa_request {
 	}
 	
 	/**
-	 * Send request to event queue for logging
-	 * 
-	 * @access 	public
-	 */
-	function log_request() {
-	
-		$this->eq->log($this->properties, $this->state);				
-					
-		return;
-	}
-	
-	/**
 	 * Creates new visitor
 	 * 
 	 * @access 	public
@@ -439,17 +334,6 @@ class owa_request {
 		$browser_def= $this->determine_ua_type($this->properties['ua']);
 			
 		$this->properties['browser_type'] =  $browser_def['name']; 
-			
-		$brow = print_r($browser_def, true);
- 
-		// need this?
-		$this->debug = $this->debug.(sprintf(
-		  '<table class="debug" border="1" width="100%%"><tr><td valign="top" width="">%s</td><td valign="top">%s</td></tr>',
-	
-		  'browscap',
-		   $brow
-		  
-		));
   
 		return;
 	}

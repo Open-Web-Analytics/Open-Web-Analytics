@@ -16,6 +16,7 @@
 // $Id$
 //
 
+require_once 'owa_event_class.php';
 require_once 'owa_settings_class.php';
 require_once 'owa_comment_class.php';
 require_once 'owa_request_class.php';
@@ -79,7 +80,6 @@ class owa {
 		
 		// Log first request just in case it was left over from prior page view.
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
-			
 			$fh = new owa_request;
 			$this->log_first_request($fh);
 			
@@ -89,10 +89,12 @@ class owa {
 		$r = new owa_request;
 		
 		// Apply application specific data to the request
+		
+		$r->_setProperties($app_params);
+		
 		$this->e->debug(sprintf('Calling Application provided the following request params for request %d:<BR>%s',
 						$r->properties['request_id'],
 						print_r($app_params, true)));
-		$r->apply_app_specific($app_params);
 		
 		// Deterine if the request is from a known robot/crawler/spider
 			if (get_cfg_var('browscap')):
@@ -113,9 +115,10 @@ class owa {
 		// Log requests from known robots or else dump the request
 			if ($r->is_robot == true):
 				if ($this->config['log_robots'] == true):
+					$r->properties['is_browser'] = false;
 					$r->transform_request();
 					$r->state = 'robot_request';
-					$r->log_request();	
+					$r->log();	
 					return;
 				else:
 					return;
@@ -123,14 +126,17 @@ class owa {
 			endif;
 		
 		// Log requests from feed readers
-		if ($this->config['log_feedreaders'] == true):
-			if (!empty($r->properties['is_feedreader'])):	
-				$r->transform_request();
-				$r->state = 'feed_request';
-				$r->log_request();
-				return;
+			if ($r->properties['is_feedreader'] == true):
+				if ($this->config['log_feedreaders'] == true):
+					$r->properties['is_browser'] = false;
+					$r->transform_request();
+					$r->state = 'feed_request';
+					$r->log();
+					return;
+				else:
+					return;
+				endif;	
 			endif;	
-		endif;	
 		
 		$this->process($r);
 		
@@ -164,7 +170,7 @@ class owa {
 
 		// Log the request
 		$r->state = 'new_request';
-		$r->log_request();
+		$r->log();
 		$this->e->debug(sprintf('Request %d logged to event queue',
 								$r->properties['request_id']));
 		
@@ -173,18 +179,14 @@ class owa {
     		; // fork process to process async event log.
 		endif;
 		
-		// Print debug to screen
-		if ($this->config['error_handler'] == 'development'):
-			
-			if($r->properties['user_name'] == 'admin'):
-				print_r($this->debug);
-			endif;
-		endif;
-		
 		return;			
 					
 	}
 	
+	/**
+	 * Special controller for special first hit http request
+	 *
+	 */
 	function process_first_request() {
 		
 		// Create a new request object
@@ -195,6 +197,11 @@ class owa {
 		return;
 	}
 	
+	/**
+	 * Logs first hit requests to event queue
+	 *
+	 * @param object $r
+	 */
 	function log_first_request($r) {
 		
 		//Load request properties from first_hit cookie if it exists
@@ -204,7 +211,7 @@ class owa {
 		
 		// Log the request
 		$r->state = 'new_request';
-		$r->log_request();
+		$r->log();
 		$this->e->debug(sprintf('First hit Request %d logged to event queue',
 								$r->properties['request_id']));
 		
@@ -229,14 +236,6 @@ class owa {
 		
 	}
 	
-	function process_comment() {
-		
-		$comment = new owa_comment;
-		$comment->state = 'new_comment';
-		$comment->log();
-		return;
-	}
-	
 	/**
 	 * Fetch a vaue from the current configuration
 	 *
@@ -246,6 +245,25 @@ class owa {
 	function get_config_value($value) {
 		
 		return $this->config[$value];
+	}
+	
+	/**
+	 * Alternative API for logging events direcly to the event queue
+	 *
+	 * @param array $app_params
+	 * @param unknown_type $event_type
+	 */
+	function logEvent($event_type, $app_params) {
+		
+		// This should become a factory method call based on event type.
+		$event = new owa_event;
+		$event->_setProperties($app_params);
+		$event->state = $event_type;
+		$event->log();
+		
+		$this->e->debug('Logging '.$event_type.' to event queue.');
+		
+		return;
 	}
 
 }

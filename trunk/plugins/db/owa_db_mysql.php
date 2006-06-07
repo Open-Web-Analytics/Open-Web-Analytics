@@ -62,8 +62,9 @@ class owa_db_mysql extends owa_db {
 	
 		return;
 	}
-
-		/**
+	
+	
+	/**
 	 * Database Query
 	 *
 	 * @param 	string $sql
@@ -73,7 +74,7 @@ class owa_db_mysql extends owa_db {
 	function query($sql) {
   
 		$this->e->debug(sprintf('Query: %s', $sql));
-	
+		
 		@mysql_free_result($this->new_result);
 		$this->result = '';
 		$this->new_result = '';
