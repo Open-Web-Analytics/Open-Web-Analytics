@@ -124,14 +124,14 @@ class Log_observer_announce extends owa_observer {
     		 Host: %s
     		 City/Country: %s, %s
     		 Entry page:%s (%s)', 
-    		 			$this->m->properties['visitor_id'],
-    		 			$this->m->properties['user_email'],
-    		 			$this->m->properties['user_name'],
-    		 			$this->m->properties['host'],
-    		 			$this->m->properties['city'],
-    		 			$this->m->properties['country'],
-    		 			$this->m->properties['first_page_title'],
-    		 			$this->m->properties['first_page_uri']
+    		 			$this->m['visitor_id'],
+    		 			$this->m['user_email'],
+    		 			$this->m['user_name'],
+    		 			$this->m['host'],
+    		 			$this->m['city'],
+    		 			$this->m['country'],
+    		 			$this->m['first_page_title'],
+    		 			$this->m['first_page_uri']
     		 )
     		 
     		 );

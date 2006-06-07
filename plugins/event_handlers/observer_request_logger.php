@@ -40,9 +40,9 @@ class Log_observer_request_logger extends owa_observer {
 	var $db;
 	
 	/**
-	 * Event
+	 * Message
 	 *
-	 * @var object
+	 * @var array
 	 */
 	var $m;
 

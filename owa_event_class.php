@@ -21,7 +21,7 @@ require_once 'owa_lib.php';
 require_once 'eventQueue.php';
 
 /**
- * Comment
+ * Abstract OWA Event Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -86,7 +86,7 @@ class owa_event {
 		// Record time of last request
 		$this->properties['last_req'] = $_COOKIE[$this->config['ns'].$this->config['last_request_param']];
 		
-			//epoc time
+		//epoc time
 		list($msec, $sec) = explode(" ", microtime());
 		$this->properties['sec'] = $sec;
 		$this->properties['msec'] = $msec;

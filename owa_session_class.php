@@ -32,21 +32,7 @@ require_once 'owa_location.php';
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_session {
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config = array();
-	
-	/**
-	 * Debug
-	 *
-	 * @var string
-	 */
-	var $debug;
+class owa_session extends owa_event {
 	
 	/**
 	 * Database access object
@@ -56,38 +42,14 @@ class owa_session {
 	var $db;
 	
 	/**
-	 * Event queue
-	 *
-	 * @var object
-	 */
-	var $eq;
-	
-	/**
-	 * Properties
-	 *
-	 * @var array
-	 */
-	var $properties = array();
-	
-	/**
-	 * State
-	 *
-	 * @var string
-	 */
-	var $state;
-	
-	/**
 	 * Constructor
 	 *
 	 * @return owa_session
 	 * @access public
 	 */
 	function owa_session() {
-	
-		$this->config = &owa_settings::get_settings();
-		$this->debug = &owa_lib::get_debugmsgs();
+		$this->owa_event();
 		$this->db = &owa_db::get_instance();
-		$this->eq = &eventQueue::get_instance();
 		
 		return;
 	}
@@ -178,7 +140,7 @@ class owa_session {
 	/**
 	 * Log new session to databse
 	 *
-	 * @access 	privit
+	 * @access 	private
 	 */
 	function log_initial_session() {
 	
@@ -258,7 +220,7 @@ class owa_session {
 		$this->state = 'new_session';
 		
 		// send session to event queue
-		$this->eq->log($this, $this->state);
+		$this->log();
 		
 		return;	
 	}
@@ -311,7 +273,7 @@ class owa_session {
 		$this->state = 'session_update';
 		
 		// Send updated sesion to the event queue
-		$this->eq->log($this, $this->state);
+		$this->log();
 		
 		return;
 	}

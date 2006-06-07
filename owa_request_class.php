@@ -21,7 +21,7 @@ require_once 'owa_lib.php';
 require_once 'ini_db.php';
 
 /**
- * Request
+ * Concrete Page Request Event Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -72,13 +72,6 @@ class owa_request extends owa_event {
 	
 		// Create GUID for this request
 		$this->properties['request_id'] = $this->set_guid();
-		
-		// Retriece inbound vistor and session values	
-		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
-		$this->properties['inbound_session_id'] = $_COOKIE[$this->config['ns'].$this->config['session_param']];
-		
-		// Record time of last request
-		$this->properties['last_req'] = $_COOKIE[$this->config['ns'].$this->config['last_request_param']];
 		
 		// Record HTTP request variables
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
