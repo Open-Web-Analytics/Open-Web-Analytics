@@ -39,7 +39,7 @@ switch ($_GET['owa_action']) {
 		$l->first_request_handler();		
 		exit;
 	case $l->config['graph_param']:
-		$l->graph_request_handler();
+		$l->getGraph();
 		exit;
 }
 

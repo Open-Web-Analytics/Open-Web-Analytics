@@ -57,6 +57,13 @@ class owa_observer extends Log_observer {
     var $e;
     
     /**
+     * Event Message
+     *
+     * @var array
+     */
+	var $m;
+    
+    /**
      * Configuration
      *
      * @var array

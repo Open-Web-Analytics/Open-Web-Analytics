@@ -230,7 +230,9 @@ class owa_lib {
 	 *
 	 * @return array
 	 */
-	function get_api_params() {
+	function getRestparams() {
+		
+		$config = &owa_settings::get_settings();
 		
 		$params = array();
 		
@@ -245,7 +247,14 @@ class owa_lib {
 		$params['offset'] = $_GET['offset'];
 		$params['sortby'] = $_GET['sortby'];
 		$params['period'] = $_GET['period'];
-		
+		$params['site_id'] = $_GET['site_id'];
+		$params['type'] = $_GET['type'];
+		$params['api_call'] = $_GET['name'];
+		$params['session_id'] = $_GET[$config['ns'].$config['session_param']];
+		$params['visitor_id'] = $_GET[$config['ns'].$config['visitor_param']];
+		$params['document_id'] = $_GET[$config['ns'].$config['document_param']];
+		$params['referer_id'] = $_GET[$config['ns'].$config['referer_param']];
+		$params['source'] = $_GET[$config['ns'].$config['source_param']];
 	
 		return $params;
 		

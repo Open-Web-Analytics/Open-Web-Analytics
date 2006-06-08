@@ -78,7 +78,7 @@ class owa_graph_source_pie extends owa_graph {
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
-		
+			'site_id'	=> $this->params['site_id'],
 			'year'		=> $this->params['year'],
 			'month'		=> $this->params['month'],
 			'day'		=> $this->params['day']
@@ -92,9 +92,8 @@ class owa_graph_source_pie extends owa_graph {
 		'api_call' 			=> 'from_search_engine',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
-		
-			'constraints'		=> array(
-		
+		'constraints'		=> array(
+			'site_id'	=> $this->params['site_id'],
 			'year'		=> $this->params['year'],
 			'month'		=> $this->params['month'],
 			'day'		=> $this->params['day']
@@ -108,9 +107,8 @@ class owa_graph_source_pie extends owa_graph {
 		'api_call' 			=> 'from_sites',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
-		
-			'constraints'		=> array(
-		
+		'constraints'		=> array(
+			'site_id'	=> $this->params['site_id'],	
 			'year'		=> $this->params['year'],
 			'month'		=> $this->params['month'],
 			'day'		=> $this->params['day']

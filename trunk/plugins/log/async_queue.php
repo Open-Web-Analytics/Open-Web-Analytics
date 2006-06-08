@@ -1,22 +1,35 @@
 <?php
-/**
- * $Header: /repository/pear/Log/Log/file.php,v 1.44 2005/09/19 04:24:14 jon Exp $
- *
- * @version $Revision: 1.44 $
- * @package Log
- */
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
 
 /**
- * The Log_file class is a concrete implementation of the Log abstract
- * class that logs messages to a text file.
+ * Concrete Log Class that implements a persistant event queue by writing events
+ * an event log file.
  * 
- * @author  Jon Parise <jon@php.net>
- * @author  Roman Neuhauser <neuhauser@bellavista.cz>
- * @since   Log 1.0
- * @package Log
- *
- * @example file.php    Using the file handler.
+ * Baed on PEAR::Log file logger.
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
  */
+
 class Log_async_queue extends Log
 {
     /**
@@ -24,7 +37,7 @@ class Log_async_queue extends Log
      * @var string
      * @access private
      */
-    var $_filename = 'php.log';
+    var $_filename = '';
 
     /**
      * Handle to the log file.

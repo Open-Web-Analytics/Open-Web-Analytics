@@ -37,13 +37,6 @@ class Log_observer_ua extends owa_observer {
 	 * @var string
 	 */
     var $browser_type;
-    
-    /**
-     * Message
-     *
-     * @var array
-     */
-	var $m;
 	
 	/**
 	 * Database Access Object
@@ -51,13 +44,6 @@ class Log_observer_ua extends owa_observer {
 	 * @var object
 	 */
 	var $db;
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
 	
 	/**
 	 * Operating System

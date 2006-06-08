@@ -85,10 +85,10 @@ class owa_metric_top extends owa_metric {
 		FROM 
 			%s as requests, %s as documents 
 		WHERE
-			site_id = '%s' 
-			%s
-			%s AND documents.page_type != 'feed'
+			documents.page_type != 'feed'
 			AND requests.document_id = documents.id
+			%s
+			%s 
 		GROUP BY
 			documents.page_title
 		ORDER BY
@@ -97,7 +97,6 @@ class owa_metric_top extends owa_metric {
 			%s",
 			$this->config['ns'].$this->config['requests_table'],
 			$this->config['ns'].$this->config['documents_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -129,12 +128,11 @@ class owa_metric_top extends owa_metric {
 		FROM 
 			%s as referers,
 			%s as sessions 
-		WHERE
-			site_id = '%s' 
-			%s
-			%s
-			AND referers.id != 0
+		WHERE 
+			referers.id != 0
 			AND referers.id = sessions.referer_id
+			%s
+			%s
 		GROUP BY
 			referers.url
 		ORDER BY
@@ -143,15 +141,12 @@ class owa_metric_top extends owa_metric {
 			%s",
 			$this->config['ns'].$this->config['referers_table'],
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
 		);
 		
-	return $this->db->get_results($sql); 
-	
-	
+		return $this->db->get_results($sql); 
 	
 	}
 	
@@ -172,7 +167,7 @@ class owa_metric_top extends owa_metric {
 		FROM 
 			%s
 		WHERE
-			site_id = '%s' 
+			true
 			%s
 			%s
 		GROUP BY
@@ -182,7 +177,6 @@ class owa_metric_top extends owa_metric {
 		LIMIT 
 			%s",
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']

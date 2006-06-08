@@ -84,15 +84,14 @@ class owa_metric_source extends owa_metric {
 		FROM 
 			%s as sessions
 		WHERE
-			site_id = %s 
+			sessions.source = '%s'
 			%s
 			%s
-			AND sessions.source = '%s'",
+			",
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['site_id'],
+			$source,
 			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$source
+			$this->add_constraints($this->params['constraints'])
 			
 		);
 		
@@ -113,14 +112,12 @@ class owa_metric_source extends owa_metric {
 			%s as sessions,
 			%s as referers
 		WHERE
-			site_id = %s 
+			sessions.referer_id = referers.id
+			AND referers.is_searchengine = 1
 			%s
-			%s
-			AND sessions.referer_id = referers.id
-			AND referers.is_searchengine = 1",
+			%s",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['ns'].$this->config['referers_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -142,14 +139,12 @@ class owa_metric_source extends owa_metric {
 			%s as sessions,
 			%s as referers
 		WHERE
-			site_id = %s 
+			sessions.referer_id = referers.id
+			AND referers.is_searchengine = 0
 			%s
-			%s
-			AND sessions.referer_id = referers.id
-			AND referers.is_searchengine = 0",
+			%s",
 			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['ns'].$this->config['referers_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);

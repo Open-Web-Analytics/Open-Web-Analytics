@@ -24,6 +24,7 @@ require_once (OWA_PEARLOG_DIR . '/Log.php');
 require_once 'owa_session_class.php';
 require_once 'owa_request_class.php';
 require_once 'owa_caller.php';
+require_once('owa_db.php');
 
 /**
  * Asynchronous Event Processsor
@@ -61,6 +62,13 @@ class asyncEventProcessor extends owa_caller {
 	var $eq;
 	
 	/**
+	 * Database acces object
+	 *
+	 * @var object
+	 */
+	var $db;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return asyncEventProcessor
@@ -78,6 +86,7 @@ class asyncEventProcessor extends owa_caller {
 		// Turns off async setting so that the proper event queue is created
 		$this->config['async_db'] = false;
 		$this->eq = &eventQueue::get_instance();
+		$this->db = &owa_db::get_instance();
 		
 		// Create Error Logger - NEEDED?
 		$conf = array('mode' => 640, 'timeFormat' => '%X %x');
@@ -167,64 +176,69 @@ class asyncEventProcessor extends owa_caller {
 		// check to see if event log file exisits
 		
 		if (file_exists($file)):
-			$this->create_lock_file();
-				
-			// Create a new log file name	
-			$new_file_name = $this->config['async_log_dir'].time().".".posix_getpid();
-			$new_file = $new_file_name.".processing";
-			// Rename current log file 
-			rename ($file, $new_file ) or die ("Could not rename file");
-			// open file for reading
-			$handle = @fopen($new_file, "r");
+			if($this->db->connection_status == true):
+				$this->create_lock_file();
+					
+				// Create a new log file name	
+				$new_file_name = $this->config['async_log_dir'].time().".".posix_getpid();
+				$new_file = $new_file_name.".processing";
+				// Rename current log file 
+				rename ($file, $new_file ) or die ("Could not rename file");
+				// open file for reading
+				$handle = @fopen($new_file, "r");
 				if ($handle):
 					while (!feof($handle)) {
 						// Read row
 						$buffer = fgets($handle, 14096); // big enough?
-						
+							
 						// Parse the row
 						$event = $this->parse_log_row($buffer);
-					
+						
 						// Log event to the event queue
 						if (!empty($event['event_obj'])):
+							
 							$this->eq->log($event['event_obj'], $event['event_type']);
 							// print status
-							$this->e->info(sprintf('Processing: %s',
-									$event['event_type']));
-							//print "Logging: ". $event['event_type'] . "...\n";
-							//$result = $this->eq->log($event['event_obj'], $event['event_type']);
+							$this->e->info(sprintf('Processing: %s', $event['event_type']));
+								
 						endif;						
-						/*
-						if ($result === false):
-							$this->error_logger->log($buffer);	
-						else: 
-							print "Could not open async error log";
-						endif;
-						*/
+							/*
+							if ($result === false):
+								$this->error_logger->log($buffer);	
+							else: 
+								print "Could not open async error log";
+							endif;
+							*/
 					}
-				//Close file
-				fclose($handle);
-				
-				// rename file to mark it as processed
-				$processed_file_name = $new_file_name.".processed";
-				rename ($new_file, $processed_file_name) or die ("Could not rename file");	
-				$this->e->info(sprintf('Processing Complete. Renaming File to %s',
-										$processed_file_name ));
-				//Delete processed file
-				unlink($processed_file_name);
-				$this->e->info(sprintf('Deleting File %s',
-										$processed_file_name ));
+					//Close file
+					fclose($handle);
 					
+					// rename file to mark it as processed
+					$processed_file_name = $new_file_name.".processed";
+					rename ($new_file, $processed_file_name) or die ("Could not rename file");	
+					$this->e->info(sprintf('Processing Complete. Renaming File to %s',
+											$processed_file_name ));
+					//Delete processed file
+					unlink($processed_file_name);
+					$this->e->info(sprintf('Deleting File %s',
+											$processed_file_name ));
+						
 				else:
 					//print error
 					$this->e->alert(sprintf('Could not open file %s. Terminating Run.',
-										$new_file));
+											$new_file));
 					exit;
 				endif;
-				
+					
 				//Delete Lock file
 				unlink($this->config['async_log_dir'].$this->config['async_lock_file']);
-			endif;
 				
+			else:
+				$this->e->err('Database Connection is down.');	
+			endif;	
+		
+		endif;
+		
 		return;
 	}
 	

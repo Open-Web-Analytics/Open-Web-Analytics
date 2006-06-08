@@ -22,7 +22,7 @@ require_once 'owa_controller.php';
 require_once 'owa_installer.php';
 
 /**
- * Abstract caller class
+ * Abstract Caller class used to build application specific invocation classes
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -48,6 +48,19 @@ class owa_caller {
 	 */
 	var $e;
 	
+	/**
+	 * Instance of Request/Event Controller
+	 *
+	 * @var object
+	 */
+	var $controller;
+	
+	/**
+	 * Constructor
+	 *
+	 * @param array $config
+	 * @return owa_caller
+	 */
 	function owa_caller($config) {
 		
 		$this->config = &owa_settings::get_settings();
@@ -57,14 +70,23 @@ class owa_caller {
 		if ($this->config['fetch_config_from_db'] == true):
 			$this->load_config_from_db();
 		endif;
+		
+		$this->controller = new owa;
 	
 		return;
 	
 	}
 	
+	/**
+	 * Applies caller specific configuration params on top of 
+	 * those specified on the global OWA config file.
+	 *
+	 * @param array $config
+	 */
 	function apply_caller_config($config) {
 		
 		if (!empty($config)):
+		
 			foreach ($config as $key => $value) {
 				
 				$this->config[$key] = $value;
@@ -77,6 +99,10 @@ class owa_caller {
 
 	}
 	
+	/**
+	 * Fetches instance specific configuration params from the database
+	 * 
+	 */
 	function load_config_from_db() {
 		
 		$config_from_db = owa_settings::fetch($this->config['site_id']);
@@ -94,11 +120,28 @@ class owa_caller {
 		return;
 	}
 	
+	/**
+	 * Logs a Page Request
+	 *
+	 * @param array $app_params	This is an array of application specific request params
+	 */
 	function log($app_params) {
 		
-		$owa = new owa;
-		$owa->process_request($app_params);
-		return;
+		return $this->controller->process_request($app_params);
+		
+	}
+	
+	/**
+	 * Logs any event to the event queue
+	 *
+	 * @param array $app_params
+	 * @param string $event_type
+	 * @return boolean
+	 */
+	function logEvent($event_type, $app_params) {
+		
+		return $this->controller->logEvent($event_type, $app_params);
+		
 	}
 	
 	function install($type) {
@@ -159,8 +202,7 @@ class owa_caller {
 		$this->e->debug('Received special OWA request. OWA action = first_hit');
 		
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
-			$owa = new owa;
-			$owa->process_first_request();
+			$this->controller->process_first_request();
 		endif;
 			
 		
@@ -173,19 +215,22 @@ class owa_caller {
 		return;
 	}
 	
-	function graph_request_handler() {
+	
+	function getGraph($app_params = '') {
 		
-		$params = owa_lib::get_api_params();
-		$params['api_call'] = $_GET[$this->config['graph_param']];
-		$params['type'] = $_GET['type'];
+		if(empty($app_params)):
+			$app_params = owa_lib::getRestparams();
+		endif;
 				
-		$owa = new owa;
-		$owa->get_graph($params);
-		//$this->e->debug('PARAMS GRAPH: '.serialize($params));
+		return $this->controller->getGraph($app_params);
 		
-		return;
 	}
 	
+	/**
+	 * Saves Configuration values to the database
+	 *
+	 * @param array $form_data
+	 */
 	function save_config($form_data) {
 		
 		//create the new config array

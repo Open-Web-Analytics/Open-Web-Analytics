@@ -32,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_report.php');
 
 $report = new owa_report;
 
-if (!empty($_POST['period'])):
+/*if (!empty($_POST['period'])):
 	$report->set_period($_POST['period']);
 else:
 	$report->set_period('this_month');
@@ -45,7 +45,7 @@ else:
 	endif;
 
 $visitor_id = $_GET[$report->config['ns'].$report->config['visitor_param']];
-	
+*/	
 	
 // Setup the templates
 	
@@ -59,7 +59,7 @@ $visits = & new owa_template;
 
 $visits->set_template('visit.tpl');// This is a sub template
 
-
+//print $report->params['limit'];
 // Fetch Metrics
 
 $result = $report->metrics->get(array(
@@ -67,13 +67,12 @@ $result = $report->metrics->get(array(
 	'period'			=> 'all_time',
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'		=> $report->params['site_id'],
 		'is_browser' 	=> 1,
-		'is_robot' 		=> 0,
-		'visitor_id' 	=> $visitor_id
+		'visitor_id' 	=> $report->params['visitor_id']
 		
 		),
-	'limit' 			=> $limit
+	'limit' 			=> $report->params['limit']
 ));
 
 // Assign Data to templates
@@ -82,7 +81,8 @@ $body->set('headline', 'Visitor Detail');
 $body->set('period_label', $report->period_label);
 $body->set('config', $report->config);
 $visits->set('visits', $result);
-$body->set('visitor_id', $visitor_id);
+$visits->set('params', $report->params);
+$body->set('visitor_id', $report->params['visitor_id']);
 $body->set('visits_data', $visits);
 $report->tpl->set('content', $body);
 

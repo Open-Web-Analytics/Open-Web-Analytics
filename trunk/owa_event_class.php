@@ -126,7 +126,7 @@ class owa_event {
 	 * @access 	private
 	 * @param 	array $properties
 	 */
-	function _setProperties($properties) {
+	function _setProperties($properties = null) {
 	
 		if(!empty($properties)):
 			foreach ($properties as $key => $value) {

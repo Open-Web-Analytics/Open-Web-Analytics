@@ -81,7 +81,7 @@ class owa_graph_page_views extends owa_graph {
 					'period'			=> $this->params['period'],
 					'result_format'		=> 'inverted_array',
 					'constraints'		=> array(
-						
+						'site_id'	=> $this->params['site_id'],
 						'is_browser' => 1,
 						'is_robot' 	=> 0),
 					'group_by'			=> 'month'
@@ -113,7 +113,7 @@ class owa_graph_page_views extends owa_graph {
 					'period'			=> $this->params['period'],
 					'result_format'		=> 'inverted_array',
 					'constraints'		=> array(
-						
+						'site_id'	=> $this->params['site_id'],
 						'is_browser' => 1,
 						'is_robot' 	=> 0),
 					'group_by'			=> 'day',
@@ -156,7 +156,7 @@ class owa_graph_page_views extends owa_graph {
 					'period'			=> $this->params['period'],
 					'result_format'		=> 'inverted_array',
 					'constraints'		=> array(
-						
+						'site_id'	=> $this->params['site_id'],
 						'is_browser' => 1,
 						'is_robot' 	=> 0),
 					'group_by'			=> 'day',

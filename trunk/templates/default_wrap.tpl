@@ -70,6 +70,11 @@
 			.centered_buttons {margin-left:auto;margin-right:auto;}
 			.owa_banner {background-color:#607B8B;font-size:16px;padding:4px;color:#ffffff;}
 			.status_msg {padding:10px;border:1px;font-size:20px;background-color:#FCF6CF;}
+			th {padding:6px 6px 6px 6px;}
+			td {padding: 2px 6px 2px 6px;}
+			.snippet_text {color:#999999;font-size:12px;}
+			.snippet_text a {color:#999999;}
+			.visit_box_stat {width:42px;}
 
 		</style>
 	

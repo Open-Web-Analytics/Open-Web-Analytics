@@ -38,10 +38,25 @@ class owa_settings {
 	 */
 	var $db;
 	
+	/**
+	 * Configuration properties
+	 *
+	 * @var array
+	 */
 	var $properties;
 	
+	/**
+	 * Error Handler
+	 *
+	 * @var object
+	 */
 	var $e;
 	
+	/**
+	 * Constructor
+	 *
+	 * @return owa_settings
+	 */
 	function owa_settings() {
 		
 		$this->properties = $this->get_settings();
@@ -105,6 +120,9 @@ class owa_settings {
 			'source_param'					=> 'from',
 			'graph_param'					=> 'graph',
 			'period_param'					=> 'period',
+			'document_param'				=> 'doc',
+			'referer_param'					=> 'referer',
+			'source_param'					=> 'source',
 			'site_id'						=> '1',
 			'session_length'				=> '1800',
 			'debug_to_screen'				=> false,
@@ -153,7 +171,6 @@ class owa_settings {
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
 			'report_wrapper'				=> 'default_wrap.tpl',
-			//'schema_version'				=> '1.0',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> true,
 			'announce_visitors'				=> false,

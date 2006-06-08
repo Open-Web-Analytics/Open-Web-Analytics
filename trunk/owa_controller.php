@@ -44,13 +44,6 @@ class owa {
 	var $config = array();
 	
 	/**
-	 * Debug
-	 *
-	 * @var string
-	 */
-	var $debug;
-	
-	/**
 	 * Error Handler
 	 *
 	 * @var object
@@ -64,14 +57,14 @@ class owa {
 	 */
 	function owa() {
 		
-		$this->debug = &owa_error::get_msgs();
 		$this->config = &owa_settings::get_settings();
 		$this->e = &owa_error::get_instance();
+		
 		return;
 	}
 	
 	/**
-	 * Normal request control logic
+	 * Main Page Request Controller
 	 *
 	 * @param array $app_params
 	 */
@@ -142,6 +135,11 @@ class owa {
 		return;
 	}
 	
+	/**
+	 * Second stage of page request processing Logic.
+	 *
+	 * @param object $r
+	 */
 	function process($r) {
 		
 		// assign visitor id
@@ -173,17 +171,15 @@ class owa {
 		$this->e->debug(sprintf('Request %d logged to event queue',
 								$r->properties['request_id']));
 		
-		// Hook to kick off the async event processor
-  	 	if ($this->config['async_db'] == true):
-    		; // fork process to process async event log.
-		endif;
-		
 		return;			
 					
 	}
 	
 	/**
-	 * Special controller for special first hit http request
+	 * Special first hit http request Controller
+	 * 
+	 * This controller is used by callers who delay the first page request of new users
+	 * to be processed by a second http request on the same page.
 	 *
 	 */
 	function process_first_request() {
@@ -218,11 +214,11 @@ class owa {
 	}
 	
 	/**
-	 * Control logic for producing graphs
+	 * Graph Controller
 	 *
 	 * @param array $params
 	 */
-	function get_graph($params) {
+	function getGraph($params) {
 	
 		require_once 'owa_api.php';
 	
@@ -252,11 +248,14 @@ class owa {
 	 * @param array $app_params
 	 * @param unknown_type $event_type
 	 */
-	function logEvent($event_type, $app_params) {
+	function logEvent($event_type, $app_params = '') {
 		
 		// This should become a factory method call based on event type.
 		$event = new owa_event;
-		$event->_setProperties($app_params);
+		
+		if (!empty($app_params)):
+			$event->_setProperties($app_params);
+		endif;
 		$event->state = $event_type;
 		$event->log();
 		

@@ -27,10 +27,10 @@ td {padding: 2px 6px 2px 6px;}
 							<?=$summary_stats_table;?>		
 						</TD>
 						<TD>
-							<img src="<?=$this->config['action_url']?>?owa_action=graph&graph=visitors_pie&type=pie&year=<?=$params['year'];?>&month=<?=$params['month'];?>&day=<?=$params['day'];?>" />
+							<img src="<?=$this->config['action_url']?>?owa_action=graph&name=visitors_pie&type=pie&year=<?=$params['year'];?>&month=<?=$params['month'];?>&day=<?=$params['day'];?>&site_id=<?=$params['site_id'];?>" />
 						</TD>
 						<TD>
-							<img src="<?=$this->config['action_url']?>?owa_action=graph&graph=source_pie&type=pie&year=<?=$params['year'];?>&month=<?=$params['month'];?>&day=<?=$params['day'];?>" />
+							<img src="<?=$this->config['action_url']?>?owa_action=graph&name=source_pie&type=pie&year=<?=$params['year'];?>&month=<?=$params['month'];?>&day=<?=$params['day'];?>&site_id=<?=$params['site_id'];?>" />
 						</TD>
 					</TR>
 				

@@ -114,12 +114,11 @@ class owa_metric_visitor extends owa_metric {
 			%s as documents,
 			%s as ua
 		WHERE
-			site_id = %s
-			%s 
-			%s
-			AND sessions.first_page_id = documents.id
+			sessions.first_page_id = documents.id
 			AND sessions.referer_id = referers.id
 			AND ua.id = sessions.ua_id
+			%s 
+			%s
 		ORDER BY
 			sessions.timestamp DESC
 		LIMIT 
@@ -128,7 +127,6 @@ class owa_metric_visitor extends owa_metric {
 			$this->config['ns'].$this->config['referers_table'],
 			$this->config['ns'].$this->config['documents_table'],
 			$this->config['ns'].$this->config['ua_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -152,12 +150,11 @@ class owa_metric_visitor extends owa_metric {
 		FROM 
 			%s 
 		WHERE
-			site_id = %s
+			true
 			%s 
 			%s",
 			
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['site_id'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
