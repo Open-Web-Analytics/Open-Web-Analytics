@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR ."/owa_db.php");
-require_once(OWA_BASE_DIR ."/owa_settings_class.php");
 
 /**
  * Request Event Handler
@@ -38,13 +37,6 @@ class Log_observer_request_logger extends owa_observer {
 	 * @var object
 	 */
 	var $db;
-	
-	/**
-	 * Message
-	 *
-	 * @var array
-	 */
-	var $m;
 
 	/**
 	 * Constructor

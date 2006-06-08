@@ -78,12 +78,12 @@ class owa_graph_visitors_pie extends owa_graph {
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
-			
-			'is_browser' => 1,
-			'is_robot' 	=> 0,
-			'year'		=> $this->params['year'],
-			'month'		=> $this->params['month'],
-			'day'		=> $this->params['day']
+			'site_id'		=> $this->params['site_id'],		
+			'is_browser' 	=> 1,
+			'is_robot' 		=> 0,
+			'year'			=> $this->params['year'],
+			'month'			=> $this->params['month'],
+			'day'			=> $this->params['day']
 			
 			)
 	

@@ -38,13 +38,6 @@ class Log_observer_referer extends owa_observer {
 	 * @var string
 	 */
     var $site_name;
-    
-    /**
-     * Message
-     *
-     * @var unknown_type
-     */
-	var $m;
 	
 	/**
 	 * Database Access Object

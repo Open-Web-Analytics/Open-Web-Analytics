@@ -1,4 +1,5 @@
 <?php
+
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -24,11 +25,9 @@
  * @package OWA
  *
  */
-class Log_queue extends Log
-{
+class Log_queue extends Log {
 
-
-	 /**
+	/**
      * The default event type to use when logging an event.
      *
      * @var string
@@ -46,18 +45,20 @@ class Log_queue extends Log
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_queue($name, $ident = '', $conf = array(),
-					  $level = PEAR_LOG_DEBUG)
-    {
-        $this->_id = md5(microtime());
+    function Log_queue($name, $ident = '', $conf = array(), $level = PEAR_LOG_DEBUG) {
+
+    	$this->_id = md5(microtime());
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);
+        
+        return;
     }
 
     /**
      * Simply consumes the log event.  The message will still be passed
      * along to any Log_observer instances that are observing this Log.
      *
+     * @param string $event_type	The type of event being logged to the queue
      * @param mixed  $message    String or object containing the message to log.
      * @param string $priority The priority of the message.  Valid
      *                  values are: PEAR_LOG_EMERG, PEAR_LOG_ALERT,
@@ -85,24 +86,20 @@ class Log_queue extends Log
         return true;
     }
 	
-	 /**
-     * Informs observers that a new message of a particular type has been
+	/**
+     * Informs observers that a new message of a particular event type has been
      * logged.
      *
      * @param array     $event      A hash describing the log event.
      *
      * @access private
      */
-    function _announce($event)
-    {
-		//print_r($this->_listeners);
+    function _announce($event) {
+		
         foreach ($this->_listeners as $id => $listener) {
             if ($event['priority'] <= $this->_listeners[$id]->_priority) {
-			
-                //if ($event['event_type'] == $this->_listeners[$id]->_event_type):
 				
 				if (array_search($event['event_type'], $this->_listeners[$id]->_event_type) !== false):
-				
 				
 					$this->_listeners[$id]->notify($event);
 					
@@ -111,29 +108,4 @@ class Log_queue extends Log
         }
     }
 	
-	
-    /**
-     * Adds a Log_observer instance to the list of observers that are listening
-     * for messages emitted by this Log instance.
-     *
-     * @param object    $observer   The Log_observer instance to attach as a
-     *                              listener.
-     *
-     * @param boolean   True if the observer is successfully attached.
-     *
-     * @access  public
-     * @since   Log 1.0
-     */
-    function attach($observer)
-    {
-        if (!is_a($observer, 'Log_observer')) {
-            return false;
-        }
-
-        $this->_listeners[$observer->_id] = $observer;
-
-        return true;
-    }
-
-
 }

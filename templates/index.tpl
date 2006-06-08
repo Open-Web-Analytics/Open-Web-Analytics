@@ -1,64 +1,6 @@
 <style>
 
-th {text-align:left;}
-td {padding:2px;}
-.inline_h2 {font-size:18px;}
-.visitor_info_box {
-	  width:40px;
-	  height:40px;
-	  text-align:center;
-  }
-  
-  .comments_info_box {
-		padding:4px 4px 4px 4px;
-	border:solid 0px #999999;
-	margin:0px 2px 2px 2px;
-	width:40px;
-	height:40px;
-	background-image: url('<?=$this->config['images_url'];?>/comment_background.jpg');
-	background-repeat: no-repeat;
-	text-align:center;
-  }
-  
-  .date_box {
-  
-  	padding:4px;
-	border:solid 1px #999999;
-	margin:2px;
-  }
-  
-   .pages_box {
-  
-  	padding:4px 4px 4px 4px;
-	border:solid 2px #999999;
-	margin:0px 2px 2px 2px;
-	background-color:;
-	color:;
-  }
-  
-  .large_number {
-  	font-size:24px;
-  
-  }
-  
-  .info_text {
-  
-  color:#999999;
-  font-size:12px;
- /* font-family:Arial, Helvetica, sans-serif; */
-  
-  }
-  
- .h_label {
-  
-  color:;
-  font-size:14px;
-  font-weight:bold;
- /* font-family:Arial, Helvetica, sans-serif; */
-  
-  }
 
-.centered_buttons {margin-left:auto;margin-right:auto;}
 #recent_visitors {width: 700px;}
 #top_pages {width: 450px;}
 #top_visitors {width: 250px;}
@@ -80,7 +22,7 @@ td {padding: 2px 6px 2px 6px;}
 		<? foreach ($news['items'] as $item => $value): ?>
 		<TR>
 			<TD>
-				<B><?=$value['pubDate'];?>:</B>
+				<span class="info_text"><?=$value['pubDate'];?>:</span>
 			</TD>
 			<TD>
 				<a href="<?=$value['link'];?>"><span class="h_label"><?=$value['title'];?></span></a>
@@ -112,7 +54,7 @@ td {padding: 2px 6px 2px 6px;}
 				</TR>-->
 				<TR>
 					<TD>
-						<img src="<?=$this->config['action_url'];?>?owa_action=graph&graph=pv_visits&type=bar_line&period=last_thirty_days" />				
+						<img src="<?=$this->config['action_url'];?>?owa_action=graph&name=pv_visits&type=bar_line&period=last_thirty_days&site_id=<?=$params['site_id'];?>" />				
 					</TD>
 				</TR>
 			</table>
@@ -132,10 +74,10 @@ td {padding: 2px 6px 2px 6px;}
 							<?=$summary_stats_table;?>		
 						</TD>
 						<TD>
-							<img src="<?=$this->config['action_url']?>?owa_action=graph&graph=visitors_pie&type=pie&period=<?=$period;?>" />
+							<img src="<?=$this->config['action_url']?>?owa_action=graph&name=visitors_pie&type=pie&period=<?=$period;?>&site_id=<?=$params['site_id'];?>" />
 						</TD>
 						<TD>
-							<img src="<?=$this->config['action_url']?>?owa_action=graph&graph=source_pie&type=pie&period=<?=$period;?>" />
+							<img src="<?=$this->config['action_url']?>?owa_action=graph&name=source_pie&type=pie&period=<?=$period;?>&site_id=<?=$params['site_id'];?>" />
 						</TD>
 					</TR>
 				

@@ -76,7 +76,7 @@ add_filter('post_link', 'owa_post_link');
 add_filter('bloginfo', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_view');
 add_action('init', array(&$owa_wp, 'init_action'));
-add_action('comment_post', array(&$owa_wp, 'process_comment'));
+add_action('comment_post', array(&$owa_wp, 'logComment'));
 add_action('admin_menu', 'owa_options');
 
 ////////// FORM HANDLERS

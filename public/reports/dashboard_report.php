@@ -23,8 +23,8 @@ $report = new owa_report;
 
 // Set the reporting period
 
-if (!empty($_POST['period'])):
-	$report->set_period($_POST['period']);
+if (!empty($report->params['period'])):
+	$report->set_period($report->params['period']);
 else:
 	$report->set_period('today');
 endif;
@@ -66,7 +66,7 @@ switch ($report->period) {
 			'period'			=> $report->period,
 			'result_format'		=> 'assoc_array',
 			'constraints'		=> array(
-				
+				'site_id'	=> $report->params['site_id'],
 				'is_browser' => 1,
 				'is_robot' 	=> 0),
 			'group_by'			=> 'month'
@@ -81,7 +81,7 @@ switch ($report->period) {
 		'period'			=> $report->period,
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
-			
+			'site_id'	=> $report->params['site_id'],
 			'is_browser' => 1,
 			'is_robot' 	=> 0),
 		'group_by'			=> 'day'
@@ -95,7 +95,7 @@ $summary_stats_data = $report->metrics->get(array(
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0
 		
@@ -108,7 +108,7 @@ $latest_visits = $report->metrics->get(array(
 	'period'			=> 'last_24_hours',
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0
 		
@@ -122,7 +122,7 @@ $top_pages_data = $report->metrics->get(array(
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0
 		
@@ -131,23 +131,29 @@ $top_pages_data = $report->metrics->get(array(
 ));
 
 $top_referers_data = $report->metrics->get(array(
-	'api_call' 		=> 'top_referers',
+	'api_call' 			=> 'top_referers',
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
-	'limit'			=> '10'
+	'limit'				=> '10',
+	'constraints'		=> array(
+		'site_id'	=> $report->params['site_id'])
 ));
 
 $top_visitors_data = $report->metrics->get(array(
 	'api_call' 			=> 'top_visitors',
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
-	'limit'				=> '10'
+	'limit'				=> '10',
+	'constraints'		=> array(
+		'site_id'	=> $report->params['site_id'])
 ));
 
 $from_feed = $report->metrics->get(array(
 	'api_call' 			=> 'from_feed',
 	'period'			=> $report->period,
-	'result_format'		=> 'assoc_array'
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'	=> $report->params['site_id'])
 ));
 
 //Fetch latest OWA news
@@ -163,6 +169,7 @@ $body->set('periods_menu', $periods_menu);
 $top_visitors->set('data', $top_visitors_data);
 $body->set('top_visitors_table', $top_visitors);
 $body->set('config', $report->config);
+$body->set('params', $report->params);
 $core_metrics->set('data', $core_metrics_data);
 $core_metrics->set('period', $report->period);
 $body->set('core_metrics_table', $core_metrics);

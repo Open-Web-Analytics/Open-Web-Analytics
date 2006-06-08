@@ -121,11 +121,13 @@ class owa_template extends Template {
 		
 		$get = '';
 		
-		foreach ($query_params as $name => $value) {
-			
-			$get .= $name . "=" . $value . "&";	
-			
-		}
+		if (!empty($query_params)):
+			foreach ($query_params as $name => $value) {
+				if (!empty($value)):
+					$get .= $name . "=" . $value . "&";	
+				endif;
+			}
+		endif;
 		
 		return sprintf($this->config['inter_report_link_template'],
 				$this->config['reporting_url'],

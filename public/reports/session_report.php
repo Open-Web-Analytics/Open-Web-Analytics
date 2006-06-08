@@ -32,13 +32,13 @@ require_once(OWA_BASE_DIR.'/owa_report.php');
 
 $report = new owa_report;
 
-if (!empty($_POST['period'])):
+/*if (!empty($_POST['period'])):
 	$report->set_period($_POST['period']);
 else:
 	$report->set_period('this_month');
 endif;
-
-$session_id =  $_GET[$report->config['ns'].$report->config['session_param']];
+*/
+//$session_id =  $_GET[$report->config['ns'].$report->config['session_param']];
 	
 // Setup the templates
 
@@ -57,10 +57,10 @@ $session_data = $report->metrics->get(array(
 	'result_format'		=> 'assoc_array',
 	'limit'				=> '50',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' 	=> 1,
 		'is_robot' 		=> 0,
-		'session_id' 	=> $session_id
+		'session_id' 	=> $report->params['session_id']
 		)
 ));
 
@@ -69,10 +69,10 @@ $result = $report->metrics->get(array(
 	'period'			=> 'all_time',
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' 	=> 1,
 		'is_robot' 		=> 0,
-		'session_id' 	=> $session_id
+		'session_id' 	=> $report->params['session_id']
 		
 		),
 	'limit' 			=> 1
@@ -83,7 +83,7 @@ $result = $report->metrics->get(array(
 $body->set('headline', 'Visit (Session) Detail');
 $body->set('period_label', $report->period_label);
 $body->set('config', $report->config);
-$body->set('session_id', $session_id);
+$body->set('session_id', $report->params['session_id']);
 $body->set('session_data', $session_data);
 //$body->set('visit', $result[0]);
 $visits->set('visits', $result);

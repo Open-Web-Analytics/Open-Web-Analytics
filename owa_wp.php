@@ -52,7 +52,7 @@ class owa_wp extends owa_caller {
 				exit;
 				break;		
 			case "graph":
-				$this->graph_request_handler();
+				$this->getGraph();
 				exit;
 				break;
 			case "update":
@@ -83,12 +83,9 @@ class owa_wp extends owa_caller {
 		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
 	}
 	
-	
-	function process_comment() {
+	function logComment() {
 		
-		$owa = new owa;
-		$owa->logEvent('new_comment', '');
-		return;
+		return $this->controller->logEvent('new_comment');
 		
 	}
 

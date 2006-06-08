@@ -71,11 +71,18 @@ class owa_report {
 	var $config;
 	
 	/**
-	 * Date constraint of report
+	 * Report generation params
 	 *
 	 * @var array
 	 */
-	var $request_api_params = array();
+	var $params = array();
+	
+	/**
+	 * User Display Preferences
+	 *
+	 * @var array
+	 */
+	var $prefs = array();
 	
 	/**
 	 * Constructor
@@ -89,10 +96,28 @@ class owa_report {
 		$this->tpl = & new owa_template;
 		$this->tpl->set_template($this->config['report_wrapper']);
 		$this->metrics = owa_api::get_instance('metric');
-		$this->request_api_params = owa_lib::get_api_params();
-	
+		
+		// Get default and user override display preferences.
+		$this->prefs = $this->getPrefs();
+		
+		// Gets full set of params from URL
+		$this->_setParams(owa_lib::getRestparams());
+		
 		return;
 	}
+	
+	/**
+	 * Gets the default report display preferences and then
+	 * applies user overrides from cookie.
+	 * 
+	 */
+	function getPrefs() {
+		
+		$this->params['limit'] = 50;
+		
+		return;
+	}
+	
 	
 	/**
 	 * Set report period
@@ -120,6 +145,24 @@ class owa_report {
 		return owa_lib::get_period_label($period);
 	}
 	
+	/**
+	 * Applies calling params
+	 *
+	 * @access 	private
+	 * @param 	array $properties
+	 */
+	function _setParams($params = null) {
+	
+		if(!empty($params)):
+			foreach ($params as $key => $value) {
+				if(!empty($value)):
+					$this->params[$key] = $value;
+				endif;
+			}
+		endif;
+		
+		return;	
+	}
 	
 }
 

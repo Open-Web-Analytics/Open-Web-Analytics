@@ -148,7 +148,7 @@ class owa_metric {
 			
 				$bound = $this->time_now['timestamp'] - 3600*24;
 				$where = sprintf(
-							"AND timestamp >= '%s'",
+							"timestamp >= '%s'",
 							$bound
 						);
 				break;
@@ -156,7 +156,7 @@ class owa_metric {
 			case "this_hour":	
 				$bound = $this->time_now['timestamp'] - 3600;
 				$where = sprintf(
-							"AND timestamp >= '%s'",
+							"timestamp >= '%s'",
 							$bound
 						);
 				break;
@@ -164,7 +164,7 @@ class owa_metric {
 			case "last_half_hour":	
 				$bound = $this->time_now['timestamp'] - 1800;
 				$where = sprintf(
-							"AND timestamp >= '%s'",
+							"timestamp >= '%s'",
 							$bound
 						);	
 				break;
@@ -172,7 +172,7 @@ class owa_metric {
 			case "last_seven_days":	
 				$bound = $this->time_now['dayofyear'] - 7;
 				$where = sprintf(
-							"AND dayofyear > '%s' and year = '%s'",
+							"dayofyear > '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
@@ -180,7 +180,7 @@ class owa_metric {
 				
 			case "today":	
 				$where = sprintf(
-							"AND day = '%s' and month = '%s' and year = '%s'",
+							"day = '%s' and month = '%s' and year = '%s'",
 							$this->time_now['day'],
 							$this->time_now['month'],
 							$this->time_now['year']
@@ -189,7 +189,7 @@ class owa_metric {
 				
 			case "this_week":	
 				$where = sprintf(
-							"AND weekofyear = '%s' and year = '%s'",
+							"weekofyear = '%s' and year = '%s'",
 							$this->time_now['weekofyear'],
 							$this->time_now['year']
 						);
@@ -197,7 +197,7 @@ class owa_metric {
 				
 			case "this_month":	
 				$where = sprintf(
-							"AND month = '%s' and year = '%s'",
+							"month = '%s' and year = '%s'",
 							$this->time_now['month'],
 							$this->time_now['year']
 						);
@@ -205,14 +205,14 @@ class owa_metric {
 				
 			case "this_year":	
 				$where = sprintf(
-							"AND year = '%s'",
+							"year = '%s'",
 							$this->time_now['year']
 						);
 				break;
 				
 			case "yesterday":	
 				$where = sprintf(
-							"AND day = '%s' and month = '%s' and year = '%s'",
+							"day = '%s' and month = '%s' and year = '%s'",
 							$this->time_now['day'] - 1,
 							$this->time_now['month'],
 							$this->time_now['year']
@@ -221,27 +221,27 @@ class owa_metric {
 				
 			case "last_week":
 				$where = sprintf(
-							"AND weekofyear = '%s' and year = '%s'",
+							"weekofyear = '%s' and year = '%s'",
 							$this->time_now['weekofyear'] - 1,
 							$this->time_now['year']
 						);
 				break;	
 				
 			case "last_month":
-				$where = sprintf("AND month = '%s' and year ='%s'",
+				$where = sprintf("month = '%s' and year ='%s'",
 							$this->time_now['month'] - 1,
 							$this->time_now['year']
 						);
 				break;
 				
 			case "last_year":
-				$where = sprintf("AND year = '%s'",
+				$where = sprintf("year = '%s'",
 							$this->time_now['year'] - 1
 						);
 				break;
 				
 			case "same_weekday_last_week":
-				$where = sprintf("AND day = '%s' and year = '%s'",
+				$where = sprintf("day = '%s' and year = '%s'",
 							$this->time_now['day'] - 7,
 							$this->time_now['year']
 						);
@@ -257,7 +257,7 @@ class owa_metric {
 				
 			case "same_month_last_year":
 				$where = sprintf(
-							"AND month = '%s' and year = '%s'",
+							"month = '%s' and year = '%s'",
 							$this->time_now['month'],
 							$this->time_now['year'] - 1
 						);
@@ -265,14 +265,14 @@ class owa_metric {
 				
 			case "all_time":
 				$where = sprintf(
-							"AND timestamp <= '%s'",
+							"timestamp <= '%s'",
 							$this->time_now['timestamp']
 						);
 				break;
 				
 			case "last_tuesday":
 				$where = sprintf(
-							"AND dayofweek = '2' and weekofyear = '%s'",
+							"dayofweek = '2' and weekofyear = '%s'",
 							$this->time_now['weekofyear'] - 1
 						);
 				break;
@@ -287,7 +287,7 @@ class owa_metric {
 						);	
 				*/
 				$where = sprintf(
-							"AND dayofyear > '%s' and year = '%s'",
+							"dayofyear > '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
@@ -299,7 +299,11 @@ class owa_metric {
 	
 		}
 		
-		return $where;
+		if(!empty($where)):
+			return ' AND '.$where;
+		else:
+			return;
+		endif;
 	}
 	
 	/**
@@ -314,19 +318,42 @@ class owa_metric {
 		if (!empty($constraints)):
 		//$this->e->debug(' CONSTRAINT: '. print_r($constraints));
 		
-		$where = '';
+		
+		
+		$count = 0;
+		
+		foreach ($constraints as $key => $value) {
+			
+			if (!empty($value)):
+				$count++;	
+			endif;
+		}
+		
+		//print $count;
+		
+		$i = 0;
 		
 			foreach ($constraints as $key => $value) {
 				
 				if ($value):
-					$where .= " AND " . $key . ' = ' . "'$value'";
-				//else:
-					//$where = '';
+					$where .= $key . ' = ' . "'$value'";
+					$i++;
+					if ($count != $i):
+					
+						$where .= " AND ";
+					
+					endif;
+
 				endif;		
+				
 			}
-		//$this->e->debug('WHERE CLAUSE FOR CONSTRAINT: '. $where);
 		
-			return $where;
+			if (!empty($where)):
+			
+				return $where = ' AND '.$where;
+			else: 
+				return;
+			endif;
 			
 		else:
 		

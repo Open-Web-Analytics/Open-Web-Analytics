@@ -56,17 +56,17 @@ if (!isset($_GET['day'])):
 			//'period'			=> $report->period,
 			'result_format'		=> 'assoc_array',
 			'constraints'		=> array(
-				
+				'site_id'	=> $report->params['site_id'],
 				'is_browser' => 1,
 				'is_robot' 	=> 0,
-				'year'		=> $report->request_api_params['year'],
-				'month'		=> $report->request_api_params['month'],
-				'day'		=> $report->request_api_params['day']),
+				'year'		=> $report->params['year'],
+				'month'		=> $report->params['month'],
+				'day'		=> $report->params['day']),
 			'group_by'			=> 'day'
 		
 		));
 
-		$date_label = $report->request_api_params['month'].'/'.$report->request_api_params['year'];
+		$date_label = $report->params['month'].'/'.$report->params['year'];
 
 else:
 
@@ -75,31 +75,30 @@ else:
 			//'period'			=> $report->period,
 			'result_format'		=> 'assoc_array',
 			'constraints'		=> array(
-				
+				'site_id'	=> $report->params['site_id'],
 				'is_browser' => 1,
 				'is_robot' 	=> 0,
-				'year'		=> $report->request_api_params['year'],
-				'month'		=> $report->request_api_params['month'],
-				'day'		=> $report->request_api_params['day']),
+				'year'		=> $report->params['year'],
+				'month'		=> $report->params['month'],
+				'day'		=> $report->params['day']),
 			'group_by'			=> 'month'
 		
 		));
 		
-		$date_label = $report->request_api_params['month'].'/'.$report->request_api_params['day'].'/'.$report->request_api_params['year'];
+		$date_label = $report->params['month'].'/'.$report->params['day'].'/'.$report->params['year'];
 	
 endif;
 
 $summary_stats_data = $report->metrics->get(array(
 	'api_call' 		=> 'dash_counts',
-	//'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0,
-		'year'		=> $report->request_api_params['year'],
-		'month'		=> $report->request_api_params['month'],
-		'day'		=> $report->request_api_params['day']
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']
 		
 		)
 
@@ -110,12 +109,12 @@ $latest_visits = $report->metrics->get(array(
 	//'period'			=> 'last_24_hours',
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0,
-		'year'		=> $report->request_api_params['year'],
-		'month'		=> $report->request_api_params['month'],
-		'day'		=> $report->request_api_params['day']
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']
 		
 		),
 	'limit'			=> '35'
@@ -127,12 +126,12 @@ $top_pages_data = $report->metrics->get(array(
 	//'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0,
-		'year'		=> $report->request_api_params['year'],
-		'month'		=> $report->request_api_params['month'],
-		'day'		=> $report->request_api_params['day']
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']
 		
 		),
 	'limit'			=> '10'
@@ -143,13 +142,12 @@ $top_referers_data = $report->metrics->get(array(
 	//'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0,
-		'year'		=> $report->request_api_params['year'],
-		'month'		=> $report->request_api_params['month'],
-		'day'		=> $report->request_api_params['day']
-		
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']
 		),
 	'limit'			=> '10'
 ));
@@ -159,12 +157,12 @@ $top_visitors_data = $report->metrics->get(array(
 	//'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0,
-		'year'		=> $report->request_api_params['year'],
-		'month'		=> $report->request_api_params['month'],
-		'day'		=> $report->request_api_params['day']
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']
 		
 		),
 	'limit'				=> '10'
@@ -174,12 +172,12 @@ $from_feed = $report->metrics->get(array(
 	'api_call' 			=> 'from_feed',
 	//'period'			=> $report->period,
 	'constraints'		=> array(
-		
+		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
 		'is_robot' 	=> 0,
-		'year'		=> $report->request_api_params['year'],
-		'month'		=> $report->request_api_params['month'],
-		'day'		=> $report->request_api_params['day']
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']
 		
 		),
 	'result_format'		=> 'assoc_array'
@@ -191,7 +189,7 @@ $from_feed = $report->metrics->get(array(
 // Assign Data to templates
 
 $body->set('headline', 'Analytics Dashboard for '.$date_label);
-$body->set('params', $report->request_api_params);
+$body->set('params', $report->params);
 $periods_menu->set('period', $report->period);
 $body->set('periods_menu', $periods_menu);
 $top_visitors->set('data', $top_visitors_data);

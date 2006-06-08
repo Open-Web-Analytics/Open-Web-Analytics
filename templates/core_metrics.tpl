@@ -19,17 +19,17 @@ There are no metrics yet for this time period.
 	<TR>
 	<? if ($period == 'this_year'): ?>
 		<TD>
-		<a href="<?=$this->config['reporting_url'];?>/dashdate_report.php&year=<?=$row['year'];?>&month=<?=$row['month'];?>">
+		<a href="<?=$this->make_report_link('dashdate_report.php', array('year' => $row['year'], 'month' => $row['month']));?>">
 		<?=$this->get_month_label($row['month']);?>
 		</a>
 		</TD>
 	<? else: ?>
 		<TD><?=$this->get_month_label($row['month']);?></TD>
 		
-		<a href="<?=$this->config['reporting_url'];?>/session_report.php&<?=$this->config['ns'].$this->config['session_param']?>=<?=$visit['prior_session_id']?>">
+		<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['prior_session_id']));?>">
 		
 		<TD>
-		<a href="<?=$this->config['reporting_url'];?>/dashdate_report.php&year=<?=$row['year'];?>&month=<?=$row['month'];?>&day=<?=$row['day'];?>">
+		<a href="<?=$this->make_report_link('dashdate_report.php', array('year' => $row['year'], 'month' => $row['month'], 'day' => $row['day']));?>">
 		<?=$row['day'];?>
 		</a>
 		</TD>

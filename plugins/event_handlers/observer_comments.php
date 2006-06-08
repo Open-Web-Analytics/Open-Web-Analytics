@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR ."/owa_db.php");
-require_once(OWA_BASE_DIR ."/owa_settings_class.php");
 
 /**
  * Comment Event Handler
@@ -38,13 +37,6 @@ class Log_observer_comments extends owa_observer {
 	 * @var object
 	 */
 	var $db;
-	
-	/**
-	 * Event Messsage
-	 *
-	 * @var object
-	 */
-	var $m;
 	
 	/**
 	 * Constructor

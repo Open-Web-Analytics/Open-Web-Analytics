@@ -92,16 +92,14 @@ class owa_metric_session extends owa_metric {
 			%s as requests,
 			%s as documents
 		WHERE
-			site_id = %s 
+			requests.document_id = documents.id
 			%s
-			AND requests.document_id = documents.id
 		ORDER BY
 			timestamp ASC
 		LIMIT 
 			%s",
 			$this->config['ns'].$this->config['requests_table'],
 			$this->config['ns'].$this->config['documents_table'],
-			$this->config['site_id'],
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
 		);

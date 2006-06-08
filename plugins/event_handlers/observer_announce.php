@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once (OWA_BASE_DIR.'/owa_settings_class.php');
-
 /**
  * Email Announcement Event handler
  * 
@@ -52,20 +50,6 @@ class Log_observer_announce extends owa_observer {
 	 * @var object
 	 */
 	var $db;
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
-	 * Event Message
-	 *
-	 * @var object
-	 */
-	var $m;
     
 	/**
 	 * Constructor
@@ -114,7 +98,7 @@ class Log_observer_announce extends owa_observer {
      *
      */
     function announce_session_update() {
-    	$this->_subject = 'OWA: New Visit to '.$this->m->properties['site'];
+    	$this->_subject = 'OWA: New Visit to '.$this->m['site'];
     	$this->_to = $this->config['notice_email'];
     	mail($this->_to, 
     		 $this->_subject,

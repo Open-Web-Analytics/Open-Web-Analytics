@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
+require_once 'owa_event_class.php';
 require_once 'owa_env.php';
 require_once 'owa_db.php';
 require_once 'owa_location.php';

@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR ."/owa_settings_class.php");
 require_once(OWA_BASE_DIR ."/owa_session_class.php");
 
 /**
@@ -31,27 +30,6 @@ require_once(OWA_BASE_DIR ."/owa_session_class.php");
  * @since		owa 1.0.0
  */
 class Log_observer_session extends owa_observer {
-
-	/**
-	 * Database Access Object
-	 *
-	 * @var object
-	 */
-	var $db;
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
-	 * Event Message
-	 *
-	 * @var object
-	 */
-	var $m;
 
 	/**
 	 * Constructor
