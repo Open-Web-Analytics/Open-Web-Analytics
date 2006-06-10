@@ -297,6 +297,17 @@ class owa_caller {
 		
 	}
 	
+	function makeTag($site_id) {
+		
+		$tag  = '<SCRIPT language=\"JavaScript\">';
+		$tag .= sprintf('var owa_site_id = %s', $site_id);
+		$tag  = '</SCRIPT>';
+ 		$tag  = sprintf('<SCRIPT TYPE=\"text/javascript\" SRC=\"%s/public/wb.php"></SCRIPT>', 
+ 						$this->config['public_url']);
+ 		
+ 		return $tag;
+		
+	}
 }
 
 ?>

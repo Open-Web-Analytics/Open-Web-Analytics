@@ -12,7 +12,7 @@ This will be some intro text about installing OWA.
 
 
     <DIV class="centered_buttons">	
-    	<? if($db_state == true):?><a href="<?=$_SERVER['PHP_SELF'];?>?action=install&package=base_schema">Continue... >></a><?endif;?>
+    	<? if($db_state == true):?><a href="<?=$_SERVER['PHP_SELF'];?>?page=db_info">Continue... >></a><?endif;?>
     </DIV>
     
 

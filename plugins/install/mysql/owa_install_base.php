@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_install.php');
+require_once(OWA_BASE_DIR.'/owa_site.php');
 
 /**
  * OWA Base Schema Installation class
@@ -81,6 +82,7 @@ class owa_install_base extends owa_install {
 								$this->config['ua_table'],
 								$this->config['hosts_table'],
 								$this->config['os_table'],
+								$this->config['sites_table'],
 								$this->config['config_table'],
 								$this->config['version_table']);
 		return;
@@ -136,6 +138,9 @@ class owa_install_base extends owa_install {
 				break;
 			case 'configuration':
 				return $this->create_config_table();
+				break;
+			case 'sites':
+				return $this->create_sites_table();
 				break;
 			case 'version':
 				return $this->create_version_table();
@@ -367,6 +372,23 @@ class owa_install_base extends owa_install {
 		
 	}
 	
+	function create_sites_table() {
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			id SERIAL,
+			site_id varchar(255),
+			domain VARCHAR(255),
+			name VARCHAR(255),
+			description TEXT,
+			site_family VARCHAR(255)
+			)",	
+			$this->config['ns'].$this->config['sites_table'])
+		);
+
+	}
+	
 	function create_version_table() {
 		
 		return $this->db->query(
@@ -378,7 +400,7 @@ class owa_install_base extends owa_install {
 			)",	
 			$this->config['ns'].$this->config['version_table'])
 		);
-
+		
 	}
 	
 	function update_schema_version() {
@@ -423,15 +445,34 @@ class owa_install_base extends owa_install {
 				$this->e->notice(sprintf("Created %s table.", $table));
 			else:
 				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
-				return;
+				return $status;
 			endif;
 		}
-	
-			$this->update_schema_version();
-			$this->e->notice(sprintf("Schema version %s installation complete.",
+		
+		// Update schema version
+		$this->update_schema_version();
+			
+		// Add default site into sites table
+		$this->addDefaultSite();
+			
+		$this->e->notice(sprintf("Schema version %s installation complete.",
 							$this->version));
+			
+		$status = sprintf("Installation complete. You may begin tracking your site using site id: <span class=\"id_box\">%s</span>", '1');					
 		
 		return $status;
+	}
+	
+	function addDefaultSite() { 
+		
+		$site = new owa_site;
+		$site->name = $_GET['name'];
+		$site->description = $_GET['description'];
+		$site->site_family = 1;
+		$site->site_id = 1;
+		$site_id = $site->addSite();
+		
+		return;
 	}
 	
 }

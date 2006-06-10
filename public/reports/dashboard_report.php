@@ -156,11 +156,16 @@ $from_feed = $report->metrics->get(array(
 		'site_id'	=> $report->params['site_id'])
 ));
 
+// Fetch Sites List
+$sites = $report->getSitesList();
+
 //Fetch latest OWA news
 $rss = new owa_news;
 $news = $rss->Get($rss->config['owa_rss_url']);
 
 // Assign Data to templates
+$periods_menu->set('params', $report->params);
+$periods_menu->set('sites', $sites);
 $body->set('news', $news);
 $body->set('headline', 'Analytics Dashboard');
 $body->set('period_label', $report->get_period_label($report->period));
@@ -169,6 +174,7 @@ $body->set('periods_menu', $periods_menu);
 $top_visitors->set('data', $top_visitors_data);
 $body->set('top_visitors_table', $top_visitors);
 $body->set('config', $report->config);
+
 $body->set('params', $report->params);
 $core_metrics->set('data', $core_metrics_data);
 $core_metrics->set('period', $report->period);
