@@ -88,8 +88,8 @@ switch ($_GET['page']) {
 	
 	case "db_info":
 		$body_tpl = 'installer_db_info.tpl';
-		$page->set('page_title', 'Database Connection Information');
-		$body->set('page_h1', 'Your Database Connection Information');
+		$page->set('page_title', 'Site Information');
+		$body->set('page_h1', 'Enter some information about your site');
 		break;
 		
 	case "package_selection":
@@ -121,10 +121,18 @@ switch ($_GET['page']) {
 switch ($_GET['action']) {
 	
 	case "install":
+		
 		$install_status = $owa->install($_GET['package']);
 	
-		if ($install_status == true):
-			$status_msg = 'The installation was a success.';
+		if ($install_status != false):
+		
+			if ($install_status === true):
+				// Stock success msg
+				$status_msg = 'The installation was a success.';
+			else:
+				// Package specific msg
+				$status_msg = $install_status;
+			endif;
 			$body->set('page_h1', 'Installation Complete');
 			$body_tpl = 'installer_success.tpl';
 		else:

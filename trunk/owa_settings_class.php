@@ -124,6 +124,7 @@ class owa_settings {
 			'referer_param'					=> 'referer',
 			'source_param'					=> 'source',
 			'site_id'						=> '1',
+			'configuration_id'				=> '1',
 			'session_length'				=> '1800',
 			'debug_to_screen'				=> false,
 			'requests_table'				=> 'requests',
@@ -132,7 +133,7 @@ class owa_settings {
 			'ua_table'						=> 'ua',
 			'os_table'						=> 'os',
 			'documents_table'				=> 'documents',
-			'optinfo_table'					=> 'optinfo',
+			'sites_table'					=> 'sites',
 			'hosts_table'					=> 'hosts',
 			'config_table'					=> 'configuration',
 			'version_table'					=> 'version',
@@ -200,7 +201,7 @@ class owa_settings {
 		$check = $this->db->get_row(
 			sprintf("SELECT settings from %s where id = '%s'",
 					$config['ns'].$config['config_table'],
-					$new_config['site_id']
+					$new_config['configuration_id']
 					));
 					
 					
@@ -210,7 +211,7 @@ class owa_settings {
 				sprintf("
 				INSERT into %s (id, settings) VALUES ('%s', '%s')",
 				$config['ns'].$config['config_table'],
-				$new_config['site_id'],
+				$new_config['configuration_id'],
 				serialize($new_config))
 				
 			);
@@ -222,7 +223,7 @@ class owa_settings {
 				UPDATE %s SET settings = '%s' where id = '%s'",
 				$config['ns'].$config['config_table'],
 				serialize($new_config),
-				$new_config['site_id']
+				$new_config['configuration_id']
 				)
 				
 			);
@@ -237,7 +238,7 @@ class owa_settings {
 	 *
 	 * @return array
 	 */
-	function fetch($site_id = 1) {
+	function fetch($configuration_id = 1) {
 		
 		$config = &owa_settings::get_settings();
 		
@@ -251,7 +252,7 @@ class owa_settings {
 				WHERE
 					id = '%s'",
 				$config['ns'].$config['config_table'],
-				$site_id);
+				$configuration_id);
 		
 		$settings = $this->db->get_row($sql);
 		

@@ -21,6 +21,7 @@ require_once 'owa_template.php';
 require_once 'owa_settings_class.php';
 require_once 'owa_api.php';
 require_once 'owa_lib.php';
+require_once 'owa_site.php';
 
 /**
  * Web Analytics Report  
@@ -162,6 +163,13 @@ class owa_report {
 		endif;
 		
 		return;	
+	}
+	
+	function getSitesList() {
+		
+		$sites = new owa_site;
+		return $sites->getAllSites();
+		
 	}
 	
 }
