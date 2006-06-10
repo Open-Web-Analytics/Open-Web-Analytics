@@ -299,11 +299,24 @@ class owa_caller {
 	
 	function makeTag($site_id) {
 		
+		$server = 'http';	
+		
+		if($_SERVER['HTTPS']=='on'):
+			$server.= 's';
+		endif;
+		
+		$server .= '://'.$_SERVER['SERVER_NAME'];
+		
+		if($_SERVER['SERVER_PORT'] != 80):
+			$server .= ':'.$_SERVER['SERVER_PORT'];
+		endif;
+		
+		
 		$tag  = '<SCRIPT language=\"JavaScript\">';
 		$tag .= sprintf('var owa_site_id = %s', $site_id);
 		$tag  = '</SCRIPT>';
  		$tag  = sprintf('<SCRIPT TYPE=\"text/javascript\" SRC=\"%s/public/wb.php"></SCRIPT>', 
- 						$this->config['public_url']);
+ 						$server.$this->config['public_url']);
  		
  		return $tag;
 		
