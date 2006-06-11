@@ -105,7 +105,7 @@ class owa_caller {
 	 */
 	function load_config_from_db() {
 		
-		$config_from_db = owa_settings::fetch($this->config['site_id']);
+		$config_from_db = owa_settings::fetch($this->config['configuration_id']);
 		
 		if (!empty($config_from_db)):
 			
@@ -238,7 +238,7 @@ class owa_caller {
 			
 		// needed for following DB queries just in case the various 
 		// implementations of the GUI does not allow you to set this.
-		$new_config['site_id'] = $this->config['site_id'];
+		$new_config['configuration_id'] = $this->config['configuration_id'];
 			
 		foreach ($form_data as $key => $value) {
 				
@@ -312,10 +312,10 @@ class owa_caller {
 		endif;
 		
 		
-		$tag  = '<SCRIPT language=\"JavaScript\">';
-		$tag .= sprintf('var owa_site_id = %s', $site_id);
-		$tag  = '</SCRIPT>';
- 		$tag  = sprintf('<SCRIPT TYPE=\"text/javascript\" SRC=\"%s/public/wb.php"></SCRIPT>', 
+		$tag  = '<SCRIPT language="JavaScript">'."\n";
+		$tag .= "\t".sprintf('var owa_site_id = %s', $site_id)."\n";
+		$tag .= '</SCRIPT>'."\n\n";
+ 		$tag .= sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php"></SCRIPT>', 
  						$server.$this->config['public_url']);
  		
  		return $tag;

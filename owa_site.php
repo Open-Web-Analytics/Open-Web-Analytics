@@ -32,22 +32,67 @@ require_once(OWA_BASE_DIR.'/owa_db.php');
 
 class owa_site {
 	
+	/**
+	 * Configuration
+	 *
+	 * @var array
+	 */
 	var $config;
 	
+	/**
+	 * Data Access object
+	 *
+	 * @var object
+	 */
 	var $db;
 	
+	/**
+	 * Error handler
+	 *
+	 * @var object
+	 */
 	var $e;
 	
+	/**
+	 * Name of web site
+	 *
+	 * @var string
+	 */
 	var $name;
 	
+	/**
+	 * Description of web site
+	 *
+	 * @var unknown_type
+	 */
 	var $description;
 	
+	/**
+	 * Family that web site belongs to
+	 *
+	 * @var string
+	 */
 	var $site_family;
 	
+	/**
+	 * GUID for the web site 
+	 *
+	 * @var string
+	 */
 	var $site_id;
 	
+	/**
+	 * Databse ID of the web site
+	 *
+	 * @var unknown_type
+	 */
 	var $id;
 	
+	/**
+	 * Constructor
+	 *
+	 * @return owa_site
+	 */
 	function owa_site() {
 		
 		$this->config = &owa_settings::get_settings();
@@ -57,6 +102,12 @@ class owa_site {
 		return;
 	}
 	
+	/**
+	 * Retrieves the site from the database
+	 *
+	 * @param string $site_id
+	 * @return array
+	 */
 	function getSite($site_id) {
 		
 		$row = $this->db->get_row(sprintf("SELECT 
@@ -82,6 +133,11 @@ class owa_site {
 		endif;
 	}
 	
+	/**
+	 * Adds a site to the database
+	 *
+	 * @return string Returns the site id
+	 */
 	function addSite() {
 		
 		$insert = $this->db->query(sprintf("
@@ -97,13 +153,18 @@ class owa_site {
 								$this->site_family));
 		
 		if ($insert == true):
-			return $site_id;
+			return $this->site_id;
 		else:
 			return false;
 		endif;
 		
 	}
 	
+	/**
+	 * Generates a GUID for a new site and saves it to the db
+	 *
+	 * @return string Returns the site_id of the newly added web site.
+	 */
 	function addNewSite() {
 		
 		$this->site_id = md5($this->name.rand().time());
@@ -112,6 +173,12 @@ class owa_site {
 		
 	}
 	
+	/**
+	 * Updates a site's record i nthe db
+	 *
+	 * @param string $site_id
+	 * @return boolean
+	 */
 	function updateSite($site_id) {
 		
 		return $this->db->query(sprintf("UPDATE 
@@ -130,6 +197,11 @@ class owa_site {
 		
 	}
 	
+	/**
+	 * Get  list of all sites from the db
+	 *
+	 * @return array
+	 */
 	function getAllSites() {
 		
 		return $this->db->get_results(sprintf("
