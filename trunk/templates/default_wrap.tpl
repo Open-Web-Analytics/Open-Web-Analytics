@@ -75,7 +75,8 @@
 			.snippet_text {color:#999999;font-size:12px;}
 			.snippet_text a {color:#999999;}
 			.visit_box_stat {width:42px;}
-			.id_box{background-color:red;color:#ffffff;font-style:bold;font-size:20px;padding:15px;}
+			.id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
+			.code {padding:7px;margin:0px 30px 0px 30px;background-color:#cccccc; border: 1px dashed #000000;}
 
 		</style>
 	

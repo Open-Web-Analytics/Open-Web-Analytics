@@ -6,14 +6,12 @@
 
 <h1><?=$page_h1;?></h1>
     
-This will be some intro text about installing OWA.
-    
-	  
+The next few screens will guide you through installing and configuraing the Open Web Analytics framework. If at any time you
+need help, please consult the <a href="http://wiki.openwebanalytics.com">OWA Wiki</a>.
 
-
-    <DIV class="centered_buttons">	
-    	<? if($db_state == true):?><a href="<?=$_SERVER['PHP_SELF'];?>?page=db_info">Continue... >></a><?endif;?>
-    </DIV>
+<DIV class="centered_buttons">	
+    <? if($db_state == true):?><a href="<?=$_SERVER['PHP_SELF'];?>?page=db_info">Continue... >></a><?endif;?>
+</DIV>
     
 
  

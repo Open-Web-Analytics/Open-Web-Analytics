@@ -74,6 +74,19 @@ switch ($_POST['action']) {
 		break;
 }
 
+switch ($_GET['action']) {
+	
+	case "get_tag":
+		$status_msg = "";
+			$body_tpl = 'options_new_site_success.tpl';
+			$page_h1 = 'The tracking tag for your site is below.';
+			
+			$body->set('site_id', $_GET['site_id']);
+			$tag = $owa->makeTag($site_id);
+			$body->set('tag', $tag);
+		
+		break;
+}
 
 // Global Template assignments
 $page->set_template('default_wrap.tpl');// This is the outer template

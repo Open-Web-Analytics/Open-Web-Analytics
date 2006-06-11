@@ -70,10 +70,9 @@ class owa {
 	 */
 	function process_request($app_params) {
 		
-		// Log first request just in case it was left over from prior page view.
+		// Do not log if the first_hit cookie is still present.
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
-			$fh = new owa_request;
-			$this->log_first_request($fh);
+			return;
 			
 		endif;
 		
