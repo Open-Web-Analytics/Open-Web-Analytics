@@ -38,6 +38,9 @@ $owa = new owa_php;
 $page = & new owa_template;
 $body = & new owa_template; 
 
+$body_tpl = 'options.tpl';// This is the inner template
+$body->set('page_title', 'OWA Options');
+
 switch ($_GET['page']) {
 	
 	case "manage_sites":

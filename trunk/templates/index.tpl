@@ -12,7 +12,8 @@ td {padding: 2px 6px 2px 6px;}
 .snippet_text a {color:#999999;}
 .visit_box_stat {width:42px;}
 </style>
-		
+
+<div class="wrap">
 
         <h2><?=$headline;?></h2>
         
@@ -120,4 +121,5 @@ td {padding: 2px 6px 2px 6px;}
 				<?=$top_visitors_table;?>
 			</fieldset>
 		</div>
-		
+
+</div>

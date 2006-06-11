@@ -77,14 +77,15 @@
 			.visit_box_stat {width:42px;}
 			.id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
 			.code {padding:7px;margin:0px 30px 0px 30px;background-color:#cccccc; border: 1px dashed #000000;}
-
+			legend {font-size:20px;font-style:bold;}
+			fieldset{margin: 7px;}
 		</style>
 	
 		
 		<DIV class="owa_banner">Open Web Analytics</DIV>
-		<div class="wrap">
+		
 			<?=$content;?>
-		</div>
+		
 	
 	</body>
 </html>

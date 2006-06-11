@@ -458,7 +458,9 @@ class owa_install_base extends owa_install {
 		$this->e->notice(sprintf("Schema version %s installation complete.",
 							$this->version));
 			
-		$status = sprintf("Installation complete. You may begin tracking your site using site id: <span class=\"id_box\">%s</span>", '1');					
+		$status = sprintf("Installation complete. You may begin tracking your site using site id: 
+		<span class=\"id_box\">%s</span><P>You can also configure yor installation by visiting
+		the <a href=\"%s/admin/options.php\">Options page</a>", '1', $this->config['public_url']);					
 		
 		return $status;
 	}
