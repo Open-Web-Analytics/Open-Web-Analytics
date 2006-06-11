@@ -1,6 +1,14 @@
 <div class=wrap>
   <form method="post">
     <h2><?=$page_title?></h2>
+    
+    <P>Open Web Analytics has several configuraion options that can set using the controls below. Once changes are made
+    click the save button to save the configuration to the database. To learn more about configuring OWA, visit the 
+    <a href="http://wiki.openwebanalytics.com">OWA Wiki</a></P>
+    
+    <UL class="nav_bar">
+    	<LI><a href="<?=$config['public_url'];?>/admin/options.php?page=manage_sites">Manage Web Site Tracking Tags</a></LI>
+    </UL>
 
     <fieldset name="owa-options" class="options">
 	<legend>Request Processing Options</legend>
@@ -90,7 +98,7 @@
 	
 	<DIV class="setting">	
 
-	Log File Directory: <input type="text" name="async_log_dir" value="<?=$config['async_log_dir']?>"><BR>
+	Event Log File Directory: <input type="text" size="80" name="async_log_dir" value="<?=$config['async_log_dir']?>"><BR>
 	
 	</DIV>
 	
@@ -163,7 +171,7 @@
 		<OPTION VALUE="production" <? if ($config['error_handler'] == 'production'):?>SELECTED<?endif;?>>
 		Production (errors logged to file with critcal alerts send via email)</OPTION>
 		<OPTION VALUE="development" <? if ($config['error_handler'] == 'development'):?>SELECTED<?endif;?>>
-		Development (errors logged to file and seperate browser window)</OPTION>
+		Development (debug and error messages logged)</OPTION>
 		</SELECT>
 	
 	</DIV>

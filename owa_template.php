@@ -111,7 +111,7 @@ class owa_template extends Template {
 	}
 	
 	/**
-	 * Generates a link betwen reports
+	 * Generates a link between reports
 	 *
 	 * @param string $anchortext
 	 * @param array $query_params

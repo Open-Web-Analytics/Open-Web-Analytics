@@ -60,18 +60,20 @@ td {padding:2px;}
   }
 
 .centered_buttons {margin-left:auto;margin-right:auto;}
-		th {padding:6px 6px 6px 6px;}
-			td {padding: 2px 6px 2px 6px;}
-			.snippet_text {color:#999999;font-size:12px;}
-			.snippet_text a {color:#999999;}
-			.visit_box_stat {width:42px;}
+th {padding:6px 6px 6px 6px;}
+td {padding: 2px 6px 2px 6px;}
+.snippet_text {color:#999999;font-size:12px;}
+.snippet_text a {color:#999999;}
+.visit_box_stat {width:42px;}
+fieldset{border:1px solid #cccccc; margin:7px;}
+.nav_bar{text-decoration:none;}			
 
 </style>
 
 
 
-   <div class="wrap">
+  <!-- <div class="wrap"> -->
         
 		<?=$content; ?>
 				
-   </div>
+  <!-- </div> -->
