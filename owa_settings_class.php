@@ -84,17 +84,18 @@ class owa_settings {
 			//load overrides from config file
 			if (file_exists($config['config_file_path'])):
 				include_once ($config['config_file_path']);
+				if (!empty($OWA_CONFIG)):
+					foreach ($OWA_CONFIG as $key => $value) {
 			
-				foreach ($OWA_CONFIG as $key => $value) {
-		
-					// update current config
-					$config[$key] = $value;
-				
-				}
+						// update current config
+						$config[$key] = $value;
+					
+					}
+				endif;
 				// Setup special public URLs
 				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
 				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
-				$config['reporting_url'] = $OWA_CONFIG['public_url']."/report.php";
+				$config['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
 				
 			endif;	
 		endif;

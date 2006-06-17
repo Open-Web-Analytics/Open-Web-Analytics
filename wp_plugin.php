@@ -37,7 +37,6 @@ $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
 $owa_config['inter_report_link_template'] = '%s/%s&%s';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
-//$owa_config['site_id'] = 'c349e10053fdfa71be908f89ca463ba6';
 
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
@@ -83,19 +82,16 @@ add_action('admin_menu', 'owa_options');
 ////////// FORM HANDLERS
 
 //if (is_plugin_page()):
-		if (isset($_POST['wa_update_options'])):
-						
-			$owa_wp->save_config($_POST);
-		endif;
-		
-		if (isset($_POST['wa_reset_options'])):
-		
-			$owa_wp->reset_config();	
-			
-		endif;
-	//endif;
 
-
+switch ($_POST['action']) {
+	
+	case "update_config":
+		$owa_wp->save_config($_POST);
+		break;
+	case "reset_config":
+		$owa_wp->reset_config();
+		break;
+}
 	
 /**
  * This is the main logger function that calls wa on each normal web request.

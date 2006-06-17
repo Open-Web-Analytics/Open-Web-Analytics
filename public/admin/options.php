@@ -75,6 +75,17 @@ switch ($_POST['action']) {
 			$status_msg = "Site could not be added. Perhaps a site by that name already exists.";
 		endif;
 		break;
+
+	case "update_config":
+						
+		$owa->save_config($_POST);
+		break;
+		
+	case "reset_config":
+		
+		$owa->reset_config();	
+		break;
+		
 }
 
 switch ($_GET['action']) {
