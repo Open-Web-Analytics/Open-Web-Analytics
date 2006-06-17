@@ -151,7 +151,7 @@ class owa_db {
 	 		if (!@include($connection_class_path)):
 	 			$this->e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
 	 							$connection_class_path));
-	 			exit;
+	 			return;
 			else:  	
 				$db = new $connection_class;
 				$this->e->debug(sprintf('Using db class at %s.',

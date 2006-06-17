@@ -252,19 +252,23 @@ class owa_caller {
 		}
 		
 		owa_settings::save($new_config);
-		$this->e->info("Configuration changes saved to database.");
+		$this->e->notice("Configuration changes saved to database.");
 		
 		return;
 	}
 	
-	function add_tag() {
+	function add_tag($echo = true) {
 		
 		//if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
 		if (empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]) && (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]))):	
 			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
 			$bug .= "document.write('<img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\">');</script>";
 			//$bug .= "<noscript><img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
-			echo $bug;
+			if ($echo == false):
+				return $bug;
+			else:
+				echo $bug;
+			endif;
 		endif;
 		
 		return;

@@ -181,8 +181,8 @@
      
      
 <BR>
-   <input type="submit" name="wa_update_options" value="Save Options" />
-   <input type="submit" name="wa_reset_options" value="Reset Options to Default" />
+   <BUTTON type="submit" name="action" value="update_config">Update Configuration</BUTTON>
+   <BUTTON type="submit" name="action" value="reset_config">Reset Config to Default Values</BUTTON>
   </form>
  </div>
  
