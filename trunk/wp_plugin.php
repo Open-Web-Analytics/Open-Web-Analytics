@@ -131,6 +131,7 @@ function owa_log() {
 	//Check to see if this is a Feed Reeder
 	if(is_feed()):
 		$app_params['is_feedreader'] = true;
+		$app_params['feed_format'] = $_GET['feed'];
 	endif;
 	
 	// Track users by the email address of that they used when posting a comment

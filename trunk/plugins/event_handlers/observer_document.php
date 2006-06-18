@@ -19,7 +19,7 @@
 require_once(OWA_BASE_DIR ."/owa_db.php");
 
 /**
- * Request Event Handler
+ * Document Event Handler
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,7 +29,7 @@ require_once(OWA_BASE_DIR ."/owa_db.php");
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class Log_observer_request_logger extends owa_observer {
+class Log_observer_document extends owa_observer {
 
 	/**
 	 * Database Access Object
@@ -44,16 +44,20 @@ class Log_observer_request_logger extends owa_observer {
 	 * @param 	string $priority
 	 * @param 	array $conf
 	 * @access 	public
-	 * @return 	Log_observer_request_logger
+	 * @return 	Log_observer_document
 	 */
-    function Log_observer_request_logger($priority, $conf) {
-	
+    function Log_observer_document($priority, $conf) {
+		
+    	
         // Call the base class constructor.
         $this->owa_observer($priority);
 
         // Configure the observer.
 		$this->_event_type = array('new_request', 'feed_request');
-		
+
+		// Load DOA
+		$this->db = &owa_db::get_instance();	
+	
 		return;
     }
 
@@ -65,90 +69,15 @@ class Log_observer_request_logger extends owa_observer {
      */
     function notify($event) {
 		
+    	$this->e->debug('Document being handled');
+    	
 		$this->m = $event['message'];
-				
-		$this->insert_request();
-		//$this->insert_document();
+	
+		$this->insert_document();
 						
 		return;
 	}
-	
-	/**
-	 * Log request to database
-	 * 
-	 * @access 	private
-	 */
-	function insert_request() {	
 		
-		// Setup databse acces object
-		$this->db = &owa_db::get_instance();
-	
-		$request = array(
-					'request_id',
-					'visitor_id', 
-					'session_id',
-					'inbound_visitor_id', 
-					'inbound_session_id',
-					'inbound_first_hit_properties',
-					'user_name',
-					'user_email',
-					'timestamp',
-					'last_req',
-					'year',
-					'month',
-					'day',
-					'dayofweek',
-					'dayofyear',
-					'weekofyear',
-					'hour',
-					'minute',
-					'second',
-					'msec',
-					'feed_subscription_id',
-					'referer_id',
-					'document_id',
-					'site',
-					'site_id',
-					'ip_address',
-					'host',
-					'host_id',
-					'os',
-					'os_id',
-					'ua_id',
-					'is_new_visitor',
-					'is_repeat_visitor',	
-					'is_comment',
-					'is_entry_page',
-					'is_browser',
-					'is_robot',
-					'is_feedreader'
-					);
-					
-			foreach ($request as $key => $value) {
-			
-				$sql_cols = $sql_cols.$value;
-				$sql_values = $sql_values."'".$this->m[$this->db->prepare($value)]."'";
-				
-				if (!empty($request[$key+1])):
-				
-					$sql_cols = $sql_cols.", ";
-					$sql_values = $sql_values.", ";
-					
-				endif;	
-			}
-						
-			$this->db->query(
-				sprintf(
-					"INSERT into %s (%s) VALUES (%s)",
-					$this->config['ns'].$this->config['requests_table'],
-					$sql_cols,
-					$sql_values
-				)
-			);	
-				
-		return;
-	}
-	
 	/**
 	 * Adds document data to documents table.
 	 * 
@@ -156,7 +85,7 @@ class Log_observer_request_logger extends owa_observer {
 	 */
 	function insert_document() {
 	
-		$this->db->query(
+		return $this->db->query(
 				sprintf(
 					"INSERT into %s (id, url, page_title, page_type) VALUES ('%s', '%s', '%s', '%s')",
 					$this->config['ns'].$this->config['documents_table'],
@@ -166,7 +95,6 @@ class Log_observer_request_logger extends owa_observer {
 					$this->m['page_type']
 				)
 			);	
-		return;
 	}
 	
 }
