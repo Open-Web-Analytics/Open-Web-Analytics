@@ -120,6 +120,7 @@ class owa {
 			if ($r->properties['is_feedreader'] == true):
 				if ($this->config['log_feedreaders'] == true):
 					$r->properties['is_browser'] = false;
+					$r->properties['feed_reader_guid'] = $r->setEnvGUID();
 					$r->transform_request();
 					$r->state = 'feed_request';
 					$r->log();

@@ -19,16 +19,14 @@
 require_once('owa_php.php');
 
 // Turn MediaWiki Caching Off
-global $wgCachePages;
+global $wgCachePages, $wgCacheEpoch;
 $wgCachePages = false;
-
-// Create Instance of OWA
-$owa = new owa_php;
+$wgCacheEpoch = 'date +%Y%m%d%H%M%S';
 
 // Register Extension with MediaWiki
 $wgExtensionFunctions[] = 'owa_main';
 $wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaWiki', 
-										'author' => 'Peter Adams', 
+										'author' => 'Peter Adams <peter@openwebanalytics.com>', 
 										'url' => 'http://www.openwebanalytics.com' );
 
     
@@ -39,6 +37,9 @@ $wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaW
 function owa_main() {
 	global $wgHooks;
 
+	// Create Instance of OWA
+	$owa = new owa_php;
+
 	// Hook for logging Article Page Views
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
@@ -47,6 +48,8 @@ function owa_main() {
 	// Hooks for adding first_hit request handler
 	if ($owa->config['delay_first_hit'] == true):
 		$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
+		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
+	$wgHooks['CategoryPageView'][] = 'owa_footer';
 	endif;
 	
     return;
@@ -105,7 +108,11 @@ function owa_logCategoryPage(&$categoryPage) {
  */
 function owa_logArticle(&$article) {
 
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $wgTitle;
+	
+	$wgTitle->invalidateCache();
+	$wgOut->enableClientCache(false);
+	
 	
 	// Setup Application Specific Properties to be Logged with request
 	$app_params['user_name']= $wgUser->mName;
@@ -124,19 +131,15 @@ function owa_logArticle(&$article) {
 /**
  * Adds first hit web bug to Article Pages if needed
  *
- * @param object $parser
+ * @param object $article
  * @return boolean
  */
-function owa_footer($article) {
+function owa_footer(&$article) {
 	
 	global $wgOut;
 	
 	$owa = &new owa_php;
 	$bug = $owa->add_tag($echo = false);
-	
-	if (!empty($bug)):
-		$wgCachePages = false;
-	endif;
 	
 	$wgOut->addHTML($bug);
 		

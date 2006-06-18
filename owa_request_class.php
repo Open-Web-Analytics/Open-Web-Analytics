@@ -578,6 +578,17 @@ class owa_request extends owa_event {
 		
 	}
 	
+	/**
+	 * Attempts to make a unique ID out of http request variables
+	 *
+	 * @return integer
+	 */
+	function setEnvGUID() {
+		
+		return crc32($this->properties['ua'].$this->properties['ip_address']);
+		
+	}
+	
 	
 }
 

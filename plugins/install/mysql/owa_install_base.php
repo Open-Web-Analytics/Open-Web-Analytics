@@ -84,7 +84,12 @@ class owa_install_base extends owa_install {
 								$this->config['os_table'],
 								$this->config['sites_table'],
 								$this->config['config_table'],
-								$this->config['version_table']);
+								$this->config['version_table'],
+								$this->config['feed_requests_table'],
+								$this->config['visitors_table'],
+								$this->config['impressions_table'],
+								$this->config['clicks_table'],
+								);
 		return;
 	}
 	
@@ -145,6 +150,19 @@ class owa_install_base extends owa_install {
 			case 'version':
 				return $this->create_version_table();
 				break;
+			case $this->config['feed_requests_table']:
+				return $this->create_feed_requests_table();
+				break;
+			case $this->config['visitors_table']:
+				return $this->create_visitors_table();
+				break;
+			case $this->config['impressions_table']:
+				return $this->create_impressions_table();
+				break;
+			case $this->config['clicks_table']:
+				return $this->create_clicks_table();
+				break;
+				
 		}
 		
 		return;		
@@ -205,6 +223,144 @@ class owa_install_base extends owa_install {
 			$this->config['ns'].$this->config['requests_table'])
 		);
 		
+		
+	}
+	
+	function create_feed_requests_table() {
+		
+		//$this->config['error_handler'] = 'development';
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			request_id BIGINT,
+			visitor_id BIGINT,
+			session_id BIGINT,
+			document_id BIGINT,
+			ua_id VARCHAR(255),
+			site_id VARCHAR(255),
+			site VARCHAR(255),
+			timestamp bigint,
+			month INT,
+			day	  tinyint(2),
+			dayofweek varchar(10),
+			dayofyear INT,
+			weekofyear INT,
+			year  INT,
+			hour  tinyint(2),
+			minute   tinyint(2),
+			second tinyint(2),
+			msec int,
+			last_req bigint,
+			feed_reader_guid VARCHAR(255),
+			subscription_id BIGINT,
+			feed_format VARCHAR(255),
+			ip_address VARCHAR(255),
+			host VARCHAR(255),
+			host_id BIGINT,
+			os VARCHAR(255),
+			os_id VARCHAR(255),
+			PRIMARY KEY (request_id))
+			",
+			$this->config['ns'].$this->config['feed_requests_table']
+			
+			));
+		
+	}
+	
+	function create_visitors_table() {
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			visitor_id BIGINT,
+			user_name VARCHAR(255),
+			user_email  varchar(255),
+			first_session_id BIGINT,
+			first_session_year INT,
+			first_session_month varchar(255),
+			first_session_day INT,
+			first_session_dayofyear INT,
+			last_session_id BIGINT,
+			last_session_year INT,
+			last_session_month varchar(255),
+			last_session_day INT,
+			last_session_dayofyear INT,
+			PRIMARY KEY (visitor_id))
+			",
+			$this->config['ns'].$this->config['visitors_table']
+			
+			));
+	}
+	
+	function create_impressions_table() {
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			impression_id BIGINT,
+			visitor_id BIGINT,
+			session_id BIGINT,
+			placement_id BIGINT,
+			campaign_id BIGINT,
+			ad_group_id BIGINT,
+			ad_id BIGINT,
+			site_id VARCHAR(255),
+			last_impression_id BIGINT,
+			last_impression_timestamp BIGINT,
+			timestamp BIGINT,
+			year INT,
+			month INT,
+			day INT,
+			dayofyear INT,
+			hour TINYINT(2),
+			minute TINYINT(2),
+			msec BIGINT,
+			url VARCHAR(255),
+			ua_id BIGINT,
+			ip_address VARCHAR(255),
+			host VARCHAR(255),
+			PRIMARY KEY (impression_id))
+			",
+			$this->config['ns'].$this->config['impressions_table']
+			
+			));
+	}
+	
+	function create_clicks_table() {
+
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			click_id BIGINT,
+			last_impression_id BIGINT,
+			visitor_id BIGINT,
+			session_id BIGINT,
+			document_id BIGINT,
+			target_url VARCHAR(255),
+			timestamp BIGINT,
+			year INT,
+			month INT,
+			day INT,
+			dayofyear INT,
+			hour TINYINT(2),
+			minute TINYINT(2),
+			msec BIGINT,
+			page_coordinates VARCHAR(255),
+			anchor_text VARCHAR(255),
+			placement_id BIGINT,
+			campaign_id BIGINT,
+			ad_group_id BIGINT,
+			ad_id BIGINT,
+			site_id VARCHAR(255),
+			ua_id BIGINT,
+			ip_address VARCHAR(255),
+			host VARCHAR(255),
+			PRIMARY KEY (click_id))
+			",
+			$this->config['ns'].$this->config['clicks_table']
+			
+			));
 		
 	}
 	
