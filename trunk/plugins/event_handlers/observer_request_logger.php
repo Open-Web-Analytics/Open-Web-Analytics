@@ -52,7 +52,7 @@ class Log_observer_request_logger extends owa_observer {
         $this->owa_observer($priority);
 
         // Configure the observer.
-		$this->_event_type = array('new_request', 'feed_request');
+		$this->_event_type = array('new_request');
 		
 		return;
     }
@@ -67,8 +67,7 @@ class Log_observer_request_logger extends owa_observer {
 		
 		$this->m = $event['message'];
 				
-		$this->insert_request();
-		//$this->insert_document();
+		$this->save_request();
 						
 		return;
 	}
@@ -78,7 +77,7 @@ class Log_observer_request_logger extends owa_observer {
 	 * 
 	 * @access 	private
 	 */
-	function insert_request() {	
+	function save_request() {	
 		
 		// Setup databse acces object
 		$this->db = &owa_db::get_instance();
@@ -146,26 +145,6 @@ class Log_observer_request_logger extends owa_observer {
 				)
 			);	
 				
-		return;
-	}
-	
-	/**
-	 * Adds document data to documents table.
-	 * 
-	 * @access private
-	 */
-	function insert_document() {
-	
-		$this->db->query(
-				sprintf(
-					"INSERT into %s (id, url, page_title, page_type) VALUES ('%s', '%s', '%s', '%s')",
-					$this->config['ns'].$this->config['documents_table'],
-					$this->m['document_id'],
-					$this->m['uri'],
-					$this->m['page_title'],
-					$this->m['page_type']
-				)
-			);	
 		return;
 	}
 	
