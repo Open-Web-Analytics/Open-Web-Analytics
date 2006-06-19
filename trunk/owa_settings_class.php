@@ -243,26 +243,34 @@ class owa_settings {
 	 *
 	 * @return array
 	 */
-	function fetch($configuration_id = 1) {
+	function &fetch($configuration_id = 1) {
 		
 		$config = &owa_settings::get_settings();
 		
-		$this->db = &owa_db::get_instance();
+		static $settings;
 		
-		$sql = sprintf("
-				SELECT 
-					settings 
-				from 
-					%s
-				WHERE
-					id = '%s'",
-				$config['ns'].$config['config_table'],
-				$configuration_id);
+		if (!isset($settings)):
 		
-		$settings = $this->db->get_row($sql);
+			$this->db = &owa_db::get_instance();
+			
+			$sql = sprintf("
+					SELECT 
+						settings 
+					from 
+						%s
+					WHERE
+						id = '%s'",
+					$config['ns'].$config['config_table'],
+					$configuration_id);
+			
+			$settings = $this->db->get_row($sql);
+			
+			// Special Debug variable because error loggers will not have been initialized yet.
+			$from_db = true;
+			//$e = &owa_error::get_instance();
+			//$e->debug(debug_backtrace());
 		
-		//$e = &owa_error::get_instance();
-		//$e->debug(debug_backtrace());
+		endif;
 		
 		return unserialize($settings['settings']);
 		
