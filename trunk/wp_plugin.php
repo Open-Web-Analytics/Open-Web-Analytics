@@ -237,8 +237,6 @@ function add_feed_sid($binfo) {
 	
 	$owa_wp = &new owa_wp;
 	
-	//print $binfo;
-	
 	if (strstr($binfo, "feed=")):
 	
 		$newbinfo = $owa_wp->add_feed_tracking($binfo);
