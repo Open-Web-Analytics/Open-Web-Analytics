@@ -105,7 +105,7 @@ class owa_caller {
 	 */
 	function load_config_from_db() {
 		
-		$config_from_db = owa_settings::fetch($this->config['configuration_id']);
+		$config_from_db = &owa_settings::fetch($this->config['configuration_id']);
 		
 		if (!empty($config_from_db)):
 			
