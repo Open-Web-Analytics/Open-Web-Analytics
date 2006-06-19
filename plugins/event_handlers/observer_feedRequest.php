@@ -29,7 +29,7 @@ require_once(OWA_BASE_DIR ."/owa_db.php");
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class Log_observer_feedRequest extends owa_observer {
+class Log_observer_feedrequest extends owa_observer {
 
 	/**
 	 * Database Access Object
@@ -46,13 +46,16 @@ class Log_observer_feedRequest extends owa_observer {
 	 * @access 	public
 	 * @return 	Log_observer_feedRequest
 	 */
-    function Log_observer_feedRequest($priority, $conf) {
+    function Log_observer_feedrequest($priority, $conf) {
 	
         // Call the base class constructor.
         $this->owa_observer($priortiy);
 
         // Configure the observer.
 		$this->_event_type = array('feed_request');
+		
+		// Setup databse acces object
+		$this->db = &owa_db::get_instance();
 		
 		return;
     }
@@ -64,10 +67,10 @@ class Log_observer_feedRequest extends owa_observer {
      * @param 	object $event
      */
     function notify($event) {
-		
+    	print "hello from feed handler";
 		$this->m = $event['message'];
 				
-		$this->insert_request();
+		$this->save_request();
 						
 		return;
 	}
@@ -77,10 +80,8 @@ class Log_observer_feedRequest extends owa_observer {
 	 * 
 	 * @access 	private
 	 */
-	function insert_request() {	
+	function save_request() {	
 		
-		// Setup databse acces object
-		$this->db = &owa_db::get_instance();
 	
 		return $this->db->query(sprintf("
 					INSERT INTO
