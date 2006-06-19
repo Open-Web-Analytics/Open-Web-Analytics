@@ -234,21 +234,19 @@ function owa_get_page_type() {
  * @return string $newbinfo
  */
 function add_feed_sid($binfo) {
-
-	global $doing_rss;
-	global $owa_wp;
 	
-	if($doing_rss):
+	$owa_wp = &new owa_wp;
 	
-		if (strstr($binfo, "feed=")):
+	//print $binfo;
 	
-			$newbinfo = $owa_wp->add_feed_tracking($binfo);
-			
-		endif;
+	if (strstr($binfo, "feed=")):
+	
+		$newbinfo = $owa_wp->add_feed_tracking($binfo);
 	
 	else: 
 		
-			$newbinfo = $binfo;
+		$newbinfo = $binfo;
+		
 	endif;
 	
 	return $newbinfo;

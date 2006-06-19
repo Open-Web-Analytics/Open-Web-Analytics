@@ -49,7 +49,7 @@ class Log_observer_feedrequest extends owa_observer {
     function Log_observer_feedrequest($priority, $conf) {
 	
         // Call the base class constructor.
-        $this->owa_observer($priortiy);
+        $this->owa_observer($priority);
 
         // Configure the observer.
 		$this->_event_type = array('feed_request');
@@ -67,7 +67,7 @@ class Log_observer_feedrequest extends owa_observer {
      * @param 	object $event
      */
     function notify($event) {
-    	print "hello from feed handler";
+    	
 		$this->m = $event['message'];
 				
 		$this->save_request();
@@ -122,7 +122,7 @@ class Log_observer_feedrequest extends owa_observer {
 						'%d',
 						'%d',
 						'%s',
-						'%d',
+						'%s',
 						'%d',
 						'%s',
 						'%s',
@@ -154,12 +154,12 @@ class Log_observer_feedrequest extends owa_observer {
 						$this->m['os_id'],
 						$this->m['ua_id'],
 						$this->m['feed_reader_guid'],
-						$this->m['session_id'],
 						$this->m['timestamp'],
 						$this->m['year'],
 						$this->m['month'],
 						$this->m['day'],
 						$this->m['dayofweek'],
+						$this->m['dayofyear'],
 						$this->m['weekofyear'],
 						$this->m['hour'],
 						$this->m['minute'],
