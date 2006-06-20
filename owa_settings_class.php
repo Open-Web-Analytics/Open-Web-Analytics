@@ -123,7 +123,6 @@ class owa_settings {
 			'period_param'					=> 'period',
 			'document_param'				=> 'doc',
 			'referer_param'					=> 'referer',
-			'source_param'					=> 'source',
 			'site_id'						=> '1',
 			'configuration_id'				=> '1',
 			'session_length'				=> '1800',
