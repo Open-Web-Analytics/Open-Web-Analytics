@@ -79,10 +79,14 @@
 			.code {padding:7px;margin:0px 30px 0px 30px;background-color:#cccccc; border: 1px dashed #000000;}
 			legend {font-size:20px;font-style:bold;}
 			fieldset{margin: 7px;}
+			.top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
+			#admin_nav{font-size:12px;}
 		</style>
 	
 		
 		<DIV class="owa_banner">Open Web Analytics</DIV>
+		
+			<? include('nav.tpl');?>
 		
 			<?=$content;?>
 		
