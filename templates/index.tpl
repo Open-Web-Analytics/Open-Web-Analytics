@@ -1,16 +1,9 @@
 <style>
-
-
 #recent_visitors {width: 700px;}
 #top_pages {width: 450px;}
 #top_visitors {width: 250px;}
 #summary_stats {width: px;}
 #core_metrics {width: 600px;}
-th {padding:6px 6px 6px 6px;}
-td {padding: 2px 6px 2px 6px;}
-.snippet_text {color:#999999;font-size:12px;}
-.snippet_text a {color:#999999;}
-.visit_box_stat {width:42px;}
 </style>
 
 <div class="wrap">

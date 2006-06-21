@@ -52,13 +52,13 @@ class owa_metric_dashboard extends owa_metric {
 		switch ($this->params['api_call']) {
 		
 		case "dash_core":
-			return $this->dash_core($params);
+			return $this->dash_core();
 		case "page_views":
-			return $this->page_views($params);
+			return $this->page_views();
 		case "page_view_count":
-			return $this->page_view_count($params);
+			return $this->page_view_count();
 		case "dash_counts":
-			return $this->dash_counts($params);
+			return $this->dash_counts();
 			
 		}
 	
@@ -71,7 +71,7 @@ class owa_metric_dashboard extends owa_metric {
 	 * @access 	private
 	 * @return 	array
 	 */
-	function dash_core($params) {
+	function dash_core() {
 	
 	$sql = sprintf("select 
 			sessions.month, 
@@ -93,10 +93,10 @@ class owa_metric_dashboard extends owa_metric {
 			sessions.month, 
 			sessions.day %s",
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->time_period($params['period']),
-			$this->add_constraints($params['constraints']),
-			$params['group_by'],
-			$params['order']
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['group_by'],
+			$this->params['order']
 		);
 	
 		return $this->db->get_results($sql);		
@@ -109,7 +109,7 @@ class owa_metric_dashboard extends owa_metric {
 	 * @access 	private
 	 * @return 	array
 	 */
-	function dash_counts($params) {
+	function dash_counts() {
 	
 		$sql = sprintf("select 
 			count(distinct sessions.visitor_id) as unique_visitors, 
@@ -123,8 +123,8 @@ class owa_metric_dashboard extends owa_metric {
 			%s 
 			%s",
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->time_period($params['period']),
-			$this->add_constraints($params['constraints'])
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
 		);
 	
 		return $this->db->get_row($sql);
@@ -137,7 +137,7 @@ class owa_metric_dashboard extends owa_metric {
 	 * @access 	private
 	 * @return 	array
 	 */
-	function page_views($params) {
+	function page_views() {
 	
 		$sql = sprintf("select 
 				sum(sessions.num_pageviews) as page_views,
@@ -157,10 +157,10 @@ class owa_metric_dashboard extends owa_metric {
 				sessions.day %6\$s",
 				
 				$this->config['ns'].$this->config['sessions_table'],
-				$this->time_period($params['period']),
-				$this->add_constraints($params['constraints']),
-				$params['group_by'],
-				$params['order']
+				$this->time_period($this->params['period']),
+				$this->add_constraints($this->params['constraints']),
+				$this->params['group_by'],
+				$this->params['order']
 			);
 						
 		
@@ -175,7 +175,7 @@ class owa_metric_dashboard extends owa_metric {
 	 * @access 	private
 	 * @return 	array
 	 */
-	function page_view_count($params) {
+	function page_view_count() {
 	
 		$sql = sprintf("select 
 			sum(sessions.num_pageviews) as page_views			
@@ -187,8 +187,8 @@ class owa_metric_dashboard extends owa_metric {
 			%s
 		",
 			$this->config['ns'].$this->config['sessions_table'],
-			$this->time_period($params['period']),
-			$this->add_constraints($params['constraints'])
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
 		);
 					
 		return $this->db->get_row($sql);

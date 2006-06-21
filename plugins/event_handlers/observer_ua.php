@@ -66,7 +66,7 @@ class Log_observer_ua extends owa_observer {
         $this->owa_observer($priority);
 
         // Configure the observer to handle certain events types
-		$this->_event_type = array('new_session');
+		$this->_event_type = array('new_session', 'feed_request');
 	
 		$this->db = &owa_db::get_instance();
 		

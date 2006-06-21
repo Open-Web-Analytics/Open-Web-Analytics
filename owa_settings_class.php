@@ -141,8 +141,6 @@ class owa_settings {
 			'visitors_table'				=> 'visitors',
 			'impressions_table'				=> 'impressions',
 			'clicks_table'					=> 'clicks',
-			//'data_store'					=> 'db',
-			//'debug_level'					=> '1',
 			'db_type'						=> '',
 			'db_name'						=> OWA_DB_NAME,
 			'db_user'						=> OWA_DB_USER,
