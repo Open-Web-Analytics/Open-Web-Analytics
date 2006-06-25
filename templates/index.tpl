@@ -6,7 +6,7 @@
 #core_metrics {width: 600px;}
 </style>
 
-<div class="wrap">
+
 
         <h2><?=$headline;?></h2>
         
@@ -31,11 +31,6 @@
 		<? endforeach;?>
 		</table>
 		
-		</fieldset>
-		
-		<fieldset class="options">
-			<legend>Time Periods</legend>
-			<?=$periods_menu;?>	
 		</fieldset>
 		
 		
@@ -114,5 +109,3 @@
 				<?=$top_visitors_table;?>
 			</fieldset>
 		</div>
-
-</div>

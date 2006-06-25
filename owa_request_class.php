@@ -83,9 +83,6 @@ class owa_request extends owa_event {
 		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
 		$this->properties['site'] = $_SERVER['SERVER_NAME'];
 		
-		// Determine Browser type
-		$this->determine_browser_type();
-		
 		// Calc time sinse the last request
 		$this->time_sinse_lastreq = $this->time_sinse_last_request();
 		
@@ -186,6 +183,9 @@ class owa_request extends owa_event {
 		if ($this->config['resolve_hosts'] = true):
 			$this->resolve_host();
 		endif;
+		
+		// Determine Browser type
+		$this->determine_browser_type();
 		
 		//update last-request time cookie
 		setcookie($this->config['ns'].$this->config['last_request_param'], $this->properties['sec'], time()+3600*24*365*30, "/", $this->properties['site']);
@@ -323,98 +323,20 @@ class owa_request extends owa_event {
 	 * @access 	private
 	 */
 	function determine_browser_type() {
-	
-		$browser_def= $this->determine_ua_type($this->properties['ua']);
-			
-		$this->properties['browser_type'] =  $browser_def['name']; 
-  
+		
+		if (!empty($this->browscap->browser)):
+			$this->properties['browser_type'] = $this->browscap->browser;
+			$this->e->debug('browser type: '.$this->properties['browser_type']);
+		else:	
+			require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
+			$this->browscap = get_browser_local($db = $this->config['browscap_supplemental.ini']);
+			$this->properties['browser_type'] = $this->browscap->browser;
+			$this->e->debug('browser type: '.$this->properties['browser_type']);
+		endif;
+		
 		return;
 	}
 	
-	/**
-	 * Lookup browser type
-	 *
-	 * @param 	string $ua
-	 * @return 	unknown
-	 * @access 	private
-	 */
-	function determine_ua_type($ua) {
-	
-		$ua_defs = array(
-		
-		'CFNetwork' 			=> array('name' => 'OS X Network Fetch', 'type' =>'feedreader'),
-		'Akregator'				=> array('name' => 'Akregator', 'type' => 'feedreader'),
-		'Aggrevator'			=> array('name' => 'Aggrevator', 'type' => 'feedreader'),
-		'AllTheNews'			=> array('name' => 'AllTheNews', 'type' => 'feedreader'),
-		'AmphetaDesk'			=> array('name' => 'AmphetaDesk', 'type' => 'feedreader'),
-		'Awasu'					=> array('name' => 'Awasu', 'type' => 'feedreader'),
-		'BigBlogZoo'			=> array('name' => 'BigBlogZoo', 'type' => 'feedreader'),
-		'BottomFeeder'			=> array('name' => 'BottomFeeder', 'type' => 'feedreader'),
-		'Desktop Sidebar'		=> array('name' => 'Desktop Sidebar', 'type' => 'feedreader'),
-		'FeedDemon'				=> array('name' => 'FeedDemon', 'type' => 'feedreader'),	
-		'FeedOnFeeds'			=> array('name' => 'FeedOnFeeds', 'type' => 'feedreader'),
-		'Google Desktop'		=> array('name' => 'Google Desktop', 'type' => 'feedreader'),
-		'GreatNews'				=> array('name' => 'GreatNews', 'type' => 'feedreader'),
-		'Liferea'				=> array('name' => 'Liferea', 'type' => 'feedreader'),
-		'NewsFire'				=> array('name' => 'NewsFire', 'type' => 'feedreader'),
-		'NewzCrawler'			=> array('name' => 'NewzCrawler', 'type' => 'feedreader'),
-		'JetBrains Omea Reader' => array('name' => 'JetBrains Omea Reader', 'type' =>'feedreader'),
-		'NewsGator' 			=> array('name' => 'NewsGator', 'type' =>'feedreader'),
-		'Onfolio' 				=> array('name' => 'Onfolio', 'type' =>'feedreader'),
-		'Pluck Soap Client' 	=> array('name' => 'Pluck', 'type' =>'feedreader'),
-		'PulpFiction' 			=> array('name' => 'PulpFiction', 'type' =>'feedreader'),
-		'RssBandit' 			=> array('name' => 'RssBandit', 'type' =>'feedreader'),
-		'RSSOwl' 				=> array('name' => 'RSSOwl', 'type' =>'feedreader'),
-		'RssReader' 			=> array('name' => 'RssReader', 'type' =>'feedreader'),
-		'Shrook' 				=> array('name' => 'Shrook', 'type' =>'feedreader'),
-		'Snarfer' 				=> array('name' => 'Snarfer', 'type' =>'feedreader'),
-		'Straw' 				=> array('name' => 'Straw', 'type' =>'feedreader'),
-		'Syndirella' 			=> array('name' => 'Syndirella', 'type' =>'feedreader'),
-		'Tickershock' 			=> array('name' => 'Tickershock', 'type' =>'feedreader'),
-		'Tristana' 				=> array('name' => 'Tristana', 'type' =>'feedreader'),
-		'NewsGatorOnline' 		=> array('name' => 'NewsGatorOnline', 'type' =>'feedreader'),
-		'NIF' 					=> array('name' => 'NewsIsFree', 'type' =>'feedreader'),
-		'PluckFeedCrawler' 		=> array('name' => 'PluckFeedCrawler', 'type' =>'feedreader'),
-		'Rojo' 					=> array('name' => 'Rojo', 'type' =>'feedreader'),
-		'Technoratibot' 		=> array('name' => 'Technorati', 'type' =>'feedreader'),
-		'TrillianPro' 			=> array('name' => 'Trillian Pro', 'type' =>'feedreader'),
-		'Feedster'				=> array('name' => 'feedster', 'type' =>'feedreader'),
-		'FeedRover'				=> array('name' => 'feedrover', 'type' =>'feedreader'),
-		'Bloglines'				=> array('name' => 'Bloglines', 'type' =>'feedreader'),
-		'NetNewsWire'			=> array('name' => 'NetNewsWire', 'type' =>'feedreader'),   
-		'FeedDemon'				=> array('name' => 'FeedDemon', 'type' =>'feedreader'), 
-		'Syndic8'				=> array('name' => 'Syndic8', 'type' =>'robot'), 
-		'PubSub'				=> array('name' => 'PubSub', 'type' =>'robot'), 
-		'MagpieRSS'				=> array('name' => 'MagpieRSS', 'type' =>'vreader'),  
-		'SharpReader'			=> array('name' => 'SharpReader', 'type' =>'feedreader'),           
-		'YahooFeedSeeker'		=> array('name' => 'My Yahoo!', 'type' =>'feedreader'),   
-		'Radio Userland'		=> array('name' => 'Radio Userland', 'type' =>'feedreader'),   
-		'NewsMonster'			=> array('name' => 'NewsMonster', 'type' =>'feedreader'),  
-		'Safari'				=> array('name' => 'Safari', 'type' =>'webbrowser'),
-		'MSIE'					=> array('name' => 'IE', 'type' =>'webbrowser'),
-		'Firefox'				=> array('name' => 'FireFox', 'type' =>'webbrowser'),
-		'Opera'					=> array('name' => 'Opera', 'type' =>'webbrowser')
-		   
-		);
-		
-		foreach($ua_defs as $k => $v)	{
-		
-			 $pos = strpos(strtolower($ua), strtolower($k));
-			 			
-			 if ($pos === false):
-				
-				$browser = array('Unknown', 'Unknown');
-					
-			 else:
-		 	
-				$browser = $v;
-				return $browser;
-			 endif;
-		}
-	
-		return $browser;
-			
-	}
 	
 	function last_chance_robot_detect($user_agent) {
 		

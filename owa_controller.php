@@ -90,12 +90,13 @@ class owa {
 		// Deterine if the request is from a known robot/crawler/spider
 			if (get_cfg_var('browscap')):
 				$this->e->debug('using php built in get_browser function to determin browser type');
-				$browser = get_browser(); //If available, use PHP native function
+				$r->browscap = get_browser(); //If available, use PHP native function
 			else:
 				$this->e->debug('Using get_browser_local to determine browser type');
 				require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
-				$browser = get_browser_local();
-				if ($browser->crawler == true):
+				$r->browscap = get_browser_local($db = $this->config['browscap.ini']);
+				
+				if ($r->browscap->crawler == true && $r->browscap->parent != 'RSS Feeds'):
 					$r->is_robot = true;
 				endif;
 				

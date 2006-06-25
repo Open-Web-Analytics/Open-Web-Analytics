@@ -63,11 +63,34 @@ class owa_lib {
 		
 		$data_arrays = array();
 	
-		foreach ($a_array as $key => $value) {
-			foreach ($value as $k => $v) {
-				$data_arrays[$k][] = $v;
+		if(!empty($a_array[1])) :
 		
+			foreach ($a_array as $key => $value) {
+				foreach ($value as $k => $v) {
+					$data_arrays[$k][] = $v;
+			
+				}
 			}
+		else:
+		
+			foreach ($a_array as $key => $value) {
+				$data_arrays[$key][] = $value;
+			}
+		endif;
+		
+		return $data_arrays;
+	}
+	
+	
+	function decon_assoc($a_array) {
+		
+		$data_arrays = array();
+	
+		foreach ($a_array as $key => $value) {
+			//foreach ($value as $k => $v) {
+				$data_arrays[$key][] = $value;
+		
+			//}
 		}
 		
 		return $data_arrays;
@@ -237,6 +260,7 @@ class owa_lib {
 		$params = array();
 		
 		$params['month'] = $_GET['month'];
+		$params['owa_action'] = $_GET['owa_action'];
 		$params['year'] = $_GET['year'];
 		$params['day'] = $_GET['day'];
 		$params['dayofyear'] = $_GET['dayofyear'];

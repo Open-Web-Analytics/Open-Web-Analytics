@@ -162,6 +162,8 @@ class owa_settings {
 			'notice_email'					=> '',
 			'error_handler'					=> 'production',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
+			'browscap.ini'					=> OWA_BASE_DIR . '/conf/browscap.ini',
+			'browscap_supplemental.ini'		=> OWA_BASE_DIR . '/conf/browscap_supplemental.ini',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
 			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
