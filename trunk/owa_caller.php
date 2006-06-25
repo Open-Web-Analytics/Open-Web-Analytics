@@ -221,7 +221,7 @@ class owa_caller {
 		if(empty($app_params)):
 			$app_params = owa_lib::getRestparams();
 		endif;
-				
+	
 		return $this->controller->getGraph($app_params);
 		
 	}

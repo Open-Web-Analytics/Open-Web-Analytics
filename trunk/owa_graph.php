@@ -147,6 +147,9 @@ class owa_graph {
 			case "bar_line":
 				$this->bar_line_graph();
 				break;
+			case "stacked_area":
+				$this->stacked_area_graph();
+				break;
 			default:
 				$this->bar_graph();
 			
@@ -271,7 +274,7 @@ class owa_graph {
 		$p1->SetLabelType(PIE_VALUE_ABS);    
 		$p1->value->Show();            
 		$p1->value->SetFont(FF_FONT1,FS_BOLD);    
-		$p1->value->SetFormat('%d users');        
+		$p1->value->SetFormat('%d '.$this->params['slice_label']);        
 		
 		$p1->SetLegends($this->params['legends']);
 		
@@ -333,6 +336,56 @@ class owa_graph {
 		$graph->yaxis->title->SetFont(FF_FONT1,FS_BOLD);
 		$graph->xaxis->title->SetFont(FF_FONT1,FS_BOLD);
 		
+		
+		// Display the graph
+		$graph->Stroke();
+		
+		return;
+	}
+	
+	function stacked_area_graph() {
+			
+		include_once (OWA_JPGRAPH_DIR .'/jpgraph_line.php');
+		
+		$data_y1 = $this->data['y1'];
+		$data_y2 = $this->data['y2'];
+		$datax = $this->data['x'];
+		
+		// Create the graph. 
+		$graph = new Graph($this->params['width'],$this->params['height']);    
+		//$graph->img->SetAntiAliasing();
+		$graph->SetColor('white'); 
+		$graph->SetMarginColor('white'); 
+		$graph->SetFrame(true,'silver',1); 
+		$graph->SetScale("textlin");
+		$graph->SetMargin(40,40,20,40);
+		$graph->xaxis->SetTickLabels($datax);
+		$graph->xaxis->SetLabelAngle(90); 
+		
+		// Create the linear plots for each category
+		$dplot[] = new LinePLot($datay1);
+		$dplot[] = new LinePLot($datay2);
+		$dplot[] = new LinePLot($datay3);
+		
+		$dplot[0]->SetFillColor("red");
+		$dplot[1]->SetFillColor("blue");
+		$dplot[2]->SetFillColor("green");
+		
+		// Create the accumulated graph
+		$accplot = new AccLinePlot($dplot);
+		
+		// Add the plot to the graph
+		$graph->Add($accplot);
+		
+		$dplot->SetLegend($this->params['y1_title']);	
+		
+		$graph->title->Set($this->params['graph_title']);
+		$graph->xaxis->title->Set($this->params['xaxis_title']);
+		$graph->yaxis->title->Set($this->params['yaxis_title']);
+		
+		$graph->title->SetFont(FF_FONT1,FS_BOLD);
+		$graph->yaxis->title->SetFont(FF_FONT1,FS_BOLD);
+		$graph->xaxis->title->SetFont(FF_FONT1,FS_BOLD);
 		
 		// Display the graph
 		$graph->Stroke();

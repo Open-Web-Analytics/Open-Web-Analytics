@@ -164,8 +164,7 @@ $rss = new owa_news;
 $news = $rss->Get($rss->config['owa_rss_url']);
 
 // Assign Data to templates
-$periods_menu->set('params', $report->params);
-$periods_menu->set('sites', $sites);
+
 $body->set('news', $news);
 $body->set('headline', 'Analytics Dashboard');
 $body->set('period_label', $report->get_period_label($report->period));
@@ -190,6 +189,8 @@ $body->set('top_pages_table', $top_pages);
 $top_referers->set('data', $top_referers_data);
 $body->set('top_referers_table', $top_referers);
 
+// Global Assignments
+$report->tpl->set('report_name', basename(__FILE__));
 $report->tpl->set('content', $body);
 
 // Render Report
