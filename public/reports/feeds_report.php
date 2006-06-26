@@ -58,6 +58,7 @@ $body->set('feed_trend', $trend);
 //$body->set('report_name', basename(__FILE__));
 $body->set('params', $report->params);
 //$body->set('config', $report->config);
+$body->set('period', $report->params['period']);
 $report->tpl->set('content', $body);
 $report->tpl->set('report_name', basename(__FILE__));
 //Output Report
