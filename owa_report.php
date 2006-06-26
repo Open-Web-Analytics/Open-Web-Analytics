@@ -106,10 +106,11 @@ class owa_report {
 		
 		// Set the reporting period
 
-		if (!empty($this->params['period'])):
+		if (!empty($this->params['period']) && !empty($this->params['year'])):
 			$this->set_period($this->params['period']);
 		else:
 			$this->set_period('today');
+			$this->params['period'] = 'today';
 		endif;
 		
 		$this->tpl->set('params', $this->params);
@@ -140,6 +141,7 @@ class owa_report {
 	function set_period($period) {
 		
 		$this->period = $period;
+		//$this->params['period'] = $period;
 		$this->period_label = $this->get_period_label($period);
 		
 		return;
