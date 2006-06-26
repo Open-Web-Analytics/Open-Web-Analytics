@@ -37,7 +37,7 @@ class owa_graph_page_views extends owa_graph {
 	function owa_graph_page_views() {
 	
 		$this->owa_graph();
-		$this->api_calls = array('page_views', 'swf_pv', 'pv_visits');
+		$this->api_calls = array('page_views', 'swf_pv', 'pv_visits', 'page_types');
 	
 		return;
 	}
@@ -59,7 +59,8 @@ class owa_graph_page_views extends owa_graph {
 				return $this->graph_page_views();
 			case "pv_visits":
 				return $this->pv_visits();
-
+			case "page_types":
+				return $this->graph_page_types();
 		}
 		
 		return;
@@ -184,6 +185,49 @@ class owa_graph_page_views extends owa_graph {
 			$this->graph($this->params['type']);
 		endif;
 		
+		return;
+	}
+	
+	function graph_page_types() {
+		
+		$result = $this->metrics->get(array(
+		
+		'api_call' 		=> 'count_page_types',
+		'period'			=> $this->params['period'],
+		'result_format'		=> 'inverted_array',
+		'constraints'		=> array(
+			'site_id'		=> $this->params['site_id'],		
+			'year'			=> $this->params['year'],
+			'month'			=> $this->params['month'],
+			'day'			=> $this->params['day']
+			
+			)
+	
+		));
+
+		// Graph params
+		$this->params['graph_title'] = "Requests by Page Type for \n" . $this->get_period_label($this->params['period']);
+		$this->params['legends'] = $result['page_type'];
+		$this->params['height']	= 400;
+		$this->params['width']	= 400;
+		$this->params['slice_label'] = 'requests';
+		
+		// Graph Data Assignment
+		if (empty($result)):
+				$this->error_graph();
+			return;
+		else:
+		
+			$this->data = array(
+		
+				'data_pie'		=> $result['count']
+			
+			);
+	
+				
+			$this->pie_graph();
+		endif;
+				
 		return;
 	}
 	

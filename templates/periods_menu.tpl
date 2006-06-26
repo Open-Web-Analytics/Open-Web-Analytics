@@ -38,13 +38,28 @@
 
 <SCRIPT>
 <!--
-function OnChange(dropdown, param)
+function OnChange(dropdown, change_param)
 {
-	var getParam = param
+	var params = new Object()
+<? foreach ($params as $k => $v):?>
+	params["<?=$k;?>"] = "<?=$v;?>";
+<? endforeach;?>
+	
+	var getParam = change_param
 	var myindex  = dropdown.selectedIndex
 	var SelValue = dropdown.options[myindex].value
+	
+	params[getParam] = SelValue;
+	
+	var get_string = ""
+	
+	for(param in params) {  // print out the params
+  		get_string = get_string + param + "=" + params[param] + "&";
+	}
+	
 	var baseURL  =  '<?=$this->make_report_link($report_name);?>'
-	top.location.href = baseURL + getParam + '=' + SelValue;
+	
+	top.location.href = baseURL + get_string;
     
 	return true;
 }

@@ -1,7 +1,7 @@
 <h2><?=$headline;?></h2>
 
 <fieldset id="trends" class="options">
-	<legend>Trends</legend>
+	<legend>Trends - <?=$period_label;?></legend>
 	<img src="<?=$this->config['action_url']?>?owa_action=graph&name=feed_fetches&type=bar_line&period=last_thirty_days&site_id=<?=$params['site_id'];?>" />
 	<BR>
 	<? include('feed_core_metrics.tpl');?>
@@ -12,13 +12,13 @@
 
 
 <fieldset id="summary_stats" class="options">
-	<legend>Feed Details</legend>
+	<legend>Feed Details - <?=$period_label;?></legend>
 
 	<TABLE>
 		<TR>
 			
-			<TH>Read Reader Types</TH>
-			<TH>Feed Formats</TH>
+			<TH>Fead Readers</TH>
+			<TH>Feed Fetches By Format</TH>
 		</TR>
 		<TR>		
 			<TD>

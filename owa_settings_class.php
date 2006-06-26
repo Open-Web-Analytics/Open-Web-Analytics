@@ -121,7 +121,7 @@ class owa_settings {
 			'source_param'					=> 'from',
 			'graph_param'					=> 'graph',
 			'period_param'					=> 'period',
-			'document_param'				=> 'doc',
+			'document_param'				=> 'document',
 			'referer_param'					=> 'referer',
 			'site_id'						=> '1',
 			'configuration_id'				=> '1',

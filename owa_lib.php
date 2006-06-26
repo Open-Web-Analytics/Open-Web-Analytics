@@ -274,11 +274,11 @@ class owa_lib {
 		$params['site_id'] = $_GET['site_id'];
 		$params['type'] = $_GET['type'];
 		$params['api_call'] = $_GET['name'];
-		$params['session_id'] = $_GET[$config['ns'].$config['session_param']];
-		$params['visitor_id'] = $_GET[$config['ns'].$config['visitor_param']];
-		$params['document_id'] = $_GET[$config['ns'].$config['document_param']];
-		$params['referer_id'] = $_GET[$config['ns'].$config['referer_param']];
-		$params['source'] = $_GET[$config['ns'].$config['source_param']];
+		$params['session_id'] = $_GET['session_id'];
+		$params['visitor_id'] = $_GET['visitor_id'];
+		$params['document_id'] = $_GET['document_id'];
+		$params['referer_id'] = $_GET['referer_id'];
+		$params['source'] = $_GET['source'];
 	
 		return $params;
 		

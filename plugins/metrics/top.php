@@ -39,7 +39,16 @@ class owa_metric_top extends owa_metric {
 
 		$this->owa_metric();
 
-		$this->api_calls = array('top_documents', 'top_referers', 'top_user_agents', 'top_os', 'top_hosts', 'top_visitors');
+		$this->api_calls = array('top_anchors', 
+								'top_keywords', 
+								'top_documents', 
+								'top_entry_documents', 
+								'top_exit_documents', 
+								'top_referers', 
+								'top_user_agents', 
+								'top_os', 
+								'top_hosts', 
+								'top_visitors');
 		
 		return;
 	}
@@ -63,7 +72,14 @@ class owa_metric_top extends owa_metric {
 			return $this->top_referers();
 		case "top_visitors":
 			return $this->top_visitors();
-	
+		case "top_entry_documents":
+			return $this->top_entry_documents();
+		case "top_exit_documents":
+			return $this->top_exit_documents();
+		case "top_keywords":
+			return $this->top_keywords();
+		case "top_anchors":
+			return $this->top_anchors();
 		}
 		
 	}
@@ -81,7 +97,8 @@ class owa_metric_top extends owa_metric {
 			count(requests.document_id) as count,
 			documents.page_title,
 			documents.page_type,
-			documents.url
+			documents.url,
+			documents.id
 		FROM 
 			%s as requests, %s as documents 
 		WHERE
@@ -90,12 +107,90 @@ class owa_metric_top extends owa_metric {
 			%s
 			%s 
 		GROUP BY
-			documents.page_title
+			documents.id
 		ORDER BY
 			count DESC
 		LIMIT 
 			%s",
 			$this->config['ns'].$this->config['requests_table'],
+			$this->config['ns'].$this->config['documents_table'],
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql);
+	
+		
+	}
+	
+	/**
+	 * Top Entry Documents
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_entry_documents() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(sessions.session_id) as count,
+			documents.page_title,
+			documents.page_type,
+			documents.url,
+			documents.id
+		FROM 
+			%s as sessions, %s as documents 
+		WHERE
+			sessions.first_page_id = documents.id
+			%s
+			%s 
+		GROUP BY
+			sessions.first_page_id
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->config['ns'].$this->config['sessions_table'],
+			$this->config['ns'].$this->config['documents_table'],
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql);
+	
+		
+	}
+	
+	/**
+	 * Top Entry Documents
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_exit_documents() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(sessions.session_id) as count,
+			documents.page_title,
+			documents.page_type,
+			documents.url,
+			documents.id
+		FROM 
+			%s as sessions, %s as documents 
+		WHERE
+			sessions.last_page_id = documents.id
+			%s
+			%s 
+		GROUP BY
+			sessions.last_page_id
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->config['ns'].$this->config['sessions_table'],
 			$this->config['ns'].$this->config['documents_table'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
@@ -149,6 +244,84 @@ class owa_metric_top extends owa_metric {
 		return $this->db->get_results($sql); 
 	
 	}
+	
+	/**
+	 * Top Keywords
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_keywords() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(sessions.session_id) as count,
+			referers.query_terms
+		FROM 
+			%s as referers,
+			%s as sessions 
+		WHERE 
+			referers.id != 0
+			and query_terms != ''
+			AND referers.id = sessions.referer_id
+			%s
+			%s
+		GROUP BY
+			referers.query_terms
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->config['ns'].$this->config['referers_table'],
+			$this->config['ns'].$this->config['sessions_table'],
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql); 
+	
+	}
+	
+	/**
+	 * Top Anchors
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_anchors() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(sessions.session_id) as count,
+			referers.refering_anchortext
+		FROM 
+			%s as referers,
+			%s as sessions 
+		WHERE 
+			referers.id != 0
+			AND refering_anchortext != ''
+			AND referers.is_searchengine = '0'
+			AND referers.id = sessions.referer_id
+			%s
+			%s
+		GROUP BY
+			referers.refering_anchortext
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->config['ns'].$this->config['referers_table'],
+			$this->config['ns'].$this->config['sessions_table'],
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql); 
+	
+	}
+	
 	
 	/**
 	 * Top Visitors

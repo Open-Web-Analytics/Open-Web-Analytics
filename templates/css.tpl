@@ -6,6 +6,7 @@ legend {font-size:20px;font-style:bold;}
 fieldset{margin: 7px;}
 
 .inline_h2 {font-size:18px;}
+.inline_h2_grey {font-size:18px; color:#cccccc;}
 .visitor_info_box {width:40px; height:40px; text-align:center;}
 .comments_info_box {
 	padding:4px 4px 4px 4px;
@@ -24,14 +25,15 @@ fieldset{margin: 7px;}
 	margin:2px;
 }
   
-   .pages_box {
+.pages_box {
   
   	padding:4px 4px 4px 4px;
 	border:solid 2px #999999;
 	margin:0px 2px 2px 2px;
 	background-color:;
 	color:;
-  }
+	text-align:center;
+}
   
   .large_number {
   	font-size:24px;
@@ -66,5 +68,6 @@ fieldset{margin: 7px;}
 .owa_banner {background-color: #cccccc; padding:4px; font-weight:bold;}
 
 #admin_nav{font-size:12px;}	
+#keywords{width:400px;}
 
 </style>

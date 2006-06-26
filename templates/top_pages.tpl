@@ -8,7 +8,8 @@
 	<?php foreach($top_pages as $page): ?>
 				
 	<TR>
-		<TD><a href="<?=$page['uri'];?>"><?=$page['page_title'];?></a> (<?=$page['page_type'];?>)</TD>
+		<TD>
+			<a href="<?=$this->make_report_link('document_report.php', array('document_id' => $page['id'], 'site_id' => $params['site_id'], 'period' => $params['period']));?>"><?=$page['page_title'];?></a> (<?=$page['page_type'];?>) </TD>
 		<TD><?=$page['count']?></TD>
 	</TR>
 				
