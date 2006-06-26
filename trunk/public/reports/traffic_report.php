@@ -19,7 +19,7 @@
 require_once(OWA_BASE_DIR.'/owa_report.php');
 
 /**
- * Content Report
+ * Traffic Report
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -35,44 +35,48 @@ $report = new owa_report;
 // Setup the templates
 
 $body = & new owa_template; 
-$body->set_template('content.tpl');// This is the inner template
-$entry_pages = & new owa_template;
-$entry_pages->set_template('top_pages.tpl');
-$exit_pages = & new owa_template;
-$exit_pages->set_template('top_pages.tpl');
+$body->set_template('traffic.tpl');// This is the inner template
+
 // Fetch Metrics
 
-$entry_documents = $report->metrics->get(array(
-	'api_call' 			=> 'top_entry_documents',
+$top_keywords = $report->metrics->get(array(
+	'api_call' 		=> 'top_keywords',
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
-	'constraints'		=> array('site_id'	=> $report->params['site_id']),
-	'order'				=> 'DESC',
-	'limit'				=> 20
+	'constraints'		=> array(
+		'site_id'	=> $report->params['site_id'],
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']	
+		),
+	'limit'			=> 30
+
 ));
 
-$exit_documents = $report->metrics->get(array(
-	'api_call' 			=> 'top_exit_documents',
+$top_anchors = $report->metrics->get(array(
+	'api_call' 		=> 'top_anchors',
 	'period'			=> $report->params['period'],
-	'constraints'		=> array('site_id'	=> $report->params['site_id']),
 	'result_format'		=> 'assoc_array',
-	'order'				=> 'DESC',
-	'limit'				=> 20
+	'constraints'		=> array(
+		'site_id'	=> $report->params['site_id'],
+		'year'		=> $report->params['year'],
+		'month'		=> $report->params['month'],
+		'day'		=> $report->params['day']	
+		),
+	'limit'			=> 30
+
 ));
 
 // Assign Data to templates
 
-$body->set('headline', 'Content');
+$body->set('headline', 'Traffic');
 $body->set('period_label', $report->period_label);
-$entry_pages->set('top_pages', $entry_documents);
-$exit_pages->set('top_pages', $exit_documents);
-$entry_pages->set('params', $report->params);
-$exit_pages->set('params', $report->params);
-$body->set('entry_pages', $entry_pages);
-$body->set('exit_pages', $exit_pages);
+$body->set('keywords', $top_keywords);
+$body->set('anchors', $top_anchors);
+
 // Global Template Assignments
-$report->tpl->set('report_name', basename(__FILE__));
 $body->set('params', $report->params);
+$report->tpl->set('report_name', basename(__FILE__));
 $report->tpl->set('content', $body);
 
 //Output Report

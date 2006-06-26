@@ -15,7 +15,7 @@
 												New Visitor
 												<? else: ?>
 												Returning Visitor
-												<span class="info_text">(<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['prior_session_id'], 'site_id' => $params['site_id']));?>">Last visit was</a>
+												<span class="info_text">(<a href="<?=$this->make_report_link('session_report.php', array('session_id' => $visit['prior_session_id'], 'site_id' => $params['site_id']));?>">Last visit was</a>
 																					
 												<?=round($visit['time_sinse_priorsession']/(3600*24));?> 
 													<? if (round($visit['time_sinse_priorsession']/(3600*24)) == 1): ?>
@@ -33,7 +33,7 @@
 								<TD class="visit_box_stat">	
 									<div class="visitor_info_box pages_box">
 										<span class="large_number">
-											<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['session_id'], 'site_id' => $params['site_id']));?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
+											<a href="<?=$this->make_report_link('session_report.php', array('session_id' => $visit['session_id'], 'site_id' => $params['site_id']));?>"><?=$visit['num_pageviews'];?></span><br /><span class="info_text">Pages</span></a>
 									</div>
 									
 								</td>
@@ -50,7 +50,7 @@
 									<table cellpadding="0" cellspacing="0">
 										<TR>
 											<TD>
-											<span class="h_label">V:</span> <a href="<?=$this->make_report_link('visitor_report.php', array($this->config['ns'].$this->config['visitor_param'] => $visit['visitor_id'], 'site_id' => $params['site_id']));?>"><span class="inline_h2"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> 
+											<span class="h_label">V:</span> <a href="<?=$this->make_report_link('visitor_report.php', array('visitor_id' => $visit['visitor_id'], 'site_id' => $params['site_id']));?>"><span class="inline_h2"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> 
 											 <span class="info_text"><?=$visit['host'];?> - <?=$visit['city'];?>, <?=$visit['country'];?></span>
 											</TD>
 										</TR>

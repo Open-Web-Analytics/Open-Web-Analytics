@@ -185,6 +185,7 @@ $body->set('summary_stats_table', $summary_stats);
 $visit->set('visits', $latest_visits);
 $body->set('visit_data', $visit);
 $top_pages->set('top_pages', $top_pages_data);
+$top_pages->set('params', $report->params);
 $body->set('top_pages_table', $top_pages);
 $top_referers->set('data', $top_referers_data);
 $body->set('top_referers_table', $top_referers);

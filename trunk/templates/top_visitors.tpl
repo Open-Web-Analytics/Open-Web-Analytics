@@ -9,7 +9,7 @@
 				
 	<TR>
 		<TD>
-			<a href="<?=$this->make_report_link('visitor_report.php', array($this->config['ns'].$this->config['visitor_param'] => $vis['vis_id']));?>">
+			<a href="<?=$this->make_report_link('visitor_report.php', array('visitor_id' => $vis['vis_id']));?>">
 				<span class="">
 					<? if (!empty($vis['user_name'])):?>
 						<?=$vis['user_name'];?>

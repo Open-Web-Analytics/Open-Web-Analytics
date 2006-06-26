@@ -83,9 +83,10 @@ class owa {
 		
 		$r->_setProperties($app_params);
 		
-		$this->e->debug(sprintf('Calling Application provided the following request params for request %d:<BR>%s',
+		$this->e->debug(sprintf('Calling Application provided the following request params for request %d: %s, %s',
 						$r->properties['request_id'],
-						print_r($app_params, true)));
+						print_r($app_params, true),
+						$r->properties['ua']));
 		
 		// Deterine if the request is from a known robot/crawler/spider
 			if (get_cfg_var('browscap')):
@@ -98,6 +99,12 @@ class owa {
 				
 				if ($r->browscap->crawler == true && $r->browscap->parent != 'RSS Feeds'):
 					$r->is_robot = true;
+				
+				else:	
+					$r->browscap = get_browser_local($db = $this->config['browscap_supplemental.ini']);
+					if ($r->browscap->crawler == true):
+						$r->is_robot = true;
+					endif;
 				endif;
 				
 				// Regex check for robots

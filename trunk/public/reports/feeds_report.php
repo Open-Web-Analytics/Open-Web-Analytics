@@ -42,6 +42,7 @@ $body->set_template('feeds.tpl');// This is the inner template
 $trend = $report->metrics->get(array(
 	'api_call' 			=> 'feed_fetches_trend',
 	'period'			=> $report->params['period'],
+	'constraints'		=> array('site_id'	=> $report->params['site_id']),
 	'result_format'		=> 'assoc_array',
 	'order'				=> 'DESC '
 ));
