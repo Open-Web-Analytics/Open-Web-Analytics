@@ -183,14 +183,14 @@ class owa_graph_feeds extends owa_graph {
 				$this->error_graph();
 			return;
 		else:
-		
+		//print_r($result);
 			$this->data = array(
 		
 				'data_pie'		=> $result['count']
 			
 			);
 	
-				
+			//print_r($this->data);
 			$this->pie_graph();
 		endif;
 				
