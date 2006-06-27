@@ -331,15 +331,7 @@ class owa_request extends owa_event {
 	 */
 	function determine_browser_type() {
 		
-		if (!empty($this->browscap->browser)):
-			$this->properties['browser_type'] = $this->browscap->browser;
-			//$this->e->debug('browser type: '.$this->properties['browser_type']);
-		else:	
-			require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
-			$this->browscap = get_browser_local($db = $this->config['browscap_supplemental.ini']);
-			$this->properties['browser_type'] = $this->browscap->browser;
-			//$this->e->debug('browser type (supplemental): '.$this->properties['browser_type']);
-		endif;
+		$this->properties['browser_type'] = $this->browscap->browser;
 		
 		return;
 	}
