@@ -79,6 +79,7 @@ class owa_graph_feeds extends owa_graph {
 			'api_call' 			=> 'feed_fetches_trend',
 			'period'			=> $report->params['period'],
 			'result_format'		=> 'inverted_array',
+			'group_by'			=> 'year, month, day',
 			'constraints'		=> array(
 				'site_id'		=> $this->params['site_id'])
 		));

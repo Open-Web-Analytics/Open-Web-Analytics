@@ -89,27 +89,39 @@ class owa {
 						$r->properties['ua']));
 		
 		// Deterine if the request is from a known robot/crawler/spider
-			if (get_cfg_var('browscap')):
-				$this->e->debug('using php built in get_browser function to determin browser type');
-				$r->browscap = get_browser(); //If available, use PHP native function
-			else:
-				$this->e->debug('Using get_browser_local to determine browser type');
-				require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
-				$r->browscap = get_browser_local($db = $this->config['browscap.ini']);
-				
-				if ($r->browscap->crawler == true && $r->browscap->parent != 'RSS Feeds'):
+		if (get_cfg_var('browscap')):
+			$this->e->debug('using php built in get_browser function to determin browser type');
+			$r->browscap = get_browser(); //If available, use PHP native function
+			$this->e->debug(sprintf('Browser Type: %s', $r->browscap->browser));
+		else:
+			// Look up UA against main browscap file.
+			$this->e->debug('Using get_browser_local to determine browser type');
+			require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
+			$r->browscap = get_browser_local($db = $this->config['browscap.ini']);
+			$this->e->debug(sprintf('Browser Type: %s', $r->browscap->browser));
+		endif;
+		
+		if ($r->browscap->browser != 'Default Browser'):
+			// If browscap has the UA listed as a crawler set is_robot, except for RSS feed readers
+			if ($r->browscap->crawler == true && $r->browscap->parent != 'RSS Feeds'):
+				$r->is_robot = true;	
+			endif;
+		else:
+			// If browscap says the UA is not a crawler then lookup against the suppelemental browscap.	
+			$r->browscap = get_browser_local($db = $this->config['browscap_supplemental.ini']);
+			$this->e->debug(sprintf('Browser Type (supplemental): %s', $r->browscap->browser));
+		
+			if ($r->browscap->browser != 'Default Browser'):
+				// Check to see if browser is listed as a crawler
+				if ($r->browscap->crawler == true):
 					$r->is_robot = true;
-				
-				else:	
-					$r->browscap = get_browser_local($db = $this->config['browscap_supplemental.ini']);
-					if ($r->browscap->crawler == true):
-						$r->is_robot = true;
-					endif;
 				endif;
-				
-				// Regex check for robots
+			else:
+				// If no match in the supplemental browscap db, do a last check for robots strings.
 				$r->last_chance_robot_detect($r->properties['ua']);
 			endif;
+		
+		endif;
 			
 		// Log requests from known robots or else dump the request
 			if ($r->is_robot == true):

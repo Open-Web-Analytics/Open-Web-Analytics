@@ -39,7 +39,7 @@ class owa_metric_visitor extends owa_metric {
 
 		$this->owa_metric();
 
-		$this->api_calls = array('visitor_history', 'new_v_repeat', 'latest_visits');
+		$this->api_calls = array('visitors_age', 'visitor_history', 'new_v_repeat', 'latest_visits');
 
 	}
 	
@@ -59,7 +59,9 @@ class owa_metric_visitor extends owa_metric {
 		case "new_v_repeat":
 			return $this->new_v_repeat();
 		case "latest_visits":
-			return $this->latest_visits();			
+			return $this->latest_visits();		
+		case "visitors_age":
+			return $this->visitors_age();			
 		}
 		
 	}
@@ -161,6 +163,40 @@ class owa_metric_visitor extends owa_metric {
 
 		
 		return $this->db->get_row($sql);	
+	}
+	
+	/**
+	 * Generates a count of visitors by the month that they 
+	 * first visited
+	 *
+	 * @access private
+	 * @return array
+	 */
+	function visitors_age() {
+		
+		$sql = sprintf("
+		SELECT
+			count(sessions.visitor_id),
+			visitors.first_session_year,
+			visitors.first_session_month 
+		FROM 
+			%s as sessions, %s as visitors 
+		WHERE
+			sessions.visitor_id = visitors.visitor_id
+			%s
+			%s
+		GROUP BY
+			visitors.first_session_year,
+			visitors.first_session_month ",
+			
+			$this->config['ns'].$this->config['sessions_table'],
+			$this->config['ns'].$this->config['visitors_table'],
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
+		);
+
+		return $this->db->get_results($sql);	
+		
 	}
 	
 }

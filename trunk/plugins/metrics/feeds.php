@@ -99,9 +99,7 @@ class owa_metric_feeds extends owa_metric {
 			%s 
 			%s
 		GROUP BY
-			year,
-			month,
-			day
+			feed_requests.%s
 		ORDER BY
 			year,
 			month,
@@ -110,6 +108,7 @@ class owa_metric_feeds extends owa_metric {
 			$this->config['ns'].$this->config['feed_requests_table'],
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
+			$this->params['group_by'],
 			$this->params['order']
 		);
 	
