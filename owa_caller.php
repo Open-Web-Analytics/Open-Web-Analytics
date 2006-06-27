@@ -260,11 +260,12 @@ class owa_caller {
 	function add_tag($echo = true) {
 		
 		//if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
-		if (empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]) && (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]))):	
+		if (empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']])):	
+		
 			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
 			$bug .= "document.write('<img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\">');</script>";
 			//$bug .= "<noscript><img src=\"".$this->config['action_url']."?owa_action=".$this->config['first_hit_param']."\"></noscript>";		
-			if ($echo == false):
+			if ($echo === false):
 				return $bug;
 			else:
 				echo $bug;
