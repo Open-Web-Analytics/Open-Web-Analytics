@@ -279,34 +279,41 @@ class owa_request extends owa_event {
 	 * @return string
 	 */
 	function determine_os($user_agent) {
-	
-		$matches = array(
-			'Win.*NT 5\.0'=>'Windows 2000',
-			'Win.*NT 5.1'=>'Windows XP',
-			'Win.*(Vista|XP|2000|ME|NT|9.?)'=>'Windows $1',
-			'Windows .*(3\.11|NT)'=>'Windows $1',
-			'Win32'=>'Windows [prior to 1995]',
-			'Linux 2\.(.?)\.'=>'Linux 2.$1.x',
-			'Linux'=>'Linux [unknown version]',
-			'FreeBSD .*-CURRENT$'=>'FreeBSD -CURRENT',
-			'FreeBSD (.?)\.'=>'FreeBSD $1.x',
-			'NetBSD 1\.(.?)\.'=>'NetBSD 1.$1.x',
-			'(Free|Net|Open)BSD'=>'$1BSD [unknown]',
-			'HP-UX B\.(10|11)\.'=>'HP-UX B.$1.x',
-			'IRIX(64)? 6\.'=>'IRIX 6.x',
-			'SunOS 4\.1'=>'SunOS 4.1.x',
-			'SunOS 5\.([4-6])'=>'Solaris 2.$1.x',
-			'SunOS 5\.([78])'=>'Solaris $1.x',
-			'Mac_PowerPC'=>'Mac OS [PowerPC]',
-			'Mac OS X'=>'Mac OS X',
-			'X11'=>'UNIX [unknown]',
-			'Unix'=>'UNIX [unknown]',
-			'BeOS'=>'BeOS [unknown]',
-			'QNX'=>'QNX [unknown]',
-		);
-		$uas = array_map(create_function('$a', 'return "#.*$a.*#";'), array_keys($matches));
 		
-		return preg_replace($uas, array_values($matches), $user_agent);
+		if (!empty($this->browscap->platform)):
+			$this->properties['os'] = $this->browscap->platform;
+			return;
+		else:
+	
+			$matches = array(
+				'Win.*NT 5\.0'=>'Windows 2000',
+				'Win.*NT 5.1'=>'Windows XP',
+				'Win.*(Vista|XP|2000|ME|NT|9.?)'=>'Windows $1',
+				'Windows .*(3\.11|NT)'=>'Windows $1',
+				'Win32'=>'Windows [prior to 1995]',
+				'Linux 2\.(.?)\.'=>'Linux 2.$1.x',
+				'Linux'=>'Linux [unknown version]',
+				'FreeBSD .*-CURRENT$'=>'FreeBSD -CURRENT',
+				'FreeBSD (.?)\.'=>'FreeBSD $1.x',
+				'NetBSD 1\.(.?)\.'=>'NetBSD 1.$1.x',
+				'(Free|Net|Open)BSD'=>'$1BSD [unknown]',
+				'HP-UX B\.(10|11)\.'=>'HP-UX B.$1.x',
+				'IRIX(64)? 6\.'=>'IRIX 6.x',
+				'SunOS 4\.1'=>'SunOS 4.1.x',
+				'SunOS 5\.([4-6])'=>'Solaris 2.$1.x',
+				'SunOS 5\.([78])'=>'Solaris $1.x',
+				'Mac_PowerPC'=>'Mac OS [PowerPC]',
+				'Mac OS X'=>'Mac OS X',
+				'X11'=>'UNIX [unknown]',
+				'Unix'=>'UNIX [unknown]',
+				'BeOS'=>'BeOS [unknown]',
+				'QNX'=>'QNX [unknown]',
+			);
+			$uas = array_map(create_function('$a', 'return "#.*$a.*#";'), array_keys($matches));
+			
+			return preg_replace($uas, array_values($matches), $user_agent);
+		
+		endif;
 	}
 	
 	function determine_os_new($user_agent) {
@@ -326,12 +333,12 @@ class owa_request extends owa_event {
 		
 		if (!empty($this->browscap->browser)):
 			$this->properties['browser_type'] = $this->browscap->browser;
-			$this->e->debug('browser type: '.$this->properties['browser_type']);
+			//$this->e->debug('browser type: '.$this->properties['browser_type']);
 		else:	
 			require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
 			$this->browscap = get_browser_local($db = $this->config['browscap_supplemental.ini']);
 			$this->properties['browser_type'] = $this->browscap->browser;
-			$this->e->debug('browser type: '.$this->properties['browser_type']);
+			//$this->e->debug('browser type (supplemental): '.$this->properties['browser_type']);
 		endif;
 		
 		return;
@@ -342,6 +349,8 @@ class owa_request extends owa_event {
 		
 		$db = new ini_db($this->config['robots.ini']);
 		$string = $db->match($user_agent);
+		
+		$this->e->debug(sprintf('Last chance robot detect string: %s', $string));
 		
 		if (!empty($string)):
 			$this->is_robot = true;

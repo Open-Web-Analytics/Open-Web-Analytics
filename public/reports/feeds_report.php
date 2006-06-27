@@ -39,13 +39,33 @@ $body->set_template('feeds.tpl');// This is the inner template
 
 // Fetch Metrics
 
-$trend = $report->metrics->get(array(
-	'api_call' 			=> 'feed_fetches_trend',
-	'period'			=> $report->params['period'],
-	'constraints'		=> array('site_id'	=> $report->params['site_id']),
-	'result_format'		=> 'assoc_array',
-	'order'				=> 'DESC '
-));
+switch ($report->params['period']) {
+	
+	case "this_year":
+		$trend = $report->metrics->get(array(
+			'api_call' 			=> 'feed_fetches_trend',
+			'period'			=> $report->params['period'],
+			'constraints'		=> array('site_id'	=> $report->params['site_id']),
+			'result_format'		=> 'assoc_array',
+			'group_by'			=> 'year, month',
+			'order'				=> 'DESC '
+		));		
+		
+		break;
+	
+	default:
+		$trend = $report->metrics->get(array(
+			'api_call' 			=> 'feed_fetches_trend',
+			'period'			=> $report->params['period'],
+			'constraints'		=> array('site_id'	=> $report->params['site_id']),
+			'result_format'		=> 'assoc_array',
+			'group_by'			=> 'year, month, day',
+			'order'				=> 'DESC '
+		));	
+		
+}
+
+
 
 // Assign Data to templates
 
