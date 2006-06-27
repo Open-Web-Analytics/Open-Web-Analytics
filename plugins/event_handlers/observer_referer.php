@@ -195,7 +195,8 @@ class Log_observer_referer extends owa_observer {
 		/*	Look for query_terms */
 		$db = new ini_db($this->config['query_strings.ini']);
 		
-		return urldecode($db->match($referer));
+		$match = $db->match($referer);
+		return urldecode($match[1]);
 	}
 
 	/**

@@ -340,11 +340,10 @@ class owa_request extends owa_event {
 	function last_chance_robot_detect($user_agent) {
 		
 		$db = new ini_db($this->config['robots.ini']);
-		$string = $db->match($user_agent);
+		$match = $db->match($user_agent);
 		
-		$this->e->debug(sprintf('Last chance robot detect string: %s', $string));
-		
-		if (!empty($string)):
+		if (!empty($match)):
+			$this->e->debug(sprintf('Last chance robot detect string: %s', $match[0]));
 			$this->is_robot = true;
 		endif;
 		
