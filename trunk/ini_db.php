@@ -140,7 +140,7 @@ class ini_db {
 		foreach ($this->db as $key => $value) {
         	//print_r($this->db);
 			if (preg_match($value, $haystack, $tmp)):
-            	$needle = $tmp[1];
+            	$needle = $tmp;
             	//print_r($tmp);
 			endif;
    
