@@ -124,8 +124,11 @@ class Log_observer_referer extends owa_observer {
     function notify($event) {
 		
     	$this->m = $event['message'];
-		$this->process_referer();
-
+    	
+    	if ($this->m['referer']):
+			$this->process_referer();
+		endif;
+		
 		return;
     }
 	
