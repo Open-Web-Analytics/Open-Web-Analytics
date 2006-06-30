@@ -102,8 +102,13 @@ switch ($_GET['action']) {
 		break;
 }
 
+//Fetch latest OWA news
+$rss = new owa_news;
+$news = $rss->Get($rss->config['owa_rss_url']);
+
 // Global Template assignments
 $page->set_template('default_wrap.tpl');// This is the outer template
+$page->set('news', $news);
 $body->set_template($body_tpl);// This is the inner template
 $body->set('config', $owa->config);
 $body->set('status_msg', $status_msg);

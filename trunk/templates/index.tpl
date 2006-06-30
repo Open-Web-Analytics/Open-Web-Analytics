@@ -9,30 +9,6 @@
 
 
         <h2><?=$headline;?></h2>
-        
-        <fieldset id="news" class="options">
-		<legend class="options">OWA News & Updates</legend>
-		<table>
-		<? foreach ($news['items'] as $item => $value): ?>
-		<TR>
-			<TD>
-				<span class="info_text"><?=$value['pubDate'];?>:</span>
-			</TD>
-			<TD>
-				<a href="<?=$value['link'];?>"><span class="h_label"><?=$value['title'];?></span></a>
-			</TD>
-		</TR>
-		<TR>
-			<TD></TD>
-			<TD>
-			<?=$value['description'];?>
-			</TD>
-		</TR>
-		<? endforeach;?>
-		</table>
-		
-		</fieldset>
-		
 		
 		<fieldset id="trends" class="options">
 			<legend>Trends</legend>

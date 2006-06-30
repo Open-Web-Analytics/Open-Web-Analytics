@@ -165,7 +165,7 @@ $news = $rss->Get($rss->config['owa_rss_url']);
 
 // Assign Data to templates
 
-$body->set('news', $news);
+$report->tpl->set('news', $news);
 $body->set('headline', 'Analytics Dashboard');
 $body->set('period_label', $report->get_period_label($report->period));
 $periods_menu->set('period', $report->period);

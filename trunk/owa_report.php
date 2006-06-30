@@ -115,7 +115,7 @@ class owa_report {
 		
 		$this->tpl->set('params', $this->params);
 		$this->tpl->set('sites', $this->getSitesList());
-		
+		$this->tpl->set('page_type', 'report');
 		return;
 	}
 	
