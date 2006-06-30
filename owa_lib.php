@@ -72,8 +72,8 @@ class owa_lib {
 				}
 			}
 		else:
-		
-			foreach ($a_array[0][0] as $key => $value) {
+			//print_r($a_array[0]);
+			foreach ($a_array[0] as $key => $value) {
 				$data_arrays[$key][] = $value;
 			}
 		endif;

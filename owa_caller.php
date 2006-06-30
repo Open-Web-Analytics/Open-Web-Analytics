@@ -173,10 +173,16 @@ class owa_caller {
 	function options_page() {
 	
 		require_once(OWA_BASE_DIR.'/owa_template.php');
-	
+		require_once(OWA_BASE_DIR.'/owa_news.php');
+		
+		//Fetch latest OWA news
+		$rss = new owa_news;
+		$news = $rss->Get($rss->config['owa_rss_url']);
+
 		//Setup templates
 		$options_page = & new owa_template;
 		$options_page->set_template($options_page->config['report_wrapper']);
+		$options_page->set('news', $news);
 		$body = & new owa_template; 
 		$body->set_template('options.tpl');// This is the inner template
 		$body->set('config', $this->config);
