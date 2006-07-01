@@ -20,11 +20,13 @@
 	<div class="wrap">
 	
 		<? include_once('nav.tpl');?>
-	
+		
+		<? if ($news):?>
 		<fieldset class="options">
 			<legend>OWA news & Announcements</legend>
 			<? include_once('news.tpl');?>
 		</fieldset>
+		<? endif;?>
 		
 		<?if ($page_type == 'report'):?>
 		<fieldset class="options">
