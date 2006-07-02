@@ -206,7 +206,7 @@ class owa_metric_feeds extends owa_metric {
 	
 		$sql = sprintf("
 		SELECT 
-			count(feed_requests.feed_reader_guid) as count,
+			count(distinct feed_requests.feed_reader_guid) as count,
 			ua.ua as ua,
 			ua.browser_type
 		FROM 

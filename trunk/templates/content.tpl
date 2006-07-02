@@ -1,6 +1,6 @@
 <h2><?=$headline;?></h2>
 
-<table>
+<table width="100%">
 	<TR>
 		<TH>Top Entry pages</TH>
 		<TH>Top Exit pages</TH>
