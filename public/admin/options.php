@@ -20,6 +20,7 @@ include_once('../set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_site.php');
+require_once(OWA_BASE_DIR.'/owa_news.php');
 /**
  * OWA Options Admin interface
  * 
