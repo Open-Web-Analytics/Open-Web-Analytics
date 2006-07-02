@@ -18,7 +18,7 @@
 			<TD>
 				<DIV CLASS="pages_box">
 				<span class="large_number"><?=$summary['sessions'];?></span>
-				<BR><span class="info_text">Sessions</span>
+				<BR><span class="info_text">Visits</span>
 				</DIV>
 			</TD>
 			<TD class="">
@@ -31,7 +31,7 @@
 	
 	</table>
 	
-	<? include('core_metrics.tpl');?>
+	<? include('document_core_metrics.tpl');?>
 </fieldset>
 
 <fieldset id="top_referers" class="options">

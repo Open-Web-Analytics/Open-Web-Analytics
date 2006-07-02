@@ -15,7 +15,7 @@
 	<TR>
 		<TD class="top_level_nav_link"><a href="<?=$this->make_report_link('dashboard_report.php', array('site_id' => $params['site_id'], 'period' => $params['period']));?>">Dashboard</a></TD>
 		<TD class="top_level_nav_link">|</TD>
-		<TD class="top_level_nav_link">Visitors</TD>
+		<TD class="top_level_nav_link"><a href="<?=$this->make_report_link('visitors_report.php', array('site_id' => $params['site_id'], 'period' => $params['period']));?>">Visitors</a></TD>
 		<TD class="top_level_nav_link">|</TD>
 		<TD class="top_level_nav_link"><a href="<?=$this->make_report_link('traffic_report.php', array('site_id' => $params['site_id'], 'period' => $params['period']));?>">Traffic Sources</a></TD>
 		<TD class="top_level_nav_link">|</TD>
