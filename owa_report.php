@@ -104,6 +104,9 @@ class owa_report {
 		// Gets full set of params from URL
 		$this->_setParams(owa_lib::getRestparams());
 		
+		// Get Reporting Periods
+		$this->tpl->set('reporting_periods', owa_lib::reporting_periods());
+		
 		// Set the reporting period
 
 		if (empty($this->params['period']) && empty($this->params['year'])):
