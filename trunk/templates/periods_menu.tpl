@@ -3,7 +3,7 @@
 		<? if (count($sites) > 1):?>
 		<TH>Site</TH>
 		<? endif;?>
-		<TH>Period</TH>
+		<TH>Time Period</TH>
 	</TR>
 	<TR>
 		<? if (count($sites) > 1):?>

@@ -205,21 +205,22 @@ class owa_lib {
 	function reporting_periods() {
 		
 		return array(
-					'last_24_hours' => array('label' => 'The Last 24 Hours'),
-					'last_half_hour' => array('label' => 'The Last 30 Minutes'),
-					'this_hour' => array('label' => 'This Hour'),
-					'last_month' => array('label' => 'Last month'),
-					'last_year' => array('label' => 'Last year'),
-					'same_day_last_week' => array('label' => 'Same Day last Week'),
-					'same_week_last_year' => array('label' => 'Same Week Last Year'),
-					'same_month_last_year' => array('label' => 'Same Month Last Year'),
+					
 					'today' => array('label' => 'Today'),
 					'yesterday' => array('label' => 'Yesterday'),
-					'this_month' => array('label' => 'This Month'),
 					'this_week' => array('label' => 'This Week'),
+					'this_month' => array('label' => 'This Month'),
 					'this_year' => array('label' => 'This Year'),
+					'last_month' => array('label' => 'Last Month'),
+					'last_year' => array('label' => 'Last Year'),
+					'last_half_hour' => array('label' => 'The Last 30 Minutes'),				
+					'last_24_hours' => array('label' => 'The Last 24 Hours'),
 					'last_seven_days' => array('label' => 'The Last Seven Days'),
-					'last_thirty_days' => array('label' => 'The Last Thirty Days')
+					'last_thirty_days' => array('label' => 'The Last Thirty Days'),
+					'this_hour' => array('label' => 'This Hour'),
+					'same_day_last_week' => array('label' => 'Same Day last Week'),
+					'same_week_last_year' => array('label' => 'Same Week Last Year'),
+					'same_month_last_year' => array('label' => 'Same Month Last Year')
 		);
 		
 	}

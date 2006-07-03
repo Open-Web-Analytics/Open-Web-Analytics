@@ -1,3 +1,4 @@
+<? if ($visitors_age):?>
 <table width="100%">
 	<TR>
 		<TH>Month of First Visit</TH>
@@ -10,3 +11,6 @@
 	</TR>
 	<? endforeach;?>
 </table>
+<?else:?>
+<div>There are no visitors for this time period</div>
+<?endif;?>
