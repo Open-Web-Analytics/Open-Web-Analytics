@@ -241,8 +241,8 @@ class owa_metric {
 				break;
 				
 			case "same_day_last_week":
-				$where = sprintf("day = '%s' and year = '%s'",
-							$this->time_now['day'] - 7,
+				$where = sprintf("dayofyear = '%s' and year = '%s'",
+							$this->time_now['dayofyear'] - 7,
 							$this->time_now['year']
 						);
 				break;
