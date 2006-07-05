@@ -16,6 +16,9 @@
 // $Id$
 //
 
+require_once(OWA_BASE_DIR.'/owa_error.php');
+require_once(OWA_BASE_DIR.'/owa_settings_class.php');
+
 /**
  * Plugin API
  * 
@@ -63,14 +66,31 @@ class owa_api {
 	 * @var string
 	 */
 	var $class_prefix;
-
+	
+	/**
+	 * Configuration
+	 * 
+	 * @var array
+	 */
+	var $config;
+	
+	/**
+	 * Configuration
+	 * 
+	 * @var array
+	 */
+	var $e;
+	
 	/**
 	 * Constructor
 	 *
 	 * @return owa_api
 	 */
 	function owa_api() {
-
+		
+		$this->config = &owa_settings::get_settings();
+		$this->e = &owa_error::get_instance();
+		
 		return;
 	}
 
@@ -113,41 +133,39 @@ class owa_api {
 	 */
 	function load_plugins() {
 	
-    	if ($dir = @opendir($this->plugins_dir)) {
+    	if ($dir = @opendir($this->plugins_dir)):
     		while (($file = @readdir($dir)) !== false) {
+    			
         		if (strstr($file, '.php') &&
             		substr($file, -1, 1) != "~" &&
-            		substr($file,  0, 1) != "#") {
-          			if (require_once($this->plugins_dir . $file)) {
+            		substr($file,  0, 1) != "#") :
+            		
+          			if (require_once($this->plugins_dir . $file)):
             			$this->plugins[] = substr($file, 0, -4);
 						$class  = $this->class_prefix . substr($file, 0, -4);
             			$plugin = new $class;
 
 						foreach ($plugin->api_calls as $api_call) {
-              				if (!isset($this->api_calls[$api_call])) {
+							
+              				if (!isset($this->api_calls[$api_call])):
                 				$this->api_calls[$plugin->api_type][$api_call] = $plugin;
-              			} else {
-                
-							  sprintf(
-								'API Call "%s" already registered.',
-			
-								$api_call
-							  );
-			              }
+              				else:
+							  $this->e->err(sprintf('API Call "%s" already registered.', $api_call));
+			              	endif;
             			}
-          			} else {
-           
-						  sprintf(
-							'Cannot load plugin "%s".',
-			
-							substr($file, 0, -4)
-						  );
-					  }
-					}
+            			
+          			else:
+						  $this->e->err(sprintf('Cannot load plugin "%s".', substr($file, 0, -4)));
+					endif;
+					
+				endif;
+				
       			}
 
  		     @closedir($dir);
-    		}
+ 		     
+    		endif;
+    		
 		return;
   	}
   

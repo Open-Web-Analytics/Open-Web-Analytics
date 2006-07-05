@@ -36,30 +36,59 @@ $report = new owa_report;
 
 $body = & new owa_template; 
 
-$body->set_template('visitors.tpl');// This is the inner template
+switch ($_GET['owa_page']) {
+	
+	case "visitor_list":
+		
+		$visitors_list = $report->metrics->get(array(
+			'request_params'	=> $report->params,
+			'api_call' 			=> 'visitor_list',
+			'result_format'		=> 'assoc_array',
+			'period'			=> $report->params['period'],
+			'constraints'		=> array(
+				'site_id'		=> $report->params['site_id'],
+				'visitors.first_session_year'		=> $report->params['year2'],
+				'visitors.first_session_month'		=> $report->params['month2']
+				),
+			'limit' 			=> $report->params['limit']
+		));
+		$body->set_template('visitors_list.tpl');// This is the inner template
+		$body->set('headline', 'Visitors for \''.$report->period_label.'\' who first visited in '.$report->date_label_2);
+		$body->set('visitors_list', $visitors_list);
+		break;
+		
+	default:
 
-// Fetch Metrics
+		// Fetch Metrics
+		
+		$visitors_age = $report->metrics->get(array(
+			'request_params'	=> $report->params,
+			'api_call' 			=> 'visitors_age',
+			'period'			=> $report->params['period'],
+			'result_format'		=> 'assoc_array',
+			'constraints'		=> array(
+				'site_id'		=> $report->params['site_id']
+				),
+			'limit' 			=> $report->params['limit']
+		));
+		
+		// Template Assingments
+		$body->set_template('visitors.tpl');// This is the inner template
+		$body->set('headline', 'Visitors');
+		$body->set('visitors_age', $visitors_age);
+}
 
-$visitors_age = $report->metrics->get(array(
-	'api_call' 			=> 'visitors_age',
-	'period'			=> $report->params['period'],
-	'result_format'		=> 'assoc_array',
-	'constraints'		=> array(
-		'site_id'		=> $report->params['site_id']
-		),
-	'limit' 			=> $report->params['limit']
-));
 
 // Assign Data to templates
 
-$body->set('headline', 'Visitors');
-$body->set('visitors_age', $visitors_age);
 $body->set('period_label', $report->period_label);
+$body->set('date_label', $report->date_label);
 $body->set('params', $report->params);
 $report->tpl->set('content', $body);
 
 //Set Report File name
 $report->tpl->set('report_name', basename(__FILE__));
+
 //Output Report
 echo $report->tpl->fetch();
 
