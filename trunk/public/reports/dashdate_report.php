@@ -49,137 +49,108 @@ $core_metrics->set_template('core_metrics.tpl');
 
 // Fetch metrics
 
-if (!isset($_GET['day'])):
+if ($report->params['period'] == 'day'):
 
 	$core_metrics_data = $report->metrics->get(array(
-			'api_call' 		=> 'dash_core',
-			//'period'			=> $report->period,
-			'result_format'		=> 'assoc_array',
-			'constraints'		=> array(
-				'site_id'	=> $report->params['site_id'],
-				'is_browser' => 1,
-				'is_robot' 	=> 0,
-				'year'		=> $report->params['year'],
-				'month'		=> $report->params['month'],
-				'day'		=> $report->params['day']),
-			'group_by'			=> 'day'
+			'request_params'	=>	$report->params,
+			'api_call' 			=>	'dash_core',
+			'period'			=> 	$report->period,
+			'result_format'		=> 	'assoc_array',
+			'constraints'		=> 	array(
+				'site_id'		=> 	$report->params['site_id'],
+				'is_browser' 	=> 	1,
+				'is_robot' 		=> 	0),
+			'group_by'			=> 	'day'
 		
 		));
-
-		$date_label = $report->params['month'].'/'.$report->params['year'];
 
 else:
 
 		$core_metrics_data = $report->metrics->get(array(
-			'api_call' 		=> 'dash_core',
-			//'period'			=> $report->period,
-			'result_format'		=> 'assoc_array',
-			'constraints'		=> array(
+			'request_params'	=>	$report->params,
+			'api_call' 			=> 	'dash_core',
+			'period'			=> 	$report->period,
+			'result_format'		=> 	'assoc_array',
+			'constraints'		=> 	array(
 				'site_id'	=> $report->params['site_id'],
 				'is_browser' => 1,
-				'is_robot' 	=> 0,
-				'year'		=> $report->params['year'],
-				'month'		=> $report->params['month'],
-				'day'		=> $report->params['day']),
+				'is_robot' 	=> 0),
 			'group_by'			=> 'month'
 		
 		));
-		
-		$date_label = $report->params['month'].'/'.$report->params['day'].'/'.$report->params['year'];
 	
 endif;
 
 $summary_stats_data = $report->metrics->get(array(
-	'api_call' 		=> 'dash_counts',
+	'request_params'	=>	$report->params,
+	'api_call' 			=> 'dash_counts',
+	'period'			=> 	$report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
-		'is_robot' 	=> 0,
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']
-		
-		)
+		'is_robot' 	=> 0)
 
 ));
 
 $latest_visits = $report->metrics->get(array(
-	'api_call' 		=> 'latest_visits',
-	//'period'			=> 'last_24_hours',
+	'request_params'	=>	$report->params,
+	'api_call' 			=> 'latest_visits',
+	'period'			=> 	$report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		'site_id'	=> $report->params['site_id'],
-		'is_browser' => 1,
-		'is_robot' 	=> 0,
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']
-		
-		),
+		'site_id'		=> $report->params['site_id'],
+		'is_browser' 	=> 1,
+		'is_robot' 		=> 0),
 	'limit'			=> '35'
 
 ));
 
 $top_pages_data = $report->metrics->get(array(
-	'api_call' 		=> 'top_documents',
-	//'period'			=> $report->period,
+	'request_params'	=>	$report->params,
+	'api_call' 			=> 'top_documents',
+	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
-		'is_robot' 	=> 0,
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']
-		
-		),
+		'is_robot' 	=> 0),
 	'limit'			=> '10'
 ));
 
 $top_referers_data = $report->metrics->get(array(
-	'api_call' 		=> 'top_referers',
-	//'period'			=> $report->period,
+	'request_params'	=>	$report->params,
+	'api_call' 			=> 'top_referers',
+	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
-		'is_robot' 	=> 0,
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']
-		),
+		'is_robot' 	=> 0),
 	'limit'			=> '10'
 ));
 
 $top_visitors_data = $report->metrics->get(array(
+	'request_params'	=>	$report->params,
 	'api_call' 			=> 'top_visitors',
-	//'period'			=> $report->period,
+	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
-		'is_robot' 	=> 0,
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']
-		
-		),
+		'is_robot' 	=> 0),
 	'limit'				=> '10'
 ));
 
 $from_feed = $report->metrics->get(array(
+	'request_params'	=>	$report->params,
 	'api_call' 			=> 'from_feed',
-	//'period'			=> $report->period,
+	'period'			=> $report->period,
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
 		'is_browser' => 1,
-		'is_robot' 	=> 0,
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']
-		
-		),
+		'is_robot' 	=> 0
+),
 	'result_format'		=> 'assoc_array'
 ));
 
@@ -188,10 +159,10 @@ $from_feed = $report->metrics->get(array(
 
 // Assign Data to templates
 
-$body->set('headline', 'Analytics Dashboard for '.$date_label);
+$body->set('headline', 'Analytics Dashboard for ');
 $body->set('params', $report->params);
-$periods_menu->set('period', $report->period);
-$body->set('periods_menu', $periods_menu);
+//$periods_menu->set('period', $report->period);
+//$body->set('periods_menu', $periods_menu);
 $top_visitors->set('data', $top_visitors_data);
 $body->set('top_visitors_table', $top_visitors);
 $body->set('config', $report->config);
@@ -209,7 +180,11 @@ $body->set('top_pages_table', $top_pages);
 $top_referers->set('data', $top_referers_data);
 $body->set('top_referers_table', $top_referers);
 
+
+
+$body->set('date_label', $report->date_label);
 $report->tpl->set('content', $body);
+$report->tpl->set('report_name', basename(__FILE__));
 
 // Render Report
 

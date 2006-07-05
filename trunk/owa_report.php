@@ -65,6 +65,20 @@ class owa_report {
 	var $period_label;
 	
 	/**
+	 * Display Label for Reporting Date
+	 *
+	 * @var string
+	 */
+	var $date_label;
+	
+	/**
+	 * Display Label for 2nd Reporting Date
+	 *
+	 * @var string
+	 */
+	var $date_label_2;
+	
+	/**
 	 * Configuration
 	 *
 	 * @var array
@@ -106,19 +120,21 @@ class owa_report {
 		
 		// Get Reporting Periods
 		$this->tpl->set('reporting_periods', owa_lib::reporting_periods());
+		$this->tpl->set('date_reporting_periods', owa_lib::date_reporting_periods());
 		
-		// Set the reporting period
-
-		if (empty($this->params['period']) && empty($this->params['year'])):
-			$this->set_period('today');
-			$this->params['period'] = 'today';	
-		else:
-			$this->set_period($this->params['period']);
-		endif;
-		
+		$this->set_period($this->params['period']);
+		$this->date_label = $this->setDateLabel(array('year' => $this->params['year'],
+														'month' => $this->params['month'],
+														'day' => $this->params['day']));
+		$this->date_label_2 = $this->setDateLabel(array('year' => $this->params['year2'],
+														'month' => $this->params['month2'],
+														'day' => $this->params['day2']));
+	
 		$this->tpl->set('params', $this->params);
 		$this->tpl->set('sites', $this->getSitesList());
+		$this->tpl->set('date_label', $this->date_label);
 		$this->tpl->set('page_type', 'report');
+		$this->tpl->set('period_filter', true);
 		return;
 	}
 	
@@ -144,7 +160,7 @@ class owa_report {
 	function set_period($period) {
 		
 		$this->period = $period;
-		//$this->params['period'] = $period;
+		$this->params['period'] = $period;
 		$this->period_label = $this->get_period_label($period);
 		
 		return;
@@ -160,6 +176,12 @@ class owa_report {
 	function get_period_label($period) {
 	
 		return owa_lib::get_period_label($period);
+	}
+	
+	function setDateLabel($params) {
+		
+		return owa_lib::getDateLabel($params);
+		
 	}
 	
 	/**

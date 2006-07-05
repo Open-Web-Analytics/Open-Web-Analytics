@@ -197,6 +197,71 @@ class owa_lib {
 		return $label;
 	}
 	
+	function setDaySuffix($day) {
+		
+		switch ($day) {
+			
+			case "1":
+				$day_suffix = 'st';
+				break;
+			case "2":
+				$day_suffix = 'nd';
+				break;
+			case "3":
+				$day_suffix = 'rd';
+				break;
+			default:
+				$day_suffix = 'th';
+		}
+		
+		return $day_suffix;
+		
+	}
+	
+	function getDatelabel($params) {
+		
+		
+		switch ($params['period']) {
+		
+			case "day":
+				return sprintf("%s, %d%s %s",
+							owa_lib::get_month_label($params['month']),
+							$params['day'],
+							$day_suffix,
+							$params['year']				
+						);
+				break;
+			
+			case "month":
+				return sprintf("%s %s",
+							owa_lib::get_month_label($params['month']),
+							$params['year']				
+						);
+				break;
+			
+			case "year":	
+				return sprintf("%s",
+							$params['year']				
+						);
+				break;
+			case "date_range":
+				return sprintf("%s, %d%s %s - %s, %d%s %s",
+							owa_lib::get_month_label($params['month']),
+							$params['day'],
+							owa_lib::setDaySuffix($params['day']),
+							$params['year'],
+							owa_lib::get_month_label($params['month2']),
+							$params['day2'],
+							owa_lib::setDaySuffix($params['day2']),
+							$params['year2']					
+						);
+				break;
+		}
+		
+		return false;
+		
+	}
+	
 	/**
 	 * Array of Reporting Periods
 	 *
@@ -220,7 +285,28 @@ class owa_lib {
 					'this_hour' => array('label' => 'This Hour'),
 					'same_day_last_week' => array('label' => 'Same Day last Week'),
 					'same_week_last_year' => array('label' => 'Same Week Last Year'),
-					'same_month_last_year' => array('label' => 'Same Month Last Year')
+					'same_month_last_year' => array('label' => 'Same Month Last Year'),
+					//'day' => array('label' => 'Day'),
+					//'month' => array('label' => 'Month'),
+					//'year' => array('label' => 'Year'),
+					//'date_range' => array('label' => 'Date Range')
+		);
+		
+	}
+	
+	/**
+	 * Array of Date specific Reporting Periods
+	 *
+	 * @return array
+	 */
+	function date_reporting_periods() {
+		
+		return array(
+					
+					'day' => array('label' => 'Day'),
+					'month' => array('label' => 'Month'),
+					'year' => array('label' => 'Year'),
+					'date_range' => array('label' => 'Date Range')
 		);
 		
 	}
@@ -273,14 +359,22 @@ class owa_lib {
 		
 		$params = array();
 		
-		$params['month'] = $_GET['month'];
 		$params['owa_action'] = $_GET['owa_action'];
+		$params['owa_page'] = $_GET['owa_page'];
 		$params['year'] = $_GET['year'];
+		$params['month'] = $_GET['month'];
 		$params['day'] = $_GET['day'];
 		$params['dayofyear'] = $_GET['dayofyear'];
 		$params['weekofyear'] = $_GET['weekofyear'];
 		$params['hour'] = $_GET['hour'];
 		$params['minute'] = $_GET['minute'];
+		$params['year2'] = $_GET['year2'];
+		$params['month2'] = $_GET['month2'];
+		$params['day2'] = $_GET['day2'];
+		$params['dayofyear2'] = $_GET['dayofyear2'];
+		$params['weekofyear2'] = $_GET['weekofyear2'];
+		$params['hour2'] = $_GET['hour2'];
+		$params['minute2'] = $_GET['minute2'];
 		$params['limit'] = $_GET['limit'];
 		$params['offset'] = $_GET['offset'];
 		$params['sortby'] = $_GET['sortby'];
