@@ -5,7 +5,7 @@
 		<TD>|</TD>
 		<TD><a href="http://wiki.openwebanalytics.com">Help</a></TD>
 		<TD>|</TD>
-		<TD>Bug Report</TD>
+		<TD><a href="http://trac.openwebanalytics.com">Bug Report</a></TD>
 	</TR>
 </table>
 </div>
