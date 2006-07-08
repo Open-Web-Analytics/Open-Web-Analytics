@@ -17,7 +17,7 @@
 	</TR>
 	<TR>
 		<TD>
-			<img src="<?=$this->config['action_url']?>?owa_action=graph&name=page_types&type=pie&period=<?=$params['period'];?>&site_id=<?=$params['site_id'];?>" />		
+			<img src="<?=$this->makeGraphLink('page_types');?>">
 		</TD>
 		<TD>
 		

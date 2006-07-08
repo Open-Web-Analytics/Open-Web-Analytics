@@ -34,7 +34,7 @@ $report = new owa_report;
 	
 // Setup the templates
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 
 switch ($_GET['owa_page']) {
 	

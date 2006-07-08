@@ -34,7 +34,7 @@ $report = new owa_report;
 	
 // Setup the templates
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 $body->set_template('traffic.tpl');// This is the inner template
 
 // Fetch Metrics
@@ -44,10 +44,7 @@ $top_keywords = $report->metrics->get(array(
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		'site_id'	=> $report->params['site_id'],
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']	
+		'site_id'	=> $report->params['site_id']
 		),
 	'limit'			=> 30
 
@@ -58,10 +55,7 @@ $top_anchors = $report->metrics->get(array(
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
-		'site_id'	=> $report->params['site_id'],
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']	
+		'site_id'	=> $report->params['site_id']	
 		),
 	'limit'			=> 30
 

@@ -149,54 +149,89 @@ class owa_lib {
 		return;
 	}
 	
-	function get_month_label($month) {
+	/**
+	 * Information array for Months in the year.
+	 *
+	 * @return array
+	 */
+	function months() {
 		
-		switch ($month) {
-			
-			case '1':
-				$label = 'January';
-				break;
-			case '2':
-				$label = 'February';
-				break;
-			case '3':
-				$label = 'March';
-				break;
-			case '4':
-				$label = 'April';
-				break;
-			case '5':
-				$label = 'May';
-				break;
-			case '6':
-				$label = 'June';
-				break;
-			case '7':
-				$label = 'July';
-				break;
-			case '8':
-				$label = 'August';
-				break;
-			case '9':
-				$label = 'September';
-				break;
-			case '10':
-				$label = 'October';
-				break;
-			case '11':
-				$label = 'November';
-				break;
-			case '12':
-				$label = 'December';
-				break;
-			default:
-				$label = 'Unknown Month';
-				break;
-		}
+		return array(
+					
+					1 => array('label' => 'January'),
+					2 => array('label' => 'February'),
+					3 => array('label' => 'March'),
+					4 => array('label' => 'April'),
+					5 => array('label' => 'May'),
+					6 => array('label' => 'June'),
+					7 => array('label' => 'July'),
+					8 => array('label' => 'August'),				
+					9 => array('label' => 'September'),
+					10 => array('label' => 'October'),
+					11 => array('label' => 'November'),
+					12 => array('label' => 'December')
+		);
 		
-		return $label;
 	}
 	
+	function days() {
+		
+		return array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
+					15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+	}
+	
+	function years() {
+		
+		static $years;
+		
+		if (empty($years)):
+			
+			$start_year = 2005;
+			
+			$years = array($start_year);
+			
+			$num_years =  date("Y", time()) - $start_year;
+			
+			for($i=1; $i<=$num_years; $i++) {
+		 	
+				$years[] = $start_year + $i;
+			}
+			
+			$years = array_reverse($years);
+		
+		endif;
+		
+		return $years;
+	}
+	
+	
+	/**
+	 * Returns a label from an array of months
+	 *
+	 * @param int $month
+	 * @return string
+	 */
+	function get_month_label($month) {
+		
+		static $months;
+		
+		if (empty($months)):
+
+			$months = owa_lib::months();
+		
+		endif;  
+		
+		return $months[$month]['label'];
+		
+	}
+	
+	
+	/**
+	 * Sets the suffix for Days used in Date labels
+	 *
+	 * @param string $day
+	 * @return string
+	 */
 	function setDaySuffix($day) {
 		
 		switch ($day) {
@@ -218,8 +253,13 @@ class owa_lib {
 		
 	}
 	
+	/**
+	 * Generates the label for a date
+	 *
+	 * @param array $params
+	 * @return string
+	 */
 	function getDatelabel($params) {
-		
 		
 		switch ($params['period']) {
 		

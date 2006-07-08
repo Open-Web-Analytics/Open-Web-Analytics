@@ -74,14 +74,12 @@ class owa_graph_source_pie extends owa_graph {
 	
 		$from_feeds = $this->metrics->get(array(
 		
+		'request_params'	=>	$this->params,
 		'api_call' 			=> 'from_feed',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
-			'site_id'	=> $this->params['site_id'],
-			'year'		=> $this->params['year'],
-			'month'		=> $this->params['month'],
-			'day'		=> $this->params['day']
+			'site_id'	=> $this->params['site_id']
 		
 		)
 	
@@ -89,14 +87,12 @@ class owa_graph_source_pie extends owa_graph {
 		
 		$from_se = $this->metrics->get(array(
 		
+		'request_params'	=>	$this->params,
 		'api_call' 			=> 'from_search_engine',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
-			'site_id'	=> $this->params['site_id'],
-			'year'		=> $this->params['year'],
-			'month'		=> $this->params['month'],
-			'day'		=> $this->params['day']
+			'site_id'	=> $this->params['site_id']
 		
 		)
 	
@@ -104,14 +100,12 @@ class owa_graph_source_pie extends owa_graph {
 		
 		$from_sites = $this->metrics->get(array(
 		
+		'request_params'	=>	$this->params,
 		'api_call' 			=> 'from_sites',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
-			'site_id'	=> $this->params['site_id'],	
-			'year'		=> $this->params['year'],
-			'month'		=> $this->params['month'],
-			'day'		=> $this->params['day']
+			'site_id'	=> $this->params['site_id']
 		
 		)
 	
