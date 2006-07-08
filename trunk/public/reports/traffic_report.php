@@ -40,6 +40,7 @@ $body->set_template('traffic.tpl');// This is the inner template
 // Fetch Metrics
 
 $top_keywords = $report->metrics->get(array(
+	'request_params'	=> $report->params,
 	'api_call' 		=> 'top_keywords',
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
@@ -51,6 +52,7 @@ $top_keywords = $report->metrics->get(array(
 ));
 
 $top_anchors = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
 	'api_call' 		=> 'top_anchors',
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
