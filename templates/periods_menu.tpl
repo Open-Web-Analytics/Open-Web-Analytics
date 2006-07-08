@@ -129,7 +129,13 @@
 						<TH>Year</TH>
 					</TR>
 					<TR>
-						<TD><input type="text" size="4" maxlength="4" name="year" value="<?=$params['year'];?>"></TD>
+						<TD>
+							<SELECT name="year">
+							<? foreach ($years as $year):?>
+								<OPTION VALUE="<?=$year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?=$year;?></OPTION>
+							<?endforeach;?>
+							</SELECT>
+						</TD>
 						<TD><input type="hidden" name="period" value="year"><input type="button" name="date_submit" value="Go" onclick='changeDate("year");'></TD>
 					</TR>
 				</form>
