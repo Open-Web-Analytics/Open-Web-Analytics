@@ -40,9 +40,13 @@ class owa_template extends Template {
 	 */
 	var $config;
 	
-	function owa_template() {
+	function owa_template($caller_params = null) {
+		
+		$this->caller_params = $caller_params;
 		$this->config = &owa_settings::get_settings();
 		$this->template_dir = $this->config['templates_dir'];
+		
+		return;
 	}
 	
 	/**
@@ -113,26 +117,70 @@ class owa_template extends Template {
 	/**
 	 * Generates a link between reports
 	 *
-	 * @param string $anchortext
 	 * @param array $query_params
 	 * @return string
 	 */
-	function make_report_link($report, $query_params = null) {
+	function make_report_link($report, $query_params = null, $make_query_string = true) {
 		
-		$get = '';
+		if ($make_query_string == true):
+			$get = $this->makeLinkQueryString($query_params);
+		else:
+			$get = '';
+		endif;
 		
+		//Return URL
+		return sprintf($this->config['inter_report_link_template'],
+				$this->config['reporting_url'],
+				$report,
+				$get);
+	}
+	
+	function makeLinkQueryString($query_params) {
+		
+		$new_query_params = array();
+		
+		//Load params passed by caller
+		if (!empty($this->caller_params)):
+			foreach ($this->caller_params as $name => $value) {
+				if (!empty($value)):
+					$new_query_params[$name] = $value;	
+				endif;
+			}
+		endif;
+
+		// Load overrides
 		if (!empty($query_params)):
 			foreach ($query_params as $name => $value) {
+				if (!empty($value)):
+					$new_query_params[$name] = $value;	
+				endif;
+			}
+		endif;
+		
+		// Construct GET request
+		if (!empty($new_query_params)):
+			foreach ($new_query_params as $name => $value) {
 				if (!empty($value)):
 					$get .= $name . "=" . $value . "&";	
 				endif;
 			}
 		endif;
 		
-		return sprintf($this->config['inter_report_link_template'],
-				$this->config['reporting_url'],
-				$report,
+		return $get;
+		
+	}
+	
+	function makeGraphLink($graph, $query_params = null) {
+		
+		$get = $this->makeLinkQueryString($query_params);
+		
+		//Return URL
+		return sprintf($this->config['graph_link_template'],
+				$this->config['action_url'],
+				$graph,
 				$get);
+		
+		
 	}
 }
 

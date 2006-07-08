@@ -22,10 +22,10 @@
 		</TR>
 		<TR>		
 			<TD>
-				<img src="<?=$this->config['action_url']?>?owa_action=graph&name=feed_reader_uas&type=pie&period=<?=$params['period'];?>&site_id=<?=$params['site_id'];?>" />
+				<img src="<?=$this->makeGraphLink('feed_reader_uas');?>">
 			</TD>
 			<TD>
-				<img src="<?=$this->config['action_url']?>?owa_action=graph&name=feed_formats&type=pie&period=<?=$params['period'];?>&site_id=<?=$params['site_id'];?>" />
+				<img src="<?=$this->makeGraphLink('feed_formats');?>">
 			</TD>
 		</TR>
 		

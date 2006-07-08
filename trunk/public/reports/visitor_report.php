@@ -31,31 +31,16 @@ require_once(OWA_BASE_DIR.'/owa_report.php');
  */
 
 $report = new owa_report;
-
-/*if (!empty($_POST['period'])):
-	$report->set_period($_POST['period']);
-else:
-	$report->set_period('this_month');
-endif;
-
-if (!empty($_POST['limit'])):
-	$limit = $_POST['limit'];
-else:
-	$limit = 50;
-	endif;
-
-$visitor_id = $_GET[$report->config['ns'].$report->config['visitor_param']];
-*/	
 	
 // Setup the templates
 	
 //$report->tpl->set_template('wordpress.tpl'); // this is the outer template
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 
 $body->set_template('visitor.tpl');// This is the inner template
 
-$visits = & new owa_template; 
+$visits = & new owa_template($report->params); 
 
 $visits->set_template('visit.tpl');// This is a sub template
 

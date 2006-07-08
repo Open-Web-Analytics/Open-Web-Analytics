@@ -95,8 +95,8 @@ class owa_metric_documents extends owa_metric {
 		ORDER BY
 			count DESC
 			",
-			$this->config['ns'].$this->config['requests_table'],
-			$this->config['ns'].$this->config['documents_table'],
+			$this->setTable($this->config['requests_table']),
+			$this->setTable($this->config['documents_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -132,7 +132,7 @@ class owa_metric_documents extends owa_metric {
 			requests.year, 
 			requests.month, 
 			requests.day %s",
-			$this->config['ns'].$this->config['requests_table'],
+			$this->setTable($this->config['requests_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['group_by'],
@@ -164,7 +164,7 @@ class owa_metric_documents extends owa_metric {
 			%s 
 			%s
 			",
-			$this->config['ns'].$this->config['requests_table'],
+			$this->setTable($this->config['requests_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -192,7 +192,7 @@ class owa_metric_documents extends owa_metric {
 		WHERE 
 			documents.id = '%s' 
 			",
-			$this->config['ns'].$this->config['documents_table'],
+			$this->setTable($this->config['documents_table']),
 			$this->params['document_id']
 		);
 	

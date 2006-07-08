@@ -34,7 +34,7 @@ $report = new owa_report;
 	
 // Setup the templates
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 $body->set_template('feeds.tpl');// This is the inner template
 
 // Fetch Metrics

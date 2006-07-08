@@ -98,8 +98,8 @@ class owa_metric_session extends owa_metric {
 			timestamp ASC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['requests_table'],
-			$this->config['ns'].$this->config['documents_table'],
+			$this->setTable($this->config['requests_table']),
+			$this->setTable($this->config['documents_table']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
 		);

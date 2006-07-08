@@ -112,8 +112,8 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['requests_table'],
-			$this->config['ns'].$this->config['documents_table'],
+			$this->setTable($this->config['requests_table']),
+			$this->setTable($this->config['documents_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -151,8 +151,8 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['ns'].$this->config['documents_table'],
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['documents_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -190,8 +190,8 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['ns'].$this->config['documents_table'],
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['documents_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -234,8 +234,8 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['referers_table'],
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['referers_table']),
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -272,8 +272,8 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['referers_table'],
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['referers_table']),
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -311,8 +311,8 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['referers_table'],
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['referers_table']),
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -349,7 +349,7 @@ class owa_metric_top extends owa_metric {
 			count DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']

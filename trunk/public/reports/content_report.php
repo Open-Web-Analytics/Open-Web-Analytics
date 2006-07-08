@@ -34,16 +34,17 @@ $report = new owa_report;
 	
 // Setup the templates
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 $body->set_template('content.tpl');// This is the inner template
-$entry_pages = & new owa_template;
+$entry_pages = & new owa_template($report->params);
 $entry_pages->set_template('top_pages.tpl');
-$exit_pages = & new owa_template;
+$exit_pages = & new owa_template($report->params);
 $exit_pages->set_template('top_pages.tpl');
 // Fetch Metrics
 
 $entry_documents = $report->metrics->get(array(
 	'api_call' 			=> 'top_entry_documents',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array('site_id'	=> $report->params['site_id']),
@@ -53,6 +54,7 @@ $entry_documents = $report->metrics->get(array(
 
 $exit_documents = $report->metrics->get(array(
 	'api_call' 			=> 'top_exit_documents',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->params['period'],
 	'constraints'		=> array('site_id'	=> $report->params['site_id']),
 	'result_format'		=> 'assoc_array',

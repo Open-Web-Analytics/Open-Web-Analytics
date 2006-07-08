@@ -22,37 +22,37 @@ require_once(OWA_BASE_DIR.'/owa_news.php');
 $report = new owa_report;
 
 // Set the reporting period
-
+/*
 if (!empty($report->params['period'])):
 	$report->set_period($report->params['period']);
 else:
 	$report->set_period('today');
 endif;
-		
+	*/	
 // Setup the templates
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 $body->set_template('index.tpl');// This is the inner template
 
-$visit = & new owa_template; 
+$visit = & new owa_template($report->params); 
 $visit->set_template('visit.tpl');// This is the inner template
 
-$top_pages = & new owa_template;
+$top_pages = & new owa_template($report->params);
 $top_pages->set_template('top_pages.tpl');
 
-$top_referers = & new owa_template;
+$top_referers = & new owa_template($report->params);
 $top_referers->set_template('top_referers.tpl');
 
-$top_visitors = & new owa_template;
+$top_visitors = & new owa_template($report->params);
 $top_visitors->set_template('top_visitors.tpl');
 
-$summary_stats = & new owa_template;
+$summary_stats = & new owa_template($report->params);
 $summary_stats->set_template('summary_stats.tpl');
 
-$periods_menu = & new owa_template;
+$periods_menu = & new owa_template($report->params);
 $periods_menu->set_template('periods_menu.tpl');
 
-$core_metrics = & new owa_template;
+$core_metrics = & new owa_template($report->params);
 $core_metrics->set_template('core_metrics.tpl');
 
 
@@ -63,6 +63,7 @@ switch ($report->period) {
 	case "this_year":
 		$core_metrics_data = $report->metrics->get(array(
 			'api_call' 		=> 'dash_core',
+			'request_params'	=>	$report->params,
 			'period'			=> $report->period,
 			'result_format'		=> 'assoc_array',
 			'constraints'		=> array(
@@ -78,6 +79,7 @@ switch ($report->period) {
 	default:
 		$core_metrics_data = $report->metrics->get(array(
 		'api_call' 		=> 'dash_core',
+		'request_params'	=>	$report->params,
 		'period'			=> $report->period,
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
@@ -92,7 +94,8 @@ switch ($report->period) {
 
 $summary_stats_data = $report->metrics->get(array(
 	'api_call' 		=> 'dash_counts',
-	'period'			=> $report->period,
+	'request_params'	=>	$report->params,
+	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
@@ -105,6 +108,7 @@ $summary_stats_data = $report->metrics->get(array(
 
 $latest_visits = $report->metrics->get(array(
 	'api_call' 		=> 'latest_visits',
+	'request_params'	=>	$report->params,
 	'period'			=> 'last_24_hours',
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
@@ -119,6 +123,7 @@ $latest_visits = $report->metrics->get(array(
 
 $top_pages_data = $report->metrics->get(array(
 	'api_call' 		=> 'top_documents',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
@@ -132,6 +137,7 @@ $top_pages_data = $report->metrics->get(array(
 
 $top_referers_data = $report->metrics->get(array(
 	'api_call' 			=> 'top_referers',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'limit'				=> '10',
@@ -141,6 +147,7 @@ $top_referers_data = $report->metrics->get(array(
 
 $top_visitors_data = $report->metrics->get(array(
 	'api_call' 			=> 'top_visitors',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'limit'				=> '10',
@@ -150,6 +157,7 @@ $top_visitors_data = $report->metrics->get(array(
 
 $from_feed = $report->metrics->get(array(
 	'api_call' 			=> 'from_feed',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->period,
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
@@ -192,6 +200,7 @@ $body->set('top_referers_table', $top_referers);
 
 // Global Assignments
 $report->tpl->set('report_name', basename(__FILE__));
+$body->set('date_label', $report->date_label);
 $report->tpl->set('content', $body);
 
 // Render Report
