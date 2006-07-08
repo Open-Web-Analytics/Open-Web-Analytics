@@ -211,7 +211,7 @@
 		
 	</TR>
 </TABLE>
-<?=print_r($params);?>
+<?//print_r($params);?>
 <SCRIPT>
 <!--
 
