@@ -150,6 +150,7 @@ class owa_settings {
 			'log_feedreaders'				=> true,
 			'log_robots'					=> false,
 			'log_sessions'					=> true,
+			'log_dom_clicks'				=> true,
 			'delay_first_hit'				=> true,
 			'async_db'						=> false,
 			'clean_query_string'			=> true,

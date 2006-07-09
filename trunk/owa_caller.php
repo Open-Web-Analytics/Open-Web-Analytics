@@ -232,6 +232,16 @@ class owa_caller {
 		
 	}
 	
+	function logClick($app_params = '') {
+		
+		if(empty($app_params)):
+			$app_params = owa_lib::getRestparams();
+		endif;
+		
+		return $this->controller->logEvent('click', $app_params);
+		
+	}
+	
 	/**
 	 * Saves Configuration values to the database
 	 *
@@ -263,9 +273,27 @@ class owa_caller {
 		return;
 	}
 	
-	function add_tag($echo = true) {
+	function placePageTags($echo = true) {
 		
-		//if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+		$this->firstHitTag();
+		
+		if ($this->config['log_dom_clicks'] == true):
+			$this->clickTag();
+		endif;
+			
+		return;
+		
+	}
+	
+	
+	/**
+	 * Generates First hit javascript tag
+	 *
+	 * @param boolean $echo
+	 * @return string
+	 */
+	function firstHitTag($echo = true) {
+		
 		if (empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']])):	
 		
 			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
@@ -308,7 +336,56 @@ class owa_caller {
 		
 	}
 	
-	function makeTag($site_id) {
+	function clickTag() {
+		
+		$server = 'http';	
+		
+		if($_SERVER['HTTPS']=='on'):
+			$server.= 's';
+		endif;
+		
+		$server .= '://'.$_SERVER['SERVER_NAME'];
+		
+		if($_SERVER['SERVER_PORT'] != 80):
+			$server .= ':'.$_SERVER['SERVER_PORT'];
+		endif;
+		
+ 		$tag = sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php?b=click"></SCRIPT><DIV ID="owa_click_bug"></DIV>', 
+ 						$server.$this->config['public_url']);
+ 		
+ 		echo $tag;
+		
+		return;
+
+	}
+	
+	function place_click_bug() {
+		
+		$base_url  = "http";
+		
+		if($_SERVER['HTTPS']=='on'):
+			$base_url .= 's';
+		endif;
+				
+		$base_url .= '://'.$_SERVER['SERVER_NAME'];
+		
+		if($_SERVER['SERVER_PORT'] != 80):
+			$base_url .= ':'.$_SERVER['SERVER_PORT'];
+		endif;
+		
+		$base_url .= $this->config['action_url'].'?owa_action=log_click';
+		
+		$js = file_get_contents(OWA_INCLUDE_DIR.'/clickbug.js');
+		
+		$bug = sprintf($js, $base_url, $base_url); 	
+		
+		echo $bug;
+		
+		return;
+		
+	}
+	
+	function requestTag($site_id) {
 		
 		$server = 'http';	
 		
@@ -326,7 +403,7 @@ class owa_caller {
 		$tag  = '<SCRIPT language="JavaScript">'."\n";
 		$tag .= "\t".sprintf('var owa_site_id = %s', $site_id)."\n";
 		$tag .= '</SCRIPT>'."\n\n";
- 		$tag .= sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php"></SCRIPT>', 
+ 		$tag .= sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php?b=request"></SCRIPT>', 
  						$server.$this->config['public_url']);
  		
  		return $tag;

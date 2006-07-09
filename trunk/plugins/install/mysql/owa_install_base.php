@@ -281,6 +281,7 @@ class owa_install_base extends owa_install {
 			first_session_month varchar(255),
 			first_session_day INT,
 			first_session_dayofyear INT,
+			first_session_timestamp BIGINT,
 			last_session_id BIGINT,
 			last_session_year INT,
 			last_session_month varchar(255),

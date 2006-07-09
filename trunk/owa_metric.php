@@ -167,7 +167,7 @@ class owa_metric {
 						);
 				break;
 
-			case "this_hour":	
+			case "last_hour":	
 				$bound = $this->time_now['timestamp'] - 3600;
 				$where = sprintf(
 							"timestamp >= '%s'",
@@ -184,9 +184,10 @@ class owa_metric {
 				break;
 				
 			case "last_seven_days":	
-				$bound = $this->time_now['dayofyear'] - 7;
+				$bound = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*7;
+
 				$where = sprintf(
-							"dayofyear > '%s' and year = '%s'",
+							"timestamp >= '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
@@ -224,40 +225,55 @@ class owa_metric {
 						);
 				break;
 				
-			case "yesterday":	
+			case "yesterday":
+				
+				$bound = mktime(12, 00, 00, $this->time_now['month'], $this->time_now['day']-1, $this->time_now['year']);
+				
+					
 				$where = sprintf(
 							"day = '%s' and month = '%s' and year = '%s'",
-							$this->time_now['day'] - 1,
-							$this->time_now['month'],
-							$this->time_now['year']
+							date("d", $bound),
+							date("n", $bound),
+							date("Y", $bound)
 						);
 				break;
 				
 			case "last_week":
+				$daybound = 7 + $this->time_now['dayofweek'];
+				$end = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*$this->time_now['dayofweek'];
+				$start = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*$daybound;
 				$where = sprintf(
-							"weekofyear = '%s' and year = '%s'",
-							$this->time_now['weekofyear'] - 1,
-							$this->time_now['year']
+							"timestamp BETWEEN '%d' and '%d'",
+							$start,
+							$end
 						);
 				break;	
 				
 			case "last_month":
+				
+				$bound = mktime(12, 0, 0, $this->time_now['month']-1, $this->time_now['day'], $this->time_now['year']);
+				
 				$where = sprintf("month = '%s' and year ='%s'",
-							$this->time_now['month'] - 1,
-							$this->time_now['year']
+							date("n", $bound),
+							date("Y", $bound)
 						);
 				break;
 				
 			case "last_year":
+				
 				$where = sprintf("year = '%s'",
 							$this->time_now['year'] - 1
 						);
 				break;
 				
 			case "same_day_last_week":
-				$where = sprintf("dayofyear = '%s' and year = '%s'",
-							$this->time_now['dayofyear'] - 7,
-							$this->time_now['year']
+				
+				$bound = mktime(12, 0, 0, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*7;
+				
+				$where = sprintf("day = '%s' and month = '%s' and year = '%s'",
+							date("d", $bound),
+							date("n", $bound),
+							date("Y", $bound)
 						);
 				break;
 				
@@ -292,16 +308,10 @@ class owa_metric {
 				break;
 			
 			case "last_thirty_days":
-				//$bound = $this->time_now['timestamp'] - 3600*24*30;
-				$bound = $this->time_now['dayofyear'] - 30;
-				/*$where = sprintf(
-							"AND timestamp >= '%s' and year = '%s'",
-							$bound,
-							$this->time_now['year']
-						);	
-				*/
+				$bound = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*30;
+
 				$where = sprintf(
-							"dayofyear > '%s' and year = '%s'",
+							"timestamp >= '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
 						);	
@@ -341,7 +351,7 @@ class owa_metric {
 			case "date_range":
 				
 				$start = mktime(0, 0, 0, $this->params['request_params']['month'], $this->params['request_params']['day'], $this->params['request_params']['year']); 
-				$end = mktime(24, 59, 59, $this->params['request_params']['month2'], $this->params['request_params']['day2'], $this->params['request_params']['year2']);
+				$end = mktime(23, 59, 59, $this->params['request_params']['month2'], $this->params['request_params']['day2'], $this->params['request_params']['year2']);
 				
 				$where = sprintf(
 							"timestamp BETWEEN '%s' and '%s'",
