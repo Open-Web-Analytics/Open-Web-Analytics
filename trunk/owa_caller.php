@@ -273,12 +273,24 @@ class owa_caller {
 		return;
 	}
 	
+	/**
+	 * Returns of echos Page Tags
+	 *
+	 * @param boolean $echo
+	 * @return string
+	 */
 	function placePageTags($echo = true) {
 		
-		$this->firstHitTag();
+		$tags = $this->firstHitTag($echo);
 		
 		if ($this->config['log_dom_clicks'] == true):
-			$this->clickTag();
+			$tsgs .= $this->clickTag($echo);
+		endif;
+		
+		if ($echo === false):
+			return $tags;
+		else:
+			;
 		endif;
 			
 		return;
@@ -336,7 +348,7 @@ class owa_caller {
 		
 	}
 	
-	function clickTag() {
+	function clickTag($echo = true) {
 		
 		$server = 'http';	
 		
@@ -353,7 +365,11 @@ class owa_caller {
  		$tag = sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php?b=click"></SCRIPT><DIV ID="owa_click_bug"></DIV>', 
  						$server.$this->config['public_url']);
  		
- 		echo $tag;
+ 		if ($echo === false):
+			return $tag;
+		else:
+			echo $tag;
+		endif;
 		
 		return;
 

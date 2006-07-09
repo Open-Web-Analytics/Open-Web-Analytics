@@ -145,7 +145,13 @@ class owa_db {
 			$this->config = &owa_settings::get_settings();
 			$this->e = &owa_error::get_instance();
 			
-			$connection_class = "owa_db_" . $this->config['db_type'];
+			if (empty($this->config['db_class'])):
+				$class = $this->config['db_type'];
+			else:
+				$class = $this->config['db_class'];
+			endif;
+
+			$connection_class = "owa_db_" . $class;
 			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";
 	
 	 		if (!@include($connection_class_path)):

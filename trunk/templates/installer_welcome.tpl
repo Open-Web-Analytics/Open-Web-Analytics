@@ -10,7 +10,7 @@ The next few screens will guide you through installing and configuraing the Open
 need help, please consult the <a href="http://wiki.openwebanalytics.com">OWA Wiki</a>.
 
 <DIV class="centered_buttons">	
-    <? if($db_state == true):?><a href="<?=$_SERVER['PHP_SELF'];?>?page=db_info">Continue... >></a><?endif;?>
+    <? if($db_state == true):?><a href="<?=$_SERVER['PHP_SELF'];?>?owa_page=db_info">Continue... >></a><?endif;?>
 </DIV>
     
 
