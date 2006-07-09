@@ -90,12 +90,17 @@ class owa_install_update_to_1_0_rc3 extends owa_install {
 	function check_for_schema() {
 		
 		
+		return false;
+		/*
+		$check ='';
+		
 		if (!empty($check)):
 			$this->e->notice("Installation aborted. Schema already exists.");
 			return true;
 		else:
 			return false;
 		endif;
+		*/
 	}
 	
 	/**
