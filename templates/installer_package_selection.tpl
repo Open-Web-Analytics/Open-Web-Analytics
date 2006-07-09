@@ -15,7 +15,7 @@
     		<TR>
     			<TD><?=$values['package_display_name'];?></TD>
     			<TD><?=$values['description'];?></TD>
-    			<TD><a href="<?=$_SERVER['PHP_SELF'];?>?action=install&package=<?=$package;?>">Install</a></TD>
+    			<TD><a href="<?=$this->make_admin_link('install.php', array('action' => 'install', 'package' => $package));?>">Install</a></TD>
     		</TR>
     	<?endforeach;?>
     	</TABLE>
