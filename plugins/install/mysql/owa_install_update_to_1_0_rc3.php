@@ -83,14 +83,12 @@ class owa_install_update_to_1_0_rc3 extends owa_install {
 	}
 	
 	/**
-	 * Check to see if schema is installed
+	 * Check to see if schema change is installed
 	 *
 	 * @return boolean
 	 */
 	function check_for_schema() {
 		
-		$check = $this->db->get_row(sprintf("show tables like '%s'",
-				$this->config['ns'].$this->config['version_table']));
 		
 		if (!empty($check)):
 			$this->e->notice("Installation aborted. Schema already exists.");
