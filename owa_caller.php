@@ -281,10 +281,11 @@ class owa_caller {
 	 */
 	function placePageTags($echo = true) {
 		
+		
 		$tags = $this->firstHitTag($echo);
 		
 		if ($this->config['log_dom_clicks'] == true):
-			$tsgs .= $this->clickTag($echo);
+			$tags .= $this->clickTag($echo);
 		endif;
 		
 		if ($echo === false):
@@ -364,7 +365,7 @@ class owa_caller {
 		
  		$tag = sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php?b=click"></SCRIPT><DIV ID="owa_click_bug"></DIV>', 
  						$server.$this->config['public_url']);
- 		
+ 						
  		if ($echo === false):
 			return $tag;
 		else:
