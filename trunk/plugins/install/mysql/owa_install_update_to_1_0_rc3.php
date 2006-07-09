@@ -73,7 +73,7 @@ class owa_install_update_to_1_0_rc3 extends owa_install {
 	 *
 	 * @return owa_install_mysql
 	 */
-	function owa_install_update_to_1rc3() {
+	function owa_install_update_to_1_0_rc3() {
 		$this->owa_install();
 		$this->tables = array(	$this->config['visitors_table'],
 								$this->config['impressions_table'],
