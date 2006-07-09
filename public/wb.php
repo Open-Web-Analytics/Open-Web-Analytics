@@ -48,9 +48,21 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 
+switch ($_GET['b']) {
+	
+	case "click":
+		// This is the handler for javascript request for the logging web bug. 
+		$owa->place_click_bug();
+		break;
+	
+	case "request":
+		// This is the handler for javascript request for the logging web bug. 
+		$owa->place_log_bug();	
+		break;
+	
+}
 
-// This is the handler for javascript request for the logging web bug. 
-$owa->place_log_bug();
+
 
 
 ?>

@@ -180,7 +180,8 @@ class owa_metric_visitor extends owa_metric {
 		SELECT
 			count(sessions.visitor_id) as count,
 			visitors.first_session_year,
-			visitors.first_session_month 
+			visitors.first_session_month,
+			visitors.first_session_day
 		FROM 
 			%s as sessions, %s as visitors 
 		WHERE
@@ -189,10 +190,12 @@ class owa_metric_visitor extends owa_metric {
 			%s
 		GROUP BY
 			visitors.first_session_year,
-			visitors.first_session_month
+			visitors.first_session_month,
+			visitors.first_session_day
 		ORDER BY
-			visitors.first_session_year,
-			visitors.first_session_month DESC",
+			visitors.first_session_year DESC,
+			visitors.first_session_month DESC,
+			visitors.first_session_day DESC",
 			
 			$this->setTable($this->config['sessions_table']),
 			$this->setTable($this->config['visitors_table']),

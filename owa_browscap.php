@@ -160,7 +160,7 @@ class owa_browscap {
 	
 	function checkForCrawler_supplemental() {
 		
-		if ($this->browscap->browser != 'Default Browser'):
+		if ($this->browscap_supplemental->browser != 'Default Browser'):
 			// If browscap has the UA listed as a crawler set is_robot, except for RSS feed readers
 			if ($r->browscap->crawler == true):
 				return true;

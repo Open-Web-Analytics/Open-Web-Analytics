@@ -68,7 +68,7 @@ switch ($_POST['action']) {
 			$body_tpl = 'options_new_site_success.tpl';
 			$page_h1 = 'Your new site is ready to be tracked';
 			$body->set('site_id', $site_id);
-			$tag = $owa->makeTag($site_id);
+			$tag = $owa->requestTag($site_id);
 			$body->set('tag', $tag);
 		else:
 			$page_h1 = 'Error';
