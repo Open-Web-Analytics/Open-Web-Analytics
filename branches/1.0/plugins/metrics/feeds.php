@@ -105,7 +105,7 @@ class owa_metric_feeds extends owa_metric {
 			month,
 			day %s
 		",
-			$this->config['ns'].$this->config['feed_requests_table'],
+			$this->setTable($this->config['feed_requests_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['group_by'],
@@ -133,7 +133,7 @@ class owa_metric_feeds extends owa_metric {
 			%s 
 			%s
 		",
-			$this->config['ns'].$this->config['feed_requests_table'],
+			$this->setTable($this->config['feed_requests_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -159,7 +159,7 @@ class owa_metric_feeds extends owa_metric {
 			%s 
 			%s
 		",
-			$this->config['ns'].$this->config['feed_requests_table'],
+			$this->setTable($this->config['feed_requests_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -188,7 +188,7 @@ class owa_metric_feeds extends owa_metric {
 		GROUP BY
 			feed_format
 		",
-			$this->config['ns'].$this->config['feed_requests_table'],
+			$this->setTable($this->config['feed_requests_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -206,7 +206,7 @@ class owa_metric_feeds extends owa_metric {
 	
 		$sql = sprintf("
 		SELECT 
-			count(feed_requests.feed_reader_guid) as count,
+			count(distinct feed_requests.feed_reader_guid) as count,
 			ua.ua as ua,
 			ua.browser_type
 		FROM 
@@ -219,8 +219,8 @@ class owa_metric_feeds extends owa_metric {
 		GROUP BY
 			ua.browser_type
 		",
-			$this->config['ns'].$this->config['feed_requests_table'],
-			$this->config['ns'].$this->config['ua_table'],
+			$this->setTable($this->config['feed_requests_table']),
+			$this->setTable($this->config['ua_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);

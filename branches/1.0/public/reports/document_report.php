@@ -34,10 +34,10 @@ $report = new owa_report;
 	
 // Setup the templates
 
-$body = & new owa_template; 
+$body = & new owa_template($report->params); 
 $body->set_template('document.tpl');// This is the inner template
 
-$top_referers = & new owa_template; 
+$top_referers = & new owa_template($report->params); 
 $top_referers->set_template('top_referers.tpl');// This is the inner template
 
 // Fetch Metrics
@@ -47,6 +47,7 @@ switch ($report->params['period']) {
 	case "this_year":
 		$core_metrics_data = $report->metrics->get(array(
 			'api_call' 		=> 'document_core_metrics',
+			'request_params'	=>	$report->params,
 			'period'			=> $report->period,
 			'result_format'		=> 'assoc_array',
 			'constraints'		=> array(
@@ -62,14 +63,12 @@ switch ($report->params['period']) {
 	default:
 		$core_metrics_data = $report->metrics->get(array(
 		'api_call' 		=> 'document_core_metrics',
+		'request_params'	=>	$report->params,
 		'period'			=> $report->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
 			'site_id'	=> $report->params['site_id'],
-			'document_id' => $report->params['document_id'],
-			'year'		=> $report->params['year'],
-			'month'		=> $report->params['month'],
-			'day'		=> $report->params['day']
+			'document_id' => $report->params['document_id']
 			),
 		'group_by'			=> 'day'
 	
@@ -79,34 +78,31 @@ switch ($report->params['period']) {
 
 $summary_stats_data = $report->metrics->get(array(
 	'api_call' 		=> 'count_document_metrics',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'	=> $report->params['site_id'],
-		'document_id' => $report->params['document_id'],
-		'year'		=> $report->params['year'],
-		'month'		=> $report->params['month'],
-		'day'		=> $report->params['day']	
+		'document_id' => $report->params['document_id']
 		)
 
 ));
 
 $document_details = $report->metrics->get(array(
 	'api_call' 		=> 'document_details',
+	'request_params'	=>	$report->params,
 	'result_format'		=> 'assoc_array',
 	'document_id' => $report->params['document_id']
 ));
 
 $document_referers = $report->metrics->get(array(
 	'api_call' 			=> 'top_referers',
+	'request_params'	=>	$report->params,
 	'period'			=> $report->params['period'],
 	'result_format'		=> 'assoc_array',
 	'constraints'		=> array(
 		'site_id'		=> $report->params['site_id'],
-		'sessions.first_page_id'	=> $report->params['document_id'],
-		'year'			=> $report->params['year'],
-		'month'			=> $report->params['month'],
-		'day'			=> $report->params['day']	
+		'sessions.first_page_id'	=> $report->params['document_id']
 		),
 	'limit'				=> 30
 ));

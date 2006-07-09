@@ -19,7 +19,7 @@ There are no metrics yet for this time period.
 	<TR>
 	<? if ($period == 'this_year' || $params['period'] == 'this_year'): ?>
 		<TD>
-		<a href="<?=$this->make_report_link('dashboard_report.php', array('period' => 'month', 'year' => $row['year'], 'month' => $row['month']));?>">
+		<a href="<?=$this->make_report_link('document_report.php', array('period' => 'month', 'year' => $row['year'], 'month' => $row['month'], 'document_id' => $params['document_id']));?>">
 		<?=$this->get_month_label($row['month']);?>
 		</a>
 		</TD>
@@ -29,7 +29,7 @@ There are no metrics yet for this time period.
 		<a href="<?=$this->make_report_link('session_report.php', array($this->config['ns'].$this->config['session_param'] => $visit['prior_session_id']));?>">
 		
 		<TD>
-		<a href="<?=$this->make_report_link('dashboard_report.php', array('period' => 'day', 'year' => $row['year'], 'month' => $row['month'], 'day' => $row['day']));?>">
+		<a href="<?=$this->make_report_link('document_report.php', array('period' => 'day', 'year' => $row['year'], 'month' => $row['month'], 'day' => $row['day'], 'document_id' => $params['document_id']));?>">
 		<?=$row['day'];?>
 		</a>
 		</TD>

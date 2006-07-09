@@ -88,7 +88,7 @@ class owa_metric_source extends owa_metric {
 			%s
 			%s
 			",
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['sessions_table']),
 			$source,
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
@@ -116,8 +116,8 @@ class owa_metric_source extends owa_metric {
 			AND referers.is_searchengine = 1
 			%s
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['ns'].$this->config['referers_table'],
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['referers_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -143,8 +143,8 @@ class owa_metric_source extends owa_metric {
 			AND referers.is_searchengine = 0
 			%s
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['ns'].$this->config['referers_table'],
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['referers_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);

@@ -73,17 +73,14 @@ class owa_graph_visitors_pie extends owa_graph {
 	function graph_visitors_pie() {
 		
 		$result = $this->metrics->get(array(
-		
-		'api_call' 		=> 'new_v_repeat',
+		'request_params'	=>	$this->params,
+		'api_call' 			=> 'new_v_repeat',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(
 			'site_id'		=> $this->params['site_id'],		
 			'is_browser' 	=> 1,
-			'is_robot' 		=> 0,
-			'year'			=> $this->params['year'],
-			'month'			=> $this->params['month'],
-			'day'			=> $this->params['day']
+			'is_robot' 		=> 0
 			
 			)
 	

@@ -10,7 +10,7 @@ td {padding: 2px 6px 2px 6px;}
 </style>
 
 
-        <h2><?=$headline;?></h2>
+        <h2><?=$headline;?><?=$date_label;?></h2>
 		
 		
 		<div id="summary_stats">

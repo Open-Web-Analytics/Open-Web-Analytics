@@ -19,7 +19,7 @@
 require_once(OWA_BASE_DIR.'/owa_report.php');
 
 /**
- * Feeds Report
+ * Visitors Report
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -30,58 +30,68 @@ require_once(OWA_BASE_DIR.'/owa_report.php');
  * @since		owa 1.0.0
  */
 
-$report = new owa_report;
+$report = new owa_report;	
 	
 // Setup the templates
 
 $body = & new owa_template($report->params); 
-$body->set_template('feeds.tpl');// This is the inner template
 
-// Fetch Metrics
-
-switch ($report->params['period']) {
+switch ($_GET['owa_page']) {
 	
-	case "this_year":
-		$trend = $report->metrics->get(array(
-			'api_call' 			=> 'feed_fetches_trend',
-			'period'			=> $report->params['period'],
-			'constraints'		=> array('site_id'	=> $report->params['site_id']),
-			'result_format'		=> 'assoc_array',
-			'group_by'			=> 'year, month',
-			'order'				=> 'DESC '
-		));		
+	case "visitor_list":
 		
+		$visitors_list = $report->metrics->get(array(
+			'request_params'	=> $report->params,
+			'api_call' 			=> 'visitor_list',
+			'result_format'		=> 'assoc_array',
+			'period'			=> $report->params['period'],
+			'constraints'		=> array(
+				'site_id'		=> $report->params['site_id'],
+				'visitors.first_session_year'		=> $report->params['year2'],
+				'visitors.first_session_month'		=> $report->params['month2']
+				),
+			'limit' 			=> $report->params['limit']
+		));
+		$body->set_template('visitors_list.tpl');// This is the inner template
+		$body->set('headline', 'Visitors for \''.$report->period_label.'\' who first visited in '.$report->date_label_2);
+		$body->set('visitors_list', $visitors_list);
 		break;
-	
-	default:
-		$trend = $report->metrics->get(array(
-			'api_call' 			=> 'feed_fetches_trend',
-			'period'			=> $report->params['period'],
-			'constraints'		=> array('site_id'	=> $report->params['site_id']),
-			'result_format'		=> 'assoc_array',
-			'group_by'			=> 'year, month, day',
-			'order'				=> 'DESC '
-		));	
 		
-}
+	default:
 
+		// Fetch Metrics
+		
+		$visitors_age = $report->metrics->get(array(
+			'request_params'	=> $report->params,
+			'api_call' 			=> 'visitors_age',
+			'period'			=> $report->params['period'],
+			'result_format'		=> 'assoc_array',
+			'constraints'		=> array(
+				'site_id'		=> $report->params['site_id']
+				),
+			'limit' 			=> $report->params['limit']
+		));
+		
+		// Template Assingments
+		$body->set_template('visitors.tpl');// This is the inner template
+		$body->set('headline', 'Visitors');
+		$body->set('visitors_age', $visitors_age);
+}
 
 
 // Assign Data to templates
 
-$body->set('headline', 'Feeds');
 $body->set('period_label', $report->period_label);
-$body->set('feed_requests', $result);
-$body->set('feed_trend', $trend);
-
-// Global Template Assignments
-//$body->set('report_name', basename(__FILE__));
+$body->set('date_label', $report->date_label);
 $body->set('params', $report->params);
-//$body->set('config', $report->config);
-$body->set('period', $report->params['period']);
 $report->tpl->set('content', $body);
+
+//Set Report File name
 $report->tpl->set('report_name', basename(__FILE__));
+
 //Output Report
 echo $report->tpl->fetch();
+
+
 
 ?>

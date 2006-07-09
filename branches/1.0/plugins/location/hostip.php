@@ -60,8 +60,8 @@ class owa_hostip extends owa_location {
 				
 		// XML parsing needs to go here.
        		
-       	$this->city = $result['City'];
-		$this->country = $result['Country'];
+       	$this->city = trim($result['City'], "\n");
+		$this->country = trim($result['Country'], "\n");
 		$this->latitude = $result['Latitude'];
 		$this->longitude = $result['Longitude'];
 		
@@ -111,7 +111,7 @@ class owa_hostip extends owa_location {
        		}
        		
        			$this->city = $result['City'];
-				$this->country = $result['Country'];
+				$this->country = trim($result['Country'], "\n");
 				$this->latitude = $result['Latitude'];
 				$this->longitude = $result['Longitude'];
   	    	

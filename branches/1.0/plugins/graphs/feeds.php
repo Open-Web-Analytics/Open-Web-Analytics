@@ -76,8 +76,10 @@ class owa_graph_feeds extends owa_graph {
 		
 		// Data 
 		$result = $this->metrics->get(array(
+		
+			'request_params'	=>	$this->params,
 			'api_call' 			=> 'feed_fetches_trend',
-			'period'			=> $report->params['period'],
+			'period'			=> $this->params['period'],
 			'result_format'		=> 'inverted_array',
 			'group_by'			=> 'year, month, day',
 			'constraints'		=> array(
@@ -115,14 +117,12 @@ class owa_graph_feeds extends owa_graph {
 		
 		$result = $this->metrics->get(array(
 		
+		'request_params'	=>	$this->params,
 		'api_call' 		=> 'count_feed_readers_by_ua',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'inverted_array',
 		'constraints'		=> array(
-			'site_id'		=> $this->params['site_id'],		
-			'year'			=> $this->params['year'],
-			'month'			=> $this->params['month'],
-			'day'			=> $this->params['day']
+			'site_id'		=> $this->params['site_id']
 			
 			)
 	
@@ -158,15 +158,12 @@ class owa_graph_feeds extends owa_graph {
 		
 		$result = $this->metrics->get(array(
 		
+		'request_params'	=>	$this->params,
 		'api_call' 		=> 'count_feed_fetches_by_format',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'inverted_array',
 		'constraints'		=> array(
-			'site_id'		=> $this->params['site_id'],		
-			'year'			=> $this->params['year'],
-			'month'			=> $this->params['month'],
-			'day'			=> $this->params['day']
-			
+			'site_id'		=> $this->params['site_id']
 			)
 	
 		));

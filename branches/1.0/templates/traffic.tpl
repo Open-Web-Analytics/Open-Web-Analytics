@@ -1,6 +1,6 @@
 <h2><?=$headline;?></h2>
 
-	<table>
+	<table width="100%">
 		<TR>
 			<TD valign="top">
 				<fieldset id="keywords" class="options">

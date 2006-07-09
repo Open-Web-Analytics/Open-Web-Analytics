@@ -92,7 +92,7 @@ class owa_metric_dashboard extends owa_metric {
 			sessions.year, 
 			sessions.month, 
 			sessions.day %s",
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['group_by'],
@@ -122,7 +122,7 @@ class owa_metric_dashboard extends owa_metric {
 			true
 			%s 
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -156,7 +156,7 @@ class owa_metric_dashboard extends owa_metric {
 				sessions.month %6\$s, 
 				sessions.day %6\$s",
 				
-				$this->config['ns'].$this->config['sessions_table'],
+				$this->setTable($this->config['sessions_table']),
 				$this->time_period($this->params['period']),
 				$this->add_constraints($this->params['constraints']),
 				$this->params['group_by'],
@@ -186,7 +186,7 @@ class owa_metric_dashboard extends owa_metric {
 			%s 
 			%s
 		",
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);

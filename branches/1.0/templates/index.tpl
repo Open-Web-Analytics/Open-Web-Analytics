@@ -8,7 +8,7 @@
 
 
 
-        <h2><?=$headline;?></h2>
+        <h2><?=$headline;?> for <?=$period_label;?><?=$date_label;?></h2>
 		
 		<fieldset id="trends" class="options">
 			<legend>Trends</legend>
@@ -19,7 +19,7 @@
 				</TR>-->
 				<TR>
 					<TD>
-						<img src="<?=$this->config['action_url'];?>?owa_action=graph&name=pv_visits&type=bar_line&period=last_thirty_days&site_id=<?=$params['site_id'];?>" />				
+						<img src="<?=$this->makeGraphLink('pv_visits', array('period' => 'last_thirty_days'));?>" />
 					</TD>
 				</TR>
 			</table>
@@ -27,7 +27,7 @@
 		
 		<div id="summary_stats">
 			<fieldset class="options">
-				<legend>Summary for <?=$period_label;?></legend>
+				<legend>Summary for <?=$period_label;?><?=$date_label;?></legend>
 				<table>
 					<TR>
 						<Th>Quick Stats</Th>
@@ -39,10 +39,10 @@
 							<?=$summary_stats_table;?>		
 						</TD>
 						<TD>
-							<img src="<?=$this->config['action_url']?>?owa_action=graph&name=visitors_pie&type=pie&period=<?=$period;?>&site_id=<?=$params['site_id'];?>" />
+							<img src="<?=$this->makeGraphLink('visitors_pie');?>" />
 						</TD>
 						<TD>
-							<img src="<?=$this->config['action_url']?>?owa_action=graph&name=source_pie&type=pie&period=<?=$period;?>&site_id=<?=$params['site_id'];?>" />
+							<img src="<?=$this->makeGraphLink('source_pie');?>" />
 						</TD>
 					</TR>
 				

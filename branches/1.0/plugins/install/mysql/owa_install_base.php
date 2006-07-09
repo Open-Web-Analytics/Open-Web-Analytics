@@ -301,6 +301,7 @@ class owa_install_base extends owa_install {
 			impression_id BIGINT,
 			visitor_id BIGINT,
 			session_id BIGINT,
+			tag_id BIGINT,
 			placement_id BIGINT,
 			campaign_id BIGINT,
 			ad_group_id BIGINT,
@@ -320,6 +321,7 @@ class owa_install_base extends owa_install {
 			ua_id BIGINT,
 			ip_address VARCHAR(255),
 			host VARCHAR(255),
+			host_id VARCHAR(255),
 			PRIMARY KEY (impression_id))
 			",
 			$this->config['ns'].$this->config['impressions_table']
@@ -346,8 +348,16 @@ class owa_install_base extends owa_install {
 			hour TINYINT(2),
 			minute TINYINT(2),
 			msec BIGINT,
-			page_coordinates VARCHAR(255),
-			anchor_text VARCHAR(255),
+			click_x INT,
+			click_y INT,
+			dom_element_x INT,
+			dom_element_y INT,
+			dom_element_name VARCHAR(255),
+			dom_element_id VARCHAR(255),
+			dom_element_value VARCHAR(255),
+			dom_element_tag VARCHAR(255),
+			dom_element_text VARCHAR(255),
+			tag_id BIGINT,
 			placement_id BIGINT,
 			campaign_id BIGINT,
 			ad_group_id BIGINT,
@@ -356,6 +366,7 @@ class owa_install_base extends owa_install {
 			ua_id BIGINT,
 			ip_address VARCHAR(255),
 			host VARCHAR(255),
+			host_id VARCHAR(255),
 			PRIMARY KEY (click_id))
 			",
 			$this->config['ns'].$this->config['clicks_table']

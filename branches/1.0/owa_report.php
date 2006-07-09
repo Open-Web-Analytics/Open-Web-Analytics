@@ -65,6 +65,20 @@ class owa_report {
 	var $period_label;
 	
 	/**
+	 * Display Label for Reporting Date
+	 *
+	 * @var string
+	 */
+	var $date_label;
+	
+	/**
+	 * Display Label for 2nd Reporting Date
+	 *
+	 * @var string
+	 */
+	var $date_label_2;
+	
+	/**
 	 * Configuration
 	 *
 	 * @var array
@@ -94,28 +108,33 @@ class owa_report {
 	function owa_report() {
 		
 		$this->config = &owa_settings::get_settings();
-		$this->tpl = & new owa_template;
-		$this->tpl->set_template($this->config['report_wrapper']);
-		$this->metrics = owa_api::get_instance('metric');
-		
-		// Get default and user override display preferences.
-		$this->prefs = $this->getPrefs();
 		
 		// Gets full set of params from URL
 		$this->_setParams(owa_lib::getRestparams());
-		
-		// Set the reporting period
 
-		if (empty($this->params['period']) && empty($this->params['year'])):
-			$this->set_period('today');
-			$this->params['period'] = 'today';	
-		else:
-			$this->set_period($this->params['period']);
-		endif;
+		// Get default and user override display preferences.
+		$this->prefs = $this->getPrefs();	
 		
+		$this->tpl = & new owa_template($this->params);
+		$this->tpl->set_template($this->config['report_wrapper']);
+		$this->metrics = owa_api::get_instance('metric');
+		
+		// Get Reporting Periods
+		$this->tpl->set('reporting_periods', owa_lib::reporting_periods());
+		$this->tpl->set('date_reporting_periods', owa_lib::date_reporting_periods());
+		$this->tpl->set('months', owa_lib::months());
+		$this->tpl->set('days', owa_lib::days());
+		$this->tpl->set('years', owa_lib::years());
+		
+		$this->set_period($this->params['period']);
+		$this->date_label = $this->setDateLabel($this->params);
+		$this->date_label_2 = $this->setDateLabel($this->params);
+	
 		$this->tpl->set('params', $this->params);
 		$this->tpl->set('sites', $this->getSitesList());
+		$this->tpl->set('date_label', $this->date_label);
 		$this->tpl->set('page_type', 'report');
+		$this->tpl->set('period_filter', true);
 		return;
 	}
 	
@@ -140,8 +159,11 @@ class owa_report {
 	 */
 	function set_period($period) {
 		
+		if (empty($period)):
+			$period = 'today';
+		endif;
 		$this->period = $period;
-		//$this->params['period'] = $period;
+		$this->params['period'] = $period;
 		$this->period_label = $this->get_period_label($period);
 		
 		return;
@@ -157,6 +179,14 @@ class owa_report {
 	function get_period_label($period) {
 	
 		return owa_lib::get_period_label($period);
+	}
+	
+	
+	
+	function setDateLabel($params) {
+
+		return owa_lib::getDateLabel($params);
+		
 	}
 	
 	/**

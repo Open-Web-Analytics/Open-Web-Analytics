@@ -149,86 +149,226 @@ class owa_lib {
 		return;
 	}
 	
+	/**
+	 * Information array for Months in the year.
+	 *
+	 * @return array
+	 */
+	function months() {
+		
+		return array(
+					
+					1 => array('label' => 'January'),
+					2 => array('label' => 'February'),
+					3 => array('label' => 'March'),
+					4 => array('label' => 'April'),
+					5 => array('label' => 'May'),
+					6 => array('label' => 'June'),
+					7 => array('label' => 'July'),
+					8 => array('label' => 'August'),				
+					9 => array('label' => 'September'),
+					10 => array('label' => 'October'),
+					11 => array('label' => 'November'),
+					12 => array('label' => 'December')
+		);
+		
+	}
+	
+	function days() {
+		
+		return array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
+					15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+	}
+	
+	function years() {
+		
+		static $years;
+		
+		if (empty($years)):
+			
+			$start_year = 2005;
+			
+			$years = array($start_year);
+			
+			$num_years =  date("Y", time()) - $start_year;
+			
+			for($i=1; $i<=$num_years; $i++) {
+		 	
+				$years[] = $start_year + $i;
+			}
+			
+			$years = array_reverse($years);
+		
+		endif;
+		
+		return $years;
+	}
+	
+	
+	/**
+	 * Returns a label from an array of months
+	 *
+	 * @param int $month
+	 * @return string
+	 */
 	function get_month_label($month) {
 		
-		switch ($month) {
+		static $months;
+		
+		if (empty($months)):
+
+			$months = owa_lib::months();
+		
+		endif;  
+		
+		return $months[$month]['label'];
+		
+	}
+	
+	
+	/**
+	 * Sets the suffix for Days used in Date labels
+	 *
+	 * @param string $day
+	 * @return string
+	 */
+	function setDaySuffix($day) {
+		
+		switch ($day) {
 			
-			case '1':
-				$label = 'January';
+			case "1":
+				$day_suffix = 'st';
 				break;
-			case '2':
-				$label = 'February';
+			case "2":
+				$day_suffix = 'nd';
 				break;
-			case '3':
-				$label = 'March';
-				break;
-			case '4':
-				$label = 'April';
-				break;
-			case '5':
-				$label = 'May';
-				break;
-			case '6':
-				$label = 'June';
-				break;
-			case '7':
-				$label = 'July';
-				break;
-			case '8':
-				$label = 'August';
-				break;
-			case '9':
-				$label = 'September';
-				break;
-			case '10':
-				$label = 'October';
-				break;
-			case '11':
-				$label = 'November';
-				break;
-			case '12':
-				$label = 'December';
+			case "3":
+				$day_suffix = 'rd';
 				break;
 			default:
-				$label = 'Unknown Month';
+				$day_suffix = 'th';
+		}
+		
+		return $day_suffix;
+		
+	}
+	
+	/**
+	 * Generates the label for a date
+	 *
+	 * @param array $params
+	 * @return string
+	 */
+	function getDatelabel($params) {
+		
+		switch ($params['period']) {
+		
+			case "day":
+				return sprintf("%s, %d%s %s",
+							owa_lib::get_month_label($params['month']),
+							$params['day'],
+							$day_suffix,
+							$params['year']				
+						);
+				break;
+			
+			case "month":
+				return sprintf("%s %s",
+							owa_lib::get_month_label($params['month']),
+							$params['year']				
+						);
+				break;
+			
+			case "year":	
+				return sprintf("%s",
+							$params['year']				
+						);
+				break;
+			case "date_range":
+				return sprintf("%s, %d%s %s - %s, %d%s %s",
+							owa_lib::get_month_label($params['month']),
+							$params['day'],
+							owa_lib::setDaySuffix($params['day']),
+							$params['year'],
+							owa_lib::get_month_label($params['month2']),
+							$params['day2'],
+							owa_lib::setDaySuffix($params['day2']),
+							$params['year2']					
+						);
 				break;
 		}
 		
-		return $label;
+		return false;
+		
 	}
 	
+	/**
+	 * Array of Reporting Periods
+	 *
+	 * @return array
+	 */
+	function reporting_periods() {
+		
+		return array(
+					
+					'today' => array('label' => 'Today'),
+					'yesterday' => array('label' => 'Yesterday'),
+					'this_week' => array('label' => 'This Week'),
+					'this_month' => array('label' => 'This Month'),
+					'this_year' => array('label' => 'This Year'),
+					'last_month' => array('label' => 'Last Month'),
+					'last_year' => array('label' => 'Last Year'),
+					'last_half_hour' => array('label' => 'The Last 30 Minutes'),				
+					'last_24_hours' => array('label' => 'The Last 24 Hours'),
+					'last_seven_days' => array('label' => 'The Last Seven Days'),
+					'last_thirty_days' => array('label' => 'The Last Thirty Days'),
+					'this_hour' => array('label' => 'This Hour'),
+					'same_day_last_week' => array('label' => 'Same Day last Week'),
+					'same_week_last_year' => array('label' => 'Same Week Last Year'),
+					'same_month_last_year' => array('label' => 'Same Month Last Year'),
+					//'day' => array('label' => 'Day'),
+					//'month' => array('label' => 'Month'),
+					//'year' => array('label' => 'Year'),
+					//'date_range' => array('label' => 'Date Range')
+		);
+		
+	}
+	
+	/**
+	 * Array of Date specific Reporting Periods
+	 *
+	 * @return array
+	 */
+	function date_reporting_periods() {
+		
+		return array(
+					
+					'day' => array('label' => 'Day'),
+					'month' => array('label' => 'Month'),
+					'year' => array('label' => 'Year'),
+					'date_range' => array('label' => 'Date Range')
+		);
+		
+	}
+	
+	/**
+	 * Gets label for a particular reporting period
+	 *
+	 * @param unknown_type $period
+	 * @return unknown
+	 */
 	function get_period_label($period) {
 	
-		switch ($period) {
+		$periods = owa_lib::reporting_periods();
 		
-			case "today";
-				$label = "Today";
-				break;
-			case "yesterday";
-				$label = "Yesterday";
-				break;
-			case "this_month";
-				$label = "This Month";
-				break;
-			case "this_week";
-				$label = "This Week";
-				break;
-			case "this_year";
-				$label = "This Year";
-				break;
-			case "last_seven_days";
-				$label = "The Last Seven Days";
-				break;
-			case "last_thirty_days";
-				$label = "The Last Thirty Days";
-				break;
-			default:
-				$label = 'Unknown Label';
-		}
-		
-		return $label;
+		return $periods[$period]['label'];
 	}
 	
+	/**
+	 * Assembles the current URL from request params
+	 *
+	 * @return string
+	 */
 	function get_current_url() {
 		
 		$url = 'http';	
@@ -259,14 +399,22 @@ class owa_lib {
 		
 		$params = array();
 		
-		$params['month'] = $_GET['month'];
 		$params['owa_action'] = $_GET['owa_action'];
+		$params['owa_page'] = $_GET['owa_page'];
 		$params['year'] = $_GET['year'];
+		$params['month'] = $_GET['month'];
 		$params['day'] = $_GET['day'];
 		$params['dayofyear'] = $_GET['dayofyear'];
 		$params['weekofyear'] = $_GET['weekofyear'];
 		$params['hour'] = $_GET['hour'];
 		$params['minute'] = $_GET['minute'];
+		$params['year2'] = $_GET['year2'];
+		$params['month2'] = $_GET['month2'];
+		$params['day2'] = $_GET['day2'];
+		$params['dayofyear2'] = $_GET['dayofyear2'];
+		$params['weekofyear2'] = $_GET['weekofyear2'];
+		$params['hour2'] = $_GET['hour2'];
+		$params['minute2'] = $_GET['minute2'];
 		$params['limit'] = $_GET['limit'];
 		$params['offset'] = $_GET['offset'];
 		$params['sortby'] = $_GET['sortby'];

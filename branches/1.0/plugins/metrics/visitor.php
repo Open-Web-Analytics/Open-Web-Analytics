@@ -39,7 +39,7 @@ class owa_metric_visitor extends owa_metric {
 
 		$this->owa_metric();
 
-		$this->api_calls = array('visitors_age', 'visitor_history', 'new_v_repeat', 'latest_visits');
+		$this->api_calls = array('visitor_list', 'visitors_age', 'visitor_history', 'new_v_repeat', 'latest_visits');
 
 	}
 	
@@ -61,7 +61,9 @@ class owa_metric_visitor extends owa_metric {
 		case "latest_visits":
 			return $this->latest_visits();		
 		case "visitors_age":
-			return $this->visitors_age();			
+			return $this->visitors_age();
+		case "visitor_list":
+			return $this->visitor_list();			
 		}
 		
 	}
@@ -125,10 +127,10 @@ class owa_metric_visitor extends owa_metric {
 			sessions.timestamp DESC
 		LIMIT 
 			%s",
-			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['ns'].$this->config['referers_table'],
-			$this->config['ns'].$this->config['documents_table'],
-			$this->config['ns'].$this->config['ua_table'],
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['referers_table']),
+			$this->setTable($this->config['documents_table']),
+			$this->setTable($this->config['ua_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']
@@ -156,7 +158,7 @@ class owa_metric_visitor extends owa_metric {
 			%s 
 			%s",
 			
-			$this->config['ns'].$this->config['sessions_table'],
+			$this->setTable($this->config['sessions_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
@@ -176,7 +178,7 @@ class owa_metric_visitor extends owa_metric {
 		
 		$sql = sprintf("
 		SELECT
-			count(sessions.visitor_id),
+			count(sessions.visitor_id) as count,
 			visitors.first_session_year,
 			visitors.first_session_month 
 		FROM 
@@ -187,16 +189,51 @@ class owa_metric_visitor extends owa_metric {
 			%s
 		GROUP BY
 			visitors.first_session_year,
-			visitors.first_session_month ",
+			visitors.first_session_month
+		ORDER BY
+			visitors.first_session_year,
+			visitors.first_session_month DESC",
 			
-			$this->config['ns'].$this->config['sessions_table'],
-			$this->config['ns'].$this->config['visitors_table'],
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['visitors_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);
 
 		return $this->db->get_results($sql);	
 		
+	}
+	
+	/**
+	 * Visitor List
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function visitor_list() {
+	
+		$sql = sprintf("
+		SELECT 
+			distinct sessions.visitor_id as visitor_id,
+			visitors.user_name,
+			visitors.user_email
+		FROM 
+			%s as sessions,
+			%s as visitors 
+		WHERE
+			sessions.visitor_id = visitors.visitor_id 
+			%s
+			%s
+		LIMIT 
+			%s",
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['visitors_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql);
 	}
 	
 }

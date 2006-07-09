@@ -62,13 +62,6 @@ class owa_metric {
 	var $config = array();
 	
 	/**
-	 * Debug
-	 *
-	 * @var string
-	 */
-	var $debug;
-	
-	/**
 	 * Databse Access Object
 	 *
 	 * @var object
@@ -90,11 +83,25 @@ class owa_metric {
 	var $api_calls = array();
 	
 	/**
+	 * The params of the caller, either a report or graph
+	 *
+	 * @var array
+	 */
+	var $params;
+	
+	/**
 	 * Error handler
 	 *
 	 * @var object
 	 */
 	var $e;
+	
+	/**
+	 * Summary Framework Object
+	 *
+	 * @var object
+	 */
+	var $summaryFramework;
 
 	/**
 	 * Constructor
@@ -107,8 +114,14 @@ class owa_metric {
 		$this->config = &owa_settings::get_settings();
 		$this->e = &owa_error::get_instance();
 		$this->db = &owa_db::get_instance();
+		
 		// Setup time and query periods
 		$this->time_now = owa_lib::time_now();
+		
+		if ($this->config['use_summary_tables']):
+		// This is a stub for getting Summary Framework object
+			//$this->summaryFramework = &owa_summary::get_instance();
+		endif;
 		
 		return;
 	}
@@ -139,9 +152,10 @@ class owa_metric {
 	 *
 	 * @access private
 	 * @param string $period
+	 * @param array $params
 	 * @return string $where
 	 */
-	function time_period($period) {	
+	function time_period($period, $params = null) {	
 	
 		switch ($period) {
 			case "last_24_hours":	
@@ -240,9 +254,9 @@ class owa_metric {
 						);
 				break;
 				
-			case "same_weekday_last_week":
-				$where = sprintf("day = '%s' and year = '%s'",
-							$this->time_now['day'] - 7,
+			case "same_day_last_week":
+				$where = sprintf("dayofyear = '%s' and year = '%s'",
+							$this->time_now['dayofyear'] - 7,
 							$this->time_now['year']
 						);
 				break;
@@ -290,6 +304,49 @@ class owa_metric {
 							"dayofyear > '%s' and year = '%s'",
 							$bound,
 							$this->time_now['year']
+						);	
+				
+				break;
+				
+			case "day":
+				
+				$where = sprintf(
+							"day = '%s' and month = '%s' and year = '%s'",
+							$this->params['request_params']['day'],
+							$this->params['request_params']['month'],
+							$this->params['request_params']['year']
+						);	
+				
+				break;
+				
+			case "month":
+				
+				$where = sprintf(
+							"month = '%s' and year = '%s'",
+							$this->params['request_params']['month'],
+							$this->params['request_params']['year']
+						);	
+				
+				break;
+				
+			case "year":
+				
+				$where = sprintf(
+							"year = '%s'",
+							$this->params['request_params']['year']
+						);	
+				
+				break;
+			
+			case "date_range":
+				
+				$start = mktime(0, 0, 0, $this->params['request_params']['month'], $this->params['request_params']['day'], $this->params['request_params']['year']); 
+				$end = mktime(24, 59, 59, $this->params['request_params']['month2'], $this->params['request_params']['day2'], $this->params['request_params']['year2']);
+				
+				$where = sprintf(
+							"timestamp BETWEEN '%s' and '%s'",
+							$start,
+							$end
 						);	
 				
 				break;
@@ -364,6 +421,26 @@ class owa_metric {
 		
 		
 	}
+	
+	/**
+	 * Hook for using summary tables
+	 *
+	 * @param string $table_name
+	 * @return unknown
+	 */
+	function setTable($table_name) {
+		
+		if ($this->config['use_summary_tables']):
+			// Set summary table suffix
+			$table_name = $this->summaryFramework->getTable($table_name, $this->params['period']); 
+		endif;
+		
+		return sprintf("%s%s",
+						$this->config['ns'],
+						$table_name);
+		
+	}
+	
 	
 	/**
 	 * Retrieve Result data for a particular metric

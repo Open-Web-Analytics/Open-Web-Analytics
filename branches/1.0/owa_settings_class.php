@@ -185,8 +185,11 @@ class owa_settings {
 			'reporting_url'					=> '',
 			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
 			'inter_report_link_template'	=> '%s?page=%s&%s', //base_url?report=report_name&get...
+			'graph_link_template'			=> '%s?owa_action=graph&name=%s&%s', //action_url?...
 			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION,
-			'owa_rss_url'					=> 'http://www.openwebanalytics.com/?feed=rss2'
+			'owa_rss_url'					=> 'http://www.openwebanalytics.com/?feed=rss2',
+			'use_summary_tables'			=> false,
+			'summary_framework'				=> ''
 			);
 	}
 	
