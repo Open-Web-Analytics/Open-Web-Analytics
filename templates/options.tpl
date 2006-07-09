@@ -7,8 +7,10 @@
     <a href="http://wiki.openwebanalytics.com">OWA Wiki</a></P>
     
     <UL class="nav_bar">
-    	<LI><a href="<?=$config['public_url'];?>/admin/options.php?page=manage_sites">Manage Web Site Tracking Tags</a></LI>
-    </UL>
+    	<LI><a href="<?=$this->make_admin_link('options.php', array('owa_page' => 'manage_sites'));?>">Manage Web Site Tracking Tags</a></LI>
+    	<LI><a href="<?=$this->make_admin_link('install.php', array('owa_page' => 'package_selection'));?>">Installation Package Manager</a></LI>
+   
+    	</UL>
 
     <fieldset name="owa-options" class="options">
 	<legend>Request Processing Options</legend>

@@ -1,7 +1,7 @@
 <div id="admin_nav">
 <table align="right">
 	<TR>
-		<TD><a href="<?=$this->config['public_url'];?>/admin/options.php">Options</a></TD>
+		<TD><a href="<?=$this->make_admin_link('options.php');?>">Options</a></TD>
 		<TD>|</TD>
 		<TD><a href="http://wiki.openwebanalytics.com">Help</a></TD>
 		<TD>|</TD>

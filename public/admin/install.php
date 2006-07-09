@@ -16,7 +16,7 @@
 // $Id$
 //
 
-include_once('../set_env.php');
+//include_once('../set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_installer.php');
@@ -84,7 +84,7 @@ $body->set('db_state', $db_state);
 
 // Page Controlers
 
-switch ($_GET['page']) {
+switch ($_GET['owa_page']) {
 	
 	case "db_info":
 		$body_tpl = 'installer_db_info.tpl';
@@ -145,7 +145,7 @@ switch ($_GET['action']) {
 }
 
 // Global Template assignments
-$page->set_template('default_wrap.tpl');// This is the outer template
+$page->set_template($owa->config['report_wrapper']);// This is the outer template
 $body->set_template($body_tpl);// This is the inner template
 $body->set('config', $owa->config);
 $body->set('status_msg', $status_msg);

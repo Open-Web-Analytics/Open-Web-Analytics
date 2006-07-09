@@ -31,11 +31,14 @@ $owa_config['db_name'] = DB_NAME;     // The name of the database
 $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
-$owa_config['db_type'] = 'wordpress';     // The host of your db
+$owa_config['db_type'] = 'mysql';     // The host of your db
+$owa_config['db_class'] = 'wordpress';     // The host of your db
 $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
+$owa_config['admin_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/admin';
 $owa_config['inter_report_link_template'] = '%s/%s&%s';
+$owa_config['inter_admin_link_template'] = '%s/%s&%s';
 
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):

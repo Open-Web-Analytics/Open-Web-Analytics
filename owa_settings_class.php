@@ -96,6 +96,7 @@ class owa_settings {
 				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
 				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
 				$config['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
+				$config['admin_url'] = $OWA_CONFIG['public_url']."/admin/index.php";
 				
 			endif;	
 		endif;
@@ -141,6 +142,7 @@ class owa_settings {
 			'visitors_table'				=> 'visitors',
 			'impressions_table'				=> 'impressions',
 			'clicks_table'					=> 'clicks',
+			'db_class'						=> '',
 			'db_type'						=> '',
 			'db_name'						=> OWA_DB_NAME,
 			'db_user'						=> OWA_DB_USER,
@@ -186,6 +188,7 @@ class owa_settings {
 			'reporting_url'					=> '',
 			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
 			'inter_report_link_template'	=> '%s?page=%s&%s', //base_url?report=report_name&get...
+			'inter_admin_link_template'		=> '%s?admin=%s&%s', //base_url?report=report_name&get...
 			'graph_link_template'			=> '%s?owa_action=graph&name=%s&%s', //action_url?...
 			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION,
 			'owa_rss_url'					=> 'http://www.openwebanalytics.com/?feed=rss2',
