@@ -76,6 +76,7 @@ class owa_install_update_to_1_0_rc3 extends owa_install {
 	function owa_install_update_to_1_0_rc3() {
 		$this->owa_install();
 		$this->tables = array(	$this->config['exits_table'],
+								$this->config['visitors_table'],
 								$this->config['impressions_table'],
 								$this->config['clicks_table']
 								);
