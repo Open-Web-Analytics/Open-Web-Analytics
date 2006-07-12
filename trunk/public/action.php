@@ -33,34 +33,8 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 $l = new owa_php;
 
-switch ($_GET['owa_action']) {
-	
-	case $l->config['first_hit_param']:
-		$l->first_request_handler();		
-		exit;
-	case $l->config['graph_param']:
-		$l->getGraph();
-		exit;
-	case "log_click":
-		$l->logClick();
-		
-		// Return 1x1 pixel
-		header('Content-type: image/gif');
-		header('P3P: CP="'.$l->config['p3p_policy'].'"');
-		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-		header('Cache-Control: no-store, no-cache, must-revalidate');
-		header('Cache-Control: post-check=0, pre-check=0', false);
-		header('Pragma: no-cache');
-		
-		printf(
-		  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
-		  71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
-		);
-			
-		exit;
-}
+$l->e->debug('Special action request received...');
 
-
+$l->actionRequestHandler();
 
 ?>

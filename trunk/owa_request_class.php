@@ -70,8 +70,8 @@ class owa_request extends owa_event {
 		//Call to Parent Constructor
 		$this->owa_event();
 	
-		// Create GUID for this request
-		$this->properties['request_id'] = $this->set_guid();
+		// Set GUID for this request
+		$this->properties['request_id'] = $this->guid;
 		
 		// Record HTTP request variables
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
@@ -79,9 +79,6 @@ class owa_request extends owa_event {
 		//$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
 		$this->properties['inbound_uri'] = owa_lib::get_current_url();
 		$this->properties['uri'] = $this->properties['inbound_uri'];
-		$this->properties['ip_address'] = $this->get_ip();
-		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
-		$this->properties['site'] = $_SERVER['SERVER_NAME'];
 		
 		// Calc time sinse the last request
 		$this->time_sinse_lastreq = $this->time_sinse_last_request();
@@ -178,7 +175,7 @@ class owa_request extends owa_event {
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->make_document_id();
+		$this->properties['document_id'] = $this->make_document_id($this->properties['uri']);
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):
 			$this->resolve_host();
@@ -350,166 +347,7 @@ class owa_request extends owa_event {
 		return;
 	}
 	
-	/**
-	 * Create guid from process id
-	 *
-	 * @return	integer
-	 * @access 	private
-	 */
-	function set_guid() {
 	
-		return crc32(posix_getpid().$this->properties['sec'].$this->properties['msec'].rand());
-	
-	}
-	
-	/**
-	 * Create guid from string
-	 *
-	 * @param 	string $string
-	 * @return 	integer
-	 * @access 	private
-	 */
-	function set_string_guid($string) {
-	
-		return crc32(strtolower($string));
-	
-	}
-	
-	/**
-	 * Resolve host
-	 * 
-	 * @access private
-	 */
-	function resolve_host() {
-	
-		if (!empty($_SERVER['REMOTE_HOST'])):
-		
-			$ip = $_SERVER['REMOTE_HOST'];
-		
-		else:
-		
-			$ip = $this->properties['ip_address'];
-		
-		endif;
-		
-		$fullhost = @gethostbyaddr($ip);
-			
-		if ($fullhost != $ip):
-	
-			$host_array = explode('.', $fullhost);
-			$host_array = array_reverse($host_array);
-			
-			$host = $host_array[2].".".$host_array[1].".".$host_array[0];
-				
-		else:
-			$host = $fullhost;					
-		endif;
-			
-			$this->properties['host'] = $host;
-			$this->properties['host_id'] = $this->set_string_guid($host);
-			
-		return;
-	}
-
-	/**
-	 * Get IP address from request
-	 *
-	 * @return string
-	 * @access private
-	 */
-	function get_ip() {
-	
-		if ($_SERVER["HTTP_X_FORWARDED_FOR"]):
-			if ($_SERVER["HTTP_CLIENT_IP"]):
-		   		$proxy = $_SERVER["HTTP_CLIENT_IP"];
-		  	else:
-		    	$proxy = $_SERVER["REMOTE_ADDR"];
-		  	endif;
-			
-			$ip = $_SERVER["HTTP_X_FORWARDED_FOR"];
-		else:
-			if ($_SERVER["HTTP_CLIENT_IP"]):
-		    	$ip = $_SERVER["HTTP_CLIENT_IP"];
-		  	else:
-		    	$ip = $_SERVER["REMOTE_ADDR"];
-			endif;
-		endif;
-		
-		return $ip;
-	
-	}
-	
-	/*function get_current_url() {
-		
-		$url = 'http';	
-		
-		if($_SERVER['HTTPS']=='on'):
-			$url.= 's';
-		endif;
-		
-		$url .= '://'.$_SERVER['SERVER_NAME'];
-		
-		if($_SERVER['SERVER_PORT'] != 80):
-			$url .= ':'.$_SERVER['SERVER_PORT'];
-		endif;
-		
-		$url .= $_SERVER['REQUEST_URI'];
-		
-		return $url;
-	}*/
-	
-	
-	/**
-	 * Makes the id for the uri of the request
-	 *
-	 * @return integer
-	 */
-	function make_document_id() {
-		
-		if ($this->config['clean_query_string'] == true):
-		
-			if (!empty($this->config['query_string_filters'])):
-				$filters = str_replace(' ', '', $this->config['query_string_filters']);
-				$filters = explode(',', $this->config['query_string_filters']);
-			else:
-				$filters = array();
-			endif;
-			
-			// Add OWA specific params to filter list
-			$filters[] = $this->config['source_param'];
-			$filters[] = $this->config['ns'].$this->config['feed_subscriber_id'];
-			
-			foreach ($filters as $filter) {
-	          $this->properties['uri'] = preg_replace(
-	            '#\?' .
-	            $filter .
-	            '=.*$|&' .
-	            $filter .
-	            '=.*$|' .
-	            $filter .
-	            '=.*&#msiU',
-	            '',
-	            $this->properties['uri']
-	          );
-	          //print $this->properties['uri'];
-	        }
-		
-	    endif;
-     	
-        return $this->set_string_guid($this->properties['uri']);
-		
-	}
-	
-	/**
-	 * Attempts to make a unique ID out of http request variables
-	 *
-	 * @return integer
-	 */
-	function setEnvGUID() {
-		
-		return crc32($this->properties['ua'].$this->properties['ip_address']);
-		
-	}
 	
 	
 }

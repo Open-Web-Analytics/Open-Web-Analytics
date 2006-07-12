@@ -57,9 +57,13 @@ function wait() {
  */
 function owa_clickLogger() {
 
-    owa_click.log_ajax();
+	if (owa_click.init == 1) {
+		
+		owa_click.log_ajax();
+   	
+	}
     
-	setTimeout("wait()", 10000);
+	//setTimeout("wait()", 500);
    // alert("click");
 	return;
 
@@ -74,6 +78,7 @@ function click() {
     var e = null
     var targ = null
     var properties = null
+    var init = null
     
     this.properties = new Object();
     
@@ -93,7 +98,7 @@ function owa_logClickAjax() {
     var log_url
     var bug
     
-    log_url = '%s&'
+    log_url = '%s&';
     properties = this.properties;
     
     for(param in properties) {  // print out the params
@@ -104,14 +109,32 @@ function owa_logClickAjax() {
 	
 	get = get + Math.round(100*Math.random());
 
-   //alert(get);
+   
    bug = log_url + get ;
+   
+	if (window.XMLHttpRequest){
+
+		// If IE7, Mozilla, Safari, etc: Use native object
+		var ajax = new XMLHttpRequest()
+
+	} 
+	
+	else {
+		
+		if (window.ActiveXObject){
+	
+	          // ...otherwise, use the ActiveX control for IE5.x and IE6
+	          var ajax = new ActiveXObject("Microsoft.XMLHTTP"); 
+		}
+
+	}
     
 	
+	ajax.open("GET", bug, false); 
+	ajax.send(null);
 	
-	
-	data = new XMLHttpRequest();
-	data.open("GET", bug, false); data.send(null);
+	// Uninitialize click object.
+	this.init = null;
 	
 	return;
 }
@@ -154,9 +177,11 @@ function owa_setClickProperties(e) {
     this.setTagName();
     this.setCoords();
 
-    this.properties["html_element_name"] = this.targ.name;
-    this.properties["html_element_value"] = this.targ.value;
-    this.properties["html_element_id"] = this.targ.id;
+    this.properties["dom_element_name"] = this.targ.name;
+    this.properties["dom_element_value"] = this.targ.value;
+    this.properties["dom_element_id"] = this.targ.id;
+    this.properties["page_url"] = owa_base64_encode(window.location.href);
+    this.init = 1;
     
     return true;
 }
@@ -169,8 +194,8 @@ function owa_setCoords() {
 
     this.properties["click_x"] = this.e.clientX;
     this.properties["click_y"] = this.e.clientY;
-    this.properties["html_element_x"] = this.targ.pageX;
-    this.properties["html_element_y"] = this.targ.pageY;
+    this.properties["dom_element_x"] = this.targ.pageX;
+    this.properties["dom_element_y"] = this.targ.pageY;
 
     return;
 }
@@ -203,19 +228,22 @@ function owa_setTarget() {
 function owa_setTagName() {
     
     // Set properties of the owa_click object.
-    this.properties["html_element_tag"] = this.targ.tagName;
+    this.properties["dom_element_tag"] = this.targ.tagName;
     
-    if (this.properties["html_element_tag"] == "A") {
+    if (this.properties["dom_element_tag"] == "A") {
     
         if (this.targ.textContent != undefined) {
-             this.properties["html_element_text"] = this.targ.textContent;
+             this.properties["dom_element_text"] = this.targ.textContent;
         } else {
-             this.properties["html_element_text"] = this.targ.innerText;
+             this.properties["dom_element_text"] = this.targ.innerText;
         }
+        
+        this.properties["target_url"] = owa_base64_encode(this.targ.href);
+        
     }
-    else if (this.properties["html_element_tag"] == "INPUT") {
+    else if (this.properties["dom_element_tag"] == "INPUT") {
     
-        this.properties["html_element_text"] = this.targ.value;
+        this.properties["dom_element_text"] = this.targ.value;
     }
 
     return;
@@ -230,14 +258,51 @@ function owa_debugClick() {
     alert( 
         " // click_x: " + this.properties["click_x"]
         + " // click_y: " + this.properties["click_y"] 
-        + " // html_element_x: " + this.properties["html_element_x"] 
-        + " // html_element_y: " + this.properties["html_element_y"]
-        + " // html_element_name: " + this.properties["html_element_name"] 
-        + " // html_element_text: " + this.properties["html_element_text"] 
-        + " // html_element_value: " + this.properties["html_element_value"] 
-        + " // html_element_id: " + this.properties["html_element_id"]
-        + " // html_element_tag: " + this.properties["html_element_tag"]
+        + " // dom_element_x: " + this.properties["dom_element_x"] 
+        + " // dom_element_y: " + this.properties["dom_element_y"]
+        + " // dom_element_name: " + this.properties["dom_element_name"] 
+        + " // dom_element_text: " + this.properties["dom_element_text"] 
+        + " // dom_element_value: " + this.properties["dom_element_value"] 
+        + " // dom_element_id: " + this.properties["dom_element_id"]
+        + " // dom_element_tag: " + this.properties["dom_element_tag"]
+        + " // page_url: " + this.properties["page_url"]
+        + " // target_url: " + this.properties["target_url"]
     );
 
     return;
+}
+
+// Base64 encodes strings
+// Taken from http://www.jan-winkler.de/hw/artikel/art_j02.htm
+function owa_base64_encode(decStr) {
+  var base64s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  var bits;
+  var dual;
+  var i = 0;
+  var encOut = '';
+
+  while(decStr.length >= i + 3) {
+    bits = (decStr.charCodeAt(i++) & 0xff) <<16 |
+           (decStr.charCodeAt(i++) & 0xff) <<8 |
+            decStr.charCodeAt(i++) & 0xff;
+
+    encOut += base64s.charAt((bits & 0x00fc0000) >>18) +
+              base64s.charAt((bits & 0x0003f000) >>12) +
+              base64s.charAt((bits & 0x00000fc0) >> 6) +
+              base64s.charAt((bits & 0x0000003f));
+  }
+
+  if(decStr.length -i > 0 && decStr.length -i < 3) {
+    dual = Boolean(decStr.length -i -1);
+
+    bits = ((decStr.charCodeAt(i++) & 0xff) <<16) |
+           (dual ? (decStr.charCodeAt(i) & 0xff) <<8 : 0);
+
+    encOut += base64s.charAt((bits & 0x00fc0000) >>18) +
+              base64s.charAt((bits & 0x0003f000) >>12) +
+              (dual ? base64s.charAt((bits & 0x00000fc0) >>6) : '=') +
+              '=';
+  }
+
+  return(encOut);
 }
