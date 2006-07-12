@@ -428,6 +428,19 @@ class owa_lib {
 		$params['document_id'] = $_GET['document_id'];
 		$params['referer_id'] = $_GET['referer_id'];
 		$params['source'] = $_GET['source'];
+		$params['page_url'] = base64_decode($_GET['page_url']);
+		$params['target_url'] = base64_decode($_GET['target_url']);
+		$params['dom_element_name'] = $_GET['dom_element_name'];
+    	$params['dom_element_value'] = $_GET['dom_element_value'];
+    	$params['dom_element_id'] = $_GET['dom_element_id'];
+    	$params['dom_element_x'] = $_GET['dom_element_x'];
+    	$params['dom_element_y'] = $_GET['dom_element_y'];
+    	$params['dom_element_text'] = $_GET['dom_element_text'];
+    	$params['dom_element_tag'] = $_GET['dom_element_tag'];
+    	$params['click_x'] = $_GET['click_x'];
+    	$params['click_y'] = $_GET['click_y'];
+    	
+		
 	
 		return $params;
 		

@@ -93,6 +93,21 @@ class owa_settings {
 					}
 				endif;
 				// Setup special public URLs
+				
+				$base_url  = "http";
+		
+				if($_SERVER['HTTPS']=='on'):
+					$base_url .= 's';
+				endif;
+						
+				$base_url .= '://'.$_SERVER['SERVER_NAME'];
+				
+				if($_SERVER['SERVER_PORT'] != 80):
+					$base_url .= ':'.$_SERVER['SERVER_PORT'];
+				endif;
+				
+				$config['public_url'] = $base_url . $OWA_CONFIG['public_url'];
+				
 				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
 				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
 				$config['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
@@ -142,6 +157,7 @@ class owa_settings {
 			'visitors_table'				=> 'visitors',
 			'impressions_table'				=> 'impressions',
 			'clicks_table'					=> 'clicks',
+			'exits_table'					=> 'exits',
 			'db_class'						=> '',
 			'db_type'						=> '',
 			'db_name'						=> OWA_DB_NAME,

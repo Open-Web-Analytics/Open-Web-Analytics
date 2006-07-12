@@ -33,8 +33,12 @@
 // $OWA_CONFIG['public_url'] = '/path/to/owa/public';
 
 // Database type
+// Possible values: mysql
+// $OWA_CONFIG['db_type'] = 'mysql';
+
+// Database Connection Class
 // Possible values: wordpress, mysql
-// $OWA_CONFIG['db_type'] = '';
+// $OWA_CONFIG['db_class'] = '';
 
 // Name of the database
 // $OWA_CONFIG['db_name'] = '';

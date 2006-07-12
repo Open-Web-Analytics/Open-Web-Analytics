@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -16,18 +16,8 @@
 // $Id$
 //
 
-include_once('set_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
-
 /**
- * Javascript web bug request handler
- * 
- * This is usually invoked using:
- *
- * <SCRIPT language="JavaScript">
- * 	var owa_site_id = 1;
- * </SCRIPT>
- * <SCRIPT TYPE="text/javascript" SRC="http://site.domain.com/public/wb.php"></SCRIPT>
+ * Click Event handler
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -37,18 +27,43 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+class Log_observer_click extends owa_observer {
+		
+	/**
+	 * Constructor
+	 *
+	 * @param string $priority
+	 * @param array $conf
+	 * @return Log_observer_referer
+	 * @access public
+	 */
+    function Log_observer_click($priority, $conf) {
+				
+        // Call the base class constructor
+        $this->owa_observer($priority);
 
-$owa = new owa_php;
+        // Configure the observer to handle certain events types
+		$this->_event_type = array('click');
+		
+		return;
+    }
 
-header('Content-type: text/javascript');
-header('P3P: CP="'.$owa->config['p3p_policy'].'"');
-header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Cache-Control: post-check=0, pre-check=0', false);
-header('Pragma: no-cache');
-
-// This is the handler for javascript request for the logging web bug. 
-$owa->place_log_bug();	
+    /**
+     * Event Notification
+     *
+     * @param unknown_type $event
+     */
+    function notify($event) {
+		
+    	$this->m = $event['message'];
+  		$this->e->debug('Handling Click Event...');
+    	$click = new owa_click;
+    	$click->_setProperties($this->m);
+    	$click->save();
+    				
+		return;
+    }
+		
+}
 
 ?>

@@ -67,6 +67,8 @@ class owa_wp extends owa_caller {
 		return $this->controller->logEvent('new_comment');
 		
 	}
+	
+
 
 }
 

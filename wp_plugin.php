@@ -37,6 +37,7 @@ $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
 $owa_config['admin_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/admin';
+$owa_config['action_url'] = get_bloginfo('url').'/index.php';
 $owa_config['inter_report_link_template'] = '%s/%s&%s';
 $owa_config['inter_admin_link_template'] = '%s/%s&%s';
 
@@ -72,9 +73,12 @@ elseif ($owa_wp_version[0] == '2'):
 endif;
 
 
+
 add_action('template_redirect', 'owa_main');
+
 add_action('wp_footer', array(&$owa_wp, 'placePageTags'));
 add_filter('post_link', 'owa_post_link');
+add_action('init', array(&$owa_wp, 'actionRequestHandler'));
 add_filter('bloginfo', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_view');
 add_action('comment_post', array(&$owa_wp, 'logComment'));
