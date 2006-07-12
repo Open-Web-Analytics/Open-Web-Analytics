@@ -16,18 +16,11 @@
 // $Id$
 //
 
-include_once('set_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+include_once '../set_env.php';
+include_once OWA_BASE_DIR.'/owa_php.php';
 
 /**
- * Javascript web bug request handler
- * 
- * This is usually invoked using:
- *
- * <SCRIPT language="JavaScript">
- * 	var owa_site_id = 1;
- * </SCRIPT>
- * <SCRIPT TYPE="text/javascript" SRC="http://site.domain.com/public/wb.php"></SCRIPT>
+ * Generic Admin screen Controler
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -38,17 +31,14 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-$owa = new owa_php;
+$owa = new owa($config);
 
-header('Content-type: text/javascript');
-header('P3P: CP="'.$owa->config['p3p_policy'].'"');
-header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Cache-Control: post-check=0, pre-check=0', false);
-header('Pragma: no-cache');
+if(!empty($_GET['admin'])):
 
-// This is the handler for javascript request for the logging web bug. 
-$owa->place_log_bug();	
+	$admin_page = $_GET['admin'];
+else:
+	$admin_page = $_POST['admin'];
+endif;
 
+include_once($owa->config['admin_dir'].$admin_page);
 ?>

@@ -16,7 +16,7 @@
 // $Id$
 //
 
-include_once('../set_env.php');
+//include_once('../set_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_site.php');
@@ -42,7 +42,7 @@ $body = & new owa_template;
 $body_tpl = 'options.tpl';// This is the inner template
 $body->set('page_title', 'OWA Options');
 
-switch ($_GET['page']) {
+switch ($_GET['owa_page']) {
 	
 	case "manage_sites":
 		$body_tpl = 'options_manage_sites.tpl';
@@ -68,7 +68,7 @@ switch ($_POST['action']) {
 			$body_tpl = 'options_new_site_success.tpl';
 			$page_h1 = 'Your new site is ready to be tracked';
 			$body->set('site_id', $site_id);
-			$tag = $owa->makeTag($site_id);
+			$tag = $owa->requestTag($site_id);
 			$body->set('tag', $tag);
 		else:
 			$page_h1 = 'Error';
@@ -97,7 +97,7 @@ switch ($_GET['action']) {
 			$page_h1 = 'The tracking tag for your site is below.';
 			
 			$body->set('site_id', $_GET['site_id']);
-			$tag = $owa->makeTag($site_id);
+			$tag = $owa->requestTag($site_id);
 			$body->set('tag', $tag);
 		
 		break;
@@ -108,7 +108,7 @@ $rss = new owa_news;
 $news = $rss->Get($rss->config['owa_rss_url']);
 
 // Global Template assignments
-$page->set_template('default_wrap.tpl');// This is the outer template
+$page->set_template($owa->config['report_wrapper']);// This is the outer template
 $page->set('news', $news);
 $body->set_template($body_tpl);// This is the inner template
 $body->set('config', $owa->config);

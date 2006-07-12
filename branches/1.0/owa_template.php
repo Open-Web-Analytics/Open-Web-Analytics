@@ -40,6 +40,13 @@ class owa_template extends Template {
 	 */
 	var $config;
 	
+	/**
+	 * Params passed by calling caller
+	 *
+	 * @var array
+	 */
+	var $caller_params;
+	
 	function owa_template($caller_params = null) {
 		
 		$this->caller_params = $caller_params;
@@ -135,6 +142,27 @@ class owa_template extends Template {
 				$get);
 	}
 	
+	/**
+	 * Generates a link between admin screens
+	 *
+	 * @param array $query_params
+	 * @return string
+	 */
+	function make_admin_link($admin_page, $query_params = null, $make_query_string = true) {
+		
+		if ($make_query_string == true):
+			$get = $this->makeLinkQueryString($query_params);
+		else:
+			$get = '';
+		endif;
+		
+		//Return URL
+		return sprintf($this->config['inter_admin_link_template'],
+				$this->config['admin_url'],
+				$admin_page,
+				$get);
+	}
+	
 	function makeLinkQueryString($query_params) {
 		
 		$new_query_params = array();
@@ -182,6 +210,7 @@ class owa_template extends Template {
 		
 		
 	}
+	
 }
 
 ?>

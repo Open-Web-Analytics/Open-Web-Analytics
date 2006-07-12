@@ -6,7 +6,7 @@
 	</TR>
 	<? foreach ($visitors_age as $row):?>
 	<TR>
-		<TD><?=$this->get_month_label($row['first_session_month']);?> <?=$row['first_session_year'];?></TD>
+		<TD><?=$this->get_month_label($row['first_session_month']);?> <?=$row['first_session_day'];?> <?=$row['first_session_year'];?></TD>
 		<TD>
 			<a href="<?=$this->make_report_link('visitors_report.php', array('owa_page' => 'visitor_list', 'year2' => $row['first_session_year'], 'month2' => $row['first_session_month'], 'period' => $params['period']));?>">
 			<?=$row['count'];?></a>

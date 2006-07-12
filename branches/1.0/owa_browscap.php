@@ -113,7 +113,7 @@ class owa_browscap {
 	
 	function robotCheck($user_agent) {
 		
-		if ($this->checkForCrawler_main() == true || $this->checkForCrawler_supplemental() == true):
+		if ($this->browscap->crawler == true || $this->browscap_supplemental->crawler == true):
 			return true;
 		else:
 			return false;
@@ -148,7 +148,7 @@ class owa_browscap {
 		
 		if ($this->browscap->browser != 'Default Browser'):
 			// If browscap has the UA listed as a crawler set is_robot, except for RSS feed readers
-			if ($r->browscap->crawler == true && $r->browscap->parent != 'RSS Feeds'):
+			if ($this->browscap->crawler == true && $this->browscap->parent != 'RSS Feeds'):
 				return true;
 			else:
 				return false;	
@@ -160,9 +160,9 @@ class owa_browscap {
 	
 	function checkForCrawler_supplemental() {
 		
-		if ($this->browscap->browser != 'Default Browser'):
+		if ($this->browscap_supplemental->browser != 'Default Browser'):
 			// If browscap has the UA listed as a crawler set is_robot, except for RSS feed readers
-			if ($r->browscap->crawler == true):
+			if ($this->browscap_supplemental->crawler == true):
 				return true;
 			else:
 				return false;	

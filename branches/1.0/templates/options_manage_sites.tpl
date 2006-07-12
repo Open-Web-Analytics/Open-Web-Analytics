@@ -21,8 +21,9 @@ if it is to be tracked seperately.</P>
 		Description: <textarea name="description" cols="32" rows="3"><?=$value['description'];?></textarea></TD>
 		<TD><input type="text" name="site_family" size="15" value="<?=$value['site_family'];?>"></TD>
 		<TD class="id_box"><?=$value['site_id'];?></TD>
+		<input type="hidden" name="admin" value="options.php">
 		<TD><input type="submit" name="edit_site" value="Save Edit" ></TD>
-		<TD><a href="<?=$_SERVER['PHP_SELF'];?>?action=get_tag&site_id=<?=$value['site_id'];?>">Get Tracking Tag</TD>
+		<TD><a href="<?=$this->make_admin_link('options.php', array('action' => 'get_tag', 'site_id' => $value['site_id']));?>">Get Tracking Tag</TD>
 		<input type="hidden" name="action" value="edit_site">
 		</form>
 	</TR>
@@ -34,6 +35,7 @@ if it is to be tracked seperately.</P>
 		<TD><input type="text" name="site_family" size="15" value=""></TD>
 		<TD></TD>
 		<TD><input type="submit" name="edit_site" value="Add New Site" ></TD>
+		<input type="hidden" name="admin" value="options.php">
 		<input type="hidden" name="action" value="add_site">
 		</form>
 	</TR>

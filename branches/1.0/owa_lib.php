@@ -111,7 +111,7 @@ class owa_lib {
 				'year' 				=> date("Y", $timestamp),
 				'month' 			=> date("n", $timestamp),
 				'day' 				=> date("d", $timestamp),
-				'dayofweek' 		=> date("D", $timestamp),
+				'dayofweek' 		=> date("w", $timestamp),
 				'dayofyear' 		=> date("z", $timestamp),
 				'weekofyear'		=> date("W", $timestamp),
 				'hour'				=> date("G", $timestamp),
@@ -316,13 +316,14 @@ class owa_lib {
 					'this_week' => array('label' => 'This Week'),
 					'this_month' => array('label' => 'This Month'),
 					'this_year' => array('label' => 'This Year'),
+					'last_week'  => array('label' => 'Last Week'),
 					'last_month' => array('label' => 'Last Month'),
 					'last_year' => array('label' => 'Last Year'),
 					'last_half_hour' => array('label' => 'The Last 30 Minutes'),				
+					'last_hour' => array('label' => 'Last Hour'),
 					'last_24_hours' => array('label' => 'The Last 24 Hours'),
 					'last_seven_days' => array('label' => 'The Last Seven Days'),
 					'last_thirty_days' => array('label' => 'The Last Thirty Days'),
-					'this_hour' => array('label' => 'This Hour'),
 					'same_day_last_week' => array('label' => 'Same Day last Week'),
 					'same_week_last_year' => array('label' => 'Same Week Last Year'),
 					'same_month_last_year' => array('label' => 'Same Month Last Year'),
@@ -427,6 +428,19 @@ class owa_lib {
 		$params['document_id'] = $_GET['document_id'];
 		$params['referer_id'] = $_GET['referer_id'];
 		$params['source'] = $_GET['source'];
+		$params['page_url'] = base64_decode($_GET['page_url']);
+		$params['target_url'] = base64_decode($_GET['target_url']);
+		$params['dom_element_name'] = $_GET['dom_element_name'];
+    	$params['dom_element_value'] = $_GET['dom_element_value'];
+    	$params['dom_element_id'] = $_GET['dom_element_id'];
+    	$params['dom_element_x'] = $_GET['dom_element_x'];
+    	$params['dom_element_y'] = $_GET['dom_element_y'];
+    	$params['dom_element_text'] = $_GET['dom_element_text'];
+    	$params['dom_element_tag'] = $_GET['dom_element_tag'];
+    	$params['click_x'] = $_GET['click_x'];
+    	$params['click_y'] = $_GET['click_y'];
+    	
+		
 	
 		return $params;
 		

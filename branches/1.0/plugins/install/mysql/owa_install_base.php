@@ -89,6 +89,7 @@ class owa_install_base extends owa_install {
 								$this->config['visitors_table'],
 								$this->config['impressions_table'],
 								$this->config['clicks_table'],
+								$this->config['exits_table']
 								);
 		return;
 	}
@@ -161,6 +162,9 @@ class owa_install_base extends owa_install {
 				break;
 			case $this->config['clicks_table']:
 				return $this->create_clicks_table();
+				break;
+			case $this->config['exits_table']:
+				return $this->create_exits_table();
 				break;
 				
 		}
@@ -281,6 +285,7 @@ class owa_install_base extends owa_install {
 			first_session_month varchar(255),
 			first_session_day INT,
 			first_session_dayofyear INT,
+			first_session_timestamp BIGINT,
 			last_session_id BIGINT,
 			last_session_year INT,
 			last_session_month varchar(255),
@@ -339,6 +344,7 @@ class owa_install_base extends owa_install {
 			visitor_id BIGINT,
 			session_id BIGINT,
 			document_id BIGINT,
+			target_id BIGINT,
 			target_url VARCHAR(255),
 			timestamp BIGINT,
 			year INT,
@@ -347,7 +353,8 @@ class owa_install_base extends owa_install {
 			dayofyear INT,
 			hour TINYINT(2),
 			minute TINYINT(2),
-			msec BIGINT,
+			second INT,
+			msec VARCHAR(255),
 			click_x INT,
 			click_y INT,
 			dom_element_x INT,
@@ -464,6 +471,22 @@ class owa_install_base extends owa_install {
 			PRIMARY KEY (id)
 			)",
 			$this->config['ns'].$this->config['documents_table'])
+		);
+		
+	}
+	
+	function create_exits_table() {
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			id BIGINT,
+			url varchar(255),
+			page_title varchar(255),
+			page_type varchar(255),
+			PRIMARY KEY (id)
+			)",
+			$this->config['ns'].$this->config['exits_table'])
 		);
 		
 	}

@@ -31,12 +31,15 @@ $owa_config['db_name'] = DB_NAME;     // The name of the database
 $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
-$owa_config['db_type'] = 'wordpress';     // The host of your db
+$owa_config['db_type'] = 'mysql';     // The host of your db
+$owa_config['db_class'] = 'wordpress';     // The host of your db
 $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
-$owa_config['inter_report_link_template'] = '%s/%s&%s';
+$owa_config['admin_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/admin';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
+$owa_config['inter_report_link_template'] = '%s/%s&%s';
+$owa_config['inter_admin_link_template'] = '%s/%s&%s';
 
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
@@ -70,12 +73,14 @@ elseif ($owa_wp_version[0] == '2'):
 endif;
 
 
+
 add_action('template_redirect', 'owa_main');
-add_action('wp_footer', array(&$owa_wp, 'add_tag'));
+
+add_action('wp_footer', array(&$owa_wp, 'placePageTags'));
 add_filter('post_link', 'owa_post_link');
+add_action('init', array(&$owa_wp, 'actionRequestHandler'));
 add_filter('bloginfo', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_view');
-add_action('init', array(&$owa_wp, 'init_action'));
 add_action('comment_post', array(&$owa_wp, 'logComment'));
 add_action('admin_menu', 'owa_options');
 

@@ -204,15 +204,12 @@ class owa_caller {
 		header('Cache-Control: post-check=0, pre-check=0', false);
 		header('Pragma: no-cache');
 		
-		
-		$this->e->debug('Received special OWA request. OWA action = first_hit');
+		$this->e->debug('Handling special first_hit request...');
 		
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
 			$this->controller->process_first_request();
 		endif;
 			
-		
-				
 		printf(
 		  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
 		  71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
@@ -229,6 +226,20 @@ class owa_caller {
 		endif;
 	
 		return $this->controller->getGraph($app_params);
+		
+	}	
+	
+	/**
+	 * Logs event whose properties are specified on the URL
+	 *
+	 * @param unknown_type $event_type
+	 * @return unknown
+	 */
+	function logEventRest($event_type) {
+		
+		$app_params = owa_lib::getRestparams();
+	
+		return $this->controller->logEvent($event_type, $app_params);
 		
 	}
 	
@@ -263,9 +274,39 @@ class owa_caller {
 		return;
 	}
 	
-	function add_tag($echo = true) {
+	/**
+	 * Returns All Page Tags
+	 *
+	 * @param boolean $echo
+	 * @return string
+	 */
+	function placePageTags($echo = true) {
 		
-		//if (empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+		$tags = $this->firstHitTag($echo);
+		
+		if ($this->config['log_dom_clicks'] == true):
+			$tags .= $this->clickTag($echo);
+		endif;
+		
+		if ($echo === false):
+			return $tags;
+		else:
+			;
+		endif;
+			
+		return;
+		
+	}
+	
+	
+	/**
+	 * Generates First hit javascript tag
+	 *
+	 * @param boolean $echo
+	 * @return string
+	 */
+	function firstHitTag($echo = true) {
+		
 		if (empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']]) && empty($_COOKIE[$this->config['ns'].$this->config['visitor_param']])):	
 		
 			$bug  = "<script language=\"JavaScript\" type=\"text/javascript\">";
@@ -282,23 +323,15 @@ class owa_caller {
 
 	}
 	
+	/**
+	 * Echos the request logger javascript library
+	 *
+	 */
 	function place_log_bug() {
 		
-		$base_url  = "http";
+		$url = $this->config['public_url'].'/page.php?';
 		
-		if($_SERVER['HTTPS']=='on'):
-			$base_url .= 's';
-		endif;
-				
-		$base_url .= '://'.$_SERVER['SERVER_NAME'];
-		
-		if($_SERVER['SERVER_PORT'] != 80):
-			$base_url .= ':'.$_SERVER['SERVER_PORT'];
-		endif;
-		
-		$base_url .= $this->config['public_url'].'/page.php?';
-		
-		$bug = 'var owa_url = \'' . $base_url . '\';';
+		$bug = 'var owa_url = \'' . $url . '\';';
 		
 		$bug .= file_get_contents(OWA_INCLUDE_DIR.'/webbug.js');
 		
@@ -308,30 +341,102 @@ class owa_caller {
 		
 	}
 	
-	function makeTag($site_id) {
+	function clickTag($echo = true) {
 		
-		$server = 'http';	
-		
-		if($_SERVER['HTTPS']=='on'):
-			$server.= 's';
+ 		$tag = sprintf('<SCRIPT TYPE="text/javascript" SRC="%s?owa_action=click_bug&random=%s"></SCRIPT><DIV ID="owa_click_bug"></DIV>', 
+ 						$this->config['action_url'],
+ 						rand());
+ 						
+ 		if ($echo === false):
+			return $tag;
+		else:
+			echo $tag;
 		endif;
 		
-		$server .= '://'.$_SERVER['SERVER_NAME'];
+		return;
+
+	}
+	
+	function place_click_bug() {
 		
-		if($_SERVER['SERVER_PORT'] != 80):
-			$server .= ':'.$_SERVER['SERVER_PORT'];
-		endif;
+		$url = $this->config['action_url'].'?owa_action=log_event&event=click&';
 		
+		$js = file_get_contents(OWA_INCLUDE_DIR.'/clickbug.js');
+		
+		$bug = sprintf($js, $url, $url); 	
+		
+		echo $bug;
+		
+		return;
+		
+	}
+	
+	function requestTag($site_id) {
 		
 		$tag  = '<SCRIPT language="JavaScript">'."\n";
 		$tag .= "\t".sprintf('var owa_site_id = %s', $site_id)."\n";
 		$tag .= '</SCRIPT>'."\n\n";
  		$tag .= sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php"></SCRIPT>', 
- 						$server.$this->config['public_url']);
+ 						$this->config['public_url']);
  		
  		return $tag;
 		
 	}
+	
+	
+	/**
+	 * Handler for special action requests
+	 *
+	 */
+	function actionRequestHandler() {
+
+		$this->e->debug('Special action request received...');
+	
+		switch ($_GET['owa_action']) {
+			
+			// This handles requests to log the delayed request contained in first_hit cookie  for new users.
+		    case $this->config['first_hit_param']:
+				$this->first_request_handler();		
+				exit;
+				
+			// This handles requests for graphs	
+			case $this->config['graph_param']:
+				$this->getGraph();
+				exit;
+				
+			// This handles requests for the click tracking javascript library	
+			case "click_bug":
+				// This is the handler for javascript request for the logging web bug. 
+				$this->place_click_bug();
+				exit;
+				
+			// This handles requests o log an event via http 	
+			case "log_event":
+				ignore_user_abort(true);
+				$this->logEventRest($_GET['event']);
+				
+				// Return 1x1 pixel
+				header('Content-type: image/gif');
+				header('P3P: CP="'.$l->config['p3p_policy'].'"');
+				header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
+				header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+				header('Cache-Control: no-store, no-cache, must-revalidate');
+				header('Cache-Control: post-check=0, pre-check=0', false);
+				header('Pragma: no-cache');
+				
+				printf(
+				  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
+				  71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
+				);
+					
+				exit;
+           		
+        }
+
+        return;
+
+	}
+	
 }
 
 ?>

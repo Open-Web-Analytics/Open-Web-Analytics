@@ -43,27 +43,6 @@ class owa_wp extends owa_caller {
 		return;
 	}
 	
-	function init_action() {
-			
-		switch ($_GET['owa_action']) {
-			
-			case "first_hit":
-				$this->first_request_handler();	
-				exit;
-				break;		
-			case "graph":
-				$this->getGraph();
-				exit;
-				break;
-			case "update":
-				$this->update_request_handler();
-				
-		}
-		
-		return;
-		
-	}
-	
 	function add_link_tracking($link) {
 	
 		if (!empty($_GET[$this->config['feed_subscription_id']])):
@@ -88,6 +67,8 @@ class owa_wp extends owa_caller {
 		return $this->controller->logEvent('new_comment');
 		
 	}
+	
+
 
 }
 

@@ -33,16 +33,8 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 $l = new owa_php;
 
-switch ($_GET['owa_action']) {
-	
-	case $l->config['first_hit_param']:
-		$l->first_request_handler();		
-		exit;
-	case $l->config['graph_param']:
-		$l->getGraph();
-		exit;
-}
+$l->e->debug('Special action request received...');
 
-
+$l->actionRequestHandler();
 
 ?>

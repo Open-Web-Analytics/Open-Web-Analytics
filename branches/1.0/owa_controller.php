@@ -19,6 +19,7 @@
 require_once 'owa_event_class.php';
 require_once 'owa_settings_class.php';
 require_once 'owa_request_class.php';
+require_once 'owa_click.php';
 require_once 'owa_lib.php';
 require_once 'owa_error.php';
 require_once 'owa_browscap.php';
@@ -90,21 +91,7 @@ class owa {
 						$r->properties['ua']));
 		
 		// Deterine if the request is from a known robot/crawler/spider
-		/*
-		if (get_cfg_var('browscap')):
-			$this->e->debug('using php built in get_browser function to determin browser type');
-			$r->browscap = get_browser(); //If available, use PHP native function
-			$this->e->debug(sprintf('Browser Type: %s', $r->browscap->browser));
-		else:
-			// Look up UA against main browscap file.
-			$this->e->debug('Using get_browser_local to determine browser type');
-			require_once(OWA_INCLUDE_DIR . 'php-local-browscap.php');
-			$r->browscap = get_browser_local($db = $this->config['browscap.ini']);
-			$this->e->debug(sprintf('Browser Type: %s', $r->browscap->browser));
-		endif;
-		
-		*/
-		
+	
 		$bcap = new owa_browscap($r->properties['ua']);
 		
 		if ($bcap->robotCheck == true):
@@ -178,10 +165,9 @@ class owa {
 
 		// Log the request
 		$r->state = 'new_request';
+
 		$r->log();
-		$this->e->debug(sprintf('Request %d logged to event queue',
-								$r->properties['request_id']));
-		
+
 		return;			
 					
 	}
@@ -262,15 +248,27 @@ class owa {
 	function logEvent($event_type, $app_params = '') {
 		
 		// This should become a factory method call based on event type.
-		$event = new owa_event;
+		
+		switch ($event_type) {
+			
+			case "click":
+				$event = new owa_click;
+				break;
+				
+			default:
+				$event = new owa_event;		
+			
+		}
 		
 		if (!empty($app_params)):
 			$event->_setProperties($app_params);
 		endif;
-		$event->state = $event_type;
-		$event->log();
 		
-		$this->e->debug('Logging '.$event_type.' to event queue.');
+		$event->state = $event_type;
+		
+		$event->process();
+		
+		$event->log();
 		
 		return;
 	}
