@@ -390,7 +390,7 @@ class owa_caller {
 	 */
 	function actionRequestHandler() {
 
-		$this->e->debug('Special action request received...');
+		$this->e->debug('Special action request received: '.$_GET['owa_action']);
 	
 		switch ($_GET['owa_action']) {
 			
