@@ -91,10 +91,8 @@ class owa {
 						$r->properties['ua']));
 		
 		// Deterine if the request is from a known robot/crawler/spider
-	
-		$bcap = new owa_browscap($r->properties['ua']);
 		
-		if ($bcap->robotCheck == true):
+		if ($r->bcap->robotCheck == true):
 			$r->is_robot = true;
 		else:
 			// If no match in the supplemental browscap db, do a last check for robots strings.
