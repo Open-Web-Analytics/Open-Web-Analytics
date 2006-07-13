@@ -57,7 +57,7 @@ class owa_request extends owa_event {
 	 *
 	 * @var object
 	 */
-	var $browscap;
+	var $bcap;
 	
 	/**
 	 * Constructor
@@ -91,6 +91,8 @@ class owa_request extends owa_event {
 		
 		// Traffic Source code
 		$this->properties['source'] = $_GET[$this->config['source_param']];
+		
+		$this->bcap = new owa_browscap($this->properties['ua']);
 		
 		return;
 	
@@ -170,6 +172,9 @@ class owa_request extends owa_event {
 		// Make ua id
 		$this->properties['ua_id'] = $this->set_string_guid($this->properties['ua']);
 		
+		// Determine Browser type
+		$this->setBrowscap();
+		
 		// Make os id
 		$this->properties['os'] = $this->determine_os($this->properties['ua']);
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
@@ -180,9 +185,6 @@ class owa_request extends owa_event {
 		if ($this->config['resolve_hosts'] = true):
 			$this->resolve_host();
 		endif;
-		
-		// Determine Browser type
-		$this->determine_browser_type();
 		
 		//update last-request time cookie
 		setcookie($this->config['ns'].$this->config['last_request_param'], $this->properties['sec'], time()+3600*24*365*30, "/", $this->properties['site']);
@@ -276,11 +278,6 @@ class owa_request extends owa_event {
 	 * @return string
 	 */
 	function determine_os($user_agent) {
-		
-		if (!empty($this->browscap->platform)):
-			$this->properties['os'] = $this->browscap->platform;
-			return;
-		else:
 	
 			$matches = array(
 				'Win.*NT 5\.0'=>'Windows 2000',
@@ -310,7 +307,6 @@ class owa_request extends owa_event {
 			
 			return preg_replace($uas, array_values($matches), $user_agent);
 		
-		endif;
 	}
 	
 	function determine_os_new($user_agent) {
@@ -324,11 +320,24 @@ class owa_request extends owa_event {
 	/**
 	 * Determine the type of browser
 	 * 
+	 * @param 	string
 	 * @access 	private
 	 */
-	function determine_browser_type() {
+	function setBrowscap($user_agent) {
 		
-		$this->properties['browser_type'] = $this->browscap->browser;
+		if ($this->bcap->browscap->browser != 'Default Browser'):
+			$this->properties['browser_type'] = $this->bcap->browscap->browser;
+			$this->properties['os'] = $this->bcap->browscap->platform;
+		elseif ($this->bcap->browscap_supplemental->browser != 'Default Browser'):
+			$this->properties['browser_type'] = $this->bcap->browscap_supplemental->browser;
+			if (!empty($this->browscap_supplemental->platform)):
+				$this->properties['os'] = $this->bcap->browscap_supplemental->platform;
+			else:
+				$this->properties['os'] = $this->determine_os($user_agent);
+			endif;
+		else:
+			$this->properties['os'] = $this->determine_os($user_agent);
+		endif;
 		
 		return;
 	}
