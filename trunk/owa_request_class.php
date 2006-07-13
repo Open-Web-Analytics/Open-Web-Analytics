@@ -173,10 +173,10 @@ class owa_request extends owa_event {
 		$this->properties['ua_id'] = $this->set_string_guid($this->properties['ua']);
 		
 		// Determine Browser type
-		$this->setBrowscap();
+		$this->setBrowscap($this->properties['ua']);
 		
 		// Make os id
-		$this->properties['os'] = $this->determine_os($this->properties['ua']);
+		//$this->properties['os'] = $this->determine_os($this->properties['ua']);
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
