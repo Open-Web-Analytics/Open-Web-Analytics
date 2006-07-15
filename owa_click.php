@@ -78,6 +78,8 @@ class owa_click extends owa_event {
 		
 		$this->e->debug('click properties: '.print_r($this->properties, true));
 		
+		$this->state = 'click';
+		
 		return;
 	}
 	

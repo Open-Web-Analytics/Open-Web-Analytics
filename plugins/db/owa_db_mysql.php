@@ -78,17 +78,32 @@ class owa_db_mysql extends owa_db {
 		@mysql_free_result($this->new_result);
 		$this->result = '';
 		$this->new_result = '';
-		$this->new_result = @mysql_unbuffered_query($sql, $this->connection);
+		$result = @mysql_unbuffered_query($sql, $this->connection);
 					
 		// Log Errors
 		if (mysql_errno()):
 			$this->e->debug(sprintf('A MySQL error occured. Error: (%s) %s. Query: %s',
 			mysql_errno(),
-			mysql_error(),
+			htmlspecialchars(mysql_error()),
 			$sql));
 		endif;			
-				
+		
+		$this->new_result = $result;
+		
+		// hack for when calling applications catch all mysql errors and you nee to flush the error
+		// this only is an issue with respect to inserts that fail.
+		if ($result == false):
+			//mysql_ping($this->connection);
+		endif;
+		
 		return $this->new_result;
+	}
+	
+	function close() {
+		
+		@mysql_close($this->connection);
+		return;
+		
 	}
 	
 	/**
