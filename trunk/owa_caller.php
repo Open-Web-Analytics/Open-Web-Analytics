@@ -127,7 +127,7 @@ class owa_caller {
 	 */
 	function log($app_params) {
 		
-		return $this->controller->process_request($app_params);
+		return $this->controller->logEvent('page_request', $app_params);
 		
 	}
 	

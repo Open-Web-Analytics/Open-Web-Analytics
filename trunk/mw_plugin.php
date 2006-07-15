@@ -73,7 +73,7 @@ function owa_logSpecialPage(&$specialPage) {
     //print_r($wgOut);
 	// Log the request
 	$owa = &new owa_php;
-	$owa->log($app_params);
+	$owa->logEvent('page_request', $app_params);
 	
 	return true;
 }
@@ -95,7 +95,7 @@ function owa_logCategoryPage(&$categoryPage) {
 	
 	// Log the request
 	$owa = &new owa_php;
-	$owa->log($app_params);
+	$owa->logEvent('page_request', $app_params);
 	
 	return true;
 }
@@ -122,7 +122,7 @@ function owa_logArticle(&$article) {
     
 	// Log the request
 	$owa = &new owa_php;
-	$owa->log($app_params);
+	$owa->logEvent('page_request', $app_params);
 	
 	return true;
 	

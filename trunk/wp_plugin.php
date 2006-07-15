@@ -159,7 +159,7 @@ function owa_log() {
 	
 	// Process the request by calling owa
 	$owa_wp = &new owa_wp;
-	$owa_wp->log($app_params);
+	$owa_wp->logEvent('page_request', $app_params);
 	return;
 }
 
