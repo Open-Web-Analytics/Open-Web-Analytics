@@ -41,13 +41,6 @@ class owa_metric {
 	var $time_now = array();
 	
 	/**
-	 * Control Paramaters
-	 *
-	 * @var array
-	 */
-	var $params = array();
-	
-	/**
 	 * Data
 	 *
 	 * @var array
@@ -87,7 +80,7 @@ class owa_metric {
 	 *
 	 * @var array
 	 */
-	var $params;
+	var $params = array();
 	
 	/**
 	 * Error handler

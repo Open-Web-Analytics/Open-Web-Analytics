@@ -75,7 +75,10 @@ class owa_request extends owa_event {
 		
 		// Record HTTP request variables
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
-		$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
+		if (!empty($this->properties['referer'])):
+			$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
+		endif;
+		
 		//$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
 		$this->properties['inbound_uri'] = owa_lib::get_current_url();
 		$this->properties['uri'] = $this->properties['inbound_uri'];
@@ -147,7 +150,7 @@ class owa_request extends owa_event {
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->set_guid($this->properties['uri']);
+		$this->properties['document_id'] = $this->set_string_guid($this->properties['uri']);
 		
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):

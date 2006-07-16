@@ -71,8 +71,6 @@ class owa_caller {
 			$this->load_config_from_db();
 		endif;
 		
-		$this->controller = new owa;
-	
 		return;
 	
 	}
