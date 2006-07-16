@@ -84,6 +84,8 @@ class owa_click extends owa_event {
 		
 		$this->state = 'click';
 		
+		$this->log();
+		
 		return;
 	}
 	
