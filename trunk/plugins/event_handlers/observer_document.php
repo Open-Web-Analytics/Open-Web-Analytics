@@ -53,7 +53,7 @@ class Log_observer_document extends owa_observer {
         $this->owa_observer($priority);
 
         // Configure the observer.
-		$this->_event_type = array('new_request', 'feed_request');
+		$this->_event_type = array('new_request', 'page_request', 'feed_request');
 
 		// Load DOA
 		$this->db = &owa_db::get_instance();	
