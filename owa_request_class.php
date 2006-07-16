@@ -221,7 +221,6 @@ class owa_request extends owa_event {
 					'site',
 					'site_id',
 					'ip_address',
-					'host',
 					'host_id',
 					'os',
 					'os_id',
