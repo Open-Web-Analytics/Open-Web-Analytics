@@ -32,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
  * @since		owa 1.0.0
  */
 
-class owa_news extends lastRSS{
+class owa_news extends lastRSS {
 	
 	/**
 	 * Configuration

@@ -115,7 +115,7 @@ class owa_request extends owa_event {
 				$this->properties['is_browser'] = false;
 				$this->state = 'robot_request';	
 			else:
-				exit;
+				return;
 			endif;
 		
 		// Log requests from feed readers
@@ -125,7 +125,7 @@ class owa_request extends owa_event {
 				$this->properties['feed_reader_guid'] = $this->setEnvGUID();
 				$this->state = 'feed_request';
 			else:
-				exit;
+				return;
 			endif;	
 		else:
 			$this->state = 'new_request';
@@ -154,6 +154,8 @@ class owa_request extends owa_event {
 		
 		//update last-request time cookie
 		setcookie($this->config['ns'].$this->config['last_request_param'], $this->properties['sec'], time()+3600*24*365*30, "/", $this->properties['site']);
+		
+		$this->log();
 		
 		return;
 	}

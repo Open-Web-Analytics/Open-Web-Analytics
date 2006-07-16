@@ -152,9 +152,6 @@ class owa {
 		// Process Event		
 		$event->process();
 		
-		// Log Event
-		$event->log();
-		
 		// Close Db connection if one was established
 		if($this->config['async_db'] == false):
 		
