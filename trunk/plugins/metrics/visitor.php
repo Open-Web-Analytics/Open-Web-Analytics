@@ -113,13 +113,12 @@ class owa_metric_visitor extends owa_metric {
 			ua.ua,
 			ua.browser_type
 		FROM 
-			%s as sessions,
-			%s as referers,
+			%s as sessions
+			LEFT OUTER JOIN	%s as referers ON sessions.referer_id = referers.id,
 			%s as documents,
 			%s as ua
 		WHERE
 			sessions.first_page_id = documents.id
-			AND sessions.referer_id = referers.id
 			AND ua.id = sessions.ua_id
 			%s 
 			%s

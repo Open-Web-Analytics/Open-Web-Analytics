@@ -60,7 +60,7 @@ class owa_settings {
 	function owa_settings() {
 		
 		$this->properties = $this->get_settings();
-		$this->e = &owa_error::get_instance();
+		//$this->e = &owa_error::get_instance();
 		return;
 	}
 	
