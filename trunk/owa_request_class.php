@@ -145,7 +145,7 @@ class owa_request extends owa_event {
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->make_document_id($this->properties['uri']);
+		$this->properties['document_id'] = $this->set_guid($this->properties['uri']);
 		
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):
