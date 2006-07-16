@@ -122,7 +122,7 @@ class owa_request extends owa_event {
 		elseif ($this->properties['is_feedreader'] == true):
 			if ($this->config['log_feedreaders'] == true):
 				$this->properties['is_browser'] = false;
-				$this->properties['feed_reader_guid'] = $r->setEnvGUID();
+				$this->properties['feed_reader_guid'] = $this->setEnvGUID();
 				$this->state = 'feed_request';
 			else:
 				exit;
