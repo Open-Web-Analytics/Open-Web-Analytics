@@ -39,3 +39,4 @@ define('OWA_GRAPHS_DIR', OWA_BASE_DIR.'/plugins/graphs/');
 define('OWA_VERSION', '1.0');
 
 ?>
+

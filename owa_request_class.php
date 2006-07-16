@@ -181,6 +181,13 @@ class owa_request extends owa_event {
 		
 	}
 	
+	function setupNewRequest() {
+		
+		$this->bcap = new owa_browscap($this->properties['ua']);
+		
+		return;
+	}
+	
 	/**
 	 * Load request properties from delayed first hit cookie.
 	 *
@@ -263,7 +270,9 @@ class owa_request extends owa_event {
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->make_document_id($this->properties['uri']);
+		$this->properties['uri']= $this->stripDocumentUrl($this->properties['inbound_uri']);
+		$this->properties['document_id'] = $this->set_guid($this->properties['uri']); 
+		
 		
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):

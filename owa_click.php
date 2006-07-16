@@ -66,8 +66,12 @@ class owa_click extends owa_event {
 		//$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->make_document_id($this->properties['page_url']);
-		$this->properties['target_id'] = $this->make_document_id($this->properties['target_url']);
+		$this->properties['page_url']= $this->stripDocumentUrl($this->properties['page_url']);
+		$this->properties['document_id'] = $this->set_guid($this->properties['page_url']); 
+		
+		//$this->setDocumentProperties($this->properties['page_url']);
+		$this->properties['target_url'] = $this->stripDocumentUrl($this->properties['target_url']);
+		$this->properties['target_id'] = $this->set_guid($this->properties['target_url']);
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):
 			$this->resolve_host();
