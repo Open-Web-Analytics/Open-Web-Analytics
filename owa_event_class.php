@@ -137,6 +137,8 @@ class owa_event {
 	 */
 	function process() {
 		
+		$this->log();
+		
 		return;
 	}
 	
