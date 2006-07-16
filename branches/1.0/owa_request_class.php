@@ -57,7 +57,7 @@ class owa_request extends owa_event {
 	 *
 	 * @var object
 	 */
-	var $browscap;
+	var $bcap;
 	
 	/**
 	 * Constructor
@@ -94,6 +94,98 @@ class owa_request extends owa_event {
 		
 		return;
 	
+	}
+	
+	function process() {
+		
+		//Load browscap
+		$this->bcap = new owa_browscap($this->properties['ua']);
+		
+		//Check for Robot
+		if ($this->bcap->robotCheck == true):
+			$this->is_robot = true;
+		else:
+			// If no match in the supplemental browscap db, do a last check for robots strings.
+			$this->last_chance_robot_detect($this->properties['ua']);
+		endif;
+		
+		// Log requests from known robots or else dump the request
+		if ($this->is_robot == true):
+			if ($this->config['log_robots'] == true):
+				$this->properties['is_browser'] = false;
+				$this->state = 'robot_request';	
+			else:
+				exit;
+			endif;
+		
+		// Log requests from feed readers
+		elseif ($this->properties['is_feedreader'] == true):
+			if ($this->config['log_feedreaders'] == true):
+				$this->properties['is_browser'] = false;
+				$this->properties['feed_reader_guid'] = $r->setEnvGUID();
+				$this->state = 'feed_request';
+			else:
+				exit;
+			endif;	
+		else:
+			$this->state = 'new_request';
+			$this->properties['is_browser'] = true;
+			$this->assign_visitor();
+			$this->sessionize();
+		endif;	
+		
+		// Make ua id
+		$this->properties['ua_id'] = $this->set_string_guid($this->properties['ua']);
+		
+		// Determine Browser type
+		$this->setBrowscap($this->properties['ua']);
+		
+		// Make os id
+		//$this->properties['os'] = $this->determine_os($this->properties['ua']);
+		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
+	
+		// Make document id	
+		$this->properties['document_id'] = $this->set_guid($this->properties['uri']);
+		
+		// Resolve host name
+		if ($this->config['resolve_hosts'] = true):
+			$this->resolve_host();
+		endif;
+		
+		//update last-request time cookie
+		setcookie($this->config['ns'].$this->config['last_request_param'], $this->properties['sec'], time()+3600*24*365*30, "/", $this->properties['site']);
+		
+		return;
+	}
+	
+	function log() {
+		
+		if ($this->state == 'new_request'):
+			if ($this->config['delay_first_hit'] == true):	
+				if ($this->first_hit != true):
+					// If not, then make sure that there is an inbound visitor_id
+					if (empty($this->properties['inbound_visitor_id'])):
+						// Log request properties to a cookie for processing by a second request and return
+						$this->e->debug('Logging this request to first hit cookie.');
+						$this->log_first_hit();
+						return;
+					endif;
+				endif;
+			endif;
+		endif;
+		
+		$this->eq->log($this->properties, $this->state);
+		$this->e->debug('Logged '.$this->state.' to event queue...');
+		
+		return;
+		
+	}
+	
+	function setupNewRequest() {
+		
+		$this->bcap = new owa_browscap($this->properties['ua']);
+		
+		return;
 	}
 	
 	/**
@@ -170,19 +262,22 @@ class owa_request extends owa_event {
 		// Make ua id
 		$this->properties['ua_id'] = $this->set_string_guid($this->properties['ua']);
 		
+		// Determine Browser type
+		$this->setBrowscap($this->properties['ua']);
+		
 		// Make os id
-		$this->properties['os'] = $this->determine_os($this->properties['ua']);
+		//$this->properties['os'] = $this->determine_os($this->properties['ua']);
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->make_document_id($this->properties['uri']);
+		$this->properties['uri']= $this->stripDocumentUrl($this->properties['inbound_uri']);
+		$this->properties['document_id'] = $this->set_guid($this->properties['uri']); 
+		
+		
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):
 			$this->resolve_host();
 		endif;
-		
-		// Determine Browser type
-		$this->determine_browser_type();
 		
 		//update last-request time cookie
 		setcookie($this->config['ns'].$this->config['last_request_param'], $this->properties['sec'], time()+3600*24*365*30, "/", $this->properties['site']);
@@ -276,11 +371,6 @@ class owa_request extends owa_event {
 	 * @return string
 	 */
 	function determine_os($user_agent) {
-		
-		if (!empty($this->browscap->platform)):
-			$this->properties['os'] = $this->browscap->platform;
-			return;
-		else:
 	
 			$matches = array(
 				'Win.*NT 5\.0'=>'Windows 2000',
@@ -310,7 +400,6 @@ class owa_request extends owa_event {
 			
 			return preg_replace($uas, array_values($matches), $user_agent);
 		
-		endif;
 	}
 	
 	function determine_os_new($user_agent) {
@@ -324,11 +413,24 @@ class owa_request extends owa_event {
 	/**
 	 * Determine the type of browser
 	 * 
+	 * @param 	string
 	 * @access 	private
 	 */
-	function determine_browser_type() {
+	function setBrowscap($user_agent) {
 		
-		$this->properties['browser_type'] = $this->browscap->browser;
+		if ($this->bcap->browscap->browser != 'Default Browser'):
+			$this->properties['browser_type'] = $this->bcap->browscap->browser;
+			$this->properties['os'] = $this->bcap->browscap->platform;
+		elseif ($this->bcap->browscap_supplemental->browser != 'Default Browser'):
+			$this->properties['browser_type'] = $this->bcap->browscap_supplemental->browser;
+			if (!empty($this->browscap_supplemental->platform)):
+				$this->properties['os'] = $this->bcap->browscap_supplemental->platform;
+			else:
+				$this->properties['os'] = $this->determine_os($user_agent);
+			endif;
+		else:
+			$this->properties['os'] = $this->determine_os($user_agent);
+		endif;
 		
 		return;
 	}

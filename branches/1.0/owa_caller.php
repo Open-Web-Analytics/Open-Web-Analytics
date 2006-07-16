@@ -127,7 +127,7 @@ class owa_caller {
 	 */
 	function log($app_params) {
 		
-		return $this->controller->process_request($app_params);
+		return $this->controller->logEvent('page_request', $app_params);
 		
 	}
 	
@@ -386,32 +386,37 @@ class owa_caller {
 	
 	/**
 	 * Handler for special action requests
+	 * 
+	 * This is sometimes called on every request by certain frameworks so nothing sounds be outside the 
+	 * switch statement.
 	 *
 	 */
 	function actionRequestHandler() {
-
-		$this->e->debug('Special action request received...');
 	
 		switch ($_GET['owa_action']) {
 			
 			// This handles requests to log the delayed request contained in first_hit cookie  for new users.
 		    case $this->config['first_hit_param']:
+		    	$this->e->debug('Special action request received: first_hit');
 				$this->first_request_handler();		
 				exit;
 				
 			// This handles requests for graphs	
 			case $this->config['graph_param']:
+				$this->e->debug('Special action request received: graph');
 				$this->getGraph();
 				exit;
 				
 			// This handles requests for the click tracking javascript library	
 			case "click_bug":
-				// This is the handler for javascript request for the logging web bug. 
+				// This is the handler for javascript request for the logging web bug.
+				$this->e->debug('Special action request received: '.$_GET['owa_action']); 
 				$this->place_click_bug();
 				exit;
 				
 			// This handles requests o log an event via http 	
 			case "log_event":
+				$this->e->debug('Special action request received: '.$_GET['owa_action']);
 				ignore_user_abort(true);
 				$this->logEventRest($_GET['event']);
 				

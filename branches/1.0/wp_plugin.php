@@ -32,7 +32,7 @@ $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
 $owa_config['db_host'] = DB_HOST;     // The host of your db
 $owa_config['db_type'] = 'mysql';     // The host of your db
-$owa_config['db_class'] = 'wordpress';     // The host of your db
+$owa_config['db_class'] = 'mysql';     // The host of your db
 $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
@@ -159,7 +159,7 @@ function owa_log() {
 	
 	// Process the request by calling owa
 	$owa_wp = &new owa_wp;
-	$owa_wp->log($app_params);
+	$owa_wp->logEvent('page_request', $app_params);
 	return;
 }
 

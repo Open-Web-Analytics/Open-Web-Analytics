@@ -264,39 +264,43 @@ class owa_event {
 	 *
 	 * @return integer
 	 */
-	function make_document_id($url) {
+	function stripDocumentUrl($url) {
 		
 		if ($this->config['clean_query_string'] == true):
 		
 			if (!empty($this->config['query_string_filters'])):
 				$filters = str_replace(' ', '', $this->config['query_string_filters']);
-				$filters = explode(',', $this->config['query_string_filters']);
+				$filters = explode(',', $filters);
 			else:
 				$filters = array();
 			endif;
 			
-			// Add OWA specific params to filter list
-			$filters[] = $this->config['source_param'];
-			$filters[] = $this->config['ns'].$this->config['feed_subscriber_id'];
+			// OWA specific params to filter
+			array_push($filters, $this->config['source_param']);
+			array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
 			
-			foreach ($filters as $filter) {
+			//print_r($filters);
+			
+			foreach ($filters as $filter => $value) {
+				
 	          $url = preg_replace(
 	            '#\?' .
-	            $filter .
+	            $value .
 	            '=.*$|&' .
-	            $filter .
+	            $value .
 	            '=.*$|' .
-	            $filter .
+	            $value .
 	            '=.*&#msiU',
 	            '',
 	            $url
 	          );
-	          //print $this->properties['uri'];
+	          
 	        }
 		
 	    endif;
+     	//print $url;
      	
-        return $this->set_string_guid($url);
+     	return $url;
 		
 	}
 	

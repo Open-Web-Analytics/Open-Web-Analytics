@@ -245,6 +245,23 @@ function owa_setTagName() {
     
         this.properties["dom_element_text"] = this.targ.value;
     }
+    
+    else if (this.properties["html_element_tag"] == "IMG") {
+    
+        this.properties["target_url"] = owa_base64_encode(this.targ.parentNode.href);
+        this.properties["dom_element_text"] = this.targ.alt;
+    }
+    
+    else {
+    
+    	this.properties["target_url"] = owa_base64_encode(this.targ.parentNode.href);
+    	
+        if (this.targ.textContent != undefined) {
+             this.properties["html_element_text"] = this.targ.textContent;
+        } else {
+             this.properties["html_element_text"] = this.targ.innerText;
+        }
+    }
 
     return;
 }
