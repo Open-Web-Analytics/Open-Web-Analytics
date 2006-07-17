@@ -81,7 +81,7 @@ class owa_hostip extends owa_location {
 	function get_location($ip) {
 		
 		$crawler = new owa_http;
-		$crawler->fetch($this->ws_url);
+		$crawler->fetch(sprintf($this->ws_url, $ip));
 		$location = $crawler->results;
 				
 		$location =	str_replace("\n", "|", $location);
