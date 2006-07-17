@@ -66,6 +66,8 @@ class owa_error {
 		
 			$config = &owa_settings::get_settings();
 			
+			print $config['error_handler'];
+			
 			switch ($config['error_handler']) {
 				
 				case "development":
