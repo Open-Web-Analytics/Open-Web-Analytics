@@ -17,7 +17,7 @@
 //
 
 include_once '../set_env.php';
-include_once OWA_BASE_DIR.'/owa_php.php';
+include_once (OWA_BASE_DIR.'/owa_php.php');
 
 /**
  * Generic Admin screen Controler

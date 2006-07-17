@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require 'owa_error.php';
+require_once('owa_error.php');
 
 /**
  * Database Connection Class

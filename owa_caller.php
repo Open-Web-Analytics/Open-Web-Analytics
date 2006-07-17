@@ -71,6 +71,11 @@ class owa_caller {
 			$this->load_config_from_db();
 		endif;
 		
+		// Needed to dump the error logger because it was loaded initially with the default setting
+		// and not the setting stored in the DB.
+		$this->e = null;
+		$this->e = owa_error::get_instance();
+		
 		return;
 	
 	}
