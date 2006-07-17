@@ -16,10 +16,8 @@
 // $Id$
 //
 
-require_once('owa_caller.php');
-
 /**
- * Wordpress Caller class
+ * Host Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,48 +27,53 @@ require_once('owa_caller.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_wp extends owa_caller {
+
+
+class owa_host {
 	
-	/**
-	 * Constructor
-	 *
-	 * @return owa_wp
-	 */
-	function owa_wp($config = null) {
+	var $config;
+	
+	var $e;
+	
+	var $db;
+	
+	var $properties;
+	
+	function owa_host() {
 		
-		$this->owa_caller($config);
+		$this->config = &owa_settings::get_settings();
+		$this->db = &owa_db::get_instance();
 		$this->e = &owa_error::get_instance();
-		$this->controller = new owa;
+		
+		return;
+		
+	}
+	
+	function get() {
+		
 		return;
 	}
 	
-	function add_link_tracking($link) {
-	
-		if (!empty($_GET[$this->config['feed_subscription_id']])):
-			return $link."&amp;"."from=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
-		else:
-			return $link."&amp;"."from=feed";
-		endif;
+	function save() {
 		
-		return;
-	
-	}
-	
-	function add_feed_tracking($binfo) {
-		
-		$guid = crc32(posix_getpid().microtime());
-		
-		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
-	}
-	
-	function logComment() {
-		
-		return $this->controller->logEvent('new_comment');
+		return $this->db->query(sprintf("
+								INSERT INTO %s 
+									(id, host, full_host, ip_address)
+								VALUES
+									('%s', '%s', '%s', '%s')
+								",
+								$this->config['ns'].$this->config['hosts_table'],
+								$this->properties['host_id'],
+								$this->db->prepare($this->properties['host']),
+								$this->db->prepare($this->properties['full_host']),
+								$this->db->prepare($this->properties['ip_address']))
+								);
 		
 	}
 	
-
-
+	
+	
+	
 }
 
 ?>

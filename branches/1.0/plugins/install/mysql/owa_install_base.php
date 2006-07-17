@@ -357,6 +357,8 @@ class owa_install_base extends owa_install {
 			msec VARCHAR(255),
 			click_x INT,
 			click_y INT,
+			position BIGINT,
+			approx_position BIGINT,
 			dom_element_x INT,
 			dom_element_y INT,
 			dom_element_name VARCHAR(255),
@@ -497,7 +499,9 @@ class owa_install_base extends owa_install {
 			sprintf("
 			CREATE TABLE %1\$s (
 			id BIGINT,
-			url varchar(255),
+			ip_address VARCHAR(255),
+			host VARCHAR(255),
+			full_host VARCHAR(255),
 			PRIMARY KEY (id)
 			)",	
 			$this->config['ns'].$this->config['hosts_table'])

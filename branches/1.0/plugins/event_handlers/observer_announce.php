@@ -44,13 +44,6 @@ class Log_observer_announce extends owa_observer {
      */
     var $_subject;
     
-    /**
-	 * Database Access Object
-	 *
-	 * @var object
-	 */
-	var $db;
-    
 	/**
 	 * Constructor
 	 *
