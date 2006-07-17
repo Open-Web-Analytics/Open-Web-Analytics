@@ -45,7 +45,7 @@ class Log_observer_session extends owa_observer {
         $this->owa_observer($priority);
 
         // Configure the observer to listen for particular events.
-		$this->_event_type = array('new_request');
+		$this->_event_type = array('new_request', 'page_request');
      	
 		return;
     }

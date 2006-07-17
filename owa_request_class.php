@@ -75,7 +75,10 @@ class owa_request extends owa_event {
 		
 		// Record HTTP request variables
 		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
-		$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
+		if (!empty($this->properties['referer'])):
+			$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
+		endif;
+		
 		//$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
 		$this->properties['inbound_uri'] = owa_lib::get_current_url();
 		$this->properties['uri'] = $this->properties['inbound_uri'];
@@ -102,7 +105,9 @@ class owa_request extends owa_event {
 		$this->bcap = new owa_browscap($this->properties['ua']);
 		
 		//Check for Robot
-		if ($this->bcap->robotCheck == true):
+		$is_robot = $this->bcap->robotCheck();
+		
+		if ($is_robot == true):
 			$this->is_robot = true;
 		else:
 			// If no match in the supplemental browscap db, do a last check for robots strings.
@@ -128,7 +133,7 @@ class owa_request extends owa_event {
 				return;
 			endif;	
 		else:
-			$this->state = 'new_request';
+			$this->state = 'page_request';
 			$this->properties['is_browser'] = true;
 			$this->assign_visitor();
 			$this->sessionize();
@@ -145,7 +150,7 @@ class owa_request extends owa_event {
 		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
 	
 		// Make document id	
-		$this->properties['document_id'] = $this->set_guid($this->properties['uri']);
+		$this->properties['document_id'] = $this->set_string_guid($this->properties['uri']);
 		
 		// Resolve host name
 		if ($this->config['resolve_hosts'] = true):
@@ -162,7 +167,7 @@ class owa_request extends owa_event {
 	
 	function log() {
 		
-		if ($this->state == 'new_request'):
+		if ($this->state == 'page_request'):
 			if ($this->config['delay_first_hit'] == true):	
 				if ($this->first_hit != true):
 					// If not, then make sure that there is an inbound visitor_id
@@ -179,6 +184,81 @@ class owa_request extends owa_event {
 		$this->eq->log($this->properties, $this->state);
 		$this->e->debug('Logged '.$this->state.' to event queue...');
 		
+		return;
+		
+	}
+	
+	/**
+	 * Saves Request to DB
+	 *
+	 */
+	function save() {	
+		
+		// Setup databse acces object
+		$this->db = &owa_db::get_instance();
+	
+		$request = array(
+					'request_id',
+					'visitor_id', 
+					'session_id',
+					'inbound_visitor_id', 
+					'inbound_session_id',
+					'inbound_first_hit_properties',
+					'user_name',
+					'user_email',
+					'timestamp',
+					'last_req',
+					'year',
+					'month',
+					'day',
+					'dayofweek',
+					'dayofyear',
+					'weekofyear',
+					'hour',
+					'minute',
+					'second',
+					'msec',
+					'feed_subscription_id',
+					'referer_id',
+					'document_id',
+					'site',
+					'site_id',
+					'ip_address',
+					'host_id',
+					'os',
+					'os_id',
+					'ua_id',
+					'is_new_visitor',
+					'is_repeat_visitor',	
+					'is_comment',
+					'is_entry_page',
+					'is_browser',
+					'is_robot',
+					'is_feedreader'
+					);
+					
+			foreach ($request as $key => $value) {
+			
+				$sql_cols = $sql_cols.$value;
+				$sql_values = $sql_values."'".$this->properties[$this->db->prepare($value)]."'";
+				
+				if (!empty($request[$key+1])):
+				
+					$sql_cols = $sql_cols.", ";
+					$sql_values = $sql_values.", ";
+					
+				endif;	
+			}
+						
+			$this->db->query(
+				sprintf(
+					"INSERT into %s (%s) VALUES (%s)",
+					$this->config['ns'].$this->config['requests_table'],
+					$sql_cols,
+					$sql_values
+				)
+			);	
+				
 		return;
 		
 	}
@@ -255,39 +335,9 @@ class owa_request extends owa_event {
 	}
 	
 	/**
-	 * Transform current request. Assign IDs
+	 * Make Session IDs
 	 *
-	 * @access 	public
 	 */
-	function transform_request() {
-			
-		// Make ua id
-		$this->properties['ua_id'] = $this->set_string_guid($this->properties['ua']);
-		
-		// Determine Browser type
-		$this->setBrowscap($this->properties['ua']);
-		
-		// Make os id
-		//$this->properties['os'] = $this->determine_os($this->properties['ua']);
-		$this->properties['os_id'] = $this->set_string_guid($this->properties['os']);
-	
-		// Make document id	
-		$this->properties['uri']= $this->stripDocumentUrl($this->properties['inbound_uri']);
-		$this->properties['document_id'] = $this->set_guid($this->properties['uri']); 
-		
-		
-		// Resolve host name
-		if ($this->config['resolve_hosts'] = true):
-			$this->resolve_host();
-		endif;
-		
-		//update last-request time cookie
-		setcookie($this->config['ns'].$this->config['last_request_param'], $this->properties['sec'], time()+3600*24*365*30, "/", $this->properties['site']);
-		
-		return;			
-		
-	}
-	
 	function sessionize() {
 		
 			// check for inbound session id

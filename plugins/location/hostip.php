@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
+
 /**
  * Geolocation plugin for Hostip.info web service
  * 
@@ -78,45 +80,29 @@ class owa_hostip extends owa_location {
 	 */
 	function get_location($ip) {
 		
-		//$url = "http://api.hostip.info/get_html.php?ip=".$ip."&position=true";
-		
-		$url = sprintf($this->ws_url,
-						$ip);
-		
-		$url = parse_url($url);
-
-		if(!in_array($url['scheme'],array('','http')))
-			return;
-
-		$fp = @fsockopen ($url['host'], ($url['port'] > 0 ? $url['port'] : 80), &$errno, &$errstr, $timeout);
+		$crawler = new owa_http;
+		$crawler->fetch(sprintf($this->ws_url, $ip));
+		$location = $crawler->results;
+				
+		$location =	str_replace("\n", "|", $location);
 			
-		if (!$fp):
-       		$this->e->err('$errstr ($errno)');
-   			return;
-  		else:
-			fputs ($fp, "GET ".$url['path'].($url['query'] ? '?'.$url['query'] : '')." HTTP/1.0\r\nHost: ".$url['host']."\r\n\r\n");
-			$location = array();
-
-			while (!feof($fp)) {
+				$loc_array = explode("|", $location);
+				//print_r($loc_array);
+				$result = array();
 				
-				// Read row
-				$buffer = fgets($fp, 14096); // big enough?
-				//print $buffer;	
-				// Parse the row
+				foreach ($loc_array as $k => $v) {
 				
-				list($name, $value) = split(":", $buffer, 2);
+					list($name, $value) = split(":", $v, 2);	
+					$result[$name] = $value;
+				}
 				
-				$result[$name] = $value;
+				//print_r($result);
 				
-       		}
        		
        			$this->city = $result['City'];
 				$this->country = trim($result['Country'], "\n");
 				$this->latitude = $result['Latitude'];
 				$this->longitude = $result['Longitude'];
-  	    	
-			fclose ($fp);
-		endif;
 		
 		return;
 	}

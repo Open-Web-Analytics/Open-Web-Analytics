@@ -43,6 +43,7 @@ class owa_php extends owa_caller {
 		
 		$this->owa_caller($config);
 		$this->e = &owa_error::get_instance();
+		$this->controller = new owa;
 		return;
 		
 	}

@@ -76,7 +76,7 @@ class owa {
 		
 		// Create a new request object
 		$r = new owa_request;
-		$r->state = 'new_request';
+		$r->state = 'page_request';
 	
 		//Load request properties from first_hit cookie if it exists
 		if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):

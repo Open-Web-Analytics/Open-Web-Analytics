@@ -16,10 +16,11 @@
 // $Id$
 //
 
+require_once(OWA_BASE_DIR ."/owa_request_class.php");
 require_once(OWA_BASE_DIR ."/owa_db.php");
 
 /**
- * Document Event Handler
+ * Request Event Handler
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,7 +30,7 @@ require_once(OWA_BASE_DIR ."/owa_db.php");
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class Log_observer_document extends owa_observer {
+class Log_observer_pagerequest extends owa_observer {
 
 	/**
 	 * Database Access Object
@@ -44,20 +45,16 @@ class Log_observer_document extends owa_observer {
 	 * @param 	string $priority
 	 * @param 	array $conf
 	 * @access 	public
-	 * @return 	Log_observer_document
+	 * @return 	Log_observer_request_logger
 	 */
-    function Log_observer_document($priority, $conf) {
-		
-    	
+    function Log_observer_pagerequest($priority, $conf) {
+	
         // Call the base class constructor.
         $this->owa_observer($priority);
 
         // Configure the observer.
-		$this->_event_type = array('new_request', 'page_request', 'feed_request');
-
-		// Load DOA
-		$this->db = &owa_db::get_instance();	
-	
+		$this->_event_type = array('page_request');
+		
 		return;
     }
 
@@ -69,32 +66,15 @@ class Log_observer_document extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->e->debug('Document being handled');
-    	
 		$this->m = $event['message'];
-	
-		$this->insert_document();
-						
-		return;
-	}
+				
+		$r = new owa_request;
+				
+		$r->_setProperties($this->m);
 		
-	/**
-	 * Adds document data to documents table.
-	 * 
-	 * @access private
-	 */
-	function insert_document() {
-	
-		return $this->db->query(
-				sprintf(
-					"INSERT into %s (id, url, page_title, page_type) VALUES ('%s', '%s', '%s', '%s')",
-					$this->config['ns'].$this->config['documents_table'],
-					$this->m['document_id'],
-					$this->m['uri'],
-					$this->m['page_title'],
-					$this->m['page_type']
-				)
-			);	
+		$r->save();
+			
+		return;
 	}
 	
 }
