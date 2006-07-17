@@ -101,6 +101,11 @@ class owa_request extends owa_event {
 	
 	function process() {
 		
+		// Do not log if the first_hit cookie is still present.
+        if (!empty($_COOKIE[$this->config['ns'].$this->config['first_hit_param']])):
+			return;
+		endif;
+
 		//Load browscap
 		$this->bcap = new owa_browscap($this->properties['ua']);
 		
