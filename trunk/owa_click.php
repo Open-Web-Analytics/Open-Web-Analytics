@@ -77,6 +77,8 @@ class owa_click extends owa_event {
 			$this->resolve_host();
 		endif;
 		
+		$this->properties['position'] = $this->properties['click_x'].$this->properties['click_x'];
+		
 		// Determine Browser type
 		$this->determine_browser_type();
 		
@@ -123,6 +125,7 @@ class owa_click extends owa_event {
 				second,
 				msec,
 				target_url,
+				position,
 				click_x,
 				click_y,
 				dom_element_x,
@@ -138,7 +141,7 @@ class owa_click extends owa_event {
 			values 
 				('%d', '%d', '%d', '%d', '%s', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%d', 
 				'%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s',
-				'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )",
+				'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )",
 			$this->config['ns'].$this->config['clicks_table'],
 			$this->properties['guid'],
 			$this->properties['last_impression_id'],
@@ -164,6 +167,7 @@ class owa_click extends owa_event {
 			$this->properties['second'],
 			$this->properties['msec'],
 			$this->properties['target_url'],
+			$this->properties['position'],
 			$this->properties['click_x'],
 			$this->properties['click_y'],
 			$this->properties['dom_element_x'],
