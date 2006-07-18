@@ -80,6 +80,8 @@ class owa_metric_top extends owa_metric {
 			return $this->top_keywords();
 		case "top_anchors":
 			return $this->top_anchors();
+		case "top_hosts":
+			return $this->top_hosts();
 		}
 		
 	}
@@ -122,6 +124,45 @@ class owa_metric_top extends owa_metric {
 		return $this->db->get_results($sql);
 	
 		
+	}
+	
+	/**
+	 * Top Documents
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_hosts() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(sessions.host_id) as count,
+			hosts.id,
+			hosts.host,
+			hosts.full_host,
+			hosts.ip_address
+			
+		FROM 
+			%s as sessions, %s as hosts 
+		WHERE
+			sessions.host_id = hosts.id
+			%s
+			%s 
+		GROUP BY
+			hosts.id
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['hosts_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql);
+	
 	}
 	
 	/**
