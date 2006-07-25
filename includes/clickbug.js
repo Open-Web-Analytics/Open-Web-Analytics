@@ -191,14 +191,63 @@ function owa_setClickProperties(e) {
  *
  */
 function owa_setCoords() {
-
-    this.properties["click_x"] = this.e.clientX;
-    this.properties["click_y"] = this.e.clientY;
-    this.properties["dom_element_x"] = this.targ.pageX;
-    this.properties["dom_element_y"] = this.targ.pageY;
+	
+	var windowWidth = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
+	
+      if( typeof( this.e.pageX ) == 'number' ) {
+      	 // Calc the percentage distance from the left edge of the browser's screen
+          this.properties["click_x"] = Math.round(this.e.pageX / windowWidth * 100);
+          this.properties["click_y"] = this.e.pageY;
+      }
+      else {
+      	 // Calc the percentage distance from the left edge of the browser's screen
+          this.properties["click_x"] = Math.round(this.e.clientX / windowWidth * 100);
+          this.properties["click_y"] = this.e.clientY;
+      }
+	
+    //this.properties["click_x"] = this.e.clientX;
+   
+    //this.properties["click_x"] = Math.round(this.e.clientX / windowWidth * 100);
+    //this.properties["click_y"] = this.e.clientY;
+    this.properties["dom_element_x"] = findPosX(this.targ);
+    this.properties["dom_element_y"] = findPosY(this.targ);
 
     return;
 }
+
+function findPosX(obj)
+{
+	var curleft = 0;
+	if (obj.offsetParent)
+	{
+		while (obj.offsetParent)
+		{
+			curleft += obj.offsetLeft
+			obj = obj.offsetParent;
+		}
+	}
+	else if (obj.x)
+		curleft += obj.x;
+	return curleft;
+}
+
+function findPosY(obj)
+{
+	var curtop = 0;
+	if (obj.offsetParent)
+	{
+		while (obj.offsetParent)
+		{
+			curtop += obj.offsetTop
+			obj = obj.offsetParent;
+		}
+	}
+	else if (obj.y)
+		curtop += obj.y;
+	return curtop;
+}
+
+
 
 /**
  * Sets the HTML element that actually generated the event

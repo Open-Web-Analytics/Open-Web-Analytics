@@ -48,7 +48,8 @@ class owa_metric_top extends owa_metric {
 								'top_user_agents', 
 								'top_os', 
 								'top_hosts', 
-								'top_visitors');
+								'top_visitors',
+								'top_clicks');
 		
 		return;
 	}
@@ -82,6 +83,8 @@ class owa_metric_top extends owa_metric {
 			return $this->top_anchors();
 		case "top_hosts":
 			return $this->top_hosts();
+		case "top_clicks":
+			return $this->top_clicks();
 		}
 		
 	}
@@ -391,6 +394,41 @@ class owa_metric_top extends owa_metric {
 		LIMIT 
 			%s",
 			$this->setTable($this->config['sessions_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql);
+	}
+	
+	/**
+	 * Top Clicks
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_clicks() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(click_id) as count,
+			click_x,
+			click_y,
+			position
+		FROM 
+			%s
+		WHERE
+			true
+			%s
+			%s
+		GROUP BY
+			position
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->setTable($this->config['clicks_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints']),
 			$this->params['limit']

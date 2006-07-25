@@ -250,19 +250,21 @@ class owa_event {
 			$host_array = array_reverse($host_array);
 			
 			if ($host_array[0] == 'com' || $host_array[0] == 'net' || $host_array[0] == 'org'):
-			
 				$host = $host_array[1].".".$host_array[0];
 			else:
 				$host = $host_array[2].".".$host_array[1].".".$host_array[0];
 			endif;
 				
-		else:
+		elseif ($fullhost == 'unknown'):
+			$host = $ip;
+			$fullhost = $ip;
+		else:	
 			$host = $fullhost;					
 		endif;
 			
-			$this->properties['host'] = $host;
-			$this->properties['full_host'] = $fullhost;
-			$this->properties['host_id'] = $this->set_string_guid($host);
+		$this->properties['host'] = $host;
+		$this->properties['full_host'] = $fullhost;
+		$this->properties['host_id'] = $this->set_string_guid($host);
 			
 		return;
 	}	

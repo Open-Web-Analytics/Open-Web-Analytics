@@ -35,6 +35,7 @@ $owa_config['db_type'] = 'mysql';     // The host of your db
 $owa_config['db_class'] = 'mysql';     // The host of your db
 $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
+$owa_config['public_url'] = '../wp-content/plugins/owa/public';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
 $owa_config['admin_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/admin';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';

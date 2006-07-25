@@ -83,6 +83,7 @@ class owa_metric_session extends owa_metric {
 			requests.timestamp,
 			requests.visitor_id, 
 			requests.session_id, 
+			requests.document_id,
 			documents.page_title,
 			requests.is_new_visitor,
 			requests.is_entry_page,
