@@ -113,6 +113,7 @@ class owa_session extends owa_event {
 		$this->properties['referer_id'] = $request['referer_id'];
 		$this->properties['ip_address'] = $request['ip_address'];
 		$this->properties['host'] = $request['host'];
+		$this->properties['full_host'] = $request['full_host'];
 		$this->properties['host_id'] = $request['host_id'];
 		
 		$this->properties['site'] = $request['site'];

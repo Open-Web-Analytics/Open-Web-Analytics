@@ -6,7 +6,7 @@
 		<TR>
 			<TD colspan="10">
 				<a href="<?=$detail['url'];?>"><span class="inline_h2"><?=$detail['page_title'];?></span></a><BR>
-				<span class="info_text"><?=$detail['url'];?></span>
+				<span class="info_text"><?=$detail['url'];?> (<a href="<?=$this->make_report_link('click_report.php', array('document_id' => $detail['document_id']));?>">Click report</a>) </span>
 			</TD>
 		
 			<TD>

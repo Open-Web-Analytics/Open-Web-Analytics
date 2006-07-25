@@ -77,7 +77,7 @@ class owa_click extends owa_event {
 			$this->resolve_host();
 		endif;
 		
-		$this->properties['position'] = $this->properties['click_x'].$this->properties['click_x'];
+		$this->properties['position'] = $this->properties['click_x'].$this->properties['click_y'];
 		
 		// Determine Browser type
 		$this->determine_browser_type();

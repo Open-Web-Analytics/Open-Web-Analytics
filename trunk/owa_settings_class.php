@@ -105,7 +105,7 @@ class owa_settings {
 				if($_SERVER['SERVER_PORT'] != 80):
 					$base_url .= ':'.$_SERVER['SERVER_PORT'];
 				endif;
-				
+								
 				$config['public_url'] = $base_url . $OWA_CONFIG['public_url'];
 				
 				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
