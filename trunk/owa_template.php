@@ -97,6 +97,9 @@ class owa_template extends Template {
 			case "ie":
 				$file = 'msie.png';
 				break;
+			case "internet explorer":
+				$file = 'msie.png';
+				break;
 			case "firefox":
 				$file = 'firefox.png';
 				break;

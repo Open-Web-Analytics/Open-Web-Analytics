@@ -1,5 +1,3 @@
-
-
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/dynifs.js';?>"></script>
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/wz_jsgraphics.js';?>"></script>
 
