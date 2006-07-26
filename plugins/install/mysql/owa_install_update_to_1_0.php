@@ -75,7 +75,7 @@ class owa_install_update_to_1_0 extends owa_install {
 	 */
 	function owa_install_update_to_1_0() {
 		$this->owa_install();
-		$this->tables = array(	$this->config['hosts_table'],
+		$this->tables = array(	$this->config['impressions_table'],
 								$this->config['clicks_table']
 								);
 		return;
@@ -111,11 +111,12 @@ class owa_install_update_to_1_0 extends owa_install {
 		
 		switch ($table) {
 			
-			case $this->config['hosts_table']:
-				return $this->create_hosts_table();
-				break;
 			case $this->config['clicks_table']:
 				return $this->create_clicks_table();
+				break;
+				
+			case $this->config['impressions_table']:
+				return $this->create_impressions_table();
 				break;
 				
 		}
@@ -123,74 +124,26 @@ class owa_install_update_to_1_0 extends owa_install {
 		return;		
 	}
 	
-	function create_hosts_table() {
-		
-		$this->db->query(
-			sprintf("DROP TABLE %s", $this->config['ns'].$this->config['hosts_table']));
-		
-		
-		return $this->db->query(
-			sprintf("
-			CREATE TABLE %1\$s (
-			id BIGINT,
-			ip_address VARCHAR(255),
-			host VARCHAR(255),
-			full_host VARCHAR(255),
-			PRIMARY KEY (id)
-			)",	
-			$this->config['ns'].$this->config['hosts_table'])
-		);
-	}
-	
 	function create_clicks_table() {
-
-		$this->db->query(
-			sprintf("DROP TABLE %s", $this->config['ns'].$this->config['clicks_table']));
-		
 		
 		return $this->db->query(
 			sprintf("
-			CREATE TABLE %1\$s (
-			click_id BIGINT,
-			last_impression_id BIGINT,
-			visitor_id BIGINT,
-			session_id BIGINT,
-			document_id BIGINT,
-			target_id BIGINT,
-			target_url VARCHAR(255),
-			timestamp BIGINT,
-			year INT,
-			month INT,
-			day INT,
-			dayofyear INT,
-			hour TINYINT(2),
-			minute TINYINT(2),
-			second INT,
-			msec VARCHAR(255),
-			click_x INT,
-			click_y INT,
-			position BIGINT,
-			approx_position BIGINT,
-			dom_element_x INT,
-			dom_element_y INT,
-			dom_element_name VARCHAR(255),
-			dom_element_id VARCHAR(255),
-			dom_element_value VARCHAR(255),
-			dom_element_tag VARCHAR(255),
-			dom_element_text VARCHAR(255),
-			tag_id BIGINT,
-			placement_id BIGINT,
-			campaign_id BIGINT,
-			ad_group_id BIGINT,
-			ad_id BIGINT,
-			site_id VARCHAR(255),
-			ua_id BIGINT,
-			ip_address VARCHAR(255),
-			host VARCHAR(255),
-			host_id VARCHAR(255),
-			PRIMARY KEY (click_id))
+			alter table %s add column weekofyear INT
 			",
 			$this->config['ns'].$this->config['clicks_table']
+			
+			));
+		
+	}
+	
+	function create_impressions_table() {
+		
+		
+		return $this->db->query(
+			sprintf("
+			alter table %s add column weekofyear INT
+			",
+			$this->config['ns'].$this->config['impressions_table']
 			
 			));
 		

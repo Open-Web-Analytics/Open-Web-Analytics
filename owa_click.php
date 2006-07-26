@@ -120,6 +120,7 @@ class owa_click extends owa_event {
 				month,
 				day,
 				dayofyear,
+				weekofyear,
 				hour,
 				minute,
 				second,
@@ -140,7 +141,7 @@ class owa_click extends owa_event {
 				)
 			values 
 				('%d', '%d', '%d', '%d', '%s', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%d', 
-				'%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s',
+				'%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s',
 				'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )",
 			$this->config['ns'].$this->config['clicks_table'],
 			$this->properties['guid'],
@@ -162,6 +163,7 @@ class owa_click extends owa_event {
 			$this->properties['month'],
 			$this->properties['day'],
 			$this->properties['dayofyear'],
+			$this->properties['weekofyear'],
 			$this->properties['hour'],
 			$this->properties['minute'],
 			$this->properties['second'],

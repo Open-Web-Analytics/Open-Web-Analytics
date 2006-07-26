@@ -193,6 +193,7 @@ function owa_setClickProperties(e) {
 function owa_setCoords() {
 	
 	var windowWidth = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
+	var windowHeight = window.innerHeight ? window.innerHeight : document.body.offsetHeight;
 	
       if( typeof( this.e.pageX ) == 'number' ) {
       	 // Calc the percentage distance from the left edge of the browser's screen
