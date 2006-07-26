@@ -81,7 +81,7 @@ class owa_request extends owa_event {
 		
 		//$this->properties['inbound_uri'] = $_SERVER['REQUEST_URI'];
 		$this->properties['inbound_uri'] = owa_lib::get_current_url();
-		$this->properties['uri'] = $this->properties['inbound_uri'];
+		$this->properties['uri'] = $this->stripDocumentUrl($this->properties['inbound_uri']);
 		
 		// Calc time sinse the last request
 		$this->time_sinse_lastreq = $this->time_sinse_last_request();
