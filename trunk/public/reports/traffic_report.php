@@ -63,13 +63,53 @@ $top_anchors = $report->metrics->get(array(
 
 ));
 
+$top_hosts = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'top_hosts',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id']	
+		),
+	'limit'				=> 30
+
+));
+
+$top_referers = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'top_referers',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id'],
+		'is_searchengine' => 0
+		),
+	'limit'				=> 30
+
+));
+
+$top_search_engines = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'top_refering_hosts',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id'],
+		'is_searchengine' => 1	
+		),
+	'limit'				=> 30
+
+));
+
 // Assign Data to templates
 
-$body->set('headline', 'Traffic');
+$body->set('headline', 'Traffic Sources');
 $body->set('period_label', $report->period_label);
 $body->set('keywords', $top_keywords);
 $body->set('anchors', $top_anchors);
-
+$body->set('domains', $top_hosts);
+$body->set('referers', $top_referers);
+$body->set('se_hosts', $top_search_engines);
 // Global Template Assignments
 $body->set('params', $report->params);
 $report->tpl->set('report_name', basename(__FILE__));

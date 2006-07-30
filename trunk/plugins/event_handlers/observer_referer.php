@@ -38,6 +38,13 @@ class Log_observer_referer extends owa_observer {
 	 * @var string
 	 */
     var $site_name;
+    
+    /**
+	 * Site
+	 *
+	 * @var string
+	 */
+    var $site;
 	
 	/**
 	 * Database Access Object
@@ -54,11 +61,11 @@ class Log_observer_referer extends owa_observer {
 	var $title;
 	
 	/**
-	 * Refering Site Info
+	 * Search Engine Info
 	 *
 	 * @var object
 	 */
-	var $referer_info;
+	var $se_info;
 	
 	/**
 	 * Keywords
@@ -140,8 +147,12 @@ class Log_observer_referer extends owa_observer {
 	function process_referer() {
 			
 			//	Look for match against Search engine groups
-			$this->referer_info = $this->get_referer_info($this->m['referer']);
+			$this->se_info = $this->get_se_info($this->m['referer']);
 		
+			$url = parse_url($this->m['referer']);
+			
+			$this->site = $url[host];
+			
 			//	Look for query_terms
 			
 			if (strstr($this->m['referer'], $this->m['site']) == false):
@@ -178,11 +189,18 @@ class Log_observer_referer extends owa_observer {
 	 * @return object
 	 * @access private
 	 */
-	function get_referer_info($referer) {
+	function get_se_info($referer) {
 	
 		/*	Look for match against Search engine groups */
 		$db = new ini_db($this->config['search_engines.ini'], $sections = true);
-		return $db->fetch($referer);
+		
+		$se_info = $db->fetch($referer);
+		
+		if (!empty($se_info['name'])):
+			$this->is_searchengine = true;
+		endif;
+		
+		return $se_info;
 	
 	}
 	
@@ -213,6 +231,7 @@ class Log_observer_referer extends owa_observer {
 			"INSERT into %s (
 				id, 
 				url, 
+				site,
 				site_name, 
 				query_terms, 
 				page_title, 
@@ -220,11 +239,12 @@ class Log_observer_referer extends owa_observer {
 				snippet,
 				is_searchengine) 
 			VALUES 
-				('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+				('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d')",
 			$this->config['ns'].$this->config['referers_table'],
 			$this->m['referer_id'],
 			$this->db->prepare($this->m['referer']),
-			trim($this->referer_info->name, '\"'),
+			$this->db->prepare($this->site),
+			trim($this->se_info->name, '\"'),
 			$this->db->prepare($this->query_terms),
 			$this->db->prepare($this->page_title),
 			$this->db->prepare($this->anchor_text),
@@ -244,13 +264,15 @@ class Log_observer_referer extends owa_observer {
 			SET 
 				page_title = '%s', 
 				refering_anchortext = '%s', 
-				snippet = '%s'
+				snippet = '%s',
+				site = '%s'
 			WHERE
 				id = '%s'",
 			$this->config['ns'].$this->config['referers_table'],
 			$this->db->prepare($this->page_title),
 			$this->db->prepare($this->anchor_text),
 			$this->db->prepare($this->snippet),
+			$this->db->prepare($this->site),
 			$this->m['referer_id']		
 			)
 		);	
