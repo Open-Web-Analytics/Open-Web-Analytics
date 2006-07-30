@@ -62,10 +62,25 @@ $exit_documents = $report->metrics->get(array(
 	'limit'				=> 20
 ));
 
+$top_pages_data = $report->metrics->get(array(
+	'api_call' 		=> 'top_documents',
+	'request_params'	=>	$report->params,
+	'period'			=> $report->period,
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'	=> $report->params['site_id'],
+		'is_browser' => 1,
+		'is_robot' 	=> 0
+		
+		),
+	'limit'			=> '30'
+));
+
 // Assign Data to templates
 
 $body->set('headline', 'Content');
 $body->set('period_label', $report->period_label);
+$body->set('top_pages', $top_pages_data);
 $entry_pages->set('top_pages', $entry_documents);
 $exit_pages->set('top_pages', $exit_documents);
 $entry_pages->set('params', $report->params);

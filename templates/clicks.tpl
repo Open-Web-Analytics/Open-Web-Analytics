@@ -1,6 +1,17 @@
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/dynifs.js';?>"></script>
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/wz_jsgraphics.js';?>"></script>
 
+<span class="inline_h2"><?=$headline;?> 
+
+<fieldset class="options">
+	<legend>Document Info</legend>
+	
+
+<?=$detail['page_title']?> (<?=$detail['page_type']?>)</span><BR>
+<span class="info_text"><?=$detail['url']?></span>
+
+</fieldset>
+
 <DIV id="clickspage" style="width:100%;height:100%;position:relative;margin:0px;padding:0px;border:1px solid red;" >
 	
 	<iframe

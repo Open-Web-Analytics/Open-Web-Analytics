@@ -376,15 +376,13 @@ class owa_metric {
 	function add_constraints($constraints) {
 	
 		if (!empty($constraints)):
-		//$this->e->debug(' CONSTRAINT: '. print_r($constraints));
-		
-		
+		$this->e->debug(' CONSTRAINT: '. print_r($constraints, true));
 		
 		$count = 0;
 		
 		foreach ($constraints as $key => $value) {
 			
-			if (!empty($value)):
+			if (!empty($value) || $value === 0):
 				$count++;	
 			endif;
 		}
@@ -395,7 +393,7 @@ class owa_metric {
 		
 			foreach ($constraints as $key => $value) {
 				
-				if ($value):
+				if (!empty($value) || $value === 0):
 					$where .= $key . ' = ' . "'$value'";
 					$i++;
 					if ($count != $i):

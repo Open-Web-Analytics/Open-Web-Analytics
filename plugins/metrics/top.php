@@ -40,6 +40,7 @@ class owa_metric_top extends owa_metric {
 		$this->owa_metric();
 
 		$this->api_calls = array('top_anchors', 
+								'top_refering_hosts',
 								'top_keywords', 
 								'top_documents', 
 								'top_entry_documents', 
@@ -67,24 +68,26 @@ class owa_metric_top extends owa_metric {
 	
 		switch ($this->params['api_call']) {
 		
-		case "top_documents":
-			return $this->top_documents();
-		case "top_referers":
-			return $this->top_referers();
-		case "top_visitors":
-			return $this->top_visitors();
-		case "top_entry_documents":
-			return $this->top_entry_documents();
-		case "top_exit_documents":
-			return $this->top_exit_documents();
-		case "top_keywords":
-			return $this->top_keywords();
-		case "top_anchors":
-			return $this->top_anchors();
-		case "top_hosts":
-			return $this->top_hosts();
-		case "top_clicks":
-			return $this->top_clicks();
+			case "top_documents":
+				return $this->top_documents();
+			case "top_referers":
+				return $this->top_referers();
+			case "top_visitors":
+				return $this->top_visitors();
+			case "top_entry_documents":
+				return $this->top_entry_documents();
+			case "top_exit_documents":
+				return $this->top_exit_documents();
+			case "top_keywords":
+				return $this->top_keywords();
+			case "top_anchors":
+				return $this->top_anchors();
+			case "top_refering_hosts":
+				return $this->top_refering_hosts();
+			case "top_hosts":
+				return $this->top_hosts();
+			case "top_clicks":
+				return $this->top_clicks();
 		}
 		
 	}
@@ -257,6 +260,7 @@ class owa_metric_top extends owa_metric {
 		$sql = sprintf("
 		SELECT 
 			count(referers.id) as count,
+			sum(sessions.num_pageviews) as page_views,
 			url,
 			page_title,
 			site_name,
@@ -312,6 +316,43 @@ class owa_metric_top extends owa_metric {
 			%s
 		GROUP BY
 			referers.query_terms
+		ORDER BY
+			count DESC
+		LIMIT 
+			%s",
+			$this->setTable($this->config['referers_table']),
+			$this->setTable($this->config['sessions_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints']),
+			$this->params['limit']
+		);
+		
+		return $this->db->get_results($sql); 
+	
+	}
+	
+	/**
+	 * Top Refering Hosts
+	 *
+	 * @access 	private
+	 * @return 	array
+	 */
+	function top_refering_hosts() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(sessions.session_id) as count,
+			referers.site
+		FROM 
+			%s as referers,
+			%s as sessions 
+		WHERE 
+			referers.id != 0
+			AND referers.id = sessions.referer_id
+			%s
+			%s
+		GROUP BY
+			referers.site
 		ORDER BY
 			count DESC
 		LIMIT 
@@ -436,6 +477,8 @@ class owa_metric_top extends owa_metric {
 		
 		return $this->db->get_results($sql);
 	}
+	
+	
 	
 }
 

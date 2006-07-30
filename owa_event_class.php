@@ -248,8 +248,9 @@ class owa_event {
 	
 			$host_array = explode('.', $fullhost);
 			$host_array = array_reverse($host_array);
+			$tlds = array('com', 'net', 'org', 'gov', 'mil');
 			
-			if ($host_array[0] == 'com' || $host_array[0] == 'net' || $host_array[0] == 'org'):
+			if (in_array($host_array[0], $tlds)):
 				$host = $host_array[1].".".$host_array[0];
 			else:
 				$host = $host_array[2].".".$host_array[1].".".$host_array[0];

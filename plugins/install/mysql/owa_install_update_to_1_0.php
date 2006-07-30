@@ -126,26 +126,54 @@ class owa_install_update_to_1_0 extends owa_install {
 	
 	function create_clicks_table() {
 		
-		return $this->db->query(
+	/*	 $this->db->query(
 			sprintf("
 			alter table %s add column weekofyear INT
 			",
 			$this->config['ns'].$this->config['clicks_table']
 			
 			));
-		
-	}
-	
-	function create_impressions_table() {
-		
-		
-		return $this->db->query(
+			
+		$this->db->query(
 			sprintf("
 			alter table %s add column weekofyear INT
 			",
 			$this->config['ns'].$this->config['impressions_table']
 			
 			));
+	*/
+		$this->db->query(
+			sprintf("
+			alter table %s add column page_width INT
+			",
+			$this->config['ns'].$this->config['clicks_table']
+			
+			));
+			
+		$this->db->query(
+			sprintf("
+			alter table %s add column page_height INT
+			",
+			$this->config['ns'].$this->config['clicks_table']
+			
+			));
+			
+		$this->db->query(
+			sprintf("
+			alter table %s add column site VARCHAR(255)
+			",
+			$this->config['ns'].$this->config['referers_table']
+			
+			));
+			
+		return true;
+		
+	}
+	
+	function create_impressions_table() {
+		
+		
+		return true;
 		
 	}
 	
