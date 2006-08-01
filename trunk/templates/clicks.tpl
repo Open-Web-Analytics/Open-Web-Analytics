@@ -39,11 +39,17 @@
 	  
 	  var windowWidth = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
 	  var divWidth = document.getElementById("clickspage").offsetWidth;
-	  
+	  var relWidth = '';
 	  <? if (!empty($clicks)):?>
 	  <?php foreach ($clicks as $click => $value):?>
 	  
-	  clickX = divWidth * <?=$value['click_x'];?> / 100;
+	  <? if ($this->config['click_drawing_mode'] == 'center_on_page'): ?>
+	  relWidth = <?=$value['click_x'];?> / <? if($value['page_width']):?><?=$value['page_width'];?><?else:?><?echo '0';?><?endif;?>;
+	  clickX = divWidth * relWidth;
+	  //alert(divWidth +',' + relWidth);
+	  <? else:?>
+	  clickX = <?=$value['click_x'];?>
+	  <?endif;?>
 	  
 	  jg_doc.fillEllipse(clickX, <?=$value['click_y'];?>,  <?=$value['count'] * 4.1;?>,  <?=$value['count'] * 4.1;?>); // co-ordinates related to the document
 	  <? endforeach;?>

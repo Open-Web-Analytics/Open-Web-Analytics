@@ -177,10 +177,11 @@ class owa_metric_visitor extends owa_metric {
 		
 		$sql = sprintf("
 		SELECT
-			count(sessions.visitor_id) as count,
+			count(distinct sessions.visitor_id) as count,
 			visitors.first_session_year,
 			visitors.first_session_month,
-			visitors.first_session_day
+			visitors.first_session_day,
+			visitors.first_session_timestamp as timestamp
 		FROM 
 			%s as sessions, %s as visitors 
 		WHERE

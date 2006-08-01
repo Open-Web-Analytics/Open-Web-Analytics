@@ -439,7 +439,8 @@ class owa_lib {
     	$params['dom_element_tag'] = $_GET['dom_element_tag'];
     	$params['click_x'] = $_GET['click_x'];
     	$params['click_y'] = $_GET['click_y'];
-    	
+    	$params['page_width'] = $_GET['page_width'];
+    	$params['page_height'] = $_GET['page_height'];
 		
 	
 		return $params;

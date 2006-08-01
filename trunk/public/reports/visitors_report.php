@@ -48,7 +48,8 @@ switch ($_GET['owa_page']) {
 			'constraints'		=> array(
 				'site_id'		=> $report->params['site_id'],
 				'visitors.first_session_year'		=> $report->params['year2'],
-				'visitors.first_session_month'		=> $report->params['month2']
+				'visitors.first_session_month'		=> $report->params['month2'],
+				'visitors.first_session_day'		=> $report->params['day2']
 				),
 			'limit' 			=> $report->params['limit']
 		));
