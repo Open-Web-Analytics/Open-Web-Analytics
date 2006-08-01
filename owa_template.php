@@ -52,6 +52,7 @@ class owa_template extends Template {
 		$this->caller_params = $caller_params;
 		$this->config = &owa_settings::get_settings();
 		$this->template_dir = $this->config['templates_dir'];
+		$this->time_now = owa_lib::time_now();
 		
 		return;
 	}
@@ -211,6 +212,23 @@ class owa_template extends Template {
 				$graph,
 				$get);
 		
+		
+	}
+	
+	function daysAgo($time) {
+		
+		$now = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']);
+		
+		$days = ($now - $time) / (3600*24);
+		
+		switch ($days) {
+			
+			case 1:
+				return $days . " day ago";
+		
+			default:
+				return $days . " days ago";
+		}
 		
 	}
 	

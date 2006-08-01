@@ -196,13 +196,13 @@ function owa_setCoords() {
 	var windowHeight = window.innerHeight ? window.innerHeight : document.body.offsetHeight;
 	
       if( typeof( this.e.pageX ) == 'number' ) {
-      	 // Calc the percentage distance from the left edge of the browser's screen
-          this.properties["click_x"] = Math.round(this.e.pageX / windowWidth * 100);
+      	
+          this.properties["click_x"] = this.e.pageX;
           this.properties["click_y"] = this.e.pageY;
       }
       else {
-      	 // Calc the percentage distance from the left edge of the browser's screen
-          this.properties["click_x"] = Math.round(this.e.clientX / windowWidth * 100);
+      	 
+          this.properties["click_x"] = this.e.clientX;
           this.properties["click_y"] = this.e.clientY;
       }
 	
@@ -212,6 +212,8 @@ function owa_setCoords() {
     //this.properties["click_y"] = this.e.clientY;
     this.properties["dom_element_x"] = findPosX(this.targ);
     this.properties["dom_element_y"] = findPosY(this.targ);
+    this.properties["page_width"] = windowWidth;
+	this.properties["page_height"] = windowHeight;
 
     return;
 }

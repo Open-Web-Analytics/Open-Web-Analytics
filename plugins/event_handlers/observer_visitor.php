@@ -98,10 +98,11 @@ class Log_observer_visitor extends owa_observer {
 				first_session_year,
 				first_session_month,
 				first_session_day,
-				first_session_dayofyear 
+				first_session_dayofyear,
+				first_session_timestamp 
 				)
 			values 
-				('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+				('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
 			$this->config['ns'].$this->config['visitors_table'],
 			$this->m['visitor_id'],
 			$this->db->prepare($this->m['user_name']),
@@ -110,7 +111,8 @@ class Log_observer_visitor extends owa_observer {
 			$this->m['year'],
 			$this->m['month'],
 			$this->m['day'],
-			$this->m['dayofyear']
+			$this->m['dayofyear'],
+			$this->m['timestamp']
 			)
 		);	
 		
@@ -118,7 +120,7 @@ class Log_observer_visitor extends owa_observer {
 	}
 	
 	/**
-	 * Logs new visitor to Database
+	 * Updates visitor record in Database
 	 * 
 	 * @access private
 	 */

@@ -265,7 +265,8 @@ class Log_observer_referer extends owa_observer {
 				page_title = '%s', 
 				refering_anchortext = '%s', 
 				snippet = '%s',
-				site = '%s'
+				site = '%s',
+				is_searchengine = '%s'
 			WHERE
 				id = '%s'",
 			$this->config['ns'].$this->config['referers_table'],
@@ -273,6 +274,7 @@ class Log_observer_referer extends owa_observer {
 			$this->db->prepare($this->anchor_text),
 			$this->db->prepare($this->snippet),
 			$this->db->prepare($this->site),
+			$this->is_searchengine,
 			$this->m['referer_id']		
 			)
 		);	

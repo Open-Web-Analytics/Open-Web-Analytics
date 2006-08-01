@@ -209,7 +209,8 @@ class owa_settings {
 			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION,
 			'owa_rss_url'					=> 'http://www.openwebanalytics.com/?feed=rss2',
 			'use_summary_tables'			=> false,
-			'summary_framework'				=> ''
+			'summary_framework'				=> '',
+			'click_drawing_mode'			=> 'center_on_page'
 			);
 	}
 	

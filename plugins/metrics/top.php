@@ -456,6 +456,10 @@ class owa_metric_top extends owa_metric {
 			count(click_id) as count,
 			click_x,
 			click_y,
+			page_width,
+			page_height,
+			dom_element_x,
+			dom_element_y,
 			position
 		FROM 
 			%s
