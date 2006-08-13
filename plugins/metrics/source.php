@@ -40,7 +40,7 @@ class owa_metric_source extends owa_metric {
 		// Call parent constructor
 		$this->owa_metric();
 		
-		$this->api_calls = array('from_feed', 'from_search_engine', 'from_sites', 'from_direct');
+		$this->api_calls = array('from_feed', 'from_search_engine', 'sessions_from_sites', 'sessions_from_direct');
 		
 		return;
 	}
@@ -59,16 +59,16 @@ class owa_metric_source extends owa_metric {
 		switch ($this->params['api_call']) {
 		
 		case "from_feed":
-			return $this->from_source('feed');
+			return $this->from_feed();
 			
 		case "from_search_engine":
 			return $this->from_search_engine();
 			
-		case "from_sites":
-			return $this->from_sites();
+		case "sessions_from_sites":
+			return $this->sessions_from_sites();
 		
-		case "from_direct":
-			return $this->from_direct();
+		case "sessions_from_direct":
+			return $this->sessions_from_direct();
 			
 		}
 		
@@ -102,6 +102,42 @@ class owa_metric_source extends owa_metric {
 	}
 	
 	/**
+	 * Generates Count of visitors from feeds
+	 *
+	 * @access 	private
+	 * @return 	array
+	 * @todo the OR clause should probsbly go once data quality is validated as its only there to
+	 * 		 work around a bug.
+	 */
+	function from_feed() {
+	
+		$sql = sprintf("select 
+			count(sessions.session_id) as source_count
+		FROM 
+			%s as sessions,
+			%s as referers
+		WHERE
+			sessions.referer_id = referers.id			
+			AND sessions.source = 'feed'
+			AND referers.is_searchengine = 0
+			
+			OR sessions.source = 'feed'
+			AND referers.is_searchengine = 1
+			AND referers.id = '0'
+			%s
+			%s
+			",
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['referers_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
+			
+		);
+		
+		return $this->db->get_row($sql);
+	}
+	
+	/**
 	 * Generates Count of visitors from search engines
 	 *
 	 * @access 	private
@@ -117,6 +153,7 @@ class owa_metric_source extends owa_metric {
 		WHERE
 			sessions.referer_id = referers.id
 			AND referers.is_searchengine = 1
+			AND referers.id != 0
 			%s
 			%s",
 			$this->setTable($this->config['sessions_table']),
@@ -134,7 +171,7 @@ class owa_metric_source extends owa_metric {
 	 * @access 	private
 	 * @return 	array
 	 */
-	function from_sites() {
+	function sessions_from_sites() {
 	
 		$sql = sprintf("select 
 			count(sessions.session_id) as site_count
@@ -144,6 +181,8 @@ class owa_metric_source extends owa_metric {
 		WHERE
 			sessions.referer_id = referers.id
 			AND referers.is_searchengine = 0
+			AND sessions.source = ''
+			AND referers.id != 0
 			%s
 			%s",
 			$this->setTable($this->config['sessions_table']),
@@ -156,25 +195,24 @@ class owa_metric_source extends owa_metric {
 	}
 	
 	/**
-	 * Generates Count of visitors from sites other than known search engines
+	 * Generates Count of visitors from direct browser navigation
 	 *
 	 * @access 	private
 	 * @return 	array
 	 */
-	function from_direct() {
+	function sessions_from_direct() {
 	
 		$sql = sprintf("
 		SELECT 
 			count(sessions.session_id) as count
 		FROM 
-			%s as sessions,
-			%s as referers
+			%s as sessions
 		WHERE
-			sessions.referer_id = ''
+			sessions.referer_id = '0'
+			AND sessions.source = ''
 			%s
 			%s",
 			$this->setTable($this->config['sessions_table']),
-			$this->setTable($this->config['referers_table']),
 			$this->time_period($this->params['period']),
 			$this->add_constraints($this->params['constraints'])
 		);

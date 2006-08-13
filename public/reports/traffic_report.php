@@ -101,6 +101,58 @@ $top_search_engines = $report->metrics->get(array(
 
 ));
 
+
+$session_count = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'session_count',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id']
+		)
+));
+
+$from_se = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'from_search_engine',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id']
+		)
+));
+
+$from_sites = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'sessions_from_sites',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id']
+		)
+));
+
+$from_direct = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'sessions_from_direct',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id']
+		)
+));
+
+$from_feeds = $report->metrics->get(array(
+	'request_params'	=> $report->params,	
+	'api_call' 			=> 'from_feed',
+	'period'			=> $report->params['period'],
+	'result_format'		=> 'assoc_array',
+	'constraints'		=> array(
+		'site_id'		=> $report->params['site_id']
+		)
+));
+
+
 // Assign Data to templates
 
 $body->set('headline', 'Traffic Sources');
@@ -110,6 +162,11 @@ $body->set('anchors', $top_anchors);
 $body->set('domains', $top_hosts);
 $body->set('referers', $top_referers);
 $body->set('se_hosts', $top_search_engines);
+$body->set('sessions', $session_count);
+$body->set('from_feeds', $from_feeds);
+$body->set('from_sites', $from_sites);
+$body->set('from_direct', $from_direct);
+$body->set('from_se', $from_se);
 // Global Template Assignments
 $body->set('params', $report->params);
 $report->tpl->set('report_name', basename(__FILE__));

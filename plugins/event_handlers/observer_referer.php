@@ -132,7 +132,7 @@ class Log_observer_referer extends owa_observer {
 		
     	$this->m = $event['message'];
     	
-    	if ($this->m['referer']):
+    	if (!empty($this->m['referer'])):
 			$this->process_referer();
 		endif;
 		
@@ -163,19 +163,25 @@ class Log_observer_referer extends owa_observer {
 				endif;
 			endif;
 			
+			// Save referer to DB
 			$this->save();
 			
-			if ($this->config['fetch_refering_page_info'] = true):
+			// Crawl and analyze refering page
+			if ($this->config['fetch_refering_page_info'] == true):
+				//But not if it's a search engine...
+				if ($this->is_searchengine == false):
+					
+					$this->crawler = new owa_http;
+					$this->crawler->fetch($this->m['referer']);
+					$this->snippet = $this->crawler->extract_anchor_snippet($this->m['inbound_uri']);
+					//$this->e->debug('Referering Snippet is: '. $this->snippet);
+					$this->anchor_text = $this->crawler->anchor_info['anchor_text'];
+					//$this->e->debug('Anchor text is: '. $this->anchor_text);
+					$this->page_title = $this->crawler->extract_title();
+					//write to DB
+					$this->update();
 				
-				$this->crawler = new owa_http;
-				$this->crawler->fetch($this->m['referer']);
-				$this->snippet = $this->crawler->extract_anchor_snippet($this->m['inbound_uri']);
-				//$this->e->debug('Referering Snippet is: '. $this->snippet);
-				$this->anchor_text = $this->crawler->anchor_info['anchor_text'];
-				//$this->e->debug('Anchor text is: '. $this->anchor_text);
-				$this->page_title = $this->crawler->extract_title();
-				//write to DB
-				$this->update();
+				endif;
 			
 			endif;
 			

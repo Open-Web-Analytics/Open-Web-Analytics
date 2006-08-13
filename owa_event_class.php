@@ -99,8 +99,7 @@ class owa_event {
 		// Retrieve inbound visitor and session values	
 		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
 		$this->properties['inbound_session_id'] = $_COOKIE[$this->config['ns'].$this->config['session_param']];
-		
-		// Record time of last request
+		// Retrieve the time of last request
 		$this->properties['last_req'] = $_COOKIE[$this->config['ns'].$this->config['last_request_param']];
 		
 		//epoc time
@@ -126,6 +125,7 @@ class owa_event {
 		$this->properties['ip_address'] = $this->get_ip();
 		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
 		$this->properties['site'] = $_SERVER['SERVER_NAME'];
+		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
 		
 		
 		return;
@@ -226,54 +226,63 @@ class owa_event {
 	}
 	
 	/**
-	 * Resolve host
+	 * Resolve hostname from IP address
 	 * 
 	 * @access private
 	 */
 	function resolve_host() {
 	
+		// See if host is already resolved
 		if (!empty($_SERVER['REMOTE_HOST'])):
-		
-			$ip = $_SERVER['REMOTE_HOST'];
+			// Use pre-resolved host if available
+			$fullhost = $_SERVER['REMOTE_HOST'];
 		
 		else:
-		
-			$ip = $this->properties['ip_address'];
-		
+			// Do the host lookup
+			$fullhost = @gethostbyaddr($this->properties['ip_address']);
 		endif;
 		
-		$fullhost = @gethostbyaddr($ip);
-			
-		if ($fullhost != $ip):
-	
-			$host_array = explode('.', $fullhost);
-			$host_array = array_reverse($host_array);
-			$tlds = array('com', 'net', 'org', 'gov', 'mil');
-			
-			if (in_array($host_array[0], $tlds)):
-				$host = $host_array[1].".".$host_array[0];
-			else:
-				$host = $host_array[2].".".$host_array[1].".".$host_array[0];
+		if (!empty($fullhost)):
+		
+			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
+			if ($fullhost != $this->properties['ip_address']):
+		
+				$host_array = explode('.', $fullhost);
+				
+				// resort so top level domain is first in array
+				$host_array = array_reverse($host_array);
+				
+				// array of tlds. this should probably be in the config array not here.
+				$tlds = array('com', 'net', 'org', 'gov', 'mil');
+				
+				if (in_array($host_array[0], $tlds)):
+					$host = $host_array[1].".".$host_array[0];
+				else:
+					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
+				endif;
+					
+			elseif ($fullhost == 'unknown'):
+				// Show the IP it's better than nothing. Should probably mark a dirty flag in the db
+				// when this happens so one can go back and try again later.
+				$host = $this->properties['ip_address'];
+				$fullhost = $this->properties['ip_address'];
+			else:	
+				$host = $fullhost;					
 			endif;
 				
-		elseif ($fullhost == 'unknown'):
-			$host = $ip;
-			$fullhost = $ip;
-		else:	
-			$host = $fullhost;					
+			$this->properties['host'] = $host;
+			$this->properties['full_host'] = $fullhost;
+			$this->properties['host_id'] = $this->set_string_guid($host);
+		
 		endif;
-			
-		$this->properties['host'] = $host;
-		$this->properties['full_host'] = $fullhost;
-		$this->properties['host_id'] = $this->set_string_guid($host);
-			
+				
 		return;
 	}	
 	
 	/**
-	 * Makes the id for the uri of the request
+	 * Strip a URL of certain GET params
 	 *
-	 * @return integer
+	 * @return string
 	 */
 	function stripDocumentUrl($url) {
 		
@@ -316,7 +325,8 @@ class owa_event {
 	}
 	
 	/**
-	 * Attempts to make a unique ID out of http request variables
+	 * Attempts to make a unique ID out of http request variables.
+	 * This should only be used when storing state in a cookie is impossible.
 	 *
 	 * @return integer
 	 */

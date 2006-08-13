@@ -7,6 +7,7 @@ fieldset{margin: 7px;}
 
 .inline_h2 {font-size:18px;}
 .inline_h2_grey {font-size:18px; color:#cccccc;}
+.indented_header_row {padding:0px 0px 0px 20px;}
 .visitor_info_box {width:40px; height:40px; text-align:center;}
 .comments_info_box {
 	padding:4px 4px 4px 4px;

@@ -74,7 +74,6 @@ class owa_request extends owa_event {
 		$this->properties['request_id'] = $this->guid;
 		
 		// Record HTTP request variables
-		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
 		if (!empty($this->properties['referer'])):
 			$this->properties['referer_id'] = $this->set_string_guid($this->properties['referer']);
 		endif;
