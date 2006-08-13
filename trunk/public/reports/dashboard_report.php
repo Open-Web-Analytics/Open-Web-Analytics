@@ -168,9 +168,10 @@ $from_feed = $report->metrics->get(array(
 $sites = $report->getSitesList();
 
 //Fetch latest OWA news
-$rss = new owa_news;
-$news = $rss->Get($rss->config['owa_rss_url']);
-
+if ($report->config['fetch_owa_news'] == true):
+	$rss = new owa_news;
+	$news = $rss->Get($rss->config['owa_rss_url']);
+endif;
 // Assign Data to templates
 
 $report->tpl->set('news', $news);

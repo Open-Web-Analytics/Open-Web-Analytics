@@ -33,7 +33,7 @@ class owa_metric_dashboard extends owa_metric {
 
 		$this->owa_metric();
 
-		$this->api_calls = array('dash_core', 'page_views', 'page_view_count', 'dash_counts');
+		$this->api_calls = array('dash_core', 'page_views', 'page_view_count', 'dash_counts', 'session_count');
 		
 		return;
 	}
@@ -59,6 +59,8 @@ class owa_metric_dashboard extends owa_metric {
 			return $this->page_view_count();
 		case "dash_counts":
 			return $this->dash_counts();
+		case "session_count":
+			return $this->session_count();
 			
 		}
 	
@@ -179,6 +181,33 @@ class owa_metric_dashboard extends owa_metric {
 	
 		$sql = sprintf("select 
 			sum(sessions.num_pageviews) as page_views			
+		from
+			%s as sessions
+		where
+			true
+			%s 
+			%s
+		",
+			$this->setTable($this->config['sessions_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
+		);
+					
+		return $this->db->get_row($sql);
+	}
+	
+	/**
+	 * Session count
+	 *
+	 * @param 	array $params
+	 * @access 	private
+	 * @return 	array
+	 */
+	function session_count() {
+	
+		$sql = sprintf("
+		select 
+			count(sessions.session_id) as count			
 		from
 			%s as sessions
 		where
