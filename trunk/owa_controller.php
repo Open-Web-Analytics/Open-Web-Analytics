@@ -146,6 +146,9 @@ class owa {
 		}
 		
 		if (!empty($app_params)):
+		
+			$app_params = owa_lib::inputFilter($app_params);
+		
 			$event->_setProperties($app_params);
 		endif;
 		
