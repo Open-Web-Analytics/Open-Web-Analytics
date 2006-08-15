@@ -120,10 +120,6 @@ class owa_metric_source extends owa_metric {
 			sessions.referer_id = referers.id			
 			AND sessions.source = 'feed'
 			AND referers.is_searchengine = 0
-			
-			OR sessions.source = 'feed'
-			AND referers.is_searchengine = 1
-			AND referers.id = '0'
 			%s
 			%s
 			",
