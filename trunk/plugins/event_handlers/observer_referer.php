@@ -223,7 +223,14 @@ class Log_observer_referer extends owa_observer {
 		$db = new ini_db($this->config['query_strings.ini']);
 		
 		$match = $db->match($referer);
-		return urldecode($match[1]);
+		
+		if (!empty($match[1])):
+		
+			return urldecode($match[1]);
+		
+		endif;
+		
+		return;
 	}
 
 	/**

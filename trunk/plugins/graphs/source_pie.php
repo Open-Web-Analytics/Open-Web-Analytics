@@ -111,14 +111,27 @@ class owa_graph_source_pie extends owa_graph {
 	
 		));
 		
+		$from_direct = $this->metrics->get(array(
+		
+		'request_params'	=>	$this->params,
+		'api_call' 			=> 'sessions_from_direct',
+		'period'			=> $this->params['period'],
+		'result_format'		=> 'assoc_array',
+		'constraints'		=> array(
+			'site_id'	=> $this->params['site_id']
+		
+		)
+	
+		));
+		
 		// Graph Params	
 		$this->params['graph_title'] = "Traffic Sources for \n" . $this->get_period_label($this->params['period']);
-		$this->params['legends'] = array('Feeds', 'Search Engines', 'Web Sites');
+		$this->params['legends'] = array('Feeds', 'Search Engines', 'Web Sites', 'Direct');
 		$this->params['height']	= 200;
-		$this->params['width']	= 280;
+		$this->params['width']	= 300;
 		
 		// Construct Data Array
-		$result_pie = array($from_feeds['source_count'], $from_se['se_count'], $from_sites['site_count']);
+		$result_pie = array($from_feeds['source_count'], $from_se['se_count'], $from_sites['site_count'], $from_direct['count']);
 		
 		if(array_sum($result_pie) == 0):
 		
