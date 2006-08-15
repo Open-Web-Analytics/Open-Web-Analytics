@@ -116,7 +116,7 @@ class owa_http extends Snoopy {
 		if(!empty($this->anchor_info['anchor_tag'])):
 			
 			// strip html from doc
-			$nohtml = strip_tags($this->results);
+			$nohtml = strip_tags(owa_lib::inputFilter($this->results));
 			
 			// calc len of the anchor text
 			$atext_len = strlen($this->anchor_info['anchor_text']);

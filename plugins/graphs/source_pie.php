@@ -101,7 +101,7 @@ class owa_graph_source_pie extends owa_graph {
 		$from_sites = $this->metrics->get(array(
 		
 		'request_params'	=>	$this->params,
-		'api_call' 			=> 'from_sites',
+		'api_call' 			=> 'sessions_from_sites',
 		'period'			=> $this->params['period'],
 		'result_format'		=> 'assoc_array',
 		'constraints'		=> array(

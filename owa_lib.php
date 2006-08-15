@@ -18,6 +18,7 @@
 
 require_once 'owa_env.php';
 require_once (OWA_PEARLOG_DIR . '/Log.php');
+require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
 
 /**
  * Utility Functions
@@ -446,6 +447,15 @@ class owa_lib {
 		return $params;
 		
 	}
+	
+	function inputFilter($array) {
+		
+		$f = new InputFilter;
+		
+		return $f->process($array);
+		
+	}
+	
 }
 
 ?>

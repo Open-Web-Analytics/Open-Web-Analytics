@@ -46,9 +46,12 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 
+// Copy GET array
+$app_params = $_GET;
+
 // Set page URL
-if (isset($_GET['page_uri']) && !empty($_GET['page_uri'])):
-	$app_params['uri'] = base64_decode($_GET['page_uri']);
+if (isset($app_params['page_uri']) && !empty($app_params['page_uri'])):
+	$app_params['uri'] = base64_decode($app_params['page_uri']);
 else: 
 	$app_params['uri'] = $_SERVER['HTTP_REFERER'];
 endif;
@@ -59,25 +62,25 @@ if (empty($app_params['uri'])):
 endif;
 
 // Set Referer
-$app_params['referer'] = base64_decode($_GET['referer']);
+$app_params['referer'] = base64_decode($app_params['referer']);
 	
 // Set page Type
-$app_params['page_type'] = urldecode($_GET['page_type']);
+$app_params['page_type'] = urldecode($app_params['page_type']);
 
 //Set page ID
-$app_params['page_id'] = urldecode($_GET['page_id']);
+$app_params['page_id'] = urldecode($app_params['page_id']);
 	
 // Track users by the email address
-$app_params['user_email'] = urldecode($_GET['user_email']); 
+$app_params['user_email'] = urldecode($app_params['user_email']); 
 	
 // Track users who have a named account
-$app_params['user_name'] = urldecode($_GET['user_name']);
+$app_params['user_name'] = urldecode($app_params['user_name']);
 
 // Set Page Title
-$app_params['page_title'] = urldecode($_GET['page_title']);
+$app_params['page_title'] = urldecode($app_params['page_title']);
 	
 // Provide an ID for this instance
-$app_params['site_id'] = $_GET['site_id'];
+$app_params['site_id'] = $app_params['site_id'];
 	
 // Track the request
 $l->log($app_params);

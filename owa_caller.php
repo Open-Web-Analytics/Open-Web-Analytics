@@ -421,7 +421,7 @@ class owa_caller {
 			case "log_event":
 				$this->e->debug('Special action request received: '.$_GET['owa_action']);
 				ignore_user_abort(true);
-				$this->logEventRest($_GET['event']);
+				$this->logEvent($_GET['event'], $_GET);
 				
 				// Return 1x1 pixel
 				header('Content-type: image/gif');
