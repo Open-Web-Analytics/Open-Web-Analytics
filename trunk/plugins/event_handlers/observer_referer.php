@@ -168,21 +168,24 @@ class Log_observer_referer extends owa_observer {
 			
 			// Crawl and analyze refering page
 			if ($this->config['fetch_refering_page_info'] == true):
-				//But not if it's a search engine...
-				if ($this->is_searchengine == false):
 					
-					$this->crawler = new owa_http;
-					$this->crawler->fetch($this->m['referer']);
+				$this->crawler = new owa_http;
+				$this->crawler->fetch($this->m['referer']);
+				
+				//Extract anchortext and page snippet but not if it's a search engine...
+				if ($this->is_searchengine == false):
 					$this->snippet = $this->crawler->extract_anchor_snippet($this->m['inbound_uri']);
 					//$this->e->debug('Referering Snippet is: '. $this->snippet);
 					$this->anchor_text = $this->crawler->anchor_info['anchor_text'];
 					//$this->e->debug('Anchor text is: '. $this->anchor_text);
-					$this->page_title = $this->crawler->extract_title();
-					//write to DB
-					$this->update();
-				
 				endif;
-			
+					
+				//Extract Title
+				$this->page_title = $this->crawler->extract_title();
+					
+				//write to DB
+				$this->update();
+				
 			endif;
 			
 		return;
