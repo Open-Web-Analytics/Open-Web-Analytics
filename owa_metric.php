@@ -376,47 +376,46 @@ class owa_metric {
 	function add_constraints($constraints) {
 	
 		if (!empty($constraints)):
-		$this->e->debug(' CONSTRAINT: '. print_r($constraints, true));
 		
-		$count = 0;
+			$this->e->debug(' CONSTRAINT: '. print_r($constraints, true));
 		
-		foreach ($constraints as $key => $value) {
+			$count = 0;
 			
-			if (!empty($value) || $value === 0):
-				$count++;	
-			endif;
-		}
-		
-		//print $count;
-		
-		$i = 0;
-		
 			foreach ($constraints as $key => $value) {
 				
-				if (!empty($value) || $value === 0):
+				if (!empty($value) || $value === 0 || $value === '0' || $value === false):
+					$count++;	
+				endif;
+			}
+			
+			$i = 0;
+			
+			foreach ($constraints as $key => $value) {
+					
+				if (!empty($value) || $value === 0 || $value === '0' || $value === false):
 					$where .= $key . ' = ' . "'$value'";
 					$i++;
 					if ($count != $i):
-					
+						
 						$where .= " AND ";
-					
+						
 					endif;
-
+	
 				endif;		
-				
+					
 			}
-		
-			if (!empty($where)):
 			
+			if (!empty($where)):
+				
 				return $where = ' AND '.$where;
 			else: 
 				return;
 			endif;
-			
-		else:
-		
-			return;
 				
+		else:
+			
+			return;
+					
 		endif;
 		
 		

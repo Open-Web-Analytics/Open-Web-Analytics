@@ -1,5 +1,5 @@
 <? if (!empty($data)):?>
-<table>
+<table width="100%">
 	<tr>
 		<th scope="col">Visitor</th>
 		<th scope="col">Visits</th>

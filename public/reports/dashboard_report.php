@@ -35,7 +35,7 @@ $body = & new owa_template($report->params);
 $body->set_template('index.tpl');// This is the inner template
 
 $visit = & new owa_template($report->params); 
-$visit->set_template('visit.tpl');// This is the inner template
+$visit->set_template('visit2.tpl');// This is the inner template
 
 $top_pages = & new owa_template($report->params);
 $top_pages->set_template('top_pages.tpl');
@@ -142,7 +142,8 @@ $top_referers_data = $report->metrics->get(array(
 	'result_format'		=> 'assoc_array',
 	'limit'				=> '10',
 	'constraints'		=> array(
-		'site_id'	=> $report->params['site_id'])
+		'site_id'	=> $report->params['site_id'],
+		'referers.is_searchengine' => '0')
 ));
 
 $top_visitors_data = $report->metrics->get(array(
