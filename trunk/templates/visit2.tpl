@@ -69,7 +69,7 @@
 								</TD>
 
 								<TD valign="top" colspan="2">
-												<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h4"><?=$this->truncate($visit['referer_page_title'], 80, '...');?></span></a> <span class="info_text"><?=$this->truncate($visit['referer'], 35, '...');?></span><? else:?><?=$this->truncate($visit['referer'], 70, '...');?><? endif;?></a>
+												<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h4"><?=$this->truncate($visit['referer_page_title'], 80, '...');?></span></a> <span class="info_text"><?=$this->truncate($visit['referer'], 35, '...');?></span><? else:?><?=$this->truncate($visit['referer'], 50, '...');?><? endif;?></a>
 								</TD>
 																	
 							</TR>
