@@ -55,7 +55,7 @@
 											<TD valign="top"><span class="h_label">In:</span></TD>
 											
 											<TD valign="top">
-												<a href="<?=$visit['first_page_uri'];?>"><span class="inline_h3"><?=$visit['first_page_title'];?></span></a> (<?=$visit['first_page_type'];?>) 
+												<a href="<?=$visit['first_page_uri'];?>"><span class="inline_h4"><?=$visit['first_page_title'];?></span></a> (<?=$visit['first_page_type'];?>) 
 												<span class="info_text"><?=$visit['first_page_uri'];?></span>
 											</TD>
 											
@@ -69,7 +69,7 @@
 								</TD>
 
 								<TD valign="top" colspan="2">
-												<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h3"><?=$visit['referer_page_title']?></span></a> <span class="info_text"><?=$this->truncate($visit['referer'], 35, '...');?></span><? else:?><?=$this->truncate($visit['referer'], 70, '...');?><? endif;?></a>
+												<a href="<?=$visit['referer'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h4"><?=$this->truncate($visit['referer_page_title'], 80, '...');?></span></a> <span class="info_text"><?=$this->truncate($visit['referer'], 35, '...');?></span><? else:?><?=$this->truncate($visit['referer'], 70, '...');?><? endif;?></a>
 								</TD>
 																	
 							</TR>
