@@ -15,10 +15,10 @@
 						<table cellpadding="0" cellspacing="0" width="100%" border="0">
 							<TR>
 								
-											<TD valign="top"><span class="h_label">Vi:</span></TD>
+											<TD class="visit_icon" align="right" valign="bottom"><span class="h_label"><img src="<?=$this->config['images_url'].'/user_icon_small.gif';?>" alt="Visitor"></span></TD>
 											
 											<TD valign="top">
-											 <a href="<?=$this->make_report_link('visitor_report.php', array('visitor_id' => $visit['visitor_id'], 'site_id' => $params['site_id']));?>"><span class="inline_h3"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> - 
+											 <a href="<?=$this->make_report_link('visitor_report.php', array('visitor_id' => $visit['visitor_id'], 'site_id' => $params['site_id']));?>"><span class="inline_h2"><? if (!empty($visit['user_name'])):?><?=$visit['user_name'];?><?elseif (!empty($visit['user_email'])):?><?=$visit['user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a> - 
 												<? if ($visit['is_new_visitor'] == true): ?>
 												New Visitor
 												<? else: ?>
@@ -52,7 +52,7 @@
 								
 										<TR>
 											
-											<TD valign="top"><span class="h_label">In:</span></TD>
+											<TD class="visit_icon" align="right" valign="top"><span class="h_label"><img src="<?=$this->config['images_url'].'/document_icon.gif';?>" alt="Entry Page"></span></TD>
 											
 											<TD valign="top">
 												<a href="<?=$visit['first_page_uri'];?>"><span class="inline_h4"><?=$visit['first_page_title'];?></span></a> (<?=$visit['first_page_type'];?>) 
@@ -62,10 +62,10 @@
 										
 							</tr>
 							<TR>
-								<TD rowspan="2" valign="top">
+								<TD class="visit_icon" rowspan="2" align="right" valign="top">
 									<? if (!empty($visit['referer'])):?>
 									
-												<span class="h_label">Fr:</span>
+												<span class="h_label"><img src="<?=$this->config['images_url'].'/referer_icon.gif';?>" alt="Refering URL"></span>
 								</TD>
 
 								<TD valign="top" colspan="2">

@@ -113,6 +113,9 @@ class owa_template extends Template {
 			case "netscape":
 				$file = 'netscape.png';
 				break;
+			case "mozilla":
+				$file = 'mozilla.png';
+				break;
 			
 			
 		}
