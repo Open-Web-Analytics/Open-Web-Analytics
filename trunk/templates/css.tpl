@@ -11,6 +11,7 @@ fieldset{margin: 7px;}
 .inline_h4 {font-size:14px;}
 .indented_header_row {padding:0px 0px 0px 20px;}
 .visitor_info_box {width:40px; height:40px; text-align:center;}
+.visit_icon {width:40px;}
 .comments_info_box {
 	padding:4px 4px 4px 4px;
 	border:solid 0px #999999;
@@ -22,7 +23,7 @@ fieldset{margin: 7px;}
 	text-align:center;
 }
 
-.snippet_anchor {font-style:bold;}
+.snippet_anchor {font-size:14px;font-style:bold;}
   
 .date_box {  
   	padding:4px;
