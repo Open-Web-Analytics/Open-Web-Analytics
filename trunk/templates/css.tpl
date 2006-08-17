@@ -7,6 +7,8 @@ fieldset{margin: 7px;}
 
 .inline_h2 {font-size:18px;}
 .inline_h2_grey {font-size:18px; color:#cccccc;}
+.inline_h3 {font-size:16px;}
+.inline_h4 {font-size:14px;}
 .indented_header_row {padding:0px 0px 0px 20px;}
 .visitor_info_box {width:40px; height:40px; text-align:center;}
 .comments_info_box {
@@ -19,6 +21,8 @@ fieldset{margin: 7px;}
 	background-repeat: no-repeat;
 	text-align:center;
 }
+
+.snippet_anchor {font-style:bold;}
   
 .date_box {  
   	padding:4px;
@@ -28,9 +32,9 @@ fieldset{margin: 7px;}
   
 .pages_box {
   
-  	padding:4px 4px 4px 4px;
+  	padding:2px;
 	border:solid 2px #999999;
-	margin:0px 2px 2px 2px;
+	margin:0px 0px 0px 0px;
 	background-color:;
 	color:;
 	text-align:center;
@@ -59,7 +63,7 @@ fieldset{margin: 7px;}
   }
 
 .centered_buttons {margin-left:auto;margin-right:auto;}
-.snippet_text {color:#999999;font-size:12px;}
+.snippet_text {color:;font-size:12px;}
 .snippet_text a {color:#999999;}
 .visit_box_stat {width:42px;}
 .nav_bar{text-decoration:none;}		

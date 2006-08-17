@@ -1,7 +1,8 @@
 <style>
 #recent_visitors {width: 700px;}
 #top_pages {width: 450px;}
-#top_visitors {width: 250px;}
+#top_referers {width: 450px;}
+#top_visitors {width: 450px;}
 #summary_stats {width: px;}
 #core_metrics {width: 600px;}
 </style>
