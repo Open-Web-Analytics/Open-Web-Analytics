@@ -2,7 +2,7 @@
 
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 6px 2px 6px;}
-legend {font-size:20px;font-style:bold;}
+legend {font-size:20px;font-weight:bold;}
 fieldset{margin: 7px;}
 
 .inline_h2 {font-size:18px;}
@@ -23,7 +23,7 @@ fieldset{margin: 7px;}
 	text-align:center;
 }
 
-.snippet_anchor {font-size:14px;font-style:bold;}
+.snippet_anchor {font-size:14px;font-weight:bold;}
   
 .date_box {  
   	padding:4px;
