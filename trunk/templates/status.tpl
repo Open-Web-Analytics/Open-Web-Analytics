@@ -2,7 +2,7 @@
 <P>
 <P>
 <DIV class="error_msg">
-	<?=$error_msg;?>
+	<?=$status_msg;?>
 </DIV>
 
 

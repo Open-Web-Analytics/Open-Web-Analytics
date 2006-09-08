@@ -74,6 +74,8 @@ fieldset{margin: 7px;}
 .owa_banner {background-color: #cccccc; padding:4px; font-weight:bold;}
 .visible {display:;}
 .invisible {display:none;}
+.status {color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: green; font-size: 14px; font-weight:bold;}
+
 
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}

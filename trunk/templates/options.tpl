@@ -8,6 +8,8 @@
     
     <UL class="nav_bar">
     	<LI><a href="<?=$this->make_admin_link('options.php', array('owa_page' => 'manage_sites'));?>">Manage Web Site Tracking Tags</a></LI>
+    	<LI><a href="<?=$this->make_admin_link('options.php', array('owa_page' => 'user_roster'));?>">Manage Users</a></LI>
+    	
     	<LI><a href="<?=$this->make_admin_link('install.php', array('owa_page' => 'package_selection'));?>">Installation Package Manager</a></LI>
    
     	</UL>

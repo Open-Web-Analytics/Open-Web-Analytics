@@ -21,6 +21,10 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_site.php');
 require_once(OWA_BASE_DIR.'/owa_news.php');
+require_once(OWA_BASE_DIR.'/owa_lib.php');
+require_once(OWA_BASE_DIR.'/owa_user.php');
+require_once(OWA_BASE_DIR.'/owa_auth.php');
+
 /**
  * OWA Options Admin interface
  * 
@@ -33,7 +37,17 @@ require_once(OWA_BASE_DIR.'/owa_news.php');
  * @since		owa 1.0.0
  */
 
+// Create instance of OWA
 $owa = new owa_php;
+
+$auth = &owa_auth::get_instance();
+
+// Clean Input arrays
+if ($_POST):
+	$params = owa_lib::inputFilter($_POST);
+else:
+	$params = owa_lib::inputFilter($_GET);
+endif;
 
 // Create Template Objects
 $page = & new owa_template;
@@ -42,25 +56,55 @@ $body = & new owa_template;
 $body_tpl = 'options.tpl';// This is the inner template
 $body->set('page_title', 'OWA Options');
 
-switch ($_GET['owa_page']) {
-	
-	case "manage_sites":
-		$body_tpl = 'options_manage_sites.tpl';
-		$site = new owa_site;
-		$sites = $site->getAllSites();
-		$body->set('sites', $sites);
-		break;
-	
-}
+if ($params['owa_page']):
 
-switch ($_POST['action']) {
+	switch ($params['owa_page']) {
+		
+		case "manage_sites":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_manage_sites.tpl';
+			$site = new owa_site;
+			$sites = $site->getAllSites();
+			$body->set('sites', $sites);
+			break;
+		case "user_roster":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_user_roster.tpl';
+			$u = new owa_user;
+			$users = $u->getAllUsers();
+			$body->set('users', $users);
+			break;
+		case "user_roster_success":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_user_roster.tpl';
+			$u = new owa_user;
+			$users = $u->getAllUsers();
+			$body->set('users', $users);
+			$body->set('status', 'User profile Saved Successfully.');
+			break;
+		case "edit_user_profile":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_edit_user_profile.tpl';
+			$u = new owa_user;
+			$u->getUserByPK($params['user_id']);
+			$body->set('user', get_object_vars($u));
+			$body->set('roles', $auth->roles);	
+			$body->set('page_title', 'OWA - Edit User Profile');
+			$body->set('headline', 'Edit User Profile');	
+			break;	
+	}
+
+endif;
+
+
+switch ($params['action']) {
 	
 	case "add_site":
 		
 		$site = new owa_site;
-		$site->name = $_POST['name'];
-		$site->description = $_POST['description'];
-		$site->site_family = $_POST['site_family'];
+		$site->name = $params['name'];
+		$site->description = $params['description'];
+		$site->site_family = $params['site_family'];
 		$site_id = $site->addNewSite();
 		
 		if ($site_id != false):
@@ -86,10 +130,6 @@ switch ($_POST['action']) {
 		
 		$owa->reset_config();	
 		break;
-		
-}
-
-switch ($_GET['action']) {
 	
 	case "get_tag":
 		$status_msg = "";
@@ -99,6 +139,20 @@ switch ($_GET['action']) {
 			$body->set('site_id', $_GET['site_id']);
 			$tag = $owa->requestTag($site_id);
 			$body->set('tag', $tag);
+		
+		break;
+		
+	case "edit_user_profile":
+		$u = new owa_user;
+		$u->getUserByPK($params['user_id']);
+		$u->email_address = $params['email_address'];
+		$u->real_name = $params['real_name'];
+		$u->role = $params['role'];
+		$u->update();
+		
+		$t = new owa_template();
+		$url = $t->make_admin_link('options.php', array('owa_page' => 'user_roster_success'));
+		owa_lib::redirectBrowser($url);
 		
 		break;
 }

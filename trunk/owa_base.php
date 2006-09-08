@@ -16,12 +16,11 @@
 // $Id$
 //
 
-include_once '../set_env.php';
-include_once OWA_BASE_DIR.'/owa_php.php';
-include_once OWA_BASE_DIR.'/owa_lib.php';
-include_once OWA_BASE_DIR.'/owa_auth.php';
+require_once('owa_env.php');
+require_once('owa_settings_class.php');
+require_once('owa_error.php');
 /**
- * Generic Report Controler
+ * OWA Base Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,10 +30,36 @@ include_once OWA_BASE_DIR.'/owa_auth.php';
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+class owa_base {
+	
+	/**
+	 * Configuration
+	 *
+	 * @var array
+	 */
+	var $config;
+	
+	/**
+	 * Error Logger
+	 *
+	 * @var object
+	 */
+	var $e;
+	
+	/**
+	 * Base Constructor
+	 *
+	 * @return owa_base
+	 */
+	function owa_base() {
+		
+		$this->config = &owa_settings::get_settings();
+		$this->e = &owa_error::get_instance();
+		
+		return;
+	}
+	
+}
 
-//$config['report_wrapper'] = '';
-$owa = new owa($config);	
-
-include_once($owa->config['reporting_dir'].$_GET['page']);
 
 ?>

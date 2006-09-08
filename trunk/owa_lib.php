@@ -456,6 +456,129 @@ class owa_lib {
 		
 	}
 	
+	/**
+	 * Generic Factory method
+	 *
+	 * @param string $class_dir
+	 * @param string $class_prefix
+	 * @param string $class_name
+	 * @param array $conf
+	 * @return object
+	 */
+	function &factory($class_dir, $class_prefix, $class_name, $conf = array()) {
+		
+        $class_dir = strtolower($class_dir);
+        $classfile = $class_dir . $class_name . '.php';
+		$class = $class_prefix . $class_name;
+		
+        /*
+         * Attempt to include a version of the named class, but don't treat
+         * a failure as fatal.  The caller may have already included their own
+         * version of the named class.
+         */
+        if (!class_exists($class)):
+            include_once $classfile;
+        endif;
+
+        /* If the class exists, return a new instance of it. */
+        if (class_exists($class)):
+            $obj = &new $class($conf);
+            return $obj;
+        endif;
+
+        $null = null;
+        return $null;
+    }
+	
+    /**
+     * Generic Object Singleton
+     *
+     * @param string $class_dir
+     * @param string $class_prefix
+     * @param string $class_name
+     * @param array $conf
+     * @return object
+     */
+    function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
+    	
+        static $instance;
+        
+        if (!isset($instance)):
+            $instance = &owa_lib::factory($class_dir, $class_prefix, $class_name, $conf = array());
+        endif;
+
+        return $instance;
+    }
+    
+    /**
+     * 301 HTP redirect the user to a new url
+     *
+     * @param string $url
+     */
+    function redirectBrowser($url) {
+    	
+	    // 301 redirect to URL 
+		header ('Location: '.$url);
+		header ('HTTP/1.0 301 Moved Permanently');
+		return;
+    }
+    
+    /**
+	 * Generates a link between admin screens
+	 *
+	 * @param array $query_params
+	 * @return string
+	 */
+	function makeAdminLink($admin_page, $query_params = null, $make_query_string = true) {
+		
+		if ($make_query_string == true):
+			$get = owa_lib::makeLinkQueryString($query_params);
+		else:
+			$get = '';
+		endif;
+		
+		//Return URL
+		return sprintf($this->config['inter_admin_link_template'],
+				$this->config['admin_url'],
+				$admin_page,
+				$get);
+	}
+	
+	function makeLinkQueryString($query_params) {
+		
+		$new_query_params = array();
+		
+		//Load params passed by caller
+		if (!empty($this->caller_params)):
+			foreach ($this->caller_params as $name => $value) {
+				if (!empty($value)):
+					$new_query_params[$name] = $value;	
+				endif;
+			}
+		endif;
+
+		// Load overrides
+		if (!empty($query_params)):
+			foreach ($query_params as $name => $value) {
+				if (!empty($value)):
+					$new_query_params[$name] = $value;	
+				endif;
+			}
+		endif;
+		
+		// Construct GET request
+		if (!empty($new_query_params)):
+			foreach ($new_query_params as $name => $value) {
+				if (!empty($value)):
+					$get .= $name . "=" . $value . "&";	
+				endif;
+			}
+		endif;
+		
+		return $get;
+		
+	}
+    
 }
 
 ?>

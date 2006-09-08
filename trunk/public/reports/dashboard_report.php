@@ -18,17 +18,25 @@
 
 require_once(OWA_BASE_DIR.'/owa_report.php');
 require_once(OWA_BASE_DIR.'/owa_news.php');
+require_once(OWA_BASE_DIR.'/owa_auth.php');
+
+/**
+ * Dashboard Report 
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+$auth = &owa_auth::get_instance();
+$auth->authenticateUser('viewer');
 
 $report = new owa_report;
 
-// Set the reporting period
-/*
-if (!empty($report->params['period'])):
-	$report->set_period($report->params['period']);
-else:
-	$report->set_period('today');
-endif;
-	*/	
 // Setup the templates
 
 $body = & new owa_template($report->params); 

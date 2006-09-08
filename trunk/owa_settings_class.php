@@ -111,6 +111,7 @@ class owa_settings {
 				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
 				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
 				$config['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
+				$config['home_url'] = $OWA_CONFIG['public_url']."/reports/index.php?page=dashboard_report.php";
 				$config['admin_url'] = $OWA_CONFIG['public_url']."/admin/index.php";
 				
 			endif;	
@@ -158,6 +159,7 @@ class owa_settings {
 			'impressions_table'				=> 'impressions',
 			'clicks_table'					=> 'clicks',
 			'exits_table'					=> 'exits',
+			'users_table'					=> 'users',
 			'db_class'						=> '',
 			'db_type'						=> '',
 			'db_name'						=> OWA_DB_NAME,
@@ -211,7 +213,9 @@ class owa_settings {
 			'owa_rss_url'					=> 'http://www.openwebanalytics.com/?feed=rss2',
 			'use_summary_tables'			=> false,
 			'summary_framework'				=> '',
-			'click_drawing_mode'			=> 'center_on_page'
+			'click_drawing_mode'			=> 'center_on_page',
+			'log_clicks'					=> true,
+			'authentication'				=> 'simple'
 			);
 	}
 	
