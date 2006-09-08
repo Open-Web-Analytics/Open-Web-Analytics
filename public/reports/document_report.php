@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_report.php');
+require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
  * Document Report
@@ -29,6 +30,9 @@ require_once(OWA_BASE_DIR.'/owa_report.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+
+$auth = &owa_auth::get_instance();
+$auth->authenticateUser('viewer');
 
 $report = new owa_report;
 	

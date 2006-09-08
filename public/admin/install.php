@@ -20,6 +20,8 @@
 require_once(OWA_BASE_DIR.'/owa_php.php');
 require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_installer.php');
+require_once(OWA_BASE_DIR.'/owa_user.php');
+require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 /**
  * OWA Installation Script
@@ -113,6 +115,11 @@ switch ($_GET['owa_page']) {
 		$page->set('page_title', 'Installation Error');
 		$body->set('page_h1', 'There was an Error During Installation');
 		break;
+	case "set_admin_user":
+		$body_tpl = 'installer_admin_user.tpl';
+		$page->set('page_title', 'Administrator Account Profile Setup');
+		$body->set('page_h1', 'Setup your profile by filling in the fields below.');
+		break;
 	
 }
 
@@ -133,14 +140,27 @@ switch ($_GET['action']) {
 				// Package specific msg
 				$status_msg = $install_status;
 			endif;
-			$body->set('page_h1', 'Installation Complete');
-			$body_tpl = 'installer_success.tpl';
+			$body->set('page_h1', 'Set Administrator User Profile');
+			$body_tpl = 'installer_set_admin_user.tpl';
 		else:
 			$status_msg = 'The installation failed. See error log for details.';
 			$body->set('page_h1', 'Installation Problem');
 			$body_tpl = 'installer_error.tpl';
 		endif;
 
+		break;
+		
+	case "set_admin_profile":
+		$params = owa_lib::inputFilter($_GET);
+		$u = new owa_user;
+		$u->user_id = $params['user_id'];
+		$u->password = md5($params['password']);
+		$u->real_name = $params['real_name'];
+		$u->email_address = $params['email_address'];
+		$u->role = 'admin';
+		$u->save();
+		$body->set('page_h1', 'Installation Complete');
+		$body_tpl = 'installer_success.tpl';
 		break;
 }
 

@@ -22,6 +22,7 @@ require_once 'owa_settings_class.php';
 require_once 'owa_api.php';
 require_once 'owa_lib.php';
 require_once 'owa_site.php';
+require_once 'owa_auth.php';
 
 /**
  * Web Analytics Report  
@@ -99,6 +100,8 @@ class owa_report {
 	 */
 	var $prefs = array();
 	
+	var $auth;
+	
 	/**
 	 * Constructor
 	 *
@@ -109,9 +112,18 @@ class owa_report {
 		
 		$this->config = &owa_settings::get_settings();
 		
+		// User authentication object
+		$this->auth = &owa_auth::get_instance();	
+		
 		// Gets full set of params from URL
-		$this->_setParams(owa_lib::getRestparams());
-
+		
+		//if (empty($_POST['go_params'])):
+			$this->_setParams(owa_lib::getRestparams());
+		//else:
+		//	parse_str($_POST['go_params'], $post_params);
+		//	$this->setParams($post_params);
+		//endif;
+		
 		// Get default and user override display preferences.
 		$this->prefs = $this->getPrefs();	
 		
@@ -212,6 +224,12 @@ class owa_report {
 		
 		$sites = new owa_site;
 		return $sites->getAllSites();
+		
+	}
+	
+	function authenticateUser($role) {
+		
+		return $this->auth->authenticateUser($role);
 		
 	}
 	

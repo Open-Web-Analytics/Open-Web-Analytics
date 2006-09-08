@@ -41,6 +41,7 @@ $owa_config['admin_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/admin';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php';
 $owa_config['inter_report_link_template'] = '%s/%s&%s';
 $owa_config['inter_admin_link_template'] = '%s/%s&%s';
+$owa_config['authentication'] = 'none';
 
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):

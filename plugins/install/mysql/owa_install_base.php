@@ -89,7 +89,8 @@ class owa_install_base extends owa_install {
 								$this->config['visitors_table'],
 								$this->config['impressions_table'],
 								$this->config['clicks_table'],
-								$this->config['exits_table']
+								$this->config['exits_table'],
+								$this->config['users_table']
 								);
 		return;
 	}
@@ -165,6 +166,9 @@ class owa_install_base extends owa_install {
 				break;
 			case $this->config['exits_table']:
 				return $this->create_exits_table();
+				break;
+			case $this->config['users_table']:
+				return $this->create_users_table();
 				break;
 				
 		}
@@ -466,6 +470,7 @@ class owa_install_base extends owa_install {
 
 	}
 		
+	
 	function create_documents_table() {
 		
 		return $this->db->query(
@@ -482,18 +487,22 @@ class owa_install_base extends owa_install {
 		
 	}
 	
-	function create_exits_table() {
+	function create_users_table() {
 		
 		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
-			id BIGINT,
-			url varchar(255),
-			page_title varchar(255),
-			page_type varchar(255),
-			PRIMARY KEY (id)
+			user_id varchar(255),
+			password VARCHAR(255),
+			role VARCHAR(255),
+			real_name VARCHAR(255),
+			email_address VARCHAR(255),
+			temp_passkey VARCHAR(255),
+			creation_date BIGINT,
+			last_update_date BIGINT,
+			PRIMARY KEY (user_id)
 			)",
-			$this->config['ns'].$this->config['exits_table'])
+			$this->config['ns'].$this->config['users_table'])
 		);
 		
 	}

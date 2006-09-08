@@ -1,4 +1,4 @@
-<?
+<? 
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -16,12 +16,11 @@
 // $Id$
 //
 
-include_once '../set_env.php';
-include_once OWA_BASE_DIR.'/owa_php.php';
-include_once OWA_BASE_DIR.'/owa_lib.php';
-include_once OWA_BASE_DIR.'/owa_auth.php';
+require_once(OWA_BASE_DIR.'/owa_user.php');
+require_once(OWA_BASE_DIR.'/eventQueue.php');
+
 /**
- * Generic Report Controler
+ * Simple Auth Plugin
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -32,9 +31,42 @@ include_once OWA_BASE_DIR.'/owa_auth.php';
  * @since		owa 1.0.0
  */
 
-//$config['report_wrapper'] = '';
-$owa = new owa($config);	
+class owa_auth_none extends owa_auth {
+	
+	function owa_auth_none($role) {
+		
+		$this->owa_auth();
+		
+		return;
+	}
+	
+	/**
+	 * Used to auth a new browser that has no cookies set
+	 *
+	 * @param string $user_id
+	 * @param string $password
+	 * @return boolean
+	 */
+	function authenticateNewBrowser($user_id, $password) {
+		
+		return;
+	}
+	
+	
+	/**
+	 * Used by controllers to check if the user exists and if they are priviledged.
+	 *
+	 * @param string $necessary_role
+	 */
+	function authenticateUser($necessary_role) {
+		
+		return;
+		
+	}
+	
+	
+	
+}
 
-include_once($owa->config['reporting_dir'].$_GET['page']);
 
 ?>

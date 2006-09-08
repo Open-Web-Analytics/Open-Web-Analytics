@@ -76,7 +76,8 @@ class owa_install_update_to_1_0 extends owa_install {
 	function owa_install_update_to_1_0() {
 		$this->owa_install();
 		$this->tables = array(	$this->config['impressions_table'],
-								$this->config['clicks_table']
+								$this->config['clicks_table'],
+								$this->config['users_table']
 								);
 		return;
 	}
@@ -117,6 +118,10 @@ class owa_install_update_to_1_0 extends owa_install {
 				
 			case $this->config['impressions_table']:
 				return $this->create_impressions_table();
+				break;
+				
+			case $this->config['users_table']:
+				return $this->create_users_table();
 				break;
 				
 		}
@@ -176,6 +181,27 @@ class owa_install_update_to_1_0 extends owa_install {
 		return true;
 		
 	}
+	
+	function create_users_table() {
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			user_id varchar(255),
+			password VARCHAR(255),
+			role VARCHAR(255),
+			real_name VARCHAR(255),
+			email_address VARCHAR(255),
+			temp_passkey VARCHAR(255),
+			creation_date BIGINT,
+			last_update_date BIGINT,
+			PRIMARY KEY (user_id)
+			)",
+			$this->config['ns'].$this->config['users_table'])
+		);
+		
+	}
+	
 	
 	function update_schema_version() {
 		
