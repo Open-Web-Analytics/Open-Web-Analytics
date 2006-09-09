@@ -6,11 +6,12 @@
 	<?=$status_msg;?>
 </DIV>
 
-<form method="POST" action="<?=$_SERVER['PHP_SELF'];?>">
+<div id="login_box">
+	<form method="POST" action="<?=$_SERVER['PHP_SELF'];?>">
     
     <fieldset>
-    	<legend>Login</legend>
-    	<TABLE border ="1">
+    	<legend>New Password</legend>
+    	<TABLE>
 		
 	
 		<TR>
@@ -28,12 +29,12 @@
 			<TD>
 			<input type="hidden" name="k" value="<?=$key;?>">
 			<input name="action" value="reset_password" type="hidden">
-			<INPUT type="submit" size="30" name="submit" value="Save"></TD>
+			<INPUT type="submit" size="30" name="submit_btn" value="Save Your New Password"></TD>
 		</TR>
     	
     	</TABLE>
     
     </fieldset>
     
-</form>
- 
+	</form>
+ </div>

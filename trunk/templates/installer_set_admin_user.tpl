@@ -10,7 +10,7 @@
     
     <fieldset>
     	<legend>Set your the Admin User Profile for your Installation</legend>
-    	<TABLE border ="1">
+    	<TABLE>
 		<TR>
 			<TH scope="row">User Name</TH>
 			<TD><INPUT type="text" size="30" name="user_id"></TD>
