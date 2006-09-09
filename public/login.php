@@ -88,12 +88,15 @@ if (!empty($params['page'])):
 				$body->set('go', $page->config['home_url']);
 			endif;
 				
-			$body->set('status_msg', 'Your Password or user name was not correct.');
+			$body->set('error_msg', 'Your Password or user name was not correct.');
 			
 			break;
 			
 		case "not_priviledged":
-			print "you are not priviledege to access the requested resource.";
+			$body->set_template('error.tpl');// This is the inner template
+			$body->set('page_h1', 'Houston, we have a problem...');
+			$body->set('error_msg', 'You do not have enought access priviledges to view this page.');
+			
 			break;
 		case "request_new_password":
 			$body->set_template('request_password_form.tpl');// This is the inner template
@@ -147,7 +150,7 @@ if (!empty($params['action'])):
 			if ($status == true):
 					$url = $params['go'];
 			else:
-					$url = $_SERVER['PHP_SELF'].'?page=bad_pass&'.$params['go'];
+				$url = $_SERVER['PHP_SELF'].'?page=bad_pass&go='.urlencode($params['go']);
 			endif;
 			break;
 		case "request_new_password":

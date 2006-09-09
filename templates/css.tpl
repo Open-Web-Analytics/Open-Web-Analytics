@@ -75,9 +75,11 @@ fieldset{margin: 7px;}
 .visible {display:;}
 .invisible {display:none;}
 .status {color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: green; font-size: 14px; font-weight:bold;}
+.error{color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: red; font-size: 14px; font-weight:bold;}
 
 
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}
+#login_box {width:390px;}
 
 </style>

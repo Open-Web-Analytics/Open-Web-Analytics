@@ -2,36 +2,38 @@
 
 <h1><?=$page_h1;?></h1>
 
-<DIV class="status_msg">
-	<?=$status_msg;?>
+<DIV class="error">
+	<?=$error_msg;?>
 </DIV>
 
+<DIV id="login_box">
 <form method="POST" action="<?=$_SERVER['PHP_SELF'];?>">
     
     <fieldset>
     	<legend>Login</legend>
-    	<TABLE border ="1">
+    	<TABLE>
 		<TR>
-			<TH scope="row">User Name</TH>
+			<TH scope="row">User Name:</TH>
 			<TD><INPUT type="text" size="30" name="user_id"></TD>
 		</TR>
 	
 		<TR>
-			<TH scope="row">Password</TH>
-			<TD><INPUT type="password" size="30" name="password"></TD>
+			<TH scope="row">Password:</TH>
+			<TD><INPUT type="password" size="20" name="password"></TD>
 		</TR>
 		
 		<TR>
 			<TH scope="row"></TH>
 			<TD>
-			<input type="text" size="70" name="go" value="<?=$go?>">
+			<input type="hidden" size="70" name="go" value="<?=$go?>">
 			<input name="action" value="auth" type="hidden">
-			<INPUT type="submit" size="30" name="submit" value="Save"></TD>
+			<INPUT type="submit" name="submit_btn" value="Login"></TD>
 		</TR>
 		
 		<TR>
+			<TD></TD>
 			<TD>
-				<a href="<?=$_SERVER['PHP_SELF'].'?page=request_new_password';?>">Forgot your password?</a>
+				<BR><span class="info_text"><a href="<?=$_SERVER['PHP_SELF'].'?page=request_new_password';?>">Forgot your password?</a></span>
 			</TD>
 		</TR>
     	
@@ -41,3 +43,4 @@
     
 </form>
  
+</DIV>
