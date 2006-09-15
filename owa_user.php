@@ -242,7 +242,7 @@ class owa_user extends owa_base {
 										creation_date, 
 										last_update_date)
 									  VALUES
-									  	('%s', '%s', '%s', '%s', '%s', '%d', '%d')",
+									  	('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d')",
 										$this->config['ns'].$this->config['users_table'],
 									  	$this->user_id,
 									  	$this->password,
@@ -290,6 +290,19 @@ class owa_user extends owa_base {
 							 	$this->user_id));
 		
 	
+	}
+	
+	function delete() {
+		
+		return $this->db->query(sprintf("DELETE FROM 
+											%s
+										WHERE
+											user_id = '%s'",
+								$this->config['ns'].$this->config['users_table'],
+							  	$this->user_id));
+		
+		
+		
 	}
 	
 	

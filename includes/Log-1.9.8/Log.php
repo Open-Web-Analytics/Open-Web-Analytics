@@ -1,9 +1,9 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log.php,v 1.59 2006/04/25 06:02:23 jon Exp $
+ * $Header: /repository/pear/Log/Log.php,v 1.63 2006/05/23 05:59:58 jon Exp $
  * $Horde: horde/lib/Log.php,v 1.15 2000/06/29 23:39:45 jon Exp $
  *
- * @version $Revision: 1.59 $
+ * @version $Revision: 1.63 $
  * @package Log
  */
 
@@ -429,7 +429,7 @@ class Log
 
     /**
      * Using debug_backtrace(), returns the file, line, and enclosing function
-     * name of the source code context from which log() was invokved.
+     * name of the source code context from which log() was invoked.
      *
      * @param   int     $depth  The initial number of frames we should step
      *                          back into the trace.
@@ -444,6 +444,14 @@ class Log
     {
         /* Start by generating a backtrace from the current call (here). */
         $backtrace = debug_backtrace();
+
+        /*
+         * If we were ultimately invoked by the composite handler, we need to
+         * increase our depth one additional level to compensate.
+         */
+        if (strcasecmp(@$backtrace[$depth+1]['class'], 'Log_composite') == 0) {
+            $depth++;
+        }
 
         /*
          * We're interested in the frame which invoked the log() function, so

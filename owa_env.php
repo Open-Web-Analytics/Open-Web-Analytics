@@ -30,7 +30,7 @@
 
 define('OWA_BASE_DIR', dirname(__FILE__));
 define('OWA_INCLUDE_DIR', OWA_BASE_DIR.'/includes/');
-define('OWA_PEARLOG_DIR', OWA_BASE_DIR.'/includes/Log-1.9.5');
+define('OWA_PEARLOG_DIR', OWA_BASE_DIR.'/includes/Log-1.9.8');
 define('OWA_JPGRAPH_DIR', OWA_BASE_DIR.'/includes/jpgraph-1.20.3/src');
 define('OWA_PLUGINS_DIR', OWA_BASE_DIR.'/plugins');
 define('OWA_METRICS_DIR', OWA_BASE_DIR.'/plugins/metrics/');

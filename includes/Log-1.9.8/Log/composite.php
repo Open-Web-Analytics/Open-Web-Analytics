@@ -1,9 +1,9 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log/composite.php,v 1.26 2005/08/24 05:09:45 jon Exp $
+ * $Header: /repository/pear/Log/Log/composite.php,v 1.28 2006/06/29 07:12:34 jon Exp $
  * $Horde: horde/lib/Log/composite.php,v 1.2 2000/06/28 21:36:13 jon Exp $
  *
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.28 $
  * @package Log
  */
 
@@ -49,52 +49,70 @@ class Log_composite extends Log
     }
 
     /**
-     * Opens the child connections.
+     * Opens all of the child instances.
+     *
+     * @return  True if all of the child instances were successfully opened.
      *
      * @access public
      */
     function open()
     {
-        if (!$this->_opened) {
-            foreach ($this->_children as $id => $child) {
-                $this->_children[$id]->open();
-            }
-            $this->_opened = true;
+        /* Attempt to open each of our children. */
+        $this->_opened = true;
+        foreach ($this->_children as $id => $child) {
+            $this->_opened &= $this->_children[$id]->open();
         }
+
+        /* If all children were opened, return success. */
+        return $this->_opened;
     }
 
     /**
-     * Closes any child instances.
+     * Closes all of the child instances.
+     *
+     * @return  True if all of the child instances were successfully closed.
      *
      * @access public
      */
     function close()
     {
-        if ($this->_opened) {
-            foreach ($this->_children as $id => $child) {
-                $this->_children[$id]->close();
-            }
-            $this->_opened = false;
+        /* Attempt to close each of our children. */
+        $closed = true;
+        foreach ($this->_children as $id => $child) {
+            $closed &= $this->_children[$id]->close();
         }
+
+        /* Track the _opened state for consistency. */
+        $this->_opened = false;
+
+        /* If all children were closed, return success. */
+        return $closed;
     }
 
     /**
-     * Flushes all open child instances.
+     * Flushes all child instances.  It is assumed that all of the children
+     * have been successfully opened.
+     *
+     * @return  True if all of the child instances were successfully flushed.
      *
      * @access public
      * @since Log 1.8.2
      */
     function flush()
     {
-        if ($this->_opened) {
-            foreach ($this->_children as $id => $child) {
-                $this->_children[$id]->flush();
-            }
+        /* Attempt to flush each of our children. */
+        $flushed = true;
+        foreach ($this->_children as $id => $child) {
+            $flushed &= $this->_children[$id]->flush();
         }
+
+        /* If all children were flushed, return success. */
+        return $flushed;
     }
 
     /**
-     * Sends $message and $priority to each child of this composite.
+     * Sends $message and $priority to each child of this composite.  If the
+     * children aren't already open, they will be opened here.
      *
      * @param mixed     $message    String or object containing the message
      *                              to log.
@@ -116,13 +134,26 @@ class Log_composite extends Log
             $priority = $this->_priority;
         }
 
+        /*
+         * If the handlers haven't been opened, attempt to open them now.
+         * However, we don't treat failure to open all of the handlers as a
+         * fatal error.  We defer that consideration to the success of calling
+         * each handler's log() method below.
+         */
+        if (!$this->_opened) {
+            $this->open();
+        }
+
+        /* Attempt to log the event using each of the children. */
+        $success = true;
         foreach ($this->_children as $id => $child) {
-            $this->_children[$id]->log($message, $priority);
+            $success &= $this->_children[$id]->log($message, $priority);
         }
 
         $this->_announce(array('priority' => $priority, 'message' => $message));
 
-        return true;
+        /* Return success if all of the children logged the event. */
+        return $success;
     }
 
     /**

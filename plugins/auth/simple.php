@@ -37,7 +37,8 @@ class owa_auth_simple extends owa_auth {
 		
 		$this->owa_auth();
 		$this->eq = &eventQueue::get_instance();
-		
+		$this->credentials['user_id'] = owa_lib::inputFilter($_COOKIE[$this->config['ns'].'u']);
+		$this->credentials['password'] = owa_lib::inputFilter($_COOKIE[$this->config['ns'].'p']);
 		return;
 	}
 	
@@ -53,110 +54,17 @@ class owa_auth_simple extends owa_auth {
 	}
 	
 	/**
-	 * Used to auth a new browser that has no cookies set
-	 *
-	 * @param string $user_id
-	 * @param string $password
-	 * @return boolean
-	 */
-	function authenticateNewBrowser($user_id, $password) {
-		
-		$this->e->debug("Login attempt from ". $user_id);
-		
-		$is_user = $this->isUser($user_id, $this->encryptPassword($password));
-		
-		if ($is_user == true):
-			$this->setCookies();
-			return true;
-		else:
-			return false;
-		endif;
-		
-		return;
-	}
-	
-	/**
-	 * Checks to see if the user credentials match a real user object in the DB
-	 *
-	 * @param string $user_id
-	 * @param string $password
-	 * @return boolean
-	 */
-	function isUser($user_id, $password) {
-		
-		// md5 password
-		
-		// fetch user credenticals from the db
-		$this->u = new owa_user;
-		$this->u->getUserByPK($user_id);
-		
-		//$this->e->debug('Password-hash: '.$password);
-		//$this->e->debug('Password-db  : '.$this->u->password);
-		
-		if (($user_id == $this->u->user_id)):
-			if ($password === $this->u->password):
-				return true;
-			else:
-				return false;
-			endif;
-		else:
-			return false;
-		endif;
-	}
-	
-	/**
-	 * Checks to see if the user has appropriate priviledges
-	 *
-	 * @param string $necessary_role
-	 * @return boolean
-	 */
-	function isPriviledged($necessary_role) {
-		
-		// compare priviledge levels
-		if ($this->getLevel($this->u->role) >= $this->getLevel($necessary_role)):
-			// authenticated
-			return true;;
-		else:
-			// not high enough priviledge level
-			return false;	
-		endif;
-		
-	}
-	
-	/**
-	 * Looks up user by temporary Passkey Column in db
-	 *
-	 * @param unknown_type $key
-	 * @return unknown
-	 */
-	function authenticateUserTempPasskey($key) {
-		
-		$this->u = new owa_user;
-		$this->u->getUserByTempPasskey($key);
-		
-		if (!empty($this->u->user_id)):
-			return true;
-		else:
-			$this->showResetPasswordErrorPage;
-		endif;
-		
-	}
-	
-	/**
 	 * Used by controllers to check if the user exists and if they are priviledged.
 	 *
 	 * @param string $necessary_role
 	 */
 	function authenticateUser($necessary_role) {
 		
-		if (!empty($_COOKIE[$this->config['ns'].'u']) && (!empty($_COOKIE[$this->config['ns'].'p']))):
-			$user_id = $_COOKIE[$this->config['ns'].'u'];
-			$password = $_COOKIE[$this->config['ns'].'p'];
-		else:
+		if (empty($this->credentials['user_id']) || (empty($this->credentials['password']))):
 			$this->showLoginPage();
 		endif;
 		
-		$is_user = $this->isUser($user_id, $password);
+		$is_user = $this->isUser($this->credentials['user_id'], $this->credentials['password']);
 		
 		if ($is_user == true):
 			$priviledged = $this->isPriviledged($necessary_role);
@@ -182,7 +90,7 @@ class owa_auth_simple extends owa_auth {
 	function showLoginPage($params = array()) {
 		
 		$url = $this->config['public_url'].'/login.php?page=login&go='.urlencode(owa_lib::get_current_url());
-		$this->redirectToUrl($url);
+		owa_lib::redirectBrowser($url);
 		return;
 		
 	}
@@ -194,15 +102,19 @@ class owa_auth_simple extends owa_auth {
 	function showPriviledgeErrorPage() {
 		
 		$url = $this->config['public_url'].'/login.php?page=not_priviledged';
-		$this->redirectToUrl($url);
+		owa_lib::redirectBrowser($url);
 		return;
 		
 	}
 	
+	/**
+	 * Shown when login credentials are not correct
+	 *
+	 */
 	function showLoginErrorPage() {
 		
 		$url = $this->config['public_url'].'/login.php?page=bad_pass&go='.urlencode(owa_lib::get_current_url());
-		$this->redirectToUrl($url);
+		owa_lib::redirectBrowser($url);
 		return;
 		
 	}
@@ -214,7 +126,7 @@ class owa_auth_simple extends owa_auth {
 	function showResetPasswordPage() {
 		
 		$url = $this->config['public_url'].'/login.php?page=reset_password';
-		$this->redirectToUrl($url);
+		owa_lib::redirectBrowser($url);
 		return;
 	}
 	
@@ -224,7 +136,7 @@ class owa_auth_simple extends owa_auth {
 	 */
 	function showResetPasswordErrorPage() {
 		$url = $this->config['public_url'].'/login.php?page=reset_password_error';
-		$this->redirectToUrl($url);
+		owa_lib::redirectBrowser($url);
 		return;
 	}
 	
@@ -234,37 +146,21 @@ class owa_auth_simple extends owa_auth {
 	 */
 	function showRequestNewPasswordSuccessPage() {
 		$url = $this->config['public_url'].'/login.php?page=request_password_success';
-		$this->redirectToUrl($url);
+		owa_lib::redirectBrowser($url);
 		return;
 	}
 	
-	function redirectToUrl($url) {
-		
-		header ('Location: '.$url);
-		header ('HTTP/1.0 301 Moved Permanently');
-		
-		return;
-	}
 	
-	function setTempPasskey($email_address) {
+	/**
+	 * Saves login credentails to persistant browser cookies
+	 *
+	 */
+	function saveCredentials() {
 		
-		$this->u = new owa_user;
-		$this->u->getUserByEmail($email_address);
-
-		
-		
-		if (!empty($this->u->user_id)):
-		
-			$this->eq->log(array('email_address' => $this->u->email_address), 'user.set_temp_passkey');
-			return true;
-			//$this->showRequestNewPasswordSuccessPage();	
-		else:
-			return false;
-			//$this->showResetPasswordErrorPage();
-		endif;
+		setcookie($this->config['ns'].'u', $this->u->user_id, time()+3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
+		setcookie($this->config['ns'].'p', $this->u->password, time()+3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
 		
 		return;
-		
 	}
 	
 	

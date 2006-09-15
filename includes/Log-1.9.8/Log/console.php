@@ -1,8 +1,8 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log/console.php,v 1.22 2006/01/11 07:56:37 jon Exp $
+ * $Header: /repository/pear/Log/Log/console.php,v 1.23 2006/06/29 07:09:21 jon Exp $
  *
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  * @package Log
  */
 
@@ -107,6 +107,18 @@ class Log_console extends Log
     }
 
     /**
+     * Open the output stream.
+     *
+     * @access public
+     * @since Log 1.9.7
+     */
+    function open()
+    {
+        $this->_opened = true;
+        return true;
+    }
+
+    /**
      * Closes the output stream.
      *
      * This results in a call to flush().
@@ -117,6 +129,8 @@ class Log_console extends Log
     function close()
     {
         $this->flush();
+        $this->_opened = false;
+        return true;
     }
 
     /**

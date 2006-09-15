@@ -82,6 +82,22 @@ if ($params['owa_page']):
 			$body->set('users', $users);
 			$body->set('status', 'User profile Saved Successfully.');
 			break;
+		case "add_user_success":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_user_roster.tpl';
+			$u = new owa_user;
+			$users = $u->getAllUsers();
+			$body->set('users', $users);
+			$body->set('status', 'User Added Successfully.');
+			break;
+		case "delete_user_success":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_user_roster.tpl';
+			$u = new owa_user;
+			$users = $u->getAllUsers();
+			$body->set('users', $users);
+			$body->set('status', 'User Deleted Successfully.');
+			break;
 		case "edit_user_profile":
 			$auth->authenticateUser('admin');
 			$body_tpl = 'options_edit_user_profile.tpl';
@@ -91,7 +107,16 @@ if ($params['owa_page']):
 			$body->set('roles', $auth->roles);	
 			$body->set('page_title', 'OWA - Edit User Profile');
 			$body->set('headline', 'Edit User Profile');	
+			$body->set('action', 'edit_user_profile');
 			break;	
+		case "add_new_user":
+			$auth->authenticateUser('admin');
+			$body_tpl = 'options_edit_user_profile.tpl';
+			$body->set('page_title', 'OWA - Add New User');
+			$body->set('headline', 'Add New User');
+			$body->set('roles', $auth->roles);	
+			$body->set('action', 'add_new_user');
+			break;
 	}
 
 endif;
@@ -133,15 +158,12 @@ switch ($params['action']) {
 	
 	case "get_tag":
 		$status_msg = "";
-			$body_tpl = 'options_new_site_success.tpl';
-			$page_h1 = 'The tracking tag for your site is below.';
-			
-			$body->set('site_id', $_GET['site_id']);
-			$tag = $owa->requestTag($site_id);
-			$body->set('tag', $tag);
-		
+		$body_tpl = 'options_new_site_success.tpl';
+		$page_h1 = 'The tracking tag for your site is below.';
+		$body->set('site_id', $_GET['site_id']);
+		$tag = $owa->requestTag($site_id);
+		$body->set('tag', $tag);
 		break;
-		
 	case "edit_user_profile":
 		$u = new owa_user;
 		$u->getUserByPK($params['user_id']);
@@ -149,12 +171,50 @@ switch ($params['action']) {
 		$u->real_name = $params['real_name'];
 		$u->role = $params['role'];
 		$u->update();
-		
-		$t = new owa_template();
-		$url = $t->make_admin_link('options.php', array('owa_page' => 'user_roster_success'));
+		//$t = new owa_template();
+		$url = $page->make_admin_link('options.php', array('owa_page' => 'user_roster_success'));
 		owa_lib::redirectBrowser($url);
 		
 		break;
+	case "add_new_user":
+		$auth->authenticateUser('admin');
+		$u = new owa_user;
+		
+		//Check to see if user name already exists
+		$u->getUserByPK($params['user_id']);
+		
+		// Set user object Params
+		if (empty($u->user_id)):
+			$u->user_id = $params['user_id'];
+			//print $u->user_id.'|';
+			//print $params['user_id'];
+			$u->real_name = $params['real_name'];
+			$u->role = $params['role'];
+			$u->email_address = $params['email_address'];
+			$u->save();
+			//Generate Initial Passkey and new account email
+			$auth->setInitialPasskey($u->user_id);
+			// Redirect user to success page
+			$url = $page->make_admin_link('options.php', array('owa_page' => 'add_user_success'));
+			owa_lib::redirectBrowser($url);
+		else:
+			$body_tpl = 'options_edit_user_profile.tpl';
+			$body->set('user', get_class_vars($u));
+			$body->set('roles', $auth->roles);	
+			$body->set('page_title', 'OWA - Edit User Profile');
+			$body->set('headline', 'Edit User Profile');
+			$body->set('error_msg', 'That user name already exists');
+		endif;
+		break;
+	case "delete_user":
+		$auth->authenticateUser('admin');
+		$u = new owa_user;
+		$u->user_id = $params['user_id'];
+		$u->delete();
+		$url = $page->make_admin_link('options.php', array('owa_page' => 'delete_user_success'));
+		owa_lib::redirectBrowser($url);
+		break;
+		
 }
 
 //Fetch latest OWA news

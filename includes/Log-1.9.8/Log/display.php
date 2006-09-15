@@ -1,8 +1,8 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log/display.php,v 1.8 2005/08/06 23:28:35 jon Exp $
+ * $Header: /repository/pear/Log/Log/display.php,v 1.9 2006/06/29 07:09:21 jon Exp $
  *
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  * @package Log
  */
 
@@ -73,6 +73,30 @@ class Log_display extends Log
         if (isset($conf['linebreak'])) {
             $this->_linebreak = $conf['linebreak'];
         }
+    }
+
+    /**
+     * Opens the display handler.
+     *
+     * @access  public
+     * @since   Log 1.9.6
+     */
+    function open()
+    {
+        $this->_opened = true;
+        return true;
+    }
+
+    /**
+     * Closes the display handler.
+     *
+     * @access  public
+     * @since   Log 1.9.6
+     */
+    function close()
+    {
+        $this->_opened = false;
+        return true;
     }
 
     /**
