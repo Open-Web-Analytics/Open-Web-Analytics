@@ -1,8 +1,8 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log/null.php,v 1.4 2005/02/26 14:48:58 chagenbu Exp $
+ * $Header: /repository/pear/Log/Log/null.php,v 1.5 2006/06/29 07:09:21 jon Exp $
  *
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  * @package Log
  */
 
@@ -33,6 +33,30 @@ class Log_null extends Log
         $this->_id = md5(microtime());
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);
+    }
+
+    /**
+     * Opens the handler.
+     *
+     * @access  public
+     * @since   Log 1.9.6
+     */
+    function open()
+    {
+        $this->_opened = true;
+        return true;
+    }
+
+    /**
+     * Closes the handler.
+     *
+     * @access  public
+     * @since   Log 1.9.6
+     */
+    function close()
+    {
+        $this->_opened = false;
+        return true;
     }
 
     /**

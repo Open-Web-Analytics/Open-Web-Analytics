@@ -60,7 +60,7 @@ class Log_observer_password_reset extends owa_observer {
         $this->owa_observer($priority);
 
         // Configure the observer to listen for event types
-		$this->_event_type = array('user.set_temp_passkey', 'user.reset_password');
+		$this->_event_type = array('user.set_temp_passkey', 'user.reset_password', 'user.set_initial_passkey');
 		
 		return;
     }
@@ -82,9 +82,47 @@ class Log_observer_password_reset extends owa_observer {
     		case "user.reset_password":
     			$this->resetPassword();
     			break;
+    		case "user.set_initial_passkey":
+    			$this->setInitialPasskey();
+    			break;	
     	}
 		
 		return;
+    }
+    
+    function sendMail($address, $subject, $msg) {
+    	
+    	mail($address, $subject, $msg);
+					
+		$this->e->debug('sending e-mail with subject of "'.$subject.'" to: '.$u->email_address);
+    	
+		return;
+    }
+    
+    function setInitialPasskey() {
+    	
+    	$u = new owa_user;
+		$u->getUserByPK($this->m['user_id']);
+		$u->temp_passkey = md5($u->user_id.time().rand());
+		$status = $u->update();
+		
+    	if ($status == true):
+	
+			$msg = new owa_template();
+			
+			$msg->set_template('email_new_account.tpl');
+			$msg->set('user_id', $u->user_id);
+			$msg->set('key', $u->temp_passkey);
+			$email = $msg->fetch();
+			
+			//send mail
+			$this->sendMail($u->email_address,
+					"OWA Account Setup",
+					$email);
+					
+		endif;
+    	
+    	return;
     }
     
 	function setTempPasskey() {
@@ -104,12 +142,10 @@ class Log_observer_password_reset extends owa_observer {
 			$email = $msg->fetch();
 			
 			//send mail
-			
-			mail($u->email_address,
+			$this->sendMail($u->email_address,
 					"Request for Password Reset",
 					$email);
 					
-			$this->e->debug('sending password reset request mail to: '.$u->email_address);
 		endif;
 		
 		return;

@@ -53,6 +53,13 @@ class owa_auth extends owa_base {
 	var $status_msg;
 	
 	/**
+	 * Login credentials
+	 *
+	 * @var array
+	 */
+	var $credentials;
+	
+	/**
 	 * Abstract class Constructor
 	 *
 	 * @return owa_auth
@@ -90,7 +97,7 @@ class owa_auth extends owa_base {
 	 */
 	function getLevel($role) {
 		
-		return $this->roles['role']['level'];
+		return $this->roles[$role]['level'];
 	}
 	
 	function authenticateUser() {
@@ -111,10 +118,122 @@ class owa_auth extends owa_base {
 									$config['authentication']);
 	}
 	
-	function setCookies() {
+	/**
+	 * Looks up user by temporary Passkey Column in db
+	 *
+	 * @param unknown_type $key
+	 * @return unknown
+	 */
+	function authenticateUserTempPasskey($key) {
 		
-		setcookie($this->config['ns'].'u', $this->u->user_id, time()+3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
-		setcookie($this->config['ns'].'p', $this->u->password, time()+3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
+		$this->u = new owa_user;
+		$this->u->getUserByTempPasskey($key);
+		
+		if (!empty($this->u->user_id)):
+			return true;
+		else:
+			$this->showResetPasswordErrorPage;
+		endif;
+		
+	}
+	
+	/**
+	 * Checks to see if the user credentials match a real user object in the DB
+	 *
+	 * @param string $user_id
+	 * @param string $password
+	 * @return boolean
+	 */
+	function isUser($user_id, $password) {
+		
+		// fetch user credenticals from the db
+		$this->u = new owa_user;
+		$this->u->getUserByPK($user_id);
+		
+		if (($user_id == $this->u->user_id)):
+			if ($password === $this->u->password):
+				return true;
+			else:
+				return false;
+			endif;
+		else:
+			return false;
+		endif;
+	}
+	
+	/**
+	 * Checks to see if the user has appropriate priviledges
+	 *
+	 * @param string $necessary_role
+	 * @return boolean
+	 */
+	function isPriviledged($necessary_role) {
+		
+		// compare priviledge levels
+		if ($this->getLevel($this->u->role) >= $this->getLevel($necessary_role)):
+			// authenticated
+			return true;;
+		else:
+			// not high enough priviledge level
+			return false;	
+		endif;
+		
+	}
+	
+	/**
+	 * Sets a temporary Passkey for a user
+	 *
+	 * @param string $email_address
+	 * @return boolean
+	 */
+	function setTempPasskey($email_address) {
+		
+		$this->u = new owa_user;
+		$this->u->getUserByEmail($email_address);
+
+		if (!empty($this->u->user_id)):
+		
+			$this->eq->log(array('email_address' => $this->u->email_address), 'user.set_temp_passkey');
+			return true;
+			//$this->showRequestNewPasswordSuccessPage();	
+		else:
+			return false;
+			//$this->showResetPasswordErrorPage();
+		endif;
+		
+	}
+	
+	/**
+	 * Sets the initial Passkey for a new user
+	 *
+	 * @param string $user_id
+	 * @return boolean
+	 */
+	function setInitialPasskey($user_id) {
+		
+		return $this->eq->log(array('user_id' => $user_id), 'user.set_initial_passkey');
+		
+	}
+	
+	/**
+	 * Used to auth a new browser that has no credentials set
+	 *
+	 * @param string $user_id
+	 * @param string $password
+	 * @return boolean
+	 */
+	function authenticateNewBrowser($user_id, $password) {
+		
+		$this->e->debug("Login attempt from ". $user_id);
+		
+		$is_user = $this->isUser($user_id, $this->encryptPassword($password));
+		
+		if ($is_user == true):
+			$this->saveCredentials();
+			return true;
+		else:
+			return false;
+		endif;
 		
 		return;
 	}

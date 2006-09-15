@@ -1,8 +1,8 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log/error_log.php,v 1.7 2005/02/26 14:48:58 chagenbu Exp $
+ * $Header: /repository/pear/Log/Log/error_log.php,v 1.8 2006/06/29 07:09:21 jon Exp $
  *
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  * @package Log
  */
 
@@ -63,6 +63,30 @@ class Log_error_log extends Log
         if (!empty($conf['extra_headers'])) {
             $this->_extra_headers = $conf['extra_headers'];
         }
+    }
+
+    /**
+     * Opens the handler.
+     *
+     * @access  public
+     * @since   Log 1.9.6
+     */
+    function open()
+    {
+        $this->_opened = true;
+        return true;
+    }
+
+    /**
+     * Closes the handler.
+     *
+     * @access  public
+     * @since   Log 1.9.6
+     */
+    function close()
+    {
+        $this->_opened = false;
+        return true;
     }
 
     /**

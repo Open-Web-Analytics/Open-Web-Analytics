@@ -111,7 +111,7 @@ class owa_settings {
 				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
 				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
 				$config['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
-				$config['home_url'] = $OWA_CONFIG['public_url']."/reports/index.php?page=dashboard_report.php";
+				$config['home_url'] = $config['public_url']."/reports/index.php?page=dashboard_report.php";
 				$config['admin_url'] = $OWA_CONFIG['public_url']."/admin/index.php";
 				
 			endif;	

@@ -69,12 +69,18 @@
 		</SELECT>
 	</DIV>
 	
+	<DIV class="setting">	
+
+	Notice Email Address: <input type="text" name="notice_email" value="<?=$config['notice_email']?>"><BR>
+	
+	</DIV>
+	
     </fieldset>
      
     <fieldset name="owa-db-options" class="options">
 	<legend>Database Options</legend>
 	
-	<DIV class="setting">	
+	<!--<DIV class="setting">	
 		Fetch Configuration from Database 
 		<SELECT NAME="fetch_config_from_db">
 	
@@ -85,10 +91,10 @@
 		On</OPTION>
 			
 		</SELECT>
-	</DIV>
+	</DIV> -->
 	
 	<DIV class="setting">	
-		Asynchronous Database Mode: 
+		Asynchronous Event Handling Mode: 
 		<SELECT NAME="async_db">
 	
 		<OPTION VALUE="0" <? if ($config['async_db'] == false):?>SELECTED<?endif;?>>
@@ -113,20 +119,9 @@
 	</DIV>
 	
     </fieldset>
-    
-    <fieldset name="owa-error-options" class="options">
-	<legend>Error Logging</legend>
-	
-	<DIV class="setting">	
-
-	Notice Email Address: <input type="text" name="notice_email" value="<?=$config['notice_email']?>"><BR>
-	
-	</DIV>
-    
-	</fieldset>
 	
     <fieldset name="owa-geolocation-options" class="options">
-	<legend>Geolocation Options</legend>
+	<legend>Geo-location Options</legend>
 	
 	<DIV class="setting">	
 	
@@ -146,7 +141,7 @@
 		<SELECT NAME="geolocation_service">
 	
 		<OPTION VALUE="hostip" <? if ($config['geolocation_service'] == 'hostip'):?>SELECTED<?endif;?>>
-		Hostip.info Webservice</OPTION>
+		Hostip.info Web Service (free)</OPTION>
 			
 		</SELECT>
 	
@@ -166,16 +161,16 @@
 	</fieldset>
 	
 	<fieldset name="owa-error-options" class="options">
-	<legend>Error Reporting</legend>
+	<legend>Error Logging</legend>
 	
 	<DIV class="setting">	
-		Erorr Reporting Mode: 
+		Logging Mode: 
 		<SELECT NAME="error_handler">
 	
 		<OPTION VALUE="production" <? if ($config['error_handler'] == 'production'):?>SELECTED<?endif;?>>
-		Production (errors logged to file with critcal alerts send via email)</OPTION>
+		Production (Errors logged to file)</OPTION>
 		<OPTION VALUE="development" <? if ($config['error_handler'] == 'development'):?>SELECTED<?endif;?>>
-		Development (debug and error messages logged)</OPTION>
+		Development (Debug and Error messages logged to file)</OPTION>
 		</SELECT>
 	
 	</DIV>

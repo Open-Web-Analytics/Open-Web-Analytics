@@ -2,9 +2,11 @@
 
 <h1><?=$page_h1;?></h1>
 
+<? if ($error_msg):?>
 <DIV class="error">
 	<?=$error_msg;?>
 </DIV>
+<?endif;?>
 
 <DIV id="login_box">
 <form method="POST" action="<?=$_SERVER['PHP_SELF'];?>">
