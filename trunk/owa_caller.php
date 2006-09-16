@@ -20,6 +20,7 @@ include_once('owa_env.php');
 require_once 'owa_settings_class.php';
 require_once 'owa_controller.php';
 require_once 'owa_installer.php';
+require_once 'owa_site.php';
 
 /**
  * Abstract Caller class used to build application specific invocation classes
@@ -147,7 +148,14 @@ class owa_caller {
 		
 	}
 	
-	function install($type) {
+	/**
+	 * Installation Controller
+	 *
+	 * @param string $type
+	 * @param array $params
+	 * @return boolean
+	 */
+	function install($type, $params = '') {
 		
 		$this->config['fetch_config_from_db'] = false;
 	    $installer = &owa_installer::get_instance();	   
@@ -156,6 +164,12 @@ class owa_caller {
 	    if ($install_check == false):
 		    //Install owa schema
 	    	$status = $installer->plugins[$type]->install(); 
+	    	//Save Default Site
+	    	$site = new owa_site;
+			$site->name = $params['name'];
+			$site->description = $params['description'];
+			$site->save();
+	    	
 	    else:
 	    	// owa already installed
 	    	$status = false;

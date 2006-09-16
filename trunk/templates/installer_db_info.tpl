@@ -42,8 +42,7 @@
     </fieldset>
     
     <DIV class="centered_buttons">	
-    	<input type="hidden" name="action" value="install" />
-    	<input type="hidden" name="package" value="base_schema" />
+    	<input type="hidden" name="action" value="save_site_info" />
    		<input type="submit" name="install_but" value="Next >>" />
     </DIV>
     

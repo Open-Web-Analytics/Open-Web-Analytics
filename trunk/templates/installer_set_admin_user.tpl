@@ -39,7 +39,7 @@
 		<TR>
 			<TH scope="row"></TH>
 			<TD>
-			<input type="hidden" name="action" value="set_admin_user">
+			<input type="hidden" name="action" value="save_admin_user">
 			<INPUT type="submit" size="30" name="submit" value="Save"></TD>
 		</TR>
     	

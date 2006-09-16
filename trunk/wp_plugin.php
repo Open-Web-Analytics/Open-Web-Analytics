@@ -318,7 +318,9 @@ function owa_install_2() {
 		$conf['fetch_config_from_db'] = false;
     	//$owa_wp = &new owa_wp;
     	$owa_wp->config['db_type'] = 'mysql';
-    	$owa_wp->install('base_schema');
+    	$install_params = array('name' => get_bloginfo('name'), 'description' => get_bloginfo('description'));
+    	$owa_wp->install('base_schema', $install_params);
+    	
 
 	return;
 }
