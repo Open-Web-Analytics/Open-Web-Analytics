@@ -469,6 +469,24 @@ class owa_install_base extends owa_install {
 		);
 
 	}
+	
+	function create_exits_table() {
+		
+		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			id BIGINT,
+			url varchar(255),
+			site_name varchar(255),
+			site VARCHAR(255),
+			exit_anchortext varchar(255),
+			page_title varchar(255),
+			PRIMARY KEY (id)
+			)",
+			$this->config['ns'].$this->config['referers_table'])
+		);
+
+	}
 		
 	
 	function create_documents_table() {
@@ -544,6 +562,7 @@ class owa_install_base extends owa_install {
 			id BIGINT,
 			ua varchar(255),
 			browser_type varchar(255),
+			browser VARCHAR(255),
 			PRIMARY KEY (id)
 			)",	
 			$this->config['ns'].$this->config['ua_table'])

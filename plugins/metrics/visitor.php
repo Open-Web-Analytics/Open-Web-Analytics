@@ -264,6 +264,8 @@ class owa_metric_visitor extends owa_metric {
 			%s
 		GROUP BY
 			ua.browser_type
+		ORDER BY
+			count DESC
 		",
 			$this->setTable($this->config['sessions_table']),
 			$this->setTable($this->config['ua_table']),

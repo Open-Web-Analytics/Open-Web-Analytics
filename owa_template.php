@@ -118,11 +118,17 @@ class owa_template extends Template {
 			case "mozilla":
 				$file = 'mozilla.png';
 				break;
+			case "konqueror":
+				$file = 'kon.png';
+				break;
+			case "camino":
+				$file = 'camino.png';
+				break; 
 			
 			
 		}
 		if (!empty($file)):
-			return $icon = "<img src=\"".$this->config['images_url']."/".$file."\">";
+			return $icon = "<img align=\"baseline\" src=\"".$this->config['images_url']."/".$file."\">";
 		else:
 			return $browser_type;
 		endif;

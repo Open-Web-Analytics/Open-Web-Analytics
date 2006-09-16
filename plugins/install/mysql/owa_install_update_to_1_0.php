@@ -18,6 +18,8 @@
 
 require_once(OWA_BASE_DIR.'/owa_install.php');
 require_once(OWA_BASE_DIR.'/owa_site.php');
+require_once(OWA_BASE_DIR.'/owa_user.php');
+require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
  * OWA Base Schema Installation class
@@ -77,7 +79,8 @@ class owa_install_update_to_1_0 extends owa_install {
 		$this->owa_install();
 		$this->tables = array(	$this->config['impressions_table'],
 								$this->config['clicks_table'],
-								$this->config['users_table']
+								$this->config['users_table'],
+								$this->config['exits_table']
 								);
 		return;
 	}
@@ -122,6 +125,10 @@ class owa_install_update_to_1_0 extends owa_install {
 				
 			case $this->config['users_table']:
 				return $this->create_users_table();
+				break;
+				
+			case $this->config['exits_table']:
+				return $this->create_exits_table();
 				break;
 				
 		}
@@ -177,14 +184,39 @@ class owa_install_update_to_1_0 extends owa_install {
 	
 	function create_impressions_table() {
 		
+		$this->db->query(
+			sprintf("
+			alter table %s add column browser VARCHAR(255)
+			",
+			$this->config['ns'].$this->config['ua_table']
+			
+			));
 		
 		return true;
 		
 	}
 	
-	function create_users_table() {
+	function create_exits_table() {
 		
 		return $this->db->query(
+			sprintf("
+			CREATE TABLE %1\$s (
+			id BIGINT,
+			url varchar(255),
+			site_name varchar(255),
+			site VARCHAR(255),
+			exit_anchortext varchar(255),
+			page_title varchar(255),
+			PRIMARY KEY (id)
+			)",
+			$this->config['ns'].$this->config['referers_table'])
+		);
+
+	}
+	
+	function create_users_table() {
+		
+		$this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
 			user_id varchar(255),
@@ -199,6 +231,13 @@ class owa_install_update_to_1_0 extends owa_install {
 			)",
 			$this->config['ns'].$this->config['users_table'])
 		);
+		
+		$auth = new owa_auth;
+		$u = new owa_user;
+		$u->user_id = $this->config['db_user'];
+		$u->password = $auth->encryptPassword($this->config['db_password']);
+		$u->role = 'admin';
+		$u->save();
 		
 	}
 	

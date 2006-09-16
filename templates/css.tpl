@@ -52,7 +52,7 @@ fieldset{margin: 7px;}
 .invisible {display:none;}
 .status {color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: green; font-size: 14px; font-weight:bold;}
 .error{color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: red; font-size: 14px; font-weight:bold;}
-
+.tiny_icon{width:10px;padding-left:0px;}
 /* LAYOUT */
 
 #admin_nav{font-size:12px;}	
