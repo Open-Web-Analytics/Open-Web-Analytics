@@ -105,7 +105,7 @@ class Log_observer_ua extends owa_observer {
 			$this->config['ns'].$this->config['ua_table'],
 			$this->m['ua_id'],
 			$this->db->prepare($this->m['ua']),
-			$this->db->prepare($this->m['browser_type'],
+			$this->db->prepare($this->m['browser_type']),
 			$this->db->prepare($this->m['browser'])
 			
 			)
