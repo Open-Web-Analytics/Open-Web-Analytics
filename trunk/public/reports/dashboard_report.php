@@ -173,6 +173,19 @@ $from_feed = $report->metrics->get(array(
 		'site_id'	=> $report->params['site_id'])
 ));
 
+$browser_types = $report->metrics->get(array(
+		
+		'request_params'	=>	$report->params,
+		'api_call' 			=> 'visitor_uas',
+		'period'			=> $report->params['period'],
+		'result_format'		=> 'assoc_array',
+		'constraints'		=> array(
+			'site_id'		=> $report->params['site_id'])
+	
+		));
+
+print_r($browser_types);
+
 // Fetch Sites List
 $sites = $report->getSitesList();
 
@@ -196,6 +209,7 @@ $body->set('params', $report->params);
 $core_metrics->set('data', $core_metrics_data);
 $core_metrics->set('period', $report->period);
 $body->set('core_metrics_table', $core_metrics);
+$body->set('browser_types', $browser_types);
 $body->set('period', $report->period);
 $summary_stats->set('data', $summary_stats_data);
 $summary_stats->set('from_feed', $from_feed);

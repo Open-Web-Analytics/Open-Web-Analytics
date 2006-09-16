@@ -16,7 +16,22 @@
 
 	</style>
 		
-	<DIV class="owa_banner">Open Web Analytics</DIV>
+	<DIV class="owa_banner">
+		<table width="100%">
+			<TR>
+				<TD>Open Web Analytics</TD>
+				<TD align="right">
+					<? if ($this->getAuthStatus() == true):?>
+					Logout
+					<?else:?>
+					Login
+					<?endif;?>
+				</TD>
+			</TR>
+		</table>
+		
+	
+	</DIV>
 
 	<div class="wrap">
 	

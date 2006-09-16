@@ -21,10 +21,10 @@
 			<TH>Feed Fetches By Format</TH>
 		</TR>
 		<TR>		
-			<TD>
+			<TD valign="top">
 				<img src="<?=$this->makeGraphLink('feed_reader_uas');?>">
 			</TD>
-			<TD>
+			<TD valign="top">
 				<img src="<?=$this->makeGraphLink('feed_formats');?>">
 			</TD>
 		</TR>

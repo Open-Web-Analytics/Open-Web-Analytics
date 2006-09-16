@@ -38,7 +38,7 @@ class owa_graph_visitors_pie extends owa_graph {
 	function owa_graph_visitors_pie() {
 		
 		$this->owa_graph();
-		$this->api_calls = array('visitors_pie');
+		$this->api_calls = array('visitors_pie', 'visitor_uas');
 		
 		return;
 	}
@@ -59,6 +59,10 @@ class owa_graph_visitors_pie extends owa_graph {
 			case "visitors_pie":
 				
 				return $this->graph_visitors_pie();
+				
+			case "visitor_uas":
+				
+				return $this->graph_visitor_uas();
 				
 			}
 		
@@ -88,7 +92,7 @@ class owa_graph_visitors_pie extends owa_graph {
 		
 		// Graph params
 		$this->params['graph_title'] = "New Vs. Repeat Visitors for \n" . $this->get_period_label($this->params['period']);
-		$this->params['legends'] = array('New', 'Repeat');
+		$this->params['labels'] = array('New (%d)', 'Repeat (%d)');
 		$this->params['height']	= 200;
 		$this->params['width']	= 260;
 		
@@ -108,6 +112,56 @@ class owa_graph_visitors_pie extends owa_graph {
 				
 		return;
 	}
+	
+	function graph_visitor_uas() {
+		
+		$result = $this->metrics->get(array(
+		
+		'request_params'	=>	$this->params,
+		'api_call' 		=> 'visitor_uas',
+		'period'			=> $this->params['period'],
+		'result_format'		=> 'inverted_array',
+		'constraints'		=> array(
+			'site_id'		=> $this->params['site_id']
+			)
+	
+		));
+
+		$labels = array();
+		
+		foreach ($result['browser_type'] as $type) {
+			
+			$labels[] = $type.' (%d)';	
+			
+		}
+		
+		
+		// Graph params
+		//$this->params['graph_title'] = "Feed Formats for \n" . $this->get_period_label($this->params['period']);
+		$this->params['labels'] = $labels;
+		$this->params['height']	= 500;
+		$this->params['width']	= 500;
+		$this->size	= .2;
+		
+		// Graph Data Assignment
+		if (empty($result)):
+				$this->error_graph();
+			return;
+		else:
+			$this->data = array(
+		
+				'data_pie'		=> $result['count']
+			
+			);
+	
+			$this->pie_graph();
+		endif;
+				
+		return;
+	}
+	
+	
+	
 	
 }
 

@@ -69,6 +69,8 @@ class owa_graph {
 	 */
 	var $width = 400;
 	
+	var $size = .3;
+	
 	/**
 	 * Image Format
 	 *
@@ -245,8 +247,9 @@ class owa_graph {
 	 *
 	 */
 	function pie_graph() {
-	
-		require_once (OWA_JPGRAPH_DIR .'/jpgraph_pie.php');
+		
+		require_once (OWA_JPGRAPH_DIR.'/jpgraph_pie.php');
+		require_once (OWA_JPGRAPH_DIR .'/jpgraph_pie3d.php');
 
 		$data = $this->data['data_pie'];
 		
@@ -257,26 +260,27 @@ class owa_graph {
 		//$graph->title->Set($this->params['graph_title']);
 		$graph->title->SetFont(FF_FONT1,FS_BOLD); 
 		$graph->title->SetColor("black");
-		$graph->legend->SetAbsPos(10,10, 'right', 'top');
-		$graph->legend->SetColumns(3); 		
+		//$graph->legend->SetAbsPos(10,10, 'right', 'top');
+		//$graph->legend->SetColumns(3); 		
 		
 		// Create pie plot
 		$p1 = new PiePlot($data);
-		$p1->SetCenter(0.5,0.55);
-		$p1->SetSize(0.3);
+		//$p1->SetCenter(0.5,0.55);
+		$p1->SetSize($this->size);
 		$p1->value->HideZero();
 		
-		// Enable and set policy for guide-lines
-		$p1->SetGuideLines();
+		//Enable and set policy for guide-lines
+		$p1->SetGuideLines(true, false);
 		$p1->SetGuideLinesAdjust(1.4);
 		
 		// Setup the labels
 		$p1->SetLabelType(PIE_VALUE_ABS);    
 		$p1->value->Show();            
 		$p1->value->SetFont(FF_FONT1,FS_BOLD);    
-		$p1->value->SetFormat('%d '.$this->params['slice_label']);        
+		//$p1->value->SetFormat('%d '.$this->params['slice_label']);        
+		//$p1->SetLegends($this->params['legends']);
 		
-		$p1->SetLegends($this->params['legends']);
+		$p1->SetLabels($this->params['labels'], 1.1); 
 		
 		// Add and stroke
 		$graph->Add($p1);

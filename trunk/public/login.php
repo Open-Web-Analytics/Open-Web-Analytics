@@ -180,11 +180,17 @@ if (!empty($params['action'])):
 			endif;
 			
 			break;
+		case "logout":
+			$auth = & owa_auth::get_instance();
+			$auth->deleteCredentials();
+			$url = $_SERVER['PHP_SELF'].'?page=login';
+			break;
+			
 			
 	}
-	// 301 redirect to URL 
-	header ('Location: '.$url);
-	header ('HTTP/1.0 301 Moved Permanently');
+
+	owa_lib::redirectBrowser($url);
+
 	return;
 	
 endif;

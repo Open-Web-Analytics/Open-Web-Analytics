@@ -61,7 +61,11 @@ class owa_auth_simple extends owa_auth {
 	function authenticateUser($necessary_role) {
 		
 		if (empty($this->credentials['user_id']) || (empty($this->credentials['password']))):
-			$this->showLoginPage();
+			if ($necessary_role == 'guest'):
+				return;
+			else:
+				$this->showLoginPage();
+			endif;
 		endif;
 		
 		$is_user = $this->isUser($this->credentials['user_id'], $this->credentials['password']);
@@ -163,7 +167,16 @@ class owa_auth_simple extends owa_auth {
 		return;
 	}
 	
-	
+	/**
+	 * Removes credentials
+	 *
+	 * @return boolean
+	 */
+	function deleteCredentials() {
+		
+		return setcookie($this->config['ns'].'p', $this->u->password, time()-3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
+
+	}
 }
 
 

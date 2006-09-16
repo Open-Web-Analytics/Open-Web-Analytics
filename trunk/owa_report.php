@@ -100,8 +100,6 @@ class owa_report {
 	 */
 	var $prefs = array();
 	
-	var $auth;
-	
 	/**
 	 * Constructor
 	 *
@@ -111,9 +109,6 @@ class owa_report {
 	function owa_report() {
 		
 		$this->config = &owa_settings::get_settings();
-		
-		// User authentication object
-		$this->auth = &owa_auth::get_instance();	
 		
 		// Gets full set of params from URL
 		
@@ -224,12 +219,6 @@ class owa_report {
 		
 		$sites = new owa_site;
 		return $sites->getAllSites();
-		
-	}
-	
-	function authenticateUser($role) {
-		
-		return $this->auth->authenticateUser($role);
 		
 	}
 	

@@ -15,9 +15,9 @@
 //
 // $Id$
 //
-
-require_once(OWA_BASE_DIR.'/owa_report.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
+require_once(OWA_BASE_DIR.'/owa_report.php');
+
 
 /**
  * Content Report
@@ -35,7 +35,6 @@ $auth = &owa_auth::get_instance();
 $auth->authenticateUser('viewer');
 
 $report = new owa_report;
-$report->authenticateUser('viewer');
 	
 // Setup the templates
 
@@ -45,6 +44,7 @@ $entry_pages = & new owa_template($report->params);
 $entry_pages->set_template('top_pages.tpl');
 $exit_pages = & new owa_template($report->params);
 $exit_pages->set_template('top_pages.tpl');
+
 // Fetch Metrics
 
 $entry_documents = $report->metrics->get(array(

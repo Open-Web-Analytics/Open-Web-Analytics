@@ -197,7 +197,7 @@ class owa_metric_feeds extends owa_metric {
 	}
 	
 	/**
-	 * Number of Feed Fetches
+	 * Feed Readers
 	 *
 	 * @access private
 	 * @return array

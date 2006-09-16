@@ -19,6 +19,7 @@
 require_once(OWA_INCLUDE_DIR.'/template_class.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_settings_class.php');
+require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
  * OWA Wrapper for template class
@@ -234,6 +235,13 @@ class owa_template extends Template {
 				return $days . " days ago";
 		}
 		
+	}
+	
+	function getAuthStatus() {
+		
+		$auth = &owa_auth::get_instance();
+		
+		return $auth->auth_status;
 	}
 	
 }
