@@ -231,13 +231,17 @@ class owa_install_update_to_1_0 extends owa_install {
 			)",
 			$this->config['ns'].$this->config['users_table'])
 		);
-		
-		$auth = new owa_auth;
+		$old_auth = $this->config['authentication'];
+		$this->config['authentication'] = 'simple';
+		$auth = & owa_auth::get_instance();
 		$u = new owa_user;
 		$u->user_id = $this->config['db_user'];
 		$u->password = $auth->encryptPassword($this->config['db_password']);
 		$u->role = 'admin';
 		$u->save();
+		$this->config['authentication'] = $old_auth;
+		
+		return;
 		
 	}
 	
