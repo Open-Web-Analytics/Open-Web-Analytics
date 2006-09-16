@@ -22,6 +22,7 @@ require_once(OWA_BASE_DIR.'/owa_template.php');
 require_once(OWA_BASE_DIR.'/owa_installer.php');
 require_once(OWA_BASE_DIR.'/owa_user.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
+require_once(OWA_BASE_DIR.'/owa_site.php');
 
 /**
  * OWA Installation Script
@@ -39,6 +40,13 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
 $config['fetch_config_from_db'] = false;
 $owa = new owa_php($config);
 
+// Clean Input arrays
+if ($_POST):
+	$params = owa_lib::inputFilter($_POST);
+else:
+	$params = owa_lib::inputFilter($_GET);
+endif;
+
 // Create Template Objects
 $page = & new owa_template;
 $body = & new owa_template; 
@@ -52,14 +60,7 @@ if (!empty($owa->config['db_name']) &&
 	//Load Installer Object
 	$installer = new owa_installer;
 
-	// Perform DB connection check
-	if ($installer->db->connection_status == false):
-		$db_state = false;
-		$status_msg = "Could not connect to the database. Please check your database connection settings and try again.";
-		$body_tpl = 'installer_error.tpl';
-		
-	else:
-		$db_state = true;
+	
 		
 		// Perform schem fro base schema
 		$check = $installer->plugins['base_schema']->check_for_schema();
@@ -74,7 +75,7 @@ if (!empty($owa->config['db_name']) &&
 			$body->set('page_h1', 'Welcome to the OWA Installer');
 			$body_tpl = 'installer_welcome.tpl';
 		endif;
-	endif;
+	
 else: 
 	$db_state = false;
 	$status_msg = "Your database connection settings are not complete. Check the owa_config.php file and try again.";
@@ -84,15 +85,122 @@ endif;
 
 $body->set('db_state', $db_state);
 
+// Form Handlers
+
+switch ($params['action']) {
+	
+	case "env_check":
+		$errors = array();
+		// Perform DB connection check
+		if ($installer->db->connection_status == false):
+			$db_state = false;
+			$errors['db_check'] = array('status' => false, 'msg' => "Could not connect to the database. Please check your database connection settings and try again.");
+			$body_tpl = 'installer_error.tpl';
+		else:
+			$db_state = true;
+		endif;
+	
+		$params['owa_page'] = 'install_wizard';
+		$params['step'] = 'env_status';
+		break;
+	
+	case "install_base":
+		
+		$install_status = $owa->install('base_schema');
+	
+		if ($install_status != false):
+		
+			if ($install_status === true):
+				// Stock success msg
+				$status_msg = 'The installation was a success.';
+			else:
+				// Package specific msg
+				$status_msg = $install_status;
+			endif;
+			$params['owa_page'] = 'install_wizard';
+			$params['step'] = 'set_admin_user';
+			
+		else:
+			$status_msg = 'The installation failed. See error log for details.';
+			$params['owa_page'] = 'error';
+		endif;
+
+		break;
+	
+	case "install_package":
+		
+		$install_status = $owa->install($_GET['package']);
+	
+		if ($install_status != false):
+		
+			if ($install_status === true):
+				// Stock success msg
+				$status_msg = 'The installation was a success.';
+			else:
+				// Package specific msg
+				$status_msg = $install_status;
+			endif;
+			$status_msg = 'Installation was a success.';
+			$params['owa_page'] = 'package_selection';
+		else:
+			$status_msg = 'The installation failed. See error log for details.';
+			$params['owa_page'] = 'error';
+		endif;
+
+		break;
+		
+	case "save_admin_user":
+		$u = new owa_user;
+		$u->user_id = $params['user_id'];
+		$u->password = md5($params['password']);
+		$u->real_name = $params['real_name'];
+		$u->email_address = $params['email_address'];
+		$u->role = 'admin';
+		$u->save();
+		$params['owa_page'] = 'install_wizard';
+		$params['step'] = 'site_info';			
+		break;
+	case "save_site_info":	
+		$site = new owa_site;
+		$site->name = $params['name'];
+		$site->description = $params['description'];
+		$site->save();
+		$params['owa_page'] = 'install_wizard';
+		$params['step'] = 'finish';			
+		break;
+}
+
+
 // Page Controlers
 
-switch ($_GET['owa_page']) {
+switch ($params['owa_page']) {
 	
-	case "db_info":
-		$body_tpl = 'installer_db_info.tpl';
-		$page->set('page_title', 'Site Information');
-		$body->set('page_h1', 'Enter some information about your site');
-		break;
+	case "install_wizard":
+		
+		switch ($params['step']) {
+			
+			case "env_status":
+				$body_tpl = 'installer_db_info.tpl';
+				$page->set('page_title', 'Environment Status');
+				$body->set('page_h1', 'Server Environment Status');
+				$body->set('errors', $errors);
+				break;
+			case "site_info":
+				$body_tpl = 'installer_db_info.tpl';
+				$page->set('page_title', 'Site Information');
+				$body->set('page_h1', 'Enter some information about your site');
+				break;
+			case "set_admin_user":
+				$body_tpl = 'installer_admin_user.tpl';
+				$page->set('page_title', 'Administrator Account Profile Setup');
+				$body->set('page_h1', 'Setup your profile by filling in the fields below.');
+				break;
+			case "finish":
+				$body_tpl = 'installer_success.tpl';
+				$page->set('page_title', 'Installation Complete');
+				$body->set('page_h1', 'Open Web Analytics Installation Complete');
+				break;
+		}
 		
 	case "package_selection":
 		$body_tpl = 'installer_package_selection.tpl';
@@ -115,53 +223,7 @@ switch ($_GET['owa_page']) {
 		$page->set('page_title', 'Installation Error');
 		$body->set('page_h1', 'There was an Error During Installation');
 		break;
-	case "set_admin_user":
-		$body_tpl = 'installer_admin_user.tpl';
-		$page->set('page_title', 'Administrator Account Profile Setup');
-		$body->set('page_h1', 'Setup your profile by filling in the fields below.');
-		break;
 	
-}
-
-// Form Handlers
-
-switch ($_GET['action']) {
-	
-	case "install":
-		
-		$install_status = $owa->install($_GET['package']);
-	
-		if ($install_status != false):
-		
-			if ($install_status === true):
-				// Stock success msg
-				$status_msg = 'The installation was a success.';
-			else:
-				// Package specific msg
-				$status_msg = $install_status;
-			endif;
-			$body->set('page_h1', 'Set Administrator User Profile');
-			$body_tpl = 'installer_set_admin_user.tpl';
-		else:
-			$status_msg = 'The installation failed. See error log for details.';
-			$body->set('page_h1', 'Installation Problem');
-			$body_tpl = 'installer_error.tpl';
-		endif;
-
-		break;
-		
-	case "set_admin_profile":
-		$params = owa_lib::inputFilter($_GET);
-		$u = new owa_user;
-		$u->user_id = $params['user_id'];
-		$u->password = md5($params['password']);
-		$u->real_name = $params['real_name'];
-		$u->email_address = $params['email_address'];
-		$u->role = 'admin';
-		$u->save();
-		$body->set('page_h1', 'Installation Complete');
-		$body_tpl = 'installer_success.tpl';
-		break;
 }
 
 // Global Template assignments

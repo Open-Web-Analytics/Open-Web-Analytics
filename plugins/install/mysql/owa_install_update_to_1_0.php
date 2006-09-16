@@ -178,6 +178,22 @@ class owa_install_update_to_1_0 extends owa_install {
 			
 			));
 			
+		$this->db->query(
+			sprintf("
+			alter table %s DROP column id
+			",
+			$this->config['ns'].$this->config['sites_table']
+			
+			));
+		
+		$this->db->query(
+			sprintf("
+			alter table %s MODIFY column site_id SERIAL
+			",
+			$this->config['ns'].$this->config['sites_table']
+			
+			));
+			
 		return true;
 		
 	}

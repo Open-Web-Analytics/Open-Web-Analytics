@@ -133,6 +133,12 @@ class owa_site {
 		endif;
 	}
 	
+	
+	function save() {
+		
+		return $this->addSite();
+	}
+	
 	/**
 	 * Adds a site to the database
 	 *
@@ -142,12 +148,11 @@ class owa_site {
 		
 		$insert = $this->db->query(sprintf("
 								INSERT INTO %s 
-									(site_id, name, description, site_family)
+									(name, description, site_family)
 								VALUES
-									('%s', '%s', '%s', '%s')
+									('%s', '%s', '%s')
 								",
 								$this->config['ns'].$this->config['sites_table'],
-								$this->site_id,
 								$this->db->prepare($this->name),
 								$this->db->prepare($this->description),
 								$this->site_family));
@@ -167,7 +172,7 @@ class owa_site {
 	 */
 	function addNewSite() {
 		
-		$this->site_id = md5($this->name.rand().time());
+		//$this->site_id = md5($this->name.rand().time());
 		return $this->addSite();
 		
 		

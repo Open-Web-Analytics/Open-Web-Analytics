@@ -604,12 +604,12 @@ class owa_install_base extends owa_install {
 		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
-			id SERIAL,
-			site_id varchar(255),
+			site_id SERIAL,
 			domain VARCHAR(255),
 			name VARCHAR(255),
 			description TEXT,
-			site_family VARCHAR(255)
+			site_family VARCHAR(255),
+			PRIMARY KEY (site_id)
 			)",	
 			$this->config['ns'].$this->config['sites_table'])
 		);

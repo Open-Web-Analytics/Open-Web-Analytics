@@ -101,7 +101,7 @@ class Log_observer_ua extends owa_observer {
 				browser_type,
 				browser)
 			values 
-				('%s', '%s', '%s')",
+				('%s', '%s', '%s', '&s')",
 			$this->config['ns'].$this->config['ua_table'],
 			$this->m['ua_id'],
 			$this->db->prepare($this->m['ua']),
