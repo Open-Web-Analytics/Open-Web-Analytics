@@ -476,9 +476,11 @@ class owa_request extends owa_event {
 		
 		if ($this->bcap->browscap->browser != 'Default Browser'):
 			$this->properties['browser_type'] = $this->bcap->browscap->browser;
+			$this->properties['browser'] = $this->bcap->browscap->browser . ' ' . $this->bcap->browscap->version;
 			$this->properties['os'] = $this->bcap->browscap->platform;
 		elseif ($this->bcap->browscap_supplemental->browser != 'Default Browser'):
 			$this->properties['browser_type'] = $this->bcap->browscap_supplemental->browser;
+			$this->properties['browser'] = $this->bcap->browscap_supplemental->browser . ' ' . $this->bcap->browscap_supplemental->version;
 			if (!empty($this->browscap_supplemental->platform)):
 				$this->properties['os'] = $this->bcap->browscap_supplemental->platform;
 			else:

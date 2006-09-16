@@ -98,13 +98,15 @@ class Log_observer_ua extends owa_observer {
 			"INSERT into %s (
 				id, 
 				ua, 
-				browser_type)
+				browser_type,
+				browser)
 			values 
 				('%s', '%s', '%s')",
 			$this->config['ns'].$this->config['ua_table'],
 			$this->m['ua_id'],
 			$this->db->prepare($this->m['ua']),
-			$this->db->prepare($this->m['browser_type'])
+			$this->db->prepare($this->m['browser_type'],
+			$this->db->prepare($this->m['browser'])
 			
 			)
 		);	
