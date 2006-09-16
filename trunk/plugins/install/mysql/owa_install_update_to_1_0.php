@@ -241,7 +241,7 @@ class owa_install_update_to_1_0 extends owa_install {
 		$u->save();
 		$this->config['authentication'] = $old_auth;
 		
-		return;
+		return true;
 		
 	}
 	
