@@ -39,7 +39,8 @@ class owa_metric_visitor extends owa_metric {
 
 		$this->owa_metric();
 
-		$this->api_calls = array('visitor_list', 'visitors_age', 'visitor_history', 'new_v_repeat', 'latest_visits');
+		$this->api_calls = array('visitor_list', 'visitors_age', 'visitor_history', 'new_v_repeat', 
+								'latest_visits', 'visitor_uas');
 
 	}
 	
@@ -63,7 +64,9 @@ class owa_metric_visitor extends owa_metric {
 		case "visitors_age":
 			return $this->visitors_age();
 		case "visitor_list":
-			return $this->visitor_list();			
+			return $this->visitor_list();	
+		case "visitor_uas":
+			return $this->visitor_uas();			
 		}
 		
 	}
@@ -238,6 +241,39 @@ class owa_metric_visitor extends owa_metric {
 		
 		return $this->db->get_results($sql);
 	}
+	
+	/**
+	 * Feed Readers
+	 *
+	 * @access private
+	 * @return array
+	 */
+	function visitor_uas() {
+	
+		$sql = sprintf("
+		SELECT 
+			count(distinct sessions.session_id) as count,
+			ua.ua as ua,
+			ua.browser_type
+		FROM 
+			%s as sessions,
+			%s as ua
+		WHERE
+			ua.id = sessions.ua_id
+			%s 
+			%s
+		GROUP BY
+			ua.browser_type
+		",
+			$this->setTable($this->config['sessions_table']),
+			$this->setTable($this->config['ua_table']),
+			$this->time_period($this->params['period']),
+			$this->add_constraints($this->params['constraints'])
+		);
+	
+		return $this->db->get_results($sql);
+	}
+	
 	
 }
 

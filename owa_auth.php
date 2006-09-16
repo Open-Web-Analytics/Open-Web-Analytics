@@ -60,6 +60,13 @@ class owa_auth extends owa_base {
 	var $credentials;
 	
 	/**
+	 * Status of Authentication
+	 *
+	 * @var boolean
+	 */
+	var $auth_status = false;
+	
+	/**
 	 * Abstract class Constructor
 	 *
 	 * @return owa_auth
@@ -113,9 +120,12 @@ class owa_auth extends owa_base {
 	function &get_instance() {
 		
 		$config = &owa_settings::get_settings();
-		return owa_lib::singleton($config['plugin_dir'].'/auth/', 
+	
+		$auth = &owa_lib::singleton($config['plugin_dir'].'/auth/', 
 									'owa_auth_',
 									$config['authentication']);
+		
+		return $auth;
 	}
 	
 	/**
@@ -150,13 +160,16 @@ class owa_auth extends owa_base {
 		$this->u = new owa_user;
 		$this->u->getUserByPK($user_id);
 		
-		if (($user_id == $this->u->user_id)):
+		if ($user_id == $this->u->user_id):
 			if ($password === $this->u->password):
+				$this->auth_status = true;
 				return true;
 			else:
+				$this->auth_status = false;
 				return false;
 			endif;
 		else:
+			$this->auth_status = false;
 			return false;
 		endif;
 	}

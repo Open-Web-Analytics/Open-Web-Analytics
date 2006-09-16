@@ -5,6 +5,7 @@
 #top_visitors {width: 450px;}
 #summary_stats {width: px;}
 #core_metrics {width: 600px;}
+#top_browser_types{width:350px;}
 </style>
 
 
@@ -84,5 +85,12 @@
 			<fieldset class="options">
 				<legend>Top Visitors</legend>
 				<?=$top_visitors_table;?>
+			</fieldset>
+		</div>
+
+		<div id="top_browser_types">
+			<fieldset class="options">
+				<legend>Browser Types</legend>
+				<? include('browser_types.tpl')?>
 			</fieldset>
 		</div>

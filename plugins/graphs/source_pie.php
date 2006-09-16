@@ -126,7 +126,7 @@ class owa_graph_source_pie extends owa_graph {
 		
 		// Graph Params	
 		$this->params['graph_title'] = "Traffic Sources for \n" . $this->get_period_label($this->params['period']);
-		$this->params['legends'] = array('Feeds', 'Search Engines', 'Web Sites', 'Direct');
+		$this->params['labels'] = array('Feeds (%d)', 'Search Engines (%d)', 'Web Sites (%d)', 'Direct (%d)');
 		$this->params['height']	= 200;
 		$this->params['width']	= 300;
 		

@@ -206,11 +206,19 @@ class owa_graph_page_views extends owa_graph {
 	
 		));
 
+		$labels = array();
+		
+		foreach ($result['page_type'] as $type) {
+			
+			$labels[] = $type.' (%d)';	
+			
+		}
+		
 		// Graph params
 		$this->params['graph_title'] = "Requests by Page Type for \n" . $this->get_period_label($this->params['period']);
-		$this->params['legends'] = $result['page_type'];
+		$this->params['labels'] = $labels;
 		$this->params['height']	= 400;
-		$this->params['width']	= 400;
+		$this->params['width']	= 500;
 		$this->params['slice_label'] = 'requests';
 		
 		// Graph Data Assignment

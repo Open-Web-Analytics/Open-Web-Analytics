@@ -128,11 +128,22 @@ class owa_graph_feeds extends owa_graph {
 	
 		));
 
+		
+		$labels = array();
+		
+		foreach ($result['browser_type'] as $type) {
+			
+			$labels[] = $type.' (%d)';	
+			
+		}
+		
+		
 		// Graph params
 		$this->params['graph_title'] = "Feed Reader Types for \n" . $this->get_period_label($this->params['period']);
-		$this->params['legends'] = $result['browser_type'];
-		$this->params['height']	= 400;
-		$this->params['width']	= 400;
+		$this->params['labels'] = $labels;
+		$this->params['height']	= 500;
+		$this->params['width']	= 500;
+		$this->size	= .2;
 		$this->params['slice_label'] = 'Users';
 		
 		// Graph Data Assignment
@@ -168,11 +179,21 @@ class owa_graph_feeds extends owa_graph {
 	
 		));
 
+		$labels = array();
+		
+		foreach ($result['feed_format'] as $type) {
+			
+			$labels[] = $type.' (%d)';	
+			
+		}
+		
+		
 		// Graph params
 		$this->params['graph_title'] = "Feed Formats for \n" . $this->get_period_label($this->params['period']);
-		$this->params['legends'] = $result['feed_format'];
-		$this->params['height']	= 400;
-		$this->params['width']	= 400;
+		$this->params['labels'] = $labels;
+		$this->params['height']	= 300;
+		$this->params['width']	= 300;
+		$this->size	= .2;
 		$this->params['slice_label'] = 'fetches';
 		
 		// Graph Data Assignment
