@@ -209,7 +209,7 @@ class owa_install_update_to_1_0 extends owa_install {
 			page_title varchar(255),
 			PRIMARY KEY (id)
 			)",
-			$this->config['ns'].$this->config['referers_table'])
+			$this->config['ns'].$this->config['exits_table'])
 		);
 
 	}
