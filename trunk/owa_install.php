@@ -61,6 +61,13 @@ class owa_install {
 	var $e;
 	
 	/**
+	 * Params array
+	 *
+	 * @var array
+	 */
+	var $params;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_install
@@ -71,6 +78,21 @@ class owa_install {
 		$this->config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		$this->e = &owa_error::get_instance();
+		
+		return;
+	}
+	
+	function addDefaultSite() { 
+		
+		$site = new owa_site;
+		$site->name = $this->params['name'];
+		$site->description = $this->params['description'];
+		if (!empty($site->site_family)):
+			$site->site_family = $this->params['description'];
+		else:
+			$site->site_family = 1;
+		endif;
+		$site_id = $site->save();
 		
 		return;
 	}

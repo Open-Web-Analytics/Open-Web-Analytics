@@ -56,7 +56,98 @@ $body = & new owa_template;
 $body_tpl = 'options.tpl';// This is the inner template
 $body->set('page_title', 'OWA Options');
 
-if ($params['owa_page']):
+
+switch ($params['action']) {
+	
+	case "add_site":
+		
+		$site = new owa_site;
+		$site->name = $params['name'];
+		$site->description = $params['description'];
+		$site->site_family = $params['site_family'];
+		$site_id = $site->addNewSite();
+		
+		if ($site_id != false):
+			$status_msg = "Site added Successfully";
+			$params['owa_page'] = 'manage_sites';
+			
+		else:
+			$page_h1 = 'Error';
+			$body_tpl = 'error.tpl';
+			$status_msg = "Site could not be added. Perhaps a site by that name already exists.";
+		endif;
+		break;
+
+	case "update_config":
+						
+		$owa->save_config($params);
+		break;
+		
+	case "reset_config":
+		
+		$owa->reset_config();	
+		break;
+	
+	case "get_tag":
+		$status_msg = "";
+		$body_tpl = 'options_new_site_success.tpl';
+		$page_h1 = 'The tracking tag for your site is below.';
+		$body->set('site_id', $params['site_id']);
+		$tag = $owa->requestTag($site_id);
+		$body->set('tag', $tag);
+		break;
+	case "edit_user_profile":
+		$u = new owa_user;
+		$u->getUserByPK($params['user_id']);
+		$u->email_address = $params['email_address'];
+		$u->real_name = $params['real_name'];
+		$u->role = $params['role'];
+		$u->update();
+		//$t = new owa_template();
+		$url = $page->make_admin_link('options.php', array('owa_page' => 'user_roster_success'));
+		owa_lib::redirectBrowser($url);
+		
+		break;
+	case "add_new_user":
+		$auth->authenticateUser('admin');
+		$u = new owa_user;
+		
+		//Check to see if user name already exists
+		$u->getUserByPK($params['user_id']);
+		
+		// Set user object Params
+		if (empty($u->user_id)):
+			$u->user_id = $params['user_id'];
+			//print $u->user_id.'|';
+			//print $params['user_id'];
+			$u->real_name = $params['real_name'];
+			$u->role = $params['role'];
+			$u->email_address = $params['email_address'];
+			$u->save();
+			//Generate Initial Passkey and new account email
+			$auth->setInitialPasskey($u->user_id);
+			// Redirect user to success page
+			$url = $page->make_admin_link('options.php', array('owa_page' => 'add_user_success'));
+			owa_lib::redirectBrowser($url);
+		else:
+			$body_tpl = 'options_edit_user_profile.tpl';
+			$body->set('user', get_class_vars($u));
+			$body->set('roles', $auth->roles);	
+			$body->set('page_title', 'OWA - Edit User Profile');
+			$body->set('headline', 'Edit User Profile');
+			$body->set('error_msg', 'That user name already exists');
+		endif;
+		break;
+	case "delete_user":
+		$auth->authenticateUser('admin');
+		$u = new owa_user;
+		$u->user_id = $params['user_id'];
+		$u->delete();
+		$url = $page->make_admin_link('options.php', array('owa_page' => 'delete_user_success'));
+		owa_lib::redirectBrowser($url);
+		break;
+		
+}
 
 	switch ($params['owa_page']) {
 		
@@ -117,105 +208,13 @@ if ($params['owa_page']):
 			$body->set('roles', $auth->roles);	
 			$body->set('action', 'add_new_user');
 			break;
+		default:
+			$auth->authenticateUser('admin');
+			$page_title = 'Configuration';
+			$page_h1 = 'options';
+		
 	}
 
-endif;
-
-
-switch ($params['action']) {
-	
-	case "add_site":
-		
-		$site = new owa_site;
-		$site->name = $params['name'];
-		$site->description = $params['description'];
-		$site->site_family = $params['site_family'];
-		$site_id = $site->addNewSite();
-		
-		if ($site_id != false):
-			$status_msg = "Site added Successfully";
-			$body_tpl = 'options_new_site_success.tpl';
-			$page_h1 = 'Your new site is ready to be tracked';
-			$body->set('site_id', $site_id);
-			$tag = $owa->requestTag($site_id);
-			$body->set('tag', $tag);
-		else:
-			$page_h1 = 'Error';
-			$body_tpl = 'error.tpl';
-			$status_msg = "Site could not be added. Perhaps a site by that name already exists.";
-		endif;
-		break;
-
-	case "update_config":
-						
-		$owa->save_config($_POST);
-		break;
-		
-	case "reset_config":
-		
-		$owa->reset_config();	
-		break;
-	
-	case "get_tag":
-		$status_msg = "";
-		$body_tpl = 'options_new_site_success.tpl';
-		$page_h1 = 'The tracking tag for your site is below.';
-		$body->set('site_id', $_GET['site_id']);
-		$tag = $owa->requestTag($site_id);
-		$body->set('tag', $tag);
-		break;
-	case "edit_user_profile":
-		$u = new owa_user;
-		$u->getUserByPK($params['user_id']);
-		$u->email_address = $params['email_address'];
-		$u->real_name = $params['real_name'];
-		$u->role = $params['role'];
-		$u->update();
-		//$t = new owa_template();
-		$url = $page->make_admin_link('options.php', array('owa_page' => 'user_roster_success'));
-		owa_lib::redirectBrowser($url);
-		
-		break;
-	case "add_new_user":
-		$auth->authenticateUser('admin');
-		$u = new owa_user;
-		
-		//Check to see if user name already exists
-		$u->getUserByPK($params['user_id']);
-		
-		// Set user object Params
-		if (empty($u->user_id)):
-			$u->user_id = $params['user_id'];
-			//print $u->user_id.'|';
-			//print $params['user_id'];
-			$u->real_name = $params['real_name'];
-			$u->role = $params['role'];
-			$u->email_address = $params['email_address'];
-			$u->save();
-			//Generate Initial Passkey and new account email
-			$auth->setInitialPasskey($u->user_id);
-			// Redirect user to success page
-			$url = $page->make_admin_link('options.php', array('owa_page' => 'add_user_success'));
-			owa_lib::redirectBrowser($url);
-		else:
-			$body_tpl = 'options_edit_user_profile.tpl';
-			$body->set('user', get_class_vars($u));
-			$body->set('roles', $auth->roles);	
-			$body->set('page_title', 'OWA - Edit User Profile');
-			$body->set('headline', 'Edit User Profile');
-			$body->set('error_msg', 'That user name already exists');
-		endif;
-		break;
-	case "delete_user":
-		$auth->authenticateUser('admin');
-		$u = new owa_user;
-		$u->user_id = $params['user_id'];
-		$u->delete();
-		$url = $page->make_admin_link('options.php', array('owa_page' => 'delete_user_success'));
-		owa_lib::redirectBrowser($url);
-		break;
-		
-}
 
 //Fetch latest OWA news
 $rss = new owa_news;
@@ -228,6 +227,7 @@ $body->set_template($body_tpl);// This is the inner template
 $body->set('config', $owa->config);
 $body->set('status_msg', $status_msg);
 $body->set('page_h1', $page_h1);
+$body->set('page_title', $page_title);
 $page->set('content', $body);
 
 // Render Page

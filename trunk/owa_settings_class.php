@@ -215,7 +215,8 @@ class owa_settings {
 			'summary_framework'				=> '',
 			'click_drawing_mode'			=> 'center_on_page',
 			'log_clicks'					=> true,
-			'authentication'				=> 'simple'
+			'authentication'				=> 'simple',
+			'owa_wiki_link_template'		=> 'http://wiki.openwebanalytics.com/index.php?title=%s'
 			);
 	}
 	

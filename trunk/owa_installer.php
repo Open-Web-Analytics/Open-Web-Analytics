@@ -74,18 +74,21 @@ class owa_installer {
 	 */
 	var $plugins;
 	
+	var $params;
+	
 	/**
 	 * Constructor
 	 *
 	 * @return owa_install
 	 */
-	function owa_installer() {
-		
+	function owa_installer($params = '') {
+		$this->params = $params;
 		$this->config = &owa_settings::get_settings();
 		$this->db = &owa_db::get_instance();
 		$this->e = &owa_error::get_instance();
 		$this->plugins_dir = $this->config['install_plugin_dir'].$this->config['db_type'];
 		$this->load_plugins();
+	
 		
 		return;
 	}
@@ -93,12 +96,12 @@ class owa_installer {
 	/**
 	 * Installation factory
 	 *
-	 * @param string $type
+	 * @param array $params
 	 * @return object
 	 */
-	function &get_instance() {
+	function &get_instance($params) {
 		
-        $class = new owa_installer;
+        $class = new owa_installer($params);
         return $class;
 
 	}
@@ -119,7 +122,7 @@ class owa_installer {
             			//$this->plugins[] = substr($file, 0, -4);
 						$class  = substr($file, 0, -4);
 						
-            			$plugin = new $class;
+            			$plugin = new $class($this->params);
 					
               			if (!isset($this->plugins[$package])):
                 			$this->plugins[$plugin->package] = $plugin;

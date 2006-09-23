@@ -250,6 +250,10 @@ class owa_template extends Template {
 		return $auth->auth_status;
 	}
 	
+	function makeWikiLink($page) {
+		
+		return sprintf($this->config['owa_wiki_link_template'], $page);
+	}
 }
 
 ?>

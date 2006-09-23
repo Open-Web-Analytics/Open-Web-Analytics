@@ -102,6 +102,13 @@ class owa_site {
 		return;
 	}
 	
+	
+	function getSiteByPK($site_id) {
+
+		return $this->getSite($site_id);
+		
+	}
+	
 	/**
 	 * Retrieves the site from the database
 	 *
@@ -111,7 +118,7 @@ class owa_site {
 	function getSite($site_id) {
 		
 		$row = $this->db->get_row(sprintf("SELECT 
-										id, 
+										site_id, 
 										name, 
 										description, 
 										site_family
@@ -122,15 +129,27 @@ class owa_site {
 									$this->config['ns'].$this->config['sites_table'],
 									$site_id));
 		if (!empty($row)):					
-			$this->id = $row['id'];
-			$this->site_id = $site_id;
-			$this->site_name = $row['name'];
-			$this->description = $row['description'];
-			$this->site_family = $row['site_family'];
+			$this->_setAttributes($row);
 			return true;
 		else:		
 			return false;
 		endif;
+	}
+	
+	/**
+	 * Sets user object attributes
+	 *
+	 * @param unknown_type $array
+	 */
+	function _setAttributes($array) {
+		
+		foreach ($array as $n => $v) {
+				
+				$this->$n = $v;
+		
+			}
+		
+		return;
 	}
 	
 	

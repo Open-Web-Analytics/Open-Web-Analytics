@@ -69,6 +69,32 @@ class owa_wp extends owa_caller {
 		
 	}
 	
+	/**
+	 * Installation Controller
+	 *
+	 * @param string $type
+	 * @param array $params
+	 * @return boolean
+	 */
+	function install($type, $params = '') {
+		
+		$this->config['fetch_config_from_db'] = false;
+	    $installer = &owa_installer::get_instance($params);	   
+	    $install_check = $installer->plugins[$type]->check_for_schema();
+	    
+	    if ($install_check == false):
+		    //Install owa schema
+	    	$status = $installer->plugins[$type]->install();
+	    	$default_site = $installer->plugins[$type]->addDefaultSite();
+	    else:
+	    	// owa already installed
+	    	$status = false;
+	    endif;
+	    
+	    return $status;
+		
+	}
+	
 
 
 }
