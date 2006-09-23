@@ -18,7 +18,7 @@
 
 include_once('owa_env.php');
 require_once 'owa_settings_class.php';
-require_once 'owa_controller.php';
+require_once 'owa_logger_controller.php';
 require_once 'owa_installer.php';
 require_once 'owa_site.php';
 
@@ -129,7 +129,7 @@ class owa_caller {
 	 *
 	 * @param array $app_params	This is an array of application specific request params
 	 */
-	function log($app_params) {
+	function log($app_params = '') {
 		
 		return $this->controller->logEvent('page_request', $app_params);
 		
@@ -142,40 +142,9 @@ class owa_caller {
 	 * @param string $event_type
 	 * @return boolean
 	 */
-	function logEvent($event_type, $app_params) {
+	function logEvent($event_type, $app_params = '') {
 		
 		return $this->controller->logEvent($event_type, $app_params);
-		
-	}
-	
-	/**
-	 * Installation Controller
-	 *
-	 * @param string $type
-	 * @param array $params
-	 * @return boolean
-	 */
-	function install($type, $params = '') {
-		
-		$this->config['fetch_config_from_db'] = false;
-	    $installer = &owa_installer::get_instance();	   
-	    $install_check = $installer->plugins[$type]->check_for_schema();
-	    
-	    if ($install_check == false):
-		    //Install owa schema
-	    	$status = $installer->plugins[$type]->install(); 
-	    	//Save Default Site
-	    	$site = new owa_site;
-			$site->name = $params['name'];
-			$site->description = $params['description'];
-			$site->save();
-	    	
-	    else:
-	    	// owa already installed
-	    	$status = false;
-	    endif;
-	    
-	    return $status;
 		
 	}
 	
@@ -293,6 +262,9 @@ class owa_caller {
 	
 	/**
 	 * Returns All Page Tags
+	 * 
+	 * Setting $echo to false allows you to pass the tag code to whatever code is going
+	 * to render your web page
 	 *
 	 * @param boolean $echo
 	 * @return string
@@ -340,11 +312,26 @@ class owa_caller {
 
 	}
 	
+	function placeAllBugs($echo = true) {
+		
+		$bug  = $this->place_log_bug(false);
+		$bug .= $this->place_click_bug(false);
+		
+		if ($echo === false):
+			return $bug;
+		else:
+			echo $bug;
+		endif;
+		
+		return;
+		
+	}
+	
 	/**
 	 * Echos the request logger javascript library
 	 *
 	 */
-	function place_log_bug() {
+	function place_log_bug($echo = true) {
 		
 		$url = $this->config['public_url'].'/page.php?';
 		
@@ -352,7 +339,11 @@ class owa_caller {
 		
 		$bug .= file_get_contents(OWA_INCLUDE_DIR.'/webbug.js');
 		
-		echo $bug;
+		if ($echo === false):
+			return $bug;
+		else:
+			echo $bug;
+		endif;
 		
 		return;
 		
@@ -374,7 +365,7 @@ class owa_caller {
 
 	}
 	
-	function place_click_bug() {
+	function place_click_bug($echo = true) {
 		
 		$url = $this->config['action_url'].'?owa_action=log_event&event=click&';
 		
@@ -382,7 +373,11 @@ class owa_caller {
 		
 		$bug = sprintf($js, $url, $url); 	
 		
-		echo $bug;
+		if ($echo === false):
+			return $bug;
+		else:
+			echo $bug;
+		endif;
 		
 		return;
 		

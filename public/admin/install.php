@@ -58,7 +58,7 @@ if (!empty($owa->config['db_name']) &&
 	!empty($owa->config['db_user'])):
 	
 	//Load Installer Object
-	$installer = new owa_installer;
+	$installer = new owa_installer($params);
 
 	
 		
@@ -94,7 +94,7 @@ switch ($params['action']) {
 		// Perform DB connection check
 		if ($installer->db->connection_status == false):
 			$db_state = false;
-			$errors['db_check'] = array('status' => false, 'msg' => "Could not connect to the database. Please check your database connection settings and try again.");
+			$env_status['db_status'] = array('status' => false, 'msg' => "Could not connect to the database. Please check your database connection settings and try again.");
 			$body_tpl = 'installer_error.tpl';
 		else:
 			$db_state = true;
@@ -106,13 +106,13 @@ switch ($params['action']) {
 	
 	case "install_base":
 		
-		$install_status = $owa->install('base_schema');
+		$install_status = $installer->plugins['base_schema']->install();
 	
 		if ($install_status != false):
 		
 			if ($install_status === true):
 				// Stock success msg
-				$status_msg = 'The installation was a success.';
+				$status_msg = 'The databse schema was installed successfully.';
 			else:
 				// Package specific msg
 				$status_msg = $install_status;
@@ -129,7 +129,7 @@ switch ($params['action']) {
 	
 	case "install_package":
 		
-		$install_status = $owa->install($_GET['package']);
+		$install_status = $installer->plugins[$params['package']]->install();
 	
 		if ($install_status != false):
 		
@@ -151,22 +151,31 @@ switch ($params['action']) {
 		
 	case "save_admin_user":
 		$u = new owa_user;
+		$auth = & owa_auth::get_instance();
 		$u->user_id = $params['user_id'];
-		$u->password = md5($params['password']);
+		$u->password = $auth->encryptPassword($params['password']);
 		$u->real_name = $params['real_name'];
 		$u->email_address = $params['email_address'];
 		$u->role = 'admin';
 		$u->save();
+		$status_msg = 'Admin user created successfully.';
 		$params['owa_page'] = 'install_wizard';
 		$params['step'] = 'site_info';			
 		break;
 	case "save_site_info":	
-		$site = new owa_site;
+		
+		$installer->plugins['base_schema']->addDefaultSite();
+		
+		/*$site = new owa_site;
+		
 		$site->name = $params['name'];
 		$site->description = $params['description'];
 		$site->save();
+		*/
+		$status_msg = 'Site Profile was created successfully.';
 		$params['owa_page'] = 'install_wizard';
-		$params['step'] = 'finish';			
+		$params['step'] = 'finish';	
+				
 		break;
 }
 
@@ -180,27 +189,29 @@ switch ($params['owa_page']) {
 		switch ($params['step']) {
 			
 			case "env_status":
-				$body_tpl = 'installer_db_info.tpl';
+				$body_tpl = 'installer_env_status.tpl';
 				$page->set('page_title', 'Environment Status');
 				$body->set('page_h1', 'Server Environment Status');
-				$body->set('errors', $errors);
+				$body->set('env_status', $env_status);
 				break;
 			case "site_info":
-				$body_tpl = 'installer_db_info.tpl';
+				$body_tpl = 'installer_site_info.tpl';
 				$page->set('page_title', 'Site Information');
 				$body->set('page_h1', 'Enter some information about your site');
 				break;
 			case "set_admin_user":
-				$body_tpl = 'installer_admin_user.tpl';
+				$body_tpl = 'installer_set_admin_user.tpl';
 				$page->set('page_title', 'Administrator Account Profile Setup');
-				$body->set('page_h1', 'Setup your profile by filling in the fields below.');
+				$body->set('page_h1', 'Setup your Administration User Profile.');
 				break;
 			case "finish":
-				$body_tpl = 'installer_success.tpl';
+				$body_tpl = 'installer_finish.tpl';
 				$page->set('page_title', 'Installation Complete');
 				$body->set('page_h1', 'Open Web Analytics Installation Complete');
+				$body->set('site_id', 1);				
 				break;
 		}
+		break;
 		
 	case "package_selection":
 		$body_tpl = 'installer_package_selection.tpl';

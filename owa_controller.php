@@ -17,12 +17,11 @@
 //
 
 require_once 'owa_event_class.php';
-require_once 'owa_settings_class.php';
 require_once 'owa_request_class.php';
 require_once 'owa_click.php';
 require_once 'owa_lib.php';
-require_once 'owa_error.php';
 require_once 'owa_browscap.php';
+require_once 'owa_base.php';
 
 /**
  * owa Controler
@@ -36,22 +35,8 @@ require_once 'owa_browscap.php';
  * @since		owa 1.0.0
  */
 
-class owa {
+class owa extends owa_base {
 	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config = array();
-	
-	/**
-	 * Error Handler
-	 *
-	 * @var object
-	 */
-	var $e;
-
 	/**
 	 * Constructor
 	 *

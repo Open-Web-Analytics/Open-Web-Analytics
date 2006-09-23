@@ -73,7 +73,8 @@ class owa_install_base extends owa_install {
 	 *
 	 * @return owa_install_mysql
 	 */
-	function owa_install_base() {
+	function owa_install_base($params = null) {
+		$this->params = $params;
 		$this->owa_install();
 		$this->tables = array($this->config['requests_table'],
 								$this->config['sessions_table'],
@@ -608,8 +609,8 @@ class owa_install_base extends owa_install {
 			domain VARCHAR(255),
 			name VARCHAR(255),
 			description TEXT,
-			site_family VARCHAR(255),
-			PRIMARY KEY (site_id)
+			site_family VARCHAR(255)
+			
 			)",	
 			$this->config['ns'].$this->config['sites_table'])
 		);
@@ -680,29 +681,17 @@ class owa_install_base extends owa_install {
 		$this->update_schema_version();
 			
 		// Add default site into sites table
-		$this->addDefaultSite();
+		//$this->addDefaultSite();
 			
 		$this->e->notice(sprintf("Schema version %s installation complete.",
 							$this->version));
 			
-		$status = sprintf("Installation complete. You may begin tracking your site using site id: 
-		<span class=\"id_box\">%s</span><P>You can also configure yor installation by visiting
-		the <a href=\"%s/admin/options.php\">Options page</a>", '1', $this->config['public_url']);					
+		$status = true;					
 		
 		return $status;
 	}
 	
-	function addDefaultSite() { 
-		
-		$site = new owa_site;
-		$site->name = $_GET['name'];
-		$site->description = $_GET['description'];
-		$site->site_family = 1;
-		$site->site_id = 1;
-		$site_id = $site->addSite();
-		
-		return;
-	}
+	
 	
 }
 

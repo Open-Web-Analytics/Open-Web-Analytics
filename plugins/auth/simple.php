@@ -37,8 +37,11 @@ class owa_auth_simple extends owa_auth {
 		
 		$this->owa_auth();
 		$this->eq = &eventQueue::get_instance();
-		$this->credentials['user_id'] = owa_lib::inputFilter($_COOKIE[$this->config['ns'].'u']);
-		$this->credentials['password'] = owa_lib::inputFilter($_COOKIE[$this->config['ns'].'p']);
+		
+		$cookies = owa_lib::inputFilter($_COOKIE);
+		
+		$this->credentials['user_id'] = $cookies[$this->config['ns'].'u'];
+		$this->credentials['password'] = $cookies[$this->config['ns'].'p'];
 		return;
 	}
 	
@@ -60,25 +63,29 @@ class owa_auth_simple extends owa_auth {
 	 */
 	function authenticateUser($necessary_role) {
 		
-		if (empty($this->credentials['user_id']) || (empty($this->credentials['password']))):
+		//print_r($this->credentials);
+		//print "hello";
+		
+		if ((empty($this->credentials['user_id'])) || (empty($this->credentials['password']))):
 			if ($necessary_role == 'guest'):
 				return;
 			else:
 				$this->showLoginPage();
 			endif;
-		endif;
-		
-		$is_user = $this->isUser($this->credentials['user_id'], $this->credentials['password']);
-		
-		if ($is_user == true):
-			$priviledged = $this->isPriviledged($necessary_role);
-				if ($priviledged == true):
-					return;
-				else:
-					$this->showPriviledgeErrorPage();
-				endif;
 		else:
-			$this->showLoginErrorPage();
+		
+			$is_user = $this->isUser($this->credentials['user_id'], $this->credentials['password']);
+			
+			if ($is_user == true):
+				$priviledged = $this->isPriviledged($necessary_role);
+					if ($priviledged == true):
+						return;
+					else:
+						$this->showPriviledgeErrorPage();
+					endif;
+			else:
+				$this->showLoginErrorPage();
+			endif;
 		endif;
 		
 		return;

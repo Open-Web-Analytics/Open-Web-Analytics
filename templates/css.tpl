@@ -45,7 +45,7 @@ fieldset{margin: 7px;}
 .visit_box_stat {width:42px;}
 .nav_bar{text-decoration:none;}		
 .id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
-.code {padding:7px;margin:0px 30px 0px 30px;background-color:#cccccc; border: 1px dashed #000000;}
+.code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:10px;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
 .owa_banner {background-color: #cccccc; padding:4px; font-weight:bold;}
 .visible {display:;}

@@ -184,8 +184,6 @@ $browser_types = $report->metrics->get(array(
 	
 		));
 
-print_r($browser_types);
-
 // Fetch Sites List
 $sites = $report->getSitesList();
 
