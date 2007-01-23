@@ -4,7 +4,7 @@
   	    
 		<legend>Site Information</legend>
 	    
-		<TABLE border="1">
+		<TABLE>
 	    	<TR>
 	    		<TH scope="row">PHP Version</TH>
 	    		<TD><?=$env_status['php_version']['msg'];?></TD>

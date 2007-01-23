@@ -61,6 +61,13 @@ class owa_site {
 	var $name;
 	
 	/**
+	 * Domain of web site
+	 *
+	 * @var unknown_type
+	 */
+	var $domain;
+	
+	/**
 	 * Description of web site
 	 *
 	 * @var unknown_type
@@ -117,23 +124,44 @@ class owa_site {
 	 */
 	function getSite($site_id) {
 		
+		return $this->getSiteBase('site_id', $site_id);
+	}
+	
+	function getSiteById($id) {
+		
+		return $this->getSiteBase('id', $id);
+		
+	}
+	
+	function getSiteByDomain($domain) {
+		
+		return $this->getSiteBase('domain', $domain);
+		
+	}
+	
+	function getSiteBase($constraint, $value) {
+		
 		$row = $this->db->get_row(sprintf("SELECT 
+										id,
 										site_id, 
 										name, 
+										domain,
 										description, 
 										site_family
 									FROM
 										%s
 									WHERE
-										site_id = '%s'",
+										%s = '%s'",
 									$this->config['ns'].$this->config['sites_table'],
-									$site_id));
+									$constraint,
+									$value));
 		if (!empty($row)):					
 			$this->_setAttributes($row);
 			return true;
 		else:		
 			return false;
 		endif;
+		
 	}
 	
 	/**
@@ -155,7 +183,7 @@ class owa_site {
 	
 	function save() {
 		
-		return $this->addSite();
+		return $this->addNewSite();
 	}
 	
 	/**
@@ -165,22 +193,27 @@ class owa_site {
 	 */
 	function addSite() {
 		
-		$insert = $this->db->query(sprintf("
+		$status =  $this->db->query(sprintf("
 								INSERT INTO %s 
-									(name, description, site_family)
+									(site_id, name, domain, description, site_family)
 								VALUES
-									('%s', '%s', '%s')
+									('%s', '%s', '%s', '%s', '%s')
 								",
 								$this->config['ns'].$this->config['sites_table'],
+								$this->site_id,
 								$this->db->prepare($this->name),
+								$this->db->prepare($this->domain),
 								$this->db->prepare($this->description),
 								$this->site_family));
-		
-		if ($insert == true):
-			return $this->site_id;
+								
+								
+		if ($status == true):
+			$site_id = $this->site_id;
 		else:
-			return false;
+			$site_id = false;
 		endif;
+		
+		return $site_id;
 		
 	}
 	
@@ -191,8 +224,27 @@ class owa_site {
 	 */
 	function addNewSite() {
 		
-		//$this->site_id = md5($this->name.rand().time());
+		$this->site_id = md5($this->domain);
 		return $this->addSite();
+		
+		
+	}
+	
+	function saveSiteCustomId() {
+		
+		return $this->addSite();
+		
+	}
+	
+	function delete() {
+		
+		return $this->db->query(sprintf("DELETE FROM 
+											%s
+										WHERE
+											site_id = '%s'",
+								$this->config['ns'].$this->config['sites_table'],
+							  	$this->site_id));
+		
 		
 		
 	}
@@ -206,19 +258,26 @@ class owa_site {
 	function updateSite($site_id) {
 		
 		return $this->db->query(sprintf("UPDATE 
-											%S
+											%s
 										SET
-											name = '%s'
-											AND description = '%s'
+											name = '%s',
+											description = '%s',
+											site_family = '%s'
 										WHERE
 											site_id = '%s'
 										",
 										$this->config['ns'].$this->config['sites_table'],
 										$this->db->prepare($this->name),
 										$this->db->prepare($this->description),
-										$this->db->prepare($this->site_family)
+										$this->db->prepare($this->site_family),
+										$this->db->prepare($this->site_id)
 										));
 		
+	}
+	
+	function update() {
+		
+		return $this->updateSite($this->site_id);
 	}
 	
 	/**
@@ -233,6 +292,7 @@ class owa_site {
 													site_id,
 													name,
 													description,
+													domain,
 													site_family
 												FROM
 													%s",

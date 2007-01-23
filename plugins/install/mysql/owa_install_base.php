@@ -123,34 +123,34 @@ class owa_install_base extends owa_install {
 		
 		switch ($table) {
 			
-			case 'requests':
+			case $this->config['requests_table']:
 				return $this->create_requests_table();
 				break;
-			case 'sessions':
+			case $this->config['sessions_table']:
 				return $this->create_sessions_table();
 				break;
-			case 'documents':
+			case $this->config['documents_table']:
 				return $this->create_documents_table();
 				break;
-			case 'referers':
+			case $this->config['referers_table']:
 				return $this->create_referers_table();
 				break;
-			case 'hosts':
+			case $this->config['hosts_table']:
 				return $this->create_hosts_table();
 				break;
-			case 'ua':
+			case $this->config['ua_table']:
 				return $this->create_ua_table();
 				break;
-			case 'os':
+			case $this->config['os_table']:
 				return $this->create_os_table();
 				break;
-			case 'configuration':
+			case $this->config['config_table']:
 				return $this->create_config_table();
 				break;
-			case 'sites':
+			case $this->config['sites_table']:
 				return $this->create_sites_table();
 				break;
-			case 'version':
+			case $this->config['version_table']:
 				return $this->create_version_table();
 				break;
 			case $this->config['feed_requests_table']:
@@ -191,7 +191,6 @@ class owa_install_base extends owa_install {
 			request_id bigint,
 			inbound_visitor_id bigint, 
 			inbound_session_id bigint,
-			inbound_first_hit_properties varchar(255),
 			visitor_id bigint, 
 			session_id bigint,
 			user_name  varchar(255),
@@ -214,7 +213,6 @@ class owa_install_base extends owa_install {
 			site varchar(255),
 			site_id varchar(255),
 			ip_address varchar(255),
-			host varchar(255),
 			host_id varchar(255),
 			os varchar(255),
 			os_id varchar(255),
@@ -248,7 +246,6 @@ class owa_install_base extends owa_install {
 			document_id BIGINT,
 			ua_id VARCHAR(255),
 			site_id VARCHAR(255),
-			site VARCHAR(255),
 			timestamp bigint,
 			month INT,
 			day	  tinyint(2),
@@ -264,10 +261,7 @@ class owa_install_base extends owa_install {
 			feed_reader_guid VARCHAR(255),
 			subscription_id BIGINT,
 			feed_format VARCHAR(255),
-			ip_address VARCHAR(255),
-			host VARCHAR(255),
 			host_id BIGINT,
-			os VARCHAR(255),
 			os_id VARCHAR(255),
 			PRIMARY KEY (request_id))
 			",
@@ -527,7 +521,7 @@ class owa_install_base extends owa_install {
 	}
   	
 	function create_hosts_table() {
-		
+			
 		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
@@ -535,6 +529,8 @@ class owa_install_base extends owa_install {
 			ip_address VARCHAR(255),
 			host VARCHAR(255),
 			full_host VARCHAR(255),
+			city VARCHAR(255),
+			country VARCHAR(255),
 			PRIMARY KEY (id)
 			)",	
 			$this->config['ns'].$this->config['hosts_table'])
@@ -605,7 +601,7 @@ class owa_install_base extends owa_install {
 		return $this->db->query(
 			sprintf("
 			CREATE TABLE %1\$s (
-			site_id SERIAL,
+			site_id VARCHAR(255),
 			domain VARCHAR(255),
 			name VARCHAR(255),
 			description TEXT,

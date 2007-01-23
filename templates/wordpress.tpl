@@ -23,5 +23,5 @@
 <div class="wrap">
         
 	<?=$content; ?>
-				
+	<?=$body; ?>			
 </div>

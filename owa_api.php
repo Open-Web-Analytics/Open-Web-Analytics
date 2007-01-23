@@ -101,7 +101,7 @@ class owa_api {
 	 * @return object $api
 	 * @access public
 	 */
-	function get_instance($api_type) {
+	function get_instance($api_type, $params = null) {
 
 		$api = new owa_api;
 	
@@ -131,10 +131,10 @@ class owa_api {
 	 * 
 	 * @access private
 	 */
-	function load_plugins() {
+	function load_plugins($params = null) {
 	
-    	if ($dir = @opendir($this->plugins_dir)):
-    		while (($file = @readdir($dir)) !== false) {
+    	if ($dir = opendir($this->plugins_dir)):
+    		while (($file = readdir($dir)) !== false) {
     			
         		if (strstr($file, '.php') &&
             		substr($file, -1, 1) != "~" &&
@@ -143,7 +143,12 @@ class owa_api {
           			if (require_once($this->plugins_dir . $file)):
             			$this->plugins[] = substr($file, 0, -4);
 						$class  = $this->class_prefix . substr($file, 0, -4);
-            			$plugin = new $class;
+						
+						//print $class;
+						
+            			$plugin = new $class($params);
+            			
+            			//print get_class($plugin);
 
 						foreach ($plugin->api_calls as $api_call) {
 							
@@ -176,7 +181,7 @@ class owa_api {
   	 * @return 	array $result
   	 */
 	function get($request_params) {	
-		
+	
 		//need to add error here incase the api call does not exist.
 		$result = $this->api_calls[$this->api_type][$request_params['api_call']]->generate($request_params);
 		

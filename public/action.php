@@ -31,10 +31,11 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-$l = new owa_php;
+$owa = new owa_php;
 
-$l->e->debug('Special action request received...');
+$owa->e->debug('Special action request received...');
 
-$l->actionRequestHandler();
+// run controller or view and echo page content
+echo $owa->handleRequestFromUrl();
 
 ?>

@@ -49,12 +49,27 @@ class owa_template extends Template {
 	 */
 	var $caller_params;
 	
-	function owa_template($caller_params = null) {
+	function owa_template($module = null, $caller_params = null) {
 		
 		$this->caller_params = $caller_params;
+			
 		$this->config = &owa_settings::get_settings();
-		$this->template_dir = $this->config['templates_dir'];
+		// set template dir
+		
+		if(!empty($caller_params['module'])):
+			$this->_setTemplateDir($module);
+		else:
+			$this->_setTemplateDir('base');
+		endif;
+		
 		$this->time_now = owa_lib::time_now();
+		
+		return;
+	}
+	
+	function _setTemplateDir($module) {
+		
+		$this->template_dir = OWA_BASE_DIR . '/modules/' . $module . '/templates/';
 		
 		return;
 	}
@@ -133,50 +148,8 @@ class owa_template extends Template {
 			return $browser_type;
 		endif;
 		
-		return;
 	}
 	
-	/**
-	 * Generates a link between reports
-	 *
-	 * @param array $query_params
-	 * @return string
-	 */
-	function make_report_link($report, $query_params = null, $make_query_string = true) {
-		
-		if ($make_query_string == true):
-			$get = $this->makeLinkQueryString($query_params);
-		else:
-			$get = '';
-		endif;
-		
-		//Return URL
-		return sprintf($this->config['inter_report_link_template'],
-				$this->config['reporting_url'],
-				$report,
-				$get);
-	}
-	
-	/**
-	 * Generates a link between admin screens
-	 *
-	 * @param array $query_params
-	 * @return string
-	 */
-	function make_admin_link($admin_page, $query_params = null, $make_query_string = true) {
-		
-		if ($make_query_string == true):
-			$get = $this->makeLinkQueryString($query_params);
-		else:
-			$get = '';
-		endif;
-		
-		//Return URL
-		return sprintf($this->config['inter_admin_link_template'],
-				$this->config['admin_url'],
-				$admin_page,
-				$get);
-	}
 	
 	function makeLinkQueryString($query_params) {
 		
@@ -213,15 +186,21 @@ class owa_template extends Template {
 		
 	}
 	
-	function makeGraphLink($graph, $query_params = null) {
+	function makeNavigation($nav) {
 		
-		$get = $this->makeLinkQueryString($query_params);
+		$navigation = '<UL class="nav_links">';
 		
-		//Return URL
-		return sprintf($this->config['graph_link_template'],
-				$this->config['action_url'],
-				$graph,
-				$get);
+		foreach($nav as $k => $v) {
+			
+			$navigation .= sprintf("<LI><a href=\"%s\">%s</a></LI>", 
+									$this->makeLink(array('do' => $v['ref']), true), 
+									$v['anchortext']);
+			
+		}
+		
+		$navigation .= '</UL>';
+		
+		return $navigation;
 		
 		
 	}
@@ -254,6 +233,102 @@ class owa_template extends Template {
 		
 		return sprintf($this->config['owa_wiki_link_template'], $page);
 	}
+	
+	/**
+	 * Returns Namespace value to template
+	 *
+	 * @return string
+	 */
+	function getNs() {
+		
+		return $this->config['ns'];
+	}
+	
+	function graphLink($params, $add_state = false) {
+		
+		return $this->makeLink($params, $add_state, $this->config['action_url']);
+	}
+	
+	/*
+	 * Convienence method for making links to other reports
+	 * 
+	 * @var array $params
+	 * @return string The link
+	 */
+	function reportLink($params) {
+		
+		$params['view'] = 'base.report';
+		return $this->makeLink($params, true);
+		
+	}
+	
+	/**
+	 * Makes Links, adds state to links optionaly.
+	 *
+	 * @param array $params
+	 * @param boolean $add_state
+	 * @return string
+	 */
+	function makeLink($params = array(), $add_state = false, $url = '') {
+		
+		//Loads link state passed by caller
+		if ($add_state == true):
+			if (!empty($this->caller_params['link_state'])):
+				foreach ($this->caller_params['link_state'] as $name => $value) {
+					if (!empty($value)):
+						$all_params[$name] = $value;	
+					endif;
+				}
+			endif;
+		endif;
+		
+		// Load overrides
+		if (!empty($params)):
+			foreach ($params as $name => $value) {
+				if (!empty($value)):
+					$all_params[$name] = $value;	
+				endif;
+			}
+		endif;
+		
+		$get = '';
+		
+		if (!empty($all_params)):
+			foreach ($all_params as $n => $v) {
+				
+				$get .= $this->config['ns'].$n.'='.$v.'&';
+			}
+		endif;
+		
+		if (empty($url)):
+			$url = $this->config['main_url'];
+		endif;
+		
+		return sprintf($this->config['link_template'], $url, $get);
+		
+	}
+	
+	function makeAbsoluteLink($params, $url = '') {
+		
+		$get = '';
+		
+		if (!empty($params)):
+			foreach ($params as $n => $v) {
+				
+				$get .= $this->config['ns'].$n.'='.$v.'&';
+			}
+		endif;
+		
+		if (empty($url)):
+			$url = $this->config['main_absolute_url'];
+		endif;
+		
+		return owa_coreAPI::makeAbsoluteLink($params, $url);
+		//return sprintf($this->config['link_template'], $this->config['main_absolute_url'], $get);
+		
+	}
+	
 }
+
 
 ?>

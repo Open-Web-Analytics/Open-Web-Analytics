@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_user.php');
-require_once(OWA_BASE_DIR.'/owa_template.php');
-
 /**
  * OWA user password reset Event handler
  * 
@@ -32,20 +29,6 @@ require_once(OWA_BASE_DIR.'/owa_template.php');
  */
 
 class Log_observer_password_reset extends owa_observer {
-
-	/**
-	 * Email that mail should go to
-	 *
-	 * @var string
-	 */
-    var $_to;
-    
-    /**
-     * Subject of email
-     *
-     * @var string
-     */
-    var $_subject;
     
 	/**
 	 * Constructor
@@ -60,7 +43,7 @@ class Log_observer_password_reset extends owa_observer {
         $this->owa_observer($priority);
 
         // Configure the observer to listen for event types
-		$this->_event_type = array('user.set_temp_passkey', 'user.reset_password', 'user.set_initial_passkey');
+		$this->_event_type = array('base.set_password', 'base.reset_password', 'base.new_user_account');
 		
 		return;
     }
@@ -76,110 +59,20 @@ class Log_observer_password_reset extends owa_observer {
     	$this->m = $event['message'];
 
     	switch ($event['event_type']) {
-    		case "user.set_temp_passkey":
-    			$this->setTempPasskey();
+    		case "base.reset_password":
+    			$this->handleEvent('base.usersResetPassword');
     			break;
-    		case "user.reset_password":
-    			$this->resetPassword();
+    		case "base.set_password":
+    			$this->handleEvent('base.usersSetPassword');
     			break;
-    		case "user.set_initial_passkey":
-    			$this->setInitialPasskey();
+    		case "base.new_user_account":
+    			$this->handleEvent('base.usersNewAccount');
     			break;	
     	}
 		
 		return;
     }
     
-    function sendMail($address, $subject, $msg) {
-    	
-    	mail($address, $subject, $msg);
-					
-		$this->e->debug('sending e-mail with subject of "'.$subject.'" to: '.$u->email_address);
-    	
-		return;
-    }
-    
-    function setInitialPasskey() {
-    	
-    	$u = new owa_user;
-		$u->getUserByPK($this->m['user_id']);
-		$u->temp_passkey = md5($u->user_id.time().rand());
-		$status = $u->update();
-		
-    	if ($status == true):
-	
-			$msg = new owa_template();
-			
-			$msg->set_template('email_new_account.tpl');
-			$msg->set('user_id', $u->user_id);
-			$msg->set('key', $u->temp_passkey);
-			$email = $msg->fetch();
-			
-			//send mail
-			$this->sendMail($u->email_address,
-					"OWA Account Setup",
-					$email);
-					
-		endif;
-    	
-    	return;
-    }
-    
-	function setTempPasskey() {
-		
-		$u = new owa_user;
-		$u->getUserByEmail($this->m['email_address']);
-		$u->temp_passkey = md5($u->user_id.time().rand());
-		$status = $u->update();
-		
-		// Create mail msg template
-		if ($status == true):
-	
-			$msg = new owa_template();
-			
-			$msg->set_template('password_reset_request_email.tpl');
-			$msg->set('key', $u->temp_passkey);
-			$email = $msg->fetch();
-			
-			//send mail
-			$this->sendMail($u->email_address,
-					"Request for Password Reset",
-					$email);
-					
-		endif;
-		
-		return;
-		
-	}
-    
-	function resetPassword() {
-		
-		$u = new owa_user;
-		$u->getUserByTempPasskey($this->m['key']);
-		$u->temp_passkey = '';
-		$u->password = $this->m['password'];
-		$status = $u->update();
-		
-		if ($status == true):
-	
-			$msg = new owa_template();
-			
-			$msg->set_template('password_reset_email.tpl');
-			$msg->set('ip', $this->m['ip']);
-			$email = $msg->fetch();
-			
-			//send mail
-			
-			mail($u->email_address,
-					"Password Reset",
-					$email);
-					
-			$this->e->debug('sending password reset mail to: '.$u->email_address);
-		endif;
-		
-		
-		return;
-	}
 }
 
 ?>

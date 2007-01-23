@@ -1,11 +1,11 @@
-<? if (!empty($top_pages)):?>
+<? if (!empty($pages)):?>
 <table width="100%">
 	<tr>
 		<th scope="col">PageTitle</th>
 		<th scope="col">Views</th>
 	</tr>
 				
-	<?php foreach($top_pages as $page): ?>
+	<?php foreach($pages as $page): ?>
 				
 	<TR>
 		<TD>

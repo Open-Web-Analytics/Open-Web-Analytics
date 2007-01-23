@@ -29,9 +29,12 @@
  */
 
 define('OWA_BASE_DIR', dirname(__FILE__));
+define('OWA_BASE_CLASSES_DIR', dirname(__FILE__). DIRECTORY_SEPARATOR);
+define('OWA_BASE_CLASS_DIR', OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'base'.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR);
 define('OWA_INCLUDE_DIR', OWA_BASE_DIR.'/includes/');
-define('OWA_PEARLOG_DIR', OWA_BASE_DIR.'/includes/Log-1.9.8');
-define('OWA_JPGRAPH_DIR', OWA_BASE_DIR.'/includes/jpgraph-1.20.3/src');
+define('OWA_PEARLOG_DIR', OWA_BASE_DIR.'/includes/Log-1.9.9');
+define('OWA_PHPMAILER_DIR', OWA_BASE_DIR.'/includes/phpmailer-1.73/');
+define('OWA_JPGRAPH_DIR', OWA_BASE_DIR.'/includes/jpgraph-1.20.3/src/');
 define('OWA_PLUGINS_DIR', OWA_BASE_DIR.'/plugins');
 define('OWA_METRICS_DIR', OWA_BASE_DIR.'/plugins/metrics/');
 define('OWA_GRAPHS_DIR', OWA_BASE_DIR.'/plugins/graphs/');
