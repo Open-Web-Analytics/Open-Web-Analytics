@@ -18,7 +18,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
  * Traffic Report Controller
@@ -32,11 +32,11 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportTrafficController extends owa_controller {
+class owa_reportTrafficController extends owa_reportController {
 	
 	function owa_reportTrafficController($params) {
 		
-		$this->owa_controller($params);
+		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
 		
 		return;

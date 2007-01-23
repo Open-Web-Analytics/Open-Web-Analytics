@@ -21,7 +21,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
  * Visit Report Controller
@@ -35,11 +35,11 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportVisitController extends owa_controller {
+class owa_reportVisitController extends owa_reportController {
 	
 	function owa_reportVisitController($params) {
 		
-		$this->owa_controller($params);
+		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
 		
 		return;

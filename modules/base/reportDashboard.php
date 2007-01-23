@@ -21,7 +21,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
  * Dashboard Report Controller
@@ -35,13 +35,14 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportDashboardController extends owa_controller {
+class owa_reportDashboardController extends owa_reportController {
 
 	function owa_reportDashboardController($params) {
 		
-		$this->owa_controller($params);
+		$this->owa_reportController($params);
 		$this->priviledge_level = 'admin';
 	
+		return;
 	}
 	
 	function action() {
@@ -110,8 +111,7 @@ class owa_reportDashboardController extends owa_controller {
 		$data['top_visitors_data'] = $api->getMetric('base.topVisitors', array(
 			
 			'limit'				=> '10',
-			'constraints'		=> array(
-				'site_id'	=> $this->params['site_id'])
+			'constraints'		=> array('site_id'	=> $this->params['site_id'])
 		));
 	
 		$data['browser_types'] = $api->getMetric('base.sessionBrowserTypes', array(
