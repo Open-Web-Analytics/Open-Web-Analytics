@@ -84,7 +84,7 @@ class owa_click extends owa_event {
 		// Determine Browser type
 		$this->determine_browser_type();
 		
-		$this->e->debug('click properties: '.print_r($this->properties, true));
+		$this->e->debug('click properties: '. print_r($this->properties, true));
 		
 		$this->state = 'click';
 		

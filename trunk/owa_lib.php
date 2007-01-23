@@ -17,8 +17,9 @@
 //
 
 require_once 'owa_env.php';
-require_once (OWA_PEARLOG_DIR . '/Log.php');
+require_once(OWA_PEARLOG_DIR . '/Log.php');
 require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
+require_once(OWA_BASE_DIR.'/owa_settings_class.php');
 
 /**
  * Utility Functions
@@ -268,7 +269,7 @@ class owa_lib {
 				return sprintf("%s, %d%s %s",
 							owa_lib::get_month_label($params['month']),
 							$params['day'],
-							$day_suffix,
+							owa_lib::setDaySuffix($params['day']),
 							$params['year']				
 						);
 				break;
@@ -467,7 +468,7 @@ class owa_lib {
 	 */
 	function &factory($class_dir, $class_prefix, $class_name, $conf = array()) {
 		
-        $class_dir = strtolower($class_dir);
+        $class_dir = strtolower($class_dir).'/';
         $classfile = $class_dir . $class_name . '.php';
 		$class = $class_prefix . $class_name;
 		
@@ -512,15 +513,15 @@ class owa_lib {
     }
     
     /**
-     * 301 HTP redirect the user to a new url
+     * 302 HTTP redirect the user to a new url
      *
      * @param string $url
      */
     function redirectBrowser($url) {
     	
-	    // 301 redirect to URL 
+	    // 302 redirect to URL 
 		header ('Location: '.$url);
-		header ('HTTP/1.0 301 Moved Permanently');
+		header ('HTTP/1.0 302 Found');
 		return;
     }
     
@@ -579,7 +580,215 @@ class owa_lib {
 		return $get;
 		
 	}
+	
+	function getRequestParams() {
+		
+		// Clean Input arrays
+		$params = owa_lib::inputFilter($_REQUEST);
+		
+		return owa_lib::stripParams($params);
+	}
+	
+	function stripParams($params) {
+		
+		$config = & owa_settings::get_settings();
+		
+		$striped_params = array();
+		
+		$len = strlen($config['ns']);
+		
+		foreach ($params as $n => $v) {
+			
+			// if namespace is present in param
+			if (strstr($n, $config['ns'])):
+				// strip the namespace value
+				$striped_n = substr($n, $len);  
+				//add to striped array
+				$striped_params[$striped_n] = $v;
+			
+			endif;
+			
+		}
+		
+		return $striped_params;
+		
+	}
+	/**
+	 * Enter description here...
+	 *
+	 * @param unknown_type $module
+	 * @param unknown_type $file
+	 * @return unknown
+	 * @deprecated 
+	 */
+	function moduleRequireOnce($module, $file) {
+		
+		return require_once(OWA_BASE_DIR.'/modules/'.$module.'/'.$file.'.php');
+	}
+	
+	/**
+	 * Enter description here...
+	 *
+	 * @param unknown_type $modulefile
+	 * @param unknown_type $class_suffix
+	 * @param unknown_type $params
+	 * @return unknown
+	 * @deprecated 
+	 */
+	function moduleFactory($modulefile, $class_suffix = null, $params = '') {
+		
+		list($module, $file) = split("\.", $modulefile);
+		$class = 'owa_'.$file.$class_suffix;
+		
+		// Require class file if class does not already exist
+		if(!class_exists($class)):	
+			owa_lib::moduleRequireOnce($module, $file);
+		endif;
+			
+		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
+		$obj->module = $module;
+		
+		return $obj;
+	}
     
+	/**
+	 * redirects borwser to a particular view
+	 *
+	 * @param unknown_type $data
+	 */
+	function redirectToView($data) {
+		
+		$config = &owa_settings::get_settings();
+		
+		$control_params = array('view_method', 'auth_status');
+		
+		//$url = $config['public_url'].'/main.php?';
+		
+		$get = '';
+		
+		foreach ($data as $n => $v) {
+			
+			if (!in_array($n, $control_params)): 			
+			
+				$get .= $config['ns'].$n.'='.$v.'&';
+			
+			endif;
+		}
+		$new_url = sprintf($this->config['link_template'], $this->config['main_url'], $get);
+		owa_lib::redirectBrowser($new_url);
+		
+		return;
+	}
+	
+	/**
+	 * Displays a View without user authentication. Takes array of data as input
+	 *
+	 * @param array $data
+	 * @deprecated 
+	 */
+	function displayView($data, $params = array()) {
+		
+		$view =  owa_lib::moduleFactory($data['view'], 'View', $params);
+		
+		return $view->assembleView($data);
+		
+	}
+	
+	function &coreAPISingleton() {
+		
+		static $api;
+		
+		if(!isset($api)):
+			require_once('owa_coreAPI.php');
+			$api = new owa_coreAPI;
+		endif;
+		
+		return $api;
+	}
+	
+	/**
+	 * Create guid from string
+	 *
+	 * @param 	string $string
+	 * @return 	integer
+	 * @access 	private
+	 */
+	function setStringGuid($string) {
+		if (!empty($string)):
+			return crc32(strtolower($string));
+		else:
+			return;
+		endif;
+	}
+	
+	/**
+	 * Add constraints into SQL where clause
+	 *
+	 * @param 	array $constraints
+	 * @return 	string $where
+	 * @access 	public
+	 */
+	function addConstraints($constraints) {
+	
+		if (!empty($constraints)):
+		
+			$count = count($constraints);
+			
+			$i = 0;
+			
+			$where = '';
+			
+			foreach ($constraints as $key => $value) {
+					
+				if (empty($value)):
+					$i++;
+				else:
+				
+					if (!is_array($value)):
+						$where .= $key . ' = ' . "'$value'";
+					else:
+					
+						switch ($value['operator']) {
+							case 'BETWEEN':
+								$where .= sprintf("%s BETWEEN '%s' AND '%s'", $key, $value['start'], $value['end']);
+								break;
+							default:
+								$where .= sprintf("%s %s '%s'", $key, $value['operator'], $value['value']);		
+								break;
+						}
+					
+						
+					endif;
+					
+					if ($i < $count - 1):
+						
+						$where .= " AND ";
+						
+					endif;
+	
+					$i++;	
+				
+				endif;
+					
+			}
+			// needed in case all values in the array are empty
+			if (!empty($where)):
+				return $where;
+			else: 
+				return;
+			endif;
+				
+		else:
+			
+			return;
+					
+		endif;
+		
+		
+		
+	}
+	
+	
 }
 
 ?>

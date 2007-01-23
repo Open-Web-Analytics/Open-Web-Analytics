@@ -47,6 +47,20 @@ class owa_base {
 	var $e;
 	
 	/**
+	 * Module that this class belongs to
+	 *
+	 * @var unknown_type
+	 */
+	var $module;
+	
+	/**
+	 * Request Params
+	 *
+	 * @var array
+	 */
+	var $params;
+	
+	/**
 	 * Base Constructor
 	 *
 	 * @return owa_base
@@ -55,6 +69,75 @@ class owa_base {
 		
 		$this->config = &owa_settings::get_settings();
 		$this->e = &owa_error::get_instance();
+		
+		return;
+	}
+	
+	/**
+	 * Retrieves string message from mesage file
+	 *
+	 * @param integer $code
+	 * @param string $s1
+	 * @param string $s2
+	 * @param string $s3
+	 * @param string $s4
+	 * @return string
+	 */
+	function getMsg($code, $s1 = null, $s2 = null, $s3 = null, $s4 = null) {
+		
+		include_once(OWA_BASE_DIR.'/conf/messages.php');
+		
+		switch ($_owa_messages[$code][1]) {
+			
+			case 0:
+				$msg = $_owa_messages[$code][0];
+				break;
+			case 1:
+				$msg = sprintf($_owa_messages[$code][0], $s1);
+				break;
+			case 2:
+				$msg = sprintf($_owa_messages[$code][0], $s1, $s2);
+				break;
+			case 3:
+				$msg = sprintf($_owa_messages[$code][0], $s1, $s2, $s3);
+				break;
+			case 4:
+				$msg = sprintf($_owa_messages[$code][0], $s1, $s2, $s3, $s4);
+				break;
+		}
+		
+		return $msg;
+		
+	}
+	
+	/**
+	 * Sets object attributes
+	 *
+	 * @param unknown_type $array
+	 */
+	function _setObjectValues($array) {
+		
+		foreach ($array as $n => $v) {
+				
+				$this->$n = $v;
+		
+			}
+		
+		return;
+	}
+	
+	/**
+	 * Sets array attributes
+	 *
+	 * @param unknown_type $array
+	 */
+	function _setArrayValues($array) {
+		
+		foreach ($array as $n => $v) {
+				
+				$this->params['$n'] = $v;
+		
+			}
 		
 		return;
 	}

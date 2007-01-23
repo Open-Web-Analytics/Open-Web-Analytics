@@ -169,6 +169,11 @@ class owa_request extends owa_event {
 		return;
 	}
 	
+	
+	/**
+	 * Log page request to event queue
+	 *
+	 */
 	function log() {
 		
 		if ($this->state == 'page_request'):
@@ -184,16 +189,17 @@ class owa_request extends owa_event {
 				endif;
 			endif;
 		endif;
+
+		$this->eq->log($this->properties, 'base.'.$this->state);
 		
-		$this->eq->log($this->properties, $this->state);
-		$this->e->debug('Logged '.$this->state.' to event queue...');
+		$this->e->debug('Logged '.'base.'.$this->state.' to event queue...');
 		
 		return;
 		
 	}
 	
 	/**
-	 * Saves Request to DB
+	 * Save Request to database
 	 *
 	 */
 	function save() {	

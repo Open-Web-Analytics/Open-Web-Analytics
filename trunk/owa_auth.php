@@ -16,6 +16,8 @@
 // $Id$
 //
 require_once(OWA_BASE_DIR.'/owa_base.php');
+require_once(OWA_BASE_DIR.'/eventQueue.php');
+
 /**
  * User Authentication Object
  * 
@@ -66,6 +68,16 @@ class owa_auth extends owa_base {
 	 */
 	var $auth_status = false;
 	
+	var $_is_user = false;
+	
+	var $_priviledge_level;
+	
+	var $_is_priviledged = false;
+	
+	var $params;
+	
+	var $check_for_credentials = false;
+	
 	/**
 	 * Abstract class Constructor
 	 *
@@ -75,6 +87,11 @@ class owa_auth extends owa_base {
 		
 		$this->owa_base();
 		$this->setRoles();
+		$this->eq = &eventQueue::get_instance();
+		$this->params = &owa_requestContainer::getInstance();
+		
+		//sets credentials based on whatever is passed in on params
+		$this->_setCredentials($this->params['u'], $this->params['p']);
 		
 		return;
 		
@@ -107,9 +124,65 @@ class owa_auth extends owa_base {
 		return $this->roles[$role]['level'];
 	}
 	
-	function authenticateUser() {
-
-		return;
+	/**
+	 * Used by controllers to check if the user exists and if they are priviledged.
+	 *
+	 * @param string $necessary_role
+	 */
+	function authenticateUser($necessary_role = '') {
+		
+		$data = array();
+		
+		// If the view or controller did not specific a priviledge level then assume 
+		// that none was required.
+		if (empty($necessary_role)):	
+			$data['auth_status'] = true;	
+			return $data;
+		endif;
+		
+		// If auth level is guest then return true, no need to check user.
+		if ($necessary_role == 'guest'):
+			$data['auth_status'] = true;
+			return $data;
+		endif;
+		
+		// if the user has no credentials then redirect them to the login page.
+		if($this->check_for_credentails == true):
+			if ((empty($this->credentials['user_id'])) || (empty($this->credentials['password']))):
+				// show login page
+				$data = $this->_setNotAuthenticatedView();
+				$data['auth_status'] = false;
+				return $data;	
+			endif;
+		endif;
+		
+		// lookup user if not already done.	
+		if ($this->_is_user == false):
+			// check to see if they are a user.
+			$this->isUser();
+		endif;
+		
+		if ($this->_is_user == true):
+			// check to see if their account is priviledged enough.
+			$priviledged = $this->isPriviledged($necessary_role);
+				if ($priviledged == true):
+					$data['auth_status'] = true;
+				else:
+					// show not priviledged error page
+					$data = $this->_setNotPriviledgedView();
+					$data['auth_status'] = false;
+				endif;
+			// if they are not a user then redirect to login error page		
+		else:
+			// Show not a user page
+			$data = $this->_setNotUserView();
+			$data['auth_status'] = false;
+		endif;
+		
+		$this->e->debug('Auth Status: '.$data['auth_status']);
+		
+		return $data;
+		
 	}
 	
 	/**
@@ -136,10 +209,11 @@ class owa_auth extends owa_base {
 	 */
 	function authenticateUserTempPasskey($key) {
 		
-		$this->u = new owa_user;
-		$this->u->getUserByTempPasskey($key);
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->getByColumn('temp_passkey', $key);
 		
-		if (!empty($this->u->user_id)):
+		$id = $this->u->get('id');
+		if (!empty($id)):
 			return true;
 		else:
 			$this->showResetPasswordErrorPage;
@@ -148,30 +222,13 @@ class owa_auth extends owa_base {
 	}
 	
 	/**
-	 * Checks to see if the user credentials match a real user object in the DB
+	 * abstract method for Checking to see if the user credentials match a real user object in the DB
 	 *
-	 * @param string $user_id
-	 * @param string $password
 	 * @return boolean
 	 */
-	function isUser($user_id, $password) {
+	function isUser() {
 		
-		// fetch user credenticals from the db
-		$this->u = new owa_user;
-		$this->u->getUserByPK($user_id);
-		
-		if ($user_id == $this->u->user_id):
-			if ($password === $this->u->password):
-				$this->auth_status = true;
-				return true;
-			else:
-				$this->auth_status = false;
-				return false;
-			endif;
-		else:
-			$this->auth_status = false;
-			return false;
-		endif;
+		return false;
 	}
 	
 	/**
@@ -183,7 +240,7 @@ class owa_auth extends owa_base {
 	function isPriviledged($necessary_role) {
 		
 		// compare priviledge levels
-		if ($this->getLevel($this->u->role) >= $this->getLevel($necessary_role)):
+		if ($this->_priviledge_level >= $this->getLevel($necessary_role)):
 			// authenticated
 			return true;;
 		else:
@@ -201,19 +258,24 @@ class owa_auth extends owa_base {
 	 */
 	function setTempPasskey($email_address) {
 		
-		$this->u = new owa_user;
-		$this->u->getUserByEmail($email_address);
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->getByColumn('email_address', $email_address);
+		
+		$id = $u->get('id');
 
-		if (!empty($this->u->user_id)):
+		if (!empty($id)):
 		
 			$this->eq->log(array('email_address' => $this->u->email_address), 'user.set_temp_passkey');
 			return true;
-			//$this->showRequestNewPasswordSuccessPage();	
 		else:
 			return false;
-			//$this->showResetPasswordErrorPage();
 		endif;
 		
+	}
+	
+	function generateTempPasskey($seed) {
+		
+		return md5($seed.time().rand());
 	}
 	
 	/**
@@ -221,11 +283,20 @@ class owa_auth extends owa_base {
 	 *
 	 * @param string $user_id
 	 * @return boolean
+	 * @deprecated 
 	 */
 	function setInitialPasskey($user_id) {
 		
 		return $this->eq->log(array('user_id' => $user_id), 'user.set_initial_passkey');
 		
+	}
+	
+	function _setCredentials($user_id, $password) {
+		
+		$this->credentials['user_id'] = $user_id;
+		$this->credentials['password'] = $password;
+		
+		return;
 	}
 	
 	/**
@@ -239,16 +310,56 @@ class owa_auth extends owa_base {
 		
 		$this->e->debug("Login attempt from ". $user_id);
 		
-		$is_user = $this->isUser($user_id, $this->encryptPassword($password));
+		$this->_setCredentials($user_id, $this->encryptPassword($password));
+		
+		$is_user = $this->isUser();
+		
+		$data = array();
 		
 		if ($is_user == true):
+			$this->e->debug('setting user credential cookies');
 			$this->saveCredentials();
-			return true;
+			$data['auth_status'] = true;
+			
 		else:
-			return false;
+			$data['auth_status'] = false;
 		endif;
 		
+		return $data;
+	}
+	
+	/**
+	 * Saves login credentails to persistant browser cookies
+	 *
+	 */
+	function saveCredentials() {
+		
+		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*30, '/', $this->config['cookie_domain']);
+		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*365*30, '/', $this->config['cookie_domain']);
+		
 		return;
+	}
+	
+	/**
+	 * Removes credentials
+	 *
+	 * @return boolean
+	 */
+	function deleteCredentials() {
+		
+		return setcookie($this->config['ns'].'p', '', time()-3600*24*365*30, '/', $this->config['cookie_domain']);
+
+	}
+	
+	/**
+	 * Simple Password Encryption Scheme
+	 *
+	 * @param string $password
+	 * @return string
+	 */
+	function encryptPassword($password) {
+		
+		return md5(strtolower($password).strlen($password));
 	}
 	
 }

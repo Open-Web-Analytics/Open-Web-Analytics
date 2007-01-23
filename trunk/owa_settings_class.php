@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once('owa_db.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
 
 /**
  * Settings
@@ -84,19 +84,19 @@ class owa_settings {
 			//load overrides from config file
 			if (file_exists($config['config_file_path'])):
 				include_once ($config['config_file_path']);
-				if (!empty($OWA_CONFIG)):
-					foreach ($OWA_CONFIG as $key => $value) {
-			
-						// update current config
-						$config[$key] = $value;
-					
-					}
+				if (isset($OWA_CONFIG)):
+					if (!empty($OWA_CONFIG)):
+						foreach ($OWA_CONFIG as $key => $value) {
+							// update current config
+							$config[$key] = $value;
+						}
+					endif;
 				endif;
 				// Setup special public URLs
 				
 				$base_url  = "http";
 		
-				if($_SERVER['HTTPS']=='on'):
+				if(isset($_SERVER['HTTPS'])):
 					$base_url .= 's';
 				endif;
 						
@@ -107,8 +107,11 @@ class owa_settings {
 				endif;
 								
 				$config['public_url'] = $base_url . $OWA_CONFIG['public_url'];
-				
-				$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
+				$config['main_url'] = $OWA_CONFIG['public_url']."/main.php";
+				$config['main_absolute_url'] = $base_url . $config['main_url'];
+				//$config['action_url'] = $OWA_CONFIG['public_url']."/action.php";
+				$config['action_url'] = $config['main_url'];
+				$config['log_url'] = $OWA_CONFIG['public_url']."/log.php";
 				$config['images_url'] = $OWA_CONFIG['public_url']."/i";
 				$config['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
 				$config['home_url'] = $config['public_url']."/reports/index.php?page=dashboard_report.php";
@@ -140,32 +143,32 @@ class owa_settings {
 			'period_param'					=> 'period',
 			'document_param'				=> 'document',
 			'referer_param'					=> 'referer',
-			'site_id'						=> '1',
+			'site_id'						=> '',
 			'configuration_id'				=> '1',
 			'session_length'				=> '1800',
 			'debug_to_screen'				=> false,
-			'requests_table'				=> 'requests',
-			'sessions_table'				=> 'sessions',
-			'referers_table'				=> 'referers',
+			'requests_table'				=> 'request',
+			'sessions_table'				=> 'session',
+			'referers_table'				=> 'referer',
 			'ua_table'						=> 'ua',
 			'os_table'						=> 'os',
-			'documents_table'				=> 'documents',
-			'sites_table'					=> 'sites',
-			'hosts_table'					=> 'hosts',
+			'documents_table'				=> 'document',
+			'sites_table'					=> 'site',
+			'hosts_table'					=> 'host',
 			'config_table'					=> 'configuration',
 			'version_table'					=> 'version',
-			'feed_requests_table'			=> 'feed_requests',
-			'visitors_table'				=> 'visitors',
-			'impressions_table'				=> 'impressions',
-			'clicks_table'					=> 'clicks',
-			'exits_table'					=> 'exits',
-			'users_table'					=> 'users',
+			'feed_requests_table'			=> 'feed_request',
+			'visitors_table'				=> 'visitor',
+			'impressions_table'				=> 'impression',
+			'clicks_table'					=> 'click',
+			'exits_table'					=> 'exit',
+			'users_table'					=> 'user',
 			'db_class'						=> '',
 			'db_type'						=> '',
-			'db_name'						=> OWA_DB_NAME,
-			'db_user'						=> OWA_DB_USER,
-			'db_password'					=> OWA_DB_PASSWORD,
-			'db_host'						=> OWA_DB_HOST,
+			'db_name'						=> '',
+			'db_user'						=> '',
+			'db_password'					=> '',
+			'db_host'						=> '',
 			'resolve_hosts'					=> true,
 			'log_feedreaders'				=> true,
 			'log_robots'					=> false,
@@ -183,7 +186,7 @@ class owa_settings {
 			'notice_email'					=> '',
 			'error_handler'					=> 'production',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
-			'browscap.ini'					=> OWA_BASE_DIR . '/conf/browscap.ini',
+			'browscap.ini'					=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
 			'browscap_supplemental.ini'		=> OWA_BASE_DIR . '/conf/browscap_supplemental.ini',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
@@ -192,11 +195,12 @@ class owa_settings {
 			'db_class_dir'					=> OWA_BASE_DIR . '/plugins/db/',
 			'templates_dir'					=> OWA_BASE_DIR . '/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
+			'module_dir'					=> OWA_BASE_DIR . '/modules',
 			'install_plugin_dir'			=> OWA_BASE_DIR . '/plugins/install/',
 			'reporting_dir'					=> OWA_BASE_DIR . '/public/reports/',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
-			'report_wrapper'				=> 'default_wrap.tpl',
+			'report_wrapper'				=> 'wrapper_default.tpl',
 			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> true,
 			'announce_visitors'				=> false,
@@ -205,9 +209,10 @@ class owa_settings {
 			'images_url'					=> '',
 			'reporting_url'					=> '',
 			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
-			'inter_report_link_template'	=> '%s?page=%s&%s', //base_url?report=report_name&get...
-			'inter_admin_link_template'		=> '%s?admin=%s&%s', //base_url?report=report_name&get...
+			'inter_report_link_template'	=> '%s?%s', //base_url?report=report_name&get...
+			'inter_admin_link_template'		=> '%s?admin=%s&%s', //base_url?report=report_name&get... DEPRICATED
 			'graph_link_template'			=> '%s?owa_action=graph&name=%s&%s', //action_url?...
+			'link_template'					=> '%s?%s', // main_url?key=value....
 			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION,
 			'fetch_owa_news'				=> true,
 			'owa_rss_url'					=> 'http://www.openwebanalytics.com/?feed=rss2',
@@ -216,7 +221,18 @@ class owa_settings {
 			'click_drawing_mode'			=> 'center_on_page',
 			'log_clicks'					=> true,
 			'authentication'				=> 'simple',
-			'owa_wiki_link_template'		=> 'http://wiki.openwebanalytics.com/index.php?title=%s'
+			'owa_wiki_link_template'		=> 'http://wiki.openwebanalytics.com/index.php?title=%s',
+			'password_length'				=> 4,
+			'modules'						=> array('base'),
+			'mailer-from'					=> '',
+			'mailer-fromName'				=> 'OWA Mailer',
+			'mailer-host'					=> '',
+			'mailer-port'					=> '',
+			'mailer-smtpAuth'				=> '',
+			'mailer-username'				=> '',
+			'mailer-password'				=> '',
+			'cookie_domain'					=> $_SERVER['SERVER_NAME']
+			
 			);
 	}
 	
@@ -227,9 +243,13 @@ class owa_settings {
 	 * @param array $settings
 	 */
 	function save($new_config) {
-		
+				
 		$config = &owa_settings::get_settings();
-		
+				
+		if (empty($new_config['configuration_id'])):
+			$new_config['configuration_id'] = $config['configuration_id'];
+		endif;
+
 		$this->db = &owa_db::get_instance();
 		//print sprintf("Saving new config for site id: %s", $new_new_config['site_id']);
 		$check = $this->db->get_row(
@@ -299,9 +319,10 @@ class owa_settings {
 			//$e = &owa_error::get_instance();
 			//$e->debug(debug_backtrace());
 		
+			$config_values = unserialize($settings['settings']);
 		endif;
 		
-		return unserialize($settings['settings']);
+		return $config_values;
 		
 	}
 

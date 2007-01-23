@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once('owa_error.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
 
 /**
  * Database Connection Class
@@ -29,7 +29,7 @@ require_once('owa_error.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_db {
+class owa_db extends owa_base {
 	
 	/**
 	 * Connection string
@@ -60,11 +60,11 @@ class owa_db {
 	var $result;
 	
 	/**
-	 * Configuration
+	 * Caller Params
 	 *
 	 * @var array
 	 */
-	var $config = array();
+	var $params = array();
 	
 	/**
 	 * Status of selecting a databse
@@ -95,14 +95,6 @@ class owa_db {
 	var $rows_affected;
 	
 	/**
-	 * Error Logger
-	 * 
-	 * @return object
-	 * @access private
-	 */
-	var $e;
-	
-	/**
 	 * Microtime Start of Query
 	 *
 	 * @var unknown_type
@@ -124,8 +116,7 @@ class owa_db {
 	 */
 	function owa_db() {
 	
-		$this->config = &owa_settings::get_settings();
-		$this->e = &owa_error::get_instance();
+		$this->owa_base();
 		
 		return;
 	}
@@ -137,7 +128,7 @@ class owa_db {
 	 * @access 	public
 	 * @static 
 	 */
-	function &get_instance() {
+	function &get_instance($params = array()) {
 	
 		static $db;
 	
@@ -160,11 +151,11 @@ class owa_db {
 	 			return;
 			else:  	
 				$db = new $connection_class;
-				$this->e->debug(sprintf('Using db class at %s.',
-	 							$connection_class_path));
+				
+				//$this->e->debug(sprintf('Using db class at %s.',	$connection_class_path));
 			endif;	
 		endif;
-	
+		
 		return $db;
 	}
 	

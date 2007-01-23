@@ -16,10 +16,13 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_settings_class.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
 
 /**
  * Browscap Class
+ * 
+ * Used to load and lookup user agents in a local Browscap file
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -30,14 +33,8 @@ require_once(OWA_BASE_DIR.'/owa_settings_class.php');
  * @since		owa 1.0.0
  */
 
-class owa_browscap {
+class owa_browscap extends owa_base {
 	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
 	
 	/**
 	 * main browscap_db maintained by Gary Keith's 
@@ -48,32 +45,11 @@ class owa_browscap {
 	var $browscap_db;
 	
 	/**
-	 * Supplemental browscap db maintianed by OWA.
-	 *
-	 * @var array
-	 */
-	var $browscap_supplimental_db;
-	
-	/**
 	 * Browscap Record for current User agent
 	 *
 	 * @var unknown_type
 	 */
-	var $browscap;
-	
-	/**
-	 * Supplemental Browscap Record for current User agent
-	 *
-	 * @var unknown_type
-	 */
-	var $browscap_supplemental;
-	
-	/**
-	 * Error Handler
-	 *
-	 * @var object
-	 */
-	var $e;
+	var $browser;
 	
 	/**
 	 * Current user Agent
@@ -83,52 +59,41 @@ class owa_browscap {
 	var $ua;
 	
 	function owa_browscap($ua = '') {
-
-		//Load Config
-		$this->config = &owa_settings::get_settings();
 		
-		//Load error handler
-		$this->e = &owa_error::get_instance();
+		$this->owa_base();
 		
 		// set user agent
 		$this->ua = $ua;
-		$this->e->debug('UA: '.$this->ua);
 		
 		// Load main browscap
 		$this->browscap_db = $this->load($this->config['browscap.ini']);
 		
-		//load supplemental browscap
-		$this->browscap_supplemental_db = $this->load($this->config['browscap_supplemental.ini']);
-		
 		//lookup robot in main browscap db
-		$this->browscap = $this->lookup($this->ua, $this->browscap_db);
-		$this->e->debug('Browser Type:'. $this->browscap->browser);
-		
-		//lookup robot in supplemental browscap db
-		$this->browscap_supplemental = $this->lookup($this->ua, $this->browscap_supplemental_db);
-		$this->e->debug('Browser Type (supplemental):'. $this->browscap_supplemental->browser);
+		$this->browser = $this->lookup($this->ua);
+		$this->e->debug('Browser Name: '. $this->browser->Browser);
 		
 		return;
 	}
 	
 	function robotCheck() {
 		
-		$main = $this->checkForCrawler_main();
-		$supplemental = $this->checkForCrawler_supplemental();
-		
-		if ($main == true || $supplemental == true):
+		if ($this->browser->Crawler == true):
 			return true;
 		else:
-			return false;
+			if($this->robotRegexCheck() == true):
+				return true;
+			else:
+				return false;
+			endif;
 		endif;
 	}
 	
-	function lookup($user_agent, $db) {
+	function lookup($user_agent) {
 		
 		$cap=null;
 		
-		foreach ($db as $key=>$value) {
-			  if (($key!='*')&&(!array_key_exists('parent',$value))) continue;
+		foreach ($this->browscap_db as $key=>$value) {
+			  if (($key!='*')&&(!array_key_exists('Parent',$value))) continue;
 			  $keyEreg='^'.str_replace(
 			   array('\\','.','?','*','^','$','[',']','|','(',')','+','{','}','%'),
 			   array('\\\\','\\.','.','.*','\\^','\\$','\\[','\\]','\\|','\\(','\\)','\\+','\\{','\\}','\\%'),
@@ -137,8 +102,8 @@ class owa_browscap {
 			  {
 			   $cap=array('browser_name_regex'=>strtolower($keyEreg),'browser_name_pattern'=>$key)+$value;
 			   $maxDeep=8;
-			   while (array_key_exists('parent',$value)&&(--$maxDeep>0))
-			    $cap+=($value=$db[$value['parent']]);
+			   while (array_key_exists('Parent',$value)&&(--$maxDeep>0))
+			    $cap += ($value = $this->browscap_db[$value['Parent']]);
 			   break;
 			  }
 		 }
@@ -147,39 +112,27 @@ class owa_browscap {
 	
 	}
 	
-	function checkForCrawler_main() {
-		
-		if ($this->browscap->browser != 'Default Browser'):
-			// If browscap has the UA listed as a crawler set is_robot, except for RSS feed readers
-			if ($this->browscap->parent != 'RSS Feeds'):
-				if ($this->browscap->crawler == true):
-					return true;
-				else:
-					return false;	
-				endif;
-			else:
-				return false;
-			endif;
-		else:
-			return false;
-		endif;
-	}
 	
-	function checkForCrawler_supplemental() {
-		
-		// If browscap has the UA listed as a crawler return true
-		if ($this->browscap_supplemental->crawler == true):
-			return true;
-		else:
-			return false;	
-		endif;
-		
-	}
 	
 	function load($file) {
 	
 		return parse_ini_file($file, true);
 		
+	}
+	
+	function robotRegexCheck() {
+		
+		$db = new ini_db($this->config['robots.ini']);
+		$match = $db->match($this->ua);
+		
+		if (!empty($match)):
+			$this->e->debug(sprintf('Last chance robot detect string: %s', $match[0]));
+			$this->browser->Crawler = true;
+			return true;
+		else:
+			return false;
+		endif;
+	
 	}
 	
 	

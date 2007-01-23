@@ -2,7 +2,7 @@
 
 <fieldset id="" class="options">
 	<legend>Details</legend>
-	<?=$visit_data?>
+	<? include('report_latest_visits.tpl');?>
 	
 </fieldset>
   
@@ -16,12 +16,12 @@
 					<TH>Time</TH>
 					<TH>Page</TH>
 				</TR>
-				<?php foreach($session_data as $s): ?>
+				<?php foreach($clickstream as $s): ?>
 				<TR>
 					<TD valign="top"><?=$s['hour'];?>:<?=$s['minute'];?>:<?=$s['second'];?></TD>
 					<TD>
-						<a href="<?=$this->make_report_link('document_report.php', array('document_id' => $s['document_id']));?>"><span class="inline_h2"><?=$s['page_title'];?></span></a> <span class="h_label">(<?=$s['page_type'];?>)</span><BR>
-						<span class="info_text"><?=$s['page_uri'];?></span>
+						<a href="<?=$this->makeLink(array('view' => 'base.report', 'subview' => 'base.reportDocument', 'document_id' => $s['document_id']));?>"><span class="inline_h2"><?=$s['page_title'];?></span></a> <span class="h_label">(<?=$s['page_type'];?>)</span><BR>
+						<span class="info_text"><?=$s['document_url'];?></span>
 					</TD>
 				</TR>
 				<?php endforeach; ?>

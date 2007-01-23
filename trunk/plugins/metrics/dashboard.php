@@ -29,8 +29,10 @@
  */
 class owa_metric_dashboard extends owa_metric {
 
-	function owa_metric_dashboard() {
+	function owa_metric_dashboard($params) {
 
+		$this->params = $params;
+		
 		$this->owa_metric();
 
 		$this->api_calls = array('dash_core', 'page_views', 'page_view_count', 'dash_counts', 'session_count');

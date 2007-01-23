@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once (OWA_BASE_DIR.'/owa_settings_class.php');
+require_once (OWA_BASE_DIR.'/owa_base.php');
 require_once (OWA_BASE_DIR.'/owa_db.php');
 
 /**
@@ -30,14 +30,7 @@ require_once (OWA_BASE_DIR.'/owa_db.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_install {
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config = array();
+class owa_install extends owa_base{
 	
 	/**
 	 * Data access object
@@ -54,18 +47,18 @@ class owa_install {
 	var $version;
 	
 	/**
-	 * Error Handler
-	 *
-	 * @var object
-	 */
-	var $e;
-	
-	/**
 	 * Params array
 	 *
 	 * @var array
 	 */
 	var $params;
+	
+	/**
+	 * Module name
+	 *
+	 * @var unknown_type
+	 */
+	var $module;
 	
 	/**
 	 * Constructor
@@ -75,9 +68,8 @@ class owa_install {
 
 	function owa_install() {
 		
-		$this->config = &owa_settings::get_settings();
+		$this->owa_base();
 		$this->db = &owa_db::get_instance();
-		$this->e = &owa_error::get_instance();
 		
 		return;
 	}

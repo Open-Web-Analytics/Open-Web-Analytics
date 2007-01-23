@@ -59,7 +59,7 @@ class owa_error {
 	 * @return object $logger
 	 */
 	function &get_instance() {	
-		
+			
 		static $logger;
 		
 		if (!isset($logger)):
@@ -118,7 +118,7 @@ class owa_error {
 			}
 		
 		endif;
-	
+		
 		return $logger;
 	}
 	
@@ -239,7 +239,7 @@ class owa_error {
 	}
 	
 	/**
-	 * Alternative ereor handler for PHP specific errors.
+	 * Alternative error handler for PHP specific errors.
 	 *
 	 * @param string $errno
 	 * @param string $errmsg
@@ -250,7 +250,7 @@ class owa_error {
 	function handlePhpError($errno = null, $errmsg, $filename, $linenum, $vars) {
 		
 	    /* Map the PHP error to a Log priority. */
-	    switch ($code) {
+	    /*switch ($errno) {
 	    case E_WARNING:
 	    case E_USER_WARNING:
 	        $priority = PEAR_LOG_WARNING;
@@ -269,7 +269,7 @@ class owa_error {
 	    default:
 	        $priotity = PEAR_LOG_INFO;
 	    }
-	    
+	    */
 	    $dt = date("Y-m-d H:i:s (T)");
 	    
 	    // set of errors for which a var trace will be saved
@@ -278,7 +278,6 @@ class owa_error {
 		$err = "<errorentry>\n";
 		$err .= "\t<datetime>" . $dt . "</datetime>\n";
 		$err .= "\t<errornum>" . $errno . "</errornum>\n";
-		$err .= "\t<errortype>" . $errortype[$errno] . "</errortype>\n";
 		$err .= "\t<errormsg>" . $errmsg . "</errormsg>\n";
 		$err .= "\t<scriptname>" . $filename . "</scriptname>\n";
 		$err .= "\t<scriptlinenum>" . $linenum . "</scriptlinenum>\n";
@@ -288,8 +287,12 @@ class owa_error {
 		}
 		
 		$err .= "</errorentry>\n\n";
-	    
-	    $this->logger->log($err, $priority);
+	    $conf = array('mode' => 0600, 'timeFormat' => '%X %x');
+	    $config = &owa_settings::get_settings();
+		$logger = &Log::singleton('file', $config['error_log_file'], posix_getpid(), $conf);
+		$file_mask = PEAR_LOG_ALL;
+		$logger->setMask($file_mask);
+	    $logger->log($err, $priority);
 		
 		return;
 	}

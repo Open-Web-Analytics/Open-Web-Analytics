@@ -25,8 +25,10 @@ $owa_wp_version = owa_parse_version($wp_version);
 $current_plugins = get_option('active_plugins');
 
 
+//print md5(get_settings('siteurl'));
+
 // Caller Configuration overides
-$owa_config['report_wrapper'] = 'wordpress.tpl';
+$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
 $owa_config['db_name'] = DB_NAME;     // The name of the database
 $owa_config['db_user'] = DB_USER;     // Your db username
 $owa_config['db_password'] = DB_PASSWORD; // ...and password
@@ -38,10 +40,15 @@ $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['public_url'] = '../wp-content/plugins/owa/public';
 $owa_config['reporting_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/reports';
 $owa_config['admin_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/admin';
-$owa_config['action_url'] = get_bloginfo('url').'/index.php';
+$owa_config['main_url'] = $_SERVER['PHP_SELF'].'?page=owa/public/main.php';
+$owa_config['main_absolute_url'] = get_bloginfo('url').$owa_config['main_url'];
+$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
+$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction';
 $owa_config['inter_report_link_template'] = '%s/%s&%s';
-$owa_config['inter_admin_link_template'] = '%s/%s&%s';
-$owa_config['authentication'] = 'none';
+//$owa_config['inter_admin_link_template'] = '%s/%s&%s';
+$owa_config['link_template'] = '%s&%s';
+$owa_config['authentication'] = 'wordpress';
+$owa_config['site_id'] = md5(get_settings('siteurl'));
 
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
@@ -55,53 +62,58 @@ if ($owa_wp_version[0] == '1'):
 	endif;
 endif;
 
-
-
 // Create new instance of caller class object
 $owa_wp = &new owa_wp($owa_config);
+
 // WORDPRESS Filter and action hook assignment
 
 // Installation logic
 if ($owa_wp_version[0] == '1'):
 	
 	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-		owa_install_2();
+		owa_install();
 	endif;
 
 elseif ($owa_wp_version[0] == '2'):
 
-	add_action('activate_owa/wp_plugin.php', 'owa_install_2');
+	add_action('activate_owa/wp_plugin.php', 'owa_install');
 
 endif;
 
-
-
+// Register Wordpress Event Handlers
 add_action('template_redirect', 'owa_main');
-
-add_action('wp_footer', array(&$owa_wp, 'placePageTags'));
+add_action('wp_footer', array(&$owa_wp, 'placeHelperPageTags'));
 add_filter('post_link', 'owa_post_link');
-add_action('init', array(&$owa_wp, 'actionRequestHandler'));
+add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
+add_action('init', 'owa_set_user_level');
 add_filter('bloginfo', 'add_feed_sid');
-add_action('admin_menu', 'owa_dashboard_view');
+add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', array(&$owa_wp, 'logComment'));
-add_action('admin_menu', 'owa_options');
+add_action('admin_menu', 'owa_options_menu');
 
-////////// FORM HANDLERS
-
-//if (is_plugin_page()):
-
-switch ($_POST['action']) {
+/**
+ * Sets the user level in caller params for use in auth module.
+ *
+ */
+function owa_set_user_level() {
 	
-	case "update_config":
-		$owa_wp->save_config($_POST);
-		break;
-	case "reset_config":
-		$owa_wp->reset_config();
-		break;
+	global $user_level, $user_login, $user_ID, $user_email, $user_identity;
+	
+	$owa_wp = &new owa_wp;
+	
+	$owa_wp->params['caller']['wordpress']['user_data'] = array(
+	
+	'user_level' 	=> $user_level, 
+	'user_ID'		=> $user_ID,
+	'user_login'	=> $user_login,
+	'user_email'	=> $user_email,
+	'user_identity'	=> $user_identity);
+	
+	return;	
 }
 	
 /**
- * This is the main logger function that calls wa on each normal web request.
+ * This is the main logger function that calls owa on each normal web request.
  * Application specific request data should be set here. as part of the $app_params array.
  */
 
@@ -161,7 +173,7 @@ function owa_log() {
 	
 	// Process the request by calling owa
 	$owa_wp = &new owa_wp;
-	$owa_wp->logEvent('page_request', $app_params);
+	$owa_wp->log($app_params);
 	return;
 }
 
@@ -284,7 +296,7 @@ function owa_post_link($link) {
  * Schema and setting installation
  *
  */
-function owa_install_1() {
+function owa_install() {
 
 	global $user_level;
 	global $owa_wp;
@@ -297,53 +309,54 @@ function owa_install_1() {
     else:
     	$conf = &owa_settings::get_settings();
 		$conf['fetch_config_from_db'] = false;
-		print_r($config);
-    	//$owa_wp = &new owa_wp;
+    	
     	$owa_wp->config['db_type'] = 'mysql';
-    	$owa_wp->install('base');
+    	
+    	$install_params = array('site_id' => $conf['site_id'], 
+    							'name' => get_bloginfo('name'),
+    							'domain' => get_settings('siteurl'), 
+    							'description' => get_bloginfo('description'),
+    							'action' => 'base.installEmbedded');
+    							
+    	$owa_wp->handleRequest($install_params);
 	endif;
 
 	return;
 }
 
-/**
- * Schema and setting installation
- *
- */
-function owa_install_2() {
-	
-	global $owa_wp;
 
-		$conf = &owa_settings::get_settings();
-		$conf['fetch_config_from_db'] = false;
-    	//$owa_wp = &new owa_wp;
-    	$owa_wp->config['db_type'] = 'mysql';
-    	$install_params = array('name' => get_bloginfo('name'), 'description' => get_bloginfo('description'));
-    	$owa_wp->install('base_schema', $install_params);
-    	
-
-	return;
-}
 
 /**
  * Adds Analytics sub tab to admin dashboard screens.
  *
  */
-function owa_dashboard_view() {
+function owa_dashboard_menu() {
 
 	if (function_exists('add_submenu_page')):
-		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__) . '/public/reports/dashboard_report.php');
+		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__), 'owa_dashboard_report');
     endif;
     
     return;
 
 }
 
+function owa_dashboard_report() {
+	
+	global $owa_wp;
+	
+	$params = array();
+	$params['do'] = 'base.reportDashboard';
+	echo $owa_wp->handleRequest($params);
+	
+	return;
+	
+}
+
 /**
  * Adds Options page to admin interface
  *
  */
-function owa_options() {
+function owa_options_menu() {
 	
 	if (function_exists('add_options_page')):
 		add_options_page('Options', 'OWA', 8, basename(__FILE__), 'owa_options_page');
@@ -360,8 +373,10 @@ function owa_options_page() {
 	
 	global $owa_wp;
 	
-	//$owa_wp = &new owa_wp;
-	$owa_wp->options_page();
+	$params = array();
+	$params['view'] = 'base.options';
+	$params['subview'] = 'base.optionsGeneral';
+	echo $owa_wp->handleRequest($params);
 	
 	return;
 }

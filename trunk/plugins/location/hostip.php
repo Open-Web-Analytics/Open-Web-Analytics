@@ -59,6 +59,8 @@ class owa_hostip extends owa_location {
 						
 		$crawler = new owa_http;
 		$crawler->fetch($url);
+		
+		$result = '';
 				
 		// XML parsing needs to go here.
        		
@@ -67,7 +69,7 @@ class owa_hostip extends owa_location {
 		$this->latitude = $result['Latitude'];
 		$this->longitude = $result['Longitude'];
 		
-		print_r($results);
+		//print_r($result);
 		
 		return;
 	

@@ -139,9 +139,10 @@ function owa_footer(&$article) {
 	global $wgOut;
 	
 	$owa = &new owa_php;
-	$bug = $owa->placePageTags($echo = false);
+
+	$tags = $owa->handleHelperPageTagsRequest();
 	
-	$wgOut->addHTML($bug);
+	$wgOut->addHTML($tags);
 		
 	return true;
 }

@@ -777,7 +777,10 @@ class Log
     function _announce($event)
     {
         foreach ($this->_listeners as $id => $listener) {
+        	
             if ($event['priority'] <= $this->_listeners[$id]->_priority) {
+            	
+            
                 $this->_listeners[$id]->notify($event);
             }
         }

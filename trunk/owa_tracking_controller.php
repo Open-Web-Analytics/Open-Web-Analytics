@@ -17,7 +17,7 @@
 //
 
 require_once 'owa_event_class.php';
-require_once 'owa_request_class.php';
+//require_once 'owa_request_class.php';
 require_once 'owa_click.php';
 require_once 'owa_lib.php';
 require_once 'owa_browscap.php';
@@ -57,6 +57,8 @@ class owa extends owa_base {
 	 * to be processed by a second http request on the same page.
 	 *
 	 */
+	
+	/*
 	function process_first_request() {
 		
 		// Create a new request object
@@ -75,6 +77,7 @@ class owa extends owa_base {
 		
 		return;
 	}
+	*/
 	
 	/**
 	 * Graph Controller
@@ -121,9 +124,9 @@ class owa extends owa_base {
 				$event = new owa_click;
 				break;
 			
-			case "page_request":
-				$event = new owa_request;
-				break;
+			//case "page_request":
+				//$event = new owa_request;
+				//break;
 				
 			default:
 				$event = new owa_event;		

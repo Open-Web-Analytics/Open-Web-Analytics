@@ -16,8 +16,7 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
-require_once 'owa_lib.php';
+require_once 'owa_base.php';
 require_once 'eventQueue.php';
 
 /**
@@ -32,14 +31,7 @@ require_once 'eventQueue.php';
  * @since		owa 1.0.0
  */
 
-class owa_event {
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
+class owa_event extends owa_base {
 	
 	/**
 	 * Event Properties
@@ -54,13 +46,6 @@ class owa_event {
 	 * @var object
 	 */
 	var $eq;
-	
-	/**
-	 * Error handler
-	 *
-	 * @var object
-	 */
-	var $e;
 	
 	/**
 	 * Database access object
@@ -89,26 +74,26 @@ class owa_event {
 	 */
 	function owa_event() {
 		
+		$this->owa_base();
+		
+		// Load event queue
+		$this->eq = &eventQueue::get_instance();
+		
+		// Set GUID for event
 		$this->guid = $this->set_guid();
 		$this->properties['guid'] = $this->guid;
 		
-		$this->config = &owa_settings::get_settings();
-		$this->e = &owa_error::get_instance();
-		$this->eq = &eventQueue::get_instance();
+		return;
+	}
+	
+	/**
+	 * Sets time related event properties
+	 *
+	 * @param integer $timestamp
+	 */
+	function setTime($timestamp) {
 		
-		// Retrieve inbound visitor and session values	
-		$this->properties['inbound_visitor_id'] = $_COOKIE[$this->config['ns'].$this->config['visitor_param']];
-		$this->properties['inbound_session_id'] = $_COOKIE[$this->config['ns'].$this->config['session_param']];
-		// Retrieve the time of last request
-		$this->properties['last_req'] = $_COOKIE[$this->config['ns'].$this->config['last_request_param']];
-		
-		//epoc time
-		list($msec, $sec) = explode(" ", microtime());
-		$this->properties['sec'] = $sec;
-		$this->properties['msec'] = $msec;
-		
-		//determine time of request
-		$this->properties['timestamp'] = time();
+		$this->properties['timestamp'] = $timestamp;
 		$this->properties['year'] = date("Y", $this->properties['timestamp']);
 		$this->properties['month'] = date("n", $this->properties['timestamp']);
 		$this->properties['day'] = date("d", $this->properties['timestamp']);
@@ -119,27 +104,11 @@ class owa_event {
 		$this->properties['minute'] = date("i", $this->properties['timestamp']);
 		$this->properties['second'] = date("s", $this->properties['timestamp']);
 		
-		//set default site id. Can be overwriten by caller if needed.
-		$this->properties['site_id'] = $this->config['site_id'];
+		//epoc time
+		list($msec, $sec) = explode(" ", microtime());
+		$this->properties['sec'] = $sec;
+		$this->properties['msec'] = $msec;
 		
-		$this->properties['ip_address'] = $this->get_ip();
-		$this->properties['ua'] = $_SERVER['HTTP_USER_AGENT'];
-		$this->properties['site'] = $_SERVER['SERVER_NAME'];
-		$this->properties['referer'] = $_SERVER['HTTP_REFERER'];
-		
-		
-		return;
-	}
-	
-	/**
-	 * Controller logic Stub for concrete classes
-	 *
-	 */
-	function process() {
-		
-		$this->log();
-		
-		return;
 	}
 	
 	/**
@@ -147,10 +116,10 @@ class owa_event {
 	 *
 	 */
 	function log() {
-
-		$this->eq->log($this->properties, $this->state);
-		$this->e->debug('Logged '.$this->state.' to event queue...');
-		return;
+		
+		$this->e->debug('Logging '.$this->state.' to event queue...');
+		return $this->eq->log($this->properties, $this->state);
+	
 	}
 	
 	/**
@@ -178,21 +147,21 @@ class owa_event {
 	 * @return string
 	 * @access private
 	 */
-	function get_ip() {
+	function get_ip(&$params) {
 	
-		if ($_SERVER["HTTP_X_FORWARDED_FOR"]):
-			if ($_SERVER["HTTP_CLIENT_IP"]):
-		   		$proxy = $_SERVER["HTTP_CLIENT_IP"];
+		if ($params["HTTP_X_FORWARDED_FOR"]):
+			if ($params["HTTP_CLIENT_IP"]):
+		   		$proxy = $params["HTTP_CLIENT_IP"];
 		  	else:
-		    	$proxy = $_SERVER["REMOTE_ADDR"];
+		    	$proxy = $params["REMOTE_ADDR"];
 		  	endif;
 			
-			$ip = $_SERVER["HTTP_X_FORWARDED_FOR"];
+			$ip = $params["HTTP_X_FORWARDED_FOR"];
 		else:
-			if ($_SERVER["HTTP_CLIENT_IP"]):
-		    	$ip = $_SERVER["HTTP_CLIENT_IP"];
+			if ($params["HTTP_CLIENT_IP"]):
+		    	$ip = $params["HTTP_CLIENT_IP"];
 		  	else:
-		    	$ip = $_SERVER["REMOTE_ADDR"];
+		    	$ip = $params["REMOTE_ADDR"];
 			endif;
 		endif;
 		
@@ -228,18 +197,19 @@ class owa_event {
 	/**
 	 * Resolve hostname from IP address
 	 * 
-	 * @access private
+	 * @access public
 	 */
-	function resolve_host() {
+	function setHost($remote_host) {
 	
 		// See if host is already resolved
-		if (!empty($_SERVER['REMOTE_HOST'])):
+		if (!empty($remote_host)):
 			// Use pre-resolved host if available
-			$fullhost = $_SERVER['REMOTE_HOST'];
-		
+			$fullhost = $remote_host;
 		else:
 			// Do the host lookup
-			$fullhost = @gethostbyaddr($this->properties['ip_address']);
+			if ($this->config['resolve_hosts'] = true):
+				$fullhost = gethostbyaddr($this->properties['ip_address']);
+			endif;
 		endif;
 		
 		if (!empty($fullhost)):

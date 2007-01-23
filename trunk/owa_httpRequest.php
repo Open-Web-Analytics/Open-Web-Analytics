@@ -115,6 +115,9 @@ class owa_http extends Snoopy {
 	
 		if(!empty($this->anchor_info['anchor_tag'])):
 			
+			// drop certain HTML entitities and their content
+			$this->results = $this->strip_selected_tags($this->results, "<title><head><script><object>", true);
+		
 			// strip html from doc
 			$nohtml = strip_tags(owa_lib::inputFilter($this->results));
 			
@@ -124,11 +127,21 @@ class owa_http extends Snoopy {
 			// find position within document of the anchor text
 			$start = strpos($nohtml, $this->anchor_info['anchor_text']);
 			
+			if ($start < $this->snip_len):
+				$part1_start_pos = 0;
+				$part1_snip_len = $start;
+			else:
+				$part1_start_pos = $start - $this->snip_len;
+				$part1_snip_len = $this->snip_len;
+			endif;
+			
+			
 			// Create first segment of snippet
-			$part1 = substr($nohtml, $start-$this->snip_len, $this->snip_len);
+			$part1 = trim(substr($nohtml, $part1_start_pos, $part1_snip_len));
+			//$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
 			
 			// Create second segment of snippet
-			$part2 = substr($nohtml, $start+$atext_len, $this->snip_len);
+			$part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len));
 			
 			// Put humpty dumpy back together again and create actual snippet
 			$snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.strip_tags($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
@@ -147,8 +160,21 @@ class owa_http extends Snoopy {
 		
 		preg_match('~(</head>|<body>|(<title>\s*(.*?)\s*</title>))~i', $this->results, $m);
 		
+		$this->e->debug("referer title extract: ". print_r($m, true));
+		
        	return $m[3];
 	}
+	
+	 function strip_selected_tags($str, $tags = "", $stripContent = false) {
+       preg_match_all("/<([^>]+)>/i",$tags,$allTags,PREG_PATTERN_ORDER);
+       foreach ($allTags[1] as $tag){
+           if ($stripContent) {
+               $str = preg_replace("/<".$tag."[^>]*>.*<\/".$tag.">/iU","",$str);
+           }
+           $str = preg_replace("/<\/?".$tag."[^>]*>/iU","",$str);
+       }
+       return $str;
+   }
 	
 }
 

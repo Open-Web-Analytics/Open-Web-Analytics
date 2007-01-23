@@ -60,7 +60,10 @@ class owa_auth_none extends owa_auth {
 	 */
 	function authenticateUser($necessary_role) {
 		
-		return;
+		$data = array();
+		$data['auth_status'] = true;
+		
+		return $data;
 		
 	}
 	

@@ -247,6 +247,9 @@ class asyncEventProcessor extends owa_caller {
 	 * 
 	 */
 	function is_running($PID){
+      
+      $process_state = '';
+      
        exec("ps $PID", $process_state);
        
 		if (count($process_state) >= 2):

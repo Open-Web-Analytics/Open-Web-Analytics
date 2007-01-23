@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once('owa_caller.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
 
 /**
  * Wordpress Caller class
@@ -39,11 +39,11 @@ class owa_wp extends owa_caller {
 	function owa_wp($config = null) {
 		
 		$this->owa_caller($config);
-		$this->e = &owa_error::get_instance();
-		$this->controller = new owa;
+		
 		return;
 	}
 	
+
 	function add_link_tracking($link) {
 	
 		if (!empty($_GET[$this->config['feed_subscription_id']])):
@@ -51,11 +51,15 @@ class owa_wp extends owa_caller {
 		else:
 			return $link."&amp;"."from=feed";
 		endif;
-		
-		return;
 	
 	}
 	
+	/**
+	 * Wordpress filter method. Adds tracking to feed links.
+	 * 
+	 * @var string the feed link
+	 * @return string link string with special tracking id
+	 */
 	function add_feed_tracking($binfo) {
 		
 		$guid = crc32(posix_getpid().microtime());
@@ -63,39 +67,40 @@ class owa_wp extends owa_caller {
 		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
 	}
 	
+	/**
+	 * Convienence function for logging comments.
+	 * 
+	 * @return boolean 
+	 */
 	function logComment() {
 		
-		return $this->controller->logEvent('new_comment');
+		return $this->logEvent('base.processEvent',array('event' => 'base.new_comment'));
 		
 	}
 	
-	/**
-	 * Installation Controller
-	 *
-	 * @param string $type
-	 * @param array $params
-	 * @return boolean
-	 */
-	function install($type, $params = '') {
+	function handleSpecialActionRequest() {
 		
-		$this->config['fetch_config_from_db'] = false;
-	    $installer = &owa_installer::get_instance($params);	   
-	    $install_check = $installer->plugins[$type]->check_for_schema();
-	    
-	    if ($install_check == false):
-		    //Install owa schema
-	    	$status = $installer->plugins[$type]->install();
-	    	$default_site = $installer->plugins[$type]->addDefaultSite();
-	    else:
-	    	// owa already installed
-	    	$status = false;
-	    endif;
-	    
-	    return $status;
-		
+		if(isset($_GET['owa_specialAction'])):
+			$this->e->debug("special action received");
+			echo $this->handleRequestFromUrl();
+			exit;
+		elseif(isset($_GET['owa_logAction'])):
+			$this->e->debug("log action received");
+			echo $this->logEventFromUrl($_GET);
+			exit;
+		else:
+			return;
+		endif;
+
 	}
 	
 
+	function placeHelperPageTags() {
+		
+		echo $this->handleHelperPageTagsRequest();
+		
+		return;
+	}
 
 }
 

@@ -16,9 +16,10 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
-require_once 'owa_lib.php';
-require_once 'owa_db.php';
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_lib.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_db.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_requestContainer.php');
 
 /**
  * Metric
@@ -31,7 +32,7 @@ require_once 'owa_db.php';
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_metric {
+class owa_metric extends owa_base {
 
 	/**
 	 * Current Time
@@ -48,13 +49,6 @@ class owa_metric {
 	var $data;
 	
 	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config = array();
-	
-	/**
 	 * Databse Access Object
 	 *
 	 * @var object
@@ -62,32 +56,11 @@ class owa_metric {
 	var $db;
 	
 	/**
-	 * Metric Api
-	 *
-	 * @var object
-	 */
-	var $api_type = 'metric';
-	
-	/**
-	 * API Calls
-	 *
-	 * @var array
-	 */
-	var $api_calls = array();
-	
-	/**
 	 * The params of the caller, either a report or graph
 	 *
 	 * @var array
 	 */
 	var $params = array();
-	
-	/**
-	 * Error handler
-	 *
-	 * @var object
-	 */
-	var $e;
 	
 	/**
 	 * Summary Framework Object
@@ -104,268 +77,237 @@ class owa_metric {
 	 */
 	function owa_metric() {
 	
-		$this->config = &owa_settings::get_settings();
-		$this->e = &owa_error::get_instance();
-		$this->db = &owa_db::get_instance();
+		//$this->db = &owa_db::get_instance();
 		
 		// Setup time and query periods
 		$this->time_now = owa_lib::time_now();
 		
 		if ($this->config['use_summary_tables']):
 		// This is a stub for getting Summary Framework object
-			//$this->summaryFramework = &owa_summary::get_instance();
+			;//$this->summaryFramework = &owa_summary::get_instance();
 		endif;
 		
 		return;
 	}
+	
+	
+	/*
+	 * Applies specific overrides specified in the request to the params of the metric.
+	 * 
+	 */
+	function applyOverrides($params = array()) {
 		
-	/**
-	 * Metric factory
-	 *
-	 * @param string $class_name
-	 * @param array $params
-	 * @return object
-	 */
-	function get_instance($class_name, $params) {
+		//$params = & owa_requestContainer::getInstance();
+		
+		foreach ($params as $k => $v) {
 			
-		$config = &owa_settings::get_settings();
-				
-		if (!require_once(OWA_METRICS_DIR.$class_name . '.php')):
-			print "error locating proper class file from: " . OWA_METRICS_DIR; //error
-		else:  
-			$o = new $class_name;
-			$o->params = $params;
-		endif;	
-	
-		return $o;
+			if (!empty($v)):
+				$this->params[$k] = $v;
+			endif;
+		
+		}
+		
+		/*if (!empty($params['limit'])):
+			$this->params['limit'] = $params['limit'];
+		endif;
+		
+		if (!empty($params['offset'])):
+			$this->params['offset'] = $params['offset'];
+		endif;
+		
+		if (!empty($params['site_id'])):
+				$this->params['site_id'] = $params['site_id'];
+		endif;
+		*/
+		
+		return;
 	}
-
-	/**
-	 * Time Period SQL constraint
-	 *
-	 * @access private
-	 * @param string $period
-	 * @param array $params
-	 * @return string $where
-	 */
-	function time_period($period, $params = null) {	
 	
-		switch ($period) {
-			case "last_24_hours":	
+	function setTimePeriod() {
+		
+		switch ($this->params['period']) {
 			
+			case "today":
+				
+				$end = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day'] + 1, $this->time_now['year']); 
+				$start = $end - 3600*24;
+
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+							
+				break;
+				
+			case "last_24_hours":
 				$bound = $this->time_now['timestamp'] - 3600*24;
-				$where = sprintf(
-							"timestamp >= '%s'",
-							$bound
-						);
+				$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
+				
 				break;
-
-			case "last_hour":	
+				
+			case "last_hour":
+				
 				$bound = $this->time_now['timestamp'] - 3600;
-				$where = sprintf(
-							"timestamp >= '%s'",
-							$bound
-						);
+				$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
+				
 				break;
 				
-			case "last_half_hour":	
+			case "last_half_hour":
+				
 				$bound = $this->time_now['timestamp'] - 1800;
-				$where = sprintf(
-							"timestamp >= '%s'",
-							$bound
-						);	
+				$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
+				
 				break;
 				
-			case "last_seven_days":	
+			case "last_seven_days":
+	
 				$bound = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*7;
-
-				$where = sprintf(
-							"timestamp >= '%s' and year = '%s'",
-							$bound,
-							$this->time_now['year']
-						);	
+				$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
+				
 				break;
 				
-			case "today":	
-				$where = sprintf(
-							"day = '%s' and month = '%s' and year = '%s'",
-							$this->time_now['day'],
-							$this->time_now['month'],
-							$this->time_now['year']
-						);
+			case "this_week":
+				
+				$this->params['constraints']['weekofyear'] = $this->time_now['weekofyear'];
+				$this->params['constraints']['year'] = $this->time_now['year'];
+				
 				break;
 				
-			case "this_week":	
-				$where = sprintf(
-							"weekofyear = '%s' and year = '%s'",
-							$this->time_now['weekofyear'],
-							$this->time_now['year']
-						);
+			case "this_month":
+				
+				$this->params['constraints']['month'] = $this->time_now['month'];
+				$this->params['constraints']['year'] = $this->time_now['year'];
+				
 				break;
 				
-			case "this_month":	
-				$where = sprintf(
-							"month = '%s' and year = '%s'",
-							$this->time_now['month'],
-							$this->time_now['year']
-						);
-				break;
+			case "this_year":
 				
-			case "this_year":	
-				$where = sprintf(
-							"year = '%s'",
-							$this->time_now['year']
-						);
+				$this->params['constraints']['year'] = $this->time_now['year'];
+				
 				break;
 				
 			case "yesterday":
+			
+				$end = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']); 
+				$start = $end - 3600*24;
+
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
 				
-				$bound = mktime(12, 00, 00, $this->time_now['month'], $this->time_now['day']-1, $this->time_now['year']);
-				
-					
-				$where = sprintf(
-							"day = '%s' and month = '%s' and year = '%s'",
-							date("d", $bound),
-							date("n", $bound),
-							date("Y", $bound)
-						);
 				break;
 				
 			case "last_week":
+				
 				$daybound = 7 + $this->time_now['dayofweek'];
+				
 				$end = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*$this->time_now['dayofweek'];
+				
 				$start = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*$daybound;
-				$where = sprintf(
-							"timestamp BETWEEN '%d' and '%d'",
-							$start,
-							$end
-						);
-				break;	
+				
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+			
+				break;
 				
 			case "last_month":
 				
 				$bound = mktime(12, 0, 0, $this->time_now['month']-1, $this->time_now['day'], $this->time_now['year']);
 				
-				$where = sprintf("month = '%s' and year ='%s'",
-							date("n", $bound),
-							date("Y", $bound)
-						);
+				$this->params['constraints']['month'] = date("n", $bound); 
+				$this->params['constraints']['year'] = date("Y", $bound);
+				
 				break;
 				
 			case "last_year":
 				
-				$where = sprintf("year = '%s'",
-							$this->time_now['year'] - 1
-						);
+				$this->params['constraints']['year'] = $this->time_now['year'] - 1;
+				
 				break;
 				
 			case "same_day_last_week":
 				
 				$bound = mktime(12, 0, 0, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*7;
 				
-				$where = sprintf("day = '%s' and month = '%s' and year = '%s'",
-							date("d", $bound),
-							date("n", $bound),
-							date("Y", $bound)
-						);
-				break;
+				$this->params['constraints']['day'] = date("d", $bound);
+				$this->params['constraints']['month'] = date("n", $bound); 
+				$this->params['constraints']['year'] = date("Y", $bound);
 				
+				break;
+			
 			case "same_week_last_year":
-				$where = sprintf(
-							"AND weekofyear = '%s' and year = '%s'",
-							$this->time_now['weekofyear'],
-							$this->time_now['year'] - 1
-						);
+				
+				$this->params['constraints']['weekofyear'] = $this->time_now['weekofyear']; 
+				$this->params['constraints']['year'] = $this->time_now['year'] - 1;
+				
 				break;
 				
 			case "same_month_last_year":
-				$where = sprintf(
-							"month = '%s' and year = '%s'",
-							$this->time_now['month'],
-							$this->time_now['year'] - 1
-						);
+				
+				$this->params['constraints']['month'] = $this->time_now['month']; 
+				$this->params['constraints']['year'] = $this->time_now['year'] - 1;
+				
 				break;
 				
 			case "all_time":
-				$where = sprintf(
-							"timestamp <= '%s'",
-							$this->time_now['timestamp']
-						);
+				
+				$this->params['constraints']['timestamp'] = array('operator' => '<=', 'value' => $this->time_now['timestamp']);
+				
 				break;
 				
 			case "last_tuesday":
-				$where = sprintf(
-							"dayofweek = '2' and weekofyear = '%s'",
-							$this->time_now['weekofyear'] - 1
-						);
+				
+				$this->params['constraints']['dayofweek'] = 2; 
+				$this->params['constraints']['weekofyear'] = $this->time_now['weekofyear'] - 1;
+				
 				break;
 			
 			case "last_thirty_days":
+				
 				$bound = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*30;
 
-				$where = sprintf(
-							"timestamp >= '%s' and year = '%s'",
-							$bound,
-							$this->time_now['year']
-						);	
+				$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
 				
-				break;
+				break;	
 				
 			case "day":
 				
-				$where = sprintf(
-							"day = '%s' and month = '%s' and year = '%s'",
-							$this->params['request_params']['day'],
-							$this->params['request_params']['month'],
-							$this->params['request_params']['year']
-						);	
+				$end = mktime(0, 0, 0, $this->params['month'], $this->params['day'] + 1, $this->params['year']);
+				
+				$start = $end - 3600*24;
+				
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
 				
 				break;
 				
 			case "month":
 				
-				$where = sprintf(
-							"month = '%s' and year = '%s'",
-							$this->params['request_params']['month'],
-							$this->params['request_params']['year']
-						);	
+				$end = mktime(0, 0, 0, $this->params['month'] + 1, 0, $this->params['year']);
+				
+				$start = mktime(0, 0, 0, $this->params['month'], 0, $this->params['year']);
+				
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
 				
 				break;
 				
 			case "year":
 				
-				$where = sprintf(
-							"year = '%s'",
-							$this->params['request_params']['year']
-						);	
+				$end = mktime(0, 0, 0, 1, 1, $this->params['year'] + 1);
+				$start = mktime(0, 0, 0, 1, 1, $this->params['year']);
 				
-				break;
-			
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				
+				break;	
+				
 			case "date_range":
 				
-				$start = mktime(0, 0, 0, $this->params['request_params']['month'], $this->params['request_params']['day'], $this->params['request_params']['year']); 
-				$end = mktime(23, 59, 59, $this->params['request_params']['month2'], $this->params['request_params']['day2'], $this->params['request_params']['year2']);
+				$start = mktime(0, 0, 0, $this->params['month'], $this->params['day'], $this->params['year']); 
+				$end = mktime(0, 0, 0, $this->params['month2'], $this->params['day2'] + 1, $this->params['year2']);
 				
-				$where = sprintf(
-							"timestamp BETWEEN '%s' and '%s'",
-							$start,
-							$end
-						);	
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
 				
 				break;
 				
-			default:
-				$where = '';
-	
 		}
 		
-		if(!empty($where)):
-			return ' AND '.$where;
-		else:
-			return;
-		endif;
+		return;
 	}
 	
+
 	/**
 	 * Add constraints into SQL where clause
 	 *
@@ -374,9 +316,9 @@ class owa_metric {
 	 * @access 	public
 	 */
 	function add_constraints($constraints) {
-	
-		if (!empty($constraints)):
 		
+		if (!empty($constraints)):
+		//print_r($constraints);
 			$this->e->debug(' CONSTRAINT: '. print_r($constraints, true));
 		
 			$count = 0;

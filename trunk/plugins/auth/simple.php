@@ -16,8 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_user.php');
-require_once(OWA_BASE_DIR.'/eventQueue.php');
+require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
  * Simple Auth Plugin
@@ -33,16 +32,19 @@ require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 class owa_auth_simple extends owa_auth {
 	
-	function owa_auth_simple($role) {
+	function owa_auth_simple() {
 		
 		$this->owa_auth();
-		$this->eq = &eventQueue::get_instance();
+		$this->check_for_credentials = true;
 		
-		$cookies = owa_lib::inputFilter($_COOKIE);
-		
-		$this->credentials['user_id'] = $cookies[$this->config['ns'].'u'];
-		$this->credentials['password'] = $cookies[$this->config['ns'].'p'];
 		return;
+	}
+	
+	function getUser() {
+		
+		// fetch user object from the db
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->getByColumn('user_id', $this->credentials['user_id']);
 	}
 	
 	/**
@@ -56,134 +58,61 @@ class owa_auth_simple extends owa_auth {
 		return md5(strtolower($password).strlen($password));
 	}
 	
-	/**
-	 * Used by controllers to check if the user exists and if they are priviledged.
-	 *
-	 * @param string $necessary_role
-	 */
-	function authenticateUser($necessary_role) {
-		
-		//print_r($this->credentials);
-		//print "hello";
-		
-		if ((empty($this->credentials['user_id'])) || (empty($this->credentials['password']))):
-			if ($necessary_role == 'guest'):
-				return;
-			else:
-				$this->showLoginPage();
-			endif;
-		else:
-		
-			$is_user = $this->isUser($this->credentials['user_id'], $this->credentials['password']);
-			
-			if ($is_user == true):
-				$priviledged = $this->isPriviledged($necessary_role);
-					if ($priviledged == true):
-						return;
-					else:
-						$this->showPriviledgeErrorPage();
-					endif;
-			else:
-				$this->showLoginErrorPage();
-			endif;
-		endif;
-		
-		return;
-		
-	}
-	
-	/**
-	 * Send user to the Login page Controller
-	 *
-	 * @param array $params
-	 */
-	
-	function showLoginPage($params = array()) {
-		
-		$url = $this->config['public_url'].'/login.php?page=login&go='.urlencode(owa_lib::get_current_url());
-		owa_lib::redirectBrowser($url);
-		return;
-		
-	}
-	
-	/**
-	 * Shown when the user does not enough priviledges
-	 *
-	 */
-	function showPriviledgeErrorPage() {
-		
-		$url = $this->config['public_url'].'/login.php?page=not_priviledged';
-		owa_lib::redirectBrowser($url);
-		return;
-		
-	}
-	
-	/**
-	 * Shown when login credentials are not correct
-	 *
-	 */
-	function showLoginErrorPage() {
-		
-		$url = $this->config['public_url'].'/login.php?page=bad_pass&go='.urlencode(owa_lib::get_current_url());
-		owa_lib::redirectBrowser($url);
-		return;
-		
-	}
-	
-	/**
-	 * Shown after the temp passkey is found in the database
-	 *
-	 */
-	function showResetPasswordPage() {
-		
-		$url = $this->config['public_url'].'/login.php?page=reset_password';
-		owa_lib::redirectBrowser($url);
-		return;
-	}
-	
-	/**
-	 * Shown when the temp passkey is not found in the DB
-	 *
-	 */
-	function showResetPasswordErrorPage() {
-		$url = $this->config['public_url'].'/login.php?page=reset_password_error';
-		owa_lib::redirectBrowser($url);
-		return;
-	}
-	
-	/**
-	 * Shown when the temp passkey has been set nd mailed.
-	 *
-	 */
-	function showRequestNewPasswordSuccessPage() {
-		$url = $this->config['public_url'].'/login.php?page=request_password_success';
-		owa_lib::redirectBrowser($url);
-		return;
-	}
 	
 	
 	/**
-	 * Saves login credentails to persistant browser cookies
-	 *
-	 */
-	function saveCredentials() {
-		
-		setcookie($this->config['ns'].'u', $this->u->user_id, time()+3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
-		setcookie($this->config['ns'].'p', $this->u->password, time()+3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
-		
-		return;
-	}
-	
-	/**
-	 * Removes credentials
+	 * Checks to see if the user credentials match a real user object in the DB
 	 *
 	 * @return boolean
 	 */
-	function deleteCredentials() {
+	function isUser() {
 		
-		return setcookie($this->config['ns'].'p', $this->u->password, time()-3600*24*365*30, '/', $_SERVER['SERVER_NAME']);
-
+		// fetches user object from DB
+		$this->getUser();
+		
+		// sets priviledge level
+		$this->_priviledge_level = $this->getLevel($this->u->get('role'));
+		
+		if ($this->credentials['user_id'] == $this->u->get('user_id')):
+			if ($this->credentials['password'] === $this->u->get('password')):
+				$this->_is_user = true;				
+				return true;
+			else:
+				$this->_is_user = false;
+				return false;
+			endif;
+		else:
+			$this->_is_user = false;
+			return false;
+		endif;
 	}
+	
+	function _setNotPriviledgedView() {
+		$data['view_method'] = 'delegate';
+		$data['view'] = 'base.error';
+		$data['error_msg'] = $this->getMsg(2003);
+		$data['go'] = urlencode(owa_lib::get_current_url());
+		return $data;
+	}
+	
+	function _setNotUserView() {
+		
+		$data['view_method'] = 'delegate';
+		$data['view'] = 'base.login';
+		$data['go'] = urlencode(owa_lib::get_current_url());
+		$data['error_msg'] = $this->getMsg(2002);
+		return $data;
+	}
+	
+	function _setNotAuthenticatedView() {
+		
+		$data['view_method'] = 'delegate';
+		$data['view'] = 'base.login';
+		$data['go'] = urlencode(owa_lib::get_current_url());
+		$data['error_msg'] = $this->getMsg(2004);
+		return $data;
+	}
+	
 }
 
 

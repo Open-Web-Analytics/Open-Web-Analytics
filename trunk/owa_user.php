@@ -112,6 +112,7 @@ class owa_user extends owa_base {
 	function selectUser($constraint) {
 		
 		return sprintf(" SELECT
+							id,
 							user_id,
 							password,
 							role,
