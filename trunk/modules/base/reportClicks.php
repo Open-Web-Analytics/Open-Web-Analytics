@@ -18,13 +18,13 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
-class owa_reportClicksController extends owa_controller {
+class owa_reportClicksController extends owa_reportController {
 	
 	function owa_reportClicksController($params) {
 		
-		$this->owa_controller($params);
+		$this->owa_reportController($params);
 		$this->priviledge_level = 'admin';
 	
 	}

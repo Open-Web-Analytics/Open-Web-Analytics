@@ -16,11 +16,10 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
 
 /**
- * Users Roster View
+ * Report Controller Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,37 +30,45 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_sitesView extends owa_view {
+
+class owa_reportController extends owa_controller {
 	
-	function owa_sitesView() {
+	/**
+	 * Constructor
+	 *
+	 * @param array $params
+	 * @return owa_controller
+	 */
+	function owa_reportController($params) {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'admin';
+		$this->owa_controller($params);
 		
 		return;
+		
 	}
 	
-	function construct() {
+	/**
+	 * Handles request from caller
+	 *
+	 */
+	function doAction() {
 		
-		//page title
-		$this->t->set('page_title', 'Sites Roster');
+		$this->e->debug('Performing Action: '.get_class($this));
 		
-		// load body template
-		$this->body->set_template('sites.tpl');
+		if (empty($this->params['site_id'])):
+			$this->params['site_id'] = $this->config['site_id'];
+		endif;
 		
-		$this->body->set('headline', 'Web Sites Roster');
+		// set default period if necessary
+		if (empty($this->params['period'])):
+			$this->params['period'] = 'today';
+		endif;
 		
-		$s = owa_coreAPI::entityFactory('base.site');
-		$sites = $s->find();
 		
-		print_r($sites);
-		$this->body->set('sites', $sites);
+		return $this->action();
 		
-		return;
 	}
-	
 	
 }
-
 
 ?>

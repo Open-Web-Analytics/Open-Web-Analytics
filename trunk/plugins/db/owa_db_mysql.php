@@ -461,7 +461,11 @@ class owa_db_mysql extends owa_db {
 		
 		foreach ($values as $k => $v) {
 			
-			$cols .= $ns.'.'.$v.' as '.$ns.'_'.$v;
+			if (empty($this->params['related_objs'])):
+				$cols .= $v;
+			else:
+				$cols .= $ns.'.'.$v.' as '.$ns.'_'.$v;
+			endif;
 			
 			// Add commas
 			if ($i < $count - 1):

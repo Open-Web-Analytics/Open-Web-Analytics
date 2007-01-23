@@ -19,7 +19,6 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_site.php');
 require_once(OWA_BASE_DIR.'/owa_news.php');
 
 /**
@@ -47,9 +46,7 @@ class owa_reportView extends owa_view {
 	
 	function construct($data) {
 		
-		if (empty($data['params']['site_id'])):
-			$this->data['params']['site_id'] = $this->config['site_id'];
-		endif;
+		
 		
 		// Set Page title
 		$this->t->set('page_title', 'Report');
@@ -123,13 +120,8 @@ class owa_reportView extends owa_view {
 	 * @param string $period
 	 */
 	function setPeriod($period) {
-		
-		// set default period if necessary
-		if (empty($period)):
-			$period = 'today';
-		endif;
-		
-		// set in various templates and is url params
+			
+		// set in various templates and params
 		$this->data['params']['period'] = $period;
 		$this->body->set('period', $period);
 		$this->subview->body->set('period', $period);
@@ -182,8 +174,9 @@ class owa_reportView extends owa_view {
 	
 	function getSitesList() {
 		
-		$sites = new owa_site;
-		return $sites->getAllSites();
+		$s = owa_coreAPI::entityFactory('base.site');
+		
+		return $s->find();
 		
 	}
 	
