@@ -236,7 +236,7 @@
 			'exits_table'					=> 'exit',
 			'users_table'					=> 'user',
 			'db_class'						=> '',
-			'db_type'						=> '',
+			'db_type'						=> OWA_DB_TYPE,
 			'db_name'						=> '',
 			'db_user'						=> '',
 			'db_password'					=> '',
