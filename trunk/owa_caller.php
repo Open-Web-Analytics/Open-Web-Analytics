@@ -60,7 +60,7 @@ class owa_caller extends owa_base {
 		
 		//load DB constants if not set already by caller
 		if(!defined('OWA_DB_HOST')):
-			include (OWA_BASE_MODULE_DIR.'config'.DIRECTORY_SEPARATOR.'db_config.php');
+			include (OWA_BASE_DIR.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'db_config.php');
 		endif;
 		
 		//set_error_handler(array("owa_error", "handlePhpError"), E_ALL);
