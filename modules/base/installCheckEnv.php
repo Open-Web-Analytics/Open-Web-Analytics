@@ -19,7 +19,7 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_db.php');
+
 /**
  * Installer Server Environment Setup Check View
  * 
@@ -95,7 +95,7 @@ class owa_installCheckEnvController extends owa_controller {
 		endif;
 		
 		// Check DB connection status
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		if ($db->connection_status != true):
 			$errors['count'] = $errors['count']++;
 			$errors['db_status'] = $this->getMsg(3300);

@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_user.php');
 
 /**
  * Delete Site Controller

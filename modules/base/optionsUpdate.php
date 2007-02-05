@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_settings_class.php');
 
 /**
  * Options Update Controller
@@ -42,30 +41,30 @@ class owa_optionsUpdateController extends owa_controller {
 
 	function action() {
 		
-		//create the new config array
-		$new_config = array();
+
+		$c = owa_coreAPI::entityFactory('base.configuration');
+		$c->getByPk('id', $this->config['configuration_id']);
+	
+		$db_settings = array('base' => $this->params['config']);
 			
-		// needed for following DB queries just in case the various 
-		// implementations of the GUI does not allow you to set this.
-		$new_config['configuration_id'] = $this->config['configuration_id'];
-			
-		foreach ($this->params['config'] as $key => $value) {
-				
-				// update exising config, needed?
-				$this->config[$key] = $value;
-				//add to config going to the db
-				$new_config[$key] = $value;
-				
-		}
+		$c->set('settings', serialize($db_settings));
 		
-		owa_settings::save($new_config);
+		$v = $c->get('id');
 		
+		if (empty($v)):
+			$c->set('id', $this->config['configuration_id']);
+			$c->create();
+		else:
+			$c->update();
+		endif;
+	
 		$this->e->notice("Configuration changes saved to database.");
 	
 		$data = array();
 		$data['view'] = 'base.options';
 		$data['subview'] = 'base.optionsGeneral';
 		$data['view_method'] = 'delegate';
+		$data['configuration'] = $db_settings['base'];
 		$data['status_msg'] = $this->getMsg(2500);
 		
 		return $data;

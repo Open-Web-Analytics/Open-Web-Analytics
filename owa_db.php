@@ -129,24 +129,28 @@ class owa_db extends owa_base {
 	 * @static 
 	 */
 	function &get_instance($params = array()) {
-	
+		
 		static $db;
-	
+		
 		if (!isset($db)):
-			$this->config = &owa_settings::get_settings();
-			$this->e = &owa_error::get_instance();
+			//print 'hello from db';
+			$c = &owa_coreAPI::configSingleton();
+			$config = $c->fetch('base');
 			
-			if (empty($this->config['db_class'])):
-				$class = $this->config['db_type'];
+			$e = &owa_error::get_instance();
+			
+			if (empty($config['db_class'])):
+				$class = $config['db_type'];
 			else:
-				$class = $this->config['db_class'];
+				$class = $config['db_class'];
 			endif;
 
 			$connection_class = "owa_db_" . $class;
-			$connection_class_path = $this->config['db_class_dir'] . $connection_class . ".php";
-	
+			$connection_class_path = $config['db_class_dir'] . $connection_class . ".php";
+
 	 		if (!@include($connection_class_path)):
-	 			$this->e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
+	 		
+	 			$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
 	 							$connection_class_path));
 	 			return;
 			else:  	
@@ -154,6 +158,7 @@ class owa_db extends owa_base {
 				
 				//$this->e->debug(sprintf('Using db class at %s.',	$connection_class_path));
 			endif;	
+			
 		endif;
 		
 		return $db;

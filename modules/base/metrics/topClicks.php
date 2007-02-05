@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Top Clicks Metric
  * 
@@ -63,36 +61,6 @@ class owa_topClicks extends owa_metric {
 		$c = owa_coreAPI::entityFactory('base.click');
 		
 		return $c->query($this->params);
-		
-		
-		/*
-		 SELECT 
-			count(click_id) as count,
-			click_x,
-			click_y,
-			page_width,
-			page_height,
-			dom_element_x,
-			dom_element_y,
-			position
-		FROM 
-			%s
-		WHERE
-			true
-			%s
-			%s
-		GROUP BY
-			position
-		ORDER BY
-			count DESC
-		LIMIT 
-			%s",
-			$this->setTable($this->config['clicks_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['limit']
-		);
-		 */
 		
 	}
 	

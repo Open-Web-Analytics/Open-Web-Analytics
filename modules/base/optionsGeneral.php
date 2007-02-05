@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_subview.php');
 
 /**
  * Options View
@@ -44,15 +43,20 @@ class owa_optionsGeneralView extends owa_view {
 		return;
 	}
 	
-	function construct() {
+	function construct($data) {
 		
 		// load template
 		$this->body->set_template('options_general.tpl');
 		// fetch admin links from all modules
 		$this->body->set('headline', 'General Configuration Options');
 		
+		if (empty($data['configuration'])):
+			$data['configuration'] = $this->c->fetch('base');
+		endif;
+		
+		//print_r($data['config']);
 		// assign config data
-		$this->body->set('config', $this->config);
+		$this->body->set('config', $data['configuration']);
 		
 		return;
 	}

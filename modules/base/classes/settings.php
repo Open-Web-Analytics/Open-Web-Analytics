@@ -16,10 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
-
 /**
- * Settings
+ * Settings Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,107 +27,176 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_settings_old {
-	
-	/**
-	 * Databse access object
-	 *
-	 * @var unknown_type
-	 */
-	var $db;
-	
-	/**
-	 * Configuration properties
-	 *
-	 * @var array
-	 */
-	var $properties;
-	
-	/**
-	 * Error Handler
-	 *
-	 * @var object
-	 */
-	var $e;
-	
-	/**
-	 * Constructor
-	 *
-	 * @return owa_settings
-	 */
-	function owa_settings() {
+ 
+ class owa_settings {
+ 	
+ 	/**
+ 	 * Configuration Entity
+ 	 * 
+ 	 * @var object configuration entity
+ 	 */
+ 	var $config;
+ 	
+ 	var $default_config;
+ 	
+ 	/**
+ 	 * Constructor
+ 	 * 
+ 	 * @param string id the id of the configuration array to load
+ 	 */
+ 	function owa_settings() {
 		
-		$this->properties = $this->get_settings();
-		//$this->e = &owa_error::get_instance();
-		return;
-	}
-	
-	
-	/**
-	 * Returns the configuration
-	 *
-	 * @return 	array
-	 * @access 	public
-	 * @static 
-	 */
-	function &get_settings() {
-	
-		static $config;
-		
-		if(!isset($config)):
-			
-			// get base config
-			$config = &owa_settings::get_default_config();
-			
-			//load overrides from config file
-			if (file_exists($config['base']['config_file_path'])):
-				include_once ($config['base']['config_file_path']);
-				if (isset($OWA_CONFIG)):
-					if (!empty($OWA_CONFIG)):
-						foreach ($OWA_CONFIG as $key => $value) {
-							// update current config
-							$config['base'][$key] = $value;
-						}
-					endif;
-				endif;
-				// Setup special public URLs
-				
-				$base_url  = "http";
-		
-				if(isset($_SERVER['HTTPS'])):
-					$base_url .= 's';
-				endif;
-						
-				$base_url .= '://'.$_SERVER['SERVER_NAME'];
-				
-				if($_SERVER['SERVER_PORT'] != 80):
-					$base_url .= ':'.$_SERVER['SERVER_PORT'];
-				endif;
-								
-				$config['base']['public_url'] = $base_url . $OWA_CONFIG['public_url'];
-				$config['base']['main_url'] = $OWA_CONFIG['public_url']."/main.php";
-				$config['base']['main_absolute_url'] = $base_url . $config['main_url'];
-				$config['base']['action_url'] = $config['main_url'];
-				$config['base']['log_url'] = $OWA_CONFIG['public_url']."/log.php";
-				$config['base']['images_url'] = $OWA_CONFIG['public_url']."/i";
-				$config['base']['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
-				$config['base']['home_url'] = $config['public_url']."/reports/index.php?page=dashboard_report.php";
-				$config['base']['admin_url'] = $OWA_CONFIG['public_url']."/admin/index.php";
-				
-			endif;	
+ 		$this->config = owa_coreAPI::entityFactory('base.configuration');
+ 		$this->config->set('settings', $this->getDefaultConfig());
+ 		
+ 		return;
+ 	}
+ 	
+ 	function applyModuleOverrides($module, $config) {
+ 		
+ 		// merge default config with overrides 
+ 		
+ 		if (!empty($config)):
+ 		
+ 			$in_place_config = $this->config->get('settings');
+ 			
+ 			$old_array = $in_place_config[$module];
+ 			
+	 		$new_array = array_merge($old_array, $config);
+ 		
+			$in_place_config[$module] = $new_array; 
+			 		
+		 	$this->config->set('settings', $in_place_config);
+		 	
+		 	//print_r($this->config->get('settings'));
+		 	
+	 	endif;
+	 	
+	 	
+	 	
+	 	return;
+ 		
+ 	}
+ 	
+ 	/**
+ 	 * Loads configuration from data store
+ 	 * 
+ 	 * @param string id  the id of the configuration array to load
+ 	 */
+ 	function load($id = 1) {
+ 		
+	 		if (!file_exists(OWA_BASE_MODULE_DIR.'config'.DIRECTORY_SEPARATOR.'base.php')):
+	 		
+	 			$db_config = owa_coreAPI::entityFactory('base.configuration');
+	 			$db_config->getByPk('id', $id);
+	 			$db_settings = unserialize($db_config->get('settings'));
+	 			
+	 			$default = $this->config->get('settings');
+	 			
+	 			// merge default config with overrides fetched from data store
+	 			
+	 			$new_config = array();
+	 			
+	 			foreach ($db_settings as $k => $v) {
+	 			
+		 			$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
+		 			
+		 			$this->config->set('settings', $new_config);	
+		 				
+	 			}
+	 			
+	 		else:
+	 			; // load config from file
+	 		endif;
+	 	
+	 	
+ 		return;
+ 		
+ 	}
+ 	
+ 	/**
+ 	 * Fetches a modules entire configuration array
+ 	 * 
+ 	 * @param string $module The name of module whose configuration values you want to fetch
+ 	 * @return array Config values
+ 	 */
+ 	function fetch($module = '') {
+	 	$v = $this->config->get('settings');
+	 	
+ 		if (!empty($module)):
+ 		
+ 			return $v[$module];
+		else:
+			return $v['base'];
 		endif;
-
-		return $config['base'];
-	}
-	
-	/**
-	 * Returns default settings array
-	 *
-	 * @return array
-	 */
-	function get_default_config() {
-		
-		return array('base' => array(
+ 	}
+ 	
+ 	/**
+ 	 * updates or creates configuration values
+ 	 * 
+ 	 * @return boolean 
+ 	 */
+ 	function update() {
+ 		
+ 		return $this->config->update();
+ 		
+ 	}
+ 	
+ 	/**
+ 	 * Accessor Method
+ 	 * 
+ 	 * @param string $module the name of the module
+ 	 * @param string $key the configuration key
+ 	 * @return boolean 
+ 	 */
+ 	function get($module, $key) {
+ 		
+ 		$values = $this->config->get('settings');
+ 		
+ 		return $values[$module][$key];
+ 	}
+ 	
+ 	/**
+ 	 * Sets configuration value
+ 	 * 
+ 	 * @param string $module the name of the module
+ 	 * @param string $key the configuration key
+ 	 * @param string $value the configuration value
+ 	 * @return boolean
+ 	 */
+ 	function set($module, $key, $value) {
+ 		
+ 		$values = $this->config->get('settings');
+ 		
+ 		$values[$module][$key] = $value;
+ 		
+ 		$this->config->set('settings', $values);
+ 		
+ 		return;
+ 	}
+ 	
+ 	/**
+ 	 * Alternate Constructor for base module settings
+ 	 * Needed for backwards compatability with older classes
+ 	 * 
+ 	 */
+ 	function &get_settings($id = 1) {
+ 		
+ 		
+ 		static $config2;
+ 		
+ 		if (!isset($config2)):
+ 			print 'hello from alt constructor';
+ 			$config2 = &owa_coreAPI::configSingleton();
+ 		endif;
+ 		
+ 		return $config2->fetch('base');
+ 		
+ 	}
+ 	
+ 	function getDefaultConfig() {
+ 		
+ 		$config =  array('base' => array(
 	
 			'ns'							=> 'owa_',
 			'visitor_param'					=> 'v',
@@ -183,7 +250,7 @@ class owa_settings_old {
 			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
 			'notice_email'					=> '',
-			'error_handler'					=> 'production',
+			'error_handler'					=> 'development',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
 			'browscap.ini'					=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
 			'browscap_supplemental.ini'		=> OWA_BASE_DIR . '/conf/browscap_supplemental.ini',
@@ -232,98 +299,36 @@ class owa_settings_old {
 			'cookie_domain'					=> $_SERVER['SERVER_NAME']
 			
 			));
-	}
-	
-	/**
-	 * Save Config to database
-	 * Site_id needs to be in the array so that it can be changed via the options GUI
-	 *
-	 * @param array $settings
-	 */
-	function save($new_config) {
-				
-		$config = &owa_settings::get_settings();
-				
-		if (empty($new_config['configuration_id'])):
-			$new_config['configuration_id'] = $config['configuration_id'];
-		endif;
-
-		$this->db = &owa_db::get_instance();
-		//print sprintf("Saving new config for site id: %s", $new_new_config['site_id']);
-		$check = $this->db->get_row(
-			sprintf("SELECT settings from %s where id = '%s'",
-					$config['ns'].$config['config_table'],
-					$new_config['configuration_id']
-					));
-					
-					
-		if (empty($check)):			
-		
-			$this->db->query(
-				sprintf("
-				INSERT into %s (id, settings) VALUES ('%s', '%s')",
-				$config['ns'].$config['config_table'],
-				$new_config['configuration_id'],
-				serialize($new_config))
-				
-			);
-		
-		else:
-		
-			$this->db->query(
-				sprintf("
-				UPDATE %s SET settings = '%s' where id = '%s'",
-				$config['ns'].$config['config_table'],
-				serialize($new_config),
-				$new_config['configuration_id']
-				)
-				
-			);
-		
-		endif;
-		
-		return;
-	}
-	
-	/**
-	 * Fetch Config from database
-	 *
-	 * @return array
-	 */
-	function &fetch($configuration_id = 1) {
-		
-		$config = &owa_settings::get_settings();
-		
-		static $settings;
-		
-		if (!isset($settings)):
-		
-			$this->db = &owa_db::get_instance();
 			
-			$sql = sprintf("
-					SELECT 
-						settings 
-					from 
-						%s
-					WHERE
-						id = '%s'",
-					$config['ns'].$config['config_table'],
-					$configuration_id);
-			
-			$settings = $this->db->get_row($sql);
-			
-			// Special Debug variable because error loggers will not have been initialized yet.
-			$from_db = true;
-			//$e = &owa_error::get_instance();
-			//$e->debug(debug_backtrace());
+			// Setup special public URLs
+				
+			$base_url  = "http";
 		
-			$config_values = unserialize($settings['settings']);
-		endif;
-		
-		return $config_values;
-		
-	}
-
-}
-
+			if(isset($_SERVER['HTTPS'])):
+				$base_url .= 's';
+			endif;
+						
+			$base_url .= '://'.$_SERVER['SERVER_NAME'];
+				
+			if($_SERVER['SERVER_PORT'] != 80):
+				$base_url .= ':'.$_SERVER['SERVER_PORT'];
+			endif;
+								
+			$config['base']['public_url'] = $base_url . $OWA_CONFIG['public_url'];
+			$config['base']['main_url'] = $OWA_CONFIG['public_url']."/main.php";
+			$config['base']['main_absolute_url'] = $base_url . $config['main_url'];
+			$config['base']['action_url'] = $config['main_url'];
+			$config['base']['log_url'] = $OWA_CONFIG['public_url']."/log.php";
+			$config['base']['images_url'] = $OWA_CONFIG['public_url']."/i";
+			$config['base']['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
+			$config['base']['home_url'] = $config['public_url']."/reports/index.php?page=dashboard_report.php";
+			$config['base']['admin_url'] = $OWA_CONFIG['public_url']."/admin/index.php";
+				
+			return $config; 		
+ 		
+ 	}
+ 	
+ }
+ 
+ 
 ?>

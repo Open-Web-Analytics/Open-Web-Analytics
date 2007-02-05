@@ -77,7 +77,8 @@ class ini_db {
 	 */
 	function ini_db($ini_file, $sections = null, $return_format = 'object') {
 	
-		$this->config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
 		$this->ini_file = $ini_file;		
 		$this->return_format = $return_format;
 		

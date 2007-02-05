@@ -53,7 +53,9 @@ class owa_mailer extends PHPMailer {
 	 */
 	function owa_mailer() {
 		
-		$this->config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
+		
 		$this->e = &owa_error::get_instance();
 		
 		if (!empty($this->config['mailer-from'])):

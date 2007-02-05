@@ -59,26 +59,6 @@ class owa_visitsFromSitesCount extends owa_metric {
 		$this->params['constraints']['source'] = array('operator' => '=', 'value' => '');
 		
 		return $s->query($this->params);
-		/*
-		 
-		 $sql = sprintf("select 
-			count(sessions.session_id) as site_count
-		FROM 
-			%s as sessions,
-			%s as referers
-		WHERE
-			sessions.referer_id = referers.id
-			AND referers.is_searchengine = 0
-			AND sessions.source = ''
-			AND referers.id != 0
-			%s
-			%s",
-			$this->setTable($this->config['sessions_table']),
-			$this->setTable($this->config['referers_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		 
-		 */
 		
 	}
 	

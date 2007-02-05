@@ -14,6 +14,7 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 
 /* NAVIGATION */
 #sub_nav {padding:5px;}
+.top_level_nav{font-size:20px;}
 .nav_links {list-style:none; margin:0px; padding:0px;}
 .nav_links li {float: left; padding-right:20px;}
 .nav_links li a {text-decoration: none; }
@@ -27,18 +28,20 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 .inline_h3 {font-size:16px;}
 .inline_h4 {font-size:14px;}
 .headline {font-size:20px; background-color:#E0EEEE;color:;border-color:#000000;padding:6px; font-weight:bold;margin: 0px 0px 0px 0px;}
-.panel_headline {font-size:18px; background-color:#FFF8DC;padding:6px;font-weight:bold;margin: 0px 0px 10px 0px;border-bottom:solid 1px}
+.panel_headline {font-size:18px; background-color:#FFF8DC;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
 /* DATA TABLES */
 
 .h_label {font-size:14px; font-weight:bold;}
 .indented_header_row {padding:0px 0px 0px 20px;}
-#layout_panels {border:1px solid;border-collapse: collapse; width:100%;}
-#layout_panels td {border:1px solid;border-collapse: collapse;}
+#layout_panels {border:1px solid;border-collapse: collapse; width:100%; vertical-align:top;}
+#layout_panels td {border:1px solid;border-collapse: collapse; vertical-align:top;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
-#panel td {margin: 0px; width:100%;border-collapse: collapse;border:0px;}
+#panel td {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
 .subview_content{padding:10px;}
+.data_table table {border:0px; solid #000000}
+.subview_content td {padding:20ps;}
 #nav_left {width:240px;}
 .data {white-space:nowrap; width:auto;}
 .form {width:;}
@@ -84,6 +87,8 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 .error{color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: red; font-size: 14px; font-weight:bold;}
 .tiny_icon{width:10px;padding-left:0px;}
 .wrap {margin:0px;padding:10px;}
+.validation_error {color:red;}
+
 /* LAYOUT */
 
 #admin_nav{font-size:12px;}	

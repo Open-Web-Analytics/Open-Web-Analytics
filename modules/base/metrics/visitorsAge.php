@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Visitors Age
  * 
@@ -64,37 +62,6 @@ class owa_visitorsAge extends owa_metric {
 	
 		return $s->query($this->params);
 		
-		/*
-		$sql = sprintf("
-		SELECT
-			count(distinct sessions.visitor_id) as count,
-			visitors.first_session_year,
-			visitors.first_session_month,
-			visitors.first_session_day,
-			visitors.first_session_timestamp as timestamp
-		FROM 
-			%s as sessions, %s as visitors 
-		WHERE
-			sessions.visitor_id = visitors.visitor_id
-			%s
-			%s
-		GROUP BY
-			visitors.first_session_year,
-			visitors.first_session_month,
-			visitors.first_session_day
-		ORDER BY
-			visitors.first_session_year DESC,
-			visitors.first_session_month DESC,
-			visitors.first_session_day DESC",
-			
-			$this->setTable($this->config['sessions_table']),
-			$this->setTable($this->config['visitors_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		);
-
-		return $this->db->get_results($sql);	
-		*/
 	}
 	
 	

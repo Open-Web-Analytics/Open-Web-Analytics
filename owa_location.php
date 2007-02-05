@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_settings_class.php');
-
 /**
  * Geo-location abstract class
  * 
@@ -32,7 +30,7 @@ require_once(OWA_BASE_DIR.'/owa_settings_class.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_location {
+class owa_location extends owa_base {
 	
 	/**
 	 * City 
@@ -70,28 +68,14 @@ class owa_location {
 	var $plugin_dir;
 	
 	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
-	 * error handler
-	 *
-	 * @var object
-	 */
-	var $e;
-	
-	/**
 	 * Constructor
 	 *
 	 * @return owa_location
 	 */
 	function owa_location() {
 		
-		$this->config = &owa_settings::get_settings();
-		$this->e = &owa_error::get_instance();
+		$this->owa_base();
+		
 		return;
 	}
 	

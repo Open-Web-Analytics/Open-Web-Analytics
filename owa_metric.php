@@ -16,10 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_lib.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_db.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_requestContainer.php');
 
 /**
  * Metric
@@ -49,25 +46,11 @@ class owa_metric extends owa_base {
 	var $data;
 	
 	/**
-	 * Databse Access Object
-	 *
-	 * @var object
-	 */
-	var $db;
-	
-	/**
 	 * The params of the caller, either a report or graph
 	 *
 	 * @var array
 	 */
 	var $params = array();
-	
-	/**
-	 * Summary Framework Object
-	 *
-	 * @var object
-	 */
-	var $summaryFramework;
 
 	/**
 	 * Constructor
@@ -76,28 +59,19 @@ class owa_metric extends owa_base {
 	 * @return owa_metric
 	 */
 	function owa_metric() {
-	
-		//$this->db = &owa_db::get_instance();
-		
+
 		// Setup time and query periods
 		$this->time_now = owa_lib::time_now();
-		
-		if ($this->config['use_summary_tables']):
-		// This is a stub for getting Summary Framework object
-			;//$this->summaryFramework = &owa_summary::get_instance();
-		endif;
 		
 		return;
 	}
 	
 	
 	/*
-	 * Applies specific overrides specified in the request to the params of the metric.
+	 * Applies overrides specified in the request to the params of the metric.
 	 * 
 	 */
 	function applyOverrides($params = array()) {
-		
-		//$params = & owa_requestContainer::getInstance();
 		
 		foreach ($params as $k => $v) {
 			
@@ -106,19 +80,6 @@ class owa_metric extends owa_base {
 			endif;
 		
 		}
-		
-		/*if (!empty($params['limit'])):
-			$this->params['limit'] = $params['limit'];
-		endif;
-		
-		if (!empty($params['offset'])):
-			$this->params['offset'] = $params['offset'];
-		endif;
-		
-		if (!empty($params['site_id'])):
-				$this->params['site_id'] = $params['site_id'];
-		endif;
-		*/
 		
 		return;
 	}

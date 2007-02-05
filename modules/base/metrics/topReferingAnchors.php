@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Top Anchors Metric
  * 
@@ -61,35 +59,6 @@ class owa_topReferingAnchors extends owa_metric {
 		$this->params['constraints']['referer.is_searchengine'] = array('operator' => '=', 'value' => 0);	
 		
 		return $s->query($this->params);
-		
-		/*
-		 
-		SELECT 
-			count(sessions.session_id) as count,
-			referers.refering_anchortext
-		FROM 
-			%s as referers,
-			%s as sessions 
-		WHERE 
-			referers.id != 0
-			AND refering_anchortext != ''
-			AND referers.is_searchengine = '0'
-			AND referers.id = sessions.referer_id
-			%s
-			%s
-		GROUP BY
-			referers.refering_anchortext
-		ORDER BY
-			count DESC
-		LIMIT 
-			%s",
-			$this->setTable($this->config['referers_table']),
-			$this->setTable($this->config['sessions_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['limit']
-		 
-		 */
 		
 	}
 	

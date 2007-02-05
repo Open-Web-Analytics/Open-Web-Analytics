@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-
 /**
  * Visits From Search Engines Count Metric
  * 
@@ -57,25 +55,6 @@ class owa_visitsFromSearchEnginesCount extends owa_metric {
 		$this->params['constraints']['referer.is_searchengine'] = 1;
 		
 		return $s->query($this->params);
-		/*
-		 
-		 $sql = sprintf("select 
-			count(sessions.session_id) as se_count
-		FROM 
-			%s as sessions,
-			%s as referers
-		WHERE
-			sessions.referer_id = referers.id
-			AND referers.is_searchengine = 1
-			AND referers.id != 0
-			%s
-			%s",
-			$this->setTable($this->config['sessions_table']),
-			$this->setTable($this->config['referers_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		 
-		 */
 		
 	}
 	

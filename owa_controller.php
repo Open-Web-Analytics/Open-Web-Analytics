@@ -49,6 +49,13 @@ class owa_controller extends owa_base {
 	var $priviledge_level;
 	
 	/**
+	 * data validation control object
+	 * 
+	 * @var Object
+	 */
+	var $v;
+	
+	/**
 	 * Constructor
 	 *
 	 * @param array $params
@@ -71,6 +78,22 @@ class owa_controller extends owa_base {
 		
 		$this->e->debug('Performing Action: '.get_class($this));
 		
+		if (!empty($this->v)):
+		
+			$this->v->doValidations();
+			
+			if ($this->v->hasErrors == true):
+				
+				return $this->errorAction();
+			
+			else:
+				
+				return $this->action();
+				
+			endif;
+			
+		endif;
+		
 		return $this->action();
 		
 	}
@@ -83,6 +106,30 @@ class owa_controller extends owa_base {
 		
 		$eq = &eventQueue::get_instance();
 		return $eq->log($properties, $event_type);
+	}
+	
+	function createValidator() {
+		
+		$this->v = owa_coreAPI::supportClassFactory('base', 'validator');
+		
+		return;
+		
+	}
+	
+	function addValidation($name, $value, $validation, $conf = array()) {
+	
+		if (empty($this->v)):
+			$this->createValidator();
+		endif;
+	
+		return $this->v->addValidation($name, $value, $validation, $conf);
+		
+	}
+	
+	function getValidationErrorMsgs() {
+		
+		return $this->v->getErrorMsgs();
+		
 	}
 	
 }

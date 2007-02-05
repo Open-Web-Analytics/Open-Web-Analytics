@@ -54,7 +54,6 @@ class owa_sitesView extends owa_view {
 		$s = owa_coreAPI::entityFactory('base.site');
 		$sites = $s->find();
 		
-		print_r($sites);
 		$this->body->set('sites', $sites);
 		
 		return;

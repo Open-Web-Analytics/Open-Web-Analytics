@@ -138,6 +138,4 @@ class owa_browscap extends owa_base {
 	
 }
 
-
-
 ?>

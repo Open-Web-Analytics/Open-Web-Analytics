@@ -79,29 +79,31 @@ class owa_sitesAddView extends owa_view {
 class owa_sitesAddController extends owa_controller {
 	
 	function owa_sitesAddController($params) {
+		
 		$this->owa_controller($params);
+		
 		$this->priviledge_level = 'admin';
+		
+		// Config for the domain validation
+		$domain_conf = array('substring' => 'http', 'position' => 0, 'operator' => '!=', 'errorMsgTemplate' => 'Please remove the "http://" from your begining of your domain.');
+	
+		// Add validations to the run
+		$this->addValidation('domain', $this->params['domain'], 'subStringPosition', $domain_conf);
+		$this->addValidation('domain', $this->params['domain'], 'required');
+		
+		return;
 	}
 	
 	function action() {
-		
-		if (empty($this->params['domain'])):
-			$data['view_method'] = 'delegate'; // Delegate, redirect
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installDefaultSiteProfile';
-			$data['error_msg'] = $this->getMsg(3307);
-			$data['site'] = $this->params;	
 			
-			return $data;
-			
-		endif;
+		$this->params['domain'] = $this->params['protocol'].$this->params['domain'];
 		
 		$s = owa_coreAPI::entityFactory('base.site');
 		$s->getByColumn('domain', $this->params['domain']);
 		$id = $s->get('id');
-	
-		if(empty($id)):
 		
+		if(empty($id)):
+			
 			$site = owa_coreAPI::entityFactory('base.site');
 			$site->set('site_id', owa_lib::setStringGuid($this->params['domain']));
 			$site->set('name', $this->params['name']);
@@ -109,22 +111,34 @@ class owa_sitesAddController extends owa_controller {
 			$site->set('description', $this->params['description']);
 			$site->set('site_family', $this->params['site_family']);
 			$site->create();
-			
+				
 			$data['view_method'] = 'redirect';
 			$data['view'] = 'base.options';
 			$data['subview'] = 'base.sites';
 			$data['status_code'] = 3202;
-			
+				
 		else:
-			
+				
 			$data['view_method'] = 'delegate';
 			$data['view'] = 'base.options';
 			$data['subview'] = 'base.sitesAdd';
 			$data['error_msg'] = $this->getMsg(3206);
 			$data['site'] = $this->params;	
-		
+						
 		endif;
+			
+		return $data;
+	}
+	
+	function errorAction() {
 		
+		$data['view_method'] = 'delegate'; 
+		$data['view'] = 'base.options';
+		$data['subview'] = 'base.sitesAdd';
+		$data['error_msg'] = $this->getMsg(3307);
+		$data['site'] = $this->params;	
+		$data['validation_errors'] = $this->getValidationErrorMsgs();
+	
 		return $data;
 	}
 	

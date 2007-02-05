@@ -16,11 +16,9 @@
 // $Id$
 //
 
-
 require_once(OWA_BASE_DIR.'/eventQueue.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_requestContainer.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_auth.php');
-
 
 /**
  * Simple Auth Plugin

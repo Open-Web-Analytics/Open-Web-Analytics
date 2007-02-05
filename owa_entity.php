@@ -76,7 +76,7 @@ class owa_entity {
 	function create() {	
 	
 		// Setup databse access object
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 	
 		$all_cols = $this->getColumns();
 		
@@ -113,7 +113,7 @@ class owa_entity {
 		endif;
 		
 		// Setup databse access object
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		
 		// Persist object
 		$status = $db->update($this->_getProperties(), $constraint, get_class($this));
@@ -140,7 +140,7 @@ class owa_entity {
 		}
 		
 		// Setup databse access object
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		
 		// Persist object
 		$status = $db->update($properties, $where, get_class($this));
@@ -157,7 +157,7 @@ class owa_entity {
 	function delete($id, $col = '') {	
 		
 		// Setup databse access object
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		
 		if (empty($col)):
 			$col = 'id';
@@ -179,7 +179,7 @@ class owa_entity {
 	function getByColumn($col, $value) {
 		
 		// Setup databse access object
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		
 		$constraint = array($col => $value);
 			
@@ -191,7 +191,7 @@ class owa_entity {
 	
 	function find($params = array()) {
 		
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		
 		$params['primary_obj'] = $this;
 		
@@ -201,7 +201,7 @@ class owa_entity {
 	
 	function query($params) {
 		
-		$db = &owa_db::get_instance();
+		$db = &owa_coreAPI::dbSingleton();
 		
 		$params['primary_obj'] = $this;
 		

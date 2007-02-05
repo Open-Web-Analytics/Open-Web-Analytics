@@ -17,7 +17,6 @@
 //
 
 require_once (OWA_BASE_DIR.'/owa_base.php');
-require_once (OWA_BASE_DIR.'/owa_db.php');
 
 /**
  * Install Abstract Class
@@ -69,7 +68,7 @@ class owa_install extends owa_base{
 	function owa_install() {
 		
 		$this->owa_base();
-		$this->db = &owa_db::get_instance();
+		$this->db = &owa_coreAPI::dbSingleton();
 		
 		return;
 	}

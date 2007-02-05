@@ -41,6 +41,7 @@ class owa_baseModule extends owa_module {
 		$this->author = 'Peter Adams';
 		$this->version = '1.0';
 		$this->description = 'Base functionality for OWA.';
+		$this->config_required = false;
 		
 		$this->owa_module();
 		
@@ -70,6 +71,12 @@ class owa_baseModule extends owa_module {
 									'anchortext' 	=> 'Site Roster',
 									'group'			=> 'General',
 									'order'			=> 3));
+								
+		$this->addAdminPanel(array('do' 			=> 'base.optionsModules', 
+									'priviledge' 	=> 'admin', 
+									'anchortext' 	=> 'Modules Admin',
+									'group'			=> 'General',
+									'order'			=> 3));
 									
 		return;
 		
@@ -78,13 +85,48 @@ class owa_baseModule extends owa_module {
 	function registerNavigation() {
 		
 		$this->addNavigationLink(array('view' 			=> 'base.reportDocument', 
+										'nav_name'		=> 'subnav',
 										'ref'			=> 'base.reportClicks',
 										'priviledge' 	=> 'viewer', 
 										'anchortext' 	=> 'Click Map Report',
 										'order'			=> 1));
 		
 		
-									
+		$this->addNavigationLink(array('view' 			=> 'base.report', 
+										'nav_name'		=> 'top_level_report_nav',
+										'ref'			=> 'base.reportDashboard',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Dashboard',
+										'order'			=> 1));
+										
+		$this->addNavigationLink(array('view' 			=> 'base.report', 
+										'nav_name'		=> 'top_level_report_nav',
+										'ref'			=> 'base.reportVisitors',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Visitors',
+										'order'			=> 3));
+										
+		$this->addNavigationLink(array('view' 			=> 'base.report', 
+										'nav_name'		=> 'top_level_report_nav',
+										'ref'			=> 'base.reportTraffic',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Traffic Sources',
+										'order'			=> 2));	
+		
+		$this->addNavigationLink(array('view' 			=> 'base.report', 
+										'nav_name'		=> 'top_level_report_nav',
+										'ref'			=> 'base.reportContent',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Content',
+										'order'			=> 4));
+		
+		$this->addNavigationLink(array('view' 			=> 'base.report', 
+										'nav_name'		=> 'top_level_report_nav',
+										'ref'			=> 'base.reportFeeds',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Feeds',
+										'order'			=> 5));
+		
 		return;
 		
 	}

@@ -17,7 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_error.php');
-require_once(OWA_BASE_DIR.'/owa_settings_class.php');
+
 
 /**
  * Plugin API
@@ -88,7 +88,8 @@ class owa_api {
 	 */
 	function owa_api() {
 		
-		$this->config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
 		$this->e = &owa_error::get_instance();
 		
 		return;

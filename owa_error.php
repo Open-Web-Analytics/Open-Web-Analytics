@@ -17,7 +17,6 @@
 //
 require_once 'owa_env.php';
 require_once (OWA_PEARLOG_DIR . '/Log.php');
-require_once (OWA_PLUGINS_DIR . '/log/winstatic.php');
 
 /**
  * Error handler
@@ -64,7 +63,8 @@ class owa_error {
 		
 		if (!isset($logger)):
 		
-			$config = &owa_settings::get_settings();
+				$c = &owa_coreAPI::configSingleton();
+				$config = $c->fetch('base');
 			
 			switch ($config['error_handler']) {
 				
@@ -288,7 +288,8 @@ class owa_error {
 		
 		$err .= "</errorentry>\n\n";
 	    $conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-	    $config = &owa_settings::get_settings();
+	   	$c = &owa_coreAPI::configSingleton();
+		$config = $c->fetch('base');
 		$logger = &Log::singleton('file', $config['error_log_file'], posix_getpid(), $conf);
 		$file_mask = PEAR_LOG_ALL;
 		$logger->setMask($file_mask);
@@ -296,13 +297,7 @@ class owa_error {
 		
 		return;
 	}
-	/*
-	function log($errmsg, $priority) {
-		
-		return $this->logger->log($errmsg, $priority);
-	}
-	*/
-}
 
+}
 
 ?>

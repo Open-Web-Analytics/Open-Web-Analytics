@@ -18,7 +18,7 @@
 
 require_once(OWA_INCLUDE_DIR.'/template_class.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_settings_class.php');
+require_once(OWA_BASE_CLASS_DIR.'settings.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
@@ -53,7 +53,8 @@ class owa_template extends Template {
 		
 		$this->caller_params = $caller_params;
 			
-		$this->config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
 		// set template dir
 		
 		if(!empty($caller_params['module'])):
@@ -327,6 +328,8 @@ class owa_template extends Template {
 		//return sprintf($this->config['link_template'], $this->config['main_absolute_url'], $get);
 		
 	}
+	
+	
 	
 }
 

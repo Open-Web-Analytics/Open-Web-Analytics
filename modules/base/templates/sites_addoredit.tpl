@@ -18,7 +18,16 @@
 			<? if ($action == 'base.sitesEdit'):?>
 			<TD><?=$site['domain'];?></TD>
 			<?else:?>
-			<TD><input type="text" name="<?=$this->getNs();?>domain" size="52" maxlength="70" value="<?=$site['domain'];?>"></TD>
+			<TD>
+				
+				<select name="<?=$this->getNs();?>protocol">
+					<option value="http://">http://</option>
+				    <option value="https://">https://</option>
+				</select>
+  
+				<input type="text" name="<?=$this->getNs();?>domain" size="52" maxlength="70" value="<?=$site['domain'];?>"><BR>
+				<span class="validation_error"><?=$validation_errors['domain'];?></span>
+			</TD>
 			<?endif;?>
 		</TR>
 		<TR>
