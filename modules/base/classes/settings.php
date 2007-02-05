@@ -89,21 +89,27 @@
 	 		
 	 			$db_config = owa_coreAPI::entityFactory('base.configuration');
 	 			$db_config->getByPk('id', $id);
-	 			$db_settings = unserialize($db_config->get('settings'));
+	 			$db_settings = $db_config->get('settings');
 	 			
-	 			$default = $this->config->get('settings');
+	 			if (!empty($db_settings)):
 	 			
-	 			// merge default config with overrides fetched from data store
-	 			
-	 			$new_config = array();
-	 			
-	 			foreach ($db_settings as $k => $v) {
-	 			
-		 			$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
+	 				$db_settings = unserialize($db_settings);
+	 				
+		 			$default = $this->config->get('settings');
 		 			
-		 			$this->config->set('settings', $new_config);	
-		 				
-	 			}
+		 			// merge default config with overrides fetched from data store
+		 			
+		 			$new_config = array();
+		 			
+		 			foreach ($db_settings as $k => $v) {
+		 			
+			 			$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
+			 			
+			 			$this->config->set('settings', $new_config);	
+			 				
+		 			}
+		 			
+	 			endif;
 	 			
 	 		else:
 	 			; // load config from file
