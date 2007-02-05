@@ -287,7 +287,7 @@ class owa_module extends owa_base {
 	
 	function installerFactory($params = array()) {
 		
-		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$this->name.'/install/', 'owa_', 'install_'.$this->name.'_'.$this->config['db_type'], $params);
+		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$this->name.'/install/', 'owa_', 'install_'.$this->name.'_'.OWA_DB_TYPE, $params);
 		
 		$obj->module = $this->name;
 		
