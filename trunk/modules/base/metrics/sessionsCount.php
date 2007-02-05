@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Dashboard Core metrics By Day
  * 

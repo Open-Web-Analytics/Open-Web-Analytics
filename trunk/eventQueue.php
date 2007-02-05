@@ -60,8 +60,9 @@ class eventQueue {
 	function &get_instance() {
 	
 		static $eq;
-	
-		$this->config = &owa_settings::get_settings();	
+		
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
 		
 		if (!isset($eq)):
 			// Create an async event queue

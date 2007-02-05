@@ -10,7 +10,6 @@ Author URI: http://www.openwebanalytics.com
 */
 
 require_once 'owa_env.php';
-require_once 'owa_settings_class.php';
 require_once 'owa_wp.php';
 
 /**
@@ -26,15 +25,16 @@ $current_plugins = get_option('active_plugins');
 
 
 //print md5(get_settings('siteurl'));
-
+$owa_config = array();
 // Caller Configuration overides
 $owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-$owa_config['db_name'] = DB_NAME;     // The name of the database
-$owa_config['db_user'] = DB_USER;     // Your db username
-$owa_config['db_password'] = DB_PASSWORD; // ...and password
-$owa_config['db_host'] = DB_HOST;     // The host of your db
-$owa_config['db_type'] = 'mysql';     // The host of your db
-$owa_config['db_class'] = 'mysql';     // The host of your db
+
+define('OWA_DB_TYPE', 'mysql');
+define('OWA_DB_NAME', DB_NAME);
+define('OWA_DB_HOST', DB_HOST);
+define('OWA_DB_USER', DB_USER);
+define('OWA_DB_PASSWORD', DB_PASSWORD);
+
 $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = '../wp-content/plugins/owa/public/i';
 $owa_config['public_url'] = '../wp-content/plugins/owa/public';
@@ -97,9 +97,7 @@ add_action('admin_menu', 'owa_options_menu');
  */
 function owa_set_user_level() {
 	
-	global $user_level, $user_login, $user_ID, $user_email, $user_identity;
-	
-	$owa_wp = &new owa_wp;
+	global $owa_wp, $user_level, $user_login, $user_ID, $user_email, $user_identity;
 	
 	$owa_wp->params['caller']['wordpress']['user_data'] = array(
 	
@@ -142,6 +140,8 @@ function owa_main() {
 
 function owa_log() {
 
+	global $owa_wp;
+	
 	// WORDPRESS SPECIFIC DATA //
 	
 	// Get the type of page
@@ -172,7 +172,7 @@ function owa_log() {
 	//$app_params['site_id'] = '';
 	
 	// Process the request by calling owa
-	$owa_wp = &new owa_wp;
+	
 	$owa_wp->log($app_params);
 	return;
 }
@@ -254,7 +254,7 @@ function owa_get_page_type() {
  */
 function add_feed_sid($binfo) {
 	
-	$owa_wp = &new owa_wp;
+	global $owa_wp;
 	
 	if (strstr($binfo, "feed=")):
 	
@@ -307,8 +307,10 @@ function owa_install() {
 	if ($user_level < 8):
     	return;
     else:
-    	$conf = &owa_settings::get_settings();
-		$conf['fetch_config_from_db'] = false;
+    	//$conf = &owa_settings::get_settings();
+		//['fetch_config_from_db'] = false;
+    	
+    	$owa_wp->config['fetch_config_from_db'] = false;
     	
     	$owa_wp->config['db_type'] = 'mysql';
     	

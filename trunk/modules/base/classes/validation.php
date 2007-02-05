@@ -17,7 +17,7 @@
 //
 
 /**
- * Database Column Object
+ * Abstract Validation Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,19 +28,64 @@
  * @since		owa 1.0.0
  */
  
-class owa_dbColumn {
+ class owa_validation extends owa_base {
  	
- 	var $value;
+ 	var $hasError;
  	
- 	var $foriegn_key;
+ 	var $errorMsg;
  	
- 	var $auto_incement;
+ 	var $errorMsgTemplate;
  	
- 	function owa_dbColumn() {
+ 	function owa_validation($conf) {
+ 		
+ 		$this->owa_base();
+ 		
+ 		if (!empty($conf['errorMsgTemplate'])):
+ 			$this->errorMsgTemplate = $conf['errorMsgTemplate'];
+ 		endif;
  		
  		return;
  	}
  	
+ 	function validate($value) {
+ 		
+ 		return false;
+ 	}
+ 	
+ 	function getErrorMsg() {
+ 		
+ 		return $this->errorMsg;
+ 	}
+ 	
+ 	function setErrorMsgTemplate($string) {
+ 		
+ 		$this->errorMsgTemplate = $string;
+ 		
+ 		return;
+ 	}
+ 	
+ 	function setErrorMsg($msg) {
+ 		
+ 		$this->errorMsg = $msg;
+ 		$this->hasError = true;
+ 		
+ 		return;
+ 		
+ 	}
+ 	
+ 	function isValid() {
+ 		
+ 		if ($this->hasError == true):
+ 			return false;
+ 		else:
+ 			return true;
+ 		endif;
+ 	}
+ 	
+ 	
+ 	
+ 	
  }
-
+ 
 ?>
+ 

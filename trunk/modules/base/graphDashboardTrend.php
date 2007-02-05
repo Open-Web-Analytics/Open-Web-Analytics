@@ -63,9 +63,10 @@ class owa_graphDashboardTrendView extends owa_abstractJpGraphView  {
 
 		$new_result = owa_lib::deconstruct_assoc($result);
 		//$new_result = '';
+		
 		if(empty($new_result['page_views']) && empty($new_result['sessions'])):
-			
-			$this->graph = owa_coreAPI::graphFactory('base.jpErrorGraph');
+		
+			$this->graph = owa_coreAPI::graphFactory('base.jpErrorGraph');	
 			$this->graph->params['width'] = 275;
 			$this->graph->params['height'] = 100;
 			$this->graph->params['error_msg'] = $this->getMsg(3500);

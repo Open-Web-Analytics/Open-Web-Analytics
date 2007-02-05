@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-
 /**
  * Feed Formats Count
  * 
@@ -58,27 +56,6 @@ class owa_feedFormatsCount extends owa_metric {
 		$this->params['groupby'] = array('feed_format');
 		
 		return $f->query($this->params);
-		
-		/*
-		 
-		SELECT 
-			count(request_id) as count, 
-			feed_format
-		FROM 
-			%s as feed_requests
-		WHERE
-			true 
-			%s 
-			%s
-		GROUP BY
-			feed_format
-		",
-			$this->setTable($this->config['feed_requests_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		);
-		 
-		 */
 		
 	}
 	

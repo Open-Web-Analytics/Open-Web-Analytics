@@ -75,7 +75,9 @@ class owa_observer extends Log_observer {
     function owa_observer($priority = PEAR_LOG_INFO)
     {
         $this->Log_observer($priority);
-        $this->config = &owa_settings::get_settings();
+     
+        $c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
         $this->e = &owa_error::get_instance();
         $this->api = &owa_coreAPI::singleton();
         return;

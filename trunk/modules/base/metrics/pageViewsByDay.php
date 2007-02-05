@@ -56,37 +56,6 @@ class owa_pageViewsByDay extends owa_metric {
 	
 		return $s->query($this->params);
 		
-		/*
-		
-		$sql = sprintf("select 
-				sum(sessions.num_pageviews) as page_views,
-				sessions.month, 
-				sessions.day, 
-				sessions.year
-			from
-				%s as sessions
-			where
-				%s 
-				%s
-			group by 
-				sessions.%s
-			ORDER BY
-				sessions.year %6\$s, 
-				sessions.month %6\$s, 
-				sessions.day %6\$s",
-				
-				$this->setTable($this->config['sessions_table']),
-				$this->time_period($this->params['period']),
-				$this->add_constraints($this->params['constraints']),
-				$this->params['group_by'],
-				$this->params['order']
-			);
-		
-		
-		
-		return $this->db->get_results($sql);
-		
-		*/
 	}
 	
 	

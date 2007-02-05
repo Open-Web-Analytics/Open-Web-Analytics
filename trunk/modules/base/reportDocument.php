@@ -102,7 +102,7 @@ class owa_reportDocumentController extends owa_reportController {
 		));
 		
 		// get navigation
-		$data['nav'] = $api->getNavigation('base.reportDocument');
+		$data['nav'] = $api->getNavigation('base.reportDocument', 'subnav');
 		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportDocument';

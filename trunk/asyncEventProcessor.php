@@ -16,15 +16,12 @@
 // $Id$
 //
 
-require_once 'owa_settings_class.php';
 require_once 'owa_lib.php';
 require_once 'owa_env.php';
 require_once 'eventQueue.php';
-require_once (OWA_PEARLOG_DIR . '/Log.php');
-require_once 'owa_session_class.php';
-require_once 'owa_request_class.php';
+//require_once (OWA_PEARLOG_DIR . '/Log.php');
 require_once 'owa_caller.php';
-require_once('owa_db.php');
+
 
 /**
  * Asynchronous Event Processsor
@@ -86,7 +83,7 @@ class asyncEventProcessor extends owa_caller {
 		// Turns off async setting so that the proper event queue is created
 		$this->config['async_db'] = false;
 		$this->eq = &eventQueue::get_instance();
-		$this->db = &owa_db::get_instance();
+		$this->db = &owa_coreAPI::dbSingleton();
 		
 		// Create Error Logger - NEEDED?
 		$conf = array('mode' => 640, 'timeFormat' => '%X %x');

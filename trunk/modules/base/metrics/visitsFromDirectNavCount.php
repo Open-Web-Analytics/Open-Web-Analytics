@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-
 /**
  * Visits From Direct Navigation Count Metric
  * 
@@ -58,22 +56,6 @@ class owa_visitsFromDirectNavCount extends owa_metric {
 		$this->params['constraints']['source'] = array('operator' => '=', 'value' => '');
 		
 		return $s->query($this->params);
-		/*
-		 
-		 SELECT 
-			count(sessions.session_id) as count
-		FROM 
-			%s as sessions
-		WHERE
-			sessions.referer_id = '0'
-			AND sessions.source = ''
-			%s
-			%s",
-			$this->setTable($this->config['sessions_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		 
-		 */
 		
 	}
 	

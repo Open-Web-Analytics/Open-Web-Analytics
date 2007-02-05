@@ -25,7 +25,11 @@
 				<H4><?=$group;?></H4>
 					<UL>
 					<? foreach ($items as $k => $v):?>
+						<? if ($v['view']):?>
 						<LI><a href="<?=$this->makeLink(array('view' => 'base.options', 'subview' => $v['view']));?>"><?=$v['anchortext'];?></a></LI>
+						<? else: ?>
+						<LI><a href="<?=$this->makeLink(array('do' => $v['do']));?>"><?=$v['anchortext'];?></a></LI>
+						<? endif; ?>
 					<? endforeach;?>
 					</UL>
 			<? endforeach;?>

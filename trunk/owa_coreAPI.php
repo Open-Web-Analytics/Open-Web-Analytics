@@ -64,6 +64,57 @@ class owa_coreAPI extends owa_base {
 		return $api;
 	}
 	
+	function &dbSingleton() {
+		
+		static $db;
+	
+		if (!isset($db)):
+			
+			//$c = &owa_coreAPI::configSingleton();
+			//$config = $c->fetch('base');
+			//$e = &owa_error::get_instance();
+			
+			if (!class_exists('owa_db')):
+				require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
+			endif;
+			
+			$connection_class = "owa_db_" . OWA_DB_TYPE;
+			$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
+	
+	 		if (!include($connection_class_path)):
+	 			$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
+	 							$connection_class_path));
+	 			return;
+			else:  	
+				$db = new $connection_class;
+				
+				//$this->e->debug(sprintf('Using db class at %s.',	$connection_class_path));
+			endif;	
+			
+		endif;
+		
+		return $db;
+		
+	}
+	
+	function &configSingleton($params = array()) {
+		
+		static $config;
+		
+		if(!isset($config)):
+			
+			if (!class_exists('owa_settings')):
+				require_once(OWA_BASE_CLASS_DIR.'settings.php');
+			endif;
+			
+			$config = owa_coreAPI::supportClassFactory('base', 'settings');
+			
+		endif;
+		
+		return $config;
+	}
+	
+	
 	function setupFramework() {
 		
 		if ($this->init != true):
@@ -78,12 +129,29 @@ class owa_coreAPI extends owa_base {
 	function _loadModules() {
 		
 		foreach ($this->config['modules'] as $k => $module) {
-			require_once(OWA_BASE_DIR.'/modules/'.$module.'/module.php');
-			$m = owa_lib::factory(OWA_BASE_DIR.'/'.$module, 'owa_', $module.'Module');
+			
+			$m = owa_coreAPI::moduleClassFactory($module);
 			$this->modules[$m->name] = $m;
 		}
 		
 		return;
+	}
+	
+	/**
+	 * Produces Module Classes (module.php)
+	 *  
+	 * @return Object module class object
+	 */
+	function moduleClassFactory($module) {
+		
+		if (!class_exists('owa_module')):
+			require_once(OWA_BASE_CLASSES_DIR.'owa_module.php');
+		endif;
+			
+		require_once(OWA_BASE_DIR.'/modules/'.$module.'/module.php');
+			
+		return owa_lib::factory(OWA_BASE_CLASSES_DIR.$module, 'owa_', $module.'Module');
+		
 	}
 	
 	function _loadEntities() {
@@ -226,7 +294,14 @@ class owa_coreAPI extends owa_base {
 	 */
 	function getMetric($metric_name, $params) {
 		
+		if (!class_exists('owa_metric')):
+		
+			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
+			
+		endif;
+		
 		$m = owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $this->params, false);
+		
 		$m->applyOverrides($params);
 		
 		return $m->generate();
@@ -300,25 +375,51 @@ class owa_coreAPI extends owa_base {
 	
 	/**
 	 * Returns a consolidated list of nav links from all active modules for a particular view
+	 * and named navigation element.
 	 *
+	 * @param string nav_name the name of the navigation element that you want links for
+	 * @param string sortby the array value to sort the navigation array by
 	 * @return array
 	 */
-	function getNavigation($view) {
+	function getNavigation($view, $nav_name, $sortby ='order') {
 		
 		$links = array();
 		
 		foreach ($this->modules as $k => $v) {
-			$v->registerNavigation();
+			
+			// If the module does not have nav links, register them. needed in case this function is called twice on
+			// same view.
+			if (empty($v->nav_links)):
+				$v->registerNavigation();
+			endif;		
+			
 			$module_nav = $v->getNavigationLinks();
 			
+			//print_r($module_nav);
+			
+			// assemble the navigation for a specific view's named navigation element'	
 			foreach ($module_nav as $key => $value) {
 				
-				$links[$value['view']][] = $value;
+				$links[$value['view']][$value['nav_name']][] = $value;
 			}
 			
 		}
 		
-		return $links[$view];
+		//print_r($links[$view][$nav_name]);
+		
+		// anonymous sorting function, takes sort by variable.
+		$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
+   		
+   		// sort the array
+   		$ret = usort($links[$view][$nav_name], create_function('$a,$b', $code));
+		
+		return $links[$view][$nav_name];
+		 
+	}
+	
+	function getNavSort($a, $b) {
+		
+		return strnatcmp($a['order'], $b['order']);
 	}
 	
 	/**
@@ -403,6 +504,6 @@ class owa_coreAPI extends owa_base {
 		
 	}
 	
-	
 }
+
 ?>

@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -17,8 +17,8 @@
 //
 
 require_once('owa_env.php');
-require_once('owa_settings_class.php');
 require_once('owa_error.php');
+
 /**
  * OWA Base Class
  * 
@@ -30,6 +30,7 @@ require_once('owa_error.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+
 class owa_base {
 	
 	/**
@@ -45,6 +46,13 @@ class owa_base {
 	 * @var object
 	 */
 	var $e;
+	
+	/**
+	 * Configuration Entity
+	 * 
+	 * @var Object global configuration object
+	 */
+	var $c;
 	
 	/**
 	 * Module that this class belongs to
@@ -67,10 +75,12 @@ class owa_base {
 	 */
 	function owa_base() {
 		
-		$this->config = &owa_settings::get_settings();
+		$this->c = &owa_coreAPI::configSingleton();
+		$this->config = $this->c->fetch('base');
 		$this->e = &owa_error::get_instance();
 		
 		return;
+
 	}
 	
 	/**
@@ -109,7 +119,7 @@ class owa_base {
 		return $msg;
 		
 	}
-	
+
 	/**
 	 * Sets object attributes
 	 *
@@ -143,6 +153,5 @@ class owa_base {
 	}
 	
 }
-
 
 ?>

@@ -39,19 +39,16 @@ class owa_db_mysql extends owa_db {
 	
 		$this->owa_db();
 		
-		$connectionString = sprintf(
-			'%s',
-			$this->config['db_host']
-		);	
+		//$connectionString = sprintf('%s', OWA_DB_HOST);	
 		
-		$this->connection = @mysql_connect(
-			$connectionString,
-			$this->config['db_user'],
-			$this->config['db_password'],
+		$this->connection = mysql_connect(
+			OWA_DB_HOST,
+			OWA_DB_USER,
+			OWA_DB_PASSWORD,
 			true
     	);
 		
-		$this->database_selection = @mysql_select_db($this->config['db_name'], $this->connection);
+		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
 		
 		if (!$this->connection || !$this->database_selection):
 			$this->e->alert('Could not connect to database. ');

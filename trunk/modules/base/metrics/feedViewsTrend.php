@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-
 /**
  * Dashboard Core metrics By Day
  * 
@@ -51,43 +49,11 @@ class owa_feedViewsTrend extends owa_metric {
 									day";
 		
 		
-		//$this->params['orderby'] = array('year', 'month', 'day');
-		
 		$this->setTimePeriod($this->params['period']);
 		
 		$f = owa_coreAPI::entityFactory('base.feed_request');
 		
 		return $f->query($this->params);
-		
-		/*
-		 
-		SELECT 
-			count(request_id) as fetch_count,
-			count(distinct feed_reader_guid) as reader_count,
-			year,
-			month,
-			day
-		FROM 
-			%s as feed_requests
-		WHERE
-			true 
-			%s 
-			%s
-		GROUP BY
-			feed_requests.%s
-		ORDER BY
-			year,
-			month,
-			day %s
-		",
-			$this->setTable($this->config['feed_requests_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['group_by'],
-			$this->params['order']
-		);
-		 
-		 */
 		
 	}
 	

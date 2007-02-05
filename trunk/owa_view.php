@@ -154,9 +154,6 @@ class owa_view extends owa_base {
 			$this->t->set('authStatus', true);
 		endif;
 		
-		//array or errors usually used for field validations
-		$this->body->set('errors', $data['errors']);
-		
 		// get error msg from error code passed on the query string from a redirect.
 		if (!empty($data['error_code'])):
 			$this->t->set('error_msg', $this->getMsg($data['error_code']));
@@ -170,6 +167,10 @@ class owa_view extends owa_base {
 		
 		// construct main view.  This might set some properties of the subview.
 		$this->construct($this->data);
+		
+		//array of errors usually used for field validations
+		$this->body->set('validation_errors', $data['validation_errors']);
+		$this->subview->body->set('validation_errors', $data['validation_errors']);	
 			
 		// assemble subview
 		if (!empty($this->data['subview'])):
@@ -178,6 +179,14 @@ class owa_view extends owa_base {
 			// assign subview to body template
 			$this->body->set('subview', $this->subview_rendered);
 		endif;
+		
+		if (!empty($data['validation_errors'])):
+			$ves = new owa_template('base');
+			$ves->set_template('error_validation_summary.tpl');
+			$ves->set('validation_errors', $data['validation_errors']);
+			$validation_errors_summary = $ves->fetch();
+			$this->t->set('error_msg', $validation_errors_summary);
+		endif;		
 		
 		//Assign body to main template
 		$this->t->set('body', $this->body);

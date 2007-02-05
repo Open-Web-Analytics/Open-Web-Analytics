@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_coreAPI.php');
-
 /**
  * Dashboard Core metrics By Day
  * 
@@ -61,9 +58,6 @@ class owa_dashCoreByDay extends owa_metric {
 		$s = owa_coreAPI::entityFactory('base.session');
 		
 		return $s->query($this->params);
-		
-		
-		
 		
 	}
 	

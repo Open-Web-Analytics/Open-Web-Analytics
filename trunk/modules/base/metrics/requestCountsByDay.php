@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Dashboard Core metrics By Day
  * 
@@ -49,8 +47,6 @@ class owa_requestCountsByDay extends owa_metric {
 			count(distinct request.session_id) as sessions, 
 			count(request.id) as page_views ";
 		
-		// $this->params['use_summary'] = true;
-		
 		$this->params['orderby'] = array('year', 'month', 'day');
 		
 		$this->setTimePeriod($this->params['period']);
@@ -58,38 +54,6 @@ class owa_requestCountsByDay extends owa_metric {
 		$r = owa_coreAPI::entityFactory('base.request');
 		
 		return $r->query($this->params);
-		
-		/*
-		 
-		 $sql = sprintf("select 
-			requests.month, 
-			requests.day, 
-			requests.year, 
-			count(distinct requests.visitor_id) as unique_visitors, 
-			count(distinct requests.session_id) as sessions, 
-			count(requests.request_id) as page_views 
-		from 
-			%s as requests
-		where 
-			true
-			%s 
-			%s
-		group by 
-			requests.%s
-		ORDER BY
-			requests.year, 
-			requests.month, 
-			requests.day %s",
-			$this->setTable($this->config['requests_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['group_by'],
-			$this->params['order']
-		);
-		 
-		 
-		 
-		 */
 		
 	}
 	

@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-
 /**
  * Feed Reader Types Count
  * 
@@ -48,9 +46,6 @@ class owa_feedReaderTypesCount extends owa_metric {
 									ua.ua as ua,
 									ua.browser_type";
 		
-		
-		//$this->params['orderby'] = array('year', 'month', 'day');
-		
 		$this->setTimePeriod($this->params['period']);
 		
 		$f = owa_coreAPI::entityFactory('base.feed_request');
@@ -62,30 +57,6 @@ class owa_feedReaderTypesCount extends owa_metric {
 		$this->params['groupby'] = array('ua.browser_type');
 		
 		return $f->query($this->params);
-		
-		/*
-		 
-			SELECT 
-			count(distinct feed_requests.feed_reader_guid) as count,
-			ua.ua as ua,
-			ua.browser_type
-		FROM 
-			%s as feed_requests,
-			%s as ua
-		WHERE
-			ua.id = ua_id
-			%s 
-			%s
-		GROUP BY
-			ua.browser_type
-		",
-			$this->setTable($this->config['feed_requests_table']),
-			$this->setTable($this->config['ua_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		);
-		 
-		 */
 		
 	}
 	

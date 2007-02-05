@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -58,33 +58,42 @@ class owa_caller extends owa_base {
 	 */
 	function owa_caller($config) {
 		
-		//set_error_handler(array("owa_error", "handlePhpError"), E_ALL);
-		
-		$this->owa_base();
-		
-		$this->config = &owa_settings::get_settings();
-		
-		$this->apply_caller_config($config);
-		
-		if ($this->config['fetch_config_from_db'] == true):
-			$this->load_config_from_db();
-			
-			// Needed to dump the error logger because it was loaded initially with the default setting
-			// and not the setting stored in the DB.
-			$this->e = null;
-			$this->e = owa_error::get_instance();
+		//load DB constants if not set already by caller
+		if(!defined('OWA_DB_HOST')):
+			include (OWA_BASE_MODULE_DIR.'config'.DIRECTORY_SEPARATOR.'db_config.php');
 		endif;
 		
+		//set_error_handler(array("owa_error", "handlePhpError"), E_ALL);
+		
+		// Sets default config and error logger
+		$this->owa_base();
+		
+		if (empty($config['configuration_id'])):
+			$config['configuration_id'] = 1;
+		endif;
+		
+		// Applies config from db or cache
+		$this->c->load($config['configuration_id']);
+		
+		// Applies run time config overrides
+		$this->c->applyModuleOverrides('base', $config);
+		
+		// re-fetch the array now that overrides have been applied.
+		// needed for backwards compatability 
+		$this->config = $this->c->fetch('base');
+	
+		// reloads error logger now that final config values are in place
+		$this->e = null;
+		$this->e = owa_error::get_instance();
+
 		// Create Request Container
 		$this->params = &owa_requestContainer::getInstance();
 		
 		// Load the core API
 		$this->api = &owa_coreAPI::singleton();
+		
 		// should only be called once to load all modules
 		$this->api->setupFramework();
-		
-		
-		//ob_end_clean();
 		
 		return;
 	
@@ -95,49 +104,6 @@ class owa_caller extends owa_base {
 		//$this->params = owa_lib::getRequestParams();
 		return $this->handleRequest();
 		
-	}
-	
-	/**
-	 * Applies caller specific configuration params on top of 
-	 * those specified on the global OWA config file.
-	 *
-	 * @param array $config
-	 */
-	function apply_caller_config($config) {
-		
-		if (!empty($config)):
-		
-			foreach ($config as $key => $value) {
-				
-				$this->config[$key] = $value;
-				
-			}
-
-		endif;
-					
-		return;
-
-	}
-	
-	/**
-	 * Fetches instance specific configuration params from the database
-	 * 
-	 */
-	function load_config_from_db() {
-		
-		$config_from_db = &owa_settings::fetch($this->config['configuration_id']);
-		
-		if (!empty($config_from_db)):
-			
-			foreach ($config_from_db as $key => $value) {
-			
-				$this->config[$key] = $value;
-			
-			}
-					
-		endif;
-		
-		return;
 	}
 	
 	/**
@@ -300,6 +266,7 @@ class owa_caller extends owa_base {
 		
 		//perfrom authentication
 		$auth = &owa_auth::get_instance();
+		
 		$data = $auth->authenticateUser($controller->priviledge_level);
 		
 		// if auth was success then procead to do action specified in the intended controller.
@@ -359,7 +326,7 @@ class owa_caller extends owa_base {
 			unset($this->params['action']);
 			
 		elseif (!empty($this->params['do'])):
-			$result =  $this->performAction($this->params['do']);
+			$result =  $this->performAction($this->params['do']);	
 			//unset($this->params['action']);
 			
 		elseif ($this->params['view']):
@@ -374,7 +341,7 @@ class owa_caller extends owa_base {
 		
 		//clean up any open db connection
 		if ($this->config['async_db'] == false):
-			$db = &owa_db::get_instance();
+			$db = &owa_coreAPI::dbSingleton();
 			$db->close();
 		endif;
 		

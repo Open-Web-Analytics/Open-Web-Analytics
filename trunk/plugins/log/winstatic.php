@@ -34,8 +34,9 @@ require_once(OWA_BASE_DIR.'/owa_error.php');
  *
  * @example winstatic.php     Using the window handler.
  */
-class Log_winstatic extends Log
-{
+class Log_winstatic extends Log {
+	
+
     /**
      * The name of the output window.
      * @var string
@@ -270,3 +271,4 @@ END_OF_SCRIPT;
     }
 
 }
+?>

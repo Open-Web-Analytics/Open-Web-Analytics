@@ -17,7 +17,7 @@
 //
 
 /**
- * Dashboard Core metrics By Day
+ * Required Validation
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -27,38 +27,29 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
-class owa_latestVisits extends owa_metric {
-	
-	function owa_latestVisits($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
-		
-	}
-	
-	function generate() {
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$h = owa_coreAPI::entityFactory('base.host');
-		$ua = owa_coreAPI::entityFactory('base.ua');
-		$d = owa_coreAPI::entityFactory('base.document');
-		$v = owa_coreAPI::entityFactory('base.visitor');
-		$r = owa_coreAPI::entityFactory('base.referer');
-		$this->params['related_objs'] = array('host_id' => $h, 'ua_id' => $ua, 'first_page_id' => $d, 'visitor_id' => $v, 'referer_id' => $r);
-		//$related_objs = array('ua_id' => $ua);
-		$this->setTimePeriod($this->params['period']);
-		
-		return $s->find($this->params);
-		
-	}
-	
-	
-}
-
-
+ 
+ class owa_requiredValidation extends owa_validation {
+ 	
+ 	function owa_requiredValidation($conf) {
+ 		
+ 		$this->setErrorMsgTemplate('Required field was empty.');
+ 		$this->owa_validation($conf);
+ 		return;
+ 	}
+ 	
+ 	function validate($value) {
+ 		
+ 		if (!empty($value)):
+ 			return true;
+ 		else:
+ 			$this->setErrorMsg($this->errorMsgTemplate);
+ 			return false;
+ 		endif;
+ 		
+ 	}
+ 	
+ }
+ 
+ 
 ?>
+ 

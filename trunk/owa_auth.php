@@ -155,13 +155,13 @@ class owa_auth extends owa_base {
 				return $data;	
 			endif;
 		endif;
-		
+	
 		// lookup user if not already done.	
 		if ($this->_is_user == false):
 			// check to see if they are a user.
 			$this->isUser();
 		endif;
-		
+				
 		if ($this->_is_user == true):
 			// check to see if their account is priviledged enough.
 			$priviledged = $this->isPriviledged($necessary_role);
@@ -191,13 +191,16 @@ class owa_auth extends owa_base {
 	 * @return object
 	 */
 	function &get_instance() {
-		
-		$config = &owa_settings::get_settings();
+
+		$c = &owa_coreAPI::configSingleton();
+		$config = $c->fetch('base');
 	
 		$auth = &owa_lib::singleton($config['plugin_dir'].'/auth/', 
 									'owa_auth_',
 									$config['authentication']);
 		
+		
+	
 		return $auth;
 	}
 	
@@ -363,6 +366,5 @@ class owa_auth extends owa_base {
 	}
 	
 }
-
 
 ?>

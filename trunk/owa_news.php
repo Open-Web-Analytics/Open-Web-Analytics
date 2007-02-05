@@ -52,7 +52,8 @@ class owa_news extends lastRSS {
 	
 	function owa_news() {
 	
-		$this->config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
 		$this->e = &owa_error::get_instance();
 		$this->crawler = new owa_http;
 		$this->cache_dir = '';

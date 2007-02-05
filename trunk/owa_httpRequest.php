@@ -16,11 +16,10 @@
 // $Id$
 //
 
-require_once('owa_env.php');
-
 if(!class_exists('snoopy')):
 	require_once(OWA_INCLUDE_DIR.'/Snoopy.class.php');
 endif;
+
 /**
  * Wrapper for Snoopy http request class
  * 
@@ -73,7 +72,8 @@ class owa_http extends Snoopy {
 	
 	function owa_http() {
 		
-		$this->config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$this->config = $c->fetch('base');
 		$this->e = &owa_error::get_instance();
 		$this->agent = $this->config['owa_user_agent'];
 		

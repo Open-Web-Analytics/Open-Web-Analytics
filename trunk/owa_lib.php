@@ -19,7 +19,7 @@
 require_once 'owa_env.php';
 require_once(OWA_PEARLOG_DIR . '/Log.php');
 require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
-require_once(OWA_BASE_DIR.'/owa_settings_class.php');
+//require_once(OWA_BASE_CLASS_DIR.'settings.php');
 
 /**
  * Utility Functions
@@ -391,64 +391,6 @@ class owa_lib {
 		return $url;
 	}
 	
-	/**
-	 * Builds date param array from GET
-	 *
-	 * @return array
-	 */
-	function getRestparams() {
-		
-		$config = &owa_settings::get_settings();
-		
-		$params = array();
-		
-		$params['owa_action'] = $_GET['owa_action'];
-		$params['owa_page'] = $_GET['owa_page'];
-		$params['year'] = $_GET['year'];
-		$params['month'] = $_GET['month'];
-		$params['day'] = $_GET['day'];
-		$params['dayofyear'] = $_GET['dayofyear'];
-		$params['weekofyear'] = $_GET['weekofyear'];
-		$params['hour'] = $_GET['hour'];
-		$params['minute'] = $_GET['minute'];
-		$params['year2'] = $_GET['year2'];
-		$params['month2'] = $_GET['month2'];
-		$params['day2'] = $_GET['day2'];
-		$params['dayofyear2'] = $_GET['dayofyear2'];
-		$params['weekofyear2'] = $_GET['weekofyear2'];
-		$params['hour2'] = $_GET['hour2'];
-		$params['minute2'] = $_GET['minute2'];
-		$params['limit'] = $_GET['limit'];
-		$params['offset'] = $_GET['offset'];
-		$params['sortby'] = $_GET['sortby'];
-		$params['period'] = $_GET['period'];
-		$params['site_id'] = $_GET['site_id'];
-		$params['type'] = $_GET['type'];
-		$params['api_call'] = $_GET['name'];
-		$params['session_id'] = $_GET['session_id'];
-		$params['visitor_id'] = $_GET['visitor_id'];
-		$params['document_id'] = $_GET['document_id'];
-		$params['referer_id'] = $_GET['referer_id'];
-		$params['source'] = $_GET['source'];
-		$params['page_url'] = base64_decode($_GET['page_url']);
-		$params['target_url'] = base64_decode($_GET['target_url']);
-		$params['dom_element_name'] = $_GET['dom_element_name'];
-    	$params['dom_element_value'] = $_GET['dom_element_value'];
-    	$params['dom_element_id'] = $_GET['dom_element_id'];
-    	$params['dom_element_x'] = $_GET['dom_element_x'];
-    	$params['dom_element_y'] = $_GET['dom_element_y'];
-    	$params['dom_element_text'] = $_GET['dom_element_text'];
-    	$params['dom_element_tag'] = $_GET['dom_element_tag'];
-    	$params['click_x'] = $_GET['click_x'];
-    	$params['click_y'] = $_GET['click_y'];
-    	$params['page_width'] = $_GET['page_width'];
-    	$params['page_height'] = $_GET['page_height'];
-		
-	
-		return $params;
-		
-	}
-	
 	function inputFilter($array) {
 		
 		$f = new InputFilter;
@@ -466,11 +408,11 @@ class owa_lib {
 	 * @param array $conf
 	 * @return object
 	 */
-	function &factory($class_dir, $class_prefix, $class_name, $conf = array()) {
+	function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
 		
-        $class_dir = strtolower($class_dir).'/';
+        $class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
         $classfile = $class_dir . $class_name . '.php';
-		$class = $class_prefix . $class_name;
+		$class = $class_prefix . $class_name . $class_suffix;
 		
         /*
          * Attempt to include a version of the named class, but don't treat
@@ -591,7 +533,9 @@ class owa_lib {
 	
 	function stripParams($params) {
 		
-		$config = & owa_settings::get_settings();
+		
+		$c = &owa_coreAPI::configSingleton();
+		$config = $c->fetch('base');
 		
 		$striped_params = array();
 		
@@ -658,7 +602,9 @@ class owa_lib {
 	 */
 	function redirectToView($data) {
 		
-		$config = &owa_settings::get_settings();
+		//$config = &owa_settings::get_settings();
+		$c = &owa_coreAPI::configSingleton();
+		$config = $c->fetch('base');
 		
 		$control_params = array('view_method', 'auth_status');
 		

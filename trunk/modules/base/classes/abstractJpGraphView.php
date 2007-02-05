@@ -64,7 +64,7 @@ class owa_abstractJpGraphView extends owa_base {
 		$this->graph->construct();	
 		
 		// outputs the graph
-		 
+	
 		$this->graph->graph->Stroke();
 		
 		//debug_print_backtrace();

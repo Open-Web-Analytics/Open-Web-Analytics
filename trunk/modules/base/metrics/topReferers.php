@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Top Referers Metric
  * 
@@ -67,7 +65,6 @@ class owa_topReferers extends owa_metric {
 		$this->params['orderby'] = array('count');
 	
 		return $s->query($this->params);
-		
 		
 	}
 	

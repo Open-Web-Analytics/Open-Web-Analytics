@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Dashboard Core metrics By Day
  * 
@@ -44,21 +42,14 @@ class owa_pageViewsCount extends owa_metric {
 	
 	function generate() {
 		
-		$sql = sprintf("select 
-			sum(sessions.num_pageviews) as page_views			
-		from
-			%s as sessions
-		where
-			true
-			%s 
-			%s
-		",
-			$this->setTable($this->config['sessions_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		);
-					
-		return $this->db->get_row($sql);
+		$s = owa_coreAPI::entityFactory('base.session');
+		
+		$this->setTimePeriod($this->params['period']);
+		
+		$this->params['select'] = "sum(session.num_pageviews) as page_views";
+	
+		return $s->query($this->params);
+		
 	}
 	
 	

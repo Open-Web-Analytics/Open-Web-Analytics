@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Page Types Count Metric
  * 
@@ -63,32 +61,6 @@ class owa_pageTypesCount extends owa_metric {
 		$this->params['orderby'] = array('count');
 		
 		return $r->query($this->params);
-		
-		/*
-		 SELECT 
-			count(requests.request_id) as count,
-			documents.page_title,
-			documents.page_type,
-			documents.url,
-			documents.id
-		FROM 
-			%s as requests, %s as documents 
-		WHERE
-			requests.document_id = documents.id
-			%s
-			%s 
-		GROUP BY
-			page_type
-		ORDER BY
-			count DESC
-			",
-			$this->setTable($this->config['requests_table']),
-			$this->setTable($this->config['documents_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['limit']
-		);
-		 */
 		
 	}
 	

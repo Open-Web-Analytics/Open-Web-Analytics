@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_metric.php');
-
 /**
  * Top Visitors metric
  * 
@@ -59,35 +57,6 @@ class owa_topVisitors extends owa_metric {
 	
 		return $s->query($this->params);
 		
-		/*
-		
-		$sql = sprintf("
-		SELECT 
-			count(visitor_id) as count,
-			visitor_id as vis_id,
-			user_name,
-			user_email
-		FROM 
-			%s
-		WHERE
-			true
-			%s
-			%s
-		GROUP BY
-			vis_id
-		ORDER BY
-			count DESC
-		LIMIT 
-			%s",
-			$this->setTable($this->config['sessions_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['limit']
-		);
-		
-		return $this->db->get_results($sql);
-		
-		*/
 	}
 	
 	
