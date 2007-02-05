@@ -73,8 +73,11 @@ class owa_caller extends owa_base {
 		endif;
 		
 		// Applies config from db or cache
-		$this->c->load($config['configuration_id']);
-		
+		// needed for installs when the configuration table does not exist.
+		if ($config['fetch_config_from_db'] == true):
+			$this->c->load($config['configuration_id']);
+		endif;
+			
 		// Applies run time config overrides
 		$this->c->applyModuleOverrides('base', $config);
 		
