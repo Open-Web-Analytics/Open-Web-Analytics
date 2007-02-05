@@ -170,11 +170,13 @@ class owa_view extends owa_base {
 		
 		//array of errors usually used for field validations
 		$this->body->set('validation_errors', $data['validation_errors']);
-		$this->subview->body->set('validation_errors', $data['validation_errors']);	
+			
 			
 		// assemble subview
 		if (!empty($this->data['subview'])):
-			// Load subview
+		
+			$this->subview->body->set('validation_errors', $data['validation_errors']);
+			// Load subview 
 			$this->renderSubView($this->data);
 			// assign subview to body template
 			$this->body->set('subview', $this->subview_rendered);
