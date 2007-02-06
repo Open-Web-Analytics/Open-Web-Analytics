@@ -144,16 +144,16 @@ class owa_baseModule extends owa_module {
 								'userHandlers');
 		
 		// Page Requests
-		$this->_addHandler(array('base.page_request'), 'requestHandlers');
+		$this->_addHandler(array('base.page_request', 'base.first_page_request'), 'requestHandlers');
 		
 		// Sessions
-		$this->_addHandler('base.page_request', 'sessionHandlers');
+		$this->_addHandler(array('base.page_request', 'base.first_page_request'), 'sessionHandlers');
 		
 		// Clicks
 		$this->_addHandler('base.click', 'clickHandlers');
 		
 		// Documents
-		$this->_addHandler(array('base.page_request', 'base.feed_request'), 'documentHandlers');
+		$this->_addHandler(array('base.page_request', 'base.first_page_request', 'base.feed_request'), 'documentHandlers');
 		
 		// Referers
 		$this->_addHandler('base.new_session', 'refererHandlers');
