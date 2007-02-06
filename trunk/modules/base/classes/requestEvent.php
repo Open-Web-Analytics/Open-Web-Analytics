@@ -64,7 +64,7 @@ class owa_requestEvent extends owa_event {
 	 */
 	function log() {
 		
-		if ($this->state == 'page_request'):
+		if ($this->state == 'page_request' || $this->state == 'first_page_request'):
 			if ($this->config['delay_first_hit'] == true):	
 				if ($this->first_hit != true):
 					// If not, then make sure that there is an inbound visitor_id

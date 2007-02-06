@@ -46,7 +46,7 @@ class owa_processFirstRequestController extends owa_controller {
 			// Create a new request object
 			$r = owa_coreAPI::supportClassFactory('base', 'requestEvent');
 			
-			$r->state = 'page_request';
+			$r->state = 'first_page_request';
 		
 			//Load request properties from first_hit cookie if it exists
 			if (!empty($this->params[$this->config['first_hit_param']])):

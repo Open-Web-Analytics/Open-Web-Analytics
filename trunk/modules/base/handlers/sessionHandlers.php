@@ -54,11 +54,13 @@ class owa_sessionHandlers extends owa_observer {
 		
     	$this->m = $event['message'];
 
-    	switch ($event['message']['is_entry_page']) {
-    		case true:
+		//print $event['event_type'];
+
+    	switch ($event['event_type']) {
+    		case 'base.first_page_request':
     			$this->handleEvent('base.logSession');
     			break;
-    		case false:
+    		case 'base.page_request':
     			$this->handleEvent('base.logSessionUpdate');
     			break;
     		
