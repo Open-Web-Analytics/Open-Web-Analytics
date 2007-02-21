@@ -239,6 +239,7 @@ class owa_entity {
 		return $this->$name->value = $value;
 	}
 	
+	
 	function setValues($values) {
 		
 		$properties = array_keys(get_object_vars($this));

@@ -422,25 +422,6 @@ class owa_coreAPI extends owa_base {
 		return strnatcmp($a['order'], $b['order']);
 	}
 	
-	/**
-	 * JS invocation tag
-	 *
-	 * @param unknown_type $site_id
-	 * @return unknown
-	 * @deprecated 
-	 */
-	function requestTag($site_id) {
-		
-		$tag  = '<SCRIPT language="JavaScript">'."\n";
-		
-		$tag .= "\t".sprintf('owa_properties["site_id"] = \'%s\'', $site_id)."\n";
-		$tag .= '</SCRIPT>'."\n\n";
- 		$tag .= sprintf('<SCRIPT TYPE="text/javascript" SRC="%s/wb.php"></SCRIPT>', 
- 						$this->config['public_url']);
- 		
- 		return $tag;
-		
-	}
 	
 	function makeAbsoluteLink($params, $url) {
 		

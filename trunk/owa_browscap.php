@@ -122,7 +122,7 @@ class owa_browscap extends owa_base {
 	
 	function robotRegexCheck() {
 		
-		$db = new ini_db($this->config['robots.ini']);
+		$db = new ini_db(OWA_CONF_DIR.'robots.ini');
 		$match = $db->match($this->ua);
 		
 		if (!empty($match)):

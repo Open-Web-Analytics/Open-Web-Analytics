@@ -19,7 +19,6 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_site.php');
 
 /**
  * Installer Default Site Profile View
@@ -102,21 +101,22 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 		
 		$site = owa_coreAPI::entityFactory('base.site');
 		
-		$site->set('site_id', owa_lib::setStringGuid($this->params['domain']));
+		$site->set('site_id', md5($this->params['domain']));
 		$site->set('name', $this->params['name']);
 		$site->set('description', $this->params['description']);
 		$site->set('domain', $this->params['domain']);
 		$site->set('site_family', $this->params['site_family']);
 		
-		$site->create();
+		$status = $site->create();
 		
-		if (!empty($site_id)):	
+		if ($status == true):	
 			// Setup the data array that will be returned to the view.
 			
 			$data['view_method'] = 'redirect'; // Delegate, redirect
 			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installAdminUser';
+			$data['subview'] = 'base.installFinish';
 			$data['status_code'] = 3303;
+			$data['site_id'] = $site->get('site_id');
 		
 		else:
 		

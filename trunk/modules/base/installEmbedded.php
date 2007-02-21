@@ -45,32 +45,25 @@ class owa_installEmbeddedController extends owa_controller {
 	function action() {
 		
 	    $api = &owa_coreAPI::singleton();
-	    $installer = $api->modules['base']->installerFactory();
 	    
-	    $check = $installer->checkForSchema();
-	    
-	    if ($check != true):
-	    
-		    // install schema
-		    $status = $installer->install();
+		// install schema
+		$status = $api->modules['base']->install();
 		    
-		    // insert default site
-		    if ($status == true):   
+		// insert default site
+		if ($status == true):   
 		    
-				$site = owa_coreAPI::entityFactory('base.site');
-				$site->set('site_id', $this->params['site_id']);
-				$site->set('name', $this->params['name']);
-				$site->set('description', $this->params['description']);
-				$site->set('domain', $this->params['domain']);
-				$site->set('site_family', $this->params['site_family']);
+			$site = owa_coreAPI::entityFactory('base.site');
+			$site->set('site_id', $this->params['site_id']);
+			$site->set('name', $this->params['name']);
+			$site->set('description', $this->params['description']);
+			$site->set('domain', $this->params['domain']);
+			$site->set('site_family', $this->params['site_family']);
 					
-				$site->create();
+			$site->create();
 				
-			endif;
-			
 			return true;
 		else:
-			// owa already installed
+			// owa already installed or some other problem
 	    	return false;
 		endif;	
 			

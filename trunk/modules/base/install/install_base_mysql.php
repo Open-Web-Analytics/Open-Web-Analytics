@@ -38,7 +38,7 @@ class owa_install_base_mysql extends owa_install {
 	 *
 	 * @var string
 	 */
-	var $version = '1.0';
+	var $version = '2';
 	
 	/**
 	 * Array of tables that will be installed
@@ -48,32 +48,12 @@ class owa_install_base_mysql extends owa_install {
 	var $tables;
 	
 	/**
-	 * Package Name
-	 *
-	 * @var string
-	 */
-	var $package = 'base_schema';
-	
-	/**
-	 * Package Display Name
-	 *
-	 * @var string
-	 */
-	var $package_display_name = 'OWA Base Schema for MySQL';
-	
-	/**
-	 * Description of what is being installed
-	 *
-	 * @var string
-	 */
-	var $description = 'This is the base OWA schema for MySQL 4 or greater.';
-	
-	/**
 	 * Constructor
 	 *
 	 * @return owa_installBase_mysql
 	 */
 	function owa_install_base_mysql($params = null) {
+		
 		$this->params = $params;
 		$this->owa_install();
 		$this->tables = array($this->config['requests_table'],
@@ -85,7 +65,6 @@ class owa_install_base_mysql extends owa_install {
 								$this->config['os_table'],
 								$this->config['sites_table'],
 								$this->config['config_table'],
-								$this->config['version_table'],
 								$this->config['feed_requests_table'],
 								$this->config['visitors_table'],
 								$this->config['impressions_table'],
@@ -96,23 +75,7 @@ class owa_install_base_mysql extends owa_install {
 		return;
 	}
 	
-	/**
-	 * Check to see if schema is installed
-	 *
-	 * @return boolean
-	 */
-	function checkForSchema() {
-		
-		$check = $this->db->get_row(sprintf("show tables like '%s'",
-				$this->config['ns'].$this->config['version_table']));
-		
-		if (!empty($check)):
-			$this->e->notice("Installation aborted. Schema already exists.");
-			return true;
-		else:
-			return false;
-		endif;
-	}
+	
 	
 	/**
 	 * Interface to creation methods
@@ -149,9 +112,6 @@ class owa_install_base_mysql extends owa_install {
 				break;
 			case $this->config['sites_table']:
 				return $this->create_sites_table();
-				break;
-			case $this->config['version_table']:
-				return $this->create_version_table();
 				break;
 			case $this->config['feed_requests_table']:
 				return $this->create_feed_requests_table();
@@ -621,81 +581,6 @@ class owa_install_base_mysql extends owa_install {
 		);
 
 	}
-	
-	function create_version_table() {
-		
-		return $this->db->query(
-			sprintf("
-			CREATE TABLE %1\$s (
-			id VARCHAR(255),
-			value VARCHAR(255),
-			PRIMARY KEY (id)
-			)",	
-			$this->config['ns'].$this->config['version_table'])
-		);
-		
-	}
-	
-	function update_schema_version() {
-		
-		$check = $this->db->get_row(sprintf("SELECT value from %s where id = 'packages'",
-										$this->config['ns'].$this->config['version_table'],
-										$this->config['site_id']
-										));
-
-		$packages = array();								
-		
-		if (empty($check)):
-			
-			$packages[$this->package] = $this->version;	
-			$this->db->query(sprintf("INSERT into %s (id, value) VALUES ('packages', '%s')",
-										$this->config['ns'].$this->config['version_table'],
-										serialize($packages)
-										));
-		else:
-			$packages = unserialize($check);
-			$packages[$this->package] = $this->version;				
-			$this->db->query(sprintf("UPDATE %s SET value = '%s' where id = 'packages'",
-										$this->config['ns'].$this->config['version_table'],
-										serialize($packages)));
-		
-		endif;
-		
-		return;
-	}
-	
-	/**
-	 * Creates all tables in base schema
-	 *
-	 */
-	function install() {
-	
-		foreach ($this->tables as $table) {
-		
-			$status = $this->create($table);
-			
-			if ($status == true):
-				$this->e->notice(sprintf("Created %s table.", $table));
-			else:
-				$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
-				return $status;
-			endif;
-		}
-		
-		// Update schema version
-		$this->update_schema_version();
-			
-		// Add default site into sites table
-		//$this->addDefaultSite();
-			
-		$this->e->notice(sprintf("Schema version %s installation complete.",
-							$this->version));
-			
-		return true;					
-		
-	}
-	
-	
 	
 }
 

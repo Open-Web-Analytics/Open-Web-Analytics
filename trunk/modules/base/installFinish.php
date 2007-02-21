@@ -20,7 +20,6 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_site.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
@@ -47,21 +46,15 @@ class owa_installFinishView extends owa_view {
 	
 	function construct($data) {
 		
+		$api = &owa_coreAPI::singleton();
+		
 		// Set Page title
 		$this->t->set('page_title', 'Installation Complete');
 		
 		// Set Page headline
 		$this->body->set('headline', 'Installation is Complete');
 		
-		
-		$site = new owa_site;
-		$site->getSiteById(1);
-		$this->body->set('site_id', $site->site_id);
-		
-		$api = &owa_coreAPI::singleton();
-		$tag = $api->requestTag($site->site_id);
-		$this->body->set('tag', $tag);
-		
+		$this->body->set('site_id', $data['site_id']);
 		// load body template
 		$this->body->set_template('install_finish.tpl');
 		

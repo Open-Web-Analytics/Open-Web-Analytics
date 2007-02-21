@@ -17,7 +17,7 @@
 			
 	<div class="code">
 		<pre><code>
-		require_once('/PATH/TO/OWA/FOLDER/owa_php.php');
+		require_once('<?=OWA_BASE_CLASSES_DIR;?>owa_php.php');
 		
 		$config['site_id'] = '<?=$site_id;?>';
 		$owa = new owa_php($config);
