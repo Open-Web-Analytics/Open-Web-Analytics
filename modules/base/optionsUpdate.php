@@ -40,23 +40,18 @@ class owa_optionsUpdateController extends owa_controller {
 	}
 
 	function action() {
-		
-
-		$c = owa_coreAPI::entityFactory('base.configuration');
-		$c->getByPk('id', $this->config['configuration_id']);
 	
-		$db_settings = array('base' => $this->params['config']);
-			
-		$c->set('settings', serialize($db_settings));
+		// get base module's config values from the global configuraton object
+		$bsettings = $this->c->fetch('base');
 		
-		$v = $c->get('id');
+		// merge the settings with those comming in as params
+		$nbsettings = array_merge($bsettings, $this->params['config']);
 		
-		if (empty($v)):
-			$c->set('id', $this->config['configuration_id']);
-			$c->create();
-		else:
-			$c->update();
-		endif;
+		// place the merge config array back to the global object
+		$this->c->replace('base', $nbsettings);
+		
+		// persist the global config
+		$this->c->update();
 	
 		$this->e->notice("Configuration changes saved to database.");
 	
@@ -64,7 +59,7 @@ class owa_optionsUpdateController extends owa_controller {
 		$data['view'] = 'base.options';
 		$data['subview'] = 'base.optionsGeneral';
 		$data['view_method'] = 'delegate';
-		$data['configuration'] = $db_settings['base'];
+		$data['configuration'] = $nbsettings;
 		$data['status_msg'] = $this->getMsg(2500);
 		
 		return $data;

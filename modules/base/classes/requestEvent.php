@@ -266,7 +266,7 @@ class owa_requestEvent extends owa_event {
 	
 	function determine_os_new($user_agent) {
 		
-		$db = new ini_db($this->config['os.ini'], $sections = true);
+		$db = new ini_db(OWA_CONF_DIR.'os.ini', $sections = true);
 		$string = $db->fetch_replace($user_agent);
 		
 		return $string;

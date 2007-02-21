@@ -115,7 +115,7 @@ class owa_installAdminUserController extends owa_controller {
 			// return view
 			$data['view_method'] = 'redirect';
 			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installFinish';
+			$data['subview'] = 'base.installDefaultSiteProfile';
 			$data['status_code'] = 3304;
 			
 		else:

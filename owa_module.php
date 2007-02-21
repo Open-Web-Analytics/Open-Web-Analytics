@@ -66,8 +66,9 @@ class owa_module extends owa_base {
 	var $author_url;
 	
 	/**
-	 * Wiki Page title. Sused to generate link to OWA wiki for this module.
-	 * Must be unique. Check the wiki if you are unsure.
+	 * Wiki Page title. Used to generate link to OWA wiki for this module.
+	 * 
+	 * Must be unique or else it will could clobber another wiki page.
 	 *
 	 * @var string
 	 */
@@ -109,14 +110,26 @@ class owa_module extends owa_base {
 	var $metrics;
 	
 	/**
-	 * Array of graph names that this module implments
+	 * Array of graphs that are implemented by this module
 	 *
-	 * @var unknown_type
+	 * @var array
 	 */
 	var $graphs;
 	
+	/**
+	 * The Module Group that the module belongs to. 
+	 * 
+	 * This is used often to group a module's features or functions together in the UI
+	 * 
+	 * @var string 
+	 */
 	var $group;
 	
+	/**
+	 * Array of Entities that are implmented by the module
+	 * 
+	 * @var array 
+	 */
 	var $entities;
 	
 	/**
@@ -138,6 +151,7 @@ class owa_module extends owa_base {
 	
 	/**
 	 * Returns array of admin Links for this module to be used in navigation
+	 * 
 	 * @access public
 	 * @return array
 	 */
@@ -159,7 +173,7 @@ class owa_module extends owa_base {
 	}
 	
 	/**
-	 * Registers handlers
+	 * Abstract method for registering event handlers
 	 * 
 	 * @access public
 	 * @return array
@@ -170,7 +184,7 @@ class owa_module extends owa_base {
 	}
 	
 	/**
-	 * Registers Admin Panels
+	 * Abstract method for registering administration panels
 	 * 
 	 * @access public
 	 * @return array
@@ -181,7 +195,7 @@ class owa_module extends owa_base {
 	}
 	
 	/**
-	 * Attaches a handler to the event queue
+	 * Attaches an event handler to the event queue
 	 *
 	 * @param array $event_name
 	 * @param string $handler_name
@@ -215,20 +229,10 @@ class owa_module extends owa_base {
 			
 		endif;
 			
-		
 		$eq->attach($handler);
-		//print_r($eq);
+		
 		return ;
 		
-	}
-	
-	/**
-	 * Registers a report with this module
-	 *
-	 */
-	function _addReport() {
-		
-		return;
 	}
 	
 	/**
@@ -239,34 +243,16 @@ class owa_module extends owa_base {
 		
 		$this->admin_panels[] = $panel;
 		
-		return;
+		return true;
 	}
 	
-	/*
+	/**
 	 * Registers Navigation Link with a particular View
 	 * 
 	 */
 	function addNavigationLink($link) {
 		
 		$this->nav_links[] = $link;
-		
-		return;
-	}
-	
-	/**
-	 * Registers a report with this module
-	 *
-	 */
-	function _addMetric() {
-		
-		return;
-	}
-	
-	/**
-	 * Registers a graph with this module
-	 *
-	 */
-	function _addGraph() {
 		
 		return;
 	}
@@ -281,10 +267,45 @@ class owa_module extends owa_base {
 	function install() {
 		
 		$obj = $this->installerFactory();
-		return $obj->install();
 		
+		$check = $obj->checkForSchema();
+		
+		if ($check != true):
+		
+			foreach ($obj->tables as $table) {
+			
+				$status = $obj->create($table);
+				
+				if ($status == true):
+					$this->e->notice(sprintf("Created %s table.", $table));
+				else:
+					$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
+					return $status;
+				endif;
+				
+			}
+			
+			// save schema version to configuration
+			$this->c->set('base', 'schema_version', $obj->version);
+	
+			// activate module and persist configuration changes 
+			$this->activate();
+	
+			$this->e->notice(sprintf("Schema version %s installation complete.", $obj->version));
+			
+			return true;
+		else:
+			return false;
+		endif;
+				
 	}
 	
+	
+	/**
+	 * Install Class Factory 
+	 * 
+	 * @return object Concrete install class for this module
+	 */
 	function installerFactory($params = array()) {
 		
 		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$this->name.'/install/', 'owa_', 'install_'.$this->name.'_'.OWA_DB_TYPE, $params);
@@ -296,7 +317,7 @@ class owa_module extends owa_base {
 	}
 	
 	/**
-	 * Upgrade method for this module
+	 * Checks for and applies schema upgrades for the module
 	 *
 	 */
 	function upgrade() {
@@ -304,21 +325,53 @@ class owa_module extends owa_base {
 		return;
 	}
 	
+	/**
+	 * Deactivates and removes schema for the module
+	 * 
+	 */
 	function uninstall() {
 		
 		return;
 	}
 	
-	function activiate() {
+	/**
+	 * Places the Module into the active module list in the global configuration
+	 * 
+	 */
+	function activate() {
+		
+		if ($this->name != 'base'):
+			$modules = $this->c->get('base', 'modules');
+			$modules[] = $this->name;
+			$this->c->set('base', 'modules', $modules);	
+		endif;
+		
+		$this->c->update();
 		
 		return;
 	}
 	
+	/**
+	 * Deactivates the module by removing it from the active module list in the global configuration
+	 * 
+	 */
 	function deactivate() {
 		
+		if ($this->name != 'base'):
+			$modules = $this->c->get('base', 'modules');
+			unset($modules[$this->name]);
+			$this->c->set('base', 'modules', $modules);
+		endif;
+		
+		$this->c->update();
+		
 		return;
 	}
 	
+	/**
+	 * Registers a set of entities for the module
+	 * 
+	 */
 	function _registerEntities() {
 		
 		return;

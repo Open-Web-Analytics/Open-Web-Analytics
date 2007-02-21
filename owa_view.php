@@ -322,7 +322,4 @@ class owa_view extends owa_base {
 	
 }
 
-
-
-
 ?>

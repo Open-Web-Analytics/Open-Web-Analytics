@@ -42,7 +42,7 @@
     
     <? if ($errors['count'] == 0):?>
     	<DIV class="centered_buttons">	
-			<a href="<?=$this->makeLink(array('action' => 'base.installBase'));?>">Next >> Next Step: Site Profile Setup</a>
+			<a href="<?=$this->makeLink(array('action' => 'base.installBase'));?>">Next >> Next Step: Admin User Setup</a>
 		</DIV>
 	<? else:?>
 	

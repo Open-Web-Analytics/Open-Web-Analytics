@@ -105,11 +105,13 @@
 		 			
 			 			$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
 			 			
-			 			$this->config->set('settings', $new_config);	
-			 				
 		 			}
 		 			
+			 		$this->config->set('settings', $new_config);	
+		 			
 	 			endif;
+	 			
+	 			$this->config->set('id', $id);
 	 			
 	 		else:
 	 			; // load config from file
@@ -144,7 +146,31 @@
  	 */
  	function update() {
  		
- 		return $this->config->update();
+ 		// serialize array of values prior to update
+ 		$s = $this->config->get('settings');
+ 		$ss = serialize($s);
+ 		
+		//check for id
+ 		$id = $this->config->get('id');
+ 		
+ 		// set id in case this is the first install
+ 		if (empty($id)):
+ 			
+ 			$cid = $this->get('base', 'configuration_id');
+ 			$this->config->set('id', $cid);
+ 			// persist entity
+ 			$this->config->set('settings', $ss);
+ 			$status = $this->config->create();
+ 		else:
+ 			// persist entity
+ 			$this->config->set('settings', $ss);
+ 			$status = $this->config->update();
+ 		endif;
+ 		
+ 		// revert back to unserialized version
+ 		$this->config->set('settings', $s);
+ 		
+ 		return $status;
  		
  	}
  	
@@ -153,13 +179,14 @@
  	 * 
  	 * @param string $module the name of the module
  	 * @param string $key the configuration key
- 	 * @return boolean 
+ 	 * @return unknown
  	 */
  	function get($module, $key) {
  		
  		$values = $this->config->get('settings');
  		
  		return $values[$module][$key];
+ 		
  	}
  	
  	/**
@@ -177,6 +204,21 @@
  		$values[$module][$key] = $value;
  		
  		$this->config->set('settings', $values);
+ 		
+ 		return;
+ 	}
+ 	
+ 	/**
+ 	 * Replaces all values of a particular module's configuration
+ 	 * 
+ 	 */
+ 	function replace($module, $values) {
+ 		
+ 		$settings = $this->config->get('settings');
+ 		
+ 		$settings[$module] = $values;
+ 		
+ 		$this->config->set('settings', $settings);
  		
  		return;
  	}
@@ -218,7 +260,6 @@
 			'site_id'						=> '',
 			'configuration_id'				=> '1',
 			'session_length'				=> '1800',
-			'debug_to_screen'				=> false,
 			'requests_table'				=> 'request',
 			'sessions_table'				=> 'session',
 			'referers_table'				=> 'referer',
@@ -235,12 +276,7 @@
 			'clicks_table'					=> 'click',
 			'exits_table'					=> 'exit',
 			'users_table'					=> 'user',
-			'db_class'						=> '',
 			'db_type'						=> OWA_DB_TYPE,
-			'db_name'						=> '',
-			'db_user'						=> '',
-			'db_password'					=> '',
-			'db_host'						=> '',
 			'resolve_hosts'					=> true,
 			'log_feedreaders'				=> true,
 			'log_robots'					=> false,
@@ -259,21 +295,15 @@
 			'error_handler'					=> 'development',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
 			'browscap.ini'					=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
-			'browscap_supplemental.ini'		=> OWA_BASE_DIR . '/conf/browscap_supplemental.ini',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
-			'os.ini'						=> OWA_BASE_DIR . '/conf/os.ini',
-			'robots.ini'					=> OWA_BASE_DIR . '/conf/robots.ini',
 			'db_class_dir'					=> OWA_BASE_DIR . '/plugins/db/',
 			'templates_dir'					=> OWA_BASE_DIR . '/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'module_dir'					=> OWA_BASE_DIR . '/modules',
-			'install_plugin_dir'			=> OWA_BASE_DIR . '/plugins/install/',
-			'reporting_dir'					=> OWA_BASE_DIR . '/public/reports/',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
 			'report_wrapper'				=> 'wrapper_default.tpl',
-			'config_file_path'				=> OWA_BASE_DIR . '/conf/owa_config.php',
 			'fetch_config_from_db'			=> true,
 			'announce_visitors'				=> false,
 			'public_url'					=> '',
@@ -281,7 +311,6 @@
 			'images_url'					=> '',
 			'reporting_url'					=> '',
 			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
-			'inter_report_link_template'	=> '%s?%s', //base_url?report=report_name&get... DEPRICATED?
 			'graph_link_template'			=> '%s?owa_action=graph&name=%s&%s', //action_url?...
 			'link_template'					=> '%s?%s', // main_url?key=value....
 			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION,
@@ -320,15 +349,11 @@
 				$base_url .= ':'.$_SERVER['SERVER_PORT'];
 			endif;
 								
-			$config['base']['public_url'] = $base_url . $OWA_CONFIG['public_url'];
-			$config['base']['main_url'] = $OWA_CONFIG['public_url']."/main.php";
-			$config['base']['main_absolute_url'] = $base_url . $config['main_url'];
-			$config['base']['action_url'] = $config['main_url'];
-			$config['base']['log_url'] = $OWA_CONFIG['public_url']."/log.php";
-			$config['base']['images_url'] = $OWA_CONFIG['public_url']."/i";
-			$config['base']['reporting_url'] = $OWA_CONFIG['public_url']."/reports/index.php";
-			$config['base']['home_url'] = $config['public_url']."/reports/index.php?page=dashboard_report.php";
-			$config['base']['admin_url'] = $OWA_CONFIG['public_url']."/admin/index.php";
+			$config['base']['public_url'] = OWA_PUBLIC_DIR;
+			$config['base']['main_url'] = $config['base']['public_url']."/main.php";
+			$config['base']['main_absolute_url'] = $base_url . $config['base']['main_url'];
+			$config['base']['action_url'] = $config['base']['main_url'];
+			$config['base']['images_url'] = $config['base']['public_url']."/i";
 				
 			return $config; 		
  		

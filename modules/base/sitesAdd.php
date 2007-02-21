@@ -105,7 +105,7 @@ class owa_sitesAddController extends owa_controller {
 		if(empty($id)):
 			
 			$site = owa_coreAPI::entityFactory('base.site');
-			$site->set('site_id', owa_lib::setStringGuid($this->params['domain']));
+			$site->set('site_id', md5($this->params['domain']));
 			$site->set('name', $this->params['name']);
 			$site->set('domain', $this->params['domain']);
 			$site->set('description', $this->params['description']);

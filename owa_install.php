@@ -73,19 +73,25 @@ class owa_install extends owa_base{
 		return;
 	}
 	
-	function addDefaultSite() { 
+	/**
+	 * Check to see if schema is installed
+	 *
+	 * @return boolean
+	 */
+	function checkForSchema() {
 		
-		$site = new owa_site;
-		$site->name = $this->params['name'];
-		$site->description = $this->params['description'];
-		if (!empty($site->site_family)):
-			$site->site_family = $this->params['description'];
-		else:
-			$site->site_family = 1;
-		endif;
-		$site_id = $site->save();
+		foreach ($this->tables as $table) {
 		
-		return;
+			$check = $this->db->get_row(sprintf("show tables like '%s'", $table));
+		
+			if (!empty($check)):
+				$this->e->notice(sprintf("Schema Installation aborted. Table '%s' already exists.", $table));
+				return true;
+			endif;
+		}
+		
+		return false;
+		
 	}
 	
 }

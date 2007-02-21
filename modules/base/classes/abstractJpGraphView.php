@@ -42,6 +42,7 @@ class owa_abstractJpGraphView extends owa_base {
 	function owa_abstractJpGraphView($params = array()) {
 		
 		$this->owa_base();
+		ob_clean();
 		
 		return;
 	}
