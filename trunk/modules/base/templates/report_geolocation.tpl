@@ -66,7 +66,7 @@
 
       // Read the data from example.xml
       var request = GXmlHttp.create();
-      request.open("GET", "<?=$this->makeAbsoluteLink(array('do' => 'base.xmlVisitsGeolocation', 'rand' => rand()), true); ?>", true);
+      request.open("GET", "<?=$this->makeAbsoluteLink(array('do' => 'base.xmlVisitsGeolocation', 'rand' => rand()), true, $this->config['action_url']); ?>", true);
       request.onreadystatechange = function() {
         if (request.readyState == 4) {
           var xmlDoc = request.responseXML;
