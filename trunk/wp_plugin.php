@@ -49,13 +49,13 @@ $owa_config['is_embedded'] = 'true';
 
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
-	$owa_config['fetch_config_from_db'] = false;
+	$owa_config['do_not_fetch_config_from_db'] = true;
 endif;
 
 // Needed for WP 1.x installs to avoid fetch of config from db duruign installation
 if ($owa_wp_version[0] == '1'):
 	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-		$owa_config['fetch_config_from_db'] = false;
+		$owa_config['do_not_fetch_config_from_db'] = true;
 	endif;
 endif;
 
