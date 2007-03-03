@@ -367,7 +367,7 @@
 			$this->set('base', 'images_url',  $this->get('base', 'public_url').'/i/');
 			$this->set('base', 'images_absolute_url',  $base_url.$this->get('base', 'images_url'));
 			$this->set('base', 'log_url',  $this->get('base', 'public_url').'/log.php');
-			
+			$this->set('base', 'link_template',  '%s?%s');
 			return;
  		
  	}

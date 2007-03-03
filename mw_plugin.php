@@ -140,7 +140,7 @@ function owa_footer(&$article) {
 	
 	$owa = &new owa_php;
 
-	$tags = $owa->handleHelperPageTagsRequest();
+	$tags = $owa->placeHelperPageTags(false);
 	
 	$wgOut->addHTML($tags);
 		
