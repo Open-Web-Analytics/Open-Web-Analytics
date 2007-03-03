@@ -38,7 +38,7 @@ class owa_graphPageTypesView extends owa_abstractJpGraphView  {
 	function owa_graphPageTypesView() {
 		
 		$this->owa_abstractJpGraphView();
-		$this->priviledge_level = 'guest';
+		$this->priviledge_level = 'viewer';
 		
 		return;
 	}

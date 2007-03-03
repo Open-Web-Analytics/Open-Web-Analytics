@@ -38,7 +38,7 @@ class owa_graphDashboardTrendView extends owa_abstractJpGraphView  {
 	function owa_graphDashboardTrendView() {
 		
 		$this->owa_abstractJpGraphView();
-		$this->priviledge_level = 'guest';
+		$this->priviledge_level = 'viewer';
 		
 		return;
 	}
