@@ -60,6 +60,12 @@ class owa_installEmbeddedController extends owa_controller {
 			$site->set('site_family', $this->params['site_family']);
 					
 			$site->create();
+			
+			//clean up any open db connection
+			if ($this->config['async_db'] == false):
+				$db = &owa_coreAPI::dbSingleton();
+				$db->close();
+			endif;
 				
 			return true;
 		else:
