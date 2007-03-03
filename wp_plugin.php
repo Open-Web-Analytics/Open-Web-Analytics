@@ -71,7 +71,7 @@ $owa_wp = &new owa_wp($owa_config);
 if ($owa_wp_version[0] == '1'):
 	
 	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-		owa_install();
+		owa_install_v1();
 	endif;
 
 elseif ($owa_wp_version[0] == '2'):
@@ -341,6 +341,32 @@ function owa_install() {
     							
     	$owa_wp->handleRequest($install_params);
 	endif;
+
+	return;
+}
+
+/**
+ * Schema and setting installation
+ *
+ */
+function owa_install_v1() {
+
+	
+	global $owa_wp;
+	
+	
+    	$owa_wp->config['fetch_config_from_db'] = false;
+    	
+    	$owa_wp->config['db_type'] = 'mysql';
+    	
+    	$install_params = array('site_id' => $conf['site_id'], 
+    							'name' => get_bloginfo('name'),
+    							'domain' => get_settings('siteurl'), 
+    							'description' => get_bloginfo('description'),
+    							'action' => 'base.installEmbedded');
+    							
+    	$owa_wp->handleRequest($install_params);
+	
 
 	return;
 }
