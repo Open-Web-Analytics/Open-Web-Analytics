@@ -466,27 +466,6 @@ class owa_lib {
 		header ('HTTP/1.0 302 Found');
 		return;
     }
-    
-    /**
-	 * Generates a link between admin screens
-	 *
-	 * @param array $query_params
-	 * @return string
-	 */
-	function makeAdminLink($admin_page, $query_params = null, $make_query_string = true) {
-		
-		if ($make_query_string == true):
-			$get = owa_lib::makeLinkQueryString($query_params);
-		else:
-			$get = '';
-		endif;
-		
-		//Return URL
-		return sprintf($this->config['inter_admin_link_template'],
-				$this->config['admin_url'],
-				$admin_page,
-				$get);
-	}
 	
 	function makeLinkQueryString($query_params) {
 		
@@ -602,13 +581,11 @@ class owa_lib {
 	 */
 	function redirectToView($data) {
 		
-		//$config = &owa_settings::get_settings();
 		$c = &owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
 		
 		$control_params = array('view_method', 'auth_status');
 		
-		//$url = $config['public_url'].'/main.php?';
 		
 		$get = '';
 		

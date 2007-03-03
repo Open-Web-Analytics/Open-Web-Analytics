@@ -76,7 +76,7 @@ class owa_base {
 	function owa_base() {
 		
 		$this->c = &owa_coreAPI::configSingleton();
-		$this->config = $this->c->fetch('base');
+		$this->config = &$this->c->fetch('base');
 		$this->e = &owa_error::get_instance();
 		
 		return;

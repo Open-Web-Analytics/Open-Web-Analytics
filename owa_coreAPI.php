@@ -39,7 +39,19 @@ class owa_coreAPI extends owa_base {
 	
 	var $init;
 	
+	/**
+	 * Container for request params
+	 * 
+	 * @var array
+	 */
 	var $params;
+	
+	/**
+	 * Container for caller config overrides.
+	 * 
+	 * @var array
+	 */
+	var $caller_config_overrides;
 	
 	
 	function owa_coreAPI() {
@@ -395,25 +407,29 @@ class owa_coreAPI extends owa_base {
 			
 			$module_nav = $v->getNavigationLinks();
 			
-			//print_r($module_nav);
-			
-			// assemble the navigation for a specific view's named navigation element'	
-			foreach ($module_nav as $key => $value) {
-				
-				$links[$value['view']][$value['nav_name']][] = $value;
-			}
+	
+			if (!empty($module_nav)):
+				// assemble the navigation for a specific view's named navigation element'	
+				foreach ($module_nav as $key => $value) {
+					
+					$links[$value['view']][$value['nav_name']][] = $value;
+				}
+			endif;
 			
 		}
 		
 		//print_r($links[$view][$nav_name]);
-		
-		// anonymous sorting function, takes sort by variable.
-		$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
-   		
-   		// sort the array
-   		$ret = usort($links[$view][$nav_name], create_function('$a,$b', $code));
-		
-		return $links[$view][$nav_name];
+		if (!empty($links[$view][$nav_name])):
+			// anonymous sorting function, takes sort by variable.
+			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
+	   		
+	   		// sort the array
+	   		$ret = usort($links[$view][$nav_name], create_function('$a,$b', $code));
+			
+			return $links[$view][$nav_name];
+		else: 
+			return false;
+		endif;
 		 
 	}
 	

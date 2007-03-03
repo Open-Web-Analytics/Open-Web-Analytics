@@ -19,7 +19,6 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_site.php');
 
 /**
  * Edit Sites View
@@ -57,9 +56,9 @@ class owa_sitesEditView extends owa_view {
 		if ($data['sites']):
 			$this->body->set('site', $data['site']);
 		else:
-			$site = new owa_site;
-			$site->getSiteByPK($data['site_id']);
-			$this->body->set('site', get_object_vars($site));
+			$site = owa_coreAPI::entityFactory('base.site');
+			$site->getByColumn('site_id', $data['site_id']);
+			$this->body->set('site', $site->_getProperties());
 			
 		endif;
 		

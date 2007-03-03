@@ -131,6 +131,14 @@ class owa_view extends owa_base {
 		
 		$this->data = $data;
 		
+		// set view name in template class. used for navigation.
+		$this->body->caller_params['view'] = $this->data['view'];
+		$this->body->caller_params['subview'] = $this->data['subview'];
+		
+		if (!empty($this->data['nav_tab'])):
+			$this->body->caller_params['nav_tab'] = $this->data['nav_tab'];
+		endif;
+		
 		$this->e->debug('Assembling view: '.get_class($this));
 		
 		// auth user
@@ -175,9 +183,15 @@ class owa_view extends owa_base {
 		// assemble subview
 		if (!empty($this->data['subview'])):
 		
+			// set view name in template. used for navigation.
+			$this->subview->body->caller_params['view'] = $this->data['subview'];
+			
+			// Set validation errors
 			$this->subview->body->set('validation_errors', $data['validation_errors']);
+			
 			// Load subview 
 			$this->renderSubView($this->data);
+			
 			// assign subview to body template
 			$this->body->set('subview', $this->subview_rendered);
 		endif;
@@ -316,6 +330,29 @@ class owa_view extends owa_base {
 	function _setPageType($page_type) {
 		
 		$this->page_type = $page_type;
+		
+		return;
+	}
+	
+	function _setLinkState() {
+		
+		// create state params for all links
+		$link_params = array(
+								'period'	=> $this->data['params']['period'], // could be set by setPeriod
+								'day'		=> $this->data['params']['day'],
+								'month'		=> $this->data['params']['month'],
+								'year'		=> $this->data['params']['year'],
+								'day2'		=> $this->data['params']['day2'],
+								'month2'	=> $this->data['params']['month2'],
+								'year2'		=> $This->data['params']['year2'],
+								'site_id'	=> $this->data['params']['site_id']								
+							);		
+							
+		$this->body->caller_params['link_state'] =  $link_params;
+		
+		if(!empty($this->subview)):
+			$this->subview->body->caller_params['link_state'] =  $link_params;
+		endif;
 		
 		return;
 	}

@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -49,7 +49,7 @@ class owa_template extends Template {
 	 */
 	var $caller_params;
 	
-	function owa_template($module = null, $caller_params = null) {
+	function owa_template($module = null, $caller_params = array()) {
 		
 		$this->caller_params = $caller_params;
 			
@@ -144,7 +144,8 @@ class owa_template extends Template {
 			
 		}
 		if (!empty($file)):
-			return $icon = "<img align=\"baseline\" src=\"".$this->config['images_url']."/".$file."\">";
+			
+			return sprintf('<img align="baseline" src="%s"', $this->makeImageLink($file));
 		else:
 			return $browser_type;
 		endif;
@@ -187,22 +188,78 @@ class owa_template extends Template {
 		
 	}
 	
+	/**
+	 * Makes navigation links by checking whether or not the view 
+	 * that is rendering the template is not the view being refered to in the link.
+	 * 
+	 * @param array navigation array
+	 */
 	function makeNavigation($nav) {
 		
-		$navigation = '<UL class="nav_links">';
-		
-		foreach($nav as $k => $v) {
+		if (!empty($nav)):
+			$navigation = '<UL>';
 			
-			$navigation .= sprintf("<LI><a href=\"%s\">%s</a></LI>", 
-									$this->makeLink(array('do' => $v['ref']), true), 
-									$v['anchortext']);
+			foreach($nav as $k => $v) {
+				
+				if($v['ref'] == $this->caller_params['view'] || $v['ref'] == $this->caller_params['subview']):
+				
+					$navigation .= sprintf('<LI ><a class="here" href="%s">%s</a></LI>', 
+											$this->makeLink(array('do' => $v['ref']), true), 
+											$v['anchortext']);
+					
+				else:
+											
+					$navigation .= sprintf("<LI><a href=\"%s\">%s</a></LI>", 
+											$this->makeLink(array('do' => $v['ref']), true), 
+											$v['anchortext']);
+				
+				endif;
+			}
+			
+			$navigation .= '</UL>';
+			
+			return $navigation;
+		else:
+			return false;
+		endif;
+		
+	}
+	
+	function makeTwoLevelNav($top, $sub) {
+		if (!empty($top)):
+		$navigation = '<UL id="globalnav"><li class="spacer">&nbsp &nbsp</LI>';
+			
+		foreach($top as $k => $v) {
+			
+			if($v['ref'] == $this->caller_params['view'] || $v['ref'] == $this->caller_params['subview'] || $v['ref'] == $this->caller_params['nav_tab']):
+				
+				$sub_nav = $this->makeNavigation($sub);
+				
+				if (empty($sub_nav)):
+					$sub_nav = '<UL><li class="spacer">&nbsp &nbsp</LI></UL>';
+				endif;
+				
+				$navigation .= sprintf('<LI><a class="here" href="%s">%s</a>%s</LI>', 
+											$this->makeLink(array('do' => $v['ref']), true), 
+											$v['anchortext'], $sub_nav);
+					
+			else:
+				
+				$navigation .= sprintf("<LI><a href=\"%s\">%s</a></LI>", 
+											$this->makeLink(array('do' => $v['ref']), true), 
+											$v['anchortext']);
+											
+			endif;
+			
 			
 		}
 		
 		$navigation .= '</UL>';
-		
-		return $navigation;
-		
+			
+			return $navigation;
+		else:
+			return false;
+		endif;
 		
 	}
 	
@@ -250,18 +307,6 @@ class owa_template extends Template {
 		return $this->makeLink($params, $add_state, $this->config['action_url']);
 	}
 	
-	/*
-	 * Convienence method for making links to other reports
-	 * 
-	 * @var array $params
-	 * @return string The link
-	 */
-	function reportLink($params) {
-		
-		$params['view'] = 'base.report';
-		return $this->makeLink($params, true);
-		
-	}
 	
 	/**
 	 * Makes Links, adds state to links optionaly.
@@ -270,7 +315,7 @@ class owa_template extends Template {
 	 * @param boolean $add_state
 	 * @return string
 	 */
-	function makeLink($params = array(), $add_state = false, $url = '') {
+	function makeLink($params = array(), $add_state = false, $url = '', $xml = false) {
 		
 		//Loads link state passed by caller
 		if ($add_state == true):
@@ -295,9 +340,31 @@ class owa_template extends Template {
 		$get = '';
 		
 		if (!empty($all_params)):
+		
+			$count = count($all_params);
+			
+			$i = 0;
+			
 			foreach ($all_params as $n => $v) {
 				
-				$get .= $this->config['ns'].$n.'='.$v.'&';
+				$get .= $this->config['ns'].$n.'='.$v;
+				
+				$i++;
+				
+				if ($i < $count):
+					switch ($xml) {
+						case true:
+							$get .= "&amp;";
+							break;
+						case false:
+							$get .= "&";
+							break;
+						default:
+							$get .= "&";
+						
+					}
+					
+				endif;
 			}
 		endif;
 		
@@ -309,23 +376,25 @@ class owa_template extends Template {
 		
 	}
 	
-	function makeAbsoluteLink($params, $url = '') {
-		
-		$get = '';
-		
-		if (!empty($params)):
-			foreach ($params as $n => $v) {
-				
-				$get .= $this->config['ns'].$n.'='.$v.'&';
-			}
-		endif;
+	function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {
 		
 		if (empty($url)):
 			$url = $this->config['main_absolute_url'];
 		endif;
 		
-		return owa_coreAPI::makeAbsoluteLink($params, $url);
-		//return sprintf($this->config['link_template'], $this->config['main_absolute_url'], $get);
+		return $this->makeLink($params, $add_state, $url, $xml);
+		
+	}
+	
+	function makeImageLink($name, $absolute = false) {
+		
+		if ($absolute == true):
+			$url = $this->config['images_absolute_url'];
+		else:
+			$url = $this->config['images_url'];
+		endif;
+		
+		return $url.$name;
 		
 	}
 	

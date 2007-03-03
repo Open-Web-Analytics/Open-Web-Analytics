@@ -46,6 +46,8 @@ class owa_optionsView extends owa_view {
 	
 	function construct($data) {
 		
+		
+		
 		//page title
 		$this->t->set('page_title', 'OWA Options');
 		
@@ -58,6 +60,7 @@ class owa_optionsView extends owa_view {
 		
 		//Fetch latest OWA news
 		$rss = new owa_news;
+		//print_r($this->config);
 		$news = $rss->Get($this->config['owa_rss_url']);
 		$this->body->set('news', $news);
 		

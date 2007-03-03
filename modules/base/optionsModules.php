@@ -63,7 +63,7 @@ class owa_optionsModulesController extends owa_controller {
 		 				$dirs[$file]['description'] = $mod->description;
 		 				$dirs[$file]['config_required'] = $mod->config_required;
 		 				//$dirs['stats'] = lstat($path.$file);
-		 	
+		 				
  					endif;
    					
    				endif;
@@ -86,13 +86,13 @@ class owa_optionsModulesController extends owa_controller {
 			endif;
 		}
 		
-		$data = array();
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.optionsModules';
-		$data['view_method'] = 'delegate';
-		$data['modules'] = $dirs;
+		// add data to container
+		$this->data['view'] = 'base.options';
+		$this->data['subview'] = 'base.optionsModules';
+		$this->data['view_method'] = 'delegate';
+		$this->data['modules'] = $dirs;
 		
-		return $data;
+		return $this->data;
 	
 	}
 	
@@ -125,11 +125,16 @@ class owa_optionsModulesView extends owa_view {
 	
 	function construct($data) {
 		
+		
+		//$this->c->get('base', 'modules'));
+		
 		// load template
 		$this->body->set_template('options_modules.tpl');
+		
 		// fetch admin links from all modules
 		$this->body->set('headline', 'Modules Administration');
 	
+		// Assign module data
 		$this->body->set('modules', $data['modules']);
 		
 		return;

@@ -20,7 +20,7 @@
 		<TD class="">
 		
 		<? if ($v['status'] == 'active'): ?>
-			<a href="<?=$this->makeLink(array('do' => 'base.moduleDisable', 'module' => $v['name']));?>">Deactivate</a>
+			<a href="<?=$this->makeLink(array('do' => 'base.moduleDeactivate', 'module' => $v['name']));?>">Deactivate</a>
 		<? else: ?>
 			<a href="<?=$this->makeLink(array('do' => 'base.moduleActivate', 'module' => $v['name']));?>">Activate</a>
 		<? endif; ?>	

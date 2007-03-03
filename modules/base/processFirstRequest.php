@@ -19,6 +19,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 /**
  * Controller
@@ -32,10 +33,10 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_processFirstRequestController extends owa_controller {
+class owa_processFirstRequestController extends owa_processEventController {
 	
 	function owa_processFirstRequestController($params) {
-		$this->owa_controller($params);
+		$this->owa_processEventController($params);
 		$this->priviledge_level = 'guest';
 	}
 	
@@ -44,20 +45,20 @@ class owa_processFirstRequestController extends owa_controller {
 		if (!empty($this->params[$this->config['first_hit_param']])):
 		
 			// Create a new request object
-			$r = owa_coreAPI::supportClassFactory('base', 'requestEvent');
+			$this->event = owa_coreAPI::supportClassFactory('base', 'requestEvent');
 			
-			$r->state = 'first_page_request';
+			$this->event->state = 'first_page_request';
 		
 			//Load request properties from first_hit cookie if it exists
 			if (!empty($this->params[$this->config['first_hit_param']])):
-				$r->load_first_hit_properties($this->params[$this->config['first_hit_param']]);
+				$this->event->load_first_hit_properties($this->params[$this->config['first_hit_param']]);
 			endif;
 			
 			$this->e->debug(sprintf('First hit Request %d logged to event queue',
 									$r->properties['request_id']));
 			
 			// Log the request
-			$r->log();
+			$this->event->log();
 		
 		endif;	
 			

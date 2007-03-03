@@ -48,7 +48,8 @@ class owa_auth_wordpress extends owa_auth {
 		$this->u->email_address = $this->params['caller']['wordpress']['user_data']['user_email'];
 		$this->u->real_name = $this->params['caller']['wordpress']['user_data']['user_identity'];
 		$this->u->user_id = $this->params['caller']['wordpress']['user_data']['user_login'];
-
+		$this->u->password = $this->params['caller']['wordpress']['user_data']['user_pass_md5'];
+		
 		return;
 			
 	}

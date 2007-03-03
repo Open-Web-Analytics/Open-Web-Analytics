@@ -106,6 +106,7 @@ class owa_reportDocumentController extends owa_reportController {
 		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportDocument';
+		$data['nav_tab'] = 'base.reportContent';
 		
 		return $data;
 

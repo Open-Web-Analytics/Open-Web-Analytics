@@ -56,6 +56,13 @@ class owa_controller extends owa_base {
 	var $v;
 	
 	/**
+	 * Data container
+	 * 
+	 * @var Array
+	 */
+	var $data = array();
+	
+	/**
 	 * Constructor
 	 *
 	 * @param array $params
@@ -77,6 +84,16 @@ class owa_controller extends owa_base {
 	function doAction() {
 		
 		$this->e->debug('Performing Action: '.get_class($this));
+		
+		// set status msg
+		if (!empty($this->params['status_code'])):
+			$this->data['status_msg'] = $this->getMsg($this->params['status_code']);
+		endif;
+		
+		// get error msg from error code passed on the query string from a redirect.
+		if (!empty($this->params['error_code'])):
+			$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
+		endif;
 		
 		if (!empty($this->v)):
 		

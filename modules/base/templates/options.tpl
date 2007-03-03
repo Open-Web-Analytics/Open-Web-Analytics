@@ -1,4 +1,4 @@
-
+<div class="wrap">
 <fieldset class="options">
 	<legend>News</legend>
 	<? include('news.tpl');?>
@@ -38,3 +38,4 @@
 	</TR>
 
 </Table>
+</div>

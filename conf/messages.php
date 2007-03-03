@@ -40,7 +40,10 @@ $_owa_messages = array(
 2010 => array("Sucess. Logout Complete.",0),
 
 // Options/Configuration related
-2500 => array("Options Saved."),
+2500 => array("Options Saved.",0),
+2501 => array("The module was activated successfully.",0),
+2502 => array("The module was deactivated successfully.",0),
+2503 => array("Options reset to Default Values.",0),
 
 //User managment
 3000 => array("Success. User Added.", 0),
@@ -72,7 +75,10 @@ $_owa_messages = array(
 3306 => array("Error. User id already exists for some reason.",0),
 
 // Graph related
-3500 => array("There is no data for\nthis time period.",0)
+3500 => array("There is no data for\nthis time period.",0),
+
+// Report Related
+3600 => array("Unknown",0)
 
 );
 

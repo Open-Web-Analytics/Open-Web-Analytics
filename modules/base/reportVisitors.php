@@ -39,6 +39,8 @@ class owa_reportVisitorsController extends owa_reportController {
 		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
 		
+		//print_r($this->config);
+		
 		return;
 	}
 	
@@ -58,7 +60,8 @@ class owa_reportVisitorsController extends owa_reportController {
 		));
 		
 		//print_r($data['visitors_age']);
-		
+		//$data['sub_nav'] = $api->getNavigation('base.reportVisitors', 'sub_nav');
+		$data['nav_tab'] = 'base.reportVisitors';
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportVisitors';
 		
@@ -99,7 +102,8 @@ class owa_reportVisitorsView extends owa_view {
 		$this->body->set('headline', 'Visitors Report');
 			
 		$this->body->set('visitors_age', $data['visitors_age']);
-
+		$this->body->set('sub_nav', $data['sub_nav']);
+		
 		return;
 	}
 	

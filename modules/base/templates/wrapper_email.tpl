@@ -1,8 +1,3 @@
-<HTML>
-	<head>
-		<TITLE>Open Web Analytics E-mail</TITLE>
-	</head>
+Open Web Analytics \n
 	
-	<?=$body;?>
-
-</HTML>
+<?=$body;?>

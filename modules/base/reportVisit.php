@@ -76,6 +76,7 @@ class owa_reportVisitController extends owa_reportController {
 		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportVisit';
+		$data['nav_tab'] = 'base.reportVisitors';
 		
 		return $data;
 			

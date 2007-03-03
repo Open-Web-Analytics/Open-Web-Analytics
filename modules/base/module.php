@@ -126,6 +126,13 @@ class owa_baseModule extends owa_module {
 										'priviledge' 	=> 'viewer', 
 										'anchortext' 	=> 'Feeds',
 										'order'			=> 5));
+										
+		$this->addNavigationLink(array('view' 			=> 'base.reportVisitors', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportVisitsGeolocation',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Geo-location',
+										'order'			=> 1));
 		
 		return;
 		

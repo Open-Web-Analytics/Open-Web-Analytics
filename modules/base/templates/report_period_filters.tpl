@@ -20,13 +20,13 @@
 		</TD>
 		
 		<TD valign="top">
-			<TABLE>
+			<TABLE cellpadding="0" cellspacing="0">
 				<TR>
-					<TD>
+					<TD valign="top">
 						<input type="radio" name="period_type" id="set_periods" onclick='choosePeriodType("set_periods_form");' <? if (array_key_exists($params['period'], $reporting_periods)):?>CHECKED<?endif;?>>
 					</TD>
-					<TH>Time Period: </th>
-					<TD><form action="" method="GET" name="set_periods_form">
+					<TH valign="top">Time Period: </th>
+					<TD valign="top"><form action="" method="GET" name="set_periods_form">
 							<SELECT name="period" onchange='OnChange(this.form.period, "period");' <? if (!array_key_exists($params['period'], $reporting_periods)):?>DISABLED<?endif;?>>
 							<? foreach ($reporting_periods as $reporting_period => $value):?>
 								<OPTION VALUE="<?=$reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
@@ -37,11 +37,11 @@
 				</TR>
 				<TR>
 					
-					<td>
+					<td valign="top">
 						<input type="radio" name="period_type" id="date_periods" onclick='choosePeriodType("date_periods_form");' <? if (array_key_exists($params['period'], $date_reporting_periods)):?>CHECKED<?endif;?>>
 					</TD>
-					<Th>Date Period:</th>
-					<TD>
+					<TH valign="top">Date Period:</TH>
+					<TD valign="top">
 						<form action="" method="GET" name="date_periods_form" >
 							<SELECT name="period" onchange='dateFormReveal(this.form.period);' <? if (!array_key_exists($params['period'], $date_reporting_periods)):?>DISABLED<?endif;?>>
 							<? foreach ($date_reporting_periods as $date_reporting_period => $value):?>

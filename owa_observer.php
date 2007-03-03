@@ -143,3 +143,5 @@ class owa_observer extends Log_observer {
     }
 
 }
+
+?>

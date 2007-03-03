@@ -20,6 +20,7 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_browscap.php');
+require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 /**
  * Controller
@@ -33,14 +34,15 @@ require_once(OWA_BASE_DIR.'/owa_browscap.php');
  * @since		owa 1.0.0
  */
 
-class owa_processRequestController extends owa_controller {
-	
-	
-	var $bcap; // browscap
+class owa_processRequestController extends owa_processEventController {
 	
 	function owa_processRequestController($params) {
-		$this->owa_controller($params);
+		
+		$this->owa_processEventController($params);
+		
 		$this->priviledge_level = 'guest';
+		
+		return;
 	}
 	
 	function action() {
@@ -53,74 +55,62 @@ class owa_processRequestController extends owa_controller {
 		endif;
 		
 		// Setup request event
-		$r = owa_coreAPI::supportClassFactory('base', 'requestEvent');
+		$this->event = owa_coreAPI::supportClassFactory('base', 'requestEvent');
+		
+		// Pre process - set default and standard event property names
+		$this->pre();
 		
 		// Set event properties
-		$r->_setProperties($this->params);
+		$this->event->_setProperties($this->params['caller']);
 		
-		// set site id if not already set
-		if (empty($this->params['site_id'])):
-			$r->properties['site_id'] = $this->config['site_id'];
+		// set page type to unknown if not already set by caller
+		if (empty($this->params['caller']['page_type'])):
+			$this->event->properties['page_type'] = $this->getMsg(3600);
 		endif;
-		
-		// Set Ip Address
-		$r->setIp();
-		
-		// Set all time related properties
-		$r->setTime();
-		
-		// Set Operating System
-		$r->setOs($this->params['browscap_Platform']);
-		
-		// Set host related properties
-		if ($this->config['resolve_hosts'] = true):
-			$r->setHost($this->params['REMOTE_HOST']);
-		endif;
-		
-		// sets browser related properties NEEDED?
-		$r->setBrowser();
 		
 		// Set the uri or else construct it from environmental vars
-		if (empty($this->params['page_url'])):
-			$r->properties['page_url'] = owa_lib::get_current_url();
+		if (empty($this->params['caller']['page_url'])):
+			$this->event->properties['page_url'] = owa_lib::get_current_url();
 		endif;
 		
-		$r->properties['inbound_page_url'] = $r->properties['page_url'];
-		
-		// Strip session based URL params 
-		$r->properties['page_url'] = $r->stripDocumentUrl($r->properties['page_url']);
+		$this->event->properties['inbound_page_url'] = $this->event->properties['page_url'];
 		
 		// Feed subscription tracking code
-		$r->properties['feed_subscription_id'] = $this->params[$this->config['feed_subscription_param']];
+		$this->event->properties['feed_subscription_id'] = $this->params['caller'][$this->config['feed_subscription_param']];
 		
 		// Traffic Source code
-		$r->properties['source'] = $this->params[$this->config['source_param']];
+		$this->event->properties['source'] = $this->params['caller'][$this->config['source_param']];
 		
 		//Check for what kind of page request this is
-		if ($this->params['browscap_Crawler'] == true):
-			$r->is_robot = true;
-			$r->properties['is_robot'] = true;
-			$r->properties['is_browser'] = false;
-			$r->state = 'robot_request';
-		elseif ($r->properties['is_feedreader'] == true || $this->params['browscap_isSyndicationReader'] == true):			$r->properties['is_feedreader'] == true;
-			$r->properties['is_browser'] = false;
-			$r->properties['feed_reader_guid'] = $r->setEnvGUID();
-			$r->state = 'feed_request';
+		if ($this->params['browscap']['Crawler'] == true):
+			$this->event->is_robot = true;
+			$this->event->properties['is_robot'] = true;
+			$this->event->properties['is_browser'] = false;
+			$this->event->state = 'robot_request';
+		elseif ($this->event->params['caller']['is_feedreader'] == true || $this->params['browscap']['isSyndicationReader'] == true):			
+			$this->event->properties['is_feedreader'] == true;
+			$this->event->properties['is_browser'] = false;
+			$this->event->properties['is_feedreader'] = true;
+			$this->event->properties['feed_reader_guid'] = $this->event->setEnvGUID();
+			$this->event->state = 'feed_request';
 		else:
-			$r->state = 'page_request';
-			$r->properties['is_browser'] = true;
-			$r->assign_visitor();
-			$r->sessionize();
+			$this->event->state = 'page_request';
+			$this->event->properties['is_browser'] = true;
+			$this->event->assign_visitor($this->event->properties['inbound_visitor_id']);
+			$this->event->sessionize($this->event->properties['inbound_session_id']);
 		endif;	
 		
 		//update last-request time cookie
 		setcookie($this->config['ns'].$this->config['last_request_param'], 
-					$r->properties['sec'], 
+					$this->event->properties['sec'], 
 					time()+3600*24*365*30, 
 					"/", 
-					$r->setCookieDomain($this->params['HTTP_HOST']));
+					$this->config['cookie_domain']);
 		
-		return $r->log();
+		// Post Process - cleanup after all properties are set
+		$this->post();
+		
+		return $this->event->log();
 		
 	}
 	

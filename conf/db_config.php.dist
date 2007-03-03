@@ -33,6 +33,9 @@ define('OWA_DB_NAME', '');
 define('OWA_DB_HOST', '');
 define('OWA_DB_USER', '');
 define('OWA_DB_PASSWORD', '');
+
+// define the URI of the public directory e.g. /root/deir/owa/public 
+define('OWA_PUBLIC_URL', dirname(dirname($_SERVER['PHP_SELF'])).'/public');
  
 ?>
  
