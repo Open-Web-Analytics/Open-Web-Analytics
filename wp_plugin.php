@@ -81,11 +81,11 @@ elseif ($owa_wp_version[0] == '2'):
 endif;
 
 // Register Wordpress Event Handlers
+add_action('init', 'owa_set_user_level');
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_footer');
 add_filter('post_link', 'owa_post_link');
 add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
-add_action('init', 'owa_set_user_level');
 add_filter('bloginfo', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', array(&$owa_wp, 'logComment'));
