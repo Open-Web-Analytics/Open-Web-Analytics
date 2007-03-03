@@ -117,9 +117,9 @@
       }
     </script>
 <? else:?>
-<span class="error">
+<div class="error">
 	You must have a Google Maps API Key to use this feature. Google provides this key for free. 
 	You can get a key in <b>minutes</b> by visiting <a href="http://www.google.com/apis/maps/signup.html" target="_blank">this Google web site</a> and then 
 	entering the key on the <a href="<?=$this->makeLink(array('view' => 'base.options'));?>">main OWA configuration page</a>.
-</span>
+</div>
 <?endif;?>
