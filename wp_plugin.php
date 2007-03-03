@@ -82,7 +82,7 @@ endif;
 
 // Register Wordpress Event Handlers
 add_action('template_redirect', 'owa_main');
-add_action('wp_footer', array(&$owa_wp, 'placeHelperPageTags'));
+add_action('wp_footer', 'owa_footer');
 add_filter('post_link', 'owa_post_link');
 add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
 add_action('init', 'owa_set_user_level');
@@ -92,6 +92,18 @@ add_action('comment_post', array(&$owa_wp, 'logComment'));
 add_action('admin_menu', 'owa_options_menu');
 
 /////////////////////////////////////////////////////////////////////////////////
+
+function owa_footer() {
+	
+	global $owa_wp;
+	
+	$owa_wp->placeHelperPageTags();
+	
+	
+	return;
+	
+}
+
 
 /**
  * Sets the user level in caller params for use in OWA's auth module.

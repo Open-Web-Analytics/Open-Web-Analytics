@@ -17,7 +17,7 @@
 //
 
 include_once('set_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa_wp.php');
 
 /**
  * Main Admin Page Wrapper Script
@@ -32,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  */
 
 // Initialize owa admin
-//$owa = &new owa_wp;
+//$owa_wp = &new owa_wp;
 
 // run controller or view and echo page content
 echo $owa_wp->handleRequestFromURL();
