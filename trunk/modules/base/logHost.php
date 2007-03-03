@@ -53,7 +53,7 @@ class owa_logHostController extends owa_controller {
 		$location = owa_location::factory($this->config['plugin_dir']."location".DIRECTORY_SEPARATOR, $this->config['geolocation_service']);
 		
 		// lookup
-		$location->get_location($this->properties['ip_address']);
+		$location->get_location($this->params['ip_address']);
 		
 		//set properties of the session
 		$h->set('country', $location->country);
