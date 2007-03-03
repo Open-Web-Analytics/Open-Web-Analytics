@@ -333,7 +333,7 @@ function owa_install() {
     	
     	$owa_wp->config['db_type'] = 'mysql';
     	
-    	$install_params = array('site_id' => $conf['site_id'], 
+    	$install_params = array('site_id' => md5(get_settings('siteurl')), 
     							'name' => get_bloginfo('name'),
     							'domain' => get_settings('siteurl'), 
     							'description' => get_bloginfo('description'),
