@@ -438,24 +438,6 @@ class owa_coreAPI extends owa_base {
 		return strnatcmp($a['order'], $b['order']);
 	}
 	
-	
-	function makeAbsoluteLink($params, $url) {
-		
-		$get = '';
-		
-		if (!empty($params)):
-		
-			foreach ($params as $n => $v) {
-				
-				$get .= $this->config['ns'].$n.'='.$v.'&';
-			}
-		
-		endif;
-		
-		return sprintf($this->config['link_template'], $url, $get);
-		
-	}
-	
 	/**
 	 * Strip a URL of certain GET params
 	 *

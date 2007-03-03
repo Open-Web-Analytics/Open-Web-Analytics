@@ -226,11 +226,16 @@ class owa_caller extends owa_base {
 	
 	function placeHelperPageTags($echo = true) {
 		
-		if ($echo == true):
-			echo $this->handleHelperPageTagsRequest();
-			return;
+		$params = array();
+		$params['view'] = 'base.helperPageTags';
+		$params['view_method'] = 'delegate';
+		
+		if ($echo == false):
+			//return $this->handleHelperPageTagsRequest();
+			return $this->handleRequest($params);
 		else:
-			return $this->handleHelperPageTagsRequest();
+			echo $this->handleRequest($params);
+			return;
 		endif;
 		
 	}

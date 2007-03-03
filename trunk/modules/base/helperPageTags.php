@@ -57,6 +57,7 @@ class owa_helperPageTagsView extends owa_view {
 			
 			if ($this->config['delay_first_hit'] == true):
 				$this->body->set('first_hit_tag', true);
+				//$this->e->debug('adding first hit tag');
 			endif;
 		endif;
 		
