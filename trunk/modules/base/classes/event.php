@@ -98,7 +98,7 @@ class owa_event extends owa_base {
 	 */
 	function setTime($timestamp = '') {
 		
-		$this->properties['timestamp'] = $this->properties['REQUEST_TIME'];
+		$this->properties['timestamp'] = $timestamp;
 		$this->properties['year'] = date("Y", $this->properties['timestamp']);
 		$this->properties['month'] = date("n", $this->properties['timestamp']);
 		$this->properties['day'] = date("d", $this->properties['timestamp']);
@@ -121,9 +121,9 @@ class owa_event extends owa_base {
 	
 	function setCookieDomain($domain) {
 		
-		$cookie_domain = $domain;
+		$this->properties['cookie_domain'] = $domain;
 		
-		return $cookie_domain;
+		return;
 		
 	}
 	
@@ -137,14 +137,6 @@ class owa_event extends owa_base {
 	
         return ($this->properties['timestamp'] - $this->properties['last_req']);
 	
-	}
-	
-	function setBrowser() {
-		
-		$this->properties['browser_type'] = $this->properties['browscap_Browser'];
-		
-		$this->properties['browser'] = $this->properties['browscap_Browser'] . ' ' . $this->properties['browscap_Version'];
-		
 	}
 	
 	/**
@@ -182,10 +174,7 @@ class owa_event extends owa_base {
 				
 			}
 			
-			// Map standard params to standard event property names
-			$this->properties['inbound_visitor_id'] = $properties[$this->config['visitor_param']];
-			$this->properties['inbound_session_id'] = $properties[$this->config['session_param']];
-			$this->properties['last_req'] = $properties[$this->config['last_request_param']];
+			
 
 		endif;
 		
@@ -214,21 +203,21 @@ class owa_event extends owa_base {
 	 * @return string
 	 * @access private
 	 */
-	function setIp() {
+	function setIp($HTTP_X_FORWARDED_FOR, $HTTP_CLIENT_IP, $REMOTE_ADDR) {
 	
-		if ($this->properties["HTTP_X_FORWARDED_FOR"]):
-			if ($this->properties["HTTP_CLIENT_IP"]):
-		   		$proxy = $this->properties["HTTP_CLIENT_IP"];
+		if ($HTTP_X_FORWARDED_FOR):
+			if ($HTTP_CLIENT_IP):
+		   		$proxy = $HTTP_CLIENT_IP;
 		  	else:
-		    	$proxy = $this->properties["REMOTE_ADDR"];
+		    	$proxy = $REMOTE_ADDR;
 		  	endif;
 			
-			$this->properties['ip_address'] = $this->properties["HTTP_X_FORWARDED_FOR"];
+			$this->properties['ip_address'] = $HTTP_X_FORWARDED_FOR;
 		else:
-			if ($this->properties["HTTP_CLIENT_IP"]):
-		    	$this->properties['ip_address'] = $this->properties["HTTP_CLIENT_IP"];
+			if ($HTTP_CLIENT_IP):
+		    	$this->properties['ip_address'] = $HTTP_CLIENT_IP;
 		  	else:
-		    	$this->properties['ip_address'] = $this->properties["REMOTE_ADDR"];
+		    	$this->properties['ip_address'] = $REMOTE_ADDR;
 			endif;
 		endif;
 		

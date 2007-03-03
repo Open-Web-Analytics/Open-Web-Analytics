@@ -95,12 +95,7 @@ class owa_wp extends owa_caller {
 	}
 	
 
-	function placeHelperPageTags() {
-		
-		echo $this->handleHelperPageTagsRequest();
-		
-		return;
-	}
+	
 
 }
 

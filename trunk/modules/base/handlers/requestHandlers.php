@@ -55,13 +55,17 @@ class owa_requestHandlers extends owa_observer {
     function notify($event) {
     
     	$this->m = $event['message'];
+    	$this->handleEvent('base.logPageRequest');
     	
-    	switch ($event['event_type']) {
+    	/*switch ($event['event_type']) {
 	    	case "base.page_request":
 	    		$this->handleEvent('base.logPageRequest');
 	    	break;
+	    	case "base.first_page_request":
+	    		$this->handleEvent('base.logPageRequest');
+	    	break;
     	
-    	}
+    	}*/
     
 		return;
 	}

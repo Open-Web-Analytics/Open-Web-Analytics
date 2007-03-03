@@ -46,8 +46,6 @@ class owa_reportView extends owa_view {
 	
 	function construct($data) {
 		
-		
-		
 		// Set Page title
 		$this->t->set('page_title', 'Report');
 		
@@ -96,6 +94,7 @@ class owa_reportView extends owa_view {
 		$this->body->caller_params['link_state'] =  $link_params;
 		$this->subview->body->caller_params['link_state'] =  $link_params;
 		
+		// set site filter list
 		$this->body->set('sites', $this->getSitesList());
 		
 		
@@ -107,12 +106,14 @@ class owa_reportView extends owa_view {
 
 		$this->body->set('news', $news);
 		
+		// Set navigation
 		$api = &owa_coreAPI::singleton();
-		$data['nav'] = $api->getNavigation('base.report', 'top_level_report_nav');
-		
-		$this->body->set('top_level_report_nav', $data['nav']);
+	
+		$this->body->set('sub_nav', $api->getNavigation($this->data['nav_tab'], 'sub_nav'));
+		$this->body->set('top_level_report_nav', $api->getNavigation('base.report', 'top_level_report_nav'));
 		
 		// load body template
+		
 		$this->body->set_template('report.tpl');
 		
 		return;

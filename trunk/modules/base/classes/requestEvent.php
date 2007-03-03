@@ -83,13 +83,6 @@ class owa_requestEvent extends owa_event {
 		
 	}
 	
-	function setupNewRequest() {
-		
-		$this->bcap = new owa_browscap($this->properties['ua']);
-		
-		return;
-	}
-	
 	/**
 	 * Load request properties from delayed first hit cookie.
 	 *
@@ -98,21 +91,23 @@ class owa_requestEvent extends owa_event {
 	 */
 	function load_first_hit_properties($properties) {
 	
-		$this->properties['inbound_first_hit_properties'] = $properties;
-		$array = explode(",", $properties);
-		
-		foreach ($array as $key => $value):
-		
-			list($realkey, $realvalue) = split('=>', $value);
-			$this->properties[$realkey] = $realvalue;
-	
-		endforeach;
+		  $this->properties['inbound_first_hit_properties'] = $properties;
+         
+          $array = explode(",", $properties);
+
+          foreach ($array as $key => $value):
+
+         	 list($realkey, $realvalue) = split('=>', $value);
+          	 $this->properties[$realkey] = $realvalue;
+
+          endforeach;
+
 		
 		// Mark the request to avoid logging it to the first hit cookie again
 		$this->first_hit = true;
 		
 		// Delete first_hit Cookie
-		setcookie($this->config['ns'].$this->config['first_hit_param'], '', time()-3600*24*365*30, "/", $this->properties['site']);
+		setcookie($this->config['ns'].$this->config['first_hit_param'], '', time()-3600*24*365*30, "/", $this->config['cookie_domain']);
 		
 		return;
 	}
@@ -129,9 +124,9 @@ class owa_requestEvent extends owa_event {
 	function log_first_hit() {
 		
 		$values = owa_lib::implode_assoc('=>', ',', $this->properties);
-		
-		setcookie($this->config['ns'].$this->config['first_hit_param'], $values, time()+3600*24*365*30, "/", $this->properties['site']);
-		
+		//$values = 'test';
+		setcookie($this->config['ns'].$this->config['first_hit_param'], $values, time()+3600*24*365*30, "/", $this->config['cookie_domain']);
+		$this->e->debug('First hit cookie values: '.$values);
 		return true;
 	
 	}
@@ -140,14 +135,14 @@ class owa_requestEvent extends owa_event {
 	 * Assigns visitor IDs
 	 *
 	 */
-	function assign_visitor() {
+	function assign_visitor($inbound_visitor_id) {
 		
 		// is this new visitor?
 	
-		if (empty($this->properties['inbound_visitor_id'])):
+		if (empty($inbound_visitor_id)):
 			$this->set_new_visitor();
 		else:
-			$this->properties['visitor_id'] = $this->properties['inbound_visitor_id'];
+			$this->properties['visitor_id'] = $inbound_visitor_id;
 			$this->properties['is_repeat_visitor'] = true;
 		endif;
 		
@@ -158,15 +153,15 @@ class owa_requestEvent extends owa_event {
 	 * Make Session IDs
 	 *
 	 */
-	function sessionize() {
+	function sessionize($inbound_session_id) {
 		
 			// check for inbound session id
-			if (!empty($this->properties['inbound_session_id'])):
+			if (!empty($inbound_session_id)):
 				 
 				 if (!empty($this->properties['last_req'])):
 							
 					if ($this->time_since_lastreq < $this->config['session_length']):
-						$this->properties['session_id'] = $this->properties['inbound_session_id'];		
+						$this->properties['session_id'] = $inbound_session_id;		
 						
 					else:
 					//prev session expired, because no hits in half hour.
@@ -198,8 +193,11 @@ class owa_requestEvent extends owa_event {
 		//mark entry page flag on current request
 		$this->properties['is_entry_page'] = true;
 		
+		//mark new session flag on current request
+		$this->properties['is_new_session'] = true;
+		
 		//Set the session cookie
-        setcookie($this->config['ns'].$this->config['session_param'], $this->properties['session_id'], time()+3600*24*365*30, "/", $this->properties['site']);
+        setcookie($this->config['ns'].$this->config['session_param'], $this->properties['session_id'], time()+3600*24*365*30, "/", $this->config['cookie_domain']);
         
 	
 		return;
@@ -218,7 +216,7 @@ class owa_requestEvent extends owa_event {
         $this->properties['visitor_id'] = $this->set_guid();
 		
         // Set visitor cookie
-        setcookie($this->config['ns'].$this->config['visitor_param'], $this->properties['visitor_id'] , time()+3600*24*365*30, "/", $this->properties['site']);
+        setcookie($this->config['ns'].$this->config['visitor_param'], $this->properties['visitor_id'] , time()+3600*24*365*30, "/", $this->config['cookie_domain']);
 		
 		$this->properties['is_new_visitor'] = true;
 		

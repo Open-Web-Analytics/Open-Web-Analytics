@@ -35,8 +35,12 @@ require_once(OWA_BASE_DIR.'/owa_browscap.php');
 
 class owa_processEventController extends owa_controller {
 	
+	var $event;
+	
 	function owa_processEventController($params) {
+	
 		$this->owa_controller($params);
+		
 		$this->priviledge_level = 'guest';
 		
 		return;
@@ -50,31 +54,69 @@ class owa_processEventController extends owa_controller {
 	function action() {
 		
 		// Setup generic event model
-		$event = owa_coreAPI::supportClassFactory('base', 'event');
+		$this->event = owa_coreAPI::supportClassFactory('base', 'event');
 		
-		$event->state = $this->params['event'];
+		// Pre process - default and standard properties
+		$this->pre();
 		
-		$event->_setProperties($this->params);
+		$this->event->state = $this->params['event'];
 		
-		$event->setTime();
+		$this->event->_setProperties($this->params['caller']);
 		
-		$event->setIp();
+		// Post Process - cleanup after all properties are set
+		$this->post();
 		
-		// Resolve host name
-		if ($this->config['resolve_hosts'] = true):
-			$event->setHost($this->params['REMOTE_HOST']);
-		endif;
+		return $this->event->log();
+		
+	}
 	
-		// sets browser related properties
-		$event->setBrowser();
+	function pre() {
+		
+		// Map standard params to standard event property names
+		$this->event->properties['inbound_visitor_id'] = $this->params[$this->config['visitor_param']];
+		$this->event->properties['inbound_session_id'] = $this->params[$this->config['session_param']];
+		$this->event->properties['last_req'] = $this->params[$this->config['last_request_param']];
+		$this->event->properties['HTTP_USER_AGENT'] = $this->params['server']['HTTP_USER_AGENT'];
+		$this->event->properties['HTTP_REFERER'] = $this->params['server']['HTTP_REFERER'];
+		$this->event->properties['HTTP_HOST'] = $this->params['server']['HTTP_HOST'];
+		
+		// Set Ip Address
+		$this->event->setIp($this->params['server']['HTTP_X_FORWARDED_FOR'], $this->params['server']['HTTP_CLIENT_IP'], $this->params['server']['REMOTE_ADDR']);
+		
+		// Set all time related properties
+		$this->event->setTime($this->params['server']['REQUEST_TIME']);
+		
+		// Set host related properties
+		if ($this->config['resolve_hosts'] = true):
+			$this->event->setHost($this->params['server']['REMOTE_HOST']);
+		endif;
+		
+		// Browser related properties
+		$this->event->properties['browser_type'] = $this->params['browscap']['Browser'];
+		$this->event->properties['browser'] = $this->params['server']['Browser'] . ' ' . $this->params['browscap']['Version'];
+		
+		// Set Operating System
+		$this->event->setOs($this->params['browscap']['Platform']);
+		
+		return;
+		
+		
+	}
+	
+	function post() {
 		
 		//Clean Query Strings
 		if ($this->config['clean_query_strings'] == true):
-			$event->cleanQueryStrings();
+			$this->event->cleanQueryStrings();
 		endif;
-			
-		return $event->log();
 		
+		// set site id if not already set
+		if (empty($this->params['caller']['site_id'])):
+			$this->event->properties['site_id'] = $this->config['site_id'];
+		endif;
+		
+		return;	
+	
 	}
 	
 }

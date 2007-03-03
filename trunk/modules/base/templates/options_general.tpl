@@ -60,7 +60,7 @@
 	<DIV class="setting">	
 
 	Notice Email Address: <input type="text" name="<?=$this->getNs();?>config[notice_email]" value="<?=$config['notice_email']?>"><BR>
-	
+
 	</DIV>
 	
     </fieldset>
@@ -93,6 +93,13 @@
 		</SELECT>
 	
 	</DIV>
+	
+	<div class="setting">
+	
+		Google Maps API Key: <input type="text" name="<?=$this->getNs();?>config[google_maps_api_key]" value="<?=$config['google_maps_api_key']?>"><BR>
+	
+		
+	</div>
     
 	</fieldset>
 		

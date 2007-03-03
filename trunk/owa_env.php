@@ -41,5 +41,4 @@ define('OWA_METRICS_DIR', OWA_BASE_DIR.'/plugins/metrics/');
 define('OWA_GRAPHS_DIR', OWA_BASE_DIR.'/plugins/graphs/');
 define('OWA_CONF_DIR', OWA_BASE_DIR.'/conf/');
 define('OWA_VERSION', '1.0');
-define('OWA_PUBLIC_DIR', dirname($_SERVER['PHP_SELF']));
 ?>

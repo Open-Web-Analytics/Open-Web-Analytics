@@ -91,7 +91,7 @@ class owa_auth extends owa_base {
 		$this->params = &owa_requestContainer::getInstance();
 		
 		//sets credentials based on whatever is passed in on params
-		$this->_setCredentials($this->params['u'], $this->params['p']);
+		$this->_setCredentials($this->params['u'], $this->params['p'], $this->params['pk']);
 		
 		return;
 		
@@ -146,15 +146,29 @@ class owa_auth extends owa_base {
 			return $data;
 		endif;
 		
+		// carve out for url passkey authentication
+		if(!empty($this->credentials['passkey'])):
+			$status = $this->authenticateUserByUrlPasskey($this->credentials['user_name'], $this->credentials['passkey']);
+			
+			if ($status == true):
+				$data['auth_status'] = true;
+				return $data;
+			else:
+				$data = $this->_setNotAuthenticatedView();
+				$data['auth_status'] = false;
+				return $data;	
+			endif;
+		endif;
+			
 		// if the user has no credentials then redirect them to the login page.
-		if($this->check_for_credentails == true):
+		//if($this->check_for_credentails == true):
 			if ((empty($this->credentials['user_id'])) || (empty($this->credentials['password']))):
 				// show login page
 				$data = $this->_setNotAuthenticatedView();
 				$data['auth_status'] = false;
 				return $data;	
 			endif;
-		endif;
+		//endif;
 	
 		// lookup user if not already done.	
 		if ($this->_is_user == false):
@@ -225,6 +239,26 @@ class owa_auth extends owa_base {
 	}
 	
 	/**
+	 * Authenticates user by a passkey
+	 *
+	 * @param unknown_type $key
+	 * @return unknown
+	 */
+	function authenticateUserByUrlPasskey($user_name, $passkey) {
+		
+		$this->getUser();
+		
+		$key =$this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
+		
+		if ($key == $passkey):
+			return true;
+		else:
+			return false;
+		endif;
+		
+	}
+	
+	/**
 	 * abstract method for Checking to see if the user credentials match a real user object in the DB
 	 *
 	 * @return boolean
@@ -281,6 +315,12 @@ class owa_auth extends owa_base {
 		return md5($seed.time().rand());
 	}
 	
+	function generateUrlPasskey($user_name, $password) {
+		
+		return md5($user_name . $password);
+		
+	}
+	
 	/**
 	 * Sets the initial Passkey for a new user
 	 *
@@ -294,10 +334,11 @@ class owa_auth extends owa_base {
 		
 	}
 	
-	function _setCredentials($user_id, $password) {
+	function _setCredentials($user_id = '', $password = '', $passkey = '') {
 		
 		$this->credentials['user_id'] = $user_id;
 		$this->credentials['password'] = $password;
+		$this->credentials['passkey'] = $passkey;
 		
 		return;
 	}

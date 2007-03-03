@@ -93,7 +93,7 @@ OWA.log.prototype = {
     	
     	get = '';
     	
-   		log_url = '<?=$this->makeAbsoluteLink('', $this->config['log_url']);?>';
+   		log_url = '<?=$this->makeAbsoluteLink('', false, $this->config['log_url']);?>';
    		
     	//assemble query string
 	    for(param in properties) {  // print out the params

@@ -47,7 +47,7 @@
  	function owa_settings() {
 		
  		$this->config = owa_coreAPI::entityFactory('base.configuration');
- 		$this->config->set('settings', $this->getDefaultConfig());
+ 		$this->getDefaultConfig();
  		
  		return;
  	}
@@ -84,7 +84,7 @@
  	 * @param string id  the id of the configuration array to load
  	 */
  	function load($id = 1) {
- 		
+ 
 	 		if (!file_exists(OWA_BASE_MODULE_DIR.'config'.DIRECTORY_SEPARATOR.'base.php')):
 	 		
 	 			$db_config = owa_coreAPI::entityFactory('base.configuration');
@@ -111,7 +111,8 @@
 		 			
 	 			endif;
 	 			
-	 			$this->config->set('id', $id);
+	 			$db_id = $db_config->get('id');
+	 			$this->config->set('id', $db_id);
 	 			
 	 		else:
 	 			; // load config from file
@@ -304,7 +305,7 @@
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
 			'report_wrapper'				=> 'wrapper_default.tpl',
-			'fetch_config_from_db'			=> true,
+			'do_not_fetch_config_from_db'	=> false,
 			'announce_visitors'				=> false,
 			'public_url'					=> '',
 			'action_url'					=> '',
@@ -335,7 +336,16 @@
 			
 			));
 			
-			// Setup special public URLs
+			$this->config->set('settings', $config);
+			$this->applyUrls();
+			
+			return;
+ 		
+ 	}
+ 	
+ 	function applyUrls() {
+ 		
+ 		// Setup special public URLs
 				
 			$base_url  = "http";
 		
@@ -349,13 +359,16 @@
 				$base_url .= ':'.$_SERVER['SERVER_PORT'];
 			endif;
 								
-			$config['base']['public_url'] = OWA_PUBLIC_DIR;
-			$config['base']['main_url'] = $config['base']['public_url']."/main.php";
-			$config['base']['main_absolute_url'] = $base_url . $config['base']['main_url'];
-			$config['base']['action_url'] = $config['base']['main_url'];
-			$config['base']['images_url'] = $config['base']['public_url']."/i";
-				
-			return $config; 		
+			$this->set('base', 'public_url', OWA_PUBLIC_URL);
+			
+			$this->set('base', 'main_url',  $this->get('base', 'public_url').'/main.php');
+			$this->set('base', 'main_absolute_url',  $base_url.$this->get('base', 'main_url'));
+			$this->set('base', 'action_url',  $this->get('base', 'main_url'));
+			$this->set('base', 'images_url',  $this->get('base', 'public_url').'/i/');
+			$this->set('base', 'images_absolute_url',  $base_url.$this->get('base', 'images_url'));
+			$this->set('base', 'log_url',  $this->get('base', 'public_url').'/log.php');
+			
+			return;
  		
  	}
  	

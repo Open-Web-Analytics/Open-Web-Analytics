@@ -33,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  */
 
 // Initialize owa admin
-$config['fetch_config_from_db'] = false;
+$config['do_not_fetch_config_from_db'] = true;
 $owa = new owa_php($config);
 
 // Santize input

@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -53,7 +53,7 @@ class owa_news extends lastRSS {
 	function owa_news() {
 	
 		$c = &owa_coreAPI::configSingleton();
-		$this->config = $c->fetch('base');
+		$this->config = &$c->fetch('base');
 		$this->e = &owa_error::get_instance();
 		$this->crawler = new owa_http;
 		$this->cache_dir = '';
@@ -151,7 +151,7 @@ class owa_news extends lastRSS {
 		}
 		else // Error in opening return False
 		{
-			print 'no rss content';
+			$this->e->notice('no rss content found at: '.$rss_url);
 			return False;
 		}
 	}

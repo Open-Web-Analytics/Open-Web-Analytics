@@ -4,27 +4,16 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
 		<title>Open Web Analytics - <?=$page_title;?></title>
+		<? include('css.tpl');?>
 	</head>
 	
 	<body>
 	
-	<? include('css.tpl');?>
-	
-	<style>
-	body {background-color:#cccccc;}
-	.wrap {margin:10px 40px 20px 40px; background-color:#ffffff; border:1px solid #000000; padding:8px;}
-
-	</style>
+		<DIV id="header"><?include ('header.tpl');?></DIV>
 		
-	<DIV class="owa_banner"><?include ('header.tpl');?></DIV>
-
-	<div class="wrap">
-	
 		<? include('msgs.tpl');?>
-	
-		<?=$content;?>
+			
 		<?=$body;?>
-	</div>
 	
 	</body>
 </html>

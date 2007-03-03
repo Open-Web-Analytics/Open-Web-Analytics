@@ -17,7 +17,7 @@
 //
 
 include_once('owa_env.php');
-require_once 'owa_requestContainer.php';
+require_once('owa_requestContainer.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
@@ -64,7 +64,7 @@ class owa_caller extends owa_base {
 			if (file_exists($db_file)):
 				include ($db_file);
 			else:
-				print "I can't find your database configuration file...";
+				print "Uh-oh. I can't find your database configuration file...";
 				exit;
 			endif;
 		endif;
@@ -79,12 +79,18 @@ class owa_caller extends owa_base {
 		
 		// Applies config from db or cache
 		// needed for installs when the configuration table does not exist.
-		if ($config['fetch_config_from_db'] == true):
+		if ($config['do_not_fetch_config_from_db'] != true):
 			$this->c->load($config['configuration_id']);
 		endif;
+		
+		//Apply URL config vales.
+		$this->c->applyUrls();
 			
 		// Applies run time config overrides
 		$this->c->applyModuleOverrides('base', $config);
+		$this->e->debug('applying caller config overrides.');
+		
+		
 		
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 
@@ -99,6 +105,8 @@ class owa_caller extends owa_base {
 		
 		// Load the core API
 		$this->api = &owa_coreAPI::singleton();
+		
+		$this->api->caller_config_overrides = $config;
 		
 		// should only be called once to load all modules
 		$this->api->setupFramework();
@@ -138,8 +146,9 @@ class owa_caller extends owa_base {
 	 */
 	function logEvent($event_type, $caller_params = '') {
 		
+		$params = array();
 		// Add PHP's $_SERVER scope variables to event properties
-		$params = $_SERVER;
+		$params['server'] = $_SERVER;
 		
 		// Apply caller's params to event properties
 		if (!empty($caller_params)):
@@ -147,7 +156,7 @@ class owa_caller extends owa_base {
 			// Apply caller specific params
 			foreach ($caller_params as $k => $v) {
 				
-				$params[$k] = $v;
+				$params['caller'][$k] = $v;
 				
 			}
 		
@@ -160,7 +169,7 @@ class owa_caller extends owa_base {
 		$params = owa_lib::inputFilter($params);
 		
 		//Load browscap
-		$bcap = new owa_browscap($params['HTTP_USER_AGENT']);  ///!
+		$bcap = new owa_browscap($params['server']['HTTP_USER_AGENT']);  ///!
 		
 		// Abort if the request is from a robot
 		if ($this->config['log_robots'] != true):
@@ -174,7 +183,7 @@ class owa_caller extends owa_base {
 	
 		foreach ($bcap_array as $k => $v) {
 				
-			$params['browscap_'.$k] = $v;
+			$params['browscap'] = $bcap_array;
 				
 		}
 		
@@ -195,7 +204,7 @@ class owa_caller extends owa_base {
 		//$clean_params = owa_lib::inputFilter($caller_params);
 		
 		$striped_params = owa_lib::stripParams($caller_params);
-		
+		$params =array();
 		// Apply caller specific params
 			foreach ($striped_params as $k => $v) {
 				
@@ -212,6 +221,17 @@ class owa_caller extends owa_base {
 	function requestTag($site_id) {
 		
 		return $api->requestTag($site_id);
+		
+	}
+	
+	function placeHelperPageTags($echo = true) {
+		
+		if ($echo == true):
+			echo $this->handleHelperPageTagsRequest();
+			return;
+		else:
+			return $this->handleHelperPageTagsRequest();
+		endif;
 		
 	}
 	
@@ -304,6 +324,12 @@ class owa_caller extends owa_base {
 				
 			endif;
 		
+		elseif(!empty($data['do'])):
+		
+			if ($data['view_method'] == 'redirect'):
+				owa_lib::redirectToView($data);
+				return;
+			endif;
 		endif;
 		
 		return;
@@ -344,7 +370,7 @@ class owa_caller extends owa_base {
 			unset($this->params['view']);
 			
 		else:
-			print 'Caller: No view or action param found. I\'m not sure what to do here.';
+			print "Caller: No view or action param found. I'm not sure what to do here.";
 			return;
 		endif;
 		

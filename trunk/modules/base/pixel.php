@@ -48,7 +48,7 @@ class owa_pixelView extends owa_view {
 	function construct($data) {
 		
 		// Set Page title
-		$this->t->set_template('blank.tpl');
+		$this->t->set_template('wrapper_blank.tpl');
 		
 		// load body template
 		$this->body->set_template('pixel.tpl');

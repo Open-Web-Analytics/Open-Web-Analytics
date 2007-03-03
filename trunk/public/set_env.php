@@ -34,5 +34,7 @@
 define('OWA_PATH', dirname(dirname(__FILE__)));
 
 include_once(OWA_PATH.'/owa_env.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
+
 
 ?>

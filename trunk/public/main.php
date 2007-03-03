@@ -32,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  */
 
 // Initialize owa admin
-$owa = new owa_php;
+$owa = &new owa_php;
 
 // run controller or view and echo page content
 echo $owa->handleRequestFromURL();

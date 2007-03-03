@@ -380,7 +380,4 @@ class owa_module extends owa_base {
 	
 }
 
-
-
-
 ?>

@@ -1,11 +1,12 @@
 <style>
 
 /* HTML ENTITIES*/
-body {border-color:#cccccc; background-color:#ffffff; font-family:Helvetica,'Arial';}
+body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;}
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 6px 2px 6px;}
-legend {font-size:20px;font-weight:bold;}
+legend {font-size:16px;font-weight:bold;}
 fieldset{margin: 7px; border:1px solid #cccccc;}
+div {margin:0;}
 
 /* COLORS */
 .red {background-color:red;}
@@ -13,12 +14,99 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 .green {background-color:green; color:#ffffff;}
 
 /* NAVIGATION */
-#sub_nav {padding:5px;}
+#sub_nav {padding:5px; background-color:#cccccc; width=100%; }
 .top_level_nav{font-size:20px;}
-.nav_links {list-style:none; margin:0px; padding:0px;}
-.nav_links li {float: left; padding-right:20px;}
+.nav_links {list-style:none; margin:0px; padding:0px; }
+.nav_links li {float: left; padding:4px 20px 4px 20px;}
 .nav_links li a {text-decoration: none; }
-.post-nav {clear: both;}
+.nav_links ul {clear: both;}
+.post-nav {clear: both; margin:0px; padding:0px 0px 20px 0px;}
+.active_nav_link {background-color:#cccccc;}
+
+/*globalnav*/
+
+#globalnav {
+	position:relative;
+	float:left;
+	width:100%;
+	padding:0 0 0px 0px;
+	margin:0;
+	list-style:none;
+	line-height:auto;
+}
+
+#globalnav LI {
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+#globalnav A {
+	display:block;
+	color:#444;
+	text-decoration:none;
+	font-weight:bold;
+	background:#ddd;
+	margin:0;
+	padding:0.25em 10px;
+	border-left:1px solid #fff;
+	border-top:1px solid #fff;
+	border-right:1px solid #aaa;
+}
+
+#globalnav A:hover,
+#globalnav A:active,
+#globalnav A.here:link,
+#globalnav A.here:visited {
+	background:#bbb;
+}
+
+#globalnav A.here:link,
+#globalnav A.here:visited {
+	position:relative;
+	z-index:102;
+}
+
+/*subnav*/
+
+#globalnav UL {
+	position:absolute;
+	left:0;
+	top:1.5em;
+	float:left;
+	background:#bbb;
+	width:100%;
+	margin:0;
+	padding:4px 0 4px 0;
+	list-style:none;
+	border-top:1px solid #fff;
+}
+
+#globalnav UL LI {
+	float:left;
+	display:block;
+	margin-top:1px;
+}
+
+#globalnav UL A {
+	background:#bbb;
+	color:#fff;
+	display:inline;
+	margin:0;
+	padding:0 15px;
+	border:0
+}
+
+#globalnav UL A:hover,
+#globalnav UL A:active,
+#globalnav UL A.here:link,
+#globalnav UL A.here:visited {
+	color:#444;
+}
+
+
+
+
 
 /* HEADLINES */
 
@@ -60,11 +148,11 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 	margin:0px 2px 2px 2px;
 	width:40px;
 	height:40px;
-	background-image: url('<?=$this->config['images_url'];?>/comment_background.jpg');
+	background-image: url('<?=$this->makeImageLink('comment_background.jpg');?>
 	background-repeat: no-repeat;
 	text-align:center;
 }
-
+.visit_summary {width:100%;}
 .date_box {padding:4px;	border:solid 1px #999999;margin:2px;}
 .pages_box {padding:2px; border:solid 2px #999999; margin:0px 0px 0px 0px; text-align:center;}
 .large_number {font-size:24px;}
@@ -80,11 +168,10 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 .id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
 .code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:10px;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
-.owa_banner {background-color: #cccccc; padding:4px; font-weight:bold;}
 .visible {display:;}
 .invisible {display:none;}
-.status {color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: green; font-size: 14px; font-weight:bold;}
-.error{color: #ffffff; border: 2px solid #000000; padding: 5px; background-color: red; font-size: 14px; font-weight:bold;}
+.status {color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 5px; background-color: green; font-size: 14px; font-weight:bold;}
+.error{color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 5px; background-color: red; font-size: 14px; font-weight:bold;}
 .tiny_icon{width:10px;padding-left:0px;}
 .wrap {margin:0px;padding:10px;}
 .validation_error {color:red;}
@@ -94,5 +181,8 @@ fieldset{margin: 7px; border:1px solid #cccccc;}
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}
 #login_box {width:390px;}
+#header {background-color: #B0C4DE; padding:4px; font-weight:bold; clear: both;}
+#report_top_level_nav {margin: 5px 0 0 0;}
+#side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 14px; font-weight:bold;}
 
 </style>
