@@ -224,61 +224,7 @@ class owa_requestEvent extends owa_event {
 	
 	}
 	
-	/**
-	 * Determine the operating system of the browser making the request
-	 *
-	 * @param string $user_agent
-	 * @return string
-	 */
-	function determine_os($user_agent) {
-	
-			$matches = array(
-				'Win.*NT 5\.0'=>'Windows 2000',
-				'Win.*NT 5.1'=>'Windows XP',
-				'Win.*(Vista|XP|2000|ME|NT|9.?)'=>'Windows $1',
-				'Windows .*(3\.11|NT)'=>'Windows $1',
-				'Win32'=>'Windows [prior to 1995]',
-				'Linux 2\.(.?)\.'=>'Linux 2.$1.x',
-				'Linux'=>'Linux [unknown version]',
-				'FreeBSD .*-CURRENT$'=>'FreeBSD -CURRENT',
-				'FreeBSD (.?)\.'=>'FreeBSD $1.x',
-				'NetBSD 1\.(.?)\.'=>'NetBSD 1.$1.x',
-				'(Free|Net|Open)BSD'=>'$1BSD [unknown]',
-				'HP-UX B\.(10|11)\.'=>'HP-UX B.$1.x',
-				'IRIX(64)? 6\.'=>'IRIX 6.x',
-				'SunOS 4\.1'=>'SunOS 4.1.x',
-				'SunOS 5\.([4-6])'=>'Solaris 2.$1.x',
-				'SunOS 5\.([78])'=>'Solaris $1.x',
-				'Mac_PowerPC'=>'Mac OS [PowerPC]',
-				'Mac OS X'=>'Mac OS X',
-				'X11'=>'UNIX [unknown]',
-				'Unix'=>'UNIX [unknown]',
-				'BeOS'=>'BeOS [unknown]',
-				'QNX'=>'QNX [unknown]',
-			);
-			$uas = array_map(create_function('$a', 'return "#.*$a.*#";'), array_keys($matches));
-			
-			return preg_replace($uas, array_values($matches), $user_agent);
-		
-	}
-	
-	function determine_os_new($user_agent) {
-		
-		$db = new ini_db(OWA_CONF_DIR.'os.ini', $sections = true);
-		$string = $db->fetch_replace($user_agent);
-		
-		return $string;
-	}
-	
-	function setOs($os) {
-		
-		if (!empty($os)):
-			$this->properties['os'] = $os;
-		else:
-			$this->properties['os'] = $this->determine_os($this->properties['ua']);
-		endif;		
-	}
-	
+
 	
 	
 	
