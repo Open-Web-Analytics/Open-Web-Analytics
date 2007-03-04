@@ -102,9 +102,9 @@ class owa_hostip extends owa_location {
 				
        		
        			$this->city = $result['City'];
-				$this->country = trim($result['Country'], "\n");
-				$this->latitude = trim($result['Latitude'], "\n");
-				$this->longitude = trim($result['Longitude'], "\n");
+				$this->country = trim($result['Country']);
+				$this->latitude = trim($result['Latitude']);
+				$this->longitude = trim($result['Longitude']);
 		
 		return;
 	}
