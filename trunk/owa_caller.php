@@ -90,12 +90,10 @@ class owa_caller extends owa_base {
 		$this->c->applyModuleOverrides('base', $config);
 		$this->e->debug('applying caller config overrides.');
 		
-		
-		
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 
 		$this->config = $this->c->fetch('base');
-	
+
 		// reloads error logger now that final config values are in place
 		$this->e = null;
 		$this->e = owa_error::get_instance();

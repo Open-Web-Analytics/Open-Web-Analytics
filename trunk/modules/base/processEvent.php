@@ -54,19 +54,18 @@ class owa_processEventController extends owa_controller {
 	function action() {
 		
 		// Setup generic event model
-		$this->e->debug('hello from procesevent controller action method');
+		
 		$this->event = owa_coreAPI::supportClassFactory('base', 'event');
 		
 		// Pre process - default and standard properties
 		$this->pre();
-		$this->e->debug('pre complete - hello from procesevent controller');
+		
 		$this->event->state = $this->params['caller']['event'];
 		
 		$this->event->_setProperties($this->params['caller']);
-		$this->e->debug('set properties complete - hello from procesevent controller');
+		
 		// Post Process - cleanup after all properties are set
 		$this->post();
-		$this->e->debug('post complete - hello from procesevent controller');
 		
 		return $this->event->log();
 		

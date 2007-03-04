@@ -88,7 +88,7 @@ class owa_helloModule extends owa_module {
 		
 		
 		// Clicks
-		$this->_addHandler('base.click', 'clickHandlers');
+		//$this->_addHandler('base.click', 'clickHandlers');
 		
 		return;
 		
