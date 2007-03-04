@@ -347,6 +347,8 @@ class owa_caller extends owa_base {
 	 */
 	function handleRequest($caller_params = null) {
 		
+		static $init;
+		
 		// Override request parsms with those passed by caller
 		if (!empty($caller_params)):
 		
@@ -356,8 +358,10 @@ class owa_caller extends owa_base {
 		
 		endif;
 		
-		$this->e->debug('Request Params: '. print_r($this->params, true));
-		
+		if ($init != true):
+			$this->e->debug('Request Params: '. print_r($this->params, true));
+		endif;
+			
 		if (!empty($this->params['action'])):
 			
 			$result =  $this->performAction($this->params['action']);
@@ -382,6 +386,8 @@ class owa_caller extends owa_base {
 			$db = &owa_coreAPI::dbSingleton();
 			$db->close();
 		endif;
+		
+		$init = true;
 		
 		return $result;
 	}
