@@ -146,6 +146,7 @@ class owa_event extends owa_base {
 	function log() {
 		
 		$this->e->debug('Logging '.$this->state.' to event queue...');
+		
 		return $this->eq->log($this->properties, $this->state);
 	
 	}
