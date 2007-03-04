@@ -166,10 +166,10 @@ class owa_baseModule extends owa_module {
 		$this->_addHandler('base.new_session', 'refererHandlers');
 		
 		// User Agents
-		$this->_addHandler('base.new_session', 'userAgentHandlers');
+		$this->_addHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		
 		// Hosts
-		$this->_addHandler('base.new_session', 'hostHandlers');
+		$this->_addHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
 		
 		// Hosts
 		$this->_addHandler('base.new_comment', 'commentHandlers');
