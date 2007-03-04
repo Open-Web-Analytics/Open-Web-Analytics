@@ -21,7 +21,7 @@
 <?=$visit['host_city'];?>, <?=$visit['host_country'];?> 
 <?endif;?>
 <P>			
-<table cellpadding="0" cellspacing="0" width="200" border="0" class="visit_summarym">
+<table cellpadding="0" cellspacing="0" width="250" border="0" class="visit_summarym">
 	<TR>
 		<TD class="visit_icon" align="left" valign="top" width="20">
 			<img src="<?=$this->makeImageLink('user_icon_small.gif', true);?>" alt="Visitor"> 
