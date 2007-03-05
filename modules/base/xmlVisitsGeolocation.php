@@ -52,7 +52,7 @@ class owa_xmlVisitsGeolocationController extends owa_reportController {
 		// calling application's output. The reason we do this is becasue the xml contains 
 		// links to other admin screens nad main_url is sometimes set by looking at php_self.
 		
-		ob_clean();
+		ob_end_clean();
 
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
