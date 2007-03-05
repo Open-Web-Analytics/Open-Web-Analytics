@@ -94,7 +94,7 @@ class owa_processEventController extends owa_controller {
 		
 		// Browser related properties
 		$this->event->properties['browser_type'] = $this->params['browscap']['Browser'];
-		$this->event->properties['browser'] = $this->params['server']['Browser'] . ' ' . $this->params['browscap']['Version'];
+		$this->event->properties['browser'] = $this->params['browscap']['Browser'] . ' ' . $this->params['browscap']['Version'];
 		
 		// Set Operating System
 		$this->event->setOs($this->params['browscap']['Platform']);

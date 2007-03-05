@@ -62,8 +62,13 @@ class owa_logSessionUpdateController extends owa_controller {
 		// Persist to database
 		$s->update();
 		
+		// setup event message
+		$session = $s->_getProperties();
+		$properties = array_merge($this->params, $session);
+		$properties['request_id'] = $this->params['guid'];
+		
 		// Log session update event to event queue
-		$this->logEvent('base.session_update', array('request' => $this->params, 'session' => $s->_getProperties()));
+		$this->logEvent('base.session_update', $properties);
 			
 		return;
 			

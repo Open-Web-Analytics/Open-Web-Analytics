@@ -50,20 +50,20 @@ class owa_logRefererController extends owa_controller {
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
 		// set referer url
-		$r->set('url', $this->params['request']['HTTP_REFERER']);
+		$r->set('url', $this->params['HTTP_REFERER']);
 		
 		// check for search engine
-		if ($this->lookupsearchEngine($this->params['request']['HTTP_REFERER']) == true):
+		if ($this->lookupsearchEngine($this->params['HTTP_REFERER']) == true):
 			$r->set('is_searchengine', true);
 		endif;
 		
 		// Set site
-		$url = parse_url($this->params['request']['HTTP_REFERER']);
+		$url = parse_url($this->params['HTTP_REFERER']);
 		$r->set('site', $url['host']);
 		
 		//	Look for query_terms
-		if (strstr($this->params['request']['HTTP_REFERER'], $this->params['request']['HTTP_HOST']) == false):
-			$r->set('query_terms', strtolower($this->extractSearchTerms($this->params['request']['HTTP_REFERER'])));
+		if (strstr($this->params['HTTP_REFERER'], $this->params['HTTP_HOST']) == false):
+			$r->set('query_terms', strtolower($this->extractSearchTerms($this->params['HTTP_REFERER'])));
 				
 			if (!empty($r->query_terms->value)):
 				$r->set('is_searchengine', true);
@@ -71,7 +71,7 @@ class owa_logRefererController extends owa_controller {
 		endif;
 		
 		// Set id
-		$r->set('id', owa_lib::setStringGuid($this->params['request']['HTTP_REFERER']));
+		$r->set('id', owa_lib::setStringGuid($this->params['HTTP_REFERER']));
 		
 		// Persist to database
 		$r->create();
@@ -80,11 +80,11 @@ class owa_logRefererController extends owa_controller {
 			if ($this->config['fetch_refering_page_info'] == true):
 					
 				$crawler = new owa_http;
-				$crawler->fetch($this->params['request']['HTTP_REFERER']);
+				$crawler->fetch($this->params['HTTP_REFERER']);
 				
 				//Extract anchortext and page snippet but not if it's a search engine...
 				if ($r->is_searchengine->value == false):
-					$r->set('snippet', $crawler->extract_anchor_snippet($this->params['request']['inbound_page_url']));
+					$r->set('snippet', $crawler->extract_anchor_snippet($this->params['inbound_page_url']));
 					//$this->e->debug('Referering Snippet is: '. $this->snippet);
 					$r->set('refering_anchortext', $crawler->anchor_info['anchor_text']);
 					//$this->e->debug('Anchor text is: '. $this->anchor_text);
