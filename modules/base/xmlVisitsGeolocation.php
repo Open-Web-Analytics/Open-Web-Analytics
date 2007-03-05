@@ -45,14 +45,7 @@ class owa_xmlVisitsGeolocationController extends owa_reportController {
 		return;
 	}
 	
-	function action() {
-
-		// Delete buffer so we can produce clean xml. this is needed in case OWA is embedded 
-		// as this request is going through main_url which may or may not be ladenned by the 
-		// calling application's output. The reason we do this is becasue the xml contains 
-		// links to other admin screens nad main_url is sometimes set by looking at php_self.
-		
-		ob_end_clean();
+	function action() {	
 
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);

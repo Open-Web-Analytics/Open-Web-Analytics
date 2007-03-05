@@ -66,8 +66,8 @@
 
       // Read the data from example.xml
       var request = GXmlHttp.create();
-      // the url of this request needs to be made via main_url in order for the links returned to work under all conditions
-      request.open("GET", "<?=$this->makeLink(array('do' => 'base.xmlVisitsGeolocation', 'rand' => rand()), true, $this->config['main_url']); ?>", true);
+ 
+      request.open("GET", "<?=$this->makeLink(array('do' => 'base.xmlVisitsGeolocation', 'rand' => rand()), true, $this->config['action_url']); ?>", true);
       request.onreadystatechange = function() {
         if (request.readyState == 4) {
           var xmlDoc = request.responseXML;
