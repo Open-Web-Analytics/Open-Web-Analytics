@@ -52,7 +52,7 @@ class owa_userAgentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message']['request'];
+    	$this->m = $event['message'];
 
 		return $this->handleEvent('base.logUserAgent');
     	

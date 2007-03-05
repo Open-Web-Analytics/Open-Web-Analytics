@@ -92,8 +92,13 @@ class owa_logSessionController extends owa_controller {
 		
 		$s->create();
 		
+		// create event message
+		$session = $s->_getProperties();
+		$properties = array_merge($this->params, $session);
+		$properties['request_id'] = $this->params['guid'];
+		
 		// log the new session event to the event queue
-		$this->logEvent('base.new_session', array('request' => $this->params, 'session' => $s->_getProperties()));
+		$this->logEvent('base.new_session', $properties);
 			
 		return;
 			

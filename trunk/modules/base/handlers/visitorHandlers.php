@@ -52,9 +52,9 @@ class owa_visitorHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message']['request'];
+    	$this->m = $event['message'];
 
-    	switch ($event['message']['session']['is_new_visitor']) {
+    	switch ($event['message']['is_new_visitor']) {
     		
     		case true:
     			$this->handleEvent('base.logVisitor');
