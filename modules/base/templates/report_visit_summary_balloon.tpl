@@ -53,6 +53,6 @@
 	<?endif;?>		
 </table>
 		
-<P><a href="<?=$this->makeAbsoluteLink(array('session_id' => $visit['session_id'], 'do' => 'base.reportVisit'), true);?>"><span class="">View Visit Details</a></P>
+<P><a href="<?=$this->makeLink(array('session_id' => $visit['session_id'], 'do' => 'base.reportVisit'), true);?>"><span class="">View Visit Details</a></P>
 
 </div>
