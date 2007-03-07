@@ -42,7 +42,7 @@ class owa_moduleDeactivateController extends owa_controller {
 
 	function action() {
 		
-		$active_modules = $this->c->get('base', 'modules');
+		/*$active_modules = $this->c->get('base', 'modules');
 		
 		$new_array = array();
 		
@@ -56,7 +56,24 @@ class owa_moduleDeactivateController extends owa_controller {
 		
 		$this->c->set('base', 'modules', $new_array);
 		
-		$this->c->update();
+		$this->c->update(); */
+		
+		$config = owa_coreAPI::entityFactory('base.configuration');
+		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
+		
+		$settings = unserialize($config->get('settings'));
+		
+		$new_modules = array();
+		
+		foreach ($settings['base']['modules'] as $k => $v){
+			if ($v != $this->params['module']):
+				$new_modules[] = $v;
+			endif;
+		}
+		
+		$settings['base']['modules'] = $new_modules;
+		$config->set('settings', serialize($settings));
+		$config->update();
 	
 		$data = array();
 		

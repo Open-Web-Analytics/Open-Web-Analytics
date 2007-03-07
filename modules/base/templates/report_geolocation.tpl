@@ -1,6 +1,6 @@
 <h2><?=$headline;?></h2>
 
-<P><a href="<?=$this->makeLink(array('do' => 'base.kmlVisitsGeolocationNetworkLink'), true);?>">View in Google Earth</a></P>
+<P><a href="<?=$this->makeLink(array('do' => 'base.kmlVisitsGeolocation'), true, $this->config['action_url']);?>">View in Google Earth</a></P>
 
 <? if(!empty($this->config['google_maps_api_key'])):?>
 

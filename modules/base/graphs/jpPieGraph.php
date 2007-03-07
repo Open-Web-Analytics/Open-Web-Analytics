@@ -69,7 +69,12 @@ class owa_jpPieGraph extends owa_graph {
 		$this->graph->legend->SetFillColor('white'); 
 		$this->graph->legend->SetFrameWeight(0); 
 		$this->graph->legend-> SetFont( FF_FONT1, '',12);
-		$this->graph->legend->SetColumns(2);
+		
+		// set number of columns used in legend
+		if ($this->params['legend_columns']):
+			$this->graph->legend->SetColumns($this->params['legend_columns']);
+		endif;
+		
 		$this->graph->SetFrame(true,'silver',1); 
 		
 		if($this->params['legends_cols']):	

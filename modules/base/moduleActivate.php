@@ -42,13 +42,40 @@ class owa_moduleActivateController extends owa_controller {
 
 	function action() {
 		
-		$active_modules = $this->c->get('base', 'modules');
+		$config = owa_coreAPI::entityFactory('base.configuration');
+		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
 		
-		$active_modules[] = $this->params['module'];
+		$settings = unserialize($config->get('settings'));
 		
-		$this->c->set('base', 'modules', $active_modules);
+		if (!empty($settings)):
+			
+			// settings overrides are in the db and the modules sub array already exists
+			if (!empty($settings['base']['modules'])):
+				$settings['base']['modules'][] = $this->params['module'];
+				$config->set('settings', serialize($settings));
+				$config->update();
+			
+			// settings overrides exist in db but no modules sub arrray exists
+			else:
+				$modules = $this->config['modules'];
+				$modules[] = $this->params['module'];
+				$settings['base']['modules'] = $modules;
+				$config->set('settings', serialize($settings));
+				$config->update();
+			endif;
 		
-		$this->c->update();
+		else:
+			// need to create persist the settings overrides for the first time
+			$modules = $this->config['modules'];
+			$modules[] = $this->params['module'];
+			$settings = array('base' => array('modules' => $modules));
+			$config->set('settings', serialize($settings));
+			$config->set('id', $this->c->get('base', 'configuration_id'));
+			$config->create();
+			
+		endif;
+		
+		
 	
 		$data = array();
 		

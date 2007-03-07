@@ -41,7 +41,7 @@ class owa_optionsUpdateController extends owa_controller {
 
 	function action() {
 	
-		// get base module's config values from the global configuraton object
+		/*// get base module's config values from the global configuraton object
 		$bsettings = $this->c->fetch('base');
 		
 		// merge the settings with those comming in as params
@@ -52,15 +52,43 @@ class owa_optionsUpdateController extends owa_controller {
 		
 		// persist the global config
 		$this->c->update();
+	*/
+	
+		$config = owa_coreAPI::entityFactory('base.configuration');
+		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
+		
+		$settings = unserialize($config->get('settings'));
+		$new_settings = array();
+	
+		if (!empty($settings)):
+			if (!empty($settings['base'])):
+				$new_settings['base'] = array_merge($settings['base'], $this->params['config']);
+			else:
+				$new_settings['base'] = $this->params['config'];
+			endif;
+		else:
+			
+			$new_settings['base'] = $this->params['config'];
+		endif;
+		
+		$config->set('settings', serialize($new_settings));
+		
+		$id = $config->get('id');
+		
+		if (!empty($id)):
+			$config->update();
+		else:
+			$config->create();
+		endif;
 	
 		$this->e->notice("Configuration changes saved to database.");
 	
 		$data = array();
 		$data['view'] = 'base.options';
 		$data['subview'] = 'base.optionsGeneral';
-		$data['view_method'] = 'delegate';
-		$data['configuration'] = $nbsettings;
-		$data['status_msg'] = $this->getMsg(2500);
+		$data['view_method'] = 'redirect';
+		//$data['configuration'] = $nbsettings;
+		$data['status_code'] = 2500;
 		
 		return $data;
 	

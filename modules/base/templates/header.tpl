@@ -13,7 +13,7 @@
 						<TD><a href="http://wiki.openwebanalytics.com">Help</a></TD>
 						<TD>|</TD>
 						<TD><a href="http://trac.openwebanalytics.com">Bug Report</a></TD>
-						<? if ($this->config['is_embedded'] != true):?>
+						<? //if ($this->config['is_embedded'] == false):?>
 						<TD>|</TD>
 						<TD>
 						<? if ($authStatus == true):?>
@@ -22,7 +22,7 @@
 						<a href="<?=$this->makeLink(array('view' => 'base.login'));?>">Login</a>
 						<?endif;?>
 						</TD>
-						<?endif;?>
+						<?//endif;?>
 					</TR>
 				</table>
 				</div>
