@@ -96,7 +96,7 @@
 	
 	<div class="setting">
 	
-		Google Maps API Key: <input type="text" name="<?=$this->getNs();?>config[google_maps_api_key]" value="<?=$config['google_maps_api_key']?>"><BR>
+		Google Maps API Key: <input type="text" size="90" name="<?=$this->getNs();?>config[google_maps_api_key]" value="<?=$config['google_maps_api_key']?>"><BR>
 	
 		
 	</div>
@@ -169,7 +169,7 @@
 	</fieldset>
 	
 	<BR>
-	
+	<? if ($this->config['is_embedded'] == false):?>
 	<fieldset name="owa-reports-options" class="options">
 		<legend>Reporting</legend>
 		
@@ -182,6 +182,7 @@
 	</fieldset>
     
 	<BR>
+	<?endif;?>
 	
 	
 	<BUTTON type="submit" name="<?=$this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
