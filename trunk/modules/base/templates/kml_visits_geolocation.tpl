@@ -2,7 +2,8 @@
 
 <kml xmlns="http://earth.google.com/kml/2.1">
 	<Document>
-		 <description>Where does this show up?</description>  
+		<name>OWA: Visits to <?=$site_name;?></name>
+		<description>Site visits for <?=$period_label;?><?=$date_label;?></description>  
 		<? if ($visits):?>    
     	<? foreach ($visits as $visit):?>  
     	<Placemark id="<?=$visit['session_id'];?>">

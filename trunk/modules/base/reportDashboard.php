@@ -40,7 +40,7 @@ class owa_reportDashboardController extends owa_reportController {
 	function owa_reportDashboardController($params) {
 		
 		$this->owa_reportController($params);
-		$this->priviledge_level = 'admin';
+		$this->priviledge_level = 'viewer';
 	
 		return;
 	}
@@ -148,7 +148,7 @@ class owa_reportDashboardView extends owa_view {
 	function owa_reportDashboardView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'guest';
+		$this->priviledge_level = 'viewer';
 		
 		return;
 	}

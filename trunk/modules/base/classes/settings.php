@@ -89,11 +89,11 @@
 	 		
 	 			$db_config = owa_coreAPI::entityFactory('base.configuration');
 	 			$db_config->getByPk('id', $id);
-	 			$db_settings = $db_config->get('settings');
+	 			$db_settings = unserialize($db_config->get('settings'));
 	 			
 	 			if (!empty($db_settings)):
 	 			
-	 				$db_settings = unserialize($db_settings);
+	 				//$db_settings = unserialize($db_settings);
 	 				
 		 			$default = $this->config->get('settings');
 		 			
@@ -145,7 +145,7 @@
  	 * 
  	 * @return boolean 
  	 */
- 	function update() {
+ 	/*function update() {
  		
  		// serialize array of values prior to update
  		$s = $this->config->get('settings');
@@ -173,7 +173,7 @@
  		
  		return $status;
  		
- 	}
+ 	}*/
  	
  	/**
  	 * Accessor Method
@@ -336,17 +336,6 @@
 			
 			));
 			
-			$this->config->set('settings', $config);
-			$this->applyUrls();
-			
-			return;
- 		
- 	}
- 	
- 	function applyUrls() {
- 		
- 		// Setup special public URLs
-				
 			$base_url  = "http";
 		
 			if(isset($_SERVER['HTTPS'])):
@@ -359,15 +348,18 @@
 				$base_url .= ':'.$_SERVER['SERVER_PORT'];
 			endif;
 								
-			$this->set('base', 'public_url', OWA_PUBLIC_URL);
+			$config['base']['public_url'] = OWA_PUBLIC_URL;
+			$config['base']['main_url'] = 'main.php';
+			$config['base']['main_absolute_url'] = OWA_PUBLIC_URL.$config['base']['main_url'];
+			$config['base']['action_url'] = $config['base']['main_absolute_url'];
+			$config['base']['images_url'] =  'i/';
+			$config['base']['images_absolute_url'] = OWA_PUBLIC_URL.$config['base']['images_url'];
+			$config['base']['log_url'] = OWA_PUBLIC_URL.'log.php';
 			
-			$this->set('base', 'main_url',  $this->get('base', 'public_url').'/main.php');
-			$this->set('base', 'main_absolute_url',  $base_url.$this->get('base', 'main_url'));
-			$this->set('base', 'action_url',  $this->get('base', 'main_url'));
-			$this->set('base', 'images_url',  $this->get('base', 'public_url').'/i/');
-			$this->set('base', 'images_absolute_url',  $base_url.$this->get('base', 'images_url'));
-			$this->set('base', 'log_url',  $this->get('base', 'public_url').'/log.php');
-			$this->set('base', 'link_template',  '%s?%s');
+			// set default values
+			$this->config->set('settings', $config);
+			
+			
 			return;
  		
  	}

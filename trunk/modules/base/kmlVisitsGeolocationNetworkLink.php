@@ -120,7 +120,7 @@ class owa_kmlVisitsGeolocationNetworkLinkView extends owa_view {
 		$this->_setLinkState();
 		
 		header('Content-type: application/vnd.google-earth.kml+xml; charset=UTF-8', true);	
-		//header('Content-type: text/plain', true);
+		//header('Content-type: application/keyhole', true);
 		return;
 	}
 	

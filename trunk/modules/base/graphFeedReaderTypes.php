@@ -70,10 +70,11 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 			$this->graph = owa_coreAPI::graphFactory('base.jpPieGraph');
 			
 			// Graph params
-			$this->graph->params['height']	= 220;
+			$this->graph->params['height']	= 280;
 			$this->graph->params['width']	= 350;
+			$this->graph->params['legend_columns'] = 2;
 			$this->graph->params['data']['data_pie'] = $result['count'];
-			$this->graph->params['legends'] = $result['browser_type'];;
+			$this->graph->params['legends'] = $result['browser_type'];
 			$this->graph->params['graph_title'] = "Feed Reader Types for " . $this->graph->get_period_label($data['period']);
 			
 		endif;

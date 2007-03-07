@@ -77,14 +77,13 @@ class owa_caller extends owa_base {
 			$config['configuration_id'] = 1;
 		endif;
 		
+		$this->c->set('base', 'configuration_id', $config['configuration_id']);
+		
 		// Applies config from db or cache
 		// needed for installs when the configuration table does not exist.
 		if ($config['do_not_fetch_config_from_db'] != true):
 			$this->c->load($config['configuration_id']);
 		endif;
-		
-		//Apply URL config vales.
-		$this->c->applyUrls();
 			
 		// Applies run time config overrides
 		$this->c->applyModuleOverrides('base', $config);

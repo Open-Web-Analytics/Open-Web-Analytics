@@ -51,10 +51,8 @@ class owa_kmlVisitsGeolocationController extends owa_reportController {
 		$api = &owa_coreAPI::singleton($this->params);
 		
 		$data = array();
-		$data['params'] = $this->params;
 		
-		//$this->params['period'] = 'last_thirty_days';
-	
+		$data['params'] = $this->params;
 			
 		if ($this->params['site_id']):
 			//get site labels
@@ -118,7 +116,6 @@ class owa_kmlVisitsGeolocationView extends owa_view {
 		
 		// load body template
 		$this->body->set_template('kml_visits_geolocation.tpl');
-		//$this->body->set_template('kml_google_sample.tpl');
 		$this->body->set('visits', $data['latest_visits']);
 		$this->body->set('site_name', $data['site_name']);
 		$this->body->set('site_domain', $data['site_domain']);

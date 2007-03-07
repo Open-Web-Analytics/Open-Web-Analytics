@@ -64,6 +64,7 @@ class owa_baseModule extends owa_module {
 									'priviledge' 	=> 'admin', 
 									'anchortext' 	=> 'User Management',
 									'group'			=> 'General',
+									'no_embedded'	=> true,
 									'order'			=> 2));
 									
 		$this->addAdminPanel(array('view' 			=> 'base.sites', 

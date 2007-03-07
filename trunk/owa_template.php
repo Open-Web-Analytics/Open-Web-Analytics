@@ -352,18 +352,7 @@ class owa_template extends Template {
 				$i++;
 				
 				if ($i < $count):
-					switch ($xml) {
-						case true:
-							$get .= "&amp;";
-							break;
-						case false:
-							$get .= "&";
-							break;
-						default:
-							$get .= "&";
-						
-					}
-					
+					$get .= "&";
 				endif;
 			}
 		endif;
@@ -372,7 +361,13 @@ class owa_template extends Template {
 			$url = $this->config['main_url'];
 		endif;
 		
-		return sprintf($this->config['link_template'], $url, $get);
+		$link = sprintf($this->config['link_template'], $url, $get);
+		
+		if ($xml == true):
+			$link = str_replace('&', '&amp;', $link);
+		endif;
+		
+		return $link;
 		
 	}
 	

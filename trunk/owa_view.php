@@ -157,8 +157,9 @@ class owa_view extends owa_base {
 		// set error msg directly if passed from constructor
 		$this->t->set('error_msg', $data['error_msg']);
 		
+		//print_r($this->data);
 		// authentication status
-		if(!empty($data['p'])):
+		if(!empty($this->data['params']['p'])):
 			$this->t->set('authStatus', true);
 		endif;
 		

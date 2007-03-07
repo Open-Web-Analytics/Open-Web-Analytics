@@ -45,6 +45,8 @@ class owa_auth_simple extends owa_auth {
 		// fetch user object from the db
 		$this->u = owa_coreAPI::entityFactory('base.user');
 		$this->u->getByColumn('user_id', $this->credentials['user_id']);
+		
+		return;
 	}
 	
 	/**
@@ -74,6 +76,7 @@ class owa_auth_simple extends owa_auth {
 		$this->_priviledge_level = $this->getLevel($this->u->get('role'));
 		
 		if ($this->credentials['user_id'] == $this->u->get('user_id')):
+			
 			if ($this->credentials['password'] === $this->u->get('password')):
 				$this->_is_user = true;				
 				return true;

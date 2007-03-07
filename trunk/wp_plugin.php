@@ -38,7 +38,7 @@ $owa_config = array();
 $owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
 $owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
-$owa_config['images_absolute_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
+$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/i/';//'../wp-content/plugins/owa/public/i/';
 $owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
 $owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
