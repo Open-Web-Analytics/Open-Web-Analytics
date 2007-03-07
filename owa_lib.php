@@ -461,9 +461,10 @@ class owa_lib {
      */
     function redirectBrowser($url) {
     	
+    	//ob_clean();
 	    // 302 redirect to URL 
-		header ('Location: '.$url);
-		header ('HTTP/1.0 302 Found');
+		header ('Location: '.$url, true);
+		header ('HTTP/1.0 302 Found', true);
 		return;
     }
 	

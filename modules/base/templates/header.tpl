@@ -6,14 +6,14 @@
 				<div id="admin_nav">
 				<table align="right">
 					<TR>
-						<TD><a href="<?=$this->makeLink(array('do' => 'base.reportDashboard'));?>">Web Analytics</a></TD>
+						<TD><a href="<?=$this->makeLink(array('do' => 'base.reportDashboard'));?>">Analytics</a></TD>
 						<TD>|</TD>
-						<TD><a href="<?=$this->makeLink(array('view' => 'base.options'));?>">Admin Options</a></TD>
+						<TD><a href="<?=$this->makeLink(array('view' => 'base.options'));?>">Admin Settings</a></TD>
 						<TD>|</TD>
 						<TD><a href="http://wiki.openwebanalytics.com">Help</a></TD>
 						<TD>|</TD>
-						<TD><a href="http://trac.openwebanalytics.com">Bug Report</a></TD>
-						<? //if ($this->config['is_embedded'] == false):?>
+						<TD><a href="http://trac.openwebanalytics.com">Report a Bug</a></TD>
+						<? if ($this->config['is_embedded'] == false):?>
 						<TD>|</TD>
 						<TD>
 						<? if ($authStatus == true):?>
@@ -22,7 +22,7 @@
 						<a href="<?=$this->makeLink(array('view' => 'base.login'));?>">Login</a>
 						<?endif;?>
 						</TD>
-						<?//endif;?>
+						<?endif;?>
 					</TR>
 				</table>
 				</div>
