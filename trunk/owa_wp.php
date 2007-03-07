@@ -37,7 +37,7 @@ class owa_wp extends owa_caller {
 	 * @return owa_wp
 	 */
 	function owa_wp($config = null) {
-		
+		ob_start();
 		$this->owa_caller($config);
 		
 		return;
