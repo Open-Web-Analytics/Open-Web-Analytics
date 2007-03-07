@@ -37,7 +37,11 @@ class owa_wp extends owa_caller {
 	 * @return owa_wp
 	 */
 	function owa_wp($config = null) {
+		
+		// needed because some of worpresses templates output prior to plugins being called
+		// which breaks OWA redirects.
 		ob_start();
+		
 		$this->owa_caller($config);
 		
 		return;
