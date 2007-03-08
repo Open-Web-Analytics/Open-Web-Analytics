@@ -36,9 +36,8 @@ define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
 // Build the OWA wordpress specific config overrides array
 $owa_config = array();
 $owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-$owa_config['fetch_config_from_db'] = true;     // The host of your db
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
-$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/i/';//'../wp-content/plugins/owa/public/i/';
+$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
 $owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
 $owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
 $owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
@@ -53,35 +52,10 @@ if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php'))
 	$owa_config['do_not_fetch_config_from_db'] = true;
 endif;
 
-// Needed for WP 1.x installs to avoid fetch of config from db duruign installation
-if ($owa_wp_version[0] == '1'):
-	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-		$owa_config['do_not_fetch_config_from_db'] = true;
-	endif;
-endif;
-
-// Create new instance of OWA passing in the Wordpres specific config
+// Create new instance of OWA passing in the Wordpres specific config overrides
 $owa_wp = &new owa_wp($owa_config);
 
-/*
- * WORDPRESS Filter and action hook assignment
- * 
- */
-
-// Installation hooks
-if ($owa_wp_version[0] == '1'):
-	
-	if (isset($_GET['activate']) && $_GET['activate'] == 'true'):
-		owa_install_v1();
-	endif;
-
-elseif ($owa_wp_version[0] == '2'):
-
-	add_action('activate_owa/wp_plugin.php', 'owa_install');
-
-endif;
-
-// Register Wordpress Event Handlers
+// Filter and Action hook assignments
 add_action('init', 'owa_set_user_level');
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_footer');
@@ -91,9 +65,14 @@ add_filter('bloginfo', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', array(&$owa_wp, 'logComment'));
 add_action('admin_menu', 'owa_options_menu');
+add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
 
 /////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Prints helper page tags to the footers of templates.
+ * 
+ */
 function owa_footer() {
 	
 	global $owa_wp;
@@ -184,15 +163,6 @@ function owa_log() {
 	
 	// Get Title of Page
 	$app_params['page_title'] = owa_get_title($app_params['page_type']);
-	
-	// Get Feed Tracking Code
-	//$app_params['feed_subscription_id'] = ''
-	
-	// Get Source Tracking code
-	//$app_params['source'] = '';
-	
-	// Provide an ID for this instance in case you want to track multiple blogs/sites seperately
-	//$app_params['site_id'] = '';
 	
 	// Process the request by calling owa
 	$owa_wp->log($app_params);
@@ -347,34 +317,6 @@ function owa_install() {
 }
 
 /**
- * Schema and setting installation
- *
- */
-function owa_install_v1() {
-
-	
-	global $owa_wp;
-	
-	
-    	$owa_wp->config['fetch_config_from_db'] = false;
-    	
-    	$owa_wp->config['db_type'] = 'mysql';
-    	
-    	$install_params = array('site_id' => $conf['site_id'], 
-    							'name' => get_bloginfo('name'),
-    							'domain' => get_settings('siteurl'), 
-    							'description' => get_bloginfo('description'),
-    							'action' => 'base.installEmbedded');
-    							
-    	$owa_wp->handleRequest($install_params);
-	
-
-	return;
-}
-
-
-
-/**
  * Adds Analytics sub tab to admin dashboard screens.
  *
  */
@@ -388,6 +330,10 @@ function owa_dashboard_menu() {
 
 }
 
+/**
+ * Produces the analytics dashboard
+ * 
+ */
 function owa_dashboard_report() {
 	
 	global $owa_wp;

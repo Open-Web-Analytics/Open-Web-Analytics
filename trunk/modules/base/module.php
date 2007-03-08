@@ -60,12 +60,15 @@ class owa_baseModule extends owa_module {
 									'group'			=> 'General',
 									'order'			=> 1));
 		
-		$this->addAdminPanel(array('view' 			=> 'base.users', 
-									'priviledge' 	=> 'admin', 
-									'anchortext' 	=> 'User Management',
-									'group'			=> 'General',
-									'no_embedded'	=> true,
-									'order'			=> 2));
+		if ($this->config['is_embedded'] != true):
+		
+			$this->addAdminPanel(array('view' 			=> 'base.users', 
+										'priviledge' 	=> 'admin', 
+										'anchortext' 	=> 'User Management',
+										'group'			=> 'General',
+										'order'			=> 2));
+									
+		endif;
 									
 		$this->addAdminPanel(array('view' 			=> 'base.sites', 
 									'priviledge' 	=> 'admin', 
