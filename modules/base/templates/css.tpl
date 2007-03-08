@@ -170,8 +170,8 @@ div {margin:0;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
 .visible {display:;}
 .invisible {display:none;}
-.status {color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 5px; background-color: green; font-size: 14px; font-weight:bold;}
-.error{color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 5px; background-color: red; font-size: 14px; font-weight:bold;}
+.status {color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 20px 10px 20px 10px; background-color: green; font-size: 14px; font-weight:bold;}
+.error{color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 20px 10px 20px 10px; background-color: red; font-size: 14px; font-weight:bold;}
 .tiny_icon{width:10px;padding-left:0px;}
 .wrap {margin:0px;padding:10px;}
 .validation_error {color:red;}
