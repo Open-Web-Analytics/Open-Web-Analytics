@@ -42,40 +42,9 @@ class owa_moduleDeactivateController extends owa_controller {
 
 	function action() {
 		
-		/*$active_modules = $this->c->get('base', 'modules');
+		$api = &owa_coreAPI::singleton();
 		
-		$new_array = array();
-		
-		foreach ($active_modules as $k => $v){
-			if ($v != $this->params['module']):
-				$new_array[] = $v;
-			endif;
-		}
-		
-		$this->e->debug('Modules: '.print_r($new_array, true));
-		
-		$this->c->set('base', 'modules', $new_array);
-		
-		$this->c->update(); */
-		
-		$config = owa_coreAPI::entityFactory('base.configuration');
-		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
-		
-		$settings = unserialize($config->get('settings'));
-		
-		$new_modules = array();
-		
-		foreach ($settings['base']['modules'] as $k => $v){
-			if ($v != $this->params['module']):
-				$new_modules[] = $v;
-			endif;
-		}
-		
-		$settings['base']['modules'] = $new_modules;
-		$config->set('settings', serialize($settings));
-		$config->update();
-	
-		$data = array();
+		$api->modules[$this->params['module']]->deactivate();
 		
 		$data['do'] = 'base.optionsModules';
 		$data['view_method'] = 'redirect';

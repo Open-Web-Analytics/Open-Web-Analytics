@@ -341,12 +341,43 @@ class owa_module extends owa_base {
 	function activate() {
 		
 		if ($this->name != 'base'):
-			$modules = $this->c->get('base', 'modules');
-			$modules[] = $this->name;
-			$this->c->set('base', 'modules', $modules);	
+			
+			$config = owa_coreAPI::entityFactory('base.configuration');
+			$config->getByPk('id', $this->c->get('base', 'configuration_id'));
+			
+			$settings = unserialize($config->get('settings'));
+			
+			if (!empty($settings)):
+				
+				// settings overrides are in the db and the modules sub array already exists
+				if (!empty($settings['base']['modules'])):
+					$settings['base']['modules'][] = $this->name;
+					$config->set('settings', serialize($settings));
+					$config->update();
+				
+				// settings overrides exist in db but no modules sub arrray exists
+				else:
+					$modules = $this->config['modules'];
+					$modules[] = $this->name;
+					$settings['base']['modules'] = $modules;
+					$config->set('settings', serialize($settings));
+					$config->update();
+				endif;
+			
+			else:
+				// need to create persist the settings overrides for the first time
+				$modules = $this->config['modules'];
+				$modules[] = $this->name;
+				$settings = array('base' => array('modules' => $modules));
+				$config->set('settings', serialize($settings));
+				$config->set('id', $this->c->get('base', 'configuration_id'));
+				$config->create();
+				
+			endif;
+			
 		endif;
 		
-		$this->c->update();
+	
 		
 		return;
 	}
@@ -358,12 +389,25 @@ class owa_module extends owa_base {
 	function deactivate() {
 		
 		if ($this->name != 'base'):
-			$modules = $this->c->get('base', 'modules');
-			unset($modules[$this->name]);
-			$this->c->set('base', 'modules', $modules);
+			
+			$config = owa_coreAPI::entityFactory('base.configuration');
+			$config->getByPk('id', $this->c->get('base', 'configuration_id'));
+			
+			$settings = unserialize($config->get('settings'));
+			
+			$new_modules = array();
+			
+			foreach ($settings['base']['modules'] as $k => $v){
+				if ($v != $this->name):
+					$new_modules[] = $v;
+				endif;
+			}
+			
+			$settings['base']['modules'] = $new_modules;
+			$config->set('settings', serialize($settings));
+			$config->update();	
+			
 		endif;
-		
-		$this->c->update();
 		
 		return;
 	}
