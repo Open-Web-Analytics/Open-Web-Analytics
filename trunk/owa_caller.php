@@ -60,11 +60,11 @@ class owa_caller extends owa_base {
 		
 		//load DB constants if not set already by caller
 		if(!defined('OWA_DB_HOST')):
-			$db_file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'db_config.php';
-			if (file_exists($db_file)):
-				include ($db_file);
+			$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+			if (file_exists($file)):
+				include ($file);
 			else:
-				print "Uh-oh. I can't find your database configuration file...";
+				print "Uh-oh. I can't find your configuration file...";
 				exit;
 			endif;
 		endif;
