@@ -60,6 +60,7 @@ class owa_topReferers extends owa_metric {
 									refering_anchortext,
 									is_searchengine";
 								
+		$this->params['constraints']['is_searchengine'] = array('operator' => '!=', 'value' => '1');
 		$this->params['groupby'] = array('referer.url');
 		
 		$this->params['orderby'] = array('count');

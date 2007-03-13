@@ -109,19 +109,6 @@
     <fieldset name="owa-event-options" class="options">
 	<legend>Event Handling</legend>
 	
-	<!--<DIV class="setting">	
-		Fetch Configuration from Database 
-		<SELECT NAME="fetch_config_from_db">
-	
-		<OPTION VALUE="0" <? if ($config['fetch_config_from_db'] == false):?>SELECTED<?endif;?>>
-		Off</OPTION>
-		
-		<OPTION VALUE="1" <? if ($config['fetch_config_from_db'] == true):?>SELECTED<?endif;?>>
-		On</OPTION>
-			
-		</SELECT>
-	</DIV> -->
-	
 	<DIV class="setting">	
 		Asynchronous Event Handling Mode: 
 		<SELECT NAME="<?=$this->getNs();?>config[async_db]">
@@ -182,6 +169,27 @@
 	</fieldset>
     
 	<BR>
+	
+	<fieldset name="owa-click-options" class="options">
+	<legend>Click Tracking</legend>
+	
+	<DIV class="setting">	
+		Click Drawing Mode:
+		<SELECT NAME="<?=$this->getNs();?>config[click_drawing_mode]">
+	
+		<OPTION VALUE="center_on_page" <? if ($config['click_drawing_mode'] == 'center_on_page'):?>SELECTED<?endif;?>>
+		Content centered</OPTION>
+		<OPTION VALUE="expandable" <? if ($config['click_drawing_mode'] == 'expandable'):?>SELECTED<?endif;?>>
+		Content resizable</OPTION>
+		</SELECT>
+	
+	</DIV>
+	
+	</fieldset>
+	
+	<BR>
+	
+	
 	<?endif;?>
 	
 	

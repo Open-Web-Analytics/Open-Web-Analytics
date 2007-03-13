@@ -10,25 +10,22 @@
 	
 	<? include('css.tpl');?>
 	
-	<style>
-	.wrap {margin:50px 10px 10px 10px; background-color:; border:0px solid #000000; padding:8px;}
-
-	</style>	
-
+	<DIV id="header">
+		<table width="100%">
+			<TR>
+				<TD>
+					<span class="inline_h1">Open Web Analytics - <?=OWA_VERSION;?></span>		
+				</TD>
+			
+				<TD align="right">
+					 <i>Open Source Web Analytics Framework.</i> 	
+				</TD>
+			</TR>
+		</table>
+	</div>
 	
-	<table width="100%">
-		<TR>
-			<TD>
-				<span class="inline_h1">Open Web Analytics - <?=OWA_VERSION;?></span>		
-			</TD>
-		
-			<TD align="right">
-				 <i>The Open Source Web Analytics Framework.</i> 	
-			</TD>
-		</TR>
-	</table>
 	
-	<hr>
+	
 	<div class="wrap">
 		
 		

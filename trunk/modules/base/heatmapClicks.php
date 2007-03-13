@@ -18,13 +18,14 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_reportController.php');
+require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_INCLUDE_DIR.'heatmap.class.php');
 
-class owa_reportClicksController extends owa_reportController {
+class owa_heatmapClicksController extends owa_controller {
 	
-	function owa_reportClicksController($params) {
+	function owa_heatmapClicksController($params) {
 		
-		$this->owa_reportController($params);
+		$this->owa_controller($params);
 		$this->priviledge_level = 'admin';
 	
 	}
@@ -37,13 +38,8 @@ class owa_reportClicksController extends owa_reportController {
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 			
-		// Fetch document object
-		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByPk('id', $this->params['document_id']);
-		$data['document_details'] = $d->_getProperties();
-		
 		// Get clicks
-		$data['clicks'] = $api->getMetric('base.topClicks', array(
+		$clicks = $api->getMetric('base.topClicks', array(
 	
 			'constraints'		=> array(
 				'site_id'		=> $this->params['site_id'],
@@ -53,12 +49,21 @@ class owa_reportClicksController extends owa_reportController {
 			'limit'				=> 500
 		));
 		
-		$u = owa_coreAPI::entityFactory('base.ua');
+		foreach ($clicks as $k => $v) {
 		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportClicks';
+			//if ($this->config['click_drawing_mode'] == 'center_on_page'):
+				$x = $this->params['width'] * ($v['click_x'] / $v['page_width']);
+				$data['clicks'][$x][$v['click_y']] = $v['count'];
+			//else:
+			//	$data['clicks'][$v['click_x']][$v['click_y']] = $v['count'];
+			//endif;
+		}
+		
+		
+		$data['width'] = $this->params['width'];
+		$data['height'] = $this->params['height'];
+		$data['view'] = 'base.heatmapClicks';
 		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportContent';
 		
 		return $data;
 	}
@@ -68,7 +73,7 @@ class owa_reportClicksController extends owa_reportController {
 
 
 /**
- * Click Report View
+ * Click Heatmap View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -79,9 +84,9 @@ class owa_reportClicksController extends owa_reportController {
  * @since		owa 1.0.0
  */
 
-class owa_reportClicksView extends owa_view {
+class owa_heatmapClicksView extends owa_view {
 	
-	function owa_reportClicksView() {
+	function owa_heatmapClicksView() {
 		
 		$this->owa_view();
 		$this->priviledge_level = 'viewer';
@@ -93,14 +98,9 @@ class owa_reportClicksView extends owa_view {
 		
 		// Assign data to templates
 		
-		$this->body->set_template('report_clicks.tpl');
-	
-		$this->body->set('headline', 'Click Map Report');
-		
-		$this->body->set('clicks', $data['clicks']);
-		$this->body->set('detail', $data['document_details']);
-		
-		$this->body->set('document_id', $data['document_id']);
+		//draw the heatmap
+	    $map = new heatmap($data['clicks']);
+	    $map->render($data['width'], $data['height']);
 			
 		return;
 	}

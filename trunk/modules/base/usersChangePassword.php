@@ -64,11 +64,11 @@ class owa_usersChangePasswordController extends owa_controller {
 					$data['status_msg'] = $this->getMsg(3006);
 					
 				else:
-					print 'could not find this user users temp passkey in the db';
+					print 'could not find this users temp passkey in the db';
 				endif;
 		else:
 			$data['error_msg'] = $validation_error;
-			$data['view'] = 'base.usersSetPassword';
+			$data['view'] = 'base.usersChangePassword';
 			$data['view_method'] = 'delegate';
 
 		endif;	

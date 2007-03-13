@@ -77,7 +77,7 @@ class owa_caller extends owa_base {
 			$config['configuration_id'] = 1;
 		endif;
 		
-		$this->c->set('base', 'configuration_id', $config['configuration_id']);
+		//$this->c->set('base', 'configuration_id', $config['configuration_id']);		
 		
 		// Applies config from db or cache
 		// needed for installs when the configuration table does not exist.
