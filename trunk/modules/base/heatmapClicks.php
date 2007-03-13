@@ -97,7 +97,7 @@ class owa_heatmapClicksView extends owa_view {
 	function construct($data) {
 		
 		// Assign data to templates
-		ob_clean();
+		ob_end_clean();
 		//draw the heatmap
 	    $map = new heatmap($data['clicks']);
 	    $map->render($data['width'], $data['height']);
