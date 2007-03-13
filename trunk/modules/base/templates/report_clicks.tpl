@@ -88,7 +88,7 @@
 		var url = '<img src="<?=$this->graphLink(array('do' => 'base.heatmapClicks', 'document_id' => $document_id), true, $this->config['action_url']);?>&owa_width=' + divWidth + '&owa_height=' + divHeight + '">';
 		document.getElementById('heatmap').innerHTML = url;
 		document.getElementById('clickspage2').style.visibility = 'hidden';
-		alert('<!-- ' + url + ' -->');
+		//alert('<!-- ' + url + ' -->');
 		return;
 		
 	}
