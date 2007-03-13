@@ -1,3 +1,3 @@
-Open Web Analytics \n
-	
+-- Open Web Analytics -------------------------------
+
 <?=$body;?>

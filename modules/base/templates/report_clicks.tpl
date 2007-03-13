@@ -8,14 +8,21 @@
 	<? include('report_document_detail.tpl');?>
 </fieldset>
 
-<DIV id="clickspage" style="width:100%;height:100%;position:relative;margin:0px;padding:0px;border:1px solid red;" >
+<P>
+	<input type="radio" name="overlay" onclick="javascript: heatmap()">Heatmap &nbsp
+	<input type="radio" name="overlay" onclick="reveal('clickspage2', 'heatmap')">Points
+</P>
+
+<DIV id="heatmap" style="position:absolute;margin:0px;padding:0px;z-index:3;"></div>
+<DIV id="clickspage2" style="position:absolute;margin:0px;padding:0px;z-index:3;"></div>
+<DIV id="clickspage" style="width:100%;height:100%;position:relative;margin:0px;padding:0px;border:1px solid red;z-index:2;" >
 	
 	<iframe
 		 id="iframe" name="iframe"
 		 src="<?=$detail['url']?>" 
 		 frameborder="0" 
 		 scrolling="No" 
-		 style="width:100%;height:500px;border:0px dotted #BEBEBE;margin:0px;padding:0px;"
+		 style="position:relative;width:100%;height:500px;border:0px dotted #BEBEBE;margin:0px;padding:0px; z-index:1;"
 		 onload="DYNIFS.resize('iframe')"
 		 marginheight="0"
 		 marginwidth="0" >
@@ -23,9 +30,11 @@
 	
 </DIV>
 
+
+
 <script>
 
-	var jg_doc = new jsGraphics("clickspage");
+	var jg_doc = new jsGraphics("clickspage2");
 
 	drawClicks();	
 	
@@ -62,6 +71,35 @@
 	  return true;
 	
 	}
+	
+	function heatmap() {
+		//alert('hello');
+		
+		if (document.getElementById('heatmap').style.visibility == 'hidden') {
+			document.getElementById('heatmap').style.visibility = 'visible';
+		}
+		
+		
+		var windowWidth = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
+		var divWidth = document.getElementById("clickspage").offsetWidth;
+		var divHeight = document.getElementById("clickspage").offsetHeight;
+		var relWidth = '';
+		
+		var url = '<img src="<?=$this->makeLink(array('do' => 'base.heatmapClicks', 'document_id' => $document_id), true, $this->config['action_url']);?>&owa_width=' + divWidth + '&owa_height=' + divHeight + '">';
+		document.getElementById('heatmap').innerHTML = url;
+		document.getElementById('clickspage2').style.visibility = 'hidden';
+		return;
+		
+	}
+	
+	function reveal(id, hide) {
+		document.getElementById(hide).style.visibility = 'hidden';
+		document.getElementById(id).style.visibility = 'visible';
+		return;
+		
+	}
 
 </script>
+
+
 

@@ -138,7 +138,8 @@ div {margin:0;}
 
 /* FORMATING */
 
-.active_tab {background-color:#1874CD; color:#ffffff;border:1px solid; padding:5px; font-weight:bold; font-size:16px;}
+.active_wizard_step {background-color:#1874CD; color:#ffffff;border:1px solid; padding:5px; font-weight:bold; font-size:16px;}
+.wizard_step {font-weight:bold; font-size:16px;}
 .visitor_info_box {width:40px; height:40px; text-align:center;}
 .visit_icon {width:40px;}
 .graph {padding:10px; text-align:center;}

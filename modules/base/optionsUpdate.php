@@ -54,8 +54,9 @@ class owa_optionsUpdateController extends owa_controller {
 		$this->c->update();
 	*/
 	
+		$configuration_id = $this->c->get('base', 'configuration_id');
 		$config = owa_coreAPI::entityFactory('base.configuration');
-		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
+		$config->getByPk('id', $configuration_id);
 		
 		$settings = unserialize($config->get('settings'));
 		$new_settings = array();
@@ -78,6 +79,7 @@ class owa_optionsUpdateController extends owa_controller {
 		if (!empty($id)):
 			$config->update();
 		else:
+			$config->set('id', $configuration_id);
 			$config->create();
 		endif;
 	

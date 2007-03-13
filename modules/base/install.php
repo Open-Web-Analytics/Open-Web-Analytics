@@ -37,7 +37,6 @@ class owa_installView extends owa_view {
 		
 		$this->owa_view();
 		$this->priviledge_level = 'guest';
-		$this->config['main_url'] = $this->config['public_url']."/install.php";
 		$this->default_subview = 'base.installStart';
 		
 		return;
