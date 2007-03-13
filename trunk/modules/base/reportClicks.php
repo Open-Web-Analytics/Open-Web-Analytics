@@ -41,6 +41,7 @@ class owa_reportClicksController extends owa_reportController {
 		$d = owa_coreAPI::entityFactory('base.document');
 		$d->getByPk('id', $this->params['document_id']);
 		$data['document_details'] = $d->_getProperties();
+		$data['document_id'] = $this->params['document_id'];
 		
 		// Get clicks
 		$data['clicks'] = $api->getMetric('base.topClicks', array(
