@@ -75,9 +75,7 @@ class owa_caller extends owa_base {
 		
 		if (empty($config['configuration_id'])):
 			$config['configuration_id'] = 1;
-		endif;
-		
-		//$this->c->set('base', 'configuration_id', $config['configuration_id']);		
+		endif;	
 		
 		// Applies config from db or cache
 		// needed for installs when the configuration table does not exist.
@@ -142,6 +140,12 @@ class owa_caller extends owa_base {
 	 * @return boolean
 	 */
 	function logEvent($event_type, $caller_params = '') {
+		
+		// do not log if the request is comming fro mthe preview plane of the admin interface
+		if ($this->params['preview'] == true):
+			return false;
+		endif;
+		
 		
 		$params = array();
 		// Add PHP's $_SERVER scope variables to event properties

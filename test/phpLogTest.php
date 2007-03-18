@@ -33,13 +33,44 @@ $owa->log($app_params);
 // Place helper page tags to track clicks and first hit
 $owa->placeHelperPageTags();
 
-print_r($owa->config);
+//print_r($owa->config);
 
 ?>
 
 
 
+
 <a href="http://www.yahoo.com">httplogTest</a>
+
+<UL>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+	<LI> <a href="http://www.yahoo.com">httplogTest</a>
+</UL>
 
 </BODY>
 

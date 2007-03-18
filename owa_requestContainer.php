@@ -59,7 +59,7 @@ class owa_requestContainer {
 		if(!isset($params)):
 			
 			$params = owa_lib::getRequestParams();
-			$params['guid'] = crc32($_SERVER['REQUEST_TIME'].getmypid());
+			$params['guid'] = crc32(microtime().getmypid());
 			
 			return $params;
 			
