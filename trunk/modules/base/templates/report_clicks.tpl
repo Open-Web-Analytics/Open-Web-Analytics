@@ -1,5 +1,12 @@
+<style>
+.wrap {margin:0px;padding:0px}
+.special_wrap{margin:5px;padding:5px}
+</style>
+
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/dynifs.js';?>"></script>
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/wz_jsgraphics.js';?>"></script>
+
+<div class="special_wrap">
 
 <H2><?=$headline;?> for <?=$period_label;?><?=$date_label;?></h2> 
 
@@ -9,9 +16,20 @@
 </fieldset>
 
 <P>
+<form>
+	<input id="points_radio" type="radio" name="overlay" onclick="reveal('clickspage2', 'heatmap')">Points
+	
 	<input type="radio" name="overlay" onclick="javascript: heatmap()">Heatmap &nbsp
-	<input type="radio" name="overlay" onclick="reveal('clickspage2', 'heatmap')">Points
+	&nbsp;View Clicks by Browser Type:
+	<select name="uas" size="" onchange="OnChange(this.form.uas, 'ua_id')">
+		<option value="" <?php if (empty($params['ua_id'])): echo 'selected'; endif; ?>>All Browser Types</option>
+  		<? foreach ($uas as $k => $v):?>
+    	<option value="<?=$v['id'];?>" <?php if ($params['ua_id'] == $v['id']): echo 'selected'; endif; ?>><?=$v['browser_type'];?></option>
+    	<? endforeach; ?>
+	</select>
+ <form>
 </P>
+</div>
 
 <DIV id="heatmap" style="position:absolute;margin:0px;padding:0px;z-index:3;"></div>
 <DIV id="clickspage2" style="position:absolute;margin:0px;padding:0px;z-index:3;"></div>
@@ -19,7 +37,7 @@
 	
 	<iframe
 		 id="iframe" name="iframe"
-		 src="<?=$detail['url']?>" 
+		 src="<?=$this->makeLink(array('preview' => true), false, $detail['url']);?>" 
 		 frameborder="0" 
 		 scrolling="No" 
 		 style="position:relative;width:100%;height:500px;border:0px dotted #BEBEBE;margin:0px;padding:0px; z-index:1;"
@@ -68,6 +86,7 @@
 	  jg_doc.setColor("maroon");
 	  jg_doc.paint(); // draws, in this case, directly into the document
 	  
+	  document.getElementById('points_radio').checked = true;
 	  return true;
 	
 	}

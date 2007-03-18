@@ -124,19 +124,6 @@ class owa_lib {
 	}
 		
 	/**
-	 * Stub of debug Handler
-	 *
-	 * @return string
-	 * @access 	public
-	 * @static 
-	 */
-	function &get_debugmsgs() {
-		
-		static $msgs;
-		return $msgs;
-	}
-		
-	/**
 	 * Error Handler
 	 *
 	 * @param string $msg
@@ -538,7 +525,7 @@ class owa_lib {
 		
 	}
 	/**
-	 * Enter description here...
+	 * module specific require method
 	 *
 	 * @param unknown_type $module
 	 * @param unknown_type $file
@@ -551,7 +538,7 @@ class owa_lib {
 	}
 	
 	/**
-	 * Enter description here...
+	 * module specific factory
 	 *
 	 * @param unknown_type $modulefile
 	 * @param unknown_type $class_suffix

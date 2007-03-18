@@ -19,14 +19,14 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_INCLUDE_DIR.'heatmap.class2.php');
+require_once(OWA_INCLUDE_DIR.'heatmap.class.php');
 
 class owa_heatmapClicksController extends owa_controller {
 	
 	function owa_heatmapClicksController($params) {
 		
 		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+		$this->priviledge_level = 'viewer';
 	
 	}
 	

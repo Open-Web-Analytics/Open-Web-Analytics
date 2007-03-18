@@ -54,7 +54,15 @@ class owa_reportClicksController extends owa_reportController {
 			'limit'				=> 500
 		));
 		
-		$u = owa_coreAPI::entityFactory('base.ua');
+		// get top User agents
+		$data['uas'] = $api->getMetric('base.clickBrowserTypes', array(
+		
+			'constraints'		=> array(
+				'site_id'		=> $this->params['site_id'],
+				'document_id'		=> $this->params['document_id']),
+			'limit'				=> 10
+		
+		));
 		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportClicks';
@@ -99,10 +107,12 @@ class owa_reportClicksView extends owa_view {
 		$this->body->set('headline', 'Click Map Report');
 		
 		$this->body->set('clicks', $data['clicks']);
+		$this->body->set('uas', $data['uas']);
+		//print_r($data['uas']);
 		$this->body->set('detail', $data['document_details']);
 		
 		$this->body->set('document_id', $data['document_id']);
-			
+		$this->body->set('params', $data['params']);	
 		return;
 	}
 	
