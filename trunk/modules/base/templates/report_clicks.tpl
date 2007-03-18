@@ -37,7 +37,7 @@
 	
 	<iframe
 		 id="iframe" name="iframe"
-		 src="<?=$this->makeLink(array('preview' => true), false, $detail['url']);?>" 
+		 src="<?$detail['url'];?><? if (strpos($detail['url'], '?') == false): echo '?'; endif;?>&<?=$this->getNs;?>preview=1" 
 		 frameborder="0" 
 		 scrolling="No" 
 		 style="position:relative;width:100%;height:500px;border:0px dotted #BEBEBE;margin:0px;padding:0px; z-index:1;"
