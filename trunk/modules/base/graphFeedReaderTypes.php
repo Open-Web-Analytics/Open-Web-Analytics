@@ -51,11 +51,18 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 		
 		$result = $api->getMetric('base.feedReaderTypesCount', array(
 		
-			'result_format'		=> 'inverted_array',
 			'constraints'		=> array('site_id' => $this->params['site_id'])
 		
 		));
-									
+		
+		// chop results and summarize into 6 reader types.
+		if (count($result) >5):
+			$temp_result = array_chunk($result, 5);
+			$remainder = owa_lib::deconstruct_assoc($temp_result[1]);
+			$temp_result[0][] = array('browser_type' => 'Others', 'count' => array_sum($remainder['count']));
+			$result = owa_lib::deconstruct_assoc($temp_result[0]);
+		endif;
+								
 		//Graph params
 		
 		if (empty($result)):
@@ -70,12 +77,14 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 			$this->graph = owa_coreAPI::graphFactory('base.jpPieGraph');
 			
 			// Graph params
-			$this->graph->params['height']	= 280;
-			$this->graph->params['width']	= 350;
+			
 			$this->graph->params['legend_columns'] = 2;
 			$this->graph->params['data']['data_pie'] = $result['count'];
 			$this->graph->params['legends'] = $result['browser_type'];
 			$this->graph->params['graph_title'] = "Feed Reader Types for " . $this->graph->get_period_label($data['period']);
+			$count = count($result['browser_type']);
+			$this->graph->params['height']	= 280+$count*20;
+			$this->graph->params['width']	= 350;
 			
 		endif;
 		
