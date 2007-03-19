@@ -17,9 +17,9 @@
 
 <P>
 <form>
-	<input id="points_radio" type="radio" name="overlay" onclick="reveal('clickspage2', 'heatmap')">Points
+	<input id="points_radio" type="radio" name="overlay" onclick="reveal('clickspage2', 'heatmap')"> Points
 	
-	<input type="radio" name="overlay" onclick="javascript: heatmap()">Heatmap &nbsp
+	<input type="radio" name="overlay" onclick="javascript: heatmap()"> Heatmap &nbsp
 	&nbsp;View Clicks by Browser Type:
 	<select name="uas" size="" onchange="OnChange(this.form.uas, 'ua_id')">
 		<option value="" <?php if (empty($params['ua_id'])): echo 'selected'; endif; ?>>All Browser Types</option>
