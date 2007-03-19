@@ -61,6 +61,8 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 			$remainder = owa_lib::deconstruct_assoc($temp_result[1]);
 			$temp_result[0][] = array('browser_type' => 'Others', 'count' => array_sum($remainder['count']));
 			$result = owa_lib::deconstruct_assoc($temp_result[0]);
+		else:
+			$result = owa_lib::deconstruct_assoc($result);
 		endif;
 								
 		//Graph params
