@@ -1,4 +1,4 @@
-<h2><?=$headline;?></h2>
+<h2><?=$headline;?>: <?=$period_label;?><?=$date_label;?></h2>
 
 	<table width="100%">
 		<TR>

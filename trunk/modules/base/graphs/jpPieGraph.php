@@ -87,7 +87,7 @@ class owa_jpPieGraph extends owa_graph {
 		$p1->SetCenter(0.5,0.4);
 		$p1->SetLegends($this->params['legends']);
 		$p1->SetHeight(18);
-		$p1->SetSliceColors(array('orange','lightblue','green','red','navy','pink'));  
+		$p1->SetSliceColors(array('orange','lightblue','green','red','navy','gray', 'purple', 'yellow', 'brown', 'pink'));  
 		//$p1->SetSliceColors(array_reverse(array('orange','lightblue','green','red','navy')));  
 		$p1->value->HideZero();
 		

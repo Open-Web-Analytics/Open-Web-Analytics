@@ -55,7 +55,8 @@ class owa_feedReaderTypesCount extends owa_metric {
 		$this->params['related_objs'] = array('ua_id' => $u);
 		
 		$this->params['groupby'] = array('ua.browser_type');
-		
+		$this->params['orderby'] = array('count');
+		$this->params['order'] = 'desc';
 		return $f->query($this->params);
 		
 	}

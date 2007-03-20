@@ -70,13 +70,15 @@ class owa_graphPageTypesView extends owa_abstractJpGraphView  {
 		else:
 			
 			$this->graph = owa_coreAPI::graphFactory('base.jpPieGraph');
-			
+			$count = count($result['page_type']);
 			// Graph params
+			$this->graph->params['legend_columns'] = 3;
 			$this->graph->params['graph_title'] = "Page Types for " . $this->graph->get_period_label($data['period']);
-			$this->graph->params['height']	= 220;
+			$this->graph->params['height']	= 240+20*$count/$this->graph->params['legend_columns'];
 			$this->graph->params['width']	= 350;
 			$this->graph->params['data']['data_pie'] = $result['count'];
 			$this->graph->params['legends'] = $result['page_type'];
+			
 			
 			
 		endif;

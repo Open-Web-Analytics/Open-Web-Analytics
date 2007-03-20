@@ -115,37 +115,53 @@ class owa_template extends Template {
 			
 			case "ie":
 				$file = 'msie.png';
+				$name = 'Microsoft Internet Explorer';
 				break;
 			case "internet explorer":
 				$file = 'msie.png';
+				$name = 'Microsoft Internet Explorer';
 				break;
 			case "firefox":
 				$file = 'firefox.png';
+				$name = 'Firefox';
 				break;
 			case "safari":
 				$file = 'safari.png';
+				$name = 'Safari';
 				break;
 			case "opera":
 				$file = 'opera.png';
+				$name = 'Opera';
 				break;
 			case "netscape":
 				$file = 'netscape.png';
+				$name = 'Netscape';
 				break;
 			case "mozilla":
 				$file = 'mozilla.png';
+				$name = 'Mozilla';
 				break;
 			case "konqueror":
 				$file = 'kon.png';
+				$name = 'Konqueror';
 				break;
 			case "camino":
 				$file = 'camino.png';
+				$name = 'Camino';
 				break; 
-			
+			case "aol":
+				$file = 'aol.png';
+				$name = 'AOL';
+				break; 
+			case "default browser":
+				$file = 'default_browser.png';
+				$name = 'Unknown Browser';
+				break; 
 			
 		}
 		if (!empty($file)):
 			
-			return sprintf('<img align="baseline" src="%s"', $this->makeImageLink($file));
+			return sprintf('<img alt="%s" align="baseline" src="%s"', $name, $this->makeImageLink($file));
 		else:
 			return $browser_type;
 		endif;
@@ -267,7 +283,7 @@ class owa_template extends Template {
 		
 		$now = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']);
 		
-		$days = ($now - $time) / (3600*24);
+		$days = round(($now - $time) / (3600*24));
 		
 		switch ($days) {
 			
