@@ -12,7 +12,7 @@
 </style>
 
 
-<h2><?=$headline;?> for <?=$period_label;?><?=$date_label;?></h2>
+<h2><?=$headline;?>: <?=$period_label;?><?=$date_label;?></h2>
 
 <table>
 	<TR>

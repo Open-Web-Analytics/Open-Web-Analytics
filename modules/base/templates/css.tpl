@@ -185,5 +185,5 @@ div {margin:0;}
 #header {background-color: #B0C4DE; padding:4px; font-weight:bold; clear: both;}
 #report_top_level_nav {margin: 5px 0 0 0;}
 #side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 14px; font-weight:bold;}
-
+#report_filters {margin:0 0 30px 0;}
 </style>

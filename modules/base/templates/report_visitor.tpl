@@ -1,4 +1,4 @@
-<h2><?=$headline;?></h2>
+<h2><?=$headline;?>: <?=$visitor_id;?></h2>
 		
 <fieldset class="options">
 	<legend>Recent Visits for Visitor: <?=$visitor_id;?></legend>

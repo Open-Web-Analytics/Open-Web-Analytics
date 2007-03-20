@@ -7,7 +7,7 @@
 
 <div class="wrap">
 
-	<fieldset>
+	<fieldset id="report_filters">
 		<legend>Report Filters</legend>
 		<? include('report_period_filters.tpl');?> 
 	</fieldset>

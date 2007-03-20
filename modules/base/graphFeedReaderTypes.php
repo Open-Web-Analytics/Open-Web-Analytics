@@ -57,10 +57,13 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 		
 		// chop results and summarize into 6 reader types.
 		if (count($result) >5):
-			$temp_result = array_chunk($result, 5);
+		
+			//$this->e->debug('before'.print_r($result, true));
+			$temp_result = array_chunk($result, 9);
 			$remainder = owa_lib::deconstruct_assoc($temp_result[1]);
 			$temp_result[0][] = array('browser_type' => 'Others', 'count' => array_sum($remainder['count']));
 			$result = owa_lib::deconstruct_assoc($temp_result[0]);
+			//$this->e->debug('after'.print_r($result, true));
 		else:
 			$result = owa_lib::deconstruct_assoc($result);
 		endif;
@@ -85,7 +88,7 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 			$this->graph->params['legends'] = $result['browser_type'];
 			$this->graph->params['graph_title'] = "Feed Reader Types for " . $this->graph->get_period_label($data['period']);
 			$count = count($result['browser_type']);
-			$this->graph->params['height']	= 280+$count*20;
+			$this->graph->params['height']	= 280+$count*10;
 			$this->graph->params['width']	= 350;
 			
 		endif;
