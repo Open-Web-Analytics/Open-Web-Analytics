@@ -155,6 +155,8 @@ function owa_log() {
 		$app_params['feed_format'] = $_GET['feed'];
 	endif;
 	
+	$app_params[$owa_wp->config['source_param']] = $_GET[$owa_wp->config['ns'].$owa_wp->config['source_param']];
+	
 	// Track users by the email address of that they used when posting a comment
 	$app_params['user_email'] = $_COOKIE['comment_author_email_'.COOKIEHASH]; 
 	

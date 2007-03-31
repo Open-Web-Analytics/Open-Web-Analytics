@@ -320,7 +320,7 @@ class owa_event extends owa_base {
 			endif;
 			
 			// OWA specific params to filter
-			array_push($filters, $this->config['source_param']);
+			array_push($filters, $this->config['ns'].$this->config['source_param']);
 			array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
 			
 			//print_r($filters);
@@ -341,7 +341,7 @@ class owa_event extends owa_base {
 	          
 	        }
 		
-     	//print $url;
+     	$this->e->debug('striped url: '.$url);
      	
      	return $url;
 		

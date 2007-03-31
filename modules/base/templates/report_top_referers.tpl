@@ -9,7 +9,7 @@
 	<?php foreach($top_referers as $referer): ?>
 
 		<TR>
-			<TD><a href="<?=$referer['url'];?>"><? if (!empty($referer['page_title'])):?><?=$referer['page_title'];?><?else:?><?=$this->truncate($referer['url'], 100, '...');?><? endif;?></a></TD>
+			<TD><a href="<?=$referer['url'];?>"><? if (!empty($referer['page_title'])):?><?=$this->truncate($referer['page_title'], 100, '...');?><?else:?><?=$this->truncate($referer['url'], 100, '...');?><? endif;?></a></TD>
 			<TD><?=$referer['count']?></TD>
 			
 		</TR>

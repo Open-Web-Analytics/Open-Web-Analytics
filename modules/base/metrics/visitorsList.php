@@ -42,28 +42,21 @@ class owa_visitorsList extends owa_metric {
 	
 	function generate() {
 		
-		$sql = sprintf("
-		SELECT 
-			distinct sessions.visitor_id as visitor_id,
-			visitors.user_name,
-			visitors.user_email
-		FROM 
-			%s as sessions,
-			%s as visitors 
-		WHERE
-			sessions.visitor_id = visitors.visitor_id 
-			%s
-			%s
-		LIMIT 
-			%s",
-			$this->setTable($this->config['sessions_table']),
-			$this->setTable($this->config['visitors_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints']),
-			$this->params['limit']
-		);
+		$s = owa_coreAPI::entityFactory('base.session');
 		
-		return $this->db->get_results($sql);
+		$v = owa_coreAPI::entityFactory('base.visitor');
+		
+		$this->params['related_objs'] = array('visitor_id' => $v);
+		
+		//$this->setTimePeriod($this->params['period']);
+		
+		$this->params['select'] = "distinct session.visitor_id as visitor_id,
+									visitor.user_name,
+									visitor.user_email";
+								
+		return $s->query($this->params);
+		
+		
 	}
 	
 	

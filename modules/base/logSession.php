@@ -72,7 +72,7 @@ class owa_logSessionController extends owa_controller {
 		endif;
 						
 		// set source			
-		$s->set('source', $this->params[$this->config['source_param']]);
+		$s->set('source', $this->params['source']);
 						
 		// Make ua id
 		$s->set('ua_id', owa_lib::setStringGuid($this->params['HTTP_USER_AGENT']));
