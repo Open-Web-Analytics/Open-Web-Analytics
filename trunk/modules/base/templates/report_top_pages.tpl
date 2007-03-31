@@ -9,7 +9,7 @@
 				
 	<TR>
 		<TD>
-			<a href="<?=$this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $page['document_id']), true);?>"><?=$page['page_title'];?></a> (<?=$page['page_type'];?>) </TD>
+			<a href="<?=$this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $page['document_id']), true);?>"><?=$this->truncate($page['page_title'], 100, '...');?></a> (<?=$page['page_type'];?>) </TD>
 		<TD><?=$page['count']?></TD>
 	</TR>
 				

@@ -51,9 +51,9 @@ class owa_wp extends owa_caller {
 	function add_link_tracking($link) {
 	
 		if (!empty($_GET[$this->config['feed_subscription_id']])):
-			return $link."&amp;"."from=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
+			return $link."&amp;".$this->config['ns'].$this->config['source_param']."=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
 		else:
-			return $link."&amp;"."from=feed";
+			return $link."&amp;".$this->config['ns'].$this->config['source_param']."=feed";
 		endif;
 	
 	}

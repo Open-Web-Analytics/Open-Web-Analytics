@@ -107,7 +107,7 @@ class owa_processEventController extends owa_controller {
 	function post() {
 		
 		//Clean Query Strings
-		if ($this->config['clean_query_strings'] == true):
+		if ($this->config['clean_query_string'] == true):
 			$this->event->cleanQueryStrings();
 		endif;
 		
