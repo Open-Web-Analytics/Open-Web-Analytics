@@ -53,7 +53,7 @@ class owa_logRefererController extends owa_controller {
 		$r->set('url', $this->params['HTTP_REFERER']);
 		
 		// check for search engine
-		if ($this->lookupsearchEngine($this->params['HTTP_REFERER']) == true):
+		if ($this->lookupSearchEngine($this->params['HTTP_REFERER']) == true):
 			$r->set('is_searchengine', true);
 		endif;
 		
@@ -63,9 +63,9 @@ class owa_logRefererController extends owa_controller {
 		
 		//	Look for query_terms
 		if (strstr($this->params['HTTP_REFERER'], $this->params['HTTP_HOST']) == false):
-			$r->set('query_terms', strtolower($this->extractSearchTerms($this->params['HTTP_REFERER'])));
-				
-			if (!empty($r->query_terms->value)):
+			$qt = $this->extractSearchTerms($this->params['HTTP_REFERER']);
+			if (!empty($qt)):
+				$r->set('query_terms', strtolower($qt));
 				$r->set('is_searchengine', true);
 			endif;
 		endif;
