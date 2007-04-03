@@ -153,14 +153,7 @@ class owa_caller extends owa_base {
 		
 		// Apply caller's params to event properties
 		if (!empty($caller_params)):
-			
-			// Apply caller specific params
-			foreach ($caller_params as $k => $v) {
-				
-				$params['caller'][$k] = $v;
-				
-			}
-		
+			$params['caller'] = $caller_params;
 		endif;
 		
 		// set controller to invoke
@@ -180,15 +173,8 @@ class owa_caller extends owa_base {
 		endif;
 		
 		// Fetch browser capabilities and and apply to event params
-		$bcap_array = get_object_vars($bcap->browser);
+		$params['browscap'] = get_object_vars($bcap->browser);
 	
-		foreach ($bcap_array as $k => $v) {
-				
-			$params['browscap'] = $bcap_array;
-				
-		}
-		
-		
 		return $this->handleRequest($params);
 		
 	}

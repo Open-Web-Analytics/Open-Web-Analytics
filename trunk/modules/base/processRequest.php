@@ -87,14 +87,17 @@ class owa_processRequestController extends owa_processEventController {
 			$this->event->properties['is_robot'] = true;
 			$this->event->properties['is_browser'] = false;
 			$this->event->state = 'robot_request';
+			$this->event->properties['event_type'] = 'base.robot_request';
 		elseif ($this->params['caller']['is_feedreader'] == true || $this->params['browscap']['isSyndicationReader'] == true):			
 			$this->event->properties['is_feedreader'] == true;
 			$this->event->properties['is_browser'] = false;
 			$this->event->properties['is_feedreader'] = true;
 			$this->event->properties['feed_reader_guid'] = $this->event->setEnvGUID();
 			$this->event->state = 'feed_request';
+			$this->event->properties['event_type'] = 'base.feed_request';
 		else:
 			$this->event->state = 'page_request';
+			$this->event->properties['event_type'] = 'base.page_request'; 
 			$this->event->properties['is_browser'] = true;
 			$this->event->assign_visitor($this->event->properties['inbound_visitor_id']);
 			$this->event->sessionize($this->event->properties['inbound_session_id']);

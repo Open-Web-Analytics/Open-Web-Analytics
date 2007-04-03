@@ -198,6 +198,7 @@ class owa_requestEvent extends owa_event {
 		
 		//mark even state as first_page_request.
 		$this->state = 'first_page_request';
+		$this->properties['event_type'] = 'base.first_page_request';
 		
 		//Set the session cookie
         setcookie($this->config['ns'].$this->config['session_param'], $this->properties['session_id'], time()+3600*24*365*30, "/", $this->config['cookie_domain']);
