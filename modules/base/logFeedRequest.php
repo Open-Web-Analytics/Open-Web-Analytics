@@ -43,7 +43,6 @@ class owa_logFeedRequestController extends owa_controller {
 	
 	function action() {
 		
-	
 		// Make entity
 		$f = owa_coreAPI::entityFactory('base.feed_request');
 		
@@ -65,7 +64,13 @@ class owa_logFeedRequestController extends owa_controller {
 		$f->set('host_id', owa_lib::setStringGuid($this->params['host']));
 		
 		// Persist to database
-		$f->create();
+		$result = $f->create();
+		
+		// makes request event processing idem potent
+		if ($result == true):
+			$eq = &eventQueue::get_instance();
+			$eq->log($this->params, $this->params['event_type'].'_logged');
+		endif;
 			
 		return;
 			

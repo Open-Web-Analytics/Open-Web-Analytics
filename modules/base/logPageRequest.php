@@ -69,8 +69,13 @@ class owa_logPageRequestController extends owa_controller {
 		// Generate Host id
 		$r->set('host_id', owa_lib::setStringGuid($this->params['host']));
 		
-		$r->create();
-			
+		$result = $r->create();
+		
+		if ($result == true):
+			$eq = &eventQueue::get_instance();
+			$eq->log($this->params, $this->params['event_type'].'_logged');
+		endif;
+		
 		return;
 			
 	}
