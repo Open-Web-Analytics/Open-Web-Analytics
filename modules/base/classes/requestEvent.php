@@ -90,17 +90,19 @@ class owa_requestEvent extends owa_event {
 	 * @access 	public
 	 */
 	function load_first_hit_properties($properties) {
-	
-		  $this->properties['inbound_first_hit_properties'] = $properties;
+		
+		$this->properties['inbound_first_hit_properties'] = $properties;
          
-          $array = explode(",", $properties);
+        $array = explode("|||", $properties);
 
-          foreach ($array as $key => $value):
+		foreach ($array as $key => $value):
 
-         	 list($realkey, $realvalue) = split('=>', $value);
-          	 $this->properties[$realkey] = $realvalue;
+			list($realkey, $realvalue) = split('=>', $value);
+          	$this->properties[$realkey] = $realvalue;
 
-          endforeach;
+        endforeach;
+          
+          //$this->e->debug('unserialized first it array: '.print_r($this->properties, true));
 
 		
 		// Mark the request to avoid logging it to the first hit cookie again
@@ -123,8 +125,7 @@ class owa_requestEvent extends owa_event {
 	 */
 	function log_first_hit() {
 		
-		$values = owa_lib::implode_assoc('=>', ',', $this->properties);
-		//$values = 'test';
+		$values = owa_lib::implode_assoc('=>', '|||', $this->properties);
 		setcookie($this->config['ns'].$this->config['first_hit_param'], $values, time()+3600*24*365*30, "/", $this->config['cookie_domain']);
 		$this->e->debug('First hit cookie values: '.$values);
 		return true;
