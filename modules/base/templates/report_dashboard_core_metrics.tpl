@@ -20,7 +20,7 @@ There are no metrics yet for this time period.
 	<TR>
 	<? if ($period == 'this_year'): ?>
 		<TD>
-		<a href="<?=$this->makeLink(array('view' => 'base.report', 'subview' => 'base.reportDashboard', 'period' => 'month', 'year' => $row['year'], 'month' => $row['month']));?>">
+		<a href="<?=$this->makeLink(array('do' => 'base.reportDashboard', 'period' => 'month', 'year' => $row['year'], 'month' => $row['month'], 'site_id' => $site_id));?>">
 		<?=$this->get_month_label($row['month']);?>
 		</a>
 		</TD>
@@ -29,7 +29,7 @@ There are no metrics yet for this time period.
 		<TD><?=$this->get_month_label($row['month']);?></TD>
 		
 		<TD>
-		<a href="<?=$this->makeLink(array('view' => 'base.report', 'subview' => 'base.reportDashboard', 'period' => 'day', 'year' => $row['year'], 'month' => $row['month'], 'day' => $row['day']));?>">
+		<a href="<?=$this->makeLink(array('do' => 'base.reportDashboard', 'period' => 'day', 'year' => $row['year'], 'month' => $row['month'], 'day' => $row['day'], 'site_id' => $site_id));?>">
 		<?=$row['day'];?>
 		</a>
 		</TD>

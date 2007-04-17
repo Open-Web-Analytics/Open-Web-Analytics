@@ -13,7 +13,7 @@
 					</TD>
 					
 					<TD valign="top">
-						 <a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id']), true);?>">
+						 <a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id'], 'site_id' => $site_id));?>">
 						 	<span class="inline_h2"><? if (!empty($visit['visitor_user_name'])):?><?=$visit['visitor_user_name'];?><?elseif (!empty($visit['visitor_user_email'])):?><?=$visit['visitor_user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span>
 						 </a> - 
 						<? if ($visit['session_is_new_visitor'] == true): ?>
