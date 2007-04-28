@@ -34,7 +34,7 @@ class owa_dbColumn {
  	
  	var $foriegn_key;
  	
- 	var $auto_incement;
+ 	var $auto_increment = false;
  	
  	function owa_dbColumn() {
  		

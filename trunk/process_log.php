@@ -46,16 +46,21 @@ if ($argv):
 
 endif;
 
+// create instance of OWA
+$config = array();
+$config['async_db'] = false;
+$owa = new asyncEventProcessor($config);
+
 //normal run
 if(empty($_argv)):
-	$processor = new asyncEventProcessor;
-	$processor->process_standard();
+	
+	$owa->process_standard();
 	return;   
 // Process a specific file
 // syntax is: file=filename.txt
 elseif (!empty($_argv['file'])):
-	$processor = new asyncEventProcessor;
-	$processor->process_specific($config['async_log_dir'].$_argv['file']);
+	
+	$owa->process_specific($config['async_log_dir'].$_argv['file']);
 	return;
 
 endif;

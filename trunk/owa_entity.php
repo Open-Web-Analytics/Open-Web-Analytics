@@ -221,8 +221,10 @@ class owa_entity {
 		
 		foreach ($properties as $k => $v) {
 				
-				$this->$v->value = $array[$v];
-		
+				if (!empty($array[$v])):
+					$this->$v->value = $array[$v];
+				endif;
+				
 			}
 		
 		return;

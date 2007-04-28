@@ -82,10 +82,10 @@ class owa_error {
 					break;
 					
 				case "async_development":
-					//$file = owa_error::make_file_logger();
+					$file = owa_error::make_file_logger();
 					$console = owa_error::make_console_logger();
 					$logger = &Log::singleton('composite');
-					//$logger->addChild($file);
+					$logger->addChild($file);
 					$logger->addChild($console);
 					break;
 					
@@ -249,27 +249,6 @@ class owa_error {
 	 */
 	function handlePhpError($errno = null, $errmsg, $filename, $linenum, $vars) {
 		
-	    /* Map the PHP error to a Log priority. */
-	    /*switch ($errno) {
-	    case E_WARNING:
-	    case E_USER_WARNING:
-	        $priority = PEAR_LOG_WARNING;
-	        break;
-	    case E_NOTICE:
-	    case E_USER_NOTICE:
-	        $priority = PEAR_LOG_NOTICE;
-	        break;
-	    case E_ERROR:
-	    case E_USER_ERROR:
-	        $priority = PEAR_LOG_ERR;
-	        break;
-	    case "debug":
-	        $priority = PEAR_LOG_DEBUG;
-	        break;
-	    default:
-	        $priotity = PEAR_LOG_INFO;
-	    }
-	    */
 	    $dt = date("Y-m-d H:i:s (T)");
 	    
 	    // set of errors for which a var trace will be saved

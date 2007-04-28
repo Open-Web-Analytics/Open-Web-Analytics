@@ -62,11 +62,13 @@ class owa_logRefererController extends owa_controller {
 		$r->set('site', $url['host']);
 		
 		//	Look for query_terms
-		if (strstr($this->params['HTTP_REFERER'], $this->params['HTTP_HOST']) == false):
-			$qt = $this->extractSearchTerms($this->params['HTTP_REFERER']);
-			if (!empty($qt)):
-				$r->set('query_terms', strtolower($qt));
-				$r->set('is_searchengine', true);
+		if (!empty($this->params['HTTP_REFERER'])):
+			if (strstr($this->params['HTTP_REFERER'], $this->params['HTTP_HOST']) == false):
+				$qt = $this->extractSearchTerms($this->params['HTTP_REFERER']);
+				if (!empty($qt)):
+					$r->set('query_terms', strtolower($qt));
+					$r->set('is_searchengine', true);
+				endif;
 			endif;
 		endif;
 		
