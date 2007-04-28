@@ -51,7 +51,7 @@ class owa_logCommentController extends owa_controller {
 		$s->getByPk('id', $this->params['inbound_session_id']);
 		
 		// increment number of page views
-		$s->num_comments = $s->num_comments + 1;
+		$s->num_comments = $s->num_comments++;
 		
 		// Persist to database
 		$s->update('id');

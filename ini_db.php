@@ -141,12 +141,14 @@ class ini_db {
 		if (!empty($haystack)):
 		
 			foreach ($this->db as $key => $value) {
-	        	//print_r($this->db);
-				if (preg_match($value, $haystack, $tmp)):
-	            	$needle = $tmp;
-	            	//print_r($tmp);
-				endif;
-	   
+				
+				if (!empty($value)):
+		        	//print_r($this->db);
+					if (preg_match($value, $haystack, $tmp)):
+		            	$needle = $tmp;
+		            	//print_r($tmp);
+					endif;
+				endif;	   
 			}
 			
 			return $needle;

@@ -68,7 +68,7 @@ class owa_caller extends owa_base {
 				exit;
 			endif;
 		endif;
-		//set_error_handler(array("owa_error", "handlePhpError"), E_ALL);
+		//set_error_handler(array("owa_error", "handlePhpError"));
 		
 		// Sets default config and error logger
 		$this->owa_base();
