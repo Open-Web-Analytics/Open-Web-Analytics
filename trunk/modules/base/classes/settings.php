@@ -293,6 +293,7 @@
 			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
 			'notice_email'					=> '',
+			'log_php_errors'				=> false,
 			'error_handler'					=> 'production',
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
 			'browscap.ini'					=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
