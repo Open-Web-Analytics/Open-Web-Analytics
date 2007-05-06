@@ -55,7 +55,8 @@ class owa_reportVisitorController extends owa_reportController {
 			'constraints'				=> array(
 				'site_id'				=> $this->params['site_id'],
 				'session.visitor_id' 	=> $this->params['visitor_id']),
-			'limit' => 10
+			'period'				=> 'all_time',
+			'limit' => 20
 			
 		));
 		

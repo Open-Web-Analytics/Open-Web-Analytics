@@ -183,6 +183,9 @@ class owa_db_mysql extends owa_db {
 		$count = count($properties);
 		
 		$i = 0;
+		
+		$sql_cols = '';
+		$sql_values = '';
 					
 			foreach ($properties as $key => $value) {
 			
@@ -214,6 +217,10 @@ class owa_db_mysql extends owa_db {
 		$count = count($properties);
 		
 		$i = 0;
+		
+		$sql_cols = '';
+		$sql_values = '';
+		$set = '';
 					
 		foreach ($properties as $key => $value) {
 			

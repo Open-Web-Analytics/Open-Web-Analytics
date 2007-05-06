@@ -181,6 +181,7 @@ class asyncEventProcessor extends owa_caller {
 				$new_file = $new_file_name.".processing";
 				// Rename current log file 
 				rename ($file, $new_file ) or die ("Could not rename file");
+				$this->e->info('renamed event file.');
 				// open file for reading
 				$handle = @fopen($new_file, "r");
 				if ($handle):

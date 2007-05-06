@@ -44,18 +44,26 @@ class owa_logCommentController extends owa_controller {
 	function action() {
 		
 	
-		// Make entity
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		// Fetch from session from database
-		$s->getByPk('id', $this->params['inbound_session_id']);
-		
-		// increment number of page views
-		$s->num_comments = $s->num_comments + 1;
-		
-		// Persist to database
-		$s->update('id');
+		if (!empty($this->params['inbound_session_id'])):
+	
+			// Make entity
+			$s = owa_coreAPI::entityFactory('base.session');
 			
+			// Fetch from session from database
+			$s->getByPk('id', $this->params['inbound_session_id']);
+			
+			$id = $s->get('id');
+			
+			if (!empty($id)):
+				// increment number of page views
+				$s->num_comments = $s->num_comments++;
+				
+				// Persist to database
+				$s->update('id');
+			endif;
+			
+		endif;
+		
 		return;
 			
 	}

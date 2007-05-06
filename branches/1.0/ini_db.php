@@ -29,7 +29,7 @@
  * @version		$Revision$	      
  * @since		wa 1.0.0
  */
-class ini_db {
+class ini_db extends owa_base {
 
 	/**
 	 * Data file
@@ -52,12 +52,6 @@ class ini_db {
 	 */
 	var $cache = true;
 	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
 	
 	/**
 	 * Database Access Object
@@ -76,9 +70,7 @@ class ini_db {
 	 * @return ini_db
 	 */
 	function ini_db($ini_file, $sections = null, $return_format = 'object') {
-	
-		$c = &owa_coreAPI::configSingleton();
-		$this->config = $c->fetch('base');
+		$this->owa_base();
 		$this->ini_file = $ini_file;		
 		$this->return_format = $return_format;
 		
@@ -138,16 +130,27 @@ class ini_db {
 	 */
 	function match($haystack) {
 		
-		foreach ($this->db as $key => $value) {
-        	//print_r($this->db);
-			if (preg_match($value, $haystack, $tmp)):
-            	$needle = $tmp;
-            	//print_r($tmp);
-			endif;
-   
-		}
+		if (!empty($haystack)):
 		
-		return $needle;
+			$tmp = '';
+			
+			foreach ($this->db as $key => $value) {
+				
+				if (!empty($value)):
+		        	//$this->e->debug('ref db:'.print_r($this->db, true));
+					preg_match(trim($value), $haystack, $tmp);
+					if (!empty($tmp)):
+		            	$needle = $tmp;
+		            	//$this->e->debug('ref db:'.print_r($tmp, true));
+					endif;
+				endif;	   
+			}
+			
+			return $needle;
+		
+		else:
+			return;
+		endif;
 	}
 	
 	/**

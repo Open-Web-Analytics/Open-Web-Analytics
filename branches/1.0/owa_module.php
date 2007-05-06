@@ -141,8 +141,11 @@ class owa_module extends owa_base {
 		
 		$this->owa_base();
 		
-		// register event handlers
-		$this->_registerEventHandlers();
+		// register event handlers unless OWA is operating in async handling mode
+		if ($this->config['async_db'] == false):
+			$this->_registerEventHandlers();
+		endif;
+		
 		$this->_registerEntities();
 		
 		return;

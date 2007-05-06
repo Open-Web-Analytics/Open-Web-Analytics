@@ -68,7 +68,6 @@ class owa_caller extends owa_base {
 				exit;
 			endif;
 		endif;
-		//set_error_handler(array("owa_error", "handlePhpError"), E_ALL);
 		
 		// Sets default config and error logger
 		$this->owa_base();
@@ -90,6 +89,11 @@ class owa_caller extends owa_base {
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 
 		$this->config = $this->c->fetch('base');
+
+		// log PHP warnings and errors
+		if ($this->config['log_php_errors'] == true):
+			set_error_handler(array("owa_error", "handlePhpError"));
+		endif;
 
 		// reloads error logger now that final config values are in place
 		$this->e = null;
