@@ -1,4 +1,4 @@
-<div>
+<div id="recent_visitors">
 		<fieldset>
 			<legend>
 				<span class="h_label"><?=$visit['session_month'];?>/<?=$visit['session_day'];?> @ at <?=$visit['session_hour'];?>:<?=$visit['session_minute'];?></span> |
@@ -9,17 +9,22 @@
 			<table cellpadding="0" cellspacing="0" width="100%" border="0" class="visit_summary">
 				<TR>
 					<TD class="visit_icon" align="right" valign="bottom">
-						<span class="h_label"><img src="<?=$this->makeImageLink('user_icon_small.gif');?>" alt="Visitor"></span>
+						<span class="h_label">
+							<? if ($visit['session_is_new_visitor'] == true): ?>
+							<img src="<?=$this->makeImageLink('newuser_icon_small.png');?>" alt="New Visitor" >
+							<?else:?>
+							<img src="<?=$this->makeImageLink('user_icon_small.png');?>" alt="Repeat Visitor">
+							<?endif;?>
+						</span>
 					</TD>
 					
-					<TD valign="top">
+					<TD valign="bottom">
 						 <a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id'], 'site_id' => $site_id));?>">
 						 	<span class="inline_h2"><? if (!empty($visit['visitor_user_name'])):?><?=$visit['visitor_user_name'];?><?elseif (!empty($visit['visitor_user_email'])):?><?=$visit['visitor_user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span>
-						 </a> - 
-						<? if ($visit['session_is_new_visitor'] == true): ?>
-							New Visitor
-						<? else: ?>
-							Returning Visitor <span class="info_text">(<a href="<?=$this->makeLink(array('session_id' => $visit['session_prior_session_id'], 'do' => 'base.reportVisit'), true);?>">Last visit was</a>	<?=round($visit['session_time_sinse_priorsession']/(3600*24));?> 
+						 </a>
+						<? if ($visit['session_is_new_visitor'] == false): ?>
+							
+							- <span class="info_text">(<a href="<?=$this->makeLink(array('session_id' => $visit['session_prior_session_id'], 'do' => 'base.reportVisit'), true);?>">Last visit was</a>	<?=round($visit['session_time_sinse_priorsession']/(3600*24));?> 
 							<? if (round($visit['session_time_sinse_priorsession']/(3600*24)) == 1): ?>
 								day ago.
 							<? else: ?>
@@ -54,7 +59,7 @@
 					</TD>
 											
 					<TD valign="top">
-						<a href="<?=$visit['document_url'];?>"><span class="inline_h4"><?=$visit['document_page_title'];?></span></a><? if($visit['document_page_type']):?> (<?=$visit['document_page_type'];?>)<? endif;?> <span class="info_text"><?=$visit['document_url'];?></span>
+						<a href="<?=$visit['document_url'];?>"><span class="inline_h4"><?=$visit['document_page_title'];?></span></a><? if($visit['document_page_type']):?> (<?=$visit['document_page_type'];?>)<? endif;?><BR><span class="info_text"><?=$visit['document_url'];?></span>
 					</TD>							
 				</tr>
 							
@@ -65,7 +70,7 @@
 					</TD>
 
 					<TD valign="top" colspan="2">
-						<a href="<?=$visit['referer_url'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h4"><?=$this->truncate($visit['referer_page_title'], 80, '...');?></span></a> <span class="info_text"><?=$this->truncate($visit['referer_url'], 35, '...');?></span><? else:?><?=$this->truncate($visit['referer_url'], 50, '...');?><? endif;?></a>
+						<a href="<?=$visit['referer_url'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h4"><?=$this->truncate($visit['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?=$this->truncate($visit['referer_url'], 80, '...');?></span><? else:?><?=$this->truncate($visit['referer_url'], 50, '...');?><? endif;?></a>
 					</TD>
 																	
 				</TR>
