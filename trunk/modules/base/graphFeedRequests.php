@@ -98,7 +98,7 @@ class owa_graphFeedRequestsView extends owa_abstractJpGraphView  {
 			$this->graph->params['data']['y1'] = $graph_arrays['reader_count'];	
 			$this->graph->params['data']['x'] = $this->makeDateArray($result, "n/j");
 							
-			$this->graph->params['graph_title'] = "Feed Fetches & Unique Feed Readers for " . $this->graph->get_period_label($data['period']);
+			//$this->graph->params['graph_title'] = "Feed Fetches & Unique Feed Readers for " . $this->graph->get_period_label($data['period']);
 			
 		endif;
 		

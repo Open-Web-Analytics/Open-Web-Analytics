@@ -1,37 +1,10 @@
-<h2><?=$headline;?>: <?=$period_label;?><?=$date_label;?></h2>
+<? include('report_header.tpl');?>
 
-	<table width="100%">
-		<TR>
-			<TD valign="top">
-				<fieldset>
-					<legend>Most Popular Web Pages</legend>
-					<? include('report_top_pages.tpl');?>
-				</fieldset>
-			</TD>
-			<TD valign="top">
-				<fieldset class="graph">
-					<legend>Pages Types</legend>
-					<img src="<?=$this->graphLink(array('view' => 'base.graphPageTypes'), true); ?>">
-			</fieldset>
-			</TD>
-		</TR>
-	</Table>
+<P><span class="inline_h2">There were <?=$summary_stats['page_views'];?> page views for this web site.</span></p> 
 
-	<table width="100%">
-		<TR>
-			<TD valign="top">
-				<fieldset>
-					<legend>Top Entry pages</legend>
-					<? include('report_top_entry_pages.tpl');?>
-				</fieldset>
-			</TD>
-			<TD valign="top">
-				<fieldset>
-					<legend>Top Exit pages</legend>
-					<? include('report_top_exit_pages.tpl');?>
-				</fieldset>
-			</TD>
-		</TR>
-	</table>	
+<? include('report_dashboard_summary_stats.tpl');?>
 
-</fieldset>
+<? include('report_top_pages.tpl');?>
+
+<img src="<?=$this->graphLink(array('view' => 'base.graphPageTypes'), true); ?>">
+			

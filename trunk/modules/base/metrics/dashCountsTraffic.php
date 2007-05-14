@@ -17,7 +17,7 @@
 //
 
 /**
- * Referer Entity
+ * Dashboard Count Metrics
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,31 +28,41 @@
  * @since		owa 1.0.0
  */
 
-class owa_referer extends owa_entity {
+class owa_dashCountsTraffic extends owa_metric {
 	
-	var $id; // BIGINT,
-	var $url; // varchar(255),
-	var $site_name; // varchar(255),
-	var $site; // VARCHAR(255),
-	var $query_terms; // varchar(255),
-	var $refering_anchortext; // varchar(255),
-	var $page_title; // varchar(255),
-	var $snippet; // TEXT,
-	var $is_searchengine; // tinyint(1),
-	//var $source; // varchar
-	
-	function owa_referer() {
+	function owa_dashCountsTraffic($params = null) {
 		
-		$this->owa_entity();
+		$this->params = $params;
+		
+		$this->owa_metric();
 		
 		return;
-			
+		
+	}
+	
+	function generate() {
+		
+		$this->params['select'] = "count(distinct session.visitor_id) as unique_visitors, 
+			sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
+			count(session.id) as sessions, 
+			sum(session.num_pageviews) as page_views ";
+		
+		$this->params['use_summary'] = true;
+		
+		$this->setTimePeriod($this->params['period']);
+		
+		$s = owa_coreAPI::entityFactory('base.session');
+		
+		$ref = owa_coreAPI::entityFactory('base.referer');
+		
+		$this->params['related_objs'] = array('referer_id' => $ref);
+		
+		return $s->query($this->params);
+		
 	}
 	
 	
-	
 }
-
 
 
 ?>

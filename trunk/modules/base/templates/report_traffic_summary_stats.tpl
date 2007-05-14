@@ -1,27 +1,31 @@
 <? if (!empty($sessions)):?>
-<table>
+<table id="summary_stats">
 	<TR>
-		<TH>Total Visits: </TH>	
-		<TH><?=$sessions['count'];?></TH>
+		<TD>
+			<span class="large_number"><?=$sessions['count'];?></span> Total Visits
+		</TD>
 	</TR>
 	<TR>
-		<TD class="indented_header_row" scope="row">from Search Engines: </TD>
-		<TD><?=$from_se['se_count'];?></TD>
+		<TD>
+			<span class="large_number"><?=$from_se['se_count'];?></span> Visits from Search Engines
+		</TD>
 	</TR>
 	<TR>
-		<TD class="indented_header_row" scope="row">from Web Pages: </TD>
-		<TD><?=$from_sites['site_count'];?></TD>
+		<TD>
+			<span class="large_number"><?=$from_sites['site_count'];?></span> Visits from Referring Web Pages
+		</TD>
 	</TR>
 	<TR>
-		<TD class="indented_header_row" scope="row">from Your Feeds: </TD>
-		<TD><?=$from_feeds['source_count'];?></TD>
+		<TD>
+			<span class="large_number"><?=$from_feeds['source_count'];?></span> Visits from Feeds
+		</TD>
 	</TR>
 	<TR>
-		<TD class="indented_header_row" scope="row">from Direct/Unknown: </TD>
-		<TD><?=$from_direct['count'];?></TD>
+		<TD>
+			<span class="large_number"><?=$from_direct['count'];?></span> Direct Visits
+		</TD>
 	</TR>
 </table>	
 <?else:?>
 	There are no statistics for this time period.
 <?endif;?>
-

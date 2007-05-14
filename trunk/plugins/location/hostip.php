@@ -83,28 +83,36 @@ class owa_hostip extends owa_location {
 	function get_location($ip) {
 		
 		$crawler = new owa_http;
+		$crawler->read_timeout = $this->config['ws_timeout'];
 		$crawler->fetch(sprintf($this->ws_url, $ip));
 		$location = $crawler->results;
 				
 		$location =	str_replace("\n", "|", $location);
 			
-				$loc_array = explode("|", $location);
-				//print_r($loc_array);
-				$result = array();
+		$loc_array = explode("|", $location);
+		//print_r($loc_array);
+		
+		$result = array();
 				
-				foreach ($loc_array as $k => $v) {
+		foreach ($loc_array as $k => $v) {
 				
-					list($name, $value) = split(":", $v, 2);	
-					$result[$name] = $value;
-				}
+			list($name, $value) = split(":", $v, 2);	
+			$result[$name] = $value;
+		}
 				
-				//print_r($result);
+		//print_r($result);
 				
-       		
-       			$this->city = $result['City'];
-				$this->country = trim($result['Country']);
-				$this->latitude = trim($result['Latitude']);
-				$this->longitude = trim($result['Longitude']);
+       	$this->city = $result['City'];
+		$this->country = trim($result['Country']);
+		$this->latitude = trim($result['Latitude']);
+		$this->longitude = trim($result['Longitude']);
+		
+		$this->e->debug(sprintf("HostIp web service response code: %s", $crawler->response_code));
+		
+		// log headers if status is not a 200 
+		if (strstr($crawler->response_code, "200") === false):
+			$this->e->debug(sprintf("HostIp web service response headers: %s", print_r($crawler->headers, true)));
+		endif;
 		
 		return;
 	}

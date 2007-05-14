@@ -1,17 +1,17 @@
 <? if (!empty($referers)):?>
-<table width="100%">
+<table cellpadding="0" cellspacing="0" class="data_table">
 	<tr>
-		<th scope="col">Referers</th>
-		<th scope="col">Visits</th>
-		<th scope="col">Page Views</th>
+		<td class="col_item_label">Refering Sites</th>
+		<td class="col_label">Visits</th>
+		<td class="col_label">Page Views</th>
 	</tr>
 				
 	<?php foreach($referers as $referer): ?>
 		
 	<TR>
-		<TD>
+		<TD class="item_cell">
 		<a href="<?=$referer['url'];?>">
-		<span class="inline_h2">
+		<span class="inline_h3">
 		<? if  (!empty($referer['page_title'])): ?>
 		<?=$this->truncate($referer['page_title'], 90);?>
 		<? else:?>
@@ -20,25 +20,21 @@
 		</span>
 		</a>
 		<BR>
+		<? if ($referer['snippet']):?>
 		<?=$referer['snippet'];?><BR>
+		<? endif;?>
 		<span class="info_text"><?=$this->truncate($referer['url'], 80);?></span></td>
-		<TD valign="top">
-			<div class="visitor_info_box pages_box">
-				<span class="large_number"><?=$referer['count']?></span><BR>
-				<span class="info_text">Visits</span>
-			</div>
+		<TD class="data_cell">
+			<?=$referer['count']?>
 		</TD>
-		<TD valign="top">
-			<div class="visitor_info_box pages_box">
-				<span class="large_number"><?=$referer['page_views']?></span><BR>
-				<span class="info_text">Pages</span>
-			</div>
+		<TD class="data_cell">
+			<?=$referer['page_views']?>
 		</TD>
 	</TR>
 				
 	<?php endforeach; ?>
+</table>
 
-	</table>
 <?else:?>
 	There are no refering web pages for this time period.
 <?endif;?>

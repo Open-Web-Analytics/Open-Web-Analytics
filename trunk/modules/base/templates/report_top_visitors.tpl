@@ -1,14 +1,14 @@
 <? if (!empty($top_visitors)):?>
-<table width="100%">
+<table class="data_table">
 	<tr>
-		<th scope="col">Visitor</th>
-		<th scope="col">Visits</th>
+		<td class="col_item_label">Most Frequent Visitors</td>
+		<td class="col_label">Visits</td>
 	</tr>
 			
 	<?php foreach($top_visitors as $vis): ?>
 				
 	<TR>
-		<TD>
+		<TD class="item_cell">
 			<a href="<?=$this->makeLink(array('visitor_id' => $vis['vis_id'], 'do' => 'base.reportVisitor'), true);?>">
 				<span class="">
 					<? if (!empty($vis['user_name'])):?>
@@ -21,7 +21,7 @@
 				</span>
 			</a>		
 		</TD>
-		<TD>
+		<TD class="data_cell">
 			<?=$vis['count']?>
 		</TD>
 	</TR>

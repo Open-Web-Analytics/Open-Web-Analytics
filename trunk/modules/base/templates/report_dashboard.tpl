@@ -12,23 +12,20 @@
 #recent_visitors{width:; margin-left: px}
 </style>
 
-
-<h2><?=$headline;?>: <?=$period_label;?><?=$date_label;?></h2>
+<? include('report_header.tpl');?>
 
 <table width="100%">
 	<TR>
-		<TD valign="top">
-			<fieldset id="summary_stats">
-				<legend>Summary</legend>
-				<? include ('report_dashboard_summary_stats.tpl');?>		
-			</fieldset>
-		</TD>
-		<TD valign="top">
-			<fieldset id="trend">
-				<legend>30 Day Trend</legend>
-				<img src="<?=$this->graphLink(array('view' => 'base.graphDashboardTrend', 'period' => 'last_thirty_days', 'site_id' => $params['site_id'])); ?>">
-			</fieldset>
+		<TD valign="top" id="trend_graph">
+		
+			<img src="<?=$this->graphLink(array('view' => 'base.graphDashboardTrend', 'period' => 'last_thirty_days', 'site_id' => $params['site_id'])); ?>">
+		
 		</TD>	
+	</TR>
+	<TR>
+		<TD valign="top">
+			<? include ('report_dashboard_summary_stats.tpl');?>		
+		</TD>
 	</TR>
 </table>
 
@@ -51,15 +48,7 @@
 				<img src="<?=$this->graphLink(array('view' => 'base.graphVisitorTypes'), true); ?>">
 			</fieldset>
 
-			<fieldset id="top_visitors">
-				<legend>Top Visitors</legend>
-				<? include ('report_top_visitors.tpl');?>
-			</fieldset>
-		
-			<fieldset id="top_browser_types">
-				<legend>Browser Types</legend>
-				<? include ('report_browser_types.tpl');?>
-			</fieldset>
+			
 	
 		</TD>
 		
