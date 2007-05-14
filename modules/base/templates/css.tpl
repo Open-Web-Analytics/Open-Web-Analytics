@@ -118,6 +118,7 @@ div {margin:0;}
 .headline {font-size:20px; background-color:#E0EEEE;color:;border-color:#000000;padding:6px; font-weight:bold;margin: 0px 0px 0px 0px;}
 .panel_headline {font-size:18px; background-color:#FFF8DC;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
+
 /* DATA TABLES */
 
 .h_label {font-size:14px; font-weight:bold;}
@@ -128,7 +129,7 @@ div {margin:0;}
 #panel td {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
 .subview_content{padding:10px;}
-.data_table table {border:0px; solid #000000}
+
 .subview_content td {padding:20ps;}
 #nav_left {width:240px;}
 .data {white-space:nowrap; width:auto;}
@@ -156,7 +157,7 @@ div {margin:0;}
 .visit_summary {width:100%;}
 .date_box {padding:4px;	border:solid 1px #999999;margin:2px;}
 .pages_box {padding:2px; border:solid 2px #999999; margin:0px 0px 0px 0px; text-align:center;}
-.large_number {font-size:24px;}
+.large_number {font-size:24px; font-weight:bold;}
 .info_text {color:#999999;font-size:12px;}
 .legend_link {color:#999999;font-size:12px;font-weight:normal;}
 .legend_link a {text-decoration:underline;}
@@ -177,13 +178,28 @@ div {margin:0;}
 .wrap {margin:0px;padding:10px;}
 .validation_error {color:red;}
 
-/* LAYOUT */
+/* REPORTS */
+#report_header {width:100%;margin: 0 0 20px 0;}
+.report_headline {font-size:26px; padding:5px; font-weight:bold;}
+.data_table {border-collapse: collapse;margin:0;width:100%;}
+.report_period {border: 1px solid #cccccc;font-size:22px; color:#999999; text-align:right; padding:5px; min-width:100px;}
+.data_table td {border:2px solid #CCCCCC;  min-width:80px;padding:10px;}
+.col_item_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999;}
+.col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
+.data_cell {text-align:center; vertical-align:center;}
+.item_cell {}
+.section_header {width:98%;background-color:#cccccc; padding:12px; margin: 15px 0 15px 0;}
 
+
+/* LAYOUT */
+#summary_stats {border-collapse: collapse; width:100%;}
+#summary_stats td {border:2px solid #CCCCCC; padding:10px; height:65px; width:px; vertical-align:center; margin:0px; min-width:150px;}
+#trend_graph {text-align:center;}
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}
 #login_box {width:390px;}
 #header {background-color: #B0C4DE; padding:4px; font-weight:bold; clear: both;}
 #report_top_level_nav {margin: 5px 0 0 0;}
-#side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 14px; font-weight:bold;}
+#side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
 #report_filters {margin:0 0 30px 0;}
 </style>

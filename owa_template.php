@@ -161,7 +161,7 @@ class owa_template extends Template {
 		}
 		if (!empty($file)):
 			
-			return sprintf('<img alt="%s" align="baseline" src="%s"', $name, $this->makeImageLink($file));
+			return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink($file));
 		else:
 			return $browser_type;
 		endif;

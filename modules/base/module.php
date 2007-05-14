@@ -137,6 +137,56 @@ class owa_baseModule extends owa_module {
 										'priviledge' 	=> 'viewer', 
 										'anchortext' 	=> 'Geo-location',
 										'order'			=> 1));
+										
+		$this->addNavigationLink(array('view' 			=> 'base.reportVisitors', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportHosts',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Domains',
+										'order'			=> 1));								
+
+		$this->addNavigationLink(array('view' 			=> 'base.reportVisitors', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportVisitorsLoyalty',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Visitor Loyalty',
+										'order'			=> 1));
+
+		$this->addNavigationLink(array('view' 			=> 'base.reportContent', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportEntryExits',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Entry & Exit Pages',
+										'order'			=> 1));
+
+
+		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportKeywords',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Keywords',
+										'order'			=> 1));
+										
+		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportAnchortext',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Inbound Link Text',
+										'order'			=> 2));
+		
+		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportSearchEngines',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Search Engines',
+										'order'			=> 3));
+		
+		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportReferringSites',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Referring Web Sites',
+										'order'			=> 3));
 		
 		return;
 		

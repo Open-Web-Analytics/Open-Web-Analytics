@@ -21,7 +21,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * Visitors Report Controller
+ * Entry Exits Content Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -32,36 +32,37 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportVisitorsController extends owa_reportController {
-	
-	function owa_reportVisitorsController($params) {
+class owa_reportEntryExitsController extends owa_reportController {
+
+	function owa_reportEntryExitsController($params) {
 		
 		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		//print_r($this->config);
-		
-		return;
+		$this->priviledge_level = 'admin';
+	
 	}
 	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
-		
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 		
-		$data['top_visitors_data'] = $api->getMetric('base.topVisitors', array(
+		$data = array();
+		$data['params'] = $this->params;
+		
+		// Fetch Metrics
+
+		$data['entry_documents'] = $api->getMetric('base.topEntryPages', array(
 			
-			'limit'				=> '10',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
+			'constraints'		=> array('site_id'	=> $this->params['site_id']),
+			'order'				=> 'DESC',
+			'limit'				=> 20
 		));
+		
+		$data['exit_documents'] = $api->getMetric('base.topExitPages', array(
 	
-		$data['browser_types'] = $api->getMetric('base.sessionBrowserTypes', array(
-				
-			'constraints'	=> array('site_id'		=> $this->params['site_id'])
-			
+			'constraints'		=> array('site_id'	=> $this->params['site_id']),
+			'order'				=> 'DESC',
+			'limit'				=> 20
 		));
 		
 		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
@@ -71,18 +72,21 @@ class owa_reportVisitorsController extends owa_reportController {
 		
 		));
 		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitors';
 		
+		$data['view'] = 'base.report';
+		$data['subview'] = 'base.reportEntryExits';
+		$data['view_method'] = 'delegate';
+		$data['nav_tab'] = 'base.reportContent';
+			
 		return $data;
+		
 		
 	}
 	
 }
 
 /**
- * Visitors Report View
+ * Entry Exits Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -93,33 +97,29 @@ class owa_reportVisitorsController extends owa_reportController {
  * @since		owa 1.0.0
  */
 
-class owa_reportVisitorsView extends owa_view {
+class owa_reportEntryExitsView extends owa_view {
 	
-	function owa_reportVisitorsView() {
+	function owa_reportEntryExitsView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'viewer';
+		$this->priviledge_level = 'guest';
 		
 		return;
 	}
 	
 	function construct($data) {
 		
-		// Assign data to templates
+		// Assign Data to templates
 		
-		$this->body->set_template('report_visitors.tpl');
-	
-		$this->body->set('headline', 'Visitors');
-			$this->body->set('top_visitors', $data['top_visitors_data']);
-		$this->body->set('browser_types', $data['browser_types']);
+		$this->body->set('headline', 'Entry & Exit Pages');
+		$this->body->set('top_entry_pages', $data['entry_documents']);
+		$this->body->set('top_exit_pages', $data['exit_documents']);
 		$this->body->set('summary_stats', $data['summary_stats_data']);
-		//$this->body->set('sub_nav', $data['sub_nav']);
+		$this->body->set_template('report_entry_exits.tpl');
 		
 		return;
 	}
-	
-	
-}
 
+}
 
 ?>

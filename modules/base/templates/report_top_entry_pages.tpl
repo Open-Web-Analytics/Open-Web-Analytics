@@ -1,21 +1,22 @@
 <? if (!empty($top_entry_pages)):?>
-<table width="100%">
+<table class="data_table">
 	<tr>
-		<th scope="col">PageTitle</th>
-		<th scope="col">Views</th>
+		<td class="col_item_label">Entry Page</td>
+		<td class="col_label">Page Views</td>
 	</tr>
 				
 	<?php foreach($top_entry_pages as $page): ?>
 				
 	<TR>
-		<TD>
-			<a href="<?=$this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $page['id']), true);?>"><?=$page['page_title'];?></a> (<?=$page['page_type'];?>) </TD>
-		<TD><?=$page['count']?></TD>
+		<TD class="item_cell">
+			<a href="<?=$this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $page['id']), true);?>"><?=$page['page_title'];?></a> (<?=$page['page_type'];?>)
+		</TD>
+		<TD class="data_cell"><?=$page['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>
 
 	</table>
 <?else:?>
-	There are no Page Views for this time period.
+	<div class="no_data_msg">There are no Page Views for this time period.</div>
 <?endif;?>

@@ -1,4 +1,4 @@
-<h2><?=$headline;?></h2>
+<? include('report_header.tpl');?>
 
 <P><a href="<?=$this->makeLink(array('do' => 'base.kmlVisitsGeolocation'), true, $this->config['action_url']);?>">View in Google Earth</a></P>
 
@@ -9,20 +9,19 @@
 <table>
 	<tr>
         <td valign="top">
-           <fieldset>
-				<legend>Visitors</legend>
-				<div id="side_bar"></div>
-           </fieldset>
-        </td>
-        
-        <td valign="top">
-			<div id="map" style="width: 900px; height: 600px"></div>
+			<div id="map" style="width: 600px; height: 480px"></div>
 			<noscript>
 				<b>JavaScript must be enabled in order for you to use Google Maps.</b> 
       			However, it seems JavaScript is either disabled or not supported by your browser. 
       			To view Google Maps, enable JavaScript by changing your browser options, and then 
       			try again.
 			</noscript>
+        </td>
+        <td valign="top">
+           <fieldset>
+				<legend>Visitors</legend>
+				<div id="side_bar"></div>
+           </fieldset>
         </td>
 	</tr>
 </table>

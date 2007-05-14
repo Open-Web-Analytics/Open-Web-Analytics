@@ -1,25 +1,24 @@
 <? if (!empty($browser_types)):?>
-<table width="100%" border="0">
+<table class="data_table">
 	<tr>
 		
-		<th colspan="2" scope="col">Browser</th>
-		<th scope="col">Visits</th>
+		<td class="col_item_label">Browser Type</td>
+		<td class="col_label">Visits</td>
 	</tr>
 				
 	<?php foreach($browser_types as $browser =>$type): ?>
 		
 	<TR>
-		<TD class="tiny_icon">
-			<?=$this->choose_browser_icon($type['browser_type']);?>
-		</TD>
-		<TD>
+		
+		<TD class="item_cell">
+			<?=$this->choose_browser_icon($type['browser_type']);?> &nbsp;
 		<? if (empty($type['browser_type'])):?>
 			Unknown Browser
 		<? else:?>
 			 <?=$type['browser_type'];?>
 		<?endif;?>
 		</TD>
-		<TD>
+		<TD class="data_cell">
 			<?=$type['count'];?>
 		</TD>		
 	</TR>

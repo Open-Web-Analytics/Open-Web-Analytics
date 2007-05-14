@@ -1,19 +1,22 @@
-<? if (!empty($summary_stats)):?>
-<table>
+<table id="summary_stats">
 	<TR>
-		<TH scope="row">Page Views:</TH>	
-		<TD><?=$summary_stats['page_views'];?></TD>
-	</TR>
-	<TR>
-		<TH scope="row">Visits:</TH>
-		<TD><?=$summary_stats['sessions'];?></TD>
-	</TR>
-	<TR>
-		<TH scope="row">Unique Visitors:</TH>
-		<TD><?=$summary_stats['unique_visitors'];?></TD>
-	</TR>
-</table>	
-<?else:?>
-	There are no statistics for this time period.
-<?endif;?>
+		<TD><span class="inline_h2"><?=$detail['page_title'];?></span> (<?=$detail['page_type'];?>)<BR>
+		<a href="<?=$detail['url'];?>"><?=$detail['url'];?></a>
+		</TD>
+		
+		<TD>
+			Page Views<BR>
+			<span class="large_number"><?=$summary_stats['page_views'];?></span>
+		</TD>
+	
+		<TD>
+			Visits<BR>
+			<span class="large_number"><?=$summary_stats['sessions'];?></span>
+		</TD>
 
+		<TD>
+			Unique Visitors<BR>
+			<span class="large_number"><?=$summary_stats['unique_visitors'];?></span>
+		</TD>
+	</TR>
+</table>

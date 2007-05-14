@@ -64,6 +64,15 @@ class owa_reportClicksController extends owa_reportController {
 		
 		));
 		
+		$data['summary_stats_data'] = $api->getMetric('base.requestCounts', array(
+	
+			'constraints'		=> array(
+				'site_id'		=> $this->params['site_id'],
+				'document_id' 	=> $this->params['document_id']
+				)
+		
+		));
+		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportClicks';
 		$data['view_method'] = 'delegate';
@@ -112,6 +121,7 @@ class owa_reportClicksView extends owa_view {
 		$this->body->set('detail', $data['document_details']);
 		
 		$this->body->set('document_id', $data['document_id']);
+		$this->body->set('summary_stats', $data['summary_stats_data']);
 		$this->body->set('params', $data['params']);	
 		return;
 	}

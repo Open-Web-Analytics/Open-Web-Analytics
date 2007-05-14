@@ -37,7 +37,7 @@ class owa_reportContentController extends owa_reportController {
 	function owa_reportContentController($params) {
 		
 		$this->owa_reportController($params);
-		$this->priviledge_level = 'admin';
+		$this->priviledge_level = 'viewer';
 	
 	}
 	
@@ -51,18 +51,11 @@ class owa_reportContentController extends owa_reportController {
 		
 		// Fetch Metrics
 
-		$data['entry_documents'] = $api->getMetric('base.topEntryPages', array(
-			
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'order'				=> 'DESC',
-			'limit'				=> 20
-		));
+		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
 		
-		$data['exit_documents'] = $api->getMetric('base.topExitPages', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'order'				=> 'DESC',
-			'limit'				=> 20
+			'result_format'		=> 'single_row',
+			'constraints'		=> array('site_id'	=> $this->params['site_id'])
+		
 		));
 		
 		$data['top_pages_data'] = $api->getMetric('base.topPages', array(
@@ -74,6 +67,7 @@ class owa_reportContentController extends owa_reportController {
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportContent';
 		$data['view_method'] = 'delegate';
+		$data['nav_tab'] = 'base.reportContent';
 			
 		return $data;
 		
@@ -108,10 +102,10 @@ class owa_reportContentView extends owa_view {
 		
 		// Assign Data to templates
 		
-		$this->body->set('headline', 'Content Report');
+		$this->body->set('headline', 'Content');
 		$this->body->set('top_pages', $data['top_pages_data']);
-		$this->body->set('top_entry_pages', $data['entry_documents']);
-		$this->body->set('top_exit_pages', $data['exit_documents']);
+		$this->body->set('summary_stats', $data['summary_stats_data']);
+	
 		
 		$this->body->set_template('report_content.tpl');
 		

@@ -99,6 +99,4 @@ class owa_graphFeedReaderTypesView extends owa_abstractJpGraphView  {
 	
 }
 
-
-
 ?>

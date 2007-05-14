@@ -75,7 +75,7 @@ class owa_graphDashboardTrendView extends owa_abstractJpGraphView  {
 			
 			$this->graph = owa_coreAPI::graphFactory('base.jpBarAreaGraph');
 		
-			$this->graph->params['width'] = 700;
+			$this->graph->params['width'] = 900;
 			$this->graph->params['height'] = 240;
 			$this->graph->params['y2_title'] = "PageViews";
 			$this->graph->params['y1_title'] = "Visits";
@@ -83,7 +83,7 @@ class owa_graphDashboardTrendView extends owa_abstractJpGraphView  {
 			$this->graph->params['data']['y1'] = $new_result['sessions'];	
 			$this->graph->params['data']['x'] = $this->makeDateArray($result, "n/j");
 				
-			$this->graph->params['graph_title'] = "Page Views & Visits for " . $this->graph->get_period_label($data['period']);
+			//$this->graph->params['graph_title'] = "Page Views & Visits for " . $this->graph->get_period_label($data['period']);
 						
 		endif;
 		

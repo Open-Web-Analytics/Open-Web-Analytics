@@ -1,34 +1,34 @@
 <? if (empty($feed_trend)):?>
 There are no metrics yet for this time period.
 <?else:?>
-<table width="100%">
+<table class="data_table">
 	<tr>
 	<? if ($period == 'this_year'): ?>		
-		<th scope="col">Month</th>
-		<th scope="col">Year</th>
+		<td class="col_item_label">Month</td>
+		<td class="col_item_label">Year</td>
 	<? else: ?>
-		<th scope="col">Month</th>
-		<th scope="col">Day</th>
-		<th scope="col">Year</th>
+		<td class="col_item_label">Month</td>
+		<td class="col_item_label">Day</td>
+		<td class="col_item_label">Year</td>
 	<? endif; ?>	
-		<th scope="col">Feed Fetches</th>
-		<th scope="col">Unique Readers</th>
+		<td class="col_label">Feed Fetches</td>
+		<td class="col_label">Unique Readers</td>
 
 	</tr>
 	<?php foreach($feed_trend as $row): ?>	
 	<TR>
 	<? if ($period == 'this_year'): ?>
-		<TD>
+		<TD class="item_cell">
 		<?=$this->get_month_label($row['month']);?>
-		<TD><?=$row['year'];?></TD>
+		<TD class="item_cell"><?=$row['year'];?></TD>
 		</TD>
 	<? else: ?>
-		<TD><?=$this->get_month_label($row['month']);?></TD>		
-		<TD><?=$row['day'];?></TD>
-		<TD><?=$row['year'];?></TD>
+		<TD class="item_cell"><?=$this->get_month_label($row['month']);?></TD>		
+		<TD class="item_cell"><?=$row['day'];?></TD>
+		<TD class="item_cell"><?=$row['year'];?></TD>
 	<? endif; ?>
-		<TD><?=$row['fetch_count'];?></TD>
-		<TD><?=$row['reader_count'];?></TD>
+		<TD class="data_cell"><?=$row['fetch_count'];?></TD>
+		<TD class="data_cell"><?=$row['reader_count'];?></TD>
 	</TR>		
    <?php endforeach; ?>
 </table>

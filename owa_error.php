@@ -73,34 +73,49 @@ class owa_error {
 					//$config['debug_to_screen'] = true;
 					//$window = owa_error::make_window_logger();
 					$logger = owa_error::make_file_logger();
-					$file_mask = PEAR_LOG_ALL;
-					$logger->setMask($file_mask);
 					
+					if (!empty($logger)):	
+						$file_mask = PEAR_LOG_ALL;
+						$logger->setMask($file_mask);
+					endif;
 					//$logger = &Log::singleton('composite');
 					//$logger->addChild($window);
 					//$logger->addChild($file);
 					break;
 					
 				case "async_development":
-					$file = owa_error::make_file_logger();
-					$console = owa_error::make_console_logger();
+				
 					$logger = &Log::singleton('composite');
-					$logger->addChild($file);
+				
+					$file = owa_error::make_file_logger();
+					
+					if (!empty($file)):	
+						$logger->addChild($file);
+					endif;
+					
+					$console = owa_error::make_console_logger();
 					$logger->addChild($console);
+					
 					break;
 					
 				case "production":
 					
-					$file = owa_error::make_file_logger();
-					$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG) ^ Log::MASK(PEAR_LOG_INFO);
-					$file->setMask($file_mask);
+					$logger = &Log::singleton('composite');
+					
 					$mail = owa_error::make_mail_logger();
 					$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 					//$mail_mask = PEAR_LOG_ALL;
 					$mail->setMask($mail_mask);
-					$logger = &Log::singleton('composite');
 					$logger->addChild($mail);
-					$logger->addChild($file);
+					
+					$file = owa_error::make_file_logger();
+					
+					if (!empty($file)):	
+						$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG) ^ Log::MASK(PEAR_LOG_INFO);
+						$file->setMask($file_mask);
+						$logger->addChild($file);
+					endif;
+					
 					break;
 					
 				default:
@@ -203,9 +218,16 @@ class owa_error {
 	 */
 	function make_file_logger() {
 		
-		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-		$logger = &Log::singleton('file', $this->config['error_log_file'], posix_getpid(), $conf);
-		return $logger;
+		$handle = @fopen($this->config['error_log_file'], "a");
+		
+		if ($handle != false):
+			fclose($handle);
+			$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
+			$logger = &Log::singleton('file', $this->config['error_log_file'], posix_getpid(), $conf);
+			return $logger;
+		else:
+			return;
+		endif;
 	}
 	
 	/**

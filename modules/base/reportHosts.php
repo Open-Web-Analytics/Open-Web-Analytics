@@ -21,7 +21,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * Visitors Report Controller
+ * Visitor Hosts Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -32,14 +32,12 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportVisitorsController extends owa_reportController {
+class owa_reportHostsController extends owa_reportController {
 	
-	function owa_reportVisitorsController($params) {
+	function owa_reportHostsController($params) {
 		
 		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
-		
-		//print_r($this->config);
 		
 		return;
 	}
@@ -47,42 +45,40 @@ class owa_reportVisitorsController extends owa_reportController {
 	function action() {
 		
 		$data = array();
+		
 		$data['params'] = $this->params;
 		
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 		
-		$data['top_visitors_data'] = $api->getMetric('base.topVisitors', array(
-			
-			'limit'				=> '10',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
+	
+		$data['top_hosts'] = $api->getMetric('base.topHosts', array(
+	
+			'constraints'		=> array('site_id'		=> $this->params['site_id']),
+			'limit'				=> 30
+		
 		));
 	
-		$data['browser_types'] = $api->getMetric('base.sessionBrowserTypes', array(
-				
-			'constraints'	=> array('site_id'		=> $this->params['site_id'])
-			
-		));
-		
 		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
 		
 			'result_format'		=> 'single_row',
 			'constraints'		=> array('site_id'	=> $this->params['site_id'])
 		
 		));
-		
-		$data['nav_tab'] = 'base.reportVisitors';
+			
 		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitors';
+		$data['subview'] = 'base.reportHosts';
+		$data['view_method'] = 'delegate';
+		$data['nav_tab'] = 'base.reportVisitors';
 		
 		return $data;
 		
 	}
-	
 }
 
+
 /**
- * Visitors Report View
+ * Visitor Hosts Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -93,27 +89,24 @@ class owa_reportVisitorsController extends owa_reportController {
  * @since		owa 1.0.0
  */
 
-class owa_reportVisitorsView extends owa_view {
+class owa_reportHostsView extends owa_view {
 	
-	function owa_reportVisitorsView() {
+	function owa_reportHostsView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'viewer';
+		$this->priviledge_level = 'guest';
 		
 		return;
 	}
 	
 	function construct($data) {
 		
-		// Assign data to templates
+		// Assign Data to templates
 		
-		$this->body->set_template('report_visitors.tpl');
-	
-		$this->body->set('headline', 'Visitors');
-			$this->body->set('top_visitors', $data['top_visitors_data']);
-		$this->body->set('browser_types', $data['browser_types']);
+		$this->body->set('headline', 'Domains');
+		$this->body->set('domains', $data['top_hosts']);
 		$this->body->set('summary_stats', $data['summary_stats_data']);
-		//$this->body->set('sub_nav', $data['sub_nav']);
+		$this->body->set_template('report_hosts.tpl');
 		
 		return;
 	}

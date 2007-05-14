@@ -1,16 +1,16 @@
 <? if (!empty($top_referers)):?>
-	<table width="100%">
+	<table class="data_table">
 		<tr>
-			<th scope="col">Web Page Title</th>
-			<th scope="col">Visits</th>
+			<td class="col_item_label">Referring Web Page</td>
+			<td class="col_label">Visits</td>
 			
 		</tr>
 				
 	<?php foreach($top_referers as $referer): ?>
 
 		<TR>
-			<TD><a href="<?=$referer['url'];?>"><? if (!empty($referer['page_title'])):?><?=$this->truncate($referer['page_title'], 100, '...');?><?else:?><?=$this->truncate($referer['url'], 100, '...');?><? endif;?></a></TD>
-			<TD><?=$referer['count']?></TD>
+			<TD class="item_cell"><a href="<?=$referer['url'];?>"><? if (!empty($referer['page_title'])):?><?=$this->truncate($referer['page_title'], 100, '...');?><?else:?><?=$this->truncate($referer['url'], 100, '...');?><? endif;?></a></TD>
+			<TD class="data_cell"><?=$referer['count']?></TD>
 			
 		</TR>
 				
