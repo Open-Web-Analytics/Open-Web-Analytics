@@ -333,7 +333,8 @@
 			'mailer-smtpAuth'				=> '',
 			'mailer-username'				=> '',
 			'mailer-password'				=> '',
-			'cookie_domain'					=> $_SERVER['SERVER_NAME']
+			'cookie_domain'					=> $_SERVER['SERVER_NAME'],
+			'ws_timeout'					=> 10
 			
 			));
 			

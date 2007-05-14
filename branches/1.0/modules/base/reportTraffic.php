@@ -51,47 +51,6 @@ class owa_reportTrafficController extends owa_reportController {
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 		
-		$data['top_keywords'] = $api->getMetric('base.topReferingKeywords', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-		
-		$data['top_anchors'] = $api->getMetric('base.topReferingAnchors', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-	
-		$data['top_hosts'] = $api->getMetric('base.topHosts', array(
-	
-			'constraints'		=> array('site_id'		=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-	
-		$data['top_referers'] = $api->getMetric('base.topReferers', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'is_searchengine' => 0
-				),
-			'limit'				=> 30
-		
-		));
-	
-		$data['top_search_engines'] = $api->getMetric('base.topReferingHosts', array(
-		
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'is_searchengine' => 1	
-				),
-			'limit'				=> 30
-		
-		));
-		
 		$data['session_count'] = $api->getMetric('base.sessionsCount', array(
 			
 			'result_format'		=> 'single_row',
@@ -130,6 +89,7 @@ class owa_reportTrafficController extends owa_reportController {
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportTraffic';
 		$data['view_method'] = 'delegate';
+		$data['nav_tab'] = 'base.reportTraffic';
 		
 		return $data;
 		

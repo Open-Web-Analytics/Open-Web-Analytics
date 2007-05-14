@@ -6,14 +6,14 @@
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/dynifs.js';?>"></script>
 <script type="text/javascript" src="<?=$this->config['public_url'].'/js/wz_jsgraphics.js';?>"></script>
 
+
 <div class="special_wrap">
 
-<H2><?=$headline;?> for <?=$period_label;?><?=$date_label;?></h2> 
+<? include('report_header.tpl');?>
 
-<fieldset>
-	<legend>Document Details</legend>
-	<? include('report_document_detail.tpl');?>
-</fieldset>
+<? include('report_document_summary_stats.tpl');?>
+
+
 
 <P>
 <form>

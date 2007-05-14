@@ -108,17 +108,7 @@ class owa_reportDashboardController extends owa_reportController {
 			'order'				=>	'DESC'
 		));
 		
-		$data['top_visitors_data'] = $api->getMetric('base.topVisitors', array(
-			
-			'limit'				=> '10',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		));
-	
-		$data['browser_types'] = $api->getMetric('base.sessionBrowserTypes', array(
-				
-			'constraints'	=> array('site_id'		=> $this->params['site_id'])
-			
-		));
+		
 		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportDashboard';	
@@ -166,7 +156,8 @@ class owa_reportDashboardView extends owa_view {
 	
 		$this->body->set('headline', 'Analytics Dashboard');
 		
-		$this->body->set('top_visitors', $data['top_visitors_data']);
+		
+		$this->body->set('summary_stats', $data['summary_stats_data']);
 		
 		$this->body->set('config', $this->config);
 		
@@ -174,9 +165,7 @@ class owa_reportDashboardView extends owa_view {
 		
 		$this->body->set('core_metrics', $data['core_metrics_data']);
 		
-		$this->body->set('browser_types', $data['browser_types']);
-	
-		$this->body->set('summary_stats', $data['summary_stats_data']);
+		
 		
 		$this->body->set('visits', $data['latest_visits']);
 		

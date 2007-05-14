@@ -6,34 +6,23 @@
 
 </style>
 
-<h2><?=$headline;?>: <?=$period_label;?><?=$date_label;?></h2>
+<? include('report_header.tpl');?>
 
-<table width="100%">
+<div valign="top" id="trend_graph"><img src="<?=$this->graphLink(array('view' => 'base.graphFeedRequests', 'period' => 'last_thirty_days', 'site_id' => $data['site_id']));?>" /></div>
+
+<? include('report_feed_core_metrics.tpl');?>
+
+<table class="layout_container" width="100%">
 	<TR>
 		<TD valign="top">
-			<fieldset id="trends" class="graph">
-				<legend>30 Day Trend</legend>
-				<img src="<?=$this->graphLink(array('view' => 'base.graphFeedRequests', 'period' => 'last_thirty_days', 'site_id' => $data['site_id']));?>" />
-			</fieldset>
-			
-			<fieldset id="core_metrics">
-				<legend>Core Metrics</legend>
-				<? include('report_feed_core_metrics.tpl');?>
-			</fieldset>		
+						<img src="<?=$this->graphLink(array('view' => 'base.graphFeedReaderTypes'), true);?>">
 		</TD>
-		
 		<TD valign="top">
-			<fieldset id="" class="graph">
-				<legend>Feed Readers</legend>
-				<img src="<?=$this->graphLink(array('view' => 'base.graphFeedReaderTypes'), true);?>">
-			</fieldset>
-			
-			<fieldset id="" class="graph">
-				<legend>Feed Formats</legend>
-				<img src="<?=$this->graphLink(array('view' => 'base.graphFeedFormats'), true);?>">
-			</fieldset>
-			
+			<img src="<?=$this->graphLink(array('view' => 'base.graphFeedFormats'), true);?>">
 		</TD>
 	</TR>
 </table>
+	
+
+
 						

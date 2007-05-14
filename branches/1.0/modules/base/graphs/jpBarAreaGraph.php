@@ -60,7 +60,7 @@ class owa_jpBarAreaGraph extends owa_graph {
 		//$this->graph->img->SetAntiAliasing();
 		$this->graph->SetColor('white'); 
 		$this->graph->SetMarginColor('white'); 
-		$this->graph->SetFrame(true,'silver',1); 
+		$this->graph->SetFrame(false,'silver',1); 
 		$this->graph->SetScale("textlin");
 		//$this->graph->SetScale( 'datlin'); 
 		$this->graph->img->SetMargin(40,40,35,60);

@@ -1,15 +1,24 @@
+
+
+<? include('report_header.tpl');?>
+
+<P><span class="inline_h2">There were <?=$summary_stats['unique_visitors'];?> unique visitors of this web site.</span></p> 
+
+<? include('report_dashboard_summary_stats.tpl');?>
+
+
 <? if (!empty($domains)):?>
-<table width="100%">
+<table class="data_table">
 	<tr>
-		<th scope="col">Domain</th>
-		<th scope="col">Visits</th>
+		<td class="col_item_label">Domain</td>
+		<td class="col_label">Visits</td>
 	</tr>
 				
 	<?php foreach($domains as $domain): ?>
 		
 	<TR>
-		<TD><?=$domain['host'];?></td>
-		<TD><?=$domain['count']?></TD>
+		<TD class="item_cell"><?=$domain['host'];?></td>
+		<TD class="data_cell"><?=$domain['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>

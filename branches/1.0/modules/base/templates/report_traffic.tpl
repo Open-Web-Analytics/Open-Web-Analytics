@@ -1,65 +1,22 @@
-<style>
-	#summary_stats {width:370px;}
-	#hosts {width:px;}
-	#anchors {width:px;}
-	#keywords {width:px;}
-</style>
+<? include('report_header.tpl');?>
 
-<h2><?=$headline;?>: <?=$period_label;?><?=$date_label;?></h2>
+<P><span class="inline_h2">There were <?=$sessions['count'];?> visits from all sources.</span></p> 
 
-<table width="100%">
+<table width=100%">
 	<TR>
-		<TD valign="top" width:"370">
-			<fieldset id="summary_stats">
-				<legend>Summary</legend>	
-				<? include('report_traffic_summary_stats.tpl');?>
-			</fieldset>	
-			
-			<fieldset id="anchors">
-				<legend>Top Link Text</legend>	
-				<? include('report_anchors.tpl');?>
-			</fieldset>	
-			
-			<fieldset id="hosts">
-				<legend>Top Domains</legend>	
-				<? include('report_hosts.tpl');?>
-			</fieldset>	
-							
-		</TD>	
-	
+		<TD width="50%" valign="top"><? include('report_traffic_summary_stats.tpl');?></TD>
 		<TD valign="top">
+			<img src="<?=$this->graphLink(array('view' => 'base.graphVisitorSources'), true); ?>">
 		
-			<fieldset id="referers">
-				<legend>Traffic From Web Pages</legend>	
-				<? include('report_referers.tpl');?>
-			</fieldset>	
+			<div class="section_header inline_h2">Traffic Reports</div>
+			<P><span class="inline_h3">Search Engines</span> - See which search engines your visitors arecomming from.</P>
+			<P><span class="inline_h3">Keywords</span> - See what keywords your visitor are using to find your web site.</P>
+			<P><span class="inline_h3">Referring Web Sites</span> - See which web sites are linking to your web site.</P>
+			<P><span class="inline_h3">Inbound Link Text</span> - See what words Referring Web Sites use to describe your web site.</P>
 			
-			<fieldset id="search_engines">
-				<legend>Traffic From Search Engines</legend>	
-				<Table>
-					<TR>
-						<TD valign="top">	
-							<fieldset id="se_hosts">
-								<legend class="sub-legend">Top Search Engines</legend>	
-								<? include('report_se_hosts.tpl');?>	
-							</fieldset>	
-						</TD>
-						
-						<TD valign="top">
-						
-							<fieldset id="keywords">
-								<legend class="sub-legend">Top Keywords</legend>	
-								<? include('report_top_keywords.tpl');?>
-							</fieldset>	
-							
-						</TD>	
-						
-					</TR>
-				</Table>
-			</fieldset>
-			
+		
 		</TD>
 	</TR>
 </table>
-	
- 
+
+
