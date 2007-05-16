@@ -23,12 +23,23 @@ $owa_wp_version = owa_parse_version($wp_version);
 // check to see if OWA is installed
 $current_plugins = get_option('active_plugins');
 
-// Pass wordpress database configurations to OWA, which sets up it's own connection.
-define('OWA_DB_TYPE', 'mysql');
-define('OWA_DB_NAME', DB_NAME);
-define('OWA_DB_HOST', DB_HOST);
-define('OWA_DB_USER', DB_USER);
-define('OWA_DB_PASSWORD', DB_PASSWORD);
+// OWA DATABASE CONFIGURATION 
+// Will use Wordpress config unless there is a config file present.
+// OWA uses this to setup it's own DB connection seperate from the one
+// that Wordpress uses.
+
+$config_file = OWA_CONF_DIR.'owa-config.php';
+if (file_exists($config_file)):
+	// do nothing as the caller class will define the DB config constants later.
+	;
+else:
+	// use the Wordpress configuration
+	define('OWA_DB_TYPE', 'mysql');
+	define('OWA_DB_NAME', DB_NAME);
+	define('OWA_DB_HOST', DB_HOST);
+	define('OWA_DB_USER', DB_USER);
+	define('OWA_DB_PASSWORD', DB_PASSWORD);
+endif;
 
 // Public folder URI
 define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
