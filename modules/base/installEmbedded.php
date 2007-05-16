@@ -50,7 +50,7 @@ class owa_installEmbeddedController extends owa_controller {
 		$status = $api->modules['base']->install();
 		    
 		// Check to see if default site already exists
-		$this->e->notice('Wordpress install: checking for existance of default site.');
+		$this->e->notice('Embedded install: checking for existance of default site.');
 		$site = owa_coreAPI::entityFactory('base.site');
 		$site->getByColumn('site_id', $this->params['site_id']);
 		$id = $site->get('id');
@@ -63,9 +63,9 @@ class owa_installEmbeddedController extends owa_controller {
 			$site->set('domain', $this->params['domain']);
 			$site->set('site_family', $this->params['site_family']);
 			$site->create();
-			$this->e->notice('Wordpress install: created default site.');
+			$this->e->notice('Embedded install: created default site.');
 		else:
-			$this->e->notice(sprintf("Wordpress install:  default site already exists (id = %s). nothing to do here.", $id));
+			$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
 		endif;
 		
 		return true;		
