@@ -19,7 +19,7 @@ if it is to be tracked/reported seperately.</P>
 		<TD>
 			<?=$value['name'];?><BR>
 			<span class="info_text"><?=$value['description'];?></span><BR>
-			<span class="info_text"><a href="http://<?=$value['domain'];?>"><?=$value['domain'];?></a></span>
+			<span class="info_text"><a href="<?=$value['domain'];?>"><?=$value['domain'];?></a></span>
 		</TD>
 		
 		<TD><?=$value['site_family'];?></TD>
