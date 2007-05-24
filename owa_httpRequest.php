@@ -96,6 +96,8 @@ class owa_http extends Snoopy {
 		
 		$this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => strip_tags($matches[0]));
 		
+		$this->e->debug('Anchor info: '.print_r($this->anchor_info, true));
+		
 		return;
 	}
 	
