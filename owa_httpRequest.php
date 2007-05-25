@@ -89,7 +89,7 @@ class owa_http extends Snoopy {
 		
 		$escaped_link = str_replace(array("/", "?"), array("\/", "\?"), $link);
 		$pattern = '/<a[^>]*href=\"'.$escaped_link.'\"[^>]*>(.*?)<\/a>/';
-		
+		$this->e->debug('pattern: '.$pattern);
 		$search = preg_match($pattern, $this->results, $matches);
 		
 		//print $pattern;
