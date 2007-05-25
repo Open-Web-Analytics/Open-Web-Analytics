@@ -7,7 +7,7 @@
 
 <? include('report_dashboard_summary_stats.tpl');?>
 				
-<? if (!empty($keywords)):?>
+<? if (!empty($anchors)):?>
 <table class="data_table">
 	<tr>
 		<td class="col_item_label">Link Text</td>
