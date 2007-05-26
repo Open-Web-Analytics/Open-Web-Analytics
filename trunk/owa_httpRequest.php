@@ -190,9 +190,9 @@ class owa_http extends Snoopy {
 	}
 	
 	 function strip_selected_tags($str, $tags = array(), $stripContent = false) {
-       //preg_match_all("/<([^>]+)>/i",$tags,$allTags,PREG_PATTERN_ORDER);
+
        foreach ($tags as $k => $tag){
-       	$this->e->debug('striping tag: '.$tag);
+       
            if ($stripContent == true) {
            		$pattern = sprintf('#(<%s.*?>)(.*?)(<\/%s.*?>)#is', preg_quote($tag), preg_quote($tag));
                $str = preg_replace($pattern,"",$str);
