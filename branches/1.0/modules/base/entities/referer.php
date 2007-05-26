@@ -39,7 +39,7 @@ class owa_referer extends owa_entity {
 	var $page_title; // varchar(255),
 	var $snippet; // TEXT,
 	var $is_searchengine; // tinyint(1),
-	//var $source; // varchar
+
 	
 	function owa_referer() {
 		

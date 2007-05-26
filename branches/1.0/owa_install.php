@@ -82,7 +82,8 @@ class owa_install extends owa_base{
 		
 		foreach ($this->tables as $table) {
 			$this->e->notice('testing for existance of schema.');
-			$check = $this->db->get_row(sprintf("show tables like '%s'", $table));
+			$check = $this->db->get_results(sprintf("show tables like '%s'", $table));
+			$this->e->notice(print_r($check, true));
 			
 			if (!empty($check)):
 				$this->e->notice(sprintf("Schema Installation aborted. Table '%s' already exists.", $table));

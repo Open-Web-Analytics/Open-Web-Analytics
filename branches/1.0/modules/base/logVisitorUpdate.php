@@ -49,16 +49,26 @@ class owa_logVisitorUpdateController extends owa_controller {
 		
 		$v->getByPk('id', $this->params['visitor_id']);
 		
-		$v->set('user_name', $this->params['user_name']);
-		$v->set('user_email', $this->params['user_email']);
+		if (!empty($this->params['user_name'])):
+			$v->set('user_name', $this->params['user_name']);
+		endif;
+		if (!empty($this->params['user_email'])):
+			$v->set('user_email', $this->params['user_email']);
+		endif;
 		$v->set('last_session_id', $this->params['session_id']);
 		$v->set('last_session_year', $this->params['year']);
 		$v->set('last_session_month', $this->params['month']);
 		$v->set('last_session_day', $this->params['day']);
 		$v->set('last_session_dayofyear', $this->params['dayofyear']);		
 		
-		$v->update();
-			
+		$id = $v->get('id');
+		
+		if (!empty($id)):
+			$v->update();
+		else:
+			$v->create();
+		endif;
+		
 		return;
 			
 	}

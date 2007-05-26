@@ -71,7 +71,21 @@ class owa_processEventController extends owa_controller {
 		
 	}
 	
+	/**
+	 * Must be called before all other event property setting functions
+	 */
 	function pre() {
+		
+		// set site id if not already set . Needed for GUID generation of event
+		if (empty($this->params['caller']['site_id'])):
+			$this->event->properties['site_id'] = $this->config['site_id'];
+		else:
+			$this->event->properties['site_id'] = $this->params['caller']['site_id'];
+		endif;
+		
+		// re-Set GUID for event so that it is truely unique taking into account the site_id that was just set
+		$this->event->guid = $this->event->set_guid();
+		$this->event->properties['guid'] = $this->event->guid;
 		
 		// Map standard params to standard event property names
 		$this->event->properties['inbound_visitor_id'] = $this->params[$this->config['visitor_param']];
@@ -109,11 +123,6 @@ class owa_processEventController extends owa_controller {
 		//Clean Query Strings
 		if ($this->config['clean_query_string'] == true):
 			$this->event->cleanQueryStrings();
-		endif;
-		
-		// set site id if not already set
-		if (empty($this->params['caller']['site_id'])):
-			$this->event->properties['site_id'] = $this->config['site_id'];
 		endif;
 		
 		return;	

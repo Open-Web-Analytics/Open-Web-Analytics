@@ -49,24 +49,26 @@ class owa_installEmbeddedController extends owa_controller {
 		// install schema
 		$status = $api->modules['base']->install();
 		    
-		// insert default site
-		if ($status == true):   
-		    
-			$site = owa_coreAPI::entityFactory('base.site');
+		// Check to see if default site already exists
+		$this->e->notice('Embedded install: checking for existance of default site.');
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->getByColumn('site_id', $this->params['site_id']);
+		$id = $site->get('id');
+		
+		if(empty($id)):
+		    // Create default site
 			$site->set('site_id', $this->params['site_id']);
 			$site->set('name', $this->params['name']);
 			$site->set('description', $this->params['description']);
 			$site->set('domain', $this->params['domain']);
 			$site->set('site_family', $this->params['site_family']);
-					
 			$site->create();
-			
-				
-			return true;
+			$this->e->notice('Embedded install: created default site.');
 		else:
-			// owa already installed or some other problem
-	    	return false;
-		endif;	
+			$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
+		endif;
+		
+		return true;		
 			
 	}
 	

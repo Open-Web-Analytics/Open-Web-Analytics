@@ -87,14 +87,34 @@ class owa_http extends Snoopy {
 	 */
 	function extract_anchor($link) {
 		
-		$escaped_link = str_replace(array("/", "?"), array("\/", "\?"), $link);
-		$pattern = '/<a[^>]*href=\"'.$escaped_link.'\"[^>]*>(.*?)<\/a>/';
+		$matches = '';
+		$regex = '/<a[^>]*href=\"%s\"[^>]*>(.*?)<\/a>/i';
 		
+		//$escaped_link = str_replace(array("/", "?"), array("\/", "\?"), $link);
+
+		$pattern = trim(sprintf($regex, preg_quote($link, '/')));
 		$search = preg_match($pattern, $this->results, $matches);
+		//$this->e->debug('pattern: '.$pattern);
+		//$this->e->debug('link: '.$link);
 		
-		//print $pattern;
 		
-		$this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => strip_tags($matches[0]));
+		if (empty($matches)):
+			if (substr($link, -1) === '/'):
+				$link = substr($link, 0, -1);
+				$pattern = trim(sprintf($regex, preg_quote($link, '/')));
+				$search = preg_match($pattern, $this->results, $matches);
+				//$this->e->debug('pattern: '.$pattern);
+				//$this->e->debug('link: '.$link);
+			endif;
+		endif;
+		
+		$this->e->debug('ref search: '.$search);
+		//$this->e->debug('ref matches: '.print_r($this->results, true));
+		//$this->e->debug('ref matches: '.print_r($matches, true));
+				
+		$this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => owa_lib::inputFilter($matches[0]));
+		
+		$this->e->debug('Anchor info: '.print_r($this->anchor_info, true));
 		
 		return;
 	}
@@ -116,16 +136,18 @@ class owa_http extends Snoopy {
 		if(!empty($this->anchor_info['anchor_tag'])):
 			
 			// drop certain HTML entitities and their content
-			$this->results = $this->strip_selected_tags($this->results, "<title><head><script><object>", true);
+			$this->results = $this->strip_selected_tags($this->results, array('title', 'head', 'script', 'object', 'style', 'meta', 'link', 'rdf:'), true);
+			
+			//$this->e->debug('Refering page content after certain html entities were dropped: '.$this->results);
 		
 			// strip html from doc
-			$nohtml = strip_tags(owa_lib::inputFilter($this->results));
+			$nohtml = $this->results;
 			
 			// calc len of the anchor text
-			$atext_len = strlen($this->anchor_info['anchor_text']);
+			$atext_len = strlen($this->anchor_info['anchor_tag']);
 			
 			// find position within document of the anchor text
-			$start = strpos($nohtml, $this->anchor_info['anchor_text']);
+			$start = strpos($nohtml, $this->anchor_info['anchor_tag']);
 			
 			if ($start < $this->snip_len):
 				$part1_start_pos = 0;
@@ -138,13 +160,15 @@ class owa_http extends Snoopy {
 			
 			// Create first segment of snippet
 			$part1 = trim(substr($nohtml, $part1_start_pos, $part1_snip_len));
-			//$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
-			
+			$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
+			$part1 = owa_lib::inputFilter($part1);
 			// Create second segment of snippet
 			$part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len));
-			
+			$part2 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part2);
+			$part2 = owa_lib::inputFilter($part2);
+
 			// Put humpty dumpy back together again and create actual snippet
-			$snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.strip_tags($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
+			$snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.owa_lib::inputFilter($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
 		
 		else:
 		
@@ -165,14 +189,17 @@ class owa_http extends Snoopy {
        	return $m[3];
 	}
 	
-	 function strip_selected_tags($str, $tags = "", $stripContent = false) {
-       preg_match_all("/<([^>]+)>/i",$tags,$allTags,PREG_PATTERN_ORDER);
-       foreach ($allTags[1] as $tag){
-           if ($stripContent) {
-               $str = preg_replace("/<".$tag."[^>]*>.*<\/".$tag.">/iU","",$str);
+	 function strip_selected_tags($str, $tags = array(), $stripContent = false) {
+
+       foreach ($tags as $k => $tag){
+       
+           if ($stripContent == true) {
+           		$pattern = sprintf('#(<%s.*?>)(.*?)(<\/%s.*?>)#is', preg_quote($tag), preg_quote($tag));
+               $str = preg_replace($pattern,"",$str);
            }
-           $str = preg_replace("/<\/?".$tag."[^>]*>/iU","",$str);
+           $str = preg_replace($pattern, ${2},$str);
        }
+       
        return $str;
    }
 	
