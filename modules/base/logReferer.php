@@ -84,6 +84,9 @@ class owa_logRefererController extends owa_controller {
 				$crawler = new owa_http;
 				$crawler->fetch($this->params['HTTP_REFERER']);
 				
+				//Extract Title
+				$r->set('page_title', $crawler->extract_title());
+				
 				$se = $r->get('is_searchengine');
 				//Extract anchortext and page snippet but not if it's a search engine...
 				if ($se != true):
@@ -93,8 +96,7 @@ class owa_logRefererController extends owa_controller {
 					//$this->e->debug('Anchor text is: '. $this->anchor_text);
 				endif;
 					
-				//Extract Title
-				$r->set('page_title', $crawler->extract_title());
+				
 					
 				//write to DB
 				$r->update();
