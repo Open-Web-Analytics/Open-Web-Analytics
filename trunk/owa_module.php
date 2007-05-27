@@ -275,7 +275,7 @@ class owa_module extends owa_base {
 		
 		$table_errors = '';
 		
-		if (!empty($tables_to_install):
+		if (!empty($tables_to_install)):
 		
 			foreach ($tables_to_install as $table) {
 			
