@@ -46,29 +46,61 @@ class owa_installEmbeddedController extends owa_controller {
 		
 	    $api = &owa_coreAPI::singleton();
 	    
+	    $this->e->notice('starting Embedded install');
 		// install schema
 		$status = $api->modules['base']->install();
+		
+		// schema was installed successfully
+		if ($status == true):
 		    
-		// Check to see if default site already exists
-		$this->e->notice('Embedded install: checking for existance of default site.');
-		$site = owa_coreAPI::entityFactory('base.site');
-		$site->getByColumn('site_id', $this->params['site_id']);
-		$id = $site->get('id');
+			// Check to see if default site already exists
+			$this->e->notice('Embedded install: checking for existance of default site.');
+			$site = owa_coreAPI::entityFactory('base.site');
+			$site->getByColumn('site_id', $this->params['site_id']);
+			$id = $site->get('id');
 		
-		if(empty($id)):
-		    // Create default site
-			$site->set('site_id', $this->params['site_id']);
-			$site->set('name', $this->params['name']);
-			$site->set('description', $this->params['description']);
-			$site->set('domain', $this->params['domain']);
-			$site->set('site_family', $this->params['site_family']);
-			$site->create();
-			$this->e->notice('Embedded install: created default site.');
+			if(empty($id)):
+		    	// Create default site
+				$site->set('site_id', $this->params['site_id']);
+				$site->set('name', $this->params['name']);
+				$site->set('description', $this->params['description']);
+				$site->set('domain', $this->params['domain']);
+				$site->set('site_family', $this->params['site_family']);
+				$site_status = $site->create();
+			
+				if ($site_status == true):
+					$this->e->notice('Embedded install: created default site.');
+				else:
+					$this->e->notice('Embedded install: creation of default site failed.');
+				endif;
+			else:
+				$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
+			endif;
+			
+			
+			$config = owa_coreAPI::entityFactory('base.configuration');
+			$config->getByPk('id', $this->config['configuration_id']);
+			$settings = unserialize($config->get('settings'));
+			$settings['base']['install_complete'] = true;
+			$config->set('settings', serialize($settings));
+			
+			$id = $config->get('id');
+			
+			if (!empty($id)):
+				$status = $config->update();
+			else:
+				$config->set('id', 1);
+				$status = $config->create();
+			endif;
+			
+			$this->e->notice('Creating config: '. print($status));
+
+			return true;
+		
+		// schema was not installed successfully
 		else:
-			$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
-		endif;
-		
-		return true;		
+			return false;
+		endif;		
 			
 	}
 	

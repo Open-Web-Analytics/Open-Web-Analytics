@@ -270,32 +270,36 @@ class owa_module extends owa_base {
 	function install() {
 		
 		$obj = $this->installerFactory();
+		$this->e->notice('starting install');
+		$tables_to_install = $obj->checkForSchema();
 		
-		$check = $obj->checkForSchema();
+		$table_errors = '';
 		
-		if ($check != true):
+		if (!empty($tables_to_install)):
 		
-			foreach ($obj->tables as $table) {
+			foreach ($tables_to_install as $table) {
 			
 				$status = $obj->create($table);
 				
 				if ($status == true):
 					$this->e->notice(sprintf("Created %s table.", $table));
 				else:
-					$this->e->err(sprintf("Creation of %s table failed. Aborting Installation...", $table));
-					return $status;
+					$this->e->err(sprintf("Creation of %s table failed.", $table));
+					$table_errors = 'error';
 				endif;
 				
 			}
 			
-			// save schema version to configuration
-			$this->c->set('base', 'schema_version', $obj->version);
-	
+		endif;
+		
+		if ($table_errors != 'error'):
+			
+			// save schema version to configuration THIS NEEDS TO BE FIXED.
+			$this->c->set($this->name, 'schema_version', $obj->version);
 			// activate module and persist configuration changes 
 			$this->activate();
 	
 			$this->e->notice(sprintf("Schema version %s installation complete.", $obj->version));
-			
 			return true;
 		else:
 			return false;

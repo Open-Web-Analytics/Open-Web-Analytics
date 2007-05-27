@@ -87,7 +87,7 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 		// Control logic
 			
 		// validations
-		
+	if ($this->config['install_complete'] != true):	
 		if (empty($this->params['domain'])):
 			$data['view_method'] = 'delegate'; // Delegate, redirect
 			$data['view'] = 'base.install';
@@ -127,7 +127,11 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 			$data['site'] = $this->params;	
 			
 		endif;
-			
+	else:
+		$data['view_method'] = 'delegate';
+		$data['view'] = 'base.install';
+		$data['subview'] = 'base.installStart';	
+	endif;	
 		return $data;
 	}
 	
