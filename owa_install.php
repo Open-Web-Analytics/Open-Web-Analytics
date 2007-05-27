@@ -85,18 +85,21 @@ class owa_install extends owa_base{
 		// test for existance of tables
 		foreach ($this->tables as $table) {
 			$this->e->notice('Testing for existance of table: '. $table);
-			$check = $this->db->get_results(sprintf("show tables like '%s'", $table));
-			$this->e->notice(print_r($check, true));
+			$check = $this->db->get_results(sprintf("show tables like 'owa_%s'", $table));
+			//$this->e->notice(print_r($check, true));
 			
 			// if a table is missing add it to this array
 			if (empty($check)):
 				$table_check[] = $table;
+				$this->e->notice('Did not find table: '. $table);
+			else:
+				$this->e->notice('Table '. $table. ' already exists.');
 			endif;
 		}
 		
 		if (!empty($table_check)):
 			//$this->e->notice(sprintf("Schema Check: Tables '%s' are missing.", implode(',', $table_check)));
-			$this->e->notice(sprintf("Schema Check: Tables to install: ", print_r($table_check, true)));
+			$this->e->notice(sprintf("Schema Check: Tables to install: %s", print_r($table_check, true)));
 
 			return $table_check;
 		else:	
