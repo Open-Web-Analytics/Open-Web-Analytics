@@ -46,6 +46,7 @@ class owa_installEmbeddedController extends owa_controller {
 		
 	    $api = &owa_coreAPI::singleton();
 	    
+	    $this->e->notice('starting Embedded install');
 		// install schema
 		$status = $api->modules['base']->install();
 		
@@ -80,7 +81,8 @@ class owa_installEmbeddedController extends owa_controller {
 		
 		// schema was not installed successfully
 		else:
-			return false;		
+			return false;
+		endif;		
 			
 	}
 	

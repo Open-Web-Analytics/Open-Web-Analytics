@@ -270,7 +270,7 @@ class owa_module extends owa_base {
 	function install() {
 		
 		$obj = $this->installerFactory();
-		
+		$this->e->notice('starting base install');
 		$tables_to_install = $obj->checkForSchema();
 		
 		$table_errors = '';
@@ -289,6 +289,7 @@ class owa_module extends owa_base {
 				endif;
 				
 			}
+			
 		endif;
 		
 		if ($table_errors != 'error'):
