@@ -45,6 +45,7 @@ class owa_installAdminUserView extends owa_view {
 	
 	function construct($data) {
 		
+		
 		// Set Page title
 		$this->t->set('page_title', 'Setup Default Admin User');
 		
@@ -90,41 +91,70 @@ class owa_installAdminUserController extends owa_controller {
 		$u = owa_coreAPI::entityFactory('base.user');
 		$auth = &owa_auth::get_instance();
 		
-		//Check to see if user name already exists
-		$u->getByColumn('user_id', $this->params['user_id']);
+		// check to see if an admin user already exists without relying on loading config from DB
+		$u->getByColumn('role', 'admin');
+		$id_check = $u->get('id');
 		
-		// data
-		$data = array();
 		
-		$id = $u->get('id');
+		$config = owa_coreAPI::entityFactory('base.configuration');
+		$config->getByPk('id', $this->config['configuration_id']);
+		$settings = unserialize($config->get('settings'));
+		//print_r($settings);
 		
-		// Set user object Params
-		if (empty($id)):
+		if ($settings['base']['install_complete'] != true):
+		// if not then proceed
+			if (empty($id_check)):
 		
-			//Generate Initial Passkey and new account email
-			$auth->setInitialPasskey($this->params['user_id']);
+				//Check to see if user name already exists
+				$u->getByColumn('user_id', $this->params['user_id']);
+		
+				// data
+				$data = array();
+		
+				$id = $u->get('id');
+		
+				// Set user object Params
+				if (empty($id)):
+		
+				//Generate Initial Passkey and new account email
+				$auth->setInitialPasskey($this->params['user_id']);
 			
-			// log account creation event to event queue
-			$eq = &eventQueue::get_instance();
-			$eq->log(array( 'user_id' 		=> $this->params['user_id'],
-							'real_name' 	=> $this->params['real_name'],
-							'role' 			=> $this->params['role'],
-							'email_address' => $this->params['email_address']), 
-							'base.new_user_account');
+				// log account creation event to event queue
+				$eq = &eventQueue::get_instance();
+				$eq->log(array( 'user_id' 		=> $this->params['user_id'],
+								'real_name' 	=> $this->params['real_name'],
+								'role' 			=> $this->params['role'],
+								'email_address' => $this->params['email_address']), 
+								'base.new_user_account');
+				
+				// return view
+				$data['view_method'] = 'redirect';
+				$data['view'] = 'base.install';
+				$data['subview'] = 'base.installDefaultSiteProfile';
+				$data['status_code'] = 3304;
+				
+				else:
+				$data = $this->params;
+				$data['view_method'] = 'delegate';
+				$data['view'] = 'base.install';
+				$data['subview'] = 'base.installAdminUser';
+				$data['status_msg'] = $this->getMsg(3306);
+				endif;
 			
-			// return view
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installDefaultSiteProfile';
-			$data['status_code'] = 3304;
-			
+			// otherwise return the already installed view
+			else:
+				$data['view_method'] = 'delegate';
+				$data['view'] = 'base.install';
+				$data['subview'] = 'base.installStart';
+			endif;
+		
 		else:
-			$data = $this->params;
 			$data['view_method'] = 'delegate';
 			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installAdminUser';
-			$data['status_msg'] = $this->getMsg(3306);
+			$data['subview'] = 'base.installStart';
 		endif;
+		
+		
 		
 		return $data;
 	}

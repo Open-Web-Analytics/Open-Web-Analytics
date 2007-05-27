@@ -76,7 +76,25 @@ class owa_installEmbeddedController extends owa_controller {
 			else:
 				$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
 			endif;
-		
+			
+			
+			$config = owa_coreAPI::entityFactory('base.configuration');
+			$config->getByPk('id', $this->config['configuration_id']);
+			$settings = unserialize($config->get('settings'));
+			$settings['base']['install_complete'] = true;
+			$config->set('settings', serialize($settings));
+			
+			$id = $config->get('id');
+			
+			if (!empty($id)):
+				$status = $config->update();
+			else:
+				$config->set('id', 1);
+				$status = $config->create();
+			endif;
+			
+			$this->e->notice('Creating config: '. print($status));
+
 			return true;
 		
 		// schema was not installed successfully

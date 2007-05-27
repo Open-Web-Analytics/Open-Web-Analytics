@@ -103,7 +103,7 @@ class owa_install extends owa_base{
 
 			return $table_check;
 		else:	
-			return;
+			return false;
 		endif;
 		
 	}

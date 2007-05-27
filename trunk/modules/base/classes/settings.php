@@ -39,6 +39,8 @@
  	
  	var $default_config;
  	
+ 	var $db_settings = array();
+ 	
  	/**
  	 * Constructor
  	 * 
@@ -90,6 +92,7 @@
 	 			$db_config = owa_coreAPI::entityFactory('base.configuration');
 	 			$db_config->getByPk('id', $id);
 	 			$db_settings = unserialize($db_config->get('settings'));
+	 			$this->db_settings = $db_settings;
 	 			
 	 			if (!empty($db_settings)):
 	 			
@@ -145,35 +148,25 @@
  	 * 
  	 * @return boolean 
  	 */
- 	/*function update() {
+ 	function update() {
  		
  		// serialize array of values prior to update
- 		$s = $this->config->get('settings');
+ 		$s = $this->db_settings;
  		$ss = serialize($s);
  		
 		//check for id
  		$id = $this->config->get('id');
  		
- 		// set id in case this is the first install
- 		if (empty($id)):
- 			
- 			$cid = $this->get('base', 'configuration_id');
- 			$this->config->set('id', $cid);
- 			// persist entity
- 			$this->config->set('settings', $ss);
- 			$status = $this->config->create();
- 		else:
- 			// persist entity
- 			$this->config->set('settings', $ss);
- 			$status = $this->config->update();
- 		endif;
- 		
+ 		// persist entity
+ 		$this->config->set('settings', $ss);
+ 		$status = $this->config->update();
+ 	 		
  		// revert back to unserialized version
  		$this->config->set('settings', $s);
  		
  		return $status;
  		
- 	}*/
+ 	}
  	
  	/**
  	 * Accessor Method
@@ -205,6 +198,8 @@
  		$values[$module][$key] = $value;
  		
  		$this->config->set('settings', $values);
+ 		
+ 		$this->db_settings[$module][$key] = $value;
  		
  		return;
  	}

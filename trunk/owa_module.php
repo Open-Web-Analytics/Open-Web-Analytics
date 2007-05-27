@@ -270,7 +270,7 @@ class owa_module extends owa_base {
 	function install() {
 		
 		$obj = $this->installerFactory();
-		$this->e->notice('starting base install');
+		$this->e->notice('starting install');
 		$tables_to_install = $obj->checkForSchema();
 		
 		$table_errors = '';
@@ -294,9 +294,8 @@ class owa_module extends owa_base {
 		
 		if ($table_errors != 'error'):
 			
-			// save schema version to configuration
-			$this->c->set('base', 'schema_version', $obj->version);
-	
+			// save schema version to configuration THIS NEEDS TO BE FIXED.
+			$this->c->set($this->name, 'schema_version', $obj->version);
 			// activate module and persist configuration changes 
 			$this->activate();
 	
