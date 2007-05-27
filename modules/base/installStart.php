@@ -48,7 +48,7 @@ class owa_installStartView extends owa_view {
 		$api = &owa_coreAPI::singleton();
 		$installer = $api->modules['base']->installerFactory();
 		
-		if ($installer->checkForSchema() == true):
+		if ($installer->checkForSchema() == false):
 			// load body template
 			$this->body->set_template('install_schema_detected.tpl');
 		else:
