@@ -169,9 +169,8 @@ class owa_http extends Snoopy {
 			//$part1 = owa_lib::inputFilter($part1);
 			// Create second segment of snippet
 			$part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len+300));
-			$part2 = substr(strip_tags($part2),0, $this->snip_len);
 			$part2 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part2);
-			$part2 = owa_lib::inputFilter($part2);
+			$part2 = substr(strip_tags(owa_lib::inputFilter($part2)),0, $this->snip_len);
 
 			// Put humpty dumpy back together again and create actual snippet
 			$snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.owa_lib::inputFilter($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
