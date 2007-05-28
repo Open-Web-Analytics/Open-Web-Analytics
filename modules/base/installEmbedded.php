@@ -77,23 +77,15 @@ class owa_installEmbeddedController extends owa_controller {
 				$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
 			endif;
 			
+			// Persist install complete flag. 
+			$this->c->setSetting('base', 'install_complete', true);
+			$save_status = $this->c->save();
 			
-			$config = owa_coreAPI::entityFactory('base.configuration');
-			$config->getByPk('id', $this->config['configuration_id']);
-			$settings = unserialize($config->get('settings'));
-			$settings['base']['install_complete'] = true;
-			$config->set('settings', serialize($settings));
-			
-			$id = $config->get('id');
-			
-			if (!empty($id)):
-				$status = $config->update();
+			if ($save_status == true):
+				$this->e->notice('Install Complete Flag added to configuration');
 			else:
-				$config->set('id', 1);
-				$status = $config->create();
+				$this->e->notice('Could not persist Install Complete Flag to the Database');
 			endif;
-			
-			$this->e->notice('Creating config: '. print($status));
 
 			return true;
 		

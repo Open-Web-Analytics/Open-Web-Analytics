@@ -300,7 +300,7 @@ class owa_caller extends owa_base {
 		endif;
 		
 		// Display view if controller calls for one.
-		if (!empty($data['view'])):
+		if (!empty($data['view']) || !empty($data['action'])):
 		
 			// 
 			if ($data['view_method'] == 'delegate'):
