@@ -38,8 +38,17 @@ class owa_installAdminUserView extends owa_view {
 	function owa_installAdminUserView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'guest';
 		
+		//Load config from db
+		$this->c->load();
+		// Secure access to this controller if the installer has already been run
+		if ($this->c->get('base', 'install_complete') != true):	
+			$this->priviledge_level = 'guest';
+		else:
+			$this->priviledge_level = 'admin';
+		endif;
+
+				
 		return;
 	}
 	
@@ -79,7 +88,15 @@ class owa_installAdminUserController extends owa_controller {
 	
 	function owa_installAdminUserController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
+		//Load config from db
+		$this->c->load();
+		// Secure access to this controller if the installer has already been run
+		if ($this->c->get('base', 'install_complete') != true):	
+			$this->priviledge_level = 'guest';
+		else:
+			$this->priviledge_level = 'admin';
+		endif;
 		
 		return;
 	}
@@ -153,8 +170,6 @@ class owa_installAdminUserController extends owa_controller {
 			$data['view'] = 'base.install';
 			$data['subview'] = 'base.installStart';
 		endif;
-		
-		
 		
 		return $data;
 	}

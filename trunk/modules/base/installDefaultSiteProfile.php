@@ -79,59 +79,63 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 	
 	function owa_installDefaultSiteProfileController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
+		//Load config from db
+		$this->c->load();
+		// Secure access to this controller if the installer has already been run
+		if ($this->c->get('base', 'install_complete') != true):	
+			$this->priviledge_level = 'guest';
+		else:
+			$this->priviledge_level = 'admin';
+		endif;
+
 	}
 	
 	function action() {
 		
-		// Control logic
+		// check to see if the installer has already been run
+		
+		
+			// validations
+			if (empty($this->params['domain'])):
+				$data['view_method'] = 'delegate'; // Delegate, redirect
+				$data['view'] = 'base.install';
+				$data['subview'] = 'base.installDefaultSiteProfile';
+				$data['error_msg'] = $this->getMsg(3207);
+				$data['site'] = $this->params;	
+				
+				return $data;
+				
+			endif;
 			
-		// validations
-	if ($this->config['install_complete'] != true):	
-		if (empty($this->params['domain'])):
-			$data['view_method'] = 'delegate'; // Delegate, redirect
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installDefaultSiteProfile';
-			$data['error_msg'] = $this->getMsg(3207);
-			$data['site'] = $this->params;	
+			$site = owa_coreAPI::entityFactory('base.site');
 			
-			return $data;
+			$site->set('site_id', md5($this->params['domain']));
+			$site->set('name', $this->params['name']);
+			$site->set('description', $this->params['description']);
+			$site->set('domain', $this->params['domain']);
+			$site->set('site_family', $this->params['site_family']);
 			
-		endif;
-		
-		$site = owa_coreAPI::entityFactory('base.site');
-		
-		$site->set('site_id', md5($this->params['domain']));
-		$site->set('name', $this->params['name']);
-		$site->set('description', $this->params['description']);
-		$site->set('domain', $this->params['domain']);
-		$site->set('site_family', $this->params['site_family']);
-		
-		$status = $site->create();
-		
-		if ($status == true):	
-			// Setup the data array that will be returned to the view.
+			$status = $site->create();
 			
-			$data['view_method'] = 'redirect'; // Delegate, redirect
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installFinish';
-			$data['status_code'] = 3303;
-			$data['site_id'] = $site->get('site_id');
-		
-		else:
-		
-			$data['view_method'] = 'delegate'; // Delegate, redirect
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installDefaultSiteProfile';
-			$data['error_msg'] = $this->getMsg(3206);
-			$data['site'] = $this->params;	
+			if ($status == true):	
+				// Setup the data array that will be returned to the view.
+				
+				$data['view_method'] = 'redirect'; // Delegate, redirect
+				$data['action'] = 'base.installFinish';
+				$data['status_code'] = 3303;
+				$data['site_id'] = $site->get('site_id');
 			
-		endif;
-	else:
-		$data['view_method'] = 'delegate';
-		$data['view'] = 'base.install';
-		$data['subview'] = 'base.installStart';	
-	endif;	
+			else:
+			
+				$data['view_method'] = 'delegate'; // Delegate, redirect
+				$data['view'] = 'base.install';
+				$data['subview'] = 'base.installDefaultSiteProfile';
+				$data['error_msg'] = $this->getMsg(3206);
+				$data['site'] = $this->params;	
+				
+			endif;
+		
 		return $data;
 	}
 	

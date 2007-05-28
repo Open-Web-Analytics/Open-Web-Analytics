@@ -1,10 +1,10 @@
 <TABLE>
+
 	<TR>
-	
 		<TH>Site</TH>
 		<TH>Reporting Period</TH>
-		
 	</TR>
+
 	<TR>
 		<TD valign="top">
 			<form action="" method="GET">

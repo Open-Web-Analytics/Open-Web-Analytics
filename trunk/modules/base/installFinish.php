@@ -23,7 +23,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
- * View
+ * Installation Finish
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -33,6 +33,47 @@ require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+
+
+class owa_installFinishController extends owa_controller {
+
+	function owa_installFinishController($params) {
+		$this->owa_controller($params);
+		
+		// Secure access to this controller if the installer has already been run
+		if ($this->c->get('base', 'install_complete') != true):	
+			$this->priviledge_level = 'guest';
+		else:
+			$this->priviledge_level = 'admin';
+		endif;
+	}
+	
+	function action() {
+	
+		// Persist install complete flag. 
+		$this->c->setSetting('base', 'install_complete', true);
+		$save_status = $this->c->save();
+		
+		if ($save_status == true):
+			$this->e->notice('Install Complete Flag added to configuration');
+		else:
+			$this->e->notice('Could not persist Install Complete Flag to the Database');
+		endif;
+		
+		$data = array();
+		$data['view'] = 'base.install';
+		$data['subview'] = 'base.installFinish';
+		$data['view_method'] = 'delegate';
+		$data['site_id'] = $this->params['site_id'];
+		$data['status_code'] = $this->params['status_code']; 
+		
+		return $data;
+	}
+	
+	
+
+}
+
 
 class owa_installFinishView extends owa_view {
 	
@@ -65,6 +106,7 @@ class owa_installFinishView extends owa_view {
 	
 	
 }
+
 
 
 
