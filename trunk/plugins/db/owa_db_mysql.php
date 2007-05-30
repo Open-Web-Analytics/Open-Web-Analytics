@@ -170,9 +170,8 @@ class owa_db_mysql extends owa_db {
 	 */
 	function prepare($string) {
 		
-		$string = mysql_real_escape_string($string, $this->connection); 
-		$this->e->debug('hello from prepare: ' . $string);
-		return $string;
+		return mysql_real_escape_string($string, $this->connection); 
+		
 	}
 	
 	/**
