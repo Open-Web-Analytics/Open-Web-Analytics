@@ -170,7 +170,8 @@ class owa_db_mysql extends owa_db {
 	 */
 	function prepare($string) {
 		
-		$string = addslashes(mysql_real_escape_string($string, $this->connection)); 
+		$string = mysql_real_escape_string($string, $this->connection); 
+		$this->e->debug('hello from prepare: ' . $string);
 		return $string;
 	}
 	
@@ -224,8 +225,8 @@ class owa_db_mysql extends owa_db {
 					
 		foreach ($properties as $key => $value) {
 			
-			$sql_cols = $sql_cols.$key;
-			$sql_values = $sql_values."'".$this->prepare($value)."'";
+			//$sql_cols = $sql_cols.$key;
+			//$sql_values = $sql_values."'".$this->prepare($value)."'";
 				
 			// Add commas
 			if ($i != 0):
@@ -234,7 +235,7 @@ class owa_db_mysql extends owa_db {
 					
 			endif;	
 			
-			$set .= $key .' = \'' . $value . '\'';
+			$set .= $key .' = \'' . $this->prepare($value) . '\'';
 			
 			$i++;
 		}
