@@ -48,13 +48,12 @@ class owa_notifyNewSessionController extends owa_controller {
 		
 		$s = owa_coreAPI::entityFactory('base.site');
 		
-		$s->getByPk('site_id', $this->params['request']['site_id']);
+		$s->getByPk('site_id', $this->params['site_id']);
 		
 		$data['site'] = $s->_getProperties();
 
 		$data['email_address']= $this->config['notice_email'];
-		$data['request'] = $this->params['request'];
-		$data['session'] = $this->params['session'];
+		$data['session'] = $this->params;
 		$data['subject'] = sprintf('OWA: New Visit to %s', $s->get('domain'));
 		$data['view'] = 'base.notifyNewSession';
 		$data['plainTextView'] = 'base.notifyNewSessionPlainText';
@@ -93,7 +92,7 @@ class owa_notifyNewSessionView extends owa_view {
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('new_session_email.tpl');
 		$this->body->set('site', $data['site']);
-		$this->body->set('request', $data['request']);
+		$this->body->set('session', $data['session']);
 			
 		return;
 		

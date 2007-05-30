@@ -99,6 +99,7 @@
 			$db_config->getByPk('id', $id);
 			$db_settings = unserialize($db_config->get('settings'));
 			
+			//print $db_settings;
 			// store copy of config for use with updates and set a flag
 			if (!empty($db_settings)):
 				$this->db_settings = $db_settings;
@@ -116,9 +117,12 @@
 				$new_config = array();
 				
 				foreach ($db_settings as $k => $v) {
-				
-					$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
 					
+					if (is_array($default[$k])):
+						$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
+					else:
+						$new_config[$k] = $db_settings[$k];
+					endif;
 				}
 				
 				$this->config->set('settings', $new_config);	
@@ -394,7 +398,8 @@
 			'mailer-username'				=> '',
 			'mailer-password'				=> '',
 			'cookie_domain'					=> $_SERVER['SERVER_NAME'],
-			'ws_timeout'					=> 10
+			'ws_timeout'					=> 10,
+			'is_active'						=> true
 			
 			));
 			

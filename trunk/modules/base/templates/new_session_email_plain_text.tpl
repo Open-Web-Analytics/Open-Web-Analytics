@@ -1,7 +1,7 @@
 New Visit to <?=$site['domain'];?> from:
 
-Visitor: <?=$request['visitor_id'];?>
-Email or Username: <?=$request['user_email'];?> | <?=$request['user_name'];?>
-Host: <?=$request['host'];?>
+Visitor: <?=$session['visitor_id'];?>
+Email or Username: <?=$session['user_email'];?> | <?=$session['user_name'];?>
+Host: <?=$session['host'];?>
 City/Country:  <?=$session['city'];?> <?=$session['country'];?>
-Entry page:  <?=$request['page_title'];?> (<?=$request['page_url'];?>)
+Entry page:  <?=$session['page_title'];?> (<?=$session['page_url'];?>)

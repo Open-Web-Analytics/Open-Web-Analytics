@@ -16,8 +16,8 @@
 // $Id$
 //
 
-include_once('set_env.php');
-require_once(OWA_BASE_DIR.'/owa_wp.php');
+//include_once('set_env.php');
+//require_once(OWA_BASE_DIR.'/owa_wp.php');
 
 /**
  * Main Admin Page Wrapper Script

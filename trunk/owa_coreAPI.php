@@ -140,10 +140,13 @@ class owa_coreAPI extends owa_base {
 	
 	function _loadModules() {
 		
-		foreach ($this->config['modules'] as $k => $module) {
+		$am = $this->getActiveModules();
+		
+		foreach ($am as $k => $v) {
 			
-			$m = owa_coreAPI::moduleClassFactory($module);
+			$m = owa_coreAPI::moduleClassFactory($v);
 			$this->modules[$m->name] = $m;
+			
 		}
 		
 		return;
@@ -481,6 +484,24 @@ class owa_coreAPI extends owa_base {
      	
      	return $url;
 		
+	}
+	
+	function getActiveModules() {
+	
+		$config = $this->c->config->get('settings');
+		
+		//print_r($config);
+		$active_modules = array();
+		
+		foreach ($config as $k => $module) {
+			
+			if ($module['is_active'] == true):
+				$active_modules[] = $k;
+			endif;
+		}
+
+		return $active_modules;
+	
 	}
 	
 }

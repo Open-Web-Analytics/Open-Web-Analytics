@@ -294,8 +294,8 @@ class owa_module extends owa_base {
 		
 		if ($table_errors != 'error'):
 			
-			// save schema version to configuration THIS NEEDS TO BE FIXED.
-			$this->c->set($this->name, 'schema_version', $obj->version);
+			// save schema version to configuration
+			$this->c->setSetting($this->name, 'schema_version', $obj->version);
 			// activate module and persist configuration changes 
 			$this->activate();
 	
@@ -348,71 +348,26 @@ class owa_module extends owa_base {
 	function activate() {
 		
 		if ($this->name != 'base'):
-			
-			$config = owa_coreAPI::entityFactory('base.configuration');
-			$config->getByPk('id', $this->c->get('base', 'configuration_id'));
-			
-			$settings = unserialize($config->get('settings'));
-			
-			if (!empty($settings)):
-				
-				// settings overrides are in the db and the modules sub array already exists
-				if (!empty($settings['base']['modules'])):
-					$settings['base']['modules'][] = $this->name;
-					$config->set('settings', serialize($settings));
-					$config->update();
-				
-				// settings overrides exist in db but no modules sub arrray exists
-				else:
-					$modules = $this->config['modules'];
-					$modules[] = $this->name;
-					$settings['base']['modules'] = $modules;
-					$config->set('settings', serialize($settings));
-					$config->update();
-				endif;
-			
-			else:
-				// need to create persist the settings overrides for the first time
-				$modules = $this->config['modules'];
-				$modules[] = $this->name;
-				$settings = array('base' => array('modules' => $modules));
-				$config->set('settings', serialize($settings));
-				$config->set('id', $this->c->get('base', 'configuration_id'));
-				$config->create();
-				
-			endif;
+		
+			$this->c->setSetting($this->name, 'is_active', true);
+			$this->c->save();
 			
 		endif;
-		
-	
 		
 		return;
 	}
 	
 	/**
-	 * Deactivates the module by removing it from the active module list in the global configuration
+	 * Deactivates the module by removing it from 
+	 * the active module list in the global configuration
 	 * 
 	 */
 	function deactivate() {
 		
 		if ($this->name != 'base'):
 			
-			$config = owa_coreAPI::entityFactory('base.configuration');
-			$config->getByPk('id', $this->c->get('base', 'configuration_id'));
-			
-			$settings = unserialize($config->get('settings'));
-			
-			$new_modules = array();
-			
-			foreach ($settings['base']['modules'] as $k => $v){
-				if ($v != $this->name):
-					$new_modules[] = $v;
-				endif;
-			}
-			
-			$settings['base']['modules'] = $new_modules;
-			$config->set('settings', serialize($settings));
-			$config->update();	
+			$this->c->setSetting($this->name, 'is_active', false);
+			$this->c->save();
 			
 		endif;
 		
