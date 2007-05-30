@@ -585,7 +585,7 @@ class owa_lib {
 			
 			endif;
 		}
-		$new_url = sprintf($this->config['link_template'], $this->config['main_url'], $get);
+		$new_url = sprintf($config['link_template'], $config['main_url'], $get);
 		owa_lib::redirectBrowser($new_url);
 		
 		return;

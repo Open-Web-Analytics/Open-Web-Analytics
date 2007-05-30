@@ -153,19 +153,24 @@ class owa_http extends Snoopy {
 				$part1_start_pos = 0;
 				$part1_snip_len = $start;
 			else:
-				$part1_start_pos = $start - $this->snip_len;
+				$part1_start_pos = $start;
 				$part1_snip_len = $this->snip_len;
 			endif;
 			
 			
 			// Create first segment of snippet
-			$part1 = trim(substr($nohtml, $part1_start_pos, $part1_snip_len));
-			$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
-			$part1 = owa_lib::inputFilter($part1);
+			$first_part = substr($nohtml, 0, $part1_start_pos);
+			$first_part = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $first_part); 
+			$first_part = strip_tags(owa_lib::inputFilter($first_part));
+			//$part1 = trim(substr($nohtml, $part1_start_pos, $part1_snip_len));
+			$part1 = substr($first_part,-$part1_snip_len, $part1_snip_len);
+			
+			//$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
+			//$part1 = owa_lib::inputFilter($part1);
 			// Create second segment of snippet
-			$part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len));
+			$part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len+300));
 			$part2 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part2);
-			$part2 = owa_lib::inputFilter($part2);
+			$part2 = substr(strip_tags(owa_lib::inputFilter($part2)),0, $this->snip_len);
 
 			// Put humpty dumpy back together again and create actual snippet
 			$snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.owa_lib::inputFilter($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;

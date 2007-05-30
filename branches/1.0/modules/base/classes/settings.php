@@ -41,6 +41,12 @@
  	
  	var $db_settings = array();
  	
+ 	var $fetched_from_db;
+ 	
+ 	var $is_dirty;
+ 	
+ 	var $config_id;
+ 	
  	/**
  	 * Constructor
  	 * 
@@ -86,42 +92,46 @@
  	 * @param string id  the id of the configuration array to load
  	 */
  	function load($id = 1) {
+			
+			$this->config_id = $id; 
  
-	 		if (!file_exists(OWA_BASE_MODULE_DIR.'config'.DIRECTORY_SEPARATOR.'base.php')):
-	 		
-	 			$db_config = owa_coreAPI::entityFactory('base.configuration');
-	 			$db_config->getByPk('id', $id);
-	 			$db_settings = unserialize($db_config->get('settings'));
-	 			$this->db_settings = $db_settings;
+			$db_config = owa_coreAPI::entityFactory('base.configuration');
+			$db_config->getByPk('id', $id);
+			$db_settings = unserialize($db_config->get('settings'));
+			
+			//print $db_settings;
+			// store copy of config for use with updates and set a flag
+			if (!empty($db_settings)):
+				$this->db_settings = $db_settings;
+				$this->config_from_db = true;
+			endif;
+						
+			if (!empty($db_settings)):
+			
+				//$db_settings = unserialize($db_settings);
+				
+				$default = $this->config->get('settings');
+				
+				// merge default config with overrides fetched from data store
+				
+				$new_config = array();
+				
+				foreach ($db_settings as $k => $v) {
+					
+					if (is_array($default[$k])):
+						$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
+					else:
+						$new_config[$k] = $db_settings[$k];
+					endif;
+				}
+				
+				$this->config->set('settings', $new_config);	
+				
+			endif;
+			
+			$db_id = $db_config->get('id');
+			$this->config->set('id', $db_id);
 	 			
-	 			if (!empty($db_settings)):
-	 			
-	 				//$db_settings = unserialize($db_settings);
-	 				
-		 			$default = $this->config->get('settings');
-		 			
-		 			// merge default config with overrides fetched from data store
-		 			
-		 			$new_config = array();
-		 			
-		 			foreach ($db_settings as $k => $v) {
-		 			
-			 			$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
-			 			
-		 			}
-		 			
-			 		$this->config->set('settings', $new_config);	
-		 			
-	 			endif;
-	 			
-	 			$db_id = $db_config->get('id');
-	 			$this->config->set('id', $db_id);
-	 			
-	 		else:
-	 			; // load config from file
-	 		endif;
-	 	
-	 	
  		return;
  		
  	}
@@ -148,22 +158,64 @@
  	 * 
  	 * @return boolean 
  	 */
- 	function update() {
+ 	function save() {
  		
  		// serialize array of values prior to update
- 		$s = $this->db_settings;
- 		$ss = serialize($s);
  		
-		//check for id
- 		$id = $this->config->get('id');
- 		
- 		// persist entity
- 		$this->config->set('settings', $ss);
- 		$status = $this->config->update();
- 	 		
- 		// revert back to unserialized version
- 		$this->config->set('settings', $s);
- 		
+		$config = owa_coreAPI::entityFactory('base.configuration');
+		
+		// if fetch from db flag is not true, try to fetch the config just in 
+		// case if was cached or something wen wrong.
+		// Then merge the new values into it.
+		if ($this->config_from_db != true):
+			
+			$config->getByPk('id', $this->get('base', 'configuration_id'));
+			
+			$settings = $config->get('settings');
+			
+			if (!empty($settings)):
+				
+				$settings = unserialize($settings);
+				
+				$new_config = array();
+				
+				foreach ($this->db_settings as $k => $v) {
+				
+					if (!is_array($settings[$k])):
+						$settings[$k] = array();
+					endif;
+					
+					$new_config[$k] = array_merge($settings[$k], $this->db_settings[$k]);
+					
+				}
+				
+				$config->set('settings', serialize($new_config));	
+			
+				//$config->set('settings', serialize(array_merge($settings, $this->db_settings)));
+			else:			
+				$config->set('settings', serialize($this->db_settings));
+			endif;
+			
+			// test to see if object exists
+			$id = $config->get('id');
+			
+			// if it does just update
+			if (!empty($id)):
+				$status = $config->update();
+				
+			// else create the object
+			else:
+				$config->set('id', $this->get('base', 'configuration_id'));
+				$status = $config->create();
+			endif; 
+			
+		// update the config	
+		else:
+			$config->set('settings', serialize($this->db_settings));
+			$config->set('id', $this->get('base', 'configuration_id'));
+			$status = $config->update();
+		endif;
+		
  		return $status;
  		
  	}
@@ -184,7 +236,7 @@
  	}
  	
  	/**
- 	 * Sets configuration value
+ 	 * Sets configuration value. will not be persisted. NEEDED?
  	 * 
  	 * @param string $module the name of the module
  	 * @param string $key the configuration key
@@ -199,9 +251,26 @@
  		
  		$this->config->set('settings', $values);
  		
- 		$this->db_settings[$module][$key] = $value;
- 		
  		return;
+ 	}
+ 	
+ 	
+ 	/**
+ 	 * Adds Setting value to be configuration and persistant data store
+ 	 * 
+ 	 * @param string $module the name of the module
+ 	 * @param string $key the configuration key
+ 	 * @param string $value the configuration value
+ 	 * @return 
+ 	 */
+ 	function setSetting($module, $key, $value) {
+ 	
+ 		$this->set($module, $key, $value);
+	 	$this->db_settings[$module][$key] = $value;
+	 	$this->is_dirty = true;
+	 	
+	 	return;
+ 	
  	}
  	
  	/**
@@ -329,7 +398,8 @@
 			'mailer-username'				=> '',
 			'mailer-password'				=> '',
 			'cookie_domain'					=> $_SERVER['SERVER_NAME'],
-			'ws_timeout'					=> 10
+			'ws_timeout'					=> 10,
+			'is_active'						=> true
 			
 			));
 			
