@@ -170,7 +170,7 @@ class owa_db_mysql extends owa_db {
 	 */
 	function prepare($string) {
 		
-		$string = mysql_real_escape_string($string, $this->connection); 
+		$string = addslashes(mysql_real_escape_string($string, $this->connection)); 
 		return $string;
 	}
 	

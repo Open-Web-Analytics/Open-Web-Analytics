@@ -77,7 +77,7 @@ class owa_optionsModulesController extends owa_controller {
 		// remove base module so it can't be deactivated
 		unset($dirs['base']);
 		
-		$active_modules = $this->c->get('base', 'modules');
+		$active_modules = owa_coreAPI::getActiveModules();
 		
 		foreach ($active_modules as $module) {
 			
