@@ -31,7 +31,10 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-$owa = new owa_php;
+$config = array();
+$config['delay_first_hit'] = false;
+
+$owa = new owa_php($config);
 
 $owa->e->debug('Logging Event from Url...');
 

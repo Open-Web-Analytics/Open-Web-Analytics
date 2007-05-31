@@ -96,7 +96,9 @@ class owa_processEventController extends owa_controller {
 		$this->event->properties['HTTP_HOST'] = $this->params['server']['HTTP_HOST'];
 		
 		// Set Ip Address
-		$this->event->setIp($this->params['server']['HTTP_X_FORWARDED_FOR'], $this->params['server']['HTTP_CLIENT_IP'], $this->params['server']['REMOTE_ADDR']);
+		//if (empty($this->event->properties['ip_address'])):
+			$this->event->setIp($this->params['server']['HTTP_X_FORWARDED_FOR'], $this->params['server']['HTTP_CLIENT_IP'], $this->params['server']['REMOTE_ADDR']);
+		//endif;
 		
 		// Set all time related properties
 		$this->event->setTime(time());

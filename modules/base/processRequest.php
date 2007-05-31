@@ -51,6 +51,7 @@ class owa_processRequestController extends owa_processEventController {
 		
 		// Do not log if the first_hit cookie is still present.
         if (!empty($this->params[$this->config['first_hit_param']])):
+        	$this->e->debug('Aborting request processing due to finding first hit cookie.');
 			return;
 		endif;
 		
