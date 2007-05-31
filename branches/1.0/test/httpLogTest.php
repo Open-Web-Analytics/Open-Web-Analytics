@@ -10,11 +10,11 @@
 
 <SCRIPT language="javascript">
 	var owa_params = new Object(); 
-	owa_params["site_id"] = "56fc54c2c10624ee9d40f6dc355d9229";
+	owa_params["site_id"] = "<?=md5('http://wp2-php5-test.openwebanalytics.com');?>";
 </SCRIPT>
 
 <!-- <SCRIPT TYPE="text/javascript" SRC="http://wp2-php5-test.openwebanalytics.com/index.php?owa_specialAction&owa_view=base.jsLogLib&233"></SCRIPT> -->
-<SCRIPT TYPE="text/javascript" SRC="http://wp2-php5-test.openwebanalytics.com/wp-content/plugins/owa/public/main.php?owa_view=base.jsLogLib"></SCRIPT>
+<SCRIPT TYPE="text/javascript" SRC="http://wp2.2-php5-test.openwebanalytics.com/wp-content/plugins/owa/public/main.php?owa_view=base.jsLogLib"></SCRIPT>
 <a href="http://www.yahoo.com">httplogTest</a>
 
 </BODY>
