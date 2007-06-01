@@ -375,10 +375,10 @@ class owa_caller extends owa_base {
 		endif;
 		
 		//clean up any open db connection
-		if ($this->config['async_db'] == false):
-			$db = &owa_coreAPI::dbSingleton();
-			$db->close();
-		endif;
+		//if ($this->config['async_db'] == false):
+		//	$db = &owa_coreAPI::dbSingleton();
+		//	$db->close();
+		//endif;
 		
 		$init = true;
 		
