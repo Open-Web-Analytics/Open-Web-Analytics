@@ -10,12 +10,34 @@
 
 <SCRIPT language="javascript">
 	var owa_params = new Object(); 
-	owa_params["site_id"] = "<?=md5('http://wp2-php5-test.openwebanalytics.com');?>";
+	owa_params["site_id"] = "<?=md5('http://wp2.2-php5-test.openwebanalytics.com');?>";
 </SCRIPT>
 
 <!-- <SCRIPT TYPE="text/javascript" SRC="http://wp2-php5-test.openwebanalytics.com/index.php?owa_specialAction&owa_view=base.jsLogLib&233"></SCRIPT> -->
 <SCRIPT TYPE="text/javascript" SRC="http://wp2.2-php5-test.openwebanalytics.com/wp-content/plugins/owa/public/main.php?owa_view=base.jsLogLib"></SCRIPT>
 <a href="http://www.yahoo.com">httplogTest</a>
+
+<?php 
+
+$HTTP_X_FORWARDED_FOR = 'unknown';
+
+if (!empty($HTTP_X_FORWARDED_FOR) && strripos($HTTP_X_FORWARDED_FOR, 'unknown') === false):
+	
+	if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):
+		echo $HTTP_X_FORWARDED_FOR;
+		echo ' no , found';
+	else:
+		$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
+		echo 'last ip: '. $ips[0];
+
+	endif;
+	
+	
+else:
+	echo 'xfip = non proxy ip address';
+endif;
+
+?>
 
 </BODY>
 

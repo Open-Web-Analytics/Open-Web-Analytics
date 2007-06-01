@@ -206,20 +206,26 @@ class owa_event extends owa_base {
 	 */
 	function setIp($HTTP_X_FORWARDED_FOR, $HTTP_CLIENT_IP, $REMOTE_ADDR) {
 	
-		if ($HTTP_X_FORWARDED_FOR):
-			if ($HTTP_CLIENT_IP):
-		   		$proxy = $HTTP_CLIENT_IP;
-		  	else:
-		    	$proxy = $REMOTE_ADDR;
-		  	endif;
+		// check for a non-unknown proxy address
+		if (!empty($HTTP_X_FORWARDED_FOR) && strripos($HTTP_X_FORWARDED_FOR, 'unknown') === false):
 			
-			$this->properties['ip_address'] = $HTTP_X_FORWARDED_FOR;
+			// if more than one use the last one
+			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):
+				$this->properties['ip_address'] = $HTTP_X_FORWARDED_FOR;
+			else:
+				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
+				$this->properties['ip_address'] = $ips[0];
+			endif;
+		
+		// or else just use the remote address	
 		else:
+		
 			if ($HTTP_CLIENT_IP):
 		    	$this->properties['ip_address'] = $HTTP_CLIENT_IP;
 		  	else:
 		    	$this->properties['ip_address'] = $REMOTE_ADDR;
 			endif;
+			
 		endif;
 		
 		return;
