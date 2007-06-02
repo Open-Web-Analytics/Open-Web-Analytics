@@ -37,5 +37,8 @@ define('OWA_DB_PASSWORD', ''); // database user's password
 // define the URL of the public directory e.g. http://www.domain.com/root/dir/owa/public/ 
 // Don't forget the slash at the end.
 define('OWA_PUBLIC_URL', ''); 
+
+// Log all php errors to OWA's error log file. Only do this to debug.
+define('OWA_LOG_PHP_ERRORS', false);
  
 ?>

@@ -91,7 +91,7 @@ class owa_caller extends owa_base {
 		$this->config = $this->c->fetch('base');
 
 		// log PHP warnings and errors
-		if ($this->config['log_php_errors'] == true):
+		if (OWA_LOG_PHP_ERRORS === true):
 			set_error_handler(array("owa_error", "handlePhpError"));
 		endif;
 
