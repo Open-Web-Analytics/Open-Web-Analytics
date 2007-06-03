@@ -8,36 +8,21 @@
 
 <BODY>
 
-<SCRIPT language="javascript">
-	var owa_params = new Object(); 
-	owa_params["site_id"] = "<?=md5('http://wp2.2-php5-test.openwebanalytics.com');?>";
-</SCRIPT>
 
-<!-- <SCRIPT TYPE="text/javascript" SRC="http://wp2-php5-test.openwebanalytics.com/index.php?owa_specialAction&owa_view=base.jsLogLib&233"></SCRIPT> -->
-<SCRIPT TYPE="text/javascript" SRC="http://wp2.2-php5-test.openwebanalytics.com/wp-content/plugins/owa/public/main.php?owa_view=base.jsLogLib"></SCRIPT>
-<a href="http://www.yahoo.com">httplogTest</a>
+<!-- Start Open Web Analytics Code -->
 
-<?php 
+<script type="text/javascript">
+//<![CDATA[
+var owa_params = new Object();
+owa_params["site_id"] = "724ce3f6bdfce79bbb852f7ae594132a";
+//]]>
+</script>
 
-$HTTP_X_FORWARDED_FOR = 'unknown';
+<script type="text/javascript" src="http://wp2.2-php5-test.openwebanalytics.com/index.php?owa_specialAction&owa_view=base.jsLogLib"></script>
 
-if (!empty($HTTP_X_FORWARDED_FOR) && strripos($HTTP_X_FORWARDED_FOR, 'unknown') === false):
-	
-	if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):
-		echo $HTTP_X_FORWARDED_FOR;
-		echo ' no , found';
-	else:
-		$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
-		echo 'last ip: '. $ips[0];
+<!-- End Open Web Analytics Code -->		
 
-	endif;
-	
-	
-else:
-	echo 'xfip = non proxy ip address';
-endif;
 
-?>
 
 </BODY>
 

@@ -380,7 +380,7 @@ class owa_template extends Template {
 		$link = sprintf($this->config['link_template'], $url, $get);
 		
 		if ($xml == true):
-			$link = str_replace('&', '&amp;', $link);
+			$link = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $link );
 		endif;
 		
 		return $link;
