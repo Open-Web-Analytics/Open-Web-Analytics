@@ -23,14 +23,15 @@
 						 	<span class="inline_h2"><? if (!empty($visit['visitor_user_name'])):?><?=$visit['visitor_user_name'];?><?elseif (!empty($visit['visitor_user_email'])):?><?=$visit['visitor_user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span>
 						 </a>
 						<? if ($visit['session_is_new_visitor'] == false): ?>
-							
+							<? if (!empty($visit['session_prior_session_id'])): ?>	
 							- <span class="info_text">(<a href="<?=$this->makeLink(array('session_id' => $visit['session_prior_session_id'], 'do' => 'base.reportVisit'), true);?>">Last visit was</a>	<?=round($visit['session_time_sinse_priorsession']/(3600*24));?> 
-							<? if (round($visit['session_time_sinse_priorsession']/(3600*24)) == 1): ?>
-								day ago.
-							<? else: ?>
-								days ago.
-							<? endif; ?>
+								<? if (round($visit['session_time_sinse_priorsession']/(3600*24)) == 1): ?>
+									day ago.
+								<? else: ?>
+									days ago.
+								<? endif; ?>
 								)</span>
+							<?endif;?>
 						<?endif;?>
 					</TD>
 					
