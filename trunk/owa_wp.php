@@ -90,6 +90,8 @@ class owa_wp extends owa_caller {
 			exit;
 		elseif(isset($_GET['owa_logAction'])):
 			$this->e->debug("log action received");
+			$this->config['delay_first_hit'] = false;
+			$this->c->set('base', 'delay_first_hit', false);
 			echo $this->logEventFromUrl($_GET);
 			exit;
 		else:
