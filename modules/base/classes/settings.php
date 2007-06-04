@@ -397,7 +397,7 @@
 			'mailer-smtpAuth'				=> '',
 			'mailer-username'				=> '',
 			'mailer-password'				=> '',
-			'cookie_domain'					=> $_SERVER['SERVER_NAME'],
+			'cookie_domain'					=> '',
 			'ws_timeout'					=> 10,
 			'is_active'						=> true
 			
@@ -422,6 +422,14 @@
 			$config['base']['images_url'] =  'i/';
 			$config['base']['images_absolute_url'] = OWA_PUBLIC_URL.$config['base']['images_url'];
 			$config['base']['log_url'] = OWA_PUBLIC_URL.'log.php';
+			
+			// Set cookie domain
+			if (!empty($_SERVER['HTTP_HOST'])):
+				$config['base']['cookie_domain'] = $_SERVER['HTTP_HOST'];
+			else:		
+				$config['base']['cookie_domain'] = $_SERVER['SERVER_NAME'];
+			endif;
+			
 			
 			// set default values
 			$this->config->set('settings', $config);
