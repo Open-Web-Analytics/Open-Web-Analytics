@@ -145,6 +145,13 @@ class owa_caller extends owa_base {
 	 */
 	function logEvent($event_type, $caller_params = '') {
 		
+		//change config value to incomming site_id
+			if(!empty($caller_params['site_id'])):
+				$this->config['site_id'] = $caller_params['site_id'];
+				$this->c->set('base', 'site_id', $caller_params['site_id']);
+			endif;
+		
+		
 		// do not log if the request is comming fro mthe preview plane of the admin interface
 		if ($this->params['preview'] == true):
 			return false;
