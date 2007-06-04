@@ -207,7 +207,7 @@ class owa_event extends owa_base {
 	function setIp($HTTP_X_FORWARDED_FOR, $HTTP_CLIENT_IP, $REMOTE_ADDR) {
 	
 		// check for a non-unknown proxy address
-		if (!empty($HTTP_X_FORWARDED_FOR) && strripos($HTTP_X_FORWARDED_FOR, 'unknown') === false):
+		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false):
 			
 			// if more than one use the last one
 			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):

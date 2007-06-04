@@ -64,6 +64,8 @@ class owa_processEventController extends owa_controller {
 		
 		$this->event->_setProperties($this->params['caller']);
 		
+		$this->event->sessionize($this->event->properties['inbound_session_id']);
+		
 		// Post Process - cleanup after all properties are set
 		$this->post();
 		
@@ -140,7 +142,7 @@ class owa_processEventController extends owa_controller {
 		endif;
 		
 		$this->event->assign_visitor($this->event->properties['inbound_visitor_id']);
-		$this->event->sessionize($this->event->properties['inbound_session_id']);
+		
 				
 		return;	
 	

@@ -100,7 +100,7 @@ class owa_processRequestController extends owa_processEventController {
 			$this->event->state = 'page_request';
 			$this->event->properties['event_type'] = 'base.page_request'; 
 			$this->event->properties['is_browser'] = true;
-			
+			$this->event->sessionize($this->event->properties['inbound_session_id']);
 		endif;	
 		
 		//update last-request time cookie
