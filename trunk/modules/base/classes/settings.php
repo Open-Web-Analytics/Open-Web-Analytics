@@ -399,7 +399,8 @@
 			'mailer-password'				=> '',
 			'cookie_domain'					=> '',
 			'ws_timeout'					=> 10,
-			'is_active'						=> true
+			'is_active'						=> true,
+			'per_site_visitors'				=> false
 			
 			));
 			

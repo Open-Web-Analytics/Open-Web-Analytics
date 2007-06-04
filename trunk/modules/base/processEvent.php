@@ -87,10 +87,22 @@ class owa_processEventController extends owa_controller {
 		$this->event->guid = $this->event->set_guid();
 		$this->event->properties['guid'] = $this->event->guid;
 		
+		// extract site specific state from session store
+		$state = $this->loadSiteState($this->params['site_'.$this->config['site_id']]);
+		
 		// Map standard params to standard event property names
-		$this->event->properties['inbound_visitor_id'] = $this->params[$this->config['visitor_param']];
-		$this->event->properties['inbound_session_id'] = $this->params[$this->config['session_param']];
-		$this->event->properties['last_req'] = $this->params[$this->config['last_request_param']];
+		$this->event->properties['inbound_session_id'] = $state[$this->config['session_param']];
+		$this->event->properties['last_req'] = $state[$this->config['last_request_param']];
+		
+		if ($this->config['per_site_visitors'] == true):
+			$this->event->properties['inbound_visitor_id'] = $state[$this->config['visitor_param']];
+		else:
+			$this->event->properties['inbound_visitor_id'] = $this->params[$this->config['visitor_param']];
+		endif;
+
+		
+		
+		
 		$this->event->properties['HTTP_USER_AGENT'] = $this->params['server']['HTTP_USER_AGENT'];
 		$this->event->properties['HTTP_REFERER'] = $this->params['server']['HTTP_REFERER'];
 		$this->event->properties['HTTP_HOST'] = $this->params['server']['HTTP_HOST'];
@@ -127,7 +139,24 @@ class owa_processEventController extends owa_controller {
 			$this->event->cleanQueryStrings();
 		endif;
 		
+		$this->event->assign_visitor($this->event->properties['inbound_visitor_id']);
+		$this->event->sessionize($this->event->properties['inbound_session_id']);
+				
 		return;	
+	
+	}
+	
+	function loadSiteState($string_state) {
+		
+		
+		if (!empty($string_state)):
+			$state = owa_lib::assocFromString($string_state);		
+		endif;
+		
+		$this->e->debug('state: '.print_r($state, true));
+			
+			
+		return $state;
 	
 	}
 	

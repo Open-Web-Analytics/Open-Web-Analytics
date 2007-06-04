@@ -50,10 +50,21 @@ class owa_helperPageTagsView extends owa_view {
 	function construct($data) {
 		
 		$this->body->set('site_id', $this->config['site_id']);
-	
 		
-		if (empty($data[$this->config['first_hit_param']]) && 
-			empty($data[$this->config['visitor_param']])):
+		// check for no presence of persistant cookies
+		if(empty($data['site_'.$this->config['site_id']])):
+			$second_check = true;
+		else:
+			$second_check = false;
+		endif;
+		
+		if(empty($data[$this->config['visitor_param']])):
+			$second_check = true;
+		else:
+			$second_check = false;
+		endif;
+		
+		if (empty($data[$this->config['first_hit_param'].'_'.$this->config['site_id']]) && $second_check == true):
 			
 			if ($this->config['delay_first_hit'] == true):
 				$this->body->set('first_hit_tag', true);

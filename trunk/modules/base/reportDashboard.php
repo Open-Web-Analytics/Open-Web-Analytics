@@ -161,7 +161,7 @@ class owa_reportDashboardView extends owa_view {
 		
 		$this->body->set('config', $this->config);
 		
-		$this->body->set('params', $data);
+		$this->body->set('params', $data['params']);
 		
 		$this->body->set('core_metrics', $data['core_metrics_data']);
 		
