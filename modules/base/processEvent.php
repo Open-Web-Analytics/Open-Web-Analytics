@@ -106,7 +106,12 @@ class owa_processEventController extends owa_controller {
 		
 		
 		$this->event->properties['HTTP_USER_AGENT'] = $this->params['server']['HTTP_USER_AGENT'];
-		$this->event->properties['HTTP_REFERER'] = $this->params['server']['HTTP_REFERER'];
+		if (isset($this->params['referer'])):
+			$this->event->properties['HTTP_REFERER'] = $this->params['referer'];
+		else:
+			$this->event->properties['HTTP_REFERER'] = $this->params['server']['HTTP_REFERER'];
+		endif;
+			
 		$this->event->properties['HTTP_HOST'] = $this->params['server']['HTTP_HOST'];
 		
 		// Set Ip Address
