@@ -4,7 +4,7 @@
 <? if ($visit['session_is_new_visitor'] == true): ?>
 			New Visitor
 			<? else: ?>
-			Returning Visitor <span class="info_text">(<a href="<?=$this->makeLink(array('session_id' => $visit['session_prior_session_id'], 'do' => 'base.reportVisit'), true);?>">Last visit was</a>	<?=round($visit['session_time_sinse_priorsession']/(3600*24));?> 
+			Returning Visitor <span class="info_text">(<a href="<?=$this->makeLink(array('session_id' => $visit['session_prior_session_id'], 'do' => 'base.reportVisit'), true,'',true);?>">Last visit was</a>	<?=round($visit['session_time_sinse_priorsession']/(3600*24));?> 
 			<? if (round($visit['session_time_sinse_priorsession']/(3600*24)) == 1): ?>
 			day ago.
 			<? else: ?>
@@ -27,7 +27,7 @@
 			<img src="<?=$this->makeImageLink('user_icon_small.gif', true);?>" alt="Visitor"> 
 		</TD>	
 		<TD valign="top">
-			<a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id']), true);?>">
+			<a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id']), true,'',true);?>">
 			<span class="inline_h2"><? if (!empty($visit['visitor_user_name'])):?><?=$visit['visitor_user_name'];?><?elseif (!empty($visit['visitor_user_email'])):?><?=$visit['visitor_user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span></a>
 			
 		</TD>
@@ -53,6 +53,6 @@
 	<?endif;?>		
 </table>
 		
-<P><a href="<?=$this->makeLink(array('session_id' => $visit['session_id'], 'do' => 'base.reportVisit'), true);?>"><span class="">View Visit Details</a></P>
+<P><a href="<?=$this->makeLink(array('session_id' => $visit['session_id'], 'do' => 'base.reportVisit'), true,'',true);?>"><span class="">View Visit Details</a></P>
 
 </div>

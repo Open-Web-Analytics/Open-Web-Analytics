@@ -20,7 +20,7 @@
         <td valign="top">
            <fieldset>
 				<legend>Visitors</legend>
-				<div id="side_bar"></div>
+				<div id="side_bar" style="overflow:auto; width:300px;height:400px;"></div>
            </fieldset>
         </td>
 	</tr>

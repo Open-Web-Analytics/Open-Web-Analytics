@@ -54,8 +54,8 @@ class owa_processFirstRequestController extends owa_processEventController {
 				$this->event->load_first_hit_properties($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']]);
 			endif;
 			
-			$this->e->debug(sprintf('First hit Request %d logged to event queue',
-									$r->properties['request_id']));
+			$this->e->debug(sprintf('First hit Request %s logged to event queue',
+									$this->event->properties['guid']));
 			
 			// Log the request
 			$this->event->log();

@@ -126,6 +126,8 @@ class owa_kmlVisitsGeolocationView extends owa_view {
 		$this->body->set('xml', '<?xml version="1.0" encoding="UTF-8"?>');
 				
 		header('Content-type: application/vnd.google-earth.kml+xml; charset=UTF-8', true);
+		
+		header('Content-Disposition: inline; filename="owa.kml"');
 		//header('Content-type: text/plain', true);		
 		return;
 	}
