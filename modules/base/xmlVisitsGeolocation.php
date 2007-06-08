@@ -126,8 +126,14 @@ class owa_xmlVisitsGeolocationView extends owa_view {
 	
 		$this->_setLinkState();
 				
-		header('Content-type: text/xml', true);
-		//header('Content-type: text/plain', true);		
+		//if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')):
+		//	ob_start("ob_gzhandler");
+		//	header('Content-type: text/xml', true);
+		//	ob_end_flush();
+		//else:
+			header('Content-type: text/xml', true);
+		//endif:
+		
 		return;
 	}
 	
