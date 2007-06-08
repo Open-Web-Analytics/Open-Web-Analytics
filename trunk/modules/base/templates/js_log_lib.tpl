@@ -199,7 +199,7 @@ OWA.pageView.prototype = {
     	logger = new OWA.log;
     	return logger._makeRequest(this.properties);
     
-    },
+    }
 
 }
 
