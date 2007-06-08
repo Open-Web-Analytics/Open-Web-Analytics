@@ -72,15 +72,17 @@ class owa_error {
 					
 					//$config['debug_to_screen'] = true;
 					//$window = owa_error::make_window_logger();
-					$logger = owa_error::make_file_logger();
+					$logger = &Log::singleton('composite');
+					$file = owa_error::make_file_logger();
 					
-					if (!empty($logger)):	
+					if (!empty($file)):	
 						$file_mask = PEAR_LOG_ALL;
-						$logger->setMask($file_mask);
+						$file->setMask($file_mask);
+						$logger->addChild($file);
 					endif;
-					//$logger = &Log::singleton('composite');
+					
 					//$logger->addChild($window);
-					//$logger->addChild($file);
+					
 					break;
 					
 				case "async_development":
