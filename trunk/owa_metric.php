@@ -263,7 +263,16 @@ class owa_metric extends owa_base {
 				
 				break;
 				
+			case "time_range":
+				
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $this->params['start_time'], 'end' => $this->params['end_time']);
+				
+				break;
+				
 		}
+		
+		
+		
 		
 		return;
 	}

@@ -1,4 +1,4 @@
-<div id="recent_visitors">
+<div>
 		<fieldset>
 			<legend>
 				<span class="h_label"><?=$visit['session_month'];?>/<?=$visit['session_day'];?> @ at <?=$visit['session_hour'];?>:<?=$visit['session_minute'];?></span> |
