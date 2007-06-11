@@ -126,7 +126,7 @@ $.fn.spy = function(settings) {
 		
 		spy.ajaxTimer = window.setInterval(function() {
 			if (spyRunning && (!spy.parsing)) {
-				$.post(o.ajax, {owa_do: 'base.widgetLatestVisits', owa_start_time: timestamp, owa_last_end_time: owa_getLastEndTime(), owa_site_id: params.site_id
+				$.post(o.ajax, {owa_do: 'base.widgetLatestVisits', owa_start_time: timestamp, owa_last_end_time: owa_getLastEndTime(), owa_site_id: owa_getSiteId()
 				 }, function(r) {
 					spy.parse(e, r);
 				});
@@ -157,10 +157,13 @@ function pauseSpy() {
 	var temp_time;
 	last_end_time = temp_time;
 	$('div#_spyTmp').html("");
+	$('div#spyContainer').prepend('<div class="status">The spy has been paused...</div>');
 
 	return false;
 }
 
 function playSpy() {
-	spyRunning = 1; return false;
+	spyRunning = 1; 
+	$('div#spyContainer').prepend('<div class="status">The spy has been re-started...</div>');
+	return false;
 }
