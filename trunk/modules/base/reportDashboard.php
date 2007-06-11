@@ -111,7 +111,8 @@ class owa_reportDashboardController extends owa_reportController {
 		
 		
 		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportDashboard';	
+		$data['subview'] = 'base.reportDashboard';
+		$data['nav_tab'] = 'base.reportDashboard';	
 		
 		return $data;	
 		
