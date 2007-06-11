@@ -55,6 +55,7 @@ class owa_reportDashboardSpyController extends owa_reportController {
 		
 		$data['view'] = 'base.report';
 		$data['subview'] = 'base.reportDashboardSpy';	
+		$data['nav_tab'] = 'base.reportDashboard';
 		
 		return $data;	
 		
@@ -93,6 +94,8 @@ class owa_reportDashboardSpyView extends owa_view {
 		
 		// Set Page headline
 		$this->body->set('headline', 'Analytics Dashboard Spy');
+		
+		$this->body->set('nav', $data['nav']);
 		
 		// load body template
 		$this->body->set_template('report_dashboard_spy.tpl');		
