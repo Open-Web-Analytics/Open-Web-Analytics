@@ -353,12 +353,14 @@ OWA.click.prototype = {
 	_setTarget : function() {
 	
 	    // Determine the actual html element that generated the event
-		if (this.e.target) {
-		   this.targ = this.e.target;
+		//if (this.e.target) {
+		//   this.targ = this.e.target;
 		   
-		} else if (this.e.srcElement) {
-	        this.targ = this.e.srcElement;
-	    }
+	    //} else if (this.e.srcElement) {
+	    //     this.targ = this.e.srcElement;
+	    // }
+	    
+	    this.targ = this.e.target || this.e.srcElement;
 	    
 		if (this.targ.nodeType == 3) {
 		    // defeat Safari bug
@@ -410,7 +412,7 @@ OWA.click.prototype = {
 	    }
 	
 	    return;
-	},
+	}	
 
 }
 
