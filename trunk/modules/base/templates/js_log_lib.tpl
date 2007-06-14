@@ -14,6 +14,9 @@
 // $Id$
 //
 
+
+<? include('js_url_encode_lib.tpl');?>
+
 /**
  * Javascript Tracking Library
  * 
@@ -105,7 +108,7 @@ OWA.log.prototype = {
     		
     			value = Url.encode(this._base64_encode(properties[param]+''));
     	
-	    	}else {
+	    	} else {
     	
     			value = '';
     	
@@ -418,4 +421,4 @@ OWA.click.prototype = {
 
 
 
-<? include('js_url_encode_lib.tpl');?>
+
