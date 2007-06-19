@@ -76,12 +76,18 @@ class owa_reportView extends owa_view {
 		// unset per site session cookies but not site_id param
 		foreach ($this->report_params as $k => $v) {
 		
+			// remove site specific session values
 			if (substr($k, 0, 5) == 'site_'):
 				if (substr($k, 0, 7) == 'site_id'): 
 					;
 				else:
 					unset($this->report_params[$k]);
 				endif;
+			endif;
+			
+			// remove left over first hit session value if found.
+			if (substr($k, 0, 10) == 'first_hit_'):
+				unset($this->report_params[$k]);
 			endif;
 			
 		}
