@@ -2,7 +2,7 @@
 <div class="subview_content">
 <form method="post">
 
-	 <fieldset name="owa-options" class="options">
+	<fieldset name="owa-options" class="options">
 	<legend>Request Processing Options</legend>
 			
 	<DIV class="setting">	
@@ -45,6 +45,39 @@
 	</DIV>	
 	
 	<DIV class="setting">	
+		Fetch Referring Web Page Info: 
+		<SELECT NAME="<?=$this->getNs();?>config[fetch_refering_page_info]">
+	
+		<OPTION VALUE="0" <? if ($config['fetch_refering_page_info'] == false):?>SELECTED<?endif;?>>
+		Off</OPTION>
+		
+		<OPTION VALUE="1" <? if ($config['fetch_refering_page_info'] == true):?>SELECTED<?endif;?>>
+		On</OPTION>
+			
+		</SELECT>
+	</DIV>		
+	
+	<DIV class="setting">	
+		Delay First Hit: 
+		<SELECT NAME="<?=$this->getNs();?>config[delay_first_hit]">
+	
+		<OPTION VALUE="0" <? if ($config['delay_first_hit'] == false):?>SELECTED<?endif;?>>
+		Off</OPTION>
+		
+		<OPTION VALUE="1" <? if ($config['delay_first_hit'] == true):?>SELECTED<?endif;?>>
+		On</OPTION>
+			
+		</SELECT>
+	</DIV>		
+	
+    </fieldset>
+    
+    <BR>
+    
+    <fieldset name="owa-options" class="options">
+	<legend>Visitor Announcements</legend>
+	
+		<DIV class="setting">	
 		Announce New Visitors via E-mail: 
 		<SELECT NAME="<?=$this->getNs();?>config[announce_visitors]">
 	
@@ -63,7 +96,8 @@
 
 	</DIV>
 	
-    </fieldset>
+	</fieldset>
+    
     
     <BR>
     

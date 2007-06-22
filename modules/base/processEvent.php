@@ -90,7 +90,7 @@ class owa_processEventController extends owa_controller {
 		$this->event->properties['guid'] = $this->event->guid;
 		
 		// extract site specific state from session store
-		$state = $this->loadSiteState($this->params['site_'.$this->config['site_id']]);
+		$state = $this->loadSiteState($this->params[$this->config['site_session_param'].'_'.$this->config['site_id']]);
 		
 		// Map standard params to standard event property names
 		$this->event->properties['inbound_session_id'] = $state[$this->config['session_param']];

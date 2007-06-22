@@ -105,7 +105,7 @@ class owa_processRequestController extends owa_processEventController {
 		
 		//update last-request time cookie
 		
-		$this->event->setState('site', $this->config['last_request_param'], $this->event->properties['sec'], true);
+		$this->event->setState($this->config['site_session_param'], $this->config['last_request_param'], $this->event->properties['sec'], true);
 		
 		
 		

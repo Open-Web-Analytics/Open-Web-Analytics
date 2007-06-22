@@ -508,7 +508,7 @@ class owa_event extends owa_base {
         
         if ($this->config['per_site_visitors'] == true):
         
-        	$this->setState('site', $this->config['visitor_param'], $this->properties['visitor_id'], true);
+        	$this->setState($this->config['site_session_param'], $this->config['visitor_param'], $this->properties['visitor_id'], true);
         else:
         	$this->setState($this->config['visitor_param'], '', $this->properties['visitor_id']);
         endif;
@@ -571,7 +571,7 @@ class owa_event extends owa_base {
 		$this->properties['event_type'] = 'base.first_page_request';
 		
 		//Set the session cookie
-		$this->setState('site', $this->config['session_param'], $this->properties['session_id'], true);
+		$this->setState($this->config['site_session_param'], $this->config['session_param'], $this->properties['session_id'], true);
 		
                 
 	

@@ -314,6 +314,7 @@
 			'ns'							=> 'owa_',
 			'visitor_param'					=> 'v',
 			'session_param'					=> 's',
+			'site_session_param'			=> 'ss',
 			'last_request_param'			=> 'last_req',
 			'first_hit_param'				=> 'first_hit',
 			'feed_subscription_param'		=> 'sid',
