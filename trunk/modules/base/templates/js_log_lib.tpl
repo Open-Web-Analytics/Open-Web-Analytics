@@ -15,7 +15,7 @@
 //
 
 
-<? include('js_url_encode_lib.tpl');?>
+<? include("js_url_encode_lib.tpl");?>
 
 /**
  * Javascript Tracking Library

@@ -77,12 +77,8 @@ class owa_reportView extends owa_view {
 		foreach ($this->report_params as $k => $v) {
 		
 			// remove site specific session values
-			if (substr($k, 0, 5) == 'site_'):
-				if (substr($k, 0, 7) == 'site_id'): 
-					;
-				else:
-					unset($this->report_params[$k]);
-				endif;
+			if (substr($k, 0, 3) == 'ss_'):
+				unset($this->report_params[$k]);
 			endif;
 			
 			// remove left over first hit session value if found.
