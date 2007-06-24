@@ -54,7 +54,7 @@
  	 */
  	function owa_settings() {
 		
- 		$this->config = owa_coreAPI::entityFactory('base.configuration');
+ 		$this->config = owa_coreAPI::rawEntityFactory('base.configuration');
  		$this->getDefaultConfig();
  		
  		return;

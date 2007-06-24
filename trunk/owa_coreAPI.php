@@ -276,7 +276,7 @@ class owa_coreAPI extends owa_base {
 	}
 	
 	function supportClassFactory($module, $class, $params = array()) {
-			
+		
 		$obj = owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, 'owa_', $class, $params);
 		$obj->module = $module;
 		
@@ -293,12 +293,31 @@ class owa_coreAPI extends owa_base {
 	 */
 	function entityFactory($entity_name) {
 			
+		/*if (!class_exists('owa_entity')):
+			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
+		endif;
+			
+		return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
+		*/
+		
+		return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
+		
+	}
+	
+	/**
+	 * Convienence method for generating entities
+	 *
+	 * @param unknown_type $entity_name
+	 * @return unknown
+	 */
+	function rawEntityFactory($entity_name) {
+			
 		if (!class_exists('owa_entity')):
 			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
 		endif;
 			
 		return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
-		
+				
 	}
 	
 	/**
