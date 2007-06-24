@@ -41,28 +41,22 @@ class owa_toppages extends owa_metric {
 	}
 	
 	function generate() {
-		
-		$this->params['select'] = "count(request.document_id) as count,
-			document.page_title,
-			document.page_type,
-			document.url,
-			document.id as document_id";
-		
-		$this->params['use_summary'] = true;
-		
-		$this->params['orderby'] = array('year', 'month', 'day');
-		
-		$this->setTimePeriod($this->params['period']);
-		
+					
 		$r = owa_coreAPI::entityFactory('base.request');
-		$d = owa_coreAPI::entityFactory('base.document');
+		$r->addRelatedObject('document_id', owa_coreAPI::entityFactory('base.document'));
 		
-		$this->params['related_objs'] = array('document_id' => $d);
-		$this->params['groupby'] = array('document.id');
-		$this->params['orderby'] = array('count');
-		$this->params['order'] = 'DESC';
-		
-		$this->params['constraints']['document.page_type'] = array('operator' => '!=', 'value' => 'feed');
+		$r->setSelect("count(request.document_id) as count,
+						document.page_title,
+						document.page_type,
+						document.url,
+						document.id as document_id");
+				
+		$this->setTimePeriod($this->params['period']);
+				
+		$r->addGroupBy('document.id');
+		$r->addOrderBy('count');
+		$r->setOrder('DESC');
+		$r->addConstraint('document.page_type', array('operator' => '!=', 'value' => 'feed'));
 		
 		return $r->query($this->params);
 		
