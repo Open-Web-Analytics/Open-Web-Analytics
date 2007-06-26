@@ -190,7 +190,7 @@ class owa_error {
 	function make_window_logger() {
 		
 		$conf = array('title' => 'Error Log Output');
-		$logger = &Log::singleton('winstatic', 'LogWindow', posix_getpid(), $conf);
+		$logger = &Log::singleton('winstatic', 'LogWindow', getmypid(), $conf);
 		return $logger;
 	}
 	/**
@@ -202,14 +202,14 @@ class owa_error {
 	function make_display_logger() {
 		
 		$conf = array('error_prepend' => '<font color="#ff0000"><tt>', 'error_append'  => '</tt></font>');
-		$logger = &Log::singleton('display', '', posix_getpid(), $conf);
+		$logger = &Log::singleton('display', '', getmypid(), $conf);
 		return $logger;
 	}
 	
 	function make_console_logger() {
 		define('STDOUT', fopen("php://stdout", "r"));
 		$conf = array('stream' => STDOUT, 'buffering' => false);
-		$logger = &Log::singleton('console', '', posix_getpid(), $conf);
+		$logger = &Log::singleton('console', '', getmypid(), $conf);
 		return $logger;
 	}
 	
@@ -225,7 +225,7 @@ class owa_error {
 		if ($handle != false):
 			fclose($handle);
 			$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-			$logger = &Log::singleton('file', $this->config['error_log_file'], posix_getpid(), $conf);
+			$logger = &Log::singleton('file', $this->config['error_log_file'], getmypid(), $conf);
 			return $logger;
 		else:
 			return;
@@ -240,7 +240,7 @@ class owa_error {
 	function make_mail_logger() {
 		
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
-		$logger = &Log::singleton('mail', $this->config['notice_email'], posix_getpid(), $conf);
+		$logger = &Log::singleton('mail', $this->config['notice_email'], getmypid(), $conf);
 		return $logger;
 	}
 	
@@ -293,7 +293,7 @@ class owa_error {
 	    $conf = array('mode' => 0600, 'timeFormat' => '%X %x');
 	   	$c = &owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
-		$logger = &Log::singleton('file', $config['error_log_file'], posix_getpid(), $conf);
+		$logger = &Log::singleton('file', $config['error_log_file'], getmypid(), $conf);
 		$file_mask = PEAR_LOG_ALL;
 		$logger->setMask($file_mask);
 	    $logger->log($err, $priority);

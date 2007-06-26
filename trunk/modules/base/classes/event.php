@@ -240,7 +240,7 @@ class owa_event extends owa_base {
 	 */
 	function set_guid() {
 	
-		return crc32(posix_getpid().$this->properties['site_id'].$this->properties['sec'].$this->properties['msec'].rand());
+		return crc32(getmypid().$this->properties['site_id'].$this->properties['sec'].$this->properties['msec'].rand());
 	
 	}
 	
