@@ -66,7 +66,7 @@ class owa_wp extends owa_caller {
 	 */
 	function add_feed_tracking($binfo) {
 		
-		$guid = crc32(posix_getpid().microtime());
+		$guid = crc32(getmypid().microtime());
 		
 		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
 	}

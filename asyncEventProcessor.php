@@ -161,7 +161,7 @@ class asyncEventProcessor extends owa_caller {
 		$lock_file = fopen($this->config['async_log_dir'].$this->config['async_lock_file'], "w+") or die ("Could not create lock file");
 								
 		// Write PID to lock file
-   		if (fwrite($lock_file, posix_getpid()) === FALSE) {
+   		if (fwrite($lock_file, getmypid()) === FALSE) {
        		$this->e->alert('Cannot write to lock file. Terminating Run.');
        		exit;
    		}
@@ -177,7 +177,7 @@ class asyncEventProcessor extends owa_caller {
 				$this->create_lock_file();
 					
 				// Create a new log file name	
-				$new_file_name = $this->config['async_log_dir'].time().".".posix_getpid();
+				$new_file_name = $this->config['async_log_dir'].time().".".getmypid();
 				$new_file = $new_file_name.".processing";
 				// Rename current log file 
 				rename ($file, $new_file ) or die ("Could not rename file");
