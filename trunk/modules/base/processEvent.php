@@ -106,8 +106,10 @@ class owa_processEventController extends owa_controller {
 		
 		
 		$this->event->properties['HTTP_USER_AGENT'] = $this->params['server']['HTTP_USER_AGENT'];
+		
+		//needed in case javascript logger sets the referer variable but is blank
 		if (isset($this->params['referer'])):
-			$this->event->properties['HTTP_REFERER'] = $this->params['referer'];
+			$this->event->properties['HTTP_REFERER'] = $this->params['caller']['referer'];
 		else:
 			$this->event->properties['HTTP_REFERER'] = $this->params['server']['HTTP_REFERER'];
 		endif;

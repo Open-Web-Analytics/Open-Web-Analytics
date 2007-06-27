@@ -191,7 +191,7 @@ OWA.pageView.prototype = {
 		}
 		
 		if (typeof this.properties["referer"] == 'undefined') {
-			this.properties["referer"] = document.referer;
+			this.properties["referer"] = document.referrer;
 		}
     
         return;
