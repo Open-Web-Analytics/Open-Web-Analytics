@@ -68,7 +68,14 @@
 		On</OPTION>
 			
 		</SELECT>
-	</DIV>		
+	</DIV>	
+	
+	<DIV class="setting">	
+
+	P3P Compact Privacy Policy: <input type="text" name="<?=$this->getNs();?>config[p3p_policy]" value="<?=$config['p3p_policy']?>"><BR>
+
+	</DIV>
+	
 	
     </fieldset>
     
