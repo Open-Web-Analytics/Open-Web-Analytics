@@ -460,7 +460,9 @@ class owa_event extends owa_base {
 			$state_name = sprintf('%s%s', $this->config['ns'], $store_name);
 		endif;
 		
-		//
+		// set compact privacy header
+		header(sprintf('P3P: CP="%s"', $this->config['p3p_policy']));
+		
 		return setcookie($state_name, $state_value, time()+3600*24*365*30, "/", $this->config['cookie_domain']);
 		
 	
