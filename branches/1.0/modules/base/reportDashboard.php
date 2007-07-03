@@ -111,7 +111,8 @@ class owa_reportDashboardController extends owa_reportController {
 		
 		
 		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportDashboard';	
+		$data['subview'] = 'base.reportDashboard';
+		$data['nav_tab'] = 'base.reportDashboard';	
 		
 		return $data;	
 		
@@ -161,7 +162,7 @@ class owa_reportDashboardView extends owa_view {
 		
 		$this->body->set('config', $this->config);
 		
-		$this->body->set('params', $data);
+		$this->body->set('params', $data['params']);
 		
 		$this->body->set('core_metrics', $data['core_metrics_data']);
 		

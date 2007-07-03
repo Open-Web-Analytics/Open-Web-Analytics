@@ -298,7 +298,7 @@ class owa_db_mysql extends owa_db {
 		
 			foreach ($this->params['related_objs'] as $k => $v) {
 			
-				$cols .= ', '.$this->makeColumnList($v);
+				$cols .= ', '.$this->makeColumnList($v->entity);
 			
 			}
 		
@@ -415,9 +415,9 @@ class owa_db_mysql extends owa_db {
 		if(!empty($this->params['related_objs'])):
 		
 			foreach ($this->params['related_objs'] as $k => $v) {
-				$joinTableNs = $this->removeNs(get_class($v));
+				$joinTableNs = $this->removeNs(get_class($v->entity));
 				
-				$from .= ' LEFT OUTER JOIN ' . get_class($v) . ' as ' . $joinTableNs . ' ON ' . $primary_obj_ns . '.' . $k . ' = ' . $joinTableNs . '.id';
+				$from .= ' LEFT OUTER JOIN ' . get_class($v->entity) . ' as ' . $joinTableNs . ' ON ' . $primary_obj_ns . '.' . $k . ' = ' . $joinTableNs . '.id';
 			}
 		
 		endif;

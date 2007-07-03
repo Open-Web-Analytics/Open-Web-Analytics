@@ -77,6 +77,15 @@ function owa_logClick() {
 document.onclick = owa_setClick;
 
 // Registers the handler for the beforenavigate event so that the click can be logged
+
+if(window.addEventListener) {
+
 window.addEventListener('beforeunload', owa_logClick, false);
+
+} else if(window.attachEvent) {
+
+window.attachEvent('beforeunload', owa_logClick);
+
+}
 
 <? endif;?>

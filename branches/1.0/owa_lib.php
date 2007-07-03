@@ -699,6 +699,36 @@ class owa_lib {
 		
 	}
 	
+	function assocFromString($string_state, $inner = '=>', $outer = '|||') {
+	
+		if (!empty($string_state)):
+		
+			if (strpos($string_state, $outer) === false):
+	
+				return $string_state;
+				
+			else:
+				
+				$array = explode($outer, $string_state);
+				
+				$state = array();
+				
+				foreach ($array as $key => $value) {
+		
+					list($realkey, $realvalue) = split($inner, $value);
+					$state[$realkey] = $realvalue;
+		
+				}
+				
+			endif;
+	
+		endif;
+		
+		return $state;
+
+	
+	}
+	
 	
 }
 

@@ -12,6 +12,8 @@ Author URI: http://www.openwebanalytics.com
 require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
 
+
+
 /**
  * WORDPRESS Constants
  * You should not need to change these.
@@ -19,6 +21,14 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
+
+// hack for eliminating WP from printing db errors prior to WP v2.1 
+// this won't be needed once OWA's blind inserts are eliminated
+if ($owa_wp_version[0] == '2'):
+	if ($owa_wp_version[1] == '0'):
+		$wpdb->hide_errors();
+	endif;
+endif;
 
 // check to see if OWA is installed
 $current_plugins = get_option('active_plugins');

@@ -380,11 +380,18 @@ class owa_template extends Template {
 		$link = sprintf($this->config['link_template'], $url, $get);
 		
 		if ($xml == true):
-			$link = str_replace('&', '&amp;', $link);
+			$link = $this->escapeForXml($link);
 		endif;
 		
 		return $link;
 		
+	}
+	
+	function escapeForXml($string) {
+	
+		return str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
+
+	
 	}
 	
 	function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {

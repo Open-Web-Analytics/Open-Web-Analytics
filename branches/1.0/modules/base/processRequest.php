@@ -50,7 +50,7 @@ class owa_processRequestController extends owa_processEventController {
 		// Control logic
 		
 		// Do not log if the first_hit cookie is still present.
-        if (!empty($this->params[$this->config['first_hit_param']])):
+        if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']])):
         	$this->e->debug('Aborting request processing due to finding first hit cookie.');
 			return;
 		endif;
@@ -100,16 +100,14 @@ class owa_processRequestController extends owa_processEventController {
 			$this->event->state = 'page_request';
 			$this->event->properties['event_type'] = 'base.page_request'; 
 			$this->event->properties['is_browser'] = true;
-			$this->event->assign_visitor($this->event->properties['inbound_visitor_id']);
 			$this->event->sessionize($this->event->properties['inbound_session_id']);
 		endif;	
 		
 		//update last-request time cookie
-		setcookie($this->config['ns'].$this->config['last_request_param'], 
-					$this->event->properties['sec'], 
-					time()+3600*24*365*30, 
-					"/", 
-					$this->config['cookie_domain']);
+		
+		$this->event->setState($this->config['site_session_param'], $this->config['last_request_param'], $this->event->properties['sec'], true);
+		
+		
 		
 		// Post Process - cleanup after all properties are set
 		$this->post();

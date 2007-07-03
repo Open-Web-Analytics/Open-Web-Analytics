@@ -55,9 +55,9 @@ class owa_reportController extends owa_controller {
 		
 		$this->e->debug('Performing Action: '.get_class($this));
 		
-		if (empty($this->params['site_id'])):
-			$this->params['site_id'] = $this->config['site_id'];
-		endif;
+		//if (!isset($this->params['site_id'])):
+		//	$this->params['site_id'] = $this->config['site_id'];
+		//endif;
 		
 		// set default period if necessary
 		if (empty($this->params['period'])):

@@ -91,7 +91,7 @@ class owa_caller extends owa_base {
 		$this->config = $this->c->fetch('base');
 
 		// log PHP warnings and errors
-		if ($this->config['log_php_errors'] == true):
+		if (OWA_LOG_PHP_ERRORS === true):
 			set_error_handler(array("owa_error", "handlePhpError"));
 		endif;
 
@@ -144,6 +144,13 @@ class owa_caller extends owa_base {
 	 * @return boolean
 	 */
 	function logEvent($event_type, $caller_params = '') {
+		
+		//change config value to incomming site_id
+			if(!empty($caller_params['site_id'])):
+				$this->config['site_id'] = $caller_params['site_id'];
+				$this->c->set('base', 'site_id', $caller_params['site_id']);
+			endif;
+		
 		
 		// do not log if the request is comming fro mthe preview plane of the admin interface
 		if ($this->params['preview'] == true):
@@ -372,12 +379,6 @@ class owa_caller extends owa_base {
 		else:
 			print "Caller: No view or action param found. I'm not sure what to do here.";
 			return;
-		endif;
-		
-		//clean up any open db connection
-		if ($this->config['async_db'] == false):
-			$db = &owa_coreAPI::dbSingleton();
-			$db->close();
 		endif;
 		
 		$init = true;

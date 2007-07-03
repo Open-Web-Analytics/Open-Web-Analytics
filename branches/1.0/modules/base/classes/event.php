@@ -206,20 +206,26 @@ class owa_event extends owa_base {
 	 */
 	function setIp($HTTP_X_FORWARDED_FOR, $HTTP_CLIENT_IP, $REMOTE_ADDR) {
 	
-		if ($HTTP_X_FORWARDED_FOR):
-			if ($HTTP_CLIENT_IP):
-		   		$proxy = $HTTP_CLIENT_IP;
-		  	else:
-		    	$proxy = $REMOTE_ADDR;
-		  	endif;
+		// check for a non-unknown proxy address
+		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false):
 			
-			$this->properties['ip_address'] = $HTTP_X_FORWARDED_FOR;
+			// if more than one use the last one
+			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):
+				$this->properties['ip_address'] = $HTTP_X_FORWARDED_FOR;
+			else:
+				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
+				$this->properties['ip_address'] = $ips[0];
+			endif;
+		
+		// or else just use the remote address	
 		else:
+		
 			if ($HTTP_CLIENT_IP):
 		    	$this->properties['ip_address'] = $HTTP_CLIENT_IP;
 		  	else:
 		    	$this->properties['ip_address'] = $REMOTE_ADDR;
 			endif;
+			
 		endif;
 		
 		return;
@@ -234,7 +240,7 @@ class owa_event extends owa_base {
 	 */
 	function set_guid() {
 	
-		return crc32(posix_getpid().$this->properties['site_id'].$this->properties['sec'].$this->properties['msec'].rand());
+		return crc32(getmypid().$this->properties['site_id'].$this->properties['sec'].$this->properties['msec'].rand());
 	
 	}
 	
@@ -414,6 +420,168 @@ class owa_event extends owa_base {
 		endif;		
 	}
 	
+	function setState($store_name, $name, $value, $per_site = false, $persistant = true) {
+		
+		static $state;
+		
+		if (empty($state[$store_name])):
+			$params = &owa_requestContainer::getInstance();
+			
+			//print 'hello from setstate:'. print_r($params[$store_name.'_'.$this->config['site_id']], true);
+			if ($per_site == true):
+			
+				$state[$store_name] = owa_lib::assocFromString($params[$store_name.'_'.$this->config['site_id']]);
+			
+			else:
+				$state[$store_name] = owa_lib::assocFromString($params[$store_name]);
+			endif;
+			
+		endif;
+		
+	
+		if (!empty($name)):
+			$state[$store_name][$name] = $value;
+		else:
+			$state[$store_name] = $value;
+		endif;
+		
+		if (is_array($state[$store_name])):
+			$state_value = owa_lib::implode_assoc('=>', '|||', $state[$store_name]);
+		else:
+			$state_value = $state[$store_name];
+		endif;
+		
+		$this->e->debug(sprintf('Setting state: Store_name=%s, Name=%s, Value=%s, State_storage_value= %s',$store_name, $name,$value,print_r($state_value, true)));
+		
+		// Set cookie name
+		if ($per_site == true):
+			$state_name = sprintf('%s%s_%s', $this->config['ns'], $store_name, $this->config['site_id']);
+		else:
+			$state_name = sprintf('%s%s', $this->config['ns'], $store_name);
+		endif;
+		
+		// set compact privacy header
+		header(sprintf('P3P: CP="%s"', $this->config['p3p_policy']));
+		
+		return setcookie($state_name, $state_value, time()+3600*24*365*30, "/", $this->config['cookie_domain']);
+		
+	
+	}
+	
+	function clearState($store_name) {
+		
+		return setcookie($this->config['ns'].$store_name.'_'.$this->config['site_id'], '', time()-3600*24*365*30, "/", $this->config['cookie_domain']);
+	
+	}
+
+
+/**
+	 * Assigns visitor IDs
+	 *
+	 */
+	function assign_visitor($inbound_visitor_id) {
+		
+		// is this new visitor?
+	
+		if (empty($inbound_visitor_id)):
+			$this->set_new_visitor();
+		else:
+			$this->properties['visitor_id'] = $inbound_visitor_id;
+			$this->properties['is_repeat_visitor'] = true;
+		endif;
+		
+		return;
+	}
+
+	
+	
+	/**
+	 * Creates new visitor
+	 * 
+	 * @access 	public
+	 *
+	 */
+	function set_new_visitor() {
+	
+		// Create guid
+        $this->properties['visitor_id'] = $this->set_guid();
+		
+        // Set visitor cookie
+        
+        if ($this->config['per_site_visitors'] == true):
+        
+        	$this->setState($this->config['site_session_param'], $this->config['visitor_param'], $this->properties['visitor_id'], true);
+        else:
+        	$this->setState($this->config['visitor_param'], '', $this->properties['visitor_id']);
+        endif;
+		
+		$this->properties['is_new_visitor'] = true;
+		
+		return;
+	
+	}
+	
+/**
+	 * Make Session IDs
+	 *
+	 */
+	function sessionize($inbound_session_id) {
+		
+			// check for inbound session id
+			if (!empty($inbound_session_id)):
+				 
+				 if (!empty($this->properties['last_req'])):
+							
+					if ($this->time_since_lastreq < $this->config['session_length']):
+						$this->properties['session_id'] = $inbound_session_id;		
+						
+					else:
+					//prev session expired, because no hits in half hour.
+						$this->create_new_session($this->properties['visitor_id']);
+					endif;
+				else:
+				//session_id, but no last_req value. whats up with that?  who cares. just make new session.
+					$this->create_new_session($this->properties['visitor_id']);
+				endif;
+			else:
+			//no session yet. make one.
+				$this->create_new_session($this->properties['visitor_id']);
+			endif;
+						
+		return;
+	}
+	
+	/**
+	 * Creates new session id 
+	 *
+	 * @param 	integer $visitor_id
+	 * @access 	public
+	 */
+	function create_new_session($visitor_id) {
+	
+		//generate new session ID 
+	    $this->properties['session_id'] = $this->set_guid();
+	
+		//mark entry page flag on current request
+		$this->properties['is_entry_page'] = true;
+		
+		//mark new session flag on current request
+		$this->properties['is_new_session'] = true;
+		
+		//mark even state as first_page_request.
+		$this->state = 'first_page_request';
+		$this->properties['event_type'] = 'base.first_page_request';
+		
+		//Set the session cookie
+		$this->setState($this->config['site_session_param'], $this->config['session_param'], $this->properties['session_id'], true);
+		
+                
+	
+		return;
+	
+	}
+
+
 	
 }
 

@@ -188,6 +188,13 @@ class owa_baseModule extends owa_module {
 										'anchortext' 	=> 'Referring Web Sites',
 										'order'			=> 3));
 		
+		$this->addNavigationLink(array('view' 			=> 'base.reportDashboard', 
+										'nav_name'		=> 'sub_nav',
+										'ref'			=> 'base.reportDashboardSpy',
+										'priviledge' 	=> 'viewer', 
+										'anchortext' 	=> 'Spy Dashboard',
+										'order'			=> 1));
+		
 		return;
 		
 	}

@@ -72,8 +72,22 @@ class owa_reportView extends owa_view {
 		unset($this->report_params['p']);
 		unset($this->report_params['u']);
 		unset($this->report_params['v']);
-		unset($this->report_params['s']);
-		unset($this->report_params['last_req']);
+		
+		// unset per site session cookies but not site_id param
+		foreach ($this->report_params as $k => $v) {
+		
+			// remove site specific session values
+			if (substr($k, 0, 3) == 'ss_'):
+				unset($this->report_params[$k]);
+			endif;
+			
+			// remove left over first hit session value if found.
+			if (substr($k, 0, 10) == 'first_hit_'):
+				unset($this->report_params[$k]);
+			endif;
+			
+		}
+		
 		unset($this->report_params['guid']);
 		unset($this->report_params['caller']);
 		

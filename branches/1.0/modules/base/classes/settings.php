@@ -54,7 +54,7 @@
  	 */
  	function owa_settings() {
 		
- 		$this->config = owa_coreAPI::entityFactory('base.configuration');
+ 		$this->config = owa_coreAPI::rawEntityFactory('base.configuration');
  		$this->getDefaultConfig();
  		
  		return;
@@ -314,6 +314,7 @@
 			'ns'							=> 'owa_',
 			'visitor_param'					=> 'v',
 			'session_param'					=> 's',
+			'site_session_param'			=> 'ss',
 			'last_request_param'			=> 'last_req',
 			'first_hit_param'				=> 'first_hit',
 			'feed_subscription_param'		=> 'sid',
@@ -397,9 +398,10 @@
 			'mailer-smtpAuth'				=> '',
 			'mailer-username'				=> '',
 			'mailer-password'				=> '',
-			'cookie_domain'					=> $_SERVER['SERVER_NAME'],
+			'cookie_domain'					=> '',
 			'ws_timeout'					=> 10,
-			'is_active'						=> true
+			'is_active'						=> true,
+			'per_site_visitors'				=> false
 			
 			));
 			
@@ -422,6 +424,14 @@
 			$config['base']['images_url'] =  'i/';
 			$config['base']['images_absolute_url'] = OWA_PUBLIC_URL.$config['base']['images_url'];
 			$config['base']['log_url'] = OWA_PUBLIC_URL.'log.php';
+			
+			// Set cookie domain
+			if (!empty($_SERVER['HTTP_HOST'])):
+				$config['base']['cookie_domain'] = $_SERVER['HTTP_HOST'];
+			else:		
+				$config['base']['cookie_domain'] = $_SERVER['SERVER_NAME'];
+			endif;
+			
 			
 			// set default values
 			$this->config->set('settings', $config);

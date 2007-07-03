@@ -91,17 +91,11 @@ class owa_requestEvent extends owa_event {
 	 */
 	function load_first_hit_properties($properties) {
 		
-		$this->properties['inbound_first_hit_properties'] = $properties;
+		$this->properties['inbound_first_hit_properties'] = owa_lib::assocFromString($properties);
+		$this->properties = $this->properties['inbound_first_hit_properties'];
          
-        $array = explode("|||", $properties);
-
-		foreach ($array as $key => $value):
-
-			list($realkey, $realvalue) = split('=>', $value);
-          	$this->properties[$realkey] = $realvalue;
-
-        endforeach;
-          
+    
+		          
           //$this->e->debug('unserialized first it array: '.print_r($this->properties, true));
 
 		
@@ -109,7 +103,7 @@ class owa_requestEvent extends owa_event {
 		$this->first_hit = true;
 		
 		// Delete first_hit Cookie
-		setcookie($this->config['ns'].$this->config['first_hit_param'], '', time()-3600*24*365*30, "/", $this->config['cookie_domain']);
+		$this->clearState($this->config['first_hit_param']);
 		
 		return;
 	}
@@ -124,114 +118,14 @@ class owa_requestEvent extends owa_event {
 	 * @access 	public
 	 */
 	function log_first_hit() {
+				
+		$this->setState($this->config['first_hit_param'], '', $this->properties, true);
 		
-		$values = owa_lib::implode_assoc('=>', '|||', $this->properties);
-		setcookie($this->config['ns'].$this->config['first_hit_param'], $values, time()+3600*24*365*30, "/", $this->config['cookie_domain']);
 		$this->e->debug('First hit cookie values: '.$values);
+		
 		return true;
 	
 	}
-	
-	/**
-	 * Assigns visitor IDs
-	 *
-	 */
-	function assign_visitor($inbound_visitor_id) {
-		
-		// is this new visitor?
-	
-		if (empty($inbound_visitor_id)):
-			$this->set_new_visitor();
-		else:
-			$this->properties['visitor_id'] = $inbound_visitor_id;
-			$this->properties['is_repeat_visitor'] = true;
-		endif;
-		
-		return;
-	}
-	
-	/**
-	 * Make Session IDs
-	 *
-	 */
-	function sessionize($inbound_session_id) {
-		
-			// check for inbound session id
-			if (!empty($inbound_session_id)):
-				 
-				 if (!empty($this->properties['last_req'])):
-							
-					if ($this->time_since_lastreq < $this->config['session_length']):
-						$this->properties['session_id'] = $inbound_session_id;		
-						
-					else:
-					//prev session expired, because no hits in half hour.
-						$this->create_new_session($this->properties['visitor_id']);
-					endif;
-				else:
-				//session_id, but no last_req value. whats up with that?  who cares. just make new session.
-					$this->create_new_session($this->properties['visitor_id']);
-				endif;
-			else:
-			//no session yet. make one.
-				$this->create_new_session($this->properties['visitor_id']);
-			endif;
-						
-		return;
-	}
-	
-	/**
-	 * Creates new session id 
-	 *
-	 * @param 	integer $visitor_id
-	 * @access 	public
-	 */
-	function create_new_session($visitor_id) {
-	
-		//generate new session ID 
-	    $this->properties['session_id'] = $this->set_guid();
-	
-		//mark entry page flag on current request
-		$this->properties['is_entry_page'] = true;
-		
-		//mark new session flag on current request
-		$this->properties['is_new_session'] = true;
-		
-		//mark even state as first_page_request.
-		$this->state = 'first_page_request';
-		$this->properties['event_type'] = 'base.first_page_request';
-		
-		//Set the session cookie
-        setcookie($this->config['ns'].$this->config['session_param'], $this->properties['session_id'], time()+3600*24*365*30, "/", $this->config['cookie_domain']);
-        
-	
-		return;
-	
-	}
-	
-	/**
-	 * Creates new visitor
-	 * 
-	 * @access 	public
-	 *
-	 */
-	function set_new_visitor() {
-	
-		// Create guid
-        $this->properties['visitor_id'] = $this->set_guid();
-		
-        // Set visitor cookie
-        setcookie($this->config['ns'].$this->config['visitor_param'], $this->properties['visitor_id'] , time()+3600*24*365*30, "/", $this->config['cookie_domain']);
-		
-		$this->properties['is_new_visitor'] = true;
-		
-		return;
-	
-	}
-	
-
-	
-	
 	
 	
 }

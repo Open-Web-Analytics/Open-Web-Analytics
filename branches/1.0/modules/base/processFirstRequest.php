@@ -42,7 +42,7 @@ class owa_processFirstRequestController extends owa_processEventController {
 	
 	function action() {
 		
-		if (!empty($this->params[$this->config['first_hit_param']])):
+		if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']])):
 		
 			// Create a new request object
 			$this->event = owa_coreAPI::supportClassFactory('base', 'requestEvent');
@@ -50,12 +50,12 @@ class owa_processFirstRequestController extends owa_processEventController {
 			$this->event->state = 'first_page_request';
 		
 			//Load request properties from first_hit cookie if it exists
-			if (!empty($this->params[$this->config['first_hit_param']])):
-				$this->event->load_first_hit_properties($this->params[$this->config['first_hit_param']]);
+			if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']])):
+				$this->event->load_first_hit_properties($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']]);
 			endif;
 			
-			$this->e->debug(sprintf('First hit Request %d logged to event queue',
-									$r->properties['request_id']));
+			$this->e->debug(sprintf('First hit Request %s logged to event queue',
+									$this->event->properties['guid']));
 			
 			// Log the request
 			$this->event->log();

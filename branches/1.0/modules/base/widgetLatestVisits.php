@@ -24,7 +24,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * XML Visits Geolocation Report Controller
+ * Latest Visits Widget Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -35,9 +35,9 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since		owa 1.0.0
  */
 
-class owa_xmlVisitsGeolocationController extends owa_reportController {
+class owa_widgetLatestVisitsController extends owa_reportController {
 
-	function owa_xmlVisitsGeolocationController($params) {
+	function owa_widgetLatestVisitsController($params) {
 		
 		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
@@ -45,42 +45,33 @@ class owa_xmlVisitsGeolocationController extends owa_reportController {
 		return;
 	}
 	
-	function action() {	
+	function action() {
 
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 		
 		$data = array();
+		
+		$this->e->debug(sprintf("start: %s, end: %s, Now: %s", date("F j, Y, g:i:s a", $this->params['start_time']), date("F j, Y, g:i:s a"), date("F j, Y, g:i:s a", time())));
+		
 		$data['params'] = $this->params;
 		
-		//$this->params['period'] = 'last_thirty_days';
-	
-			
-		if ($this->params['site_id']):
-			//get site labels
-			$s = owa_coreAPI::entityFactory('base.site');
-			$s->getByColumn('site_id', $this->params['site_id']);
-			$data['site_name'] = $s->get('name');
-			$data['site_description'] = $s->get('description');
-		else:
-			$data['site_name'] = 'All Sites';
-			$data['site_description'] = 'All Sites Tracked by OWA';
-		endif;
-		
+
 		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
 		
 			'constraints'	=> array('site_id'	=> $this->params['site_id']),
-			'limit'			=> 100,
-			//'period'		=> 'last_thirty_days',
+			'limit'			=> 50,
 			'orderby'		=> array('session.timestamp'),
-			'order'			=> 'DESC'
+			'period'		=> 'time_range',
+			'start_time'	=> $this->params['start_time'],
+			'end_time'		=> $this->params['last_end_time'],
+			'order'			=> 'ASC'
 		
 		));
 		
-
 		
-		$data['view'] = 'base.xmlVisitsGeolocation';
-			
+		
+		$data['view'] = 'base.widgetLatestVisits';	
 		
 		return $data;	
 		
@@ -91,7 +82,7 @@ class owa_xmlVisitsGeolocationController extends owa_reportController {
 
 
 /**
- * Visits Geolocation xml View
+ * View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -102,37 +93,24 @@ class owa_xmlVisitsGeolocationController extends owa_reportController {
  * @since		owa 1.0.0
  */
 
-class owa_xmlVisitsGeolocationView extends owa_view {
+class owa_widgetLatestVisitsView extends owa_view {
 	
-	function owa_xmlVisitsGeolocationView() {
+	function owa_widgetLastestVisitsView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'guest';
+		$this->priviledge_level = 'viewer';
 		
 		return;
 	}
 	
 	function construct($data) {
 		
-		$this->t->set_template('wrapper_blank.tpl');
 		
 		// load body template
-		$this->body->set_template('xml_visits_geolocation.tpl');
-		//$this->body->set_template('kml_google_sample.tpl');
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('widget_latest_visits.tpl');
+			
 		$this->body->set('visits', $data['latest_visits']);
-		$this->body->set('site_name', $data['site_name']);
-		$this->body->set('site_domain', $data['site_domain']);
-		$this->body->set('site_description', $data['site_description']);
-	
-		$this->_setLinkState();
-				
-		//if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')):
-		//	ob_start("ob_gzhandler");
-		//	header('Content-type: text/xml', true);
-		//	ob_end_flush();
-		//else:
-			header('Content-type: text/xml', true);
-		//endif:
 		
 		return;
 	}
