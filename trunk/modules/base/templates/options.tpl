@@ -6,7 +6,7 @@
 
 <BR>
 
-<Table id="layout_panels" cellpadding="0" cellspacing="0">
+<table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>
 		<TD colspan="2" class="headline">
 			<?=$headline;?>

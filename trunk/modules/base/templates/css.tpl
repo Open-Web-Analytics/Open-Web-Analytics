@@ -129,7 +129,6 @@ div {margin:0;}
 #panel td {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
 .subview_content{padding:10px;}
-
 .subview_content td {padding:20ps;}
 #nav_left {width:240px;}
 .data {white-space:nowrap; width:auto;}
@@ -177,6 +176,13 @@ div {margin:0;}
 .tiny_icon{width:10px;padding-left:0px;}
 .wrap {margin:0px;padding:10px;}
 .validation_error {color:red;}
+
+/* Admin Settings */
+.setting {padding:5px;border:1px solid #cccccc; margin:1px;}
+.setting .description {border:0px solid #cccccc; font-size:10px; padding: 2px 0 2px 0;}
+.setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
+.setting .field {padding: 2px 0 2px 0;}
+
 
 /* REPORTS */
 #report_header {width:100%;margin: 0 0 20px 0;}
