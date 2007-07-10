@@ -82,23 +82,7 @@ class owa_wp extends owa_caller {
 		
 	}
 	
-	function handleSpecialActionRequest() {
-		
-		if(isset($_GET['owa_specialAction'])):
-			$this->e->debug("special action received");
-			echo $this->handleRequestFromUrl();
-			exit;
-		elseif(isset($_GET['owa_logAction'])):
-			$this->e->debug("log action received");
-			$this->config['delay_first_hit'] = false;
-			$this->c->set('base', 'delay_first_hit', false);
-			echo $this->logEventFromUrl($_GET);
-			exit;
-		else:
-			return;
-		endif;
-
-	}
+	
 	
 
 	

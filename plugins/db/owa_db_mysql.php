@@ -157,7 +157,7 @@ class owa_db_mysql extends owa_db {
 		$this->query($sql);
 		
 		//print_r($this->result);
-		$row = mysql_fetch_assoc($this->new_result);
+		$row = @mysql_fetch_assoc($this->new_result);
 		
 		return $row;
 	}

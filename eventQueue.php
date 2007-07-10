@@ -16,10 +16,10 @@
 // $Id$
 //
 
-require_once OWA_PEARLOG_DIR . '/Log.php';
-require_once OWA_PLUGINS_DIR . '/log/queue.php';
-require_once OWA_PLUGINS_DIR . '/log/async_queue.php';
-require_once 'owa_observer.php';
+require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
+require_once(OWA_PLUGINS_DIR . DIRECTORY_SEPARATOR . 'log/queue.php');
+require_once(OWA_PLUGINS_DIR . DIRECTORY_SEPARATOR . 'log/async_queue.php');
+require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
 
 /**
  * Event Queue
