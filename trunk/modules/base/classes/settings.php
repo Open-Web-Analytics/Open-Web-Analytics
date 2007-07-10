@@ -416,7 +416,7 @@
 			if($_SERVER['SERVER_PORT'] != 80):
 				$base_url .= ':'.$_SERVER['SERVER_PORT'];
 			endif;
-								
+			$config['base']['base_url'] = $base_url;					
 			$config['base']['public_url'] = OWA_PUBLIC_URL;
 			$config['base']['main_url'] = 'main.php';
 			$config['base']['main_absolute_url'] = OWA_PUBLIC_URL.$config['base']['main_url'];

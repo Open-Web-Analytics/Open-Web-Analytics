@@ -16,7 +16,55 @@
 // $Id$
 //
 
-require_once('owa_php.php');
+require_once('owa_env.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
+require_once "$IP/includes/SpecialPage.php";
+
+global $wgCachePages, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword, $wgUser, $wgServer;
+
+// OWA Configuration
+
+
+// OWA DATABASE CONFIGURATION 
+// Will use Wordpress config unless there is a config file present.
+// OWA uses this to setup it's own DB connection seperate from the one
+// that Wordpress uses.
+
+$config_file = OWA_CONF_DIR.'owa-config.php';
+if (file_exists($config_file)):
+	// do nothing as the caller class will define the DB config constants later.
+	;
+else:
+	// use the Wordpress configuration
+	define('OWA_DB_TYPE', $wgDBtype);
+	define('OWA_DB_NAME', $wgDBname);
+	define('OWA_DB_HOST', $wgDBserver);
+	define('OWA_DB_USER', $wgDBuser);
+	define('OWA_DB_PASSWORD', $wgDBpassword);
+endif;
+
+// Public folder URI
+define('OWA_PUBLIC_URL', '../extensions/owa/public/');
+
+$wiki_url = $wgServer;
+
+// Build the OWA wordpress specific config overrides array
+$owa_config = array();
+$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
+$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
+$owa_config['images_absolute_url'] = $wiki_url.'/wp-content/plugins/owa/public/i/';
+$owa_config['main_url'] = '../index.php?title=Special:Owa';
+$owa_config['main_absolute_url'] = $wiki_url.$owa_config['main_url'];
+$owa_config['action_url'] = $wiki_url.'/index.php?action=owa&owa_specialAction';
+$owa_config['log_url'] = $wiki_url.'/index.php?action=owa&owa_logAction=1';
+$owa_config['link_template'] = '%s&%s';
+$owa_config['authentication'] = 'mediawiki';
+$owa_config['site_id'] = md5($wiki_url);
+$owa_config['is_embedded'] = 'true';
+
+
+$owa = new owa_php($owa_config);
+
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
@@ -28,6 +76,18 @@ $wgExtensionFunctions[] = 'owa_main';
 $wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaWiki', 
 										'author' => 'Peter Adams <peter@openwebanalytics.com>', 
 										'url' => 'http://www.openwebanalytics.com' );
+										
+$wgExtensionCredits['specialpage'][] = array('name' => 'Open Web Analytics for MediaWiki', 
+  											 'author' => 'Peter Adams', 
+  											 'url' => 'http://www.openwebanalytics.com',
+  											 'description' => 'Open Web Analytics for MedaWiki');
+
+//Load Special Page
+
+$wgAutoloadClasses['SpecialOwa'] = __FILE__;
+$wgSpecialPages['Owa'] = 'SpecialOwa';
+$wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
+$wgHooks['UnknownAction'][] = 'owa_actions';
 
     
 /**
@@ -35,10 +95,12 @@ $wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaW
  *
  */
 function owa_main() {
-	global $wgHooks;
+	global $wgHooks, $owa;
 
+	
+	
 	// Create Instance of OWA
-	$owa = new owa_php;
+	//$owa = new owa_php;
 
 	// Hook for logging Article Page Views
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
@@ -52,7 +114,26 @@ function owa_main() {
 	$wgHooks['CategoryPageView'][] = 'owa_footer';
 	endif;
 	
+	//SpecialPage::addPage(new OwaSpecialPage());
+	
     return;
+}
+
+/**
+ * Logs Special Page Views
+ *
+ * @param object $specialPage
+ * @url http://www.mediawiki.org/wiki/Manual:MediaWiki_hooks/UnknownAction
+ * @return false
+ */
+function owa_actions() {
+	
+	global $owa;
+	
+	$owa->handleSpecialActionRequest();
+	
+	return false;
+
 }
 
 /**
@@ -63,7 +144,7 @@ function owa_main() {
  */
 function owa_logSpecialPage(&$specialPage) {
 	
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $owa;
 	
 	$app_params['user_name']= $wgUser->mName;
     $app_params['user_email'] = $wgUser->mEmail;
@@ -73,7 +154,7 @@ function owa_logSpecialPage(&$specialPage) {
     //print_r($wgOut);
 	// Log the request
 	$owa = &new owa_php;
-	$owa->logEvent('page_request', $app_params);
+	$owa->log($app_params);
 	
 	return true;
 }
@@ -86,7 +167,7 @@ function owa_logSpecialPage(&$specialPage) {
  */
 function owa_logCategoryPage(&$categoryPage) {
 	
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $owa;
 	
 	$app_params['user_name']= $wgUser->mName;
     $app_params['user_email'] = $wgUser->mEmail;
@@ -95,7 +176,7 @@ function owa_logCategoryPage(&$categoryPage) {
 	
 	// Log the request
 	$owa = &new owa_php;
-	$owa->logEvent('page_request', $app_params);
+	$owa->log($app_params);
 	
 	return true;
 }
@@ -108,7 +189,7 @@ function owa_logCategoryPage(&$categoryPage) {
  */
 function owa_logArticle(&$article) {
 
-	global $wgUser, $wgOut, $wgTitle;
+	global $wgUser, $wgOut, $wgTitle, $owa;
 	
 	$wgTitle->invalidateCache();
 	$wgOut->enableClientCache(false);
@@ -121,8 +202,8 @@ function owa_logArticle(&$article) {
     $app_params['page_type'] = 'article';
     
 	// Log the request
-	$owa = &new owa_php;
-	$owa->logEvent('page_request', $app_params);
+	//$owa = &new owa_php;
+	$owa->log($app_params);
 	
 	return true;
 	
@@ -136,9 +217,7 @@ function owa_logArticle(&$article) {
  */
 function owa_footer(&$article) {
 	
-	global $wgOut;
-	
-	$owa = &new owa_php;
+	global $wgOut, $owa;
 
 	$tags = $owa->placeHelperPageTags(false);
 	
@@ -146,3 +225,90 @@ function owa_footer(&$article) {
 		
 	return true;
 }
+
+
+/* Special Page Class
+ * 
+ */
+class SpecialOwa extends SpecialPage {
+
+        function SpecialOwa() {
+                SpecialPage::SpecialPage('Owa','',true);
+                self::loadMessages();
+        }
+
+        function execute() {
+                global $wgRequest, $wgOut, $owa, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
+                
+                $this->setHeaders();
+                
+                # Get request data from, e.g.
+                
+                $owa->params['caller']['mediawiki']['user_data'] = array(
+	
+					'user_level' 	=> $wgUser->mGroups,
+					'user_ID'		=> $wgUser->mName,
+					'user_login'	=> $wgUser->mName,
+					'user_email'	=> $wgUser->mEmail,
+					'user_identity'	=> $wgUser->mRealName,
+					'user_password'	=> $wgUser->mPassword);
+					
+					$owa->params['u'] = $wgUser->mName;
+					$owa->params['p'] = $wgUser->mPassword;
+                
+                $params = array();
+                
+                // check to see that owa in installed.
+                if (empty($owa->config['install_complete'])):
+
+                	$site_url = $wgServer.$wgScriptPath;
+                	
+                	$params = array('site_id' => md5($site_url), 
+    							'name' => $wgSitename,
+    							'domain' => $site_url, 
+    							'description' => '',
+    							'do' => 'base.installStartEmbedded');
+    							
+                elseif (empty($owa->params['do'])):
+                	if (empty($owa->params['view'])):
+                		$params['do'] = 'base.reportDashboard';
+                	endif;
+                endif;
+                
+				$page = $owa->handleRequest($params);
+
+                # Output
+                return $wgOut->addHTML($page);
+                
+                
+        }
+
+        function loadMessages() {
+        	static $messagesLoaded = false;
+            global $wgMessageCache;
+                
+			if ( $messagesLoaded ) return;
+			
+			$messagesLoaded = true;
+			
+			// this should be the only msg defined by mediawiki
+			$allMessages = array(
+				 'en' => array( 
+					 'owa' => 'Open Web Analytics'
+					 )
+				);
+
+
+			// load msgs in to mediawiki cache
+			foreach ( $allMessages as $lang => $langMessages ) {
+				   $wgMessageCache->addMessages( $langMessages, $lang );
+			}
+        }
+        
+}
+
+
+
+?>
+
+

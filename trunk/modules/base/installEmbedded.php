@@ -87,7 +87,10 @@ class owa_installEmbeddedController extends owa_controller {
 				$this->e->notice('Could not persist Install Complete Flag to the Database');
 			endif;
 
-			return true;
+			$data = array();
+			$data['view'] = 'base.installFinishEmbedded';
+			
+			return $data;
 		
 		// schema was not installed successfully
 		else:
