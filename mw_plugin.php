@@ -62,9 +62,7 @@ $owa_config['authentication'] = 'mediawiki';
 $owa_config['site_id'] = md5($wiki_url);
 $owa_config['is_embedded'] = 'true';
 
-
 $owa = new owa_php($owa_config);
-
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
@@ -89,7 +87,6 @@ $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
 $wgHooks['UnknownAction'][] = 'owa_actions';
 
-    
 /**
  * Main Media Wiki Extension method
  *
@@ -128,12 +125,37 @@ function owa_main() {
  */
 function owa_actions() {
 	
-	global $owa;
+	global $owa, $wgOut;
 	
+
+    owa_set_priviledges();
+	
+
+	$wgOut->disable();
 	$owa->handleSpecialActionRequest();
 	
 	return false;
 
+}
+
+function owa_set_priviledges() {
+
+	global $owa, $wgUser;
+	
+	$owa->params['caller']['mediawiki']['user_data'] = array(
+	
+					'user_level' 	=> $wgUser->mGroups,
+					'user_ID'		=> $wgUser->mName,
+					'user_login'	=> $wgUser->mName,
+					'user_email'	=> $wgUser->mEmail,
+					'user_identity'	=> $wgUser->mRealName,
+					//'user_password'	=> $wgUser->mPassword
+					);
+					
+					$owa->params['u'] = $wgUser->mName;
+					$owa->params['p'] = 'xxxxxxx';//$wgUser->mPassword;
+
+	return;
 }
 
 /**
@@ -243,18 +265,9 @@ class SpecialOwa extends SpecialPage {
                 $this->setHeaders();
                 
                 # Get request data from, e.g.
-                
-                $owa->params['caller']['mediawiki']['user_data'] = array(
-	
-					'user_level' 	=> $wgUser->mGroups,
-					'user_ID'		=> $wgUser->mName,
-					'user_login'	=> $wgUser->mName,
-					'user_email'	=> $wgUser->mEmail,
-					'user_identity'	=> $wgUser->mRealName,
-					'user_password'	=> $wgUser->mPassword);
-					
-					$owa->params['u'] = $wgUser->mName;
-					$owa->params['p'] = $wgUser->mPassword;
+               
+           		// sets authentication priviledges
+           		owa_set_priviledges();
                 
                 $params = array();
                 
