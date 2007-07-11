@@ -152,7 +152,7 @@ function owa_set_priviledges() {
 					//'user_password'	=> $wgUser->mPassword
 					);
 					
-					$owa->params['u'] = $wgUser->mName;
+					$owa->params['u'] = 'xxxxx'.$wgUser->mName;
 					$owa->params['p'] = 'xxxxxxx';//$wgUser->mPassword;
 
 	return;
@@ -323,5 +323,3 @@ class SpecialOwa extends SpecialPage {
 
 
 ?>
-
-
