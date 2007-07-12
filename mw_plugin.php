@@ -50,7 +50,7 @@ $wiki_url = $wgServer;
 
 // Build the OWA wordpress specific config overrides array
 $owa_config = array();
-$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
+$owa_config['report_wrapper'] = 'wrapper_mediawiki.tpl';
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
 $owa_config['images_absolute_url'] = $wiki_url.'/wp-content/plugins/owa/public/i/';
 $owa_config['main_url'] = '../index.php?title=Special:Owa';
@@ -263,7 +263,7 @@ class SpecialOwa extends SpecialPage {
                 global $wgRequest, $wgOut, $owa, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
                 
                 $this->setHeaders();
-                
+                	
                 # Get request data from, e.g.
                
            		// sets authentication priviledges
@@ -290,9 +290,14 @@ class SpecialOwa extends SpecialPage {
                 
 				$page = $owa->handleRequest($params);
 
-                # Output
-                return $wgOut->addHTML($page);
-                
+				// switch for output scenario
+				if (empty($owa->config['install_complete'])):
+					return $wgOut->addHTML($page);					
+				else:
+					$wgOut->disable();
+					echo $page;
+					return;
+				endif;
                 
         }
 
