@@ -22,6 +22,7 @@ div {margin:0;}
 .nav_links ul {clear: both;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 20px 0px;}
 .active_nav_link {background-color:#cccccc;}
+.host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
 
 /*globalnav*/
 
