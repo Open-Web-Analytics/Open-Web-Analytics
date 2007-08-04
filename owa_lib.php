@@ -397,7 +397,8 @@ class owa_lib {
 	 */
 	function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
 		
-        $class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
+        //$class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
+        $class_dir = $class_dir.DIRECTORY_SEPARATOR;
         $classfile = $class_dir . $class_name . '.php';
 		$class = $class_prefix . $class_name . $class_suffix;
 		

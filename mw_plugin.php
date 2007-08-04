@@ -20,7 +20,7 @@ require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
 require_once "$IP/includes/SpecialPage.php";
 
-global $wgCachePages, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword, $wgUser, $wgServer;
+global $wgCachePages, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword, $wgUser, $wgServer, $wgScriptPath, $wgScript;
 
 // OWA Configuration
 
@@ -44,22 +44,20 @@ else:
 endif;
 
 // Public folder URI
-define('OWA_PUBLIC_URL', '../extensions/owa/public/');
-
-$wiki_url = $wgServer;
+define('OWA_PUBLIC_URL', $wgServer.$wgScriptPath.'/extensions/owa/public/');
 
 // Build the OWA wordpress specific config overrides array
 $owa_config = array();
 $owa_config['report_wrapper'] = 'wrapper_mediawiki.tpl';
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
-$owa_config['images_absolute_url'] = $wiki_url.'/wp-content/plugins/owa/public/i/';
-$owa_config['main_url'] = '../index.php?title=Special:Owa';
-$owa_config['main_absolute_url'] = $wiki_url.$owa_config['main_url'];
-$owa_config['action_url'] = $wiki_url.'/index.php?action=owa&owa_specialAction';
-$owa_config['log_url'] = $wiki_url.'/index.php?action=owa&owa_logAction=1';
+$owa_config['images_absolute_url'] = $owa_config['images_url'];
+$owa_config['main_url'] = $wgScriptPath.'/index.php?title=Special:Owa';
+$owa_config['main_absolute_url'] = $wgServer.$owa_config['main_url'];
+$owa_config['action_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction';
+$owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1';
 $owa_config['link_template'] = '%s&%s';
 $owa_config['authentication'] = 'mediawiki';
-$owa_config['site_id'] = md5($wiki_url);
+$owa_config['site_id'] = md5($wgServer.$wiki_url);
 $owa_config['is_embedded'] = 'true';
 
 $owa = new owa_php($owa_config);
