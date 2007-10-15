@@ -126,6 +126,22 @@ class owa_coreAPI extends owa_base {
 		return $config;
 	}
 	
+	function &cacheSingleton($params = array()) {
+		
+		static $cache;
+		
+		if(!isset($cache)):
+			
+			if (!class_exists('owa_cache')):
+				require_once(OWA_BASE_CLASS_DIR.'cache.php');
+			endif;
+			
+			$cache = owa_coreAPI::supportClassFactory('base', 'cacheFacade');
+			
+		endif;
+		
+		return $cache;
+	}
 	
 	function setupFramework() {
 		
