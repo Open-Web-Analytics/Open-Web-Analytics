@@ -179,6 +179,24 @@
 	
 	<BR>
 	
+	<fieldset name="owa-error-options" class="options">
+		<legend>Object Cache</legend>
+	
+		<div class="setting" id="object_cache">	
+			<div class="title">Flush Cache</div> 
+			<div class="description">Flushes the object cache</div>
+			<div class="field">
+				
+				<a href="<?=$this->makeLink(array('do' => 'base.optionsFlushCache')); ?>">Flush Cache Now</a>
+			</div>
+		</div>
+	
+	</fieldset>
+	
+	<BR>
+
+	
+	
 	<fieldset name="owa-reports-options" class="options">
 		
 		<legend>Presenation</legend>

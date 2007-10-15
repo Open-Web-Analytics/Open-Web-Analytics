@@ -40,5 +40,6 @@ define('OWA_PLUGINS_DIR', OWA_BASE_DIR.'/plugins');
 define('OWA_METRICS_DIR', OWA_BASE_DIR.'/plugins/metrics/');
 define('OWA_GRAPHS_DIR', OWA_BASE_DIR.'/plugins/graphs/');
 define('OWA_CONF_DIR', OWA_BASE_DIR.'/conf/');
+define('OWA_CACHE_DIR', OWA_BASE_DIR.DIRECTORY_SEPARATOR.'caches'.DIRECTORY_SEPARATOR);
 define('OWA_VERSION', '1.0');
 ?>
