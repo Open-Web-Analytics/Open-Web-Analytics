@@ -21,7 +21,6 @@ require_once('owa_requestContainer.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
-require_once(OWA_BASE_DIR.'/owa_browscap.php');
 
 /**
  * Abstract Caller class used to build application specific invocation classes
@@ -174,7 +173,9 @@ class owa_caller extends owa_base {
 		$params = owa_lib::inputFilter($params);
 		
 		//Load browscap
-		$bcap = new owa_browscap($params['server']['HTTP_USER_AGENT']);  ///!
+		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $params['server']['HTTP_USER_AGENT']);
+		
+		//$bcap = new owa_browscap($params['server']['HTTP_USER_AGENT']);  ///!
 		
 		// Abort if the request is from a robot
 		if ($this->config['log_robots'] != true):

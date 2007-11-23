@@ -183,6 +183,17 @@
 		<legend>Object Cache</legend>
 	
 		<div class="setting" id="object_cache">	
+			<div class="title">Cache Control</div> 
+			<div class="description">Enables and disables object caching. This will improve performance under high load conditions.</div>
+			<div class="field">
+			<SELECT NAME="<?=$this->getNs();?>config[cache_objects]">
+				<OPTION VALUE="0" <? if ($config['cache_obejcts'] == false):?>SELECTED<?endif;?>>Off</OPTION>
+				<OPTION VALUE="1" <? if ($config['cache_objects'] == true):?>SELECTED<?endif;?>>On</OPTION>
+			</SELECT>
+			</div>
+		</div>
+		
+		<div class="setting" id="object_cache_flush">	
 			<div class="title">Flush Cache</div> 
 			<div class="description">Flushes the object cache</div>
 			<div class="field">
@@ -190,6 +201,7 @@
 				<a href="<?=$this->makeLink(array('do' => 'base.optionsFlushCache')); ?>">Flush Cache Now</a>
 			</div>
 		</div>
+		
 	
 	</fieldset>
 	

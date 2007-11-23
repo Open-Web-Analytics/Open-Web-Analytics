@@ -19,7 +19,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_browscap.php');
 require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 /**

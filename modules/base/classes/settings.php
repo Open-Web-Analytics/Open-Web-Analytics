@@ -401,7 +401,8 @@
 			'cookie_domain'					=> '',
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
-			'per_site_visitors'				=> false
+			'per_site_visitors'				=> false,
+			'cache_objects'					=> false
 			
 			));
 			
