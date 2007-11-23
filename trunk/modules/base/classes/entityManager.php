@@ -114,8 +114,11 @@ class owa_entityManager extends owa_base {
 		$status = $this->db->save($cols, get_class($this->entity));
 		
 		// Add to Cache
+		
 		if ($status == true):
-			$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			if ($this->config['cache_objects'] == true):
+				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			endif;
 		endif;
 		
 		return $status;
@@ -140,7 +143,9 @@ class owa_entityManager extends owa_base {
 		
 		// Add to Cache
 		if ($status == true):
-			$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			if ($this->config['cache_objects'] == true):
+				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			endif;
 		endif;
 		
 		return $status;
@@ -170,7 +175,9 @@ class owa_entityManager extends owa_base {
 		
 		// Add to Cache
 		if ($status == true):
-			$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			if ($this->config['cache_objects'] == true):
+				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			endif;
 		endif;
 		
 		return $status;
@@ -193,7 +200,9 @@ class owa_entityManager extends owa_base {
 	
 		// Add to Cache
 		if ($status == true):
-			$this->cache->remove(get_class($this->entity), 'id'.$this->entity->id->value);
+			if ($this->config['cache_objects'] == true):
+				$this->cache->remove(get_class($this->entity), 'id'.$this->entity->id->value);
+			endif;
 		endif;
 		
 		return $status;
@@ -208,8 +217,10 @@ class owa_entityManager extends owa_base {
 	
 	function getByColumn($col, $value) {
 		
-		$cache_obj = $this->cache->get(get_class($this->entity), $col.$value);
-		
+		if ($this->config['cache_objects'] == true):
+			$cache_obj = $this->cache->get(get_class($this->entity), $col.$value);
+		endif;
+			
 		if (!empty($cache_obj)):
 		
 			$this->entity = $cache_obj;
