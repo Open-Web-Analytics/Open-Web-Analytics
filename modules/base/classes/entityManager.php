@@ -217,6 +217,8 @@ class owa_entityManager extends owa_base {
 	
 	function getByColumn($col, $value) {
 		
+		$cache_obj = '';
+		
 		if ($this->config['cache_objects'] == true):
 			$cache_obj = $this->cache->get(get_class($this->entity), $col.$value);
 		endif;
@@ -233,8 +235,9 @@ class owa_entityManager extends owa_base {
 				
 			$this->setProperties($properties);
 			
-			$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);	
-			
+			if ($this->config['cache_objects'] == true):
+				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);	
+			endif;		
 		endif;
 		
 		return; 

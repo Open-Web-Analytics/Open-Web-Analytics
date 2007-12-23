@@ -47,6 +47,12 @@ class owa_wp extends owa_caller {
 		return;
 	}
 	
+	function __construct($config = null) {
+		ob_start();
+		return parent::__construct($config);
+	
+	}
+	
 
 	function add_link_tracking($link) {
 	

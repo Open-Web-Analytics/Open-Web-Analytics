@@ -33,7 +33,7 @@ class owa_cache {
 
 	var $cache_dir;
 	var $cache;
-	var $lock_file_name = 'owa_object.lock';
+	var $lock_file_name = 'cache.lock';
 	var $statistics;
 	var $cache_id = 1; // default cache id
 	var $cache_file_header = '<?php\n/*';
@@ -81,12 +81,13 @@ class owa_cache {
 		$hkey = $this->hash($key);
 		$this->cache[$collection][$hkey] = $value;
 		$this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
+		$this->statistics['added']++;
 		
 		if (!in_array($collection, $this->non_persistant_collections)):
 			$this->dirty_objs[$collection][] = $hkey;
 			$this->dirty_collections[$collection] = true; 
 			$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
-		
+			$this->statistics['dirty']++;
 		// check to see if cache file exists and remove it just in case the collection
 		// was recently added to the non persistant list.
 		else:
@@ -103,29 +104,34 @@ class owa_cache {
 	}
 	
 	function get($collection, $key) {
-	
+		
+		$this->debug("getting: ".$collection.$key);
 		$id = $this->hash($key);
 		
 		// check warm cache and return
 		if (isset($this->cache[$collection][$id])):
 			$this->debug(sprintf('CACHE HIT (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));	
+		$this->statistics['warm']++;
 		//load from cache file	
 		else:
 		
 			$cache_file = $this->makeCollectionDirPath($collection).$id.'.php'; 
+			$this->debug("check cache file: ".$cache_file);
 	
 			// if no cache file then return false
 			if (!file_exists($cache_file)):
 				$this->debug(sprintf('CACHE MISS - Object Not Found in Cache or Cache File - Collection: %s, id: %s', $collection, $id));
+				$this->statistics['miss']++;
 				return false;
 			
 			// load from cache file	
 			else:
 		
 				$this->cache[$collection][$id] = unserialize(base64_decode(substr(@ file_get_contents($cache_file), strlen($this->cache_file_header), -strlen($this->cache_file_footer))));
+				$this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
+				$this->statistics['cold']++;
 			endif;
 			
-			$this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
 		endif;
 		
 		return $this->cache[$collection][$id];
@@ -166,12 +172,25 @@ class owa_cache {
 	
 		$id = $this->hash($key);
 		unset($this->cache[$collection][$id]);
+		
 		return $this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
 		
 	}
 	
 	function getStats() {
-	
+		return sprintf("Cache Statistics: 
+						  Total Hits: %s (Warm/Cold: %s/%s)
+						  Total Miss: %s
+						  Total Added to Cache: %s
+						  Total Persisted: %s
+						  Total Removed: %s",
+						  $this->statistics['warm'] + $this->statistics['cold'],
+						  $this->statistics['warm'],
+						  $this->statistics['cold'],
+						  $this->statistics['miss'],
+						  $this->statistics['added'],
+						  $this->statistics['dirty'],
+						  $this->statistics['removed']);
 	}
 
 	function connect() {
@@ -237,7 +256,7 @@ class owa_cache {
 	function __destruct() {
 	
 		$this->persistCache();
-		
+		$this->debug($this->getStats());
 		$this->persistStats();
 		
 		return;
@@ -322,6 +341,7 @@ class owa_cache {
 		if (file_exists($cache_file)):
 			@ unlink($cache_file);
 			$this->debug('Cache File Removed: '.$cache_file);
+			$this->statistics['removed']++;
 			return true;
 		else:
 			return false;
