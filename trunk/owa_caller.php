@@ -49,14 +49,32 @@ class owa_caller extends owa_base {
 	 */
 	var $api;
 	
+	var $start_time;
+	var $end_time;
+	
+	/**
+	 * PHP4 Constructor
+	 *
+	 */
+	 
+	function owa_caller($config) {
+	
+		register_shutdown_function(array(&$this, "__destruct"));
+		return $this->__construct($config);
+		
+	}
+	
 	/**
 	 * Constructor
 	 *
 	 * @param array $config
 	 * @return owa_caller
 	 */
-	function owa_caller($config) {
+	function __construct($config) {
 		
+		$this->start_time = owa_lib::microtime_float();
+		
+				
 		//load DB constants if not set already by caller
 		if(!defined('OWA_DB_HOST')):
 			$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
@@ -70,6 +88,10 @@ class owa_caller extends owa_base {
 		
 		// Sets default config and error logger
 		$this->owa_base();
+		
+		//$bt = debug_backtrace();
+		//$this->e->debug($bt[4]); 
+		
 		
 		if (empty($config['configuration_id'])):
 			$config['configuration_id'] = 1;
@@ -97,6 +119,9 @@ class owa_caller extends owa_base {
 		// reloads error logger now that final config values are in place
 		$this->e = null;
 		$this->e = owa_error::get_instance();
+		
+		// Log init debug
+		$this->e->debug(sprintf('*** Open Web Analytics v%s ***', OWA_VERSION));
 
 		// Create Request Container
 		$this->params = &owa_requestContainer::getInstance();
@@ -404,6 +429,17 @@ class owa_caller extends owa_base {
 		endif;
 
 	}
+	
+	function __destruct() {
+		
+		$this->end_time = owa_lib::microtime_float();
+		$total_time = $this->end_time - $this->start_time;
+		$this->e->debug(sprintf('Total session time: %s',$total_time));
+		$this->e->debug("goodbye from OWA");
+		
+		return;
+	}
+	
 }
 
 ?>

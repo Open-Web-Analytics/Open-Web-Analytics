@@ -60,7 +60,7 @@ $owa_config['authentication'] = 'mediawiki';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
 $owa_config['is_embedded'] = 'true';
 
-$owa = new owa_php($owa_config);
+//$owa = new owa_php($owa_config);
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
@@ -85,29 +85,46 @@ $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
 $wgHooks['UnknownAction'][] = 'owa_actions';
 
+
+// OWA Factory
+
+function owa_factory() {
+
+	global $owa_config;
+	static $owa;
+	
+	if( isset($owa)):
+		return $owa;
+	else:
+		$owa = new owa_php($owa_config);
+		return $owa;
+	endif;
+
+}
+
 /**
  * Main Media Wiki Extension method
  *
  */
 function owa_main() {
-	global $wgHooks, $owa;
+	global $wgHooks;
 
 	
 	
 	// Create Instance of OWA
 	//$owa = new owa_php;
-
+	//$owa = owa_factory();
 	// Hook for logging Article Page Views
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
 	$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
 	
-	// Hooks for adding first_hit request handler
-	if ($owa->config['delay_first_hit'] == true):
-		$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
-		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
+	// Hooks for adding page tracking tags 
+	
+	$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
+	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
 	$wgHooks['CategoryPageView'][] = 'owa_footer';
-	endif;
+	
 	
 	//SpecialPage::addPage(new OwaSpecialPage());
 	
@@ -123,9 +140,9 @@ function owa_main() {
  */
 function owa_actions() {
 	
-	global $owa, $wgOut;
+	global $wgOut;
 	
-
+	$owa = owa_factory();
     owa_set_priviledges();
 	
 
@@ -138,8 +155,9 @@ function owa_actions() {
 
 function owa_set_priviledges() {
 
-	global $owa, $wgUser;
+	global $wgUser;
 	
+	$owa = owa_factory();
 	$owa->params['caller']['mediawiki']['user_data'] = array(
 	
 					'user_level' 	=> $wgUser->mGroups,
@@ -164,7 +182,7 @@ function owa_set_priviledges() {
  */
 function owa_logSpecialPage(&$specialPage) {
 	
-	global $wgUser, $wgOut, $owa;
+	global $wgUser, $wgOut;
 	
 	$app_params['user_name']= $wgUser->mName;
     $app_params['user_email'] = $wgUser->mEmail;
@@ -173,7 +191,7 @@ function owa_logSpecialPage(&$specialPage) {
 
     //print_r($wgOut);
 	// Log the request
-	$owa = &new owa_php;
+	$owa = owa_factory();
 	$owa->log($app_params);
 	
 	return true;
@@ -187,7 +205,7 @@ function owa_logSpecialPage(&$specialPage) {
  */
 function owa_logCategoryPage(&$categoryPage) {
 	
-	global $wgUser, $wgOut, $owa;
+	global $wgUser, $wgOut;
 	
 	$app_params['user_name']= $wgUser->mName;
     $app_params['user_email'] = $wgUser->mEmail;
@@ -195,7 +213,7 @@ function owa_logCategoryPage(&$categoryPage) {
     $app_params['page_type'] = 'Category';
 	
 	// Log the request
-	$owa = &new owa_php;
+	$owa = owa_factory();
 	$owa->log($app_params);
 	
 	return true;
@@ -209,7 +227,7 @@ function owa_logCategoryPage(&$categoryPage) {
  */
 function owa_logArticle(&$article) {
 
-	global $wgUser, $wgOut, $wgTitle, $owa;
+	global $wgUser, $wgOut, $wgTitle;
 	
 	$wgTitle->invalidateCache();
 	$wgOut->enableClientCache(false);
@@ -222,7 +240,7 @@ function owa_logArticle(&$article) {
     $app_params['page_type'] = 'article';
     
 	// Log the request
-	//$owa = &new owa_php;
+	$owa = owa_factory();
 	$owa->log($app_params);
 	
 	return true;
@@ -237,8 +255,8 @@ function owa_logArticle(&$article) {
  */
 function owa_footer(&$article) {
 	
-	global $wgOut, $owa;
-
+	global $wgOut;
+	$owa = owa_factory();
 	$tags = $owa->placeHelperPageTags(false);
 	
 	$wgOut->addHTML($tags);
@@ -258,10 +276,10 @@ class SpecialOwa extends SpecialPage {
         }
 
         function execute() {
-                global $wgRequest, $wgOut, $owa, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
+                global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
                 
                 $this->setHeaders();
-                	
+                $owa = owa_factory();
                 # Get request data from, e.g.
                
            		// sets authentication priviledges
