@@ -65,7 +65,7 @@ class owa_browscap extends owa_base {
 		
 		// set user agent
 		$this->ua = $ua;
-		$this->e->debug('hello from browscap');
+		
 		// init cache
 		$this->cache = &owa_coreAPI::cacheSingleton(); 
 		$this->cache->setCacheDir(OWA_CACHE_DIR);
