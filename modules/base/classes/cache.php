@@ -49,11 +49,7 @@ class owa_cache {
 
 	function __construct($cache_dir) {
 	
-		$this->cache_dir = $cache_dir;
-		
-		
-		
-		return;
+		return $this->cache_dir = $cache_dir;
 	
 	}
 
