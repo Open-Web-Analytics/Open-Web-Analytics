@@ -37,18 +37,15 @@ class owa_cacheFacade extends owa_cache {
 
 	function __construct($cache_dir) {
 	
-		$this->cache_dir = $cache_dir;
 		$this->e = &owa_error::get_instance();
-		
-	
-		return;
+		return parent::__construct($cache_dir);
 	
 	}
 
 	function owa_cacheFacade($cache_dir) {
 		
-		register_shutdown_function(array(&$this, "__destruct"));
-		return $this->__construct($cache_dir);
+		$this->e = &owa_error::get_instance();
+		return $this->owa_cache($cache_dir);
 	
 	}
 	
