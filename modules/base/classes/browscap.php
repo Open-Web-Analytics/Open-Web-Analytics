@@ -126,7 +126,9 @@ class owa_browscap extends owa_base {
 			if (!empty($cap)):
 				
 				if ($this->config['cache_objects'] == true):
-					$this->cache->set('browscap', $this->ua, (object)$cap);
+					if ($cap['Browser'] != 'Default Browser'): 
+						$this->cache->set('browscap', $this->ua, (object)$cap);
+					endif;
 				endif;
 			endif;
 
