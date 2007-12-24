@@ -74,7 +74,7 @@ class owa_http extends Snoopy {
 		
 		$c = &owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
-		$this->e = &owa_error::get_instance();
+		$this->e = &owa_coreAPI::errorSingleton();
 		$this->agent = $this->config['owa_user_agent'];
 		
 		return;

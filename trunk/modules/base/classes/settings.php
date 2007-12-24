@@ -360,6 +360,7 @@
 			'notice_email'					=> '',
 			'log_php_errors'				=> false,
 			'error_handler'					=> 'development',
+			'error_log_level'				=> 0,
 			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
 			'browscap.ini'					=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',

@@ -126,6 +126,25 @@ class owa_coreAPI extends owa_base {
 		return $config;
 	}
 	
+	function &errorSingleton() {
+		
+		static $e;
+		
+		if(!isset($e)):
+			
+			if (!class_exists('owa_error')):
+				require_once(OWA_BASE_CLASS_DIR.'error.php');
+			endif;
+			
+			$e = owa_coreAPI::supportClassFactory('base', 'error');
+			
+		endif;
+		
+		return $e;
+	}
+
+	
+	
 	function &cacheSingleton($params = array()) {
 		
 		static $cache;
