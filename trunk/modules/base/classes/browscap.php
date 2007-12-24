@@ -101,6 +101,20 @@ class owa_browscap extends owa_base {
 			return $cache_obj;
 					
 		else:
+		
+			// lookup from DB
+			
+			//$ua = owa_coreAPI::entityFactory('base.ua');
+			//$ua->getByColumn('ua', $user_agent);
+			
+			//$browser = $ua->get('browser');
+			
+			//if (!empty($browser)):
+				
+			//	return $ua->_getProperties();
+			//else:
+			// ;
+			//endif;
 				
 			// Load main browscap
 			$this->browscap_db = $this->load($this->config['browscap.ini']);
