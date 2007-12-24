@@ -75,11 +75,11 @@ class owa_caller extends owa_base {
 		// Start time
 		$this->start_time = owa_lib::microtime_float();
 		
-		// Sets default config and error logger
+		// Parent Constructor. Sets default config and error logger
 		$this->owa_base();
 		
-		// Log init debug
-		$this->e->debug(sprintf('*** Open Web Analytics v%s ***', OWA_VERSION));
+		// Log version debug
+		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
 				
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 
@@ -100,7 +100,7 @@ class owa_caller extends owa_base {
 			if (file_exists($file)):
 				include ($file);
 			else:
-				$this->e->emerg("Uh-oh. I can't find your configuration file...");
+				$this->e->emerg("Uh-oh. Your DB config is undefined and I can't find your configuration file...");
 				exit;
 			endif;
 		endif;
@@ -109,7 +109,7 @@ class owa_caller extends owa_base {
 		/* OBJECT CACHING */
 		
 		// Looks for object cache config constant
-		if (!defined('OWA_OBJECT_CACHING')):
+		if (defined('OWA_OBJECT_CACHING')):
 			$config['cache_objects'] = OWA_OBJECT_CACHING;
 		endif;
 		
@@ -117,7 +117,7 @@ class owa_caller extends owa_base {
 		/* ERROR LOGGING */
 		
 		// Looks for log level constant
-		if (!defined('OWA_ERROR_LOG_LEVEL')):
+		if (defined('OWA_ERROR_LOG_LEVEL')):
 			$config['error_log_level'] = OWA_ERROR_LOG_LEVEL;
 		endif;
 		
@@ -172,7 +172,6 @@ class owa_caller extends owa_base {
 		
 		// Load the core API
 		$this->api = &owa_coreAPI::singleton();
-		
 		$this->api->caller_config_overrides = $config;
 		
 		// should only be called once to load all modules

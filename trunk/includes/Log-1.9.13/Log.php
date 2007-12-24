@@ -1,9 +1,9 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log.php,v 1.64 2006/10/08 23:03:15 jon Exp $
+ * $Header: /repository/pear/Log/Log.php,v 1.67 2007/12/13 06:46:30 jon Exp $
  * $Horde: horde/lib/Log.php,v 1.15 2000/06/29 23:39:45 jon Exp $
  *
- * @version $Revision: 1.64 $
+ * @version $Revision: 1.67 $
  * @package Log
  */
 
@@ -40,7 +40,7 @@ class Log
      * Indicates whether or not the log can been opened / connected.
      *
      * @var boolean
-     * @access private
+     * @access protected
      */
     var $_opened = false;
 
@@ -48,7 +48,7 @@ class Log
      * Instance-specific unique identification number.
      *
      * @var integer
-     * @access private
+     * @access protected
      */
     var $_id = 0;
 
@@ -56,7 +56,7 @@ class Log
      * The label that uniquely identifies this set of log messages.
      *
      * @var string
-     * @access private
+     * @access protected
      */
     var $_ident = '';
 
@@ -64,7 +64,7 @@ class Log
      * The default priority to use when logging an event.
      *
      * @var integer
-     * @access private
+     * @access protected
      */
     var $_priority = PEAR_LOG_INFO;
 
@@ -72,7 +72,7 @@ class Log
      * The bitmask of allowed log levels.
      *
      * @var integer
-     * @access private
+     * @access protected
      */
     var $_mask = PEAR_LOG_ALL;
 
@@ -80,7 +80,7 @@ class Log
      * Holds all Log_observer objects that wish to be notified of new messages.
      *
      * @var array
-     * @access private
+     * @access protected
      */
     var $_listeners = array();
 
@@ -89,7 +89,7 @@ class Log
      * "line format" strings.
      *
      * @var array
-     * @access private
+     * @access protected
      */
     var $_formatMap = array('%{timestamp}'  => '%1$s',
                             '%{ident}'      => '%2$s',
@@ -100,6 +100,27 @@ class Log
                             '%{function}'   => '%7$s',
                             '%\{'           => '%%{');
 
+    /**
+     * Utility function which wraps PHP's class_exists() function to ensure
+     * consistent behavior between PHP versions 4 and 5.  Autoloading behavior
+     * is always disabled.
+     *
+     * @param string $class     The name of the class whose existence should
+     *                          be tested.
+     *
+     * @return bool             True if the class exists.
+     *
+     * @access private
+     * @since Log 1.9.13
+     */
+    function _classExists($class)
+    {
+        if (version_compare(PHP_VERSION, '5.0.0', 'ge')) {
+            return class_exists($class, false);
+        }
+
+        return class_exists($class);
+    }
 
     /**
      * Attempts to return a concrete Log instance of type $handler.
@@ -138,12 +159,12 @@ class Log
          * a failure as fatal.  The caller may have already included their own
          * version of the named class.
          */
-        if (!class_exists($class)) {
+        if (!Log::_classExists($class)) {
             include_once $classfile;
         }
 
         /* If the class exists, return a new instance of it. */
-        if (class_exists($class)) {
+        if (Log::_classExists($class)) {
             $obj = &new $class($name, $ident, $conf, $level);
             return $obj;
         }
@@ -390,7 +411,7 @@ class Log
      *
      * @return string           The string representation of the message.
      *
-     * @access private
+     * @access protected
      */
     function _extractMessage($message)
     {
@@ -493,7 +514,7 @@ class Log
      *
      * @return  string  Formatted log string.
      *
-     * @access  private
+     * @access  protected
      * @since   Log 1.9.4
      */
     function _format($format, $timestamp, $priority, $message)
@@ -528,6 +549,7 @@ class Log
      *
      * @return string           The string representation of $level.
      *
+     * @access  public
      * @since   Log 1.0
      */
     function priorityToString($priority)
@@ -556,6 +578,7 @@ class Log
      * @return string           The PEAR_LOG_* integer contstant corresponding
      *                          the the specified priority name.
      *
+     * @access  public
      * @since   Log 1.9.0
      */
     function stringToPriority($name)
@@ -686,7 +709,7 @@ class Log
      * @return boolean  True if the given priority is included in the current
      *                  log mask.
      *
-     * @access  private
+     * @access  protected
      * @since   Log 1.7.0
      */
     function _isMasked($priority)
@@ -772,7 +795,7 @@ class Log
      *
      * @param array     $event      A hash describing the log event.
      *
-     * @access private
+     * @access protected
      */
     function _announce($event)
     {

@@ -8,8 +8,8 @@
 
 :Author:        Jon Parise
 :Contact:       jon@php.net
-:Date:          $Date: 2007/02/09 05:32:48 $
-:Revision:      $Revision: 1.32 $
+:Date:          $Date: 2007/12/12 07:11:31 $
+:Revision:      $Revision: 1.36 $
 
 .. contents:: Contents
 .. section-numbering::
@@ -25,7 +25,7 @@ handler.
 A wide variety of handlers are distributed with the Log package, and, should
 none of them fit your application's needs, it's easy to `write your own`__.
 
-.. _Log class: http://cvs.php.net/co.php/pear/Log/Log.php
+.. _Log class: http://cvs.php.net/viewvc.cgi/pear/Log/Log.php
 __ `Custom Handlers`_
 
 Creating a Log Object
@@ -56,7 +56,7 @@ The new ``Log`` instance is returned by reference.
     $file = &Log::factory('file', 'out.log', 'TEST');
     $file->log('Logging to out.log.');
 
-.. _Factory Pattern: http://www.phppatterns.com/index.php/article/articleview/49/1/1/
+.. _Factory Pattern: http://wikipedia.org/wiki/Factory_method_pattern
 
 The Singleton Method
 ~~~~~~~~~~~~~~~~~~~~
@@ -91,7 +91,7 @@ method.  The new ``Log`` instance is returned by reference.
         echo '$c and $d point to different Log instances.' . "\n";
     }
 
-.. _Singleton Pattern: http://www.phppatterns.com/index.php/article/articleview/6/1/1/
+.. _Singleton Pattern: http://wikipedia.org/wiki/Singleton_pattern
 
 Direct Instantiation
 ~~~~~~~~~~~~~~~~~~~~
@@ -270,7 +270,8 @@ calling their ``flush()`` method::
     $logger->close();
 
 At this time, the ``flush()`` method is only implemented by `the console
-handler`_, `the file handler`_ and `the mail handler`_.
+handler`_, `the file handler`_, `the Firebug handler`_, and `the mail
+handler`_.
 
 
 Standard Log Handlers
@@ -847,8 +848,12 @@ Configuration
 |                   |           | (high to low) | to CSS styles.            |
 +-------------------+-----------+---------------+---------------------------+
 
+**Note:** The Window handler may not work reliably when PHP's `output
+buffering`_ system is enabled.
+
 .. _"JavaScript Power PHP Debugging": http://www.zend.com/zend/tut/tutorial-DebugLib.php
 .. _ROY G BIV: http://www.cis.rit.edu/
+.. _output buffering: http://www.php.net/outcontrol
 
 Example
 ~~~~~~~
@@ -915,7 +920,7 @@ Observers can be detached using the ``detach()`` method::
 At this time, no concrete ``Log_observer`` implementations are distributed
 with the Log package.
 
-.. _observer pattern: http://phppatterns.com/index.php/article/articleview/27/1/1/
+.. _observer pattern: http://wikipedia.org/wiki/Observer_pattern
 
 
 Logging From Standard Error Handlers
@@ -1076,14 +1081,147 @@ it.
 
 Writing New Handlers
 --------------------
+Writing a new Log handler is as simple as authoring a new class that extends
+the ``Log`` class and that implements a relatively small set of standard
+methods.
 
-TODO
+Every handler's class name must start with ``Log_`` in order for it to be
+recognized by the Log package.
+
+::
+
+    class Log_custom extends Log
+
+The handler's constructor will be called with four parameters.  These values
+are discussed in detail in the `Configuring a Handler`_ section.
+
+::
+
+    Log_custom($name, $ident = '', $conf = array(), $level = PEAR_LOG_DEBUG)
+
+The constructor is responsible for configuring the handler based on these
+values.  Handler-specific parameters are passed as part of the ``$conf``
+array.  At a minimum, the handler's constructor must set the following values
+defined by the ``Log`` base class::
+
+        $this->_id = md5(microtime());
+        $this->_name = $name;
+        $this->_ident = $ident;
+        $this->_mask = Log::UPTO($level);
+
+The `Handler Methods`_ section below details the various standard methods that
+can be implemented by a log handler.  The `Utility Methods`_ section describes
+some useful utility methods provided by the ``Log`` base class which may be
+useful when implementing a log handler.
+
 
 Extending Existing Handlers
 ---------------------------
+Extending existing handlers is very similar to `writing new handlers`_ with
+the exception that, instead of inheriting from the ``Log`` base class
+directly, the handler extends an existing handler's class.  This is a useful
+way of adding some custom behavior to an existing handler without writing an
+entirely new class (in the spirit of object-oriented programming).
 
-TODO
+For example, `the mail handler`_ could be extended to support sending messages
+with MIME-encoded attachments simply by authoring a new ``Log_mail_mime``
+class with a compliant constructor and a custom ``log()`` method.  The rest of
+the standard methods would fall back on the ``Log_mail`` base class's
+implementations.
 
+Obviously, the specific details involved in extending an existing handler
+require a good working understanding of that handler's implementation.
+
+
+Handler Methods
+---------------
+
+bool open()
+~~~~~~~~~~~
+The ``open()`` method is called to open the log resource for output.  Handlers
+can call ``open()`` immediately upon construction or lazily at runtime
+(perhaps when the first log event is received).
+
+The ``Log`` base class provides a protected ``$_opened`` member variable which
+should be set to ``true`` when the log handler is opened and ``false`` when it
+is closed.  Handler methods can inspect this value to determine whether or not
+the handler is currently open and ready for output.
+
+If the ``open()`` method fails to ready the handler for output, it should
+return ``false`` and set ``$this->_opened`` to ``false``.
+
+bool close()
+~~~~~~~~~~~~
+The ``close()`` method is called to close the log resource.  This method is
+the analog of the ``open()`` method.  It should be safe to call ``close()``
+even when the handler is not open for output.
+
+If the ``close()`` method fails to close the handler, it should return
+``false``.  Otherwise, it should return ``true``.  The ``$this->_opened``
+flag should also be updated appropriately.
+
+bool flush()
+~~~~~~~~~~~~
+The ``flush()`` method flushes any buffered log events, as described in
+`Flushing Log Events`_.  The implementation of this method will be largely
+handler-specific.  If the handler does not support buffered output,
+implementing this method is not necessary; the ``Log`` class's ``flush()``
+method will be called instead.
+
+bool log($message, $priority = null)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``log()`` method is the core of every log handler.  It is called whenever
+the user wishes to log an event.  The implementation of this method is very
+handler-specific.  It should return ``true`` or ``false``, depending on
+whether or not the message was successfully logged by the handler.
+
+The ``log()`` implementation should be sure to call `_announce()`__ whenever
+an event is successfully logged.
+
+.. __: void _announce($event)
+
+Utility Methods
+---------------
+These utility methods are provided by the ``Log`` base class and provide
+common, useful functionality to handler implementations.
+
+string _extractMessage($message)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This method returns the string representation of the provided message data.
+
+If ``$message`` is an object, ``_extractMessage()`` will attempt to extract
+the message text using a known method (such as a `PEAR_Error`_ object's
+`getMessage()`_ method).  If a known method, cannot be found, the serialized
+representation of the object will be returned.
+
+If the message data is already a string, it will be returned unchanged.
+
+.. _PEAR_Error: http://pear.php.net/manual/en/core.pear.pear-error.php
+.. _getMessage(): http://pear.php.net/manual/en/core.pear.pear-error.getmessage.php
+
+string _format($format, $timestamp, $priority, $message)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This method produces a formatted log line based on a format string and a set
+of variables representing the current log record and state.
+
+bool _isMasked($priority)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+This method checks if the given priority is included in the handler's current
+level mask.  This is useful for determining whether or not a log event should
+be written to the handler's log.
+
+void _announce($event)
+~~~~~~~~~~~~~~~~~~~~~~
+This method informs any registered `log observers`_ that a new event has been
+logged.  ``$event`` is an array containg two named elements::
+
+    array('priority' => $priority, 'message' => $message)
+
+``_announce()`` should be called from a handler's `log()`_ method whenever an
+event is successfully logged.  Otherwise, registered observers will never
+become aware of the event.
+
+.. _log(): bool log($message, $priority = null)
 
 .. |required| replace:: **[required]**
 
