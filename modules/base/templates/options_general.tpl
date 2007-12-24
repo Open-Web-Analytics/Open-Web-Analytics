@@ -179,18 +179,15 @@
 	
 	<BR>
 	
-	<fieldset name="owa-error-options" class="options">
+	<fieldset name="owa-cache-options" class="options">
 		<legend>Object Cache</legend>
 	
 		<div class="setting" id="object_cache">	
 			<div class="title">Cache Control</div> 
-			<div class="description">Enables and disables object caching. This will improve performance under high load conditions.</div>
+			<div class="description">Enables and disables object caching. This will improve performance under high load conditions. The object cache can be turned on/off via your config file.
+</div>
 			<div class="field">
-			<SELECT NAME="<?=$this->getNs();?>config[cache_objects]">
-				<OPTION VALUE="0" <? if ($config['cache_obejcts'] == false):?>SELECTED<?endif;?>>Off</OPTION>
-				<OPTION VALUE="1" <? if ($config['cache_objects'] == true):?>SELECTED<?endif;?>>On</OPTION>
-			</SELECT>
-			</div>
+			Status: <? if ($config['cache_objects'] == true):?><B>ON</B><?else:?><B>OFF</B><?endif;?> </div>
 		</div>
 		
 		<div class="setting" id="object_cache_flush">	
