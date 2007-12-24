@@ -37,14 +37,14 @@ class owa_cacheFacade extends owa_cache {
 
 	function __construct($cache_dir) {
 	
-		$this->e = &owa_error::get_instance();
+		$this->e = &owa_coreAPI::errorSingleton();
 		return parent::__construct($cache_dir);
 	
 	}
 
 	function owa_cacheFacade($cache_dir) {
 		
-		$this->e = &owa_error::get_instance();
+		$this->e = &owa_coreAPI::errorSingleton();
 		return $this->owa_cache($cache_dir);
 	
 	}

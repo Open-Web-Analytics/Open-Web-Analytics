@@ -78,7 +78,7 @@ class owa_observer extends Log_observer {
      
         $c = &owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
-        $this->e = &owa_error::get_instance();
+        $this->e = &owa_coreAPI::errorSingleton();
         $this->api = &owa_coreAPI::singleton();
         return;
     }

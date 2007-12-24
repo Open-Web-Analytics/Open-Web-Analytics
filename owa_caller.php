@@ -72,27 +72,68 @@ class owa_caller extends owa_base {
 	 */
 	function __construct($config) {
 		
+		// Start time
 		$this->start_time = owa_lib::microtime_float();
-		
-				
-		//load DB constants if not set already by caller
-		if(!defined('OWA_DB_HOST')):
-			$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
-			if (file_exists($file)):
-				include ($file);
-			else:
-				print "Uh-oh. I can't find your configuration file...";
-				exit;
-			endif;
-		endif;
 		
 		// Sets default config and error logger
 		$this->owa_base();
 		
+		// Log init debug
+		$this->e->debug(sprintf('*** Open Web Analytics v%s ***', OWA_VERSION));
+				
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 
 		
 		
+		/** 
+		 * Super Global Default Config Overrides
+		 * 
+		 * These are constants that can be defined in the config file, plugin, or caller
+		 * the will override default config values
+		 */
+		
+		/* DATABASE CONNECTIONS */
+		
+		//load DB constants if not set already by caller
+		if (!defined('OWA_DB_HOST')):
+			$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+			if (file_exists($file)):
+				include ($file);
+			else:
+				$this->e->emerg("Uh-oh. I can't find your configuration file...");
+				exit;
+			endif;
+		endif;
+		
+		
+		/* OBJECT CACHING */
+		
+		// Looks for object cache config constant
+		if (!defined('OWA_OBJECT_CACHING')):
+			$config['cache_objects'] = OWA_OBJECT_CACHING;
+		endif;
+		
+		
+		/* ERROR LOGGING */
+		
+		// Looks for log level constant
+		if (!defined('OWA_ERROR_LOG_LEVEL')):
+			$config['error_log_level'] = OWA_ERROR_LOG_LEVEL;
+		endif;
+		
+		// log PHP warnings and errors
+		if (OWA_LOG_PHP_ERRORS === true):
+			$this->e->logPhpErrors();
+		endif;
+		
+		
+		/**
+		 * User Settings Config Overrides
+		 *
+		 * These overrides come from user settings stored in the database
+		 */
+			
+		// sets config ID is not already set
 		if (empty($config['configuration_id'])):
 			$config['configuration_id'] = 1;
 		endif;	
@@ -103,26 +144,29 @@ class owa_caller extends owa_base {
 			$this->c->load($config['configuration_id']);
 		endif;
 			
+		/**
+		 * Run-time Config Overrides
+		 *
+		 */
+		 
 		// Applies run time config overrides
 		$this->c->applyModuleOverrides('base', $config);
-		$this->e->debug('applying caller config overrides.');
+		$this->e->debug('caller config overrides applied.');
 		
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 
 		$this->config = $this->c->fetch('base');
 
-		// log PHP warnings and errors
-		if (OWA_LOG_PHP_ERRORS === true):
-			set_error_handler(array("owa_error", "handlePhpError"));
-		endif;
-
-		// reloads error logger now that final config values are in place
-		$this->e = null;
-		$this->e = owa_error::get_instance();
 		
-		// Log init debug
-		$this->e->debug(sprintf('*** Open Web Analytics v%s ***', OWA_VERSION));
-
+		/**
+		 * Post Config Framework Setup
+		 *
+		 */
+		
+		// Sets the correct mode of the error logger now that final config values are in place
+		// This will flush buffered msgs that were thrown up untill this point
+		$this->e->setHandler($this->c->get('base', 'error_handler'));
+		
 		// Create Request Container
 		$this->params = &owa_requestContainer::getInstance();
 		
