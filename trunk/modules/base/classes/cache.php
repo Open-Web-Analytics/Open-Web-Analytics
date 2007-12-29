@@ -47,6 +47,14 @@ class owa_cache {
 	var $non_persistant_collections = array();
 	var $mutex;
 
+
+	/**
+	 * Constructor
+	 * 
+	 * Takes cache directory as param
+	 *
+	 * @param $cache_dir string
+	 */
 	function __construct($cache_dir) {
 	
 		return $this->cache_dir = $cache_dir;
