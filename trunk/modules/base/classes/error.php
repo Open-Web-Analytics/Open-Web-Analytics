@@ -208,19 +208,19 @@ class owa_error {
 
 	}
 	
-	function crit() {
+	function crit($message) {
 		
 		return $this->log($message, PEAR_LOG_CRIT);
 
 	}
 	
-	function alert() {
+	function alert($message) {
 		
 		return $this->log($message, PEAR_LOG_ALERT);
 
 	}
 	
-	function emerg() {
+	function emerg($message) {
 		
 		return $this->log($message, PEAR_LOG_EMERG);
 

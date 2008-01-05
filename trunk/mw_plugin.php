@@ -20,34 +20,26 @@ require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
 require_once "$IP/includes/SpecialPage.php";
 
+/* MEDIAWIKI GLOBALS */
 global $wgCachePages, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword, $wgUser, $wgServer, $wgScriptPath, $wgScript;
 
-// OWA Configuration
-
-
-// OWA DATABASE CONFIGURATION 
-// Will use Wordpress config unless there is a config file present.
-// OWA uses this to setup it's own DB connection seperate from the one
-// that Wordpress uses.
-
-$config_file = OWA_CONF_DIR.'owa-config.php';
-if (file_exists($config_file)):
-	// do nothing as the caller class will define the DB config constants later.
-	;
-else:
-	// use the Wordpress configuration
-	define('OWA_DB_TYPE', $wgDBtype);
-	define('OWA_DB_NAME', $wgDBname);
-	define('OWA_DB_HOST', $wgDBserver);
-	define('OWA_DB_USER', $wgDBuser);
-	define('OWA_DB_PASSWORD', $wgDBpassword);
-endif;
+/* OWA's MEDIAWIKI CONFIGURATION OVERRIDES */
 
 // Public folder URI
 define('OWA_PUBLIC_URL', $wgServer.$wgScriptPath.'/extensions/owa/public/');
 
-// Build the OWA wordpress specific config overrides array
+// Build OWA's Mediawiki specific config overrides array
 $owa_config = array();
+
+// OWA DATABASE CONFIGURATION 
+// Will use Mediawiki's config valuesunless there are values present in an OWA config file.
+// OWA uses this to setup it's own DB connection seperate from the one that Mediawiki uses.
+$owa_config['db_type'] = $wgDBtype;
+$owa_config['db_name'] = $wgDBname;
+$owa_config['db_host'] = $wgDBserver;
+$owa_config['db_user'] = $wgDBuser;
+$owa_config['db_password'] = $wgDBpassword;
+
 $owa_config['report_wrapper'] = 'wrapper_mediawiki.tpl';
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
 $owa_config['images_absolute_url'] = $owa_config['images_url'];
@@ -59,8 +51,6 @@ $owa_config['link_template'] = '%s&%s';
 $owa_config['authentication'] = 'mediawiki';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
 $owa_config['is_embedded'] = 'true';
-
-//$owa = new owa_php($owa_config);
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
@@ -79,18 +69,21 @@ $wgExtensionCredits['specialpage'][] = array('name' => 'Open Web Analytics for M
   											 'description' => 'Open Web Analytics for MedaWiki');
 
 //Load Special Page
-
 $wgAutoloadClasses['SpecialOwa'] = __FILE__;
 $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
 $wgHooks['UnknownAction'][] = 'owa_actions';
 
 
-// OWA Factory
-
+/**
+ * OWA Singleton Method
+ *
+ * Makes a singleton instance of OWA using the config array
+ */
 function owa_factory() {
 
 	global $owa_config;
+	
 	static $owa;
 	
 	if( isset($owa)):
@@ -103,24 +96,20 @@ function owa_factory() {
 }
 
 /**
- * Main Media Wiki Extension method
+ * Main Mediawiki Extension method
  *
+ * sets up OWA to be triggered for various hooks/actions
  */
 function owa_main() {
+
 	global $wgHooks;
 
-	
-	
-	// Create Instance of OWA
-	//$owa = new owa_php;
-	//$owa = owa_factory();
 	// Hook for logging Article Page Views
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
 	$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
 	
 	// Hooks for adding page tracking tags 
-	
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
 	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
 	$wgHooks['CategoryPageView'][] = 'owa_footer';
@@ -132,8 +121,14 @@ function owa_main() {
 }
 
 /**
- * Logs Special Page Views
+ * Hook for OWA special actions
  *
+ * This uses mediawiki's 'unknown action' hook to trigger OWA's special action handler.
+ * This is setup by adding 'action=owa' to the URLs for special actions. There is 
+ * probably a better way to do this so that the OWA namespace is preserved.
+ *
+ * @TODO figure out how to register this method to be triggered only when 'action=owa' instead of 
+ *		 for all unknown mediawiki actions.
  * @param object $specialPage
  * @url http://www.mediawiki.org/wiki/Manual:MediaWiki_hooks/UnknownAction
  * @return false
@@ -153,6 +148,13 @@ function owa_actions() {
 
 }
 
+/**
+ * OWA Priviledges
+ *
+ * Populates OWA requestion container with info about the current mediawiki user.
+ * This info is needed by OWA authentication system as well as to add dimensions
+ * requests that are logged.
+ */
 function owa_set_priviledges() {
 
 	global $wgUser;
@@ -189,7 +191,6 @@ function owa_logSpecialPage(&$specialPage) {
     $app_params['page_title'] = $wgOut->mPagetitle;
     $app_params['page_type'] = 'Special Page';
 
-    //print_r($wgOut);
 	// Log the request
 	$owa = owa_factory();
 	$owa->log($app_params);
@@ -248,7 +249,7 @@ function owa_logArticle(&$article) {
 }
 
 /**
- * Adds first hit web bug to Article Pages if needed
+ * Adds helper page tags to Article Pages if they are needed
  *
  * @param object $article
  * @return boolean
@@ -265,8 +266,10 @@ function owa_footer(&$article) {
 }
 
 
-/* Special Page Class
- * 
+/**
+ * OWA Special Page Class
+ *
+ * Enables OWA to be accessed through a Mediawiki special page. 
  */
 class SpecialOwa extends SpecialPage {
 

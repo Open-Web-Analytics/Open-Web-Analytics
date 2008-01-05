@@ -232,12 +232,15 @@ class owa_entityManager extends owa_base {
 			$constraint = array($col => $value);
 				
 			$properties = $this->db->select($this->_getProperties(), $constraint, get_class($this->entity));
-				
-			$this->setProperties($properties);
 			
-			if ($this->config['cache_objects'] == true):
-				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);	
-			endif;		
+			if (!empty($properties)):
+					
+				$this->setProperties($properties);
+				
+				if ($this->config['cache_objects'] == true):
+					$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);	
+				endif;		
+			endif;
 		endif;
 		
 		return; 
