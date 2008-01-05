@@ -50,6 +50,10 @@ class owa_reportDashboardController extends owa_reportController {
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 		
+		//if (empty($this->params['period'])):
+		//	$this->params['period'] = 'today';
+		//endif;
+		
 		$data = array();
 		$data['params'] = $this->params;
 		

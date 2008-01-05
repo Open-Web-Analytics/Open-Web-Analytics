@@ -92,66 +92,79 @@ class owa_caller extends owa_base {
 		 * the will override default config values
 		 */
 		
-		/* DATABASE CONNECTIONS */
-		
-		//load DB constants if not set already by caller
-		if (!defined('OWA_DB_HOST')):
-			$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
-			if (file_exists($file)):
-				include ($file);
-			else:
-				$this->e->emerg("Uh-oh. Your DB config is undefined and I can't find your configuration file...");
-				exit;
-			endif;
-		endif;
-		
-		
-		/* OBJECT CACHING */
-		
-		// Looks for object cache config constant
-		if (defined('OWA_OBJECT_CACHING')):
-			$config['cache_objects'] = OWA_OBJECT_CACHING;
-		endif;
-		
-		
-		/* ERROR LOGGING */
-		
-		// Looks for log level constant
-		if (defined('OWA_ERROR_LOG_LEVEL')):
-			$config['error_log_level'] = OWA_ERROR_LOG_LEVEL;
-		endif;
-		
-		// log PHP warnings and errors
-		if (OWA_LOG_PHP_ERRORS === true):
-			$this->e->logPhpErrors();
-		endif;
-		
+		/* APPLY CALLER CONFIGURATION OVERRIDES */
 		
 		/**
-		 * User Settings Config Overrides
-		 *
-		 * These overrides come from user settings stored in the database
+		 * This will apply configuration overirdes that are specified by the calling application.
+		 * This is usually used by plugins to setup integration specific configuration values.
 		 */
+		$this->c->applyModuleOverrides('base', $config);
+		$this->e->debug('Caller configuration overrides applied.');
+		
+		
+		/* APPLY CONFIGURATION FILE OVERRIDES */
+		
+		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		
+		if (file_exists($file)):
+			include ($file);
 			
-		// sets config ID is not already set
-		if (empty($config['configuration_id'])):
-			$config['configuration_id'] = 1;
+			/* OBJECT CACHING */
+		
+			// Looks for object cache config constant
+			if (defined('OWA_CACHE_OBJECTS')):
+				$this->c->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
+			endif;
+			
+		
+			/* ERROR LOGGING */
+		
+			// Looks for log level constant
+			if (defined('OWA_ERROR_LOG_LEVEL')):
+				$this->c->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
+			endif;
+		
+			/* PHP ERROR LOGGING */
+			
+			if (OWA_LOG_PHP_ERRORS === true):
+				$this->e->logPhpErrors();
+			endif;
+			
+		else:
+			$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
+		endif;
+		
+					
+		/* APPLY DATABASE CONFIGURATION */
+		
+		if (!defined('OWA_DB_TYPE')):
+			define('OWA_DB_TYPE', $this->c->get('base', 'db_type'));
+		endif;
+		
+		if (!defined('OWA_DB_NAME')):
+			define('OWA_DB_NAME', $this->c->get('base', 'db_name'));
+		endif;
+		
+		if (!defined('OWA_DB_HOST')):
+			define('OWA_DB_HOST', $this->c->get('base', 'db_host'));
+		endif;
+		
+		if (!defined('OWA_DB_USER')):
+			define('OWA_DB_USER', $this->c->get('base', 'db_user'));
+		endif;
+		
+		if (!defined('OWA_DB_PASSWORD')):
+			define('OWA_DB_PASSWORD', $this->c->get('base', 'db_password'));
 		endif;	
+					
+		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
 		
 		// Applies config from db or cache
 		// needed for installs when the configuration table does not exist.
-		if ($config['do_not_fetch_config_from_db'] != true):
-			$this->c->load($config['configuration_id']);
+		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
+			$this->c->load($this->c->get('base', 'configuration_id'));
 		endif;
-			
-		/**
-		 * Run-time Config Overrides
-		 *
-		 */
-		 
-		// Applies run time config overrides
-		$this->c->applyModuleOverrides('base', $config);
-		$this->e->debug('caller config overrides applied.');
+
 		
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 

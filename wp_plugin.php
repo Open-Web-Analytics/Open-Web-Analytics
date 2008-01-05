@@ -33,29 +33,22 @@ endif;
 // check to see if OWA is installed
 $current_plugins = get_option('active_plugins');
 
-// OWA DATABASE CONFIGURATION 
-// Will use Wordpress config unless there is a config file present.
-// OWA uses this to setup it's own DB connection seperate from the one
-// that Wordpress uses.
-
-$config_file = OWA_CONF_DIR.'owa-config.php';
-if (file_exists($config_file)):
-	// do nothing as the caller class will define the DB config constants later.
-	;
-else:
-	// use the Wordpress configuration
-	define('OWA_DB_TYPE', 'mysql');
-	define('OWA_DB_NAME', DB_NAME);
-	define('OWA_DB_HOST', DB_HOST);
-	define('OWA_DB_USER', DB_USER);
-	define('OWA_DB_PASSWORD', DB_PASSWORD);
-endif;
-
 // Public folder URI
 define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
 
 // Build the OWA wordpress specific config overrides array
 $owa_config = array();
+
+// OWA DATABASE CONFIGURATION 
+// Will use Wordpress config unless there is a config file present.
+// OWA uses this to setup it's own DB connection seperate from the one
+// that Wordpress uses.
+$owa_config['db_type'] = 'mysql';
+$owa_config['db_name'] = DB_NAME;
+$owa_config['db_host'] = DB_HOST;
+$owa_config['db_user'] = DB_USER;
+$owa_config['db_password'] = DB_PASSWORD;
+
 $owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
 $owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
