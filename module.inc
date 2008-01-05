@@ -1,15 +1,30 @@
 <?php
 
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2008 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
 require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
 
 /**
- * OWA Factory.
+ * OWA Singleton.
  *
  * Creates instance of OWA that can be called from within Gallery.
  * All configuration taken from Gallery directly.
  */
-
 function owa_factory() {
 	
 	static $owa;
@@ -131,7 +146,6 @@ function owa_set_priviledges() {
  * @author Peter Adams <peter@openwebanalytics.com>
  * @version $Revision$ $Date: $
  */
-
 class owaModule extends GalleryModule {
 
 	function owaModule() {
@@ -150,42 +164,12 @@ class owaModule extends GalleryModule {
         return;
     }
     
-    /**
-     * @see GalleryModule::performFactoryRegistrations
-     */
-    function performFactoryRegistrations() 
-	{
-		GalleryCoreApi::registerFactoryImplementation('GalleryAuthPlugin', 'owaModule', 'owaModule',
-				'modules/owa/module.inc', $this->getId(), null, 1);
-	}
-	
-	function getUser() {
-
-		return;
-	}
-	
-			
-	function owa_getPageType($entityType = '') {
-		
-		
-		// determin Entity Type
-		switch($entityType) {
-		
-			case "GalleryAlbumItem":
-				$page_type = 'Album';
-				break;
-			case "GalleryPhotoItem":
-				$page_type = "Photo";
-				break;
-			default:
-				$page_type = $entityType;
-		
-		}
-		
-		return $page_type;
-			
-	}
-	
+    
+	/**
+	 * Main OWA logging method
+	 * 
+	 * Using getSystemLinks as a callback because it is called on every request.
+	 */
 	function getSystemLinks() {
 		
 		global $gallery;
