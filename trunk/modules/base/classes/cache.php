@@ -40,13 +40,13 @@ class owa_cache {
 	var $cache_file_footer = '*/\n?>';
 	var $collections;
 	var $dirty_collections;
-	var $dirty_objs;
+	var $dirty_objs = array();
 	var $file_perms = 0775;
 	var $dir_perms = 0775;
 	var $global_collections = array();
 	var $non_persistant_collections = array();
 	var $mutex;
-
+	var $e;
 
 	/**
 	 * Constructor
@@ -55,13 +55,14 @@ class owa_cache {
 	 *
 	 * @param $cache_dir string
 	 */
-	function __construct($cache_dir) {
-	
+	function __construct($cache_dir = '') {
+		
+		$this->e = &owa_coreAPI::errorSingleton();
 		return $this->cache_dir = $cache_dir;
 	
 	}
 
-	function owa_cache($cache_dir) {
+	function owa_cache($cache_dir = '') {
 		
 		register_shutdown_function(array(&$this, "__destruct"));
 		return $this->__construct($cache_dir);
@@ -89,6 +90,7 @@ class owa_cache {
 		
 		if (!in_array($collection, $this->non_persistant_collections)):
 			$this->dirty_objs[$collection][] = $hkey;
+			//$this->debug(print_r($this->dirty_objs, true));
 			$this->dirty_collections[$collection] = true; 
 			$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
 			$this->statistics['dirty']++;
@@ -258,7 +260,7 @@ class owa_cache {
 	}
 	
 	function __destruct() {
-	
+		
 		$this->persistCache();
 		$this->debug($this->getStats());
 		$this->persistStats();
@@ -268,13 +270,18 @@ class owa_cache {
 	
 	function persistCache() {
 		
+		$this->debug("starting to persist cache...");
+		
 		// check for dirty objects
 		if (!empty($this->dirty_objs)):
-		
+			
+			$this->debug('Dirty Objects: '.print_r($this->dirty_objs, true));
+				
 			if ( ! $this->acquire_lock() ):
+				$this->debug("could not persist cache due to not acquiring lock.");
 	            return false;
 	        else:
-		
+				$this->debug("starting to persist cache...");
 				// make directories for collections
 				foreach ($this->dirty_collections as $k => $v) {
 					
@@ -333,6 +340,9 @@ class owa_cache {
 				
 			endif;
 			$this->release_lock();
+		
+		else:
+			$this->debug("There seem to be no dirty objects in the cache to persist.");
 		endif;
 	
 		return;
@@ -368,7 +378,7 @@ class owa_cache {
 	
 	function debug($msg) {
 		
-		print $msg.'<br>';
+		$this->e->debug($msg);
 		return;
 	}
 	

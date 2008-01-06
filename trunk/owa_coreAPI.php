@@ -310,9 +310,9 @@ class owa_coreAPI extends owa_base {
 		return $subview;
 	}
 	
-	function supportClassFactory($module, $class, $params = array()) {
+	function &supportClassFactory($module, $class, $params = array()) {
 		
-		$obj = owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, 'owa_', $class, $params);
+		$obj = &owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, 'owa_', $class, $params);
 		$obj->module = $module;
 		
 		return $obj;
