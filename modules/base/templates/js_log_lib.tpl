@@ -247,7 +247,6 @@ OWA.click.prototype = {
 	 */
 	 setProperties : function(e) {
 		
-	
 		this.e = e;
 	    this.properties["event"] = "base.click";
 	    this.properties["action"] = "base.processEvent";
