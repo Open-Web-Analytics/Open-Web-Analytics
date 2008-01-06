@@ -89,9 +89,9 @@ $owa_wp = &new owa_wp($owa_config);
 add_action('init', 'owa_set_user_level');
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_footer');
-add_filter('post_link', 'owa_post_link');
+add_filter('the_permalink_rss', 'owa_post_link');
 add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
-add_filter('bloginfo', 'add_feed_sid');
+add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', array(&$owa_wp, 'logComment'));
 add_action('admin_menu', 'owa_options_menu');
@@ -281,8 +281,9 @@ function add_feed_sid($binfo) {
 	
 	global $owa_wp;
 	
-	if (strstr($binfo, "feed=")):
+	$test = strpos($binfo, "feed=");
 	
+	if ($test == true):
 		$newbinfo = $owa_wp->add_feed_tracking($binfo);
 	
 	else: 
@@ -303,18 +304,8 @@ function add_feed_sid($binfo) {
  */
 function owa_post_link($link) {
 
-	global $owa_wp;
-	global $doing_rss;
-	
-	if($doing_rss):
-	
-		$tracked_link = $owa_wp->add_link_tracking($link);
-		return $tracked_link;
-	else:
-		return $link;
-	endif;
-	
-
+	return $owa_wp->add_link_tracking($link);
+		
 }
 
 /**
