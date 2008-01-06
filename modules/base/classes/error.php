@@ -56,7 +56,7 @@ class owa_error {
 	 */
 	function owa_error() {
 	 
-		return __construct();
+		return $this->__construct();
 	 
 	}
 	
