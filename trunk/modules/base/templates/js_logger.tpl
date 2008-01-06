@@ -50,13 +50,16 @@ var owa_click = new OWA.click(owa_params);
 
 
 /**
- * Helper function for setting properties o nthe cick object
+ * Helper function for setting properties on the click object
  *
  * Takes a DOM event object
  *
  * @param e Object
  */
 function owa_setClick(e) {
+
+	// hack for IE7
+	e = e || window.event;
 
 	owa_click.setProperties(e);
 	return;
