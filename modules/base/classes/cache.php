@@ -106,7 +106,27 @@ class owa_cache {
 	
 	function replace($collection, $key, $value) {
 	
-		return $this->set($collection, $key, $value);
+		$hkey = $this->hash($key);
+		$this->cache[$collection][$hkey] = $value;
+		$this->debug(sprintf('Replacing Object in Cache - Collection: %s, id: %s', $collection, $hkey));
+		$this->statistics['replaced']++;
+		
+		if (!in_array($collection, $this->non_persistant_collections)):
+			if (!in_array($hkey, $this->dirty_objs[$collection])):
+				$this->dirty_objs[$collection][] = $hkey;
+				//$this->debug(print_r($this->dirty_objs, true));
+				$this->dirty_collections[$collection] = true; 
+				$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
+				$this->statistics['dirty']++;
+			endif;
+		// check to see if cache file exists and remove it just in case the collection
+		// was recently added to the non persistant list.
+		else:
+			$this->removeCacheFile($this->makeCollectionDirPath($collection).$hkey.'.php');
+		endif;
+
+		
+		return;
 	}
 	
 	function get($collection, $key) {
@@ -188,6 +208,7 @@ class owa_cache {
 						  Total Hits: %s (Warm/Cold: %s/%s)
 						  Total Miss: %s
 						  Total Added to Cache: %s
+						  Total Replaced: %s
 						  Total Persisted: %s
 						  Total Removed: %s",
 						  $this->statistics['warm'] + $this->statistics['cold'],
@@ -195,6 +216,7 @@ class owa_cache {
 						  $this->statistics['cold'],
 						  $this->statistics['miss'],
 						  $this->statistics['added'],
+						  $this->statistics['replaced'],
 						  $this->statistics['dirty'],
 						  $this->statistics['removed']);
 	}

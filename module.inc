@@ -73,6 +73,7 @@ function owa_factory() {
 		$owa_config['link_template'] = '%s&%s';
 		$owa_config['authentication'] = 'gallery';
 		$owa_config['site_id'] = md5($gallery_base_url);
+		$owa_config['query_string_filters'] = 'g2_fromNavId';
 		$owa_config['is_embedded'] = 'true';
 		
 		// create owa instance
@@ -174,22 +175,28 @@ class owaModule extends GalleryModule {
 		
 		global $gallery;
 		
-		// get instance of owa
-		$owa = owa_factory();
 		
-		// set user priviledges of the request for OWA to log
-		owa_set_priviledges();
-
-		// Setup OWA request params
-		$params = array();
-		
-		// get user gallery's object to set request variables
-		$params['user_name']= $u->userName;
-    	$params['user_email'] = $u->email;	
     	if (GalleryUtilities::hasRequestVariable('view')):
     		$viewName = GalleryUtilities::getRequestVariables('view');
+    		
+    		
     		// ensure this is not a Gallery admin screen
-    		if ($viewName != "core.SiteAdmin"):
+    		if ($viewName == "core.SiteAdmin" || $viewName == "core.ItemAdmin"):
+    			return;
+    		else:
+    			
+    			// get instance of owa
+				$owa = owa_factory();
+				
+				// set user priviledges of the request for OWA to log
+				owa_set_priviledges();
+		
+				// Setup OWA request params
+				$params = array();
+				
+				// get user gallery's object to set request variables
+				//$params['user_name']= $u->userName;
+				//$params['user_email'] = $u->email;	
     			
 				// get information on current view	
 				list ($ret, $view) = GalleryView::loadView($viewName);
@@ -223,6 +230,23 @@ class owaModule extends GalleryModule {
 	
 	}
 	
+	
+	/**
+	 * Check to see if OWA is installed and activated
+	 *
+	 */
+	function owa_isActivated() {
+	
+		list ($ret, $params) = GalleryCoreApi::fetchAllPluginParameters('module', 'owa');
+		
+		if (!empty($params)):
+			return true;
+		else:
+			return false;
+		endif;
+	}
+	
+	
 	/**
      * @see GalleryModule::getSiteAdminViews
      */
@@ -230,11 +254,15 @@ class owaModule extends GalleryModule {
     	
     	global $gallery;
     	
-    	$owa = owa_factory();
-		
-		// set user priviledges of the request for OWA
-		owa_set_priviledges();
-    	
+    	// this is needed becasue on the plugins page this callback is triggered
+    	// whether then plugin is active or not for some reason.
+    	//if ($this->owa_isActivated()):
+			// get OWA instance
+		//	$owa = owa_factory();
+			// set user priviledges of the request for OWA
+		//	owa_set_priviledges();
+		//endif;
+					
 		$data = array(array('name' => $this->translate('Dashboard'), 'view' => 'owa.owaDashboard'),
 					  array('name' => $this->translate('Admin Settings'), 'view' => 'owa.owaOptions'));		    
 		return array(null, $data);
@@ -291,12 +319,28 @@ class owaOptionsView extends GalleryView {
 		owa_set_priviledges();
 		
 		$params = array();
-		$params['view'] = 'base.options';
-		$params['subview'] = 'base.optionsGeneral';        
+		
+		 if (empty($owa->params['do'])):
+         	if (empty($owa->params['view'])):		
+				$params['view'] = 'base.options';
+				$params['subview'] = 'base.optionsGeneral'; 
+			endif;
+		endif;
+		       
 		$page = $owa->handleRequest($params);
 		$template->setVariable('owa', array('content' => $page));
 		return array(null, array('body' => 'modules/owa/modules/base/templates/gallery.tpl'));
     }
+    
+    /**
+     * Does this view change any data? Only controllers should change data, but AJAX and some
+     * immediate views are handled in views in Gallery.
+     * @return bool true if the view changes data
+     */
+    function isControllerLike() {
+		return true;
+    }
+
 		
 }
 
@@ -342,7 +386,31 @@ class owaGenericView extends GalleryView {
 		$template->setVariable('owa', array('content' => $page));
 		return array(null, array('body' => 'modules/owa/modules/base/templates/gallery.tpl'));
     }
+	
+	/**
+     * Does this view change any data? Only controllers should change data, but AJAX and some
+     * immediate views are handled in views in Gallery.
+     * @return bool true if the view changes data
+     */
+    function isControllerLike() {
+		return true;
+    }
 		
+}
+
+class owaControlController extends GalleryController {
+
+	/**
+     * @see GalleryController::handleRequest
+     */
+    function handleRequest($form) {
+    
+    	$result = array('delegate' => array('view' => 'owa.owaGeneric'),
+                        'status' => 1, 'error' => '');
+        return array(null, $result);
+    
+    }
+
 }
 
 
@@ -394,10 +462,12 @@ class owaCallbacks {
         	
            	$viewName = GalleryUtilities::getRequestVariables('view');
     		// ensure this is not a Gallery admin screen
-    		if ($viewName != "core.SiteAdmin"):
-
-        	
+    		
+    		if ($viewName == "core.SiteAdmin" || $viewName == "core.ItemAdmin"):
+    			return;
+        	else:
 				/* 2. Load the requested data */
+				
 				$owa = owa_factory();
 				$tags = $owa->placeHelperPageTags(false);
 				

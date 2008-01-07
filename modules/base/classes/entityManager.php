@@ -144,7 +144,7 @@ class owa_entityManager extends owa_base {
 		// Add to Cache
 		if ($status == true):
 			if ($this->config['cache_objects'] == true):
-				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+				$this->cache->replace(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
 			endif;
 		endif;
 		

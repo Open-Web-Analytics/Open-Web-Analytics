@@ -2,7 +2,7 @@
 
 <div class="subview_content">
 
-<form method="post">
+<form method="post" name="owa_options">
 
 	<fieldset name="owa-options" class="options">
 	<legend>Request Processing Options</legend>
