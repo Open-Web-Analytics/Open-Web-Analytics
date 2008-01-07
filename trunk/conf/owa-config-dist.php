@@ -52,6 +52,20 @@
 // define('OWA_PUBLIC_URL', ''); 
 
 /** 
+ * OWA ERROR HANDLER
+ *
+ * Overide OWA error handler. This should be done through the admin GUI, but 
+ * can be handy during install or development. 
+ * 
+ * Choices are: 
+ *
+ * 'production' - will log only critical errors to a log file.
+ * 'development' - logs al sorts of useful debug to log file.
+ */
+
+//define('OWA_ERROR_HANDLER', 'development');
+
+/** 
  * LOG PHP ERRORS
  *
  * Log all php errors to OWA's error log file. Only do this to debug.

@@ -176,6 +176,12 @@ class owa_caller extends owa_base {
 		 *
 		 */
 		
+		// Looks for log handler constant from config file
+		if (defined('OWA_ERROR_HANDLER')):
+			$this->c->set('base', 'error_handler', OWA_ERROR_HANDLER);
+		endif;
+		
+		
 		// Sets the correct mode of the error logger now that final config values are in place
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
