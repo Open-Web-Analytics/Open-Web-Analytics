@@ -112,7 +112,8 @@ class owa_cache {
 		$this->statistics['replaced']++;
 		
 		if (!in_array($collection, $this->non_persistant_collections)):
-			if (!in_array($hkey, $this->dirty_objs[$collection])):
+			// check to make sure the dirty collection exists and object is not already in there.
+			if (!empty($this->dirty_objs[$collection]) || !in_array($hkey, $this->dirty_objs[$collection])):
 				$this->dirty_objs[$collection][] = $hkey;
 				//$this->debug(print_r($this->dirty_objs, true));
 				$this->dirty_collections[$collection] = true; 
