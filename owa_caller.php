@@ -107,6 +107,7 @@ class owa_caller extends owa_base {
 		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
 		
 		if (file_exists($file)):
+			
 			include ($file);
 			
 			/* OBJECT CACHING */
@@ -146,25 +147,25 @@ class owa_caller extends owa_base {
 		if (!defined('OWA_DB_NAME')):
 			define('OWA_DB_NAME', $this->c->get('base', 'db_name'));
 		else:
-			$this->c->set('base', 'db_type', OWA_DB_NAME);
+			$this->c->set('base', 'db_name', OWA_DB_NAME);
 		endif;
 		
 		if (!defined('OWA_DB_HOST')):
 			define('OWA_DB_HOST', $this->c->get('base', 'db_host'));
 		else:
-			$this->c->set('base', 'db_type', OWA_DB_HOST);
+			$this->c->set('base', 'db_host', OWA_DB_HOST);
 		endif;
 		
 		if (!defined('OWA_DB_USER')):
 			define('OWA_DB_USER', $this->c->get('base', 'db_user'));
 		else:
-			$this->c->set('base', 'db_type', OWA_DB_USER);
+			$this->c->set('base', 'db_user', OWA_DB_USER);
 		endif;
 		
 		if (!defined('OWA_DB_PASSWORD')):
 			define('OWA_DB_PASSWORD', $this->c->get('base', 'db_password'));
 		else:
-			$this->c->set('base', 'db_type', OWA_DB_PASSWORD);
+			$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
 		endif;	
 					
 		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
