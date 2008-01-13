@@ -139,22 +139,32 @@ class owa_caller extends owa_base {
 		
 		if (!defined('OWA_DB_TYPE')):
 			define('OWA_DB_TYPE', $this->c->get('base', 'db_type'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_TYPE);
 		endif;
 		
 		if (!defined('OWA_DB_NAME')):
 			define('OWA_DB_NAME', $this->c->get('base', 'db_name'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_NAME);
 		endif;
 		
 		if (!defined('OWA_DB_HOST')):
 			define('OWA_DB_HOST', $this->c->get('base', 'db_host'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_HOST);
 		endif;
 		
 		if (!defined('OWA_DB_USER')):
 			define('OWA_DB_USER', $this->c->get('base', 'db_user'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_USER);
 		endif;
 		
 		if (!defined('OWA_DB_PASSWORD')):
 			define('OWA_DB_PASSWORD', $this->c->get('base', 'db_password'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_PASSWORD);
 		endif;	
 					
 		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
