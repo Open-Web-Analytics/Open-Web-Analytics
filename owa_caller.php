@@ -75,6 +75,15 @@ class owa_caller extends owa_base {
 		// Start time
 		$this->start_time = owa_lib::microtime_float();
 		
+		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		
+		if (file_exists($file)):
+			$config_file_exists = true;
+			include($file);
+		else:
+			$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
+		endif;
+		
 		// Parent Constructor. Sets default config and error logger
 		$this->owa_base();
 		
@@ -104,11 +113,8 @@ class owa_caller extends owa_base {
 		
 		/* APPLY CONFIGURATION FILE OVERRIDES */
 		
-		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
 		
-		if (file_exists($file)):
-			
-			include ($file);
+		if ($config_file_exists == true):
 			
 			/* OBJECT CACHING */
 		
@@ -131,11 +137,9 @@ class owa_caller extends owa_base {
 				$this->e->logPhpErrors();
 			endif;
 			
-		else:
-			$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
 		endif;
-		
-					
+			
+		$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
 		/* APPLY DATABASE CONFIGURATION */
 		
 		if (!defined('OWA_DB_TYPE')):
