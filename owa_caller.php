@@ -81,7 +81,7 @@ class owa_caller extends owa_base {
 			$config_file_exists = true;
 			include($file);
 		else:
-			$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
+			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
 		endif;
 		
 		// Parent Constructor. Sets default config and error logger
