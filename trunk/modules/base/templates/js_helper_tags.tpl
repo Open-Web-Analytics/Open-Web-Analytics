@@ -3,7 +3,7 @@
 
 <script type="text/javascript">
 //<![CDATA[
-document.write('<img src="<?=$this->makeAbsolutelink(array('action' => 'base.processFirstRequest'), '', $this->config['action_url']);?>">');
+document.write('<img src="<?=$this->makeAbsolutelink(array('action' => 'base.processFirstRequest', 'site_id' => $this->config['site_id']), '', $this->config['action_url']);?>">');
 //]]>
 </script>
 

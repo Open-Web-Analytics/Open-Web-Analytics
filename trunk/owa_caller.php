@@ -211,6 +211,11 @@ class owa_caller extends owa_base {
 		// should only be called once to load all modules
 		$this->api->setupFramework();
 		
+		// needed in standalone installs where site_id is not set in config file.
+		if ($this->params['site_id']):
+			$this->c->set('base', 'site_id', $this->params['site_id']);
+		endif;
+		
 		return;
 	
 	}
@@ -250,6 +255,8 @@ class owa_caller extends owa_base {
 			if(!empty($caller_params['site_id'])):
 				$this->config['site_id'] = $caller_params['site_id'];
 				$this->c->set('base', 'site_id', $caller_params['site_id']);
+			else:
+				$caller_params['site_id'] = $this->c->get('base', 'site_id');
 			endif;
 		
 		
@@ -282,6 +289,7 @@ class owa_caller extends owa_base {
 		// Abort if the request is from a robot
 		if ($this->config['log_robots'] != true):
 			if ($bcap->robotCheck() == true):
+				$this->e->debug("ABORTING: request appears to be from a robot");
 				return;
 			endif;
 		endif;
