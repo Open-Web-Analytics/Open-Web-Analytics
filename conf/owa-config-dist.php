@@ -81,6 +81,13 @@
 
 //define('OWA_CACHE_OBJECTS', true);
 
+/**
+ * CONFIGURATION ID
+ *
+ * Override to load an alternative user configuration
+ */
+ 
+//define('OWA_CONFIGURATION_ID', '1');
 
 
 ?>
