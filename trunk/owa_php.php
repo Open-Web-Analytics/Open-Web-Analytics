@@ -44,16 +44,6 @@ class owa_php extends owa_caller {
 		return $this->owa_caller($config);
 		
 	}
-	
-	
-	/*
-function __construct($config = null) {
-		//return;
-		return $this->owa_caller($config);
-	
-	}
-
-*/
 
 }
 

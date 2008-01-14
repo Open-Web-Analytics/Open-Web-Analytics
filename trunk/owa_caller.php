@@ -137,6 +137,12 @@ class owa_caller extends owa_base {
 				$this->e->logPhpErrors();
 			endif;
 			
+			/* CONFIGURATION ID */
+			
+			if (defined('OWA_CONFIGURATION_ID')):
+				$this->c->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
+			endif;
+			
 		endif;
 			
 		$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
@@ -179,15 +185,9 @@ class owa_caller extends owa_base {
 		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
 			$this->c->load($this->c->get('base', 'configuration_id'));
 		endif;
-
-		
-		// re-fetch the array now that overrides have been applied.
-		// needed for backwards compatability 
-		$this->config = $this->c->fetch('base');
-
 		
 		/**
-		 * Post Config Framework Setup
+		 * Post User Config Framework Setup
 		 *
 		 */
 		
@@ -195,7 +195,6 @@ class owa_caller extends owa_base {
 		if (defined('OWA_ERROR_HANDLER')):
 			$this->c->set('base', 'error_handler', OWA_ERROR_HANDLER);
 		endif;
-		
 		
 		// Sets the correct mode of the error logger now that final config values are in place
 		// This will flush buffered msgs that were thrown up untill this point
@@ -216,6 +215,10 @@ class owa_caller extends owa_base {
 			$this->c->set('base', 'site_id', $this->params['site_id']);
 		endif;
 		
+		// re-fetch the array now that overrides have been applied.
+		// needed for backwards compatability 
+		$this->config = $this->c->fetch('base');
+
 		return;
 	
 	}

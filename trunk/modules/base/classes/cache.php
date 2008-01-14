@@ -113,13 +113,22 @@ class owa_cache {
 		
 		if (!in_array($collection, $this->non_persistant_collections)):
 			// check to make sure the dirty collection exists and object is not already in there.
-			if (!empty($this->dirty_objs[$collection]) || !in_array($hkey, $this->dirty_objs[$collection])):
+			if (!empty($this->dirty_objs[$collection])):
+				if(!in_array($hkey, $this->dirty_objs[$collection])):
+					$this->dirty_objs[$collection][] = $hkey;
+					//$this->debug(print_r($this->dirty_objs, true));
+					$this->dirty_collections[$collection] = true; 
+					$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
+					$this->statistics['dirty']++;
+				endif;
+			else:
 				$this->dirty_objs[$collection][] = $hkey;
 				//$this->debug(print_r($this->dirty_objs, true));
 				$this->dirty_collections[$collection] = true; 
 				$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
 				$this->statistics['dirty']++;
 			endif;
+			
 		// check to see if cache file exists and remove it just in case the collection
 		// was recently added to the non persistant list.
 		else:
