@@ -45,11 +45,15 @@ class owa_php extends owa_caller {
 		
 	}
 	
-	function __construct($config = null) {
 	
-		return parent::__construct($config);
+	/*
+function __construct($config = null) {
+		//return;
+		return $this->owa_caller($config);
 	
 	}
+
+*/
 
 }
 
