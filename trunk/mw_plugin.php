@@ -172,6 +172,12 @@ function owa_set_priviledges() {
 					
 					$owa->params['u'] = 'xxxxx'.$wgUser->mName;
 					$owa->params['p'] = 'xxxxxxx';//$wgUser->mPassword;
+					
+					if ($owa->config['do_not_log_admins'] == true):
+						if (strtolower($wgUser->mGroups) == 'sysop' || 'bureaucrat' || 'developer'):
+							$owa->params['do_not_log'] = true;
+						endif;
+					endif;		
 
 	return;
 }
