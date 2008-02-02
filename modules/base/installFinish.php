@@ -60,12 +60,19 @@ class owa_installFinishController extends owa_controller {
 			$this->e->notice('Could not persist Install Complete Flag to the Database');
 		endif;
 		
+		
+		$site = owa_coreAPI::entityFactory('base.site');
+		
+		$site->getByPk('id', '1');
+		
 		$data = array();
 		$data['view'] = 'base.install';
 		$data['subview'] = 'base.installFinish';
 		$data['view_method'] = 'delegate';
-		$data['site_id'] = $this->params['site_id'];
+		$data['site_id'] = $site->get('site_id');
 		$data['status_code'] = $this->params['status_code']; 
+		$data['u'] = $this->params['u'];
+		$data['k'] = $this->params['k'];
 		
 		return $data;
 	}
@@ -96,6 +103,8 @@ class owa_installFinishView extends owa_view {
 		$this->body->set('headline', 'Installation is Complete');
 		
 		$this->body->set('site_id', $data['site_id']);
+		$this->body->set('u', $data['u']);
+		$this->body->set('key', $data['k']);
 		// load body template
 		$this->body->set_template('install_finish.tpl');
 		

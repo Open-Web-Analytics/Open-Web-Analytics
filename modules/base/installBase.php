@@ -49,7 +49,7 @@ class owa_installBaseController extends owa_controller {
 		if ($status == true):
 			$data['view_method'] = 'redirect';
 			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installAdminUser';
+			$data['subview'] = 'base.installDefaultSiteProfile';
 			$data['status_code'] = 3305;
 		else:
 			$data['view_method'] = 'redirect';

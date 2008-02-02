@@ -122,7 +122,8 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 				// Setup the data array that will be returned to the view.
 				
 				$data['view_method'] = 'redirect'; // Delegate, redirect
-				$data['action'] = 'base.installFinish';
+				$data['view'] = 'base.install';
+				$data['subview'] = 'base.installAdminUser';
 				$data['status_code'] = 3303;
 				$data['site_id'] = $site->get('site_id');
 			

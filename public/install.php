@@ -35,6 +35,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 // Initialize owa admin
 $config['do_not_fetch_config_from_db'] = true;
 $config['main_url'] = 'install.php';
+$config['cache_objects'] = false;
 $owa = new owa_php($config);
 
 // Santize input
