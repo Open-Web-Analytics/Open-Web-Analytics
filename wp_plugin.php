@@ -130,10 +130,10 @@ function owa_set_user_level() {
 	'user_login'	=> $user_login,
 	'user_email'	=> $user_email,
 	'user_identity'	=> $user_identity,
-	'user_password'	=> $user_pass_md5);
+	'user_password'	=> 'xxxxxxxxx');
 	
 	$owa_wp->params['u'] = $user_login;
-	$owa_wp->params['p'] = $user_pass_md5;
+	$owa_wp->params['p'] = 'xxxxxxxxx';
 	
 	return;	
 }

@@ -340,7 +340,7 @@ class owa_error {
 		
 		if ($handle != false):
 			fclose($handle);
-			$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
+			$conf = array('mode' => 0600, 'timeFormat' => '%X %x', 'lineFormat' => '%1$s %2$s [%3$s] %4$s');
 			$logger = &Log::singleton('file', $c->get('base', 'error_log_file'), getmypid(), $conf);
 			return $logger;
 		else:
