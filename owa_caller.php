@@ -268,6 +268,14 @@ class owa_caller extends owa_base {
 			return false;
 		endif;
 		
+		// do not log if the request is from a reserved IP
+		// ips = $this->c->get('base', 'log_not_log_ips');
+		//	...
+		
+		// do not log if the do not log param is set by caller.
+		if ($this->params['do_not_log'] == true):
+			return false;
+		endif;
 		
 		$params = array();
 		// Add PHP's $_SERVER scope variables to event properties

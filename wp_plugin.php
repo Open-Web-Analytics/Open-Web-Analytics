@@ -145,18 +145,20 @@ function owa_set_user_level() {
  */
 function owa_main() {
 	
-	global $user_level;
+	global $user_level, $owa_wp;
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists(is_preview)):
 		if (is_preview()):
-			return;
+			$owa_wp->params['do_not_log'] = true;
 		endif;
 	endif;
 	
 	// Don't Log if user is an admin
 	if($user_level == '10'):
-		return;
+		if ($owa_wp->config['do_not_log_admins'] == true):
+			$owa_wp->params['do_not_log'] = true;
+		endif;
 	endif;
 	
 	owa_log();

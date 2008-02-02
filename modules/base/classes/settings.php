@@ -407,7 +407,9 @@
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
-			'cache_objects'					=> true
+			'cache_objects'					=> true,
+			'do_not_log_admins'				=> true,
+			'do_not_log_ips'				=> ''
 			
 			));
 			
