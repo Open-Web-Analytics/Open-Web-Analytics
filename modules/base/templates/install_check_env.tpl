@@ -29,7 +29,7 @@
 	    		<TD><?=$errors['socket_connection'];?></TD>
 	    	</TR>
 	    	<TR>	
-	    		<TH scope="row">Log Directory Permissions</TH>
+	    		<TH scope="row">File System Permissions</TH>
 	    		<TD class="<? if ($errors['log_dir_permission']):?>red
 							<?elseif ($warnings['log_dir_permission']):?>yellow
 							<?else:?>green<?endif;?>">
@@ -42,7 +42,7 @@
     
     <? if ($errors['count'] == 0):?>
     	<DIV class="centered_buttons">	
-			<a href="<?=$this->makeLink(array('action' => 'base.installBase'));?>">Next >> Next Step: Admin User Setup</a>
+			<a href="<?=$this->makeLink(array('action' => 'base.installBase'));?>">Next >> Next Step: Default Site Setup</a>
 		</DIV>
 	<? else:?>
 	

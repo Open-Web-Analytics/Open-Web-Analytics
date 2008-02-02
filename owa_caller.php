@@ -75,6 +75,15 @@ class owa_caller extends owa_base {
 		// Start time
 		$this->start_time = owa_lib::microtime_float();
 		
+		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		
+		if (file_exists($file)):
+			$config_file_exists = true;
+			include($file);
+		else:
+			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
+		endif;
+		
 		// Parent Constructor. Sets default config and error logger
 		$this->owa_base();
 		
@@ -104,10 +113,8 @@ class owa_caller extends owa_base {
 		
 		/* APPLY CONFIGURATION FILE OVERRIDES */
 		
-		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
 		
-		if (file_exists($file)):
-			include ($file);
+		if ($config_file_exists == true):
 			
 			/* OBJECT CACHING */
 		
@@ -130,31 +137,45 @@ class owa_caller extends owa_base {
 				$this->e->logPhpErrors();
 			endif;
 			
-		else:
-			$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
+			/* CONFIGURATION ID */
+			
+			if (defined('OWA_CONFIGURATION_ID')):
+				$this->c->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
+			endif;
+			
 		endif;
-		
-					
+			
+		$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
 		/* APPLY DATABASE CONFIGURATION */
 		
 		if (!defined('OWA_DB_TYPE')):
 			define('OWA_DB_TYPE', $this->c->get('base', 'db_type'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_TYPE);
 		endif;
 		
 		if (!defined('OWA_DB_NAME')):
 			define('OWA_DB_NAME', $this->c->get('base', 'db_name'));
+		else:
+			$this->c->set('base', 'db_name', OWA_DB_NAME);
 		endif;
 		
 		if (!defined('OWA_DB_HOST')):
 			define('OWA_DB_HOST', $this->c->get('base', 'db_host'));
+		else:
+			$this->c->set('base', 'db_host', OWA_DB_HOST);
 		endif;
 		
 		if (!defined('OWA_DB_USER')):
 			define('OWA_DB_USER', $this->c->get('base', 'db_user'));
+		else:
+			$this->c->set('base', 'db_user', OWA_DB_USER);
 		endif;
 		
 		if (!defined('OWA_DB_PASSWORD')):
 			define('OWA_DB_PASSWORD', $this->c->get('base', 'db_password'));
+		else:
+			$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
 		endif;	
 					
 		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
@@ -164,15 +185,9 @@ class owa_caller extends owa_base {
 		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
 			$this->c->load($this->c->get('base', 'configuration_id'));
 		endif;
-
-		
-		// re-fetch the array now that overrides have been applied.
-		// needed for backwards compatability 
-		$this->config = $this->c->fetch('base');
-
 		
 		/**
-		 * Post Config Framework Setup
+		 * Post User Config Framework Setup
 		 *
 		 */
 		
@@ -180,7 +195,6 @@ class owa_caller extends owa_base {
 		if (defined('OWA_ERROR_HANDLER')):
 			$this->c->set('base', 'error_handler', OWA_ERROR_HANDLER);
 		endif;
-		
 		
 		// Sets the correct mode of the error logger now that final config values are in place
 		// This will flush buffered msgs that were thrown up untill this point
@@ -196,6 +210,15 @@ class owa_caller extends owa_base {
 		// should only be called once to load all modules
 		$this->api->setupFramework();
 		
+		// needed in standalone installs where site_id is not set in config file.
+		if ($this->params['site_id']):
+			$this->c->set('base', 'site_id', $this->params['site_id']);
+		endif;
+		
+		// re-fetch the array now that overrides have been applied.
+		// needed for backwards compatability 
+		$this->config = $this->c->fetch('base');
+
 		return;
 	
 	}
@@ -235,6 +258,8 @@ class owa_caller extends owa_base {
 			if(!empty($caller_params['site_id'])):
 				$this->config['site_id'] = $caller_params['site_id'];
 				$this->c->set('base', 'site_id', $caller_params['site_id']);
+			else:
+				$caller_params['site_id'] = $this->c->get('base', 'site_id');
 			endif;
 		
 		
@@ -243,6 +268,14 @@ class owa_caller extends owa_base {
 			return false;
 		endif;
 		
+		// do not log if the request is from a reserved IP
+		// ips = $this->c->get('base', 'log_not_log_ips');
+		//	...
+		
+		// do not log if the do not log param is set by caller.
+		if ($this->params['do_not_log'] == true):
+			return false;
+		endif;
 		
 		$params = array();
 		// Add PHP's $_SERVER scope variables to event properties
@@ -267,6 +300,7 @@ class owa_caller extends owa_base {
 		// Abort if the request is from a robot
 		if ($this->config['log_robots'] != true):
 			if ($bcap->robotCheck() == true):
+				$this->e->debug("ABORTING: request appears to be from a robot");
 				return;
 			endif;
 		endif;

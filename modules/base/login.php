@@ -79,7 +79,7 @@ class owa_loginController extends owa_controller {
 			//else redirect to home page
 			else:
 				$data['view_method'] = 'redirect';
-				$data['view'] = 'base.options';
+				$data['do'] = 'base.reportDashboard';
 			endif;
 		// return error view		
 		else:
