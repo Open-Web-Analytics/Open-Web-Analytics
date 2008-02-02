@@ -39,10 +39,9 @@ class owa_usersDeleteController extends owa_controller {
 	
 	function action() {
 		
-		$u = owa_coreAPI::entityFactory('base.user');
-
-		$u->delete($this->params['user_id'], 'user_id');
-		
+		$userManager = owa_coreApi::supportClassFactory('base', 'userManager');	
+		$userManager->deleteUser($this->params['user_id']);
+				
 		$data['view_method'] = 'redirect';
 		$data['view'] = 'base.options';
 		$data['subview'] = 'base.users';
