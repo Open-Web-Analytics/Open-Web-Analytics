@@ -65,6 +65,20 @@ class owa_userManager extends owa_base {
 	
 	}
 	
+	function deleteUser($user_id) {
+	
+		$u = owa_coreAPI::entityFactory('base.user');
+
+		$ret = $u->delete($user_id, 'user_id');
+		
+		if ($ret == true):
+			return true;
+		else:
+			return false;
+		endif;
+	
+	}
+	
 }
 
 ?>
