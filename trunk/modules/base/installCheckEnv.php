@@ -96,6 +96,7 @@ class owa_installCheckEnvController extends owa_controller {
 		
 		// Check DB connection status
 		$db = &owa_coreAPI::dbSingleton();
+		$db->connect();
 		if ($db->connection_status != true):
 			$errors['count'] = $errors['count']++;
 			$errors['db_status'] = $this->getMsg(3300);

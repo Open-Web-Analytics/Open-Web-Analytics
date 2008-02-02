@@ -132,23 +132,24 @@ class owa_installAdminUserController extends owa_controller {
 		
 				// Set user object Params
 				if (empty($id)):
-		
-				//Generate Initial Passkey and new account email
-				$auth->setInitialPasskey($this->params['user_id']);
-			
-				// log account creation event to event queue
-				$eq = &eventQueue::get_instance();
-				$eq->log(array( 'user_id' 		=> $this->params['user_id'],
-								'real_name' 	=> $this->params['real_name'],
-								'role' 			=> $this->params['role'],
-								'email_address' => $this->params['email_address']), 
-								'base.new_user_account');
 				
-				// return view
-				$data['view_method'] = 'redirect';
-				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installDefaultSiteProfile';
-				$data['status_code'] = 3304;
+					$userManager = owa_coreApi::supportClassFactory('base', 'userManager');				
+					
+					
+					$user_params = array( 'user_id' 		=> $this->params['user_id'],
+										  'real_name' 		=> $this->params['real_name'],
+									      'role'			=> $this->params['role'],
+								    	  'email_address' 	=> $this->params['email_address']); 
+								          
+					$temp_passkey = $userManager->createNewUser($user_params);
+					
+					// return view
+					$data['view_method'] = 'redirect';
+					
+					$data['u'] = $this->params['user_id'];
+					$data['k'] = $temp_passkey;
+					$data['action'] = 'base.installFinish';
+					$data['status_code'] = 3304;
 				
 				else:
 				$data = $this->params;

@@ -41,18 +41,19 @@ class owa_usersNewAccountController extends owa_controller {
 	
 	function action() {
 		
-		// save new user to db
-		$auth = &owa_auth::get_instance();
-		$u = owa_coreAPI::entityFactory('base.user');
-		$u->set('user_id', $this->params['user_id']);
-		$u->set('role', $this->params['role']);
-		$u->set('real_name', $this->params['real_name']);
-		$u->set('email_address', $this->params['email_address']);
-		$u->set('temp_passkey', $auth->generateTempPasskey($this->params['user_id']));
-		$u->set('creation_date', time());
-		$u->set('last_update_date', time());
-		$u->create();
-		
+		if ($this->params['just_email') == false):
+			// save new user to db
+			$auth = &owa_auth::get_instance();
+			$u = owa_coreAPI::entityFactory('base.user');
+			$u->set('user_id', $this->params['user_id']);
+			$u->set('role', $this->params['role']);
+			$u->set('real_name', $this->params['real_name']);
+			$u->set('email_address', $this->params['email_address']);
+			$u->set('temp_passkey', $auth->generateTempPasskey($this->params['user_id']));
+			$u->set('creation_date', time());
+			$u->set('last_update_date', time());
+			$u->create();
+		endif;
    		// return email view
 		$data['user_id']= $this->params['user_id'];
 		$data['email_address']= $this->params['email_address'];
