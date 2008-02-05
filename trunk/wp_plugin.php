@@ -306,6 +306,8 @@ function add_feed_sid($binfo) {
  */
 function owa_post_link($link) {
 
+	global $owa_wp;
+
 	return $owa_wp->add_link_tracking($link);
 		
 }
