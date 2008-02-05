@@ -222,6 +222,8 @@ class owaModule extends GalleryModule {
 						
 				// log request
 				
+				//print_r($owa->config);
+				
 				$owa->log($params);
 			endif;	
 		endif;
