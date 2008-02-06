@@ -55,13 +55,29 @@ class owa_wp extends owa_caller {
 	
 
 	function add_link_tracking($link) {
+		
+		// check for presence of '?' which is not present under URL rewrite conditions
+		if (strpos($link, "?") === false):
+			$link .= '?';
+		endif;
+		
 	
+		
+		// setup link template
+		$link_template = "%s&amp;%s&amp;%s";
+			
+		return sprintf($link_template,
+					   $link,
+					   $this->config['ns'].$this->config['source_param'].'=feed',
+					   $this->config['ns'].$this->config['feed_subscription_param']."=".$_GET[$this->config['feed_subscription_param']]);
+					   
+		/*		   
 		if (!empty($_GET[$this->config['feed_subscription_id']])):
 			return $link."&amp;".$this->config['ns'].$this->config['source_param']."=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
 		else:
 			return $link."&amp;".$this->config['ns'].$this->config['source_param']."=feed";
 		endif;
-	
+		*/
 	}
 	
 	/**
@@ -74,7 +90,7 @@ class owa_wp extends owa_caller {
 		
 		$guid = crc32(getmypid().microtime());
 		
-		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
+		return $binfo."&amp;".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
 	}
 	
 	/**
