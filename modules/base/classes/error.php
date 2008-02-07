@@ -400,7 +400,8 @@ class owa_error {
 		
 		$err .= "</errorentry>\n\n";
 	   
-	    $this->log($err, $priority);
+	    $e = owa_coreAPI::errorSingleton();
+	    $e->debug($err);
 		
 		return;
 	}
