@@ -81,7 +81,7 @@ class owa_install extends owa_base{
 	function checkForSchema() {
 		
 		$table_check = array();
-		
+		//$this->e->notice(print_r($this->tables, true));
 		// test for existance of tables
 		foreach ($this->tables as $table) {
 			$this->e->notice('Testing for existance of table: '. $table);

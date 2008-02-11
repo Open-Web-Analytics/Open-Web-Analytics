@@ -270,6 +270,8 @@ class owa_module extends owa_base {
 	function install() {
 		
 		$obj = $this->installerFactory();
+		//$this->e->notice(print_r($obj, true));
+
 		$this->e->notice('starting install');
 		$tables_to_install = $obj->checkForSchema();
 		
