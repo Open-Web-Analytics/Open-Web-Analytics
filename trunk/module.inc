@@ -25,7 +25,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
  * Creates instance of OWA that can be called from within Gallery.
  * All configuration taken from Gallery directly.
  */
-function owa_factory() {
+function owa_factory($params = array()) {
 	
 	static $owa;
 
@@ -37,7 +37,7 @@ function owa_factory() {
 		global $gallery;
 		
 		// init the configuration array for this caller
-		$owa_config = array();
+		$owa_config = $params;
 		
 		// OWA DATABASE CONFIGURATION 
 		// Will use Gallery config unless there is a config file present.
@@ -46,9 +46,14 @@ function owa_factory() {
 		
 		// Get Gallery's DB configuration
 		$db_config = $gallery->getConfig('storage.config');
-			
-		// set OWA's database configuration values	
-		$owa_config['db_type'] = $db_config['type'];
+			$gallery->debug($db_config['type']);
+		// set OWA's database configuration values
+		if ($db_config['type'] === 'mysqli'):
+			$owa_config['db_type'] = 'mysql';
+		else:
+			$owa_config['db_type'] = $db_config['type'];
+		endif;
+		$gallery->debug($owa_config['db_type']);
 		$owa_config['db_name'] = $db_config['database'];
 		$owa_config['db_host'] = $db_config['hostname']; 
 		$owa_config['db_user'] = $db_config['username'];
@@ -76,8 +81,11 @@ function owa_factory() {
 		$owa_config['query_string_filters'] = 'g2_fromNavId';
 		$owa_config['is_embedded'] = 'true';
 		
+		$gallery->debug('hello from owa');
+
 		// create owa instance
 		$owa = new owa_php($owa_config);
+$gallery->debug('hello from owa after');
 		
 		return $owa;
 		
@@ -278,10 +286,11 @@ class owaModule extends GalleryModule {
     function upgrade($currentVersion, $statusMonitor) {
 		
 		global $gallery;
-				
-		$owa = owa_factory();
 		
-		// set user priviledges of the request for OWA to log
+		$owa_config = array();
+		$owa_config['do_not_fetch_config_from_db'] = true;		
+		$owa = owa_factory($owa_config);
+				// set user priviledges of the request for OWA to log
 		owa_set_priviledges();
 		
 		//get the base gallery url 
