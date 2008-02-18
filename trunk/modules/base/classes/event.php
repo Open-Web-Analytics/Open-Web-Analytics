@@ -318,35 +318,46 @@ class owa_event extends owa_base {
 	 */
 	function stripDocumentUrl($url) {
 		
-			if (!empty($this->config['query_string_filters'])):
-				$filters = str_replace(' ', '', $this->config['query_string_filters']);
-				$filters = explode(',', $filters);
-			else:
-				$filters = array();
-			endif;
+		if (!empty($this->config['query_string_filters'])):
+			$filters = str_replace(' ', '', $this->config['query_string_filters']);
+			$filters = explode(',', $filters);
+		else:
+			$filters = array();
+		endif;
 			
-			// OWA specific params to filter
-			array_push($filters, $this->config['ns'].$this->config['source_param']);
-			array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
-			
-			//print_r($filters);
-			
-			foreach ($filters as $filter => $value) {
-				
-	          $url = preg_replace(
-	            '#\?' .
-	            $value .
-	            '=.*$|&' .
-	            $value .
-	            '=.*$|' .
-	            $value .
-	            '=.*&#msiU',
-	            '',
-	            $url
-	          );
-	          
-	        }
+		// OWA specific params to filter
+		array_push($filters, $this->config['ns'].$this->config['source_param']);
+		array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
 		
+		//print_r($filters);
+		
+		foreach ($filters as $filter => $value) {
+			
+		  $url = preg_replace(
+			'#\?' .
+			$value .
+			'=.*$|&' .
+			$value .
+			'=.*$|' .
+			$value .
+			'=.*&#msiU',
+			'',
+			$url
+		  );
+		  
+		}
+	        
+	        
+	    //check for dangling '?'. this might occure if all params are stripped.
+	        
+	    // returns last character of string
+		$test = substr($url, -1);   		
+		
+		// if dangling '?' is found clean up the url by removing it.
+		if ($test == '?'):
+			$url = substr($url, 0, -1);
+		endif;	
+			
      	$this->e->debug('striped url: '.$url);
      	
      	return $url;
