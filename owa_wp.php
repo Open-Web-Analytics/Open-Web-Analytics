@@ -71,7 +71,7 @@ class owa_wp extends owa_caller {
 					   $this->config['ns'].$this->config['source_param'],
 					   'feed',
 					   $this->config['ns'].$this->config['feed_subscription_param'],
-					   $_GET[$this->config['feed_subscription_param']]);
+					   $_GET[$this->config['ns'].$this->config['feed_subscription_param']]);
 					  
 	}
 	
