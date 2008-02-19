@@ -334,7 +334,6 @@ class owaOptionsView extends GalleryView {
 		 if (empty($owa->params['do'])):
          	if (empty($owa->params['view'])):		
 				$params['view'] = 'base.options';
-				$params['subview'] = 'base.optionsGeneral'; 
 			endif;
 		endif;
 		       
