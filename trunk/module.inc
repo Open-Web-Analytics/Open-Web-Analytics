@@ -64,11 +64,11 @@ function owa_factory($params = array()) {
 		$gallery_base_url = $urlgenerator->getCurrentUrlDir();
 		
 		// Public folder URL
-		define('OWA_PUBLIC_URL', $gallery_base_url.'/modules/owa/public/');
+		define('OWA_PUBLIC_URL', $gallery_base_url.'modules/owa/public/');
 		
 		// Gallery specific config overrides array
 		
-		$owa_config['report_wrapper'] = 'wrapper_gallery.tpl';
+		$owa_config['report_wrapper'] = 'wrapper_gallery2.tpl';
 		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
 		$owa_config['images_absolute_url'] = $owa_config['images_url'];
 		$owa_config['main_url'] = $gallery_base_url.'main.php?g2_view=core.SiteAdmin&g2_subView=owa.owaGeneric';
@@ -85,7 +85,7 @@ function owa_factory($params = array()) {
 
 		// create owa instance
 		$owa = new owa_php($owa_config);
-$gallery->debug('hello from owa after');
+		$gallery->debug('new owa instance created');
 		
 		return $owa;
 		
@@ -372,8 +372,8 @@ class owaDashboardView extends GalleryView {
 		owa_set_priviledges();
 		
 		$params = array();
-		$params['view'] = 'base.report';
-		$params['subview'] = 'base.reportDashboard'; 
+		//$params['view'] = 'base.report';
+		$params['action'] = 'base.reportDashboard'; 
 		$params['period'] = 'today';      
 		$page = $owa->handleRequest($params);
 		$template->setVariable('owa', array('content' => $page));
@@ -409,6 +409,8 @@ class owaGenericView extends GalleryView {
 		
 }
 
+
+GalleryCoreApi::requireOnce('modules/core/classes/GalleryController.class');
 class owaControlController extends GalleryController {
 
 	/**
@@ -446,8 +448,10 @@ class owaActionView extends GalleryView {
 	 */
 	function renderImmediate($status, $error) {
 	
+		global $gallery;
 		$owa = owa_factory();
 		
+		$gallery->debug('hello from owaAction');
 		owa_set_priviledges();
 		
 		$owa->handleSpecialActionRequest();

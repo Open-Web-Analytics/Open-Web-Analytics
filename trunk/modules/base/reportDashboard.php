@@ -56,7 +56,7 @@ class owa_reportDashboardController extends owa_reportController {
 		
 		$data = array();
 		$data['params'] = $this->params;
-		
+				
 		switch ($this->params['period']) {
 
 			case "this_year":
