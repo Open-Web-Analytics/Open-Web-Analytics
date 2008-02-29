@@ -134,6 +134,25 @@
 		
 	<BR>
 
+	<fieldset name="owa-feed-options" class="options">
+		<legend>Feed Tracking</legend>
+		
+		<div class="setting" id="feeds">	
+			<div class="title">Feed Link Tracking</div> 
+			<div class="description">Adds tracking parameters to RSS or Atom feeds links. This provides a way to track how many visitors come from your feeds.</div>
+			<div class="field">
+				<select name="<?=$this->getNs();?>config[track_feed_links]">
+	
+					<option value="0" <? if ($config['track_feed_links'] == false):?>SELECTED<?endif;?>>Off</OPTION>
+					<option value="1" <? if ($config['track_feed_links'] == true):?>SELECTED<?endif;?>>On</OPTION>
+				</select>
+			</div>
+		</div>
+		
+	</fieldset>
+	
+    <BR>
+	
     <fieldset name="owa-event-options" class="options">
 		<legend>Event Handling</legend>
 	

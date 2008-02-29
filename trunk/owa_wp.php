@@ -58,21 +58,25 @@ class owa_wp extends owa_caller {
 		
 		// check for presence of '?' which is not present under URL rewrite conditions
 	
-		if (strpos($link, "?") === false):
-			// add the '?' if not found
-			$link .= '?';
-		endif;
+		if ($this->config['track_feed_links'] == true):
 		
-		// setup link template
-		$link_template = "%s&amp;%s=%s&amp;%s=%s";
+			if (strpos($link, "?") === false):
+				// add the '?' if not found
+				$link .= '?';
+			endif;
 			
-		return sprintf($link_template,
-					   $link,
-					   $this->config['ns'].$this->config['source_param'],
-					   'feed',
-					   $this->config['ns'].$this->config['feed_subscription_param'],
-					   $_GET[$this->config['ns'].$this->config['feed_subscription_param']]);
-					  
+			// setup link template
+			$link_template = "%s&amp;%s=%s&amp;%s=%s";
+				
+			return sprintf($link_template,
+						   $link,
+						   $this->config['ns'].$this->config['source_param'],
+						   'feed',
+						   $this->config['ns'].$this->config['feed_subscription_param'],
+						   $_GET[$this->config['ns'].$this->config['feed_subscription_param']]);
+		else:
+			return;
+		endif;
 	}
 	
 	/**
@@ -83,9 +87,13 @@ class owa_wp extends owa_caller {
 	 */
 	function add_feed_tracking($binfo) {
 		
-		$guid = crc32(getmypid().microtime());
+		if ($this->config['track_feed_links'] == true):
+			$guid = crc32(getmypid().microtime());
 		
-		return $binfo."&amp;".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
+			return $binfo."&amp;".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
+		else:
+			return;
+		endif;
 	}
 	
 	/**
