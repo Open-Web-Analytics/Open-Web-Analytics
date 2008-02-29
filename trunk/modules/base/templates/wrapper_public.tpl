@@ -8,13 +8,14 @@
 	
 	<body>
 	
-	<? include('css.tpl');?>
+	<?php $this->includeTemplate('css.tpl');?>
 	
 	<DIV id="header">
 		<table width="100%">
 			<TR>
+				<TD class="owa_logo"><img src="<?=$this->makeImageLink('owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"></TD>
 				<TD>
-					<span class="inline_h1">Open Web Analytics - <?=OWA_VERSION;?></span>		
+					<span class="inline_h1">Version: <?=OWA_VERSION;?></span>		
 				</TD>
 			
 				<TD align="right">
@@ -29,7 +30,7 @@
 	<div class="wrap">
 		
 		
-		<? include('msgs.tpl');?>
+		<?php $this->includeTemplate('msgs.tpl');?>
 	<BR>
 		<?=$content;?>
 		<?=$body;?>
