@@ -1,7 +1,7 @@
-<? include('css.tpl');?>	
+<?php $this->includeTemplate('css.tpl');?>	
 	
-<DIV id="header"><?include ('header.tpl');?></DIV>
+<?php $this->includeTemplate('header.tpl');?>
 
-<? include('msgs.tpl');?>
+<?php $this->includeTemplate('msgs.tpl');?>
 
 <?=$body;?>

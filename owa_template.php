@@ -16,9 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_INCLUDE_DIR.'/template_class.php');
+require_once(OWA_INCLUDE_DIR.'template_class.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_CLASS_DIR.'settings.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
@@ -42,6 +41,14 @@ class owa_template extends Template {
 	 */
 	var $config;
 	
+	var $theme_template_dir;
+	
+	var $module_local_template_dir;
+	
+	var $module_template_dir;
+	
+	var $e;
+	
 	/**
 	 * Params passed by calling caller
 	 *
@@ -55,8 +62,10 @@ class owa_template extends Template {
 			
 		$c = &owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
-		// set template dir
 		
+		$this->e = &owa_coreAPI::errorSingleton();
+		
+		// set template dirs
 		if(!empty($caller_params['module'])):
 			$this->_setTemplateDir($module);
 		else:
@@ -69,11 +78,51 @@ class owa_template extends Template {
 	}
 	
 	function _setTemplateDir($module) {
+	
+		// set module template dir
+		$this->module_template_dir = OWA_DIR.'modules'.DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR;
 		
-		$this->template_dir = OWA_BASE_DIR . '/modules/' . $module . '/templates/';
+		// set module local template override dir
+		$this->module_local_template_dir = $this->module_template_dir.'local'.DIRECTORY_SEPARATOR;
+		
+		// set theme template dir
+		$this->theme_template_dir = OWA_THEMES_DIR.$this->config['theme'].DIRECTORY_SEPARATOR;
 		
 		return;
 	}
+	
+	/**
+     * Set the template file
+     *
+     * @param string $file
+     */
+	function set_template($file = null) {
+	
+		if ($file == null):
+			$this->e->error('No template file was specified.');
+			return false;
+		else:
+			// check module's local modification template Directory
+			if (file_exists($this->module_local_template_dir.$file)):
+				$this->file = $this->module_local_template_dir.$file;
+				
+			// check theme's template Directory
+			elseif(file_exists($this->theme_template_dir.$file)):
+				$this->file = $this->theme_template_dir.$file;
+				
+			// check module's template directory
+			elseif(file_exists($this->module_template_dir.$file)):
+				$this->file = $this->module_template_dir.$file;
+			
+			// throw error
+			else:
+				$this->e->error(sprintf('%s was not found in any template directory.', $file));
+				return false;
+			endif;
+        
+        	return true;
+        endif;
+    }
 	
 	/**
 	 * Truncate string
@@ -416,6 +465,13 @@ class owa_template extends Template {
 		
 	}
 	
+	function includeTemplate($file) {
+	
+		$this->set_template($file);
+		include($this->file);
+		return;
+	
+	}
 	
 	
 }
