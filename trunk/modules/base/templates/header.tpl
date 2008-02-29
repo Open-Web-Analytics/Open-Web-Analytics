@@ -1,7 +1,7 @@
-
+<div id="owa_header">
 	<table width="100%" cellpadding="0" cellspacing="0">
 		<TR>
-			<TD class=""><h1>Open Web Analytics</h1></TD>
+			<TD class="owa_logo"><img src="<?=$this->makeImageLink('owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"></TD>
 			<TD>
 				<div id="admin_nav">
 				<table align="right">
@@ -29,3 +29,4 @@
 			</td>
 		</TR>
 	</table>
+</div>
