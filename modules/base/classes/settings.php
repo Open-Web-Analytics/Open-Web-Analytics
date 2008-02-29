@@ -409,7 +409,8 @@
 			'per_site_visitors'				=> false,
 			'cache_objects'					=> true,
 			'do_not_log_admins'				=> true,
-			'do_not_log_ips'				=> ''
+			'do_not_log_ips'				=> '',
+			'track_feed_links'					=> true
 			
 			));
 			
