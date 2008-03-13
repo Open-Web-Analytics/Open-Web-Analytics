@@ -60,10 +60,9 @@ class owa_reportDashboardController extends owa_reportController {
 		switch ($this->params['period']) {
 
 			case "this_year":
-				$data['core_metrics_data'] = $api->getMetric('base.dashCoreByDay', array(
+				$data['core_metrics_data'] = $api->getMetric('base.dashCoreByMonth', array(
 				
-					'constraints'		=> array('site_id'	=> $this->params['site_id']),
-					'groupby'			=> array('month')
+					'constraints'		=> array('site_id'	=> $this->params['site_id'])
 				
 				));
 				
@@ -73,7 +72,7 @@ class owa_reportDashboardController extends owa_reportController {
 				$data['core_metrics_data'] = $api->getMetric('base.dashCoreByDay', array(
 			
 					'constraints'		=> array('site_id'	=> $this->params['site_id']),
-					'groupby'			=> array('day')
+					'order'				=> ASC
 				
 				));
 			break;
@@ -85,8 +84,6 @@ class owa_reportDashboardController extends owa_reportController {
 			'constraints'		=> array('site_id'	=> $this->params['site_id'])
 		
 		));
-		
-		//print_r($data['summary_stats_data'] );
 
 		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
 		

@@ -55,10 +55,11 @@ class owa_graphDashboardTrendView extends owa_abstractJpGraphView  {
 						'site_id'	=> $data['site_id'],
 						'is_browser' => 1,
 						'is_robot' 	=> 0),
-					'groupby'			=> array('day'),
+					
 					'order'				=> 'ASC'
 					));
 		
+	
 		//Graph params
 
 		$new_result = owa_lib::deconstruct_assoc($result);

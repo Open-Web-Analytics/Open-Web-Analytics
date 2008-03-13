@@ -219,9 +219,14 @@ class owa_metric extends owa_base {
 			
 			case "last_thirty_days":
 				
-				$bound = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*30;
+				$end = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day']+1, $this->time_now['year']);
+				
+				$start = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day']-29, $this->time_now['year']);
+				//$start = $end - 3600*24*29;
+				//$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
+				
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
 
-				$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
 				
 				break;	
 				
