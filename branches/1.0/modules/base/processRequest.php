@@ -19,7 +19,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_browscap.php');
 require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 /**
@@ -50,7 +49,7 @@ class owa_processRequestController extends owa_processEventController {
 		// Control logic
 		
 		// Do not log if the first_hit cookie is still present.
-        if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']])):
+        if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->params['site_id']])):
         	$this->e->debug('Aborting request processing due to finding first hit cookie.');
 			return;
 		endif;

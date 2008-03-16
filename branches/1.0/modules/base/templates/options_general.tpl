@@ -2,7 +2,7 @@
 
 <div class="subview_content">
 
-<form method="post">
+<form method="post" name="owa_options">
 
 	<fieldset name="owa-options" class="options">
 	<legend>Request Processing Options</legend>
@@ -134,6 +134,25 @@
 		
 	<BR>
 
+	<fieldset name="owa-feed-options" class="options">
+		<legend>Feed Tracking</legend>
+		
+		<div class="setting" id="feeds">	
+			<div class="title">Feed Link Tracking</div> 
+			<div class="description">Adds tracking parameters to RSS or Atom feeds links. This provides a way to track how many visitors come from your feeds.</div>
+			<div class="field">
+				<select name="<?=$this->getNs();?>config[track_feed_links]">
+	
+					<option value="0" <? if ($config['track_feed_links'] == false):?>SELECTED<?endif;?>>Off</OPTION>
+					<option value="1" <? if ($config['track_feed_links'] == true):?>SELECTED<?endif;?>>On</OPTION>
+				</select>
+			</div>
+		</div>
+		
+	</fieldset>
+	
+    <BR>
+	
     <fieldset name="owa-event-options" class="options">
 		<legend>Event Handling</legend>
 	
@@ -178,6 +197,33 @@
 	</fieldset>
 	
 	<BR>
+	
+	<fieldset name="owa-cache-options" class="options">
+		<legend>Object Cache</legend>
+	
+		<div class="setting" id="object_cache">	
+			<div class="title">Cache Control</div> 
+			<div class="description">Enables and disables object caching. This will improve performance under high load conditions. The object cache can be turned on/off via your config file.
+</div>
+			<div class="field">
+			Status: <? if ($config['cache_objects'] == true):?><B>ON</B><?else:?><B>OFF</B><?endif;?> </div>
+		</div>
+		
+		<div class="setting" id="object_cache_flush">	
+			<div class="title">Flush Cache</div> 
+			<div class="description">Flushes the object cache</div>
+			<div class="field">
+				
+				<a href="<?=$this->makeLink(array('do' => 'base.optionsFlushCache')); ?>">Flush Cache Now</a>
+			</div>
+		</div>
+		
+	
+	</fieldset>
+	
+	<BR>
+
+	
 	
 	<fieldset name="owa-reports-options" class="options">
 		

@@ -9,6 +9,22 @@ Version: v1.0
 Author URI: http://www.openwebanalytics.com
 */
 
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2008 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
 require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
 
@@ -33,29 +49,22 @@ endif;
 // check to see if OWA is installed
 $current_plugins = get_option('active_plugins');
 
-// OWA DATABASE CONFIGURATION 
-// Will use Wordpress config unless there is a config file present.
-// OWA uses this to setup it's own DB connection seperate from the one
-// that Wordpress uses.
-
-$config_file = OWA_CONF_DIR.'owa-config.php';
-if (file_exists($config_file)):
-	// do nothing as the caller class will define the DB config constants later.
-	;
-else:
-	// use the Wordpress configuration
-	define('OWA_DB_TYPE', 'mysql');
-	define('OWA_DB_NAME', DB_NAME);
-	define('OWA_DB_HOST', DB_HOST);
-	define('OWA_DB_USER', DB_USER);
-	define('OWA_DB_PASSWORD', DB_PASSWORD);
-endif;
-
 // Public folder URI
 define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
 
 // Build the OWA wordpress specific config overrides array
 $owa_config = array();
+
+// OWA DATABASE CONFIGURATION 
+// Will use Wordpress config unless there is a config file present.
+// OWA uses this to setup it's own DB connection seperate from the one
+// that Wordpress uses.
+$owa_config['db_type'] = 'mysql';
+$owa_config['db_name'] = DB_NAME;
+$owa_config['db_host'] = DB_HOST;
+$owa_config['db_user'] = DB_USER;
+$owa_config['db_password'] = DB_PASSWORD;
+
 $owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
 $owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
@@ -80,9 +89,9 @@ $owa_wp = &new owa_wp($owa_config);
 add_action('init', 'owa_set_user_level');
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_footer');
-add_filter('post_link', 'owa_post_link');
+add_filter('the_permalink_rss', 'owa_post_link');
 add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
-add_filter('bloginfo', 'add_feed_sid');
+add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', array(&$owa_wp, 'logComment'));
 add_action('admin_menu', 'owa_options_menu');
@@ -121,10 +130,10 @@ function owa_set_user_level() {
 	'user_login'	=> $user_login,
 	'user_email'	=> $user_email,
 	'user_identity'	=> $user_identity,
-	'user_password'	=> $user_pass_md5);
+	'user_password'	=> 'xxxxxxxxx');
 	
 	$owa_wp->params['u'] = $user_login;
-	$owa_wp->params['p'] = $user_pass_md5;
+	$owa_wp->params['p'] = 'xxxxxxxxx';
 	
 	return;	
 }
@@ -136,18 +145,20 @@ function owa_set_user_level() {
  */
 function owa_main() {
 	
-	global $user_level;
+	global $user_level, $owa_wp;
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists(is_preview)):
 		if (is_preview()):
-			return;
+			$owa_wp->params['do_not_log'] = true;
 		endif;
 	endif;
 	
 	// Don't Log if user is an admin
 	if($user_level == '10'):
-		return;
+		if ($owa_wp->config['do_not_log_admins'] == true):
+			$owa_wp->params['do_not_log'] = true;
+		endif;
 	endif;
 	
 	owa_log();
@@ -272,8 +283,9 @@ function add_feed_sid($binfo) {
 	
 	global $owa_wp;
 	
-	if (strstr($binfo, "feed=")):
+	$test = strpos($binfo, "feed=");
 	
+	if ($test == true):
 		$newbinfo = $owa_wp->add_feed_tracking($binfo);
 	
 	else: 
@@ -295,17 +307,9 @@ function add_feed_sid($binfo) {
 function owa_post_link($link) {
 
 	global $owa_wp;
-	global $doing_rss;
-	
-	if($doing_rss):
-	
-		$tracked_link = $owa_wp->add_link_tracking($link);
-		return $tracked_link;
-	else:
-		return $link;
-	endif;
-	
 
+	return $owa_wp->add_link_tracking($link);
+		
 }
 
 /**

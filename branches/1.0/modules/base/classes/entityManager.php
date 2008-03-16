@@ -42,6 +42,9 @@ class owa_entityManager extends owa_base {
 		//print "hello from emanager constructor";
 		$this->owa_base();
 		$this->db = &owa_coreAPI::dbSingleton();
+		$this->cache = &owa_coreAPI::cacheSingleton(); 
+		$this->cache->setCacheDir(OWA_CACHE_DIR);
+		$this->cache->setNonPersistantCollection('owa_session');
 		
 		if (!class_exists('owa_entity')):
 			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
@@ -110,6 +113,14 @@ class owa_entityManager extends owa_base {
 		// Persist object
 		$status = $this->db->save($cols, get_class($this->entity));
 		
+		// Add to Cache
+		
+		if ($status == true):
+			if ($this->config['cache_objects'] == true):
+				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			endif;
+		endif;
+		
 		return $status;
 		
 	}
@@ -129,7 +140,14 @@ class owa_entityManager extends owa_base {
 		
 		// Persist object
 		$status = $this->db->update($this->_getProperties(), $constraint, get_class($this->entity));
-	
+		
+		// Add to Cache
+		if ($status == true):
+			if ($this->config['cache_objects'] == true):
+				$this->cache->replace(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			endif;
+		endif;
+		
 		return $status;
 		
 	}
@@ -155,6 +173,13 @@ class owa_entityManager extends owa_base {
 		// Persist object
 		$status = $this->db->update($properties, $where, get_class($this->entity));
 		
+		// Add to Cache
+		if ($status == true):
+			if ($this->config['cache_objects'] == true):
+				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
+			endif;
+		endif;
+		
 		return $status;
 		
 	}
@@ -173,6 +198,13 @@ class owa_entityManager extends owa_base {
 		// Persist object
 		$status = $this->db->delete($id, $col, get_class($this->entity));
 	
+		// Add to Cache
+		if ($status == true):
+			if ($this->config['cache_objects'] == true):
+				$this->cache->remove(get_class($this->entity), 'id'.$this->entity->id->value);
+			endif;
+		endif;
+		
 		return $status;
 		
 	}
@@ -185,13 +217,33 @@ class owa_entityManager extends owa_base {
 	
 	function getByColumn($col, $value) {
 		
+		$cache_obj = '';
 		
-		$constraint = array($col => $value);
+		if ($this->config['cache_objects'] == true):
+			$cache_obj = $this->cache->get(get_class($this->entity), $col.$value);
+		endif;
 			
-		$properties = $this->db->select($this->_getProperties(), $constraint, get_class($this->entity));
-			
-		return $this->setProperties($properties);
+		if (!empty($cache_obj)):
 		
+			$this->entity = $cache_obj;
+					
+		else:
+		
+			$constraint = array($col => $value);
+				
+			$properties = $this->db->select($this->_getProperties(), $constraint, get_class($this->entity));
+			
+			if (!empty($properties)):
+					
+				$this->setProperties($properties);
+				
+				if ($this->config['cache_objects'] == true):
+					$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);	
+				endif;		
+			endif;
+		endif;
+		
+		return; 
 	}
 	
 	function find($params = array()) {

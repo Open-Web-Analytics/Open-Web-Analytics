@@ -342,7 +342,11 @@
 			'clicks_table'					=> 'click',
 			'exits_table'					=> 'exit',
 			'users_table'					=> 'user',
-			'db_type'						=> OWA_DB_TYPE,
+			'db_type'						=> '',
+			'db_name'						=> '',
+			'db_host'						=> '',
+			'db_user'						=> '',
+			'db_password'					=> '',
 			'resolve_hosts'					=> true,
 			'log_feedreaders'				=> true,
 			'log_robots'					=> false,
@@ -353,14 +357,15 @@
 			'clean_query_string'			=> true,
 			'fetch_refering_page_info'		=> true,
 			'query_string_filters'			=> '',
-			'async_log_dir'					=> OWA_BASE_DIR . '/logs/',
+			'async_log_dir'					=> OWA_DATA_DIR . 'logs/',
 			'async_log_file'				=> 'events.txt',
 			'async_lock_file'				=> 'owa.lock',
 			'async_error_log_file'			=> 'events_error.txt',
 			'notice_email'					=> '',
 			'log_php_errors'				=> false,
 			'error_handler'					=> 'production',
-			'error_log_file'				=> OWA_BASE_DIR . '/logs/errors.txt',
+			'error_log_level'				=> 0,
+			'error_log_file'				=> OWA_DATA_DIR . 'logs/errors.txt',
 			'browscap.ini'					=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
 			'search_engines.ini'			=> OWA_BASE_DIR . '/conf/search_engines.ini',
 			'query_strings.ini'				=> OWA_BASE_DIR . '/conf/query_strings.ini',
@@ -401,7 +406,11 @@
 			'cookie_domain'					=> '',
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
-			'per_site_visitors'				=> false
+			'per_site_visitors'				=> false,
+			'cache_objects'					=> true,
+			'do_not_log_admins'				=> true,
+			'do_not_log_ips'				=> '',
+			'track_feed_links'					=> true
 			
 			));
 			
@@ -416,7 +425,7 @@
 			if($_SERVER['SERVER_PORT'] != 80):
 				$base_url .= ':'.$_SERVER['SERVER_PORT'];
 			endif;
-								
+			$config['base']['base_url'] = $base_url;					
 			$config['base']['public_url'] = OWA_PUBLIC_URL;
 			$config['base']['main_url'] = 'main.php';
 			$config['base']['main_absolute_url'] = OWA_PUBLIC_URL.$config['base']['main_url'];

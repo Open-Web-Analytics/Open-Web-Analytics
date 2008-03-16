@@ -16,12 +16,9 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_auth.php');
 require_once(OWA_BASE_DIR.'/eventQueue.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_coreAPI.php');
 /**
  * Add User View
  * 
@@ -82,8 +79,7 @@ class owa_usersAddController extends owa_controller {
 	
 	function action() {
 		
-		$u = new owa_user;
-		$auth = &owa_auth::get_instance();
+		$u = owa_coreApi::entityFactory('base.user');
 		
 		//Check to see if user name already exists
 		$u->getByColumn('user_id', $this->params['user_id']);
@@ -95,15 +91,23 @@ class owa_usersAddController extends owa_controller {
 		// Set user object Params
 		if (empty($id)):
 		
-			//Generate Initial Passkey and new account email
-			$auth->setInitialPasskey($this->params['user_id']);
+			$userManager = owa_coreApi::supportClassFactory('base', 'userManager');				
+					
+					
+			$user_params = array( 'user_id' 		=> $this->params['user_id'],
+								  'real_name' 		=> $this->params['real_name'],
+							      'role'			=> $this->params['role'],
+								  'email_address' 	=> $this->params['email_address']); 
+								          
+			$temp_passkey = $userManager->createNewUser($user_params);
 			
 			// log account creation event to event queue
 			$eq = &eventQueue::get_instance();
 			$eq->log(array( 'user_id' 	=> $this->params['user_id'],
 							'real_name' => $this->params['real_name'],
 							'role' 		=> $this->params['role'],
-							'email_address' => $this->params['email_address']), 
+							'email_address' => $this->params['email_address'],
+							'temp_passkey' => $temp_passkey), 
 							'base.new_user_account');
 			
 			// return view

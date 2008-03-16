@@ -126,6 +126,41 @@ class owa_coreAPI extends owa_base {
 		return $config;
 	}
 	
+	function &errorSingleton() {
+		
+		static $e;
+		
+		if(!isset($e)):
+			
+			if (!class_exists('owa_error')):
+				require_once(OWA_BASE_CLASS_DIR.'error.php');
+			endif;
+			
+			$e = owa_coreAPI::supportClassFactory('base', 'error');
+			
+		endif;
+		
+		return $e;
+	}
+
+	
+	
+	function &cacheSingleton($params = array()) {
+		
+		static $cache;
+		
+		if(!isset($cache)):
+			
+			if (!class_exists('owa_cache')):
+				require_once(OWA_BASE_CLASS_DIR.'cache.php');
+			endif;
+			
+			$cache = owa_coreAPI::supportClassFactory('base', 'cacheFacade');
+			
+		endif;
+		
+		return $cache;
+	}
 	
 	function setupFramework() {
 		
@@ -275,9 +310,9 @@ class owa_coreAPI extends owa_base {
 		return $subview;
 	}
 	
-	function supportClassFactory($module, $class, $params = array()) {
+	function &supportClassFactory($module, $class, $params = array()) {
 		
-		$obj = owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, 'owa_', $class, $params);
+		$obj = &owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, 'owa_', $class, $params);
 		$obj->module = $module;
 		
 		return $obj;

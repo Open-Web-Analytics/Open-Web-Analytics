@@ -142,7 +142,7 @@ class owa_view extends owa_base {
 		$this->e->debug('Assembling view: '.get_class($this));
 		
 		// auth user
-		$this->auth->authenticateUser($this->priviledge_level);		
+		$auth_data = $this->auth->authenticateUser($this->priviledge_level);		
 		
 		// Assign status msg
 		if (!empty($data['status_msg'])):
@@ -159,7 +159,7 @@ class owa_view extends owa_base {
 		
 		//print_r($this->data);
 		// authentication status
-		if(!empty($this->data['params']['p'])):
+		if ($auth_data['auth_status'] == true):
 			$this->t->set('authStatus', true);
 		endif;
 		

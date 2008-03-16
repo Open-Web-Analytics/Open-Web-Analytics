@@ -17,7 +17,7 @@
 //
 
 /**
- * DB Configuration
+ * OWA Configuration
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,17 +28,66 @@
  * @since		owa 1.0.0
  */
  
-define('OWA_DB_TYPE', ''); // options: mysql
-define('OWA_DB_NAME', ''); // name of the database
-define('OWA_DB_HOST', ''); // host name of the server housing the database
-define('OWA_DB_USER', ''); // database user
-define('OWA_DB_PASSWORD', ''); // database user's password
+/**
+ * DATABASE CONFIGURATION
+ *
+ * Connection info for databases that will be used by OWA. 
+ *
+ */
 
-// define the URL of the public directory e.g. http://www.domain.com/root/dir/owa/public/ 
-// Don't forget the slash at the end.
-define('OWA_PUBLIC_URL', ''); 
+//define('OWA_DB_TYPE', ''); // options: mysql
+//define('OWA_DB_NAME', ''); // name of the database
+//define('OWA_DB_HOST', ''); // host name of the server housing the database
+//define('OWA_DB_USER', ''); // database user
+//define('OWA_DB_PASSWORD', ''); // database user's password
 
-// Log all php errors to OWA's error log file. Only do this to debug.
-define('OWA_LOG_PHP_ERRORS', false);
+
+/** 
+ * PUBLIC URL
+ *
+ * Define the URL of the public directory e.g. http://www.domain.com/root/dir/owa/public/ 
+ * Don't forget the slash at the end.
+ */
  
+// define('OWA_PUBLIC_URL', ''); 
+
+/** 
+ * OWA ERROR HANDLER
+ *
+ * Overide OWA error handler. This should be done through the admin GUI, but 
+ * can be handy during install or development. 
+ * 
+ * Choices are: 
+ *
+ * 'production' - will log only critical errors to a log file.
+ * 'development' - logs al sorts of useful debug to log file.
+ */
+
+//define('OWA_ERROR_HANDLER', 'development');
+
+/** 
+ * LOG PHP ERRORS
+ *
+ * Log all php errors to OWA's error log file. Only do this to debug.
+ */
+
+//define('OWA_LOG_PHP_ERRORS', false);
+ 
+/** 
+ * OBJECT CACHING
+ *
+ * Override setting to cache objects. Caching will increase performance. 
+ */
+
+//define('OWA_CACHE_OBJECTS', true);
+
+/**
+ * CONFIGURATION ID
+ *
+ * Override to load an alternative user configuration
+ */
+ 
+//define('OWA_CONFIGURATION_ID', '1');
+
+
 ?>

@@ -47,15 +47,36 @@ class owa_wp extends owa_caller {
 		return;
 	}
 	
+	function __construct($config = null) {
+		ob_start();
+		return parent::__construct($config);
+	
+	}
+	
 
 	function add_link_tracking($link) {
+		
+		// check for presence of '?' which is not present under URL rewrite conditions
 	
-		if (!empty($_GET[$this->config['feed_subscription_id']])):
-			return $link."&amp;".$this->config['ns'].$this->config['source_param']."=feed"."&amp;".$this->config['ns'].$this->config['feed_subscription_id']."=".$_GET[$this->config['feed_subscription_id']];
+		if ($this->config['track_feed_links'] == true):
+		
+			if (strpos($link, "?") === false):
+				// add the '?' if not found
+				$link .= '?';
+			endif;
+			
+			// setup link template
+			$link_template = "%s&amp;%s=%s&amp;%s=%s";
+				
+			return sprintf($link_template,
+						   $link,
+						   $this->config['ns'].$this->config['source_param'],
+						   'feed',
+						   $this->config['ns'].$this->config['feed_subscription_param'],
+						   $_GET[$this->config['ns'].$this->config['feed_subscription_param']]);
 		else:
-			return $link."&amp;".$this->config['ns'].$this->config['source_param']."=feed";
+			return;
 		endif;
-	
 	}
 	
 	/**
@@ -66,9 +87,13 @@ class owa_wp extends owa_caller {
 	 */
 	function add_feed_tracking($binfo) {
 		
-		$guid = crc32(getmypid().microtime());
+		if ($this->config['track_feed_links'] == true):
+			$guid = crc32(getmypid().microtime());
 		
-		return $binfo."&".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
+			return $binfo."&amp;".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
+		else:
+			return;
+		endif;
 	}
 	
 	/**
@@ -82,23 +107,7 @@ class owa_wp extends owa_caller {
 		
 	}
 	
-	function handleSpecialActionRequest() {
-		
-		if(isset($_GET['owa_specialAction'])):
-			$this->e->debug("special action received");
-			echo $this->handleRequestFromUrl();
-			exit;
-		elseif(isset($_GET['owa_logAction'])):
-			$this->e->debug("log action received");
-			$this->config['delay_first_hit'] = false;
-			$this->c->set('base', 'delay_first_hit', false);
-			echo $this->logEventFromUrl($_GET);
-			exit;
-		else:
-			return;
-		endif;
-
-	}
+	
 	
 
 	

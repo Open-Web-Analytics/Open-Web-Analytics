@@ -51,6 +51,8 @@ class owa_dashCoreByDay extends owa_metric {
 		
 		$this->params['use_summary'] = true;
 		
+		$this->params['groupby'] = array('day', 'month');
+
 		$this->params['orderby'] = array('year', 'month', 'day');
 		
 		$this->setTimePeriod($this->params['period']);

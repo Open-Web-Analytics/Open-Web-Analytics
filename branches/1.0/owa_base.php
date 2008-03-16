@@ -17,7 +17,6 @@
 //
 
 require_once('owa_env.php');
-require_once('owa_error.php');
 
 /**
  * OWA Base Class
@@ -75,9 +74,9 @@ class owa_base {
 	 */
 	function owa_base() {
 		
+		$this->e = &owa_coreAPI::errorSingleton();
 		$this->c = &owa_coreAPI::configSingleton();
 		$this->config = &$this->c->fetch('base');
-		$this->e = &owa_error::get_instance();
 		
 		return;
 

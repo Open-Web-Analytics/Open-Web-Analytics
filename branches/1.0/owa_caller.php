@@ -21,7 +21,6 @@ require_once('owa_requestContainer.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
-require_once(OWA_BASE_DIR.'/owa_browscap.php');
 
 /**
  * Abstract Caller class used to build application specific invocation classes
@@ -50,65 +49,174 @@ class owa_caller extends owa_base {
 	 */
 	var $api;
 	
+	var $start_time;
+	var $end_time;
+	
+	/**
+	 * PHP4 Constructor
+	 *
+	 */
+	 
+	function owa_caller($config) {
+	
+		register_shutdown_function(array(&$this, "__destruct"));
+		return $this->__construct($config);
+		
+	}
+	
 	/**
 	 * Constructor
 	 *
 	 * @param array $config
 	 * @return owa_caller
 	 */
-	function owa_caller($config) {
+	function __construct($config) {
 		
-		//load DB constants if not set already by caller
-		if(!defined('OWA_DB_HOST')):
-			$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
-			if (file_exists($file)):
-				include ($file);
-			else:
-				print "Uh-oh. I can't find your configuration file...";
-				exit;
-			endif;
+		// Start time
+		$this->start_time = owa_lib::microtime_float();
+		
+		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		
+		if (file_exists($file)):
+			$config_file_exists = true;
+			include($file);
+		else:
+			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
 		endif;
 		
-		// Sets default config and error logger
+		// Parent Constructor. Sets default config and error logger
 		$this->owa_base();
 		
-		if (empty($config['configuration_id'])):
-			$config['configuration_id'] = 1;
+		// Log version debug
+		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
+				
+		//$bt = debug_backtrace();
+		//$this->e->debug($bt[4]); 
+		
+		
+		/** 
+		 * Super Global Default Config Overrides
+		 * 
+		 * These are constants that can be defined in the config file, plugin, or caller
+		 * the will override default config values
+		 */
+		
+		/* APPLY CALLER CONFIGURATION OVERRIDES */
+		
+		/**
+		 * This will apply configuration overirdes that are specified by the calling application.
+		 * This is usually used by plugins to setup integration specific configuration values.
+		 */
+		$this->c->applyModuleOverrides('base', $config);
+		$this->e->debug('Caller configuration overrides applied.');
+		
+		/* APPLY CONFIGURATION FILE OVERRIDES */
+		
+		
+		if ($config_file_exists == true):
+			
+			/* OBJECT CACHING */
+		
+			// Looks for object cache config constant
+			if (defined('OWA_CACHE_OBJECTS')):
+				$this->c->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
+			endif;
+			
+		
+			/* ERROR LOGGING */
+		
+			// Looks for log level constant
+			if (defined('OWA_ERROR_LOG_LEVEL')):
+				$this->c->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
+			endif;
+		
+			/* PHP ERROR LOGGING */
+			
+			if (OWA_LOG_PHP_ERRORS === true):
+				$this->e->logPhpErrors();
+			endif;
+			
+			/* CONFIGURATION ID */
+			
+			if (defined('OWA_CONFIGURATION_ID')):
+				$this->c->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
+			endif;
+			
+		endif;
+			
+		$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
+		/* APPLY DATABASE CONFIGURATION */
+		
+		if (!defined('OWA_DB_TYPE')):
+			define('OWA_DB_TYPE', $this->c->get('base', 'db_type'));
+		else:
+			$this->c->set('base', 'db_type', OWA_DB_TYPE);
+		endif;
+		
+		if (!defined('OWA_DB_NAME')):
+			define('OWA_DB_NAME', $this->c->get('base', 'db_name'));
+		else:
+			$this->c->set('base', 'db_name', OWA_DB_NAME);
+		endif;
+		
+		if (!defined('OWA_DB_HOST')):
+			define('OWA_DB_HOST', $this->c->get('base', 'db_host'));
+		else:
+			$this->c->set('base', 'db_host', OWA_DB_HOST);
+		endif;
+		
+		if (!defined('OWA_DB_USER')):
+			define('OWA_DB_USER', $this->c->get('base', 'db_user'));
+		else:
+			$this->c->set('base', 'db_user', OWA_DB_USER);
+		endif;
+		
+		if (!defined('OWA_DB_PASSWORD')):
+			define('OWA_DB_PASSWORD', $this->c->get('base', 'db_password'));
+		else:
+			$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
 		endif;	
+					
+		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
 		
 		// Applies config from db or cache
 		// needed for installs when the configuration table does not exist.
-		if ($config['do_not_fetch_config_from_db'] != true):
-			$this->c->load($config['configuration_id']);
+		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
+			$this->c->load($this->c->get('base', 'configuration_id'));
 		endif;
-			
-		// Applies run time config overrides
-		$this->c->applyModuleOverrides('base', $config);
-		$this->e->debug('applying caller config overrides.');
 		
-		// re-fetch the array now that overrides have been applied.
-		// needed for backwards compatability 
-		$this->config = $this->c->fetch('base');
-
-		// log PHP warnings and errors
-		if (OWA_LOG_PHP_ERRORS === true):
-			set_error_handler(array("owa_error", "handlePhpError"));
+		/**
+		 * Post User Config Framework Setup
+		 *
+		 */
+		
+		// Looks for log handler constant from config file
+		if (defined('OWA_ERROR_HANDLER')):
+			$this->c->set('base', 'error_handler', OWA_ERROR_HANDLER);
 		endif;
-
-		// reloads error logger now that final config values are in place
-		$this->e = null;
-		$this->e = owa_error::get_instance();
-
+		
+		// Sets the correct mode of the error logger now that final config values are in place
+		// This will flush buffered msgs that were thrown up untill this point
+		$this->e->setHandler($this->c->get('base', 'error_handler'));
+		
 		// Create Request Container
 		$this->params = &owa_requestContainer::getInstance();
 		
 		// Load the core API
 		$this->api = &owa_coreAPI::singleton();
-		
 		$this->api->caller_config_overrides = $config;
 		
 		// should only be called once to load all modules
 		$this->api->setupFramework();
+		
+		// needed in standalone installs where site_id is not set in config file.
+		if ($this->params['site_id']):
+			$this->c->set('base', 'site_id', $this->params['site_id']);
+		endif;
+		
+		// re-fetch the array now that overrides have been applied.
+		// needed for backwards compatability 
+		$this->config = $this->c->fetch('base');
 		
 		return;
 	
@@ -149,6 +257,8 @@ class owa_caller extends owa_base {
 			if(!empty($caller_params['site_id'])):
 				$this->config['site_id'] = $caller_params['site_id'];
 				$this->c->set('base', 'site_id', $caller_params['site_id']);
+			else:
+				$caller_params['site_id'] = $this->c->get('base', 'site_id');
 			endif;
 		
 		
@@ -157,6 +267,14 @@ class owa_caller extends owa_base {
 			return false;
 		endif;
 		
+		// do not log if the request is from a reserved IP
+		// ips = $this->c->get('base', 'log_not_log_ips');
+		//	...
+		
+		// do not log if the do not log param is set by caller.
+		if ($this->params['do_not_log'] == true):
+			return false;
+		endif;
 		
 		$params = array();
 		// Add PHP's $_SERVER scope variables to event properties
@@ -174,11 +292,14 @@ class owa_caller extends owa_base {
 		$params = owa_lib::inputFilter($params);
 		
 		//Load browscap
-		$bcap = new owa_browscap($params['server']['HTTP_USER_AGENT']);  ///!
+		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $params['server']['HTTP_USER_AGENT']);
+		
+		//$bcap = new owa_browscap($params['server']['HTTP_USER_AGENT']);  ///!
 		
 		// Abort if the request is from a robot
 		if ($this->config['log_robots'] != true):
 			if ($bcap->robotCheck() == true):
+				$this->e->debug("ABORTING: request appears to be from a robot");
 				return;
 			endif;
 		endif;
@@ -386,6 +507,33 @@ class owa_caller extends owa_base {
 		return $result;
 	}
 	
+	function handleSpecialActionRequest() {
+		
+		if(isset($_GET['owa_specialAction'])):
+			$this->e->debug("special action received");
+			echo $this->handleRequestFromUrl();
+			exit;
+		elseif(isset($_GET['owa_logAction'])):
+			$this->e->debug("log action received");
+			$this->config['delay_first_hit'] = false;
+			$this->c->set('base', 'delay_first_hit', false);
+			echo $this->logEventFromUrl($_GET);
+			exit;
+		else:
+			return;
+		endif;
+
+	}
+	
+	function __destruct() {
+		
+		$this->end_time = owa_lib::microtime_float();
+		$total_time = $this->end_time - $this->start_time;
+		$this->e->debug(sprintf('Total session time: %s',$total_time));
+		$this->e->debug("goodbye from OWA");
+		
+		return;
+	}
 	
 }
 

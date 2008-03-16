@@ -41,7 +41,7 @@ class owa_db_mysql extends owa_db {
 		
 		//$connectionString = sprintf('%s', OWA_DB_HOST);	
 		
-		$this->connection = mysql_connect(
+		/*$this->connection = mysql_connect(
 			OWA_DB_HOST,
 			OWA_DB_USER,
 			OWA_DB_PASSWORD,
@@ -56,8 +56,31 @@ class owa_db_mysql extends owa_db {
 		else:
 			$this->connection_status = true;
 		endif;
-	
+	*/
 		return;
+	}
+	
+	function connect() {
+	
+		$this->connection = mysql_connect(
+				OWA_DB_HOST,
+				OWA_DB_USER,
+				OWA_DB_PASSWORD,
+				true
+    	);
+		
+		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
+			
+		if (!$this->connection || !$this->database_selection):
+				$this->e->alert('Could not connect to database. ');
+				$this->connection_status = false;
+				return false;
+		else:
+				$this->connection_status = true;
+		endif;
+		
+		return;
+	
 	}
 	
 	
@@ -69,6 +92,11 @@ class owa_db_mysql extends owa_db {
 	 * 
 	 */
 	function query($sql) {
+  
+  		if ($this->connection_status == false):
+  			$this->connect();
+  		endif;
+  
   
 		$this->e->debug(sprintf('Query: %s', $sql));
 		
@@ -157,7 +185,7 @@ class owa_db_mysql extends owa_db {
 		$this->query($sql);
 		
 		//print_r($this->result);
-		$row = mysql_fetch_assoc($this->new_result);
+		$row = @mysql_fetch_assoc($this->new_result);
 		
 		return $row;
 	}
@@ -169,6 +197,10 @@ class owa_db_mysql extends owa_db {
 	 * @return string
 	 */
 	function prepare($string) {
+		
+		if ($this->connection_status == false):
+  			$this->connect();
+  		endif;
 		
 		return mysql_real_escape_string($string, $this->connection); 
 		

@@ -1,8 +1,8 @@
 <?php
 /**
- * $Header: /repository/pear/Log/Log/console.php,v 1.23 2006/06/29 07:09:21 jon Exp $
+ * $Header: /repository/pear/Log/Log/console.php,v 1.24 2006/12/07 04:15:02 jon Exp $
  *
- * @version $Revision: 1.23 $
+ * @version $Revision: 1.24 $
  * @package Log
  */
 
@@ -150,7 +150,11 @@ class Log_console extends Log
             $this->_buffer = '';
         }
  
-        return fflush($this->_stream);
+        if (is_resource($this->_stream)) {
+            return fflush($this->_stream);
+        }
+
+        return false;
     }
 
     /**

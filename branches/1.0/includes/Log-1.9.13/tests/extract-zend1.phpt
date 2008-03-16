@@ -1,5 +1,5 @@
 --TEST--
-Log: _extractMessage() [Zend Engine 1]
+Log: _extractMessage() [Zend Engine 1.0]
 --SKIPIF--
 <?php if (version_compare(zend_version(), "2.0.0", ">=")) die('skip'); ?>
 --FILE--

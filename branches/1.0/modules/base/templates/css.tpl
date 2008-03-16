@@ -22,6 +22,7 @@ div {margin:0;}
 .nav_links ul {clear: both;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 20px 0px;}
 .active_nav_link {background-color:#cccccc;}
+.host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
 
 /*globalnav*/
 
@@ -204,7 +205,7 @@ div {margin:0;}
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}
 #login_box {width:390px;}
-#header {background-color: #B0C4DE; padding:4px; font-weight:bold; clear: both;}
+#owa_header {background-color:#FFFFFF; padding:4px; font-weight:bold; clear: both;}
 #report_top_level_nav {margin: 5px 0 0 0;}
 #side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
 #report_filters {margin:0 0 30px 0;}
