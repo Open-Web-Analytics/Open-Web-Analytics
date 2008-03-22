@@ -78,7 +78,7 @@ class asyncEventProcessor extends owa_caller {
 			$this->config['error_handler'] = 'async_development';
 		endif;
 		
-		$this->e = &owa_error::get_instance();
+		//$this->e = &owa_error::get_instance();
 
 		// Turns off async setting so that the proper event queue is created
 		$this->config['async_db'] = false;
@@ -93,6 +93,8 @@ class asyncEventProcessor extends owa_caller {
 		
 		return;
 	}
+	
+	
 	
 	/**
 	 * Processes a named file
