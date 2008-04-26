@@ -5,7 +5,7 @@ Plugin Name: Open Web Analytics
 Plugin URI: http://www.openwebanalytics
 Description: This plugin enables Wordpress blog owners to use the Open Web Analytics Framework.
 Author: Peter Adams
-Version: v1.0
+Version: v1.1
 Author URI: http://www.openwebanalytics.com
 */
 
@@ -27,70 +27,20 @@ Author URI: http://www.openwebanalytics.com
 
 require_once('owa_env.php');
 
-
-
-
-/**
- * WORDPRESS Constants
- * You should not need to change these.
- */
+// Public folder URI
+define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
 
 // hack for eliminating WP from printing db errors prior to WP v2.1 
-// this won't be needed once OWA's blind inserts are eliminated
 if ($owa_wp_version[0] == '2'):
 	if ($owa_wp_version[1] == '0'):
 		$wpdb->hide_errors();
 	endif;
 endif;
 
-// check to see if OWA is installed
-$current_plugins = get_option('active_plugins');
-
-// Public folder URI
-define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
-/*
-
-// Build the OWA wordpress specific config overrides array
-$owa_config = array();
-
-// OWA DATABASE CONFIGURATION 
-// Will use Wordpress config unless there is a config file present.
-// OWA uses this to setup it's own DB connection seperate from the one
-// that Wordpress uses.
-$owa_config['db_type'] = 'mysql';
-$owa_config['db_name'] = DB_NAME;
-$owa_config['db_host'] = DB_HOST;
-$owa_config['db_user'] = DB_USER;
-$owa_config['db_password'] = DB_PASSWORD;
-
-$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
-$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
-$owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
-$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
-$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
-$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
-$owa_config['link_template'] = '%s&%s';
-$owa_config['authentication'] = 'wordpress';
-$owa_config['site_id'] = md5(get_settings('siteurl'));
-$owa_config['is_embedded'] = 'true';
-*/
-
-/*
-// Needed to avoid a fetch of configuration from db during installation
-if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
-	$owa_config['do_not_fetch_config_from_db'] = true;
-endif;
-*/
-
-// Create new instance of OWA passing in the Wordpres specific config overrides
-//$owa_wp = &new owa_wp($owa_config);
-
 // Filter and Action hook assignments
-//add_action('init', 'owa_set_user_level');
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_footer');
 add_filter('the_permalink_rss', 'owa_post_link');
@@ -103,7 +53,15 @@ add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
 
 /////////////////////////////////////////////////////////////////////////////////
 
-function owa_factory($params = array()) {
+
+/**
+ * Singleton Method
+ *
+ * Returns an instance of OWA
+ *
+ * @return $owa object
+ */
+function owa_getInstance($params = array()) {
 	
 	static $owa;
 
@@ -114,7 +72,7 @@ function owa_factory($params = array()) {
 		require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
 		
 		// Build the OWA wordpress specific config overrides array
-		$owa_config = $params;
+		$owa_config = array();
 		
 		// OWA DATABASE CONFIGURATION 
 		// Will use Wordpress config unless there is a config file present.
@@ -138,8 +96,11 @@ function owa_factory($params = array()) {
 		$owa_config['site_id'] = md5(get_settings('siteurl'));
 		$owa_config['is_embedded'] = 'true';
 	
-		$owa = new owa_wp($owa_config);
+		$config = array_merge($owa_config, $params);
 		
+		$owa = new owa_wp($config);
+		
+		// adds wordpress specific user priviledge info to the request params
 		global $user_level, $user_login, $user_ID, $user_email, $user_identity, $user_pass_md5;
 	
 		$owa->params['caller']['wordpress']['user_data'] = array(
@@ -161,14 +122,14 @@ function owa_factory($params = array()) {
 
 function owa_handleSpecialActionRequest() {
 
-	$owa_wp = owa_factory();
-	return $owa_wp->handleSpecialActionRequest();
+	$owa = owa_getInstance();
+	return $owa->handleSpecialActionRequest();
 }
 
 function owa_logComment() {
 
-	$owa_wp = owa_factory();
-	return $owa_wp->logComment();
+	$owa = owa_getInstance();
+	return $owa->logComment();
 }
 
 
@@ -179,9 +140,9 @@ function owa_logComment() {
  */
 function owa_footer() {
 	
-	$owa_wp = owa_factory();
+	$owa = owa_getInstance();
 	
-	$owa_wp->placeHelperPageTags();
+	$owa->placeHelperPageTags();
 	
 	
 	return;
@@ -196,36 +157,21 @@ function owa_main() {
 	
 	global $user_level;
 	
-	$owa_wp = owa_factory();
+	$owa = owa_getInstance();
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists(is_preview)):
 		if (is_preview()):
-			$owa_wp->params['do_not_log'] = true;
+			$owa->params['do_not_log'] = true;
 		endif;
 	endif;
 	
 	// Don't Log if user is an admin
 	if($user_level == '10'):
-		if ($owa_wp->config['do_not_log_admins'] == true):
-			$owa_wp->params['do_not_log'] = true;
+		if ($owa->config['do_not_log_admins'] == true):
+			$owa->params['do_not_log'] = true;
 		endif;
 	endif;
-	
-	owa_log();
-	
-	return;
-	
-}
-
-/**
- * This is the main logger function that calls owa on each normal web request.
- * Application specific request data should be set here as part of the $app_params array.
- * 
- */
-function owa_log() {
-
-	$owa_wp = owa_factory();
 	
 	// WORDPRESS SPECIFIC DATA //
 	
@@ -250,7 +196,7 @@ function owa_log() {
 	$app_params['page_title'] = owa_get_title($app_params['page_type']);
 	
 	// Process the request by calling owa
-	$owa_wp->log($app_params);
+	$owa->log($app_params);
 	
 	return;
 }
@@ -332,12 +278,12 @@ function owa_get_page_type() {
  */
 function add_feed_sid($binfo) {
 	
-	$owa_wp = owa_factory();
+	$owa = owa_getInstance();
 	
 	$test = strpos($binfo, "feed=");
 	
 	if ($test == true):
-		$newbinfo = $owa_wp->add_feed_tracking($binfo);
+		$newbinfo = $owa->add_feed_tracking($binfo);
 	
 	else: 
 		
@@ -357,9 +303,9 @@ function add_feed_sid($binfo) {
  */
 function owa_post_link($link) {
 
-	$owa_wp = owa_factory();
+	$owa = owa_getInstance();
 
-	return $owa_wp->add_link_tracking($link);
+	return $owa->add_link_tracking($link);
 		
 }
 
@@ -374,7 +320,7 @@ function owa_install() {
 	$params = array();
 	$params['do_not_fetch_config_from_db'] = true;
 
-	$owa_wp = owa_factory($params);
+	$owa = owa_getInstance($params);
 	
 	//check to see if the user has permissions to install or not...
 	get_currentuserinfo();
@@ -382,9 +328,9 @@ function owa_install() {
 	if ($user_level < 8):
     	return;
     else:
-    	$owa_wp->config['fetch_config_from_db'] = false;
+    	$owa->config['fetch_config_from_db'] = false;
     	
-    	$owa_wp->config['db_type'] = 'mysql';
+    	$owa->config['db_type'] = 'mysql';
     	
     	$install_params = array('site_id' => md5(get_settings('siteurl')), 
     							'name' => get_bloginfo('name'),
@@ -392,7 +338,7 @@ function owa_install() {
     							'description' => get_bloginfo('description'),
     							'action' => 'base.installEmbedded');
     							
-    	$owa_wp->handleRequest($install_params);
+    	$owa->handleRequest($install_params);
 	endif;
 
 	return;
@@ -418,11 +364,11 @@ function owa_dashboard_menu() {
  */
 function owa_dashboard_report() {
 	
-	$owa_wp = owa_factory();
+	$owa = owa_getInstance();
 	
 	$params = array();
 	$params['do'] = 'base.reportDashboard';
-	echo $owa_wp->handleRequest($params);
+	echo $owa->handleRequest($params);
 	
 	return;
 	
@@ -447,12 +393,12 @@ function owa_options_menu() {
  */
 function owa_options_page() {
 	
-	$owa_wp = owa_factory();
+	$owa = owa_getInstance();
 	
 	$params = array();
 	$params['view'] = 'base.options';
 	$params['subview'] = 'base.optionsGeneral';
-	echo $owa_wp->handleRequest($params);
+	echo $owa->handleRequest($params);
 	
 	return;
 }

@@ -33,9 +33,9 @@
 
 // Initialize owa admin
 //$owa_wp = &new owa_wp;
-$owa_wp = owa_factory();
+$owa = owa_getInstance();
 // run controller or view and echo page content
-echo $owa_wp->handleRequestFromURL();
+echo $owa->handleRequestFromURL();
 
 // unload owa
 
