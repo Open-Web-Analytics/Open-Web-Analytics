@@ -29,7 +29,7 @@ function owa_factory($params = array()) {
 	
 	static $owa;
 
-	if( isset($owa)):
+	if(!empty($owa)):
 		return $owa;
 	else:
 	

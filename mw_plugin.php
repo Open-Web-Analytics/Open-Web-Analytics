@@ -86,7 +86,7 @@ function owa_factory() {
 	
 	static $owa;
 	
-	if( isset($owa)):
+	if(!empty($owa)):
 		return $owa;
 	else:
 		$owa = new owa_php($owa_config);
@@ -346,6 +346,8 @@ class SpecialOwa extends SpecialPage {
 			foreach ( $allMessages as $lang => $langMessages ) {
 				   $wgMessageCache->addMessages( $langMessages, $lang );
 			}
+			
+			return true;
         }
         
 }
