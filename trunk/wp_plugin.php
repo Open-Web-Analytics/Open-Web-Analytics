@@ -26,7 +26,7 @@ Author URI: http://www.openwebanalytics.com
 //
 
 require_once('owa_env.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
+
 
 
 
@@ -51,6 +51,7 @@ $current_plugins = get_option('active_plugins');
 
 // Public folder URI
 define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
+/*
 
 // Build the OWA wordpress specific config overrides array
 $owa_config = array();
@@ -76,28 +77,101 @@ $owa_config['link_template'] = '%s&%s';
 $owa_config['authentication'] = 'wordpress';
 $owa_config['site_id'] = md5(get_settings('siteurl'));
 $owa_config['is_embedded'] = 'true';
+*/
 
+/*
 // Needed to avoid a fetch of configuration from db during installation
 if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
 	$owa_config['do_not_fetch_config_from_db'] = true;
 endif;
+*/
 
 // Create new instance of OWA passing in the Wordpres specific config overrides
-$owa_wp = &new owa_wp($owa_config);
+//$owa_wp = &new owa_wp($owa_config);
 
 // Filter and Action hook assignments
-add_action('init', 'owa_set_user_level');
+//add_action('init', 'owa_set_user_level');
 add_action('template_redirect', 'owa_main');
 add_action('wp_footer', 'owa_footer');
 add_filter('the_permalink_rss', 'owa_post_link');
-add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
+add_action('init', 'owa_handleSpecialActionRequest');
 add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
-add_action('comment_post', array(&$owa_wp, 'logComment'));
+add_action('comment_post', 'owa_logComment');
 add_action('admin_menu', 'owa_options_menu');
 add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
 
 /////////////////////////////////////////////////////////////////////////////////
+
+function owa_factory($params = array()) {
+	
+	static $owa;
+
+	if(!empty($owa)):
+		return $owa;
+	else:
+	
+		require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
+		
+		// Build the OWA wordpress specific config overrides array
+		$owa_config = $params;
+		
+		// OWA DATABASE CONFIGURATION 
+		// Will use Wordpress config unless there is a config file present.
+		// OWA uses this to setup it's own DB connection seperate from the one
+		// that Wordpress uses.
+		$owa_config['db_type'] = 'mysql';
+		$owa_config['db_name'] = DB_NAME;
+		$owa_config['db_host'] = DB_HOST;
+		$owa_config['db_user'] = DB_USER;
+		$owa_config['db_password'] = DB_PASSWORD;
+		
+		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
+		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
+		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
+		$owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
+		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
+		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
+		$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
+		$owa_config['link_template'] = '%s&%s';
+		$owa_config['authentication'] = 'wordpress';
+		$owa_config['site_id'] = md5(get_settings('siteurl'));
+		$owa_config['is_embedded'] = 'true';
+	
+		$owa = new owa_wp($owa_config);
+		
+		global $user_level, $user_login, $user_ID, $user_email, $user_identity, $user_pass_md5;
+	
+		$owa->params['caller']['wordpress']['user_data'] = array(
+	
+		'user_level' 	=> $user_level, 
+		'user_ID'		=> $user_ID,
+		'user_login'	=> $user_login,
+		'user_email'	=> $user_email,
+		'user_identity'	=> $user_identity,
+		'user_password'	=> 'xxxxxxxxx');
+		
+		$owa->params['u'] = $user_login;
+		$owa->params['p'] = 'xxxxxxxxx';
+	
+		return $owa;
+		
+	endif;
+}
+
+function owa_handleSpecialActionRequest() {
+
+	$owa_wp = owa_factory();
+	return $owa_wp->handleSpecialActionRequest();
+}
+
+function owa_logComment() {
+
+	$owa_wp = owa_factory();
+	return $owa_wp->logComment();
+}
+
+
 
 /**
  * Prints helper page tags to the footers of templates.
@@ -105,39 +179,14 @@ add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
  */
 function owa_footer() {
 	
-	global $owa_wp;
+	$owa_wp = owa_factory();
 	
 	$owa_wp->placeHelperPageTags();
 	
 	
 	return;
 	
-}
-
-
-/**
- * Sets the user level in caller params for use in OWA's auth module.
- *
- */
-function owa_set_user_level() {
-	
-	global $owa_wp, $user_level, $user_login, $user_ID, $user_email, $user_identity, $user_pass_md5;
-	
-	$owa_wp->params['caller']['wordpress']['user_data'] = array(
-	
-	'user_level' 	=> $user_level, 
-	'user_ID'		=> $user_ID,
-	'user_login'	=> $user_login,
-	'user_email'	=> $user_email,
-	'user_identity'	=> $user_identity,
-	'user_password'	=> 'xxxxxxxxx');
-	
-	$owa_wp->params['u'] = $user_login;
-	$owa_wp->params['p'] = 'xxxxxxxxx';
-	
-	return;	
-}
-	
+}	
 
 /**
  * This is the main logging controller that is called on each request.
@@ -145,7 +194,9 @@ function owa_set_user_level() {
  */
 function owa_main() {
 	
-	global $user_level, $owa_wp;
+	global $user_level;
+	
+	$owa_wp = owa_factory();
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists(is_preview)):
@@ -174,7 +225,7 @@ function owa_main() {
  */
 function owa_log() {
 
-	global $owa_wp;
+	$owa_wp = owa_factory();
 	
 	// WORDPRESS SPECIFIC DATA //
 	
@@ -281,7 +332,7 @@ function owa_get_page_type() {
  */
 function add_feed_sid($binfo) {
 	
-	global $owa_wp;
+	$owa_wp = owa_factory();
 	
 	$test = strpos($binfo, "feed=");
 	
@@ -306,7 +357,7 @@ function add_feed_sid($binfo) {
  */
 function owa_post_link($link) {
 
-	global $owa_wp;
+	$owa_wp = owa_factory();
 
 	return $owa_wp->add_link_tracking($link);
 		
@@ -319,7 +370,11 @@ function owa_post_link($link) {
 function owa_install() {
 
 	global $user_level;
-	global $owa_wp;
+	
+	$params = array();
+	$params['do_not_fetch_config_from_db'] = true;
+
+	$owa_wp = owa_factory($params);
 	
 	//check to see if the user has permissions to install or not...
 	get_currentuserinfo();
@@ -363,7 +418,7 @@ function owa_dashboard_menu() {
  */
 function owa_dashboard_report() {
 	
-	global $owa_wp;
+	$owa_wp = owa_factory();
 	
 	$params = array();
 	$params['do'] = 'base.reportDashboard';
@@ -392,7 +447,7 @@ function owa_options_menu() {
  */
 function owa_options_page() {
 	
-	global $owa_wp;
+	$owa_wp = owa_factory();
 	
 	$params = array();
 	$params['view'] = 'base.options';
