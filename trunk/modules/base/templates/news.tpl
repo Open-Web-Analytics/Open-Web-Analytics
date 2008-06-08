@@ -2,11 +2,8 @@
 	<table>
 		<? foreach ($news['items'] as $item => $value): ?>
 		<TR>
-			<TD>
-				<span class="info_text"><?=$value['pubDate'];?>:</span>
-			</TD>
-			<TD>
-				<a href="<?=$value['link'];?>"><span class="h_label"><?=$value['title'];?></span></a>
+			<TD colspan="2">
+				<a href="<?=$value['link'];?>"><span class="h_label"><?=$value['title'];?></span></a> <span class="info_text">- <?=$value['pubDate'];?></span>
 			</TD>
 		</TR>
 		<TR>

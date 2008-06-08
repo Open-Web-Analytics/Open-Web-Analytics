@@ -30,15 +30,86 @@
  
 class owa_dbColumn {
  	
+ 	var $name;
+ 	
  	var $value;
+ 	
+ 	var $data_type;
  	
  	var $foriegn_key;
  	
+ 	var $is_primary_key = false;
+ 	
  	var $auto_increment = false;
  	
- 	function owa_dbColumn() {
+ 	var $is_unique = false;
+ 	
+ 	var $is_not_null = false;
+ 	
+ 	var $label;
+ 	
+ 	function owa_dbColumn($params = array()) {
+ 		
+ 		
+ 		if (!empty($params)):
+ 			
+ 			foreach ($params as $k => $v) {
+ 				
+ 				$this->$k = $v;
+ 			
+ 			}
+ 			
+ 		endif;
  		
  		return;
+ 	}
+ 	
+ 	function get($name) {
+ 	
+ 		return $this->$name;
+ 	}
+ 	
+ 	function set($name, $value) {
+ 	
+ 		$this->$name = $value;
+ 		
+ 		return;
+ 	}
+ 	
+ 	function getDefinition() {
+ 	
+ 		$definition = '';
+ 		
+ 		$definition .= $this->get('data_type');
+			
+		// Check for auto increment
+		if ($this->get('auto_increment') == true):
+			$definition .= ' '.OWA_DTD_AUTO_INCREMENT;
+		endif;
+			
+		// Check for auto Not null
+		if ($this->get('is_not_null') == true):
+			$definition .= ' '.OWA_DTD_NOT_NULL;
+		endif;
+			
+		// Check for unique
+		if ($this->get('is_unique') == true):
+			$definition .= ' '.OWA_DTD_UNIQUE;
+		endif;
+			
+		// check for primary key
+		if ($this->get('is_primary_key') == true):
+			$definition .= ' '.OWA_DTD_PRIMARY_KEY;
+			//$definition .= sprintf(", INDEX (%s)", $this->get('name'));
+		endif;
+		
+		// check for index
+		if ($this->get('index') == true):
+			$definition .= sprintf(", INDEX (%s)", $this->get('name'));
+		endif;
+
+ 		return $definition;
+ 		 	
  	}
  	
  }

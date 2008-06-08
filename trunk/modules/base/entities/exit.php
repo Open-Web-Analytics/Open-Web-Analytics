@@ -17,7 +17,7 @@
 //
 
 /**
- * Referer Entity
+ * Visitor Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,23 +28,19 @@
  * @since		owa 1.0.0
  */
 
-class owa_referer extends owa_entity {
+class owa_exit extends owa_entity {
 	
 	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $url = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	var $url = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	var $site = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $query_terms = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $refering_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $snippet = array('data_type' => OWA_DTD_TEXT); // TEXT,
-	var $is_searchengine = array('data_type' => OWA_DTD_TINYINT); // tinyint(1),
-
+	var $exit_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	
-	function owa_referer() {
+	function owa_exit() {
 		
-		$this->owa_entity();
-		
+			$this->owa_entity();
+			
 		return;
 			
 	}

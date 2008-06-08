@@ -56,6 +56,12 @@ class owa_sitesView extends owa_view {
 		
 		$this->body->set('sites', $sites);
 		
+		
+		$tt = owa_coreAPI::entityFactory('base.testtable');
+		$tt->dropTable();
+		//print_r($tt);
+
+		
 		return;
 	}
 	

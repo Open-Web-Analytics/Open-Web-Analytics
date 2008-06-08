@@ -33,6 +33,9 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
 
 class owa_reportController extends owa_controller {
 	
+	var $is_admin = true;
+	var $type = 'report';
+	
 	/**
 	 * Constructor
 	 *

@@ -16,8 +16,9 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-
+require_once(OWA_DIR.'owa_lib.php');
+require_once(OWA_DIR.'owa_view.php');
+require_once(OWA_DIR.'owa_adminController.php');
 /**
  * Options View
  * 
@@ -50,10 +51,6 @@ class owa_optionsGeneralView extends owa_view {
 		// fetch admin links from all modules
 		$this->body->set('headline', 'General Configuration Options');
 		
-		if (empty($data['configuration'])):
-			$data['configuration'] = $this->c->fetch('base');
-		endif;
-		
 		//print_r($data['config']);
 		// assign config data
 		$this->body->set('config', $data['configuration']);
@@ -63,6 +60,48 @@ class owa_optionsGeneralView extends owa_view {
 	
 	
 }
+
+/**
+ * Admin Settings/Options Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_optionsGeneralController extends owa_adminController {
+	
+	var $is_admin = true;
+	var $type = 'options';
+	
+	function owa_optionsGeneralController($params) {
+		$this->owa_controller($params);
+		$this->priviledge_level = 'admin';
+		
+		return;
+	}
+
+	function action() {
+		
+		
+		
+		$this->data['configuration'] = $this->c->fetch('base');
+			
+		// add data to container
+		$this->data['view'] = 'base.options';
+		$this->data['subview'] = 'base.optionsGeneral';
+		$this->data['view_method'] = 'delegate';
+		
+		return $this->data;
+	
+	}
+	
+}
+
 
 
 ?>

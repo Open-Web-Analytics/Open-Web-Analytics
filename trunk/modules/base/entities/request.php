@@ -30,42 +30,42 @@
 
 class owa_request extends owa_entity {
 	
-	var $id;
-	var $visitor_id; 
-	var $session_id;
-	var $inbound_visitor_id;
-	var $inbound_session_id;
-	var $feed_subscription_id;
-	var $user_name;
-	var $user_email;
-	var $timestamp;
-	var $last_req;
-	var $year;
-	var $month;
-	var $day;
-	var $dayofweek;
-	var $dayofyear;
-	var $weekofyear;
-	var $hour;
-	var $minute;
-	var $second;
-	var $msec;
-	var $referer_id;
-	var $document_id;
-	var $site;
-	var $site_id;
-	var $ip_address;
-	var $host_id;
-	var $os;
-	var $os_id;
-	var $ua_id;
-	var $is_new_visitor;
-	var $is_repeat_visitor;
-	var $is_comment;
-	var $is_entry_page;
-	var $is_browser;
-	var $is_robot;
-	var $is_feedreader;
+	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true);
+	var $visitor_id = array('data_type' => OWA_DTD_BIGINT); 
+	var $session_id = array('data_type' => OWA_DTD_BIGINT);
+	var $inbound_visitor_id = array('data_type' => OWA_DTD_BIGINT);
+	var $inbound_session_id = array('data_type' => OWA_DTD_BIGINT);
+	var $feed_subscription_id = array('data_type' => OWA_DTD_BIGINT);
+	var $user_name = array('data_type' => OWA_DTD_VARCHAR255);
+	var $user_email = array('data_type' => OWA_DTD_VARCHAR255);
+	var $timestamp = array('data_type' => OWA_DTD_BIGINT, 'index' => true);
+	var $last_req = array('data_type' => OWA_DTD_BIGINT);
+	var $year = array('data_type' => OWA_DTD_INT);
+	var $month = array('data_type' => OWA_DTD_INT);
+	var $day = array('data_type' => OWA_DTD_TINYINT2);
+	var $dayofweek = array('data_type' => OWA_DTD_VARCHAR10);
+	var $dayofyear = array('data_type' => OWA_DTD_INT);
+	var $weekofyear = array('data_type' => OWA_DTD_INT);
+	var $hour = array('data_type' => OWA_DTD_TINYINT2);
+	var $minute = array('data_type' => OWA_DTD_TINYINT2);
+	var $second = array('data_type' => OWA_DTD_TINYINT2);
+	var $msec = array('data_type' => OWA_DTD_INT);
+	var $referer_id = array('data_type' => OWA_DTD_VARCHAR255);
+	var $document_id = array('data_type' => OWA_DTD_VARCHAR255);
+	var $site = array('data_type' => OWA_DTD_VARCHAR255);
+	var $site_id = array('data_type' => OWA_DTD_VARCHAR255);
+	var $ip_address = array('data_type' => OWA_DTD_VARCHAR255);
+	var $host_id = array('data_type' => OWA_DTD_VARCHAR255);
+	var $os = array('data_type' => OWA_DTD_VARCHAR255);
+	var $os_id = array('data_type' => OWA_DTD_VARCHAR255);
+	var $ua_id = array('data_type' => OWA_DTD_VARCHAR255);
+	var $is_new_visitor = array('data_type' => OWA_DTD_TINYINT);
+	var $is_repeat_visitor = array('data_type' => OWA_DTD_TINYINT);
+	var $is_comment = array('data_type' => OWA_DTD_TINYINT);
+	var $is_entry_page = array('data_type' => OWA_DTD_TINYINT);
+	var $is_browser = array('data_type' => OWA_DTD_TINYINT);
+	var $is_robot = array('data_type' => OWA_DTD_TINYINT);
+	var $is_feedreader = array('data_type' => OWA_DTD_TINYINT);
 	
 	function owa_request() {
 		

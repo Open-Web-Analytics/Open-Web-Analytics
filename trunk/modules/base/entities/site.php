@@ -32,12 +32,12 @@
 
 class owa_site extends owa_entity {
 	
-	var $id;
-	var $site_id; // VARCHAR(255),
-	var $domain; // VARCHAR(255),
-	var $name; // VARCHAR(255),
-	var $description; // TEXT,
-	var $site_family; // VARCHAR(255)
+	var $id = array('data_type' => OWA_DTD_SERIAL, 'auto_increment' => true);
+	var $site_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $domain = array('data_type' => OWA_DTD_VARCHAR255, 'is_not_hull' => true); // VARCHAR(255),
+	var $name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $description = array('data_type' => OWA_DTD_TEXT); // TEXT,
+	var $site_family = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255)
 	
 	function owa_site() {
 		

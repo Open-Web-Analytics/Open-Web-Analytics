@@ -40,6 +40,20 @@ class owa_coreAPI extends owa_base {
 	var $init;
 	
 	/**
+	 * Array of modules whose schemas are out of date
+	 *
+	 * @var array
+	 */
+	var $modules_needing_updates = array();
+	
+	/**
+	 * Flag for schema update required
+	 *
+	 * @var boolean
+	 */
+	var $update_required;
+	
+	/**
 	 * Container for request params
 	 * 
 	 * @var array
@@ -76,6 +90,23 @@ class owa_coreAPI extends owa_base {
 		return $api;
 	}
 	
+	function setupStorageEngine($type) {
+	
+		if (!class_exists('owa_db')):
+			require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
+		endif;
+			
+		$connection_class = "owa_db_" . $type;
+		$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
+	
+	 	if (!require_once($connection_class_path)):
+	 		$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+		endif;
+		
+	 	return;
+
+	}
+	
 	function &dbSingleton() {
 		
 		static $db;
@@ -93,7 +124,7 @@ class owa_coreAPI extends owa_base {
 			$connection_class = "owa_db_" . OWA_DB_TYPE;
 			$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
 	
-	 		if (!include($connection_class_path)):
+	 		if (!require_once($connection_class_path)):
 	 			$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
 	 							$connection_class_path));
 	 			return;
@@ -162,6 +193,24 @@ class owa_coreAPI extends owa_base {
 		return $cache;
 	}
 	
+	function requestContainerSingleton() {
+	
+		static $request;
+		
+		if(!isset($request)):
+			
+			if (!class_exists('owa_requestContainer')):
+				require_once(OWA_DIR.'owa_requestContainer.php');
+			endif;
+			
+			$request = owa_lib::factory(OWA_DIR, '', 'owa_requestContainer');
+			
+		endif;
+		
+		return $request;
+	
+	}
+	
 	function setupFramework() {
 		
 		if ($this->init != true):
@@ -180,9 +229,21 @@ class owa_coreAPI extends owa_base {
 		foreach ($am as $k => $v) {
 			
 			$m = owa_coreAPI::moduleClassFactory($v);
+			
 			$this->modules[$m->name] = $m;
 			
+			// check for schema updates
+			$check = $this->modules[$m->name]->isSchemaCurrent();
+			
+			if ($check != true):
+				$this->modules_needing_updates[] = $m->name;
+			endif;
 		}
+		
+		// set schema update flag
+		if (!empty($this->modules_needing_updates)):
+			$this->update_required = true;
+		endif;
 		
 		return;
 	}
@@ -298,6 +359,29 @@ class owa_coreAPI extends owa_base {
 		return $obj;
 	}
 	
+	function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '') {
+		
+		$class = 'owa_'.$file.$class_suffix;
+	
+		// Require class file if class does not already exist
+		if(!class_exists($class)):	
+			owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
+		endif;
+			
+		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.$sub_directory, '', $class, $params);
+		
+		return $obj;
+	}
+	
+	function updateFactory($module, $class) {
+	
+		require_once(OWA_BASE_CLASS_DIR.'update.php');
+		
+		$obj = owa_coreAPI::moduleGenericFactory($module, 'updates', $class, '_update');
+		$obj->module_name = $module;
+		return $obj;
+	}
+		
 	function subViewFactory($subview, $params = array()) {
 		
 		list($module, $class) = split("\.", $subview);
@@ -556,6 +640,11 @@ class owa_coreAPI extends owa_base {
 
 		return $active_modules;
 	
+	}
+	
+	function getModulesNeedingUpdates() {
+	
+		return $this->modules_needing_updates;
 	}
 	
 }

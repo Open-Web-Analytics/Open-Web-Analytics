@@ -40,22 +40,6 @@ class owa_optionsResetController extends owa_controller {
 	}
 
 	function action() {
-	
-		/*$api = &owa_coreAPI::singleton();
-		
-		$caller_config = $api->caller_config_overrides;
-		
-		$default_config = $this->c->getDefaultConfig();
-		
-		// merge the settings with those comming in as params
-		$nbsettings = array_merge($default_config['base'], $caller_config);
-		
-		// place the merge config array back to the global object
-		$this->c->replace('base', $nbsettings);
-		
-		// persist the global config
-		$this->c->update();
-		*/
 		
 		$config = owa_coreAPI::entityFactory('base.configuration');
 		
@@ -73,8 +57,8 @@ class owa_optionsResetController extends owa_controller {
 		$this->e->notice($this->getMsg(2503));
 	
 		$data = array();
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.optionsGeneral';
+		
+		$data['do'] = 'base.optionsGeneral';
 		$data['view_method'] = 'redirect';
 		//$data['configuration'] = $nbsettings;
 		$data['status_code'] = 2503;

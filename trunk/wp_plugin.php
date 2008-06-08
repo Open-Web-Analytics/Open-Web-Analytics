@@ -49,8 +49,8 @@ add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', 'owa_logComment');
 add_action('admin_menu', 'owa_options_menu');
-add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
-
+// Installation hook
+register_activation_hook(__FILE__,'owa_install');
 /////////////////////////////////////////////////////////////////////////////////
 
 
@@ -61,6 +61,7 @@ add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
  *
  * @return $owa object
  */
+
 function owa_getInstance($params = array()) {
 	
 	static $owa;
@@ -85,8 +86,10 @@ function owa_getInstance($params = array()) {
 		$owa_config['db_password'] = DB_PASSWORD;
 		
 		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
-		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
+		//'../wp-content/plugins/owa/public/i/';
+		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
+		//'../wp-content/plugins/owa/public/i/';
+		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';
 		$owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
 		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
@@ -101,6 +104,7 @@ function owa_getInstance($params = array()) {
 		$owa = new owa_wp($config);
 		
 		// adds wordpress specific user priviledge info to the request params
+		
 		global $user_level, $user_login, $user_ID, $user_email, $user_identity, $user_pass_md5;
 	
 		$owa->params['caller']['wordpress']['user_data'] = array(
@@ -118,7 +122,9 @@ function owa_getInstance($params = array()) {
 		return $owa;
 		
 	endif;
+	
 }
+
 
 function owa_handleSpecialActionRequest() {
 
@@ -184,7 +190,7 @@ function owa_main() {
 		$app_params['feed_format'] = $_GET['feed'];
 	endif;
 	
-	$app_params[$owa_wp->config['source_param']] = $_GET[$owa_wp->config['ns'].$owa_wp->config['source_param']];
+	$app_params[$owa->config['source_param']] = $_GET[$owa->config['ns'].$owa->config['source_param']];
 	
 	// Track users by the email address of that they used when posting a comment
 	$app_params['user_email'] = $_COOKIE['comment_author_email_'.COOKIEHASH]; 

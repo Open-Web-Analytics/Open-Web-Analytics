@@ -5,14 +5,14 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
 		<title>Open Web Analytics - <?=$page_title;?></title>
-		<?php $this->includeTemplate('css.tpl');?>
+		<?php include($this->setTemplate('css.tpl'));?>
 	</head>
 	
 	<body>
 	
-		<?php $this->includeTemplate('header.tpl');?>
+		<?php include($this->setTemplate('header.tpl'));?>
 		
-		<?php $this->includeTemplate('msgs.tpl');?>
+		<?php include($this->setTemplate('msgs.tpl'));?>
 			
 		<?=$body;?>
 	

@@ -50,7 +50,10 @@ class owa_caller extends owa_base {
 	var $api;
 	
 	var $start_time;
+	
 	var $end_time;
+	
+	var $update_required;
 	
 	/**
 	 * PHP4 Constructor
@@ -81,8 +84,18 @@ class owa_caller extends owa_base {
 			$config_file_exists = true;
 			include($file);
 		else:
+			$config_file_exists = false;
 			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
 		endif;
+		
+		
+		if (!defined('OWA_DB_TYPE')):
+			owa_coreAPI::setupStorageEngine($config['db_type']);
+		else:
+			owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
+		endif;
+		
+		
 		
 		// Parent Constructor. Sets default config and error logger
 		$this->owa_base();
@@ -101,28 +114,12 @@ class owa_caller extends owa_base {
 		 * the will override default config values
 		 */
 		
-		/* APPLY CALLER CONFIGURATION OVERRIDES */
-		
-		/**
-		 * This will apply configuration overirdes that are specified by the calling application.
-		 * This is usually used by plugins to setup integration specific configuration values.
-		 */
-		$this->c->applyModuleOverrides('base', $config);
-		$this->e->debug('Caller configuration overrides applied.');
 		
 		/* APPLY CONFIGURATION FILE OVERRIDES */
 		
 		
 		if ($config_file_exists == true):
 			
-			/* OBJECT CACHING */
-		
-			// Looks for object cache config constant
-			if (defined('OWA_CACHE_OBJECTS')):
-				$this->c->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
-			endif;
-			
-		
 			/* ERROR LOGGING */
 		
 			// Looks for log level constant
@@ -142,37 +139,50 @@ class owa_caller extends owa_base {
 				$this->c->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
 			endif;
 			
+			/* OBJECT CACHING */
+		
+			// Looks for object cache config constant
+			// must comebefore user db values are fetched from db
+			if (defined('OWA_CACHE_OBJECTS')):
+				$this->c->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
+			endif;
+			
 		endif;
 			
-		$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
-		/* APPLY DATABASE CONFIGURATION */
+		//$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
+		
+		/* DATABASE CONFIGURATION */
+		// This needs to come before the fetch of user overrides from the DB
+		// Constants defined in the config file have the final word
+		// values passed from calling application must be applied prior
+		// to the rest of the caller's overrides
 		
 		if (!defined('OWA_DB_TYPE')):
-			define('OWA_DB_TYPE', $this->c->get('base', 'db_type'));
+			define('OWA_DB_TYPE', $config['db_type']);
 		else:
 			$this->c->set('base', 'db_type', OWA_DB_TYPE);
 		endif;
 		
 		if (!defined('OWA_DB_NAME')):
-			define('OWA_DB_NAME', $this->c->get('base', 'db_name'));
+			define('OWA_DB_NAME',  $config['db_name']);
 		else:
 			$this->c->set('base', 'db_name', OWA_DB_NAME);
 		endif;
 		
 		if (!defined('OWA_DB_HOST')):
-			define('OWA_DB_HOST', $this->c->get('base', 'db_host'));
+			define('OWA_DB_HOST',  $config['db_host']);
 		else:
 			$this->c->set('base', 'db_host', OWA_DB_HOST);
 		endif;
 		
 		if (!defined('OWA_DB_USER')):
-			define('OWA_DB_USER', $this->c->get('base', 'db_user'));
+			define('OWA_DB_USER',  $config['db_user']);
 		else:
 			$this->c->set('base', 'db_user', OWA_DB_USER);
 		endif;
 		
 		if (!defined('OWA_DB_PASSWORD')):
-			define('OWA_DB_PASSWORD', $this->c->get('base', 'db_password'));
+			define('OWA_DB_PASSWORD',  $config['db_password']);
 		else:
 			$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
 		endif;	
@@ -184,13 +194,22 @@ class owa_caller extends owa_base {
 		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
 			$this->c->load($this->c->get('base', 'configuration_id'));
 		endif;
+
+		/* APPLY CALLER CONFIGURATION OVERRIDES */
 		
-		/**
-		 * Post User Config Framework Setup
-		 *
-		 */
+		// overrides all default and user config values except defined in the config file
+		// must come after user overides are applied 
+		// This will apply configuration overirdes that are specified by the calling application.
+		// This is usually used by plugins to setup integration specific configuration values.
 		
-		// Looks for log handler constant from config file
+		$this->c->applyModuleOverrides('base', $config);
+		
+		$this->e->debug('Caller configuration overrides applied.');
+		
+		/* SET ERROR HANDLER */
+		
+		// Looks for log handler constant from config file otherwise respects
+		// user and caller overrides
 		if (defined('OWA_ERROR_HANDLER')):
 			$this->c->set('base', 'error_handler', OWA_ERROR_HANDLER);
 		endif;
@@ -199,18 +218,29 @@ class owa_caller extends owa_base {
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
 		
-		// Create Request Container
+		/* SETUP REQUEST CONTAINER */
+		
+		$this->request = owa_coreAPI::requestContainerSingleton();
 		$this->params = &owa_requestContainer::getInstance();
 		
-		// Load the core API
+		/* LOAD CORE API */
+		
+		/**
+		 * @todo This needs to be refactored into stateless api calls 
+		 */
 		$this->api = &owa_coreAPI::singleton();
 		$this->api->caller_config_overrides = $config;
-		
 		// should only be called once to load all modules
 		$this->api->setupFramework();
+		// check for required schema updates and sets update flag
+		// this is needed if the calling application or plugin needs to check for updates
+		if (!empty($this->api->modules_needing_updates)):
+			$this->update_required = true;
+		endif;
 		
+		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.
-		if ($this->params['site_id']):
+		if (!empty($this->params['site_id'])):
 			$this->c->set('base', 'site_id', $this->params['site_id']);
 		endif;
 		
@@ -253,18 +283,13 @@ class owa_caller extends owa_base {
 	 */
 	function logEvent($event_type, $caller_params = '') {
 		
+		$this->e->debug(print_r($this->e->backtrace(), true));
 		//change config value to incomming site_id
-			if(!empty($caller_params['site_id'])):
-				$this->config['site_id'] = $caller_params['site_id'];
-				$this->c->set('base', 'site_id', $caller_params['site_id']);
-			else:
-				$caller_params['site_id'] = $this->c->get('base', 'site_id');
-			endif;
-		
-		
-		// do not log if the request is comming fro mthe preview plane of the admin interface
-		if ($this->params['preview'] == true):
-			return false;
+		if(!empty($caller_params['site_id'])):
+			$this->config['site_id'] = $caller_params['site_id'];
+			$this->c->set('base', 'site_id', $caller_params['site_id']);
+		else:
+			$caller_params['site_id'] = $this->c->get('base', 'site_id');
 		endif;
 		
 		// do not log if the request is from a reserved IP
@@ -318,6 +343,8 @@ class owa_caller extends owa_base {
 	 * @return unknown
 	 */
 	function logEventFromUrl($caller_params) {
+		
+		// keeps php executing even if the client closes the connection
 		ignore_user_abort(true);
 		
 		//$clean_params = owa_lib::inputFilter($caller_params);
@@ -418,14 +445,14 @@ class owa_caller extends owa_base {
 		$controller = $this->api->moduleFactory($action, 'Controller', $this->params);
 		
 		//perfrom authentication
-		$auth = &owa_auth::get_instance();
+		//$auth = &owa_auth::get_instance();
 		
-		$data = $auth->authenticateUser($controller->priviledge_level);
+		//$data = $auth->authenticateUser($controller->priviledge_level);
 		
 		// if auth was success then procead to do action specified in the intended controller.
-		if ($data['auth_status'] == true):
+		//if ($data['auth_status'] == true):
 			$data = $controller->doAction();
-		endif;
+		//endif;
 		
 		// Display view if controller calls for one.
 		if (!empty($data['view']) || !empty($data['action'])):
@@ -471,6 +498,7 @@ class owa_caller extends owa_base {
 		static $init;
 		
 		// Override request parsms with those passed by caller
+		// TODO: make this an array merge
 		if (!empty($caller_params)):
 		
 			foreach ($caller_params as $n => $v) {
@@ -482,9 +510,8 @@ class owa_caller extends owa_base {
 		if ($init != true):
 			$this->e->debug('Request Params: '. print_r($this->params, true));
 		endif;
-			
+				
 		if (!empty($this->params['action'])):
-			
 			$result =  $this->performAction($this->params['action']);
 			unset($this->params['action']);
 			
@@ -500,6 +527,7 @@ class owa_caller extends owa_base {
 		else:
 			print "Caller: No view or action param found. I'm not sure what to do here.";
 			return;
+			
 		endif;
 		
 		$init = true;

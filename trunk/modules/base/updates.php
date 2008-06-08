@@ -16,11 +16,12 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
+require_once(OWA_BASE_DIR.'/owa_controller.php');
+
 
 /**
- * Installation View
+ * Update View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,9 +32,9 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_installStartView extends owa_view {
+class owa_updatesView extends owa_view {
 	
-	function owa_installStartView() {
+	function owa_updatesView() {
 		
 		$this->owa_view();
 		$this->priviledge_level = 'guest';
@@ -41,33 +42,45 @@ class owa_installStartView extends owa_view {
 		return;
 	}
 	
-	function construct() {
+	function construct($data) {
 		
-		// check for schema
-		//$api = &owa_coreAPI::singleton();
-		//$installer = $api->modules['base']->installerFactory();
-		//if ($installer->checkForSchema() == false):
-		
-		if (!empty($this->config['install_complete'])):
-			// load body template
-			$this->body->set_template('install_schema_detected.tpl');
-		else:
-			// load body template
-			$this->body->set_template('install_start.tpl');
+		//switch wrapper if OWA is not embedded
+		// needed becasue this view might be rendered before anything else.
+		if ($this->config['is_embedded'] != true):
+			$this->t->set_template('wrapper_public.tpl');
 		endif;
 		
-		//page title
-		$this->t->set('page_title', 'Installation');
+		$this->body->set_template('updates.tpl');// This is the inner template
+		$this->body->set('headline', 'Your database needs to be upgraded...');
+		$this->body->set('modules', $data['modules']);
+		
+	
+	}
+}
 
-		// fetch admin links from all modules
-		
-		$this->body->set('headline', 'Get Started...');
-		
+class owa_updatesController extends owa_controller {
+	
+	function owa_updatesController($params) {
+		$this->owa_controller($params);
+		$this->priviledge_level = 'guest';
+	
 		return;
+	}
+	
+	function action() {
+		
+		$data = array();
+		
+		$api = &owa_coreAPI::singleton();
+				
+		$data['view_method'] = 'delegate';
+		$data['view'] = 'base.updates';
+		$data['modules'] = $api->getModulesNeedingUpdates();
+		
+		return $data;
 	}
 	
 	
 }
-
 
 ?>

@@ -410,7 +410,8 @@
 			'cache_objects'					=> true,
 			'do_not_log_admins'				=> true,
 			'do_not_log_ips'				=> '',
-			'track_feed_links'					=> true
+			'track_feed_links'				=> true,
+			'start_page'					=> 'base.reportDashboard'
 			
 			));
 			

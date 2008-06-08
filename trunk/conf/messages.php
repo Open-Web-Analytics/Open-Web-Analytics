@@ -36,7 +36,7 @@ $_owa_messages = array(
 2001 => array("The e-mail <B>%s</B> was not found in our database. Please check the address and try again.",1),
 2002 => array("<B>Login Failed</B>. Your user name or password did not match.",0),
 2003 => array("Your Account lacks the necessary priviledges to access the requested resource.",0),
-2004 => array("You must login to access the requested resource."),
+2004 => array("You must login to access the requested resource.",0),
 2010 => array("Sucess. Logout Complete.",0),
 
 // Options/Configuration related
@@ -67,7 +67,7 @@ $_owa_messages = array(
 
 //install
 3300 => array("Could not connect to the database. Please check the database connection settings in your configuration file and try again.",0),
-3301 => array("The version of PHP installed on this server is too old. Please upgrade to at least PHP 4."),
+3301 => array("The version of PHP installed on this server is too old. Please upgrade to at least PHP 4.",0),
 3302 => array("Database Schema Installation failed. Please check the error log file for more details.",0),
 3303 => array("Success. Default Site Added.",0),
 3304 => array("Success. Admin User Added.",0),

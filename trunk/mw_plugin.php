@@ -30,6 +30,7 @@ define('OWA_PUBLIC_URL', $wgServer.$wgScriptPath.'/extensions/owa/public/');
 
 // Build OWA's Mediawiki specific config overrides array
 $owa_config = array();
+$wiki_url = $wgScriptPath;
 
 // OWA DATABASE CONFIGURATION 
 // Will use Mediawiki's config valuesunless there are values present in an OWA config file.

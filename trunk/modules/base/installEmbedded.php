@@ -94,6 +94,7 @@ class owa_installEmbeddedController extends owa_controller {
 		
 		// schema was not installed successfully
 		else:
+			$this->e->notice('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');
 			return false;
 		endif;		
 			
