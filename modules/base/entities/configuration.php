@@ -30,8 +30,8 @@
 
 class owa_configuration extends owa_entity {
 	
-	var $id; // BIGINT,
-	var $settings; // varchar(255)
+	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
+	var $settings = array('data_type' => OWA_DTD_TEXT); 
 	
 	function owa_configuration() {
 		

@@ -40,7 +40,8 @@ class owa_entity {
 		
 		foreach ($vars as $k => $v) {
 			
-			$this->$v = new owa_dbColumn();
+			$this->$v = new owa_dbColumn($this->$v);
+			$this->$v->set('name', $v);
 		}
 		
 		return;
@@ -119,6 +120,13 @@ class owa_entity {
 		
 		return $this->$name->value;
 	}
+	
+	function getTableOptions() {
+	
+		return array('table_type' => 'disk');
+	
+	}
+
 	
 }
 

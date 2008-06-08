@@ -16,8 +16,47 @@
 // $Id$
 //
 
+
+define('OWA_DTD_BIGINT', 'BIGINT'); 
+define('OWA_DTD_INT', 'INT');
+define('OWA_DTD_TINYINT', 'TINYINT(1)');
+define('OWA_DTD_TINYINT2', 'TINYINT(2)');
+define('OWA_DTD_TINYINT4', 'TINYINT(4)');
+define('OWA_DTD_BOOLEAN', 'BOOLEAN');
+define('OWA_DTD_SERIAL', 'SERIAL');
+define('OWA_DTD_PRIMARY_KEY', 'PRIMARY KEY');
+define('OWA_DTD_VARCHAR10', 'VARCHAR(10)');
+define('OWA_DTD_VARCHAR255', 'VARCHAR(255)');
+define('OWA_DTD_VARCHAR', 'VARCHAR(%s)');
+define('OWA_DTD_TEXT', 'TEXT'); 
+define('OWA_DTD_INDEX', 'KEY');
+define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT');
+define('OWA_DTD_NOT_NULL', 'NOT NULL');
+define('OWA_DTD_UNIQUE', 'UNIQUE'); 
+define('OWA_DTD_UNIQUE', 'PRIMARY KEY(%s)');
+define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');   
+define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s'); 
+define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s'); 
+define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s'); 
+define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE %s (%s) %s'); 
+define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');  
+define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)');
+define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s WHERE %s');
+define('OWA_SQL_DELETE_ROW', "DELETE from %s WHERE %s = '%s'");
+define('OWA_SQL_CREATE_INDEX', 'CREATE INDEX %s ON %s (%s)');
+define('OWA_SQL_DROP_INDEX', 'DROP INDEX %s ON %s');
+define('OWA_SQL_INDEX', 'INDEX (%s)');
+define('OWA_SQL_BEGIN_TRANSACTION', 'BEGIN');
+define('OWA_SQL_END_TRANSACTION', 'COMMIT');
+define('OWA_DTD_TABLE_TYPE', 'ENGINE = %s');
+define('OWA_DTD_DEFAULT_TABLE_TYPE', 'INNODB');
+define('OWA_DTD_TABLE_TYPE_DISK', 'INNODB');
+define('OWA_DTD_TABLE_TYPE_MEMORY', 'MEMORY');
+
+
+
 /**
- * MySQL Connection class
+ * MySQL Data Access Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -39,24 +78,6 @@ class owa_db_mysql extends owa_db {
 	
 		$this->owa_db();
 		
-		//$connectionString = sprintf('%s', OWA_DB_HOST);	
-		
-		/*$this->connection = mysql_connect(
-			OWA_DB_HOST,
-			OWA_DB_USER,
-			OWA_DB_PASSWORD,
-			true
-    	);
-		
-		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
-		
-		if (!$this->connection || !$this->database_selection):
-			$this->e->alert('Could not connect to database. ');
-			$this->connection_status = false;
-		else:
-			$this->connection_status = true;
-		endif;
-	*/
 		return;
 	}
 	
@@ -72,7 +93,7 @@ class owa_db_mysql extends owa_db {
 		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
 			
 		if (!$this->connection || !$this->database_selection):
-				$this->e->alert('Could not connect to database. ');
+				$this->e->alert('Could not connect to database.');
 				$this->connection_status = false;
 				return false;
 		else:
@@ -118,12 +139,6 @@ class owa_db_mysql extends owa_db {
 		endif;			
 		
 		$this->new_result = $result;
-		
-		// hack for when calling applications catch all mysql errors and you nee to flush the error
-		// this only is an issue with respect to inserts that fail.
-		if ($result == false):
-			;//mysql_ping($this->connection);
-		endif;
 		
 		return $this->new_result;
 		
@@ -236,7 +251,7 @@ class owa_db_mysql extends owa_db {
 			}
 						
 		return $this->query(sprintf(
-					"INSERT into %s (%s) VALUES (%s)",
+					OWA_SQL_INSERT_ROW,
 					$table,
 					$sql_cols,
 					$sql_values)
@@ -273,15 +288,148 @@ class owa_db_mysql extends owa_db {
 		
 		$where = owa_lib::addConstraints($constraints);
 		
-		return $this->query(sprintf("UPDATE %s SET %s WHERE %s", $table, $set, $where));
+		return $this->query(sprintf(OWA_SQL_UPDATE_ROW, $table, $set, $where));
 		
 	}
 	
+	/**
+	 * Deletes Row from a table
+	 *
+	 */
 	function delete($id, $col, $table) {
 		
-		return $this->query(sprintf("DELETE from %s WHERE %s = '%s'", $table, $col, $id));
+		return $this->query(sprintf(OWA_SQL_DELETE_ROW, $table, $col, $id));
 		
 	}
+	
+	/**
+	 * Creates a new table
+	 *
+	 */
+	function createTable($entity) {
+	
+		//create column defs
+		
+		$all_cols = $entity->getColumns();
+		
+		$columns = '';
+	
+		$table_defs = '';
+		
+		$i = 0;
+		$count = count($all_cols);
+		
+		// Control loop
+		foreach ($all_cols as $k => $v){
+			
+			// get column definition 
+			$columns .= $v.' '.$entity->$v->getDefinition();
+						
+			// Add commas to column statement
+			if ($i < $count - 1):
+				
+				$columns .= ', ';
+					
+			endif;	
+			
+			$i++;
+				
+		}
+		
+		// make table options
+		$table_options = '';
+		$options = $entity->getTableOptions();
+		
+		// table type
+		switch ($options['table_type']) {
+		
+			case "disk":
+				$table_type = OWA_DTD_TABLE_TYPE_DISK;
+				break;
+			case "memory":
+				$table_type = OWA_DTD_TABLE_TYPE_MEMORY;
+				break;
+			default:
+				$table_type = OWA_DTD_TABLE_TYPE_DEFAULT;
+	
+		}
+		
+		$table_options .= sprintf(OWA_DTD_TABLE_TYPE, $table_type);
+			
+		return $this->query(sprintf(OWA_SQL_CREATE_TABLE, get_class($entity), $columns, $table_options));
+		
+	}
+	
+	/**
+	 * Drops a table
+	 *
+	 */
+	function dropTable($table_name) {
+	
+		return $this->query(sprintf(OWA_SQL_DROP_TABLE, $table_name));
+	
+	}
+	
+	
+	/**
+	 * Rename a table
+	 *
+	 */
+	function renameTable($table_name, $new_table_name) {
+	
+		return $this->query(sprintf(OWA_SQL_RENAME_TABLE, $table_name, $new_table_name));
+	
+	}
+
+	
+	/**
+	 * Adds new column to table
+	 *
+	 */
+	function addColumn($table_name, $column_name, $column_definition) {
+	
+		return $this->query(sprintf(OWA_SQL_ADD_COLUMN, $table_name. $column_name, $column_definition));
+
+	}
+	
+	/**
+	 * Drops a column from a table
+	 *
+	 */
+	function dropColumn($table_name, $column_name) {
+	
+		return $this->query(sprintf(OWA_SQL_DROP_COLUMN, $table_name. $column_name));
+
+	}
+	
+	/**
+	 * Begins a SQL transaction statement
+	 *
+	 */
+	function beginTransaction() {
+	
+		return $this->query(OWA_SQL_BEGIN_TRANSACTION);
+	}
+	
+	/**
+	 * Ends a SQL transaction statement
+	 *
+	 */
+	function endTransaction() {
+	
+		return $this->query(OWA_SQL_END_TRANSACTION);
+	}
+	
+	/**
+	 * Changes the definition of a column
+	 *
+	 */
+	function modifyColumn($table_name, $column_name, $column_definition) {
+	
+		return $this->query(sprintf(OWA_SQL_MODIFY_COLUMN, $table_name. $column_name, $column_definition));
+
+	}
+
 	
 	function select($values, $constraints, $table) {
 		

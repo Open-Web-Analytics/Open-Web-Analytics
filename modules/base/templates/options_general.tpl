@@ -227,7 +227,7 @@
 	
 	<fieldset name="owa-reports-options" class="options">
 		
-		<legend>Presenation</legend>
+		<legend>Presentation</legend>
 		<? if ($this->config['is_embedded'] == false):?>	
 		<div class="setting" id="reporting_wrapper">	
 			<div class="title">Reporting Template Wrapper</div>

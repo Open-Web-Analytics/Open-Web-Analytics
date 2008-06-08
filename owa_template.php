@@ -473,6 +473,13 @@ class owa_template extends Template {
 	
 	}
 	
+	function setTemplate($file) {
+		
+		$this->set_template($file);
+		return $this->file;
+		
+	}
+	
 	
 }
 

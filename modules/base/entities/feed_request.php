@@ -30,29 +30,33 @@
 
 class owa_feed_request extends owa_entity {
 	
-		var $id; // BIGINT,
-		var $visitor_id; // BIGINT,
-		var $session_id; // BIGINT,
-		var $document_id; // BIGINT,
-		var $ua_id; // VARCHAR(255),
-		var $site_id; // VARCHAR(255),
-		var $host_id; // BIGINT,
-		var $os_id; // VARCHAR(255),
-		var $feed_reader_guid; // VARCHAR(255),
-		var $subscription_id; // BIGINT,
-		var $timestamp; // bigint,
-		var $month; // INT,
-		var $day; // tinyint(2),
-		var $dayofweek; // varchar(10),
-		var $dayofyear; // INT,
-		var $weekofyear; // INT,
-		var $year; //  INT,
-		var $hour; //  tinyint(2),
-		var $minute; //   tinyint(2),
-		var $second; // tinyint(2),
-		var $msec; // int,
-		var $last_req; // bigint,
-		var $feed_format; // VARCHAR(255),
+		var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
+		var $visitor_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
+		var $session_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
+		var $document_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
+		var $ua_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+		var $site_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+		var $site = array('data_type' => OWA_DTD_VARCHAR255); // **** DROP ****
+		var $host_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
+		var $host = array('data_type' => OWA_DTD_VARCHAR255); // **** DROP ****
+		var $os_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+		var $feed_reader_guid = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+		var $subscription_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
+		var $timestamp = array('data_type' => OWA_DTD_BIGINT); // bigint,
+		var $month = array('data_type' => OWA_DTD_INT); // INT,
+		var $day = array('data_type' => OWA_DTD_TINYINT2); // tinyint(2),
+		var $dayofweek = array('data_type' => OWA_DTD_VARCHAR10); // varchar(10),
+		var $dayofyear = array('data_type' => OWA_DTD_INT); // INT,
+		var $weekofyear = array('data_type' => OWA_DTD_INT); // INT,
+		var $year = array('data_type' => OWA_DTD_INT); //  INT,
+		var $hour = array('data_type' => OWA_DTD_TINYINT2); //  tinyint(2),
+		var $minute = array('data_type' => OWA_DTD_TINYINT2); //   tinyint(2),
+		var $second = array('data_type' => OWA_DTD_TINYINT2); // tinyint(2),
+		var $msec = array('data_type' => OWA_DTD_INT); // int,
+		var $last_req = array('data_type' => OWA_DTD_BIGINT); // bigint,
+		var $feed_format = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+		var $ip_address = array('data_type' => OWA_DTD_VARCHAR255); // **** DROP ****
+		var $os = array('data_type' => OWA_DTD_VARCHAR255); // **** DROP ****
 	
 	function owa_feed_request() {
 		

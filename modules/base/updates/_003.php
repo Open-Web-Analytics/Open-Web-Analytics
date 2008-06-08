@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -16,11 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
-
 /**
- * Installation View
+ * Test Update Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,43 +28,31 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_installStartView extends owa_view {
-	
-	function owa_installStartView() {
+
+class owa_003_update extends owa_update {
+
+
+	function up() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
+		$tt = owa_coreAPI::entityFactory('base.testtable');
+		$ret = $tt->createTable();
 		
-		return;
-	}
-	
-	function construct() {
-		
-		// check for schema
-		//$api = &owa_coreAPI::singleton();
-		//$installer = $api->modules['base']->installerFactory();
-		//if ($installer->checkForSchema() == false):
-		
-		if (!empty($this->config['install_complete'])):
-			// load body template
-			$this->body->set_template('install_schema_detected.tpl');
+		if ($ret == true):
+			print 'table testtable2 created';
+			return true;
 		else:
-			// load body template
-			$this->body->set_template('install_start.tpl');
+			print 'table testtable2 creation failed';
+			return false;
 		endif;
 		
-		//page title
-		$this->t->set('page_title', 'Installation');
-
-		// fetch admin links from all modules
 		
-		$this->body->set('headline', 'Get Started...');
-		
-		return;
 	}
 	
+	function down() {
 	
-}
+		return false;
+	}
 
+}
 
 ?>

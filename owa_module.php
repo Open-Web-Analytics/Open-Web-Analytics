@@ -52,6 +52,13 @@ class owa_module extends owa_base {
 	var $version;
 	
 	/**
+	 * Schema Version of Module
+	 *
+	 * @var string
+	 */
+	var $schema_version = 1100;
+	
+	/**
 	 * Name of author of module
 	 *
 	 * @var string
@@ -130,7 +137,21 @@ class owa_module extends owa_base {
 	 * 
 	 * @var array 
 	 */
-	var $entities;
+	var $entities = array();
+	
+	/**
+	 * Required Schema Version
+	 * 
+	 * @var array 
+	 */
+	var $required_schema_version;
+	
+	/**
+	 * Available Updates
+	 * 
+	 * @var array 
+	 */
+	var $updates = array();
 	
 	/**
 	 * Constructor
@@ -261,77 +282,137 @@ class owa_module extends owa_base {
 	}
 	
 	/**
-	 * Installation method for this module
+	 * Registers Entity
 	 * 
-	 * Concrete classes must be placed in the install sub directory and 
-	 * use the following naming convention: owa_install_{module name}_{database type}.
-	 *
+	 */
+	function _addEntity($entity_name) {
+		
+		if (is_array($entity_name)):
+			$this->entities = array_merge($this->entities, $entity_name);
+		else:
+			$this->entities[] = $name;
+		endif;
+		
+		return;
+	}
+	
+	/**
+	 * Installation method
+	 * 
+	 * Creates database tables and sets schema version
+	 * 
 	 */
 	function install() {
 		
-		$obj = $this->installerFactory();
-		//$this->e->notice(print_r($obj, true));
+		$this->e->notice('Starting installation of module: '.$this->name);
 
-		$this->e->notice('starting install');
-		$tables_to_install = $obj->checkForSchema();
+		$errors = '';
+
+		// Install schema
+		if (!empty($this->entities)):
 		
-		$table_errors = '';
-		
-		if (!empty($tables_to_install)):
-		
-			foreach ($tables_to_install as $table) {
+			foreach ($this->entities as $k => $v) {
 			
-				$status = $obj->create($table);
+				$entity = owa_coreAPI::entityFactory($this->name.'.'.$v);
+				//$this->e->debug("about to  execute createtable");
+				$status = $entity->createTable();
 				
-				if ($status == true):
-					$this->e->notice(sprintf("Created %s table.", $table));
-				else:
-					$this->e->err(sprintf("Creation of %s table failed.", $table));
-					$table_errors = 'error';
+				if ($status != true):
+					$this->e->notice("Entity Installation Failed.");
+					$errors = true;
+					//return false;
 				endif;
 				
 			}
-			
+		
 		endif;
 		
-		if ($table_errors != 'error'):
+		// activate module and persist configuration changes 
+		if ($errors != true):
 			
-			// save schema version to configuration
-			$this->c->setSetting($this->name, 'schema_version', $obj->version);
-			// activate module and persist configuration changes 
-			$this->activate();
-	
-			$this->e->notice(sprintf("Schema version %s installation complete.", $obj->version));
-			return true;
+			// run post install hook
+			$ret = $this->postInstall();
+			
+			if ($ret == true):
+				// save schema version to configuration
+				$this->c->setSetting($this->name, 'schema_version', $this->schema_version);
+				//activate the module and save the configuration
+				$this->activate();
+				$this->e->notice("Installation complete.");
+				return true;
+			else:
+				$this->e->notice("Post install proceadure failed.");
+				return true;
+			endif;
 		else:
+			$this->e->notice("Installation failed.");
 			return false;
 		endif;
-				
+
 	}
-	
 	
 	/**
-	 * Install Class Factory 
-	 * 
-	 * @return object Concrete install class for this module
+	 * Post installation hook
+	 *
 	 */
-	function installerFactory($params = array()) {
-		
-		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$this->name.'/install/', 'owa_', 'install_'.$this->name.'_'.OWA_DB_TYPE, $params);
-		
-		$obj->module = $this->name;
-		
-		return $obj;
-		
-	}
+	function postInstall() {
 	
+		return false;
+	}
+		
 	/**
 	 * Checks for and applies schema upgrades for the module
 	 *
 	 */
-	function upgrade() {
+	function update() {
 		
-		return;
+		// list files in a directory
+		$files = owa_lib::listDir(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'updates');
+		//print_r($files);
+		
+		$current_schema_version = $this->c->get($this->name, 'schema_version');
+		
+		// extract sequence
+		foreach ($files as $k => $v) {
+			// the use of %d casts the sequence number as an int which is critical for maintaining the 
+			// order of the keys in the array that we are going ot create that holds the update objs
+			//$n = sscanf($v['name'], '%d_%s', $seq, $classname);
+			$seq = substr($v['name'], 0, -4);
+			
+			settype($seq, "integer");
+			
+			if ($seq > $current_schema_version):
+			
+				if ($seq <= $this->required_schema_version):
+					$this->updates[$seq] = owa_coreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
+					// set schema version from sequence number in file name. This ensures that only one update
+					// class can ever be in use for a particular schema version
+					$this->updates[$seq]->schema_version = $seq;
+				endif;
+			endif;	
+			
+		}
+		
+		// sort the array
+		ksort($this->updates, SORT_NUMERIC);
+		
+		print_r(array_keys($this->updates));
+		
+		foreach ($this->updates as $k => $obj) {
+			
+			$this->e->notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
+			
+			$ret = $obj->apply();
+			
+			if ($ret == true):
+				$this->e->notice("Update Suceeded");
+			else:
+				$this->e->notice("Update Failed");
+				return false;
+			endif;
+		}
+		
+		return true;
 	}
 	
 	/**
@@ -382,9 +463,48 @@ class owa_module extends owa_base {
 	 */
 	function _registerEntities() {
 		
-		return;
+		return false;
 	}
 	
+	/**
+	 * Checks to se if the schema is up to date
+	 *
+	 */
+	function isSchemaCurrent() {
+		
+		$current_schema = $this->c->get($this->name, 'schema_version');
+		
+		if ($current_schema >= $this->required_schema_version):
+			return true;
+		else:
+			return false;
+		endif;
+	}
+	
+	/**
+	 * Registers updates
+	 *
+	 */
+	function _registerUpdates() {
+		
+		
+		
+		return;
+	
+	}
+	
+	/**
+	 * Adds an update class into the update array.
+	 * This should be used to within the _registerUpdates method or else
+	 * it will not get called.
+	 *
+	 */
+	function _addUpdate($sequence, $class) {
+		
+		$this->updates[$sequence] = $class;
+		
+		return true;
+	}
 	
 }
 

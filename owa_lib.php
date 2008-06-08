@@ -739,6 +739,43 @@ class owa_lib {
     	return ((float)$usec + (float)$sec);
 	}
 	
+	/**
+	 * Lists all files in a Directory
+	 *
+	 */
+	function listDir($start_dir='.') {
+
+		$files = array();
+		
+		if (is_dir($start_dir)):
+		
+			$fh = opendir($start_dir);
+			
+			while (($file = readdir($fh)) !== false) {
+			
+				// loop through the files, skipping . and .., and recursing if necessary
+				if (strcmp($file, '.')==0 || strcmp($file, '..')==0) continue;
+				$filepath = $start_dir . DIRECTORY_SEPARATOR . $file;
+				
+				if (is_dir($filepath)):
+					$files = array_merge($files, listDir($filepath));
+				else:
+					array_push($files, array('name' => $file, 'path' => $filepath));
+				endif;
+			}
+			
+			closedir($fh);
+	  
+		else:
+			// false if the function was called with an invalid non-directory argument
+			$files = false;
+		endif;
+	
+	  return $files;
+	
+	}
+
+	
 	
 }
 

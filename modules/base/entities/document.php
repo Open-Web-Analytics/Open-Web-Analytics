@@ -30,10 +30,10 @@
 
 class owa_document extends owa_entity {
 	
-	var $id;
-	var $url; // varchar(255),
-	var $page_title; // varchar(255),
-	var $page_type; // varchar(255),
+	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true);
+	var $url = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	var $page_type = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
 	
 	function owa_document() {
 		

@@ -30,14 +30,14 @@
 
 class owa_host extends owa_entity {
 	
-	var $id; // BIGINT,
-	var $ip_address; // VARCHAR(255),
-	var $host; // VARCHAR(255),
-	var $full_host; // VARCHAR(255),
-	var $city; // varchar(255),
-	var $country; // varchar(255),
-	var $latitude; // varchar(255),
-	var $longitude; // varchar(255),
+	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
+	var $ip_address = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $full_host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	var $city = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	var $country = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	var $latitude = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	var $longitude = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
 	
 	function owa_host() {
 		

@@ -47,8 +47,7 @@ class owa_optionsFlushCacheController extends owa_controller {
 		$this->e->notice("Cache Flushed");
 	
 		$data = array();
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.optionsGeneral';
+		$data['do'] = 'base.optionsGeneral';
 		$data['view_method'] = 'redirect';
 		//$data['configuration'] = $nbsettings;
 		$data['status_code'] = 2500;

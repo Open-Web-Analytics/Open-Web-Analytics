@@ -16,8 +16,12 @@
 // $Id$
 //
 
+require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
+
 /**
- * Referer Entity
+ * Administrative Controller Class
+ *
+ * This controller should be used for internal management functions
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,31 +32,26 @@
  * @since		owa 1.0.0
  */
 
-class owa_referer extends owa_entity {
-	
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $url = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $site = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $query_terms = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $refering_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $snippet = array('data_type' => OWA_DTD_TEXT); // TEXT,
-	var $is_searchengine = array('data_type' => OWA_DTD_TINYINT); // tinyint(1),
 
+class owa_adminController extends owa_controller {
 	
-	function owa_referer() {
+	var $is_admin = true;
+	
+	/**
+	 * Constructor
+	 *
+	 * @param array $params
+	 * @return owa_controller
+	 */
+	function owa_adminController($params) {
 		
-		$this->owa_entity();
+		$this->owa_controller($params);
 		
 		return;
-			
+		
 	}
 	
-	
-	
+		
 }
-
-
 
 ?>

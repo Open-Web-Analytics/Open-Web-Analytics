@@ -42,9 +42,11 @@ class owa_baseModule extends owa_module {
 		$this->version = '1.0';
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
+		$this->required_schema_version = 1;
+		
 		
 		$this->owa_module();
-		
+		$this->c->set('base', 'schema_version', '1');
 		return;
 	}
 	
@@ -54,7 +56,7 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerAdminPanels() {
 		
-		$this->addAdminPanel(array('view' 			=> 'base.optionsGeneral', 
+		$this->addAdminPanel(array('do' 			=> 'base.optionsGeneral', 
 									'priviledge' 	=> 'admin', 
 									'anchortext' 	=> 'Main Configuration',
 									'group'			=> 'General',
@@ -251,8 +253,26 @@ class owa_baseModule extends owa_module {
 	
 	function _registerEntities() {
 		
-		$this->entities[] = 'request';
+		//$this->_addEntity('testtable');
+								
+		$this->_addEntity(array('request', 
+								'session', 
+								'document', 
+								'feed_request', 
+								'click', 
+								'ua', 
+								'referer', 
+								'site', 
+								'visitor', 
+								'host',
+								'exit',
+								'os',
+								'impression', 
+								'configuration'));
+		
 	}
+	
+	
 	
 	
 }

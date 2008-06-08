@@ -8,7 +8,7 @@
 	
 	<body>
 	
-	<?php $this->includeTemplate('css.tpl');?>
+	<?php include($this->setTemplate('css.tpl'));?>
 	
 	<DIV id="header">
 		<table width="100%">
@@ -30,7 +30,7 @@
 	<div class="wrap">
 		
 		
-		<?php $this->includeTemplate('msgs.tpl');?>
+		<?php include($this->setTemplate('msgs.tpl'));?>
 	<BR>
 		<?=$content;?>
 		<?=$body;?>

@@ -72,17 +72,21 @@ class asyncEventProcessor extends owa_caller {
 	 * @access public
 	 */
 	function asyncEventProcessor($config = null) {
+		
 		$this->owa_caller($config);
-				
+		
 		if ($this->config['error_handler'] == 'development'):
-			$this->config['error_handler'] = 'async_development';
+			//$this->config['error_handler'] = 'async_development';
 		endif;
 		
-		//$this->e = &owa_error::get_instance();
-
 		// Turns off async setting so that the proper event queue is created
 		$this->config['async_db'] = false;
+		$this->c->set('base', 'async_db', false);
+		
+		// load event queue
 		$this->eq = &eventQueue::get_instance();
+		
+		// load DAO
 		$this->db = &owa_coreAPI::dbSingleton();
 		
 		// Create Error Logger - NEEDED?
@@ -124,36 +128,40 @@ class asyncEventProcessor extends owa_caller {
 	 *
 	 */
 	function process_events($event_file) {
-		$this->e->info(sprintf('Starting Async Event Processing Run for: %s',
-									$event_file));
-		//check for lock file
-		if (file_exists($this->config['async_log_dir'].$this->config['async_lock_file'])):
-			//read contents of lock file for last PID
-			$lock_file = fopen($this->config['async_log_dir'].$this->config['async_lock_file'], "r") or die ("Could not create lock file");
-				if ($lock_file):
-		   			while (!feof($lock_file)) {
-		       			$former_pid = fgets($lock_file, 4096);
-				    }
-		   			fclose($lock_file);
+		
+		if (file_exists($event_file)):
+			$this->e->info(sprintf('Starting Async Event Processing Run for: %s', $event_file));
+			//check for lock file
+			if (file_exists($this->config['async_log_dir'].$this->config['async_lock_file'])):
+				//read contents of lock file for last PID
+				$lock_file = fopen($this->config['async_log_dir'].$this->config['async_lock_file'], "r") or die ("Could not create lock file");
+					if ($lock_file):
+						while (!feof($lock_file)) {
+							$former_pid = fgets($lock_file, 4096);
+						}
+						fclose($lock_file);
+					endif;
+				//check to see if former PID is still running
+				$ps_check = $this->is_running($former_pid);
+				//if the process is still running, exit.
+				if ($ps_check == true):
+					$this->e->info(sprintf('Previous Process (%d) still active. Terminating Run.',
+										$former_pid));
+					exit;
+				//if it's not running remove the lock file and proceead.
+				else:
+					$this->e->info(sprintf('Process %d is not running. Continuing Run... \n',
+										$former_pid));
+					unlink ($this->config['async_log_dir'].$this->config['async_lock_file']);
+					$this->process_event_log($event_file);
 				endif;
-			//check to see if former PID is still running
-			$ps_check = $this->is_running($former_pid);
-			//if the process is still running, exit.
-			if ($ps_check == true):
-				$this->e->info(sprintf('Previous Process (%d) still active. Terminating Run.',
-									$former_pid));
-				exit;
-			//if it's not running remove the lock file and proceead.
+	
 			else:
-				$this->e->info(sprintf('Process %d is not running. Continuing Run... \n',
-									$former_pid));
-				unlink ($this->config['async_log_dir'].$this->config['async_lock_file']);
 				$this->process_event_log($event_file);
+				
 			endif;
-
 		else:
-			$this->process_event_log($event_file);
-			
+			$this->e->debug("No event file found at: ".$event_file);
 		endif;
 		return;
 	}
@@ -175,6 +183,7 @@ class asyncEventProcessor extends owa_caller {
 		// check to see if event log file exisits
 		
 		if (file_exists($file)):
+			$this->db->connect();
 			if($this->db->connection_status == true):
 				$this->create_lock_file();
 					

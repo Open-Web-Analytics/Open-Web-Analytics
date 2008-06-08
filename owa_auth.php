@@ -204,17 +204,18 @@ class owa_auth extends owa_base {
 	 *
 	 * @return object
 	 */
-	function &get_instance() {
-
-		$c = &owa_coreAPI::configSingleton();
-		$config = $c->fetch('base');
-	
-		$auth = &owa_lib::singleton($config['plugin_dir'].'/auth/', 
-									'owa_auth_',
-									$config['authentication']);
+	function &get_instance($auth_module = '') {
 		
+		if (empty($auth_module)):
+			
+			$c = &owa_coreAPI::configSingleton();
+			$auth_module = $c->get('base', 'authentication');
+			
+		endif;
 		
-	
+		// this needs to not be a singleton
+		$auth = &owa_lib::singleton(OWA_PLUGIN_DIR.'auth'.DIRECTORY_SEPARATOR, 'owa_auth_', $auth_module);
+		
 		return $auth;
 	}
 	

@@ -8,7 +8,7 @@
 					<TR>
 						<TD><a href="<?=$this->makeLink(array('do' => 'base.reportDashboard'));?>">Analytics</a></TD>
 						<TD>|</TD>
-						<TD><a href="<?=$this->makeLink(array('view' => 'base.options'));?>">Admin Settings</a></TD>
+						<TD><a href="<?=$this->makeLink(array('do' => 'base.optionsGeneral'));?>">Admin Settings</a></TD>
 						<TD>|</TD>
 						<TD><a href="http://wiki.openwebanalytics.com">Help</a></TD>
 						<TD>|</TD>

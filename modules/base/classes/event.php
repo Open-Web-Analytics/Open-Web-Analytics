@@ -98,21 +98,21 @@ class owa_event extends owa_base {
 	 */
 	function setTime($timestamp = '') {
 		
-		$this->properties['timestamp'] = $timestamp;
-		$this->properties['year'] = date("Y", $this->properties['timestamp']);
-		$this->properties['month'] = date("n", $this->properties['timestamp']);
-		$this->properties['day'] = date("d", $this->properties['timestamp']);
-		$this->properties['dayofweek'] = date("D", $this->properties['timestamp']);
-		$this->properties['dayofyear'] = date("z", $this->properties['timestamp']);
-		$this->properties['weekofyear'] = date("W", $this->properties['timestamp']);
-		$this->properties['hour'] = date("G", $this->properties['timestamp']);
-		$this->properties['minute'] = date("i", $this->properties['timestamp']);
-		$this->properties['second'] = date("s", $this->properties['timestamp']);
+		$this->set('timestamp', $timestamp);
+		$this->set('year', date("Y", $timestamp));
+		$this->set('month', date("n", $timestamp));
+		$this->set('day', date("d", $timestamp));
+		$this->set('dayofweek', date("D", $timestamp));
+		$this->set('dayofyear', date("z", $timestamp));
+		$this->set('weekofyear', date("W", $timestamp));
+		$this->set('hour', date("G", $timestamp));
+		$this->set('minute', date("i", $timestamp));
+		$this->set('second', date("s", $timestamp));
 		
 		//epoc time
 		list($msec, $sec) = explode(" ", microtime());
-		$this->properties['sec'] = $sec;
-		$this->properties['msec'] = $msec;
+		$this->set('sec', $sec);
+		$this->set('msec', $msec);
 		
 		// Calc time sinse the last request
 		$this->time_since_lastreq = $this->timeSinceLastRequest();
@@ -592,7 +592,17 @@ class owa_event extends owa_base {
 	
 	}
 
-
+	function get($name) {
+		
+		return $this->properties[$name];
+	}
+	
+	
+	function set($name, $value) {
+	
+		$this->properties[$name] = $value;
+		return;
+	}
 	
 }
 

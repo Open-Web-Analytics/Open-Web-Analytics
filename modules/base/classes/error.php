@@ -365,7 +365,8 @@ class owa_error {
 	}
 	
 	function logPhpErrors() {
-	
+		error_reporting(E_ALL);
+		ini_set('display_errors', E_ALL);
 		return set_error_handler(array("owa_error", "handlePhpError"));
 	
 	}
@@ -404,6 +405,22 @@ class owa_error {
 	    $e->debug($err);
 		
 		return;
+	}
+	
+	function backtrace() {
+		
+		$dbgTrace = debug_backtrace();
+		$bt = array();
+		foreach($dbgTrace as $dbgIndex => $dbgInfo) {
+			
+			$bt[$dbgIndex] = array('file' => $dbgInfo['file'], 
+									'line' => $dbgInfo['line'], 
+									'function' => $dbgInfo['function'],
+									'args' => $dbgInfo['args']);
+		}
+		
+		return $bt;
+
 	}
 
 }
