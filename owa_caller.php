@@ -78,6 +78,8 @@ class owa_caller extends owa_base {
 		// Start time
 		$this->start_time = owa_lib::microtime_float();
 		
+		/* LOAD CONFIG FILE */
+		
 		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
 		
 		if (file_exists($file)):
@@ -88,6 +90,9 @@ class owa_caller extends owa_base {
 			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
 		endif;
 		
+		/* SETUP STORAGE ENGINE */
+		
+		// Must be called before any entities are created
 		
 		if (!defined('OWA_DB_TYPE')):
 			owa_coreAPI::setupStorageEngine($config['db_type']);
@@ -95,28 +100,19 @@ class owa_caller extends owa_base {
 			owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
 		endif;
 		
+		/* SETUP CONFIGURATION AND ERROR LOGGER */
 		
-		
-		// Parent Constructor. Sets default config and error logger
+		// Parent Constructor. Sets default config entity and error logger
 		$this->owa_base();
 		
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
-				
+			
+		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 
 		
-		
-		/** 
-		 * Super Global Default Config Overrides
-		 * 
-		 * These are constants that can be defined in the config file, plugin, or caller
-		 * the will override default config values
-		 */
-		
-		
 		/* APPLY CONFIGURATION FILE OVERRIDES */
-		
 		
 		if ($config_file_exists == true):
 			
@@ -148,10 +144,10 @@ class owa_caller extends owa_base {
 			endif;
 			
 		endif;
-			
-		//$this->e->debug('PURL: '.OWA_PUBLIC_URL);			
-		
+					
 		/* DATABASE CONFIGURATION */
+		
+		// Can either be set by calling application or the config file.
 		// This needs to come before the fetch of user overrides from the DB
 		// Constants defined in the config file have the final word
 		// values passed from calling application must be applied prior
@@ -159,38 +155,45 @@ class owa_caller extends owa_base {
 		
 		if (!defined('OWA_DB_TYPE')):
 			define('OWA_DB_TYPE', $config['db_type']);
-		else:
-			$this->c->set('base', 'db_type', OWA_DB_TYPE);
 		endif;
-		
+	
+		$this->c->set('base', 'db_type', OWA_DB_TYPE);
+				
 		if (!defined('OWA_DB_NAME')):
 			define('OWA_DB_NAME',  $config['db_name']);
-		else:
-			$this->c->set('base', 'db_name', OWA_DB_NAME);
 		endif;
 		
+		$this->c->set('base', 'db_name', OWA_DB_NAME);
+				
 		if (!defined('OWA_DB_HOST')):
 			define('OWA_DB_HOST',  $config['db_host']);
-		else:
-			$this->c->set('base', 'db_host', OWA_DB_HOST);
-		endif;
+		endif;		
 		
+		$this->c->set('base', 'db_host', OWA_DB_HOST);
+				
 		if (!defined('OWA_DB_USER')):
 			define('OWA_DB_USER',  $config['db_user']);
-		else:
-			$this->c->set('base', 'db_user', OWA_DB_USER);
 		endif;
+		
+		$this->c->set('base', 'db_user', OWA_DB_USER);
 		
 		if (!defined('OWA_DB_PASSWORD')):
 			define('OWA_DB_PASSWORD',  $config['db_password']);
-		else:
-			$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
-		endif;	
+		endif;
+		
+		$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
+		
 					
 		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
 		
+		if (!defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')):
+			$this->c->set('base', 'do_not_fetch_config_from_db', $config['do_not_fetch_config_from_db']);
+		else:
+			$this->c->set('base', 'do_not_fetch_config_from_db', OWA_CONFIG_DO_NOT_FETCH_FROM_DB);
+		endif;		
+		
 		// Applies config from db or cache
-		// needed for installs when the configuration table does not exist.
+		// check here is needed for installs when the configuration table does not exist.
 		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
 			$this->c->load($this->c->get('base', 'configuration_id'));
 		endif;
