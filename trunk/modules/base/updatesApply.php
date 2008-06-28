@@ -50,25 +50,39 @@ class owa_updatesApplyController extends owa_controller {
 		$api = &owa_coreAPI::singleton();
 		
 		$modules = $api->getModulesNeedingUpdates();
+		//print_r($modules);
+		//return;
 		
 		// foreach do update in order
+		
+		$error = false;
 		
 		foreach ($modules as $k => $v) {
 		
 			$ret = $api->modules[$v]->update();
 			
 			if ($ret != true):
+				$error = true;
 				break;
 			endif;
 		
 		}
-			
-		// add data to container
-		$this->data['status_code'] = '';
-		$this->data['do'] = 'base.optionsGeneral';
-		$this->data['view_method'] = 'delegate';
 		
-		return $this->data;
+		if ($error == true):
+			$data['error_msg'] = 'something went wrong here with the updates.';
+			$data['view'] = 'base.error';
+			$data['view_method'] = 'delegate';			
+		else:
+			
+			// add data to container
+			$data['status_code'] = 3307;
+			$data['do'] = 'base.optionsGeneral';
+			$data['view_method'] = 'redirect';
+		 
+		endif;		
+		
+		return $data;
+	
 	
 	}
 	

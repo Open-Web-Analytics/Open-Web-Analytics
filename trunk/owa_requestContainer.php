@@ -96,9 +96,12 @@ class owa_requestContainer {
 	}
 	
 	function __construct() {
-	
-		$this->php_self = $_SERVER['PHP_SELF'];
+		
+		$this->guid = crc32(microtime().getmypid());
+		
 		$this->cli_args = $_SERVER['argv'];
+		
+		$this->php_self = $_SERVER['PHP_SELF'];
 		$this->gateway_interface = $_SERVER['GATEWAY_INTERFACE'];
 		$this->server_ip_address = $_SERVER['SERVER_ADDR'];
 		$this->server_name = $_SERVER['SERVER_NAME'];
@@ -125,11 +128,10 @@ class owa_requestContainer {
 		$this->remote_port = $_SERVER['REMOTE_PORT'];
 		$this->script_filename = $_SERVER['SCRIPT_FILENAME'];
 		$this->request_uri = $_SERVER['REQUEST_URI'];
-	
 		$this->cookies = $_COOKIE;
 		$this->request = owa_lib::inputFilter($_REQUEST);
 		$this->owa_params = owa_lib::stripParams($this->request);
-		$this->guid = crc32(microtime().getmypid());
+		
 		
 		if(isset($_SERVER['HTTPS'])):
 			$this->is_https = true;
@@ -151,12 +153,12 @@ class owa_requestContainer {
 		return true;
 	}
 	
-	function getOwaParam($name) {
+	function getParam($name) {
 	
 		return $this->owa_params[$name];
 	}
 	
-	function setOwaParam($name, $value) {
+	function setParam($name, $value) {
 		
 		$this->owa_params[$name] = $value;
 		return true;
@@ -165,11 +167,6 @@ class owa_requestContainer {
 	function getCookie($name) {
 	
 		return $this->cookies[$name];
-	}
-	
-	function getHeader($name) {
-	
-		return $this->headers['name'];
 	}
 	
 	function getRequestParam($name) {

@@ -286,7 +286,10 @@ class owa_caller extends owa_base {
 	 */
 	function logEvent($event_type, $caller_params = '') {
 		
-		$this->e->debug(print_r($this->e->backtrace(), true));
+		if ($this->c->get('base', 'error_log_level') > 9):
+			$this->e->debug(print_r($this->e->backtrace(), true));
+		endif;
+		
 		//change config value to incomming site_id
 		if(!empty($caller_params['site_id'])):
 			$this->config['site_id'] = $caller_params['site_id'];
@@ -402,6 +405,7 @@ class owa_caller extends owa_base {
 	 * Authenticated Rendering of view 
 	 *
 	 * @param array $caller_data
+	 * @depricated
 	 * @return string
 	 */
 	function renderView($data) {
@@ -425,7 +429,7 @@ class owa_caller extends owa_base {
 	
 	/**
 	 * Displays a View without user authentication. Takes array of data as input
-	 *
+	 * @depricated
 	 * @param array $data
 	 */
 	function displayView($data) {
@@ -436,60 +440,6 @@ class owa_caller extends owa_base {
 		
 	}
 	
-	/**
-	 * Invokes controller to perform controller
-	 *
-	 * @param $action string
-	 * 
-	 */
-	function performAction($action) {
-		
-		// Load 
-		$controller = $this->api->moduleFactory($action, 'Controller', $this->params);
-		
-		//perfrom authentication
-		//$auth = &owa_auth::get_instance();
-		
-		//$data = $auth->authenticateUser($controller->priviledge_level);
-		
-		// if auth was success then procead to do action specified in the intended controller.
-		//if ($data['auth_status'] == true):
-			$data = $controller->doAction();
-		//endif;
-		
-		// Display view if controller calls for one.
-		if (!empty($data['view']) || !empty($data['action'])):
-		
-			// 
-			if ($data['view_method'] == 'delegate'):
-				return $this->api->displayView($data);
-			
-			// Redirect to a view	
-			elseif ($data['view_method'] == 'redirect'):
-				owa_lib::redirectToView($data);
-				return;
-				
-			// return an image . Will output headers and binary data.
-			elseif ($data['view_method'] == 'image'):
-				return $this->api->displayImage($data);
-			
-			else:
-				return $this->api->displayView($data);
-				
-			endif;
-		
-		elseif(!empty($data['do'])):
-		
-			if ($data['view_method'] == 'redirect'):
-				owa_lib::redirectToView($data);
-				return;
-			endif;
-		endif;
-		
-		return;
-		
-	}
-
 	
 	/**
 	 * Handles OWA internal page/action requests
@@ -501,13 +451,8 @@ class owa_caller extends owa_base {
 		static $init;
 		
 		// Override request parsms with those passed by caller
-		// TODO: make this an array merge
 		if (!empty($caller_params)):
-		
-			foreach ($caller_params as $n => $v) {
-				$this->params[$n] = $v;
-			}
-		
+			$this->params = array_merge($this->params, $caller_params);
 		endif;
 		
 		if ($init != true):
@@ -515,16 +460,16 @@ class owa_caller extends owa_base {
 		endif;
 				
 		if (!empty($this->params['action'])):
-			$result =  $this->performAction($this->params['action']);
+			$result = owa_coreAPI::performAction($this->params['action'], $this->params);
 			unset($this->params['action']);
 			
 		elseif (!empty($this->params['do'])):
-			$result =  $this->performAction($this->params['do']);	
+			$result = owa_coreAPI::performAction($this->params['do'], $this->params);	
 			//unset($this->params['action']);
 			
 		elseif ($this->params['view']):
 			// its a view request so the only data is in whats in the params
-			$result = $this->renderView($this->params);
+			$result = owa_coreAPI::displayView($this->params);
 			unset($this->params['view']);
 			
 		else:

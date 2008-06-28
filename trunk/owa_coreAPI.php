@@ -373,11 +373,20 @@ class owa_coreAPI extends owa_base {
 		return $obj;
 	}
 	
-	function updateFactory($module, $class) {
+	function updateFactory($module, $filename) {
 	
 		require_once(OWA_BASE_CLASS_DIR.'update.php');
 		
-		$obj = owa_coreAPI::moduleGenericFactory($module, 'updates', $class, '_update');
+		//$obj = owa_coreAPI::moduleGenericFactory($module, 'updates', $filename, '_update');
+		$class = 'owa_'.$module.'_'.$filename.'_update';
+	
+		// Require class file if class does not already exist
+		if(!class_exists($class)):	
+			owa_coreAPI::moduleRequireOnce($module, 'updates', $filename);
+		endif;
+			
+		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'updates', '', $class, $params);
+
 		$obj->module_name = $module;
 		return $obj;
 	}
@@ -645,6 +654,122 @@ class owa_coreAPI extends owa_base {
 	function getModulesNeedingUpdates() {
 	
 		return $this->modules_needing_updates;
+	}
+	
+	/**
+	 * Invokes controller to perform controller
+	 *
+	 * @param $action string
+	 * 
+	 */
+	function performAction($action, $params = array()) {
+		
+		// Load 
+		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+		
+		$data = $controller->doAction();
+				
+		// Display view if controller calls for one.
+		if (!empty($data['view']) || !empty($data['action'])):
+		
+			// 
+			if ($data['view_method'] == 'delegate'):
+				return owa_coreAPI::displayView($data);
+			
+			// Redirect to a view	
+			elseif ($data['view_method'] == 'redirect'):
+				owa_lib::redirectToView($data);
+				return;
+				
+			// return an image . Will output headers and binary data.
+			elseif ($data['view_method'] == 'image'):
+				return owa_coreAPI::displayImage($data);
+			
+			else:
+				return owa_coreAPI::displayView($data);
+				
+			endif;
+		
+		elseif(!empty($data['do'])):
+			//print_r($data);
+			owa_lib::redirectToView($data);
+			return;
+			
+		endif;
+		
+		
+		
+	}
+	
+	/**
+	 * Logs an event to the event queue
+	 * 
+	 * This function sets the action to be perfromed, santizes, 
+	 * and adds all of PHP's $_SERVER vars to the $caller_params.
+	 * $_REQUEST vars are already added to $this->params in the constructor.
+	 *
+	 * @param array $caller_params
+	 * @param string $event_type
+	 * @return boolean
+	 */
+	function logEvent($event_type, $caller_params = '') {
+		
+		$c = owa_coreAPI::configSingleton();
+		$e = owa_coreAPI::errorSingleton();
+		$request_params = owa_coreAPI::requestContainer();
+		
+		if ($c->get('base', 'error_log_level') > 9):
+			$e->debug(print_r($e->backtrace(), true));
+		endif;
+		
+		// do not log if the do not log param is set by caller.
+		if ($request_params['do_not_log'] == true):
+			$e->debug("ABORTING LOG ACTION: do not log flag appears to be set");
+			return false;
+		endif;
+		
+		//change config value to incomming site_id
+		if(!empty($caller_params['site_id'])):
+			$c->set('base', 'site_id', $caller_params['site_id']);
+		else:
+			$caller_params['site_id'] = $c->get('base', 'site_id');
+		endif;
+		
+		// do not log if the request is from a reserved IP
+		// ips = $this->c->get('base', 'log_not_log_ips');
+		//	...
+		
+		$params = array();
+		// Add PHP's $_SERVER scope variables to event properties
+		$params['server'] = $_SERVER;
+		
+		// Apply caller's params to event properties
+		if (!empty($caller_params)):
+			$params['caller'] = $caller_params;
+		endif;
+		
+		// set controller to invoke
+		$params['action'] = $event_type;
+		
+		// Filter input
+		$params = owa_lib::inputFilter($params);
+		
+		//Load browscap
+		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $params['server']['HTTP_USER_AGENT']);
+		
+		// Abort if the request is from a robot
+		if ($c->get('base', 'log_robots') != true):
+			if ($bcap->robotCheck() == true):
+				$e->debug("ABORTING LOG ACTION: request appears to be from a robot");
+				return;
+			endif;
+		endif;
+		
+		// Fetch browser capabilities and and apply to event params
+		$params['browscap'] = get_object_vars($bcap->browser);
+	
+		return owa_coreAPI::handleRequest($params);
+		
 	}
 	
 }

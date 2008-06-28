@@ -79,18 +79,13 @@ class owa_observer extends Log_observer {
         $c = &owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
         $this->e = &owa_coreAPI::errorSingleton();
-        $this->api = &owa_coreAPI::singleton();
+        //$this->api = &owa_coreAPI::singleton();
         return;
     }
     
     function handleEvent($action) {
     	
-    	// Create controller, passing event message as params
-    	$controller = $this->api->moduleFactory($action, 'Controller', $this->m);
-    	
-    	// Run controller
-    	$data = $controller->doAction();
-    	$this->e->debug(sprintf("Handled Event with Controller: %s", $action.'Controller'));
+    	$data = owa_coreAPI::performAction($action, $this->m);
     	
     	// Create View if called for
     	if ($data['view']):
@@ -104,9 +99,9 @@ class owa_observer extends Log_observer {
     				$mailer = new owa_mailer;
     				
     				$mailer->Subject = $data['subject'];
-    				$mailer->Body = $this->api->displayView($data);
+    				$mailer->Body = owa_coreAPI::displayView($data);
     				
-    				$mailer->AltBody = $this->api->displayView($data, $data['plainTextView']);
+    				$mailer->AltBody = owa_coreAPI::displayView($data, $data['plainTextView']);
     				$mailer->AddAddress($data['email_address'], $data['name']);
     				
     				$mailer->sendMail();
@@ -119,7 +114,7 @@ class owa_observer extends Log_observer {
     				$mailer = new owa_mailer;
     				
     				$mailer->Subject = $data['subject'];
-    				$mailer->Body = $this->api->displayView($data);
+    				$mailer->Body = owa_coreAPI::displayView($data);
     				
     				$mailer->AddAddress($data['email_address'], $data['name']);
     				

@@ -290,10 +290,15 @@ class owa_module extends owa_base {
 		if (is_array($entity_name)):
 			$this->entities = array_merge($this->entities, $entity_name);
 		else:
-			$this->entities[] = $name;
+			$this->entities[] = $entity_name;
 		endif;
 		
 		return;
+	}
+	
+	function getEntities() {
+		
+		return $this->entities;
 	}
 	
 	/**
@@ -396,7 +401,7 @@ class owa_module extends owa_base {
 		// sort the array
 		ksort($this->updates, SORT_NUMERIC);
 		
-		print_r(array_keys($this->updates));
+		//print_r(array_keys($this->updates));
 		
 		foreach ($this->updates as $k => $obj) {
 			
