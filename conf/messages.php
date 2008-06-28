@@ -45,6 +45,7 @@ $_owa_messages = array(
 2502 => array("The module was deactivated successfully.",0),
 2503 => array("Options reset to Default Values.",0),
 
+
 //User managment
 3000 => array("Success. User Added.", 0),
 3001 => array("Error. That user name is already taken.",0),
@@ -73,6 +74,7 @@ $_owa_messages = array(
 3304 => array("Success. Admin User Added.",0),
 3305 => array("Success. Base Database Schema Installed.",0),
 3306 => array("Error. User id already exists for some reason.",0),
+3307 => array("Updates failed. Check the log file for more details and try again.",0),
 
 // Graph related
 3500 => array("There is no data for\nthis time period.",0),

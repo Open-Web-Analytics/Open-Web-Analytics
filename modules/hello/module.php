@@ -42,9 +42,10 @@ class owa_helloModule extends owa_module {
 		$this->version = '1.0';
 		$this->description = 'Hello world sample module.';
 		$this->config_required = false;
-		$this->required_schema_version = 2;
+		$this->required_schema_version = 1;
 		
 		$this->owa_module();
+		//$this->c->set('hello', 'schema_version', '1');
 		
 		return;
 	}

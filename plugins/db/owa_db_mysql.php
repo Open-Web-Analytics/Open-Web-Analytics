@@ -52,6 +52,7 @@ define('OWA_DTD_TABLE_TYPE', 'ENGINE = %s');
 define('OWA_DTD_DEFAULT_TABLE_TYPE', 'INNODB');
 define('OWA_DTD_TABLE_TYPE_DISK', 'INNODB');
 define('OWA_DTD_TABLE_TYPE_MEMORY', 'MEMORY');
+define('OWA_SQL_ALTER_TABLE_TYPE', 'ALTER TABLE %s ENGINE = %s');
 
 
 
@@ -367,6 +368,16 @@ class owa_db_mysql extends owa_db {
 	function dropTable($table_name) {
 	
 		return $this->query(sprintf(OWA_SQL_DROP_TABLE, $table_name));
+	
+	}
+	
+	/**
+	 * Change table type
+	 *
+	 */
+	function alterTableType($table_name, $engine) {
+	
+		return $this->query(sprintf(OWA_SQL_ALTER_TABLE_TYPE, $table_name, $engine));
 	
 	}
 	

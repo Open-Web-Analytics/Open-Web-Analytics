@@ -95,41 +95,14 @@ class owa_entityManager extends owa_base {
 	 */ 
 	function create() {	
 		
-		$all_cols = $this->entity->getColumns();
-		
-		$cols = array();
-		
-		// Control loop
-		foreach ($all_cols as $k => $v){
-		
-			// drop column is it is marked as auto-incement as DB will take car of that.
-			if ($this->entity->$v->auto_increment == true):
-				break;
-			else:
-				$cols[$v] = $this->entity->$v->value;
-			endif;
-				
-		}
-	
-		// Persist object
-		$status = $this->db->save($cols, get_class($this->entity));
-		
-		// Add to Cache
-		
-		if ($status == true):
-			if ($this->config['cache_objects'] == true):
-				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
-			endif;
-		endif;
-		
-		return $status;
+		return $this->entity->create();
 		
 	}
 	
 	/**
 	 * Create Table
 	 *
-	 * Handled by DB abstraction layer because the SQ associated with this is way too DB specific
+	 * Handled by DB abstraction layer because the SQL associated with this is way too DB specific
 	 */
 	function createTable() {
 		
@@ -234,24 +207,7 @@ class owa_entityManager extends owa_base {
 	 */
 	function update($where = '') {	
 		
-		if(empty($where)):
-			$constraint = array('id' => $this->entity->id->value);
-		else:
-			$constraint = array($where => $this->entity->$where->value);
-		endif;
-		
-		
-		// Persist object
-		$status = $this->db->update($this->_getProperties(), $constraint, get_class($this->entity));
-		
-		// Add to Cache
-		if ($status == true):
-			if ($this->config['cache_objects'] == true):
-				$this->cache->replace(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
-			endif;
-		endif;
-		
-		return $status;
+		$this->entity->update($where);
 		
 	}
 	
@@ -264,26 +220,7 @@ class owa_entityManager extends owa_base {
 	 */
 	function partialUpdate($named_properties, $where) {
 		
-		$properties = array();
-		
-		foreach ($named_properties as $n) {
-			
-			$properties[$n] = $this->entity->$n->value;
-			
-		}
-		
-				
-		// Persist object
-		$status = $this->db->update($properties, $where, get_class($this->entity));
-		
-		// Add to Cache
-		if ($status == true):
-			if ($this->config['cache_objects'] == true):
-				$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);
-			endif;
-		endif;
-		
-		return $status;
+		return $this->entity->partialUpdate($named_properties, $where);
 		
 	}
 	
@@ -294,59 +231,19 @@ class owa_entityManager extends owa_base {
 	 */
 	function delete($id, $col = '') {	
 				
-		if (empty($col)):
-			$col = 'id';
-		endif;
-		
-		// Persist object
-		$status = $this->db->delete($id, $col, get_class($this->entity));
-	
-		// Add to Cache
-		if ($status == true):
-			if ($this->config['cache_objects'] == true):
-				$this->cache->remove(get_class($this->entity), 'id'.$this->entity->id->value);
-			endif;
-		endif;
-		
-		return $status;
-		
+		return $this->entity->delete($id, $col);	
 	}
 	
 	function getByPk($col, $value) {
 		
-		return $this->getByColumn($col, $value);
+		return $this->entity->getByColumn($col, $value);
 		
 	}
 	
 	function getByColumn($col, $value) {
 		
-		$cache_obj = '';
+		return $this->entity->getByColumn($col, $value);
 		
-		if ($this->config['cache_objects'] == true):
-			$cache_obj = $this->cache->get(get_class($this->entity), $col.$value);
-		endif;
-			
-		if (!empty($cache_obj)):
-		
-			$this->entity = $cache_obj;
-					
-		else:
-		
-			$constraint = array($col => $value);
-				
-			$properties = $this->db->select($this->_getProperties(), $constraint, get_class($this->entity));
-			
-			if (!empty($properties)):
-					
-				$this->setProperties($properties);
-				
-				if ($this->config['cache_objects'] == true):
-					$this->cache->set(get_class($this->entity), 'id'.$this->entity->id->value, $this->entity);	
-				endif;		
-			endif;
-		endif;
-		
-		return; 
 	}
 	
 	function find($params = array()) {
@@ -401,18 +298,13 @@ class owa_entityManager extends owa_base {
 		return $this->entity->$name->value = $value;
 	}
 	
-	
+	/**
+	 * Sets Values/Properties
+	 * @depricated use setProperties()
+	 */
 	function setValues($values) {
 		
-		$properties = array_keys(get_object_vars($this->entity));
-		
-		foreach ($properties as $k => $v) {
-				
-				$this->entity->$v->value = $values[$v];
-		
-			}
-		
-		return;
+		return $this->setProperties($values);
 		
 	}
 	

@@ -29,21 +29,30 @@
  */
 
 
-class owa_002_update extends owa_update {
-
+class owa_base_002_update extends owa_update {
 
 	function up() {
 		
-		$tt = owa_coreAPI::entityFactory('base.testtable');
-		$ret = $tt->createTable();
+		$db = owa_coreAPI::dbSingleton();
+		$api = &owa_coreAPI::singleton();
 		
-		if ($ret == true):
-			print 'table testtable created';
-			return true;
-		else:
-			print 'table testtable creation failed';
-			return false;
-		endif;
+		$entities = $api->modules[$this->module_name]->getEntities();
+		
+		foreach ($entities as $k => $v) {
+		
+			$ret = $db->alterTableType($this->c->get('base', 'ns').$v, 'InnoDB');
+			
+			if ($ret == true):
+				$this->e->debug(sprintf('Changed Table %s to InnoDB', $v));
+			else:
+				$this->e->debug(sprintf('Change to Table %s failed', $v));
+				return false;
+			endif;
+		
+		}
+		
+		
+		return true;
 		
 		
 	}

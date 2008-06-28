@@ -569,7 +569,7 @@ class owa_lib {
 	 * @param unknown_type $data
 	 */
 	function redirectToView($data) {
-		
+		print_r($data);
 		$c = &owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
 		
@@ -587,6 +587,7 @@ class owa_lib {
 			endif;
 		}
 		$new_url = sprintf($config['link_template'], $config['main_url'], $get);
+		
 		owa_lib::redirectBrowser($new_url);
 		
 		return;
@@ -758,7 +759,7 @@ class owa_lib {
 				$filepath = $start_dir . DIRECTORY_SEPARATOR . $file;
 				
 				if (is_dir($filepath)):
-					$files = array_merge($files, listDir($filepath));
+					$files = array_merge($files, owa_lib::listDir($filepath));
 				else:
 					array_push($files, array('name' => $file, 'path' => $filepath));
 				endif;
