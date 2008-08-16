@@ -40,9 +40,22 @@ class owa_visitorsUserAgentCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 	
-		$sql = sprintf("
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(distinct sessions.session_id) as count, ua.ua as ua, ua.browser_type");
+		$db->selectFrom('owa_session', 'sessions');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id');
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->groupBy('ua.browser_type');
+		
+		$ret = $db->getOneRow();
+
+		return $ret;
+	
+		/*
+$sql = sprintf("
 		SELECT 
 			count(distinct sessions.session_id) as count,
 			ua.ua as ua,
@@ -66,6 +79,7 @@ class owa_visitorsUserAgentCount extends owa_metric {
 		);
 	
 		return $this->db->get_results($sql);
+*/
 	}
 	
 	

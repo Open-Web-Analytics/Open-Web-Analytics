@@ -40,8 +40,35 @@ class owa_topReferers extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(referer.id) as count,
+									sum(session.num_pageviews) as page_views,
+									url,
+									page_title,
+									site_name,
+									query_terms,
+									snippet,
+									refering_anchortext,
+									is_searchengine");
+									
+		$db->selectFrom('owa_session', 'session');	
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$db->groupBy('referer.url');		
+		$db->orderBy('count');	
+		$db->where('is_searchengine', 1, '!=');
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$ret = $db->getAllRows();
+
+		return $ret;
+
+		
+		
+		/*
+
 		$s = owa_coreAPI::entityFactory('base.session');
 		
 		$r = owa_coreAPI::entityFactory('base.referer');
@@ -66,7 +93,8 @@ class owa_topReferers extends owa_metric {
 		$this->params['orderby'] = array('count');
 	
 		return $s->query($this->params);
-		
+
+*/		
 	}
 	
 	

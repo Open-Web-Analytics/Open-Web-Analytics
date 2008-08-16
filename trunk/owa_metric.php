@@ -51,6 +51,8 @@ class owa_metric extends owa_base {
 	 * @var array
 	 */
 	var $params = array();
+	
+	var $db;
 
 	/**
 	 * Constructor
@@ -58,11 +60,22 @@ class owa_metric extends owa_base {
 	 * @access public
 	 * @return owa_metric
 	 */
-	function owa_metric() {
+	function owa_metric($params = '') {
 
+		return $this->__construct($params);
+	}
+	
+	function __construct($params = '') {
+		
+		if (!empty($params)):
+			$this->params = $params;
+		endif;
+		//print_r($this->params);
 		// Setup time and query periods
 		$this->time_now = owa_lib::time_now();
-		
+		// create timeperiod constraints
+		$this->setTimePeriod($this->params['period']);
+		//print_r($this->params);
 		return;
 	}
 	
@@ -76,12 +89,31 @@ class owa_metric extends owa_base {
 		foreach ($params as $k => $v) {
 			
 			if (!empty($v)):
-				$this->params[$k] = $v;
+				if (is_array($v)):
+					if (!empty($this->params[$k])):
+						$this->params[$k] = array_merge($this->params[$k], $v);
+					endif;
+				else:
+					$this->params[$k] = $v;
+				endif;
+				
+				
 			endif;
 		
 		}
 		
 		return;
+	}
+	
+	function makeTimePeriod($period = '') {
+		
+		if (!empty($period)):	
+			$this->params['period'] = $period;
+			$this->setTimePeriod();
+		endif;
+		
+		return $this->params['constraints']['timestamp'];
+		
 	}
 	
 	function setTimePeriod() {
@@ -93,7 +125,7 @@ class owa_metric extends owa_base {
 				$end = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day'] + 1, $this->time_now['year']); 
 				$start = $end - 3600*24;
 
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
 							
 				break;
 				
@@ -126,21 +158,21 @@ class owa_metric extends owa_base {
 				
 			case "this_week":
 				
-				$this->params['constraints']['weekofyear'] = $this->time_now['weekofyear'];
-				$this->params['constraints']['year'] = $this->time_now['year'];
+				$this->params['constraints']['weekofyear'] = array('operator' => '=', 'value' => $this->time_now['weekofyear']);
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => $this->time_now['year']);
 				
 				break;
 				
 			case "this_month":
 				
-				$this->params['constraints']['month'] = $this->time_now['month'];
-				$this->params['constraints']['year'] = $this->time_now['year'];
+				$this->params['constraints']['month'] = array('operator' => '=', 'value' => $this->time_now['month']);
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => $this->time_now['year']);
 				
 				break;
 				
 			case "this_year":
 				
-				$this->params['constraints']['year'] = $this->time_now['year'];
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => $this->time_now['year']);
 				
 				break;
 				
@@ -149,7 +181,8 @@ class owa_metric extends owa_base {
 				$end = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']); 
 				$start = $end - 3600*24;
 
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 				
 				break;
 				
@@ -161,7 +194,8 @@ class owa_metric extends owa_base {
 				
 				$start = mktime(23, 59, 59, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*$daybound;
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 			
 				break;
 				
@@ -175,8 +209,10 @@ class owa_metric extends owa_base {
 				break;
 				
 			case "last_year":
-				
-				$this->params['constraints']['year'] = $this->time_now['year'] - 1;
+			
+				$bound = $this->time_now['year'] - 1;
+			
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => $bound);
 				
 				break;
 				
@@ -184,23 +220,26 @@ class owa_metric extends owa_base {
 				
 				$bound = mktime(12, 0, 0, $this->time_now['month'], $this->time_now['day'], $this->time_now['year']) - 3600*24*7;
 				
-				$this->params['constraints']['day'] = date("d", $bound);
-				$this->params['constraints']['month'] = date("n", $bound); 
-				$this->params['constraints']['year'] = date("Y", $bound);
+				$this->params['constraints']['day'] = array('operator' => '=', 'value' => date("d", $bound));
+				$this->params['constraints']['month'] = array('operator' => '=', 'value' => date("n", $bound)); 
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => date("Y", $bound));
 				
 				break;
 			
 			case "same_week_last_year":
 				
-				$this->params['constraints']['weekofyear'] = $this->time_now['weekofyear']; 
-				$this->params['constraints']['year'] = $this->time_now['year'] - 1;
+				$this->params['constraints']['weekofyear'] = array('operator' => '=', 'value' => $this->time_now['weekofyear']); 
+				
+				$bound = $this->time_now['year'] - 1;
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => $bound);
 				
 				break;
 				
 			case "same_month_last_year":
 				
-				$this->params['constraints']['month'] = $this->time_now['month']; 
-				$this->params['constraints']['year'] = $this->time_now['year'] - 1;
+				$bound = $this->time_now['year'] - 1;
+				$this->params['constraints']['month'] = array('operator' => '=', 'value' => $this->time_now['month']); 
+				$this->params['constraints']['year'] = array('operator' => '=', 'value' => $bound);
 				
 				break;
 				
@@ -225,7 +264,8 @@ class owa_metric extends owa_base {
 				//$start = $end - 3600*24*29;
 				//$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 
 				
 				break;	
@@ -236,7 +276,8 @@ class owa_metric extends owa_base {
 				
 				$start = $end - 3600*24;
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 				
 				break;
 				
@@ -246,7 +287,8 @@ class owa_metric extends owa_base {
 				
 				$start = mktime(0, 0, 0, $this->params['month'], 0, $this->params['year']);
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 				
 				break;
 				
@@ -255,7 +297,8 @@ class owa_metric extends owa_base {
 				$end = mktime(0, 0, 0, 1, 1, $this->params['year'] + 1);
 				$start = mktime(0, 0, 0, 1, 1, $this->params['year']);
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 				
 				break;	
 				
@@ -264,13 +307,16 @@ class owa_metric extends owa_base {
 				$start = mktime(0, 0, 0, $this->params['month'], $this->params['day'], $this->params['year']); 
 				$end = mktime(0, 0, 0, $this->params['month2'], $this->params['day2'] + 1, $this->params['year2']);
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $start, 'end' => $end);
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 				
 				break;
 				
 			case "time_range":
 				
-				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'start' => $this->params['start_time'], 'end' => $this->params['end_time']);
+				$start = $this->params['start_time'];
+				$end = $this->params['end_time'];
+				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
 				
 				break;
 				
@@ -283,81 +329,57 @@ class owa_metric extends owa_base {
 	}
 	
 
-	/**
-	 * Add constraints into SQL where clause
-	 *
-	 * @param 	array $constraints
-	 * @return 	string $where
-	 * @access 	public
-	 */
-	function add_constraints($constraints) {
+	function setConstraint($name, $value, $operator = '') {
 		
-		if (!empty($constraints)):
-		//print_r($constraints);
-			$this->e->debug(' CONSTRAINT: '. print_r($constraints, true));
-		
-			$count = 0;
-			
-			foreach ($constraints as $key => $value) {
-				
-				if (!empty($value) || $value === 0 || $value === '0' || $value === false):
-					$count++;	
-				endif;
-			}
-			
-			$i = 0;
-			
-			foreach ($constraints as $key => $value) {
-					
-				if (!empty($value) || $value === 0 || $value === '0' || $value === false):
-					$where .= $key . ' = ' . "'$value'";
-					$i++;
-					if ($count != $i):
-						
-						$where .= " AND ";
-						
-					endif;
-	
-				endif;		
-					
-			}
-			
-			if (!empty($where)):
-				
-				return $where = ' AND '.$where;
-			else: 
-				return;
-			endif;
-				
-		else:
-			
-			return;
-					
+		if (empty($operator)):
+			$operator = '=';
 		endif;
 		
-		
-		
-	}
-	
-	/**
-	 * Hook for using summary tables
-	 *
-	 * @param string $table_name
-	 * @return unknown
-	 */
-	function setTable($table_name) {
-		
-		if ($this->config['use_summary_tables']):
-			// Set summary table suffix
-			$table_name = $this->summaryFramework->getTable($table_name, $this->params['period']); 
+		if (!empty($value)):
+			$this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
 		endif;
 		
-		return sprintf("%s%s",
-						$this->config['ns'],
-						$table_name);
-		
+		return;
+
 	}
 	
+	function setLimit($value) {
+		
+		if (!empty($value)):
+			$this->params['limit'] = $value;
+		endif;
+	}
+	
+
+	function getConstraints() {
+	
+		return $this->params['constraints'];
+	}
+	
+	function setOffset($value) {
+		
+		if (!empty($value)):
+			$this->params['offset'] = $value;
+		endif;
+	}
+	
+	function setFormat($value) {
+		if (!empty($value)):
+			$this->params['result_format'] = $value;
+		endif;
+	}
+	
+	function setPeriod($value) {
+		if (!empty($value)):
+			$this->params['period'] = $value;
+		endif;
+	}
+	
+	function setOrder($value) {
+		if (!empty($value)):
+			$this->params['order'] = $value;
+		endif;
+	}
 	
 	/**
 	 * Retrieve Result data for a particular metric
@@ -383,6 +405,12 @@ class owa_metric extends owa_base {
 		return $data;
 	}
 	
+	function generate() {
+		
+		$this->makeTimePeriod();
+		return $this->calculate();
+	
+	}
 }
 
 ?>

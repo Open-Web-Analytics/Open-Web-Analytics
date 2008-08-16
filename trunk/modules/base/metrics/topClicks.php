@@ -40,8 +40,32 @@ class owa_topClicks extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_click');
+		$db->selectColumn("count(id) as count,
+									click_x,
+									click_y,
+									page_width,
+									page_height,
+									dom_element_x,
+									dom_element_y,
+									position");
+		
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->groupBy('position');
+		$db->orderBy('count');
+		$db->order('DESC');
+		
+		return $db->getAllRows();
+
+			
+		
+		/*
+
 		$this->params['select'] = "count(id) as count,
 									click_x,
 									click_y,
@@ -62,6 +86,7 @@ class owa_topClicks extends owa_metric {
 		
 		return $c->query($this->params);
 		
+*/
 	}
 	
 	

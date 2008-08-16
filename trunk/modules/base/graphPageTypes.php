@@ -51,12 +51,11 @@ class owa_graphPageTypesView extends owa_abstractJpGraphView  {
 		
 		$result = $api->getMetric('base.pageTypesCount',array(
 		
-		'result_format'		=> 'inverted_array',
 		'constraints'		=> array('site_id' => $data['site_id'])
 	
 		));
 		
-		//$result = owa_lib::deconstruct_assoc($results);
+		$result = owa_lib::deconstruct_assoc($result);
 		
 		//Graph params
 		

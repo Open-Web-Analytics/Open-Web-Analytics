@@ -79,7 +79,7 @@ class owa_optionsGeneralController extends owa_adminController {
 	var $type = 'options';
 	
 	function owa_optionsGeneralController($params) {
-		$this->owa_controller($params);
+		$this->owa_adminController($params);
 		$this->priviledge_level = 'admin';
 		
 		return;

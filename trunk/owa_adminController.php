@@ -45,10 +45,13 @@ class owa_adminController extends owa_controller {
 	 */
 	function owa_adminController($params) {
 		
-		$this->owa_controller($params);
+		return parent::__construct($params);
 		
-		return;
-		
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 		

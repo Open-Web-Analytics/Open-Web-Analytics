@@ -30,31 +30,53 @@
 
 class owa_latestVisits extends owa_metric {
 	
-	function owa_latestVisits($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+	function owa_latestVisits($params) {
+	
+		return parent::__construct($params);
 		
 	}
 	
-	function generate() {
+	function __construct($params) {
+	
+		return parent::__construct($params);
+	}
+	
+	function calculate() {
+			
+		$db = owa_coreAPI::dbSingleton();
 		
 		$s = owa_coreAPI::entityFactory('base.session');
-		
 		$h = owa_coreAPI::entityFactory('base.host');
 		$ua = owa_coreAPI::entityFactory('base.ua');
 		$d = owa_coreAPI::entityFactory('base.document');
 		$v = owa_coreAPI::entityFactory('base.visitor');
 		$r = owa_coreAPI::entityFactory('base.referer');
-		$this->params['related_objs'] = array('host_id' => $h, 'ua_id' => $ua, 'first_page_id' => $d, 'visitor_id' => $v, 'referer_id' => $r);
-		//$related_objs = array('ua_id' => $ua);
-		$this->setTimePeriod($this->params['period']);
 		
-		return $s->find($this->params);
+		$db->selectFrom($s->getTableName());
 		
+		$db->selectColumn($s->getColumnsSql('session_'));
+		$db->selectColumn($h->getColumnsSql('host_'));
+		$db->selectColumn($ua->getColumnsSql('ua_'));
+		$db->selectColumn($d->getColumnsSql('document_'));
+		$db->selectColumn($v->getColumnsSql('visitor_'));
+		$db->selectColumn($r->getColumnsSql('referer_'));
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
+		
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->orderBy('session_timestamp');
+		$db->order($this->params['order']);
+		$db->limit($this->params['limit']);
+		$db->offset($this->params['offset']);
+		
+		$ret = $db->getAllRows();
+		
+		return $ret;
 	}
 	
 	

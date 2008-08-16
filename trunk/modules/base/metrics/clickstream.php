@@ -40,8 +40,22 @@ class owa_clickstream extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_request', 'request');
+		$db->selectColumn("*");
+		// pass constraints into where clause
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'document_id', 'document.id');
+		$db->multiWhere($this->getConstraints());
+	
+		
+		$ret =  $db->getAllRows();
+
+		return $ret;
+		/*
+
 		$r = owa_coreAPI::entityFactory('base.request');
 		$d = owa_coreAPI::entityFactory('base.document');
 		
@@ -50,7 +64,8 @@ class owa_clickstream extends owa_metric {
 		$this->setTimePeriod($this->params['period']);
 	
 		return $r->find($this->params);
-		
+
+*/		
 	}
 	
 	

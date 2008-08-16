@@ -40,21 +40,21 @@ class owa_visitsFromSearchEnginesCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
-		$this->params['select'] = "count(session.id) as se_count";
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(session.id) as se_count");
+		$db->selectFrom('owa_session', 'session');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
+		$db->where('session.source', 'feed');
+		$db->where('referer.is_searchengine', 1);
 		
-		$this->params['use_summary'] = true;
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
 		
-		$this->setTimePeriod($this->params['period']);
+		$ret = $db->getOneRow();
 		
-		$s = owa_coreAPI::entityFactory('base.session');
-		$ref = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $ref);
-		$this->params['constraints']['referer.is_searchengine'] = 1;
-		
-		return $s->query($this->params);
+		return $ret;
 		
 	}
 	

@@ -62,11 +62,39 @@ class owa_entity {
 		return $properties;	
 	}
 	
-	function getColumns() {
+	function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
 		
 		$all_cols = get_object_vars($this);
+		$table = $this->getTableName();
+		$new_cols = array();
 		
-		return array_keys($all_cols);
+		if (!empty($table_namespace)):	
+			$ns = $table.'.';
+		endif;
+				
+		foreach ($all_cols as $k => $v) {
+			
+			if (!empty($as_namespace)):	 
+				$as =  ' AS '.$as_namespace.$k;
+			endif;
+			
+			$new_cols[] = $ns.$k.$as;
+		}
+		
+		// add implode as string here
+		
+		if ($return_as_string == true):
+			$new_cols = implode(', ', $new_cols);	
+		endif;
+		
+		//print_r($new_cols);
+		return $new_cols; 
+		
+	}
+	
+	function getColumnsSql($as_namespace = '', $table_namespace = true) {
+	
+		return $this->getColumns(true, $as_namespace, $table_namespace);
 		
 	}
 	
@@ -83,6 +111,7 @@ class owa_entity {
 				
 				if (!empty($array[$v])):
 					$this->$v->value = $array[$v];
+					//print $this->getTableName().$v.':'.$this->$v->value;
 				endif;
 				
 			}
@@ -139,7 +168,7 @@ class owa_entity {
 		
 		$all_cols = $this->getColumns();
 		
-		$cols = array();
+		$db->insertInto(get_class($this));
 		
 		// Control loop
 		foreach ($all_cols as $k => $v){
@@ -148,16 +177,15 @@ class owa_entity {
 			if ($this->$v->auto_increment == true):
 				;
 			else:
-				$cols[$v] = $this->$v->value;
+				$db->set($v, $this->get($v));
 			endif;
 				
 		}
 	
 		// Persist object
-		$status = $db->save($cols, get_class($this));
+		$status = $db->executeQuery();
 		
 		// Add to Cache
-		
 		if ($status == true):
 			if ($config->get('base', 'cache_objects') == true):
 				$cache->set(get_class($this), 'id'.$this->id->value, $this);
@@ -178,16 +206,32 @@ class owa_entity {
 		$config = owa_coreAPI::configSingleton();
 		$cache = owa_coreAPI::cacheSingleton();
 		
+		$db->updateTable(get_class($this));
+		
+		// get column list
+		$all_cols = $this->getColumns();
+		
+		// Control loop
+		foreach ($all_cols as $k => $v){
+		
+			// drop column is it is marked as auto-incement as DB will take care of that.
+			if (!empty($this->$v->value)):
+				$db->set($v, $this->get($v));
+			endif;
+				
+		}
+		
 		if(empty($where)):
-			$constraint = array('id' => $this->id->value);
+			$id = $this->get('id');
+			$db->where('id', $id);
+			
 		else:
-			$constraint = array($where => $this->$where->value);
+			$db->where($where, $this->get($where));
 		endif;
 		
-		
 		// Persist object
-		$status = $db->update($this->_getProperties(), $constraint, get_class($this));
-		
+		$status = $db->executeQuery();
+
 		// Add to Cache
 		if ($status == true):
 			if ($config->get('base', 'cache_objects') == true):
@@ -212,17 +256,25 @@ class owa_entity {
 		$config = owa_coreAPI::configSingleton();
 		$cache = owa_coreAPI::cacheSingleton();
 		
-		$properties = array();
+		$db->updateTable(get_class($this));
 		
-		foreach ($named_properties as $n) {
+		foreach ($named_properties as $v) {
 			
-			$properties[$n] = $this->$n->value;
+			if (!empty($this->$v->value)):
+				$db->set($v, $this->get($v));
+			endif;
 			
 		}
 		
-				
+		if(empty($where)):
+			$db->where('id', $this->get('id'));
+		else:
+			$db->where($where, $this->get($where));
+		endif;
+		
 		// Persist object
-		$status = $db->update($properties, $where, get_class($this));
+		$status = $db->executeQuery();
+		
 		
 		// Add to Cache
 		if ($status == true):
@@ -240,18 +292,21 @@ class owa_entity {
 	 * Delete Object
 	 *
 	 */
-	function delete($id, $col = '') {	
+	function delete($value = '', $col = 'id') {	
 		
 		$db = owa_coreAPI::dbSingleton();
 		$config = owa_coreAPI::configSingleton();
 		$cache = owa_coreAPI::cacheSingleton();
-	
-		if (empty($col)):
-			$col = 'id';
+		
+		$db->deleteFrom(get_class($this));
+		
+		if (empty($value)):
+			$value = $this->get('id');
 		endif;
 		
-		// Persist object
-		$status = $db->delete($id, $col, get_class($this));
+		$db->where($col, $value);	
+
+		$status = $db->executeQuery();
 	
 		// Add to Cache
 		if ($status == true):
@@ -294,10 +349,11 @@ class owa_entity {
 			$this->setProperties($cache_obj_properties);
 					
 		else:
-		
-			$constraint = array($col => $value);
-				
-			$properties = $db->select($this->_getProperties(), $constraint, get_class($this));
+			
+			$db->selectFrom(get_class($this));
+			$db->selectColumn('*');
+			$db->where($col, $value);
+			$properties = $db->getOneRow();
 			
 			if (!empty($properties)):
 					
@@ -305,14 +361,18 @@ class owa_entity {
 				
 				if ($config->get('base', 'cache_objects') == true):
 					$cache->set(get_class($this), 'id'.$this->id->value, $this);	
-				endif;		
+				endif;	
+					
 			endif;
+			
 		endif;
 		
 		return; 
 	}
 
-
+	function getTableName() {
+		return get_class($this);
+	}
 
 	
 }

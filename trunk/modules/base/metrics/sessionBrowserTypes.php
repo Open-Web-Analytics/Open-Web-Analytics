@@ -40,7 +40,21 @@ class owa_sessionBrowserTypes extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_session', 'session');
+		$db->selectColumn("count(distinct session.id) as count, ua.ua as ua, ua.browser_type");
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id', 'ua.id');
+		$db->groupBy('ua.browser_type');
+		$db->orderBy('count');
+		
+		return $db->getAllRows();
+
+		/*		
 		
 		$s = owa_coreAPI::entityFactory('base.session');
 		
@@ -59,7 +73,8 @@ class owa_sessionBrowserTypes extends owa_metric {
 		$this->params['orderby'] = array('count');
 	
 		return $s->query($this->params);
-		
+
+*/		
 	}
 	
 	

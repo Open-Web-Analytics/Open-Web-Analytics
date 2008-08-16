@@ -40,9 +40,23 @@ class owa_feedReaderTypesCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+	
+		$db = owa_coreAPI::dbSingleton();
 		
-		$this->params['select'] = "count(distinct feed_request.feed_reader_guid) as count,
+		$db->selectFrom('owa_feed_request', 'feed_request');
+		$db->selectColumn("count(distinct feed_request.feed_reader_guid) as count, ua.ua as ua, ua.browser_type");
+		// pass constraints into where clause
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id', 'ua.id');
+		$db->multiWhere($this->getConstraints());
+		$db->groupBy('ua.browser_type');
+		$db->orderBy('count');
+		$db->order('DESC');		
+		
+		return $db->getOneRow();
+		
+		/*
+$this->params['select'] = "count(distinct feed_request.feed_reader_guid) as count,
 									ua.ua as ua,
 									ua.browser_type";
 		
@@ -58,7 +72,8 @@ class owa_feedReaderTypesCount extends owa_metric {
 		$this->params['orderby'] = array('count');
 		$this->params['order'] = 'desc';
 		return $f->query($this->params);
-		
+
+*/		
 	}
 	
 	

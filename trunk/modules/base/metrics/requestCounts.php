@@ -40,8 +40,24 @@ class owa_requestCounts extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_request', 'request');
+		$db->selectColumn("count(distinct request.visitor_id) as unique_visitors, 
+							count(request.session_id) as sessions, 
+							count(request.id) as page_views");
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+		
+		return $db->getOneRow();
+
+		
+		
+		
+		/*
+
 		$this->params['select'] = "count(distinct request.visitor_id) as unique_visitors, 
 									count(request.session_id) as sessions, 
 									count(request.id) as page_views";
@@ -53,6 +69,7 @@ class owa_requestCounts extends owa_metric {
 		$r = owa_coreAPI::entityFactory('base.request');
 		
 		return $r->query($this->params);
+*/
 		
 	}
 	

@@ -40,8 +40,23 @@ class owa_dashCounts extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+
+		$db->selectFrom('owa_session');
+		$db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
+							sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
+							count(session.id) as sessions, 
+							sum(session.num_pageviews) as page_views");
+		
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+
+		return $db->getOneRow();
+		
+		/*
+
 		$this->params['select'] = "count(distinct session.visitor_id) as unique_visitors, 
 			sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
 			count(session.id) as sessions, 
@@ -55,6 +70,7 @@ class owa_dashCounts extends owa_metric {
 		
 		return $s->query($this->params);
 		
+*/
 	}
 	
 	

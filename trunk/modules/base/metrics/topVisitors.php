@@ -40,23 +40,20 @@ class owa_topVisitors extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
-		$s = owa_coreAPI::entityFactory('base.session');
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(visitor_id) as count, visitor_id as vis_id, user_name, user_email");					
+		$db->selectFrom('owa_session');
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->groupBy('vis_id');
+		$db->orderBy('count');
 		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(visitor_id) as count,
-									visitor_id as vis_id,
-									user_name,
-									user_email";
-								
-		$this->params['groupby'] = array('vis_id');
-		
-		$this->params['orderby'] = array('count');
-	
-		return $s->query($this->params);
-		
+		$ret = $db->getAllRows();
+
+		return $ret;
+				
 	}
 	
 	

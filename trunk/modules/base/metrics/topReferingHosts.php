@@ -40,8 +40,29 @@ class owa_topReferingHosts extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(session.id) as count, referer.site");
+									
+		$db->selectFrom('owa_session', 'session');
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$db->groupBy('referer.site');		
+		$db->orderBy('count');	
+		$db->order('DESC');
+		$db->where('referer.id', 0, '!=');
+		
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$ret = $db->getAllRows();
+
+		return $ret;
+
+		
+		/*
+
 		$this->params['select'] = "count(session.id) as count, referer.site";
 		
 		$this->setTimePeriod($this->params['period']);
@@ -57,6 +78,7 @@ class owa_topReferingHosts extends owa_metric {
 		$this->params['constraints']['referer.id'] = array('operator' => '!=', 'value' => 0);
 		
 		return $s->query($this->params);
+*/
 		
 	}
 	

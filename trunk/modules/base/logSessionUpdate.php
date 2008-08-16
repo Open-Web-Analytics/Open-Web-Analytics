@@ -53,6 +53,7 @@ class owa_logSessionUpdateController extends owa_controller {
 		// increment number of page views
 		$s->set('num_pageviews', $s->get('num_pageviews') + 1);
 		
+		print $num;
 		// update timestamp
 		$s->set('last_req', $this->params['last_req']);
 		

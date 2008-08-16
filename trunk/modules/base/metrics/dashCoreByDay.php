@@ -40,7 +40,33 @@ class owa_dashCoreByDay extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_session', 'session');
+		
+		$db->selectColumn("session.month, 
+							session.day, 
+							session.year, 
+							count(distinct session.visitor_id) as unique_visitors, 
+							count(session.id) as sessions, 
+							sum(session.num_pageviews) as page_views");
+									
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->groupBy('day');
+		$db->groupBy('month');
+		$db->orderBy('year');
+		$db->orderBy('month');
+		$db->orderBy('day');
+		
+		$ret = $db->getAllRows();
+		
+		return $ret;
+		
+		
+/*
 		
 		$this->params['select'] = "session.month, 
 			session.day, 
@@ -49,7 +75,6 @@ class owa_dashCoreByDay extends owa_metric {
 			count(session.id) as sessions, 
 			sum(session.num_pageviews) as page_views ";
 		
-		$this->params['use_summary'] = true;
 		
 		$this->params['groupby'] = array('day', 'month');
 
@@ -60,7 +85,8 @@ class owa_dashCoreByDay extends owa_metric {
 		$s = owa_coreAPI::entityFactory('base.session');
 		
 		return $s->query($this->params);
-		
+
+*/		
 	}
 	
 	
