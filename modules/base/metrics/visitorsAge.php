@@ -40,28 +40,32 @@ class owa_visitorsAge extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$v = owa_coreAPI::entityFactory('base.visitor');
-		
-		$this->params['related_objs'] = array('visitor_id' => $v);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(distinct session.visitor_id) as count,
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(distinct session.visitor_id) as count,
 									visitor.first_session_year,
 									visitor.first_session_month,
 									visitor.first_session_day,
-									visitor.first_session_timestamp as timestamp";
-								
-		$this->params['groupby'] = array('visitor.first_session_year', 'visitor.first_session_month', 'visitor.first_session_day');
+									visitor.first_session_timestamp as timestamp");
+									
+		$db->selectFrom('owa_session', 'session');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
 		
-		$this->params['orderby'] = array('visitor.first_session_year', 'visitor.first_session_month', 'visitor.first_session_day');
-	
-		return $s->query($this->params);
+		$db->groupBy('visitor.first_session_year');
+		$db->groupBy('visitor.first_session_month');
+		$db->groupBy('visitor.first_session_day');
 		
+		$db->orderBy('visitor.first_session_year');
+		$db->orderBy('visitor.first_session_month');
+		$db->orderBy('visitor.first_session_day');
+		
+		$ret = $db->getAllRows();
+
+		return $ret;
+			
 	}
 	
 	

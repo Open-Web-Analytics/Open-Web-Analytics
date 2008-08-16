@@ -40,8 +40,32 @@ class owa_pageTypesCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+
+		$db->selectFrom('owa_request', 'request');
+		$db->selectColumn("count(request.id) as count,
+									document.page_title,
+									document.page_type,
+									document.url,
+									document.id");
+		
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER,'owa_document', 'document', 'document_id', 'document.id');
+		$db->groupBy('document.page_type');
+		$db->orderBy('count');
+		
+		return $db->getAllRows();
+
+		
+		
+		
+		/*
+
+	
 		$r = owa_coreAPI::entityFactory('base.request');
 		
 		$d = owa_coreAPI::entityFactory('base.document');
@@ -61,7 +85,8 @@ class owa_pageTypesCount extends owa_metric {
 		$this->params['orderby'] = array('count');
 		
 		return $r->query($this->params);
-		
+
+*/		
 	}
 	
 	

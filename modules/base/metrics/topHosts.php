@@ -40,7 +40,32 @@ class owa_topHosts extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_session', 'session');
+		$db->selectColumn("count(session.host_id) as count,
+									host.id,
+									host.host,
+									host.full_host,
+									host.ip_address");
+		
+
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_host', 'host', 'host_id', 'host.id');
+		$db->groupBy('host.id');
+		$db->orderBy('count');
+		$db->order('DESC');
+		
+		return $db->getAllRows();
+
+		
+		/*
+
+		
 		
 		$this->params['select'] = "count(session.host_id) as count,
 									host.id,
@@ -60,6 +85,7 @@ class owa_topHosts extends owa_metric {
 	
 		return $s->query($this->params);
 		
+*/
 	}
 	
 	

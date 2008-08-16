@@ -66,39 +66,6 @@ class owa_entityManager extends owa_base {
 		
 	}
 	
-	function _getProperties() {
-		
-		$vars = get_object_vars($this->entity);
-		
-		$properties = array();
-		
-		foreach ($vars as $k => $v) {
-			
-			$properties[$k] = $v->value;
-			
-		}
-		
-		return $properties;	
-	}
-	
-	function getColumns() {
-		
-		$all_cols = get_object_vars($this->entity);
-		
-		return array_keys($all_cols);
-		
-	}
-	
-	/**
-	 * Persist new object
-	 *
-	 */ 
-	function create() {	
-		
-		return $this->entity->create();
-		
-	}
-	
 	/**
 	 * Create Table
 	 *
@@ -199,7 +166,15 @@ class owa_entityManager extends owa_base {
 		return;
 	}
 	
-	
+	/**
+	 * Persist new object
+	 *
+	 */ 
+	function create() {	
+		
+		return $this->entity->create();
+		
+	}
 	
 	/**
 	 * Update all properties of an Existing object
@@ -224,7 +199,6 @@ class owa_entityManager extends owa_base {
 		
 	}
 	
-	
 	/**
 	 * Delete Object
 	 *
@@ -246,26 +220,15 @@ class owa_entityManager extends owa_base {
 		
 	}
 	
-	function find($params = array()) {
+	/**
+	 * Sets Values/Properties
+	 * @depricated use setProperties()
+	 */
+	function setValues($values) {
 		
-		
-		$params['primary_obj'] = $this->entity;
-		
-		return $this->db->getObjs($params);
+		return $this->entity->setProperties($values);
 		
 	}
-	
-	function query($params) {
-		
-		$this->params['primary_obj'] = $this->entity;
-		
-		if (!empty($params)):
-			return $this->db->selectQuery(array_merge($this->params, $params));
-		else:
-			return $this->db->selectQuery($this->params);
-		endif;
-	}
-	
 	
 	/**
 	 * Sets object attributes
@@ -274,23 +237,9 @@ class owa_entityManager extends owa_base {
 	 */
 	function setProperties($array) {
 		
-		$properties = $this->getColumns();
-		
-		foreach ($properties as $k => $v) {
-				
-				if (!empty($array[$v])):
-					$this->entity->$v->value = $array[$v];
-				endif;
-				
-			}
+		$this->entity->setProperties($array);
 		
 		return;
-	}
-	
-	function setGuid($string) {
-		
-		return owa_lib::setStringGuid($string);
-		
 	}
 	
 	function set($name, $value) {
@@ -298,51 +247,276 @@ class owa_entityManager extends owa_base {
 		return $this->entity->$name->value = $value;
 	}
 	
-	/**
-	 * Sets Values/Properties
-	 * @depricated use setProperties()
-	 */
-	function setValues($values) {
-		
-		return $this->setProperties($values);
-		
-	}
-	
 	function get($name) {
 		
 		return $this->entity->$name->value;
 	}
 	
+	function _getProperties() {
+		
+		return $this->entity->_getProperties();
+		
+	}
+	
+	function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
+		
+		return $this->entity->getColumns($return_as_string, $as_namespace, $table_namespace);
+		
+	}
+	
+	function getColumnsSql($as_namespace = '', $table_namespace = true) {
+	
+		return $this->entity->getColumnsSql($as_namespace, $table_namespace);
+
+	}
+	
+	/**
+	 * 
+	 * @depricated
+	 */
+	function find($params = array()) {
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom(get_class($this->entity), $db->removeNs($this->entity->getTableName()));
+		
+		$values = $this->entity->getColumns();
+		
+		$primary_obj_ns = $db->removeNs(get_class($this->entity));
+		
+		foreach ($values as $k => $v) {
+			
+			if (empty($params['related_objs'])):
+				$db->selectColumn($v);
+			else:
+				$db->selectColumn($primary_obj_ns.'.'.$v, $primary_obj_ns.'_'.$v);
+			endif;
+			
+		}
+		
+		$db->selectFrom(get_class($this->entity), $ns);
+
+		// add related objects
+		if(!empty($params['related_objs'])):
+		
+			foreach ($params['related_objs'] as $fk => $v_obj) {
+			
+				$values = $v_obj->entity->getColumns();
+				
+				$ns = $db->removeNs(get_class($v_obj->entity));
+				
+				foreach ($values as $k_values => $v_values) {
+			
+						$db->selectColumn($ns.'.'.$v_values, $ns.'_'.$v_values);
+					
+				}
+				
+				$for_key = $primary_obj_ns . '.' . $fk;
+				$pk = $ns . '.id';
+				
+				$db->join(OWA_SQL_JOIN_LEFT_OUTER, get_class($v_obj->entity), $ns, $for_key, $pk);
+
+			}
+		
+		endif;
+		
+		
+		if(!empty($params['constraints'])):
+			foreach ($params['constraints'] as $k_con => $v_con) {
+				
+				if (is_array($v_con)):
+					$db->where($k_con, $v_con['value'], $v_con['operator']);
+				else:
+					$db->where($k_con, $v_con);
+				endif;
+			}
+		endif;
+		
+		return $db->getAllRows();
+		
+	}
+	
+	/**
+	 * 
+	 * @depricated
+	 */
+	function query($params) {
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$primary_obj_ns = $db->removeNs(get_class($this->entity));
+		
+		if (!empty($params)):
+			if (!empty($this->params)):	
+				$params = array_merge($this->params, $params);
+			endif;
+		endif;
+	
+		// construct FROM
+		$db->selectFrom(get_class($this->entity), $db->removeNs($this->entity->getTableName()));
+		$db->selectColumn($params['select']);
+		$pns = $db->removeNs($this->entity->getTableName());
+		// add related objects
+		if(!empty($params['related_objs'])):
+		
+			foreach ($params['related_objs'] as $fk => $v_obj) {
+			
+				//$values = $v_obj->entity->getColumns();
+				
+				$ns = $db->removeNs(get_class($v_obj->entity));
+				
+				//foreach ($values as $k_values => $v_values) {
+			
+				//		$db->selectColumn($ns.'.'.$v_values, $ns.'_'.$v_values);
+					
+				//}
+				
+				$for_key = $primary_obj_ns . '.' . $fk;
+				$pk = $ns . '.id';
+				
+				$db->join(OWA_SQL_JOIN_LEFT_OUTER, get_class($v_obj->entity), $ns, $for_key, $pk);
+
+			}
+		
+		endif;
+
+		
+		
+		if(!empty($params['constraints'])):
+			foreach ($params['constraints'] as $k_con => $v_con) {
+				
+				$db->where($k_con, $v_con['value'], $v_con['operator']);
+				
+			}
+		endif;
+						
+		// construct GROUP BY
+		
+		if(!empty($params['groupby'])):
+		
+			if (is_array($params['groupby'])):
+			
+				foreach ($params['groupby'] as $groupby) {
+			
+					$db->groupBy($groupby);
+			
+				}
+			else:
+				$db->groupBy($params['groupby']);
+			endif;
+		
+		endif;
+		
+		// construct ORDER
+		
+		if(!empty($params['orderby'])):
+		
+			if (is_array($params['orderby'])):
+			
+				foreach ($params['orderby'] as $orderby) {
+			
+					$db->groupBy($orderby);
+			
+				}
+			else:
+				$db->orderBy($params['groupby']);
+			endif;
+		
+		endif;
+		
+		if(!empty($params['order'])):
+			$db->order($params['order']);
+		endif;
+		
+		// construct LIMIT
+		
+		if(!empty($params['limit'])):
+			$db->limit($params['order']);	
+		endif;
+		
+		// construct OFFSET
+		
+		if(!empty($params['offset'])):
+			$db->offset($params['offset']);
+		endif;
+		
+		if(!empty($params['result_format'])):
+			$db->setFormat($params['result_format']);
+		endif;
+
+		return $db->getAllRows();
+	
+		
+		
+	}
+	
+	/**
+	 * 
+	 * @depricated
+	 */
 	function addRelatedObject($foreign_key, $obj) {
 	
 		return $this->params['related_objs'][$foreign_key] = $obj;
 	
 	}
 	
+	/**
+	 * 
+	 * @depricated
+	 */
 	function addConstraint($col, $value) {
 	
 		return $this->params['constraints'][$col] = $value;
 	
 	}
 	
+	/**
+	 * 
+	 * @depricated
+	 */
 	function addGroupBy($col) {
 		
 		return $this->params['groupby'][] = $col;
 	}
 	
+	/**
+	 * 
+	 * @depricated
+	 */
 	function addOrderBy($col) {
 		
 		return $this->params['orderby'][] = $col;
 	}
 	
+	/**
+	 * 
+	 * @depricated
+	 */
 	function setOrder($flag) {
 		
 		return $this->params['order'] = $flag;
 	}
 	
+	/**
+	 * 
+	 * @depricated
+	 */
 	function setSelect($string) {
 		
 		return $this->params['select'] = $string;
+	
+	}
+	
+	
+	function setGuid($string) {
+		
+		return owa_lib::setStringGuid($string);
+		
+	}
+	
+	function getTableName() {
+	
+		return $this->entity->getTableName();
 	
 	}
 	

@@ -40,8 +40,28 @@ class owa_topReferingKeywords extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(session.id) as count, referer.query_terms");
+									
+		$db->selectFrom('owa_session', 'session');
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$db->groupBy('referer.query_terms');		
+		$db->orderBy('count');	
+		$db->order('DESC');
+		$db->where('referer.id', 0, '!=');
+		$db->where('referer.query_terms', ' ', '!=');		
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$ret = $db->getAllRows();
+
+		return $ret;
+
+		/*
+
 		$this->params['select'] = "count(session.id) as count, referer.query_terms";
 		
 		$this->setTimePeriod($this->params['period']);
@@ -58,7 +78,8 @@ class owa_topReferingKeywords extends owa_metric {
 		$this->params['constraints']['referer.query_terms'] = array('operator' => '!=', 'value' => '');	
 		
 		return $s->query($this->params);
-		
+
+*/		
 	}
 	
 	

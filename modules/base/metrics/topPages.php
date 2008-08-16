@@ -28,37 +28,50 @@
  * @since		owa 1.0.0
  */
 
-class owa_toppages extends owa_metric {
+class owa_topPages extends owa_metric {
 	
-	function owa_topPages($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+	function owa_topPages($params) {
+	
+		return $this->__construct($params);
 		
 	}
 	
-	function generate() {
-					
+	function __construct($params) {
+	
+		return parent::__construct($params);
+	}
+
+	
+	function calculate() {
+			
+		$db = owa_coreAPI::dbSingleton();
+				
 		$r = owa_coreAPI::entityFactory('base.request');
-		$r->addRelatedObject('document_id', owa_coreAPI::entityFactory('base.document'));
+		$d = owa_coreAPI::entityFactory('base.document');
 		
-		$r->setSelect("count(request.document_id) as count,
+		//$r->addRelatedObject('document_id', owa_coreAPI::entityFactory('base.document'));
+		$db->selectFrom($r->getTableName(), 'request');
+		$db->selectColumn("count(request.document_id) as count,
 						document.page_title,
 						document.page_type,
 						document.url,
 						document.id as document_id");
-				
-		$this->setTimePeriod($this->params['period']);
-				
-		$r->addGroupBy('document.id');
-		$r->addOrderBy('count');
-		$r->setOrder('DESC');
-		$r->addConstraint('document.page_type', array('operator' => '!=', 'value' => 'feed'));
 		
-		return $r->query($this->params);
+				
+		//$this->setTimePeriod($this->params['period']);
+		
+		$db->where('document.page_type', 'feed', '!=');
+
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER,$d->getTableName(), 'document', 'document_id', 'document.id');
+		$db->groupBy('document.id');
+		$db->orderBy('count');
+		$db->order('DESC');
+		
+		
+		return $db->getAllRows();
 		
 	}
 	

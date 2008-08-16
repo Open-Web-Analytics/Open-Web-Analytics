@@ -19,7 +19,8 @@
 		<TD valign="top" id="trend_graph">
 		
 			<img src="<?=$this->graphLink(array('view' => 'base.graphDashboardTrend', 'period' => 'last_thirty_days', 'site_id' => $params['site_id'])); ?>">
-		
+			
+			<?=$this->getWidget('base.dashboardTrendWidget', 'graph', array('height' => 300, 'width' => 900));?>
 		</TD>	
 	</TR>
 	<TR>
@@ -60,7 +61,7 @@
 			</fieldset>
 			
 			<fieldset id="top_referers">
-				<legend>Top Referering Web Pages</legend>
+				<legend>Top Referring Web Pages</legend>
 				<? include ('report_top_referers.tpl');?>
 			</fieldset>
 				

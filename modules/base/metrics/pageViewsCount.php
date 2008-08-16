@@ -40,7 +40,22 @@ class owa_pageViewsCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_session', 'session');
+		$db->selectColumn("sum(session.num_pageviews) as page_views");
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+		
+		return $db->getOneRow();
+
+
+		
+		/*
+
+		
 		
 		$s = owa_coreAPI::entityFactory('base.session');
 		
@@ -49,7 +64,8 @@ class owa_pageViewsCount extends owa_metric {
 		$this->params['select'] = "sum(session.num_pageviews) as page_views";
 	
 		return $s->query($this->params);
-		
+
+*/		
 	}
 	
 	

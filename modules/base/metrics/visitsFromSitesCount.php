@@ -42,7 +42,28 @@ class owa_visitsFromSitesCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(session.id) as site_count");
+									
+		$db->selectFrom('owa_session', 'session');
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+			
+		$db->where('referer_id', 0, '!=');
+		$db->where('referer.source', ' ');
+		$db->where('referer.is_searchengine', 1, '!=');
+		
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+	
+		$ret = $db->getOneRow();
+
+		return $ret;
+
+		/*
+
 		
 		$this->params['select'] = "count(session.id) as site_count";
 		
@@ -59,7 +80,8 @@ class owa_visitsFromSitesCount extends owa_metric {
 		$this->params['constraints']['source'] = array('operator' => '=', 'value' => '');
 		
 		return $s->query($this->params);
-		
+
+*/		
 	}
 	
 	

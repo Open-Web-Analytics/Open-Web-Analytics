@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Options Reset Controller
@@ -30,10 +30,10 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_optionsResetController extends owa_controller {
+class owa_optionsResetController extends owa_adminController {
 	
 	function owa_optionsResetController($params) {
-		$this->owa_controller($params);
+		$this->owa_adminController($params);
 		$this->priviledge_level = 'admin';
 		
 		return;

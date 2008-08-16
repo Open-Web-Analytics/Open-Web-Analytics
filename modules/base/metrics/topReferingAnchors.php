@@ -40,9 +40,30 @@ class owa_topReferingAnchors extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
-		$this->params['select'] = "count(session.id) as count, referer.refering_anchortext";
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(session.id) as count, referer.refering_anchortext");
+									
+		$db->selectFrom('owa_session', 'session');
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$db->groupBy('referer.refering_anchortext');		
+		$db->orderBy('count');	
+		$db->order('DESC');
+		$db->where('referer.id', 0, '!=');
+		$db->where('referer.refering_anchortext', ' ', '!=');
+		$db->where('referer.is_searchengine', 0);
+		
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+
+		$ret = $db->getAllRows();
+
+		return $ret;
+		
+		/*
+$this->params['select'] = "count(session.id) as count, referer.refering_anchortext";
 		
 		$this->setTimePeriod($this->params['period']);
 		
@@ -59,6 +80,7 @@ class owa_topReferingAnchors extends owa_metric {
 		$this->params['constraints']['referer.is_searchengine'] = array('operator' => '=', 'value' => 0);	
 		
 		return $s->query($this->params);
+*/
 		
 	}
 	

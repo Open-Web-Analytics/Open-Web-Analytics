@@ -776,7 +776,35 @@ class owa_lib {
 	
 	}
 
+	function makeDateArray($result, $format) {
+		
+		$timestamps = array();
+			
+			foreach ($result as $row) {
+				
+				$timestamps[]= mktime(0,0,0,$row['month'],$row['day'],$row['year']);
+				
+			}
+		
+		return owa_lib::makeDates($timestamps, $format);
+	}
 	
+	function makeDates($timestamps, $format) { 
+		
+		sort($timestamps);
+			
+			$new_dates = array();
+			
+			foreach ($timestamps as $timestamp) {
+				
+				$new_dates[] = date($format, $timestamp);
+				
+			}
+			
+		return $new_dates;
+		
+	}
+
 	
 }
 

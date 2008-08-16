@@ -40,16 +40,18 @@ class owa_sessionsCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
-		$this->params['select'] = "count(session.id) as count";
+		$db = owa_coreAPI::dbSingleton();
 		
-		$this->setTimePeriod($this->params['period']);
+		$db->selectFrom('owa_session', 'session');
+		$db->selectColumn("count(session.id) as count");
 		
-		$s = owa_coreAPI::entityFactory('base.session');
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
 				
-		return $s->query($this->params);
-		
+		return $db->getOneRow();
+
 	}
 	
 	

@@ -8,10 +8,10 @@
 	</head>
 	
 	<body>
-		<div class="host_app_nav"><img src="<?=$this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="/index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div>
+		<div class="host_app_nav"><img src="<?=$this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div>
 		<div id="header"><? include($this->setTemplate('header.tpl'));?></div>
 		<?php include($this->setTemplate('msgs.tpl'));?>
 		<?=$body;?>
-		<div class="host_app_nav"><img src="<?=$this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="/index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div>
+		<div class="host_app_nav"><img src="<?=$this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div>
 	</body>
 </html>

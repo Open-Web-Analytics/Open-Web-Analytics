@@ -40,28 +40,27 @@ class owa_topEntryPages extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
-		$s = owa_coreAPI::entityFactory('base.session');
+		$db = owa_coreAPI::dbSingleton();
 		
-		$d = owa_coreAPI::entityFactory('base.document');
-		
-		$this->params['related_objs'] = array('first_page_id' => $d);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(session.id) as count,
+		$db->selectFrom('owa_session', 'session');
+		$db->selectColumn("count(session.id) as count,
 									document.page_title,
 									document.page_type,
 									document.url,
-									document.id";
-								
-		$this->params['groupby'] = array('session.first_page_id');
+									document.id");
 		
-		$this->params['orderby'] = array('count');
+
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'first_page_id', 'document.id');
+		$db->groupBy('session.last_page_id');
+		$db->orderBy('count');
 		
-		return $s->query($this->params);
-		
+		return $db->getAllRows();
+
+
 	}
 	
 	

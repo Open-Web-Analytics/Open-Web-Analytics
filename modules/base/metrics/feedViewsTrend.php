@@ -40,8 +40,20 @@ class owa_feedViewsTrend extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+
+		$db->selectFrom('owa_feed_request');
+		$db->selectColumn("count(id) as fetch_count, count(distinct feed_reader_guid) as reader_count, year, month, day");
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+
+		return $db->getAllRows();
+
+		
+		/*
+
 		$this->params['select'] = "count(id) as fetch_count,
 									count(distinct feed_reader_guid) as reader_count,
 									year,
@@ -54,7 +66,8 @@ class owa_feedViewsTrend extends owa_metric {
 		$f = owa_coreAPI::entityFactory('base.feed_request');
 		
 		return $f->query($this->params);
-		
+
+*/		
 	}
 	
 	

@@ -40,7 +40,34 @@ class owa_pageViewsByDay extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+		
+		$db = owa_coreAPI::dbSingleton();
+
+		$db->selectFrom('owa_session', 'session');
+		$db->selectColumn("sum(session.num_pageviews) as page_views,
+									session.month, 
+									session.day, 
+									session.year");
+		
+		// pass constraints into where clause
+		$db->multiWhere($this->getConstraints());
+
+		if (array_key_exists('groupby', $this->params)):
+			$db->groupBy($this->params['groupby']);
+		else:
+			$db->groupBy('session.day');
+		endif;
+		
+		$db->orderBy('session.year');
+		$db->orderBy('session.month');
+		$db->orderBy('session.day');
+		
+		
+		return $db->getAllRows();
+		
+		/*
+
 		
 		$s = owa_coreAPI::entityFactory('base.session');
 		
@@ -56,6 +83,7 @@ class owa_pageViewsByDay extends owa_metric {
 	
 		return $s->query($this->params);
 		
+*/
 	}
 	
 	

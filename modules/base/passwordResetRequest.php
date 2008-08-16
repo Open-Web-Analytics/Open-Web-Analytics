@@ -17,7 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Password Reset Request View 
@@ -64,10 +64,10 @@ class owa_passwordResetRequestView extends owa_view {
  * @since		owa 1.0.0
  */
 
-class owa_passwordResetRequestController extends owa_controller {
+class owa_passwordResetRequestController extends owa_adminController {
 	
 	function owa_passwordResetRequestController($params) {
-		$this->owa_controller($params);
+		$this->owa_adminController($params);
 		$this->priviledge_level = 'guest';
 	
 		return;

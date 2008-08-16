@@ -360,4 +360,105 @@ class owa_view extends owa_base {
 	
 }
 
+class owa_areaBarsFlashChartView extends owa_base {
+
+	function owa_areaBarsFlashChartView() {
+	
+		return owa_areaBarsFlashChartView::__construct();
+	}
+	
+	function __construct() {
+		
+		return $this->owa_base();
+		
+	}
+
+	function assembleView($data) {
+		
+		include_once(OWA_INCLUDE_DIR.'open-flash-chart.php' );
+		
+		$g = new graph();
+		//$g->title($data['title'], '{font-size: 20px;}' );
+		$g->bg_colour = '#FFFFFF';
+		$g->x_axis_colour('#cccccc', '#ffffff');
+		$g->y_axis_colour('#cccccc', '#cccccc');
+		//$g->set_inner_background( '#FFFFFF', '#', 90 );
+		
+		// y2 series
+		$g->set_data($data['y']['series']);
+		$g->bar( 100, '#FF9900', $data['y']['label'], 10 );
+
+		// y series
+		$g->set_data($data['y2']['series']);
+		// width: 2px, dots: 3px, area alpha: 25% ...
+		$g->area_hollow( 1, 3, 60, '#99CCFF', $data['y2']['label'], 12, '#99CCFF' );
+		
+		
+		$g->set_x_labels($data['x']['series']);
+		$g->set_x_label_style( 10, '#000000', 0, 2 );
+		$g->set_x_axis_steps( 2 );
+		$g->set_x_legend( $data['x']['label'], 12, '#000000' );
+		
+		$g->set_y_min( 0 );
+		//$g->set_y_max( 225 );
+		
+		//$g->y_label_steps( 15 );
+		//$g->set_y_legend( '', 12, '#C11B01' );
+		
+		return $g->render();
+	
+	}
+
+}
+
+class owa_pieFlashChartView extends owa_base {
+
+	function owa_pieFlashChartView() {
+	
+		return owa_pieFlashChartView::__construct();
+	}
+	
+	function __construct() {
+		
+		return $this->owa_base();
+		
+	}
+
+	function assembleView($data) {
+		
+		include_once(OWA_INCLUDE_DIR.'open-flash-chart.php' );
+		
+		$g = new graph();
+		
+		//
+		// PIE chart, 60% alpha
+		//
+		$g->pie(60,'#505050','{font-size: 12px; color: #404040;');
+		//
+		// pass in two arrays, one of data, the other data labels
+		//
+		$g->pie_values($data['values'], $data['labels']);
+		//
+		// Colours for each slice, in this case some of the colours
+		// will be re-used (3 colurs for 5 slices means the last two
+		// slices will have colours colour[0] and colour[1]):
+		//
+		$g->pie_slice_colours( array('#d01f3c','#356aa0','#C79810') );
+		
+		$g->set_tool_tip( '#val#%' );
+		
+		if (array_key_exists('title', $data)):
+			$g->title($data['title'], '{font-size:18px; color: #d01f3c}' );
+		endif;
+		
+		return $g->render();
+	
+	}
+
+}
+
+
+
+
+
 ?>

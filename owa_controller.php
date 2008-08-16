@@ -93,14 +93,19 @@ class owa_controller extends owa_base {
 	 */
 	function owa_controller($params) {
 	
+		return owa_controller::__construct($params);
+		
+	}
+	
+	function __construct($params) {
+	
 		$this->owa_base();
 		$this->params = $params;
-		
 		// sets the auth module. requires a configuration object.
 		$this->_setAuthModule();
 		
 		return;
-		
+	
 	}
 	
 	/**
@@ -129,7 +134,8 @@ class owa_controller extends owa_base {
 		endif;		
 		
 		//perfrom authentication
-		// TODO: make the auth module configurable by the controller
+		// TODO: create authSingleton() to hold an array of auth objects
+		
 		$auth = &owa_auth::get_instance();
 		
 		$data = $auth->authenticateUser($this->priviledge_level);

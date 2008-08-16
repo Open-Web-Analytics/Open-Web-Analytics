@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
 
 /**
@@ -31,10 +31,10 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_optionsModulesController extends owa_controller {
+class owa_optionsModulesController extends owa_adminController {
 	
 	function owa_optionsModulesController($params) {
-		$this->owa_controller($params);
+		$this->owa_adminController($params);
 		$this->priviledge_level = 'admin';
 		
 		return;

@@ -85,14 +85,12 @@ class owa_reportDashboardController extends owa_reportController {
 		
 		));
 
-		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
-		
-			'constraints'	=> array('site_id'	=> $this->params['site_id']),
-			'limit'			=> 15,
-			'orderby'		=> array('session.timestamp'),
-			'order'			=> 'DESC'
-		
-		));
+		// Latest Visits	
+		$lv = $api->metricFactory('base.latestVisits');
+		$lv->setConstraint('site_id', $this->params['site_id']);
+		$lv->setLimit(15);
+		$lv->setOrder(OWA_SQL_DESCENDING); 
+		$data['latest_visits'] = $lv->generate();
 		
 		$data['top_pages_data'] = $api->getMetric('base.topPages', array(
 			

@@ -140,6 +140,27 @@ class owa_coreAPI extends owa_base {
 		
 	}
 	
+	function authSingleton() {
+			
+		static $auth_modules;
+		$auth_mdules = array();
+		
+		if (empty($auth_modules['plugin'])):
+			
+			$c = &owa_coreAPI::configSingleton();
+			$plugin = $c->get('base', 'authentication');
+			
+		endif;
+		
+		// this needs to not be a singleton
+		$auth_modules[$plugin] = &owa_lib::singleton(OWA_PLUGIN_DIR.'auth'.DIRECTORY_SEPARATOR, 'owa_auth_', $plugin);
+		
+		return $auth_modules[$plugin];
+
+		
+		return;
+	}
+	
 	function &configSingleton($params = array()) {
 		
 		static $config;
@@ -248,6 +269,65 @@ class owa_coreAPI extends owa_base {
 		return;
 	}
 	
+		
+	function _loadEntities() {
+		
+		foreach ($this->modules as $k => $module) {
+			
+			foreach ($module->entities as $entitiy_k => $entitiy_v) {
+			
+				$this->entities[] = $module->name.$entitiy_v;
+				
+			}
+		}
+		
+		return;
+	}
+		
+	function moduleRequireOnce($module, $class_dir, $file) {
+		
+		if (!empty($class_dir)):
+		
+			$class_dir .= DIRECTORY_SEPARATOR;
+			
+		endif;
+		
+		return require_once(OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php');
+	}
+	
+	function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+		
+		list($module, $file) = split("\.", $modulefile);
+		$class = $class_ns.$file.$class_suffix;
+	
+		// Require class file if class does not already exist
+		if(!class_exists($class)):	
+			owa_coreAPI::moduleRequireOnce($module, '', $file);
+		endif;
+			
+		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
+		
+		//if (isset($obj->module)):
+			$obj->module = $module;
+		//endif;
+		
+		return $obj;
+	}
+	
+	function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+		
+		$class = $class_ns.$file.$class_suffix;
+	
+		// Require class file if class does not already exist
+		if(!class_exists($class)):	
+			owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
+		endif;
+			
+		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.$sub_directory, '', $class, $params);
+		
+		return $obj;
+	}
+	
 	/**
 	 * Produces Module Classes (module.php)
 	 *  
@@ -264,121 +344,14 @@ class owa_coreAPI extends owa_base {
 		return owa_lib::factory(OWA_BASE_CLASSES_DIR.$module, 'owa_', $module.'Module');
 		
 	}
+
 	
-	function _loadEntities() {
-		
-		foreach ($this->modules as $k => $module) {
-			
-			foreach ($module->entities as $entitiy_k => $entitiy_v) {
-			
-				$this->entities[] = $module->name.$entitiy_v;
-				
-			}
-		}
-		
-		return;
-	}
-	
-	
-	function displayImage($data) {
-		
-		header('Content-type: image/gif');
-		header('P3P: CP="'.$this->config['p3p_policy'].'"');
-		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-		header('Cache-Control: no-store, no-cache, must-revalidate');
-		header('Cache-Control: post-check=0, pre-check=0', false);
-		header('Pragma: no-cache');
-		
-		print owa_coreAPI::displayView($data);
-		
-		return;
-		
-	}
-	
-	
-	/**
-	 * Displays a View without user authentication. Takes array of data as input
-	 *
-	 * @param array $data
-	 * @param string $viewfile a specific view file to use
-	 * @return string
-	 * 
-	 */
-	function displayView($data, $viewfile = '') {
-		
-		if (empty($viewfile)):
-			$viewfile = $data['view'];
-		endif;
-		
-		$view =  owa_coreAPI::moduleFactory($viewfile, 'View', $params);
-		
-		return $view->assembleView($data);
-		
-	}
-	
-	function displaySubView($data, $viewfile = '') {
-		
-		if (empty($viewfile)):
-			$viewfile = $data['view'];
-		endif;
-		
-		$view =  owa_coreAPI::subViewFactory($viewfile);
-		
-		return $view->assembleView($data);
-		
-	}
-	
-	function moduleRequireOnce($module, $class_dir, $file) {
-		
-		if (!empty($class_dir)):
-		
-			$class_dir .= DIRECTORY_SEPARATOR;
-			
-		endif;
-		
-		return require_once(OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php');
-	}
-	
-	function moduleFactory($modulefile, $class_suffix = null, $params = '') {
-		
-		list($module, $file) = split("\.", $modulefile);
-		$class = 'owa_'.$file.$class_suffix;
-	
-		// Require class file if class does not already exist
-		if(!class_exists($class)):	
-			owa_coreAPI::moduleRequireOnce($module, '', $file);
-		endif;
-			
-		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
-		
-		//if (isset($obj->module)):
-			$obj->module = $module;
-		//endif;
-		
-		return $obj;
-	}
-	
-	function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '') {
-		
-		$class = 'owa_'.$file.$class_suffix;
-	
-		// Require class file if class does not already exist
-		if(!class_exists($class)):	
-			owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
-		endif;
-			
-		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.$sub_directory, '', $class, $params);
-		
-		return $obj;
-	}
-	
-	function updateFactory($module, $filename) {
+	function updateFactory($module, $filename, $class_ns = 'owa_') {
 	
 		require_once(OWA_BASE_CLASS_DIR.'update.php');
 		
 		//$obj = owa_coreAPI::moduleGenericFactory($module, 'updates', $filename, '_update');
-		$class = 'owa_'.$module.'_'.$filename.'_update';
+		$class = $class_ns.$module.'_'.$filename.'_update';
 	
 		// Require class file if class does not already exist
 		if(!class_exists($class)):	
@@ -403,9 +376,9 @@ class owa_coreAPI extends owa_base {
 		return $subview;
 	}
 	
-	function &supportClassFactory($module, $class, $params = array()) {
+	function &supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 		
-		$obj = &owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, 'owa_', $class, $params);
+		$obj = &owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, $class_ns, $class, $params);
 		$obj->module = $module;
 		
 		return $obj;
@@ -447,28 +420,7 @@ class owa_coreAPI extends owa_base {
 		return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
 				
 	}
-	
-	/**
-	 * Convienence method for generating metrics
-	 *
-	 * @param unknown_type $entity_name
-	 * @return unknown
-	 */
-	function getMetric($metric_name, $params) {
 		
-		if (!class_exists('owa_metric')):
-		
-			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-			
-		endif;
-		
-		$m = owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $this->params, false);
-		
-		$m->applyOverrides($params);
-		
-		return $m->generate();
-	}
-	
 	/**
 	 * Factory for generating graphs
 	 *
@@ -490,10 +442,10 @@ class owa_coreAPI extends owa_base {
 	 * @param array $params
 	 * @return unknown
 	 */
-	function moduleSpecificFactory($modulefile, $class_dir, $class_suffix = null, $params = '', $add_module_name = true) {
+	function moduleSpecificFactory($modulefile, $class_dir, $class_suffix = null, $params = '', $add_module_name = true, $class_ns = 'owa_') {
 		
 		list($module, $file) = split("\.", $modulefile);
-		$class = 'owa_'.$file.$class_suffix;
+		$class = $class_ns.$file.$class_suffix;
 		
 		// Require class file if class does not already exist
 		if(!class_exists($class)):	
@@ -511,6 +463,57 @@ class owa_coreAPI extends owa_base {
 		
 	}
 	
+	/**
+	 * Convienence method for generating metrics
+	 *
+	 * @param unknown_type $entity_name
+	 * @return unknown
+	 */
+	function getMetric($metric_name, $params) {
+		
+		$m = owa_coreAPI::metricFactory($metric_name);
+		
+		if (array_key_exists('constraints', $params)):
+			
+			foreach ($params['constraints'] as $k => $v) {
+				
+				if(is_array($v)):
+					$m->setConstraint($k, $v[1], $v[0]);
+				else:
+					$m->setConstraint($k, $value);	
+				endif;
+				
+			}
+			
+			unset($params['constraints']);
+			
+		endif;
+		
+		$m->applyOverrides($params);
+		
+		return $m->generate();
+	}
+	
+	/**
+	 * Convienence method for generating metrics
+	 *
+	 * @param unknown_type $entity_name
+	 * @return unknown
+	 */
+	function metricFactory($metric_name) {
+		
+		if (!class_exists('owa_metric')):
+		
+			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
+			
+		endif;
+		
+		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $this->params, false);
+		
+	}
+
+
+
 	
 	/**
 	 * Returns a consolidated list of admin/options panels from all active modules 
@@ -588,51 +591,7 @@ class owa_coreAPI extends owa_base {
 		return strnatcmp($a['order'], $b['order']);
 	}
 	
-	/**
-	 * Strip a URL of certain GET params
-	 *
-	 * @return string
-	 */
-	function stripDocumentUrl($url) {
 		
-		if ($this->config['clean_query_string'] == true):
-		
-			if (!empty($this->config['query_string_filters'])):
-				$filters = str_replace(' ', '', $this->config['query_string_filters']);
-				$filters = explode(',', $filters);
-			else:
-				$filters = array();
-			endif;
-			
-			// OWA specific params to filter
-			array_push($filters, $this->config['source_param']);
-			array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
-			
-			//print_r($filters);
-			
-			foreach ($filters as $filter => $value) {
-				
-	          $url = preg_replace(
-	            '#\?' .
-	            $value .
-	            '=.*$|&' .
-	            $value .
-	            '=.*$|' .
-	            $value .
-	            '=.*&#msiU',
-	            '',
-	            $url
-	          );
-	          
-	        }
-		
-	    endif;
-     	//print $url;
-     	
-     	return $url;
-		
-	}
-	
 	function getActiveModules() {
 	
 		$config = $this->c->config->get('settings');
@@ -771,6 +730,109 @@ class owa_coreAPI extends owa_base {
 		return owa_coreAPI::handleRequest($params);
 		
 	}
+	
+	function displayImage($data) {
+		
+		header('Content-type: image/gif');
+		header('P3P: CP="'.$this->config['p3p_policy'].'"');
+		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
+		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+		header('Cache-Control: no-store, no-cache, must-revalidate');
+		header('Cache-Control: post-check=0, pre-check=0', false);
+		header('Pragma: no-cache');
+		
+		print owa_coreAPI::displayView($data);
+		
+		return;
+		
+	}
+	
+	
+	/**
+	 * Displays a View without user authentication. Takes array of data as input
+	 *
+	 * @param array $data
+	 * @param string $viewfile a specific view file to use
+	 * @return string
+	 * 
+	 */
+	function displayView($data, $viewfile = '') {
+		
+		if (empty($viewfile)):
+			$viewfile = $data['view'];
+		endif;
+		
+		$view =  owa_coreAPI::moduleFactory($viewfile, 'View', $params);
+		
+		return $view->assembleView($data);
+		
+	}
+	
+	function displaySubView($data, $viewfile = '') {
+		
+		if (empty($viewfile)):
+			$viewfile = $data['view'];
+		endif;
+		
+		$view =  owa_coreAPI::subViewFactory($viewfile);
+		
+		return $view->assembleView($data);
+		
+	}
+	
+	/**
+	 * Strip a URL of certain GET params
+	 *
+	 * @return string
+	 */
+	function stripDocumentUrl($url) {
+		
+		if ($this->config['clean_query_string'] == true):
+		
+			if (!empty($this->config['query_string_filters'])):
+				$filters = str_replace(' ', '', $this->config['query_string_filters']);
+				$filters = explode(',', $filters);
+			else:
+				$filters = array();
+			endif;
+			
+			// OWA specific params to filter
+			array_push($filters, $this->config['source_param']);
+			array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
+			
+			//print_r($filters);
+			
+			foreach ($filters as $filter => $value) {
+				
+	          $url = preg_replace(
+	            '#\?' .
+	            $value .
+	            '=.*$|&' .
+	            $value .
+	            '=.*$|' .
+	            $value .
+	            '=.*&#msiU',
+	            '',
+	            $url
+	          );
+	          
+	        }
+		
+	    endif;
+     	//print $url;
+     	
+     	return $url;
+		
+	}
+	
+	function getRequestParam($name) {
+		
+		$r = owa_coreAPI::requestContainerSingleton();
+		return $r->getParam($name);
+		
+	}
+
+
 	
 }
 

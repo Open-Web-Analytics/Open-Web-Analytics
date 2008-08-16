@@ -40,8 +40,22 @@ class owa_visitorsList extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
 		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
+		$db->selectFrom('owa_session', 'session');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
+		
+		$ret = $db->getAllRows();
+
+		return $ret;
+		
+		
+		/*
+
 		$s = owa_coreAPI::entityFactory('base.session');
 		
 		$v = owa_coreAPI::entityFactory('base.visitor');
@@ -56,6 +70,7 @@ class owa_visitorsList extends owa_metric {
 								
 		return $s->query($this->params);
 		
+*/
 		
 	}
 	

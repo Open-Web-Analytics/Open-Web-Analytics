@@ -40,22 +40,20 @@ class owa_visitsFromDirectNavCount extends owa_metric {
 		
 	}
 	
-	function generate() {
+	function calculate() {
+	
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectColumn("count(session.id) as count");
+		$db->selectFrom('owa_session', 'session');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
+		$db->where('referer.is_searchengine', 0);
+		$db->where('source', ' ');
+		// pass constraints set by caller into where clause
+		$db->multiWhere($this->getConstraints());
 		
-		$this->params['select'] = "count(session.id) as count";
-		
-		$this->params['use_summary'] = true;
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		$ref = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $ref);
-		$this->params['constraints']['referer_id'] = array('operator' => '=', 'value' => '0');
-		$this->params['constraints']['source'] = array('operator' => '=', 'value' => '');
-		
-		return $s->query($this->params);
+		$ret = $db->getOneRow();
+
+		return $ret;
 		
 	}
 	
