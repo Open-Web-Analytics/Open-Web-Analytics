@@ -299,7 +299,7 @@ class owa_coreAPI extends owa_base {
 		
 		list($module, $file) = split("\.", $modulefile);
 		$class = $class_ns.$file.$class_suffix;
-	
+		//print $class;
 		// Require class file if class does not already exist
 		if(!class_exists($class)):	
 			owa_coreAPI::moduleRequireOnce($module, '', $file);
@@ -368,7 +368,7 @@ class owa_coreAPI extends owa_base {
 		
 		list($module, $class) = split("\.", $subview);
 		
-		owa_lib::moduleRequireOnce($module, $class);
+		//owa_lib::moduleRequireOnce($module, $class);
 	
 		$subview =  owa_lib::moduleFactory($module, $class.'View', $params);
 		$subview->is_subview = true;

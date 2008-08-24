@@ -578,7 +578,7 @@ class owa_template extends Template {
 	
 	}
 	
-	function getWidget($widget, $format, $params = '') {
+	function getWidget($widget, $format, $params = array()) {
 		
 		if (empty($params)):
 			$params = array();
@@ -586,10 +586,9 @@ class owa_template extends Template {
 		
 		$params['widget'] = $widget;
 		$params['format'] = $format;
+		$params['initial-view'] = true;
 		
-		$api = owa_coreAPI::singleton();
-		
-		return $api->performAction('base.widget', $params);
+		return owa_coreAPI::performAction($widget, $params);
 	}
 	
 }

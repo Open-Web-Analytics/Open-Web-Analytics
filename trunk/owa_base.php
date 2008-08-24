@@ -74,12 +74,18 @@ class owa_base {
 	 */
 	function owa_base() {
 		
+		return owa_base::__construct();
+
+	}
+	
+	function __construct() {
+	
 		$this->e = &owa_coreAPI::errorSingleton();
 		$this->c = &owa_coreAPI::configSingleton();
 		$this->config = &$this->c->fetch('base');
 		
 		return;
-
+	
 	}
 	
 	/**

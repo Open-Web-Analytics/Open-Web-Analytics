@@ -51,8 +51,13 @@ class owa_metric extends owa_base {
 	 * @var array
 	 */
 	var $params = array();
-	
-	var $db;
+		
+	/**
+	 * The lables for calculated measures
+	 *
+	 * @var array
+	 */
+	var $labels = array();
 
 	/**
 	 * Constructor
@@ -62,7 +67,7 @@ class owa_metric extends owa_base {
 	 */
 	function owa_metric($params = '') {
 
-		return $this->__construct($params);
+		return owa_metric::__construct($params);
 	}
 	
 	function __construct($params = '') {
@@ -411,6 +416,29 @@ class owa_metric extends owa_base {
 		return $this->calculate();
 	
 	}
+	
+	
+	/**
+	 * Set the labels of the measures
+	 *
+	 */
+	function setLabels($array) {
+	
+		$this->labels = $array;
+		return;
+	}
+	
+	/**
+	 * Retrieve the labels of the measures
+	 *
+	 */
+	function getLabels() {
+	
+		return $this->labels;
+	
+	}
+	
+	
 }
 
 ?>

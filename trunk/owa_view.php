@@ -16,10 +16,10 @@
 // $Id$
 //
 
-require_once('owa_template.php');
-require_once('owa_base.php');
-require_once('owa_requestContainer.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_coreAPI.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
+//require_once(OWA_BASE_CLASSES_DIR.'owa_base.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_requestContainer.php'); // ??
+//require_once(OWA_BASE_CLASSES_DIR.'owa_coreAPI.php');
 
 /**
  * Abstract View Class
@@ -300,9 +300,9 @@ class owa_view extends owa_base {
 			
 		else: 
 			//$this->e->debug('RenderView: '.print_r($data, true));
-			$api = &owa_coreAPI::singleton();
+			//$api = &owa_coreAPI::singleton();
 			
-			$subview = $api->displaySubView($auth_data);
+			$subview = owa_coreAPI::displaySubView($auth_data);
 			
 			return $subview;
 		endif;
@@ -411,7 +411,7 @@ class owa_areaBarsFlashChartView extends owa_base {
 
 }
 
-class owa_pieFlashChartView extends owa_base {
+class owa_pieFlashChartView extends owa_view {
 
 	function owa_pieFlashChartView() {
 	
@@ -420,7 +420,7 @@ class owa_pieFlashChartView extends owa_base {
 	
 	function __construct() {
 		
-		return $this->owa_base();
+		return parent::__construct();
 		
 	}
 
@@ -457,8 +457,71 @@ class owa_pieFlashChartView extends owa_base {
 
 }
 
+class owa_genericTableView extends owa_view {
 
+	function __construct() {
+		
+		return parent::__construct();
+		
+	}
+	
+	function owa_genericTableView() {
+	
+		return owa_genericTableView::__construct(); 
+	}
+	
+	function construct($data) {
+	
+		$this->t->set_template('wrapper_blank.tpl');		
+		$this->body->set_template('generic_table.tpl');
+		
+		if (!empty($data['labels'])):
+			$this->body->set('labels', $data['labels']);
+		else:
+			$this->body->set('labels', '');
+		endif;
+			
+		if (!empty($data['rows'])):
+			$this->body->set('rows', $data['rows']);
+			$this->body->set('row_count', count($data['rows']));
+		else:
+			$this->body->set('rows', '');
+			$this->body->set('row_count', 0);
+		endif;
+		
+	}
 
+}
 
+class owa_openFlashChartView extends owa_view {
+
+	function owa_openFlashChartView() {
+		
+		owa_openFlashChartView::__construct();
+		
+		return;
+	}
+	
+	function __construct() {
+		
+		return parent::__construct();
+		
+	}
+	
+	function construct($data) {
+		
+		// load template
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('ofc.tpl');
+		// set
+		$this->body->set('widget', $data['widget']);
+		$this->body->set('height', $data['height']);
+		$this->body->set('width', $data['width']);
+		
+		return;
+	
+	}
+
+}
 
 ?>
