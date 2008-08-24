@@ -32,9 +32,15 @@ class owa_dashCoreByDay extends owa_metric {
 	
 	function owa_dashCoreByDay($params = null) {
 		
-		$this->params = $params;
+		return owa_dashCoreByDay::__construct($params);
+	
+	}
+	
+	function __construct($params = null) {
+	
+		parent::__construct($params);
 		
-		$this->owa_metric();
+		$this->setLabels(array('Month', 'Day', 'Year', 'Unique Visitors', 'Sessions', 'Page Views'));
 		
 		return;
 		
@@ -61,32 +67,14 @@ class owa_dashCoreByDay extends owa_metric {
 		$db->orderBy('month');
 		$db->orderBy('day');
 		
+		if (array_key_exists('limit', $this->params)):
+			$db->limit($this->params['limit']);
+		endif;
+		
 		$ret = $db->getAllRows();
 		
 		return $ret;
-		
-		
-/*
-		
-		$this->params['select'] = "session.month, 
-			session.day, 
-			session.year, 
-			count(distinct session.visitor_id) as unique_visitors, 
-			count(session.id) as sessions, 
-			sum(session.num_pageviews) as page_views ";
-		
-		
-		$this->params['groupby'] = array('day', 'month');
-
-		$this->params['orderby'] = array('year', 'month', 'day');
-		
-		$this->setTimePeriod($this->params['period']);
-
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		return $s->query($this->params);
-
-*/		
+				
 	}
 	
 	

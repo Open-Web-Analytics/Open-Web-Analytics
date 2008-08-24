@@ -1,0 +1,1 @@
+<?=$this->ofc($width, $height, $this->makeAbsoluteLink(array('do' => $widget, 'period' => 'last_thirty_days', 'site_id' => $params['site_id'], 'format' => 'graph-data'), false , $this->config['action_url'])); ?>

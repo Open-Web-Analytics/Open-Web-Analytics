@@ -41,7 +41,7 @@ class owa_dashboardTrendWidgetController extends owa_controller {
 		$m->setConstraint('is_browser', 1);
 		$m->setPeriod($this->params['period']);
 		$m->setOrder(OWA_SQL_ASCENDING); 
-		$results = $m->generate();
+		
 		
 		if (array_key_exists('format', $this->params)):
 			$format = $this->params['format'];
@@ -50,16 +50,24 @@ class owa_dashboardTrendWidgetController extends owa_controller {
 		endif;
 			
 		$data['title'] = 'Dashboard Trend';
-		$data['view'] = 'base.widget';
-		$data['y']['label'] = 'Page Views';
-		$data['y2']['label'] = 'Visits';
-		$data['x']['label'] = 'Day';
+		$data['params'] = $this->params;
+		$data['widget'] = 'base.dashboardTrendWidget';
 		
 		switch ($format) {
 		
 			case 'graph':
 				
+				$data['view'] = 'base.openFlashChart';
+				$data['height'] = $this->params['height'];
+				$data['width'] = $this->params['width'];
+				break;
+				
+			case 'graph-data':
+				$results = $m->generate();
 				$series = owa_lib::deconstruct_assoc($results);
+				$data['y']['label'] = 'Page Views';
+				$data['y2']['label'] = 'Visits';
+				$data['x']['label'] = 'Day';
 				$data['y']['series'] = $series['page_views'];
 				$data['y2']['series'] = $series['sessions'];
 				$data['x']['series'] = owa_lib::makeDateArray($results, "n/j");				
@@ -67,13 +75,21 @@ class owa_dashboardTrendWidgetController extends owa_controller {
 				break;
 				
 			case 'table':
-				$data['column_labels'] = array();
-				$data['data'] = '';
+				$m->setLimit(5);
+				$results = $m->generate();
+				$data['labels'] = $m->getLabels();
+				$data['rows'] = $results;
 				$data['view'] = 'base.genericTable';
 				break;
 				
 			
 		}
+		
+		if ($this->params['initial-view'] == true):
+			$data['subview'] = $data['view'];
+			$data['view'] = 'base.widget';
+		endif;
+		
 		
 		return $data;
 		
