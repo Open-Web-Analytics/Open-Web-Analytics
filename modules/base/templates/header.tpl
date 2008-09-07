@@ -29,4 +29,7 @@
 			</td>
 		</TR>
 	</table>
+	
+	<?php $this->headerActions(); ?>
+	
 </div>

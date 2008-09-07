@@ -99,8 +99,10 @@ class owa_widgetView extends owa_view {
 		$this->body->set_template('widget.tpl');
 		$this->body->set('format', $data['params']['format']);
 		$this->body->set('widget', str_replace('.', '-', $data['widget']));			
-		$this->body->set('params', $data['params']['params']);	
-		$this->body->set('title', $data['title']);	
+		$this->body->set('params', $data['params']);	
+		$this->body->set('title', $data['title']);
+		$this->body->set('do', $data['widget']);	
+		
 		return;
 	}
 	

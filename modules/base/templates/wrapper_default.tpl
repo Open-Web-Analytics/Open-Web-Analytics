@@ -5,6 +5,7 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
 		<title>Open Web Analytics - <?=$page_title;?></title>
+		<?=$head;?>
 		<?php include($this->setTemplate('css.tpl'));?>
 	</head>
 	

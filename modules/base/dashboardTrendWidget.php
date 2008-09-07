@@ -85,11 +85,13 @@ class owa_dashboardTrendWidgetController extends owa_controller {
 			
 		}
 		
-		if ($this->params['initial-view'] == true):
+		// used to add outer wrapper to widget if it's the first view.
+		if ($this->params['initial_view'] == true):
 			$data['subview'] = $data['view'];
 			$data['view'] = 'base.widget';
+			// we dont want to keep passing this.
+			unset($data['params']['initial_view']);
 		endif;
-		
 		
 		return $data;
 		

@@ -86,6 +86,13 @@ class owa_controller extends owa_base {
 	var $data = array();
 	
 	/**
+	 * Capability
+	 * 
+	 * @var string
+	 */
+	var $capability;
+	
+	/**
 	 * Constructor
 	 *
 	 * @param array $params
@@ -99,8 +106,12 @@ class owa_controller extends owa_base {
 	
 	function __construct($params) {
 	
-		$this->owa_base();
+		// call parent constructor to setup objects.
+		parent::__construct();
+		
+		// set request params
 		$this->params = $params;
+		
 		// sets the auth module. requires a configuration object.
 		$this->_setAuthModule();
 		
@@ -121,6 +132,7 @@ class owa_controller extends owa_base {
 		if ($this->is_admin == true):
 			// do not intercept if its the updatesApply action or else updates will never apply
 			if ($this->params['do'] != 'base.updatesApply'):
+				
 				$api = &owa_coreAPI::singleton();
 				
 				if ($api->update_required == true):
@@ -133,8 +145,8 @@ class owa_controller extends owa_base {
 			endif;
 		endif;		
 		
-		//perfrom authentication
-		// TODO: create authSingleton() to hold an array of auth objects
+		//perform authentication
+		// TODO: create authSingleton() to hold an array of multiple auth objects
 		
 		$auth = &owa_auth::get_instance();
 		
@@ -153,7 +165,7 @@ class owa_controller extends owa_base {
 				$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
 			endif;
 			
-			// check to see if the controlelr has created a validator
+			// check to see if the controller has created a validator
 			if (!empty($this->v)):
 				// if so do the validations required
 				$this->v->doValidations();
@@ -230,6 +242,12 @@ class owa_controller extends owa_base {
 		
 		return;
 	
+	}
+	
+	function _setCapability($capability) {
+	
+		$this->capability = $capability;
+		return;
 	}
 	
 }

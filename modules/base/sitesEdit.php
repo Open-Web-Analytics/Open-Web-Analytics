@@ -18,7 +18,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Edit Sites View
@@ -80,10 +80,10 @@ class owa_sitesEditView extends owa_view {
  * @since		owa 1.0.0
  */
 
-class owa_sitesEditController extends owa_controller {
+class owa_sitesEditController extends owa_adminController {
 	
 	function owa_sitesEditController($params) {
-		$this->owa_controller($params);
+		$this->owa_adminController($params);
 		$this->priviledge_level = 'admin';
 	}
 	

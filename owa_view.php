@@ -106,6 +106,10 @@ class owa_view extends owa_base {
 	
 	var $is_subview;
 	
+	var $js = array();
+	
+	var $css = array();
+	
 	/**
 	 * Constructor
 	 *
@@ -205,6 +209,21 @@ class owa_view extends owa_base {
 			$this->t->set('error_msg', $validation_errors_summary);
 		endif;		
 		
+		// assign css and js ellements if the view is not a subview.
+		// subview css/js have been merged/pulls from subview and assigned here.
+		if ($this->is_subview != true):
+			if (!empty($this->css)):
+				$this->t->set('css', $this->css);
+			endif;
+			
+			if (!empty($this->js)):
+				$this->t->set('js', $this->js);
+			endif;
+		endif;
+		
+		//Assign body to main template
+		$this->t->set('config', $this->config);
+					
 		//Assign body to main template
 		$this->t->set('body', $this->body);
 		
@@ -266,6 +285,10 @@ class owa_view extends owa_base {
 		
 		// Stores subview as string into $this->subview
 		$this->subview_rendered = $this->subview->assembleSubView($data);
+		
+		// pull css and jas elements needed by subview
+		$this->css = array_merge($this->css, $this->subview->css);
+		$this->js = array_merge($this->js, $this->subview->js);
 	
 		return;
 		
@@ -278,36 +301,32 @@ class owa_view extends owa_base {
 	 * @return unknown
 	 */
 	function assembleSubView($data) {
+			
+		// construct view
+		$this->construct($data);
 		
-		// auth user
-		$auth_data = $this->auth->authenticateUser($this->priviledge_level);		
+		$this->t->set_template('wrapper_subview.tpl');
 		
-		// if auth was success then procead to assemble view.
-		if ($auth_data['auth_status'] == true):
+		//Assign body to main template
+		$this->t->set('body', $this->body);
+
+		// Return fully asembled View
+		$page =  $this->t->fetch();
 	
-			// construct view
-			$this->construct($data);
-			
-			$this->t->set_template('wrapper_subview.tpl');
-			
-			//Assign body to main template
-			$this->t->set('body', $this->body);
+		return $page;
+					
+	}
 	
-			// Return fully asembled View
-			$page =  $this->t->fetch();
+	function setCss($file) {
 		
-			return $page;
-			
-		else: 
-			//$this->e->debug('RenderView: '.print_r($data, true));
-			//$api = &owa_coreAPI::singleton();
-			
-			$subview = owa_coreAPI::displaySubView($auth_data);
-			
-			return $subview;
-		endif;
+		$this->css[] = $file;
+		return;
+	}
+	
+	function setJs($file) {
 		
-		
+		$this->js[] = $file;
+		return;
 	}
 	
 	

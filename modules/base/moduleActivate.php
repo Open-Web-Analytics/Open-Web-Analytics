@@ -16,8 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * Module Activation Controller
@@ -31,18 +30,23 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_moduleActivateController extends owa_controller {
+class owa_moduleActivateController extends owa_adminController {
+	
+	function __construct($params) {
+	
+		parent::__construct($params);
+		$this->priviledge_level = 'admin';
+		return;
+	}
 	
 	function owa_moduleActivateController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+	
+		return owa_moduleActivateController::__construct($params);
 		
-		return;
 	}
 
 	function action() {
 		
-		$api = &owa_coreAPI::singleton();
 		$m = owa_coreAPI::moduleClassFactory($this->params['module']);
 		$m->activate();
 		

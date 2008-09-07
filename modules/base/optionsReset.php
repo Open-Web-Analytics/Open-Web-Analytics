@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_adminController.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * Options Reset Controller
