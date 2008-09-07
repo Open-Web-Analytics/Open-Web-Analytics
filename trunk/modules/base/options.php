@@ -19,7 +19,6 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_news.php');
-require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
  * Options View
@@ -45,8 +44,6 @@ class owa_optionsView extends owa_view {
 	}
 	
 	function construct($data) {
-		
-		
 		
 		//page title
 		$this->t->set('page_title', 'OWA Options');

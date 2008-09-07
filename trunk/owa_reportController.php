@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * Report Controller Class
@@ -31,10 +31,17 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
  */
 
 
-class owa_reportController extends owa_controller {
+class owa_reportController extends owa_adminController {
 	
-	var $is_admin = true;
-	var $type = 'report';
+	function __construct($params) {
+	
+		parent::__construct($params);
+		$this->type = 'report';
+		$this->_setCapability = 'view_report';
+		
+		return;
+	
+	}
 	
 	/**
 	 * Constructor
@@ -44,9 +51,7 @@ class owa_reportController extends owa_controller {
 	 */
 	function owa_reportController($params) {
 		
-		$this->owa_controller($params);
-		
-		return;
+		return owa_reportController::__construct($params);
 		
 	}
 	

@@ -32,11 +32,19 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 class owa_optionsFlushCacheController extends owa_adminController {
 	
-	function owa_optionsFlushCacheController($params) {
-		$this->owa_adminController($params);
+	function __construct($params) {
+	
+		parent::__construct($params);
 		$this->priviledge_level = 'admin';
 		
 		return;
+	
+	}
+	
+	function owa_optionsFlushCacheController($params) {
+		
+		return owa_optionsFlushCacheController::__construct($params);
+		
 	}
 
 	function action() {

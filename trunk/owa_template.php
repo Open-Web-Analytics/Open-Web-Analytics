@@ -572,11 +572,6 @@ class owa_template extends Template {
 		return implode("\n",$out);
 	}
 	
-	function performAction($action, $params) {
-	
-		return owa_coreAPI::performAction($action, $params);
-	
-	}
 	
 	function getWidget($widget, $format, $params = array()) {
 		
@@ -586,9 +581,38 @@ class owa_template extends Template {
 		
 		$params['widget'] = $widget;
 		$params['format'] = $format;
-		$params['initial-view'] = true;
+		$params['initial_view'] = true;
 		
 		return owa_coreAPI::performAction($widget, $params);
+	}
+	
+	function makeJson($array) {
+		
+		$json = '{';
+		
+		foreach ($array as $k => $v) {
+			
+			$json .= sprintf('%s: "%s", ', $k, $v);
+			
+		}
+		
+		
+		$json = substr($json, 0, -2);
+		
+		$json .= '}';
+		
+		return $json;
+	
+	}
+	
+	function headerActions() {
+	
+		return;
+	}
+	
+	function footerActions() {
+	
+		return;
 	}
 	
 }

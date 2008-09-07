@@ -75,19 +75,26 @@ class owa_optionsGeneralView extends owa_view {
 
 class owa_optionsGeneralController extends owa_adminController {
 	
-	var $is_admin = true;
-	var $type = 'options';
+	function __construct($params) {
 	
-	function owa_optionsGeneralController($params) {
-		$this->owa_adminController($params);
+		parent::__construct($params);
 		$this->priviledge_level = 'admin';
+		$this->type = 'options';
+		$this->_setCapability('alter_config');
 		
 		return;
 	}
+	
+	/**
+	 * PHP 4 Style Constructor
+	 */
+	function owa_optionsGeneralController($params) {
+		
+		return owa_optionsGeneralController::__construct($params);
+	}
+	
 
 	function action() {
-		
-		
 		
 		$this->data['configuration'] = $this->c->fetch('base');
 			

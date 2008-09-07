@@ -16,8 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * Module Deactivation Controller
@@ -31,13 +30,22 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_moduleDeactivateController extends owa_controller {
+class owa_moduleDeactivateController extends owa_adminController {
 	
-	function owa_moduleDeactivateController($params) {
-		$this->owa_controller($params);
+	
+	function __construct($params) {
+	
+		parent::__construct($params):
 		$this->priviledge_level = 'admin';
 		
 		return;
+	
+	}
+	
+	function owa_moduleDeactivateController($params) {
+		
+		return owa_moduleDeactivateController::__construct($params);
+		
 	}
 
 	function action() {

@@ -12,18 +12,14 @@
 #recent_visitors{width:; margin-left: px}
 </style>
 
-<script type="text/javascript" src="<?=$this->config['public_url'];?>js/includes/jquery/jquery.js"></script>
-
 <? include('report_header.tpl');?>
 
 <table width="100%">
 	<TR>
 		<TD valign="top" id="trend_graph">
 		
-			<!-- <img src="<?=$this->graphLink(array('view' => 'base.graphDashboardTrend', 'period' => 'last_thirty_days', 'site_id' => $params['site_id'])); ?>"> -->
+			<?=$this->getWidget('base.dashboardTrendWidget', 'graph', array('height' => 300, 'width' => 900, 'period' => 'last_thirty_days'));?>
 			
-			<?=$this->getWidget('base.dashboardTrendWidget', 'graph', array('height' => 300, 'width' => 900));?>
-			<? //$this->getWidget('base.dashboardTrendWidget', 'table', array('height' => 300, 'width' => 900));?>
 		</TD>	
 	</TR>
 	<TR>
