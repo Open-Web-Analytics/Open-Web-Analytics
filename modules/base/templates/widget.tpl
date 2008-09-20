@@ -1,16 +1,3 @@
-<style>
-
-.widget-container {border:1px solid #cccccc; width:100%;}
-.widget-header {color: white;background-color:orange; padding:5px;text-align:left;}
-.widget-title {font-size:20px;text-align:right;font-weight:bold;}
-.widget-title a {color: white;}
-.widget-title-controls {font-size:14px;text-align:right;}
-.widget-controls {text-align:right;padding:10px}
-.widget-content {padding:10px;}
-
-</style>
- 
-
 <script>
 
 //var state = new Object;
@@ -23,31 +10,36 @@ OWA.items['<?=$widget;?>'].dom_id = "<?=$widget;?>";
 
 </script>
 
-<div id="<?=$widget;?>" class="widget-container">
+<div id="<?=$widget;?>" class="owa_widget-container">
 	
-	<div id="<?=$widget;?>_widget-header" class="widget-header">
+	<div id="<?=$widget;?>_widget-header" class="owa_widget-header">
 		<table style="width:100%;">
 			<TR>
 				<TD>
-					<span class="widget-title"><?=$title;?></span>
+					<span class="owa_widget-title"><?=$title;?></span>
 				</TD>
 				<TD style="text-align:right;">
-					<a class="widget-title-controls" href="">Close</a>
+					<a class="owa_widget-toggle" href="#<?=$widget;?>_widget-header">Minimize</a> |
+					<a class="owa_widget-close" href="#<?=$widget;?>_widget-header">Close</a>
 				</TD>
 			</TR>
 		</table>
 
 	</div>
-
-	<div id="<?=$widget;?>_widget-status" class="widget-status">LOADING</div> 
-
-	<div id="<?=$widget;?>_widget-content" class="widget-content"><?=$subview;?></div>
 	
-	<div id="<?=$widget;?>_widget-controls" class="widget-controls">
-		<a class="widget-control" href="#<?=$widget;?>_widget-header" name="graph">Graph</a> | 
-		<a class="widget-control" href="#<?=$widget;?>_widget-header" name="table">Table</a> | 
-		<a class="widget-control" href="#<?=$widget;?>_widget-header" name="sparkline">Sparkline</a>
+	<div class="owa_widget-innercontainer">	
+		<div id="<?=$widget;?>_widget-status" class="owa_widget-status"><img src="<?=$this->makeImageLink("loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...</div> 
+	
+		<div id="<?=$widget;?>_widget-content" class="owa_widget-content"><?=$subview;?></div>
+		
+		<? if($widget_views): ?>
+		<div id="<?=$widget;?>_widget-controls" class="owa_widget-controls">
+			<span>Views: </span>
+			<? foreach ($widget_views as $k => $v): ?>
+			<a class="owa_widget-control" href="#<?=$widget;?>_widget-header" name="<?=$k;?>"><?=$v;?></a> / 
+			<? endforeach;?>
+		</div>
+		<? endif; ?>
 	</div>
-
 	
 </div>

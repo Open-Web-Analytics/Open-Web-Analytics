@@ -173,9 +173,10 @@ class owa_reportDashboardView extends owa_view {
 		
 		$this->body->set('top_referers', $data['top_referers_data']);
 		
-		$this->setJs($this->config['public_url']."js/includes/jquery/jquery.js");
-		$this->setJs($this->config['public_url']."js/owa.js");
-		$this->setJs($this->config['public_url']."js/owa.widgets.js");
+		$this->setJs("includes/jquery/jquery.js");
+		$this->setJs("owa.js");
+		$this->setJs("owa.widgets.js");
+		$this->setCss("owa.widgets.css");
 
 		return;
 	}
