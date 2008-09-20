@@ -18,44 +18,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
-
-
-class owa_widgetController extends owa_controller {
-	
-	function owa_widgetController($params) {
-		
-		$this->owa_controller($params);
-		$this->priviledge_level = 'viewer';
-	
-	}
-	
-	function action() {
-		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['widget'] = $this->params['widget'];
-		$data['format'] = $this->params['format'];
-		$data['width'] = $this->params['width'];
-		$data['height'] = $this->params['height'];
-		
-		// flag used to pick the right wrapper template
-		if (array_key_exists('is_external', $this->params)):
-			$data['is_external'] = $this->params['is_external'];
-		endif;
-		$data['view'] = 'base.widget';
-		$data['view_method'] = 'delegate';
-		
-		return $data;
-	}
-}
-
-
-
 
 /**
  * Widget  View
@@ -101,6 +63,7 @@ class owa_widgetView extends owa_view {
 		$this->body->set('widget', str_replace('.', '-', $data['widget']));			
 		$this->body->set('params', $data['params']);	
 		$this->body->set('title', $data['title']);
+		$this->body->set('widget_views', $data['widget_views']);
 		$this->body->set('do', $data['widget']);	
 		
 		return;

@@ -93,6 +93,14 @@ class owa_controller extends owa_base {
 	var $capability;
 	
 	/**
+	 * Available Views
+	 * 
+	 * @var Array
+	 */
+	var $available_views = array();
+	
+	
+	/**
 	 * Constructor
 	 *
 	 * @param array $params
@@ -154,6 +162,9 @@ class owa_controller extends owa_base {
 		
 		// if auth was success then procead
 		if ($data['auth_status'] == true):
+		
+			//set request params
+			$this->data['params'] = $this->params;
 					
 			// set status msg
 			if (!empty($this->params['status_code'])):
@@ -173,13 +184,22 @@ class owa_controller extends owa_base {
 				if ($this->v->hasErrors == true):
 					// if errors, do the errorAction instead of the normal action
 					return $this->errorAction();
-				else:
-					return $this->action();
 				endif;
-				
 			endif;
 			
-			return $this->action();
+			// need to check ret for backwards compatability with older 
+			// controllers that donot use $this->data
+			
+			$this->pre();
+			
+			$ret = $this->action();
+			
+			if (!empty($ret)):
+				return $ret;
+			else:
+				$this->post();
+				return $this->data;
+			endif;
 		else:
 			 // return the not priviledged error view set by owa_auth.
 			 // TODO: owa_auth should probably not know anything about a view
@@ -248,6 +268,24 @@ class owa_controller extends owa_base {
 	
 		$this->capability = $capability;
 		return;
+	}
+	
+	function getParam($name) {
+	
+		if (array_key_exists($name, $this->params)):
+			return $this->params['name'];
+		else:
+			return false;
+		endif;
+	}
+	
+	function pre() {
+	
+		return false;
+	}
+	
+	function post() {
+		return false;
 	}
 	
 }

@@ -19,11 +19,13 @@ OWA.widget.prototype = {
 	
 	current_view: '',
 	
+	minimized: false,
+	
 	_makeUrl: function(values) {},
 			
 	changeView: function(view) {
 			
-			var widgetcontentid = "#"+this.name+"_widget-content";
+			var widgetcontentid = "#"+this.dom_id+"_widget-content";
 			
 			this.properties.format = view;
 			
@@ -34,9 +36,9 @@ OWA.widget.prototype = {
 				url: this.config.action_url,
 				data: OWA.util.nsAll(this.properties), 
 				//show loading just when link is clicked 
-				beforeSend: function(){ jQuery(".widget-status").show("fast");}, 
+				beforeSend: function(){ jQuery(".owa_widget-status").show("slow");}, 
 				//stop showing loading when the process is complete 
-				complete: function(){ jQuery(".widget-status").hide("fast");}, 
+				complete: function(){ jQuery(".owa_widget-status").hide("slow");}, 
 				//so, if data is retrieved, store it in html
 				success: function(html){  
 					jQuery(widgetcontentid).show("slow"); //animation 
@@ -54,21 +56,32 @@ OWA.widget.prototype = {
 
 // Bind event handlers
 jQuery(document).ready(function(){   
-	jQuery('.widget-control').click(owa_widget_changeView);
+	jQuery('.owa_widget-control').click(owa_widget_changeView);
+	jQuery('.owa_widget-close').click(owa_widget_close);
+	jQuery('.owa_widget-status').hide("slow");
+	jQuery('.owa_widget-toggle').click(owa_widget_toggle);
 });
-
 
 // Event handler for changeing views
 function owa_widget_changeView() {
 
 	var view = jQuery(this).attr("name");
-	var parentname = jQuery("div").parent(".widget-container").attr("id");
-	//var widgetname2 = parentname.split("_");
-	var widgetname = parentname;
-	//alert(parentname);
-	// add to state object
-	OWA.items[widgetname].name = widgetname;
-	OWA.items[widgetname].changeView(view);
+	var widgetname = jQuery("div").parent(".owa_widget-container").attr("id");	
+	return OWA.items[widgetname].changeView(view);
+	
+}
+
+function owa_widget_close() {
+	
+	return jQuery("div").parent(".owa_widget-container").hide("slow");	
+}
+
+function owa_widget_toggle() {
+
+	jQuery("div").parent(".owa_widget-innercontainer").toggle("slow");
+	jQuery(this).html("Show");
+	var widgetname = jQuery("div").parent(".owa_widget-container").attr("id");	
+	OWA.items[widgetname].minimized = true;
 
 	return;
 }

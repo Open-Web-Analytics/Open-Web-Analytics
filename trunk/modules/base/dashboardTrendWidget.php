@@ -18,10 +18,10 @@
 //
 
 require_once(OWA_BASE_CLASSES_DIR.'owa_lib.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'widget.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
 
-class owa_dashboardTrendWidgetController extends owa_controller {
+class owa_dashboardTrendWidgetController extends owa_widgetController {
 
 	function __construct($params) {
 		
@@ -35,65 +35,55 @@ class owa_dashboardTrendWidgetController extends owa_controller {
 
 	function action() {
 		
-		$m = owa_coreApi::metricFactory('base.dashCoreByDay');
+		// Set Title of the Widget
+		$this->data['title'] = 'Dashboard Trend';
 		
+		// enable formats
+		$this->enableFormat('graph', 'Graph');
+		$this->enableFormat('table', 'Table');
+		$this->enableFormat('sparkline', 'Sparkline');
+		
+		//setup Metrics
+		$m = owa_coreApi::metricFactory('base.dashCoreByDay');
 		$m->setConstraint('site_id', $this->params['site_id']);
 		$m->setConstraint('is_browser', 1);
 		$m->setPeriod($this->params['period']);
 		$m->setOrder(OWA_SQL_ASCENDING); 
-		
-		
-		if (array_key_exists('format', $this->params)):
-			$format = $this->params['format'];
-		else:
-			$format = 'graph';
-		endif;
 			
-		$data['title'] = 'Dashboard Trend';
-		$data['params'] = $this->params;
-		$data['widget'] = 'base.dashboardTrendWidget';
-		
-		switch ($format) {
+		switch ($this->params['format']) {
 		
 			case 'graph':
 				
-				$data['view'] = 'base.openFlashChart';
-				$data['height'] = $this->params['height'];
-				$data['width'] = $this->params['width'];
+				$this->data['view'] = 'base.openFlashChart';
+				$this->data['height'] = $this->params['height'];
+				$this->data['width'] = $this->params['width'];
 				break;
 				
 			case 'graph-data':
+			
 				$results = $m->generate();
 				$series = owa_lib::deconstruct_assoc($results);
-				$data['y']['label'] = 'Page Views';
-				$data['y2']['label'] = 'Visits';
-				$data['x']['label'] = 'Day';
-				$data['y']['series'] = $series['page_views'];
-				$data['y2']['series'] = $series['sessions'];
-				$data['x']['series'] = owa_lib::makeDateArray($results, "n/j");				
-				$data['view'] = 'base.areaBarsFlashChart';
+				$this->data['y']['label'] = 'Page Views';
+				$this->data['y2']['label'] = 'Visits';
+				$this->data['x']['label'] = 'Day';
+				$this->data['y']['series'] = $series['page_views'];
+				$this->data['y2']['series'] = $series['sessions'];
+				$this->data['x']['series'] = owa_lib::makeDateArray($results, "n/j");				
+				$this->data['view'] = 'base.areaBarsFlashChart';
 				break;
 				
 			case 'table':
+			
 				$m->setLimit(5);
 				$results = $m->generate();
-				$data['labels'] = $m->getLabels();
-				$data['rows'] = $results;
-				$data['view'] = 'base.genericTable';
+				$this->data['labels'] = $m->getLabels();
+				$this->data['rows'] = $results;
+				$this->data['view'] = 'base.genericTable';
 				break;
-				
-			
+					
 		}
 		
-		// used to add outer wrapper to widget if it's the first view.
-		if ($this->params['initial_view'] == true):
-			$data['subview'] = $data['view'];
-			$data['view'] = 'base.widget';
-			// we dont want to keep passing this.
-			unset($data['params']['initial_view']);
-		endif;
-		
-		return $data;
+		return;
 		
 	}
 }

@@ -317,15 +317,23 @@ class owa_view extends owa_base {
 					
 	}
 	
-	function setCss($file) {
+	function setCss($file, $path = '') {
 		
-		$this->css[] = $file;
+		if(empty($path)):
+			$path = $this->config['public_url'].DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR;
+		endif;
+		
+		$this->css[] = $path.$file;
 		return;
 	}
 	
-	function setJs($file) {
+	function setJs($file, $path = '') {
 		
-		$this->js[] = $file;
+		if(empty($path)):
+			$path = $this->config['public_url'].DIRECTORY_SEPARATOR.'js'.DIRECTORY_SEPARATOR;
+		endif;
+		
+		$this->js[] = $path.$file;
 		return;
 	}
 	
