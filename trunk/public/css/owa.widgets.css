@@ -1,0 +1,9 @@
+/* OWA Widget CSS Declarations */
+ 
+.owa_widget-container {border:1px solid #cccccc; width:100%;}
+.owa_widget-header {color: white;background-color:orange; padding:5px;text-align:left;}
+.owa_widget-title {font-size:18px;text-align:right;font-weight:bold;}
+.owa_widget-title a {color: white;}
+.owa_widget-title-controls {font-size:14px;text-align:right;}
+.owa_widget-controls {text-align:right;padding:10px}
+.owa_widget-content {padding:10px;}
