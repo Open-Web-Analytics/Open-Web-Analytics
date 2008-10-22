@@ -14,14 +14,12 @@
 
 <? include('report_header.tpl');?>
 
+<?=$this->getWidget('base.dashboardTrendWidget', array('height' => 400, 'width' => 900, 'period' => 'last_thirty_days'));?>
+
+<?=$this->getWidget('base.dashboardTrendWidget', array('height' => 100, 'width' => 900, 'period' => 'last_thirty_days', 'format' => 'sparkline'), false);?>
+
 <table width="100%">
-	<TR>
-		<TD valign="top" id="trend_graph">
-		
-			<?=$this->getWidget('base.dashboardTrendWidget', 'graph', array('height' => 300, 'width' => 900, 'period' => 'last_thirty_days'));?>
-			
-		</TD>	
-	</TR>
+	
 	<TR>
 		<TD valign="top">
 			<? include ('report_dashboard_summary_stats.tpl');?>		

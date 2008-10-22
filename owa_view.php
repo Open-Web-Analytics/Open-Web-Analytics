@@ -17,9 +17,7 @@
 //
 
 require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
-//require_once(OWA_BASE_CLASSES_DIR.'owa_base.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_requestContainer.php'); // ??
-//require_once(OWA_BASE_CLASSES_DIR.'owa_coreAPI.php');
 
 /**
  * Abstract View Class
@@ -117,11 +115,17 @@ class owa_view extends owa_base {
 	 */
 	function owa_view($params = null) {
 		
-		$this->owa_base();
-		$this->auth = & owa_auth::get_instance();
+		return owa_view::__construct($params);
+	}
+	
+	function __construct($params = null) {
+	
+		parent::__construct();
+		//$this->auth = & owa_auth::get_instance();
 		$this->t = new owa_template();
 		$this->body = new owa_template($this->module);
 		$this->setTheme();
+		
 		return;
 	}
 	
@@ -133,42 +137,46 @@ class owa_view extends owa_base {
 	 */
 	function assembleView($data) {
 		
+		$this->e->debug('Assembling view: '.get_class($this));
+		
 		$this->data = $data;
 		
 		// set view name in template class. used for navigation.
 		$this->body->caller_params['view'] = $this->data['view'];
-		$this->body->caller_params['subview'] = $this->data['subview'];
 		
-		if (!empty($this->data['nav_tab'])):
+		if (array_key_exists('subview', $this->data)):
+			$this->body->caller_params['subview'] = $this->data['subview'];
+		endif;
+		
+		if (array_key_exists('nav_tab', $this->data)):
 			$this->body->caller_params['nav_tab'] = $this->data['nav_tab'];
 		endif;
 		
-		$this->e->debug('Assembling view: '.get_class($this));
-		
-		// auth user
-		$auth_data = $this->auth->authenticateUser($this->priviledge_level);		
-		
 		// Assign status msg
-		if (!empty($data['status_msg'])):
+		if (array_key_exists('status_msg', $data)):
 			$this->t->set('status_msg', $data['status_msg']);
 		endif;
 		
 		// get status msg from code passed on the query string from a redirect.
-		if (!empty($data['status_code'])):
+		if (array_key_exists('status_code', $data)):
 			$this->t->set('status_msg', $this->getMsg($data['status_code']));
 		endif;
 		
 		// set error msg directly if passed from constructor
-		$this->t->set('error_msg', $data['error_msg']);
+		if (array_key_exists('error_msg', $data)):
+			$this->t->set('error_msg', $data['error_msg']);
+		endif;
 		
-		//print_r($this->data);
+		// auth user
+		//$auth_data = $this->auth->authenticateUser($this->priviledge_level);		
+		
 		// authentication status
-		if ($auth_data['auth_status'] == true):
-			$this->t->set('authStatus', true);
+		if (array_key_exists('auth_status', $data)):
+			$this->t->set('authStatus', $this->data['auth_status']);
 		endif;
 		
 		// get error msg from error code passed on the query string from a redirect.
-		if (!empty($data['error_code'])):
+		if (array_key_exists('error_code', $data)):
 			$this->t->set('error_msg', $this->getMsg($data['error_code']));
 		endif;
 		
@@ -182,8 +190,16 @@ class owa_view extends owa_base {
 		$this->construct($this->data);
 		
 		//array of errors usually used for field validations
-		$this->body->set('validation_errors', $data['validation_errors']);
-			
+		if (array_key_exists('validation_errors', $data)):
+			$this->body->set('validation_errors', $data['validation_errors']);
+		endif;
+		
+		// pagination
+		if (array_key_exists('pagination', $data)):
+			$this->body->set('pagination', $data['pagination']);	
+		endif;
+		
+		$this->_setLinkState();
 			
 		// assemble subview
 		if (!empty($this->data['subview'])):
@@ -320,7 +336,7 @@ class owa_view extends owa_base {
 	function setCss($file, $path = '') {
 		
 		if(empty($path)):
-			$path = $this->config['public_url'].DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR;
+			$path = $this->config['public_url'].'css'.DIRECTORY_SEPARATOR;
 		endif;
 		
 		$this->css[] = $path.$file;
@@ -330,7 +346,7 @@ class owa_view extends owa_base {
 	function setJs($file, $path = '') {
 		
 		if(empty($path)):
-			$path = $this->config['public_url'].DIRECTORY_SEPARATOR.'js'.DIRECTORY_SEPARATOR;
+			$path = $this->config['public_url'].'js'.DIRECTORY_SEPARATOR;
 		endif;
 		
 		$this->js[] = $path.$file;
@@ -484,6 +500,14 @@ class owa_pieFlashChartView extends owa_view {
 
 }
 
+
+
+/**
+ * Generic HTMl Table View
+ *
+ * Will produce a generic html table
+ *
+ */
 class owa_genericTableView extends owa_view {
 
 	function __construct() {
@@ -504,8 +528,10 @@ class owa_genericTableView extends owa_view {
 		
 		if (!empty($data['labels'])):
 			$this->body->set('labels', $data['labels']);
+			$this->body->set('col_count', count($data['labels']));
 		else:
 			$this->body->set('labels', '');
+			$this->body->set('col_count', count($data['rows'][0]));
 		endif;
 			
 		if (!empty($data['rows'])):
@@ -515,6 +541,35 @@ class owa_genericTableView extends owa_view {
 			$this->body->set('rows', '');
 			$this->body->set('row_count', 0);
 		endif;
+		
+		if (array_key_exists('table_class', $data)):
+			$this->body->set('table_class', $data['table_class']);
+		else:
+			$this->body->set('table_class', 'data');		
+		endif;
+		
+		if (array_key_exists('header_orientation', $data)):
+			$this->body->set('header_orientation', $data['header_orientation']);
+		else:
+			$this->body->set('header_orientation', 'col');		
+		endif;
+		
+		if (array_key_exists('table_footer', $data)):
+			$this->body->set('table_footer', $data['table_footer']);
+		else:
+			$this->body->set('table_footer', '');		
+		endif;
+		
+		if (array_key_exists('table_caption', $data)):
+			$this->body->set('table_caption', $data['table_caption']);
+		else:
+			$this->body->set('table_caption', '');		
+		endif;
+		
+		$this->body->set('table_id', str_replace('.', '-', $data['params']['do']).'-table');
+		
+		return;
+		
 		
 	}
 
@@ -549,6 +604,53 @@ class owa_openFlashChartView extends owa_view {
 	
 	}
 
+}
+
+class owa_sparklineView extends owa_view {
+
+	function owa_sparklineView() {
+	
+		return owa_sparklineView::__construct();
+	}
+	
+	function __construct() {
+	
+		return parent::__construct();
+
+	}
+	
+	function construct($data) {
+	
+		// load template
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('sparkline.tpl');
+		// set
+		$this->body->set('widget', $data['widget']);
+		$this->body->set('type', $data['type']);
+		$this->body->set('height', $data['height']);
+		$this->body->set('width', $data['width']);
+		
+		return;
+	}
+
+}
+
+class owa_sparklineLineGraphView {
+
+	function assembleView($data) {
+	
+		require_once(OWA_SPARKLINE_DIR.'Sparkline_Line.php');
+	
+		$sparkline = new Sparkline_Line();
+		
+		$sparkline->SetData(0, 15);
+		$sparkline->SetData(1, 18);
+		$sparkline->SetData(2, 9);
+		$sparkline->SetData(3, 40);
+		$sparkline->RenderResampled($data['width'], $data['height']);
+		$sparkline->Output();
+		return;
+	}
 }
 
 ?>

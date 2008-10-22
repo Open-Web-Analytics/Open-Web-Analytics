@@ -39,7 +39,7 @@ class owa_controller extends owa_base {
 	 *
 	 * @var array
 	 */
-	var $params;
+	var $params = array();
 	
 	/**
 	 * Controller Type
@@ -162,7 +162,9 @@ class owa_controller extends owa_base {
 		
 		// if auth was success then procead
 		if ($data['auth_status'] == true):
-		
+			
+			$this->data['auth_status'] = true;
+			
 			//set request params
 			$this->data['params'] = $this->params;
 					

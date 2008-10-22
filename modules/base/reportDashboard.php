@@ -1,8 +1,5 @@
 <?php
 
-
-
-
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -174,6 +171,9 @@ class owa_reportDashboardView extends owa_view {
 		$this->body->set('top_referers', $data['top_referers_data']);
 		
 		$this->setJs("includes/jquery/jquery.js");
+		$this->setJs("includes/jquery/tablesorter/jquery.tablesorter.js");
+		// data table style
+		$this->setCss('style.css', $this->config['public_url']."js/includes/jquery/tablesorter/themes/blue/");
 		$this->setJs("owa.js");
 		$this->setJs("owa.widgets.js");
 		$this->setCss("owa.widgets.css");

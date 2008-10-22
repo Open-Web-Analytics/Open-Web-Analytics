@@ -58,7 +58,7 @@ class owa_processRequestController extends owa_processEventController {
 		$this->event = owa_coreAPI::supportClassFactory('base', 'requestEvent');
 		
 		// Pre process - set default and standard event property names
-		$this->pre();
+		$this->preProcess();
 		
 		// Set event properties
 		$this->event->_setProperties($this->params['caller']);
@@ -109,7 +109,7 @@ class owa_processRequestController extends owa_processEventController {
 		
 		
 		// Post Process - cleanup after all properties are set
-		$this->post();
+		$this->postProcess();
 		
 		return $this->event->log();
 		

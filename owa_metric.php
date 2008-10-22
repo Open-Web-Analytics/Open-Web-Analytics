@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_lib.php');
+require_once(OWA_BASE_CLASS_DIR.'pagination.php');
 
 /**
  * Metric
@@ -58,6 +59,28 @@ class owa_metric extends owa_base {
 	 * @var array
 	 */
 	var $labels = array();
+	
+	/**
+	 * Page results	 
+	 *
+	 * @var boolean
+	 */
+	var $page_results = false;
+	
+	/**
+	 * Data Access Object
+	 *
+	 * @var object
+	 */
+	var $db;
+	
+	var $_default_offset = 0;
+	
+	var $pagination;
+	
+	var $page;
+	
+	var $limit;
 
 	/**
 	 * Constructor
@@ -81,6 +104,10 @@ class owa_metric extends owa_base {
 		// create timeperiod constraints
 		$this->setTimePeriod($this->params['period']);
 		//print_r($this->params);
+		$this->db = owa_coreAPI::dbSingleton();
+		
+		$this->pagination = new owa_pagination;
+		
 		return;
 	}
 	
@@ -351,7 +378,20 @@ class owa_metric extends owa_base {
 	function setLimit($value) {
 		
 		if (!empty($value)):
-			$this->params['limit'] = $value;
+		
+			$this->limit = $value;
+		
+		endif;
+	}
+	
+	function setPage($value) {
+		
+		if (!empty($value)):
+		
+			if (!empty($this->pagination)):
+				$this->pagination->setPage($value);
+			endif;
+			
 		endif;
 	}
 	
@@ -413,7 +453,44 @@ class owa_metric extends owa_base {
 	function generate() {
 		
 		$this->makeTimePeriod();
-		return $this->calculate();
+		
+		$this->db->multiWhere($this->getConstraints());
+		
+		// apply limit if one is set
+		if (array_key_exists('limit', $this->params)):
+			$this->limit = $this->params['limit'];
+		endif;
+		
+		if (!empty($this->pagination)):
+			$this->pagination->setLimit($this->limit);
+		endif;
+		
+		// pass limit to db object if one exists
+		if (!empty($this->limit)):
+			$this->db->limit($this->limit);
+		endif;
+		
+		//
+		if (!empty($this->page)):
+			$this->pagination->setPage($this->page);
+			$offset = $this->pagination->calculateOffset();
+			$this->db->offset($offset);
+		else:
+			// deprecated
+			if (!empty($this->params['offset'])):
+				$offset = $this->params['offset'];
+				$this->db->offset($offset);
+			endif;
+		endif;
+	
+		
+		$results = $this->calculate();
+		
+		if (!empty($this->pagination)):
+			$this->pagination->countResults($results);
+		endif;
+		
+		return $results;
 	
 	}
 	
@@ -437,6 +514,13 @@ class owa_metric extends owa_base {
 		return $this->labels;
 	
 	}
+	
+	function getPagination() {
+	
+		return $this->pagination->getPagination(); 
+	
+	}
+	
 	
 	
 }

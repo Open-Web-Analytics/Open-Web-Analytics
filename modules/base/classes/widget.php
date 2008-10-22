@@ -50,7 +50,13 @@ class owa_widgetController extends owa_controller {
 	function pre() {
 	
 		if (!array_key_exists('format', $this->params)):
-			$this->params['format'] = $this->default_format;
+			
+				$this->params['format'] = $this->default_format;
+		
+		else:
+			if (empty($this->params['format'])):
+				$this->params['format'] = $this->default_format;
+			endif;
 		endif;
 		
 		return;
@@ -65,9 +71,10 @@ class owa_widgetController extends owa_controller {
 			// we dont want to keep passing this.
 			unset($this->data['params']['initial_view']);
 		endif;
-		
+		$this->data['wrapper'] = $this->params['wrapper'];
 		$this->data['widget'] = $this->params['do'];
-	
+		$this->data['do'] = $this->params['do'];
+
 	}
 	
 	function enableFormat($name, $label) {
@@ -75,6 +82,39 @@ class owa_widgetController extends owa_controller {
 		$this->data['widget_views'][$name] = $label;
 		return;
 	
+	}
+	
+	function setHeight($height) {
+	
+		if (!array_key_exists('height', $this->params)):
+			$this->data['height'] = $height;
+		else:
+			$this->data['height'] = $this->params['height'];
+		endif;
+		
+		if ($this->params['wrapper'] === true):
+			$this->data['outer_height'] = $this->data['height'];
+			$this->data['height'] = $this->data['height'] - 130;
+		endif;
+		
+		return;
+	}
+	
+	function setWidth($width) {
+	
+		if (!array_key_exists('width', $this->params)):
+			$this->data['width'] = $width;
+		else:
+			$this->data['width'] = $this->params['width'];
+		endif;
+		
+		if ($this->params['wrapper'] == true):
+			$this->data['outer_width'] = $this->data['width'];	
+			$this->data['width'] = $this->data['width'] - 50;
+			
+		endif;
+		
+		return;
 	}
 
 }
@@ -112,11 +152,17 @@ class owa_widgetView extends owa_view {
 		
 		if (!array_key_exists('width', $data)):
 			$data['params']['width'] = 300;
+		else:
+			$data['params']['width'] = $data['outer_width'];
 		endif;
 		
-		if (!array_key_exists('width', $data)):
+		if (!array_key_exists('height', $data)):
 			$data['params']['height'] = 250;
+		else:
+			$data['params']['height'] = $data['outer_height'];
 		endif;
+		
+		$this->_setLinkState();
 		
 		$this->body->set_template('widget.tpl');
 		$this->body->set('format', $data['params']['format']);
@@ -124,7 +170,9 @@ class owa_widgetView extends owa_view {
 		$this->body->set('params', $data['params']);	
 		$this->body->set('title', $data['title']);
 		$this->body->set('widget_views', $data['widget_views']);
-		$this->body->set('do', $data['widget']);	
+		$this->body->set('do', $data['widget']);
+		
+		
 		
 		return;
 	}

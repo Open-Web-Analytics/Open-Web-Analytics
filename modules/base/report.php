@@ -92,7 +92,8 @@ class owa_reportView extends owa_view {
 		
 		$this->body->set('params', $this->report_params);
 		
-		// create state params for all links
+		/*
+// create state params for all links
 		$link_params = array(
 								'period'	=> $this->data['params']['period'], // could be set by setPeriod
 								'day'		=> $data['params']['day'],
@@ -106,6 +107,8 @@ class owa_reportView extends owa_view {
 							
 		$this->body->caller_params['link_state'] =  $link_params;
 		$this->subview->body->caller_params['link_state'] =  $link_params;
+*/
+		$this->_setLinkState();
 		
 		// set site filter list
 		$this->body->set('sites', $this->getSitesList());

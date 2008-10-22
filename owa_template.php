@@ -573,19 +573,24 @@ class owa_template extends Template {
 	}
 	
 	
-	function getWidget($do, $format, $params = array()) {
+	function getWidget($do, $params = array(), $wrapper = true) {
 		
 		if (empty($params)):
 			$params = array();
 		endif;
 		
 		$params['do'] = $do;
-		$params['format'] = $format;
-		$params['initial_view'] = true;
+	
+		if ($wrapper === true):
+			$params['initial_view'] = true;
+			$params['wrapper'] = true;
+		else:
+			$params['wrapper'] = false;
+		endif;
 		
 		return owa_coreAPI::performAction($do, $params);
 	}
-	
+		
 	function makeJson($array) {
 		
 		$json = '{';

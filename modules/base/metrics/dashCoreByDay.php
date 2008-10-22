@@ -29,6 +29,8 @@
  */
 
 class owa_dashCoreByDay extends owa_metric {
+
+	var $limit = 10;
 	
 	function owa_dashCoreByDay($params = null) {
 		
@@ -41,6 +43,7 @@ class owa_dashCoreByDay extends owa_metric {
 		parent::__construct($params);
 		
 		$this->setLabels(array('Month', 'Day', 'Year', 'Unique Visitors', 'Sessions', 'Page Views'));
+		$this->page_results = true;
 		
 		return;
 		
@@ -48,30 +51,22 @@ class owa_dashCoreByDay extends owa_metric {
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
+		$this->db->selectFrom('owa_session', 'session');
 		
-		$db->selectFrom('owa_session', 'session');
-		
-		$db->selectColumn("session.month, 
-							session.day, 
-							session.year, 
-							count(distinct session.visitor_id) as unique_visitors, 
-							count(session.id) as sessions, 
-							sum(session.num_pageviews) as page_views");
+		$this->db->selectColumn("session.month, 
+								session.day, 
+								session.year, 
+								count(distinct session.visitor_id) as unique_visitors, 
+								count(session.id) as sessions, 
+								sum(session.num_pageviews) as page_views");
 									
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-		$db->groupBy('day');
-		$db->groupBy('month');
-		$db->orderBy('year');
-		$db->orderBy('month');
-		$db->orderBy('day');
+		$this->db->groupBy('day');
+		$this->db->groupBy('month');
+		$this->db->orderBy('year');
+		$this->db->orderBy('month');
+		$this->db->orderBy('day');
 		
-		if (array_key_exists('limit', $this->params)):
-			$db->limit($this->params['limit']);
-		endif;
-		
-		$ret = $db->getAllRows();
+		$ret = $this->db->getAllRows();
 		
 		return $ret;
 				

@@ -57,7 +57,7 @@ class owa_processEventController extends owa_controller {
 		$this->event = owa_coreAPI::supportClassFactory('base', 'event');
 		
 		// Pre process - default and standard properties
-		$this->pre();
+		$this->preProcess();
 		
 		$this->event->state = $this->params['caller']['event'];
 		
@@ -75,7 +75,7 @@ class owa_processEventController extends owa_controller {
 	/**
 	 * Must be called before all other event property setting functions
 	 */
-	function pre() {
+	function preProcess() {
 		
 		// set site id if not already set . Needed for GUID generation of event
 		if (empty($this->params['caller']['site_id'])):
@@ -140,7 +140,7 @@ class owa_processEventController extends owa_controller {
 		
 	}
 	
-	function post() {
+	function postProcess() {
 		
 		//Clean Query Strings
 		if ($this->config['clean_query_string'] == true):
