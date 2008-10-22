@@ -43,6 +43,7 @@ class owa_dashCountsTraffic extends owa_metric {
 	function calculate() {
 		
 		$db = owa_coreAPI::dbSingleton();
+		
 		$db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
 			sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
 			count(session.id) as sessions, 
@@ -58,27 +59,6 @@ class owa_dashCountsTraffic extends owa_metric {
 		$ret = $db->getAllRows();
 
 		return $ret;
-
-	
-		/*
-
-		$this->params['select'] = "count(distinct session.visitor_id) as unique_visitors, 
-			sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
-			count(session.id) as sessions, 
-			sum(session.num_pageviews) as page_views ";
-		
-		$this->params['use_summary'] = true;
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$ref = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $ref);
-		
-		return $s->query($this->params);
-*/
 		
 	}
 	

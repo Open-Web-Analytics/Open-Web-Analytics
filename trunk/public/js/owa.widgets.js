@@ -19,9 +19,33 @@ OWA.widget.prototype = {
 	
 	current_view: '',
 	
+	page_num: 1,
+	
+	max_page_num: 2,
+	
+	more_pages: false,
+	
 	minimized: false,
 	
-	_makeUrl: function(values) {},
+	displayPagination: function() {
+	
+		var widget_pagination_div = "#"+this.dom_id+"_widget-pagination";
+		var pages = this._makePagination();
+		jQuery(widget_pagination_div).show("fast");
+		jQuery(widget_pagination_div).html(pages);
+		jQuery('.owa_widget-paginationcontrol').click(owa_widget_page_results);
+		
+		return;
+	},
+	
+		
+	hidePagination: function() {
+	
+		var widget_pagination_div = "#"+this.dom_id+"_widget-pagination";
+		jQuery(widget_pagination_div).hide();
+		
+		return;
+	},
 			
 	changeView: function(view) {
 			
@@ -43,23 +67,90 @@ OWA.widget.prototype = {
 				success: function(html){  
 					jQuery(widgetcontentid).show("slow"); //animation 
 					jQuery(widgetcontentid).html(html); //show the html inside .content div 
-					this.current_view = view;
+					
+					
+					
 					
 				} 
 			}); //close $.ajax( 
-				
+			
+			this.current_view = view;
+			
+			if (view == "table") {
+				this.displayPagination();
+			} else {
+				this.hidePagination();
+			}
+			
 			return true;
 		
+	},
+	
+	_makePagination: function() {
+		
+		var pagination = '';
+		var anchor = this._makeLinkAnchor();
+		
+		// previous nav link
+		if (this.page_num > 1) {
+			pagination = 'Pages: ';
+			pagination = pagination + this._makePaginationLink(anchor, "<< Previous") + ' ... ';
+		}
+		
+		for (i = 1; i <= this.max_page_num; i++) {
+			
+			// let's pick a page name for our link
+			var page_name = i;
+		
+			// to link or not to link
+			if (i == this.page_num) {
+				pagination = pagination + page_name;
+			} else {
+				pagination = pagination + this._makePaginationLink(anchor, page_name);
+			}
+			
+			// add commas
+			if (i != this.max_page_num) {
+				pagination = pagination + ', ';
+			}
+
+		}
+		
+		// previous nav link
+		if (this.page_num < this.max_page_num) {
+			if (this.more_pages == true) {
+				pagination = pagination + this._makePaginationLink(anchor, "Next >>") + ' ... ';
+			}
+		}
+		
+        
+        return pagination;
+       	
+	},
+	
+	_makePaginationLink: function(anchor, page_name) {
+		
+		var link = '<a href="' + anchor + '" class="owa_widget-paginationcontrol">' + page_name + '</a>';
+		return link;
+	},
+	
+	_makeLinkAnchor: function() {
+		
+		return anchor = "#"+this.dom_id+"_widget-header";
 	}
+	
+	
 
 }
 
 // Bind event handlers
 jQuery(document).ready(function(){   
 	jQuery('.owa_widget-control').click(owa_widget_changeView);
+	jQuery('.owa_widget-pagecontrol').click(owa_widget_changeView);
 	jQuery('.owa_widget-close').click(owa_widget_close);
 	jQuery('.owa_widget-status').hide("slow");
 	jQuery('.owa_widget-toggle').click(owa_widget_toggle);
+	jQuery('.owa_widget-paginationcontrol').click(owa_widget_page_results);
 });
 
 // Event handler for changeing views
@@ -85,4 +176,16 @@ function owa_widget_toggle() {
 
 	return;
 }
+
+function owa_widget_page_results() {
+	var page = jQuery(this).text();
+	alert(page);
+	var widgetname = jQuery("div").parent(".owa_widget-container").attr("id");
+	OWA.items[widgetname].page_num = page;
+	OWA.items[widgetname].properties.page = page;
+	var view = OWA.items[widgetname].current_view;
+	return OWA.items[widgetname].changeView(view);
+
+}
+
 

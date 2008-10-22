@@ -19,11 +19,17 @@
 
 require_once(OWA_BASE_CLASSES_DIR.'owa_lib.php');
 require_once(OWA_BASE_CLASS_DIR.'widget.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
 
+/**
+ * DashBoard Trend Widget Controller
+ *
+ *
+ */
 class owa_dashboardTrendWidgetController extends owa_widgetController {
-
+	
 	function __construct($params) {
+		
+		$this->default_format = 'graph';
 		
 		return parent::__construct($params);
 	}
@@ -37,6 +43,10 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 		
 		// Set Title of the Widget
 		$this->data['title'] = 'Dashboard Trend';
+		
+		// set default dimensions
+		$this->setHeight(300);
+		$this->setWidth(800);
 		
 		// enable formats
 		$this->enableFormat('graph', 'Graph');
@@ -55,8 +65,6 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 			case 'graph':
 				
 				$this->data['view'] = 'base.openFlashChart';
-				$this->data['height'] = $this->params['height'];
-				$this->data['width'] = $this->params['width'];
 				break;
 				
 			case 'graph-data':
@@ -74,13 +82,39 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 				
 			case 'table':
 			
-				$m->setLimit(5);
+				// apply limit override
+				if (array_key_exists('limit', $this->params)):
+					$m->setLimit($this->params['limit']);
+				else:
+					$m->setLimit(5);	
+				endif;
+											
+				// set page number of results
+				if (array_key_exists('page', $this->params)):
+					$m->setPage($this->params['page']);
+				endif;
+				
 				$results = $m->generate();
+				
 				$this->data['labels'] = $m->getLabels();
 				$this->data['rows'] = $results;
 				$this->data['view'] = 'base.genericTable';
+				
+				// generate pagination array
+				$this->data['pagination'] = $m->getPagination();
+			
+				//print_r($this->data['pagination']);
 				break;
-					
+				
+			case 'sparkline':
+			
+				$this->data['type'] = 'line';
+				$this->data['view'] = 'base.sparkline';			
+				break;
+			case 'sparkline-image':
+				
+				$this->data['view'] = 'base.sparklineLineGraph';
+				break;		
 		}
 		
 		return;

@@ -13,7 +13,7 @@ if it is to be tracked/reported seperately.</P>
 		<TH>Site Family</TH>
 		<TH>Options</TH>
 	</TR>
-<? foreach ($sites as $site =>$value):?>
+<? foreach ($sites as $site => $value):?>
 	<TR>
 	
 		<TD>
