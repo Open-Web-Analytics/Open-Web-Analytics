@@ -90,112 +90,18 @@ class owa_baseModule extends owa_module {
 	
 	function registerNavigation() {
 		
-		$this->addNavigationLink(array('view' 			=> 'base.reportDocument', 
-										'nav_name'		=> 'subnav',
-										'ref'			=> 'base.reportClicks',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Click Map Report',
-										'order'			=> 1));
-		
-		
-		$this->addNavigationLink(array('view' 			=> 'base.report', 
-										'nav_name'		=> 'top_level_report_nav',
-										'ref'			=> 'base.reportDashboard',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Dashboard',
-										'order'			=> 1));
-										
-		$this->addNavigationLink(array('view' 			=> 'base.report', 
-										'nav_name'		=> 'top_level_report_nav',
-										'ref'			=> 'base.reportVisitors',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Visitors',
-										'order'			=> 3));
-										
-		$this->addNavigationLink(array('view' 			=> 'base.report', 
-										'nav_name'		=> 'top_level_report_nav',
-										'ref'			=> 'base.reportTraffic',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Traffic Sources',
-										'order'			=> 2));	
-		
-		$this->addNavigationLink(array('view' 			=> 'base.report', 
-										'nav_name'		=> 'top_level_report_nav',
-										'ref'			=> 'base.reportContent',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Content',
-										'order'			=> 4));
-		
-		$this->addNavigationLink(array('view' 			=> 'base.report', 
-										'nav_name'		=> 'top_level_report_nav',
-										'ref'			=> 'base.reportFeeds',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Feeds',
-										'order'			=> 5));
-										
-		$this->addNavigationLink(array('view' 			=> 'base.reportVisitors', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportVisitsGeolocation',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Geo-location',
-										'order'			=> 1));
-										
-		$this->addNavigationLink(array('view' 			=> 'base.reportVisitors', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportHosts',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Domains',
-										'order'			=> 1));								
-
-		$this->addNavigationLink(array('view' 			=> 'base.reportVisitors', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportVisitorsLoyalty',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Visitor Loyalty',
-										'order'			=> 1));
-
-		$this->addNavigationLink(array('view' 			=> 'base.reportContent', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportEntryExits',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Entry & Exit Pages',
-										'order'			=> 1));
-
-
-		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportKeywords',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Keywords',
-										'order'			=> 1));
-										
-		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportAnchortext',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Inbound Link Text',
-										'order'			=> 2));
-		
-		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportSearchEngines',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Search Engines',
-										'order'			=> 3));
-		
-		$this->addNavigationLink(array('view' 			=> 'base.reportTraffic', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportReferringSites',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Referring Web Sites',
-										'order'			=> 3));
-		
-		$this->addNavigationLink(array('view' 			=> 'base.reportDashboard', 
-										'nav_name'		=> 'sub_nav',
-										'ref'			=> 'base.reportDashboardSpy',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Spy Dashboard',
-										'order'			=> 1));
+		$this->addNavigationLink('Reports', '', 'base.reportDashboard', 'Dashboard', 1);
+		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
+		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
+		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 2);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryExits', 'Entry & Exit Pages', 3);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);								$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);							$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Keywords', 1);								
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);							$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Spy Dashboard', 1);	
 		
 		return;
 		

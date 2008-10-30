@@ -81,6 +81,8 @@ class owa_metric extends owa_base {
 	var $page;
 	
 	var $limit;
+	
+	var $order;
 
 	/**
 	 * Constructor
@@ -102,7 +104,7 @@ class owa_metric extends owa_base {
 		// Setup time and query periods
 		$this->time_now = owa_lib::time_now();
 		// create timeperiod constraints
-		$this->setTimePeriod($this->params['period']);
+		//$this->setTimePeriod($this->params['period']);
 		//print_r($this->params);
 		$this->db = owa_coreAPI::dbSingleton();
 		
@@ -141,10 +143,11 @@ class owa_metric extends owa_base {
 		
 		if (!empty($period)):	
 			$this->params['period'] = $period;
-			$this->setTimePeriod();
 		endif;
 		
-		return $this->params['constraints']['timestamp'];
+		$this->setTimePeriod();
+		
+		return;
 		
 	}
 	
@@ -384,10 +387,22 @@ class owa_metric extends owa_base {
 		endif;
 	}
 	
+	function setOrder($value) {
+		
+		if (!empty($value)):
+		
+			$this->order = $value;
+		
+		endif;
+	}
+
+	
 	function setPage($value) {
 		
 		if (!empty($value)):
 		
+			$this->page = $value;
+			
 			if (!empty($this->pagination)):
 				$this->pagination->setPage($value);
 			endif;
@@ -417,12 +432,6 @@ class owa_metric extends owa_base {
 	function setPeriod($value) {
 		if (!empty($value)):
 			$this->params['period'] = $value;
-		endif;
-	}
-	
-	function setOrder($value) {
-		if (!empty($value)):
-			$this->params['order'] = $value;
 		endif;
 	}
 	
@@ -456,10 +465,12 @@ class owa_metric extends owa_base {
 		
 		$this->db->multiWhere($this->getConstraints());
 		
-		// apply limit if one is set
+		/*
+// apply limit if one is set
 		if (array_key_exists('limit', $this->params)):
 			$this->limit = $this->params['limit'];
 		endif;
+*/
 		
 		if (!empty($this->pagination)):
 			$this->pagination->setLimit($this->limit);
@@ -470,17 +481,17 @@ class owa_metric extends owa_base {
 			$this->db->limit($this->limit);
 		endif;
 		
-		//
+		// pass order to db object if one exists
+		if (!empty($this->order)):
+			$this->db->order($this->order);
+		endif;
+		
+		
+		// pagination
 		if (!empty($this->page)):
 			$this->pagination->setPage($this->page);
 			$offset = $this->pagination->calculateOffset();
 			$this->db->offset($offset);
-		else:
-			// deprecated
-			if (!empty($this->params['offset'])):
-				$offset = $this->params['offset'];
-				$this->db->offset($offset);
-			endif;
 		endif;
 	
 		
@@ -494,6 +505,19 @@ class owa_metric extends owa_base {
 	
 	}
 	
+	function calculatePaginationCount() {
+		
+		if (method_exists($this, 'paginationCount')):
+			$this->makeTimePeriod();
+		
+			$this->db->multiWhere($this->getConstraints());
+		
+			return $this->paginationCount();
+		else:
+		
+			return false;
+		endif;
+	}
 	
 	/**
 	 * Set the labels of the measures
@@ -517,6 +541,8 @@ class owa_metric extends owa_base {
 	
 	function getPagination() {
 	
+		$count = $this->calculatePaginationCount();
+		$this->pagination->total_count = $count;
 		return $this->pagination->getPagination(); 
 	
 	}

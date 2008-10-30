@@ -25,9 +25,19 @@ OWA.util =  {
 		}
 		
 		return nsObj;
+    },
+    
+    getScript: function(file, path) {
+    
+    	jQuery.getScript(path + file);
+    	
+    	return;
+    
     }
 
 	
 }
+
+
 
 

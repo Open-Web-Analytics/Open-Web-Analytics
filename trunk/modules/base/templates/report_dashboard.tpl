@@ -1,72 +1,55 @@
-<style>
-#summary_stats {width:px;}
-#trend {width:; padding:10px;}
-#core_metrics {width:px;float:;}
-#visitor_types {width:350px; padding:10px; float:;}
-#visitor_sources {width:350px; padding:10px; float:;}
-#recent_visitors {width:px;}
-#top_pages {width:; }
-#top_referers {width:px; margin-left: px}
-#top_visitors {width:; margin-left: px}
-#top_browser_types{width:; margin-left: px}
-#recent_visitors{width:; margin-left: px}
-</style>
 
-<? include('report_header.tpl');?>
+<? //$this->getWidget('base.dashboardTrendWidget', array('height' => 100, 'width' => 900, 'period' => 'last_thirty_days', 'format' => 'sparkline'), false);?>
 
-<?=$this->getWidget('base.dashboardTrendWidget', array('height' => 400, 'width' => 900, 'period' => 'last_thirty_days'));?>
 
-<?=$this->getWidget('base.dashboardTrendWidget', array('height' => 100, 'width' => 900, 'period' => 'last_thirty_days', 'format' => 'sparkline'), false);?>
+<?=$this->getWidget('base.dashboardTrendWidget', array('height' => 200, 'width' => '', 'period' => 'last_thirty_days'));?>		
+<BR>
 
-<table width="100%">
-	
+
+<BR>
+
+<table class="owa_reportElement">
 	<TR>
-		<TD valign="top">
-			<? include ('report_dashboard_summary_stats.tpl');?>		
+		<TD valign="top" width="50%">	
+			<?=$this->getWidget('base.widgetTopPages', array('height' => '', 'width' => '', 'period' => $params['period']));?>
+		</TD>
+		
+		<TD valign="top" width="50%">	
+			<?=$this->getWidget('base.widgetTopReferers', array('height' => '', 'width' => '', 'period' => $params['period']));?>
 		</TD>
 	</TR>
 </table>
+<BR>
 
-<table>
-	<TR>
-		<TD valign="top">	
+<table class="owa_reportElement">
+	<TR>	
+		<TD width="50%">
+			<?=$this->getWidget('base.widgetVisitorSources', array('height' => '', 'width' => '', 'period' => $params['period']));?>
 
-			<fieldset id="top_pages">
-				<legend>Top Pages</legend>
-				<? include ('report_top_pages.tpl');?>
-			</fieldset>
-			
-			<fieldset id="visitor_sources">	
-				<legend>Visitor Sources</legend>
-				<img src="<?=$this->graphLink(array('view' => 'base.graphVisitorSources'), true); ?>">
-			</fieldset>
-			
+		</TD>
+		<TD>
 			<fieldset id="visitor_types">	
 				<legend>Visitor Types</legend>
 				<img src="<?=$this->graphLink(array('view' => 'base.graphVisitorTypes'), true); ?>">
 			</fieldset>
-
-			
-	
 		</TD>
+	</TR>
+</table>
+<BR>
+<BR>
+
+<? include ('report_dashboard_summary_stats.tpl');?>
+<table class="">
+	<TR>
 		
 		<TD valign="top">
-		
-			<fieldset id="core_metrics">
-				<legend>Core Metrics</legend>
-				<? include ('report_dashboard_core_metrics.tpl');?>
-			</fieldset>
 			
-			<fieldset id="top_referers">
-				<legend>Top Referring Web Pages</legend>
-				<? include ('report_top_referers.tpl');?>
-			</fieldset>
-				
 			<fieldset id="recent_visitors">
 				<legend>Recent Visitors</legend>
 				<? include ('report_latest_visits.tpl');?>
 			</fieldset>
 			
+			<?=$this->makePagination($pagination, $params['do']);?>
 		</TD>
 	</TR>
 </table>

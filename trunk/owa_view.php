@@ -196,7 +196,7 @@ class owa_view extends owa_base {
 		
 		// pagination
 		if (array_key_exists('pagination', $data)):
-			$this->body->set('pagination', $data['pagination']);	
+			$this->body->set('pagination', $data['pagination']);
 		endif;
 		
 		$this->_setLinkState();
@@ -215,6 +215,11 @@ class owa_view extends owa_base {
 			
 			// assign subview to body template
 			$this->body->set('subview', $this->subview_rendered);
+			
+			// pagination
+			if (array_key_exists('pagination', $data)):
+				$this->subview->body->set('pagination', $data['pagination']);
+			endif;
 		endif;
 		
 		if (!empty($data['validation_errors'])):
@@ -403,6 +408,7 @@ class owa_view extends owa_base {
 	
 }
 
+
 class owa_areaBarsFlashChartView extends owa_base {
 
 	function owa_areaBarsFlashChartView() {
@@ -454,6 +460,78 @@ class owa_areaBarsFlashChartView extends owa_base {
 
 }
 
+/*
+class owa_areaBarsFlashChart2View extends owa_view {
+
+	function owa_areaBarsFlashChart2View() {
+	
+		return owa_areaBarsFlashChart2View::__construct();
+	}
+	
+	function __construct() {
+		
+		return parent::__construct();
+		
+	}
+
+	function construct($data) {
+		
+		include_once(OWA_INCLUDE_DIR.'ofc-2.0/php-ofc-library/open-flash-chart.php');
+		
+		$this->t->set_template('wrapper_component.tpl');		
+		$this->body->set_template('ofc2.tpl');
+		$this->setJs('includes/json2.js');
+		$this->setJs('includes/swfobject.js');
+		
+		$g = new open_flash_chart();
+		
+		$x = new x_axis();
+		$y = new y_axis();
+		//$g->title($data['title'], '{font-size: 20px;}' );
+		$g->bg_colour = '#FFFFFF';
+		$x->set_colour('#cccccc', '#ffffff');
+		$y->set_colour('#cccccc', '#cccccc');
+		//$g->set_inner_background( '#FFFFFF', '#', 90 );
+		
+		// y2 series
+		$bar = new bar();
+		$bar->set_values($data['y']['series']);
+		//$g->set_data($data['y']['series']);
+		//$g->bar( 100, '#FF9900', $data['y']['label'], 10 );
+		$bar->set_colour('#FF9900');
+		//$bar->set_alpha(10)
+		// y series
+		
+		// area
+		$a = new area_hollow();
+		$a->set_values($data['y2']['series']);
+		// width: 2px, dots: 3px, area alpha: 25% ...
+		//$g->area_hollow( 1, 3, 60, '#99CCFF', $data['y2']['label'], 12, '#99CCFF' );
+		
+		
+		//$g->set_x_labels($data['x']['series']);
+		$x->set_labels( $data['x']['series'] );
+		$g->x_axis = $x;
+		$g->add_y_axis( $y );
+		//$g->set_x_label_style( 10, '#000000', 0, 2 );
+		//$g->set_x_axis_steps( 2 );
+		//$g->set_x_legend( $data['x']['label'], 12, '#000000' );
+		
+		//$g->set_y_min( 0 );
+		//$g->set_y_max( 225 );
+		
+		//$g->y_label_steps( 15 );
+		//$g->set_y_legend( '', 12, '#C11B01' );
+		
+		$this->body->set('data', $g->toPrettyString());
+		$this->body->set('dom_id', $data['dom_id']);
+		return;
+	}
+
+}
+
+*/
+
 class owa_pieFlashChartView extends owa_view {
 
 	function owa_pieFlashChartView() {
@@ -472,11 +550,12 @@ class owa_pieFlashChartView extends owa_view {
 		include_once(OWA_INCLUDE_DIR.'open-flash-chart.php' );
 		
 		$g = new graph();
-		
+		$g->bg_colour = '#FFFFFF';
 		//
 		// PIE chart, 60% alpha
 		//
-		$g->pie(60,'#505050','{font-size: 12px; color: #404040;');
+		$g->pie(100,'#505050','{font-size: 10px; color: #404040;');
+		//$g->pie(60,'#E4F0DB','{display:none;}',false,1);
 		//
 		// pass in two arrays, one of data, the other data labels
 		//
@@ -486,14 +565,10 @@ class owa_pieFlashChartView extends owa_view {
 		// will be re-used (3 colurs for 5 slices means the last two
 		// slices will have colours colour[0] and colour[1]):
 		//
-		$g->pie_slice_colours( array('#d01f3c','#356aa0','#C79810') );
+		$g->pie_slice_colours( array('#99CCFF', '#FF9900', '#356aa0','#C79810', '#848484','#CACFBE','#DEF799') );
 		
-		$g->set_tool_tip( '#val#%' );
-		
-		if (array_key_exists('title', $data)):
-			$g->title($data['title'], '{font-size:18px; color: #d01f3c}' );
-		endif;
-		
+		//$g->set_tool_tip( '#val#%' );
+		$g->set_tool_tip( 'Label: #x_label#<br>Value: #val#' );
 		return $g->render();
 	
 	}
@@ -566,6 +641,13 @@ class owa_genericTableView extends owa_view {
 			$this->body->set('table_caption', '');		
 		endif;
 		
+		if (array_key_exists('table_row_template', $data)):
+			$this->body->set('table_row_template', $data['table_row_template']);
+		else:
+			;		
+		endif;
+		
+		
 		$this->body->set('table_id', str_replace('.', '-', $data['params']['do']).'-table');
 		
 		return;
@@ -599,6 +681,8 @@ class owa_openFlashChartView extends owa_view {
 		$this->body->set('widget', $data['widget']);
 		$this->body->set('height', $data['height']);
 		$this->body->set('width', $data['width']);
+		$this->body->set('dom_id', $data['dom_id']);
+		$this->body->set('params', $data['params']);
 		
 		return;
 	

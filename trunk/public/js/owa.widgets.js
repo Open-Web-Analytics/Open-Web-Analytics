@@ -60,9 +60,9 @@ OWA.widget.prototype = {
 				url: this.config.action_url,
 				data: OWA.util.nsAll(this.properties), 
 				//show loading just when link is clicked 
-				beforeSend: function(){ jQuery(".owa_widget-status").show("slow");}, 
+				beforeSend: function(){ jQuery("#"+this.dom_id).children(".owa_widget-status").show("slow");}, 
 				//stop showing loading when the process is complete 
-				complete: function(){ jQuery(".owa_widget-status").hide("slow");}, 
+				complete: function(){ jQuery("#"+this.dom_id).children(".owa_widget-status").hide("slow");}, 
 				//so, if data is retrieved, store it in html
 				success: function(html){  
 					jQuery(widgetcontentid).show("slow"); //animation 
@@ -144,34 +144,45 @@ OWA.widget.prototype = {
 }
 
 // Bind event handlers
-jQuery(document).ready(function(){   
+jQuery(document).ready(function(){  
+	//jQuery.getScript(OWA.config.js_url + "includes/jquery/tablesorter/jquery.tablesorter.js");	 
 	jQuery('.owa_widget-control').click(owa_widget_changeView);
 	jQuery('.owa_widget-pagecontrol').click(owa_widget_changeView);
 	jQuery('.owa_widget-close').click(owa_widget_close);
 	jQuery('.owa_widget-status').hide("slow");
 	jQuery('.owa_widget-toggle').click(owa_widget_toggle);
 	jQuery('.owa_widget-paginationcontrol').click(owa_widget_page_results);
+	
 });
+
 
 // Event handler for changeing views
 function owa_widget_changeView() {
 
 	var view = jQuery(this).attr("name");
-	var widgetname = jQuery("div").parent(".owa_widget-container").attr("id");	
+	var widgetname = jQuery(this).parents(".owa_widget-container").get(0).id;	
+	//alert(widgetname);
 	return OWA.items[widgetname].changeView(view);
 	
 }
 
 function owa_widget_close() {
 	
-	return jQuery("div").parent(".owa_widget-container").hide("slow");	
+	return jQuery(this).parents(".owa_widget-container").hide("slow");	
 }
 
 function owa_widget_toggle() {
-
-	jQuery("div").parent(".owa_widget-innercontainer").toggle("slow");
-	jQuery(this).html("Show");
-	var widgetname = jQuery("div").parent(".owa_widget-container").attr("id");	
+	
+	// get the widget name
+	var widgetname = jQuery(this).parents(".owa_widget-container").get(0).id;
+	
+	// toggle the visibility of the child element
+	jQuery('#'+widgetname).children(".owa_widget-innercontainer").toggle("slow");
+	
+	//change the text of the link to reflect new state
+	jQuery(this).html("Show");	
+	
+	// set property on widget object
 	OWA.items[widgetname].minimized = true;
 
 	return;
@@ -180,7 +191,7 @@ function owa_widget_toggle() {
 function owa_widget_page_results() {
 	var page = jQuery(this).text();
 	alert(page);
-	var widgetname = jQuery("div").parent(".owa_widget-container").attr("id");
+	var widgetname = jQuery(this).parents(".owa_widget-container").get(0).id;
 	OWA.items[widgetname].page_num = page;
 	OWA.items[widgetname].properties.page = page;
 	var view = OWA.items[widgetname].current_view;

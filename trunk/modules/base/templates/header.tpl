@@ -3,30 +3,31 @@
 		<TR>
 			<TD class="owa_logo"><img src="<?=$this->makeImageLink('owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"></TD>
 			<TD>
-				<div id="admin_nav">
-				<table align="right">
-					<TR>
-						<TD><a href="<?=$this->makeLink(array('do' => 'base.reportDashboard'));?>">Analytics</a></TD>
-						<TD>|</TD>
-						<TD><a href="<?=$this->makeLink(array('do' => 'base.optionsGeneral'));?>">Admin Settings</a></TD>
-						<TD>|</TD>
-						<TD><a href="http://wiki.openwebanalytics.com">Help</a></TD>
-						<TD>|</TD>
-						<TD><a href="http://trac.openwebanalytics.com">Report a Bug</a></TD>
+				<div style="float:right;">
+				<div class="owa_navigation">
+					<UL>
+						<LI><a href="<?=$this->makeLink(array('do' => 'base.reportDashboard'));?>">Reports</a></LI>
+						<LI><a href="<?=$this->makeLink(array('do' => 'base.optionsGeneral'));?>">Settings</a></LI>
+						<LI><a href="http://wiki.openwebanalytics.com">Help</a></LI>
+						<LI><a href="http://trac.openwebanalytics.com">Report a Bug</a></LI>
 						<? if ($this->config['is_embedded'] == false):?>
-						<TD>|</TD>
-						<TD>
-						<? if ($authStatus == true):?>
-						<a href="<?=$this->makeLink(array('action' => 'base.logout'));?>">Logout</a>
-						<?else:?>
-						<a href="<?=$this->makeLink(array('view' => 'base.login'));?>">Login</a>
-						<?endif;?>
-						</TD>
-						<?endif;?>
-					</TR>
-				</table>
+						<LI>
+							<? if ($authStatus == true):?>
+							<a href="<?=$this->makeLink(array('action' => 'base.logout'));?>">Logout</a>
+							<?php else:?>
+							<a href="<?=$this->makeLink(array('view' => 'base.login'));?>">Login</a>
+							<?php endif;?>
+						</LI>
+						<?php endif;?>
+					</UL>
 				</div>
-			</td>
+				</div>
+				<div class="post-nav"></div>
+				<?php if (!empty($service_msg)): ?>
+				<div class="owa_headerServiceMsg"><?=$service_msg; ?></div>
+				<?php endif;?>
+	
+			</TD>
 		</TR>
 	</table>
 	

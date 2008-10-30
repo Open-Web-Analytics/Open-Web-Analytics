@@ -274,12 +274,35 @@ class owa_module extends owa_base {
 	 * Registers Navigation Link with a particular View
 	 * 
 	 */
-	function addNavigationLink($link) {
+	/*
+function addNavigationLink($link) {
 		
 		$this->nav_links[] = $link;
 		
 		return;
 	}
+*/
+	
+	/**
+	 * Registers Group Link with a particular View
+	 * 
+	 */
+	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'viewer') {
+		
+		$link = array('ref' => $ref, 
+					'anchortext' => $anchortext, 
+					'order' => $order, 
+					'priviledge' => $priviledge);
+					
+		if (!empty($subgroup)):
+			$this->nav_links[$group][$subgroup]['subgroup'][] = $link;
+		else:
+			$this->nav_links[$group][$anchortext] = $link;			
+		endif;
+
+		return;
+	}
+	
 	
 	/**
 	 * Registers Entity

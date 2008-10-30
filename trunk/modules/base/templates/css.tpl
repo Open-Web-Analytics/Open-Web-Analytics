@@ -20,93 +20,47 @@ div {margin:0;}
 .nav_links li {float: left; padding:4px 20px 4px 20px;}
 .nav_links li a {text-decoration: none; }
 .nav_links ul {clear: both;}
-.post-nav {clear: both; margin:0px; padding:0px 0px 20px 0px;}
+.post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
-
-/*globalnav*/
-
-#globalnav {
-	position:relative;
-	float:left;
-	width:100%;
-	padding:0 0 0px 0px;
-	margin:0;
-	list-style:none;
-	line-height:auto;
+#owa_header {border-bottom: 3px solid orange;}
+.owa_navigation {float:left; overflow: hidden;}
+.owa_navigation ul {list-style: none; padding: 0; margin: 0;}
+.owa_navigation li {text-decoration: none; float:left; margin: 2px;}
+.owa_navigation li a {
+	background: url(background.gif) #fff bottom left repeat-x;
+	height: 2em;
+	line-height: 2em;
+	float: left;
+	width: 9em;
+	display: block;
+	border: 0.1em solid #efefef;
+	color: ;
+	text-decoration: none;
+	text-align: center;
 }
 
-#globalnav LI {
-	float:left;
-	margin:0;
-	padding:0;
-}
-
-#globalnav A {
-	display:block;
-	color:#444;
-	text-decoration:none;
-	font-weight:bold;
-	background:#ddd;
-	margin:0;
-	padding:0.25em 10px;
-	border-left:1px solid #fff;
-	border-top:1px solid #fff;
-	border-right:1px solid #aaa;
-}
-
-#globalnav A:hover,
-#globalnav A:active,
-#globalnav A.here:link,
-#globalnav A.here:visited {
-	background:#bbb;
-}
-
-#globalnav A.here:link,
-#globalnav A.here:visited {
-	position:relative;
-	z-index:102;
-}
-
-/*subnav*/
-
-#globalnav UL {
-	position:absolute;
-	left:0;
-	top:1.5em;
-	float:left;
-	background:#bbb;
-	width:100%;
-	margin:0;
-	padding:4px 0 4px 0;
-	list-style:none;
-	border-top:1px solid #fff;
-}
-
-#globalnav UL LI {
-	float:left;
-	display:block;
-	margin-top:1px;
-}
-
-#globalnav UL A {
-	background:#bbb;
-	color:#fff;
-	display:inline;
-	margin:0;
-	padding:0 15px;
-	border:0
-}
-
-#globalnav UL A:hover,
-#globalnav UL A:active,
-#globalnav UL A.here:link,
-#globalnav UL A.here:visited {
-	color:#444;
+.owa_pagination {float:left; overflow: hidden;}
+.owa_pagination ul {list-style: none; padding: 0; margin: 0;}
+.owa_pagination li {text-decoration: none; float:left; margin: 2px;}
+.owa_pagination li a {
+	background: url(background.gif) #fff bottom left repeat-x;
+	height:2em;
+	line-height:2em;
+	float: left;
+	width: 15px;
+	display: block;
+	border: 0.1em solid #efefef;
+	color: ;
+	text-decoration: none;
+	text-align: center;
 }
 
 
 
+
+
+.owa_headerServiceMsg {border: 1px solid #efefef;border-left: 8px solid yellow; height: 25px; width: auto; padding:10px}
 
 
 /* HEADLINES */
@@ -185,17 +139,7 @@ div {margin:0;}
 .setting .field {padding: 2px 0 2px 0;}
 
 
-/* REPORTS */
-#report_header {width:100%;margin: 0 0 20px 0;}
-.report_headline {font-size:26px; padding:5px; font-weight:bold;}
-.data_table {border-collapse: collapse;margin:0;width:100%;}
-.report_period {border: 1px solid #cccccc;font-size:22px; color:#999999; text-align:right; padding:5px; min-width:100px;}
-.data_table td {border:2px solid #CCCCCC;  min-width:80px;padding:10px;}
-.col_item_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999;}
-.col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
-.data_cell {text-align:center; vertical-align:center;}
-.item_cell {}
-.section_header {width:98%;background-color:#cccccc; padding:12px; margin: 15px 0 15px 0;}
+
 
 
 /* LAYOUT */

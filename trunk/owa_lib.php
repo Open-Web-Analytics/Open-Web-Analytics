@@ -319,7 +319,7 @@ class owa_lib {
 					//'day' => array('label' => 'Day'),
 					//'month' => array('label' => 'Month'),
 					//'year' => array('label' => 'Year'),
-					//'date_range' => array('label' => 'Date Range')
+					'date_range' => array('label' => 'Custom Date Range')
 		);
 		
 	}

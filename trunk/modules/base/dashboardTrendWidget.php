@@ -42,16 +42,12 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 	function action() {
 		
 		// Set Title of the Widget
-		$this->data['title'] = 'Dashboard Trend';
-		
-		// set default dimensions
-		$this->setHeight(300);
-		$this->setWidth(800);
+		$this->data['title'] = 'Dashboard Trend';		
 		
 		// enable formats
-		$this->enableFormat('graph', 'Graph');
-		$this->enableFormat('table', 'Table');
-		$this->enableFormat('sparkline', 'Sparkline');
+		$this->enableFormat('graph');
+		$this->enableFormat('table');
+		$this->enableFormat('sparkline');
 		
 		//setup Metrics
 		$m = owa_coreApi::metricFactory('base.dashCoreByDay');
@@ -109,8 +105,9 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 			case 'sparkline':
 			
 				$this->data['type'] = 'line';
-				$this->data['view'] = 'base.sparkline';			
+				$this->data['view'] = 'base.sparkline';				
 				break;
+				
 			case 'sparkline-image':
 				
 				$this->data['view'] = 'base.sparklineLineGraph';

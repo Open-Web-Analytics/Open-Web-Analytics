@@ -37,21 +37,24 @@ class owa_topPages extends owa_metric {
 	}
 	
 	function __construct($params) {
-	
+				
+		$this->setLabels(array('Page Views', 'Page Name', 'Page Type', 'URL', 'Document ID'));
+		$this->page_results = true;
+
 		return parent::__construct($params);
 	}
 
 	
 	function calculate() {
 			
-		$db = owa_coreAPI::dbSingleton();
+		//$db = owa_coreAPI::dbSingleton();
 				
 		$r = owa_coreAPI::entityFactory('base.request');
 		$d = owa_coreAPI::entityFactory('base.document');
 		
 		//$r->addRelatedObject('document_id', owa_coreAPI::entityFactory('base.document'));
-		$db->selectFrom($r->getTableName(), 'request');
-		$db->selectColumn("count(request.document_id) as count,
+		$this->db->selectFrom($r->getTableName(), 'request');
+		$this->db->selectColumn("count(request.document_id) as count,
 						document.page_title,
 						document.page_type,
 						document.url,
@@ -60,18 +63,17 @@ class owa_topPages extends owa_metric {
 				
 		//$this->setTimePeriod($this->params['period']);
 		
-		$db->where('document.page_type', 'feed', '!=');
+		$this->db->where('document.page_type', 'feed', '!=');
 
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER,$d->getTableName(), 'document', 'document_id', 'document.id');
-		$db->groupBy('document.id');
-		$db->orderBy('count');
-		$db->order('DESC');
+		
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER,$d->getTableName(), 'document', 'document_id', 'document.id');
+		$this->db->groupBy('document.id');
+		$this->db->orderBy('count');
+		
+		//$db->order('DESC');
 		
 		
-		return $db->getAllRows();
+		return $this->db->getAllRows();
 		
 	}
 	

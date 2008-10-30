@@ -32,18 +32,18 @@ class owa_topReferers extends owa_metric {
 	
 	function owa_topReferers($params = null) {
 		
-		$this->params = $params;
+		return owa_topReferers::__construct($params);
 		
-		$this->owa_metric();
-		
-		return;
-		
+	}
+	
+	function __construct($params = '') {
+	
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(referer.id) as count,
+		$this->db->selectColumn("count(referer.id) as count,
 									sum(session.num_pageviews) as page_views,
 									url,
 									page_title,
@@ -53,48 +53,16 @@ class owa_topReferers extends owa_metric {
 									refering_anchortext,
 									is_searchengine");
 									
-		$db->selectFrom('owa_session', 'session');	
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
-		$db->groupBy('referer.url');		
-		$db->orderBy('count');	
-		$db->where('is_searchengine', 1, '!=');
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-
-		$ret = $db->getAllRows();
+		$this->db->selectFrom('owa_session', 'session');	
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->groupBy('referer.url');		
+		$this->db->orderBy('count');	
+		$this->db->where('is_searchengine', 1, '!=');
+		
+		$ret = $this->db->getAllRows();
 
 		return $ret;
 
-		
-		
-		/*
-
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$r = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $r);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(referer.id) as count,
-									sum(session.num_pageviews) as page_views,
-									url,
-									page_title,
-									site_name,
-									query_terms,
-									snippet,
-									refering_anchortext,
-									is_searchengine";
-								
-		$this->params['constraints']['is_searchengine'] = array('operator' => '!=', 'value' => '1');
-		$this->params['groupby'] = array('referer.url');
-		
-		$this->params['orderby'] = array('count');
-	
-		return $s->query($this->params);
-
-*/		
 	}
 	
 	

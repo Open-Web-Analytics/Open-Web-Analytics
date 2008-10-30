@@ -31,27 +31,30 @@
 class owa_visitsFromDirectNavCount extends owa_metric {
 	
 	function owa_visitsFromDirectNavCount($params = null) {
+	
+		return owa_visitsFromDirectNavCount::__construct($params);
 		
-		$this->params = $params;
+	}
+	
+	function __construct($params = null) {
 		
-		$this->owa_metric();
-		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 	
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(session.id) as count");
-		$db->selectFrom('owa_session', 'session');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
-		$db->where('referer.is_searchengine', 0);
-		$db->where('source', ' ');
+		$this->db->selectColumn("count(session.id) as count");
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
+		$this->db->where('referer.is_searchengine', 0);
+		$this->db->where('source', ' ');
 		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
+				
+		$ret = $this->db->getOneRow();
 		
-		$ret = $db->getOneRow();
+		if (empty($ret)):
+			$ret = array('count' => 0);
+		endif;
 
 		return $ret;
 		

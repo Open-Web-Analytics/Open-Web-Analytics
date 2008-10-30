@@ -35,6 +35,8 @@ class owa_pagination extends owa_base {
 	
 	var $offset = 0;
 	
+	var $total_count;
+	
 	function __construct() {
 		
 		return;
@@ -61,18 +63,16 @@ class owa_pagination extends owa_base {
 	function calculateOffset() {
 		
 		$this->offset = $this->limit * $this->page;
-		return;
+		return $this->offset;
 	}
 	
 	function getMaxPageNum() {
 	
-		if ($this->more_pages == true):
-			$mpn = $this->page + 1;
-		else:
-			$mpn = $this->page;
-		endif;
+		$c = $this->total_count / $this->limit;
 		
-		return $mpn;
+		$c = ceil($c);
+		
+		return $c;
 	}
 	
 	function getPagination() {
@@ -83,6 +83,7 @@ class owa_pagination extends owa_base {
 		$pagination['offset'] = $this->offset;
 		$pagination['max_page_num'] = $this->getMaxPageNum();
 		$pagination['more_pages'] = $this->more_pages;
+		$pagination['total_count'] = $this->total_count;
 		
 		return $pagination;
 	}

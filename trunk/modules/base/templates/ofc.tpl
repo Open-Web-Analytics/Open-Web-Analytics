@@ -1,1 +1,2 @@
-<?=$this->ofc($width, $height, $this->makeAbsoluteLink(array('do' => $widget, 'period' => $params['period'], 'site_id' => $params['site_id'], 'format' => 'graph-data'), true , $this->config['action_url'])); ?>
+
+<?=$this->ofc($this->makeAbsoluteLink(array('do' => $widget, 'period' => $params['period'], 'site_id' => $params['site_id'], 'format' => 'graph-data')), true , $dom_id, $this->config['action_url']); ?>

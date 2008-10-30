@@ -43,8 +43,6 @@ class owa_latestVisits extends owa_metric {
 	
 	function calculate() {
 			
-		$db = owa_coreAPI::dbSingleton();
-		
 		$s = owa_coreAPI::entityFactory('base.session');
 		$h = owa_coreAPI::entityFactory('base.host');
 		$ua = owa_coreAPI::entityFactory('base.ua');
@@ -52,31 +50,41 @@ class owa_latestVisits extends owa_metric {
 		$v = owa_coreAPI::entityFactory('base.visitor');
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
-		$db->selectFrom($s->getTableName());
+		$this->db->selectFrom($s->getTableName());
 		
-		$db->selectColumn($s->getColumnsSql('session_'));
-		$db->selectColumn($h->getColumnsSql('host_'));
-		$db->selectColumn($ua->getColumnsSql('ua_'));
-		$db->selectColumn($d->getColumnsSql('document_'));
-		$db->selectColumn($v->getColumnsSql('visitor_'));
-		$db->selectColumn($r->getColumnsSql('referer_'));
+		$this->db->selectColumn($s->getColumnsSql('session_'));
+		$this->db->selectColumn($h->getColumnsSql('host_'));
+		$this->db->selectColumn($ua->getColumnsSql('ua_'));
+		$this->db->selectColumn($d->getColumnsSql('document_'));
+		$this->db->selectColumn($v->getColumnsSql('visitor_'));
+		$this->db->selectColumn($r->getColumnsSql('referer_'));
 		
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
 		
 		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-		$db->orderBy('session_timestamp');
-		$db->order($this->params['order']);
-		$db->limit($this->params['limit']);
-		$db->offset($this->params['offset']);
 		
-		$ret = $db->getAllRows();
+		$this->db->orderBy('session_timestamp');
+		$this->db->order($this->params['order']);
+		
+		$ret = $this->db->getAllRows();
 		
 		return $ret;
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectFrom('owa_session');
+		$this->db->selectColumn('count(id) as count');
+		
+		$ret = $this->db->getOneRow();
+		
+		return $ret['count'];
+		
+		
 	}
 	
 	

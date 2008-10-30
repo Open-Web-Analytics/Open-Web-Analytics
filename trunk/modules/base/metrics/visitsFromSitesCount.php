@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-
 /**
  * Visits From Search Engines Count Metric
  * 
@@ -34,54 +32,32 @@ class owa_visitsFromSitesCount extends owa_metric {
 	
 	function owa_visitsFromSitesCount($params = null) {
 		
-		$this->params = $params;
+		return owa_visitsFromSitesCount::__construct($params);
 		
-		$this->owa_metric();
+	}
+	
+	function __construct($params = null) {
 		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(session.id) as site_count");
-									
-		$db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(session.id) as count");						
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->where('referer_id', 0, '!=');
+		$this->db->where('referer.source', ' ');
+		$this->db->where('referer.is_searchengine', 1, '!=');
 		
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
-			
-		$db->where('referer_id', 0, '!=');
-		$db->where('referer.source', ' ');
-		$db->where('referer.is_searchengine', 1, '!=');
+		$ret = $this->db->getOneRow();
 		
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-	
-		$ret = $db->getOneRow();
+		if (empty($ret)):
+			$ret = array('count' => 0);
+		endif;
 
 		return $ret;
 
-		/*
-
-		
-		$this->params['select'] = "count(session.id) as site_count";
-		
-		$this->params['use_summary'] = true;
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		$ref = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $ref);
-		$this->params['constraints']['referer_id'] = array('operator' => '!=', 'value' => '0');
-		$this->params['constraints']['referer.is_searchengine'] = array('operator' => '!=', 'value' => 1);
-		$this->params['constraints']['source'] = array('operator' => '=', 'value' => '');
-		
-		return $s->query($this->params);
-
-*/		
 	}
 	
 	
