@@ -1,3 +1,5 @@
+<? if (!empty($rows)): ?>
+
 <script>
 
 jQuery(document).ready(function() { 
@@ -25,10 +27,20 @@ jQuery(document).ready(function() {
 	<tbody>
 		<?php foreach ($rows as $row):?>
 		<TR>
+			<?php if (!empty($table_row_template)): ?>
+			<?php include($this->setTemplate($table_row_template));?>
+			<?php else: ?>
 			<?php foreach ($row as $item): ?>
 			<TD><?=$item;?></TD>
-			<?php endforeach;?>		
+			<?php endforeach;?>	
+			<?php endif;?>	
 		</TR>
 		<?php endforeach;?>
 	</tbody>
 </table>
+
+<? else: ?>
+
+<div class="owa_status-msg">No data to display.</div>
+
+<? endif;?>

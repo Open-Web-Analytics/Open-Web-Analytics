@@ -32,27 +32,28 @@ class owa_visitsFromFeedsCount extends owa_metric {
 	
 	function owa_visitsFromFeedsCount($params = null) {
 		
-		$this->params = $params;
+		return owa_visitsFromFeedsCount::__construct($params);
 		
-		$this->owa_metric();
+	}
+	
+	function __construct($params = null) {
 		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(session.id) as source_count");
-		$db->selectFrom('base.session');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'base.referer', '', 'referer_id');
-		$db->where('session.source', 'feed');
-		$db->where('referer.is_searchengine', 1, '!=');
+		$this->db->selectColumn("count(session.id) as count");
+		$this->db->selectFrom('base.session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'base.referer', '', 'referer_id');
+		$this->db->where('session.source', 'feed');
+		$this->db->where('referer.is_searchengine', 1, '!=');
+				
+		$ret = $this->db->getOneRow();
 		
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-		
-		$ret = $db->getOneRow();
+		if (empty($ret)):
+			$ret = array('count' => 0);
+		endif;
 		
 		return $ret;
 		

@@ -32,58 +32,35 @@ class owa_pageViewsByDay extends owa_metric {
 	
 	function owa_pageViewsByDay($params = null) {
 		
-		$this->params = $params;
+		return owa_pageViewsByDay::__construct($params);
 		
-		$this->owa_metric();
-		
-		return;
-		
+	}
+	
+	function __construct($params = null) {
+	
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-
-		$db->selectFrom('owa_session', 'session');
-		$db->selectColumn("sum(session.num_pageviews) as page_views,
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("sum(session.num_pageviews) as page_views,
 									session.month, 
 									session.day, 
 									session.year");
 		
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-
 		if (array_key_exists('groupby', $this->params)):
-			$db->groupBy($this->params['groupby']);
+			$this->db->groupBy($this->params['groupby']);
 		else:
-			$db->groupBy('session.day');
+			$this->db->groupBy('session.day');
 		endif;
 		
-		$db->orderBy('session.year');
-		$db->orderBy('session.month');
-		$db->orderBy('session.day');
+		$this->db->orderBy('session.year');
+		$this->db->orderBy('session.month');
+		$this->db->orderBy('session.day');
 		
+		return $this->db->getAllRows();
 		
-		return $db->getAllRows();
-		
-		/*
-
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "sum(session.num_pageviews) as page_views,
-									session.month, 
-									session.day, 
-									session.year";
-								
-		
-		$this->params['orderby'] = array('session.year', 'session.month', 'session.day');
-	
-		return $s->query($this->params);
-		
-*/
 	}
 	
 	

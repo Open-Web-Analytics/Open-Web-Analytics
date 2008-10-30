@@ -123,6 +123,13 @@ class owa_db extends owa_base {
 	var $_sql_statement;
 	
 	/**
+	 * Last Sql Statement
+	 *
+	 * @var string
+	 */
+	var $_last_sql_statement;
+	
+	/**
 	 * Constructor
 	 *
 	 * @return 	owa_db
@@ -435,14 +442,13 @@ class owa_db extends owa_base {
 			
 		}
 		
-		$this->_setSql(sprintf("SELECT %s FROM %s %s %s %s %s %s", 
+		$this->_setSql(sprintf("SELECT %s FROM %s %s %s %s %s", 
 										$cols, 
 										$this->_makeFromClause(), 
 										$this->_makeWhereClause(),
 										$this->_makeGroupByClause(),
 										$this->_makeOrderByClause(),
-										$this->_makeLimitClause(),
-										$this->_makeOffsetClause()
+										$this->_makeLimitClause()
 										));
 		return $this->_query();
 	
@@ -693,7 +699,13 @@ class owa_db extends owa_base {
 		$param = $this->_fetchSqlParams('limit');
 		
 		if(!empty($param)):
-			return sprintf("LIMIT %d", $param);
+			$limit = sprintf("LIMIT %d", $param);
+			
+			$offset = $this->_makeOffsetClause();
+			
+			$ret = $limit . ' ' . $offset;
+					
+			return $ret;
 		else:
 			return;
 		endif;
@@ -752,42 +764,28 @@ class owa_db extends owa_base {
 			case 'insert':
 				
 				$ret = $this->query($this->_sql_statement);
-				$this->_sql_statement = '';
-				$this->_sqlParams = array();
-				return $ret;
 				break;
 			case 'select':
 			
-				$ret = $this->get_results($this->_sql_statement);
-				
-				
-				$results = $this->_formatResults($ret);
-				$count = count($results);
-				
-				$this->_sql_statement = '';
-				$this->_sqlParams = array();
-				
-				//if ($count > 1):
-				return $results;
-				//else:
-				//	return $results[0];
-				//endif;
-				
+				$results = $this->get_results($this->_sql_statement);
+				$ret = $this->_formatResults($results);
+				//$count = count($results);
 				break;
 				
 			case 'update':
 				
 				$ret = $this->query($this->_sql_statement);
-				$this->_sql_statement = '';
-				$this->_sqlParams = array();
-				return $ret;
+				break;
 			case 'delete':
 			
 				$ret = $this->query($this->_sql_statement);
-				$this->_sql_statement = '';
-				$this->_sqlParams = array();
-				return $ret;
+				break;
 		}
+		
+		$this->_last_sql_statement = $this->_sql_statement;
+		$this->_sql_statement = '';
+		$this->_sqlParams = array();
+		return $ret;
 		
 	}
 

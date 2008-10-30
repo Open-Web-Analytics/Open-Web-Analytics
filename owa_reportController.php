@@ -33,6 +33,8 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 class owa_reportController extends owa_adminController {
 	
+	var $dom_id;
+	
 	function __construct($params) {
 	
 		parent::__construct($params);
@@ -71,6 +73,10 @@ class owa_reportController extends owa_adminController {
 		if (empty($this->params['period'])):
 			$this->params['period'] = 'today';
 		endif;
+		
+		$this->dom_id = str_replace('.', '-', $this->params['do']);
+		$this->data['dom_id'] = $this->dom_id;
+		$this->data['do'] = $this->params['do'];
 		
 		
 		return $this->action();

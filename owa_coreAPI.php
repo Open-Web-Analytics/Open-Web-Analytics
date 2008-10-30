@@ -586,6 +586,71 @@ class owa_coreAPI extends owa_base {
 		 
 	}
 	
+	function getGroupNavigation($group, $sortby ='order') {
+	
+		$links = array();
+		
+		foreach ($this->modules as $k => $v) {
+			
+			// If the module does not have nav links, register them. needed in case this function is called twice on
+			// same view.
+			if (empty($v->nav_links)):
+				$v->registerNavigation();
+			endif;		
+			
+			$module_nav = $v->getNavigationLinks();
+			
+			if (!empty($module_nav)):
+				//loop through returned nav array
+				foreach ($module_nav as $group => $nav_links) {
+					
+					foreach ($nav_links as $link) {	
+									
+						if (array_key_exists($group, $links)):
+							
+							// check to see if link is already present in the main array
+							if (array_key_exists($link['anchortext'], $links[$group])):
+								// merge various elements?? not now.
+								//check to see if there is an existing subgroup
+								
+								if (array_key_exists('subgroup', $links[$group][$link['anchortext']])):
+									// if so, merge the subgroups
+									$links[$group][$link['anchortext']]['subgroup'] = array_merge($links[$group][$link['anchortext']]['subgroup'], $link['subgroup']);
+								endif;	
+							else:
+								// else populate the link
+								$links[$group][$link['anchortext']] = $link;	
+							endif;
+							
+						else:
+							$links[$group][$link['anchortext']] = $link;
+						endif;
+					}					
+					
+				}
+			endif;
+			
+		}
+		
+		return $links[$group];
+		
+		//print_r($links[$view][$nav_name]);
+		if (!empty($links[$group])):
+			// anonymous sorting function, takes sort by variable.
+			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
+	   		
+	   		// sort the array
+	   		$ret = usort($links[$group], create_function('$a,$b', $code));
+			
+			return $links[$group];
+		else: 
+			return false;
+		endif;
+	
+	
+	
+	}
+	
 	function getNavSort($a, $b) {
 		
 		return strnatcmp($a['order'], $b['order']);

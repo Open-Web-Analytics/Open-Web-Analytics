@@ -259,26 +259,18 @@ class owa_template extends Template {
 	 * 
 	 * @param array navigation array
 	 */
-	function makeNavigation($nav) {
+	function makeNavigation($nav, $id = '', $class = '', $li_template = '<LI class="%s"><a href="%s">%s</a></LI>', $li_class = '') {
+		
+		$ul = sprintf('<UL id="%s" class="%s">', $id, $class);
 		
 		if (!empty($nav)):
-			$navigation = '<UL>';
+		
+			$navigation = $ul;
 			
 			foreach($nav as $k => $v) {
+										
+				$navigation .= sprintf($li_template, $li_class,	$this->makeLink(array('do' => $v['ref']), true), $v['anchortext']);
 				
-				if($v['ref'] == $this->caller_params['view'] || $v['ref'] == $this->caller_params['subview']):
-				
-					$navigation .= sprintf('<LI ><a class="here" href="%s">%s</a></LI>', 
-											$this->makeLink(array('do' => $v['ref']), true), 
-											$v['anchortext']);
-					
-				else:
-											
-					$navigation .= sprintf("<LI><a href=\"%s\">%s</a></LI>", 
-											$this->makeLink(array('do' => $v['ref']), true), 
-											$v['anchortext']);
-				
-				endif;
 			}
 			
 			$navigation .= '</UL>';
@@ -290,42 +282,33 @@ class owa_template extends Template {
 		
 	}
 	
-	function makeTwoLevelNav($top, $sub) {
-		if (!empty($top)):
-		$navigation = '<UL id="globalnav"><li class="spacer">&nbsp &nbsp</LI>';
-			
-		foreach($top as $k => $v) {
-			
-			if($v['ref'] == $this->caller_params['view'] || $v['ref'] == $this->caller_params['subview'] || $v['ref'] == $this->caller_params['nav_tab']):
+		
+	function makeTwoLevelNav($links) {
+	
+		$navigation = '<UL id="report_top_level_nav_ul">';
+
+		foreach($links as $k => $v) {
+		
+			if (!empty($v['subgroup'])):
+				$sub_nav = $this->makeNavigation($v['subgroup']);	
 				
-				$sub_nav = $this->makeNavigation($sub);
-				
-				if (empty($sub_nav)):
-					$sub_nav = '<UL><li class="spacer">&nbsp &nbsp</LI></UL>';
-				endif;
-				
-				$navigation .= sprintf('<LI><a class="here" href="%s">%s</a>%s</LI>', 
-											$this->makeLink(array('do' => $v['ref']), true), 
-											$v['anchortext'], $sub_nav);
-					
+				$navigation .= sprintf('<LI class="drawer"><H2 class="nav_header"><a href="%s">%s</a></H2>%s</LI>', 
+												$this->makeLink(array('do' => $v['ref']), true), 
+												$v['anchortext'], $sub_nav);
 			else:
-				
-				$navigation .= sprintf("<LI><a href=\"%s\">%s</a></LI>", 
-											$this->makeLink(array('do' => $v['ref']), true), 
-											$v['anchortext']);
-											
-			endif;
 			
+				$navigation .= sprintf('<LI class="drawer"><H2 class="nav_header"><a href="%s">%s</a></H2></LI>', 
+												$this->makeLink(array('do' => $v['ref']), true), 
+												$v['anchortext']);
+				
+			endif;	
 			
 		}
 		
 		$navigation .= '</UL>';
 			
-			return $navigation;
-		else:
-			return false;
-		endif;
-		
+		return $navigation;
+	
 	}
 	
 	function daysAgo($time) {
@@ -480,8 +463,12 @@ class owa_template extends Template {
 		
 	}
 	
-	function ofc( $width, $height, $url, $use_swfobject = true, $base = '' ) {
+	function ofc($url, $use_swfobject = true, $id, $base = '') {
 	
+		if (empty($width)):
+			$width = '100%';
+		endif;
+		
 		$base = $this->config['public_url'].'includes/ofc-1.9/';
 		//
 		// I think we may use swfobject for all browsers,
@@ -524,7 +511,8 @@ class owa_template extends Template {
 		//
 		global $open_flash_chart_seqno;
 		$obj_id = 'chart';
-		$div_name = 'flashcontent';
+		
+		$div_name = 'ofc_chart_object_'.$id;
 		
 		//$out[] = '<script type="text/javascript" src="'. $base .'js/ofc.js"></script>';
 		
@@ -543,7 +531,7 @@ class owa_template extends Template {
 		if( $use_swfobject )
 		{
 		// Using library for auto-enabling Flash object on IE, disabled-Javascript proof  
-		$out[] = '<div id="'. $div_name .'"></div>';
+		$out[] = '<div id="'. $div_name .'" class="owa_ofcChart"></div>';
 		$out[] = '<script type="text/javascript">';
 		$out[] = 'var so = new SWFObject("'. $base .'actionscript/open-flash-chart.swf", "'. $obj_id .'", "'. $width . '", "' . $height . '", "9", "#FFFFFF");';
 		//$out[] = 'so.addVariable("width", "' . $width . '");';
@@ -618,6 +606,24 @@ class owa_template extends Template {
 	function footerActions() {
 	
 		return;
+	}
+	
+	function makePagination($pagination, $do, $template = '') {
+		
+		$pages = '<div class="owa_pagination"><UL>';
+		
+		for ($i = 1; $i <= $pagination['max_page_num'];$i++) {
+		
+			$link = sprintf('<LI class="owa_reportPaginationControl"><a href="%s">%s</a></LI>', 
+													$this->makeLink(array('do' => $do, 'page' => $i), true), 
+													$i);
+													
+			$pages .= $link;
+		}
+		
+		$pages .= '</UL></div>';
+				
+		return $pages;
 	}
 	
 }

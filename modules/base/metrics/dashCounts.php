@@ -32,45 +32,27 @@ class owa_dashCounts extends owa_metric {
 	
 	function owa_dashCounts($params = null) {
 		
-		$this->params = $params;
+		return owa_dashCounts::__construct($params);
 		
-		$this->owa_metric();
+	}
+	
+	function __construct($params = null) {
 		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-
-		$db->selectFrom('owa_session');
-		$db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
 							sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
 							count(session.id) as sessions, 
 							sum(session.num_pageviews) as page_views");
 		
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-
-		return $db->getOneRow();
+		$ret = $this->db->getOneRow();
 		
-		/*
-
-		$this->params['select'] = "count(distinct session.visitor_id) as unique_visitors, 
-			sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
-			count(session.id) as sessions, 
-			sum(session.num_pageviews) as page_views ";
+		return $ret;
 		
-		$this->params['use_summary'] = true;
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		return $s->query($this->params);
-		
-*/
 	}
 	
 	
