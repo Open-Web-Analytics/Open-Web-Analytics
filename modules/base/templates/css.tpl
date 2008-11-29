@@ -43,7 +43,7 @@ div {margin:0;}
 .owa_pagination {float:left; overflow: hidden;}
 .owa_pagination ul {list-style: none; padding: 0; margin: 0;}
 .owa_pagination li {text-decoration: none; float:left; margin: 2px;}
-.owa_pagination li a {
+.owa_pagination li {
 	background: url(background.gif) #fff bottom left repeat-x;
 	height:2em;
 	line-height:2em;

@@ -45,9 +45,11 @@ class owa_dashCounts extends owa_metric {
 		
 		$this->db->selectFrom('owa_session', 'session');
 		$this->db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
-							sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
-							count(session.id) as sessions, 
-							sum(session.num_pageviews) as page_views");
+								 sum(session.is_new_visitor) as new_visitor, 
+								 sum(session.is_repeat_visitor) as repeat_visitor,
+								 count(session.id) as sessions, 
+								 sum(session.num_pageviews) as page_views,
+								 (sum(session.num_pageviews) / count(session.id)) as pages_per_visit");
 		
 		$ret = $this->db->getOneRow();
 		

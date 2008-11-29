@@ -62,7 +62,7 @@ class owa_pagination extends owa_base {
 	
 	function calculateOffset() {
 		
-		$this->offset = $this->limit * $this->page;
+		$this->offset = $this->limit * ($this->page - 1);
 		return $this->offset;
 	}
 	

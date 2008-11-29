@@ -11,7 +11,7 @@ OWA.items['<?=$widget;?>'].max_page_num = "<?=$pagination['more_pages'];?>";
 
 </script>
 
-<div id="<?=$widget;?>" class="owa_widget-container" style="width:<? if ($params['width']): echo($params['width'].'px;'); else: echo('auto;'); endif;?>;">
+<div id="<?=$widget;?>" class="owa_widget-container" style="width:<? if ($params['width']): echo($params['width'].'px'); else: echo('auto'); endif;?>;">
 	
 	<div id="<?=$widget;?>_widget-header" class="owa_widget-header">
 		<table style="width:100%">
@@ -20,7 +20,9 @@ OWA.items['<?=$widget;?>'].max_page_num = "<?=$pagination['more_pages'];?>";
 					<span class="owa_widget-title"><?=$title;?></span>
 				</TD>
 				<TD style="text-align:right;">
-					<a class="owa_widget-toggle" href="#<?=$widget;?>_widget-header">Minimize</a> |
+					<div id="">
+					<a class="owa_widget-collapsetoggle" href="#<?=$widget;?>_widget-header">Minimize</a>
+					 |
 					<a class="owa_widget-close" href="#<?=$widget;?>_widget-header">Close</a>
 				</TD>
 			</TR>

@@ -30,7 +30,7 @@ OWA.items['<?=$dom_id;?>'].properties.<?=$k;?> = "<?=$v;?>";
 			
 			<table id="report_header" cellpadding="0" cellspacing="0">
 				<TR>
-					<TD valign="top" class="report_headline"><?=$headline;?></TD>
+					<TD valign="top" class="report_headline"><?=$title;?></TD>
 					<TD class="owa_reportPeriod"><? include('filter_period.tpl');?></TD>			
 				</TR>
 			</table>		

@@ -150,7 +150,7 @@ jQuery(document).ready(function(){
 	jQuery('.owa_widget-pagecontrol').click(owa_widget_changeView);
 	jQuery('.owa_widget-close').click(owa_widget_close);
 	jQuery('.owa_widget-status').hide("slow");
-	jQuery('.owa_widget-toggle').click(owa_widget_toggle);
+	jQuery('.owa_widget-collapsetoggle').click(owa_widget_toggle);
 	jQuery('.owa_widget-paginationcontrol').click(owa_widget_page_results);
 	
 });
@@ -179,12 +179,18 @@ function owa_widget_toggle() {
 	// toggle the visibility of the child element
 	jQuery('#'+widgetname).children(".owa_widget-innercontainer").toggle("slow");
 	
-	//change the text of the link to reflect new state
-	jQuery(this).html("Show");	
+	if (OWA.items[widgetname].minimized != true) {
+		// set property on widget object
+		OWA.items[widgetname].minimized = true;
+		//change the text of the link to reflect new state
+		jQuery(this).html("Show");
+	} else {
+		// set property on widget object
+		OWA.items[widgetname].minimized = false;
+		//change the text of the link to reflect new state
+		jQuery(this).html("Minimize");
+	}
 	
-	// set property on widget object
-	OWA.items[widgetname].minimized = true;
-
 	return;
 }
 

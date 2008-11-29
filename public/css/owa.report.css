@@ -8,7 +8,7 @@
 .col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
 .data_cell {text-align:center; vertical-align:center;}
 .item_cell {}
-.section_header {width:98%;background-color:#cccccc; padding:12px; margin: 15px 0 15px 0;}
+
 
 #owa_reportSiteFilter {width:; padding:5px; text-align: center; background-color:; margin-bottom:10px; border-bottom: 1px solid #efefef;}
 #owa_reportSiteFilterSelect {font-size: 12px;}
@@ -35,3 +35,6 @@
 
 .owa_reportContainer {width:auto;}
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
+.owa_reportSectionHeader, .section_header {width:auto;background-color:#9f9f9f; color:#ffffff;padding:5px 5px 5px 7px; margin: 0px 0 15px 0; font-size: 18px; font-weight:bold;}
+.owa_reportSectionContent {margin: 15px;}
+.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px;}

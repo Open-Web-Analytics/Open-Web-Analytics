@@ -18,7 +18,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_news.php');
 
 /**
  * View
@@ -43,29 +42,20 @@ class owa_reportView extends owa_view {
 		return;
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		// Set Page title
-		$this->t->set('page_title', $this->data['page_title']);
+		$this->t->set('page_title', $this->data['title']);
 		
 		// Set Page headline
-		$this->body->set('headline', $this->data['headline']);
+		$this->body->set('title', $this->data['title']);
 		
 		// Report Period Filters
 		$this->body->set('reporting_periods', owa_lib::reporting_periods());
-		$this->body->set('date_reporting_periods', owa_lib::date_reporting_periods());
-		$this->body->set('months', owa_lib::months());
-		$this->body->set('days', owa_lib::days());
-		$this->body->set('years', owa_lib::years());
 		
 		// Set reporting period
-		$this->setPeriod($data['params']['period']);
-		
-		// Set date labels
-		$date_label = $this->setDateLabel($data['params']);
-		$this->body->set('date_label', $date_label);
-		$this->subview->body->set('date_label', $date_label);
-		
+		$this->setPeriod($this->data['period']);
+	
 		//create the report control params array
 		$this->report_params = $this->data['params'];
 		unset($this->report_params['p']);
@@ -91,22 +81,12 @@ class owa_reportView extends owa_view {
 		unset($this->report_params['caller']);
 		
 		$this->body->set('params', $this->report_params);
-		
-		
-
+		$this->subview->body->set('params', $this->report_params);
 		$this->_setLinkState();
 		
 		// set site filter list
 		$this->body->set('sites', $this->getSitesList());
 		
-		
-		//Fetch latest OWA news
-		if ($this->config['fetch_owa_news'] == true):
-			$rss = new owa_news;
-			$news = $rss->Get($rss->config['owa_rss_url']);
-		endif;
-
-		$this->body->set('news', $news);
 		$this->body->set('dom_id', $this->data['dom_id']);
 		$this->body->set('do', $this->data['do']);
 		
@@ -128,6 +108,7 @@ class owa_reportView extends owa_view {
 		$this->setJs("owa.js");
 		$this->setJs('owa.report.js');
 		$this->setJs("includes/jquery/tablesorter/jquery.tablesorter.js");
+		$this->setJs("includes/jquery/jquery.sparkline.min.js");
 		// data table style
 		
 		
@@ -149,35 +130,15 @@ class owa_reportView extends owa_view {
 	function setPeriod($period) {
 			
 		// set in various templates and params
-		$this->data['params']['period'] = $period;
-		$this->body->set('period', $period);
-		$this->subview->body->set('period', $period);
+		$this->data['params']['period'] = $period->get();
+		$this->body->set('period', $period->get());
+		$this->subview->body->set('period', $period->get());
 		
 		// set period label
-		$period_label = $this->get_period_label($period);
+		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
 		$this->subview->body->set('period_label', $period_label);
 		return;
-	}
-
-	/**
-	 * Lookup report period label
-	 *
-	 * @param string $period
-	 * @access private
-	 * @return string $label
-	 */
-	function get_period_label($period) {
-	
-		return owa_lib::get_period_label($period);
-	}
-	
-	
-	
-	function setDateLabel($params) {
-
-		return owa_lib::getDateLabel($params);
-		
 	}
 	
 	/**

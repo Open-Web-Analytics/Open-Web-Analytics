@@ -1,39 +1,42 @@
-<? if (!empty($summary_stats)):?>
-<table id="summary_stats" cellpadding="0" cellspacing="0" width="100%">
+<?php if (!empty($summary_stats)):?>
+
+<table  id="" cellpadding="0" cellspacing="0" width="100%">
 	<TR>	
-		<TD>
-			Visits<BR>
-			<span class="large_number"><?=$summary_stats['sessions'];?></span>
-		</TD>
+		<TD valign="top">
+			<DIV>
+				<?=$this->getSparkline('base.dashCoreByDay', 'sessions', 'last_thirty_days', 25, 100);?>
+				<span class="large_number"><?=$summary_stats['sessions'];?></span> 
+				<span class="inline_h2">Visits</span>
+			</DIV>
+			
+			<DIV>
+				<?=$this->getSparkline('base.dashCoreByDay', 'pages_per_visit', 'last_thirty_days', 25, 100);?>			
+				<span class="large_number"><?=round($summary_stats['pages_per_visit'],1);?></span> 
+				<span class="inline_h2">Pages/Visit</span>				
+			</DIV>
 		
-		<TD>
-			Pages/Visit<BR>
-			<span class="large_number">
-				<? if ($summary_stats['sessions'] != 0):?>
-					<?=round($summary_stats['page_views']/$summary_stats['sessions'],2);?>
-				<?else:?>
-					0
-				<?endif;?>
-			</span>
+			<DIV>
+				<?=$this->getSparkline('base.dashCoreByDay', 'new_visitor', 'last_thirty_days', 25, 100);?>
+				<span class="large_number"><?=$summary_stats['new_visitor'];?></span> 
+				<span class="inline_h2">New Visitors</span> 
+			</DIV>
 		</TD>
+		<td valign="top">
+			<DIV>
+				<?=$this->getSparkline('base.dashCoreByDay', 'repeat_visitor', 'last_thirty_days', 25, 100);?>
+				<span class="large_number"><?=$summary_stats['repeat_visitor'];?></span>
+				<span class="inline_h2">Repeat Visitors</span> 
+			</DIV>
 	
-		<TD>
-			Unique Visitors<BR>
-			<span class="large_number"><?=$summary_stats['unique_visitors'];?></span>
-		</TD>
-		
-		<TD>
-			New Visitors<BR>
-			<span class="large_number"><?=$summary_stats['new_visitor'];?></span>
-		</TD>
-	
-		<TD>
-			Repeat Visitors<BR>
-			<span class="large_number"><?=$summary_stats['repeat_visitor'];?></span>
-		</TD>
+			<DIV>
+				<?=$this->getSparkline('base.dashCoreByDay', 'unique_visitors', 'last_thirty_days', 25, 100);?>
+				<span class="inline_h2"><span class="large_number"><?=$summary_stats['unique_visitors'];?></span> 
+				Unique Visitors</span>
+			</DIV>
+		</td>
 	</TR>
-</table>	
-<?else:?>
+</table>
+<?php else:?>
 	There are no statistics for this time period.
-<?endif;?>
+<?php endif;?>
 

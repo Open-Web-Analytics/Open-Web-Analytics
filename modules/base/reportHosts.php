@@ -36,42 +36,38 @@ class owa_reportHostsController extends owa_reportController {
 	
 	function owa_reportHostsController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+		return owa_reportController::__construct($params);
 		
-		return;
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
+		// top hosts	
+		$h = owa_coreAPI::metricFactory('base.topHosts');
+		$h->setPeriod($this->getPeriod());
+		$h->setConstraint('site_id', $this->getParam('site_id')); 
+		$h->setLimit(15);
+		$h->setPage($this->getParam('page'));
 		
-		$data['params'] = $this->params;
+		$this->set('top_hosts', $h->generate());
+		$this->set('pagination', $h->getPagination());
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		// summary_stats_data	
+		$s = owa_coreAPI::metricFactory('base.dashCounts');
+		$s->setPeriod($this->getPeriod());
+		$s->setConstraint('site_id', $this->getParam('site_id'));
 		
-	
-		$data['top_hosts'] = $api->getMetric('base.topHosts', array(
-	
-			'constraints'		=> array('site_id'		=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-	
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
+		$this->set('summary_stats_data', $s->generate());
 			
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportHosts';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportVisitors';
-		
-		return $data;
+		$this->setSubview('base.reportHosts');
+		$this->setTitle('Visiting Domains');
+				
+		return;
 		
 	}
 }
@@ -93,19 +89,20 @@ class owa_reportHostsView extends owa_view {
 	
 	function owa_reportHostsView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+		return owa_reportHostsView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render() {
 		
 		// Assign Data to templates
-		
-		$this->body->set('headline', 'Domains');
-		$this->body->set('domains', $data['top_hosts']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
+		$this->body->set('domains', $this->data['top_hosts']);
+		$this->body->set('pagination', $this->data['pagination']);
+		$this->body->set('summary_stats', $this->data['summary_stats_data']);
 		$this->body->set_template('report_hosts.tpl');
 		
 		return;

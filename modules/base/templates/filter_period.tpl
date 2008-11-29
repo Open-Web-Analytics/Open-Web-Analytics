@@ -34,5 +34,8 @@
 				</SELECT>	
 			</TD>
 		</TR>
+		<TR>
+			<TD colspan="2"><INPUT type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Period"></TD>
+		</TR>
 	</table>
 </div>

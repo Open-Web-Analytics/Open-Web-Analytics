@@ -42,8 +42,9 @@ class owa_dashCoreByDay extends owa_metric {
 	
 		parent::__construct($params);
 		
-		$this->setLabels(array('Month', 'Day', 'Year', 'Unique Visitors', 'Sessions', 'Page Views'));
+		$this->setLabels(array('Month', 'Day', 'Year', 'Sessions', ' New Visitors', 'Repeat Visitors',  'Unique Visitors', 'Page Views', 'Pages/Visit'));
 		$this->page_results = true;
+		$this->setOrder('ASC');
 		
 		return;
 		
@@ -56,9 +57,12 @@ class owa_dashCoreByDay extends owa_metric {
 		$this->db->selectColumn("session.month, 
 								session.day, 
 								session.year, 
-								count(distinct session.visitor_id) as unique_visitors, 
 								count(session.id) as sessions, 
-								sum(session.num_pageviews) as page_views");
+								sum(session.is_new_visitor) as new_visitor, 
+								sum(session.is_repeat_visitor) as repeat_visitor,
+								count(distinct session.visitor_id) as unique_visitors, 
+								sum(session.num_pageviews) as page_views,
+								round((sum(session.num_pageviews) / count(session.id)), 1) as pages_per_visit");
 									
 		$this->db->groupBy('day');
 		$this->db->groupBy('month');

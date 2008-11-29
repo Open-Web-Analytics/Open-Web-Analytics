@@ -30,26 +30,21 @@
 
 class owa_visitorTypesCount extends owa_metric {
 	
-	function owa_visitorTypesCount($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
-		
+	function __construct($params = array()) {
+	
+		return parent::__construct($params);
 	}
 	
-	function generate() {
+	function owa_visitorTypesCount($params = array()) {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("sum(is_new_visitor) as new_visitor, sum(is_repeat_visitor) as repeat_visitor");
-		$db->selectFrom('owa_session');
+		return owa_visitorTypesCount::__construct($params);
+	}
+	
+	function calculate() {
 		
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-				
-		$ret = $db->getOneRow();
+		$this->db->selectColumn("sum(is_new_visitor) as new_visitor, sum(is_repeat_visitor) as repeat_visitor");
+		$this->db->selectFrom('owa_session');		
+		$ret = $this->db->getOneRow();
 		
 		return $ret;
 	}
