@@ -48,7 +48,6 @@ class owa_visitsFromDirectNavCount extends owa_metric {
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
 		$this->db->where('referer.is_searchengine', 0);
 		$this->db->where('source', ' ');
-		// pass constraints set by caller into where clause
 				
 		$ret = $this->db->getOneRow();
 		

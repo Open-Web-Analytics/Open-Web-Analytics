@@ -35,11 +35,13 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportDashboardController extends owa_reportController {
 
 	function owa_reportDashboardController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
 	
-		return;
+		return owa_reportDashboardController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -47,46 +49,31 @@ class owa_reportDashboardController extends owa_reportController {
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
 		
-		$this->data['params'] = $this->params;
-		
 		// dash counts	
 		$d = owa_coreAPI::metricFactory('base.dashCounts');
-		$d->setConstraint('site_id', $this->params['site_id']); 
-		$this->data['summary_stats_data'] = $d->generate();
-		//print_r($this->data['summary_stats_data']);
-		// Latest Visits	
-		$lv = owa_coreAPI::metricFactory('base.latestVisits');
-		$lv->setConstraint('site_id', $this->params['site_id']);
-		$lv->setLimit(15);
-		$lv->setOrder(OWA_SQL_DESCENDING); 
-		
-		if (array_key_exists('page', $this->params)):
-			$lv->setPage($this->params['page']);
-		endif;
-		
-		$this->data['latest_visits'] = $lv->generate();
-		
-		$this->data['pagination'] = $lv->getPagination();
-		//print_r($this->data['pagination']);
-		
-		
+		$d->setPeriod($this->getPeriod());
+		$d->setConstraint('site_id', $this->getParam('site_id')); 
+		$this->set('summary_stats_data', $d->generate());
+			
 		// Counts
 		$s = owa_coreAPI::metricFactory('base.sessionsCount');
-		$s->setConstraint('site_id', $this->params['site_id']);
-		$s->setPeriod($this->params['period']);
-		$this->data['sessions_count'] = $s->generate();
+		$s->setConstraint('site_id', $this->getParam('site_id'));
+		$s->setPeriod($this->getPeriod());
+		$this->set('sessions_count', $s->generate());
 		
 		// Counts
 		$st = owa_coreAPI::metricFactory('base.sessionsTrend');
-		$st->setConstraint('site_id', $this->params['site_id']);
-		$st->setPeriod('this_year');
-		$this->data['sessions_trend'] = $st->generate();
+		$st->setConstraint('site_id', $this->getParam('site_id'));
+		$st_period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+		$st_period->set('this_year');
+		$st->setPeriod($st_period);
+		$this->set('sessions_trend', $st->generate());
 		
-		$this->data['view'] = 'base.report';
-		$this->data['subview'] = 'base.reportDashboard';
-		$this->data['nav_tab'] = 'base.reportDashboard';	
-		$this->data['headline'] = 'Analytics Dashboard';	
-		return $this->data;	
+		// set view stuff
+		$this->setSubview('base.reportDashboard');
+		$this->setTitle('Analytics Dashboard');	
+			
+		return;	
 		
 	}
 	
@@ -110,32 +97,32 @@ class owa_reportDashboardView extends owa_view {
 	
 	function owa_reportDashboardView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportDashboardView::__construct();
 	}
 	
-	function construct($data) {
-		
-		// Set Page headline
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render() {
 		
 		// load body template
 		$this->body->set_template('report_dashboard.tpl');
 	
-		$this->body->set('summary_stats', $data['summary_stats_data']);
+		$this->body->set('summary_stats', $this->data['summary_stats_data']);
 		
 		$this->body->set('config', $this->config);
 		
-		$this->body->set('params', $data['params']);
+		$this->body->set('params', $this->data['params']);
 				
-		$this->body->set('visits', $data['latest_visits']);
+		$this->body->set('visits', $this->data['latest_visits']);
 		
-		$this->body->set('sessions_count', $data['sessions_count']);
+		$this->body->set('sessions_count', $this->data['sessions_count']);
 		
-		$this->body->set('sessions_trend', $data['sessions_trend']);
+		$this->body->set('sessions_trend', $this->data['sessions_trend']);
 		
-		$this->body->set('pagination', $data['pagination']);
+		//$this->body->set('pagination', $this->data['pagination']);
 		
 		$this->setJs("owa.widgets.js");
 		$this->setCss("owa.widgets.css");

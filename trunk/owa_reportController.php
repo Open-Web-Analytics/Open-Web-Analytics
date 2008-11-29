@@ -19,7 +19,7 @@
 require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
- * Report Controller Class
+ * Abstract Report Controller Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -33,15 +33,11 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 class owa_reportController extends owa_adminController {
 	
-	var $dom_id;
-	
 	function __construct($params) {
 	
-		parent::__construct($params);
 		$this->type = 'report';
-		$this->_setCapability = 'view_report';
-		
-		return;
+		$this->_setCapability('view_report');
+		return parent::__construct($params);
 	
 	}
 	
@@ -58,31 +54,36 @@ class owa_reportController extends owa_adminController {
 	}
 	
 	/**
-	 * Handles request from caller
+	 * pre action
 	 *
 	 */
-	function doAction() {
+	function pre() {
 		
-		$this->e->debug('Performing Action: '.get_class($this));
-		
-		//if (!isset($this->params['site_id'])):
-		//	$this->params['site_id'] = $this->config['site_id'];
-		//endif;
-		
+		// pass full set of params to view
+		$this->data['params'] = $this->params;
+				
 		// set default period if necessary
 		if (empty($this->params['period'])):
 			$this->params['period'] = 'today';
 		endif;
+	
+		$this->setPeriod($this->params['period']);
+		$this->setView('base.report');
+		$this->setViewMethod('delegate');
 		
 		$this->dom_id = str_replace('.', '-', $this->params['do']);
 		$this->data['dom_id'] = $this->dom_id;
 		$this->data['do'] = $this->params['do'];
 		
-		
-		return $this->action();
+		return;
 		
 	}
 	
+	function setTitle($title) {
+		
+		$this->data['title'] = $title;
+		return;
+	}
 }
 
 ?>

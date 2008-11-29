@@ -18,7 +18,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_news.php');
 
 /**
  * Options View
@@ -54,12 +53,6 @@ class owa_optionsView extends owa_view {
 		// fetch admin links from all modules
 		// need api call here.
 		$this->body->set('headline', 'OWA Configuration Options');
-		
-		//Fetch latest OWA news
-		$rss = new owa_news;
-		//print_r($this->config);
-		$news = $rss->Get($this->config['owa_rss_url']);
-		$this->body->set('news', $news);
 		
 		// get admin panels
 		$api = &owa_coreAPI::singleton();

@@ -57,51 +57,42 @@ class owa_widgetTopReferersController extends owa_widgetController {
 		$m = owa_coreApi::metricFactory('base.topReferers');
 		$m->setConstraint('site_id', $this->params['site_id']);
 		$m->setConstraint('is_browser', 1);
-		$m->setPeriod($this->params['period']);
+		$m->setPeriod($this->getPeriod());
 		$m->setOrder(OWA_SQL_ASCENDING); 
-			
-		switch ($this->params['format']) {
-		
-			case 'graph':
-				
-				break;
-				
-			case 'graph-data':
-			
-				break;
-				
-			case 'table':
-			
-				// apply limit override
-				if (array_key_exists('limit', $this->params)):
-					$m->setLimit($this->params['limit']);
-				else:
-					$m->setLimit(10);	
-				endif;
-											
-				// set page number of results
-				if (array_key_exists('page', $this->params)):
-					$m->setPage($this->params['page']);
-				endif;
-				
-				$results = $m->generate();
-				
-				$this->data['labels'] = array('Web Page', 'Page Views');
-				$this->data['rows'] = $results;
-				$this->data['view'] = 'base.genericTable';
-				$this->data['table_row_template'] = 'row_topReferers.tpl';
-				
-				// generate pagination array
-				$this->data['pagination'] = $m->getPagination();
-			
-				//print_r($this->data['pagination']);
-				break;
-				
-		}
-		
+		$this->setMetric('base.topReferers', $m);
 		return;
 		
 	}
+	
+	function tableAction() {
+	
+		$m = $this->getMetric('base.topReferers');
+		// apply limit override
+		if (array_key_exists('limit', $this->params)):
+			$m->setLimit($this->params['limit']);
+		else:
+			$m->setLimit(10);	
+		endif;
+									
+		// set page number of results
+		if (array_key_exists('page', $this->params)):
+			$m->setPage($this->params['page']);
+		endif;
+		
+		$results = $m->generate();
+		
+		$this->data['labels'] = array('Web Page', 'Page Views');
+		$this->data['rows'] = $results;
+		$this->data['view'] = 'base.genericTable';
+		$this->data['table_row_template'] = 'row_topReferers.tpl';
+		
+		// generate pagination array
+		$this->data['pagination'] = $m->getPagination();
+	
+		//print_r($this->data['pagination']);
+		return;
+	}
+		
 }
 
 

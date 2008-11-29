@@ -578,6 +578,17 @@ class owa_template extends Template {
 		
 		return owa_coreAPI::performAction($do, $params);
 	}
+	
+	function getSparkline($metric, $metric_col, $period = 'last_thirty_days', $height = 25, $width = 200, $map = array()) {
+	
+		$map['metric'] = $metric;
+		$map['metric_col'] = $metric_col;
+		$map['period'] = $period;
+		$map['height'] = $height;
+		$map['width'] = $width;
+		return owa_template::getWidget('base.widgetSparkline', $map, false);
+	
+	}
 		
 	function makeJson($array) {
 		
@@ -610,19 +621,34 @@ class owa_template extends Template {
 	
 	function makePagination($pagination, $do, $template = '') {
 		
-		$pages = '<div class="owa_pagination"><UL>';
+		$pages = '';
 		
-		for ($i = 1; $i <= $pagination['max_page_num'];$i++) {
+		if ($pagination['max_page_num'] > 1) {
+	
+			$pages = '<div class="owa_pagination"><UL>';
+			
+			for ($i = 1; $i <= $pagination['max_page_num'];$i++) {
+				
+				if ($pagination['page_num'] != $i) {
+				
+					$link = sprintf('<LI class="owa_reportPaginationControl"><a href="%s">%s</a></LI>', 
+														$this->makeLink(array('do' => $do, 'page' => $i), true), 
+														$i);
+				
+				} else {
+					
+					$link = sprintf('<LI class="owa_reportPaginationControl">%s</LI>', $i);
+				}
+														
+				$pages .= $link;
+			}
+			
+			$pages .= '</UL></div>';
+					
+			
 		
-			$link = sprintf('<LI class="owa_reportPaginationControl"><a href="%s">%s</a></LI>', 
-													$this->makeLink(array('do' => $do, 'page' => $i), true), 
-													$i);
-													
-			$pages .= $link;
 		}
 		
-		$pages .= '</UL></div>';
-				
 		return $pages;
 	}
 	

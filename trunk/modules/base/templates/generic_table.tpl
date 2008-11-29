@@ -8,15 +8,17 @@ jQuery(document).ready(function() {
     
 </script>
 
-<table class="tablesorter <?=$table_class;?>" summary="" id="<?=$table_id;?>">
+<table class="<?=$sort_table_class;?> <?=$table_class;?>" summary="" id="<?=$table_id;?>">
 	<? if (!empty($caption)): ?>
 	<caption><?=$caption;?></caption>
 	<? endif;?>
 	<thead>
 		<TR>
+			<?php if (!empty($labels)):?>
 			<?php foreach ($labels as $label): ?>
 			<TH scope="<?=$th_scope;?>"><?=$label;?></TH>
 			<?php endforeach;?>
+			<?php endif;?>
 		</TR>
 	</thead>
 	<? if (!empty($table_footer)): ?>

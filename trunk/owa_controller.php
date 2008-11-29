@@ -99,12 +99,25 @@ class owa_controller extends owa_base {
 	 */
 	var $available_views = array();
 	
+	/**
+	 * Time period
+	 * 
+	 * @var Object
+	 */
+	var $period;
 	
 	/**
-	 * Constructor
+	 * Dom id
+	 * 
+	 * @var String
+	 */
+	var $dom_id;
+	
+	
+	/**
+	 * PHP4 Constructor
 	 *
 	 * @param array $params
-	 * @return owa_controller
 	 */
 	function owa_controller($params) {
 	
@@ -112,6 +125,11 @@ class owa_controller extends owa_base {
 		
 	}
 	
+	/**
+	 * Constructor
+	 *
+	 * @param array $params
+	 */
 	function __construct($params) {
 	
 		// call parent constructor to setup objects.
@@ -275,7 +293,7 @@ class owa_controller extends owa_base {
 	function getParam($name) {
 	
 		if (array_key_exists($name, $this->params)):
-			return $this->params['name'];
+			return $this->params[$name];
 		else:
 			return false;
 		endif;
@@ -290,6 +308,52 @@ class owa_controller extends owa_base {
 		return false;
 	}
 	
+	function getPeriod() {
+		
+		return $this->period;
+	}
+	
+	function setPeriod() {
+	
+	// set period
+		$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+		$map = array();
+		
+		if (array_key_exists('startDate', $this->params)) {
+			$map['startDate'] = $this->params['startDate'];			
+		}
+		
+		if (array_key_exists('endDate', $this->params)) {
+			$map['endDate'] = $this->params['endDate'];
+		}
+		
+		$period->set($this->params['period'], $map);
+		$this->period = $period;
+		$this->set('period', $this->getPeriod());
+		$this->data['params']['period'] = $this->data['period']->get();
+
+	}
+	
+	function setView($view) {
+		$this->data['view'] = $view;
+		return;
+	}
+	
+	function setSubview($subview) {
+		$this->data['subview'] = $subview;
+		return;
+	}
+	
+	function setViewMethod($method = 'delegate') {
+		$this->data['view_method'] = $method;
+		return;
+	}
+	
+	function set($name, $value) {
+	
+		$this->data[$name] = $value;
+		return;
+	}
 }
 
 ?>

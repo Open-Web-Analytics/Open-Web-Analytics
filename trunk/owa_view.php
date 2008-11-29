@@ -144,6 +144,10 @@ class owa_view extends owa_base {
 		// set view name in template class. used for navigation.
 		$this->body->caller_params['view'] = $this->data['view'];
 		
+		if (array_key_exists('params', $this->data)):
+			$this->body->set('params', $this->data['params']);
+		endif;
+		
 		if (array_key_exists('subview', $this->data)):
 			$this->body->caller_params['subview'] = $this->data['subview'];
 		endif;
@@ -187,28 +191,32 @@ class owa_view extends owa_base {
 		endif;
 		
 		// construct main view.  This might set some properties of the subview.
-		$this->construct($this->data);
-		
+		if (method_exists(get_class($this), 'render')) {
+			$this->render($this->data);
+		} else {
+			// old style
+			$this->construct($this->data);
+		}
 		//array of errors usually used for field validations
 		if (array_key_exists('validation_errors', $data)):
 			$this->body->set('validation_errors', $data['validation_errors']);
 		endif;
 		
 		// pagination
-		if (array_key_exists('pagination', $data)):
-			$this->body->set('pagination', $data['pagination']);
+		if (array_key_exists('pagination', $this->data)):
+			$this->body->set('pagination', $this->data['pagination']);
 		endif;
 		
 		$this->_setLinkState();
 			
 		// assemble subview
 		if (!empty($this->data['subview'])):
-		
+			
 			// set view name in template. used for navigation.
 			$this->subview->body->caller_params['view'] = $this->data['subview'];
 			
 			// Set validation errors
-			$this->subview->body->set('validation_errors', $data['validation_errors']);
+			$this->subview->body->set('validation_errors', $this->data['validation_errors']);
 			
 			// Load subview 
 			$this->renderSubView($this->data);
@@ -217,15 +225,22 @@ class owa_view extends owa_base {
 			$this->body->set('subview', $this->subview_rendered);
 			
 			// pagination
-			if (array_key_exists('pagination', $data)):
-				$this->subview->body->set('pagination', $data['pagination']);
+			if (array_key_exists('pagination', $this->data)):
+				$this->subview->body->set('pagination', $this->data['pagination']);
 			endif;
+			
+			if (array_key_exists('params', $this->data)):
+				$this->subview->body->set('params', $this->data['params']);
+				$this->subview->body->set('do', $this->data['params']['do']);
+			endif;
+			
+			
 		endif;
 		
-		if (!empty($data['validation_errors'])):
+		if (!empty($this->data['validation_errors'])):
 			$ves = new owa_template('base');
 			$ves->set_template('error_validation_summary.tpl');
-			$ves->set('validation_errors', $data['validation_errors']);
+			$ves->set('validation_errors', $this->data['validation_errors']);
 			$validation_errors_summary = $ves->fetch();
 			$this->t->set('error_msg', $validation_errors_summary);
 		endif;		
@@ -292,6 +307,7 @@ class owa_view extends owa_base {
 		endif;
 	
 		$this->subview = owa_coreAPI::subViewFactory($subview);
+		$this->subview->data = $this->data;
 		
 		return;
 		
@@ -322,9 +338,14 @@ class owa_view extends owa_base {
 	 * @return unknown
 	 */
 	function assembleSubView($data) {
-			
-		// construct view
-		$this->construct($data);
+		
+		// construct main view.  This might set some properties of the subview.
+		if (method_exists(get_class($this), 'render')) {
+			$this->render($data);
+		} else {
+			// old style
+			$this->construct($data);
+		}
 		
 		$this->t->set_template('wrapper_subview.tpl');
 		
@@ -641,6 +662,14 @@ class owa_genericTableView extends owa_view {
 			$this->body->set('table_caption', '');		
 		endif;
 		
+		if (array_key_exists('is_sortable', $data)) {
+			if ($data['is_sortable'] != true) {
+				$this->body->set('sort_table_class', '');
+			}
+		} else {
+			$this->body->set('sort_table_class', 'tablesorter');		
+		}
+		
 		if (array_key_exists('table_row_template', $data)):
 			$this->body->set('table_row_template', $data['table_row_template']);
 		else:
@@ -735,6 +764,38 @@ class owa_sparklineLineGraphView {
 		$sparkline->Output();
 		return;
 	}
+}
+
+class owa_sparklineJsView extends owa_view {
+
+function owa_sparklineJsView() {
+	
+		return owa_sparklinejSView::__construct();
+	}
+	
+	function __construct() {
+	
+		return parent::__construct();
+
+	}
+	
+	function construct($data) {
+	
+		// load template
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('sparklineJs.tpl');
+		// set
+		$this->body->set('widget', $data['widget']);
+		$this->body->set('type', $data['type']);
+		$this->body->set('height', $data['height']);
+		$this->body->set('width', $data['width']);
+		$this->body->set('values', $data['series']['values']);
+		$this->body->set('dom_id', $data['dom_id'].rand());
+		//$this->setJs("includes/jquery/jquery.sparkline.js");
+		return;
+	}
+
+
 }
 
 ?>

@@ -38,8 +38,15 @@ class owa_widgetController extends owa_controller {
 	var $default_format = 'graph';
 	var $dom_id;
 	
+	/**
+	 * holding tank or metrics that need 
+	 * to be shared between action methods
+	 */
+	var $metrics = array();
+	
 	function __construct($params) {
 		
+		$this->type = 'widget';
 		return parent::__construct($params);
 	}
 	
@@ -50,6 +57,8 @@ class owa_widgetController extends owa_controller {
 	
 	function pre() {
 	
+		$this->setPeriod($this->params['period']);
+		
 		// create dom safe id from do action param
 		$this->dom_id = str_replace('.', '-', $this->params['do']);
 		$this->data['dom_id'] = $this->dom_id;
@@ -68,6 +77,10 @@ class owa_widgetController extends owa_controller {
 	}
 	
 	function post() {
+	
+		// calls widget format specific functions
+		
+		$this->doFormatAction($this->params['format']);
 	
 		// used to add outer wrapper to widget if it's the first view.
 		if ($this->params['initial_view'] == true):
@@ -123,6 +136,28 @@ class owa_widgetController extends owa_controller {
 		
 		return;
 		
+	}
+	
+	function doFormatAction($format = '') {
+	
+	
+		$method = $this->params['format'].'Action';
+			
+		if (method_exists($this, $method)) {
+			$this->$method();
+		} else {
+			$this->e->debug("Widget format not implemented. No method named $method");
+		}
+	
+	}
+	
+	function setMetric($name, $obj) {
+		$this->metrics[$name] = $obj;
+		return;
+	}
+	
+	function getMetric($name) {
+		return $this->metrics[$name];
 	}
 
 }

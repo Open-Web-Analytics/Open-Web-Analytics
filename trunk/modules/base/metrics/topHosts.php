@@ -30,64 +30,46 @@
 
 class owa_topHosts extends owa_metric {
 	
-	function owa_topHosts($params = null) {
+	function owa_topHosts($params = array()) {
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+		return owa_topHosts::__construct($params);
 		
 	}
 	
+	function __construct($params = array()) {
+	
+		return parent::__construct($params);
+	}
+	
 	function calculate() {
-		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectFrom('owa_session', 'session');
-		$db->selectColumn("count(session.host_id) as count,
+				
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(session.host_id) as count,
 									host.id,
 									host.host,
 									host.full_host,
 									host.ip_address");
 		
 
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_host', 'host', 'host_id', 'host.id');
+		$this->db->groupBy('host.id');
+		$this->db->orderBy('count');
+		$this->db->order('DESC');
+		
+		return $this->db->getAllRows();
 
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_host', 'host', 'host_id', 'host.id');
-		$db->groupBy('host.id');
-		$db->orderBy('count');
-		$db->order('DESC');
-		
-		return $db->getAllRows();
-
-		
-		/*
-
-		
-		
-		$this->params['select'] = "count(session.host_id) as count,
-									host.id,
-									host.host,
-									host.full_host,
-									host.ip_address";
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		$h = owa_coreAPI::entityFactory('base.host');
-		
-		$this->params['related_objs'] = array('host_id' => $h);
-		$this->params['groupby'] = array('host.id');
-		$this->params['orderby'] = array('count');
-		$this->params['order'] = 'DESC';
-	
-		return $s->query($this->params);
-		
-*/
 	}
 	
+	function paginationCount() {
+	
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(distinct session.host_id) as count");
+		
+		$ret = $this->db->getOneRow();
+		return $ret['count'];
+		
+	
+	}	
 	
 }
 

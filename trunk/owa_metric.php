@@ -83,6 +83,8 @@ class owa_metric extends owa_base {
 	var $limit;
 	
 	var $order;
+	
+	var $time_period_constraint_format = 'timestamp';
 
 	/**
 	 * Constructor
@@ -95,17 +97,15 @@ class owa_metric extends owa_base {
 		return owa_metric::__construct($params);
 	}
 	
-	function __construct($params = '') {
+	function __construct($params = array()) {
 		
 		if (!empty($params)):
 			$this->params = $params;
 		endif;
-		//print_r($this->params);
+		
 		// Setup time and query periods
-		$this->time_now = owa_lib::time_now();
-		// create timeperiod constraints
-		//$this->setTimePeriod($this->params['period']);
-		//print_r($this->params);
+		//$this->time_now = owa_lib::time_now();
+	
 		$this->db = owa_coreAPI::dbSingleton();
 		
 		$this->pagination = new owa_pagination;
@@ -141,16 +141,15 @@ class owa_metric extends owa_base {
 	
 	function makeTimePeriod($period = '') {
 		
-		if (!empty($period)):	
-			$this->params['period'] = $period;
-		endif;
-		
-		$this->setTimePeriod();
-		
+		$start = $this->params['period']->startDate->get($this->time_period_constraint_format);
+		$end = $this->params['period']->endDate->get($this->time_period_constraint_format);
+		$this->params['constraints'][$this->time_period_constraint_format] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
+
 		return;
 		
 	}
 	
+	/*
 	function setTimePeriod() {
 		
 		switch ($this->params['period']) {
@@ -294,17 +293,15 @@ class owa_metric extends owa_base {
 			case "last_thirty_days":
 				
 				$end = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day']+1, $this->time_now['year']);
-				
 				$start = mktime(0, 0, 0, $this->time_now['month'], $this->time_now['day']-29, $this->time_now['year']);
-				//$start = $end - 3600*24*29;
-				//$this->params['constraints']['timestamp'] = array('operator' => '>=', 'value' => $bound);
+				
 				
 				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
 
 
 				
 				break;	
-				
+
 			case "day":
 				
 				$end = mktime(0, 0, 0, $this->params['month'], $this->params['day'] + 1, $this->params['year']);
@@ -336,11 +333,26 @@ class owa_metric extends owa_base {
 
 				
 				break;	
+
+case "date_range":
+			
+			
+				if (array_key_exists('startDate', $this->params)):
 				
-			case "date_range":
+					list($year, $month, $day) = sscanf($this->params['startDate'], "%4d%2d%2d");
+					$start = mktime(0, 0, 0, $month, $day, $year);
+				else:
+					// OLD STYLE REQUEST PARAMS
+					$start = mktime(0, 0, 0, $this->params['month'], $this->params['day'], $this->params['year']); 
+				endif;
 				
-				$start = mktime(0, 0, 0, $this->params['month'], $this->params['day'], $this->params['year']); 
-				$end = mktime(0, 0, 0, $this->params['month2'], $this->params['day2'] + 1, $this->params['year2']);
+				if (array_key_exists('endDate', $this->params)):
+				
+					list($year, $month, $day) = sscanf($this->params['endDate'], "%4d%2d%2d");
+					$end = mktime(0, 0, 0, $month, $day, $year);
+				else:
+					$end = mktime(0, 0, 0, $this->params['month2'], $this->params['day2'] + 1, $this->params['year2']);
+				endif;
 				
 				$this->params['constraints']['timestamp'] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
 
@@ -356,13 +368,12 @@ class owa_metric extends owa_base {
 				break;
 				
 		}
-		
-		
+
 		
 		
 		return;
 	}
-	
+	*/	
 
 	function setConstraint($name, $value, $operator = '') {
 		
@@ -435,9 +446,23 @@ class owa_metric extends owa_base {
 		endif;
 	}
 	
+	function setStartDate($date) {
+		if (!empty($date)):
+			$this->params['startDate'] = $date;
+		endif;
+	}
+	
+	function setEndDate($date) {
+		if (!empty($date)):
+			$this->params['endDate'] = $date;
+		endif;
+	}
+
+	
+		
 	/**
 	 * Retrieve Result data for a particular metric
-	 *
+	 * @depricated
 	 * @param 	array $params
 	 * @return 	array $data
 	 * @access 	public
@@ -464,14 +489,7 @@ class owa_metric extends owa_base {
 		$this->makeTimePeriod();
 		
 		$this->db->multiWhere($this->getConstraints());
-		
-		/*
-// apply limit if one is set
-		if (array_key_exists('limit', $this->params)):
-			$this->limit = $this->params['limit'];
-		endif;
-*/
-		
+				
 		if (!empty($this->pagination)):
 			$this->pagination->setLimit($this->limit);
 		endif;
@@ -514,7 +532,6 @@ class owa_metric extends owa_base {
 		
 			return $this->paginationCount();
 		else:
-		
 			return false;
 		endif;
 	}

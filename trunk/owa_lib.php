@@ -217,7 +217,7 @@ class owa_lib {
 	
 	/**
 	 * Sets the suffix for Days used in Date labels
-	 *
+	 * @depricated
 	 * @param string $day
 	 * @return string
 	 */
@@ -244,7 +244,7 @@ class owa_lib {
 	
 	/**
 	 * Generates the label for a date
-	 *
+	 * @depricated
 	 * @param array $params
 	 * @return string
 	 */
@@ -293,7 +293,7 @@ class owa_lib {
 	
 	/**
 	 * Array of Reporting Periods
-	 *
+	 * @depricated
 	 * @return array
 	 */
 	function reporting_periods() {
@@ -316,17 +316,14 @@ class owa_lib {
 					'same_day_last_week' => array('label' => 'Same Day last Week'),
 					'same_week_last_year' => array('label' => 'Same Week Last Year'),
 					'same_month_last_year' => array('label' => 'Same Month Last Year'),
-					//'day' => array('label' => 'Day'),
-					//'month' => array('label' => 'Month'),
-					//'year' => array('label' => 'Year'),
-					'date_range' => array('label' => 'Custom Date Range')
+					'date_range' => array('label' => 'Date Range')
 		);
 		
 	}
 	
 	/**
 	 * Array of Date specific Reporting Periods
-	 *
+	 * @depricated
 	 * @return array
 	 */
 	function date_reporting_periods() {

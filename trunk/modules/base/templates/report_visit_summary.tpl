@@ -2,7 +2,7 @@
 		<fieldset>
 			<legend>
 				<span class="h_label"><?=$visit['session_month'];?>/<?=$visit['session_day'];?> @ at <?=$visit['session_hour'];?>:<?=$visit['session_minute'];?></span> |
-					<span class="info_text"><?=$visit['host_host'];?> <? if ($visit['host_city']):?>- <?=$visit['host_city'];?>, <?=$visit['host_country'];?><?endif;?></span> 
+					<span class="info_text"><?=$visit['host_host'];?> <? if ($visit['host_city']):?>- <?=$visit['host_city'];?>, <?=$visit['host_country'];?><? endif;?></span> 
 					<?=$this->choose_browser_icon($visit['ua_browser_type']);?>
 			</legend>
 						
@@ -12,15 +12,15 @@
 						<span class="h_label">
 							<? if ($visit['session_is_new_visitor'] == true): ?>
 							<img src="<?=$this->makeImageLink('newuser_icon_small.png');?>" alt="New Visitor" >
-							<?else:?>
+							<? else:?>
 							<img src="<?=$this->makeImageLink('user_icon_small.png');?>" alt="Repeat Visitor">
-							<?endif;?>
+							<? endif;?>
 						</span>
 					</TD>
 					
 					<TD valign="bottom">
 						 <a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id'], 'site_id' => $site_id));?>">
-						 	<span class="inline_h2"><? if (!empty($visit['visitor_user_name'])):?><?=$visit['visitor_user_name'];?><?elseif (!empty($visit['visitor_user_email'])):?><?=$visit['visitor_user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span>
+						 	<span class="inline_h2"><? if (!empty($visit['visitor_user_name'])):?><?=$visit['visitor_user_name'];?><? elseif (!empty($visit['visitor_user_email'])):?><?=$visit['visitor_user_email'];?><? else: ?><?=$visit['visitor_id'];?><? endif; ?></span>
 						 </a>
 						<? if ($visit['session_is_new_visitor'] == false): ?>
 							<? if (!empty($visit['session_prior_session_id'])): ?>	
@@ -31,8 +31,8 @@
 									days ago.
 								<? endif; ?>
 								)</span>
-							<?endif;?>
-						<?endif;?>
+							<? endif;?>
+						<? endif;?>
 					</TD>
 					
 					<TD class="visit_box_stat" rowspan="4">	
@@ -48,7 +48,7 @@
 							<span class="large_number"><?=$visit['session_num_comments'];?></span><br /><span class="info_text"></span></a>
 						</div>
 						
-						<?endif;?>
+						<? endif;?>
 					</TD>	 
 			
 									
@@ -83,9 +83,9 @@
 					</TD>
 					
 				</TR>
-			<?endif;?>
+			<? endif;?>
 									
-		<?endif;?>
+		<? endif;?>
 						
 			</table>
 			

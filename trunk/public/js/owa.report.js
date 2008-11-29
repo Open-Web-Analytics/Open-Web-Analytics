@@ -33,8 +33,8 @@ OWA.report.prototype = {
 	
 	setDateRange: function (date) {
 		
-		this.properties.startDate = jQuery("#owa_report-datepicker-start").datepicker("getDate");
-		this.properties.endDate = jQuery("#owa_report-datepicker-end").datepicker("getDate");
+		this.properties.startDate = jQuery.datepicker.formatDate('yymmdd', jQuery("#owa_report-datepicker-start").datepicker("getDate"));
+		this.properties.endDate = jQuery.datepicker.formatDate('yymmdd', jQuery("#owa_report-datepicker-end").datepicker("getDate"));
 		if (this.properties.startDate != null && this.properties.endDate != null) {
 			this.setPeriod('date_range');
 		}
@@ -55,6 +55,7 @@ OWA.report.prototype = {
 // Bind event handlers
 jQuery(document).ready(function(){   
 	jQuery('#owa_reportSiteFilterSelect').change(owa_report_reload);
+	jQuery("#owa_reportPeriodFilterSubmit").click(owa_report_reload);
 	jQuery('#owa_reportPeriodFilter').change(owa_reportSetPeriod);
 	jQuery('#report_top_level_nav_ul').accordion({
 		//onClick: navigateAway;
@@ -75,6 +76,7 @@ jQuery(document).ready(function(){
 		//buttonImage: "templates/images/calendar.gif", 
 		//buttonImageOnly: true
 	});
+	
 
 });
 
