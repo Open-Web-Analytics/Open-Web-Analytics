@@ -470,9 +470,12 @@ class owa_areaBarsFlashChartView extends owa_base {
 		$g->set_x_legend( $data['x']['label'], 12, '#000000' );
 		
 		$g->set_y_min( 0 );
-		//$g->set_y_max( 225 );
 		
-		//$g->y_label_steps( 15 );
+		$max = max(array_merge($data['y']['series'], $data['y']['series']));
+		
+		$g->set_y_max($max + 2);
+		
+		$g->y_label_steps( 2 );
 		//$g->set_y_legend( '', 12, '#C11B01' );
 		
 		return $g->render();
