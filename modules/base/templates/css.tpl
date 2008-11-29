@@ -104,7 +104,7 @@ div {margin:0;}
 	margin:0px 2px 2px 2px;
 	width:40px;
 	height:40px;
-	background-image: url('<?=$this->makeImageLink('comment_background.jpg');?>
+	background-image: url('<?=$this->makeImageLink('comment_background.jpg');?>');
 	background-repeat: no-repeat;
 	text-align:center;
 }

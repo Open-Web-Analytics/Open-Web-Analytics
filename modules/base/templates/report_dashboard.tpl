@@ -4,7 +4,7 @@
 
 	<BR>
 	<div class="owa_reportElement">
-	<?=$this->getWidget('base.dashboardTrendWidget', array('height' => 200, 'width' => '', 'period' => 'last_thirty_days'));?>	
+	<?=$this->getWidget('base.dashboardTrendWidget', array('height' => '100', 'width' => '', 'period' => 'last_thirty_days'), false);?>	
 	</div>
 	<P></P>
 	<table class="owa_reportElement">
