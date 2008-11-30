@@ -1,15 +1,4 @@
-<script>
-
-OWA.items['<?=$widget;?>'] = new OWA.widget();
-OWA.items['<?=$widget;?>'].properties = <?=$this->makeJson($params);?>;
-OWA.items['<?=$widget;?>'].properties.do = "<?=$do;?>";
-OWA.items['<?=$widget;?>'].current_view = "<?=$format;?>";
-OWA.items['<?=$widget;?>'].dom_id = "<?=$widget;?>";
-OWA.items['<?=$widget;?>'].page_num = "<?=$pagination['page_num'];?>1";
-OWA.items['<?=$widget;?>'].max_page_num = "<?=$pagination['max_page_num'];?>";
-OWA.items['<?=$widget;?>'].max_page_num = "<?=$pagination['more_pages'];?>";
-
-</script>
+<? include('widget_dom.tpl');?>
 
 <div id="<?=$widget;?>" class="owa_widget-container" style="width:<? if ($params['width']): echo($params['width'].'px'); else: echo('auto'); endif;?>;">
 	

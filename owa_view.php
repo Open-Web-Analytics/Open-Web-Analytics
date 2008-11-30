@@ -70,7 +70,7 @@ class owa_view extends owa_base {
 	
 	/**
 	 * The priviledge level required to access this view
-	 *
+	 * @depricated
 	 * @var string
 	 */
 	var $priviledge_level;
@@ -120,13 +120,13 @@ class owa_view extends owa_base {
 	
 	function __construct($params = null) {
 	
-		parent::__construct();
-		//$this->auth = & owa_auth::get_instance();
+		parent::__construct($params);
+		
 		$this->t = new owa_template();
 		$this->body = new owa_template($this->module);
 		$this->setTheme();
-		
 		return;
+
 	}
 	
 	/**
@@ -138,8 +138,6 @@ class owa_view extends owa_base {
 	function assembleView($data) {
 		
 		$this->e->debug('Assembling view: '.get_class($this));
-		
-		$this->data = $data;
 		
 		// set view name in template class. used for navigation.
 		$this->body->caller_params['view'] = $this->data['view'];
@@ -281,7 +279,7 @@ class owa_view extends owa_base {
 	
 	/**
 	 * Abstract method for assembling a view
-	 *
+	 * @depricated
 	 * @param array $data
 	 */
 	function construct($data) {
@@ -307,7 +305,7 @@ class owa_view extends owa_base {
 		endif;
 	
 		$this->subview = owa_coreAPI::subViewFactory($subview);
-		$this->subview->data = $this->data;
+		$this->subview->setData($this->data);
 		
 		return;
 		
@@ -427,19 +425,43 @@ class owa_view extends owa_base {
 		return;
 	}
 	
+	function get($name) {
+		
+		return $this->data[$name];
+	}
+	
+	function set($name, $value) {
+		
+		$this->data[$name] = $value;
+		return;
+	}
+	
+	function setSubViewProperty($name, $value) {
+		
+		$this->subview->set($name, $value);
+		return;
+	}
+	
+	function getSubViewProperty($name) {
+		return $this->subview->get($name); 
+	}
+	
+	function setData($data) {
+		$this->data = $data;
+	}
+	
 }
 
+class owa_areaFlashChartView extends owa_view {
 
-class owa_areaBarsFlashChartView extends owa_base {
-
-	function owa_areaBarsFlashChartView() {
+	function owa_areaFlashChartView() {
 	
-		return owa_areaBarsFlashChartView::__construct();
+		return owa_areaFlashChartView::__construct();
 	}
 	
 	function __construct() {
 		
-		return $this->owa_base();
+		return parent::__construct();
 		
 	}
 
@@ -453,15 +475,11 @@ class owa_areaBarsFlashChartView extends owa_base {
 		$g->x_axis_colour('#cccccc', '#ffffff');
 		$g->y_axis_colour('#cccccc', '#cccccc');
 		//$g->set_inner_background( '#FFFFFF', '#', 90 );
-		
-		// y2 series
-		$g->set_data($data['y']['series']);
-		$g->bar( 100, '#FF9900', $data['y']['label'], 10 );
 
 		// y series
-		$g->set_data($data['y2']['series']);
+		$g->set_data($data['y']['series']);
 		// width: 2px, dots: 3px, area alpha: 25% ...
-		$g->area_hollow( 1, 3, 60, '#99CCFF', $data['y2']['label'], 12, '#99CCFF' );
+		$g->area_hollow( 1, 3, 60, '#99CCFF', $data['y']['label'], 12, '#99CCFF' );
 		
 		
 		$g->set_x_labels($data['x']['series']);
@@ -471,7 +489,65 @@ class owa_areaBarsFlashChartView extends owa_base {
 		
 		$g->set_y_min( 0 );
 		
-		$max = max(array_merge($data['y']['series'], $data['y']['series']));
+		$max = max($data['y']['series']);
+		
+		$g->set_y_max($max + 2);
+		
+		$g->y_label_steps( 2 );
+		//$g->set_y_legend( '', 12, '#C11B01' );
+		
+		return $g->render();
+	
+	}
+
+}
+
+
+
+class owa_areaBarsFlashChartView extends owa_view {
+
+	function owa_areaBarsFlashChartView() {
+	
+		return owa_areaBarsFlashChartView::__construct();
+	}
+	
+	function __construct() {
+		
+		return parent::__construct();
+		
+	}
+
+	function assembleView($data) {
+		
+		include_once(OWA_INCLUDE_DIR.'open-flash-chart.php' );
+		
+		$cd = $data['chart_data'];
+				
+		$g = new graph();
+		//$g->title($data['title'], '{font-size: 20px;}' );
+		$g->bg_colour = '#FFFFFF';
+		$g->x_axis_colour('#cccccc', '#ffffff');
+		$g->y_axis_colour('#cccccc', '#cccccc');
+		//$g->set_inner_background( '#FFFFFF', '#', 90 );
+		
+		// y2 series
+		$g->set_data($cd->getSeriesData('bar'));
+		$g->bar( 100, '#FF9900', $cd->getSeriesLabel('bar'), 10 );
+
+		// y series
+		$g->set_data($cd->getSeriesData('area'));
+		// width: 2px, dots: 3px, area alpha: 25% ...
+		$g->area_hollow( 1, 3, 60, '#99CCFF', $cd->getSeriesLabel('area'), 12, '#99CCFF' );
+		
+		
+		$g->set_x_labels($cd->getSeriesData('x'));
+		$g->set_x_label_style( 10, '#000000', 0, 2 );
+		$g->set_x_axis_steps( 2 );
+		$g->set_x_legend($cd->getSeriesLabel('x'), 12, '#000000' );
+		
+		$g->set_y_min( 0 );
+		
+		$max = max(array_merge($cd->getSeriesData('bar'), $cd->getSeriesData('area')));
 		
 		$g->set_y_max($max + 2);
 		

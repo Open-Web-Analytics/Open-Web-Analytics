@@ -203,7 +203,12 @@ class owa_widgetView extends owa_view {
 		
 		$this->_setLinkState();
 		
-		$this->body->set_template('widget.tpl');
+		if ($data['wrapper'] === true):
+			$this->body->set_template('widget.tpl');
+		elseif ($data['wrapper'] === 'inpage'):
+			$this->body->set_template('widget_inpage.tpl');
+		endif;
+		
 		$this->body->set('format', $data['params']['format']);
 		$this->body->set('widget', str_replace('.', '-', $data['widget']));			
 		$this->body->set('params', $data['params']);	

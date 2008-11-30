@@ -37,4 +37,6 @@
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
 .owa_reportSectionHeader, .section_header {width:auto;background-color:#9f9f9f; color:#ffffff;padding:5px 5px 5px 7px; margin: 0px 0 15px 0; font-size: 18px; font-weight:bold;}
 .owa_reportSectionContent {margin: 15px;}
-.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px;}
+.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
+
+.owa_metricInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin:5px; width:185px; float:left;}

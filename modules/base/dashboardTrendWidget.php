@@ -19,6 +19,7 @@
 
 require_once(OWA_BASE_CLASSES_DIR.'owa_lib.php');
 require_once(OWA_BASE_CLASS_DIR.'widget.php');
+require_once(OWA_BASE_CLASS_DIR.'chartData.php');
 
 /**
  * DashBoard Trend Widget Controller
@@ -42,7 +43,7 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 	function action() {
 		
 		// Set Title of the Widget
-		$this->data['title'] = 'Dashboard Trend';		
+		$this->data['title'] = 'Site Usage Trend';		
 		
 		// enable formats
 		$this->enableFormat('graph');
@@ -72,12 +73,11 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 		$m = $this->getMetric('base.dashCoreByDay');
 		$results = $m->generate();
 		$series = owa_lib::deconstruct_assoc($results);
-		$this->data['y']['label'] = 'Page Views';
-		$this->data['y2']['label'] = 'Visits';
-		$this->data['x']['label'] = 'Day';
-		$this->data['y']['series'] = $series['page_views'];
-		$this->data['y2']['series'] = $series['sessions'];
-		$this->data['x']['series'] = owa_lib::makeDateArray($results, "n/j");				
+		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
+		$cd->setSeries('x', owa_lib::makeDateArray($results, "n/j"), 'Day');
+		$cd->setSeries('bar', $series['page_views'], 'Page Views');
+		$cd->setSeries('area', $series['sessions'], 'Visits');
+		$this->set('chart_data', $cd);
 		$this->data['view'] = 'base.areaBarsFlashChart';
 		return;
 	}	
