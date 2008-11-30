@@ -572,6 +572,9 @@ class owa_template extends Template {
 		if ($wrapper === true):
 			$params['initial_view'] = true;
 			$params['wrapper'] = true;
+		elseif ($wrapper === 'inpage'):
+			$params['initial_view'] = true;
+			$params['wrapper'] = 'inpage';
 		else:
 			$params['wrapper'] = false;
 		endif;
@@ -579,7 +582,13 @@ class owa_template extends Template {
 		return owa_coreAPI::performAction($do, $params);
 	}
 	
-	function getSparkline($metric, $metric_col, $period = 'last_thirty_days', $height = 25, $width = 200, $map = array()) {
+	function getInpageWidget($do, $params = array()) {
+	
+		return owa_template::getWidget($do, $params, 'inpage');
+	
+	}
+	
+	function getSparkline($metric, $metric_col, $period = 'last_thirty_days', $height = 25, $width = 250, $map = array()) {
 	
 		$map['metric'] = $metric;
 		$map['metric_col'] = $metric_col;

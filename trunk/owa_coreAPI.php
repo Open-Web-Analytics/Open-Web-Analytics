@@ -827,8 +827,8 @@ class owa_coreAPI extends owa_base {
 			$viewfile = $data['view'];
 		endif;
 		
-		$view =  owa_coreAPI::moduleFactory($viewfile, 'View', $params);
-		
+		$view = owa_coreAPI::moduleFactory($viewfile, 'View', $params);
+		$view->setData($data);
 		return $view->assembleView($data);
 		
 	}
