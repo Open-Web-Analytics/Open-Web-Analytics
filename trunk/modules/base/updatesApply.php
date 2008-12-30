@@ -49,8 +49,8 @@ class owa_updatesApplyController extends owa_controller {
 		$api = &owa_coreAPI::singleton();
 		
 		$modules = $api->getModulesNeedingUpdates();
-		print_r($modules);
-		return;
+		//print_r($modules);
+		//return;
 		
 		// foreach do update in order
 		
