@@ -47,7 +47,8 @@ class owa_reportDocumentController extends owa_reportController {
 		
 		// document request trends
 		$r = owa_coreAPI::metricFactory('base.requestCountsByDay');
-		$r->setPeriod($this->getPeriod());
+		$period = $this->makeTimePeriod('last_thirty_days');
+		$r->setPeriod($period);
 		$r->setConstraint('site_id', $this->getParam('site_id')); 
 		$r->setConstraint('document_id', $this->getParam('document_id')); 
 		$r->setOrder('DESC');
