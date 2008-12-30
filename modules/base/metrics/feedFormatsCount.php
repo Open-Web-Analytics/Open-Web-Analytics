@@ -31,32 +31,33 @@
 class owa_feedFormatsCount extends owa_metric {
 	
 	function owa_feedFormatsCount($params = null) {
+				
+		return owa_feedFormatsCount::__construct($params);
 		
-		$this->params = $params;
+	}
+	
+	function __construct($params = null) {
 		
-		$this->owa_metric();
-		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function generate() {
 		
-		$this->params['select'] = "count(id) as count, 
-									feed_format";
+		$this->db->selectColumn("count(id) as count, feed_format");
+		$this->db->selectFrom("owa_feed_requests");
+		$this->db->groupBy('feed_format');
 		
+		return $this->db->getAllRows();
 		
-		//$this->params['orderby'] = array('year', 'month', 'day');
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(id) as count");
+		$this->db->selectFrom("owa_feed_requests");
 		
-		$this->setTimePeriod($this->params['period']);
-		
-		$f = owa_coreAPI::entityFactory('base.feed_request');
-		
-		
-		$this->params['groupby'] = array('feed_format');
-		
-		return $f->query($this->params);
-		
+		$ret = $this->db->getOneRow();
+		return $ret['count'];
 	}
 	
 	

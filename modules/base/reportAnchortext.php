@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -35,46 +34,39 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportAnchortextController extends owa_reportController {
 	
 	function owa_reportAnchortextController($params) {
+				
+		return owa_reportAnchortextController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
+			
+		// top referers
+		$a = owa_coreAPI::metricFactory('base.topReferingAnchors');
+		$a->setPeriod($this->getPeriod());
+		$a->setConstraint('site_id', $this->getParam('site_id')); 
+		$a->setLimit(30);
+		$a->setPage($this->get('page'));
+		$this->set('top_anchors', $a->generate());
+		$this->set('pagination', $a->getPagination());
+
+		// summary stats
+		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
+		$s->setPeriod($this->getPeriod());
+		$s->setConstraint('site_id', $this->getParam('site_id')); 
+		$s->setConstraint('referer.is_searchengine', true, '!=');
+		$s->setConstraint('session.source', '', '='); 
+		$s->setConstraint('session.referer_id', '0', '!='); 
+		$this->set('summary_stats_data', $s->generate());
 		
-		$data = array();
-		
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['top_anchors'] = $api->getMetric('base.topReferingAnchors', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCountsTraffic', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'referer.is_searchengine' => array('operator' => '!=', 'value' => true),
-										'session.source' => array('operator' => '=', 'value' => ''),
-										'session.referer_id' => array('operator' => '!=', 'value' => '0'))
-										
-		
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportAnchortext';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
+		$this->setView('base.report');
+		$this->setSubview('base.reportAnchortext');
+		$this->setTitle('Links');
+		return;
 		
 	}
 }

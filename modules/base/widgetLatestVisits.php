@@ -60,10 +60,11 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		$m->setOrder(OWA_SQL_ASCENDING); 
 		$m->setLimit(5);
 		$results = $m->generate();
-		$this->data['rows'] = $results;	
-		$this->data['view'] = 'base.genericTable';
-		$this->data['table_row_template'] = 'row_visitSummary.tpl';	
-		$this->data['is_sortable'] = false;	
+		$this->set('rows', $results);	
+		$this->setView('base.genericTable');
+		$this->set('show_error', false);
+		$this->set('table_row_template', 'row_visitSummary.tpl');	
+		$this->set('is_sortable', false);	
 		return;	
 		
 	}

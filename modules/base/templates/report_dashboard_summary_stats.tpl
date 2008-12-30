@@ -5,33 +5,33 @@
 		<td valign="top">
 			<div class="owa_metricInfobox">
 				<span class="large_number"><?=$summary_stats['sessions'];?></span> 
-				<span class="inline_h2">Visits</span><BR>
-				<?=$this->getSparkline('base.dashCoreByDay', 'sessions', 'last_thirty_days', 25, 100);?>
+				<span class="inline_h3">Visits</span><BR>
+				<?=$this->displaySparkline('sessionsTrend', $site_trend['sessions']);?>
 			</div>
 			
 			<div class="owa_metricInfobox">	
 				<span class="large_number"><?=round($summary_stats['pages_per_visit'],1);?></span> 
-				<span class="inline_h2">Pages/Visit</span><BR>				
-				<?=$this->getSparkline('base.dashCoreByDay', 'pages_per_visit', 'last_thirty_days', 25, 100);?>		
+				<span class="inline_h3">Pages/Visit</span><BR>				
+				<?=$this->displaySparkline('pagePerVisitTrend', $site_trend['pages_per_visit']);?>			
 			</div>
 		
 			<div class="owa_metricInfobox">
 				<span class="large_number"><?=$summary_stats['new_visitor'];?></span> 
-				<span class="inline_h2">New Visitors</span><BR>
-				<?=$this->getSparkline('base.dashCoreByDay', 'new_visitor', 'last_thirty_days', 25, 100);?>
+				<span class="inline_h3">New Visitors</span><BR>
+				<?=$this->displaySparkline('newVisitorsTrend', $site_trend['new_visitor']);?>	
  
 			</div>
 		
 			<div class="owa_metricInfobox">
 				<span class="large_number"><?=$summary_stats['repeat_visitor'];?></span>
-				<span class="inline_h2">Repeat Visitors</span><BR>
-				<?=$this->getSparkline('base.dashCoreByDay', 'repeat_visitor', 'last_thirty_days', 25, 100);?> 
+				<span class="inline_h3">Repeat Visitors</span><BR>
+				<?=$this->displaySparkline('repeatVisitorsTrend', $site_trend['repeat_visitor']);?>	
 			</div>
 	
 			<div class="owa_metricInfobox">
-				<span class="inline_h2"><span class="large_number"><?=$summary_stats['unique_visitors'];?></span> 
+				<span class="inline_h3"><span class="large_number"><?=$summary_stats['unique_visitors'];?></span> 
 				Unique Visitors</span><BR>
-				<?=$this->getSparkline('base.dashCoreByDay', 'unique_visitors', 'last_thirty_days', 25, 100);?>
+				<?=$this->displaySparkline('uniqueVisitorsTrend', $site_trend['unique_visitors']);?>	
 			</div>
 		</td>
 	</tr>

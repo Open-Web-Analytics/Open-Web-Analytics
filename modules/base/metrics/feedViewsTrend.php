@@ -32,42 +32,38 @@ class owa_feedViewsTrend extends owa_metric {
 	
 	function owa_feedViewsTrend($params = null) {
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
-		
+		return owa_feedViewsTrend::__construct($params);
+	}
+	
+	function __construct($params = null) {
+	
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-
-		$db->selectFrom('owa_feed_request');
-		$db->selectColumn("count(id) as fetch_count, count(distinct feed_reader_guid) as reader_count, year, month, day");
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-
-		return $db->getAllRows();
-
+		$this->db->selectFrom('owa_feed_request');
+		$this->db->selectColumn("count(id) as fetch_count, count(distinct feed_reader_guid) as reader_count, year, month, day");
 		
-		/*
-
-		$this->params['select'] = "count(id) as fetch_count,
-									count(distinct feed_reader_guid) as reader_count,
-									year,
-									month,
-									day";
+		$p = $this->getPeriod();
+		$num_months = $p->getMonthsDifference();
 		
+		// set groupby and orderby
+		if ($num_months > 3):
+			$this->db->groupBy('year');
+			$this->db->groupBy('month');
+			$this->db->orderBy('year', $this->getOrder());
+			$this->db->orderBy('month', $this->getOrder());
+		else:
+			$this->db->groupBy('year');
+			$this->db->groupBy('month');
+			$this->db->groupBy('day');
+			$this->db->orderBy('year', $this->getOrder());
+			$this->db->orderBy('month', $this->getOrder());
+			$this->db->orderBy('day', $this->getOrder());
+		endif;
 		
-		$this->setTimePeriod($this->params['period']);
-		
-		$f = owa_coreAPI::entityFactory('base.feed_request');
-		
-		return $f->query($this->params);
-
-*/		
+		return $this->db->getAllRows();
 	}
 	
 	

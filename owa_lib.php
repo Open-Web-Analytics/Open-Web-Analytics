@@ -62,25 +62,29 @@ class owa_lib {
 	 * @access public
 	 */
 	function deconstruct_assoc($a_array) {
+		if (!empty($a_array)):
 		
-		$data_arrays = array();
-	
-		if(!empty($a_array[1])) :
+			$data_arrays = array();
 		
-			foreach ($a_array as $key => $value) {
-				foreach ($value as $k => $v) {
-					$data_arrays[$k][] = $v;
+			if(!empty($a_array[1])) :
 			
+				foreach ($a_array as $key => $value) {
+					foreach ($value as $k => $v) {
+						$data_arrays[$k][] = $v;
+				
+					}
 				}
-			}
+			else:
+				//print_r($a_array[0]);
+				foreach ($a_array[0] as $key => $value) {
+					$data_arrays[$key][] = $value;
+				}
+			endif;
+			
+			return $data_arrays;
 		else:
-			//print_r($a_array[0]);
-			foreach ($a_array[0] as $key => $value) {
-				$data_arrays[$key][] = $value;
-			}
+			return array();
 		endif;
-		
-		return $data_arrays;
 	}
 	
 	
@@ -775,15 +779,22 @@ class owa_lib {
 
 	function makeDateArray($result, $format) {
 		
-		$timestamps = array();
+		if (!empty($result)) {
+		
+			$timestamps = array();
 			
 			foreach ($result as $row) {
 				
 				$timestamps[]= mktime(0,0,0,$row['month'],$row['day'],$row['year']);
-				
 			}
 		
-		return owa_lib::makeDates($timestamps, $format);
+			return owa_lib::makeDates($timestamps, $format);
+		
+		} else {
+		
+			return array();
+		}
+		
 	}
 	
 	function makeDates($timestamps, $format) { 

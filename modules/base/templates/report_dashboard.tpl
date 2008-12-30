@@ -1,16 +1,16 @@
 <div class="section_header">Site Usage</div>
 <div class="owa_reportSectionContent">
-	<? include ('report_dashboard_summary_stats.tpl');?>
+<? include ('report_dashboard_summary_stats.tpl');?>
 
 	<BR>
 	<div class="owa_reportElement">
-	<?=$this->getInpageWidget('base.dashboardTrendWidget', array('height' => '100', 'width' => '', 'period' => 'last_thirty_days'));?>	
+	<?=$this->getInpageWidget('base.dashboardTrendWidget', array('height' => '100px', 'width' => '', 'period' => 'last_thirty_days'));?>	
 	</div>
 	<P></P>
-	<table class="owa_reportElement">
+	<table class="owa_reportElement" size="100%">
 		<TR>	
 			<TD valign="top" width="50%">
-					<?=$this->getWidget('base.widgetTopPages', array('height' => '', 'width' => '', 'period' => $params['period']));?>
+					<?=$this->getWidget('base.widgetTopPages', array( 'width' => '100%', 'period' => $params['period']));?>
 			</TD>
 			<TD valign="top" width="50%">
 				<?=$this->getWidget('base.widgetVisitorTypes', array('height' => '', 'width' => '', 'period' => $params['period']));?>
@@ -24,12 +24,12 @@
 	<table class="owa_reportElement">
 		<TR>
 			<TD valign="top" width="50%">	
-				<?=$this->getWidget('base.widgetVisitorSources', array('height' => '', 'width' => '', 'period' => $params['period']));?>
+				<?=$this->getWidget('base.widgetVisitorSources', array('height' => '', 'width' => '100%'));?>
 	
 			</TD>
 			
 			<TD valign="top" width="50%">	
-				<?=$this->getWidget('base.widgetTopReferers', array('height' => '', 'width' => '', 'period' => $params['period']));?>
+				<?=$this->getWidget('base.widgetTopReferers', array('height' => '', 'width' => '100%', 'period' => $params['period']));?>
 			</TD>
 		</TR>
 	</table>

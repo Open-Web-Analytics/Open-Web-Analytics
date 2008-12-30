@@ -47,6 +47,7 @@ class owa_widgetController extends owa_controller {
 	function __construct($params) {
 		
 		$this->type = 'widget';
+		//print_r($params);
 		return parent::__construct($params);
 	}
 	
@@ -57,7 +58,8 @@ class owa_widgetController extends owa_controller {
 	
 	function pre() {
 	
-		$this->setPeriod($this->params['period']);
+	
+		$this->setPeriod($this->getParam('period'));
 		
 		// create dom safe id from do action param
 		$this->dom_id = str_replace('.', '-', $this->params['do']);
@@ -117,7 +119,7 @@ class owa_widgetController extends owa_controller {
 	}
 	
 	function setHeight($height) {
-	
+		
 			$this->data['height'] = $height;
 		
 		return;
@@ -183,9 +185,10 @@ class owa_widgetView extends owa_view {
 		return;
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		// load template
+		
 		
 		if ($data['params']['is_external'] == true):
 			$this->t->set_template('wrapper_widget.tpl');
@@ -216,8 +219,6 @@ class owa_widgetView extends owa_view {
 		$this->body->set('widget_views', $data['widget_views']);
 		$this->body->set('widget_views_count', count($data['widget_views']));
 		$this->body->set('do', $data['widget']);
-		
-		
 		
 		return;
 	}

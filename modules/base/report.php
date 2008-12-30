@@ -35,20 +35,21 @@ class owa_reportView extends owa_view {
 	
 	function owa_reportView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		
-		return;
+		return owa_reportView::__construct();
+	}
+	
+	function __construct() {
+	
+		return parent::__construct();
 	}
 	
 	function render($data) {
 		
 		// Set Page title
-		$this->t->set('page_title', $this->data['title']);
+		$this->t->set('page_title', $this->get('title'));
 		
 		// Set Page headline
-		$this->body->set('title', $this->data['title']);
+		$this->body->set('title', $this->get('title'));
 		
 		// Report Period Filters
 		$this->body->set('reporting_periods', owa_lib::reporting_periods());
@@ -88,36 +89,39 @@ class owa_reportView extends owa_view {
 		$this->body->set('sites', $this->getSitesList());
 		
 		$this->body->set('dom_id', $this->data['dom_id']);
+		// add if here
+		$this->subview->body->set('dom_id', $this->data['dom_id']);
 		$this->body->set('do', $this->data['do']);
 		
 		// Set navigation
 		$api = &owa_coreAPI::singleton();
-	
 		$this->body->set('sub_nav', $api->getNavigation($this->data['nav_tab'], 'sub_nav'));
-		
 		$this->body->set('top_level_report_nav', $api->getGroupNavigation('Reports'));
 		
 		// load body template
-		
 		$this->body->set_template('report.tpl');
 		
-	
+		// set Js libs to be loaded
 		$this->setJs("includes/jquery/jquery-1.2.6.min.js");
 		$this->setJs("includes/jquery/jquery.sprintf.js");
 		$this->setJs("includes/jquery/jquery-ui-personalized-1.5.2.min.js");
-		$this->setJs("owa.js");
-		$this->setJs('owa.report.js');
 		$this->setJs("includes/jquery/tablesorter/jquery.tablesorter.js");
 		$this->setJs("includes/jquery/jquery.sparkline.min.js");
+		$this->setJs("owa.js");
+		$this->setJs('owa.report.js');
+		$this->setJs("owa.widgets.js");
+		$this->setJs("includes/swfobject.js");
+		$this->setJs("includes/json2.js");
+		$this->setJs("owa.chart.js");
+		$this->setJs("owa.sparkline.js");
 		// data table style
-		
-		
 		//$this->setCss('flora/flora.css');
 		//$this->setCss('flora/flora.datepicker.css');
 		//$this->setCss('ui.datepicker.css');
 		$this->setCss('jquery-ui-themeroller.css');
 		$this->setCss('style.css', $this->config['public_url']."js/includes/jquery/tablesorter/themes/blue/");
 		$this->setCss("owa.report.css");
+		$this->setCss("owa.widgets.css");
 		return;
 	}
 	
@@ -134,6 +138,8 @@ class owa_reportView extends owa_view {
 		$this->body->set('period', $period->get());
 		$this->subview->body->set('period', $period->get());
 		
+		//$this->body->set('timePeriod', $period);
+		//$this->subview->body->set('timePeriod', $period);
 		// set period label
 		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);

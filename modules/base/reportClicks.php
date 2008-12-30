@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -24,65 +23,57 @@ class owa_reportClicksController extends owa_reportController {
 	
 	function owa_reportClicksController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'admin';
+		return owa_reportClicksController::__construct($params);
 	
 	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
+	}
+	
 	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-			
+					
 		// Fetch document object
 		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByPk('id', $this->params['document_id']);
-		$data['document_details'] = $d->_getProperties();
-		$data['document_id'] = $this->params['document_id'];
+		$d->getByPk('id', $this->getParam('document_id'));
+		$this->set('document_details', $d->_getProperties());
+		$this->set('document_id', $this->getParam('document_id'));
 		
 		// Get clicks
-		$data['clicks'] = $api->getMetric('base.topClicks', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'document_id'		=> $this->params['document_id'],
-				'ua_id'			=> $this->params['ua_id']
-				),
-			'limit'				=> 500
-		));
+		$c = owa_coreAPI::metricFactory('base.topClicks');
+		$c->setPeriod($this->getPeriod());
+		$c->setConstraint('site_id', $this->getParam('site_id')); 
+		$c->setConstraint('document_id', $this->getParam('document_id'));
+		$c->setConstraint('ua_id', $this->getParam('ua_id'));
+		$c->setLimit(500);
+		$this->set('clicks', $c->generate());
 		
-		// get top User agents
-		$data['uas'] = $api->getMetric('base.clickBrowserTypes', array(
+		// Get top user agents to populate pull-down
+		$ua = owa_coreAPI::metricFactory('base.clickBrowserTypes');
+		$ua->setPeriod($this->getPeriod());
+		$ua->setConstraint('site_id', $this->getParam('site_id')); 
+		$ua->setConstraint('document_id', $this->getParam('document_id'));
+		$ua->setLimit(10);
+		$this->set('uas', $ua->generate());
 		
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'document_id'		=> $this->params['document_id']),
-			'limit'				=> 10
+		// Get top user agents to populate pull-down
+		$s = owa_coreAPI::metricFactory('base.requestCounts');
+		$s->setPeriod($this->getPeriod());
+		$s->setConstraint('site_id', $this->getParam('site_id')); 
+		$s->setConstraint('document_id', $this->getParam('document_id'));
+		$this->set('summary_stats_data', $s->generate());
 		
-		));
+		// view stuff		
+		$this->setView('base.report');
+		$this->setSubview('base.reportClicks');
+		$this->setTitle('Click Analysis');
 		
-		$data['summary_stats_data'] = $api->getMetric('base.requestCounts', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'document_id' 	=> $this->params['document_id']
-				)
-		
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportClicks';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportContent';
-		
-		return $data;
+		return;
 	}
 }
-
-
 
 
 /**
@@ -101,28 +92,27 @@ class owa_reportClicksView extends owa_view {
 	
 	function owa_reportClicksView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportClicksView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign data to templates
 		
 		$this->body->set_template('report_clicks.tpl');
-	
-		$this->body->set('headline', 'Click Map Report');
+		$this->body->set('clicks', $this->get('clicks'));
+		$this->body->set('uas', $this->get('uas'));
+		$this->body->set('detail', $this->get('document_details'));
+		$this->body->set('document_id', $this->get('document_id'));
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));
+		$this->setJs('dynifs.js');
+		$this->setJs('wz_jsgraphics.js');
 		
-		$this->body->set('clicks', $data['clicks']);
-		$this->body->set('uas', $data['uas']);
-		//print_r($data['uas']);
-		$this->body->set('detail', $data['document_details']);
-		
-		$this->body->set('document_id', $data['document_id']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		$this->body->set('params', $data['params']);	
 		return;
 	}
 	

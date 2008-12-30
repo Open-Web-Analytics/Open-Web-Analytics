@@ -33,7 +33,14 @@ OWA.util =  {
     	
     	return;
     
-    }
+    },
+    
+    makeUrl: function(template, uri, params) {
+		var url = jQuery.sprintf(template, uri, jQuery.param(OWA.util.nsAll(params)));
+		//alert(url);
+		return url;
+	}
+
 
 	
 }

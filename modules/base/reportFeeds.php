@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -36,48 +35,45 @@ class owa_reportFeedsController extends owa_reportController {
 	
 	function owa_reportFeedsController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+		return owa_reportFeedsController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
+		// summary counts
+		$fc = owa_coreAPI::metricFactory('base.feedSummaryCount');
+		$fc->setPeriod($this->getPeriod());
+		$fc->setConstraint('site_id', $this->getParam('site_id')); 
+		$this->set('feed_counts', $fc->generate());
 		
-		$data['params'] = $this->params;
+		// summary trend
+		$f = owa_coreAPI::metricFactory('base.feedViewsTrend');
+		$f->setPeriod($this->getPeriod());
+		$f->setConstraint('site_id', $this->getParam('site_id')); 
+		$f->setOrder('DESC');
+		$feed_trend = $f->generate();
+		$this->set('feed_trend', $feed_trend);
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		// trend chart
+		$series = owa_lib::deconstruct_assoc($feed_trend);
+		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
+		$cd->setSeries('x', owa_lib::makeDateArray($feed_trend, "n/j"), 'Day');
+		$cd->setSeries('area', $series['fetch_counts'], 'Fetch Counts');
+		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
+		$json = $chart->area($cd);
+		$this->set('feed_chart_data', $json);
 			
-			switch ($this->params['period']) {
-	
-				case "this_year":
-					$data['trend'] = $api->getMetric('base.feedViewsTrend', array(
-					
-						'constraints'		=> array('site_id'	=> $this->params['site_id']),
-						'groupby'			=> array('year', 'month'),
-						'order'				=> 'DESC '
-					));		
-					
-					break;
-				
-				default:
-					$data['trend'] = $api->getMetric('base.feedViewsTrend', array(
-					
-						'constraints'		=> array('site_id'	=> $this->params['site_id']),
-						'groupby'			=> array('year', 'month', 'day'),
-						'order'				=> 'DESC '
-					));	
-					
-			}
-			
-			$data['view'] = 'base.report';
-			$data['subview'] = 'base.reportFeeds';
-			$data['view_method'] = 'delegate';
-			
-			return $data;
+		// view stuff
+		$this->setView('base.report');
+		$this->setSubview('base.reportFeeds');
+		$this->setTitle('Feeds');
+		
+		return;
 		
 	}
 	
@@ -99,24 +95,23 @@ class owa_reportFeedsView extends owa_view {
 	
 	function owa_reportFeedsView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportFeedsView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 	
 		// Assign Data to templates
-		
-		$this->body->set('headline', 'Feeds');
 	
-		$this->body->set('feed_trend', $data['trend']);
-		
+		$this->body->set('feed_trend', $this->get('feed_trend'));
+		$this->body->set('feed_counts', $this->get('feed_counts'));
+		$this->body->set('feed_chart_data', $this->get('feed_chart_data'));
 		$this->body->set_template('report_feeds.tpl');
-	
-		$this->body->set('headline', 'Feeds Report');
-		
+
 		return;
 	}
 	

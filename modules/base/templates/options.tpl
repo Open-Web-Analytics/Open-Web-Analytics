@@ -1,10 +1,4 @@
 <div class="wrap">
-<fieldset class="options">
-	<legend>News</legend>
-	<? include('news.tpl');?>
-</fieldset>
-
-<BR>
 
 <table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>

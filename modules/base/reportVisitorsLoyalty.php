@@ -35,40 +35,35 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportVisitorsLoyaltyController extends owa_reportController {
 	
 	function owa_reportVisitorsLoyaltyController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
 				
-		return;
+		return owa_reportVisitorsLoyaltyController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
+		// visitors age	
+		$va = owa_coreAPI::metricFactory('base.visitorsAge');
+		$va->setPeriod($this->getPeriod());
+		$va->setConstraint('site_id', $this->getParam('site_id'));
+		$va->setLimit(30); 
+		$this->set('visitors_age', $va->generate());
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		// dash counts	
+		$d = owa_coreAPI::metricFactory('base.dashCounts');
+		$d->setPeriod($this->getPeriod());
+		$d->setConstraint('site_id', $this->getParam('site_id')); 
+		$this->set('summary_stats_data', $d->generate());	
+				
+		$this->setView('base.report');
+		$this->setSubview('base.reportVisitorsLoyalty');
+		$this->setTitle('Visitor Loyalty');
 		
-		$data['visitors_age'] = $api->getMetric('base.visitorsAge',array(
-			
-			'period'			=> $this->params['period'],
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit' 			=> $this->params['limit']
-		));
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitorsLoyalty';
-		
-		return $data;
+		return;
 		
 	}
 	
@@ -89,23 +84,22 @@ class owa_reportVisitorsLoyaltyController extends owa_reportController {
 class owa_reportVisitorsLoyaltyView extends owa_view {
 	
 	function owa_reportVisitorsLoyaltyView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+					
+		return owa_reportVisitorsLoyaltyView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign data to templates
 		
 		$this->body->set_template('report_visitors_loyalty.tpl');
-	
-		$this->body->set('headline', 'Visitor Loyalty');
-			
-		$this->body->set('visitors_age', $data['visitors_age']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
+		$this->body->set('visitors_age', $this->get('visitors_age'));
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));
 		
 		return;
 	}

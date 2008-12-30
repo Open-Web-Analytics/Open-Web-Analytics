@@ -1,11 +1,14 @@
+<div class="owa_reportSectionHeader">There were <?=$summary_stats['sessions'];?> visits from Search Engines.</div>
+<div class="owa_reportSectionContent">
 
-<? include('report_header.tpl');?>
+<?php include('report_traffic_summary_metrics.tpl');?>
 
-<P><span class="inline_h2">There were <?=$summary_stats['sessions'];?> visits from Search Engines.</span></p> 
+</div>
 
-<? include('report_dashboard_summary_stats.tpl');?>
+<div class="owa_reportSectionHeader">Top keywords that drove traffic</div> 
+<div class="owa_reportSectionContent">
 				
-<? if (!empty($keywords)):?>
+<?php if (!empty($keywords)):?>
 <table class="data_table">
 	<tr>
 		<td class="col_item_label">Keyword</td>
@@ -22,6 +25,7 @@
 	<?php endforeach; ?>
 
 	</table>
-<?else:?>
+<?php else:?>
 	There are no Keywords for this time period.
-<?endif;?> 
+<?php endif;?> 
+</div>

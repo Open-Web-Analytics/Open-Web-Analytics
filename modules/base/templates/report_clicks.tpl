@@ -3,17 +3,10 @@
 .special_wrap{margin:5px;padding:5px}
 </style>
 
-<script type="text/javascript" src="<?=$this->config['public_url'].'/js/dynifs.js';?>"></script>
-<script type="text/javascript" src="<?=$this->config['public_url'].'/js/wz_jsgraphics.js';?>"></script>
-
 
 <div class="special_wrap">
 
-<? include('report_header.tpl');?>
-
 <? include('report_document_summary_stats.tpl');?>
-
-
 
 <P>
 <form>
@@ -63,25 +56,25 @@
 	  var windowWidth = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
 	  var divWidth = document.getElementById("clickspage").offsetWidth;
 	  var relWidth = '';
-	  <? if (!empty($clicks)):?>
-	  <?php foreach ($clicks as $click => $value):?>
+	  <?php if (!empty($clicks)):?>
+	  	<?php foreach ($clicks as $click => $value):?>
 	  
-	  <? if ($this->config['click_drawing_mode'] == 'center_on_page'): ?>
+	  <?php if ($this->config['click_drawing_mode'] == 'center_on_page'): ?>
 	  relWidth = <?=$value['click_x'];?> / <? if($value['page_width']):?><?=$value['page_width'];?><?else:?><?echo '0';?><?endif;?>;
 	  clickX = divWidth * relWidth;
 	  //alert(divWidth +',' + relWidth);
-	  <? else:?>
+	  <?php else:?>
 	  clickX = <?=$value['click_x'];?>
-	  <?endif;?>
+	  <?php endif;?>
 	  
 	  jg_doc.fillEllipse(clickX, <?=$value['click_y'];?>,  <?=$value['count'] * 4.1;?>,  <?=$value['count'] * 4.1;?>); // co-ordinates related to the document
-	  <? endforeach;?>
-	  <? else:?>
+	  <?php endforeach;?>
+	  <?php else:?>
 	  
 	  jg_doc.setFont("arial","15px",Font.ITALIC_BOLD);
 	  jg_doc.drawString("There are no clicks for this time period.",20,50);
 	  
-	  <?endif;?>
+	  <?php endif;?>
 	  
 	  jg_doc.setColor("maroon");
 	  jg_doc.paint(); // draws, in this case, directly into the document

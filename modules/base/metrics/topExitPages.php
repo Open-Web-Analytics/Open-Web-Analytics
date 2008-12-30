@@ -32,62 +32,31 @@ class owa_topExitPages extends owa_metric {
 	
 	function owa_topExitPages($params = null) {
 		
-		$this->params = $params;
+		return owa_topExitPages::__construct($params);	
+	}
+	
+	function __construct($params = null) {
 		
-		$this->owa_metric();
-		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectFrom('owa_session', 'session');
-		$db->selectColumn("count(session.id) as count,
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(session.id) as count,
 									document.page_title,
 									document.page_type,
 									document.url,
 									document.id");
 		
 
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'last_page_id', 'document.id');
+		$this->db->groupBy('session.last_page_id');
+		$this->db->orderBy('count', $this->getOrder());
+		
+		
+		return $this->db->getAllRows();
 
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'last_page_id', 'document.id');
-		$db->groupBy('session.last_page_id');
-		$db->orderBy('count');
-		
-		
-		return $db->getAllRows();
-
-		
-		
-		/*
-
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$d = owa_coreAPI::entityFactory('base.document');
-		
-		$this->params['related_objs'] = array('last_page_id' => $d);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(session.id) as count,
-									document.page_title,
-									document.page_type,
-									document.url,
-									document.id";
-								
-		$this->params['groupby'] = array('session.last_page_id');
-		
-		$this->params['orderby'] = array('count');
-	
-		return $s->query($this->params);
-
-*/		
 	}
 	
 	

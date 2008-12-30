@@ -97,7 +97,8 @@ function owa_getInstance($params = array()) {
 		$owa_config['link_template'] = '%s&%s';
 		$owa_config['authentication'] = 'wordpress';
 		$owa_config['site_id'] = md5(get_settings('siteurl'));
-		$owa_config['is_embedded'] = 'true';
+		$owa_config['is_embedded'] = true;
+		$owa_config['delay_first_hit'] = true;
 	
 		$config = array_merge($owa_config, $params);
 		

@@ -57,21 +57,21 @@ class owa_widgetSparklineController extends owa_widgetController {
 		$this->setHeight(25);
 		$this->setWidth(200);
 		
-		// enable formats
-		//$this->enableFormat('graph', 'Graph');
-		//$this->enableFormat('table', 'Table');
-		//$this->enableFormat('sparkline', 'Sparkline');
-		
 		//setup Metrics
 		$m = owa_coreApi::metricFactory($this->params['metric']);
 		$m->setConstraint('site_id', $this->params['site_id']);
-		//$m->setConstraint('is_browser', 1);
+		
 		$m->setPeriod($this->getPeriod());
-		//$m->setOrder(OWA_SQL_ASCENDING); 
-		//$this->setMetric('base.pageViewsTrend', $m);
+		
 		$results = $m->generate();
-		$res = owa_lib::deconstruct_assoc($results);
-		$series = implode(',', $res[$this->metric_col]);
+		
+		if (!empty($results)) {
+			$res = owa_lib::deconstruct_assoc($results);
+			$series = implode(',', $res[$this->metric_col]);
+		} else {
+			$series = '';
+		}
+		
 		//print_r($series);
 		$this->data['series']['values'] = $series;
 		$this->data['view'] = 'base.sparklineJs';

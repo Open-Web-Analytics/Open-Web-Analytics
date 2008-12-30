@@ -1,31 +1,25 @@
-<? if (!empty($sessions)):?>
-<table id="summary_stats">
+<table id="" style="width:100%;">
 	<TR>
 		<TD>
-			<span class="large_number"><?=$sessions['count'];?></span> Total Visits
-		</TD>
-	</TR>
-	<TR>
-		<TD>
-			<span class="large_number"><?=$from_se['se_count'];?></span> Visits from Search Engines
-		</TD>
-	</TR>
-	<TR>
-		<TD>
-			<span class="large_number"><?=$from_sites['site_count'];?></span> Visits from Referring Web Pages
-		</TD>
-	</TR>
-	<TR>
-		<TD>
-			<span class="large_number"><?=$from_feeds['source_count'];?></span> Visits from Feeds
-		</TD>
-	</TR>
-	<TR>
-		<TD>
-			<span class="large_number"><?=$from_direct['count'];?></span> Direct Visits
+			
+			<div class="owa_infobox">
+				<span class="large_number"><?=$from_se['count'];?></span>
+				<span class="inline_h3">Visits from Search Engines</span>
+			</div><BR>
+			<div class="owa_infobox">
+				<span class="large_number"><?=$from_sites['count'];?></span>
+				<span class="inline_h3">Visits from Referring Web Pages</span>
+			</div>
+			<BR>
+			<div class="owa_infobox">
+				<span class="large_number"><?=$from_feeds['count'];?></span>
+				<span class="inline_h3">Visits from Feeds</span>
+			</div>
+			<BR>
+			<div class="owa_infobox">
+				<span class="large_number"><?=$from_direct['count'];?></span> 
+				<span class="inline_h3">Visits from Direct Navigation</span>
+			</div>			 
 		</TD>
 	</TR>
 </table>	
-<?else:?>
-	There are no statistics for this time period.
-<?endif;?>

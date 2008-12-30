@@ -31,55 +31,34 @@
 class owa_topReferingKeywords extends owa_metric {
 	
 	function owa_topReferingKeywords($params = null) {
+				
+		return owa_topReferingKeywords::__construct($params);
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
-		
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(session.id) as count, referer.query_terms");
+	
+		$this->db->selectColumn("count(session.id) as count, referer.query_terms");
 									
-		$db->selectFrom('owa_session', 'session');
+		$this->db->selectFrom('owa_session', 'session');
 		
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
-		$db->groupBy('referer.query_terms');		
-		$db->orderBy('count');	
-		$db->order('DESC');
-		$db->where('referer.id', 0, '!=');
-		$db->where('referer.query_terms', ' ', '!=');		
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-
-		$ret = $db->getAllRows();
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->groupBy('referer.query_terms');		
+		$this->db->orderBy('count');	
+		$this->db->order('DESC');
+		$this->db->where('referer.id', 0, '!=');
+		$this->db->where('referer.query_terms', ' ', '!=');		
+		
+		$ret = $this->db->getAllRows();
 
 		return $ret;
 
-		/*
-
-		$this->params['select'] = "count(session.id) as count, referer.query_terms";
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		$r = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $r);
-		$this->params['groupby'] = array('referer.query_terms');
-		$this->params['orderby'] = array('count');
-		$this->params['order'] = 'DESC';
-		
-		$this->params['constraints']['referer.id'] = array('operator' => '!=', 'value' => 0);
-		$this->params['constraints']['referer.query_terms'] = array('operator' => '!=', 'value' => '');	
-		
-		return $s->query($this->params);
-
-*/		
 	}
 	
 	

@@ -32,55 +32,32 @@ class owa_topReferingAnchors extends owa_metric {
 	
 	function owa_topReferingAnchors($params = null) {
 		
-		$this->params = $params;
+		return owa_topReferingAnchors::__construct($params);
 		
-		$this->owa_metric();
-		
-		return;
-		
+	}
+	
+	function __construct($params = '') {
+	
+		parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(session.id) as count, referer.refering_anchortext");
+		$this->db->selectColumn("count(session.id) as count, referer.refering_anchortext");
 									
-		$db->selectFrom('owa_session', 'session');
+		$this->db->selectFrom('owa_session', 'session');
 		
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
-		$db->groupBy('referer.refering_anchortext');		
-		$db->orderBy('count');	
-		$db->order('DESC');
-		$db->where('referer.id', 0, '!=');
-		$db->where('referer.refering_anchortext', ' ', '!=');
-		$db->where('referer.is_searchengine', 0);
-		
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->groupBy('referer.refering_anchortext');		
+		$this->db->orderBy('count');	
+		$this->db->order('DESC');
+		$this->db->where('referer.id', 0, '!=');
+		$this->db->where('referer.refering_anchortext', ' ', '!=');
+		$this->db->where('referer.is_searchengine', 0);
 
-		$ret = $db->getAllRows();
+		$ret = $this->db->getAllRows();
 
 		return $ret;
-		
-		/*
-$this->params['select'] = "count(session.id) as count, referer.refering_anchortext";
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		$r = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $r);
-		$this->params['groupby'] = array('referer.refering_anchortext');
-		$this->params['orderby'] = array('count');
-		$this->params['order'] = 'DESC';
-		
-		$this->params['constraints']['referer.id'] = array('operator' => '!=', 'value' => 0);
-		$this->params['constraints']['referer.refering_anchortext'] = array('operator' => '!=', 'value' => '');	
-		$this->params['constraints']['referer.is_searchengine'] = array('operator' => '=', 'value' => 0);	
-		
-		return $s->query($this->params);
-*/
 		
 	}
 	

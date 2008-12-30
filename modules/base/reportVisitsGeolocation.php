@@ -36,33 +36,30 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
 	
 	function owa_reportVisitsGeolocationController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportVisitsGeolocationController::__construct($params);
+
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
+	
 	}
 	
 	function action() {
-
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		$this->setTitle('Visitor Geo-location');
+		$this->setView('base.report');
+		$this->setSubview('base.reportVisitsGeolocation');
+		$this->set('user_name', $this->getParam('u'));
 		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitsGeolocation';
-		$data['user_name'] = $this->params['u'];
-		
-		//perfrom authentication
+		// perfrom authentication
+		// is this needed?
 		$auth = &owa_auth::get_instance();
 		
-		$data['passkey'] = $auth->generateUrlPasskey($this->params['u'], $this->params['p']);
+		$this->set('passkey', $auth->generateUrlPasskey($this->getParam('u'), $this->getParam('p')));
 		
-		return $data;
+		return;
 
-		
 	}
 
 }
@@ -83,21 +80,23 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
 class owa_reportVisitsGeolocationView extends owa_view {
 	
 	function owa_reportVisitsGeolocationView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+				
+		return owa_reportVisitsGeolocationView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign data to templates
 		
 		$this->body->set_template('report_geolocation.tpl');
 		$this->body->set('headline', 'Visitor Geolocation Report');
-		$this->body->set('user_name', $data['user_name']);
-		$this->body->set('passkey', $data['passkey']);
+		$this->body->set('user_name', $this->data['user_name']);
+		$this->body->set('passkey', $this->data['passkey']);
 		
 		return;
 	}

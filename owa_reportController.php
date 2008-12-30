@@ -33,20 +33,21 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 class owa_reportController extends owa_adminController {
 	
+	/**
+	 * Constructor
+	 *
+	 * @param array $params
+	 * @return
+	 */
 	function __construct($params) {
 	
-		$this->type = 'report';
+		$this->setControllerType('report');
 		$this->_setCapability('view_report');
 		return parent::__construct($params);
 	
 	}
 	
-	/**
-	 * Constructor
-	 *
-	 * @param array $params
-	 * @return owa_controller
-	 */
+	// PHP 4 style constructor
 	function owa_reportController($params) {
 		
 		return owa_reportController::__construct($params);
@@ -66,8 +67,9 @@ class owa_reportController extends owa_adminController {
 		if (empty($this->params['period'])):
 			$this->params['period'] = 'today';
 		endif;
-	
-		$this->setPeriod($this->params['period']);
+		
+		$this->setPeriod($this->getParam('period'));
+
 		$this->setView('base.report');
 		$this->setViewMethod('delegate');
 		

@@ -277,9 +277,9 @@ class owa_db extends owa_base {
 		return;
 	}
 	
-	function orderBy($col) {
+	function orderBy($col, $flag = '') {
 		
-		$this->_sqlParams['orderby'][] = $col;
+		$this->_sqlParams['orderby'][] = array($col, $flag);
 		return;
 	}
 	
@@ -681,11 +681,7 @@ class owa_db extends owa_base {
 		
 			$order = $this->_fetchSqlParams('order');
 			
-			if(empty($order)):
-				$order = 'DESC';
-			endif;
-			
-			return sprintf("ORDER BY %s %s", $this->_makeDelimitedValueList($params), $order);
+			return sprintf("ORDER BY %s", $this->_makeDelimitedValueListArray($params));
 			
 		else:
 			return;	
@@ -722,6 +718,38 @@ class owa_db extends owa_base {
 			return;
 		endif;
 		
+	}
+	
+	
+	/**
+	 * Creates a delimited value list from an array or arrays.
+	 *
+	 */
+	function _makeDelimitedValueListArray($values, $delimiter = ', ', $inner_delimiter = ' ') {
+		
+		$items = '';
+		$i = 0;
+		$count = count($values);
+		
+		//print_r($values);
+		
+		foreach ($values as $k) {
+				
+			$items .= implode($inner_delimiter, $k);
+			
+			// Add commas
+			if ($i < $count - 1):
+				
+				$items .= $delimiter;
+					
+			endif;	
+			
+			$i++;
+			
+		}
+		
+		return $items;
+	
 	}
 	
 	function _makeDelimitedValueList($values, $delimiter = ', ') {

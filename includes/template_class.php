@@ -78,7 +78,14 @@ class Template {
 	 * @access public
 	 */
     function set($name, $value) {
-        $this->vars[$name] = is_object($value) ? $value->fetch() : $value;
+    
+    	if (is_object($value)) {
+    		if (is_a($value, 'owa_template')) {
+    			$value = $value->fetch();
+    		}
+    	} 
+    
+        $this->vars[$name] =  $value;
         return;
     }
 

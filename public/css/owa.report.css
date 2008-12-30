@@ -40,3 +40,5 @@
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
 .owa_metricInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin:5px; width:185px; float:left;}
+
+.owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}

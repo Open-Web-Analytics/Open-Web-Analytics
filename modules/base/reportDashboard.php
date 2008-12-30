@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -45,29 +43,21 @@ class owa_reportDashboardController extends owa_reportController {
 	}
 	
 	function action() {
-
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
 		
 		// dash counts	
 		$d = owa_coreAPI::metricFactory('base.dashCounts');
 		$d->setPeriod($this->getPeriod());
 		$d->setConstraint('site_id', $this->getParam('site_id')); 
-		$this->set('summary_stats_data', $d->generate());
-			
-		// Counts
-		$s = owa_coreAPI::metricFactory('base.sessionsCount');
-		$s->setConstraint('site_id', $this->getParam('site_id'));
-		$s->setPeriod($this->getPeriod());
-		$this->set('sessions_count', $s->generate());
+		$d->setOrder('ASC');
+		$this->set('summary_stats_data', $d->zeroFill($d->generate()));
 		
-		// Counts
-		$st = owa_coreAPI::metricFactory('base.sessionsTrend');
-		$st->setConstraint('site_id', $this->getParam('site_id'));
-		$st_period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-		$st_period->set('this_year');
-		$st->setPeriod($st_period);
-		$this->set('sessions_trend', $st->generate());
+		// dash trend	
+		$dt = owa_coreAPI::metricFactory('base.dashCoreByDay');
+		$dt->setPeriod($this->makeTimePeriod('last_thirty_days'));
+		$dt->setConstraint('site_id', $this->getParam('site_id')); 
+		$trend = owa_lib::deconstruct_assoc($dt->generate());
+		//print_r($trend);
+		$this->set('site_trend', $trend);
 		
 		// set view stuff
 		$this->setSubview('base.reportDashboard');
@@ -79,10 +69,10 @@ class owa_reportDashboardController extends owa_reportController {
 	
 }
 		
-
+require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
- * View
+ * Dashboard Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -107,29 +97,9 @@ class owa_reportDashboardView extends owa_view {
 	
 	function render() {
 		
-		// load body template
 		$this->body->set_template('report_dashboard.tpl');
-	
-		$this->body->set('summary_stats', $this->data['summary_stats_data']);
-		
-		$this->body->set('config', $this->config);
-		
-		$this->body->set('params', $this->data['params']);
-				
-		$this->body->set('visits', $this->data['latest_visits']);
-		
-		$this->body->set('sessions_count', $this->data['sessions_count']);
-		
-		$this->body->set('sessions_trend', $this->data['sessions_trend']);
-		
-		//$this->body->set('pagination', $this->data['pagination']);
-		
-		$this->setJs("owa.widgets.js");
-		$this->setCss("owa.widgets.css");
-		
-		//$this->setJs('includes/json2.js');
-		//$this->setJs('includes/swfobject.js');
-
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));			
+		$this->body->set('site_trend', $this->get('site_trend'));
 		return;
 	}
 	

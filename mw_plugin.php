@@ -51,7 +51,8 @@ $owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logA
 $owa_config['link_template'] = '%s&%s';
 $owa_config['authentication'] = 'mediawiki';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
-$owa_config['is_embedded'] = 'true';
+$owa_config['is_embedded'] = true;
+$owa_config['delay_first_hit'] = true;
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
