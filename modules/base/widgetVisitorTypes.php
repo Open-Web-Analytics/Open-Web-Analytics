@@ -47,8 +47,8 @@ class owa_widgetVisitorTypesController extends owa_widgetController {
 		$this->data['title'] = 'Visitor Types';
 		
 		// set default dimensions
-		//$this->setHeight(450);
-		//$this->setWidth(350);
+		$this->setHeight('');
+		$this->setWidth('');
 		
 		$this->data['labels'] = array('New', 'Repeat');
 		//Metrics
@@ -62,20 +62,19 @@ class owa_widgetVisitorTypesController extends owa_widgetController {
 	}
 	
 	function graphAction() {
-		$this->data['view'] = 'base.openFlashChart';
-		return;
-	}
 	
-	function graphDataAction() {
-	
-		$m = $this->getMetric('base.visitorTypesCount');
+		$m = $this->getMetric('base.visitorTypesCount');	
+		$m->setLimit(5);
 		$results = $m->generate();	
-	
-		$this->data['values'] = array();
-		//$this->data['width'] = '100%';
-		//$this->data['height'] = '100%';
-		$this->data['values'] = $results;	
-		$this->data['view'] = 'base.pieFlashChart';
+		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
+		$cd->setSeries('values', array($results['new_visitor'], $results['repeat_visitor']), 'Visitors');
+		$cd->setSeries('labels', array('New', 'Repeat'), 'Visitor Types');
+		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
+		$json = $chart->pie($cd);
+		$this->set('chart_data', $json);
+		//$this->set('width', '100%');
+		//$this->setHeight('300px');
+		$this->setView('base.chart');
 		return;
 	
 	}
