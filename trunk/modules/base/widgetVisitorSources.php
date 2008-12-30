@@ -45,8 +45,8 @@ class owa_widgetVisitorSourcesController extends owa_widgetController {
 		$this->data['title'] = 'Visitor Sources';
 		
 		// set default dimensions
-		$this->setHeight(450);
-		$this->setWidth(350);
+		//$this->setHeight(450);
+		//$this->setWidth(350);
 		
 		// enable formats
 		$this->enableFormat('graph');
@@ -83,12 +83,8 @@ class owa_widgetVisitorSourcesController extends owa_widgetController {
 		
 	}
 	
-	function graphAction() {
-		$this->data['view'] = 'base.openFlashChart';
-		return;
-	}
 	
-	function graphDataAction() {
+	function graphAction() {
 	
 		$f = $this->getMetric('base.visitsFromFeedsCount');
 		$se = $this->getMetric('base.visitsFromSearchEnginesCount');
@@ -105,27 +101,37 @@ class owa_widgetVisitorSourcesController extends owa_widgetController {
 		$this->data['width'] = '100%';
 		$this->data['height'] = '100%';
 		
+		$values = array();
+		$labels = array();
 		if ($from_direct['count'] > 0):
-			$this->data['values'][] = $from_direct['count'];
-			$this->data['labels'][] = 'Direct';
+			$values[] = $from_direct['count'];
+			$labels[] = 'Direct';
 		endif;
 		
 		if ($from_se['count'] > 0):
-			$this->data['values'][] = $from_se['count'];
-			$this->data['labels'][] = 'Search';
+			$values[] = $from_se['count'];
+			$labels[] = 'Search';
 		endif;
 		
 		if ($from_sites['count'] > 0):
-			$this->data['values'][] = $from_sites['count'];
-			$this->data['labels'][] = 'Sites';
+			$values[] = $from_sites['count'];
+			$labels[] = 'Sites';
 		endif;
 		
 		if ($from_feeds['count'] > 0):
-			$this->data['values'][] = $from_feeds['count'];
-			$this->data['labels'][] = 'Feeds';
+			$values[] = $from_feeds['count'];
+			$labels[] = 'Feeds';
 		endif;
 		
-		$this->data['view'] = 'base.pieFlashChart';
+		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
+		$cd->setSeries('values', $values, 'Visitors');
+		$cd->setSeries('labels', $labels, 'Visit Sources');
+		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
+		$json = $chart->pie($cd);
+		$this->set('chart_data', $json);
+		//$this->set('width', '100%');
+		//$this->setHeight('300px');
+		$this->setView('base.chart');
 		return;
 	
 	}

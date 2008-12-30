@@ -13,7 +13,7 @@
 					<?=$this->getWidget('base.widgetTopPages', array( 'width' => '100%', 'period' => $params['period']));?>
 			</TD>
 			<TD valign="top" width="50%">
-				<?=$this->getWidget('base.widgetVisitorTypes', array('height' => '', 'width' => '', 'period' => $params['period']));?>
+				<?=$this->getWidget('base.widgetVisitorTypes', array('height' => '200px', 'width' => '100%', 'period' => $params['period']));?>
 			</TD>
 		</TR>
 	</table>
@@ -24,7 +24,7 @@
 	<table class="owa_reportElement">
 		<TR>
 			<TD valign="top" width="50%">	
-				<?=$this->getWidget('base.widgetVisitorSources', array('height' => '', 'width' => '100%'));?>
+				<?=$this->getWidget('base.widgetVisitorSources', array('height' => '200px', 'width' => '100%', 'period' => $params['period']));?>
 	
 			</TD>
 			

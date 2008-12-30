@@ -73,7 +73,7 @@ class owa_widgetSiteStatsController extends owa_widgetController {
 		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
 		$json = $chart->areaBar($cd);
 		$this->set('chart_data', $json);
-		$this->set('width', '100%');
+		//$this->set('width', '100%');
 		//$this->setHeight('300px');
 		$this->setView('base.chart');
 		return;
