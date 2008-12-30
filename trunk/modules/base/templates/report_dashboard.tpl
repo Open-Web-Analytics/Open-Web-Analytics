@@ -4,7 +4,7 @@
 
 	<BR>
 	<div class="owa_reportElement">
-	<?=$this->getInpageWidget('base.dashboardTrendWidget', array('height' => '100px', 'width' => '', 'period' => 'last_thirty_days'));?>	
+	<?=$this->getInpageWidget('base.widgetSiteStats', array('height' => '100px', 'width' => '', 'period' => 'last_thirty_days'));?>	
 	</div>
 	<P></P>
 	<table class="owa_reportElement" size="100%">

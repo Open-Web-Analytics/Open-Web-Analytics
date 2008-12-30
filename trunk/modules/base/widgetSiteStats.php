@@ -26,7 +26,7 @@ require_once(OWA_BASE_CLASS_DIR.'chartData.php');
  *
  *
  */
-class owa_dashboardTrendWidgetController extends owa_widgetController {
+class owa_widgetSiteStatsController extends owa_widgetController {
 	
 	function __construct($params) {
 		
@@ -35,9 +35,9 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 		return parent::__construct($params);
 	}
 	
-	function owa_dashboardTrendWidgetController($params) {
+	function owa_widgetSiteStatsController($params) {
 	
-		return owa_dashboardTrendWidgetController::__construct($params);
+		return owa_widgetSiteStatsController::__construct($params);
 	}
 
 	function action() {
