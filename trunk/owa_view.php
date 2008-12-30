@@ -185,7 +185,7 @@ class owa_view extends owa_base {
 		endif;
 		
 		// construct main view.  This might set some properties of the subview.
-		if (method_exists(get_class($this), 'render')) {
+		if (method_exists($this, 'render')) {
 			$this->render($this->data);
 		} else {
 			// old style
@@ -334,7 +334,7 @@ class owa_view extends owa_base {
 	function assembleSubView($data) {
 		
 		// construct main view.  This might set some properties of the subview.
-		if (method_exists(get_class($this), 'render')) {
+		if (method_exists($this, 'render')) {
 			$this->render($data);
 		} else {
 			// old style
@@ -422,7 +422,7 @@ class owa_view extends owa_base {
 		$link_params = array();
 		
 		if (!empty($p)):
-			$link_params = array_intersect_key($p, $sp);
+			$link_params = array_intersect_assoc($p, $sp);
 		endif;
 							
 		$this->body->caller_params['link_state'] =  $link_params;
