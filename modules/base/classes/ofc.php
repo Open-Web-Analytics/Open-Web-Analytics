@@ -162,7 +162,7 @@ class owa_ofc {
 		$this->y_axis->set_steps( round($chartData->getMax('area', 'bar') / 4) );
 		
 		$x_labels = new x_axis_labels();
-		$x_labels->set_steps( 1 );
+		$x_labels->set_steps( 2 );
 		$x_labels->set_labels($chartData->getSeriesData('x'));
 		// Add the X Axis Labels to the X Axis
 		$this->x_axis->set_labels( $x_labels );
