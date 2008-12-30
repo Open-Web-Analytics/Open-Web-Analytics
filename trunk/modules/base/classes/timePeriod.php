@@ -45,13 +45,14 @@ class owa_timePeriod {
 		
 		$this->startDate = owa_coreAPI::supportClassFactory('base', 'date');
 		$this->endDate = owa_coreAPI::supportClassFactory('base', 'date');
+		
 	
 		return;
 	}
 	
 	function owa_timePeriod() {
 		
-		return;
+		return owa_timePeriod::__construct();
 	}
 	
 	function set($value, $map = array()) {

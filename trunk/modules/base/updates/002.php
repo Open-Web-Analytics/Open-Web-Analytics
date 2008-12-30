@@ -43,9 +43,9 @@ class owa_base_002_update extends owa_update {
 			$ret = $db->alterTableType($this->c->get('base', 'ns').$v, 'InnoDB');
 			
 			if ($ret == true):
-				$this->e->debug(sprintf('Changed Table %s to InnoDB', $v));
+				$this->e->notice(sprintf('Changed Table %s to InnoDB', $v));
 			else:
-				$this->e->debug(sprintf('Change to Table %s failed', $v));
+				$this->e->notice(sprintf('Change to Table %s failed', $v));
 				return false;
 			endif;
 		
