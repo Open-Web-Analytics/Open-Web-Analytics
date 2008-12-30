@@ -91,7 +91,7 @@ class owa_reportDashboardView extends owa_view {
 	}
 	
 	function __construct() {
-	
+		
 		return parent::__construct();
 	}
 	

@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_DIR.'owa_lib.php');
-require_once(OWA_DIR.'owa_view.php');
 require_once(OWA_DIR.'owa_controller.php');
 
 
@@ -37,11 +35,12 @@ class owa_updatesApplyController extends owa_controller {
 	
 	function owa_updatesApplyController($params) {
 		
-		$this->priviledge_level = 'guest';
+		return owa_updatesApplyController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		$this->owa_controller($params);
-
-		return;
+		return parent::__construct($params);
 	}
 
 	function action() {
@@ -50,8 +49,8 @@ class owa_updatesApplyController extends owa_controller {
 		$api = &owa_coreAPI::singleton();
 		
 		$modules = $api->getModulesNeedingUpdates();
-		//print_r($modules);
-		//return;
+		print_r($modules);
+		return;
 		
 		// foreach do update in order
 		
@@ -68,20 +67,20 @@ class owa_updatesApplyController extends owa_controller {
 		
 		}
 		
-		if ($error == true):
-			$data['error_msg'] = 'something went wrong here with the updates.';
-			$data['view'] = 'base.error';
-			$data['view_method'] = 'delegate';			
+		if ($error === true):
+			$this->set('error_msg', 'something went wrong here with the updates.');
+			$this->setView('base.error');
+			$this->setViewMethod('delegate');			
 		else:
 			
 			// add data to container
-			$data['status_code'] = 3307;
-			$data['do'] = 'base.optionsGeneral';
-			$data['view_method'] = 'redirect';
+			$this->set('status_code', 3307);
+			$this->set('do', 'base.optionsGeneral');
+			$this->setViewMethod('redirect');
 		 
 		endif;		
 		
-		return $data;
+		return;
 	
 	
 	}

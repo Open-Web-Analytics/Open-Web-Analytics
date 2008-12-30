@@ -185,12 +185,13 @@ class owa_view extends owa_base {
 		endif;
 		
 		// construct main view.  This might set some properties of the subview.
-		if (method_exists(get_class($this), 'render')) {
+		if (method_exists($this, 'render')):
 			$this->render($this->data);
-		} else {
+		else:
 			// old style
 			$this->construct($this->data);
-		}
+		endif;
+		
 		//array of errors usually used for field validations
 		if (array_key_exists('validation_errors', $data)):
 			$this->body->set('validation_errors', $data['validation_errors']);
@@ -332,10 +333,12 @@ class owa_view extends owa_base {
 	 * @return unknown
 	 */
 	function assembleSubView($data) {
-		
+		//print get_class($this);
 		// construct main view.  This might set some properties of the subview.
-		if (method_exists(get_class($this), 'render')) {
+		if (method_exists($this, 'render')) {
+			
 			$this->render($data);
+			
 		} else {
 			// old style
 			$this->construct($data);
@@ -422,7 +425,7 @@ class owa_view extends owa_base {
 		$link_params = array();
 		
 		if (!empty($p)):
-			$link_params = array_intersect_key($p, $sp);
+			$link_params = array_intersect_assoc($p, $sp);
 		endif;
 							
 		$this->body->caller_params['link_state'] =  $link_params;
