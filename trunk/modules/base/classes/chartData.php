@@ -87,7 +87,11 @@ class owa_chartData {
 		$max_values = array();
 		
 		$max_values[] = max($this->getSeriesData($name));
-		$max_values[] = max($this->getSeriesData($name2));
+		
+		if (!empty($name2)) {
+			$max_values[] = max($this->getSeriesData($name2));
+		}
+		
 		$max = max($max_values);
 		return $max + 2;
 	}
