@@ -1,6 +1,15 @@
-<? include('report_header.tpl');?>
+<div class="owa_reportSectionHeader">
+	There were <?=$summary_stats['sessions'];?> visits from Referring Web Sites.
+</div>
 
-<? include('report_dashboard_summary_stats.tpl');?>
+<div class="owa_reportSectionContent">
+<?php include('report_traffic_summary_metrics.tpl');?>	
+</div>
 
-<? include('report_referers.tpl');?>
+<div class="owa_reportSectionHeader">
+	Top Referring Web Sites
+</div>
 
+<div class="owa_reportSectionContent">
+	<? include('report_referers.tpl');?>
+</div>

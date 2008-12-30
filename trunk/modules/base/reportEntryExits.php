@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -36,51 +35,43 @@ class owa_reportEntryExitsController extends owa_reportController {
 
 	function owa_reportEntryExitsController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'admin';
+		return owa_reportEntryExitsController::__construct($params); 
+	}
 	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		// entry pages
+		$en = owa_coreAPI::metricFactory('base.topEntryPages');
+		$en->setPeriod($this->getPeriod());
+		$en->setConstraint('site_id', $this->getParam('site_id')); 
+		$en->setLimit(20);
+		$en->setOrder('DESC');
+		$this->set('entry_documents', $en->generate());
 		
-		$data = array();
-		$data['params'] = $this->params;
+		// exit pages
+		$ex = owa_coreAPI::metricFactory('base.topExitPages');
+		$ex->setPeriod($this->getPeriod());
+		$ex->setConstraint('site_id', $this->getParam('site_id')); 
+		$ex->setLimit(20);
+		$ex->setOrder('DESC');
+		$this->set('exit_documents', $ex->generate());
 		
-		// Fetch Metrics
+		// summary stats
+		$s = owa_coreAPI::metricFactory('base.dashCounts');
+		$s->setPeriod($this->getPeriod());
+		$s->setConstraint('site_id', $this->getParam('site_id')); 
+		$this->set('summary_stats_data', $s->generate());
 
-		$data['entry_documents'] = $api->getMetric('base.topEntryPages', array(
-			
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'order'				=> 'DESC',
-			'limit'				=> 20
-		));
-		
-		$data['exit_documents'] = $api->getMetric('base.topExitPages', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'order'				=> 'DESC',
-			'limit'				=> 20
-		));
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-		
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportEntryExits';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportContent';
-			
-		return $data;
-		
-		
+		// view stuff
+		$this->setView('base.report');
+		$this->setSubview('base.reportEntryExits');
+		$this->setTitle('Entry & Exit Pages');
+		return;
 	}
 	
 }
@@ -100,21 +91,21 @@ class owa_reportEntryExitsController extends owa_reportController {
 class owa_reportEntryExitsView extends owa_view {
 	
 	function owa_reportEntryExitsView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+	
+		return owa_reportEntryExitsView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign Data to templates
-		
-		$this->body->set('headline', 'Entry & Exit Pages');
-		$this->body->set('top_entry_pages', $data['entry_documents']);
-		$this->body->set('top_exit_pages', $data['exit_documents']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
+		$this->body->set('top_entry_pages', $this->get('entry_documents'));
+		$this->body->set('top_exit_pages', $this->get('exit_documents'));
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));
 		$this->body->set_template('report_entry_exits.tpl');
 		
 		return;

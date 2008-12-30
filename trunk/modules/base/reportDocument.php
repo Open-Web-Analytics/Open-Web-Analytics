@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -36,79 +35,62 @@ class owa_reportDocumentController extends owa_reportController {
 	
 	function owa_reportDocumentController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportDocumentController::__construct($params);
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
-
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
 		
-		$data = array();
-		$data['params'] = $this->params;
+		// document request trends
+		$r = owa_coreAPI::metricFactory('base.requestCountsByDay');
+		$r->setPeriod($this->getPeriod());
+		$r->setConstraint('site_id', $this->getParam('site_id')); 
+		$r->setConstraint('document_id', $this->getParam('document_id')); 
+		$r->setOrder('DESC');
+		$core_metrics_data =  $r->generate();
+		$this->set('core_metrics_data', $core_metrics_data);
 		
-		switch ($this->params['period']) {
-
-			case "this_year":
-				$data['core_metrics_data'] = $api->getMetric('base.requestCountsByDay', array(
-							
-					'constraints'		=> array(
-						'site_id'		=> $this->params['site_id'],
-						'document_id' 	=> $this->params['document_id']
-						),
-					'groupby'			=> 'month'
-				
-				));
-				
-			break;
-			
-			default:
-				$data['core_metrics_data'] = $api->getMetric('base.requestCountsByDay', array(
+		// document counts
+		$rc = owa_coreAPI::metricFactory('base.requestCounts');
+		$rc->setPeriod($this->getPeriod());
+		$rc->setConstraint('site_id', $this->getParam('site_id')); 
+		$rc->setConstraint('document_id', $this->getParam('document_id')); 
+		$this->set('summary_stats_data', $rc->generate());
 		
-				'constraints'		=> array(
-					'site_id'		=> $this->params['site_id'],
-					'document_id' 	=> $this->params['document_id']
-					),
-				'groupby'			=> 'day'
-			
-			));
-		
-			break;
-		}
-		
-		$data['summary_stats_data'] = $api->getMetric('base.requestCounts', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'document_id' 	=> $this->params['document_id']
-				)
-		
-		));
-		
+		// load document details
 		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByPk('id', $this->params['document_id']);
-		$data['document_details'] = $d->_getProperties();
+		$d->getByPk('id', $this->getParam('document_id'));
+		$this->set('document_details', $d->_getProperties());
 		
-		$data['top_referers'] = $api->getMetric('base.topReferers', array(
-			
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'session.first_page_id'	=> $this->params['document_id']
-				),
-			'limit'				=> 30
-		));
+		// load top external referring sites
+		$ref = owa_coreAPI::metricFactory('base.topReferers');
+		$ref->setPeriod($this->getPeriod());
+		$ref->setConstraint('site_id', $this->getParam('site_id')); 
+		$ref->setConstraint('session.first_page_id', $this->getParam('document_id')); 
+		$ref->setLimit(30);
+		//$ref->setPage($this->getParam('page'));
+		$this->set('top_referers', $ref->generate());
+				
+		// trend chart
+		$series = owa_lib::deconstruct_assoc($core_metrics_data);
+		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
+		$cd->setSeries('x', owa_lib::makeDateArray($core_metrics_data, "n/j"), 'Day');
+		$cd->setSeries('area', $series['page_views'], 'Page Views');
+		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
+		$json = $chart->area($cd);
+		$this->set('chart1_data', $json);
 		
-		// get navigation
-		$data['nav'] = $api->getNavigation('base.reportDocument', 'subnav');
+		// view stuff
+		$this->setView('base.report');
+		$this->setSubview('base.reportDocument');
+		//$this->set('document_id', $this->getParam('document_id'));
+		$this->setTitle('Document Detail:');
 		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportDocument';
-		$data['nav_tab'] = 'base.reportContent';
-		
-		return $data;
+		return;
 
 		
 	}
@@ -132,28 +114,30 @@ class owa_reportDocumentView extends owa_view {
 	
 	function owa_reportDocumentView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+		return owa_reportDocumentView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
 		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
-		$this->body->caller_params['link_state']['document_id'] = $data['params']['document_id'];
+		$request_params = $this->get('params');
+		
+		$this->body->caller_params['link_state']['document_id'] = $this->data['params']['document_id'];
 		
 		// Assign data to templates
 		
 		$this->body->set_template('report_document.tpl');
-		$this->body->set('headline', 'Document Report');
-		$this->body->set('core_metrics', $data['core_metrics_data']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		$this->body->set('detail', $data['document_details']);
-		$this->body->set('top_referers', $data['top_referers']);
-		$this->body->set('document_id', $data['params']['document_id']);
-		$this->body->set('nav', $data['nav']);
-			
+		$this->body->set('core_metrics', $this->get('core_metrics_data'));
+		$this->body->set('summary_stats',  $this->get('summary_stats_data'));
+		$this->body->set('detail',  $this->get('document_details'));
+		$this->body->set('top_referers',  $this->get('top_referers'));
+		$this->body->set('document_id', $this->data['params']['document_id']);
+		$this->body->set('chart1_data',  $this->get('chart1_data'));	
+		$this->body->set('chart2_data',  $this->get('chart2_data'));	
 		return;
 	}
 	

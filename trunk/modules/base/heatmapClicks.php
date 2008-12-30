@@ -16,56 +16,49 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 require_once(OWA_INCLUDE_DIR.'heatmap.class.php');
 
-class owa_heatmapClicksController extends owa_controller {
+class owa_heatmapClicksController extends owa_reportController {
 	
 	function owa_heatmapClicksController($params) {
 		
-		$this->owa_controller($params);
-		$this->priviledge_level = 'viewer';
+		return owa_heatmapClicksController::__construct($params);
+			
+	}
 	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-			
 		// Get clicks
-		$clicks = $api->getMetric('base.topClicks', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'document_id'		=> $this->params['document_id'],
-				'ua_id'			=> $this->params['ua_id']
-				),
-			'limit'				=> 500
-		));
-		
+		$c = owa_coreAPI::metricFactory('base.topClicks');
+		$c->setPeriod($this->getPeriod());
+		$c->setConstraint('site_id', $this->getParam('site_id')); 
+		$c->setConstraint('document_id', $this->getParam('document_id'));
+		$c->setConstraint('ua_id', $this->getParam('ua_id'));
+		$c->setLimit(500);
+		$clicks = $c->generate();
+				
 		foreach ($clicks as $k => $v) {
 		
 			//if ($this->config['click_drawing_mode'] == 'center_on_page'):
 				$x = $this->params['width'] * ($v['click_x'] / $v['page_width']);
-				$data['clicks'][$x][$v['click_y']] = $v['count'];
+				$this->data['clicks'][$x][$v['click_y']] = $v['count'];
 			//else:
 			//	$data['clicks'][$v['click_x']][$v['click_y']] = $v['count'];
 			//endif;
 		}
 		
+		$this->set('width', $this->getParam('width'));
+		$this->set('height', $this->getParam('height'));
+		$this->setView('base.heatmapClicks');
 		
-		$data['width'] = $this->params['width'];
-		$data['height'] = $this->params['height'];
-		$data['view'] = 'base.heatmapClicks';
-		$data['view_method'] = 'delegate';
-		
-		return $data;
+		return;
 	}
 }
 
@@ -88,19 +81,21 @@ class owa_heatmapClicksView extends owa_view {
 	
 	function owa_heatmapClicksView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_heatmapClicksView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign data to templates
 		ob_end_clean();
 		//draw the heatmap
-	    $map = new heatmap($data['clicks']);
-	    $map->render($data['width'], $data['height']);
+	    $map = new heatmap($this->get('clicks'));
+	    $map->render($this->get('width'), $this->get('height'));
 			
 		return;
 	}

@@ -31,35 +31,32 @@
 class owa_topEntryPages extends owa_metric {
 	
 	function owa_topEntryPages($params = null) {
+				
+		return owa_topEntryPages::__construct($params);
 		
-		$this->params = $params;
+	}
+	
+	function __construct($params = null) {
 		
-		$this->owa_metric();
-		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectFrom('owa_session', 'session');
-		$db->selectColumn("count(session.id) as count,
+	
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(session.id) as count,
 									document.page_title,
 									document.page_type,
 									document.url,
 									document.id");
 		
-
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'first_page_id', 'document.id');
-		$db->groupBy('session.last_page_id');
-		$db->orderBy('count');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'first_page_id', 'document.id');
+		$this->db->groupBy('session.last_page_id');
 		
-		return $db->getAllRows();
-
+		$this->db->orderBy('count', $this->getOrder());
+		
+		return $this->db->getAllRows();
 
 	}
 	

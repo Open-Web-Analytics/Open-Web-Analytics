@@ -1,8 +1,14 @@
-<? include('report_header.tpl');?>
 
-<P><span class="inline_h2">There were <?=$summary_stats['page_views'];?> page views for this web site.</span></p> 
 
+<div class="owa_reportSectionHeader">There were <?=$summary_stats['page_views'];?> page views for this web site.</div> 
+
+<div class"owa_reportSectionContent">
 <? include('report_dashboard_summary_stats.tpl');?>
+</div>
+
+<div class="owa_reportSectionHeader">Top Entry & Exist Pages</div> 
+
+<div class"owa_reportSectionContent">
 
 <table class="layout_container" width="100%" cellpadding="0" cellspacing="0">
 	<TR>
@@ -15,3 +21,5 @@
 		</TD>
 	</TR>
 </table>	
+
+</div>

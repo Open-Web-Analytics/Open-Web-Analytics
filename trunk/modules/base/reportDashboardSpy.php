@@ -19,7 +19,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -38,33 +37,27 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportDashboardSpyController extends owa_reportController {
 
 	function owa_reportDashboardSpyController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+			
+		return  owa_reportDashboardSpyController::__construct($params);
+	}
 	
-		return;
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
-
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+				
+		$this->setTitle('Latest Visits Spy');
+		//$this->setView('base.report';
+		$this->setSubview('base.reportDashboardSpy');	
 		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportDashboardSpy';	
-		$data['nav_tab'] = 'base.reportDashboard';
-		
-		return $data;	
+		return;	
 		
 	}
 	
 }
 		
-
-
 /**
  * View
  * 
@@ -79,26 +72,25 @@ class owa_reportDashboardSpyController extends owa_reportController {
 
 class owa_reportDashboardSpyView extends owa_view {
 	
-	function owa_reportDashboardSpyView() {
+	function owa_reportDashboardSpyView() {		
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportDashboardSpyView::__construct();
+	}
+	
+	function __construct() {
+	
+		return parent::__construct();
 	}
 	
 	function construct($data) {
-		
-		// Set Page title
-		$this->t->set('page_title', '');
-		
-		// Set Page headline
-		$this->body->set('headline', 'Analytics Dashboard Spy');
-		
-		$this->body->set('nav', $data['nav']);
-		
+				
 		// load body template
+		
 		$this->body->set_template('report_dashboard_spy.tpl');		
+		
+		//$this->setJs('includes/jquery/jquery.js');
+		$this->setJs('includes/jquery/spy.js');
+		$this->setJs('owa.spy.js');
 				
 		return;
 	}

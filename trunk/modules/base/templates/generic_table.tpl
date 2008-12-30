@@ -1,4 +1,4 @@
-<? if (!empty($rows)): ?>
+<?php if (!empty($rows)): ?>
 
 <script>
 
@@ -9,9 +9,9 @@ jQuery(document).ready(function() {
 </script>
 
 <table class="<?=$sort_table_class;?> <?=$table_class;?>" summary="" id="<?=$table_id;?>">
-	<? if (!empty($caption)): ?>
+	<?php if (!empty($caption)): ?>
 	<caption><?=$caption;?></caption>
-	<? endif;?>
+	<?php endif;?>
 	<thead>
 		<TR>
 			<?php if (!empty($labels)):?>
@@ -21,11 +21,11 @@ jQuery(document).ready(function() {
 			<?php endif;?>
 		</TR>
 	</thead>
-	<? if (!empty($table_footer)): ?>
+	<?php if (!empty($table_footer)): ?>
 	<tfoot>
 		<td colspan="<?=$col_count;?>"><?=$table_footer;?></td>
 	</tfoot>
-	<? endif;?>
+	<?php endif;?>
 	<tbody>
 		<?php foreach ($rows as $row):?>
 		<TR>
@@ -41,8 +41,8 @@ jQuery(document).ready(function() {
 	</tbody>
 </table>
 
-<? else: ?>
-
-<div class="owa_status-msg">No data to display.</div>
-
-<? endif;?>
+<?php else: ?>
+	<?php if ($show_error):?>
+	<div class="owa_status-msg">No data to display.</div>
+	<?php endif;?>
+<?php endif;?>

@@ -30,7 +30,7 @@
 
 class owa_dashCoreByDay extends owa_metric {
 
-	var $limit = 10;
+	//var $limit = 10;
 	
 	function owa_dashCoreByDay($params = null) {
 		
@@ -43,8 +43,6 @@ class owa_dashCoreByDay extends owa_metric {
 		parent::__construct($params);
 		
 		$this->setLabels(array('Month', 'Day', 'Year', 'Sessions', ' New Visitors', 'Repeat Visitors',  'Unique Visitors', 'Page Views', 'Pages/Visit'));
-		$this->page_results = true;
-		$this->setOrder('ASC');
 		
 		return;
 		
@@ -64,16 +62,41 @@ class owa_dashCoreByDay extends owa_metric {
 								sum(session.num_pageviews) as page_views,
 								round((sum(session.num_pageviews) / count(session.id)), 1) as pages_per_visit");
 									
-		$this->db->groupBy('day');
+		
+		
+		$this->db->groupBy('year');
 		$this->db->groupBy('month');
-		$this->db->orderBy('year');
-		$this->db->orderBy('month');
-		$this->db->orderBy('day');
+		$this->db->groupBy('day');
+			
+		$this->db->orderBy('year', $this->getOrder());
+		$this->db->orderBy('month', $this->getOrder());
+		$this->db->orderBy('day', $this->getOrder());
 		
 		$ret = $this->db->getAllRows();
 		
+		//print($this->db->_last_sql_statement);
+		
 		return $ret;
 				
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectFrom('owa_session', 'session');
+		
+		$this->db->selectColumn("session.month, 
+								session.day, 
+								session.year, 
+								count(session.id) as sessions");
+								
+		$this->db->groupBy('day');
+		$this->db->groupBy('month');
+		$this->db->groupBy('year');
+		
+		$ret = $this->db->getAllRows();
+		
+		return count($ret);
+	
 	}
 	
 	

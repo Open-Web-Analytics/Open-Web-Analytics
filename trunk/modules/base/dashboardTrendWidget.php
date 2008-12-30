@@ -48,7 +48,6 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 		// enable formats
 		$this->enableFormat('graph');
 		$this->enableFormat('table');
-		$this->enableFormat('sparkline');
 		
 		//setup Metrics
 		$m = owa_coreApi::metricFactory('base.dashCoreByDay');
@@ -63,13 +62,6 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 	}
 	
 	function graphAction() {
-		
-		$this->data['view'] = 'base.openFlashChart';
-		return;
-	}
-	
-	function graphDataAction() {
-	
 		$m = $this->getMetric('base.dashCoreByDay');
 		$results = $m->generate();
 		$series = owa_lib::deconstruct_assoc($results);
@@ -78,10 +70,16 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 		$cd->setSeries('bar', $series['page_views'], 'Page Views');
 		$cd->setSeries('area', $series['sessions'], 'Visits');
 		$this->set('chart_data', $cd);
-		$this->data['view'] = 'base.areaBarsFlashChart';
+		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
+		$json = $chart->areaBar($cd);
+		$this->set('chart_data', $json);
+		$this->set('width', '100%');
+		//$this->setHeight('300px');
+		$this->setView('base.chart');
 		return;
-	}	
+	}
 	
+		
 	function tableAction() {
 	
 		$m = $this->getMetric('base.dashCoreByDay');
@@ -97,6 +95,8 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 			$m->setPage($this->params['page']);
 		endif;
 		
+		$m->setOrder('DESC');
+		
 		$results = $m->generate();
 		
 		$this->data['labels'] = $m->getLabels();
@@ -109,20 +109,7 @@ class owa_dashboardTrendWidgetController extends owa_widgetController {
 		//print_r($this->data['pagination']);
 		return;
 		
-	}
-	
-	function sparklineAction() {
-	
-		$this->data['type'] = 'line';
-		$this->data['view'] = 'base.sparkline';
-		return;	
-	}	
-	
-	function sparklineImageAction() {
-	
-		$this->data['view'] = 'base.sparklineLineGraph';
-		return;
-	}					
+	}			
 				
 }
 

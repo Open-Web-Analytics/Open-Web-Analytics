@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -36,59 +35,59 @@ class owa_reportReferringSitesController extends owa_reportController {
 	
 	function owa_reportReferringSitesController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportReferringSitesController::__construct($params);
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
+				
+		// top referers
+		$r = owa_coreAPI::metricFactory('base.topReferers');
+		$r->setPeriod($this->getPeriod());
+		$r->setConstraint('site_id', $this->getParam('site_id')); 
+		$r->setConstraint('is_searchengine', 0);
+		$r->setLimit(30);
+		$r->setPage($this->get('page'));
+		$this->set('top_referers', $r->generate());
+		$this->set('pagination', $r->getPagination());
+
+		// summary stats
+		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
+		$s->setPeriod($this->getPeriod());
+		$s->setConstraint('site_id', $this->getParam('site_id')); 
+		$s->setConstraint('referer.is_searchengine', true, '!=');
+		$s->setConstraint('session.source', '', '='); 
+		$s->setConstraint('session.referer_id', '0', '!='); 
+		$this->set('summary_stats_data', $s->generate());
 		
-		$data = array();
+		// summary stats trend	used by sparklines
+		$t = owa_coreAPI::metricFactory('base.trafficSummaryTrend');
+		$t->setPeriod($this->makeTimePeriod('last_thirty_days'));
+		$t->setConstraint('site_id', $this->getParam('site_id')); 
+		$t->setConstraint('referer.is_searchengine', true, '!=');
+		$t->setConstraint('session.source', '', '='); 
+		$t->setConstraint('session.referer_id', '0', '!='); 
+		$trend = owa_lib::deconstruct_assoc($t->generate());
+		//print_r($trend);
+		$this->set('summary_trend', $trend);
 		
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-	
-	
-		$data['top_referers'] = $api->getMetric('base.topReferers', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'is_searchengine' => 0
-				),
-			'limit'				=> 30
-		
-		));
-		
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCountsTraffic', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'referer.is_searchengine' => array('operator' => '!=', 'value' => true),
-										'session.source' => array('operator' => '=', 'value' => ''),
-										'session.referer_id' => array('operator' => '!=', 'value' => '0'))
-										
-		
-		));
-		
-		//print_r($data['summary_stats_data']);
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportReferringSites';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
+		// set views
+		$this->setView('base.report');
+		$this->setSubview('base.reportReferringSites');
+		$this->setTitle('Referring Web Sites');
+				
+		return;
 		
 	}
 }
 
 
 /**
- * Traffic Report View
+ * Referring Web Sites Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -103,23 +102,23 @@ class owa_reportReferringSitesView extends owa_view {
 	
 	function owa_reportReferringSitesView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+		return owa_reportReferringSitesView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign Data to templates
 		
 		$this->body->set('referers', $data['top_referers']);
 		$this->body->set('summary_stats', $data['summary_stats_data']);
-		
+		$this->body->set('summary_trend', $this->get('summary_trend'));
 		$this->body->set_template('report_referring_sites.tpl');
 
-		$this->body->set('headline', 'Referring Web Sites');
-		
 		return;
 	}
 	

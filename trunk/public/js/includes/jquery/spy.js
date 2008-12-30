@@ -126,8 +126,8 @@ $.fn.spy = function(settings) {
 		
 		spy.ajaxTimer = window.setInterval(function() {
 			if (spyRunning && (!spy.parsing)) {
-				$.post(o.ajax, {owa_do: 'base.widgetLatestVisits', owa_start_time: timestamp, owa_last_end_time: owa_getLastEndTime(), owa_site_id: owa_getSiteId()
-				 }, function(r) {
+				$.get(o.ajax, owa_getData()
+				 , function(r) {
 					spy.parse(e, r);
 				});
 			    timestamp = o.timestamp.call();

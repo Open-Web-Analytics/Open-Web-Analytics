@@ -74,7 +74,7 @@ class owa_date {
 			case 'timestamp':
 				$this->timestamp = $date;
 				$this->yyyymmdd = date('Ymd', $date);
-				list($this->year, $this->month, $this->day) = sscanf($date, "%4d%2d%2d");
+				list($this->year, $this->month, $this->day) = sscanf($this->yyyymmdd, "%4d%2d%2d");
 				break;
 				
 		
@@ -129,6 +129,15 @@ class owa_date {
 		return $this->$format;
 	}
 	
+	function getYyyymmdd() {
+	
+		return $this->yyyymmdd;
+	}
+	
+	function getTimestamp() {
+	
+		return $this->timestamp;
+	}
 }
 
 

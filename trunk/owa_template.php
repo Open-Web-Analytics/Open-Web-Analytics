@@ -49,6 +49,8 @@ class owa_template extends Template {
 	
 	var $e;
 	
+	var $period;
+	
 	/**
 	 * Params passed by calling caller
 	 *
@@ -206,14 +208,12 @@ class owa_template extends Template {
 				$file = 'default_browser.png';
 				$name = 'Unknown Browser';
 				break; 
+			default:
+				$file = 'default_browser.png';
 			
 		}
-		if (!empty($file)):
 			
-			return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink($file));
-		else:
-			return $browser_type;
-		endif;
+		return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink($file));
 		
 	}
 	
@@ -364,26 +364,35 @@ class owa_template extends Template {
 	 * @return string
 	 */
 	function makeLink($params = array(), $add_state = false, $url = '', $xml = false) {
-		
+		//print_r($this->get('params'));
+		$all_params = array();
+		//print_r($this->caller_params['link_state']);
 		//Loads link state passed by caller
 		if ($add_state == true):
 			if (!empty($this->caller_params['link_state'])):
-				foreach ($this->caller_params['link_state'] as $name => $value) {
-					if (!empty($value)):
-						$all_params[$name] = $value;	
-					endif;
-				}
+				$all_params = array_merge($all_params, $this->caller_params['link_state']);
 			endif;
+			
+			// add in period properties if available
+			$period = $this->get('timePeriod');
+			
+			if (!empty($period)):
+				$all_params = array_merge($all_params, $period->getPeriodProperties());
+				//print_r($all_params);
+			endif;
+			
 		endif;
+		
 		
 		// Load overrides
 		if (!empty($params)):
-			foreach ($params as $name => $value) {
-				if (!empty($value)):
-					$all_params[$name] = $value;	
-				endif;
-			}
+			$params = array_filter($params);
+			//print_r($params);
+			$all_params = array_merge($all_params, $params);
 		endif;
+		
+		//print_r($all_params);
+		//print_r($this->get('timePeriod')->getPeriodProperties());
 		
 		$get = '';
 		
@@ -561,7 +570,9 @@ class owa_template extends Template {
 	}
 	
 	
-	function getWidget($do, $params = array(), $wrapper = true) {
+	function getWidget($do, $params = array(), $wrapper = true, $add_state = true) {
+		
+		$final_params = array();
 		
 		if (empty($params)):
 			$params = array();
@@ -578,8 +589,16 @@ class owa_template extends Template {
 		else:
 			$params['wrapper'] = false;
 		endif;
+
+		// add state params into request params
+		if ($add_state === true):
+			$final_params = array_merge($final_params, $this->caller_params['link_state']);
+		endif;
 		
-		return owa_coreAPI::performAction($do, $params);
+		// apply overides made via the template
+		$final_params = array_merge($final_params, array_filter($params));
+		
+		return owa_coreAPI::performAction($do, $final_params);
 	}
 	
 	function getInpageWidget($do, $params = array()) {
@@ -588,14 +607,14 @@ class owa_template extends Template {
 	
 	}
 	
-	function getSparkline($metric, $metric_col, $period = 'last_thirty_days', $height = 25, $width = 250, $map = array()) {
+	function getSparkline($metric, $metric_col, $period = '', $height = 25, $width = 250, $map = array(), $add_state = true) {
 	
 		$map['metric'] = $metric;
 		$map['metric_col'] = $metric_col;
 		$map['period'] = $period;
 		$map['height'] = $height;
 		$map['width'] = $width;
-		return owa_template::getWidget('base.widgetSparkline', $map, false);
+		return owa_template::getWidget('base.widgetSparkline', $map, false, $add_state);
 	
 	}
 		
@@ -604,6 +623,15 @@ class owa_template extends Template {
 		$json = '{';
 		
 		foreach ($array as $k => $v) {
+			
+			if (is_object($v)) {
+				if (method_exists($v, 'toString')) {
+					$v = $v->toString();
+				} else {
+					$v = '';
+				}
+				
+			}
 			
 			$json .= sprintf('%s: "%s", ', $k, $v);
 			
@@ -628,10 +656,10 @@ class owa_template extends Template {
 		return;
 	}
 	
-	function makePagination($pagination, $do, $template = '') {
+	function makePagination($pagination, $map = array(), $add_state = true, $template = '') {
 		
 		$pages = '';
-		
+		//print_r($pagination);
 		if ($pagination['max_page_num'] > 1) {
 	
 			$pages = '<div class="owa_pagination"><UL>';
@@ -639,9 +667,11 @@ class owa_template extends Template {
 			for ($i = 1; $i <= $pagination['max_page_num'];$i++) {
 				
 				if ($pagination['page_num'] != $i) {
-				
+					$new_map = array();
+					$new_map = $map;
+					$new_map['page'] = $i;
 					$link = sprintf('<LI class="owa_reportPaginationControl"><a href="%s">%s</a></LI>', 
-														$this->makeLink(array('do' => $do, 'page' => $i), true), 
+														$this->makeLink($new_map, $add_state), 
 														$i);
 				
 				} else {
@@ -661,6 +691,74 @@ class owa_template extends Template {
 		return $pages;
 	}
 	
+	function get($name) {
+	
+		if (array_key_exists($name, $this->vars)) {
+			return $this->vars[$name];
+		} else {
+			return false;
+		}
+		
+	}
+	
+	function displayChart($id, $data, $width = '100%', $height = '200px') {
+		
+		if (!empty($data)) {
+		
+			$t = new owa_template;
+			$t->set('dom_id', $id.'Chart');
+			$t->set('data', $data);
+			$t->set('width', $width);
+			$t->set('height', $height);
+			$t->set_template('chart_dom.tpl');
+			return $t->fetch();
+		} else {
+		
+			return false;
+		}
+	}
+
+	function displaySparkline($id, $data, $width = '125px', $height = '35px') {
+		
+		if (!empty($data)) {
+		
+			$data_string = implode(',', $data);
+			
+			$t = new owa_template;
+			$t->set('dom_id', $id.'Sparkline');
+			$t->set('data', $data_string);
+			$t->set('width', $width);
+			$t->set('height', $height);
+			$t->set_template('sparkline_dom.tpl');
+			return $t->fetch();
+		
+		} else {
+		
+			return false;
+		}
+	}
+
+	function makeTable($labels, $data, $table_class = '', $table_id = '', $is_sortable = true) {
+	
+		$t = new owa_template;
+		
+		if (!empty($table_id)) {
+			$id = rand();
+		}
+		
+		$t->set('table_id', $id.'Table');
+		$t->set('data', $data);
+		$t->set('labels', $labels);
+		$t->set('class', $table_class);
+		if ($is_sortable === true) {
+			$t->set('sort_table_class', 'tablesorter');
+		}
+		
+		$t->set_template('generic_table.tpl');
+		
+		return $t->fetch();	
+	
+	}	
 }
 
 

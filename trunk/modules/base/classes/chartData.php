@@ -56,7 +56,7 @@ class owa_chartData {
 		if (array_key_exists($name, $this->series_data)) {
 			return $this->series_data[$name];
 		} else {
-			return false;
+			return array();
 		}
 	
 	}
@@ -69,6 +69,44 @@ class owa_chartData {
 			return false;
 		}
 	}
+	
+	function getMin($name) {
+		
+		$min = min($this->getSeriesData($name));
+		
+		if ($min >= 0) {
+			return 0;
+		} else {
+			return $min - 2;
+		}
+	
+	}
+	
+	function getMax($name, $name2 = null) {
+		
+		$max_values = array();
+		
+		$max_values[] = max($this->getSeriesData($name));
+		$max_values[] = max($this->getSeriesData($name2));
+		$max = max($max_values);
+		return $max + 2;
+	}
+	
+	function checkForSeries() {
+		
+		$counts = array();
+		foreach ($this->series_data as $series) {
+		
+			$counts[] = count($series);
+		}
+		
+		if (array_sum($counts) > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 	
 }
 

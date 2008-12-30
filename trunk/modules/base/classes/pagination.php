@@ -67,10 +67,15 @@ class owa_pagination extends owa_base {
 	}
 	
 	function getMaxPageNum() {
-	
-		$c = $this->total_count / $this->limit;
 		
-		$c = ceil($c);
+		if ($this->total_count > 0) {
+		
+			$c = $this->total_count / $this->limit;
+			$c = ceil($c);
+		} else {
+		
+			$c = 0;
+		}
 		
 		return $c;
 	}
@@ -84,7 +89,8 @@ class owa_pagination extends owa_base {
 		$pagination['max_page_num'] = $this->getMaxPageNum();
 		$pagination['more_pages'] = $this->more_pages;
 		$pagination['total_count'] = $this->total_count;
-		
+		$pagination['results_count'] = $this->results_count;
+		$pagination['diff_count'] = $this->total_count - $this->results_count;
 		return $pagination;
 	}
 	

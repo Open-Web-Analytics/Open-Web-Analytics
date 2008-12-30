@@ -196,6 +196,9 @@ class owa_controller extends owa_base {
 				$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
 			endif;
 			
+			// set site_id
+			$this->set('site_id', $this->get('site_id'));
+			
 			// check to see if the controller has created a validator
 			if (!empty($this->v)):
 				// if so do the validations required
@@ -299,6 +302,11 @@ class owa_controller extends owa_base {
 		endif;
 	}
 	
+	function get($name) {
+		
+		return $this->getParam($name);
+	}
+	
 	function pre() {
 	
 		return false;
@@ -315,8 +323,12 @@ class owa_controller extends owa_base {
 	
 	function setPeriod() {
 	
-	// set period
-		$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+	// set period 
+	
+		$period = $this->makeTimePeriod($this->getParam('period'), $this->params);
+		
+		/*
+$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
 		$map = array();
 		
 		if (array_key_exists('startDate', $this->params)) {
@@ -327,13 +339,49 @@ class owa_controller extends owa_base {
 			$map['endDate'] = $this->params['endDate'];
 		}
 		
+		if (array_key_exists('startTime', $this->params)) {
+			$map['startTime'] = $this->params['startTime'];			
+		}
+		
+		if (array_key_exists('endTime', $this->params)) {
+			$map['endTime'] = $this->params['endTime'];
+		}
+		
 		$period->set($this->params['period'], $map);
+*/
 		$this->period = $period;
-		$this->set('period', $this->getPeriod());
-		$this->data['params']['period'] = $this->data['period']->get();
-
+		$this->set('period', $this->getPeriod());	
+		$this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
+		return;
 	}
 	
+	function makeTimePeriod($time_period, $params = array()) {
+		
+		$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+		$map = array();
+		
+		if (array_key_exists('startDate', $params)) {
+			$map['startDate'] = $params['startDate'];			
+		}
+		
+		if (array_key_exists('endDate', $params)) {
+			$map['endDate'] = $params['endDate'];
+		}
+		
+		if (array_key_exists('startTime', $params)) {
+			$map['startTime'] = $params['startTime'];			
+		}
+		
+		if (array_key_exists('endTime', $params)) {
+			$map['endTime'] = $params['endTime'];
+		}
+		
+		$period->set($time_period, $map);
+		
+		return $period;
+	}
+	
+		
 	function setView($view) {
 		$this->data['view'] = $view;
 		return;
@@ -352,6 +400,18 @@ class owa_controller extends owa_base {
 	function set($name, $value) {
 	
 		$this->data[$name] = $value;
+		return;
+	}
+	
+	function setControllerType($string) {
+	
+		$this->type = $string;
+		return;
+	}
+	
+	function mergeParams($array) {
+	
+		$this->params = array_merge($this->params, $array);
 		return;
 	}
 }

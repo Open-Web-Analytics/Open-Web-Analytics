@@ -1,24 +1,19 @@
-<style>
+<div class="owa_reportSectionHeader">
+	There were <?=$feed_counts['fetch_count'];?> requests of this web site's feeds.
+</div>
 
-#trends {}
-#core_metrics {width: px; float:;}
-#summary_stats {margin-left: 420px; width:auto;}
-
-</style>
-
-<? include('report_header.tpl');?>
-
-<div valign="top" id="trend_graph"><img src="<?=$this->graphLink(array('view' => 'base.graphFeedRequests', 'period' => 'last_thirty_days', 'site_id' => $data['site_id']));?>" /></div>
-
-<? include('report_feed_core_metrics.tpl');?>
+<div class="owa_reportSectionContent">
+	<?=$this->displayChart('feed_trend', $feed_chart_data);?>
+	<? include('report_feed_core_metrics.tpl');?>
+</div>
 
 <table class="layout_container" width="100%">
 	<TR>
 		<TD valign="top">
-						<img src="<?=$this->graphLink(array('view' => 'base.graphFeedReaderTypes'), true);?>">
+			<?=$this->getWidget('base.widgetFeedTypes');?>
 		</TD>
 		<TD valign="top">
-			<img src="<?=$this->graphLink(array('view' => 'base.graphFeedFormats'), true);?>">
+			<?=$this->getWidget('base.widgetFeedReaderTypes');?>
 		</TD>
 	</TR>
 </table>

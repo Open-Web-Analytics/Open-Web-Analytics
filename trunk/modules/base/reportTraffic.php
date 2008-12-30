@@ -34,64 +34,54 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportTrafficController extends owa_reportController {
 	
+	function __construct($params) {
+	
+		return parent::__construct($params);
+	}
+	
 	function owa_reportTrafficController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportTrafficController::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
+		$ses = owa_coreApi::metricFactory('base.sessionsCount');
+		$ses->setConstraint('site_id', $this->getParam('site_id'));
+		$ses->setConstraint('is_browser', 1);
+		$ses->setPeriod($this->getPeriod());
+		$this->set('session_count', $ses->zeroFill($ses->generate()));
 		
-		$data['params'] = $this->params;
+		$f = owa_coreApi::metricFactory('base.visitsFromFeedsCount');
+		$f->setConstraint('site_id', $this->getParam('site_id'));
+		$f->setConstraint('is_browser', 1);
+		$f->setPeriod($this->getPeriod());
+		$this->set('from_feeds', $f->zeroFill($f->generate()));
+		 
+		$se = owa_coreApi::metricFactory('base.visitsFromSearchEnginesCount');
+		$se->setConstraint('site_id', $this->getParam('site_id'));
+		$se->setConstraint('is_browser', 1);
+		$se->setPeriod($this->getPeriod());
+		$this->set('from_se', $se->zeroFill($se->generate()));
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		$s = owa_coreApi::metricFactory('base.visitsFromSitesCount');
+		$s->setConstraint('site_id', $this->getParam('site_id'));
+		$s->setConstraint('is_browser', 1);
+		$s->setPeriod($this->getPeriod());
+		$this->set('from_sites', $s->generate());
+		 
+		$d = owa_coreApi::metricFactory('base.visitsFromDirectNavCount');
+		$d->setConstraint('site_id', $this->getParam('site_id'));
+		$d->setConstraint('is_browser', 1);
+		$d->setPeriod($this->getPeriod());
+		$this->set('from_direct', $d->generate());
 		
-		$data['session_count'] = $api->getMetric('base.sessionsCount', array(
-			
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-
-		));
+		// view stuff
+		$this->setView('base.report');
+		$this->setSubview('base.reportTraffic');
+		$this->setTitle('Traffic');
 		
-		$data['from_se'] = $api->getMetric('base.visitsFromSearchEnginesCount', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-
-		));
-		
-		$data['from_sites'] = $api->getMetric('base.visitsFromSitesCount', array(
-			
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-			
-		));
-		
-		$data['from_direct'] = $api->getMetric('base.visitsFromDirectNavCount', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-		
-		$data['from_feeds'] = $api->getMetric('base.visitsFromFeedsCount', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-			
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportTraffic';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
+		return;
 		
 	}
 }
@@ -112,28 +102,24 @@ class owa_reportTrafficController extends owa_reportController {
 class owa_reportTrafficView extends owa_view {
 	
 	function owa_reportTrafficView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+			
+		return owa_reportTrafficView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign Data to templates
-		
-		$this->body->set('headline', 'Traffic Sources');
-		$this->body->set('keywords', $data['top_keywords']);
-		$this->body->set('anchors', $data['top_anchors']);
-		$this->body->set('domains', $data['top_hosts']);
-		$this->body->set('referers', $data['top_referers']);
-		$this->body->set('se_hosts', $data['top_search_engines']);
-		$this->body->set('sessions', $data['session_count']);
-		$this->body->set('from_feeds', $data['from_feeds']);
-		$this->body->set('from_sites', $data['from_sites']);
-		$this->body->set('from_direct', $data['from_direct']);
-		$this->body->set('from_se', $data['from_se']);
+	
+		$this->body->set('sessions', $this->get('session_count'));
+		$this->body->set('from_feeds', $this->get('from_feeds'));
+		$this->body->set('from_sites', $this->get('from_sites'));
+		$this->body->set('from_direct', $this->get('from_direct'));
+		$this->body->set('from_se', $this->get('from_se'));
 		
 		$this->body->set_template('report_traffic.tpl');
 

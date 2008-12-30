@@ -15,17 +15,11 @@ OWA.report.prototype = {
 	
 	reload: function() {
 		
-		var url = this._makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);
+		var url = OWA.util.makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);
 		window.location.href = url;
 		return; 
 	},
-	
-	_makeUrl: function(template, uri, params) {
-		var url = jQuery.sprintf(template, uri, jQuery.param(OWA.util.nsAll(params)));
-		//alert(url);
-		return url;
-	},
-	
+		
 	_parseDate: function (date) {
 		
 		
@@ -75,9 +69,11 @@ jQuery(document).ready(function(){
 	
 		//buttonImage: "templates/images/calendar.gif", 
 		//buttonImageOnly: true
-	});
+	});	
+	// make tables sortable
+	jQuery.tablesorter.defaults.widgets = ['zebra'];
+	jQuery('.tablesorter').tablesorter();
 	
-
 });
 
 

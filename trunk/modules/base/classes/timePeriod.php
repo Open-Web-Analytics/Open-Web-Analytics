@@ -1,4 +1,4 @@
-<?php 
+	<?php 
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,16 +29,19 @@
  */
 
 
-class owa_timePeriod extends owa_base {
+class owa_timePeriod {
 
 	var $period;
 	var $startDate;
 	var $endDate;
 	var $label;
+	var $diff_years;
+	var $diff_months;
+	var $diff_days;
 	
 	function __construct() {
 		
-		parent::__construct();
+		//parent::__construct();
 		
 		$this->startDate = owa_coreAPI::supportClassFactory('base', 'date');
 		$this->endDate = owa_coreAPI::supportClassFactory('base', 'date');
@@ -48,7 +51,7 @@ class owa_timePeriod extends owa_base {
 	
 	function owa_timePeriod() {
 		
-		return owa_date::__construct();
+		return;
 	}
 	
 	function set($value, $map = array()) {
@@ -58,6 +61,8 @@ class owa_timePeriod extends owa_base {
 		$this->_setDates($map);
 		
 		$this->_setLabel($value);
+		
+		$this->_setDifferences();
 		
 		return;
 	
@@ -233,8 +238,8 @@ class owa_timePeriod extends owa_base {
 				break;
 				
 			case "time_range":
-				$start = $map['start_time'];
-				$end = $map['end_time'];				
+				$start = $map['startTime'];
+				$end = $map['endTime'];				
 				break;
 				
 		}
@@ -245,7 +250,61 @@ class owa_timePeriod extends owa_base {
 		return;
 	}
 	
+	function getPeriodProperties() {
 	
+		$period_params = array();
+		$period_params['period'] = $this->get();
+		
+		if ($period_params['period'] === 'date_range') {
+		
+			$period_params['startDate'] = $this->startDate->getYyyymmdd();
+			$period_params['endDate'] = $this->endDate->getYyyymmdd();	
+		
+		} elseif ($period_params['period'] === 'time_range') {
+		
+			$period_params['startTime'] = $this->startDate->getTimestamp();
+			$period_params['endTime'] = $this->endDate->getTimestamp();	
+		}
+		
+		return $period_params;
+	
+	}
+	
+	function _setDifferences() {
+		
+		// calc years diff
+		$start_year = $this->startDate->getYear();
+		$end_year = $this->endDate->getYear();	
+		$this->diff_years = $end_year - $start_year;
+		
+		// calc months diff
+		$start_month = $this->startDate->getMonth();
+		$end_month = $this->endDate->getMonth();	
+		$this->diff_months = ($this->diff_years * 52) + abs($end_month - $start_month);
+		
+		// calc days diff
+		
+		return;
+		
+		
+	}
+	
+	function getMonthsDifference() {
+		
+		return $this->diff_months;
+	}
+
+	function getYearsDifference() {
+		
+		return $this->diff_years;
+	}
+	
+	function getDaysDifference() {
+		
+		return $this->diff_days;
+	}
+
+		
 }
 
 

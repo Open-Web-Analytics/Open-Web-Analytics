@@ -32,20 +32,19 @@ class owa_topClicks extends owa_metric {
 	
 	function owa_topClicks($params = null) {
 		
-		$this->params = $params;
+		return owa_topClicks::__construct($params);
 		
-		$this->owa_metric();
+	}
+	
+	function __construct($params= null) {
 		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectFrom('owa_click');
-		$db->selectColumn("count(id) as count,
+		$this->db->selectFrom('owa_click');
+		$this->db->selectColumn("count(id) as count,
 									click_x,
 									click_y,
 									page_width,
@@ -54,39 +53,10 @@ class owa_topClicks extends owa_metric {
 									dom_element_y,
 									position");
 		
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-		$db->groupBy('position');
-		$db->orderBy('count');
-		$db->order('DESC');
-		
-		return $db->getAllRows();
-
-			
-		
-		/*
-
-		$this->params['select'] = "count(id) as count,
-									click_x,
-									click_y,
-									page_width,
-									page_height,
-									dom_element_x,
-									dom_element_y,
-									position";
-		
-		
-		$this->params['orderby'] = array('year', 'month', 'day');
-		$this->setTimePeriod($this->params['period']);
-		$this->params['groupby'] = array('position');
-		$this->params['orderby'] = array('count');
-		$this->params['order'] = 'DESC';
-		
-		$c = owa_coreAPI::entityFactory('base.click');
-		
-		return $c->query($this->params);
-		
-*/
+		$this->db->groupBy('position');
+		$this->db->orderBy('count', 'DESC');
+				
+		return $this->db->getAllRows();
 	}
 	
 	

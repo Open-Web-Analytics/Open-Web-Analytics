@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -36,40 +35,41 @@ class owa_reportContentController extends owa_reportController {
 
 	function owa_reportContentController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+		return owa_reportContentController::__construct($params);
 	
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		// dash counts	
+		$d = owa_coreAPI::metricFactory('base.dashCounts');
+		$d->setPeriod($this->getPeriod());
+		$d->setConstraint('site_id', $this->getParam('site_id')); 
+		$d->setOrder('ASC');
+		$this->set('summary_stats_data', $d->zeroFill($d->generate()));
 		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		// Fetch Metrics
-
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-		
-		$data['top_pages_data'] = $api->getMetric('base.topPages', array(
-		
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'			=> 30
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportContent';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportContent';
+		//setup Metrics
+		$m = owa_coreApi::metricFactory('base.topPages');
+		$m->setConstraint('site_id', $this->getParam('site_id'));
+		$m->setConstraint('is_browser', 1);
+		$m->setPeriod($this->getPeriod());
+		$m->setPage($this->getParam('page'));
+		$m->setOrder('DESC'); 
+		$m->setLimit(20);
+		$this->set('top_pages', $m->generate());
+		$this->set('pagination', $m->getPagination());
+	
+		// view stuff		
+		$this->setView('base.report');
+		$this->setSubview('base.reportContent');
+		$this->setTitle('Content');
 			
-		return $data;
+		return;
 		
 		
 	}
@@ -92,21 +92,22 @@ class owa_reportContentView extends owa_view {
 	
 	function owa_reportContentView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
+		return owa_reportContentView::__construct();
 		
-		return;
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign Data to templates
 		
 		$this->body->set('headline', 'Content');
-		$this->body->set('top_pages', $data['top_pages_data']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-	
-		
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));
+		$this->body->set('top_pages', $this->get('top_pages'));
 		$this->body->set_template('report_content.tpl');
 		
 		return;

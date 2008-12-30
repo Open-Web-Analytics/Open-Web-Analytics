@@ -31,26 +31,26 @@
 class owa_topVisitors extends owa_metric {
 	
 	function owa_topVisitors($params = null) {
+				
+		return owa_topVisitors::__construct($params = null);
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
-		
+	}
+	
+	function __construct($params = null) {
+	
+		parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(visitor_id) as count, visitor_id as vis_id, user_name, user_email");					
-		$db->selectFrom('owa_session');
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-		$db->groupBy('vis_id');
-		$db->orderBy('count');
+		$this->db = owa_coreAPI::dbSingleton();
+		$this->db->selectColumn("count(visitor_id) as count, visitor_id as vis_id, user_name, user_email");					
+		$this->db->selectFrom('owa_session');
 		
-		$ret = $db->getAllRows();
+		$this->db->groupBy('vis_id');
+		$this->db->orderBy('count');
+		
+		$ret = $this->db->getAllRows();
 
 		return $ret;
 				

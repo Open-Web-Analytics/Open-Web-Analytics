@@ -30,6 +30,9 @@ class owa_widgetTopPagesController extends owa_widgetController {
 	function __construct($params) {
 		
 		$this->setDefaultFormat('table');
+		// set default dimensions
+		$this->setHeight(450);
+		$this->setWidth(350);
 		
 		return parent::__construct($params);
 	}
@@ -44,14 +47,8 @@ class owa_widgetTopPagesController extends owa_widgetController {
 		// Set Title of the Widget
 		$this->data['title'] = 'Top Pages';
 		
-		// set default dimensions
-		$this->setHeight(450);
-		$this->setWidth(350);
-		
 		// enable formats
-		//$this->enableFormat('graph', 'Graph');
 		$this->enableFormat('table', 'Table');
-		//$this->enableFormat('sparkline', 'Sparkline');
 		
 		//setup Metrics
 		$m = owa_coreApi::metricFactory('base.topPages');

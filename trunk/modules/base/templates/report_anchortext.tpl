@@ -1,13 +1,19 @@
+<div class="owa_reportSectionHeader">
+There were <?=$summary_stats['sessions'];?> visits to this web site.
+</div>
+
+<div class="owa_reportSectionContent">
+	<?php include('report_traffic_summary_metrics.tpl');?>
+</div>
+<div class="owa_reportSectionHeader">
+	Top Inbound Link Text
+</div>
 
 
 
-<? include('report_header.tpl');?>
-
-<P><span class="inline_h2">There were <?=$summary_stats['sessions'];?> visits from Referring Web Sites.</span></p> 
-
-<? include('report_dashboard_summary_stats.tpl');?>
+<div class="owa_reportSectionContent">
 				
-<? if (!empty($anchors)):?>
+<?php if (!empty($anchors)):?>
 <table class="data_table">
 	<tr>
 		<td class="col_item_label">Link Text</td>
@@ -24,6 +30,8 @@
 	<?php endforeach; ?>
 
 	</table>
-<?else:?>
+<?php else:?>
 	There are no refering anchors for this time period.
-<?endif;?>
+<?php endif;?>
+
+</div>

@@ -36,45 +36,35 @@ class owa_reportKeywordsController extends owa_reportController {
 	
 	function owa_reportKeywordsController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+		return owa_reportKeywordsController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
-		
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['top_keywords'] = $api->getMetric('base.topReferingKeywords', array(
+		$k = owa_coreAPI::metricFactory('base.topReferingKeywords');
+		$k->setPeriod($this->getPeriod());
+		$k->setConstraint('site_id', $this->getParam('site_id')); 
+		$k->setLimit(30);
+		$k->setPage($this->get('page'));
+		$this->set('top_keywords', $k->generate());
+		$this->set('pagination', $k->getPagination());
 	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'				=> 30
+		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
+		$s->setPeriod($this->getPeriod());
+		$s->setConstraint('site_id', $this->getParam('site_id'));
+		$s->setConstraint('referer.is_searchengine', true);
+		$this->set('summary_stats_data', $s->generate());
+				
+		$this->setTitle('Keywords');
+		$this->setView('base.report');
+		$this->setSubview('base.reportKeywords');
 		
-		));
-		
-			
-		$data['summary_stats_data'] = $api->getMetric('base.dashCountsTraffic', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'referer.is_searchengine' =>  true)
-										
-										
-		
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportKeywords';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
+		return;
 		
 	}
 }
@@ -95,22 +85,20 @@ class owa_reportKeywordsController extends owa_reportController {
 class owa_reportKeywordsView extends owa_view {
 	
 	function owa_reportKeywordsView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+	
+		return owa_reportKeywordsView::__construct() ;
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign Data to templates
-		
-		$this->body->set('headline', 'Keywords');
 		$this->body->set('keywords', $data['top_keywords']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		
-		
+		$this->body->set('summary_stats', $data['summary_stats_data']);	
 		$this->body->set_template('report_keywords.tpl');
 
 		return;

@@ -32,56 +32,43 @@ class owa_requestCountsByDay extends owa_metric {
 	
 	function owa_requestCountsByDay($params = null) {
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+		return owa_requestCountsByDay::__construct($params);
 		
 	}
 	
+	function __construct($params = null) {
+	
+		return parent::__construct($params);
+	}
+	
 	function calculate() {
-		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectFrom('owa_request', 'request');
-		$db->selectColumn("request.month, request.day, request.year, 
+				
+		$this->db->selectFrom('owa_request', 'request');
+		$this->db->selectColumn("request.month, request.day, request.year, 
 							count(distinct request.visitor_id) as unique_visitors, 
 							count(distinct request.session_id) as sessions, 
 							count(request.id) as page_views");
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
 		
-		if (array_key_exists('groupby', $this->params)):
-			$db->groupBy($this->params['groupby']);
+		$p = $this->getPeriod();
+		$num_months = $p->getMonthsDifference();
+		
+		// set groupby and orderby
+		if ($num_months > 3):
+			$this->db->groupBy('year');
+			$this->db->groupBy('month');
+			$this->db->orderBy('year', $this->getOrder());
+			$this->db->orderBy('month', $this->getOrder());
 		else:
-			$db->groupBy('month');
+			$this->db->groupBy('year');
+			$this->db->groupBy('month');
+			$this->db->groupBy('day');
+			$this->db->orderBy('year', $this->getOrder());
+			$this->db->orderBy('month', $this->getOrder());
+			$this->db->orderBy('day', $this->getOrder());
 		endif;
 		
-		$db->orderBy('year');
-		$db->orderBy('month');
-		$db->orderBy('day');
-		
-		return $db->getAllRows();
-		
-		
-		/*
-
-		
-		$this->params['select'] = "request.month, request.day, request.year, 
-			count(distinct request.visitor_id) as unique_visitors, 
-			count(distinct request.session_id) as sessions, 
-			count(request.id) as page_views ";
-		
-		$this->params['orderby'] = array('year', 'month', 'day');
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$r = owa_coreAPI::entityFactory('base.request');
-		
-		return $r->query($this->params);
-*/
-		
+		return $this->db->getAllRows();
+				
 	}
 	
 	

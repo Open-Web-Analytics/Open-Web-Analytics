@@ -32,31 +32,31 @@ class owa_dashCountsTraffic extends owa_metric {
 	
 	function owa_dashCountsTraffic($params = null) {
 		
-		$this->params = $params;
+		return owa_dashCountsTraffic::__construct($params);
 		
-		$this->owa_metric();
-		
-		return;
-		
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
-			sum(session.is_new_visitor) as new_visitor, sum(session.is_repeat_visitor) as repeat_visitor,
-			count(session.id) as sessions, 
-			sum(session.num_pageviews) as page_views");
+		$this->db->selectColumn("count(distinct session.visitor_id) as unique_visitors, 
+								 sum(session.is_new_visitor) as new_visitor, 
+								 sum(session.is_repeat_visitor) as repeat_visitor,
+								 count(session.id) as sessions, 
+							     sum(session.num_pageviews) as page_views,
+							     (sum(session.num_pageviews) / count(session.id)) as pages_per_visit");
 									
-		$db->selectFrom('owa_session', 'session');
+		$this->db->selectFrom('owa_session', 'session');
 		
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-
-		$ret = $db->getAllRows();
+		$ret = $this->db->getOneRow();
+		
+		$ret = $this->zeroFill($ret);
 
 		return $ret;
 		

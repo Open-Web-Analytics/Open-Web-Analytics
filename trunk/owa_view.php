@@ -136,7 +136,7 @@ class owa_view extends owa_base {
 	 * @return unknown
 	 */
 	function assembleView($data) {
-		
+			
 		$this->e->debug('Assembling view: '.get_class($this));
 		
 		// set view name in template class. used for navigation.
@@ -148,10 +148,6 @@ class owa_view extends owa_base {
 		
 		if (array_key_exists('subview', $this->data)):
 			$this->body->caller_params['subview'] = $this->data['subview'];
-		endif;
-		
-		if (array_key_exists('nav_tab', $this->data)):
-			$this->body->caller_params['nav_tab'] = $this->data['nav_tab'];
 		endif;
 		
 		// Assign status msg
@@ -216,12 +212,6 @@ class owa_view extends owa_base {
 			// Set validation errors
 			$this->subview->body->set('validation_errors', $this->data['validation_errors']);
 			
-			// Load subview 
-			$this->renderSubView($this->data);
-			
-			// assign subview to body template
-			$this->body->set('subview', $this->subview_rendered);
-			
 			// pagination
 			if (array_key_exists('pagination', $this->data)):
 				$this->subview->body->set('pagination', $this->data['pagination']);
@@ -231,6 +221,12 @@ class owa_view extends owa_base {
 				$this->subview->body->set('params', $this->data['params']);
 				$this->subview->body->set('do', $this->data['params']['do']);
 			endif;
+			
+			// Load subview 
+			$this->renderSubView($this->data);
+			
+			// assign subview to body template
+			$this->body->set('subview', $this->subview_rendered);
 			
 			
 		endif;
@@ -402,19 +398,32 @@ class owa_view extends owa_base {
 		return;
 	}
 	
+	
+	/**
+	 * Sets properties that are needed to maintain state across most 
+	 * report and widget requests. This is used by many template functions.
+	 *
+	 */
 	function _setLinkState() {
 		
-		// create state params for all links
-		$link_params = array(
-								'period'	=> $this->data['params']['period'], // could be set by setPeriod
-								'day'		=> $this->data['params']['day'],
-								'month'		=> $this->data['params']['month'],
-								'year'		=> $this->data['params']['year'],
-								'day2'		=> $this->data['params']['day2'],
-								'month2'	=> $this->data['params']['month2'],
-								'year2'		=> $This->data['params']['year2'],
-								'site_id'	=> $this->data['params']['site_id']								
-							);		
+		// array of params to check
+		$p = $this->get('params');
+		
+		// control array - will check for these params. If they exist it will return.
+		$sp = array('period' => null, 
+					'startDate' => null, 
+					'endDate' => null, 
+					'site_id' => null, 
+					'page' => null, 
+					'startTime' => null, 
+					'endTime' => null);
+					
+		// result array
+		$link_params = array();
+		
+		if (!empty($p)):
+			$link_params = array_intersect_key($p, $sp);
+		endif;
 							
 		$this->body->caller_params['link_state'] =  $link_params;
 		
@@ -696,7 +705,7 @@ class owa_genericTableView extends owa_view {
 		return owa_genericTableView::__construct(); 
 	}
 	
-	function construct($data) {
+	function render($data) {
 	
 		$this->t->set_template('wrapper_blank.tpl');		
 		$this->body->set_template('generic_table.tpl');
@@ -755,6 +764,14 @@ class owa_genericTableView extends owa_view {
 			;		
 		endif;
 		
+		// show the no data error msg
+		if (array_key_exists('show_error', $data)):
+			$this->body->set('show_error', $data['show_error']);
+		else:
+			$this->body->set('show_error', true);		
+		endif;
+		
+		
 		
 		$this->body->set('table_id', str_replace('.', '-', $data['params']['do']).'-table');
 		
@@ -780,23 +797,24 @@ class owa_openFlashChartView extends owa_view {
 		
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		// load template
 		$this->t->set_template('wrapper_blank.tpl');
 		$this->body->set_template('ofc.tpl');
 		// set
-		$this->body->set('widget', $data['widget']);
-		$this->body->set('height', $data['height']);
-		$this->body->set('width', $data['width']);
-		$this->body->set('dom_id', $data['dom_id']);
-		$this->body->set('params', $data['params']);
-		
+		$this->body->set('widget', $this->get('widget'));
+		$this->body->set('height', $this->get('height'));
+		$this->body->set('width', $this->get('width'));
+		$this->body->set('dom_id', $this->get('dom_id'));
+		$this->body->set('params', $this->get('params'));
+	
 		return;
 	
 	}
 
 }
+/*
 
 class owa_sparklineView extends owa_view {
 
@@ -845,9 +863,10 @@ class owa_sparklineLineGraphView {
 	}
 }
 
+*/
 class owa_sparklineJsView extends owa_view {
 
-function owa_sparklineJsView() {
+	function owa_sparklineJsView() {
 	
 		return owa_sparklinejSView::__construct();
 	}
@@ -858,7 +877,7 @@ function owa_sparklineJsView() {
 
 	}
 	
-	function construct($data) {
+	function render($data) {
 	
 		// load template
 		$this->t->set_template('wrapper_blank.tpl');
@@ -875,6 +894,40 @@ function owa_sparklineJsView() {
 	}
 
 
+}
+
+class owa_chartView extends owa_view {
+
+	function owa_chartView() {
+	
+		return owa_chartView::__construct();
+	}
+	
+	function __construct() {
+	
+		return parent::__construct();
+
+	}
+	
+	function render($data) {
+	
+		// load template
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('chart_dom.tpl');
+		// set
+		$this->body->set('widget', $data['widget']);
+		$this->body->set('type', $data['type']);
+		//print_r($this->get('height'));
+		//height should be passed in as a request params as it sets the height of the actual flash object
+		$this->body->set('height', $this->get('height'));
+		//width should always be 100%
+		$this->body->set('width', $this->get('width'));
+		$this->body->set('data', $this->get('chart_data'));
+		$this->body->set('dom_id', $data['dom_id'].rand().'Chart');
+		//$this->setJs("includes/jquery/jquery.sparkline.js");
+		return;
+	}
+	
 }
 
 ?>

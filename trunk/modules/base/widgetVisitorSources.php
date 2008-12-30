@@ -30,7 +30,7 @@ class owa_widgetVisitorSourcesController extends owa_widgetController {
 	function __construct($params) {
 		
 		$this->setDefaultFormat('graph');
-		
+		//print_r($params);
 		return parent::__construct($params);
 	}
 	
@@ -52,6 +52,8 @@ class owa_widgetVisitorSourcesController extends owa_widgetController {
 		$this->enableFormat('graph');
 		$this->enableFormat('table');
 	
+		//print_r($this->getPeriod());
+		//print 'hello';
 		//Metrics
 		$f = owa_coreApi::metricFactory('base.visitsFromFeedsCount');
 		$f->setConstraint('site_id', $this->params['site_id']);
@@ -97,7 +99,7 @@ class owa_widgetVisitorSourcesController extends owa_widgetController {
 		$from_se = $se->generate(); 
 		$from_sites = $s->generate();
 		$from_direct = $d->generate();		
-	
+		
 		$this->data['values'] = array();
 		$this->data['labels'] = array();
 		$this->data['width'] = '100%';

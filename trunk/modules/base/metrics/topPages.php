@@ -68,12 +68,29 @@ class owa_topPages extends owa_metric {
 		
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER,$d->getTableName(), 'document', 'document_id', 'document.id');
 		$this->db->groupBy('document.id');
-		$this->db->orderBy('count');
+		
+		$order = '';
+		
+		if (!empty($this->order)):
+			$order = $this->order;
+		endif;
+		
+		$this->db->orderBy('count', $order);
 		
 		//$db->order('DESC');
 		
 		
 		return $this->db->getAllRows();
+		
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectFrom('owa_request');
+		$this->db->selectColumn("count(distinct document_id) as count");
+		$this->db->where('is_browser', 1);
+		$ret = $this->db->getOneRow();
+		return $ret['count'];
 		
 	}
 	
