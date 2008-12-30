@@ -39,6 +39,11 @@ class owa_ofc {
 	var $area_fill_color = '#FFA500';
 	var $line_color = '#4169e1';
 	
+	function owa_ofc() {
+		
+		return owa_ofc::__construct();
+	}
+	
 	function __construct() {
 		
 		$this->chart = new open_flash_chart();
