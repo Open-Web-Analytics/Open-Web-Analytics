@@ -64,11 +64,8 @@ class owa_latestVisits extends owa_metric {
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
-		
-		// pass constraints into where clause
-		
-		$this->db->orderBy('session_timestamp');
-		$this->db->order($this->params['order']);
+			
+		$this->db->orderBy('session_timestamp', $this->getOrder());
 		
 		$ret = $this->db->getAllRows();
 		

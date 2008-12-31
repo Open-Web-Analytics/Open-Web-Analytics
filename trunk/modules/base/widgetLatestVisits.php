@@ -57,7 +57,7 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		$m = owa_coreApi::metricFactory('base.latestVisits');
 		$m->setConstraint('site_id', $this->params['site_id']);
 		$m->setPeriod($this->getPeriod());
-		$m->setOrder(OWA_SQL_ASCENDING); 
+		$m->setOrder(OWA_SQL_DESCENDING); 
 		$m->setLimit(5);
 		$results = $m->generate();
 		$this->set('rows', $results);	
