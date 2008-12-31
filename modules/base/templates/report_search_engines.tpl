@@ -14,16 +14,18 @@
 <div class="owa_reportSectionContent">			
 	<? if (!empty($se_hosts)):?>
 	
-	<table class="data_table">
-		<tr>
-			<td class="col_item_label">Search Engine</td>
-			<td class="col_label">Visits</td>
-		</tr>
-					
+	<table class="tablesorter">
+		<thead>
+			<tr>
+				<th>Search Engine</th>
+				<th>Visits</th>
+			</tr>
+		</thead>
+		<tbody>			
 		<?php foreach($se_hosts as $host): ?>
 			
 		<TR>
-			<TD class="item_cell"><? if ($host['site_name']): ?>
+			<td><? if ($host['site_name']): ?>
 					<?=$host['site_name'];?> (<?=$host['site'];?>) 
 				<? else:?>
 					<?=$host['site'];?>
@@ -33,9 +35,12 @@
 		</TR>
 					
 		<?php endforeach; ?>
-
+		</tbody>
 	</table>
 	<?php else:?>
 		There are no refering search engines for this time period.
 	<?php endif;?>
+
+
+<?=$this->makePagination($pagination, array('do' => 'base.reportSearchEngines'));?>
 </div>
