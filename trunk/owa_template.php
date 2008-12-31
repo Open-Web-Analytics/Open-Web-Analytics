@@ -471,7 +471,8 @@ class owa_template extends Template {
 		return $this->file;
 		
 	}
-	
+	/*
+
 	function ofc($url, $use_swfobject = true, $id, $base = '') {
 	
 		if (empty($width)):
@@ -569,6 +570,7 @@ class owa_template extends Template {
 		return implode("\n",$out);
 	}
 	
+*/
 	
 	function getWidget($do, $params = array(), $wrapper = true, $add_state = true) {
 		
