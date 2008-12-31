@@ -63,7 +63,7 @@ class owa_reportVisitController extends owa_reportController {
 		$c->setConstraint('session_id', $this->getParam('session_id'));
 		$period = $this->makeTimePeriod('all_time');
 		$c->setPeriod($period); 
-		$c->setLimit(10);
+		$c->setLimit(35);
 		$c->setPage($this->getParam('page'));
 		$this->set('clickstream', $c->generate());
 		$pagination = $c->getPagination();
