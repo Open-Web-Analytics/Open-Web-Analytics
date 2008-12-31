@@ -39,47 +39,27 @@ class owa_topPages extends owa_metric {
 	function __construct($params) {
 				
 		$this->setLabels(array('Page Views', 'Page Name', 'Page Type', 'URL', 'Document ID'));
-		$this->page_results = true;
-
 		return parent::__construct($params);
 	}
 
 	
 	function calculate() {
-			
-		//$db = owa_coreAPI::dbSingleton();
-				
+						
 		$r = owa_coreAPI::entityFactory('base.request');
 		$d = owa_coreAPI::entityFactory('base.document');
 		
-		//$r->addRelatedObject('document_id', owa_coreAPI::entityFactory('base.document'));
 		$this->db->selectFrom($r->getTableName(), 'request');
 		$this->db->selectColumn("count(request.document_id) as count,
 						document.page_title,
 						document.page_type,
 						document.url,
 						document.id as document_id");
-		
 				
-		//$this->setTimePeriod($this->params['period']);
-		
 		$this->db->where('document.page_type', 'feed', '!=');
-
-		
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER,$d->getTableName(), 'document', 'document_id', 'document.id');
 		$this->db->groupBy('document.id');
-		
-		$order = '';
-		
-		if (!empty($this->order)):
-			$order = $this->order;
-		endif;
-		
-		$this->db->orderBy('count', $order);
-		
-		//$db->order('DESC');
-		
-		
+		$this->db->orderBy('count', $this->getOrder());
+				
 		return $this->db->getAllRows();
 		
 	}
