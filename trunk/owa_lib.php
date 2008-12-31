@@ -117,6 +117,51 @@ class owa_lib {
         return $result;
      }
 	
+	// php4 compatible function
+	function array_walk_recursive(&$input, $funcname, $userdata = "")
+    {
+        if (!is_callable($funcname))
+        {
+            return false;
+        }
+        
+        if (!is_array($input))
+        {
+            return false;
+        }
+        
+        if (is_array($funcname))
+        {
+            $funcname = $funcname[0].'::'.$funcname[1];
+        }
+        
+        
+        foreach ($input AS $key => $value)
+        {
+            if (is_array($input[$key]))
+            {
+                array_walk_recursive($input[$key], $funcname, $userdata);
+            }
+            else
+            {
+                $saved_value = $value;
+                if (!empty($userdata))
+                {
+                    $funcname($value, $key, $userdata);
+                }
+                else
+                {
+                    $funcname($value, $key);
+                }
+                
+                if ($value != $saved_value)
+                {
+                    $input[$key] = $value;
+                }
+            }
+        }
+        return true;
+    }
 
 	/**
 	 * Array of Current Time

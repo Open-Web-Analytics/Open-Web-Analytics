@@ -52,7 +52,6 @@ class owa_reportSearchEnginesController extends owa_reportController {
 		$se->setLimit(30);
 		$se->setPage($this->getParam('page'));
 		$ses = $se->generate();
-		print_r($ses);
 		$this->set('top_search_engines', $ses);
 		$this->set('pagination', $se->getPagination());
 
