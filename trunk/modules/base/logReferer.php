@@ -53,8 +53,10 @@ class owa_logRefererController extends owa_controller {
 		$r->set('url', $this->params['HTTP_REFERER']);
 		
 		// check for search engine
-		if ($this->lookupSearchEngine($this->params['HTTP_REFERER']) == true):
+		$se_info = $this->lookupSearchEngine($this->params['HTTP_REFERER']);
+		if (!empty($se_info)):
 			$r->set('is_searchengine', true);
+			$r->set('site_name', $se_info->name);
 		endif;
 		
 		// Set site
@@ -123,7 +125,7 @@ class owa_logRefererController extends owa_controller {
 		$se_info = $db->fetch($referer);
 		
 		if (!empty($se_info->name)):
-			return true;
+			return $se_info;
 		else:
 			return false;
 		endif;

@@ -46,13 +46,14 @@ class owa_reportSearchEnginesController extends owa_reportController {
 	function action() {
 				
 		// top search engines
-		$se = owa_coreAPI::metricFactory('base.topReferers');
+		$se = owa_coreAPI::metricFactory('base.topSearchEngines');
 		$se->setPeriod($this->getPeriod());
 		$se->setConstraint('site_id', $this->getParam('site_id')); 
-		$se->setConstraint('is_searchengine', 1);
 		$se->setLimit(30);
 		$se->setPage($this->getParam('page'));
-		$this->set('top_referers', $se->generate());
+		$ses = $se->generate();
+		print_r($ses);
+		$this->set('top_search_engines', $ses);
 		$this->set('pagination', $se->getPagination());
 
 		// summary stats
