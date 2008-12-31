@@ -51,13 +51,13 @@ class owa_topSearchEngines extends owa_metric {
 
 		$this->db->selectColumn("count(referer.id) as count,
 								sum(session.num_pageviews) as page_views,
-								url, page_title, site_name, query_terms, snippet, refering_anchortext, is_searchengine");
+							 	referer.site, site_name, is_searchengine");
 
 		$this->db->selectFrom('owa_session', 'session');	
 
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 
-		$this->db->groupBy('referer.url');		
+		$this->db->groupBy('referer.site');		
 
 		$this->db->orderBy('count');	
 		

@@ -340,20 +340,16 @@ class owa_metric extends owa_base {
 	
 		// PHP 5 only function used here
 		if (function_exists("array_walk_recursive")) {
-			array_walk_recursive($array, array($this, 'addZero'));
+			array_walk_recursive($array, array($this, 'addzero'));
 		} else {
-			// loop then walk through each array
-			foreach ($array as $row) {
-				
-				array_walk($row, array($this, 'addZero'));
-			}
+			owa_lib::array_walk_recursive($array, array(get_class($this).'Metric', 'addzero'));
 		}
 		
 		return $array;
 		
 	}
 	
-	function addZero(&$v, $k) {
+	function addzero(&$v, $k) {
 		
 		if (empty($v)) {
 			
