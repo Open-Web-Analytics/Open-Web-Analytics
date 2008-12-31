@@ -68,12 +68,6 @@ class owa_widgetFeedTypesController extends owa_widgetController {
 		$ff->setLimit(5);
 		$results = $ff->generate();	
 		$series = owa_lib::deconstruct_assoc($results);
-		$pagination = $ff->getPagination();
-		
-		if ($pagination['more_pages'] === true) {
-			$series['count'][] = $pagination['diff_count'];
-			$series['feed_format'][] = 'Other';
-		}
 		
 		// add a final slice
 		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
@@ -82,8 +76,6 @@ class owa_widgetFeedTypesController extends owa_widgetController {
 		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
 		$json = $chart->pie($cd);
 		$this->set('chart_data', $json);
-		$this->set('width', '100%');
-		//$this->setHeight('300px');
 		$this->setView('base.chart');
 		return;
 	}
