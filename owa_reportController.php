@@ -69,7 +69,7 @@ class owa_reportController extends owa_adminController {
 		endif;
 		
 		$this->setPeriod($this->getParam('period'));
-
+		
 		$this->setView('base.report');
 		$this->setViewMethod('delegate');
 		

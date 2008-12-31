@@ -1,10 +1,9 @@
-<h2><?=$headline;?>: <?=$visitor_id;?></h2>
+<div class="owa_reportSectionHeader">Prior Visits for Visitor: <?=$visitor_id;?></div>
 		
-<fieldset class="options">
-	<legend>Recent Visits for Visitor: <?=$visitor_id;?></legend>
-		
+<div class="owa_reportSectionContent">		
 	<? include('report_latest_visits.tpl')?>
 	
-</fieldset>
+	<?=$this->makePagination($pagination, array('do' => 'base.reportVisitor', 'visitor_id' => $visitor_id));?>
+</div>	
 				
 
