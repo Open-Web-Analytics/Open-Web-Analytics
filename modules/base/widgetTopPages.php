@@ -55,7 +55,7 @@ class owa_widgetTopPagesController extends owa_widgetController {
 		$m->setConstraint('site_id', $this->params['site_id']);
 		$m->setConstraint('is_browser', 1);
 		$m->setPeriod($this->getPeriod());
-		$m->setOrder(OWA_SQL_ASCENDING); 
+		$m->setOrder(OWA_SQL_DESCENDING); 
 		$this->setMetric('base.topPages', $m);
 			
 		return;
