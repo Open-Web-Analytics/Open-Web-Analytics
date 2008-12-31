@@ -15,7 +15,7 @@
 			<a href="<?=$referer['url'];?>">
 			<span class="inline_h3">
 			<? if  (!empty($referer['page_title'])): ?>
-			<?=$this->truncate($referer['page_title'], 90);?>
+			<?=$this->truncate($referer['page_title'], 75);?>
 			<? else:?>
 			<?=$this->truncate($referer['url'], 90);?>
 			<? endif;?>

@@ -56,13 +56,28 @@ class owa_topReferers extends owa_metric {
 		$this->db->selectFrom('owa_session', 'session');	
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 		$this->db->groupBy('referer.url');		
-		$this->db->orderBy('count');	
+		$this->db->orderBy('count', $this->getOrder());	
 		$this->db->where('is_searchengine', 1, '!=');
 		
 		$ret = $this->db->getAllRows();
 
 		return $ret;
 
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(distinct referer.id) as count");
+									
+		$this->db->selectFrom('owa_session', 'session');	
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');			
+		$this->db->where('is_searchengine', 1, '!=');
+		
+		$ret = $this->db->getOneRow();
+
+		return $ret['count'];
+
+	
 	}
 	
 	
