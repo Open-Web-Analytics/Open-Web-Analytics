@@ -47,7 +47,8 @@ class owa_reportFeedsController extends owa_reportController {
 		
 		// summary counts
 		$fc = owa_coreAPI::metricFactory('base.feedSummaryCount');
-		$fc->setPeriod($this->getPeriod());
+		$period = $this->makeTimePeriod('last_thirty_days');
+		$fc->setPeriod($period);
 		$fc->setConstraint('site_id', $this->getParam('site_id')); 
 		$this->set('feed_counts', $fc->generate());
 		

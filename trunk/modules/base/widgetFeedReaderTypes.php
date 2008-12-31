@@ -92,7 +92,7 @@ class owa_widgetFeedReaderTypesController extends owa_widgetController {
 		$ff = $this->getMetric('base.feedReaderTypesCount');
 		$results = $ff->generate();	
 		$this->set('rows', $results);
-		$this->set('labels', array('Feed Formats', 'Fetch Count'));
+		$this->set('labels', array('Fetch Count', 'User Agent', 'Name'));
 		$this->data['view'] = 'base.genericTable';
 		
 		return;
