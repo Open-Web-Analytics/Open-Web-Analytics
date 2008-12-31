@@ -424,7 +424,7 @@ class owa_view extends owa_base {
 		if (!empty($p)):
 			$link_params = owa_lib::array_intersect_key($p, $sp);
 		endif;
-		print_r($link_params);				
+						
 		$this->body->caller_params['link_state'] =  $link_params;
 		
 		if(!empty($this->subview)):
