@@ -51,9 +51,10 @@ class owa_reportReferringSitesController extends owa_reportController {
 		$r->setConstraint('site_id', $this->getParam('site_id')); 
 		$r->setConstraint('is_searchengine', 0);
 		$r->setLimit(30);
+		$r->setOrder('DESC');
 		$r->setPage($this->get('page'));
 		$this->set('top_referers', $r->generate());
-		$this->set('pagination', $r->getPagination());
+		$this->setPagination($r->getPagination());
 
 		// summary stats
 		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
