@@ -102,6 +102,22 @@ class owa_lib {
 		return $data_arrays;
 	}
 
+	// php 4 compatible function
+	function array_intersect_key() {
+	
+        $arrs = func_get_args();
+        $result = array_shift($arrs);
+        foreach ($arrs as $array) {
+            foreach ($result as $key => $v) {
+                if (!array_key_exists($key, $array)) {
+                    unset($result[$key]);
+                }
+            }
+        }
+        return $result;
+     }
+	
+
 	/**
 	 * Array of Current Time
 	 *
