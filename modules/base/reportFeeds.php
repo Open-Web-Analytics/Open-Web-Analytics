@@ -55,7 +55,7 @@ class owa_reportFeedsController extends owa_reportController {
 		$f = owa_coreAPI::metricFactory('base.feedViewsTrend');
 		$f->setPeriod($this->getPeriod());
 		$f->setConstraint('site_id', $this->getParam('site_id')); 
-		$f->setOrder('DESC');
+		//$f->setOrder('DESC');
 		$feed_trend = $f->generate();
 		$this->set('feed_trend', $feed_trend);
 		
@@ -63,7 +63,7 @@ class owa_reportFeedsController extends owa_reportController {
 		$series = owa_lib::deconstruct_assoc($feed_trend);
 		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
 		$cd->setSeries('x', owa_lib::makeDateArray($feed_trend, "n/j"), 'Day');
-		$cd->setSeries('area', $series['fetch_counts'], 'Fetch Counts');
+		$cd->setSeries('area', $series['fetch_count'], 'Fetch Counts');
 		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
 		$json = $chart->area($cd);
 		$this->set('feed_chart_data', $json);
