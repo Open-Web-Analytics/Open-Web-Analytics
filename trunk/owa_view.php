@@ -413,8 +413,7 @@ class owa_view extends owa_base {
 		$sp = array('period' => null, 
 					'startDate' => null, 
 					'endDate' => null, 
-					'site_id' => null, 
-					'page' => null, 
+					'site_id' => null,  
 					'startTime' => null, 
 					'endTime' => null);
 					
