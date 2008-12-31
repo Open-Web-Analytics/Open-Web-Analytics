@@ -49,10 +49,11 @@ class owa_reportAnchortextController extends owa_reportController {
 		$a = owa_coreAPI::metricFactory('base.topReferingAnchors');
 		$a->setPeriod($this->getPeriod());
 		$a->setConstraint('site_id', $this->getParam('site_id')); 
-		$a->setLimit(30);
+		$a->setLimit(15);
+		$a->setOrder('DESC');
 		$a->setPage($this->get('page'));
 		$this->set('top_anchors', $a->generate());
-		$this->set('pagination', $a->getPagination());
+		$this->setPagination($a->getPagination());
 
 		// summary stats
 		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
@@ -63,9 +64,18 @@ class owa_reportAnchortextController extends owa_reportController {
 		$s->setConstraint('session.referer_id', '0', '!='); 
 		$this->set('summary_stats_data', $s->generate());
 		
+		// summary stats trend	used by sparklines
+		$t = owa_coreAPI::metricFactory('base.trafficSummaryTrend');
+		$t->setPeriod($this->makeTimePeriod('last_thirty_days'));
+		$t->setConstraint('site_id', $this->getParam('site_id')); 
+		$t->setConstraint('referer.is_searchengine', true, '!=');
+		$t->setConstraint('session.source', '', '='); 
+		$t->setConstraint('session.referer_id', '0', '!='); 
+		$trend = owa_lib::deconstruct_assoc($t->generate());
+		$this->set('summary_trend', $trend);
 		$this->setView('base.report');
 		$this->setSubview('base.reportAnchortext');
-		$this->setTitle('Links');
+		$this->setTitle('Inbound Link Text');
 		return;
 		
 	}
@@ -88,27 +98,25 @@ class owa_reportAnchortextView extends owa_view {
 	
 	function owa_reportAnchortextView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'view';
-		
-		return;
+		return owa_reportAnchortextView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Assign Data to templates
-		
-		$this->body->set('headline', 'Inbound Link Text');
-		
-		$this->body->set('anchors', $data['top_anchors']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-	
-		
+
+		$this->body->set('anchors', $this->get('top_anchors'));
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));
+		$this->body->set('summary_trend', $this->get('summary_trend'));
 		$this->body->set_template('report_anchortext.tpl');
 		
 		return;
 	}
-	
 	
 }
 

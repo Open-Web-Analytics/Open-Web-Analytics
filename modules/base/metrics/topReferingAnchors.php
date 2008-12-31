@@ -43,14 +43,11 @@ class owa_topReferingAnchors extends owa_metric {
 	
 	function calculate() {
 		
-		$this->db->selectColumn("count(session.id) as count, referer.refering_anchortext");
-									
+		$this->db->selectColumn("count(session.id) as count, referer.refering_anchortext");					
 		$this->db->selectFrom('owa_session', 'session');
-		
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 		$this->db->groupBy('referer.refering_anchortext');		
-		$this->db->orderBy('count');	
-		$this->db->order('DESC');
+		$this->db->orderBy('count', $this->getOrder());	
 		$this->db->where('referer.id', 0, '!=');
 		$this->db->where('referer.refering_anchortext', ' ', '!=');
 		$this->db->where('referer.is_searchengine', 0);
@@ -59,6 +56,21 @@ class owa_topReferingAnchors extends owa_metric {
 
 		return $ret;
 		
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(distinct referer.refering_anchortext) as count");					
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->where('referer.id', 0, '!=');
+		$this->db->where('referer.refering_anchortext', ' ', '!=');
+		$this->db->where('referer.is_searchengine', 0);
+
+		$ret = $this->db->getOneRow();
+		
+		return $ret['count'];
+	
 	}
 	
 	

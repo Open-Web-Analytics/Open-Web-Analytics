@@ -1,5 +1,5 @@
 <div class="owa_reportSectionHeader">
-There were <?=$summary_stats['sessions'];?> visits to this web site.
+There were <?=$summary_stats['sessions'];?> visits from referring web sites.
 </div>
 
 <div class="owa_reportSectionContent">
@@ -14,13 +14,15 @@ There were <?=$summary_stats['sessions'];?> visits to this web site.
 <div class="owa_reportSectionContent">
 				
 <?php if (!empty($anchors)):?>
-<table class="data_table">
+<table class="tablesorter">
+	<thead>
 	<tr>
 		<td class="col_item_label">Link Text</td>
 		<td class="col_label">Visits</td>
 	</tr>
-				
-<?php foreach($anchors as $anchor): ?>
+	</thead>
+	<tbody>			
+	<?php foreach($anchors as $anchor): ?>
 		
 	<TR>
 		<TD class="item_cell"><?=$anchor['refering_anchortext'];?></td>
@@ -28,10 +30,12 @@ There were <?=$summary_stats['sessions'];?> visits to this web site.
 	</TR>
 				
 	<?php endforeach; ?>
-
-	</table>
+	</tbody>
+</table>
 <?php else:?>
 	There are no refering anchors for this time period.
 <?php endif;?>
+
+<?=$this->makePagination($pagination, array('do' => 'base.reportAnchortext'));?>
 
 </div>
