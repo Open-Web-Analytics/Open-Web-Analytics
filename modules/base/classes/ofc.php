@@ -109,7 +109,7 @@ class owa_ofc {
 			
 			// Add the X Axis Labels to the X Axis
 			$x_labels = new x_axis_labels();
-			$x_labels->set_steps( 1 );
+			$x_labels->set_steps( 2 );
 			$x_labels->set_labels($chartData->getSeriesData('x'));
 			//$x_labels->set_vertical();
 			$this->x_axis->set_labels( $x_labels );
