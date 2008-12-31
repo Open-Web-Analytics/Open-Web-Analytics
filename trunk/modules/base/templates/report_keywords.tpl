@@ -9,23 +9,27 @@
 <div class="owa_reportSectionContent">
 				
 <?php if (!empty($keywords)):?>
-<table class="data_table">
-	<tr>
-		<td class="col_item_label">Keyword</td>
-		<td class="col_label">Visits</td>
-	</tr>
-				
+<table class="tablesorter">
+	<thead>
+		<tr>
+			<th>Keyword</th>
+			<th>Visits</th>
+		</tr>
+	</thead>
+	<tbody>			
 	<?php foreach($keywords as $keyword): ?>
 		
 	<TR>
-		<TD class="item_cell"><?=$keyword['query_terms'];?></td>
-		<TD class="data_cell"><?=$keyword['count']?></TD>
+		<td><?=$keyword['query_terms'];?></td>
+		<TD><?=$keyword['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>
-
-	</table>
+	</tbody>
+</table>
 <?php else:?>
 	There are no Keywords for this time period.
 <?php endif;?> 
+
+<?=$this->makePagination($pagination, array('do' => 'base.reportKeywords'));?>
 </div>

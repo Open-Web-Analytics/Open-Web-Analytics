@@ -49,11 +49,12 @@ class owa_reportSearchEnginesController extends owa_reportController {
 		$se = owa_coreAPI::metricFactory('base.topSearchEngines');
 		$se->setPeriod($this->getPeriod());
 		$se->setConstraint('site_id', $this->getParam('site_id')); 
-		$se->setLimit(30);
+		$se->setLimit(15);
 		$se->setPage($this->getParam('page'));
+		$se->setOrder('DESC');
 		$ses = $se->generate();
 		$this->set('top_search_engines', $ses);
-		$this->set('pagination', $se->getPagination());
+		$this->setPagination($se->getPagination());
 
 		// summary stats
 		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');

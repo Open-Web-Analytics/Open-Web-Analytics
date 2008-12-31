@@ -44,10 +44,8 @@ class owa_topReferingKeywords extends owa_metric {
 	function calculate() {
 		
 	
-		$this->db->selectColumn("count(session.id) as count, referer.query_terms");
-									
+		$this->db->selectColumn("count(session.id) as count, referer.query_terms");						
 		$this->db->selectFrom('owa_session', 'session');
-		
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 		$this->db->groupBy('referer.query_terms');		
 		$this->db->orderBy('count');	
@@ -58,6 +56,20 @@ class owa_topReferingKeywords extends owa_metric {
 		$ret = $this->db->getAllRows();
 
 		return $ret;
+
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(distinct referer.query_terms) as count");						
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->where('referer.id', 0, '!=');
+		$this->db->where('referer.query_terms', ' ', '!=');		
+		
+		$ret = $this->db->getOneRow();
+
+		return $ret['count'];
 
 	}
 	

@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -52,13 +51,22 @@ class owa_reportKeywordsController extends owa_reportController {
 		$k->setLimit(30);
 		$k->setPage($this->get('page'));
 		$this->set('top_keywords', $k->generate());
-		$this->set('pagination', $k->getPagination());
+		$this->setPagination($k->getPagination());
 	
+		// summary stats
 		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
 		$s->setPeriod($this->getPeriod());
-		$s->setConstraint('site_id', $this->getParam('site_id'));
+		$s->setConstraint('site_id', $this->getParam('site_id')); 
 		$s->setConstraint('referer.is_searchengine', true);
 		$this->set('summary_stats_data', $s->generate());
+		
+		// summary stats trend	used by sparklines
+		$t = owa_coreAPI::metricFactory('base.trafficSummaryTrend');
+		$t->setPeriod($this->makeTimePeriod('last_thirty_days'));
+		$t->setConstraint('site_id', $this->getParam('site_id')); 
+		$t->setConstraint('referer.is_searchengine', true);
+		$trend = owa_lib::deconstruct_assoc($t->generate());
+		$this->set('summary_trend', $trend);
 				
 		$this->setTitle('Keywords');
 		$this->setView('base.report');
@@ -97,8 +105,9 @@ class owa_reportKeywordsView extends owa_view {
 	function render($data) {
 		
 		// Assign Data to templates
-		$this->body->set('keywords', $data['top_keywords']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);	
+		$this->body->set('keywords', $this->get('top_keywords'));
+		$this->body->set('summary_stats', $this->get('summary_stats_data'));	
+		$this->body->set('summary_trend', $this->get('summary_trend'));
 		$this->body->set_template('report_keywords.tpl');
 
 		return;
