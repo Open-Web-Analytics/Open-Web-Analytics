@@ -19,7 +19,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -39,46 +38,41 @@ class owa_reportVisitController extends owa_reportController {
 	
 	function owa_reportVisitController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+		return owa_reportVisitController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		//setup Metrics
+		$m = owa_coreApi::metricFactory('base.latestVisits');
+		$m->setConstraint('site_id', $this->getParam('site_id'));
+		$m->setConstraint('owa_session.id', $this->getParam('session_id'));
+		$period = $this->makeTimePeriod('all_time');
+		$m->setPeriod($period); 
+		$m->setLimit(1);
+		$this->set('latest_visits', $m->generate());
 		
-		$data = array();
-		
-		$data['params'] = $this->params;
-		
-		$data['clickstream'] = $api->getMetric('base.clickstream', array(
-	
-			'limit'				=> '50',
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'session_id' 	=> $this->params['session_id']
-				)
-		));
-		
-		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
-		
-			'period'			=> 'all_time',
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'session.id' 	=> $this->params['session_id']
-				),
-				
-			'limit' 			=> 1
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisit';
-		$data['nav_tab'] = 'base.reportVisitors';
-		
-		return $data;
+		//setup Metrics
+		$c = owa_coreApi::metricFactory('base.clickstream');
+		$c->setConstraint('site_id', $this->getParam('site_id'));
+		$c->setConstraint('session_id', $this->getParam('session_id'));
+		$period = $this->makeTimePeriod('all_time');
+		$c->setPeriod($period); 
+		$c->setLimit(10);
+		$c->setPage($this->getParam('page'));
+		$this->set('clickstream', $c->generate());
+		$pagination = $c->getPagination();
+		$this->setPagination($pagination);
+		$this->set('session_id', $this->getParam('session_id'));
+		$this->setView('base.report');
+		$this->setSubview('base.reportVisit');
+		$this->setTitle('Visit Clickstream');
+		return;
 			
 	}
 	
@@ -100,29 +94,22 @@ class owa_reportVisitView extends owa_view {
 	
 	function owa_reportVisitView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return owa_reportVisitView::__construct();
+	}
+	
+	function __construct() {
+	
+		return parent::__construct();
 	}
 	
 	function construct($data) {
 		
 		// Assign data to templates
 
-		$this->body->set_template('report_visit.tpl');
-	
-		$this->body->set('headline', 'Visit Report');
-		
-		//$this->body->set('config', $this->config);
-		
-		//$this->body->set('params', $data);
-		
-		$this->body->set('session_id', $data['params']['session_id']);
-			
-		$this->body->set('visits', $data['latest_visits']);
-		
-		$this->body->set('clickstream', $data['clickstream']);
+		$this->body->set_template('report_visit.tpl');	
+		$this->body->set('session_id', $this->get('session_id'));
+		$this->body->set('visits', $this->get('latest_visits'));
+		$this->body->set('clickstream', $this->get('clickstream'));
 
 		return;
 	}
