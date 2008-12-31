@@ -47,8 +47,8 @@ class owa_widgetFeedTypesController extends owa_widgetController {
 		$this->data['title'] = 'Feed Types';
 		
 		// set default dimensions
-		//$this->setHeight(450);
-		//$this->setWidth(350);
+		$this->setHeight('200px');
+		$this->setWidth('100%');
 		
 		$this->data['labels'] = array('New', 'Repeat');
 		//Metrics
