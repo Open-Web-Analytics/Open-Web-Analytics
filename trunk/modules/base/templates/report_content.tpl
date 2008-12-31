@@ -5,9 +5,5 @@
 
 <div class="owa_reportSectionHeader">Most Popular Pages</div> 
 <div class="owa_reportSectionContent">
-	<div style="width:500px;">
 	<? include('report_top_pages.tpl');?>
-	</div>
 </div>
-
-<? //$this->getWidget('base.widgetTopPages');?>			
