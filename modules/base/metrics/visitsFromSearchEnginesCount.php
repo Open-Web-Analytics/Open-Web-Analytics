@@ -46,14 +46,9 @@ class owa_visitsFromSearchEnginesCount extends owa_metric {
 		$this->db->selectColumn("count(session.id) as count");
 		$this->db->selectFrom('owa_session', 'session');
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
-		$this->db->where('session.source', 'feed');
-		$this->db->where('referer.is_searchengine', 1);
+		$this->db->where('owa_referer.is_searchengine', 1);
 				
 		$ret = $this->db->getOneRow();
-		
-		if (empty($ret)):
-			$ret = array('count' => 0);
-		endif;
 		
 		return $ret;
 		

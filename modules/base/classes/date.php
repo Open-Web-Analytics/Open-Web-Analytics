@@ -85,7 +85,7 @@ class owa_date {
 		$this->second = date('s', $this->timestamp);
 		$this->microsecond = date('u', $this->timestamp);
 		$this->meridiem = date('a', $this->timestamp);
-		$this->day_of_week = date('N', $this->timestamp);
+		$this->day_of_week = date('w', $this->timestamp);
 		$this->day_of_week_label = date('l', $this->timestamp);
 		$this->week_of_year = date('W', $this->timestamp);
 		$this->day_of_year = date('z', $this->timestamp);

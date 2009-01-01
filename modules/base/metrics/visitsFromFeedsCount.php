@@ -44,10 +44,10 @@ class owa_visitsFromFeedsCount extends owa_metric {
 	function calculate() {
 		
 		$this->db->selectColumn("count(session.id) as count");
-		$this->db->selectFrom('base.session');
-		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'base.referer', '', 'referer_id');
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', '', 'referer_id');
 		$this->db->where('session.source', 'feed');
-		$this->db->where('referer.is_searchengine', 1, '!=');
+		$this->db->where('owa_referer.is_searchengine', 1, '!=');
 				
 		$ret = $this->db->getOneRow();
 		

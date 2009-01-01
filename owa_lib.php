@@ -889,7 +889,28 @@ class owa_lib {
 		return preg_replace('/[^(\x20-\x7F)]*/','', $string);
 	}
 
-	
+	/**
+	 * Truncate string
+	 *
+	 * @param string $str
+	 * @param integer $length
+	 * @param string $trailing
+	 * @return string
+	 */
+	function truncate ($str, $length=10, $trailing='...')  {
+	 
+    	// take off chars for the trailing 
+    	$length-=strlen($trailing); 
+    	if (strlen($str) > $length):
+        	// string exceeded length, truncate and add trailing dots 
+         	return substr($str,0,$length).$trailing; 
+		else:  
+        	// string was already short enough, return the string 
+        	$res = $str;  
+      	endif;
+   
+      return $res; 
+	}
 }
 
 ?>

@@ -48,6 +48,8 @@ class owa_feedViewsTrend extends owa_metric {
 		$p = $this->getPeriod();
 		$num_months = $p->getMonthsDifference();
 		
+		//print_r($p);
+		
 		// set groupby and orderby
 		if ($num_months > 3):
 			$this->db->groupBy('year');

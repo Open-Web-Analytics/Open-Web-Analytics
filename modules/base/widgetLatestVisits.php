@@ -36,7 +36,7 @@ require_once(OWA_BASE_CLASS_DIR.'widget.php');
 class owa_widgetLatestVisitsController extends owa_widgetController {
 
 	function __construct($params) {
-	
+		$this->setDefaultFormat('table');
 		return parent::__construct($params);
 	}
 	
@@ -58,7 +58,7 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		$m->setConstraint('site_id', $this->params['site_id']);
 		$m->setPeriod($this->getPeriod());
 		$m->setOrder(OWA_SQL_DESCENDING); 
-		$m->setLimit(5);
+		$m->setLimit(15);
 		$results = $m->generate();
 		$this->set('rows', $results);	
 		$this->setView('base.genericTable');

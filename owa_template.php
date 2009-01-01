@@ -136,17 +136,7 @@ class owa_template extends Template {
 	 */
 	function truncate ($str, $length=10, $trailing='...')  {
 	 
-    	// take off chars for the trailing 
-    	$length-=strlen($trailing); 
-    	if (strlen($str) > $length):
-        	// string exceeded length, truncate and add trailing dots 
-         	return substr($str,0,$length).$trailing; 
-		else:  
-        	// string was already short enough, return the string 
-        	$res = $str;  
-      	endif;
-   
-      return $res; 
+      return owa_lib::truncate ($str, $length, $trailing); 
 	}
 	
 	function get_month_label($month) {

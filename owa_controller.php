@@ -397,8 +397,8 @@ $period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
 		return;
 	}
 	
-	function setPagination($pagination) {
-		$this->data['pagination'] = $pagination;
+	function setPagination($pagination, $name = 'pagination') {
+		$this->data[$name] = $pagination;
 		return;
 	}
 	

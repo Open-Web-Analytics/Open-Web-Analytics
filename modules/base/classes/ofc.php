@@ -149,14 +149,14 @@ class owa_ofc {
 		///bar
 		$bar = $this->getBarPlot();
 		$bar->set_values($this->convertArrayToInts($chartData->getSeriesData('bar')));
-	
+		$bar->set_key( $chartData->getSeriesLabel('bar'), 12 );
 		// Make our area chart:
 		$area = $this->getAreaPlot();
 		// need to force a conversion of strings to ints for the arrea to render properly.
 		$numArray = $this->convertArrayToInts($chartData->getSeriesData('area'));
 		//$area->set_values($chartData->getSeriesData('area'));
 		$area->set_values($numArray);
-				
+		$area->set_key( $chartData->getSeriesLabel('area'), 12 );		
 		$this->y_axis->set_range(round($chartData->getMin('area')), round($chartData->getMax('area', 'bar')));
 		$this->y_axis->set_offset( false );
 		$this->y_axis->set_steps( round($chartData->getMax('area', 'bar') / 4) );
@@ -184,7 +184,7 @@ class owa_ofc {
 		$pie->set_animate( true );
 		$pie->set_label_colour( '#432BAF' );
 		$pie->set_gradient_fill();
-		$pie->set_tooltip( '#val# of #total#<br>#percent# of 100%' );
+		$pie->set_tooltip( '#label#<br>$#val# (#percent#)' );
 		$pie->set_colours(
 		    array(
 		        '#1F8FA1',    // <-- blue
@@ -197,7 +197,7 @@ class owa_ofc {
 	
 	}
 	
-	function pie($chartData) {
+	function pie($chartData, $label_length = 50) {
 		
 		if ($chartData->checkForSeries()) {
 		
@@ -210,11 +210,11 @@ class owa_ofc {
 		
 			foreach ($values as $k => $v) {
 			
-				$pie_slices[] = new pie_value($v, $labels[$k]);
+				$pie_slices[] = new pie_value($v, owa_lib::truncate($labels[$k], $label_length));
 			}
-			//$pie_slices = array(1,2,4,5);
+	
 			$pie->set_values($pie_slices);
-			
+		
 			$this->chart->add_element($pie);
 			
 			return $this->chart->toPrettyString();
