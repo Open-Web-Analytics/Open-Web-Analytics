@@ -26,7 +26,7 @@
 	</tbody>
 </table>
 	
-<?=$this->makePagination($pagination, $params['do']);?>
+<?=$this->makePagination($pagination, array('do' => $params['do']));?>
 
 <?php else:?>
 	There are no refering domains for this time period.

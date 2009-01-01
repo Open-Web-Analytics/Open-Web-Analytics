@@ -873,6 +873,21 @@ class owa_lib {
 		return $new_dates;
 		
 	}
+	
+	function html2txt($document){
+		$search = array('@<script[^>]*?>.*?</script>@si',  // Strip out javascript
+		               '@<style[^>]*?>.*?</style>@siU',    // Strip style tags properly
+		               '@<[\/\!]*?[^<>]*?>@si',            // Strip out HTML tags
+		               '@<![\s\S]*?--[ \t\n\r]*>@'         // Strip multi-line comments including CDATA
+		);
+		$text = preg_replace($search, '', $document);
+		return $text;	
+	}
+	
+	function escapeNonAsciiChars($string) {
+	
+		return preg_replace('/[^(\x20-\x7F)]*/','', $string);
+	}
 
 	
 }

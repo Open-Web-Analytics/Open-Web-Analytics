@@ -53,8 +53,7 @@ class owa_topHosts extends owa_metric {
 
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_host', 'host', 'host_id', 'host.id');
 		$this->db->groupBy('host.id');
-		$this->db->orderBy('count');
-		$this->db->order('DESC');
+		$this->db->orderBy('count', $this->getOrder());
 		
 		return $this->db->getAllRows();
 

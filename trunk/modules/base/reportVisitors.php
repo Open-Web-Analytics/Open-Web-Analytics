@@ -46,14 +46,15 @@ class owa_reportVisitorsController extends owa_reportController {
 	
 	function action() {
 				
-		// dash counts	
+		// Top Visitors	
 		$v = owa_coreAPI::metricFactory('base.topVisitors');
 		$v->setPeriod($this->getPeriod());
 		$v->setConstraint('site_id', $this->getParam('site_id')); 
-		//$b->setOrder('ASC');
-		$v->setLimit(10);
+		$v->setOrder('DESC');
+		$v->setLimit(25);
+		$v->setPage($this->getParam('page'));
 		$this->set('top_visitors_data', $v->generate());
-		
+		$this->setPagination($v->getPagination());
 		// browser types
 		$b = owa_coreAPI::metricFactory('base.sessionBrowserTypes');
 		$b->setPeriod($this->getPeriod());

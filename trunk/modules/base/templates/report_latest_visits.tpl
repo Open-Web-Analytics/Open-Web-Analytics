@@ -1,10 +1,10 @@
-<? if(!empty($visits)):?>
+<?php if(!empty($visits)):?>
 	<?php foreach($visits as $visit): ?>
 		
-	<? include('report_visit_summary.tpl');?>
-	
-<?php endforeach; ?>
+		<?php include('report_visit_summary.tpl');?>
+		<BR>
+	<?php endforeach; ?>
 
-<?else:?>
+<?php else:?>
 	There were no visits during this time period.
-<? endif;?>
+<?php endif;?>
