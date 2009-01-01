@@ -56,10 +56,6 @@ div {margin:0;}
 	text-align: center;
 }
 
-
-
-
-
 .owa_headerServiceMsg {border: 1px solid #efefef;border-left: 8px solid yellow; height: 25px; width: auto; padding:10px}
 
 
@@ -86,7 +82,7 @@ div {margin:0;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
 #nav_left {width:240px;}
-.data {white-space:nowrap; width:auto;}
+.data {white-space:; width:auto;}
 .form {width:;}
 .sub-row {padding-left:20px; font-weight:normal;}
 #summary_stats {font-size:16px; font-weight: normal;}

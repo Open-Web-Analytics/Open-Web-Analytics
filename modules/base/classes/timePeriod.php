@@ -192,7 +192,7 @@ class owa_timePeriod {
 				break;
 				
 			case "last_month":
-				$month =  $this->time_now['month'] - 1;
+				$month =  $time_now['month'] - 1;
 				$start = mktime(0, 0, 0, $month, 1, $time_now['year']);
 				$last = owa_coreAPI::supportClassFactory('base', 'date');
 				$last->set($start, 'timestamp');
@@ -200,7 +200,7 @@ class owa_timePeriod {
 				break;
 				
 			case "last_year":
-				$year = $this->time_now['year'] - 1;
+				$year = $time_now['year'] - 1;
 				$start = mktime(0, 0, 0, 1, 1, $year);
 				$end = mktime(0, 0, 0, 12, 31, $year);
 				break;

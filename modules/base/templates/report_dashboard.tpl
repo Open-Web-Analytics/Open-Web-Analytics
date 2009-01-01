@@ -40,7 +40,7 @@
 
 	<table class="owa_reportElement">
 		<TR>
-			<TD valign="top" width="33%">
+			<TD valign="top" width="66%">
 				<?=$this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '', 'period' => $params['period']));?>
 			</TD>
 			<TD valign="top" width="33%">
