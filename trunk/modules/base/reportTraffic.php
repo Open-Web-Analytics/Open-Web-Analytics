@@ -54,7 +54,6 @@ class owa_reportTrafficController extends owa_reportController {
 		
 		$f = owa_coreApi::metricFactory('base.visitsFromFeedsCount');
 		$f->setConstraint('site_id', $this->getParam('site_id'));
-		$f->setConstraint('is_browser', 1);
 		$f->setPeriod($this->getPeriod());
 		$this->set('from_feeds', $f->zeroFill($f->generate()));
 		 

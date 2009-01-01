@@ -49,7 +49,9 @@ class owa_reportDashboardController extends owa_reportController {
 		$d->setPeriod($this->getPeriod());
 		$d->setConstraint('site_id', $this->getParam('site_id')); 
 		$d->setOrder('ASC');
-		$this->set('summary_stats_data', $d->zeroFill($d->generate()));
+		$res = $d->generate();
+		//print_r($d->zeroFill($res));
+		$this->set('summary_stats_data', $d->zeroFill($res));
 		
 		// dash trend	
 		$dt = owa_coreAPI::metricFactory('base.dashCoreByDay');

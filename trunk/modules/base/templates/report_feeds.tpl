@@ -7,17 +7,11 @@
 	<? include('report_feed_core_metrics.tpl');?>
 </div>
 
-<table class="layout_container" width="100%">
-	<TR>
-		<TD valign="top">
-			<?=$this->getWidget('base.widgetFeedTypes');?>
-		</TD>
-		<TD valign="top">
-			<?=$this->getWidget('base.widgetFeedReaderTypes');?>
-		</TD>
-	</TR>
-</table>
-	
+<?=$this->getWidget('base.widgetFeedReaderTypes', array('height' => '400px'));?>
+
+<BR><BR>		
+
+<?=$this->getWidget('base.widgetFeedTypes');?>
 
 
 						

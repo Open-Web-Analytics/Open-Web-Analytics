@@ -70,14 +70,14 @@ class owa_widgetFeedReaderTypesController extends owa_widgetController {
 		$pagination = $ff->getPagination();
 		
 		if ($pagination['more_pages'] === true) {
-			$series['count'][] = $pagination['diff_count'];
-			$series['feed_format'][] = 'Other';
+			$series['count'][] = $pagination['total_count'] - $ff->getLimit();
+			$series['ua'][] = 'Other';
 		}
 		
 		// add a final slice
 		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
 		$cd->setSeries('values', $series['count'], 'Fetch Count');
-		$cd->setSeries('labels', $series['feed_format'], 'Feed Formats');
+		$cd->setSeries('labels', $series['ua'], 'Feed Formats');
 		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
 		$json = $chart->pie($cd);
 		$this->set('chart_data', $json);

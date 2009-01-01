@@ -7,7 +7,7 @@
 		</TD>
 		
 		<TD width="33%" valign="top">
-			<?=$this->getWidget('base.widgetVisitorSources', array('height' => '', 'width' => '', 'period' => $params['period']));?>
+			<?=$this->getWidget('base.widgetVisitorSources', array('height' => '200px', 'width' => '', 'period' => $params['period']));?>
 		</TD>
 		
 		<TD width="33%" valign="top">

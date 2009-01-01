@@ -372,6 +372,12 @@ class owa_metric extends owa_base {
 		}
 	}
 	
+	function getLimit() {
+		
+		return $this->limit;
+		
+	}
+	
 }
 
 ?>

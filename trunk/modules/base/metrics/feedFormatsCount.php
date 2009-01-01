@@ -44,7 +44,7 @@ class owa_feedFormatsCount extends owa_metric {
 	function generate() {
 		
 		$this->db->selectColumn("count(id) as count, feed_format");
-		$this->db->selectFrom("owa_feed_requests");
+		$this->db->selectFrom("owa_feed_request");
 		$this->db->groupBy('feed_format');
 		
 		return $this->db->getAllRows();

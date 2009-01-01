@@ -51,10 +51,22 @@ class owa_reportVisitorsController extends owa_reportController {
 		$v->setPeriod($this->getPeriod());
 		$v->setConstraint('site_id', $this->getParam('site_id')); 
 		$v->setOrder('DESC');
-		$v->setLimit(25);
-		$v->setPage($this->getParam('page'));
+		$v->setLimit(10);
 		$this->set('top_visitors_data', $v->generate());
-		$this->setPagination($v->getPagination());
+		
+		
+		//latest visitors 
+		$m = owa_coreApi::metricFactory('base.latestVisits');
+		$m->setConstraint('site_id', $this->getParam('site_id'));
+		$m->setPeriod($this->getPeriod());
+		$m->setOrder('DESC'); 
+		$m->setLimit(25);
+		$m->setPage($this->getParam('page'));
+		$results = $m->generate();
+		$pagination = $m->getPagination();
+		$this->set('latest_visits', $results);
+		$this->setPagination($pagination);
+		
 		// browser types
 		$b = owa_coreAPI::metricFactory('base.sessionBrowserTypes');
 		$b->setPeriod($this->getPeriod());
@@ -112,7 +124,7 @@ class owa_reportVisitorsView extends owa_view {
 		$this->body->set('top_visitors', $this->get('top_visitors_data'));
 		$this->body->set('browser_types', $this->get('browser_types'));
 		$this->body->set('summary_stats', $this->get('summary_stats_data'));
-				
+		$this->body->set('visits', $this->get('latest_visits'));		
 		return;
 	}
 	

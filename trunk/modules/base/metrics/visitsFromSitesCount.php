@@ -47,7 +47,7 @@ class owa_visitsFromSitesCount extends owa_metric {
 		$this->db->selectFrom('owa_session', 'session');
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 		$this->db->where('referer_id', 0, '!=');
-		$this->db->where('referer.source', ' ');
+		$this->db->where('session.source', ' ');
 		$this->db->where('referer.is_searchengine', 1, '!=');
 		
 		$ret = $this->db->getOneRow();

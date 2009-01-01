@@ -44,13 +44,16 @@ class owa_reportFeedsController extends owa_reportController {
 	}
 	
 	function action() {
-		
+	
+		$period = $this->makeTimePeriod('last_thirty_days');
+
 		// summary counts
 		$fc = owa_coreAPI::metricFactory('base.feedSummaryCount');
-		$period = $this->makeTimePeriod('last_thirty_days');
-		$fc->setPeriod($period);
+		$fc->setPeriod($this->getPeriod());
 		$fc->setConstraint('site_id', $this->getParam('site_id')); 
-		$this->set('feed_counts', $fc->generate());
+		$counts = $fc->generate();
+		print_r($counts);
+		$this->set('feed_counts', $counts);
 		
 		// summary trend
 		$f = owa_coreAPI::metricFactory('base.feedViewsTrend');
@@ -60,13 +63,21 @@ class owa_reportFeedsController extends owa_reportController {
 		$feed_trend = $f->generate();
 		$this->set('feed_trend', $feed_trend);
 		
+		
+		
 		// trend chart
-		$series = owa_lib::deconstruct_assoc($feed_trend);
+		$f2 = owa_coreAPI::metricFactory('base.feedViewsTrend');
+		$f2->setPeriod($period);
+		$f2->setConstraint('site_id', $this->getParam('site_id')); 
+		//$f->setOrder('DESC');
+		$feed_trend_2 = $f2->generate();
+		$series = owa_lib::deconstruct_assoc($feed_trend_2);
 		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
-		$cd->setSeries('x', owa_lib::makeDateArray($feed_trend, "n/j"), 'Day');
-		$cd->setSeries('area', $series['fetch_count'], 'Fetch Counts');
+		$cd->setSeries('x', owa_lib::makeDateArray($feed_trend_2, "n/j"), 'Day');
+		$cd->setSeries('bar', $series['fetch_count'], 'Fetch Counts');
+		$cd->setSeries('area', $series['reader_count'], 'Unique Readers');
 		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
-		$json = $chart->area($cd);
+		$json = $chart->areaBar($cd);
 		$this->set('feed_chart_data', $json);
 			
 		// view stuff
