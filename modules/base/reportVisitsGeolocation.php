@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -97,6 +96,7 @@ class owa_reportVisitsGeolocationView extends owa_view {
 		$this->body->set('headline', 'Visitor Geolocation Report');
 		$this->body->set('user_name', $this->data['user_name']);
 		$this->body->set('passkey', $this->data['passkey']);
+		$this->setjs('includes/jquery/jquery.jmap-r72.js');
 		
 		return;
 	}

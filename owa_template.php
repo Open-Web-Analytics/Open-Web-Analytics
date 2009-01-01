@@ -430,9 +430,10 @@ class owa_template extends Template {
 	
 	function escapeForXml($string) {
 	
-		return str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
-
-	
+		$string = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
+		// removes non-ascii chars
+		$string = owa_lib::escapeNonAsciiChars($string);
+		return $string;
 	}
 	
 	function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {

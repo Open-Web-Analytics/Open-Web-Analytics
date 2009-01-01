@@ -95,7 +95,9 @@ div {margin:0;}
 
 .active_wizard_step {background-color:#1874CD; color:#ffffff;border:1px solid; padding:5px; font-weight:bold; font-size:16px;}
 .wizard_step {font-weight:bold; font-size:16px;}
-.visitor_info_box {width:40px; height:40px; text-align:center;}
+.visitor_info_box {width:40px; height:40px; text-align:center; padding:7px;}
+.owa_visitSummaryLeftCol {width:auto;}
+.owa_visitSummaryRightCol {padding-left:15px;width:auto; vertical-align: top;}
 .visit_icon {width:40px;}
 .graph {padding:10px; text-align:center;}
 .comments_info_box {
@@ -110,7 +112,7 @@ div {margin:0;}
 }
 .visit_summary {width:100%;}
 .date_box {padding:4px;	border:solid 1px #999999;margin:2px;}
-.pages_box {padding:2px; border:solid 2px #999999; margin:0px 0px 0px 0px; text-align:center;}
+.pages_box {padding:5px; border:solid 2px #999999; margin:0px 0px 0px 0px; text-align:center;}
 .large_number {font-size:24px; font-weight:bold;}
 .info_text {color:#999999;font-size:12px;}
 .legend_link {color:#999999;font-size:12px;font-weight:normal;}

@@ -30,6 +30,9 @@
 	    <?php endforeach; ?>
 	</tbody>    
 </table>	
+
+<?=$this->makePagination($pagination, array('do' => $params['do']));?>
+
 <?php else:?>
 There are no visitors for this time period.
 <?php endif;?>

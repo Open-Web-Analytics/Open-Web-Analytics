@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -53,9 +52,9 @@ class owa_reportHostsController extends owa_reportController {
 		$h->setConstraint('site_id', $this->getParam('site_id')); 
 		$h->setLimit(15);
 		$h->setPage($this->getParam('page'));
-		
+		$h->setOrder('DESC');
 		$this->set('top_hosts', $h->generate());
-		$this->set('pagination', $h->getPagination());
+		$this->setPagination($h->getPagination());
 		
 		// summary_stats_data	
 		$s = owa_coreAPI::metricFactory('base.dashCounts');
