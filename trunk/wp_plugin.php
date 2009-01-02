@@ -95,7 +95,6 @@ function owa_getInstance($params = array()) {
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
 		$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
 		$owa_config['link_template'] = '%s&%s';
-		$owa_config['authentication'] = 'wordpress';
 		$owa_config['site_id'] = md5(get_settings('siteurl'));
 		$owa_config['is_embedded'] = true;
 		$owa_config['delay_first_hit'] = true;
@@ -107,6 +106,9 @@ function owa_getInstance($params = array()) {
 		// adds wordpress specific user priviledge info to the request params
 		global $current_user;
       	get_currentuserinfo();
+      	
+      	/*
+      	
       	//print_r($current_user);
 		$owa->params['caller']['wordpress']['user_data'] = array(
 	
@@ -119,6 +121,8 @@ function owa_getInstance($params = array()) {
 		
 		$owa->params['u'] = $current_user->user_login;
 		$owa->params['p'] = 'xxxxxxxxx';
+		
+		*/
 		
 		// preemptively set the current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate

@@ -58,6 +58,9 @@ class owa_auth_simple extends owa_auth {
 	 */
 	function isUser() {
 		
+		// get current user
+		$cu = owa_coreAPI::getCurrentUser();
+				
 		// fetches user object from DB
 		$this->getUser();
 		
@@ -67,9 +70,8 @@ class owa_auth_simple extends owa_auth {
 				$this->_is_user = true;	
 				
 				// set as new current user in service layer
-				$cu = owa_coreAPI::getCurrentUser();
 				$cu->loadNewUserByObject($this->u);
-				
+				$cu->setAuthStatus(true);
 				return true;
 			else:
 				$this->_is_user = false;
@@ -79,6 +81,9 @@ class owa_auth_simple extends owa_auth {
 			$this->_is_user = false;
 			return false;
 		endif;
+		
+		
+		
 	}
 	
 	function _setNotPriviledgedView() {

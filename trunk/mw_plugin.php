@@ -49,7 +49,7 @@ $owa_config['main_absolute_url'] = $wgServer.$owa_config['main_url'];
 $owa_config['action_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction';
 $owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1';
 $owa_config['link_template'] = '%s&%s';
-$owa_config['authentication'] = 'mediawiki';
+//$owa_config['authentication'] = 'mediawiki';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
 $owa_config['is_embedded'] = true;
 $owa_config['delay_first_hit'] = true;
@@ -162,6 +162,9 @@ function owa_set_priviledges() {
 	global $wgUser;
 	
 	$owa = owa_factory();
+	
+	/*
+
 	$owa->params['caller']['mediawiki']['user_data'] = array(
 	
 					'user_level' 	=> $wgUser->mGroups,
@@ -172,16 +175,51 @@ function owa_set_priviledges() {
 					//'user_password'	=> $wgUser->mPassword
 					);
 					
-					$owa->params['u'] = 'xxxxx'.$wgUser->mName;
-					$owa->params['p'] = 'xxxxxxx';//$wgUser->mPassword;
-					
-					if ($owa->config['do_not_log_admins'] == true):
-						if (strtolower($wgUser->mGroups) == 'sysop' || 'bureaucrat' || 'developer'):
-							$owa->params['do_not_log'] = true;
-						endif;
-					endif;		
+	$owa->params['u'] = 'xxxxx'.$wgUser->mName;
+	$owa->params['p'] = 'xxxxxxx';//$wgUser->mPassword;
+	
+	*/
+	
+	if ($owa->config['do_not_log_admins'] == true):
+		if (strtolower($wgUser->mGroups) == 'sysop' || 'bureaucrat' || 'developer'):
+			$owa->params['do_not_log'] = true;
+		endif;
+	endif;		
+	
+	// preemptively set the current user info and mark as authenticated so that
+	// downstream controllers don't have to authenticate
+	$cu =&owa_coreAPI::getCurrentUser();
+	$cu->setUserData('user_id', $wgUser->mName);
+	$cu->setUserData('email_address', $wgUser->mEmail);
+	$cu->setUserData('real_name', $wgUser->mRealName);
+	$cu->setRole(owa_translate_role($wgUser->mGroups));
+	$cu->setAuthStatus(true);
 
 	return;
+}
+
+function owa_translate_role($role_array) {
+
+	if (in_array("*", $level)):
+		$owa_role = 'everyone';
+	elseif (in_array("user", $level)):
+		$owa_role = 'viewer';
+	elseif (in_array("autoconfirmed", $level)):
+		$owa_role = 'viewer';
+	elseif (in_array("emailconfirmed", $level)):
+		$owa_role = 'viewer';
+	elseif (in_array("bot", $level)):
+		$owa_role = 'viewer';
+	elseif (in_array("sysop", $level)):
+		$owa_role = 'administrator';
+	elseif (in_array("bureaucrat", $level)):
+		$owa_role = 'administrator';
+	elseif (in_array("developer", $level)):
+		$owa_role = 'administrator';
+	endif;
+	
+	return $owa_role;
+
 }
 
 /**
