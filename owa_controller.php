@@ -113,6 +113,12 @@ class owa_controller extends owa_base {
 	 */
 	var $dom_id;
 	
+	/**
+	 * Flag for requiring authenciation before performing actions
+	 * 
+	 * @var Bool
+	 */
+	var $authenticate_user;
 	
 	/**
 	 * PHP4 Constructor
@@ -122,7 +128,6 @@ class owa_controller extends owa_base {
 	function owa_controller($params) {
 	
 		return owa_controller::__construct($params);
-		
 	}
 	
 	/**
@@ -155,13 +160,13 @@ class owa_controller extends owa_base {
 		
 		// check if the schema needs to be updated and force the update
 		// not sure this should go here...
-		if ($this->is_admin == true):
+		if ($this->is_admin === true):
 			// do not intercept if its the updatesApply action or else updates will never apply
 			if ($this->params['do'] != 'base.updatesApply'):
 				
 				$api = &owa_coreAPI::singleton();
 				
-				if ($api->update_required == true):
+				if ($api->update_required === true):
 					$this->e->debug('Updates Required. Redirecting action.');
 					$data = array();
 					$data['view_method'] = 'redirect';
@@ -171,64 +176,79 @@ class owa_controller extends owa_base {
 			endif;
 		endif;		
 		
-		//perform authentication
-		// TODO: create authSingleton() to hold an array of multiple auth objects
-		
-		$auth = &owa_auth::get_instance();
-		
-		$data = $auth->authenticateUser($this->priviledge_level);
-		
-		// if auth was success then procead
-		if ($data['auth_status'] == true):
+		/* CHECK USER FOR CAPABILITIES */
+		if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())):
+	
+			/* PERFORM AUTHENTICATION */
+			// TODO: create authSingleton() to hold an array of multiple auth objects
+			// TODO: make auth object configurable by controller
 			
-			$this->data['auth_status'] = true;
-			
-			//set request params
-			$this->data['params'] = $this->params;
-					
-			// set status msg
-			if (!empty($this->params['status_code'])):
-				$this->data['status_msg'] = $this->getMsg($this->params['status_code']);
-			endif;
-			
-			// get error msg from error code passed on the query string from a redirect.
-			if (!empty($this->params['error_code'])):
-				$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
-			endif;
-			
-			// set site_id
-			$this->set('site_id', $this->get('site_id'));
-			
-			// check to see if the controller has created a validator
-			if (!empty($this->v)):
-				// if so do the validations required
-				$this->v->doValidations();
-				//check for erros
-				if ($this->v->hasErrors == true):
-					// if errors, do the errorAction instead of the normal action
-					return $this->errorAction();
+			$auth = &owa_auth::get_instance();
+			$status = $auth->authenticateUser();
+			// if auth was not successful then return login view.
+			if ($status['auth_status'] != true):
+				//$data['view_method'] = 'delegate';
+				$this->setView('base.login');
+				$this->set('go', urlencode(owa_lib::get_current_url()));
+				$this->set('error_msg', $this->getMsg(2002));
+				return $this->data;
+			else:
+				//check for needed capability again now that they are authenticated
+				if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())):
+					$this->setView('base.error');
+					$this->set('error_msg', $this->getMsg(2003));
+					$this->set('go', urlencode(owa_lib::get_current_url()));
+					return $this->data;	
 				endif;
 			endif;
-			
-			// need to check ret for backwards compatability with older 
-			// controllers that donot use $this->data
-			
-			$this->pre();
-			
-			$ret = $this->action();
-			
-			if (!empty($ret)):
-				return $ret;
-			else:
-				$this->post();
-				return $this->data;
-			endif;
-		else:
-			 // return the not priviledged error view set by owa_auth.
-			 // TODO: owa_auth should probably not know anything about a view
-			return $data;
-
 		endif;
+		
+		// set auth status
+		$this->set('auth_status', true);
+		//set request params
+		$this->set('params', $this->params);
+		// set site_id
+		$this->set('site_id', $this->get('site_id'));
+				
+		// set status msg - NEEDED HERE? doesnt owa_ view handle this?
+		if (!empty($this->params['status_code'])):
+			$this->data['status_msg'] = $this->getMsg($this->params['status_code']);
+		endif;
+		
+		// get error msg from error code passed on the query string from a redirect.
+		if (!empty($this->params['error_code'])):
+			$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
+		endif;
+		 
+		// check to see if the controller has created a validator
+		if (!empty($this->v)):
+			// if so do the validations required
+			$this->v->doValidations();
+			//check for erros
+			if ($this->v->hasErrors == true):
+				// if errors, do the errorAction instead of the normal action
+				return $this->errorAction();
+			endif;
+		endif;
+		
+		
+		/* PERFORM PRE ACTION */
+		// often used by abstract descendant controllers to set various things
+		$this->pre();
+		
+		/* PERFORM MAIN ACTION */
+		// need to check ret for backwards compatability with older 
+		// controllers that donot use $this->data
+		$ret = $this->action();
+		
+		if (!empty($ret)):
+			$this->post();
+			return $ret;
+		else:
+			$this->post();
+			return $this->data;
+		endif;
+		
 		
 		
 	}
@@ -287,10 +307,23 @@ class owa_controller extends owa_base {
 	
 	}
 	
+	// depricated
 	function _setCapability($capability) {
+	
+		$this->setRequiredCapability($capability);
+		
+		return;
+	}
+	
+	function setRequiredCapability($capability) {
 	
 		$this->capability = $capability;
 		return;
+	}
+		
+	function getRequiredCapability() {
+		
+		return $this->capability;
 	}
 	
 	function getParam($name) {
@@ -327,28 +360,6 @@ class owa_controller extends owa_base {
 	
 		$period = $this->makeTimePeriod($this->getParam('period'), $this->params);
 		
-		/*
-$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-		$map = array();
-		
-		if (array_key_exists('startDate', $this->params)) {
-			$map['startDate'] = $this->params['startDate'];			
-		}
-		
-		if (array_key_exists('endDate', $this->params)) {
-			$map['endDate'] = $this->params['endDate'];
-		}
-		
-		if (array_key_exists('startTime', $this->params)) {
-			$map['startTime'] = $this->params['startTime'];			
-		}
-		
-		if (array_key_exists('endTime', $this->params)) {
-			$map['endTime'] = $this->params['endTime'];
-		}
-		
-		$period->set($this->params['period'], $map);
-*/
 		$this->period = $period;
 		$this->set('period', $this->getPeriod());	
 		$this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
@@ -419,6 +430,7 @@ $period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
 		$this->params = array_merge($this->params, $array);
 		return;
 	}
+	
 }
 
 ?>

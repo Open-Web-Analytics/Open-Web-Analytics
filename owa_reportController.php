@@ -42,7 +42,7 @@ class owa_reportController extends owa_adminController {
 	function __construct($params) {
 	
 		$this->setControllerType('report');
-		$this->_setCapability('view_report');
+		$this->_setCapability('view_reports');
 		return parent::__construct($params);
 	
 	}

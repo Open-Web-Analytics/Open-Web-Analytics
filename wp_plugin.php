@@ -105,25 +105,61 @@ function owa_getInstance($params = array()) {
 		$owa = new owa_wp($config);
 		
 		// adds wordpress specific user priviledge info to the request params
-		
-		global $user_level, $user_login, $user_ID, $user_email, $user_identity, $user_pass_md5;
-	
+		global $current_user;
+      	get_currentuserinfo();
+      	//print_r($current_user);
 		$owa->params['caller']['wordpress']['user_data'] = array(
 	
-		'user_level' 	=> $user_level, 
-		'user_ID'		=> $user_ID,
-		'user_login'	=> $user_login,
-		'user_email'	=> $user_email,
-		'user_identity'	=> $user_identity,
+		'user_roles' 	=> $current_user->roles, 
+		'user_ID'		=> $current_user->user_ID,
+		'user_login'	=> $current_user->user_login,
+		'user_email'	=> $current_user->user_email,
+		'user_identity'	=> $current_user->user_identity,
 		'user_password'	=> 'xxxxxxxxx');
 		
-		$owa->params['u'] = $user_login;
+		$owa->params['u'] = $current_user->user_login;
 		$owa->params['p'] = 'xxxxxxxxx';
-	
+		
+		// preemptively set the current user info and mark as authenticated so that
+		// downstream controllers don't have to authenticate
+		$cu =&owa_coreAPI::getCurrentUser();
+		$cu->setUserData('user_id', $current_user->user_ID);
+		$cu->setUserData('email_address', $current_user->user_email);
+		$cu->setUserData('real_name', $current_user->user_identity);
+		$cu->setRole(owa_translate_role($current_user->roles[0]));
+		$cu->setAuthStatus(true);
+				
 		return $owa;
 		
 	endif;
 	
+}
+
+// translates wordpress roles to owa roles
+function owa_translate_role($role) {
+	$role = strtolower($role);
+	switch ($role) {
+		case "administrator":
+			$owa_role = 'administrator';
+			break;
+		case "editor":
+			$owa_role = 'viewer';
+			break;
+		case "author":
+			$owa_role = 'viewer';
+			break;
+		case "contributor":
+			$owa_role = 'viewer';
+			break;
+		case "subscriber":
+			$owa_role = 'everyone';
+			break;
+		default:
+			$owa_role = 'everyone';
+	
+	}
+
+	return $owa_role;
 }
 
 

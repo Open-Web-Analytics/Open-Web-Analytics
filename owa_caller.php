@@ -55,6 +55,8 @@ class owa_caller extends owa_base {
 	
 	var $update_required;
 	
+	var $service;
+		
 	/**
 	 * PHP4 Constructor
 	 *
@@ -221,12 +223,9 @@ class owa_caller extends owa_base {
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
 		
+		
 		/* SETUP REQUEST CONTAINER */
-		
-		$this->request = owa_coreAPI::requestContainerSingleton();
 		$this->params = &owa_requestContainer::getInstance();
-		
-		/* LOAD CORE API */
 		
 		/**
 		 * @todo This needs to be refactored into stateless api calls 
@@ -250,6 +249,9 @@ class owa_caller extends owa_base {
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 
 		$this->config = $this->c->fetch('base');
+		
+		/* LOAD SERVICE LAYER */
+		$this->service = owa_coreAPI::serviceSingleton();
 		
 		return;
 	
@@ -401,6 +403,7 @@ class owa_caller extends owa_base {
 	
 	}
 	
+
 	/**
 	 * Authenticated Rendering of view 
 	 *
@@ -440,6 +443,7 @@ class owa_caller extends owa_base {
 		
 	}
 	
+
 	
 	/**
 	 * Handles OWA internal page/action requests

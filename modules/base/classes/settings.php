@@ -411,7 +411,17 @@
 			'do_not_log_admins'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
-			'start_page'					=> 'base.reportDashboard'
+			'login_view'					=> 'base.login',
+			'not_capable_view'				=> 'base.error',
+			'start_page'					=> 'base.reportDashboard',
+			'capabilities'					=> array('administrator' => array('view_reports', 
+																			  'edit_settings', 
+																			  'edit_sites', 
+																			  'edit_users', 
+																			  'edit_modules'),
+													 'analyst' => array('view_reports'), 
+													 'viewer' => array('view_reports'), 
+													 'everyone' => array())
 			
 			));
 			

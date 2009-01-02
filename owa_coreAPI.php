@@ -194,8 +194,51 @@ class owa_coreAPI extends owa_base {
 		
 		return $e;
 	}
-
 	
+	function &getSetting($module, $name) {
+		
+		$s = &owa_coreAPI::configSingleton();
+		return $s->get($module, $name);
+	}
+	
+	function getAllRoles() {
+		
+		$caps = owa_coreAPI::getSetting('base', 'capabilities');
+		return array_keys($caps);
+	}
+	
+	function &getCurrentUser() {
+		
+		$s = &owa_coreAPI::serviceSingleton();
+		return $s->getCurrentUser();
+	}
+	
+	/**
+	 * check to see if the current user has a capability
+	 * always returns a bool
+	 */
+	function isCurrentUserCapable($capability) {
+		
+		$cu = owa_coreAPI::getCurrentUser();
+		return $cu->isCapable($capability);
+	}
+	
+	function &serviceSingleton() {
+		
+		static $s;
+		
+		if(empty($s)) {
+			
+			if (!class_exists('owa_service')) {
+				require_once(OWA_BASE_CLASS_DIR.'service.php');
+			}
+			
+			$s = owa_coreAPI::supportClassFactory('base', 'service');
+			
+		}
+		
+		return $s;
+	}
 	
 	function &cacheSingleton($params = array()) {
 		

@@ -37,14 +37,14 @@ class owa_optionsGeneralView extends owa_view {
 		
 		$this->owa_view($params);
 		//set priviledge level
-		$this->_setPriviledgeLevel('admin');
+		//$this->_setPriviledgeLevel('admin');
 		//set page type
 		$this->_setPageType('Administration Page');
 		
 		return;
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		// load template
 		$this->body->set_template('options_general.tpl');
@@ -80,7 +80,7 @@ class owa_optionsGeneralController extends owa_adminController {
 		parent::__construct($params);
 		$this->priviledge_level = 'admin';
 		$this->type = 'options';
-		$this->_setCapability('alter_config');
+		$this->_setCapability('alter_settings');
 		
 		return;
 	}

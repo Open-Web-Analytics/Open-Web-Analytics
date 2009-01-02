@@ -36,7 +36,7 @@ class owa_optionsView extends owa_view {
 	function owa_OptionsView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'admin';
+		
 		$this->default_subview = 'base.optionsGeneral';
 		
 		return;

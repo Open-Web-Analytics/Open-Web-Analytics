@@ -44,6 +44,9 @@ class owa_reportDashboardController extends owa_reportController {
 	
 	function action() {
 		
+		$cu = owa_coreAPI::getCurrentUser();
+		print_r($cu);
+		
 		// dash counts	
 		$d = owa_coreAPI::metricFactory('base.dashCounts');
 		$d->setPeriod($this->getPeriod());

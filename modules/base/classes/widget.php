@@ -47,6 +47,7 @@ class owa_widgetController extends owa_controller {
 	function __construct($params) {
 		
 		$this->type = 'widget';
+		//$this->setRequiredCapability('view_reports');
 		//print_r($params);
 		return parent::__construct($params);
 	}
