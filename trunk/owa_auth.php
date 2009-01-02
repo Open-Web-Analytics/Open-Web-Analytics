@@ -85,66 +85,28 @@ class owa_auth extends owa_base {
 	 */
 	function owa_auth() {
 		
-		$this->owa_base();
-		$this->setRoles();
+		return owa_auth::__construct();
+		
+	}
+	
+	function __construct() {
+		
+		parent::__construct();
 		$this->eq = &eventQueue::get_instance();
 		$this->params = &owa_requestContainer::getInstance();
-		
 		//sets credentials based on whatever is passed in on params
 		$this->_setCredentials($this->params['u'], $this->params['p'], $this->params['pk']);
 		
-		return;
-		
 	}
-	
-	/**
-	 * Sets the permission levels of each role.
-	 *
-	 */
-	function setRoles() {
 		
-		$this->roles = array('admin' 	=> array('level' => 10, 'label' => 'Administrator'),
-							 'viewer' 	=> array('level' => 2, 'label' => 'Report Viewer'),
-							 'guest' 	=> array('level' => 1, 'label' => 'Guest')
-		
-						);
-						
-		return;
-		
-	}
-	
-	/**
-	 * Looks up the priviledge level for a particular role
-	 *
-	 * @param unknown_type $role
-	 * @return unknown
-	 */
-	function getLevel($role) {
-		
-		return $this->roles[$role]['level'];
-	}
-	
 	/**
 	 * Used by controllers to check if the user exists and if they are priviledged.
 	 *
 	 * @param string $necessary_role
 	 */
-	function authenticateUser($necessary_role = '') {
+	function authenticateUser() {
 		
 		$data = array();
-		
-		// If the view or controller did not specific a priviledge level then assume 
-		// that none was required.
-		if (empty($necessary_role)):	
-			$data['auth_status'] = true;	
-			return $data;
-		endif;
-		
-		// If auth level is guest then return true, no need to check user.
-		if ($necessary_role == 'guest'):
-			$data['auth_status'] = true;
-			return $data;
-		endif;
 		
 		// carve out for url passkey authentication
 		if(!empty($this->credentials['passkey'])):
@@ -177,18 +139,11 @@ class owa_auth extends owa_base {
 		endif;
 				
 		if ($this->_is_user == true):
-			// check to see if their account is priviledged enough.
-			$priviledged = $this->isPriviledged($necessary_role);
-				if ($priviledged == true):
-					$data['auth_status'] = true;
-				else:
-					// show not priviledged error page
-					$data = $this->_setNotPriviledgedView();
-					$data['auth_status'] = false;
-				endif;
-			// if they are not a user then redirect to login error page		
+			$data['auth_status'] = true;
+					
 		else:
 			// Show not a user page
+			// if they are not a user then redirect to login error page
 			$data = $this->_setNotUserView();
 			$data['auth_status'] = false;
 		endif;
@@ -237,7 +192,7 @@ class owa_auth extends owa_base {
 		if (!empty($id)):
 			return true;
 		else:
-			$this->showResetPasswordErrorPage;
+			$this->showResetPasswordErrorPage();
 		endif;
 		
 	}
@@ -270,25 +225,6 @@ class owa_auth extends owa_base {
 	function isUser() {
 		
 		return false;
-	}
-	
-	/**
-	 * Checks to see if the user has appropriate priviledges
-	 *
-	 * @param string $necessary_role
-	 * @return boolean
-	 */
-	function isPriviledged($necessary_role) {
-		
-		// compare priviledge levels
-		if ($this->_priviledge_level >= $this->getLevel($necessary_role)):
-			// authenticated
-			return true;;
-		else:
-			// not high enough priviledge level
-			return false;	
-		endif;
-		
 	}
 	
 	/**

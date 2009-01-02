@@ -34,10 +34,12 @@ class owa_auth_simple extends owa_auth {
 	
 	function owa_auth_simple() {
 		
-		$this->owa_auth();
+		return owa_auth_simple::__construct();
+	}
+	
+	function __construct() {
 		$this->check_for_credentials = true;
-		
-		return;
+		return parent::__construct();
 	}
 	
 	function getUser() {
@@ -48,20 +50,7 @@ class owa_auth_simple extends owa_auth {
 		
 		return;
 	}
-	
-	/**
-	 * Simple Password Encryption Scheme
-	 *
-	 * @param string $password
-	 * @return string
-	 */
-	function encryptPassword($password) {
 		
-		return md5(strtolower($password).strlen($password));
-	}
-	
-	
-	
 	/**
 	 * Checks to see if the user credentials match a real user object in the DB
 	 *
@@ -72,13 +61,15 @@ class owa_auth_simple extends owa_auth {
 		// fetches user object from DB
 		$this->getUser();
 		
-		// sets priviledge level
-		$this->_priviledge_level = $this->getLevel($this->u->get('role'));
-		
 		if ($this->credentials['user_id'] == $this->u->get('user_id')):
 			
 			if ($this->credentials['password'] === $this->u->get('password')):
-				$this->_is_user = true;				
+				$this->_is_user = true;	
+				
+				// set as new current user in service layer
+				$cu = owa_coreAPI::getCurrentUser();
+				$cu->loadNewUserByObject($this->u);
+				
 				return true;
 			else:
 				$this->_is_user = false;
