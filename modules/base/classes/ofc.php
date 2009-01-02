@@ -184,7 +184,7 @@ class owa_ofc {
 		$pie->set_animate( true );
 		$pie->set_label_colour( '#432BAF' );
 		$pie->set_gradient_fill();
-		$pie->set_tooltip( '#label#<br>$#val# (#percent#)' );
+		$pie->set_tooltip( '#label#<br>#val# (#percent#)' );
 		$pie->set_colours(
 		    array(
 		        '#1F8FA1',    // <-- blue
