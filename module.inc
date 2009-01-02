@@ -76,7 +76,7 @@ function owa_factory($params = array()) {
 		$owa_config['action_url'] = $gallery_base_url.'main.php?g2_view=owa.owaAction&owa_specialAction';
 		$owa_config['log_url'] = $gallery_base_url.'main.php?g2_view=owa.owaAction&owa_logAction=1';
 		$owa_config['link_template'] = '%s&%s';
-		$owa_config['authentication'] = 'gallery';
+		//$owa_config['authentication'] = 'gallery';
 		$owa_config['site_id'] = md5($gallery_base_url);
 		$owa_config['query_string_filters'] = 'g2_fromNavId';
 		$owa_config['is_embedded'] = 'true';
@@ -113,7 +113,7 @@ function owa_set_priviledges() {
 	
 	if ($user == true):
 	
-		$level = 0;
+		$level = 'everyone';
 		
 	else:
 		// check to see if the user is a site admin. important becasue we might not want
@@ -121,13 +121,24 @@ function owa_set_priviledges() {
 		list ($ret, $admin) = GalleryCoreApi::isUserInSiteAdminGroup();
 	
 		if ($admin = true):
-			$level = 10;
+			$level = 'administrator';
 		else:
-			$level = 1; 
+			$level = 'viewer'; 
 		endif;
 		
 	endif;		
-				
+	
+	// preemptively set the current user info and mark as authenticated so that
+	// downstream controllers don't have to authenticate
+	$cu =&owa_coreAPI::getCurrentUser();
+	$cu->setUserData('user_id', $u->id);
+	$cu->setUserData('email_address', $u->email);
+	$cu->setUserData('real_name', $u->fullname);
+	$cu->setRole($level);
+	$cu->setAuthStatus(true);
+	
+	/*
+			
 	$owa->params['caller']['gallery']['user_data'] = array(
 	
 					'user_level' 	=> $level,
@@ -140,7 +151,8 @@ function owa_set_priviledges() {
 					$owa->params['u'] = $u->userName;
 					$owa->params['p'] = 'xxxxxxx';
 
-
+	*/
+	
 	return;
 }
 
