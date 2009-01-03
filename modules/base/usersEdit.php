@@ -86,7 +86,7 @@ class owa_usersEditController extends owa_controller {
 	
 	function owa_usersEditController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_users');
 	}
 	
 	function action() {

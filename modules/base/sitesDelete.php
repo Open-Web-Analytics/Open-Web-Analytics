@@ -34,7 +34,7 @@ class owa_sitesDeleteController extends owa_adminController {
 	
 	function owa_siteDeleteController($params) {
 		$this->owa_adminController($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_sites');
 	}
 	
 	function action() {

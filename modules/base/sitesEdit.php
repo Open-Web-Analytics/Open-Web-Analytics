@@ -84,7 +84,7 @@ class owa_sitesEditController extends owa_adminController {
 	
 	function owa_sitesEditController($params) {
 		$this->owa_adminController($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_sites');
 	}
 	
 	function action() {

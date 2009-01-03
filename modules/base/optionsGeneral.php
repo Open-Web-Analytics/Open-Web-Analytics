@@ -78,9 +78,8 @@ class owa_optionsGeneralController extends owa_adminController {
 	function __construct($params) {
 	
 		parent::__construct($params);
-		$this->priviledge_level = 'admin';
 		$this->type = 'options';
-		$this->_setCapability('alter_settings');
+		$this->setRequiredCapability('edit_settings');
 		
 		return;
 	}
