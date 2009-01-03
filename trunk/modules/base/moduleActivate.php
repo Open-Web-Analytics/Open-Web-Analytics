@@ -34,9 +34,8 @@ class owa_moduleActivateController extends owa_adminController {
 	
 	function __construct($params) {
 	
-		parent::__construct($params);
-		$this->priviledge_level = 'admin';
-		return;
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
 	}
 	
 	function owa_moduleActivateController($params) {

@@ -86,7 +86,7 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 		if ($this->c->get('base', 'install_complete') != true):	
 			$this->priviledge_level = 'guest';
 		else:
-			$this->priviledge_level = 'admin';
+			$this->setRequiredCapability('edit_modules');
 		endif;
 
 	}

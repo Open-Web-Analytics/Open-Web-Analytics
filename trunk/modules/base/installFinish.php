@@ -17,10 +17,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
  * Installation Finish
@@ -44,7 +42,7 @@ class owa_installFinishController extends owa_controller {
 		if ($this->c->get('base', 'install_complete') != true):	
 			$this->priviledge_level = 'guest';
 		else:
-			$this->priviledge_level = 'admin';
+			$this->setRequiredCapability('edit_modules');
 		endif;
 	}
 	

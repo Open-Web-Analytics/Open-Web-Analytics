@@ -34,8 +34,9 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
 class owa_optionsModulesController extends owa_adminController {
 	
 	function owa_optionsModulesController($params) {
+		
 		$this->owa_adminController($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_modules');
 		
 		return;
 	}

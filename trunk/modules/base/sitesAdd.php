@@ -82,7 +82,7 @@ class owa_sitesAddController extends owa_adminController {
 		
 		$this->owa_adminController($params);
 		
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_sites');
 		
 		// Config for the domain validation
 		$domain_conf = array('substring' => 'http', 'position' => 0, 'operator' => '!=', 'errorMsgTemplate' => 'Please remove the "http://" from your begining of your domain.');

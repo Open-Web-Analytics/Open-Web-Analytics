@@ -34,7 +34,6 @@ class owa_sitesInvocationView extends owa_view {
 	function owa_sitesInvocationView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'admin';
 		
 		return;
 	}

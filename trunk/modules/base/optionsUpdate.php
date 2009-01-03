@@ -34,7 +34,7 @@ class owa_optionsUpdateController extends owa_adminController {
 	
 	function owa_optionsUpdateController($params) {
 		$this->owa_adminController($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_settings');
 		
 		return;
 	}

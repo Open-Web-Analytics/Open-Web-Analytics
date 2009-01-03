@@ -39,7 +39,8 @@ class owa_installEmbeddedController extends owa_controller {
 	
 	function owa_installEmbeddedController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		$this->setRequiredCapability('edit_modules');
+		return;
 	}
 	
 	function action() {

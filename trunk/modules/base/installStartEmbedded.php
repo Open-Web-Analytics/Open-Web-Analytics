@@ -38,7 +38,7 @@ class owa_installStartEmbeddedController extends owa_controller {
 	function __construct($params) {
 	
 		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_modules');
 
 		return;
 	}
@@ -46,7 +46,7 @@ class owa_installStartEmbeddedController extends owa_controller {
 	
 	function owa_installEmbeddedController($params) {
 	
-		return $this->__construct($params);
+		return owa_installEmbeddedController::__construct($params);
 	}
 	
 	function action() {

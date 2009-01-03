@@ -34,7 +34,7 @@ class owa_usersDeleteController extends owa_controller {
 	
 	function owa_usersDeleteController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_users');
 	}
 	
 	function action() {
