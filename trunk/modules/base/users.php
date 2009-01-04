@@ -32,34 +32,64 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_coreAPI.php');
  * @since		owa 1.0.0
  */
 
+class owa_usersController extends owa_adminController {
+	
+	function owa_usersController($params) {
+		
+		return owa_usersController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		$this->setRequiredCapability('edit_users');
+		return parent::__construct($params);
+	}
+	
+	function action() {
+		
+		$u = owa_coreAPI::entityFactory('base.user');
+		$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
+		$this->set('users', $u->find($params));
+		$this->setView('base.options');
+		$this->setSubview('base.users');
+		return;
+	
+	}
+
+}
+
+
+/**
+ * Users Roster View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
 class owa_usersView extends owa_view {
 	
 	function owa_usersView($params) {
 		
 		$this->owa_view($params);
-		$this->priviledge_level = 'admin';
 		
 		return;
 	}
 	
-	function construct() {
+	function render() {
 		
 		//page title
 		$this->t->set('page_title', 'User Roster');
 		
 		// load body template
 		$this->body->set_template('users.tpl');
-		
-		// fetch admin links from all modules
-		//
-		
 		$this->body->set('headline', 'User Roster');
-		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
-		$users = $u->find($params);
-		
-		$this->body->set('users', $users);
+				
+		$this->body->set('users', $this-.get('users'));
 		
 		return;
 	}

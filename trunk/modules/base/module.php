@@ -64,7 +64,7 @@ class owa_baseModule extends owa_module {
 		
 		if ($this->config['is_embedded'] != true):
 		
-			$this->addAdminPanel(array('view' 			=> 'base.users', 
+			$this->addAdminPanel(array('do' 			=> 'base.users', 
 										'priviledge' 	=> 'admin', 
 										'anchortext' 	=> 'User Management',
 										'group'			=> 'General',
