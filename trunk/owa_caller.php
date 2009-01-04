@@ -226,6 +226,7 @@ class owa_caller extends owa_base {
 		
 		/* SETUP REQUEST CONTAINER */
 		$this->params = &owa_requestContainer::getInstance();
+		//print_r($this->params);
 		
 		/**
 		 * @todo This needs to be refactored into stateless api calls 

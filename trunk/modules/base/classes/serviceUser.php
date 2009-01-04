@@ -52,8 +52,15 @@ class owa_serviceUser extends owa_base {
 	function load($user_id) {
 		
 		$this->user->load($user_id, 'user_id');
-		$this->getCapabilities($this->user->get('role'));
-		$this->getPreferences($this->user->get('user_id'));
+		$this->loadRelatedUserData();
+		return;
+	}
+	
+	function loadRelatedUserData() {
+		
+		$this->capabilities = $this->getCapabilities($this->user->get('role'));
+		$this->preferences = $this->getPreferences($this->user->get('user_id'));
+		return;
 	}
 		
 	function getCapabilities($role) {
@@ -87,11 +94,11 @@ class owa_serviceUser extends owa_base {
 	}
 	
 	function isCapable($cap) {
-		
+		//print($this);
 		// just in case there is no cap passed
 		if (!empty($cap)) {
-		
-			if (in_array($cap, $this->capabilities)) {
+			//adding @ here as is_array throws warning that an empty array is not the right data type!
+			if (@in_array($cap, $this->capabilities)) {
 				return true;
 			} else {
 				return false;
@@ -114,13 +121,13 @@ class owa_serviceUser extends owa_base {
 	
 	function isAuthenticated() {
 		
-		return $this->is_autheniticated();
+		return $this->is_authenticated;
 	}
 	
 	function loadNewUserByObject($obj) {
 		$this->user = $obj;
-		$this->current_user->loadNewUserByObject($obj);
-		$this->setRole($this->user->getRole());
+		//$this->current_user->loadNewUserByObject($obj);
+		$this->loadRelatedUserData();
 		return;
 	}
 	

@@ -144,7 +144,7 @@ function owa_translate_role($role) {
 	$role = strtolower($role);
 	switch ($role) {
 		case "administrator":
-			$owa_role = 'administrator';
+			$owa_role = 'admin';
 			break;
 		case "editor":
 			$owa_role = 'viewer';

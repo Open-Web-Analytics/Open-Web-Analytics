@@ -74,7 +74,7 @@ class owa_updatesApplyController extends owa_controller {
 		else:
 			
 			// add data to container
-			$this->set('status_code', 3307);
+			$this->set('status_code', 3308);
 			$this->set('do', 'base.optionsGeneral');
 			$this->setViewMethod('redirect');
 		 

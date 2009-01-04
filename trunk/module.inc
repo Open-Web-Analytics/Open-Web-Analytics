@@ -121,7 +121,7 @@ function owa_set_priviledges() {
 		list ($ret, $admin) = GalleryCoreApi::isUserInSiteAdminGroup();
 	
 		if ($admin = true):
-			$level = 'administrator';
+			$level = 'admin';
 		else:
 			$level = 'viewer'; 
 		endif;

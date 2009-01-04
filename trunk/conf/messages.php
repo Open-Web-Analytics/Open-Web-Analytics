@@ -75,7 +75,7 @@ $_owa_messages = array(
 3305 => array("Success. Base Database Schema Installed.",0),
 3306 => array("Error. User id already exists for some reason.",0),
 3307 => array("Updates failed. Check the log file for more details and try again.",0),
-
+3308 => array("Success. Updates were applied.",0),
 // Graph related
 3500 => array("There is no data for\nthis time period.",0),
 

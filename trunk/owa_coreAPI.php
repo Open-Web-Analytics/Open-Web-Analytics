@@ -219,7 +219,7 @@ class owa_coreAPI extends owa_base {
 	 */
 	function isCurrentUserCapable($capability) {
 		
-		$cu = owa_coreAPI::getCurrentUser();
+		$cu = &owa_coreAPI::getCurrentUser();
 		return $cu->isCapable($capability);
 	}
 	
