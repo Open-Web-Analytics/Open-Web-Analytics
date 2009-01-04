@@ -1,4 +1,4 @@
-<div class="wrap">
+<div class="">
 
 <table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>

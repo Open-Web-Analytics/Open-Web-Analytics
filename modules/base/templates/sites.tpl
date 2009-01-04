@@ -4,34 +4,39 @@
 if it is to be tracked/reported seperately.</P>
 
 <fieldset>
-	<legend>Tracked Web Sites <span class="legend_link">(<a href="<?=$this->makeLink(array('view' => 'base.options', 'subview' => 'base.sitesAdd'));?>">Add a Site</a>)<span></legend>
+	<legend>Tracked Web Sites <span class="legend_link">(<a href="<?=$this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a Site</a>)<span></legend>
 
 
-<TABLE>
+<TABLE size="100%" border="0" class="tablesorter">
+	<thead>
 	<TR>
 		<TH>Name & Description</TH>
 		<TH>Site Family</TH>
 		<TH>Options</TH>
 	</TR>
-<? foreach ($sites as $site => $value):?>
+	</thead>
+	<tbody>
+	<?php foreach ($tracked_sites as $site => $value):?>
 	<TR>
-	
 		<TD>
 			<?=$value['name'];?><BR>
+			<?php if (!empty($value['description'])):?>
 			<span class="info_text"><?=$value['description'];?></span><BR>
-			<span class="info_text"><a href="<?=$value['domain'];?>"><?=$value['domain'];?></a></span>
+			<?php endif;?>
+			<span class="info_text"><a href="<?=$value['domain'];?>"><?=$value['domain'];?></a></span><BR>
 		</TD>
-		
-		<TD><?=$value['site_family'];?></TD>
-		<TD nowrap>
-			<a href="<?=$this->makeLink(array('view' => 'base.options', 'subview' => 'base.sitesEdit', 'site_id' => $value['site_id']));?>">Edit</a> |
-			<a href="<?=$this->makeLink(array('action' => 'base.sitesDelete', 'site_id' => $value['site_id']));?>">Delete</a> |
-			<a href="<?=$this->makeLink(array('view' => 'base.options', 'subview' => 'base.sitesInvocation', 'site_id' => $value['site_id']));?>">Get Tags</a>
+		<TD>
+			<?=$value['site_family'];?>
+		</TD>
+		<TD>
+			<a href="<?=$this->makeLink(array('do' => 'base.sitesProfile', 'site_id' => $value['site_id'], 'edit' => true));?>">Edit</a> |
+			<a href="<?=$this->makeLink(array('do' => 'base.sitesDelete', 'site_id' => $value['site_id']));?>">Delete</a> |
+			<a href="<?=$this->makeLink(array('do' => 'base.sitesInvocation', 'site_id' => $value['site_id']));?>">Get Tags</a>
 		</TD>
 	
 	</TR>
-<? endforeach;?>
-
+	<?php endforeach;?>
+	</tbody>
 </TABLE>
 
 </fieldset>

@@ -136,7 +136,7 @@ class owa_view extends owa_base {
 	 * @return unknown
 	 */
 	function assembleView($data) {
-			
+		
 		$this->e->debug('Assembling view: '.get_class($this));
 		
 		// set view name in template class. used for navigation.
@@ -151,31 +151,31 @@ class owa_view extends owa_base {
 		endif;
 		
 		// Assign status msg
-		if (array_key_exists('status_msg', $data)):
-			$this->t->set('status_msg', $data['status_msg']);
+		if (array_key_exists('status_msg', $this->data)):
+			$this->t->set('status_msg', $this->data['status_msg']);
 		endif;
 		
 		// get status msg from code passed on the query string from a redirect.
-		if (array_key_exists('status_code', $data)):
-			$this->t->set('status_msg', $this->getMsg($data['status_code']));
+		if (array_key_exists('status_code', $this->data)):
+			$this->t->set('status_msg', $this->getMsg($this->data['status_code']));
 		endif;
 		
 		// set error msg directly if passed from constructor
-		if (array_key_exists('error_msg', $data)):
-			$this->t->set('error_msg', $data['error_msg']);
+		if (array_key_exists('error_msg', $this->data)):
+			$this->t->set('error_msg', $this->data['error_msg']);
 		endif;
 		
 		// auth user
 		//$auth_data = $this->auth->authenticateUser($this->priviledge_level);		
 		
 		// authentication status
-		if (array_key_exists('auth_status', $data)):
+		if (array_key_exists('auth_status', $this->data)):
 			$this->t->set('authStatus', $this->data['auth_status']);
 		endif;
 		
 		// get error msg from error code passed on the query string from a redirect.
-		if (array_key_exists('error_code', $data)):
-			$this->t->set('error_msg', $this->getMsg($data['error_code']));
+		if (array_key_exists('error_code', $this->data)):
+			$this->t->set('error_msg', $this->getMsg($this->data['error_code']));
 		endif;
 		
 		// load subview
@@ -192,8 +192,8 @@ class owa_view extends owa_base {
 			$this->construct($this->data);
 		}
 		//array of errors usually used for field validations
-		if (array_key_exists('validation_errors', $data)):
-			$this->body->set('validation_errors', $data['validation_errors']);
+		if (array_key_exists('validation_errors', $this->data)):
+			$this->body->set('validation_errors', $this->data['validation_errors']);
 		endif;
 		
 		// pagination
@@ -299,8 +299,9 @@ class owa_view extends owa_base {
 				return $this->e->debug("No Subview was specified by caller.");
 			endif;
 		endif;
-	
+		
 		$this->subview = owa_coreAPI::subViewFactory($subview);
+		//print_r($subview.'///');
 		$this->subview->setData($this->data);
 		
 		return;

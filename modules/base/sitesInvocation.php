@@ -16,6 +16,47 @@
 // $Id$
 //
 
+
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
+require_once(OWA_BASE_DIR.'/owa_view.php');
+
+/**
+ * Tracked Sites Tag Generator Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_sitesInvocationController extends owa_adminController {
+
+
+	function owa_sitesInvocationController($params) {
+		
+		return owa_sitesInvocationController::__construct($params); 
+	}
+	
+	function __construct($params) {
+		
+		$this->setRequiredCapability('edit_sites');
+		return parent::__construct($params);
+	}
+	
+	function action() {
+	
+		$this->set('site_id', $this->getParam('site_id'));
+		$this->setSubview('base.sitesInvocation');
+		$this->setView('base.options');
+		return;
+	}
+}
+
+
+
 /**
  * Sites Invocation Instructions
  * 
@@ -46,7 +87,7 @@ class owa_sitesInvocationView extends owa_view {
 		// load body template
 		$this->body->set_template('sites_invocation.tpl');
 		
-		$this->body->set('site_id', $data['site_id']);
+		$this->body->set('site_id', $this->get('site_id'));
 		
 		return;
 	}

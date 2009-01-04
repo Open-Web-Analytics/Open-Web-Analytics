@@ -2,22 +2,22 @@
 <div id="panel">
 <fieldset>
 
-	<legend>Add/Edit</legend>
+	<legend>Site Profile</legend>
 
 	<form method="POST">
 	
 	<table id="panel">
-		<? if ($action == 'base.sitesEdit'):?>
+		<?php if ($edit === true):?>
 		<TR>
 			<TH>Site ID:</TH>
 			<TD><?=$site['site_id'];?></TD>
 		</TR>
-		<?endif;?>
+		<?php endif;?>
 		<TR>
 			<TH>Domain:</TH>
-			<? if ($action == 'base.sitesEdit'):?>
+			<?php if ($action == 'base.sitesEdit'):?>
 			<TD><?=$site['domain'];?></TD>
-			<?else:?>
+			<?php else:?>
 			<TD>
 				
 				<select name="<?=$this->getNs();?>protocol">
@@ -28,7 +28,7 @@
 				<input type="text" name="<?=$this->getNs();?>domain" size="52" maxlength="70" value="<?=$site['domain'];?>"><BR>
 				<span class="validation_error"><?=$validation_errors['domain'];?></span>
 			</TD>
-			<?endif;?>
+			<?php endif;?>
 		</TR>
 		<TR>
 			<TH>Site Name:</TH>

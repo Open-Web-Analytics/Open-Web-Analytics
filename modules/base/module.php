@@ -72,7 +72,7 @@ class owa_baseModule extends owa_module {
 									
 		endif;
 									
-		$this->addAdminPanel(array('view' 			=> 'base.sites', 
+		$this->addAdminPanel(array('do' 			=> 'base.sites', 
 									'priviledge' 	=> 'admin', 
 									'anchortext' 	=> 'Site Roster',
 									'group'			=> 'General',

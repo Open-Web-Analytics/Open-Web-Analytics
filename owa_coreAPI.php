@@ -410,10 +410,10 @@ class owa_coreAPI extends owa_base {
 	function subViewFactory($subview, $params = array()) {
 		
 		list($module, $class) = split("\.", $subview);
-		
+		//print_r($module.' ' . $class);
 		//owa_lib::moduleRequireOnce($module, $class);
 	
-		$subview =  owa_lib::moduleFactory($module, $class.'View', $params);
+		$subview =  owa_lib::moduleFactory($subview, 'View', $params);
 		$subview->is_subview = true;
 		
 		return $subview;
