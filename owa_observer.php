@@ -87,46 +87,7 @@ class owa_observer extends Log_observer {
     	
     	$data = owa_coreAPI::performAction($action, $this->m);
     	
-    	// Create View if called for
-    	if ($data['view']):
-    		
-    		// Determine what to do with view
-    		switch ($data['view_method']) {
-    			case 'email-html':
-    				
-    				require_once(OWA_BASE_CLASS_DIR.'mailer.php');
-    				
-    				$mailer = new owa_mailer;
-    				
-    				$mailer->Subject = $data['subject'];
-    				$mailer->Body = owa_coreAPI::displayView($data);
-    				
-    				$mailer->AltBody = owa_coreAPI::displayView($data, $data['plainTextView']);
-    				$mailer->AddAddress($data['email_address'], $data['name']);
-    				
-    				$mailer->sendMail();
-    				break;	
-    			
-    			case 'email':
-    				
-    				require_once(OWA_BASE_CLASS_DIR.'mailer.php');
-    				
-    				$mailer = new owa_mailer;
-    				
-    				$mailer->Subject = $data['subject'];
-    				$mailer->Body = owa_coreAPI::displayView($data);
-    				
-    				$mailer->AddAddress($data['email_address'], $data['name']);
-    				
-    				$mailer->sendMail();
-    				break;	
-    		}
-
-    		$this->e->debug(sprintf("Handled Event. Assembled View: %s", $data['view'].'View'));
-    		 	
-    	endif;
-    	
-    	return;
+    	return $this->e->debug(sprintf("Handled Event. Action: %s", $action));
     	
     }
     

@@ -1,4 +1,4 @@
-<div class="">
+<div>
 
 <table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>
@@ -31,5 +31,13 @@
 		<TD class="layout_subview"><?=$subview;?></TD>
 	</TR>
 
-</Table>
+</table>
 </div>
+
+<script>
+// Bind event handlers
+jQuery(document).ready(function(){   
+	jQuery.tablesorter.defaults.widgets = ['zebra'];
+	jQuery('.tablesorter').tablesorter();
+});
+</script>
