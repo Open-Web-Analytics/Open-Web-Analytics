@@ -631,7 +631,7 @@ class owa_lib {
 	 * @param unknown_type $data
 	 */
 	function redirectToView($data) {
-		print_r($data);
+		//print_r($data);
 		$c = &owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
 		

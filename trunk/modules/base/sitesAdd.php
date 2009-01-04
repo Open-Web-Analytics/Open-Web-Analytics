@@ -20,7 +20,6 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
-
 /**
  * Add Sites View
  * 
@@ -95,7 +94,7 @@ class owa_sitesAddController extends owa_adminController {
 	}
 	
 	function action() {
-			
+				
 		$this->params['domain'] = $this->params['protocol'].$this->params['domain'];
 		
 		$s = owa_coreAPI::entityFactory('base.site');
@@ -113,16 +112,15 @@ class owa_sitesAddController extends owa_adminController {
 			$site->create();
 				
 			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.options';
-			$data['subview'] = 'base.sites';
+			$data['do'] = 'base.sites';
 			$data['status_code'] = 3202;
 				
 		else:
 				
 			$data['view_method'] = 'delegate';
 			$data['view'] = 'base.options';
-			$data['subview'] = 'base.sitesAdd';
-			$data['error_msg'] = $this->getMsg(3206);
+			$data['subview'] = 'base.sitesProfile';
+			$data['error_code'] = 3206;
 			$data['site'] = $this->params;	
 						
 		endif;
@@ -134,8 +132,8 @@ class owa_sitesAddController extends owa_adminController {
 		
 		$data['view_method'] = 'delegate'; 
 		$data['view'] = 'base.options';
-		$data['subview'] = 'base.sitesAdd';
-		$data['error_msg'] = $this->getMsg(3307);
+		$data['subview'] = 'base.sitesProfile';
+		$data['error_code'] = 3307;
 		$data['site'] = $this->params;	
 		$data['validation_errors'] = $this->getValidationErrorMsgs();
 	
