@@ -71,13 +71,14 @@ class owa_requestContainer {
 	 * @return array
 	 * @todo DEPRICATED
 	 */
-	function & getInstance() {
+	function &getInstance() {
 		
 		static $params;
 		
-		if(!isset($params)):
+		if(empty($params)):
 			
 			$params = owa_lib::getRequestParams();
+			
 			$params['guid'] = $this->guid;
 			
 			return $params;

@@ -414,7 +414,7 @@
 			'login_view'					=> 'base.login',
 			'not_capable_view'				=> 'base.error',
 			'start_page'					=> 'base.reportDashboard',
-			'capabilities'					=> array('administrator' => array('view_reports', 
+			'capabilities'					=> array('admin' => array('view_reports', 
 																			  'edit_settings', 
 																			  'edit_sites', 
 																			  'edit_users', 

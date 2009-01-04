@@ -579,7 +579,7 @@ class owa_lib {
 				$striped_n = substr($n, $len);  
 				//add to striped array
 				$striped_params[$striped_n] = $v;
-			
+				
 			endif;
 			
 		}
@@ -587,6 +587,7 @@ class owa_lib {
 		return $striped_params;
 		
 	}
+	
 	/**
 	 * module specific require method
 	 *
@@ -806,7 +807,7 @@ class owa_lib {
 	 * Lists all files in a Directory
 	 *
 	 */
-	function listDir($start_dir='.') {
+	function listDir($start_dir='.', $recursive = true) {
 
 		$files = array();
 		
@@ -820,8 +821,11 @@ class owa_lib {
 				if (strcmp($file, '.')==0 || strcmp($file, '..')==0) continue;
 				$filepath = $start_dir . DIRECTORY_SEPARATOR . $file;
 				
+				
 				if (is_dir($filepath)):
-					$files = array_merge($files, owa_lib::listDir($filepath));
+					if ($recursive === true):
+						$files = array_merge($files, owa_lib::listDir($filepath));
+					endif;
 				else:
 					array_push($files, array('name' => $file, 'path' => $filepath));
 				endif;

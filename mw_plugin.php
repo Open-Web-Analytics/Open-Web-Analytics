@@ -211,11 +211,11 @@ function owa_translate_role($role_array) {
 	elseif (in_array("bot", $level)):
 		$owa_role = 'viewer';
 	elseif (in_array("sysop", $level)):
-		$owa_role = 'administrator';
+		$owa_role = 'admin';
 	elseif (in_array("bureaucrat", $level)):
-		$owa_role = 'administrator';
+		$owa_role = 'admin';
 	elseif (in_array("developer", $level)):
-		$owa_role = 'administrator';
+		$owa_role = 'admin';
 	endif;
 	
 	return $owa_role;
