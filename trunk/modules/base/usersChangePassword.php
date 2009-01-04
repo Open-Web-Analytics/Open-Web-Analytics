@@ -98,40 +98,4 @@ class owa_usersChangePasswordController extends owa_controller {
 	
 }
 
-/**
- * Change Password View
- * 
- * Presents a simple form to the user asking them to enter a new password.
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_usersChangePasswordView extends owa_view {
-	
-	function owa_usersChangePasswordView() {
-		
-		$this->owa_view();
-		return;
-	}
-	
-	function construct($data) {
-		
-		$this->body->set_template('users_change_password.tpl');
-		$this->body->set('headline', $this->getMsg(3005));
-		$this->body->set('key', $data['k']);
-		
-		return;
-		
-	}
-	
-	
-}
-
-
 ?>

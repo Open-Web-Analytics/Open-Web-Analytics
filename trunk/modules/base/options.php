@@ -62,6 +62,12 @@ class owa_optionsView extends owa_view {
 		
 		// Assign config data
 		$this->body->set('config', $this->config);
+		$this->setJs("includes/jquery/jquery-1.2.6.min.js");
+		$this->setJs("includes/jquery/jquery.sprintf.js");
+		$this->setJs("includes/jquery/jquery-ui-personalized-1.5.2.min.js");
+		$this->setJs("includes/jquery/tablesorter/jquery.tablesorter.js");
+		$this->setJs("owa.js");
+		$this->setCss('style.css', $this->config['public_url']."js/includes/jquery/tablesorter/themes/blue/");
 		
 		return;
 	}

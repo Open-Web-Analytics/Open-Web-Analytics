@@ -387,6 +387,12 @@ class owa_controller extends owa_base {
 		return;
 	}
 	
+	function setRedirectAction($do) {
+		$this->set('view_method', 'redirect');
+		$this->set('do', $do);
+		return;
+	}
+	
 	function setPagination($pagination, $name = 'pagination') {
 		$this->data[$name] = $pagination;
 		return;

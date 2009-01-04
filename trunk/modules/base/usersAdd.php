@@ -16,47 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 require_once(OWA_BASE_DIR.'/eventQueue.php');
-/**
- * Add User View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_usersAddView extends owa_view {
-	
-	function owa_usersAddView($params) {
-		
-		$this->owa_view($params);
-		$this->priviledge_level = 'admin';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		//page title
-		$this->t->set('page_title', 'Add A User');
-		$this->body->set('headline', 'Add A User');
-		// load body template
-		$this->body->set_template('users_addoredit.tpl');
-		$auth = &owa_auth::get_instance();
-		$this->body->set('roles', $auth->roles);	
-		$this->body->set('action', 'base.usersAdd');
-		$this->body->set('user', $data['user']);		
-		return;
-	}
-	
-	
-}
 
 /**
  * Add User Controller
@@ -70,12 +31,17 @@ class owa_usersAddView extends owa_view {
  * @since		owa 1.0.0
  */
 
-class owa_usersAddController extends owa_controller {
+class owa_usersAddController extends owa_adminController {
 	
 	function owa_usersAddController($params) {
-		$this->owa_controller($params);
+		
+		return owa_usersAddController::__construct($params);
+	}
+	
+	function __construct($params) {
+	
 		$this->setRequiredCapability('edit_users');
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -84,11 +50,9 @@ class owa_usersAddController extends owa_controller {
 		
 		//Check to see if user name already exists
 		$u->getByColumn('user_id', $this->params['user_id']);
-		
-		// data
-		$data = array();
-		
+			
 		$id = $u->get('id');
+		
 		// Set user object Params
 		if (empty($id)):
 		
@@ -111,23 +75,21 @@ class owa_usersAddController extends owa_controller {
 							'temp_passkey' => $temp_passkey), 
 							'base.new_user_account');
 			
-			// return view
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.options';
-			$data['subview'] = 'base.users';
-			$data['status_code'] = 3000;
+			
+			$this->setRedirectAction('base.users');
+			$this->set('status_code', 3000);
 			
 		//Send user and back to form to pick a new user name.
 		else:
-			$data['view_method'] = 'delegate';
-			$data['view'] = 'base.options';
-			$data['subview'] = 'base.usersAdd';
-			$data['error_msg'] = $this->getMsg(3001);
+			
+			$this->setView('base.options');
+			$this->setSubview('base.usersProfile');
+			$this->set('error_code', 3001);
 			//assign original form data so the user does not have to re-enter the data
-			$data['user'] = $this->params;
+			$this->set('user', $this->params);
 		endif;
 		
-		return $data;
+		return;
 	}
 	
 }

@@ -16,12 +16,11 @@
 // $Id$
 //
 
-
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
- * Users Roster View
+ * Edit User Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -32,35 +31,43 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since		owa 1.0.0
  */
 
-class owa_usersController extends owa_adminController {
+class owa_usersProfileController extends owa_controller {
 	
-	function owa_usersController($params) {
+	function owa_usersProfileController($params) {
 		
-		return owa_usersController::__construct($params);
+		return owa_usersProfileController::__construct($params); 
 	}
 	
 	function __construct($params) {
-		
+	
 		$this->setRequiredCapability('edit_users');
 		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
-		$this->set('users', $u->find($params));
+		// This needs form validation in a bad way.
+		//Check to see if user is passed by constructor or else fetch the object.
+		if ($this->getParam('user_id')) {
+			$u = owa_coreAPI::entityFactory('base.user');
+			$u->getByColumn('user_id', $data['user_id']);
+			$this->set('profile', $u->_getProperties());
+			$this->set('edit', true);
+			$this->set('user_id', $this->getParam('user_id'));
+		} else {
+			$this->set('profile', array());
+		}
+		
 		$this->setView('base.options');
-		$this->setSubview('base.users');
-		return;
-	
+		$this->setSubview('base.usersProfile');
+		
+		return $data;
 	}
-
+	
 }
 
-
 /**
- * Users Roster View
+ * OWA User Profile View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -71,26 +78,31 @@ class owa_usersController extends owa_adminController {
  * @since		owa 1.0.0
  */
 
-class owa_usersView extends owa_view {
+class owa_usersProfileView extends owa_view {
 	
-	function owa_usersView($params) {
+	function owa_usersProfileView($params) {
 		
 		$this->owa_view($params);
 		
 		return;
 	}
 	
-	function render() {
+	function render($data) {
 		
+		if ($this->get('edit')) {
+			$this->body->set('headline', 'Edit user profile');
+			$this->body->set('action', 'base.usersEdit');
+			$this->body->set('edit', true);
+		} else {
+			$this->body->set('headline', 'Add a new user profile');
+			$this->body->set('action', 'base.usersAdd');
+		}
 		//page title
-		$this->t->set('page_title', 'User Roster');
-		
-		// load body template
-		$this->body->set_template('users.tpl');
-		$this->body->set('headline', 'User Roster');
-				
-		$this->body->set('users', $this->get('users'));
-		//$this->setJs('includes/jquery/tablesorter/jquery.tablesorter.js');
+		$this->t->set('page_title', 'User Profile');
+		$this->body->set_template('users_addoredit.tpl');
+		$this->body->set('roles', owa_coreAPI::getAllRoles());	
+		$this->body->set('user', $this->get('profile'));
+			
 		return;
 	}
 	

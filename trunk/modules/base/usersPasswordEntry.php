@@ -16,12 +16,13 @@
 // $Id$
 //
 
-
+require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
- * Users Roster View
+ * Change Password Controller
+ * 
+ * handles from input from the Change password screen
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -32,35 +33,32 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @since		owa 1.0.0
  */
 
-class owa_usersController extends owa_adminController {
+class owa_usersPasswordEntryController extends owa_controller {
 	
-	function owa_usersController($params) {
-		
-		return owa_usersController::__construct($params);
+	function owa_usersPasswordEntryController($params) {
+			
+		return owa_usersPasswordEntryController::__construct($params);
 	}
 	
 	function __construct($params) {
 		
-		$this->setRequiredCapability('edit_users');
 		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
-		$this->set('users', $u->find($params));
-		$this->setView('base.options');
-		$this->setSubview('base.users');
+		$this->set('key', $this->getParam('k'));
+		$this->setView('base.usersPasswordEntry');
 		return;
-	
 	}
-
+		
+	
 }
 
-
 /**
- * Users Roster View
+ * Change Password View
+ * 
+ * Presents a simple form to the user asking them to enter a new password.
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -71,27 +69,26 @@ class owa_usersController extends owa_adminController {
  * @since		owa 1.0.0
  */
 
-class owa_usersView extends owa_view {
+class owa_usersPasswordEntryView extends owa_view {
 	
-	function owa_usersView($params) {
+	function owa_usersPasswordEntryView() {
 		
-		$this->owa_view($params);
-		
-		return;
+		return owa_usersPasswordEntryView::__construct();
 	}
 	
-	function render() {
+	function __construct() {
 		
-		//page title
-		$this->t->set('page_title', 'User Roster');
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
-		// load body template
-		$this->body->set_template('users.tpl');
-		$this->body->set('headline', 'User Roster');
-				
-		$this->body->set('users', $this->get('users'));
-		//$this->setJs('includes/jquery/tablesorter/jquery.tablesorter.js');
+		$this->body->set_template('users_change_password.tpl');
+		$this->body->set('headline', $this->getMsg(3005));
+		$this->body->set('key', $this->get('key'));
+		
 		return;
+		
 	}
 	
 	
