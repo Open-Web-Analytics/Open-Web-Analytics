@@ -43,8 +43,7 @@ class owa_sitesDeleteController extends owa_adminController {
 		$site->delete($this->params['site_id'], 'site_id');
 		
 		$data['view_method'] = 'redirect';
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.sites';
+		$data['do'] = 'base.sites';
 		$data['status_code'] = 3204;
 		
 		return $data;
