@@ -188,9 +188,9 @@ class owa_controller extends owa_base {
 			// if auth was not successful then return login view.
 			if ($status['auth_status'] != true):
 				//$data['view_method'] = 'delegate';
-				$this->setView('base.login');
+				$this->setRedirectAction('base.loginForm');
 				$this->set('go', urlencode(owa_lib::get_current_url()));
-				$this->set('error_msg', $this->getMsg(2002));
+				$this->set('error_code', 2002);
 				return $this->data;
 			else:
 				//check for needed capability again now that they are authenticated
@@ -198,18 +198,26 @@ class owa_controller extends owa_base {
 					$this->setView('base.error');
 					$this->set('error_msg', $this->getMsg(2003));
 					$this->set('go', urlencode(owa_lib::get_current_url()));
+					// set auth status for downstream views
+					$this->set('auth_status', true);
 					return $this->data;	
 				endif;
 			endif;
 		endif;
+		 
+		// TODO: These sets need to be removed and added to pre(), action() or post() methods 
+		// in various concrete controller classes as they screw up things when 
+		// redirecting from one controller to another.
 		
-		// set auth status
-		$this->set('auth_status', true);
+		// set auth status for downstream views
+		//$this->set('auth_status', true);
 		//set request params
 		$this->set('params', $this->params);
 		// set site_id
 		$this->set('site_id', $this->get('site_id'));
 				
+		/*
+		
 		// set status msg - NEEDED HERE? doesnt owa_ view handle this?
 		if (!empty($this->params['status_code'])):
 			$this->data['status_msg'] = $this->getMsg($this->params['status_code']);
@@ -219,6 +227,8 @@ class owa_controller extends owa_base {
 		if (!empty($this->params['error_code'])):
 			$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
 		endif;
+		
+		*/
 		 
 		// check to see if the controller has created a validator
 		if (!empty($this->v)):
@@ -390,6 +400,14 @@ class owa_controller extends owa_base {
 	function setRedirectAction($do) {
 		$this->set('view_method', 'redirect');
 		$this->set('do', $do);
+		
+		// need to remove these unsets once they are no longer set in the main doAction method
+		if (array_key_exists('params', $this->data)) {
+			unset($this->data['params']);
+		}
+		if (array_key_exists('site_id', $this->data)) {
+			unset($this->data['site_id']);
+		}
 		return;
 	}
 	

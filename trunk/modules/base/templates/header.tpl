@@ -12,10 +12,10 @@
 						<LI><a href="http://trac.openwebanalytics.com">Report a Bug</a></LI>
 						<? if ($this->config['is_embedded'] == false):?>
 						<LI>
-							<? if ($authStatus == true):?>
-							<a href="<?=$this->makeLink(array('action' => 'base.logout'));?>">Logout</a>
+							<? if (owa_coreAPI::isCurrentUserAuthenticated()):?>
+							<a href="<?=$this->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
 							<?php else:?>
-							<a href="<?=$this->makeLink(array('view' => 'base.login'));?>">Login</a>
+							<a href="<?=$this->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
 							<?php endif;?>
 						</LI>
 						<?php endif;?>

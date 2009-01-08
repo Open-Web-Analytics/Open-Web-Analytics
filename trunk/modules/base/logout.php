@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
@@ -35,23 +34,23 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 class owa_logoutController extends owa_controller {
 	
 	function owa_loginController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
+		return owa_loginController::__construct($params);
+	}
 	
-		return;
+	function __construct($params) {
+	
+		return parent::__construct();
 	}
 	
 	function action() {
 		
 		$auth = &owa_auth::get_instance();
 		$auth->deleteCredentials();
+		$this->setRedirectAction('base.loginForm');
+		//$this->set('status_code', 2010);
 		
-		$data = array();
-		$data['view_method'] = 'redirect';
-		$data['view'] = 'base.login';
-		$data['status_code'] = $this->getMsg(2010);
-		
-		return $data;
+		return;
 	}
 	
 	

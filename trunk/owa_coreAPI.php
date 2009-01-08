@@ -223,6 +223,12 @@ class owa_coreAPI extends owa_base {
 		return $cu->isCapable($capability);
 	}
 	
+	function isCurrentUserAuthenticated() {
+		
+		$cu = &owa_coreAPI::getCurrentUser();
+		return $cu->isAuthenticated();
+	}
+	
 	function &serviceSingleton() {
 		
 		static $s;
