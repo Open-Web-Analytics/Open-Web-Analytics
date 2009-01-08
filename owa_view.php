@@ -163,10 +163,7 @@ class owa_view extends owa_base {
 		// set error msg directly if passed from constructor
 		if (array_key_exists('error_msg', $this->data)):
 			$this->t->set('error_msg', $this->data['error_msg']);
-		endif;
-		
-		// auth user
-		//$auth_data = $this->auth->authenticateUser($this->priviledge_level);		
+		endif;		
 		
 		// authentication status
 		if (array_key_exists('auth_status', $this->data)):

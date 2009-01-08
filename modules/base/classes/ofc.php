@@ -145,36 +145,40 @@ class owa_ofc {
 	}
 	
 	function areaBar($chartData) {
+		
+		if ($chartData->checkForSeries()) {
+
+			///bar
+			$bar = $this->getBarPlot();
+			$bar->set_values($this->convertArrayToInts($chartData->getSeriesData('bar')));
+			$bar->set_key( $chartData->getSeriesLabel('bar'), 12 );
+			// Make our area chart:
+			$area = $this->getAreaPlot();
+			// need to force a conversion of strings to ints for the arrea to render properly.
+			$numArray = $this->convertArrayToInts($chartData->getSeriesData('area'));
+			//$area->set_values($chartData->getSeriesData('area'));
+			$area->set_values($numArray);
+			$area->set_key( $chartData->getSeriesLabel('area'), 12 );		
+			$this->y_axis->set_range(round($chartData->getMin('area')), round($chartData->getMax('area', 'bar')));
+			$this->y_axis->set_offset( false );
+			$this->y_axis->set_steps( round($chartData->getMax('area', 'bar') / 4) );
 			
-		///bar
-		$bar = $this->getBarPlot();
-		$bar->set_values($this->convertArrayToInts($chartData->getSeriesData('bar')));
-		$bar->set_key( $chartData->getSeriesLabel('bar'), 12 );
-		// Make our area chart:
-		$area = $this->getAreaPlot();
-		// need to force a conversion of strings to ints for the arrea to render properly.
-		$numArray = $this->convertArrayToInts($chartData->getSeriesData('area'));
-		//$area->set_values($chartData->getSeriesData('area'));
-		$area->set_values($numArray);
-		$area->set_key( $chartData->getSeriesLabel('area'), 12 );		
-		$this->y_axis->set_range(round($chartData->getMin('area')), round($chartData->getMax('area', 'bar')));
-		$this->y_axis->set_offset( false );
-		$this->y_axis->set_steps( round($chartData->getMax('area', 'bar') / 4) );
-		
-		$x_labels = new x_axis_labels();
-		$x_labels->set_steps( 2 );
-		$x_labels->set_labels($chartData->getSeriesData('x'));
-		// Add the X Axis Labels to the X Axis
-		$this->x_axis->set_labels( $x_labels );
-		
-		// assemble chart
-		$this->chart->add_y_axis($this->y_axis);
-		$this->chart->x_axis = $this->x_axis;
-		$this->chart->add_element($bar);
-		$this->chart->add_element($area);
-		
-		return $this->chart->toPrettyString();
-	
+			$x_labels = new x_axis_labels();
+			$x_labels->set_steps( 2 );
+			$x_labels->set_labels($chartData->getSeriesData('x'));
+			// Add the X Axis Labels to the X Axis
+			$this->x_axis->set_labels( $x_labels );
+			
+			// assemble chart
+			$this->chart->add_y_axis($this->y_axis);
+			$this->chart->x_axis = $this->x_axis;
+			$this->chart->add_element($bar);
+			$this->chart->add_element($area);
+			
+			return $this->chart->toPrettyString();
+		} else {
+			return;
+		}	
 	}
 	
 	function getPiePlot() {
@@ -228,8 +232,12 @@ class owa_ofc {
 	}
 	
 	function convertArrayToInts($array) {
-	
-		return array_map(create_function('$value', 'return (int)$value;'),$array);
+		if  (!empty($array)) {
+			return array_map(create_function('$value', 'return (int)$value;'),$array);
+		} else {
+			return false;
+		}
+		
 	}
 		
 }

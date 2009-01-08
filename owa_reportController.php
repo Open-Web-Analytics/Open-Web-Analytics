@@ -81,6 +81,11 @@ class owa_reportController extends owa_adminController {
 		
 	}
 	
+	function post() {
+		
+		return;
+	}
+	
 	function setTitle($title) {
 		
 		$this->data['title'] = $title;

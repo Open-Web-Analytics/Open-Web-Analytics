@@ -50,7 +50,7 @@ class owa_usersProfileController extends owa_controller {
 		//Check to see if user is passed by constructor or else fetch the object.
 		if ($this->getParam('user_id')) {
 			$u = owa_coreAPI::entityFactory('base.user');
-			$u->getByColumn('user_id', $data['user_id']);
+			$u->getByColumn('user_id', $this->getParam('user_id'));
 			$this->set('profile', $u->_getProperties());
 			$this->set('edit', true);
 			$this->set('user_id', $this->getParam('user_id'));

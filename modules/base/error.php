@@ -49,7 +49,7 @@ class owa_errorView extends owa_view {
 		$this->t->set('page_title', 'Error');
 		
 		// Set Page headline
-		$this->body->set('error_msg', $data['error_msg']);
+		//$this->body->set('error_msg', $data['error_msg']);
 		
 		if($this->is_subview == true):
 			

@@ -29,7 +29,7 @@
 		<TR>
 			<TD></TD>
 			<TD>
-				<BR><span class="info_text"><a href="<?=$this->makeLink(array('view' => 'base.passwordResetRequest'))?>">Forgot your password?</a></span>
+				<BR><span class="info_text"><a href="<?=$this->makeLink(array('do' => 'base.passwordResetRequest'))?>">Forgot your password?</a></span>
 			</TD>
 		</TR>
     	

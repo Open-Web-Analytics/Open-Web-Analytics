@@ -19,7 +19,7 @@
 				</TD>
 			
 				<TD align="right">
-					 <i>Open Source Web Analytics Framework.</i> 	
+					 <i>Open Source Web Analytics</i> 	
 				</TD>
 			</TR>
 		</table>
