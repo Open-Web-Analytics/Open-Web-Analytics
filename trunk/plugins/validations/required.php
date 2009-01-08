@@ -30,22 +30,31 @@
  
  class owa_requiredValidation extends owa_validation {
  	
- 	function owa_requiredValidation($conf) {
- 		
- 		$this->setErrorMsgTemplate('Required field was empty.');
- 		$this->owa_validation($conf);
- 		return;
+ 	function owa_requiredValidation() {
+ 			
+ 		return owa_requiredValidation::__construct();
  	}
  	
- 	function validate($value) {
+ 	function __construct() {
  		
- 		if (!empty($value)):
- 			return true;
- 		else:
- 			$this->setErrorMsg($this->errorMsgTemplate);
- 			return false;
+ 		return parent::__construct();
+ 	}
+ 	
+ 	function validate() {
+ 		
+ 		$value = $this->getValues();
+ 		
+ 		$error = $this->getErrorMsg();
+ 		
+ 		if (empty($error)) {
+ 			$this->setErrorMessage('Required field was empty.');
+ 		}
+ 		
+ 		if (empty($value)):
+ 			$this->hasError();
  		endif;
  		
+ 		return;
  	}
  	
  }

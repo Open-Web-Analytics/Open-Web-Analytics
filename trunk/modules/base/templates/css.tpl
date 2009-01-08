@@ -66,7 +66,7 @@ div {margin:0;}
 .inline_h2_grey {font-size:20px; color:#cccccc;}
 .inline_h3 {font-size:16px;}
 .inline_h4 {font-size:14px;}
-.headline {font-size:20px; background-color:#E0EEEE;color:;border-color:#000000;padding:6px; font-weight:bold;margin: 0px 0px 0px 0px;}
+.headline {font-size:20px; background-color:orange;color:#ffffff;border-color:#000000;padding:6px; font-weight:bold;margin: 0px 0px 0px 0px;}
 .panel_headline {font-size:18px; background-color:#FFF8DC;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
 
@@ -82,20 +82,16 @@ div {margin:0;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
 #nav_left {width:240px;}
-.data {white-space:; width:auto;}
-.form {width:;}
-.sub-row {padding-left:20px; font-weight:normal;}
-#summary_stats {font-size:16px; font-weight: normal;}
+
 
 /* FORMATING */
-
+.owa_largeFormField { font-size:18px;}
 .active_wizard_step {background-color:#1874CD; color:#ffffff;border:1px solid; padding:5px; font-weight:bold; font-size:16px;}
 .wizard_step {font-weight:bold; font-size:16px;}
 .visitor_info_box {width:40px; height:40px; text-align:center; padding:7px;}
 .owa_visitSummaryLeftCol {width:auto;}
 .owa_visitSummaryRightCol {padding-left:15px;width:auto; vertical-align: top;}
 .visit_icon {width:40px;}
-.graph {padding:10px; text-align:center;}
 .comments_info_box {
 	padding:4px 4px 4px 4px;
 	border:solid 0px #999999; 
@@ -136,19 +132,48 @@ div {margin:0;}
 .setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
 .setting .field {padding: 2px 0 2px 0;}
 
-
-
-
-
 /* LAYOUT */
-#summary_stats {border-collapse: collapse; width:100%;}
-#summary_stats td {border:2px solid #CCCCCC; padding:10px; height:65px; width:px; vertical-align:center; margin:0px; min-width:150px;}
-#trend_graph {text-align:center;}
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}
-#login_box {width:390px;}
 #owa_header {background-color:#FFFFFF; padding:4px; font-weight:bold; clear: both;}
-#report_top_level_nav {margin: 5px 0 0 0;}
 #side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
-#report_filters {margin:0 0 30px 0;}
+
+/* ROUNDER CORNERS */
+.spiffy{display:block;}
+.spiffy *{
+  display:block;
+  height:1px;
+  overflow:hidden;
+  font-size:.01em;
+  background:#494444}
+.spiffy1{
+  margin-left:3px;
+  margin-right:3px;
+  padding-left:1px;
+  padding-right:1px;
+  border-left:1px solid #b0aeae;
+  border-right:1px solid #b0aeae;
+  background:#767272}
+.spiffy2{
+  margin-left:1px;
+  margin-right:1px;
+  padding-right:1px;
+  padding-left:1px;
+  border-left:1px solid #ececec;
+  border-right:1px solid #ececec;
+  background:#6b6767}
+.spiffy3{
+  margin-left:1px;
+  margin-right:1px;
+  border-left:1px solid #6b6767;
+  border-right:1px solid #6b6767;}
+.spiffy4{
+  border-left:1px solid #b0aeae;
+  border-right:1px solid #b0aeae}
+.spiffy5{
+  border-left:1px solid #767272;
+  border-right:1px solid #767272}
+.spiffyfg{
+  background:#494444;}
+   
 </style>

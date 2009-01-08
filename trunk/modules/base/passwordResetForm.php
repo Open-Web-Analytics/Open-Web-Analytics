@@ -16,6 +16,7 @@
 // $Id$
 //
 
+require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 /**
@@ -30,11 +31,11 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_passwordResetRequestController extends owa_controller {
+class owa_passwordResetFormController extends owa_controller {
 	
-	function owa_passwordResetRequestController($params) {
+	function owa_passwordResetFormController($params) {
 	
-		return owa_passwordResetRequestController::__construct($params);
+		return owa_passwordResetFormController::__construct($params);
 	}
 	
 	function __construct($params) {
@@ -44,33 +45,43 @@ class owa_passwordResetRequestController extends owa_controller {
 	
 	function action() {
 		
-		// Check to see if this email exists in the db
-		// fetch user object from the db
-		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('email_address', $this->getParam('email_address'));
-		$uid = $u->get('user_id');	
-		
-		// If user exists then fire event and return view
-		if (!empty($uid)) {
-			
-			// Log password reset request to event queue
-			$eq = &eventQueue::get_instance();
-			$eq->log(array('user_id' => $uid), 'base.reset_password');
-		
-			// return view
-			$this->setView('base.passwordResetForm');
-			$this->set('status_msg', $this->getMsg(2000, $this->getParam('email_address')));	
-			
-		// if user does not exists just return view with error
-		} else {
-			$this->setView('base.passwordResetForm');
-			$this->set('error_msg', $this->getMsg(2001, $this->getParam('email_address')));
-		}
-		
+		$this->setView('base.passwordResetForm');
+				
 		return;
 	}
 }
 
 
+/**
+ * Password Reset Request View 
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_passwordResetFormView extends owa_view {
+	
+	function owa_passwordResetFormView() {
+		
+		return owa_passwordResetFormView::__construct();
+	}
+	
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
+		$this->t->set_template('wrapper_public.tpl');
+		$this->body->set_template('users_password_reset_request.tpl');		
+		return;
+	}
+	
+}
 
 ?>

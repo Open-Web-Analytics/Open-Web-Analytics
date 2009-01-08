@@ -17,7 +17,7 @@
 //
 
 /**
- * Sub String Position Validation
+ * Required Validation
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,11 +28,11 @@
  * @since		owa 1.0.0
  */
  
- class owa_subStringPositionValidation extends owa_validation {
+ class owa_stringLengthValidation extends owa_validation {
  	
- 	function owa_subStringPositionValidation() {
+ 	function owa_stringLengthValidation() {
  		
- 		return owa_subStringPositionValidation::__construct();
+ 		return  owa_stringLengthValidation::__construct();
  	}
  	
  	function __construct() {
@@ -43,41 +43,45 @@
  	function validate() {
  		
  		$value = $this->getValues();
- 		
- 		$substring = $this->getConfig('subString')
- 		$pos = strpos($value, $substring);
- 		
- 		//print $pos;
- 		//print_r($this);
+ 		$length = $this->getConfig('length');
  		$operator = $this->getConfig('operator');
- 		$position = $this->getConfig('position');
+ 		
+ 		// default error msg
+ 		$errorMsg = $this->getErrorMsg();
+ 		if (empty($errorMsg)) {
+ 			
+ 			$this->setErrorMessage(sprintf("Must be %s %d character in length.", $operator, $length));
+ 		}
  		
  		switch ($operator) {
- 			
- 			case "=":
- 				
- 				if ($pos != $position):
- 					$this->hasError();
- 				endif;
- 				
- 			break;
- 			
- 			case "!=":
- 				
- 				if ($pos === $position):
- 					$this->hasError();
- 				endif;
- 			
- 			break;
- 		}
-		
-		$error = $this->getErrorMsg();
-		
-		if (empty($error)) {
-			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $subString, $pos));
-		} 		
-		
  		
+ 			case '<':
+ 				if (strlen($value) >= $length) {	
+					$this->hasError();
+				}
+ 				break;
+ 			
+ 			case '>':
+ 				if (strlen($value) <= $length) {	
+					$this->hasError();
+				}
+ 				break;
+ 				
+ 			case '<=':
+ 				if (strlen($value) > $length) {	
+					$this->hasError();
+				}
+ 				break;
+ 			
+ 			case '>=':
+ 				if (strlen($value) < $length) {	
+					$this->hasError();
+				}
+ 				break;	
+ 				
+ 		}
+ 		 
+ 		return;
  		
  	}
  	

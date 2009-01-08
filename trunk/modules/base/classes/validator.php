@@ -76,10 +76,22 @@
  	 */
  	function addValidation($name, $value, $validation, $conf) {
 		
-		$this->validations[$name] = array('value' => $value, 'validation' => $validation, 'conf' => $conf);
+		$this->validations[] = $name;
 		
+		// Construct validatation obj
+		$this->validators[$name] = $this->validationFactory($validation);
+		$this->validators[$name]->setValues($value);
+		$this->validators[$name]->setConfigArray($conf);
+
 		return;
 		
+	}
+	
+	function setValidation($name, $obj) {
+		
+		$this->validations[] = $name;
+		$this->validators[$name]  = $obj;
+		return;
 	}
 	
 	/**
@@ -87,14 +99,9 @@
 	 * 
 	 * @return Object
 	 */
-	function validationFactory($class_file, $conf) {
+	function validationFactory($class_file) {
 		
-		if (!class_exists('owa_validation')):
-			require_once(OWA_BASE_CLASS_DIR.'validation.php');
-		endif;
-		
-		return owa_lib::factory(OWA_PLUGINS_DIR.'/validations', 'owa_', $class_file, $conf, 'Validation');
-		
+		return owa_coreAPI::validationFactory($class_file, $conf);		
 	}
 	
 	/**
@@ -103,19 +110,16 @@
 	 */
 	function doValidations() {
 		
-		foreach ($this->validations as $k => $v) {
+		foreach ($this->validations as $k) {
 			
-			// Construct validatation obj
-			$this->validators[$k] = $this->validationFactory($v['validation'], $v['conf']);
+			$this->validators[$k]->validate();
 			
-			$this->validators[$k]->validate($v['value']);
-			
-			if ($this->validators[$k]->hasError == true):
-			
+			if ($this->validators[$k]->hasError === true):
+				//print_r($this->validators[$k]);	
 				$this->hasErrors = true;
-				$this->errorMsgs[$k] = $this->validators[$k]->errorMsg;
+				$this->errorMsgs[$k] = $this->validators[$k]->getErrorMsg();
 				
-				if ($this->validators[$k]->conf['stopOnError'] == true):
+				if ($this->validators[$k]->conf['stopOnError'] === true):
 					break;
 				endif;
 				

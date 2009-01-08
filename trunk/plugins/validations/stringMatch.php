@@ -28,11 +28,12 @@
  * @since		owa 1.0.0
  */
  
- class owa_subStringPositionValidation extends owa_validation {
+ class owa_stringMatchValidation extends owa_validation {
  	
- 	function owa_subStringPositionValidation() {
+ 	
+ 	function owa_stringMatchValidation() {
  		
- 		return owa_subStringPositionValidation::__construct();
+ 		return owa_stringMatchValidation::__construct();
  	}
  	
  	function __construct() {
@@ -40,44 +41,27 @@
  		return parent::__construct();
  	}
  	
+ 	
  	function validate() {
  		
- 		$value = $this->getValues();
+ 		$values_array = $this->getValues();
+ 		$string1 = $values_array[0];
+ 		$string2 = $values_array[1];
  		
- 		$substring = $this->getConfig('subString')
- 		$pos = strpos($value, $substring);
+ 		$error = $this->getErrorMsg();
  		
- 		//print $pos;
- 		//print_r($this);
- 		$operator = $this->getConfig('operator');
- 		$position = $this->getConfig('position');
- 		
- 		switch ($operator) {
- 			
- 			case "=":
- 				
- 				if ($pos != $position):
- 					$this->hasError();
- 				endif;
- 				
- 			break;
- 			
- 			case "!=":
- 				
- 				if ($pos === $position):
- 					$this->hasError();
- 				endif;
- 			
- 			break;
+ 		if (empty($error)) {
+ 			$this->setErrorMessage('Strings do not match.');
  		}
-		
-		$error = $this->getErrorMsg();
-		
-		if (empty($error)) {
-			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $subString, $pos));
-		} 		
-		
- 		
+
+		// validation logic 
+ 		if ($string1 === $string2) {
+ 			;
+ 		} else {
+ 			$this->hasError();
+ 		}
+ 		 		
+ 		return;
  		
  	}
  	

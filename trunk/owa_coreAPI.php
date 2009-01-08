@@ -972,7 +972,20 @@ class owa_coreAPI extends owa_base {
 		return $period;
 	}
 
-
+	/**
+	 * Factory method for producing validation objects
+	 * 
+	 * @return Object
+	 */
+	function validationFactory($class_file) {
+		
+		if (!class_exists('owa_validation')):
+			require_once(OWA_BASE_CLASS_DIR.'validation.php');
+		endif;
+		
+		return owa_lib::factory(OWA_PLUGINS_DIR.'/validations', 'owa_', $class_file, array(), 'Validation');
+		
+	}
 
 	
 }

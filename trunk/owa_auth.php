@@ -198,7 +198,7 @@ class owa_auth extends owa_base {
 		if (!empty($id)):
 			return true;
 		else:
-			$this->showResetPasswordErrorPage();
+			return false;
 		endif;
 		
 	}

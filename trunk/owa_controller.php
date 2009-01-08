@@ -235,9 +235,17 @@ class owa_controller extends owa_base {
 			// if so do the validations required
 			$this->v->doValidations();
 			//check for erros
-			if ($this->v->hasErrors == true):
+			if ($this->v->hasErrors === true):
 				// if errors, do the errorAction instead of the normal action
-				return $this->errorAction();
+				$this->set('validation_errors', $this->getValidationErrorMsgs());
+				$ret = $this->errorAction();
+				if (!empty($ret)):
+					$this->post();
+					return $ret;
+				else:
+					$this->post();
+					return $this->data;
+				endif;
 			endif;
 		endif;
 		
@@ -288,6 +296,16 @@ class owa_controller extends owa_base {
 		endif;
 	
 		return $this->v->addValidation($name, $value, $validation, $conf);
+		
+	}
+	
+	function setValidation($name, $obj) {
+	
+		if (empty($this->v)):
+			$this->createValidator();
+		endif;
+	
+		return $this->v->setValidation($name, $obj);
 		
 	}
 	
