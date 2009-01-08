@@ -3,39 +3,31 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-		<title>Open Web Analytics - <?=$page_title;?></title>
+		<title><?=$page_title;?> - Open Web Analytics</title>
 	</head>
 	
 	<body>
 	
 	<?php include($this->setTemplate('css.tpl'));?>
 	
-	<DIV id="header">
+	<DIV id="header" style="text-align:center;">
 		<table width="100%">
 			<TR>
-				<TD class="owa_logo"><img src="<?=$this->makeImageLink('owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"></TD>
-				<TD>
-					<span class="inline_h1">Version: <?=OWA_VERSION;?></span>		
-				</TD>
-			
-				<TD align="right">
-					 <i>Open Source Web Analytics</i> 	
+				<TD class="">
+					<img src="<?=$this->makeImageLink('owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"><BR>	
 				</TD>
 			</TR>
 		</table>
 	</div>
-	
-	
-	
-	<div class="wrap">
-		
-		
-		<?php include($this->setTemplate('msgs.tpl'));?>
 	<BR>
-		<?=$content;?>
-		<?=$body;?>
-
-	</div>
+	<?php include($this->setTemplate('msgs.tpl'));?>
+	<BR>
+	<?=$content;?>
+	<?=$body;?>
 	
+	<BR><BR>
+	<div style="text-align:center">	
+		<span class="inline_h2">Open Source Web Analytics - v: <?=OWA_VERSION;?></span>
+	</div>
 	</body>
 </html>
