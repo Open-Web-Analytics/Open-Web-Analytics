@@ -694,7 +694,11 @@ class owa_mailView extends owa_view {
 		return;
 	}
 	
-	function addMailToAddress($email, $name) {
+	function addMailToAddress($email, $name = '') {
+		
+		if (empty($name)) {
+			$name = $email;
+		}
 		
 		$this->po->mailer->AddAddress($email, $name);
 		return;

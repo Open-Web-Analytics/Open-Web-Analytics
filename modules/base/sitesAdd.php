@@ -130,14 +130,13 @@ class owa_sitesAddController extends owa_adminController {
 	
 	function errorAction() {
 		
-		$data['view_method'] = 'delegate'; 
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.sitesProfile';
-		$data['error_code'] = 3307;
-		$data['site'] = $this->params;	
-		$data['validation_errors'] = $this->getValidationErrorMsgs();
+		$this->setView('base.options');
+		$this->setSubview('base.sitesProfile');
+		$this->set('error_code', 3309);
+		$this->set('site', $this->params);	
+		//$data['validation_errors'] = $this->getValidationErrorMsgs();
 	
-		return $data;
+		return;
 	}
 	
 }

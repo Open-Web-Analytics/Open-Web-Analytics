@@ -13,6 +13,7 @@
 			<TR>
 				<TH>User ID</TH>
 				<TH>Real Name</TH>
+				<TH>Email Address</TH>
 				<TH>Role</TH>
 				<TH>Last Updated</TH>
 				<TH>Options</TH>
@@ -23,6 +24,7 @@
 			<TR>
 				<TD><?=$value['user_id'];?></TD>
 				<TD><?=$value['real_name'];?></TD>
+				<TD><?=$value['email_address'];?></TD>
 				<TD><?=$value['role'];?></TD>
 				<TD><?=date("F j, Y, g:i a", $value['last_update_date']);?></TD>
 				<TD><a href="<?=$this->makeLink(array('do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']));?>">Edit</a>  

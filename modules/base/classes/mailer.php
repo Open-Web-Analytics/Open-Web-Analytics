@@ -88,7 +88,7 @@ class owa_mailer extends owa_base {
 			return $this->e->debug(sprintf("Mailer Failure. Was not able to send to %s with subject of '%s'. Error Msgs: '%s'", $this->mailer->to, $this->mailer->Subject, $this->mailer->ErrorInfo));
 			
 		else:
-			return $this->e->debug(sprintf("Mail sent to %s with the subject of '%s'.", $this->mailer->to, $this->mailer->Subject));
+			return $this->e->debug(sprintf("Mail sent to %s with the subject of '%s'.", $this->mailer->to[0], $this->mailer->Subject));
 		endif;
 		
 		

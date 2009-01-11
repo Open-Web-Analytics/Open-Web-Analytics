@@ -31,13 +31,13 @@
 
 $_owa_messages = array(
 
-// Login related
 2000 => array("An e-mail containing instructions on how to complete the password reset process has been sent to %s",1),
 2001 => array("The e-mail <B>%s</B> was not found in our database. Please check the address and try again.",1),
 2002 => array("<B>Login Failed</B>. Your user name or password did not match.",0),
 2003 => array("Your Account lacks the necessary priviledges to access the requested resource.",0),
 2004 => array("You must login to access the requested resource.",0),
 2010 => array("Sucess. Logout Complete.",0),
+2011 => array("Error. Can't find your temporary passkey in the db.",0),
 
 // Options/Configuration related
 2500 => array("Options Saved.",0),
@@ -53,9 +53,11 @@ $_owa_messages = array(
 3003 => array("Success. User profile saved.",0),
 3004 => array("Success. User acount deleted."),
 3005 => array("Enter Your New Password", 0),
-3006 => array("Success. Your password will be changed shortly. This may take a few minutes.",0),
+3006 => array("Success. Please login with your new password.",0),
 3007 => array("Error. Your passwords must match.",0),
 3008 => array("Error. Your password must be %s characters long.", 1),
+3009 => array("Error. A user with that email address already exists.", 0),
+3010 => array("A user with that email address does not exist.", 0),
 
 //sites management
 3200 => array("Error. Please fill in all required fields.",0),

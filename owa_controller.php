@@ -216,26 +216,23 @@ class owa_controller extends owa_base {
 		// set site_id
 		$this->set('site_id', $this->get('site_id'));
 				
-		/*
-		
 		// set status msg - NEEDED HERE? doesnt owa_ view handle this?
-		if (!empty($this->params['status_code'])):
-			$this->data['status_msg'] = $this->getMsg($this->params['status_code']);
+		if (array_key_exists('status_code', $this->params)):
+			$this->set('status_code', $this->getParam('status_code'));
 		endif;
 		
 		// get error msg from error code passed on the query string from a redirect.
-		if (!empty($this->params['error_code'])):
-			$this->data['error_msg'] = $this->getMsg($this->params['error_code']);
+		if (array_key_exists('error_code', $this->params)):
+			$this->set('error_code', $this->getParam('error_code'));
 		endif;
-		
-		*/
 		 
 		// check to see if the controller has created a validator
 		if (!empty($this->v)):
 			// if so do the validations required
 			$this->v->doValidations();
-			//check for erros
+			//check for errors
 			if ($this->v->hasErrors === true):
+				//print_r($this->v);
 				// if errors, do the errorAction instead of the normal action
 				$this->set('validation_errors', $this->getValidationErrorMsgs());
 				$ret = $this->errorAction();

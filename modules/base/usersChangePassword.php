@@ -64,7 +64,7 @@ class owa_usersChangePasswordController extends owa_controller {
 	}
 	
 	function action() {
-		exit;
+		
 		$auth = &owa_auth::get_instance();
 		$status = $auth->authenticateUserTempPasskey($this->params['k']);
 			
@@ -74,11 +74,11 @@ class owa_usersChangePasswordController extends owa_controller {
 			$new_password = array('key' => $this->params['k'], 'password' => $auth->encryptPassword($this->params['password']), 'ip' => $_SERVER['REMOTE_ADDR']);
 			$eq->log($new_password, 'base.set_password');
 			$auth->deleteCredentials();	
-			$this->setRedirectAction('base.login');
+			$this->setRedirectAction('base.loginForm');
 			$this->set('status_code', 3006);
 		} else {
-			$this->setRedirectAction('base.login');
-			$this->set('error_code', 000000); // can't find key in the db
+			$this->setRedirectAction('base.loginForm');
+			$this->set('error_code', 2011); // can't find key in the db
 		}
 				
 		return;

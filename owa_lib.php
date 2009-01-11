@@ -555,8 +555,21 @@ class owa_lib {
 	
 	function getRequestParams() {
 		
+		$params = array();
+		
+		if (!empty($_POST)) {
+			$params = $_POST;
+		} else {
+			$params = $_GET;
+		}
+		
+		if (!empty($_COOKIE)) {
+			
+			$params = array_merge($params, $_COOKIE);
+		}
+		
 		// Clean Input arrays
-		$params = owa_lib::inputFilter($_REQUEST);
+		$params = owa_lib::inputFilter($params);
 		
 		return owa_lib::stripParams($params);
 	}

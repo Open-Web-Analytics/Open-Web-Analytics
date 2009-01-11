@@ -18,7 +18,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
  * Login Form Controller
