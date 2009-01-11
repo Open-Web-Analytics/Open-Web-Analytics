@@ -39,36 +39,43 @@ class owa_passwordResetRequestController extends owa_controller {
 	
 	function __construct($params) {
 		
-		return parent::__construct($params);
-	}
-	
-	function action() {
+		parent::__construct($params);
 		
-		// Check to see if this email exists in the db
-		// fetch user object from the db
-		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('email_address', $this->getParam('email_address'));
-		$uid = $u->get('user_id');	
-		
-		// If user exists then fire event and return view
-		if (!empty($uid)) {
-			
-			// Log password reset request to event queue
-			$eq = &eventQueue::get_instance();
-			$eq->log(array('user_id' => $uid), 'base.reset_password');
-		
-			// return view
-			$this->setView('base.passwordResetForm');
-			$this->set('status_msg', $this->getMsg(2000, $this->getParam('email_address')));	
-			
-		// if user does not exists just return view with error
-		} else {
-			$this->setView('base.passwordResetForm');
-			$this->set('error_msg', $this->getMsg(2001, $this->getParam('email_address')));
-		}
+		$v1 = owa_coreAPI::validationFactory('entityDoesNotExist');
+		$v1->setConfig('entity', 'base.user');
+		$v1->setConfig('column', 'email_address');
+		$v1->setValues($this->getParam('email_address'));
+		$v1->setErrorMessage($this->getMsg(3010));
+		$this->setValidation('email_address', $v1);
 		
 		return;
 	}
+	
+	function action() {
+				
+		// Log password reset request to event queue
+		$eq = &eventQueue::get_instance();
+		
+		$eq->log(array('email_address' => $this->getParam('email_address')), 'base.reset_password');
+	
+		// return view
+		$this->setView('base.passwordResetForm');
+		$email_address = $this->getParam('email_address');
+		$msg = $this->getMsg(2000, $email_address);
+		$this->set('status_msg', $msg);	
+							
+		return;
+	}
+	
+	function errorAction() {
+	
+		$this->setView('base.passwordResetForm');
+		$this->set('error_msg', $this->getMsg(2001, $this->getParam('email_address')));
+		return;
+	}
+	
+	
+	
 }
 
 

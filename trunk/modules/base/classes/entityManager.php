@@ -183,7 +183,7 @@ class owa_entityManager extends owa_base {
 	 */
 	function update($where = '') {	
 		
-		$this->entity->update($where);
+		return $this->entity->update($where);
 		
 	}
 	

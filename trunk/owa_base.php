@@ -100,7 +100,12 @@ class owa_base {
 	 */
 	function getMsg($code, $s1 = null, $s2 = null, $s3 = null, $s4 = null) {
 		
-		include_once(OWA_DIR.'conf/messages.php');
+		static $_owa_messages;
+		
+		if (empty($_owa_messages)) {
+			
+			require_once(OWA_DIR.'conf/messages.php');
+		}
 		
 		switch ($_owa_messages[$code][1]) {
 			
