@@ -513,7 +513,7 @@ class owa_template extends Template {
 		
 	function makeJson($array) {
 		
-		$reserved_words = array('do' => 'action');
+		$reserved_words = owa_coreAPI::getSetting('base', 'reserved_words');
 		
 		$json = '{';
 		

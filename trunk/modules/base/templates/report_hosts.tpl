@@ -25,7 +25,7 @@
 	<?php endforeach; ?>
 	</tbody>
 </table>
-	
+
 <?=$this->makePagination($pagination, array('do' => $params['do']));?>
 
 <?php else:?>

@@ -411,6 +411,7 @@
 			'do_not_log_admins'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
+			'reserved_words'				=> array('do' => 'action'),
 			'login_view'					=> 'base.login',
 			'not_capable_view'				=> 'base.error',
 			'start_page'					=> 'base.reportDashboard',

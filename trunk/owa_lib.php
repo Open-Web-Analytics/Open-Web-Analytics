@@ -574,6 +574,23 @@ class owa_lib {
 		return owa_lib::stripParams($params);
 	}
 	
+	function rekeyArray($array, $new_keys) {
+	
+		$new_keys = $new_keys;
+		$new_array = array();
+		foreach ($array as $k => $v) {
+		
+			if (array_key_exists($k, $new_keys)) {
+				$k = $new_keys[$k];
+			}
+			
+			$new_array[$k] = $v;
+		}
+		
+		return $new_array;
+	}
+	
+	
 	function stripParams($params) {
 		
 		
