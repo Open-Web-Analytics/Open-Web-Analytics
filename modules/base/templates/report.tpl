@@ -6,10 +6,10 @@ OWA.items['<?=$dom_id;?>'].dom_id = "<?=$dom_id;?>";
 OWA.items['<?=$dom_id;?>'].page_num = "<?=$pagination['page_num'];?>1";
 OWA.items['<?=$dom_id;?>'].max_page_num = "<?=$pagination['max_page_num'];?>";
 OWA.items['<?=$dom_id;?>'].max_page_num = "<?=$pagination['more_pages'];?>";
-<? foreach ($params as $k => $v): ?>
-OWA.items['<?=$dom_id;?>'].properties.<?=$k;?> = "<?=$v;?>";
-<? endforeach;?>
-
+<? //foreach ($params as $k => $v): ?>
+//OWA.items['<?=$dom_id;?>'].properties.<?=$k;?> = "<?=$v;?>";
+<? //endforeach;?>
+OWA.items['<?=$dom_id;?>'].properties = <?=$this->makeJson($params);?>;
 </SCRIPT>
 
 <div id="<?=$dom_id;?>" class="owa_reportContainer">

@@ -462,106 +462,6 @@ class owa_template extends Template {
 		return $this->file;
 		
 	}
-	/*
-
-	function ofc($url, $use_swfobject = true, $id, $base = '') {
-	
-		if (empty($width)):
-			$width = '100%';
-		endif;
-		
-		$base = $this->config['public_url'].'includes/ofc-1.9/';
-		//
-		// I think we may use swfobject for all browsers,
-		// not JUST for IE...
-		//
-		//$ie = strstr(getenv('HTTP_USER_AGENT'), 'MSIE');
-		
-		//
-		// escape the & and stuff:
-		//
-		$url = urlencode($url);
-		
-		//
-		// output buffer
-		//
-		$out = array();
-		
-		//
-		// check for http or https:
-		//
-		if (isset ($_SERVER['HTTPS']))
-		{
-			if (strtoupper ($_SERVER['HTTPS']) == 'ON')
-			{
-				$protocol = 'https';
-			}
-			else
-			{
-				$protocol = 'http';
-			}
-		}
-		else
-		{
-			$protocol = 'http';
-		}
-		
-		//
-		// if there are more than one charts on the
-		// page, give each a different ID
-		//
-		global $open_flash_chart_seqno;
-		$obj_id = 'chart';
-		
-		$div_name = 'ofc_chart_object_'.$id;
-		
-		//$out[] = '<script type="text/javascript" src="'. $base .'js/ofc.js"></script>';
-		
-		if( !isset( $open_flash_chart_seqno ) )
-		{
-			$open_flash_chart_seqno = 1;
-			$out[] = '<script type="text/javascript" src="'. $base .'swfobject.js"></script>';
-		}
-		else
-		{
-			$open_flash_chart_seqno++;
-			$obj_id .= '_'. $open_flash_chart_seqno;
-			$div_name .= '_'. $open_flash_chart_seqno;
-		}
-		
-		if( $use_swfobject )
-		{
-		// Using library for auto-enabling Flash object on IE, disabled-Javascript proof  
-		$out[] = '<div id="'. $div_name .'" class="owa_ofcChart"></div>';
-		$out[] = '<script type="text/javascript">';
-		$out[] = 'var so = new SWFObject("'. $base .'actionscript/open-flash-chart.swf", "'. $obj_id .'", "'. $width . '", "' . $height . '", "9", "#FFFFFF");';
-		//$out[] = 'so.addVariable("width", "' . $width . '");';
-		//$out[] = 'so.addVariable("height", "' . $height . '");';
-		$out[] = 'so.addVariable("data", "'. $url . '");';
-		$out[] = 'so.addParam("allowScriptAccess", "sameDomain");';
-		$out[] = 'so.write("'. $div_name .'");';
-		$out[] = '</script>';
-		$out[] = '<noscript>';
-		}
-	
-		$out[] = '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="' . $protocol . '://fpdownload.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" ';
-		$out[] = 'width="' . $width . '" height="' . $height . '" id="ie_'. $obj_id .'" align="middle">';
-		$out[] = '<param name="allowScriptAccess" value="sameDomain" />';
-		$out[] = '<param name="movie" value="'. $base .'open-flash-chart.swf?width='. $width .'&height='. $height . '&data='. $url .'" />';
-		$out[] = '<param name="quality" value="high" />';
-		$out[] = '<param name="bgcolor" value="#FFFFFF" />';
-		$out[] = '<embed src="'. $base .'actionscript/open-flash-chart.swf?data=' . $url .'" quality="high" bgcolor="#FFFFFF" width="'. $width .'" height="'. $height .'" name="'. $obj_id .'" align="middle" allowScriptAccess="sameDomain" ';
-		$out[] = 'type="application/x-shockwave-flash" pluginspage="' . $protocol . '://www.macromedia.com/go/getflashplayer" id="'. $obj_id .'"/>';
-		$out[] = '</object>';
-	
-		if ( $use_swfobject ) {
-		$out[] = '</noscript>';
-		}
-		
-		return implode("\n",$out);
-	}
-	
-*/
 	
 	function getWidget($do, $params = array(), $wrapper = true, $add_state = true) {
 		
@@ -613,6 +513,8 @@ class owa_template extends Template {
 		
 	function makeJson($array) {
 		
+		$reserved_words = array('do' => 'action');
+		
 		$json = '{';
 		
 		foreach ($array as $k => $v) {
@@ -624,6 +526,10 @@ class owa_template extends Template {
 					$v = '';
 				}
 				
+			}
+			
+			if (in_array($k, array_keys($reserved_words))) {
+				$k = $reserved_words[$k];
 			}
 			
 			$json .= sprintf('%s: "%s", ', $k, $v);
