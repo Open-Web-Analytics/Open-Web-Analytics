@@ -79,6 +79,8 @@ class owa_requestContainer {
 			
 			$params = owa_lib::getRequestParams();
 			
+			$params = owa_lib::rekeyArray($params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
+			
 			$params['guid'] = $this->guid;
 			
 			return $params;
