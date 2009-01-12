@@ -30,40 +30,13 @@
 
 class owa_requestContainer {
 	
-	var $php_self;
 	var $cli_args;
-	var $gateway_interface;
-	var $server_ip_address;
-	var $server_name;
-	var $server_software;
-	var $server_protocol;
-	var $server_document_root;
-	var $request_method;
-	var $request_time;
-	var $query_string;
 	var $is_https;
-	var $remote_ip_address;
-	var $remote_host;
-	var $remote_port;
-	var $path_translated;
-	var $script_filename;
-	var $request_uri;
-	var $server_auth_user;
-	var $server_auth_password;
-	var $auth_type;
 	var $owa_params;
 	var $cookies;
 	var $request;
+	var $server;
 	var $guid;
-	
-	/**
-	 * Request Params
-	 * @depricated
-	 * @var array
-	 */
-	var $params;
-	
-
 	
 	/**
 	 * Singleton returns request params
@@ -78,7 +51,7 @@ class owa_requestContainer {
 		if(empty($params)):
 			
 			$params = owa_lib::getRequestParams();
-			
+			// translate certain request variables that are reserved in javascript
 			$params = owa_lib::rekeyArray($params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 			
 			$params['guid'] = $this->guid;
@@ -102,39 +75,56 @@ class owa_requestContainer {
 		
 		$this->guid = crc32(microtime().getmypid());
 		
-		$this->cli_args = $_SERVER['argv'];
+		// CLI args
+		if (array_key_exists('argv', $_SERVER)) {
+			
+			$this->cli_args = $_SERVER['argv'];
+		}
 		
-		$this->php_self = $_SERVER['PHP_SELF'];
-		$this->gateway_interface = $_SERVER['GATEWAY_INTERFACE'];
-		$this->server_ip_address = $_SERVER['SERVER_ADDR'];
-		$this->server_name = $_SERVER['SERVER_NAME'];
-		$this->server_software = $_SERVER['SERVER_SOFTWARE'];
-		$this->server_protocol = $_SERVER['SERVER_PROTOCOL'];
-		$this->server_document_root = $_SERVER['DOCUMENT_ROOT'];
-		$this->server_auth_user = $_SERVER['PHP_AUTH_USER'];
-		$this->server_auth_password = $_SERVER['PHP_AUTH_PW'];
-		$this->server_auth_type = $_SERVER['AUTH_TYPE'];
-		$this->server_path_translated = $_SERVER['PATH_TRANSLATED'];
-		$this->request_method = $_SERVER['REQUEST_METHOD'];
-		$this->request_time = $_SERVER['REQUEST_TIME'];
-		$this->query_string = $_SERVER['QUERY_STRING'];
-		$this->http_accept = $_SERVER['HTTP_ACCEPT'];
-		$this->http_accept_charset = $_SERVER['HTTP_ACCEPT_CHARSET'];
-		$this->http_accept_encoding = $_SERVER['HTTP_ACCEPT_ENCODING'];
-		$this->http_accept_language = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
-		$this->http_connection = $_SERVER['HTTP_CONNECTION'];
-		$this->http_host = $_SERVER['HTTP_HOST'];
-		$this->http_referer = $_SERVER['HTTP_REFERER'];
-		$this->http_user_agent = $_SERVER['HTTP_USER_AGENT'];
-		$this->remote_ip_address = $_SERVER['REMOTE_ADDR'];
-		$this->remote_host = $_SERVER['REMOTE_HOST'];
-		$this->remote_port = $_SERVER['REMOTE_PORT'];
-		$this->script_filename = $_SERVER['SCRIPT_FILENAME'];
-		$this->request_uri = $_SERVER['REQUEST_URI'];
-		$this->cookies = $_COOKIE;
-		$this->request = owa_lib::inputFilter($_REQUEST);
+		// php's server variables
+		$this->server = $_SERVER;
+		
+		// files
+		if (!empty($_FILES)) {
+			$this->files = $_FILES;	
+		}
+		
+		// cookies
+		if (!empty($_COOKIE)) {
+			$this->cookies = $_COOKIE;
+		}
+		
+		// create request params from GET or POST or CLI args
+		$params = array();
+		
+		if (!empty($_POST)):
+			// get params from _POST
+			$params = $_POST;
+		elseif (!empty($_GET)):
+			// get params from _GET
+			$params = $_GET;
+		elseif (!empty($this->cli_args)):
+			// get params from the command line args
+			// $argv is a php super global variable
+			
+			   for ($i=1; $i<count($this->cli_args);$i++)
+			   {
+				   $it = split("=",$this->cli_args[$i]);
+				   $params[$it[0]] = $it[1];
+			   }
+		endif;
+		
+		// merge in cookies into the request params
+		if (!empty($_COOKIE)) {
+			$params = array_merge($params, $_COOKIE);
+		}
+		
+		// Clean Input arrays
+		$this->request = owa_lib::inputFilter($params);	
+		// strip owa namespace
 		$this->owa_params = owa_lib::stripParams($this->request);
-		
+		// translate certain request variables that are reserved in javascript
+		$this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 		
 		if(isset($_SERVER['HTTPS'])):
 			$this->is_https = true;
@@ -143,19 +133,7 @@ class owa_requestContainer {
 		return;
 	
 	}
-	
-	function get($name) {
-	
-		return $this->$name;
-	
-	}
-	
-	function set($name, $value) {
 		
-		$this->$name = $value;
-		return true;
-	}
-	
 	function getParam($name) {
 	
 		return $this->owa_params[$name];
