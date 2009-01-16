@@ -39,6 +39,7 @@ class owa_installEmbeddedController extends owa_controller {
 	
 	function owa_installEmbeddedController($params) {
 		$this->owa_controller($params);
+		$this->c->setSettingTemporary('base', 'cache_objects', false);
 		$this->setRequiredCapability('edit_modules');
 		return;
 	}

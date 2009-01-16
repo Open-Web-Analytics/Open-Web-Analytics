@@ -127,8 +127,8 @@ div {margin:0;}
 .validation_error {color:red;}
 
 /* Admin Settings */
-.setting {padding:5px;border:1px solid #cccccc; margin:1px;}
-.setting .description {border:0px solid #cccccc; font-size:10px; padding: 2px 0 2px 0;}
+.setting {padding:5px;border:1px solid #cccccc; margin:10px;}
+.setting .description {border:0px solid #cccccc; font-size:12px; padding: 2px 0 2px 0;}
 .setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
 .setting .field {padding: 2px 0 2px 0;}
 

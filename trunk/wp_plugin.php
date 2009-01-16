@@ -103,28 +103,11 @@ function owa_getInstance($params = array()) {
 		
 		$owa = new owa_wp($config);
 		
-		// adds wordpress specific user priviledge info to the request params
+		// Access WP current user object to check permissions
 		global $current_user;
       	get_currentuserinfo();
       	
-      	/*
-      	
-      	//print_r($current_user);
-		$owa->params['caller']['wordpress']['user_data'] = array(
-	
-		'user_roles' 	=> $current_user->roles, 
-		'user_ID'		=> $current_user->user_ID,
-		'user_login'	=> $current_user->user_login,
-		'user_email'	=> $current_user->user_email,
-		'user_identity'	=> $current_user->user_identity,
-		'user_password'	=> 'xxxxxxxxx');
-		
-		$owa->params['u'] = $current_user->user_login;
-		$owa->params['p'] = 'xxxxxxxxx';
-		
-		*/
-		
-		// preemptively set the current user info and mark as authenticated so that
+		// preemptively set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
 		$cu->setUserData('user_id', $current_user->user_ID);
@@ -209,13 +192,6 @@ function owa_main() {
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists(is_preview)):
 		if (is_preview()):
-			$owa->params['do_not_log'] = true;
-		endif;
-	endif;
-	
-	// Don't Log if user is an admin
-	if($user_level == '10'):
-		if ($owa->config['do_not_log_admins'] == true):
 			$owa->params['do_not_log'] = true;
 		endif;
 	endif;

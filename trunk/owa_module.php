@@ -362,16 +362,18 @@ function addNavigationLink($link) {
 			$ret = $this->postInstall();
 			
 			if ($ret == true):
-				// save schema version to configuration
-				$this->c->setSetting($this->name, 'schema_version', $this->schema_version);
-				//activate the module and save the configuration
-				$this->activate();
-				$this->e->notice("Installation complete.");
-				return true;
+				$this->e->notice("Post install proceadure success.");;
 			else:
 				$this->e->notice("Post install proceadure failed.");
-				return true;
 			endif;
+			
+			// save schema version to configuration
+			$this->c->setSetting($this->name, 'schema_version', $this->schema_version);
+			//activate the module and save the configuration
+			$this->activate();
+			$this->e->notice("Installation complete.");
+			return true;
+			
 		else:
 			$this->e->notice("Installation failed.");
 			return false;
@@ -458,12 +460,13 @@ function addNavigationLink($link) {
 	 */
 	function activate() {
 		
-		if ($this->name != 'base'):
+		//if ($this->name != 'base'):
 		
 			$this->c->setSetting($this->name, 'is_active', true);
 			$this->c->save();
+			$this->e->notice("Module $this->name activated");
 			
-		endif;
+		//endif;
 		
 		return;
 	}

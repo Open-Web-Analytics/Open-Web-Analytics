@@ -373,7 +373,20 @@ class owa_entity {
 	function getTableName() {
 		return get_class($this);
 	}
+	/*
 
+	function setMeta($name, $value) {
+	
+		$this->_meta[$name] = $value;
+		return;
+	}
+	
+	function getMeta($name) {
+		
+		return $this->_meta[$name];
+	}
+
+*/
 	
 }
 

@@ -39,6 +39,19 @@
 		</div>
 	</div>	
 	
+	<div class="setting" id="log_admins">	
+		<div class="title">Log Requests From Admin Users</div>
+		<div class="description">Controls the logging of page requests made by OWA Users with an Admin role.</div>
+		<div class="field">
+			<SELECT NAME="<?=$this->getNs();?>config[log_admins]">
+				<OPTION VALUE="0" <? if ($config['log_admins'] == false):?>SELECTED<?endif;?>>Off</OPTION>
+				<OPTION VALUE="1" <? if ($config['log_admins'] == true):?>SELECTED<?endif;?>>On</OPTION>
+			</SELECT>
+		</div>
+	</div>	
+
+	
+	
 	<div class="setting" id="fetch_refering_page_info">	
 		<div class="title">Fetch Referring Web Page Info</div> 
 		<div class="description">Controls whether OWA should crawl the web pages that refer visitors to your web site and extract descriptive meta-data that will be used in reporting.</div>

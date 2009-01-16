@@ -274,6 +274,22 @@
  	}
  	
  	/**
+ 	 * Adds Setting value to be configuration but DOES NOT add to persistant data store
+ 	 * 
+ 	 * @param string $module the name of the module
+ 	 * @param string $key the configuration key
+ 	 * @param string $value the configuration value
+ 	 * @return 
+ 	 */
+ 	function setSettingTemporary($module, $key, $value) {
+ 	
+ 		$this->set($module, $key, $value);
+	 	
+	 	return;
+ 	
+ 	}
+ 	
+ 	/**
  	 * Replaces all values of a particular module's configuration
  	 * 
  	 */
@@ -408,7 +424,7 @@
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
 			'cache_objects'					=> true,
-			'do_not_log_admins'				=> true,
+			'log_admins'					=> false,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
 			'reserved_words'				=> array('do' => 'action'),

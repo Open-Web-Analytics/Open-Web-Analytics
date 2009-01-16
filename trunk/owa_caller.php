@@ -294,6 +294,7 @@ class owa_caller extends owa_base {
 		endif;
 		
 		//change config value to incomming site_id
+		// NEEDED?
 		if(!empty($caller_params['site_id'])):
 			$this->config['site_id'] = $caller_params['site_id'];
 			$this->c->set('base', 'site_id', $caller_params['site_id']);
@@ -304,6 +305,18 @@ class owa_caller extends owa_base {
 		// do not log if the request is from a reserved IP
 		// ips = $this->c->get('base', 'log_not_log_ips');
 		//	...
+		
+		
+		// Don't Log if user is an admin
+		if (owa_coreAPI::getSetting('base', 'log_admins') != true):
+			
+			$cu_role = owa_coreAPI::getCurrentUser()->getRole();
+			
+			if($cu_role === 'admin'):
+				return false;
+			endif;
+		endif;
+			
 		
 		// do not log if the do not log param is set by caller.
 		if ($this->params['do_not_log'] == true):
