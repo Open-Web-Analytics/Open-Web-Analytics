@@ -163,29 +163,6 @@ function owa_set_priviledges() {
 	
 	$owa = owa_factory();
 	
-	/*
-
-	$owa->params['caller']['mediawiki']['user_data'] = array(
-	
-					'user_level' 	=> $wgUser->mGroups,
-					'user_ID'		=> $wgUser->mName,
-					'user_login'	=> $wgUser->mName,
-					'user_email'	=> $wgUser->mEmail,
-					'user_identity'	=> $wgUser->mRealName,
-					//'user_password'	=> $wgUser->mPassword
-					);
-					
-	$owa->params['u'] = 'xxxxx'.$wgUser->mName;
-	$owa->params['p'] = 'xxxxxxx';//$wgUser->mPassword;
-	
-	*/
-	
-	if ($owa->config['do_not_log_admins'] == true):
-		if (strtolower($wgUser->mGroups) == 'sysop' || 'bureaucrat' || 'developer'):
-			$owa->params['do_not_log'] = true;
-		endif;
-	endif;		
-	
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
 	$cu =&owa_coreAPI::getCurrentUser();
