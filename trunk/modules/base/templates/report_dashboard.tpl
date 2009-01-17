@@ -24,7 +24,7 @@
 	<table class="owa_reportElement">
 		<TR>
 			<TD valign="top" width="50%">	
-				<?=$this->getWidget('base.widgetVisitorSources', array('height' => '200px', 'width' => '100%', 'period' => $params['period']));?>
+				<?=$this->getWidget('base.widgetVisitorSources', array('height' => '320px', 'width' => '100%', 'period' => $params['period']));?>
 	
 			</TD>
 			

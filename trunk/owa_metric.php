@@ -336,7 +336,7 @@ class owa_metric extends owa_base {
 	
 	}
 	
-	function zeroFill($array) {
+	function zeroFill(&$array) {
 	
 		// PHP 5 only function used here
 		if (function_exists("array_walk_recursive")) {

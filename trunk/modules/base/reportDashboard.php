@@ -51,7 +51,6 @@ class owa_reportDashboardController extends owa_reportController {
 		$d = owa_coreAPI::metricFactory('base.dashCounts');
 		$d->setPeriod($this->getPeriod());
 		$d->setConstraint('site_id', $this->getParam('site_id')); 
-		$d->setOrder('ASC');
 		$res = $d->generate();
 		//print_r($d->zeroFill($res));
 		$this->set('summary_stats_data', $d->zeroFill($res));
