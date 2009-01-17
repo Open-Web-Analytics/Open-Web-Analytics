@@ -50,6 +50,7 @@ class owa_reportKeywordsController extends owa_reportController {
 		$k->setConstraint('site_id', $this->getParam('site_id')); 
 		$k->setLimit(30);
 		$k->setPage($this->get('page'));
+		$k->setOrder('DESC');
 		$this->set('top_keywords', $k->generate());
 		$this->setPagination($k->getPagination());
 	

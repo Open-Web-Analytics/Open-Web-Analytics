@@ -53,7 +53,7 @@ class owa_dashCounts extends owa_metric {
 		
 		$ret = $this->db->getOneRow();
 		
-		return $ret;
+		return $this->zeroFill($ret);
 		
 	}
 	

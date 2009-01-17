@@ -48,8 +48,7 @@ class owa_topReferingKeywords extends owa_metric {
 		$this->db->selectFrom('owa_session', 'session');
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
 		$this->db->groupBy('referer.query_terms');		
-		$this->db->orderBy('count');	
-		$this->db->order('DESC');
+		$this->db->orderBy('count', $this->getOrder());	
 		$this->db->where('referer.id', 0, '!=');
 		$this->db->where('referer.query_terms', ' ', '!=');		
 		
