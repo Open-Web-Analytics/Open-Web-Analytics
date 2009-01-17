@@ -310,7 +310,8 @@ class owa_caller extends owa_base {
 		// Don't Log if user is an admin
 		if (owa_coreAPI::getSetting('base', 'log_admins') != true):
 			
-			$cu_role = owa_coreAPI::getCurrentUser()->getRole();
+			$cu = owa_coreAPI::getCurrentUser();
+			$cu_role = $cu->getRole();
 			
 			if($cu_role === 'admin'):
 				return false;
