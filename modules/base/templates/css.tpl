@@ -50,12 +50,13 @@ div {margin:0;}
 	height:2em;
 	line-height:2em;
 	float: left;
-	width: 15px;
+	width: auto;
 	display: block;
 	border: 0.1em solid #efefef;
 	color: ;
 	text-decoration: none;
 	text-align: center;
+	padding:0px 2px 0px 2px;
 }
 
 .owa_headerServiceMsg {border: 1px solid #efefef;border-left: 8px solid yellow; height: 25px; width: auto; padding:10px}
