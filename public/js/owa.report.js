@@ -56,6 +56,7 @@ jQuery(document).ready(function(){
 		navigation: true,
 		header: 'h2.nav_header',
 		selectedClass: 'open',
+		autoHeight: false,
 		event: 'mouseover'
 	});
 	jQuery("#owa_reportPeriodLabelContainer").click(function() { 
@@ -73,7 +74,9 @@ jQuery(document).ready(function(){
 	// make tables sortable
 	jQuery.tablesorter.defaults.widgets = ['zebra'];
 	jQuery('.tablesorter').tablesorter();
-	
+	$('.owa_admin_nav_topmenu_toggle').click(function () { 
+      $(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
+    });
 });
 
 
