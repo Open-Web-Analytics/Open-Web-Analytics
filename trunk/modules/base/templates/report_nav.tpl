@@ -19,7 +19,10 @@
 					<UL>
 						<?php foreach ($l['subgroup'] as $sgl): ?>
 						<LI>
-							<a href="<?=$this->makeLink(array('do' => $sgl['ref']), true);?>"><?=$sgl['anchortext'];?></a>
+							<div class="owa_admin_nav_subgroup_item">
+								<a href="<?=$this->makeLink(array('do' => $sgl['ref']), true);?>"><?=$sgl['anchortext'];?></a>
+							</div>
+							
 						</LI>
 						<?php endforeach;?>
 					</UL>

@@ -32,8 +32,20 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 
 class owa_baseModule extends owa_module {
 	
-	
+	/**
+	 * PHP 4 constructor
+	 * Remains for backwards compatibility
+	 */
 	function owa_baseModule() {
+		
+		return owa_baseModule::__construct();
+	}
+	
+	/**
+	 * Constructor
+	 * 
+	 */
+	function __construct() {
 		
 		$this->name = 'base';
 		$this->display_name = 'Open Web Analytics';
@@ -44,14 +56,11 @@ class owa_baseModule extends owa_module {
 		$this->config_required = false;
 		$this->required_schema_version = 2;
 		
-		
-		$this->owa_module();
-		//$this->c->set('base', 'schema_version', '1');
-		return;
+		return parent::__construct();
 	}
 	
 	/**
-	 * Registers Admin panels with the core API
+	 * Registers Admin panels
 	 *
 	 */
 	function registerAdminPanels() {
@@ -101,7 +110,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);							$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Keywords', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);							$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Spy Dashboard', 1);	
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);							$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);	
 		
 		return;
 		
@@ -149,7 +158,7 @@ class owa_baseModule extends owa_module {
 		// User management
 		$this->_addHandler('base.new_session', 'visitorHandlers');
 
-		// Nofofcation handlers
+		// Nofifcation handlers
 		$this->_addHandler('base.new_session', 'notifyHandlers');
 
 		
@@ -177,10 +186,7 @@ class owa_baseModule extends owa_module {
 								'configuration'));
 		
 	}
-	
-	
-	
-	
+		
 }
 
 

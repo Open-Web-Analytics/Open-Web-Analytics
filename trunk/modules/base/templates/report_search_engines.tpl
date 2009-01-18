@@ -12,7 +12,7 @@
 </div>
 
 <div class="owa_reportSectionContent">			
-	<? if (!empty($se_hosts)):?>
+	<?php if (!empty($se_hosts)):?>
 	
 	<table class="tablesorter">
 		<thead>
@@ -25,11 +25,11 @@
 		<?php foreach($se_hosts as $host): ?>
 			
 		<TR>
-			<td><? if ($host['site_name']): ?>
+			<td><?php if ($host['site_name']): ?>
 					<?=$host['site_name'];?> (<?=$host['site'];?>) 
-				<? else:?>
+				<?php  else:?>
 					<?=$host['site'];?>
-				<?endif;?>
+				<?php endif;?>
 			</td>
 			<TD class="data_cell"><?=$host['count']?></TD>
 		</TR>

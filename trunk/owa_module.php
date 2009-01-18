@@ -160,7 +160,13 @@ class owa_module extends owa_base {
 	 */
 	function owa_module() {
 		
-		$this->owa_base();
+		return owa_module::__construct();
+		
+	}
+	
+	function __construct() {
+		
+		parent::__construct();
 		
 		// register event handlers unless OWA is operating in async handling mode
 		if ($this->config['async_db'] == false):
@@ -170,7 +176,6 @@ class owa_module extends owa_base {
 		$this->_registerEntities();
 		
 		return;
-		
 	}
 	
 	/**
