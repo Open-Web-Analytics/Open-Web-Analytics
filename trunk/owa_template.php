@@ -271,10 +271,9 @@ class owa_template extends Template {
 		endif;
 		
 	}
-	
 		
 	function makeTwoLevelNav($links) {
-	
+		print_r($links);
 		$navigation = '<UL id="report_top_level_nav_ul">';
 
 		foreach($links as $k => $v) {
@@ -595,6 +594,22 @@ class owa_template extends Template {
 		if (array_key_exists($name, $this->vars)) {
 			return $this->vars[$name];
 		} else {
+			return false;
+		}
+		
+	}
+	
+	function makeNavigationMenu($links) {
+		
+		if (!empty($links)) {
+		
+			$t = new owa_template;
+			$t->set('links', $links);
+			$t->caller_params['link_state'] = $this->caller_params['link_state'];
+			$t->set_template('report_nav.tpl');
+			return $t->fetch();
+		} else {
+		
 			return false;
 		}
 		

@@ -20,7 +20,8 @@ OWA.items['<?=$dom_id;?>'].properties = <?=$this->makeJson($params);?>;
 		<TD valign="top" class="owa_reportLeftNavColumn">
 			<div id="owa_report-filters"><? include('filter_site.tpl');?></div>
 			<div id="owa_reportNavPanel">
-				<?=$this->makeTwoLevelNav($top_level_report_nav);?>
+				<? //$this->makeTwoLevelNav($top_level_report_nav);?>
+				<?=$this->makeNavigationMenu($top_level_report_nav);?>
 			</div>
 			
 		</TD>

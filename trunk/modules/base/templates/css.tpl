@@ -40,6 +40,8 @@ div {margin:0;}
 	text-align: center;
 }
 
+
+
 .owa_pagination {float:left; overflow: hidden;}
 .owa_pagination ul {list-style: none; padding: 0; margin: 0;}
 .owa_pagination li {text-decoration: none; float:left; margin: 2px;}
