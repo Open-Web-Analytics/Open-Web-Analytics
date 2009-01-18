@@ -51,14 +51,6 @@ jQuery(document).ready(function(){
 	jQuery('#owa_reportSiteFilterSelect').change(owa_report_reload);
 	jQuery("#owa_reportPeriodFilterSubmit").click(owa_report_reload);
 	jQuery('#owa_reportPeriodFilter').change(owa_reportSetPeriod);
-	jQuery('#report_top_level_nav_ul').accordion({
-		//onClick: navigateAway;
-		navigation: true,
-		header: 'h2.nav_header',
-		selectedClass: 'open',
-		autoHeight: false,
-		event: 'mouseover'
-	});
 	jQuery("#owa_reportPeriodLabelContainer").click(function() { 
 		jQuery("#owa_reportPeriodFiltersContainer").toggle();
 	});
@@ -74,8 +66,9 @@ jQuery(document).ready(function(){
 	// make tables sortable
 	jQuery.tablesorter.defaults.widgets = ['zebra'];
 	jQuery('.tablesorter').tablesorter();
-	$('.owa_admin_nav_topmenu_toggle').click(function () { 
-      $(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
+	// report side navigaion panels - toggle
+	jQuery('.owa_admin_nav_topmenu_toggle').click(function () { 
+      jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
     });
 });
 
