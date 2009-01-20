@@ -17,7 +17,7 @@
 //
 
 /**
- * Test Update Class
+ * 003 Update Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,7 +29,7 @@
  */
 
 
-class owa_base_002_update extends owa_update {
+class owa_base_003_update extends owa_update {
 
 	function up() {
 		
