@@ -35,10 +35,13 @@ class owa_optionsModulesController extends owa_adminController {
 	
 	function owa_optionsModulesController($params) {
 		
-		$this->owa_adminController($params);
-		$this->setRequiredCapability('edit_modules');
+		return owa_optionsModulesController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		return;
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
 	}
 
 	function action() {
@@ -63,6 +66,9 @@ class owa_optionsModulesController extends owa_adminController {
 		 				$dirs[$file]['version'] = $mod->version;
 		 				$dirs[$file]['description'] = $mod->description;
 		 				$dirs[$file]['config_required'] = $mod->config_required;
+		 				$dirs[$file]['current_schema_version'] = $mod->getSchemaVersion();
+		 				$dirs[$file]['required_schema_version'] = $mod->getRequiredSchemaVersion();
+		 				$dirs[$file]['schema_uptodate'] = $mod->isSchemaCurrent();
 		 				//$dirs['stats'] = lstat($path.$file);
 		 				
  					endif;
@@ -76,7 +82,7 @@ class owa_optionsModulesController extends owa_adminController {
 		ksort($dirs);
 		
 		// remove base module so it can't be deactivated
-		unset($dirs['base']);
+		// unset($dirs['base']);
 		
 		$active_modules = owa_coreAPI::getActiveModules();
 		
@@ -88,12 +94,11 @@ class owa_optionsModulesController extends owa_adminController {
 		}
 		
 		// add data to container
-		$this->data['view'] = 'base.options';
-		$this->data['subview'] = 'base.optionsModules';
-		$this->data['view_method'] = 'delegate';
-		$this->data['modules'] = $dirs;
+		$this->setView('base.options');
+		$this->setSubview('base.optionsModules');
+		$this->set('modules', $dirs);
 		
-		return $this->data;
+		return;
 	
 	}
 	
@@ -136,7 +141,7 @@ class owa_optionsModulesView extends owa_view {
 		$this->body->set('headline', 'Modules Administration');
 	
 		// Assign module data
-		$this->body->set('modules', $data['modules']);
+		$this->body->set('modules', $this->get('modules'));
 		
 		return;
 	}
