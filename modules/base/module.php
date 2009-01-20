@@ -54,7 +54,7 @@ class owa_baseModule extends owa_module {
 		$this->version = '2.0';
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 2;
+		$this->required_schema_version = 3;
 		
 		return parent::__construct();
 	}
