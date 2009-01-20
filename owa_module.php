@@ -56,7 +56,7 @@ class owa_module extends owa_base {
 	 *
 	 * @var string
 	 */
-	var $schema_version = 1100;
+	var $schema_version = 1;
 	
 	/**
 	 * Name of author of module
@@ -508,13 +508,33 @@ function addNavigationLink($link) {
 	 */
 	function isSchemaCurrent() {
 		
-		$current_schema = $this->c->get($this->name, 'schema_version');
+		$current_schema = $this->getSchemaVersion();
+		$required_schema = $this->getRequiredSchemaVersion(); 
 		
-		if ($current_schema >= $this->required_schema_version):
+		owa_coreAPI::debug("Schema version is $current_schema");
+		owa_coreAPI::debug("Required Schema version is $required_schema");
+		
+		if ($current_schema >= $required_schema):
 			return true;
 		else:
 			return false;
 		endif;
+	}
+	
+	function getSchemaVersion() {
+		
+		$current_schema = $this->c->get($this->name, 'schema_version');
+		
+		if (empty($current_schema)):
+			$current_schema = 1;
+		endif;
+		
+		return $current_schema;
+	}
+	
+	function getRequiredSchemaVersion() {
+		
+		return $this->required_schema_version;
 	}
 	
 	/**
@@ -522,8 +542,6 @@ function addNavigationLink($link) {
 	 *
 	 */
 	function _registerUpdates() {
-		
-		
 		
 		return;
 	

@@ -986,6 +986,13 @@ class owa_coreAPI extends owa_base {
 		return owa_lib::factory(OWA_PLUGINS_DIR.'/validations', 'owa_', $class_file, array(), 'Validation');
 		
 	}
+	
+	function debug($msg) {
+		
+		$e = owa_coreAPI::errorSingleton();
+		$e->debug($msg);
+		return;
+	}
 
 	
 }
