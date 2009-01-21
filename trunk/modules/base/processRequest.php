@@ -38,9 +38,7 @@ class owa_processRequestController extends owa_processEventController {
 	function owa_processRequestController($params) {
 		
 		$this->owa_processEventController($params);
-		
-		$this->priviledge_level = 'guest';
-		
+				
 		return;
 	}
 	

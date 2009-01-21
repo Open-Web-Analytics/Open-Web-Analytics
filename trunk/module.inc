@@ -131,28 +131,12 @@ function owa_set_priviledges() {
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
 	$cu =&owa_coreAPI::getCurrentUser();
-	$cu->setUserData('user_id', $u->id);
+	$cu->setUserData('user_id', $u->userName);
 	$cu->setUserData('email_address', $u->email);
-	$cu->setUserData('real_name', $u->fullname);
+	$cu->setUserData('real_name', $u->fullName);
 	$cu->setRole($level);
 	$cu->setAuthStatus(true);
-	
-	/*
-			
-	$owa->params['caller']['gallery']['user_data'] = array(
-	
-					'user_level' 	=> $level,
-					'user_ID'		=> $u->id,
-					'user_login'	=> $u->userName,
-					'user_email'	=> $u->email,
-					'user_identity'	=> $u->fullname,
-					);
-					
-					$owa->params['u'] = $u->userName;
-					$owa->params['p'] = 'xxxxxxx';
-
-	*/
-	
+		
 	return;
 }
 
@@ -343,10 +327,8 @@ class owaOptionsView extends GalleryView {
 		
 		$params = array();
 		
-		 if (empty($owa->params['do'])):
-         	if (empty($owa->params['view'])):		
-				$params['view'] = 'base.options';
-			endif;
+		 if (empty($owa->params['do'])):	
+				$params['do'] = 'base.optionsGeneral';
 		endif;
 		       
 		$page = $owa->handleRequest($params);

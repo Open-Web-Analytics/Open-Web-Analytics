@@ -56,7 +56,7 @@ class owa_module extends owa_base {
 	 *
 	 * @var string
 	 */
-	var $schema_version = 1;
+	//var $schema_version = 1;
 	
 	/**
 	 * Name of author of module
@@ -373,7 +373,7 @@ function addNavigationLink($link) {
 			endif;
 			
 			// save schema version to configuration
-			$this->c->setSetting($this->name, 'schema_version', $this->schema_version);
+			$this->c->setSetting($this->name, 'schema_version', $this->getRequiredSchemaVersion());
 			//activate the module and save the configuration
 			$this->activate();
 			$this->e->notice("Installation complete.");
