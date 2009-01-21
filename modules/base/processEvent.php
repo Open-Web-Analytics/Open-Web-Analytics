@@ -40,8 +40,6 @@ class owa_processEventController extends owa_controller {
 	
 		$this->owa_controller($params);
 		
-		$this->priviledge_level = 'guest';
-		
 		return;
 	}
 	
@@ -135,6 +133,11 @@ class owa_processEventController extends owa_controller {
 		// Set Operating System
 		$this->event->setOs($this->params['browscap']['Platform']);
 		
+		// set user name and email
+		$cu = owa_coreAPI::getCurrentUser();
+		//print_r($cu);
+		$this->event->set('user_name', $cu->user->get('user_id'));
+		$this->event->set('user_email', $cu->user->get('email_address'));
 		return;
 		
 		
