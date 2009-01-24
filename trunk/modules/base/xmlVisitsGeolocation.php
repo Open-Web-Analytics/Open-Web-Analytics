@@ -38,19 +38,21 @@ class owa_xmlVisitsGeolocationController extends owa_reportController {
 
 	function owa_xmlVisitsGeolocationController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'guest';
+		return owa_xmlVisitsGeolocationController::__construct($params);
+	}
 	
-		return;
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {	
 
-				
-		if ($this->params['site_id']):
+		$site_id = $this->getParam('site_id');
+		if ($site_id):
 			//get site labels
 			$s = owa_coreAPI::entityFactory('base.site');
-			$s->getByColumn('site_id', $this->params['site_id']);
+			$s->getByColumn('site_id', $site_id);
 			$this->set('site_name', $s->get('name'));
 			$this->set('site_description', $s->get('description'));
 		else:

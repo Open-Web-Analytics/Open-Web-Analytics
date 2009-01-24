@@ -46,16 +46,33 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
 	}
 	
 	function action() {
+	
+		$site_id = $this->getParam('site_id');
+		if ($site_id):
+			//get site labels
+			$s = owa_coreAPI::entityFactory('base.site');
+			$s->getByColumn('site_id', $site_id);
+			$this->set('site_name', $s->get('name'));
+			$this->set('site_description', $s->get('description'));
+		else:
+			$this->set('site_name', 'All Sites');
+			$this->set('site_description', 'All Sites Tracked by OWA');
+		endif;
+		
+		//setup Metrics
+		$m = owa_coreApi::metricFactory('base.latestVisits');
+		$m->setConstraint('site_id', $this->getParam('site_id'));
+		//$period = $this->makeTimePeriod('all_time');
+		$m->setPeriod($this->getPeriod());
+		$m->setLimit(10);
+		$m->setOrder('DESC');
+		$this->set('latest_visits', $m->generate());
+	
+	
 		$this->setTitle('Visitor Geo-location');
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitsGeolocation');
-		$this->set('user_name', $this->getParam('u'));
 		
-		// perfrom authentication
-		// is this needed?
-		$auth = &owa_auth::get_instance();
-		
-		$this->set('passkey', $auth->generateUrlPasskey($this->getParam('u'), $this->getParam('p')));
 		
 		return;
 
@@ -91,12 +108,11 @@ class owa_reportVisitsGeolocationView extends owa_view {
 	function render($data) {
 		
 		// Assign data to templates
-		
 		$this->body->set_template('report_geolocation.tpl');
-		$this->body->set('headline', 'Visitor Geolocation Report');
-		$this->body->set('user_name', $this->data['user_name']);
-		$this->body->set('passkey', $this->data['passkey']);
+		$this->body->set('latest_visits', $this->get('latest_visits'));
 		$this->setjs('includes/jquery/jquery.jmap-r72.js');
+		$this->setjs('owa.map.js');
+		//$this->setjs('includes/markermanager.js');
 		
 		return;
 	}

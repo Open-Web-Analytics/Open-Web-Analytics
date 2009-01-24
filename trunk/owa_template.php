@@ -673,6 +673,21 @@ class owa_template extends Template {
 		return $t->fetch();	
 	
 	}	
+	
+	function subTemplate($template_name = '', $map = array(), $linkstate = array()) {
+	
+		$t = new owa_template;
+		
+		$t->set_template($template_name);
+		
+		foreach ($map as $k => $v) {
+			
+			$t->set($k, $v);
+		}
+		
+		return $t->fetch();	
+	
+	}
 }
 
 

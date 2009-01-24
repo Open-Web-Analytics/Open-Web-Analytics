@@ -768,7 +768,6 @@ Mapifies.CreateMarkerManager = function(element, options, callback) {
 	 * @namespace Mapifies.CreateMarkerManager
 	 * @id Mapifies.CreateMarkerManager.defaults
 	 * @alias Mapifies.CreateMarkerManager.defaults
-	 * @param {String} markerManager The type of marker manager to use.  Options are 'GMarkerManager' (default) and 'MarkerManager'.  (Added r72)
 	 * @param {Number} borderPadding Specifies, in pixels, the extra padding outside the map's current viewport monitored by a manager. Markers that fall within this padding are added to the map, even if they are not fully visible.
 	 * @param {Number} maxZoom The maximum zoom level to show markers at
 	 * @param {Boolean} trackMarkers Indicates whether or not a marker manager should track markers' movements.
