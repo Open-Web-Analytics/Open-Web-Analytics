@@ -64,10 +64,12 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
 		$m->setConstraint('site_id', $this->getParam('site_id'));
 		//$period = $this->makeTimePeriod('all_time');
 		$m->setPeriod($this->getPeriod());
-		$m->setLimit(10);
+		$m->setLimit(500);
 		$m->setOrder('DESC');
+		$m->setPage($this->getParam('page'));
 		$this->set('latest_visits', $m->generate());
-	
+		$pagination = $m->getPagination();
+		$this->setPagination($pagination);
 	
 		$this->setTitle('Visitor Geo-location');
 		$this->setView('base.report');
