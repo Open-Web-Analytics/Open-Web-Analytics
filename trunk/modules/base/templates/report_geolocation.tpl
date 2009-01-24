@@ -11,6 +11,7 @@
 	<?php include("map_dom.tpl");?>
 </div>
 
+<?=$this->makePagination($pagination, array('do' => 'base.reportVisitsGeolocation'));?>
 
 
 
