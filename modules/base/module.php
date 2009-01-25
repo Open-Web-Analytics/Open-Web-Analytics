@@ -183,7 +183,8 @@ class owa_baseModule extends owa_module {
 								'exit',
 								'os',
 								'impression', 
-								'configuration'));
+								'configuration',
+								'user'));
 		
 	}
 		

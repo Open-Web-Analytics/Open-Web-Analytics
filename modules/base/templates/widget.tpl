@@ -1,6 +1,6 @@
 <? include('widget_dom.tpl');?>
 
-<div id="<?=$widget;?>" class="owa_widget-container" style="width:<? if ($params['width']): echo($params['width'].'px'); else: echo('auto'); endif;?>;">
+<div id="<?=$widget;?>" class="owa_widget-container" style="width:<? if ($params['width']): echo($params['width']); else: echo('auto'); endif;?>;">
 	
 	<div id="<?=$widget;?>_widget-header" class="owa_widget-header">
 		<table style="width:100%">
@@ -23,7 +23,7 @@
 			<img src="<?=$this->makeImageLink("loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...
 		</div> 
 	
-		<div id="<?=$widget;?>_widget-content" class="owa_widget-content" style="height:<? //$params['height'];?>px;"><?=$subview;?></div>
+		<div id="<?=$widget;?>_widget-content" class="owa_widget-content" style="width:<? $params['width'];?>;"><?=$subview;?></div>
 		
 		<div id="<?=$widget;?>_widget-pagination" class="owa_widget-pagination"></div>
 		<? if($widget_views): ?>

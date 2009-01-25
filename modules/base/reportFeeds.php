@@ -52,7 +52,6 @@ class owa_reportFeedsController extends owa_reportController {
 		$fc->setPeriod($this->getPeriod());
 		$fc->setConstraint('site_id', $this->getParam('site_id')); 
 		$counts = $fc->generate();
-		print_r($counts);
 		$this->set('feed_counts', $counts);
 		
 		// summary trend
