@@ -431,6 +431,7 @@
 			'login_view'					=> 'base.login',
 			'not_capable_view'				=> 'base.error',
 			'start_page'					=> 'base.reportDashboard',
+			'default_action'				=> 'base.loginForm',
 			'capabilities'					=> array('admin' => array('view_reports', 
 																			  'edit_settings', 
 																			  'edit_sites', 
