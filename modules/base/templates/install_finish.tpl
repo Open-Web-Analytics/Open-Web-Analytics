@@ -17,7 +17,7 @@
 		</TR>
 		<TR>
 			<TH>Password:</TH>
-			<TD><a href="<?=$this->makeAbsoluteLink(array('view' => 'base.usersChangePassword', 'k' => $key));?>"> Click here to set password</a></TD>
+			<TD><a href="<?=$this->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $key));?>"> Click here to set password</a></TD>
 		</TR>
 	</table>
 	
