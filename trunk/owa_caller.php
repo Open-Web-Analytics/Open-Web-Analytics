@@ -492,8 +492,9 @@ class owa_caller extends owa_base {
 			unset($this->params['view']);
 			
 		else:
-			print "Caller: No view or action param found. I'm not sure what to do here.";
-			return;
+			$default_action = owa_coreAPI::getSetting('base', 'default_action');
+			$result = owa_coreAPI::performAction($default_action, $this->params);
+			//return;
 			
 		endif;
 		
