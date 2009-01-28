@@ -16,55 +16,10 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 /**
- * Installer Default Site Profile View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_installDefaultSiteProfileView extends owa_view {
-	
-	function owa_installDefaultSiteProfileView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Set Page title
-		$this->t->set('page_title', 'Default Site Profile');
-		
-		// Set Page headline
-		$this->body->set('headline', 'Default Site Profile');
-		
-		$this->body->set('action', 'base.installDefaultSiteProfile');
-		
-		// load body template
-		$this->body->set_template('sites_addoredit.tpl');
-		
-		
-		
-		return;
-	}
-	
-	
-}
-
-/**
- * Installer Default Site Profile Controller
+ * Install Default Site Profile Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -78,38 +33,42 @@ class owa_installDefaultSiteProfileView extends owa_view {
 class owa_installDefaultSiteProfileController extends owa_controller {
 	
 	function owa_installDefaultSiteProfileController($params) {
-		$this->owa_controller($params);
+		
+		return  owa_installDefaultSiteProfileController::__construct($params); 
+	}
+	
+	function __construct($params) {
+		
+		parent::__construct($params);
 		
 		//Load config from db
 		$this->c->load();
 		// Secure access to this controller if the installer has already been run
-		if ($this->c->get('base', 'install_complete') != true):	
-			$this->priviledge_level = 'guest';
-		else:
+		if ($this->c->get('base', 'install_complete') === true) {
 			$this->setRequiredCapability('edit_modules');
-		endif;
-
+		}
+		
+		// validations
+		$v1 = owa_coreAPI::validationFactory('required');
+		$v1->setValues($this->getParam('domain'));
+		$v1->setErrorMessage($this->getMsg(3207));
+		$this->setValidation('domain', $v1);
+		
+		return;
+		
+	}
+	
+	function errorAction() {
+		
+		$this->setView('base.install');
+		$this->setSubview('base.installDefaultSiteProfile');
+		$this->set('site', $this->params);
+		return;
 	}
 	
 	function action() {
 		
-		// check to see if the installer has already been run
-		
-		
-			// validations
-			if (empty($this->params['domain'])):
-				$data['view_method'] = 'delegate'; // Delegate, redirect
-				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installDefaultSiteProfile';
-				$data['error_msg'] = $this->getMsg(3207);
-				$data['site'] = $this->params;	
-				
-				return $data;
-				
-			endif;
-			
-			$site = owa_coreAPI::entityFactory('base.site');
-			
+			$site = owa_coreAPI::entityFactory('base.site');	
 			$site->set('site_id', md5($this->params['domain']));
 			$site->set('name', $this->params['name']);
 			$site->set('description', $this->params['description']);
@@ -121,9 +80,8 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 			if ($status == true):	
 				// Setup the data array that will be returned to the view.
 				
-				$data['view_method'] = 'redirect'; // Delegate, redirect
 				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installAdminUser';
+				$data['subview'] = 'base.installAdminUserEntry';
 				$data['status_code'] = 3303;
 				$data['site_id'] = $site->get('site_id');
 			
@@ -131,7 +89,7 @@ class owa_installDefaultSiteProfileController extends owa_controller {
 			
 				$data['view_method'] = 'delegate'; // Delegate, redirect
 				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installDefaultSiteProfile';
+				$data['subview'] = 'base.installDefaultSiteProfileEntry';
 				$data['error_msg'] = $this->getMsg(3206);
 				$data['site'] = $this->params;	
 				

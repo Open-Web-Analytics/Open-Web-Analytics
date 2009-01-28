@@ -112,7 +112,6 @@ class owa_installAdminUserController extends owa_controller {
 		$u->getByColumn('role', 'admin');
 		$id_check = $u->get('id');
 		
-		
 		$config = owa_coreAPI::entityFactory('base.configuration');
 		$config->getByPk('id', $this->config['configuration_id']);
 		$settings = unserialize($config->get('settings'));
@@ -123,7 +122,7 @@ class owa_installAdminUserController extends owa_controller {
 			if (empty($id_check)):
 		
 				//Check to see if user name already exists
-				$u->getByColumn('user_id', $this->params['user_id']);
+				$u->getByColumn('user_id', 'admin');
 		
 				// data
 				$data = array();
@@ -136,9 +135,9 @@ class owa_installAdminUserController extends owa_controller {
 					$userManager = owa_coreApi::supportClassFactory('base', 'userManager');				
 					
 					
-					$user_params = array( 'user_id' 		=> $this->params['user_id'],
+					$user_params = array( 'user_id' 		=> 'admin',
 										  'real_name' 		=> $this->params['real_name'],
-									      'role'			=> $this->params['role'],
+									      'role'			=> 'admin',
 								    	  'email_address' 	=> $this->params['email_address']); 
 								          
 					$temp_passkey = $userManager->createNewUser($user_params);

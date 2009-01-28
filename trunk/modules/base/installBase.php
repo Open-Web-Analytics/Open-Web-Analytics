@@ -35,7 +35,6 @@ class owa_installBaseController extends owa_controller {
 	function owa_installBaseController($params) {
 		
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 		
 		return;
 	}
@@ -46,19 +45,16 @@ class owa_installBaseController extends owa_controller {
 		
 		$status = $api->modules['base']->install();
 		
-		if ($status == true):
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installDefaultSiteProfile';
-			$data['status_code'] = 3305;
-		else:
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installCheckEnv';
-			$data['error_code'] = 3302;
-		endif;
+		if ($status == true) {
+			$this->set('status_code', 3305);
+		} else {
+			$this->set('error_code', 3302);
+		}
 		
-		return $data;
+		$this->setView('base.install');
+		$this->setSubView('base.installDefaultSiteProfileEntry');
+		
+		return;
 	}
 	
 
