@@ -17,60 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-
-/**
- * View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_installAdminUserView extends owa_view {
-	
-	function owa_installAdminUserView() {
-		
-		$this->owa_view();
-		
-		//Load config from db
-		$this->c->load();
-		// Secure access to this controller if the installer has already been run
-		if ($this->c->get('base', 'install_complete') != true):	
-			$this->priviledge_level = 'guest';
-		else:
-			$this->priviledge_level = 'admin';
-		endif;
-
-				
-		return;
-	}
-	
-	function construct($data) {
-		
-		
-		// Set Page title
-		$this->t->set('page_title', 'Setup Default Admin User');
-		
-		// Set Page headline
-		$this->body->set('headline', 'Setup Default Admin user');
-		
-		$this->body->set('action', 'base.installAdminUser');
-		
-		// load body template
-		$this->body->set_template('install_default_user.tpl');
-		
-		return;
-	}
-	
-	
-}
 
 /**
  * Install Default Admin User Controller
@@ -145,7 +92,7 @@ class owa_installAdminUserController extends owa_controller {
 					// return view
 					$data['view_method'] = 'redirect';
 					
-					$data['u'] = $this->params['user_id'];
+					$data['u'] = 'admin';
 					$data['k'] = $temp_passkey;
 					$data['action'] = 'base.installFinish';
 					$data['status_code'] = 3304;
@@ -154,7 +101,7 @@ class owa_installAdminUserController extends owa_controller {
 				$data = $this->params;
 				$data['view_method'] = 'delegate';
 				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installAdminUser';
+				$data['subview'] = 'base.installAdminUserEntry';
 				$data['status_msg'] = $this->getMsg(3306);
 				endif;
 			
