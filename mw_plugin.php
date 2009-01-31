@@ -77,6 +77,7 @@ $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
 $wgHooks['UnknownAction'][] = 'owa_actions';
 
 
+
 /**
  * OWA Singleton Method
  *
@@ -89,12 +90,12 @@ function owa_factory() {
 	static $owa;
 	
 	if(!empty($owa)):
-		return $owa;
+		
 	else:
-		$owa = new owa_php($owa_config);
-		return $owa;
+		$owa = new owa_php($owa_config);	
 	endif;
-
+	
+	return $owa;
 }
 
 /**
@@ -115,7 +116,6 @@ function owa_main() {
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
 	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
 	$wgHooks['CategoryPageView'][] = 'owa_footer';
-	
 	
 	//SpecialPage::addPage(new OwaSpecialPage());
 	
@@ -165,11 +165,12 @@ function owa_set_priviledges() {
 	
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
-	$cu =&owa_coreAPI::getCurrentUser();
+	$cu = &owa_coreAPI::getCurrentUser();
 	$cu->setUserData('user_id', $wgUser->mName);
 	$cu->setUserData('email_address', $wgUser->mEmail);
 	$cu->setUserData('real_name', $wgUser->mRealName);
 	$cu->setRole(owa_translate_role($wgUser->mGroups));
+	//print_r($wgUser);
 	$cu->setAuthStatus(true);
 
 	return;
@@ -216,6 +217,7 @@ function owa_logSpecialPage(&$specialPage) {
 
 	// Log the request
 	$owa = owa_factory();
+	
 	$owa->log($app_params);
 	
 	return true;
@@ -238,6 +240,7 @@ function owa_logCategoryPage(&$categoryPage) {
 	
 	// Log the request
 	$owa = owa_factory();
+	
 	$owa->log($app_params);
 	
 	return true;
@@ -265,6 +268,7 @@ function owa_logArticle(&$article) {
     
 	// Log the request
 	$owa = owa_factory();
+	
 	$owa->log($app_params);
 	
 	return true;
@@ -281,6 +285,7 @@ function owa_footer(&$article) {
 	
 	global $wgOut;
 	$owa = owa_factory();
+	
 	$tags = $owa->placeHelperPageTags(false);
 	
 	$wgOut->addHTML($tags);
