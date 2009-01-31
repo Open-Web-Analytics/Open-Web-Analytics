@@ -67,6 +67,22 @@ class owa_visitorsAge extends owa_metric {
 			
 	}
 	
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(distinct session.visitor_id) as count");
+									
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
+		
+		$ret = $this->db->getOneRow();
+
+		return $ret['count'];
+			
+
+	
+	
+	}
+	
 	
 }
 

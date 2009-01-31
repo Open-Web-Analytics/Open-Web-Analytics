@@ -47,7 +47,7 @@ class owa_sessionBrowserTypes extends owa_metric {
 		$this->db->selectColumn("count(distinct session.id) as count, ua.ua as ua, ua.browser_type");
 		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id', 'ua.id');
 		$this->db->groupBy('ua.browser_type');
-		$this->db->orderBy('count');
+		$this->db->orderBy('count', $this->getOrder());
 		
 		return $this->db->getAllRows();
 

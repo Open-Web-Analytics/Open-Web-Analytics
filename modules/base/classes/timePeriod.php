@@ -90,6 +90,10 @@ class owa_timePeriod {
 		if ($value === 'date_range') {
 			// Set date labels
 			$this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();
+		} elseif ($value === 'day') {
+		
+			$this->label = $this->startDate->getLabel() . ' - ' . $this->startDate->getLabel();
+		
 		} else {
 		
 			$periods = $this->getPeriodLabels();
@@ -240,6 +244,12 @@ class owa_timePeriod {
 			case "time_range":
 				$start = $map['startTime'];
 				$end = $map['endTime'];				
+				break;
+				
+			case "day":
+				list($year, $month, $day) = sscanf($map['startDate'], "%4d%2d%2d");
+				$start = mktime(0, 0, 0, $month, $day, $year);	
+				$end = mktime(23, 59, 59, $month, $day, $year);
 				break;
 				
 		}

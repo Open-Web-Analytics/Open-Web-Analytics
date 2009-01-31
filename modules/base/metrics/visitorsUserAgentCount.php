@@ -31,55 +31,28 @@
 class owa_visitorsUserAgentCount extends owa_metric {
 	
 	function owa_visitorsUserAgentCount($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
-		
+	
+		return owa_visitorsUserAgentCount::__construct($params);	
+	}
+	
+	function __construct($params = null) {
+	
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 	
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("count(distinct sessions.session_id) as count, ua.ua as ua, ua.browser_type");
-		$db->selectFrom('owa_session', 'sessions');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id');
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
-		$db->groupBy('ua.browser_type');
+		$this->db = owa_coreAPI::dbSingleton();
+		$this->db->selectColumn("count(distinct sessions.session_id) as count, ua.ua as ua, ua.browser_type");
+		$this->db->selectFrom('owa_session', 'sessions');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id');
+		$this->db->groupBy('ua.browser_type');
+		$this->db->orderBy('count', $this->getOrder());
 		
-		$ret = $db->getOneRow();
+		$ret = $this->db->getOneRow();
 
 		return $ret;
 	
-		/*
-$sql = sprintf("
-		SELECT 
-			count(distinct sessions.session_id) as count,
-			ua.ua as ua,
-			ua.browser_type
-		FROM 
-			%s as sessions,
-			%s as ua
-		WHERE
-			ua.id = sessions.ua_id
-			%s 
-			%s
-		GROUP BY
-			ua.browser_type
-		ORDER BY
-			count DESC
-		",
-			$this->setTable($this->config['sessions_table']),
-			$this->setTable($this->config['ua_table']),
-			$this->time_period($this->params['period']),
-			$this->add_constraints($this->params['constraints'])
-		);
-	
-		return $this->db->get_results($sql);
-*/
 	}
 	
 	
