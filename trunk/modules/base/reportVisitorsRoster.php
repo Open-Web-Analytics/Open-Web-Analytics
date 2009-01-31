@@ -44,28 +44,26 @@ class owa_reportVisitorsRosterController extends owa_reportController {
 	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
+		$m = owa_coreAPI::metricFactory('base.visitorsList');
+		$m->setPeriod($this->getPeriod());
+		$m->setConstraint('site_id', $this->getParam('site_id'));
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		// make new timeperiod of a day
+		$period = owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
+		$start = $period->getStartDate();
+		$end = $period->getEndDate();
+		//print_r($period);
+		// set new period so lables show up right.
+		$m->setConstraint('first_session_timestamp', 
+				   array('start' => $start->getTimestamp(), 'end' => $end->getTimestamp()), 
+				   'BETWEEN');
 		
-		$data['visitors'] = $api->getMetric('base.visitorsList',array(
-			
-			
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'visitor.first_session_year' => $this->params['year2'],
-										'visitor.first_session_month' => $this->params['month2'],
-										'visitor.first_session_day' => $this->params['day2']
-										),
-			'limit' 			=> $this->params['limit']
-		));
+		$ret = $m->generate();
+	
+		$this->set('visitors', $ret);	
+		$this->setSubview('base.reportVisitorsRoster');
 		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitorsRoster';
-		
-		return $data;
+		return;
 		
 	}
 	

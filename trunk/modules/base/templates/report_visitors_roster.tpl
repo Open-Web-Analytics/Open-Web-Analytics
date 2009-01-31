@@ -5,7 +5,7 @@
 	<? foreach ($visitors as $visitor):?>
 	<TR>
 		<TD><img src="<?=$this->makeImageLink('user_icon_small.gif');?>" align="top"> 
-			<a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id']));?>">
+			<a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id'], 'period' => 'all_time'));?>">
 			<?if(!empty($visitor['user_name'])): 
 				echo $visitor['user_name'];
 			elseif(!empty($visitor['user_email'])):

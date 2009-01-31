@@ -32,45 +32,24 @@ class owa_visitorsList extends owa_metric {
 	
 	function owa_visitorsList($params = null) {
 		
-		$this->params = $params;
+		return owa_visitorsList::__construct($params = null);
+	
+	}
+	
+	function __construct($params = '') {
 		
-		$this->owa_metric();
-		
-		return;
-		
+		return parent::__construct($params);
 	}
 	
 	function calculate() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
-		$db->selectFrom('owa_session', 'session');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
-		// pass constraints set by caller into where clause
-		$db->multiWhere($this->getConstraints());
+		$this->db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
 		
-		$ret = $db->getAllRows();
+		$ret = $this->db->getAllRows();
 
 		return $ret;
-		
-		
-		/*
-
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$v = owa_coreAPI::entityFactory('base.visitor');
-		
-		$this->params['related_objs'] = array('visitor_id' => $v);
-		
-		//$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "distinct session.visitor_id as visitor_id,
-									visitor.user_name,
-									visitor.user_email";
-								
-		return $s->query($this->params);
-		
-*/
 		
 	}
 	

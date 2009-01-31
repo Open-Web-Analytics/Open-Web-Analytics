@@ -6,5 +6,8 @@
 <div class="owa_reportSectionHeader">First Visit Distribution</div>
 <div class="owa_reportSectionContent">
 <? include('report_visitors_age.tpl');?>
+
+<?=$this->makePagination($pagination, array('do' => 'base.reportVisitorLoyalty'));?>
+
 </div>
 

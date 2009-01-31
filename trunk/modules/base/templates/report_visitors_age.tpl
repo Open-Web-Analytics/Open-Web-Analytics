@@ -12,7 +12,8 @@
 		<TR>
 			<TD><?=$this->daysAgo(mktime(23, 59, 59,$row['first_session_month'], $row['first_session_day'], $row['first_session_year']) );?> (<?=$this->get_month_label($row['first_session_month']);?> <?=$row['first_session_day'];?> <?=$row['first_session_year'];?>)</TD>
 			<TD>
-				<a href="<?=$this->makeLink(array('do' => 'base.reportVisitorsRoster','year2' => $row['first_session_year'], 'month2' => $row['first_session_month'], 'day2' => $row['first_session_day'], 'period' => $params['period']));?>">
+				<a href="<?=$this->makeLink(array('do' => 'base.reportVisitorsRoster', 
+				'first_session' => sprintf('%d%02d%02d', $row['first_session_year'], $row['first_session_month'], $row['first_session_day'])), true);?>">
 				<?=$row['count'];?></a>
 			</TD>
 		</TR>

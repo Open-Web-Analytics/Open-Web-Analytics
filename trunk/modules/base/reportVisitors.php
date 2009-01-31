@@ -71,7 +71,8 @@ class owa_reportVisitorsController extends owa_reportController {
 		$b = owa_coreAPI::metricFactory('base.sessionBrowserTypes');
 		$b->setPeriod($this->getPeriod());
 		$b->setConstraint('site_id', $this->getParam('site_id')); 
-		//$b->setOrder('ASC');
+		$b->setOrder('DESC');
+		$b->setLimit(10);
 		$this->set('browser_types', $b->generate());		
 		
 		// dash counts	

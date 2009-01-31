@@ -396,6 +396,13 @@ class owa_controller extends owa_base {
 		return owa_coreAPI::makeTimePeriod($time_period, $params);
 	}
 	
+	function setTimePeriod($period) {
+		
+		$this->period = $period;
+		$this->set('period', $this->getPeriod());	
+		//$this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
+	}
+	
 		
 	function setView($view) {
 		$this->data['view'] = $view;
