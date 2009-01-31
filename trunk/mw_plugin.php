@@ -175,7 +175,7 @@ function owa_set_priviledges() {
 	return;
 }
 
-function owa_translate_role($role_array) {
+function owa_translate_role($level = array()) {
 
 	if (in_array("*", $level)):
 		$owa_role = 'everyone';
@@ -307,7 +307,7 @@ class SpecialOwa extends SpecialPage {
                 $this->setHeaders();
                 $owa = owa_factory();
                 # Get request data from, e.g.
-               
+               	//print_r($wgUser);
            		// sets authentication priviledges
            		owa_set_priviledges();
                 
