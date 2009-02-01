@@ -941,7 +941,7 @@ class owa_coreAPI extends owa_base {
 	
 	function getRequestParam($name) {
 		
-		$r = owa_coreAPI::requestContainerSingleton();
+		$r = &owa_coreAPI::requestContainerSingleton();
 		return $r->getParam($name);
 		
 	}

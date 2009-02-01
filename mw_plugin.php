@@ -301,24 +301,24 @@ function owa_footer(&$article) {
  */
 class SpecialOwa extends SpecialPage {
 
-        function SpecialOwa() {
-                SpecialPage::SpecialPage('Owa','',true);
-                self::loadMessages();
-        }
+    function SpecialOwa() {
+            SpecialPage::SpecialPage('Owa','',true);
+            self::loadMessages();
+    }
 
-        function execute() {
-                global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
-                
-                $this->setHeaders();
-                $owa = owa_factory();
-                # Get request data from, e.g.
-               	//print_r($wgUser);
-           		// sets authentication priviledges
-           		owa_set_priviledges();
-                
-                $params = array();
-                
-                // check to see that owa in installed.
+    function execute() {
+            global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
+            
+            $this->setHeaders();
+            $owa = owa_factory();
+       		owa_set_priviledges();
+            
+            $params = array();
+            
+            // if no action is found...
+            $do = owa_coreAPI::getRequestParam('do');
+            if (empty($do)):
+            	// check to see that owa in installed.
                 if (empty($owa->config['install_complete'])):
 
                 	$site_url = $wgServer.$wgScriptPath;
@@ -328,49 +328,54 @@ class SpecialOwa extends SpecialPage {
     							'domain' => $site_url, 
     							'description' => '',
     							'do' => 'base.installStartEmbedded');
-    							
-                elseif (empty($owa->params['do'])):
-                	if (empty($owa->params['view'])):
-                		$params['do'] = 'base.reportDashboard';
-                	endif;
+    				$page = $owa->handleRequest($params);
+    			
+    			// send to daashboard
+                else: 
+                	$params['do'] = 'base.reportDashboard';
+		           	$page = $owa->handleRequest($params);
                 endif;
-                
-				$page = $owa->handleRequest($params);
+            // do action found on url
+            else:
+           		$page = $owa->handleRequestFromURL(); 
+            endif;
+            
+           				
 
-				// switch for output scenario
-				if (empty($owa->config['install_complete'])):
-					return $wgOut->addHTML($page);					
-				else:
-					$wgOut->disable();
-					echo $page;
-					return;
-				endif;
-                
-        }
+			// switch for output scenario
+			//if (empty($owa->config['schema_version'])):
+				return $wgOut->addHTML($page);					
+			//else:
+			//	$wgOut->disable();
+			//	echo $page;
+			//	return;
+			//endif;
+            
+    }
 
-        function loadMessages() {
-        	static $messagesLoaded = false;
-            global $wgMessageCache;
-                
-			if ( $messagesLoaded ) return;
-			
-			$messagesLoaded = true;
-			
-			// this should be the only msg defined by mediawiki
-			$allMessages = array(
-				 'en' => array( 
-					 'owa' => 'Open Web Analytics'
-					 )
-				);
+    function loadMessages() {
+    	static $messagesLoaded = false;
+        global $wgMessageCache;
+            
+		if ( $messagesLoaded ) return;
+		
+		$messagesLoaded = true;
+		
+		// this should be the only msg defined by mediawiki
+		$allMessages = array(
+			 'en' => array( 
+				 'owa' => 'Open Web Analytics'
+				 )
+			);
 
 
-			// load msgs in to mediawiki cache
-			foreach ( $allMessages as $lang => $langMessages ) {
-				   $wgMessageCache->addMessages( $langMessages, $lang );
-			}
-			
-			return true;
-        }
+		// load msgs in to mediawiki cache
+		foreach ( $allMessages as $lang => $langMessages ) {
+			   $wgMessageCache->addMessages( $langMessages, $lang );
+		}
+		
+		return true;
+    }
         
 }
 
