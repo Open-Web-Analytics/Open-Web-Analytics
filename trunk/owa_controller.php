@@ -178,7 +178,15 @@ class owa_controller extends owa_base {
 		
 		/* CHECK USER FOR CAPABILITIES */
 		if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())):
-	
+			
+			// check to see if the user has already been authenticated by a plugin 
+			if (owa_coreAPI::isCurrentUserAuthenticated()):
+				$this->setView('base.error');
+				$this->set('error_msg', $this->getMsg(2003));
+				return $this->data;
+			endif;
+			
+			
 			/* PERFORM AUTHENTICATION */
 			// TODO: create authSingleton() to hold an array of multiple auth objects
 			// TODO: make auth object configurable by controller
