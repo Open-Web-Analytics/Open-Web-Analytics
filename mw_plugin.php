@@ -217,7 +217,7 @@ function owa_logSpecialPage(&$specialPage) {
 
 	// Log the request
 	$owa = owa_factory();
-	
+	owa_set_priviledges();
 	$owa->log($app_params);
 	
 	return true;
