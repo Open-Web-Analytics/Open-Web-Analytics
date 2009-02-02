@@ -49,7 +49,7 @@ class owa_installAdminUserEntryView extends owa_view {
 		$this->t->set('page_title', 'Setup Default Admin User');
 		
 		// Set Page headline
-		$this->body->set('headline', 'Setup Default Admin user');
+		$this->body->set('headline', 'Create Default Admin User');
 		
 		$this->body->set('action', 'base.installAdminUser');
 		

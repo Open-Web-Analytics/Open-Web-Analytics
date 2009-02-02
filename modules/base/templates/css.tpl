@@ -87,9 +87,14 @@ div {margin:0;}
 #nav_left {width:240px;}
 
 
+/* WIZARD */
+
+.owa_wizard {}
+.owa_wizardNextText {text-align:left; font-size:20px;}
+
 /* FORMATING */
 .owa_largeFormField { font-size:18px;}
-.active_wizard_step {background-color:#1874CD; color:#ffffff;border:1px solid; padding:5px; font-weight:bold; font-size:16px;}
+.active_wizard_step {background-color:orange; color:#ffffff;border:1px solid #9f9f9f; padding:5px; font-weight:bold; font-size:16px;}
 .wizard_step {font-weight:bold; font-size:16px;}
 .visitor_info_box {width:40px; height:40px; text-align:center; padding:7px;}
 .owa_visitSummaryLeftCol {width:auto;}
