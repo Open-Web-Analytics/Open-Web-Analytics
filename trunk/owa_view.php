@@ -463,6 +463,12 @@ class owa_view extends owa_base {
 		$this->data = $data;
 	}
 	
+	function setTitle($title) {
+		
+		$this->t->set('page_title', $title);
+		return;
+	}
+	
 }
 
 /**

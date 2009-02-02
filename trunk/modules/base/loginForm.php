@@ -81,7 +81,7 @@ class owa_loginFormView extends owa_view {
 	}
 	
 	function construct($data) {
-	
+		$this->setTitle("Login");
 		$this->t->set_template('wrapper_public.tpl');
 		$this->body->set_template('login_form.tpl');// This is the inner template
 		$this->body->set('headline', 'Please login using the from below');
