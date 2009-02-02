@@ -268,7 +268,8 @@ function owa_logArticle(&$article) {
     
 	// Log the request
 	$owa = owa_factory();
-	
+	// wguser is not set by the time this hook is called for some reason.
+	//owa_set_priviledges();
 	$owa->log($app_params);
 	
 	return true;
