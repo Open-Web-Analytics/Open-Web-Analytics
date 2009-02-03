@@ -39,13 +39,13 @@
 		</div>
 	</div>	
 	
-	<div class="setting" id="log_admins">	
-		<div class="title">Log Requests From Admin Users</div>
-		<div class="description">Controls the logging of page requests made by OWA Users with an Admin role.</div>
+	<div class="setting" id="log_named_users">	
+		<div class="title">Log Requests From Named Users</div>
+		<div class="description">Controls the logging of requests made by named users.</div>
 		<div class="field">
-			<SELECT NAME="<?=$this->getNs();?>config[log_admins]">
-				<OPTION VALUE="0" <? if ($config['log_admins'] == false):?>SELECTED<?endif;?>>Off</OPTION>
-				<OPTION VALUE="1" <? if ($config['log_admins'] == true):?>SELECTED<?endif;?>>On</OPTION>
+			<SELECT NAME="<?=$this->getNs();?>config[log_named_users]">
+				<OPTION VALUE="0" <?php if ($config['log_named_users'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
+				<OPTION VALUE="1" <?php if ($config['log_named_users'] == true):?>SELECTED<?php endif;?>>On</OPTION>
 			</SELECT>
 		</div>
 	</div>	

@@ -135,8 +135,13 @@ class owa_requestContainer {
 	}
 		
 	function getParam($name) {
-	
-		return $this->owa_params[$name];
+		
+		if (array_key_exists($name, $this->owa_params)) {
+			return $this->owa_params[$name];
+		} else {
+			return false;
+		}
+
 	}
 	
 	function setParam($name, $value) {
