@@ -44,7 +44,7 @@
  		
  		$value = $this->getValues();
  		
- 		$substring = $this->getConfig('subString')
+ 		$substring = $this->getConfig('subString');
  		$pos = strpos($value, $substring);
  		
  		//print $pos;
