@@ -1,0 +1,51 @@
+/* REPORT CSS */
+
+#report_header {width:100%; margin: 0 0 20px 0;}
+.report_headline {font-size:26px; padding:5px; font-weight:bold;}
+.data_table {border-collapse: collapse;margin:0;width:100%;}
+.data_table td {border:2px solid #CCCCCC;  min-width:80px;padding:10px;}
+.col_item_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999;}
+.col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
+.data_cell {text-align:center; vertical-align:center;}
+.item_cell {}
+
+
+#owa_reportSiteFilter {width:; padding:5px; text-align: center; background-color:; margin-bottom:10px; border-bottom: 1px solid #efefef;}
+#owa_reportSiteFilterSelect {font-size: 12px;}
+#owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline;}
+
+.owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
+.owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
+.owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
+.owa_reportPeriod {text-align: right; width:350px;}
+#owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
+
+
+#owa_reportPeriodFiltersContainer {background-color: #efefef; width:100%;}
+#owa_reportPeriodFiltersContainer table {width:100%;}
+#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}
+
+#owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
+.owa_reportPeriodLabelText {padding:5px; font-size:18px; color:#999999; text-align: center;}
+
+#owa_reportNavPanel {width:100%;}
+#report_top_level_nav_ul {width:;}
+
+.owa_reportLeftNavColumn {width:200px; margin-right:20px; border-right: 1px solid orange; background-color: #ffffff; padding: 5px 10px 5px 5px;}
+
+.owa_reportContainer {width:auto;}
+.owa_reportElement {width:100%; text-align:center; vertical-align: top;}
+.owa_reportSectionHeader, .section_header {width:auto;background-color:#9f9f9f; color:#ffffff;padding:5px 5px 5px 7px; margin: 0px 0 15px 0; font-size: 18px; font-weight:bold;}
+.owa_reportSectionContent {margin: 15px;}
+.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
+
+.owa_metricInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin:5px; width:185px; float:left;}
+
+.owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
+
+.owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
+.owa_admin_nav li {list-style:none; margin:10px; padding:0px; }
+.owa_admin_nav_topmenu {padding:0px;border:1px solid #efefef;}
+.owa_admin_nav_topmenu_container {background-color: #efefef;}
+.owa_admin_nav_topmenu_item {background-color: #efefef;padding:0px;height:33px; vertical-align: middle; font-weight: bold;}
+.owa_admin_nav_topmenu_toggle {border:0px solid #e9e9e9;width:30px;height:30px;float:right;background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
