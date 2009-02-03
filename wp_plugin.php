@@ -110,15 +110,15 @@ function owa_getInstance($params = array()) {
 		// preemptively set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
-		$cu->setUserData('user_id', $current_user->user_ID);
+		$cu->setUserData('user_id', $current_user->user_login);
 		owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
 		$cu->setUserData('email_address', $current_user->user_email);
 		$cu->setUserData('real_name', $current_user->user_identity);
-		$cu->setRole(owa_translate_role($current_user->roles[0]));
-		owa_coreAPI::debug("Wordpress  User Role: ".$current_user->roles[0]);
+		$cu->setRole(owa_translate_role($current_user->roles));
+		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
 		$cu->setAuthStatus(true);
-				
+		//owa_coreAPI::debug("Wordpress  User Object: ".print_r($current_user, true));		
 		return $owa;
 		
 	endif;
@@ -126,27 +126,20 @@ function owa_getInstance($params = array()) {
 }
 
 // translates wordpress roles to owa roles
-function owa_translate_role($role) {
-	$role = strtolower($role);
-	switch ($role) {
-		case "administrator":
-			$owa_role = 'admin';
-			break;
-		case "editor":
-			$owa_role = 'viewer';
-			break;
-		case "author":
-			$owa_role = 'viewer';
-			break;
-		case "contributor":
-			$owa_role = 'viewer';
-			break;
-		case "subscriber":
-			$owa_role = 'everyone';
-			break;
-		default:
-			$owa_role = 'everyone';
-	
+function owa_translate_role($roles) {
+		
+	if (in_array('administrator', $roles)) {
+		$owa_role = 'admin';
+	} elseif (in_array('editor', $roles)) {
+		$owa_role = 'viewer';
+	} elseif (in_array('author', $roles)) {
+		$owa_role = 'viewer';
+	} elseif (in_array('contributor', $roles)) {
+		$owa_role = 'viewer';
+	} elseif (in_array('subscriber', $roles)) {
+		$owa_role = 'everyone';
+	} else {
+		$owa_role = 'everyone';
 	}
 
 	return $owa_role;
