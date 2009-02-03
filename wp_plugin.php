@@ -106,14 +106,17 @@ function owa_getInstance($params = array()) {
 		// Access WP current user object to check permissions
 		global $current_user;
       	get_currentuserinfo();
-      	
+     
 		// preemptively set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
 		$cu->setUserData('user_id', $current_user->user_ID);
+		owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
 		$cu->setUserData('email_address', $current_user->user_email);
 		$cu->setUserData('real_name', $current_user->user_identity);
 		$cu->setRole(owa_translate_role($current_user->roles[0]));
+		owa_coreAPI::debug("Wordpress  User Role: ".$current_user->roles[0]);
+		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
 		$cu->setAuthStatus(true);
 				
 		return $owa;

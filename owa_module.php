@@ -511,8 +511,8 @@ function addNavigationLink($link) {
 		$current_schema = $this->getSchemaVersion();
 		$required_schema = $this->getRequiredSchemaVersion(); 
 		
-		owa_coreAPI::debug("Schema version is $current_schema");
-		owa_coreAPI::debug("Required Schema version is $required_schema");
+		owa_coreAPI::debug("$this->name Schema version is $current_schema");
+		owa_coreAPI::debug("$this->name Required Schema version is $required_schema");
 		
 		if ($current_schema >= $required_schema):
 			return true;
