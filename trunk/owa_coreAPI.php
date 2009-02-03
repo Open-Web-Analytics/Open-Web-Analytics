@@ -220,6 +220,8 @@ class owa_coreAPI extends owa_base {
 	function isCurrentUserCapable($capability) {
 		
 		$cu = &owa_coreAPI::getCurrentUser();
+		owa_coreAPI::debug("Current User Role: ".$cu->getRole());
+		owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
 		return $cu->isCapable($capability);
 	}
 	

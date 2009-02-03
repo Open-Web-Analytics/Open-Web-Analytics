@@ -28,7 +28,7 @@ div {margin:0;}
 .owa_navigation ul {list-style: none; padding: 0; margin: 0;}
 .owa_navigation li {text-decoration: none; float:left; margin: 2px;}
 .owa_navigation li a {
-	background: url(background.gif) #fff bottom left repeat-x;
+	background: url() #fff bottom left repeat-x;
 	height: 2em;
 	line-height: 2em;
 	float: left;
@@ -46,7 +46,7 @@ div {margin:0;}
 .owa_pagination ul {list-style: none; padding: 0; margin: 0;}
 .owa_pagination li {text-decoration: none; float:left; margin: 2px;}
 .owa_pagination li {
-	background: url(background.gif) #fff bottom left repeat-x;
+	background: url() #fff bottom left repeat-x;
 	height:2em;
 	line-height:2em;
 	float: left;
