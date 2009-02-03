@@ -303,17 +303,17 @@ class owa_caller extends owa_base {
 		endif;
 		
 		// do not log if the request is from a reserved IP
-		// ips = $this->c->get('base', 'log_not_log_ips');
+		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
 		//	...
 		
 		
 		// Don't Log if user is an admin
-		if (owa_coreAPI::getSetting('base', 'log_admins') != true):
+		if (owa_coreAPI::getSetting('base', 'log_named_users') != true):
 			
 			$cu = owa_coreAPI::getCurrentUser();
-			$cu_role = $cu->getRole();
+			$cu_user_id = $cu->getUserData('user_id');
 			
-			if($cu_role === 'admin'):
+			if(!empty($cu_user_id)):
 				return false;
 			endif;
 		endif;

@@ -51,6 +51,10 @@ class owa_service extends owa_base {
 		// setup current user
 		$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
 		$this->current_user->setRole('everyone');
+		// the 'log_users' confi directive relies on this being populated
+		$this->current_user->setUserData('user_id', owa_coreAPI::getRequestParam('u'));
+		
+		return;
 	}
 	
 	function &getCurrentUser() {

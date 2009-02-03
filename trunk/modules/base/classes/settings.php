@@ -424,7 +424,7 @@
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
 			'cache_objects'					=> true,
-			'log_admins'					=> false,
+			'log_named_users'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
 			'reserved_words'				=> array('do' => 'action'),
