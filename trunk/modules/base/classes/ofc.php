@@ -52,6 +52,7 @@ class owa_ofc {
 		$this->y_axis->set_colour('#9f9f9f');
 		$this->y_axis->set_grid_colour('#9f9f9f');
 		$this->y_axis->labels = null;
+		//$this->y_axis->set_tick_length( 30 );
 		$this->x_axis = new x_axis();
 		$this->x_axis->set_colour('#9f9f9f');
 		$this->x_axis->set_grid_colour('#ffffff');
@@ -160,6 +161,7 @@ class owa_ofc {
 			$area->set_values($numArray);
 			$area->set_key( $chartData->getSeriesLabel('area'), 12 );		
 			$this->y_axis->set_range(round($chartData->getMin('area')), round($chartData->getMax('area', 'bar')));
+			owa_coreAPI::debug("max". round($chartData->getMax('area', 'bar')));
 			$this->y_axis->set_offset( false );
 			$this->y_axis->set_steps( round($chartData->getMax('area', 'bar') / 4) );
 			
@@ -170,7 +172,7 @@ class owa_ofc {
 			$this->x_axis->set_labels( $x_labels );
 			
 			// assemble chart
-			$this->chart->add_y_axis($this->y_axis);
+			$this->chart->set_y_axis($this->y_axis);
 			$this->chart->x_axis = $this->x_axis;
 			$this->chart->add_element($bar);
 			$this->chart->add_element($area);
