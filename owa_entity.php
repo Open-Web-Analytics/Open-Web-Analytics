@@ -67,6 +67,8 @@ class owa_entity {
 		$all_cols = get_object_vars($this);
 		$table = $this->getTableName();
 		$new_cols = array();
+		$ns = '';
+		$as = '';
 		
 		if (!empty($table_namespace)):	
 			$ns = $table.'.';
