@@ -190,9 +190,12 @@ class owa_widgetView extends owa_view {
 		
 		// load template
 		
-		
-		if ($data['params']['is_external'] == true):
-			$this->t->set_template('wrapper_widget.tpl');
+		if (array_key_exists('is_external', $data['params'])):
+			if ($data['params']['is_external'] == true):
+				$this->t->set_template('wrapper_widget.tpl');
+			else:
+				$this->t->set_template('wrapper_blank.tpl');
+			endif;
 		else:
 			$this->t->set_template('wrapper_blank.tpl');
 		endif;
@@ -213,7 +216,10 @@ class owa_widgetView extends owa_view {
 			$this->body->set_template('widget_inpage.tpl');
 		endif;
 		
-		$this->body->set('format', $data['params']['format']);
+		if (array_key_exists('format', $data['params'])):
+			$this->body->set('format', $data['params']['format']);
+		endif;
+		
 		$this->body->set('widget', str_replace('.', '-', $data['widget']));			
 		$this->body->set('params', $data['params']);	
 		$this->body->set('title', $data['title']);

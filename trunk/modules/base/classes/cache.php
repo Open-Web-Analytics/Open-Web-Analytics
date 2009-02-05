@@ -34,7 +34,7 @@ class owa_cache {
 	var $cache_dir;
 	var $cache;
 	var $lock_file_name = 'cache.lock';
-	var $statistics;
+	var $statistics = array('warm' => 0, 'cold' => 0, 'miss' => 0, 'replaced' => 0, 'added' => 0, 'removed' => 0, 'dirty' => 0);
 	var $cache_id = 1; // default cache id
 	var $cache_file_header = '<?php\n/*';
 	var $cache_file_footer = '*/\n?>';

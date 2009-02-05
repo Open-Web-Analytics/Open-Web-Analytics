@@ -427,6 +427,7 @@
 			'log_named_users'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
+			'theme'							=> '',
 			'reserved_words'				=> array('do' => 'action'),
 			'login_view'					=> 'base.login',
 			'not_capable_view'				=> 'base.error',

@@ -54,7 +54,7 @@ class owa_requestContainer {
 			// translate certain request variables that are reserved in javascript
 			$params = owa_lib::rekeyArray($params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 			
-			$params['guid'] = $this->guid;
+			$params['guid'] = crc32(microtime().getmypid());
 			
 			return $params;
 			

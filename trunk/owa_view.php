@@ -108,6 +108,8 @@ class owa_view extends owa_base {
 	
 	var $css = array();
 	
+	var $postProcessView = false;
+	
 	/**
 	 * Constructor
 	 *
@@ -207,7 +209,7 @@ class owa_view extends owa_base {
 			$this->subview->body->caller_params['view'] = $this->data['subview'];
 			
 			// Set validation errors
-			$this->subview->body->set('validation_errors', $this->data['validation_errors']);
+			$this->subview->body->set('validation_errors', $this->get('validation_errors'));
 			
 			// pagination
 			if (array_key_exists('pagination', $this->data)):
@@ -440,7 +442,12 @@ class owa_view extends owa_base {
 	
 	function get($name) {
 		
-		return $this->data[$name];
+		if (array_key_exists($name, $this->data)) {
+			return $this->data[$name];
+		} else {
+			return false;
+		}
+		
 	}
 	
 	function set($name, $value) {
@@ -649,15 +656,15 @@ class owa_chartView extends owa_view {
 		$this->t->set_template('wrapper_blank.tpl');
 		$this->body->set_template('chart_dom.tpl');
 		// set
-		$this->body->set('widget', $data['widget']);
-		$this->body->set('type', $data['type']);
+		$this->body->set('widget', $this->get('widget'));
+		$this->body->set('type', $this->get('type'));
 		//print_r($this->get('height'));
 		//height should be passed in as a request params as it sets the height of the actual flash object
 		$this->body->set('height', $this->get('height'));
 		//width should always be 100%
 		$this->body->set('width', $this->get('width'));
 		$this->body->set('data', $this->get('chart_data'));
-		$this->body->set('dom_id', $data['dom_id'].rand().'Chart');
+		$this->body->set('dom_id', $this->get('dom_id').rand().'Chart');
 		$this->setJs("includes/swfobject.js");
 		return;
 	}

@@ -795,9 +795,12 @@ class owa_db extends owa_base {
 				break;
 			case 'select':
 			
-				$results = $this->get_results($this->_sql_statement);
-				$ret = $this->_formatResults($results);
-				//$count = count($results);
+				$ret = $this->get_results($this->_sql_statement);
+				
+				if (array_key_exists('result_format', $this->_sqlParams)):
+					$ret = $this->_formatResults($ret);
+				endif;
+				
 				break;
 				
 			case 'update':

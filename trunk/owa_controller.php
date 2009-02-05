@@ -146,6 +146,9 @@ class owa_controller extends owa_base {
 		// sets the auth module. requires a configuration object.
 		$this->_setAuthModule();
 		
+		// set the default view method
+		$this->setViewMethod('delegate');
+		
 		return;
 	
 	}
