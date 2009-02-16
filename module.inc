@@ -127,13 +127,18 @@ function owa_set_priviledges() {
 		endif;
 		
 	endif;		
-	
+
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
 	$cu =&owa_coreAPI::getCurrentUser();
-	$cu->setUserData('user_id', $u->userName);
-	$cu->setUserData('email_address', $u->email);
-	$cu->setUserData('real_name', $u->fullName);
+	
+	// gallery gives all users a username of guest if there are not named users...
+	if ($u->userName != 'guest'):
+		$cu->setUserData('user_id', $u->userName);
+		$cu->setUserData('email_address', $u->email);
+		$cu->setUserData('real_name', $u->fullName);
+	endif;
+	
 	$cu->setRole($level);
 	$cu->setAuthStatus(true);
 		
