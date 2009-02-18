@@ -101,7 +101,7 @@ class owa_template extends Template {
 	function set_template($file = null) {
 	
 		if ($file == null):
-			$this->e->error('No template file was specified.');
+			owa_coreAPI::error('No template file was specified.');
 			return false;
 		else:
 			// check module's local modification template Directory
