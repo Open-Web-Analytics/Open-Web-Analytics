@@ -995,6 +995,13 @@ class owa_coreAPI extends owa_base {
 		$e->debug($msg);
 		return;
 	}
+	
+	function error($msg) {
+		
+		$e = owa_coreAPI::errorSingleton();
+		$e->err($msg);
+		return;
+	}
 
 	
 }
