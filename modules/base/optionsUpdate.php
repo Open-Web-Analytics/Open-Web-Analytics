@@ -33,10 +33,15 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 class owa_optionsUpdateController extends owa_adminController {
 	
 	function owa_optionsUpdateController($params) {
-		$this->owa_adminController($params);
-		$this->setRequiredCapability('edit_settings');
 		
-		return;
+		return owa_optionsUpdateController::__construct($params);
+	}
+	
+	function __construct($params) {
+	
+		$this->setRequiredCapability('edit_settings');
+		return parent::__construct($params);
+	
 	}
 
 	function action() {
@@ -71,13 +76,11 @@ class owa_optionsUpdateController extends owa_adminController {
 		endif;
 	
 		$this->e->notice("Configuration changes saved to database.");
-	
-		$data = array();
-		$data['do'] = 'base.optionsGeneral';
-		$data['view_method'] = 'redirect';
-		$data['status_code'] = 2500;
+
+		$this->setRedirectAction('base.optionsGeneral');
+		$this->set('status_code', 2500);
 		
-		return $data;
+		return;
 	
 	}
 	
