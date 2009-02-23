@@ -200,25 +200,16 @@ class owa_module extends owa_base {
 		
 		return $this->nav_links;
 	}
-	
+		
 	/**
 	 * Abstract method for registering event handlers
+	 *
+	 * Must be defined by a concrete module class for any event handlers to be registered
 	 * 
 	 * @access public
 	 * @return array
 	 */
 	function _registerEventHandlers() {
-		
-		return;
-	}
-	
-	/**
-	 * Abstract method for registering administration panels
-	 * 
-	 * @access public
-	 * @return array
-	 */
-	function _registerAdminPanels() {
 		
 		return;
 	}
@@ -230,8 +221,8 @@ class owa_module extends owa_base {
 	 * @param string $handler_name
 	 * @return boolean
 	 */
-	function _addHandler($event_name, $handler_name) {
-		
+	function registerEventHandler($event_name, $handler_name) {
+	
 		$handler_dir = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'handlers';
 		
 		$class = 'owa_'.$handler_name;
@@ -260,34 +251,55 @@ class owa_module extends owa_base {
 			
 		$eq->attach($handler);
 		
-		return ;
+		return;
+	
+	}
+	
+	/**
+	 * Attaches an event handler to the event queue
+	 *
+	 * @param array $event_name
+	 * @param string $handler_name
+	 * @return boolean
+	 * @depricated
+	 */
+	function _addHandler($event_name, $handler_name) {
 		
+		return $this->registerEventHandler($event_name, $handler_name); 
+				
+	}
+	
+	/**
+	 * Abstract method for registering administration/settings page
+	 * 
+	 * @access public
+	 * @return array
+	 */
+	function _registerAdminPanels() {
+		
+		return;
 	}
 	
 	/**
 	 * Registers an admin panel with this module 
-	 *
+	 * 
 	 */
-	function addAdminPanel($panel) {
-		
+	function registerSettingsPanel($panel) {
+	
 		$this->admin_panels[] = $panel;
 		
 		return true;
 	}
 	
 	/**
-	 * Registers Navigation Link with a particular View
-	 * 
+	 * Registers an admin panel with this module 
+	 * @depricated
 	 */
-	/*
-function addNavigationLink($link) {
+	function addAdminPanel($panel) {
 		
-		$this->nav_links[] = $link;
-		
-		return;
+		return $this->registerSettingsPanel($panel);
 	}
-*/
-	
+		
 	/**
 	 * Registers Group Link with a particular View
 	 * 
@@ -308,21 +320,46 @@ function addNavigationLink($link) {
 		return;
 	}
 	
+	/**
+	 * Abstract method for registering a module's entities
+	 *
+	 * This method must be defined in concrete module classes in order for entities to be registered.
+	 */
+	function _registerEntities() {
+		
+		return false;
+	}
+	
+	
+	/**
+	 * Registers an Entity
+	 *
+	 * Can take an array of entities or just a single entity as a string.
+	 * Will add an enetiy to the module's entity array. Required for entity installation, etc.
+	 *
+	 * @param $entity_name array or string 
+	 */
+	function registerEntity($entity_name) {
+	
+		if (is_array($entity_name)) {
+			$this->entities = array_merge($this->entities, $entity_name);
+		} else {
+			$this->entities[] = $entity_name;
+		}
+	}
 	
 	/**
 	 * Registers Entity
-	 * 
-	 */
+	 *
+	 * Depreicated see registerEntity
+	 *
+	 * @depricated 
+	 */ 
 	function _addEntity($entity_name) {
 		
-		if (is_array($entity_name)):
-			$this->entities = array_merge($this->entities, $entity_name);
-		else:
-			$this->entities[] = $entity_name;
-		endif;
-		
-		return;
+		return $this->registerEntity($entity_name);
 	}
+	
 	
 	function getEntities() {
 		
@@ -492,16 +529,7 @@ function addNavigationLink($link) {
 		
 		return;
 	}
-	
-	/**
-	 * Registers a set of entities for the module
-	 * 
-	 */
-	function _registerEntities() {
 		
-		return false;
-	}
-	
 	/**
 	 * Checks to se if the schema is up to date
 	 *
