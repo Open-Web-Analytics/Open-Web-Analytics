@@ -86,12 +86,10 @@ function owa_getInstance($params = array()) {
 		$owa_config['db_password'] = DB_PASSWORD;
 		
 		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-		//'../wp-content/plugins/owa/public/i/';
 		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
-		//'../wp-content/plugins/owa/public/i/';
 		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';
-		$owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
-		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
+		$owa_config['main_url'] = '../wp-admin/index.php?page=owa';
+		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa';
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
 		$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
 		$owa_config['link_template'] = '%s&%s';
@@ -370,7 +368,7 @@ function owa_install() {
 function owa_dashboard_menu() {
 
 	if (function_exists('add_submenu_page')):
-		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__), 'owa_dashboard_report');
+		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__), 'owa_pageController');
     endif;
     
     return;
@@ -391,6 +389,21 @@ function owa_dashboard_report() {
 	
 	return;
 	
+}
+
+function owa_pageController() {
+
+	$owa = owa_getInstance();
+	
+	$do = owa_coreAPI::getRequestParam('do');
+	
+	if (empty($do)) {
+		$params = array();
+		$params['do'] = 'base.reportDashboard';	
+	}
+	
+	echo $owa->handleRequest($params);
+
 }
 
 /**
