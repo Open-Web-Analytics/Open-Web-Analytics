@@ -304,7 +304,8 @@ class owaModule extends GalleryModule {
 		return null;
     }
     
-    
+    /*
+
     // register event handlers
 	function performFactoryRegistrations() {
     	
@@ -325,6 +326,7 @@ class owaModule extends GalleryModule {
 		
  	}
 
+*/
 }
 
 /**
