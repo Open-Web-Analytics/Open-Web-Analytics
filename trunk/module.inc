@@ -145,8 +145,6 @@ function owa_set_priviledges() {
 	return;
 }
 
-
-
 /**
  * OWA Gallery Module
  *
@@ -168,7 +166,7 @@ class owaModule extends GalleryModule {
         $this->setGroup('OWA', $gallery->i18n('Open Web Analytics'));
         $this->setRequiredCoreApi(array(7, 18));
         $this->setRequiredModuleApi(array(3, 4));
-        $this->setCallbacks('getSiteAdminViews|getSystemLinks|registerEventListeners');
+        $this->setCallbacks('getSiteAdminViews|getSystemLinks');
         
         return;
     }
@@ -308,16 +306,17 @@ class owaModule extends GalleryModule {
     
     
     // register event handlers
-    function performFactoryRegistrations() {
+	function performFactoryRegistrations() {
     	
-    	//owa_coreAPI::debug("g2 factory regs");
-    	$ret = GalleryCoreApi::registerFactoryImplementation('GalleryEventListener', 'owaLoginEventHandler ', 'owa', 'modules/owa/module.inc', 'owa', array('Gallery::Login'), null);
+    	owa_coreAPI::debug("g2 factory regs");
+    	$ret = GalleryCoreApi::registerFactoryImplementation('GalleryEventListener', 'owaLoginEventHandler ', 'owa', __FILE__, 'owa', array('Gallery::Login'), null);
     	
-    	$ret = GalleryCoreApi::registerFactoryImplementation('GalleryEventListener', 'owaLoginEventHandler ', 'owa', 'modules/owa/module.inc', 'owa', array('Gallery::Logout'), null);
+    	$ret = GalleryCoreApi::registerFactoryImplementation('GalleryEventListener', 'owaLoginEventHandler ', 'owa', __FILE__, 'owa', array('Gallery::Logout'), null);
     	
-    	$listener = new owaLoginEventHandler();
-		$ret = GalleryCoreApi::registerEventListener('Gallery::Login', $listener, true);
-    	$ret = GalleryCoreApi::registerEventListener('Gallery::Logout', $listener, true);
+		//$listener = new owaLoginEventHandler();
+		//$ret = GalleryCoreApi::registerEventListener('Gallery::Login', $listener, true);
+    	//$ret = GalleryCoreApi::registerEventListener('Gallery::Logout', $listener, true);
+	
     	if ($ret) {
 	    	return $ret;
 		}
@@ -325,27 +324,6 @@ class owaModule extends GalleryModule {
 		return null;
 		
  	}
- 	
- 	 	
- 	function registerEventListeners() {
-		$listener = new owaLoginEventHandler();
-		$ret = GalleryCoreApi::registerEventListener('Gallery::Login', $listener, true);
-		if ($ret) {
-	    	return $ret;
-		}
- 	}
-
-}
-
-class owaLoginEventHandler /* extends GalleryEventListener */ {
-
-     function handleEvent($event) {
-         global $gallery;
-		 owa_coreAPI::debug("hello from login event handler ".print_r($event));
-         
-         return array(null, null);
-     }
-
 
 }
 
@@ -540,5 +518,22 @@ class owaCallbacks {
 	}
 }
 
+class owaLoginEventHandler {
+	
+	function owaLoginEventHandler() {
+		return;
+	}
+	
+	function __construct() {
+		return;
+	}
+	
+	function handleEvent($event) {
+		global $gallery;
+		owa_coreAPI::debug("hello from login event handler ".print_r($event));
+		return array(null, null);
+	}
+
+}
 
 ?>
