@@ -38,22 +38,29 @@ class owa_logSessionUpdateController extends owa_controller {
 	
 	function owa_logSessionUpdateController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
 	}
 	
 	function action() {
 		
-	
 		// Make entity
 		$s = owa_coreAPI::entityFactory('base.session');
 		
 		// Fetch from session from database
 		$s->getByPk('id', $this->params['session_id']);
 		
+		$id = $s->get('id');
+		// fail safe for when there is no existing session in DB
+		if (empty($id)) {
+			
+			owa_coreAPI:error("Aborting session update as no existing session was found");
+			return false;
+		}
+		
 		// increment number of page views
 		$s->set('num_pageviews', $s->get('num_pageviews') + 1);
 		
-		print $num;
+		//print $num;
 		// update timestamp
 		$s->set('last_req', $this->params['last_req']);
 		
