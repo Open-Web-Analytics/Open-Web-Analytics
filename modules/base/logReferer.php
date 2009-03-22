@@ -19,7 +19,6 @@
 
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_lib.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
 
@@ -39,13 +38,17 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
 class owa_logRefererController extends owa_controller {
 	
 	function owa_logRefererController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
+		return owa_logRefererController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-	
 		// Make entity
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
@@ -81,29 +84,28 @@ class owa_logRefererController extends owa_controller {
 		$r->create();
 		
 		// Crawl and analyze refering page
-			if ($this->config['fetch_refering_page_info'] == true):
-					
-				$crawler = new owa_http;
-				$crawler->fetch($this->params['HTTP_REFERER']);
-				
-				//Extract Title
-				$r->set('page_title', $crawler->extract_title());
-				
-				$se = $r->get('is_searchengine');
-				//Extract anchortext and page snippet but not if it's a search engine...
-				if ($se != true):
-					$r->set('snippet', $crawler->extract_anchor_snippet($this->params['inbound_page_url']));
-					//$this->e->debug('Referering Snippet is: '. $this->snippet);
-					$r->set('refering_anchortext', $crawler->anchor_info['anchor_text']);
-					//$this->e->debug('Anchor text is: '. $this->anchor_text);
-				endif;
-					
-				
-					
-				//write to DB
-				$r->update();
-				
+		if (owa_coreAPI::getSetting('base', 'fetch_refering_page_info')):
+			owa_coreAPI::debug('hello from logReferer');
+			$crawler = new owa_http;
+			//$crawler->fetch($this->params['HTTP_REFERER']);
+			$res = $crawler->getRequest($this->params['HTTP_REFERER'], $response);
+			owa_coreAPI::debug(print_r($res, true));
+			//Extract Title
+			$r->set('page_title', $crawler->extract_title());
+		
+			$se = $r->get('is_searchengine');
+			//Extract anchortext and page snippet but not if it's a search engine...
+			if ($se != true):
+				$r->set('snippet', $crawler->extract_anchor_snippet($this->params['inbound_page_url']));
+				//$this->e->debug('Referering Snippet is: '. $this->snippet);
+				$r->set('refering_anchortext', $crawler->anchor_info['anchor_text']);
+				//$this->e->debug('Anchor text is: '. $this->anchor_text);
 			endif;
+				
+			//write to DB
+			$r->update();
+			
+		endif;
 		
 			
 		return;

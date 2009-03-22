@@ -53,7 +53,7 @@ class owa_logSessionUpdateController extends owa_controller {
 		// fail safe for when there is no existing session in DB
 		if (empty($id)) {
 			
-			owa_coreAPI:error("Aborting session update as no existing session was found");
+			owa_coreAPI::error("Aborting session update as no existing session was found");
 			return false;
 		}
 		

@@ -81,53 +81,7 @@ class owa_requestEvent extends owa_event {
 		
 		return $this->eq->log($this->properties, 'base.'.$this->state);
 		
-	}
-	
-	/**
-	 * Load request properties from delayed first hit cookie.
-	 *
-	 * @param 	array $properties
-	 * @access 	public
-	 */
-	function load_first_hit_properties($properties) {
-		
-		$this->properties['inbound_first_hit_properties'] = owa_lib::assocFromString($properties);
-		$this->properties = $this->properties['inbound_first_hit_properties'];
-         
-    
-		          
-          //$this->e->debug('unserialized first it array: '.print_r($this->properties, true));
-
-		
-		// Mark the request to avoid logging it to the first hit cookie again
-		$this->first_hit = true;
-		
-		// Delete first_hit Cookie
-		$this->clearState($this->config['first_hit_param']);
-		
-		return;
-	}
-	
-	
-	/**
-	 * Log request properties of the first hit from a new visitor to a special cookie.
-	 * 
-	 * This is used to determine if the request is made by an actual browser instead 
-	 * of a robot with spoofed or unknown user agent.
-	 * 
-	 * @access 	public
-	 */
-	function log_first_hit() {
-				
-		$this->setState($this->config['first_hit_param'], '', $this->properties, true);
-		
-		$this->e->debug('First hit cookie values: '.$values);
-		
-		return true;
-	
-	}
-	
-	
+	}	
 }
 
 ?>

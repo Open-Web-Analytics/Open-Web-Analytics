@@ -25,18 +25,21 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.0.0 
  */
 
 class owa_requestContainer {
 	
 	var $cli_args;
 	var $is_https;
-	var $owa_params;
-	var $cookies;
-	var $request;
+	var $owa_params = array();
+	var $cookies = array();
+	var $owa_cookies = array();
+	var $session = array();
+	var $request = array();
 	var $server;
 	var $guid;
+	var $state;
 	
 	/**
 	 * Singleton returns request params
@@ -51,6 +54,10 @@ class owa_requestContainer {
 		if(empty($params)):
 			
 			$params = owa_lib::getRequestParams();
+			// Clean Input arrays
+			$params = owa_lib::inputFilter($params);
+			//strip all params that do not include the namespace
+			$params = owa_lib::stripParams($params, owa_coreAPI::getSetting('base', 'ns'));
 			// translate certain request variables that are reserved in javascript
 			$params = owa_lib::rekeyArray($params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 			
@@ -68,7 +75,7 @@ class owa_requestContainer {
 	
 	function owa_requestContainer() {
 	
-		return $this->__construct();
+		return owa_requestContainer::__construct();
 	}
 	
 	function __construct() {
@@ -92,8 +99,35 @@ class owa_requestContainer {
 		// cookies
 		if (!empty($_COOKIE)) {
 			$this->cookies = $_COOKIE;
+			$this->owa_cookies = owa_lib::stripParams($_COOKIE, owa_coreAPI::getSetting('base', 'ns'));
 		}
 		
+		// cookies
+		if (!empty($_SESSION)) {
+			$this->session = $_SESSION;
+		}
+		
+		/* STATE CONTAINER */
+		
+		// state
+		$this->state = owa_coreAPI::supportClassFactory('base', 'state');
+		// merges session
+		if (!empty($this->session)) {
+			$this->state->addStores(owa_lib::stripParams($this->session, owa_coreAPI::getSetting('base', 'ns')));
+		}
+		
+		// merges cookies
+		foreach ($this->owa_cookies as $k => $cookie) {
+			
+			if (strpos($cookie, "|||")) {
+				$cookie = owa_lib::assocFromString($cookie);
+			}
+			
+			$this->state->loadState($k, '', $cookie, 'cookie');
+		}
+		
+		
+		//print_r($this->state);
 		// create request params from GET or POST or CLI args
 		$params = array();
 		
@@ -116,13 +150,13 @@ class owa_requestContainer {
 		
 		// merge in cookies into the request params
 		if (!empty($_COOKIE)) {
-			$params = array_merge($params, $_COOKIE);
+			//$params = array_merge($params, $this->owa_cookies);
 		}
 		
 		// Clean Input arrays
 		$this->request = owa_lib::inputFilter($params);	
 		// strip owa namespace
-		$this->owa_params = owa_lib::stripParams($this->request);
+		$this->owa_params = owa_lib::stripParams($this->request, owa_coreAPI::getSetting('base', 'ns'));
 		// translate certain request variables that are reserved in javascript
 		$this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 		
@@ -151,15 +185,73 @@ class owa_requestContainer {
 	}
 	
 	function getCookie($name) {
-	
-		return $this->cookies[$name];
+		
+		if (array_key_exists($name, $this->cookies)) {
+			return $this->cookies[$name];
+		} else {
+			return false;
+		}
+		
 	}
 	
 	function getRequestParam($name) {
 	
-		return $this->request[$name];
+		if (array_key_exists($name, $this->request)) {
+			return $this->request[$name];
+		} else {
+			return false;
+		}
 	}
 	
+	function getAllOwaParams() {
+		
+		return $this->owa_params;
+	}
+	
+	function mergeParams($params) {
+		
+		$this->owa_params = array_merge($this->owa_params, $params);
+		return;	
+	}
+	
+	function getServerParam($name) {
+	
+		if (array_key_exists($name, $this->server)) {
+			return $this->server[$name];
+		} else {
+			return false;
+		}
+	}
+	
+	function decodeRequestParams() {
+	
+		$params = array();
+		// Apply caller specific params
+		foreach ($this->owa_params as $k => $v) {
+				
+			$params[$k] = base64_decode(urldecode($v));
+				
+		}
+		
+		// clean params after decode
+		$params = owa_lib::inputFilter($params);
+		// replace owa params
+		$this->owa_params = $params;
+		//debug
+		owa_coreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
+		return;
+	
+	}
+	
+	function getOwaCookie($name) {
+		
+		if (array_key_exists($name, $this->owa_cookies)) {
+			return $this->owa_cookies[$name];
+		} else {
+			return false;
+		}
+		
+	}
 	
 }
 

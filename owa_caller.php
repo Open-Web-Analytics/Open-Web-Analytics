@@ -109,7 +109,7 @@ class owa_caller extends owa_base {
 		
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
-			
+		//owa_coreAPI::debug(print_r($_SERVER, true));
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 
@@ -223,23 +223,17 @@ class owa_caller extends owa_base {
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
 		
-		
-		/* SETUP REQUEST CONTAINER */
-		$this->params = &owa_requestContainer::getInstance();
-		//print_r($this->params);
-		
 		/**
 		 * @todo This needs to be refactored into stateless api calls 
 		 */
 		$this->api = &owa_coreAPI::singleton();
+		
+		/* LOAD SERVICE LAYER */
+		$this->service = &owa_coreAPI::serviceSingleton();
+		
 		$this->api->caller_config_overrides = $config;
 		// should only be called once to load all modules
 		$this->api->setupFramework();
-		// check for required schema updates and sets update flag
-		// this is needed if the calling application or plugin needs to check for updates
-		if (!empty($this->api->modules_needing_updates)):
-			$this->update_required = true;
-		endif;
 		
 		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.
@@ -251,8 +245,16 @@ class owa_caller extends owa_base {
 		// needed for backwards compatability 
 		$this->config = $this->c->fetch('base');
 		
-		/* LOAD SERVICE LAYER */
-		$this->service = owa_coreAPI::serviceSingleton();
+		/* SETUP REQUEST Params */
+		//$this->params = &owa_requestContainer::getInstance();
+		$this->params = $this->service->request->getAllOwaParams();
+		//print_r($this->params);
+		
+		// check for required schema updates and sets update flag
+		// this is needed if the calling application or plugin needs to check for updates
+		if (!empty($this->api->modules_needing_updates)):
+			$this->service->setUpdateRequired();
+		endif;
 		
 		return;
 	
@@ -272,7 +274,7 @@ class owa_caller extends owa_base {
 	 */
 	function log($caller_params = '') {
 		
-		return $this->logEvent('base.processRequest', $caller_params);
+		return owa_coreAPI::logEvent('base.page_request', $caller_params);
 		
 	}
 	
@@ -289,73 +291,7 @@ class owa_caller extends owa_base {
 	 */
 	function logEvent($event_type, $caller_params = '') {
 		
-		if ($this->c->get('base', 'error_log_level') > 9):
-			$this->e->debug(print_r($this->e->backtrace(), true));
-		endif;
-		
-		//change config value to incomming site_id
-		// NEEDED?
-		if(!empty($caller_params['site_id'])):
-			$this->config['site_id'] = $caller_params['site_id'];
-			$this->c->set('base', 'site_id', $caller_params['site_id']);
-		else:
-			$caller_params['site_id'] = $this->c->get('base', 'site_id');
-		endif;
-		
-		// do not log if the request is from a reserved IP
-		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
-		//	...
-		
-		
-		// Don't Log if user is an admin
-		if (owa_coreAPI::getSetting('base', 'log_named_users') != true):
-			
-			$cu = owa_coreAPI::getCurrentUser();
-			$cu_user_id = $cu->getUserData('user_id');
-			
-			if(!empty($cu_user_id)):
-				return false;
-			endif;
-		endif;
-			
-		
-		// do not log if the do not log param is set by caller.
-		if ($this->params['do_not_log'] == true):
-			return false;
-		endif;
-		
-		$params = array();
-		// Add PHP's $_SERVER scope variables to event properties
-		$params['server'] = $_SERVER;
-		
-		// Apply caller's params to event properties
-		if (!empty($caller_params)):
-			$params['caller'] = $caller_params;
-		endif;
-		
-		// set controller to invoke
-		$params['action'] = $event_type;
-		
-		// Filter input
-		$params = owa_lib::inputFilter($params);
-		
-		//Load browscap
-		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $params['server']['HTTP_USER_AGENT']);
-		
-		//$bcap = new owa_browscap($params['server']['HTTP_USER_AGENT']);  ///!
-		
-		// Abort if the request is from a robot
-		if ($this->config['log_robots'] != true):
-			if ($bcap->robotCheck() == true):
-				$this->e->debug("ABORTING: request appears to be from a robot");
-				return;
-			endif;
-		endif;
-		
-		// Fetch browser capabilities and and apply to event params
-		$params['browscap'] = get_object_vars($bcap->browser);
-	
-		return $this->handleRequest($params);
+		return owa_coreAPI::logEvent($event_type, $caller_params);
 		
 	}
 	
@@ -365,25 +301,14 @@ class owa_caller extends owa_base {
 	 *
 	 * @return unknown
 	 */
-	function logEventFromUrl($caller_params) {
+	function logEventFromUrl() {
 		
 		// keeps php executing even if the client closes the connection
 		ignore_user_abort(true);
-		
-		//$clean_params = owa_lib::inputFilter($caller_params);
-		
-		$striped_params = owa_lib::stripParams($caller_params);
-		$params =array();
-		// Apply caller specific params
-			foreach ($striped_params as $k => $v) {
-				
-				$params[$k] = base64_decode(urldecode($v));
-				
-			}
-			
-		//$this->e->debug('logEventFromUrl decoded params: '. print_r($params, true));
-		
-		return $this->logEvent($params['action'], $params);
+		$service = &owa_coreAPI::serviceSingleton();
+		$service->request->decodeRequestParams();
+	
+		return owa_coreAPI::logEvent(owa_coreAPI::getRequestParam('event_type'), $service->request->getAllOwaParams());
 		
 	}
 	
@@ -396,8 +321,7 @@ class owa_caller extends owa_base {
 	function placeHelperPageTags($echo = true) {
 		
 		$params = array();
-		$params['view'] = 'base.helperPageTags';
-		$params['view_method'] = 'delegate';
+		$params['do'] = 'base.helperPageTags';
 		
 		if ($echo == false):
 			//return $this->handleHelperPageTagsRequest();
@@ -412,99 +336,24 @@ class owa_caller extends owa_base {
 	function handleHelperPageTagsRequest() {
 	
 		$params = array();
-		$params['view'] = 'base.helperPageTags';
-		$params['view_method'] = 'delegate';
+		$params['do'] = 'base.helperPageTags';
 		return $this->handleRequest($params);
 	
 	}
-	
-
-	/**
-	 * Authenticated Rendering of view 
-	 *
-	 * @param array $caller_data
-	 * @depricated
-	 * @return string
-	 */
-	function renderView($data) {
-	
-		$view =  $this->api->moduleFactory($data['view'], 'View', $this->params);
-		
-		//perfrom authentication
-		$auth = &owa_auth::get_instance();
-		$auth_data = $auth->authenticateUser($view->priviledge_level);
-	
-		// if auth was success then procead to assemble view.
-		if ($auth_data['auth_status'] == true):
-	
-			return $view->assembleView($data);
-		else: 
-			//$this->e->debug('RenderView: '.print_r($data, true));
-			return $this->api->displayView($auth_data);
-		endif;
-		
-	}
-	
-	/**
-	 * Displays a View without user authentication. Takes array of data as input
-	 * @depricated
-	 * @param array $data
-	 */
-	function displayView($data) {
-		
-		$view =  $this->api->moduleFactory($data['view'], 'View', $this->params);
-		
-		return $view->assembleView($data);
-		
-	}
-	
-
 	
 	/**
 	 * Handles OWA internal page/action requests
 	 *
 	 * @return unknown
 	 */
-	function handleRequest($caller_params = null) {
+	function handleRequest($caller_params = null, $action = '') {
 		
-		static $init;
-		
-		// Override request parsms with those passed by caller
-		if (!empty($caller_params)):
-			$this->params = array_merge($this->params, $caller_params);
-		endif;
-		
-		if ($init != true):
-			$this->e->debug('Request Params: '. print_r($this->params, true));
-		endif;
-				
-		if (!empty($this->params['action'])):
-			$result = owa_coreAPI::performAction($this->params['action'], $this->params);
-			unset($this->params['action']);
-			
-		elseif (!empty($this->params['do'])):
-			$result = owa_coreAPI::performAction($this->params['do'], $this->params);	
-			//unset($this->params['action']);
-			
-		elseif ($this->params['view']):
-			// its a view request so the only data is in whats in the params
-			$result = owa_coreAPI::displayView($this->params);
-			unset($this->params['view']);
-			
-		else:
-			$default_action = owa_coreAPI::getSetting('base', 'default_action');
-			$result = owa_coreAPI::performAction($default_action, $this->params);
-			//return;
-			
-		endif;
-		
-		$init = true;
-		
-		return $result;
+		return owa_coreAPI::handleRequest($caller_params, $action);
+						
 	}
 	
 	function handleSpecialActionRequest() {
-		
+		owa_coreAPI::debug('hello from special action request method in caller');
 		if(isset($_GET['owa_specialAction'])):
 			$this->e->debug("special action received");
 			echo $this->handleRequestFromUrl();
@@ -513,7 +362,7 @@ class owa_caller extends owa_base {
 			$this->e->debug("log action received");
 			$this->config['delay_first_hit'] = false;
 			$this->c->set('base', 'delay_first_hit', false);
-			echo $this->logEventFromUrl($_GET);
+			echo $this->logEventFromUrl();
 			exit;
 		else:
 			return;
@@ -531,6 +380,11 @@ class owa_caller extends owa_base {
 		return;
 	}
 	
+	function createSiteId($value) {
+	
+		return md5($value);
+	}
+		
 }
 
 ?>

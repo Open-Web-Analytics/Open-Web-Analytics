@@ -37,9 +37,12 @@ class owa_processRequestController extends owa_processEventController {
 	
 	function owa_processRequestController($params) {
 		
-		$this->owa_processEventController($params);
-				
-		return;
+		return owa_processRequestController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -47,70 +50,36 @@ class owa_processRequestController extends owa_processEventController {
 		// Control logic
 		
 		// Do not log if the first_hit cookie is still present.
-        if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->params['caller']['site_id']])):
+        $fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->getParam('site_id'));
+		$fh = owa_coreAPI::getStateParam($fh_state_name);
+        
+        if (!empty($fh)):
         	$this->e->debug('Aborting request processing due to finding first hit cookie.');
 			return;
 		endif;
 		
-		// Setup request event
-		$this->event = owa_coreAPI::supportClassFactory('base', 'requestEvent');
+						
+		return;
 		
-		// Pre process - set default and standard event property names
-		$this->preProcess();
+	}
+	
+	function post() {
+				
+		if (owa_coreAPI::getSetting('base', 'delay_first_hit')) {	
+			if ($this->event->first_hit != true) {
+				// If not, then make sure that there is an inbound visitor_id
+				if (!$this->event->get('inbound_visitor_id')) {
+					// Log request properties to a cookie for processing by a second request and return
+					owa_coreAPI::debug('Logging this request to first hit cookie.');
+					return $this->log_first_hit();
+				}
+			}
+		}
 		
-		// Set event properties
-		$this->event->_setProperties($this->params['caller']);
+		owa_coreAPI::debug('Logging '.'base.'.$this->state.' to event queue...');
 		
-		// set page type to unknown if not already set by caller
-		if (empty($this->params['caller']['page_type'])):
-			$this->event->properties['page_type'] = $this->getMsg(3600);
-		endif;
-		
-		// Set the uri or else construct it from environmental vars
-		if (empty($this->params['caller']['page_url'])):
-			$this->event->properties['page_url'] = owa_lib::get_current_url();
-		endif;
-		
-		$this->event->properties['inbound_page_url'] = $this->event->properties['page_url'];
-		
-		// Feed subscription tracking code
-		$this->event->properties['feed_subscription_id'] = $this->params['caller'][$this->config['feed_subscription_param']];
-		
-		// Traffic Source code
-		$this->event->properties['source'] = $this->params['caller'][$this->config['source_param']];
-		
-		//Check for what kind of page request this is
-		if ($this->params['browscap']['Crawler'] == true):
-			$this->event->is_robot = true;
-			$this->event->properties['is_robot'] = true;
-			$this->event->properties['is_browser'] = false;
-			$this->event->state = 'robot_request';
-			$this->event->properties['event_type'] = 'base.robot_request';
-		elseif ($this->params['caller']['is_feedreader'] == true || $this->params['browscap']['isSyndicationReader'] == true):			
-			$this->event->properties['is_feedreader'] == true;
-			$this->event->properties['is_browser'] = false;
-			$this->event->properties['is_feedreader'] = true;
-			$this->event->properties['feed_reader_guid'] = $this->event->setEnvGUID();
-			$this->event->state = 'feed_request';
-			$this->event->properties['event_type'] = 'base.feed_request';
-		else:
-			$this->event->state = 'page_request';
-			$this->event->properties['event_type'] = 'base.page_request'; 
-			$this->event->properties['is_browser'] = true;
-			$this->event->sessionize($this->event->properties['inbound_session_id']);
-		endif;	
-		
-		//update last-request time cookie
-		
-		$this->event->setState($this->config['site_session_param'], $this->config['last_request_param'], $this->event->properties['sec'], true);
-		
-		
-		
-		// Post Process - cleanup after all properties are set
-		$this->postProcess();
-		
-		return $this->event->log();
-		
+		return $this->addToEventQueue();
+	
 	}
 	
 	

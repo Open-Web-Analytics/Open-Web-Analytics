@@ -103,14 +103,9 @@ class owa_wp extends owa_caller {
 	 */
 	function logComment() {
 		
-		return $this->logEvent('base.processEvent',array('event' => 'base.new_comment'));
+		return owa_coreAPI::logEvent('base.new_comment');
 		
 	}
-	
-	
-	
-
-	
 
 }
 

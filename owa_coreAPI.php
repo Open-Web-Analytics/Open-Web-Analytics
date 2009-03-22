@@ -201,6 +201,19 @@ class owa_coreAPI extends owa_base {
 		return $s->get($module, $name);
 	}
 	
+	function setSetting($module, $name, $value, $persist = true) {
+		
+		$s = &owa_coreAPI::configSingleton();
+		
+		if ($persist === true) {
+			$s->setSetting($module, $name, $value);
+		} else {
+			$s->setSettingTemporary($module, $name, $value);
+		}
+		
+	}
+	
+	
 	function getAllRoles() {
 		
 		$caps = owa_coreAPI::getSetting('base', 'capabilities');
@@ -285,11 +298,12 @@ class owa_coreAPI extends owa_base {
 	
 	function setupFramework() {
 		
-		if ($this->init != true):
+		if ($this->init != true) {
 			$this->_loadModules();
 			$this->_loadEntities();
+			$this->_loadEventProcessors();
 			$this->init = true;
-		endif;
+		}
 		
 		return;
 	}
@@ -333,6 +347,21 @@ class owa_coreAPI extends owa_base {
 		}
 		
 		return;
+	}
+	
+	function _loadEventProcessors() {
+		
+		$processors = array();
+		
+		foreach ($this->modules as $k => $module) {
+			
+			$processors = array_merge($processors, $module->event_processors);
+		}
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		$service->setMap('event_processors', $processors);
+		return;
+		
 	}
 		
 	function moduleRequireOnce($module, $class_dir, $file) {
@@ -788,64 +817,79 @@ class owa_coreAPI extends owa_base {
 	 * @return boolean
 	 */
 	function logEvent($event_type, $caller_params = '') {
-		
-		$c = owa_coreAPI::configSingleton();
-		$e = owa_coreAPI::errorSingleton();
-		$request_params = owa_coreAPI::requestContainer();
-		
-		if ($c->get('base', 'error_log_level') > 9):
-			$e->debug(print_r($e->backtrace(), true));
+		owa_coreAPI::debug("logging event $event_type");
+		if (owa_coreAPI::getSetting('base', 'error_log_level') > 9):
+			owa_coreAPI::debug(print_r($this->e->backtrace(), true));
 		endif;
+				
+		// do not log if the request is from a reserved IP
+		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
+		//	...
 		
+		// Don't Log if user is an admin
+		if (owa_coreAPI::getSetting('base', 'log_named_users') != true):
+			
+			$cu = owa_coreAPI::getCurrentUser();
+			$cu_user_id = $cu->getUserData('user_id');
+			
+			if(!empty($cu_user_id)):
+				return false;
+			endif;
+		endif;
+			
 		// do not log if the do not log param is set by caller.
-		if ($request_params['do_not_log'] == true):
-			$e->debug("ABORTING LOG ACTION: do not log flag appears to be set");
+		if (owa_coreAPI::getRequestParam('do_not_log')):
 			return false;
 		endif;
 		
-		//change config value to incomming site_id
-		if(!empty($caller_params['site_id'])):
-			$c->set('base', 'site_id', $caller_params['site_id']);
-		else:
-			$caller_params['site_id'] = $c->get('base', 'site_id');
-		endif;
-		
-		// do not log if the request is from a reserved IP
-		// ips = $this->c->get('base', 'log_not_log_ips');
-		//	...
+		/////////////////// PARAMS ////////////////////
 		
 		$params = array();
-		// Add PHP's $_SERVER scope variables to event properties
-		$params['server'] = $_SERVER;
 		
 		// Apply caller's params to event properties
 		if (!empty($caller_params)):
-			$params['caller'] = $caller_params;
+			$params = $caller_params;
 		endif;
 		
-		// set controller to invoke
-		$params['action'] = $event_type;
+		//change config value to incomming site_id
+		// NEEDED?
+		if(array_key_exists('site_id', $caller_params)):
+			owa_coreAPI::setSetting('base', 'site_id', $params['site_id'], false);
+		else:
+			$params['site_id'] = owa_coreAPI::getSetting('base', 'site_id');
+		endif;
+
+		// Add PHP's $_SERVER scope variables to event properties
+		// TODO: REMOVE
+		owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
+		//$params['server'] = $_SERVER;
+		
+		
+		// set event_type
+		$params['event_type'] = $event_type;
 		
 		// Filter input
 		$params = owa_lib::inputFilter($params);
 		
+		$service = &owa_coreAPI::serviceSingleton();
 		//Load browscap
-		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $params['server']['HTTP_USER_AGENT']);
+		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $service->request->getServerParam('HTTP_USER_AGENT'));
 		
 		// Abort if the request is from a robot
-		if ($c->get('base', 'log_robots') != true):
-			if ($bcap->robotCheck() == true):
-				$e->debug("ABORTING LOG ACTION: request appears to be from a robot");
+		if (!owa_coreAPI::getSetting('base', 'log_robots')) {
+			if ($bcap->robotCheck()) {
+				owa_coreAPI::debug("ABORTING: request appears to be from a robot");
 				return;
-			endif;
-		endif;
+			}
+		}
 		
-		// Fetch browser capabilities and and apply to event params
-		$params['browscap'] = get_object_vars($bcap->browser);
-	
-		return owa_coreAPI::handleRequest($params);
+		// lookup which event processor to use to process this event type
+		$processor_action = owa_coreAPI::getEventProcessor($event_type);
+		
+		return owa_coreAPI::handleRequest($params, $processor_action);
 		
 	}
+
 	
 	function displayImage($data) {
 		
@@ -1002,7 +1046,121 @@ class owa_coreAPI extends owa_base {
 		$e->err($msg);
 		return;
 	}
-
+	
+	function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
+	
+		if (empty($domain)) {
+			$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
+		}
+		
+		if (is_array($cookie_value)) {
+			$cookie_value = owa_lib::implode_assoc('=>', '|||', $cookie_value);
+		}
+		
+		// add namespace
+		$cookie_name = sprintf('%s%s', owa_coreAPI::getSetting('base', 'ns'), $cookie_name);
+		
+		// debug
+		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s', $cookie_name, $cookie_value));
+		
+		// set compact privacy header
+		header(sprintf('P3P: CP="%s"', owa_coreAPI::getSetting('base', 'p3p_policy')));
+		//owa_coreAPI::debug('time: '.$expires);
+		setcookie($cookie_name, $cookie_value, $expires, $path, $domain);
+		return;
+	}
+	
+	function deleteCookie($cookie_name, $path = '/', $domain = '') {
+	
+		return owa_coreAPI::createCookie($cookie_name, '', time()-3600*24*365*10, $path, $domain);
+	}
+	
+	function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
+	}
+	
+	function getStateParam($store, $name = '') {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->request->state->get($store, $name);	
+	}
+	
+	function getServerParam($name = '') {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->request->getServerParam($name);	
+	}
+	
+	function clearState($store) {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		$service->request->state->clear($store); 
+				
+	}
+	
+	function getEventProcessor($event_type) {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		$processor = $service->getMapValue('event_processors', $event_type);
+		
+		if (empty($processor)) {
+		
+			$processor = 'base.processEvent';
+		}
+		
+		return $processor;
+	}
+	
+	/**
+	 * Handles OWA internal page/action requests
+	 *
+	 * @return unknown
+	 */
+	function handleRequest($caller_params = null, $action = '') {
+		
+		static $init;
+		$service = &owa_coreAPI::serviceSingleton();
+		// Override request parsms with those passed by caller
+		if (!empty($caller_params)) {
+			$service->request->mergeParams($caller_params);
+		};
+		
+		$params = $service->request->getAllOwaParams();
+		
+		//if ($init != true) {
+			owa_coreAPI::debug('Handling request with params: '. print_r($params, true));
+		//}
+		
+		// backwards compatability with old style view/controler scheme
+		if (array_key_exists('view', $params)) {
+			// its a view request so the only data is in whats in the params
+			$init = true;
+			return owa_coreAPI::displayView($params);
+		} 
+		
+		if (empty($action)) {
+			$action = owa_coreAPI::getRequestParam('action');
+			if (empty($action)) {
+				$action = owa_coreAPI::getRequestParam('do');
+				if (empty($action)) {
+					$action = owa_coreAPI::getSetting('base', 'default_action');
+				}	
+			}
+		}
+				
+		$init = true;
+		return owa_coreAPI::performAction($action, $params);
+						
+	}
+	
+	function isUpdateRequired() {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->isUpdateRequired();
+	}
+	
 	
 }
 
