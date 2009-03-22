@@ -181,7 +181,6 @@ OWA.pageView.prototype = {
     _setProperties : function () {
     
 		this.properties["event"] = "base.page_request";	
-    	this.properties["action"] = "base.processRequest";
     
 		if (typeof this.properties["page_uri"] == 'undefined') {
 			this.properties["page_url"] = document.URL;
@@ -249,7 +248,6 @@ OWA.click.prototype = {
 		
 		this.e = e;
 	    this.properties["event"] = "base.click";
-	    this.properties["action"] = "base.processEvent";
 	    this._setTarget();
 	    this._setTagName();
 	    this._setCoords();

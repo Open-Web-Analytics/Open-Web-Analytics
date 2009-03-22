@@ -93,9 +93,8 @@ class owa_auth extends owa_base {
 		
 		parent::__construct();
 		$this->eq = &eventQueue::get_instance();
-		$this->params = &owa_requestContainer::getInstance();
 		//sets credentials based on whatever is passed in on params
-		$this->_setCredentials($this->params['u'], $this->params['p'], $this->params['pk']);
+		$this->_setCredentials(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'), owa_coreAPI::getRequestParam('pk'));
 		
 	}
 		
@@ -320,7 +319,7 @@ class owa_auth extends owa_base {
 	
 	/**
 	 * Saves login credentails to persistant browser cookies
-	 *
+	 * TODO: refactor to use state facility
 	 */
 	function saveCredentials() {
 		
@@ -332,7 +331,7 @@ class owa_auth extends owa_base {
 	
 	/**
 	 * Removes credentials
-	 *
+	 * TODO: refactor to use state facility
 	 * @return boolean
 	 */
 	function deleteCredentials() {

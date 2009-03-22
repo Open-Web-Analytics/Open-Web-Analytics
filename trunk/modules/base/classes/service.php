@@ -33,9 +33,11 @@ class owa_service extends owa_base {
 	
 	var $init;
 	var $request;
+	var $state;
 	var $current_user;
 	var $settings;
-	
+	var $maps = array();
+	var $update_required;
 	
 	function owa_service() {
 		
@@ -47,12 +49,12 @@ class owa_service extends owa_base {
 		// setup request container
 		$this->request = owa_coreAPI::requestContainerSingleton();
 		// setup settings
-		$this->settings = owa_coreAPI::configSingleton(); 
+		//$this->settings = owa_coreAPI::configSingleton(); 
 		// setup current user
 		$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
 		$this->current_user->setRole('everyone');
 		// the 'log_users' confi directive relies on this being populated
-		$this->current_user->setUserData('user_id', owa_coreAPI::getRequestParam('u'));
+		$this->current_user->setUserData('user_id', $this->request->state->get('u'));
 		
 		return;
 	}
@@ -65,6 +67,45 @@ class owa_service extends owa_base {
 	function getRequest() {
 		
 		return $this->request;
+	}
+	
+	function getState() {
+		
+		return $this->request->state;
+	}
+	
+	function getMapValue($map_name, $name) {
+		
+		if (array_key_exists($map_name, $this->maps)) {
+			
+			if (array_key_exists($name, $this->maps[$map_name])) {
+				
+				return $this->maps[$map_name][$name];
+			} else {
+				
+				return false;
+			}
+		} else {
+			
+			return false;
+		}
+	}
+	
+	function setMap($name, $map) {
+		
+		$this->maps[$name] = $map;
+		return;
+	}
+	
+	function setUpdateRequired() {
+		
+		$this->update_required = true;
+		return;
+	}
+	
+	function isUpdateRequired() {
+		
+		return $this->update_required;
 	}
 	
 }

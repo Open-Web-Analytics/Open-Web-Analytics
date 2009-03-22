@@ -154,6 +154,13 @@ class owa_module extends owa_base {
 	var $updates = array();
 	
 	/**
+	 * Event Processors Map
+	 * 
+	 * @var array 
+	 */
+	var $event_processors = array();
+	
+	/**
 	 * Constructor
 	 *
 	 * @return owa_module
@@ -172,10 +179,19 @@ class owa_module extends owa_base {
 		if ($this->config['async_db'] == false):
 			$this->_registerEventHandlers();
 		endif;
-		
+		$this->_registerEventProcessors();
 		$this->_registerEntities();
 		
 		return;
+	}
+	
+	/**
+	 * Method for registering event processors
+	 *
+	 */
+	function _registerEventProcessors() {
+		
+		return false;
 	}
 	
 	/**
@@ -586,6 +602,15 @@ class owa_module extends owa_base {
 		$this->updates[$sequence] = $class;
 		
 		return true;
+	}
+	
+	/**
+	 * Adds an event processor class to the processor array. This is used to determin
+	 * which class to use to process a particular event
+	 */
+	function addEventProcessor($event_type, $processor) {
+		$this->event_processors[$event_type] = $processor;
+		return;
 	}
 	
 }

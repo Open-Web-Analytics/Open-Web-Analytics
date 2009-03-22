@@ -341,7 +341,7 @@
 			'referer_param'					=> 'referer',
 			'site_id'						=> '',
 			'configuration_id'				=> '1',
-			'session_length'				=> '1800',
+			'session_length'				=> 1800,
 			'requests_table'				=> 'request',
 			'sessions_table'				=> 'session',
 			'referers_table'				=> 'referer',
@@ -398,7 +398,8 @@
 			'action_url'					=> '',
 			'images_url'					=> '',
 			'reporting_url'					=> '',
-			'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
+			//'p3p_policy'					=> 'NOI NID ADMa OUR IND UNI COM NAV',
+			'p3p_policy'					=> 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
 			'graph_link_template'			=> '%s?owa_action=graph&name=%s&%s', //action_url?...
 			'link_template'					=> '%s?%s', // main_url?key=value....
 			'owa_user_agent'				=> 'Open Web Analytics Bot '.OWA_VERSION,

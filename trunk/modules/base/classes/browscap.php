@@ -80,14 +80,16 @@ class owa_browscap extends owa_base {
 	function robotCheck() {
 		
 		if ($this->browser->Crawler == true):
-			return true;
+			$robot = true;
 		else:
-			if($this->robotRegexCheck() == true):
-				return true;
+			if($this->robotRegexCheck() === true):
+				$robot = true;
 			else:
-				return false;
+				$robot = false;
 			endif;
 		endif;
+		owa_coreAPI::debug('Browscap Robot Check: '. $robot);
+		return $robot;
 	}
 	
 	function lookup($user_agent) {
@@ -176,6 +178,10 @@ class owa_browscap extends owa_base {
 	
 	}
 	
+	function get($name) {
+	
+		return $this->browser->$name;
+	}
 	
 }
 

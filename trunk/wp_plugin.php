@@ -41,7 +41,10 @@ if ($owa_wp_version[0] == '2'):
 endif;
 
 // Filter and Action hook assignments
-add_action('template_redirect', 'owa_main');
+//if (!is_admin()) {
+	add_action('template_redirect', 'owa_main');
+//}
+
 add_action('wp_footer', 'owa_footer');
 add_filter('the_permalink_rss', 'owa_post_link');
 add_action('init', 'owa_handleSpecialActionRequest');
@@ -62,7 +65,7 @@ register_activation_hook(__FILE__,'owa_install');
  * @return $owa object
  */
 
-function owa_getInstance($params = array()) {
+function &owa_getInstance($params = array()) {
 	
 	static $owa;
 
@@ -186,18 +189,19 @@ function owa_main() {
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists(is_preview)):
 		if (is_preview()):
-			$owa->params['do_not_log'] = true;
+			$app_params['do_not_log'] = true;
 		endif;
 	endif;
 	
 	// WORDPRESS SPECIFIC DATA //
 	
+	$event_type = 'base.page_request';
 	// Get the type of page
 	$app_params['page_type'] = owa_get_page_type();
 	
 	//Check to see if this is a Feed Reeder
 	if(is_feed()):
-		$app_params['is_feedreader'] = true;
+		$event_type = 'base.feed_request';
 		$app_params['feed_format'] = $_GET['feed'];
 	endif;
 	
@@ -212,8 +216,11 @@ function owa_main() {
 	// Get Title of Page
 	$app_params['page_title'] = owa_get_title($app_params['page_type']);
 	
+	// Create Site ID
+	$app_params['site_id'] = $owa->createSiteId(get_settings('siteurl'));
+	
 	// Process the request by calling owa
-	$owa->log($app_params);
+	$owa->logEvent($event_type, $app_params);
 	
 	return;
 }

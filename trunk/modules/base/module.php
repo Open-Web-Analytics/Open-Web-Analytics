@@ -166,6 +166,14 @@ class owa_baseModule extends owa_module {
 		
 	}
 	
+	function _registerEventProcessors() {
+		
+		$this->addEventProcessor('base.page_request', 'base.processRequest');
+		$this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
+		$this->addEventProcessor('base.page_request', 'base.processRequest');
+		$this->addEventProcessor('base.feed_request', 'base.processFeedRequest');
+	}
+	
 	function _registerEntities() {
 		
 		//$this->_addEntity('testtable');

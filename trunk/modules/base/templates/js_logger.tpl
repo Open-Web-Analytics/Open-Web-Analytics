@@ -16,7 +16,7 @@
 // $Id$
 //
 
-<? if ($log_pageview == true): ?>
+<?php if ($log_pageview === true): ?>
 
 /**
  * Logs Page View
@@ -28,15 +28,15 @@
 var owa_pv = new OWA.pageView(owa_params);
 owa_pv.log();
 
-<? endif;?>
+<?php endif;?>
 
-<? if ($is_embedded == true): ?>
+<?php if ($is_embedded === true): ?>
 
-	<?include('js_owa_params.tpl'); ?>
+	<?php include('js_owa_params.tpl'); ?>
 
-<? endif;?>
+<?php endif;?>
 
-<? if ($log_clicks == true): ?>
+<?php if ($log_clicks === true): ?>
 
 /**
  * Logs Click
@@ -67,7 +67,7 @@ function owa_setClick(e) {
 }
 
 /**
- * Helper Function for calling the log method on the lick object
+ * Helper Function for calling the log method on the click object
  *
  */
 function owa_logClick() {
@@ -91,4 +91,4 @@ window.attachEvent('beforeunload', owa_logClick);
 
 }
 
-<? endif;?>
+<?php endif;?>

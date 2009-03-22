@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_base.php');
-require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 /**
  * Abstract OWA Event Class
@@ -34,19 +33,21 @@ require_once(OWA_BASE_DIR.'/eventQueue.php');
 class owa_event extends owa_base {
 	
 	/**
+	 * First hit flag
+	 * 
+	 * Used to tell if this request was loaded from the first hit cookie. 
+	 *
+	 * @var boolean
+	 */
+	var $first_hit = false;
+	
+	/**
 	 * Event Properties
 	 *
 	 * @var array
 	 */
 	var $properties = array();
-	
-	/**
-	 * Event Queue
-	 *
-	 * @var object
-	 */
-	var $eq;
-	
+		
 	/**
 	 * State
 	 *
@@ -76,19 +77,35 @@ class owa_event extends owa_base {
 	 */
 	function owa_event() {
 		
-		$this->owa_base();
-		
-		// Load event queue
-		$this->eq = &eventQueue::get_instance();
+		return owa_event::__construct();
+	}
+	
+	function __construct() {
 		
 		// Set GUID for event
+		$this->set('guid', $this->set_guid());
+		//needed?
 		$this->guid = $this->set_guid();
-		$this->properties['guid'] = $this->guid;
 		
 		// Assume browser untill told otherwise
-		$this->properties['is_browser'] = true;
-		//$this->e->debug('hello from event class');
+		$this->set('is_browser',true);
+		
 		return;
+	}
+	
+	function set($name, $value) {
+		
+		$this->properties[$name] = $value;
+		return;
+	}
+	
+	function get($name) {
+	
+		if(array_key_exists($name, $this->properties)) {
+			return $this->properties[$name];
+		} else {
+			return false;
+		}
 	}
 	
 	/**
@@ -97,6 +114,10 @@ class owa_event extends owa_base {
 	 * @param integer $timestamp
 	 */
 	function setTime($timestamp = '') {
+	
+		if (empty($timestamp)) {
+			$timestamp = time();
+		}
 		
 		$this->set('timestamp', $timestamp);
 		$this->set('year', date("Y", $timestamp));
@@ -113,9 +134,6 @@ class owa_event extends owa_base {
 		list($msec, $sec) = explode(" ", microtime());
 		$this->set('sec', $sec);
 		$this->set('msec', $msec);
-		
-		// Calc time sinse the last request
-		$this->time_since_lastreq = $this->timeSinceLastRequest();
 		
 	}
 	
@@ -135,27 +153,8 @@ class owa_event extends owa_base {
 	 */
 	function timeSinceLastRequest() {
 	
-        return ($this->properties['timestamp'] - $this->properties['last_req']);
+        return ($this->get('timestamp') - $this->get('last_req'));
 	
-	}
-	
-	/**
-	 * Logs event to event queue
-	 *
-	 */
-	function log() {
-		
-		$this->e->debug('Logging '.$this->state.' to event queue...');
-		
-		return $this->eq->log($this->properties, $this->state);
-	
-	}
-	
-	function logEvent($event_type, $properties) {
-		
-		$this->e->debug('Logging '.$event_type.' to event queue...');
-		return $this->eq->log($properties, $event_type);
-		
 	}
 	
 	/**
@@ -164,7 +163,7 @@ class owa_event extends owa_base {
 	 * @access 	private
 	 * @param 	array $properties
 	 */
-	function _setProperties($properties = null) {
+	function setProperties($properties = null) {
 	
 		if(!empty($properties)):
 			
@@ -182,15 +181,26 @@ class owa_event extends owa_base {
 		return;	
 	}
 	
+	function replaceProperties($properties) {
+		
+		$this->properties = $properties;
+		return;
+	}
+	
+	
+	/**
+	 * Cleans query strings of various session params
+	 * that are defined as a setting
+	 */
 	function cleanQueryStrings() {
 		
 		$properties = array('page_url', 'page_uri', 'target_url');
 		
 		foreach ($properties as $key) {
 
-			if (!empty($this->properties[$key])):
-				$this->properties[$key] = $this->stripDocumentUrl($this->properties[$key]);
-			endif;
+			if ($this->get($key)) {
+				$this->set($key, $this->stripDocumentUrl($this->get($key)));
+			}
 				
 		}
 		
@@ -211,19 +221,19 @@ class owa_event extends owa_base {
 			
 			// if more than one use the last one
 			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):
-				$this->properties['ip_address'] = $HTTP_X_FORWARDED_FOR;
+				$this->set('ip_address', $HTTP_X_FORWARDED_FOR);
 			else:
 				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
-				$this->properties['ip_address'] = $ips[0];
+				$this->set('ip_address', $ips[0]);
 			endif;
 		
 		// or else just use the remote address	
 		else:
 		
 			if ($HTTP_CLIENT_IP):
-		    	$this->properties['ip_address'] = $HTTP_CLIENT_IP;
+		    	$this->set('ip_address', $HTTP_CLIENT_IP);
 		  	else:
-		    	$this->properties['ip_address'] = $REMOTE_ADDR;
+		    	$this->set('ip_address', $REMOTE_ADDR);
 			endif;
 			
 		endif;
@@ -240,8 +250,14 @@ class owa_event extends owa_base {
 	 */
 	function set_guid() {
 	
-		return crc32(getmypid().$this->properties['site_id'].$this->properties['sec'].$this->properties['msec'].rand());
+		return crc32(getmypid().time().rand());
 	
+	}
+	
+	function getSiteSpecificGuid() {
+		
+		return crc32(getmypid().time().rand().$this->get('site_id'));
+		
 	}
 	
 	/**
@@ -265,20 +281,26 @@ class owa_event extends owa_base {
 	function setHost($remote_host) {
 	
 		// See if host is already resolved
-		if (!empty($remote_host)):
+		if (!empty($remote_host)) {
 			// Use pre-resolved host if available
 			$fullhost = $remote_host;
-		else:
+		} else {
 			// Do the host lookup
-			if ($this->config['resolve_hosts'] = true):
-				$fullhost = gethostbyaddr($this->properties['ip_address']);
-			endif;
-		endif;
+			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
+				$fullhost = @gethostbyaddr($this->get('ip_address'));
+			}
+			
+			// if still empty then use the IP address
+			if (empty($fullhost)) {
+				// just use IP address
+				$fullhost = $this->get('ip_address');
+			}
+		}
 		
-		if (!empty($fullhost)):
+		if (!empty($fullhost)) {
 		
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-			if ($fullhost != $this->properties['ip_address']):
+			if ($fullhost != $this->get('ip_address')) {
 		
 				$host_array = explode('.', $fullhost);
 				
@@ -288,25 +310,25 @@ class owa_event extends owa_base {
 				// array of tlds. this should probably be in the config array not here.
 				$tlds = array('com', 'net', 'org', 'gov', 'mil');
 				
-				if (in_array($host_array[0], $tlds)):
+				if (in_array($host_array[0], $tlds)) {
 					$host = $host_array[1].".".$host_array[0];
-				else:
+				} else {
 					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
-				endif;
+				}
 					
-			elseif ($fullhost == 'unknown'):
+			} elseif ($fullhost === 'unknown') {
 				// Show the IP it's better than nothing. Should probably mark a dirty flag in the db
 				// when this happens so one can go back and try again later.
-				$host = $this->properties['ip_address'];
-				$fullhost = $this->properties['ip_address'];
-			else:	
+				$host = $this->get('ip_address');
+				$fullhost = $this->get('ip_address');
+			} else {	
 				$host = $fullhost;					
-			endif;
+			}
 				
-			$this->properties['host'] = $host;
-			$this->properties['full_host'] = $fullhost;
+			$this->set('host', $host);
+			$this->set('full_host', $fullhost);
 		
-		endif;
+		}
 				
 		return;
 	}	
@@ -318,16 +340,16 @@ class owa_event extends owa_base {
 	 */
 	function stripDocumentUrl($url) {
 		
-		if (!empty($this->config['query_string_filters'])):
-			$filters = str_replace(' ', '', $this->config['query_string_filters']);
+		if (owa_coreAPI::getSetting('base', 'query_string_filters')):
+			$filters = str_replace(' ', '', owa_coreAPI::getSetting('base', 'query_string_filters'));
 			$filters = explode(',', $filters);
 		else:
 			$filters = array();
 		endif;
 			
 		// OWA specific params to filter
-		array_push($filters, $this->config['ns'].$this->config['source_param']);
-		array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'source_param'));
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_id'));
 		
 		//print_r($filters);
 		
@@ -358,7 +380,7 @@ class owa_event extends owa_base {
 			$url = substr($url, 0, -1);
 		endif;	
 			
-     	$this->e->debug('striped url: '.$url);
+     	owa_coreAPI::debug('striped url: '.$url);
      	
      	return $url;
 		
@@ -425,66 +447,25 @@ class owa_event extends owa_base {
 	function setOs($os) {
 		
 		if (!empty($os)):
-			$this->properties['os'] = $os;
+			$this->set('os', $os);
 		else:
-			$this->properties['os'] = $this->determine_os($this->properties['HTTP_USER_AGENT']);
+			$this->set('os', $this->determine_os($this->get('HTTP_USER_AGENT')));
 		endif;		
 	}
 	
-	function setState($store_name, $name, $value, $per_site = false, $persistant = true) {
+	function setSiteSessionState($site_id, $name, $value, $store_type = 'cookie') {
 		
-		static $state;
-		
-		if (empty($state[$store_name])):
-			$params = &owa_requestContainer::getInstance();
-			
-			//print 'hello from setstate:'. print_r($params[$store_name.'_'.$this->config['site_id']], true);
-			if ($per_site == true):
-			
-				$state[$store_name] = owa_lib::assocFromString($params[$store_name.'_'.$this->config['site_id']]);
-			
-			else:
-				$state[$store_name] = owa_lib::assocFromString($params[$store_name]);
-			endif;
-			
-		endif;
-		
-	
-		if (!empty($name)):
-			$state[$store_name][$name] = $value;
-		else:
-			$state[$store_name] = $value;
-		endif;
-		
-		if (is_array($state[$store_name])):
-			$state_value = owa_lib::implode_assoc('=>', '|||', $state[$store_name]);
-		else:
-			$state_value = $state[$store_name];
-		endif;
-		
-		$this->e->debug(sprintf('Setting state: Store_name=%s, Name=%s, Value=%s, State_storage_value= %s',$store_name, $name,$value,print_r($state_value, true)));
-		
-		// Set cookie name
-		if ($per_site == true):
-			$state_name = sprintf('%s%s_%s', $this->config['ns'], $store_name, $this->config['site_id']);
-		else:
-			$state_name = sprintf('%s%s', $this->config['ns'], $store_name);
-		endif;
-		
-		// set compact privacy header
-		header(sprintf('P3P: CP="%s"', $this->config['p3p_policy']));
-		
-		return setcookie($state_name, $state_value, time()+3600*24*365*30, "/", $this->config['cookie_domain']);
-		
-	
+		$store_name = owa_coreAPI::getSetting('base', 'site_session_param').'_'.$site_id;
+		return owa_coreAPI::setState($store_name, $name, $value, $store_type, true);
 	}
 	
-	function clearState($store_name) {
-		
-		return setcookie($this->config['ns'].$store_name.'_'.$this->config['site_id'], '', time()-3600*24*365*30, "/", $this->config['cookie_domain']);
+	function deleteSiteSessionState($site_id, $store_type = 'cookie') {
 	
+		$store_name = owa_coreAPI::getSetting('base', 'site_session_param').'_'.$site_id;
+		return owa_coreAPI::clearState($store_name);
 	}
-
+	
+	
 
 /**
 	 * Assigns visitor IDs
@@ -497,8 +478,8 @@ class owa_event extends owa_base {
 		if (empty($inbound_visitor_id)):
 			$this->set_new_visitor();
 		else:
-			$this->properties['visitor_id'] = $inbound_visitor_id;
-			$this->properties['is_repeat_visitor'] = true;
+			$this->set('visitor_id', $inbound_visitor_id);
+			$this->set('is_repeat_visitor', true);
 		endif;
 		
 		return;
@@ -515,18 +496,18 @@ class owa_event extends owa_base {
 	function set_new_visitor() {
 	
 		// Create guid
-        $this->properties['visitor_id'] = $this->set_guid();
+        $this->set('visitor_id', $this->getSiteSpecificGuid());
 		
-        // Set visitor cookie
-        
-        if ($this->config['per_site_visitors'] == true):
-        
-        	$this->setState($this->config['site_session_param'], $this->config['visitor_param'], $this->properties['visitor_id'], true);
-        else:
-        	$this->setState($this->config['visitor_param'], '', $this->properties['visitor_id']);
-        endif;
+        // Set visitor state        
+        if (owa_coreAPI::getSetting('base', 'per_site_visitors') === true) {
+        	// TODO: not sure how this will work if the config calls for maintaining state on the server....
+        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'site_session_param'), owa_coreAPI::getSetting('base', 'visitor_param'), $this->get('visitor_id'), 'cookie', true);
+        } else {
+        	// state for this must be maintained in a cookie
+        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', $this->get('visitor_id'), 'cookie', true);
+        }
 		
-		$this->properties['is_new_visitor'] = true;
+		$this->set('is_new_visitor', true);
 		
 		return;
 	
@@ -537,26 +518,36 @@ class owa_event extends owa_base {
 	 *
 	 */
 	function sessionize($inbound_session_id) {
-		
+			
+			
+			
 			// check for inbound session id
 			if (!empty($inbound_session_id)):
 				 
-				 if (!empty($this->properties['last_req'])):
-							
-					if ($this->time_since_lastreq < $this->config['session_length']):
-						$this->properties['session_id'] = $inbound_session_id;		
-						
+				 if ($this->get('last_req')):
+				 
+				 	// Calc time sinse the last request
+				 	// NEEDED???
+					$time_since_lastreq = $this->timeSinceLastRequest();
+					$this->set('time_sinse_lastreq', $time_since_lastreq);
+					$len = owa_coreAPI::getSetting('base', 'session_length');
+					if ($time_since_lastreq < $len):
+						owa_coreAPI::debug("Sessionize: last hit less than session length.");
+						$this->set('session_id', $inbound_session_id);		
 					else:
 					//prev session expired, because no hits in half hour.
-						$this->create_new_session($this->properties['visitor_id']);
+						owa_coreAPI::debug("Sessionize: prev session expired, because no hits in half hour.");
+						$this->create_new_session($this->get('visitor_id'));
 					endif;
 				else:
 				//session_id, but no last_req value. whats up with that?  who cares. just make new session.
-					$this->create_new_session($this->properties['visitor_id']);
+					owa_coreAPI::debug("Sessionize: session_id, but no last_req value. whats up with that?  who cares. just make new session.");
+					$this->create_new_session($this->get('visitor_id'));
 				endif;
 			else:
 			//no session yet. make one.
-				$this->create_new_session($this->properties['visitor_id']);
+				owa_coreAPI::debug("Sessionize: no session yet. make one.");
+				$this->create_new_session($this->get('visitor_id'));
 			endif;
 						
 		return;
@@ -571,39 +562,32 @@ class owa_event extends owa_base {
 	function create_new_session($visitor_id) {
 	
 		//generate new session ID 
-	    $this->properties['session_id'] = $this->set_guid();
+	    $this->set('session_id', $this->getSiteSpecificGuid());
 	
 		//mark entry page flag on current request
-		$this->properties['is_entry_page'] = true;
+		$this->set('is_entry_page', true);
 		
 		//mark new session flag on current request
-		$this->properties['is_new_session'] = true;
+		$this->set('is_new_session', true);
 		
 		//mark even state as first_page_request.
 		$this->state = 'first_page_request';
-		$this->properties['event_type'] = 'base.first_page_request';
+		$this->set('event_type', 'base.first_page_request');
 		
 		//Set the session cookie
-		$this->setState($this->config['site_session_param'], $this->config['session_param'], $this->properties['session_id'], true);
+		$this->setSiteSessionState($this->get('site_id'), owa_coreAPI::getSetting('base', 'session_param'), $this->get('session_id'));
 		
-                
-	
 		return;
 	
 	}
 
-	function get($name) {
 		
-		return $this->properties[$name];
+	function getProperties() {
+		
+		return $this->properties;
 	}
 	
-	
-	function set($name, $value) {
-	
-		$this->properties[$name] = $value;
-		return;
-	}
-	
+		
 }
 
 ?>

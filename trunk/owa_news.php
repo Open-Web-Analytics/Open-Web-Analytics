@@ -75,7 +75,7 @@ class owa_news extends lastRSS {
 		// Open and load RSS file
 		
 		$this->crawler->fetch($rss_url);
-		$rss_content = $this->crawler->results;
+		$rss_content = $this->crawler->crawler->results;
 		
 		if (!empty($rss_content)) {
 			

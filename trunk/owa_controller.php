@@ -159,7 +159,7 @@ class owa_controller extends owa_base {
 	 */
 	function doAction() {
 		
-		$this->e->debug('Performing Action: '.get_class($this));
+		owa_coreAPI::debug('Performing Action: '.get_class($this));
 		
 		// check if the schema needs to be updated and force the update
 		// not sure this should go here...
@@ -169,7 +169,7 @@ class owa_controller extends owa_base {
 				
 				$api = &owa_coreAPI::singleton();
 				
-				if ($api->update_required === true):
+				if ($api->isUpdateRequired()):
 					$this->e->debug('Updates Required. Redirecting action.');
 					$data = array();
 					$data['view_method'] = 'redirect';

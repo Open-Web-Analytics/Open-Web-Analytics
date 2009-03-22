@@ -33,11 +33,11 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
  * @since		owa 1.0.0
  */
 
-class owa_processFirstRequestController extends owa_processEventController {
+class owa_processFeedRequestController extends owa_processEventController {
 	
-	function owa_processFirstRequestController($params) {
-	
-		return owa_processFirstRequestController::__construct($params);
+	function owa_processFeedRequestController($params) {
+		
+		return owa_processFeedRequestController::__construct($params);
 	}
 	
 	function __construct($params) {
@@ -45,40 +45,28 @@ class owa_processFirstRequestController extends owa_processEventController {
 		return parent::__construct($params);
 	}
 	
-	function pre() {
-		
-		return false;
-	}
-	
 	function action() {
-	
-		$fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->getParam('site_id'));
-		//print_r($fh_state_name);
-		$fh = owa_coreAPI::getStateParam($fh_state_name);
-		//print_r($fh);
-		if (!empty($fh)) {
-			
-			$this->event->replaceProperties($fh);
-			$this->event->first_hit = true;
 		
-			// Delete first_hit Cookie
-			owa_coreAPI::clearState($fh_state_name);
-
+		// Feed subscription tracking code
+		if (!$this->event->get('feed_subscription_id')) {
+			$this->event->set('feed_subscription_id', $this->getParam(owa_coreAPI::getSetting('base', 'feed_subscription_param')));
 		}
-				
-		$this->setView('base.pixel');
-		$this->setViewMethod('image');
+		
+		//Check for what kind of page request this is			
+		$this->event->set('is_feedreader',true);
+		$this->event->set('is_browser', false);
+		$this->event->set('feed_reader_guid', $this->event->setEnvGUID());
+		
+		//update last-request time cookie
+		$this->event->setSiteSessionState(owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
 		
 		return;
 		
 	}
 	
-	function post() {
-			
-		return $this->addToEventQueue();
-	}
 	
 	
 }
+
 
 ?>

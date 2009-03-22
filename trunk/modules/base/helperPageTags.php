@@ -17,9 +17,66 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
+
+/**
+ * Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_helperPageTagsController extends owa_controller {
+	
+	function owa_helperPageTagsController($params) {
+	
+		return owa_helperPageTagsController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
+	}
+	
+	function action() {
+		
+		// Control logic
+		
+		// check to see if first hit tag is needed
+		if (owa_coreAPI::getSetting('base', 'delay_first_hit')) {
+		
+			$service = &owa_coreAPI::serviceSingleton();
+			//check for persistant cookie
+			$v = $service->request->getOwaCookie('v');
+			
+			if (empty($v)) {
+				
+				$this->set('first_hit_tag', true);
+			}		
+		}
+		
+		// check to see if clicktag is needed
+		if (owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
+			
+			$this->set('click_tag', true);
+		}
+		
+		// site id needed for link state
+		$this->set('site_id', $this->getParam('site_id'));
+		
+		$this->setView('base.helperPageTags');
+				
+		return;
+	}
+	
+}
+
 
 /**
  * First hit tag View
@@ -41,87 +98,38 @@ class owa_helperPageTagsView extends owa_view {
 	
 	function owa_helperPageTagsView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+		return owa_helperPageTagsView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
-		$this->body->set('site_id', $this->config['site_id']);
+		$this->body->set('site_id', $this->get('site_id'));
 		
-		// check for no presence of persistant cookies
-		if(empty($data['site_'.$this->config['site_id']])):
-			$second_check = true;
-		else:
-			$second_check = false;
-		endif;
+		// will include the first ht tracking tag
+		if ($this->get('first_hit_tag')) {
+			$this->body->set('first_hit_tag', true);
+		}
 		
-		if(empty($data[$this->config['visitor_param']])):
-			$second_check = true;
-		else:
-			$second_check = false;
-		endif;
-		
-		if (empty($data[$this->config['first_hit_param'].'_'.$this->config['site_id']]) && $second_check == true):
-			
-			if ($this->config['delay_first_hit'] == true):
-				$this->body->set('first_hit_tag', true);
-				//$this->e->debug('adding first hit tag');
-			endif;
-		endif;
-		
-		if ($this->config['log_dom_clicks'] == true):
+		// will include the click tracking tag
+		if ($this->get('click_tag')) {
 			$this->body->set('click_tag', true);	
-		endif;
+		}
 		
 		// load body template
-		$this->t->set_template('wrapper_blank.tpl');
+		$this->t->set_template('wrapper_blank_whead.tpl');
 		
 		// load body template
 		$this->body->set_template('js_helper_tags.tpl');
-		
+		$this->setJs('owa.js');
+		$this->setJs('includes/url_encode.js');
+		$this->setJs('owa.logger.js');
+		owa_coreAPI::debug('hello from help page tags view');
 		return;
-	}
-	
-	
-}
-
-/**
- * Controller
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_helperPageTagsController extends owa_controller {
-	
-	function owa_helperPageTagsController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
-	}
-	
-	function action() {
-		
-		// Control logic
-		
-		if (empty($this->params[$this->config['first_hit_param']]) && 
-			empty($this->params[$this->config['visitor_param']])):
-		
-			$data['view_method'] = 'delegate'; // Delegate, redirect
-			$data['view'] = 'base.helperPageTags';		
-		endif;
-		
-		
-		// Setup the data array that will be returned to the view.
-		
-		return $data;
 	}
 	
 	

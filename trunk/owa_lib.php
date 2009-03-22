@@ -568,10 +568,7 @@ class owa_lib {
 			$params = array_merge($params, $_COOKIE);
 		}
 		
-		// Clean Input arrays
-		$params = owa_lib::inputFilter($params);
-		
-		return owa_lib::stripParams($params);
+		return $params;
 	}
 	
 	function rekeyArray($array, $new_keys) {
@@ -591,31 +588,34 @@ class owa_lib {
 	}
 	
 	
-	function stripParams($params) {
-		
-		
-		$c = &owa_coreAPI::configSingleton();
-		$config = $c->fetch('base');
+	function stripParams($params, $ns = '') {
 		
 		$striped_params = array();
 		
-		$len = strlen($config['ns']);
+		if (!empty($ns)) {
 		
-		foreach ($params as $n => $v) {
+			$len = strlen($ns);
 			
-			// if namespace is present in param
-			if (strstr($n, $config['ns'])):
-				// strip the namespace value
-				$striped_n = substr($n, $len);  
-				//add to striped array
-				$striped_params[$striped_n] = $v;
+			foreach ($params as $n => $v) {
 				
-			endif;
+				// if namespace is present in param
+				if (strstr($n, $ns)) {
+					// strip the namespace value
+					$striped_n = substr($n, $len);  
+					//add to striped array
+					$striped_params[$striped_n] = $v;
+					
+				}
+				
+			}
 			
+			return $striped_params;
+
+		} else {
+		
+			return $params;
 		}
-		
-		return $striped_params;
-		
+			
 	}
 	
 	/**
