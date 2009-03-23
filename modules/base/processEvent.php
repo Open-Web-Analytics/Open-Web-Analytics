@@ -55,8 +55,6 @@ class owa_processEventController extends owa_controller {
 	 */
 	function action() {
 			
-		
-		
 		return;
 		
 	}
@@ -165,10 +163,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->cleanQueryStrings();
 		}
 		
-		// assign visitor cookie
-		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
-		// sessionize
-		$this->event->sessionize($this->event->get('inbound_session_id'));
+		
 		// set last request time state
 		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
 
