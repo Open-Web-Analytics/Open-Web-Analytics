@@ -1,5 +1,3 @@
-<? include("js_log_lib.tpl"); ?>
-
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -16,65 +14,27 @@
 // $Id$
 //
 
-<?php if ($log_pageview === true): ?>
+<?=$js_includes;?>
 
-/**
- * Logs Page View
- *
- * Takes owa_param object which is defined by the logging tag.
- *
- * @param owa_params Object
- */
+
+// config values
+<?php $this->includeTemplate('config_dom.tpl');?>
+
+
+// Create page view logger and log page view
+// Takes owa_param object which is defined by the logging tag.
 var owa_pv = new OWA.pageView(owa_params);
 owa_pv.log();
 
-<?php endif;?>
+<? //php if ($is_embedded === true): ?>
 
-<?php if ($is_embedded === true): ?>
+	<?php //include('js_owa_params.tpl'); ?>
 
-	<?php include('js_owa_params.tpl'); ?>
-
-<?php endif;?>
+<?php //endif;?>
 
 <?php if ($log_clicks === true): ?>
-
-/**
- * Logs Click
- *
- * Takes owa_param object which is defined by the logging tag.
- *
- * @param owa_params Object
- */
-//Log Clicks
+// Create click logger and bind it to click events
 var owa_click = new OWA.click(owa_params);
-
-
-/**
- * Helper function for setting properties on the click object
- *
- * Takes a DOM event object
- *
- * @param e Object
- */
-function owa_setClick(e) {
-
-	// hack for IE7
-	e = e || window.event;
-
-	owa_click.setProperties(e);
-	return;
-
-}
-
-/**
- * Helper Function for calling the log method on the click object
- *
- */
-function owa_logClick() {
-
-	owa_click.log();
-	return;
-}
 
 // Registers the handler for the on.click event so that click properties can be set
 document.onclick = owa_setClick;
@@ -90,5 +50,4 @@ window.addEventListener('beforeunload', owa_logClick, false);
 window.attachEvent('beforeunload', owa_logClick);
 
 }
-
 <?php endif;?>

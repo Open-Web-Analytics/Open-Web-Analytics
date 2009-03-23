@@ -7,7 +7,7 @@
 
 <?php if(!empty($js)): ?>
 <?php foreach ($js as $jsfile): ?>
-<script type="text/javascript" src="<?=$jsfile;?>"></script>
+<script type="text/javascript" src="<?=$jsfile['url'];?>"></script>
 <?php endforeach; ?>
 <?php endif;?>
 

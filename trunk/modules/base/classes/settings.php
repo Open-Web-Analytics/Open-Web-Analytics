@@ -458,6 +458,13 @@
 			endif;
 			$config['base']['base_url'] = $base_url;					
 			$config['base']['public_url'] = OWA_PUBLIC_URL;
+			
+			if (defined('OWA_PUBLIC_PATH')):
+				$config['base']['public_path'] = OWA_PUBLIC_PATH;
+			else:
+				$config['base']['public_path'] = OWA_PATH.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR;
+			endif;
+			
 			$config['base']['main_url'] = 'main.php';
 			$config['base']['main_absolute_url'] = OWA_PUBLIC_URL.$config['base']['main_url'];
 			$config['base']['action_url'] = $config['base']['main_absolute_url'];
