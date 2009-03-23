@@ -110,6 +110,8 @@ class owa_view extends owa_base {
 	
 	var $postProcessView = false;
 	
+	var $renderJsInline;
+	
 	/**
 	 * Constructor
 	 *
@@ -370,13 +372,46 @@ class owa_view extends owa_base {
 		return;
 	}
 	
-	function setJs($file, $path = '') {
+	function setJs($file, $path = '', $version ='') {
 		
 		if(empty($path)):
-			$path = $this->config['public_url'].'js'.DIRECTORY_SEPARATOR;
+			$uri = $this->config['public_url'].'js'.DIRECTORY_SEPARATOR;
+		else:
+			$uri = $path;
 		endif;
 		
-		$this->js[] = $path.$file;
+		$fs_path = owa_coreAPI::getSetting('base', 'public_path').'js'.DIRECTORY_SEPARATOR.$path;
+		
+		$this->js[$file]['url'] = $uri.$file;
+		$this->js[$file]['path'] = $fs_path.$file;
+
+		return;
+	}
+	
+	function concatinateJs() {
+	
+		$js_libs = '';
+		
+		foreach ($this->js as $lib) {
+			
+			$js_libs .= file_get_contents($lib['path']);
+			$js_libs .= "\n\n";
+		}
+		
+		$this->body->set('js_includes', $js_libs);
+		
+		return;
+	
+	}
+	
+	/**
+	 * Sets flag to tell view to render the JS inline as <SCRIPT> blocks
+	 * TODO: not yet implemented
+	 */
+	function renderJsInline() {
+	
+		$this->renderJsInLine = true;
+		
 		return;
 	}
 	

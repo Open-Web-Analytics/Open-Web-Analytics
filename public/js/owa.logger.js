@@ -92,7 +92,7 @@ OWA.log.prototype = {
     	
     	get = '';
     	
-   		log_url = OWA.config.log_url;
+   		log_url = OWA.config.log_url + '?';
    		
     	//assemble query string
 	    for(param in properties) {  // print out the params
@@ -410,4 +410,31 @@ OWA.click.prototype = {
 	    return;
 	}	
 
+}
+
+/**
+ * Helper function for setting properties on the click object
+ *
+ * Takes a DOM event object
+ *
+ * @param e Object
+ */
+function owa_setClick(e) {
+
+	// hack for IE7
+	e = e || window.event;
+
+	owa_click.setProperties(e);
+	return;
+
+}
+
+/**
+ * Helper Function for calling the log method on the click object
+ *
+ */
+function owa_logClick() {
+
+	owa_click.log();
+	return;
 }

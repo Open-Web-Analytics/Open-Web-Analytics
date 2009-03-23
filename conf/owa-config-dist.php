@@ -52,6 +52,16 @@
 // define('OWA_PUBLIC_URL', ''); 
 
 /** 
+ * PUBLIC PATH
+ * Only needs to be defined if you move the public dir from it's original location
+ *
+ * Define the filesystem path of the public directory e.g. /path/to/owa/public/ 
+ * Don't forget the slash at the end.
+ */
+ 
+// define('OWA_PUBLIC_PATH', ''); 
+
+/** 
  * OWA ERROR HANDLER
  *
  * Overide OWA error handler. This should be done through the admin GUI, but 

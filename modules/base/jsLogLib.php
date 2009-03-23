@@ -38,7 +38,6 @@ class owa_jsLogLibView extends owa_view {
 	function owa_jsLogLibView() {
 		
 		$this->owa_view();
-		$this->priviledge_level = 'guest';
 		
 		return;
 	}
@@ -48,17 +47,20 @@ class owa_jsLogLibView extends owa_view {
 	
 		// load body template
 		$this->t->set_template('wrapper_blank.tpl');
-		
-		
+	
 		$this->body->set('log_pageview', true);
 		
-		if ($this->config['log_dom_clicks'] == true):
+		if (owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
 			$this->body->set('log_clicks', true);
-		endif;
+		}
 		
 		// load body template
 		$this->body->set_template('js_logger.tpl');
-		
+		// load body template
+		$this->setJs('owa.js');
+		$this->setJs('includes/url_encode.js');
+		$this->setJs('owa.logger.js');
+		$this->concatinateJs();
 		
 		return;
 	}

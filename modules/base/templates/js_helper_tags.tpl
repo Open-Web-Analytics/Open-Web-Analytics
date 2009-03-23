@@ -36,34 +36,6 @@ document.write('<img src="<?=$this->makeAbsolutelink(array('action' => 'base.pro
 //Log Clicks
 var owa_click = new OWA.click(owa_params);
 
-
-/**
- * Helper function for setting properties on the click object
- *
- * Takes a DOM event object
- *
- * @param e Object
- */
-function owa_setClick(e) {
-
-	// hack for IE7
-	e = e || window.event;
-
-	owa_click.setProperties(e);
-	return;
-
-}
-
-/**
- * Helper Function for calling the log method on the click object
- *
- */
-function owa_logClick() {
-
-	owa_click.log();
-	return;
-}
-
 // Registers the handler for the on.click event so that click properties can be set
 document.onclick = owa_setClick;
 
