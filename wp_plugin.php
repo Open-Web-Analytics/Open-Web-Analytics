@@ -28,7 +28,7 @@ Author URI: http://www.openwebanalytics.com
 require_once('owa_env.php');
 
 // Public folder URI
-define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
+define('OWA_PUBLIC_URL', get_bloginfo('url').'/wp-content/plugins/owa/public/');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);

@@ -235,7 +235,9 @@ class owa_coreAPI extends owa_base {
 		$cu = &owa_coreAPI::getCurrentUser();
 		owa_coreAPI::debug("Current User Role: ".$cu->getRole());
 		owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
-		return $cu->isCapable($capability);
+		$ret = $cu->isCapable($capability);
+		owa_coreAPI::debug("cap-api ".$ret);
+		return $ret;
 	}
 	
 	function isCurrentUserAuthenticated() {
@@ -772,7 +774,7 @@ class owa_coreAPI extends owa_base {
 		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
 		
 		$data = $controller->doAction();
-				
+						
 		// Display view if controller calls for one.
 		if (!empty($data['view']) || !empty($data['action'])):
 		
@@ -987,8 +989,8 @@ class owa_coreAPI extends owa_base {
 	
 	function getRequestParam($name) {
 		
-		$r = &owa_coreAPI::requestContainerSingleton();
-		return $r->getParam($name);
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->request->getParam($name);
 		
 	}
 	
@@ -1121,6 +1123,7 @@ class owa_coreAPI extends owa_base {
 	function handleRequest($caller_params = null, $action = '') {
 		
 		static $init;
+		
 		$service = &owa_coreAPI::serviceSingleton();
 		// Override request parsms with those passed by caller
 		if (!empty($caller_params)) {
@@ -1144,6 +1147,7 @@ class owa_coreAPI extends owa_base {
 			$action = owa_coreAPI::getRequestParam('action');
 			if (empty($action)) {
 				$action = owa_coreAPI::getRequestParam('do');
+				owa_coreAPI::debug("post-merge ".print_r($service->request->getAllOwaParams(), true));
 				if (empty($action)) {
 					$action = owa_coreAPI::getSetting('base', 'default_action');
 				}	
