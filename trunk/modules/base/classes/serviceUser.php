@@ -94,7 +94,8 @@ class owa_serviceUser extends owa_base {
 	}
 	
 	function isCapable($cap) {
-		//print($this);
+		//owa_coreAPI::debug(print_r($this->user->getProperties(), true));
+		//owa_coreAPI::debug("cap ".$cap);
 		// just in case there is no cap passed
 		if (!empty($cap)) {
 			//adding @ here as is_array throws warning that an empty array is not the right data type!

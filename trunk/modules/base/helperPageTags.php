@@ -69,9 +69,9 @@ class owa_helperPageTagsController extends owa_controller {
 		
 		// site id needed for link state
 		$this->set('site_id', $this->getParam('site_id'));
-		
+		owa_coreAPI::debug("in controller ".print_r($this->data, true));
 		$this->setView('base.helperPageTags');
-				
+		owa_coreAPI::debug(print_r($this->data, true));
 		return;
 	}
 	
@@ -79,7 +79,7 @@ class owa_helperPageTagsController extends owa_controller {
 
 
 /**
- * First hit tag View
+ * Helper page tags
  * 
  * This HTML tag will process the first hit cooki. This tag can only be placed by php
  * as part of the same process that is doing the page logging or else it will create 

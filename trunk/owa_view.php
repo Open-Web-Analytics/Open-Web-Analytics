@@ -375,7 +375,7 @@ class owa_view extends owa_base {
 	function setJs($file, $path = '', $version ='') {
 		
 		if(empty($path)):
-			$uri = $this->config['public_url'].'js'.DIRECTORY_SEPARATOR;
+			$uri = owa_coreAPI::getSetting('base', 'public_url').'js'.DIRECTORY_SEPARATOR;
 		else:
 			$uri = $path;
 		endif;
