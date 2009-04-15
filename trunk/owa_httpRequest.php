@@ -312,8 +312,7 @@ class owa_http {
 		return($response);
 	}
 
-	function getRequest($url, $arguments = '', &$response = '')
-	{
+	function getRequest($url, $arguments = '', $response = '') {
 	
 		$this->SetupHTTP();
 		
