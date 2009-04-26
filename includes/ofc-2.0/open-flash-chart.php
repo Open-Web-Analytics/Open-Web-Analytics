@@ -8,9 +8,11 @@
 //
 // -- Marcus Engene
 //
-if (! function_exists('json_encode'))
-{
-	include_once 'JSON.php';
+if (! function_exists('json_encode')) {
+	
+	if (!class_exists('Services_JSON')) {
+		include_once 'JSON.php';
+	}
 }
 
 include_once 'json_format.php';
