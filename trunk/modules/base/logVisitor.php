@@ -37,8 +37,11 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_logVisitorController extends owa_controller {
 	
 	function owa_logVisitorController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		return owa_logVisitorController::__construct($params);
+	}
+	
+	function __construct($params) {
+		return parent::__construct($params);
 	}
 	
 	function action() {

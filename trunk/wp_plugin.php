@@ -105,9 +105,8 @@ function &owa_getInstance($params = array()) {
 		$owa = new owa_wp($config);
 		
 		// Access WP current user object to check permissions
-		global $current_user;
-      	get_currentuserinfo();
-     
+		$current_user = owa_getCurrentWpUser();
+      	     
 		// preemptively set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
@@ -124,6 +123,15 @@ function &owa_getInstance($params = array()) {
 		
 	endif;
 	
+}
+
+function owa_getCurrentWpUser() {
+
+	// Access WP current user object to check permissions
+	global $current_user;
+    get_currentuserinfo();
+    return $current_user;
+
 }
 
 // translates wordpress roles to owa roles
@@ -207,11 +215,13 @@ function owa_main() {
 	
 	$app_params[$owa->config['source_param']] = $_GET[$owa->config['ns'].$owa->config['source_param']];
 	
+	$cu =&owa_coreAPI::getCurrentUser();
+	
 	// Track users by the email address of that they used when posting a comment
-	$app_params['user_email'] = $_COOKIE['comment_author_email_'.COOKIEHASH]; 
+	//$app_params['user_email'] = $cu->getUserData('email_address'); 
 	
 	// Track users who have a named account
-	$app_params['user_name'] = $_COOKIE['wordpressuser_'.COOKIEHASH];
+	//$app_params['user_name'] = $cu->getUserData('user_id');
 	
 	// Get Title of Page
 	$app_params['page_title'] = owa_get_title($app_params['page_type']);

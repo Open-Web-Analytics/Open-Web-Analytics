@@ -828,10 +828,10 @@ class owa_coreAPI extends owa_base {
 		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
 		//	...
 		
-		// Don't Log if user is an admin
+		// Check to see if named users should be logged
+				
 		if (owa_coreAPI::getSetting('base', 'log_named_users') != true):
-			
-			$cu = owa_coreAPI::getCurrentUser();
+			$cu = owa_coreAPI::getCurrentUser();	
 			$cu_user_id = $cu->getUserData('user_id');
 			
 			if(!empty($cu_user_id)):
@@ -853,20 +853,21 @@ class owa_coreAPI extends owa_base {
 			$params = $caller_params;
 		endif;
 		
+		// add named user values
+		//$params['user_name'] = $cu->getUserData('user_id');
+		//$params['user_email'] = $cu->getUserData('email_address');
+		
+		
 		//change config value to incomming site_id
-		// NEEDED?
+		// NEEDED HERE?
 		if(array_key_exists('site_id', $caller_params)):
 			owa_coreAPI::setSetting('base', 'site_id', $params['site_id'], false);
 		else:
 			$params['site_id'] = owa_coreAPI::getSetting('base', 'site_id');
 		endif;
 
-		// Add PHP's $_SERVER scope variables to event properties
-		// TODO: REMOVE
 		owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
-		//$params['server'] = $_SERVER;
-		
-		
+				
 		// set event_type
 		$params['event_type'] = $event_type;
 		
