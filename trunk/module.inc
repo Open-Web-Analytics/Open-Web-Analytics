@@ -81,7 +81,7 @@ function owa_factory($params = array()) {
 		$owa_config['query_string_filters'] = 'g2_fromNavId';
 		$owa_config['is_embedded'] = 'true';
 		
-		$gallery->debug('hello from owa');
+		$gallery->debug('hello from gallery owa plugin');
 
 		// create owa instance
 		$owa = new owa_php($owa_config);
