@@ -93,6 +93,11 @@ class owa_serviceUser extends owa_base {
 		return;
 	}
 	
+	function getUserData($name) {
+		
+		return $this->user->get($name);
+	}
+	
 	function isCapable($cap) {
 		//owa_coreAPI::debug(print_r($this->user->getProperties(), true));
 		//owa_coreAPI::debug("cap ".$cap);

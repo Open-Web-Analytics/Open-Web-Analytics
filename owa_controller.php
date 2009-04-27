@@ -181,9 +181,8 @@ class owa_controller extends owa_base {
 		
 		/* CHECK USER FOR CAPABILITIES */
 		$cap = owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability());
-		owa_coreAPI::debug('controller cap '.$cap);
+		owa_coreAPI::debug('Controller: is current user capable: '.$cap);
 		if ($cap != true):
-			owa_coreAPI::debug("hello from controller");
 			// check to see if the user has already been authenticated by a plugin 
 			if (owa_coreAPI::isCurrentUserAuthenticated()):
 				$this->setView('base.error');
@@ -217,7 +216,6 @@ class owa_controller extends owa_base {
 				endif;
 			endif;
 		endif;
-		owa_coreAPI::debug("hello from controller 2");
 		// TODO: These sets need to be removed and added to pre(), action() or post() methods 
 		// in various concrete controller classes as they screw up things when 
 		// redirecting from one controller to another.

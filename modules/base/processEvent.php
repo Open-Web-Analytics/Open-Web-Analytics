@@ -210,10 +210,10 @@ class owa_processEventController extends owa_controller {
 	}
 	
 	function addToEventQueue() {
-		
+		$properties = $this->event->getProperties();
 		$eq = &eventQueue::get_instance();
-		$eq->log($this->event->getProperties(), $this->event->get('event_type'));
-		return owa_coreAPI::debug('Logged Event Type '.$this->event->get('event_type').' to event queue...');
+		$eq->log($properties, $this->event->get('event_type'));
+		return owa_coreAPI::debug('Logged '.$this->event->get('event_type').' to event queue with properties: '.print_r($properties, true));
 
 	}
 
