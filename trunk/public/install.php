@@ -38,17 +38,15 @@ $config['main_url'] = 'install.php';
 $config['cache_objects'] = false;
 $owa = new owa_php($config);
 
-// Santize input
-$params = owa_lib::inputFilter($_REQUEST);
+
+// run controller, echo page content
+$do = owa_coreAPI::getRequestParam('do'); 
+if (empty($do)) {
+	
+	$params['do'] = 'base.installStart';
+}
 
 // run controller or view and echo page content
-
-if (empty($params['view'])):
-	$params['view'] = 'base.install';
-endif;
-
 echo $owa->handleRequest($params);
-
-// unload owa
 
 ?>

@@ -20,11 +20,11 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
-class owa_installStartController extends owa_controller {
+class owa_installDetectedController extends owa_controller {
 
-	function owa_installStartController($params) {
+	function owa_installDetectedController($params) {
 	
-		return owa_installStartController::__construct($params); 
+		return owa_installDetectedController::__construct($params); 
 			
 	}
 	
@@ -37,7 +37,7 @@ class owa_installStartController extends owa_controller {
 	function action() {
 	
 		$this->setView('base.install');
-		$this->setSubview('base.installStart');
+		$this->setSubview('base.installDetected');
 		
 		return;
 	
@@ -49,7 +49,7 @@ class owa_installStartController extends owa_controller {
 
 
 /**
- * Installation View
+ * Installation Detected View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -59,11 +59,11 @@ class owa_installStartController extends owa_controller {
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_installStartView extends owa_view {
+class owa_installDetectedView extends owa_view {
 	
-	function owa_installStartView() {
+	function owa_installDetectedView() {
 		
-		return owa_installStartView::__construct();
+		return owa_installDetectedView::__construct();
 	}
 	
 	function __construct() {
@@ -73,14 +73,10 @@ class owa_installStartView extends owa_view {
 	
 	function render() {
 		
-		$this->body->set_template('install_start.tpl');
-
-		//page title
-		$this->t->set('page_title', 'OWA Installation Start');
-
-		// fetch admin links from all modules
+		$this->body->set_template('install_schema_detected.tpl');
 		
-		$this->body->set('headline', 'Get Started...');
+		//page title
+		$this->t->set('page_title', 'OWA INstallation Detected');
 		
 		return;
 	}
