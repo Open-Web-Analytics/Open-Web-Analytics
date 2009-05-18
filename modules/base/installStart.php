@@ -20,7 +20,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
-class owa_installStartController extends owa_controller {
+class owa_installStartController extends owa_installController {
 
 	function owa_installStartController($params) {
 	

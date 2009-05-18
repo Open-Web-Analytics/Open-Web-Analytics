@@ -46,14 +46,12 @@ class owa_installController extends owa_controller {
 	}
 			
 	function pre() {
-	
+		
 		if (owa_coreAPI::getSetting('base', 'install_complete')) {
-			
-			return $this->setRedirectAction('base.login');
-			
+			owa_coreAPI::debug('Install complete redirecting to base.installDetected');
+			return $this->redirectBrowser('base.installDetected', false);
 		}
-	
-	
+
 		return;
 	}
 
