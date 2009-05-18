@@ -16,9 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * Installer Default Site Profile Entry Controller
@@ -32,7 +31,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_installDefaultSiteProfileEntryController extends owa_controller {
+class owa_installDefaultSiteProfileEntryController extends owa_installController {
 	
 	function owa_installDefaultSiteProfileEntryController($params) {
 		
@@ -41,16 +40,7 @@ class owa_installDefaultSiteProfileEntryController extends owa_controller {
 	
 	function __construct($params) {
 		
-		parent::__construct($params);
-		
-		//Load config from db
-		$this->c->load();
-		// Secure access to this controller if the installer has already been run
-		if ($this->c->get('base', 'install_complete') === true) {
-			$this->setRequiredCapability('edit_modules');
-		}
-	
-		return;
+		return parent::__construct($params);
 		
 	}
 	

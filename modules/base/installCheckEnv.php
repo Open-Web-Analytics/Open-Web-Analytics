@@ -16,9 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * Installer Server Environment Setup Check View
@@ -35,14 +34,16 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 class owa_installCheckEnvView extends owa_view {
 	
 	function owa_installCheckEnvView($params) {
-		
-		$this->owa_view($params);
-		$this->priviledge_level = 'guest';
-		
-		return;
+	
+		return owa_installCheckEnvView::__construct($params);
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'Installer Server Environment Check');
@@ -51,8 +52,6 @@ class owa_installCheckEnvView extends owa_view {
 		$this->body->set('env', $data['env']);
 		// load body template
 		$this->body->set_template('install_check_env.tpl');
-		
-		
 		
 		return;
 	}
@@ -72,11 +71,16 @@ class owa_installCheckEnvView extends owa_view {
  * @since		owa 1.0.0
  */
 
-class owa_installCheckEnvController extends owa_controller {
+class owa_installCheckEnvController extends owa_installController {
 	
 	function owa_installCheckEnvController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
+		return owa_installCheckEnvController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -109,13 +113,12 @@ class owa_installCheckEnvController extends owa_controller {
 		
 		// Check permissions on log directory
 		
-		$data['errors'] = $errors;
-		$data['env'] = $env;
-		$data['view_method'] = 'delegate';
-		$data['view'] = 'base.install';
-		$data['subview'] = 'base.installCheckEnv';
+		$this->set('errors', $errors);
+		$this->set('env', $env);
+		$this->setView('base.install');
+		$this->setSubview('base.installCheckEnv');
 		
-		return $data;
+		return;
 	}
 	
 	

@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * base Schema Installation Controller
@@ -30,13 +30,16 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_installBaseController extends owa_controller {
+class owa_installBaseController extends owa_installController {
 	
 	function owa_installBaseController($params) {
+				
+		return owa_installBaseController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		$this->owa_controller($params);
-		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {

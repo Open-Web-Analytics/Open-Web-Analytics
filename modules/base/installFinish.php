@@ -18,7 +18,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * Installation Finish
@@ -33,17 +33,16 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  */
 
 
-class owa_installFinishController extends owa_controller {
+class owa_installFinishController extends owa_installController {
 
 	function owa_installFinishController($params) {
-		$this->owa_controller($params);
+	
+		return owa_installFinishController::__construct($params); 	
+	}
+	
+	function __construct($params) {
 		
-		// Secure access to this controller if the installer has already been run
-		if ($this->c->get('base', 'install_complete') != true):	
-			$this->priviledge_level = 'guest';
-		else:
-			$this->setRequiredCapability('edit_modules');
-		endif;
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -58,41 +57,33 @@ class owa_installFinishController extends owa_controller {
 			$this->e->notice('Could not persist Install Complete Flag to the Database');
 		endif;
 		
-		
 		$site = owa_coreAPI::entityFactory('base.site');
-		
 		$site->getByPk('id', '1');
+		$this->setView('base.install');
+		$this->setSubview('base.installFinish');
+		$this->set('site_id', $site->get('site_id'));
+		$this->set('status_code', $this->getParam('status_code')); 
+		$this->set('u', $this->getParam('u'));
+		$this->set('k', $this->getParam('k'));
 		
-		$data = array();
-		$data['view'] = 'base.install';
-		$data['subview'] = 'base.installFinish';
-		$data['view_method'] = 'delegate';
-		$data['site_id'] = $site->get('site_id');
-		$data['status_code'] = $this->params['status_code']; 
-		$data['u'] = $this->params['u'];
-		$data['k'] = $this->params['k'];
-		
-		return $data;
+		return;
 	}
-	
-	
-
 }
 
 
 class owa_installFinishView extends owa_view {
 	
 	function owa_installFinishView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+				
+		return owa_installFinishView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
 		
-		$api = &owa_coreAPI::singleton();
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Set Page title
 		$this->t->set('page_title', 'Installation Complete');
@@ -100,13 +91,11 @@ class owa_installFinishView extends owa_view {
 		// Set Page headline
 		$this->body->set('headline', 'Installation is Complete');
 		
-		$this->body->set('site_id', $data['site_id']);
-		$this->body->set('u', $data['u']);
-		$this->body->set('key', $data['k']);
+		$this->body->set('site_id', $this->get('site_id'));
+		$this->body->set('u', $this->get('u'));
+		$this->body->set('key', $this->get('k'));
 		// load body template
 		$this->body->set_template('install_finish.tpl');
-		
-		
 		
 		return;
 	}

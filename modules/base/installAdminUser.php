@@ -17,7 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * Install Default Admin User Controller
@@ -31,21 +31,16 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_installAdminUserController extends owa_controller {
+class owa_installAdminUserController extends owa_installController {
 	
 	function owa_installAdminUserController($params) {
-		$this->owa_controller($params);
+				
+		return owa_installAdminUserController::__construct($params);
+	}
+	
+	function __construct($params) {
 		
-		//Load config from db
-		$this->c->load();
-		// Secure access to this controller if the installer has already been run
-		if ($this->c->get('base', 'install_complete') != true):	
-			$this->priviledge_level = 'guest';
-		else:
-			$this->setRequiredCapability('edit_modules');
-		endif;
-		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -55,70 +50,49 @@ class owa_installAdminUserController extends owa_controller {
 		$u = owa_coreAPI::entityFactory('base.user');
 		$auth = &owa_auth::get_instance();
 		
-		// check to see if an admin user already exists without relying on loading config from DB
+		// check to see if an admin user already exists
 		$u->getByColumn('role', 'admin');
 		$id_check = $u->get('id');
-		
-		$config = owa_coreAPI::entityFactory('base.configuration');
-		$config->getByPk('id', $this->config['configuration_id']);
-		$settings = unserialize($config->get('settings'));
-		//print_r($settings);
-		
-		if ($settings['base']['install_complete'] != true):
+				
 		// if not then proceed
-			if (empty($id_check)):
-		
-				//Check to see if user name already exists
-				$u->getByColumn('user_id', 'admin');
-		
-				// data
-				$data = array();
-		
-				$id = $u->get('id');
-		
-				// Set user object Params
-				if (empty($id)):
-				
-					$userManager = owa_coreApi::supportClassFactory('base', 'userManager');				
-					
-					
-					$user_params = array( 'user_id' 		=> 'admin',
-										  'real_name' 		=> $this->params['real_name'],
-									      'role'			=> 'admin',
-								    	  'email_address' 	=> $this->params['email_address']); 
-								          
-					$temp_passkey = $userManager->createNewUser($user_params);
-					
-					// return view
-					$data['view_method'] = 'redirect';
-					
-					$data['u'] = 'admin';
-					$data['k'] = $temp_passkey;
-					$data['action'] = 'base.installFinish';
-					$data['status_code'] = 3304;
-				
-				else:
-				$data = $this->params;
-				$data['view_method'] = 'delegate';
-				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installAdminUserEntry';
-				$data['status_msg'] = $this->getMsg(3306);
-				endif;
+		if (empty($id_check)):
+	
+			//Check to see if user name already exists
+			$u->getByColumn('user_id', 'admin');
+	
+			$id = $u->get('id');
+	
+			// Set user object Params
+			if (empty($id)):
 			
-			// otherwise return the already installed view
-			else:
-				$data['view_method'] = 'delegate';
-				$data['view'] = 'base.install';
-				$data['subview'] = 'base.installStart';
+				$userManager = owa_coreApi::supportClassFactory('base', 'userManager');				
+				
+				
+				$user_params = array( 'user_id' 		=> 'admin',
+									  'real_name' 		=> $this->params['real_name'],
+								      'role'			=> 'admin',
+							    	  'email_address' 	=> $this->params['email_address']); 
+							          
+				$temp_passkey = $userManager->createNewUser($user_params);
+				
+				$this->set('u', 'admin');
+				$this->set('k', $temp_passkey);
+				$this->setRedirectAction('base.installFinish');
+				$this->set('status_code', 3304);
+			
+			else:					
+				$this->setView('base.install');
+				$this->setSubview('base.installAdminUserEntry');
+				$this->set('status_msg', $this->getMsg(3306));
 			endif;
 		
+		// otherwise return the already installed view
 		else:
-			$data['view_method'] = 'delegate';
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installStart';
+			$this->setView('base.install');
+			$this->setSubview('base.installStart');
 		endif;
 		
-		return $data;
+		return;
 	}
 	
 }
