@@ -65,7 +65,7 @@ class owa_caller extends owa_base {
 	function owa_caller($config) {
 	
 		register_shutdown_function(array(&$this, "__destruct"));
-		return $this->__construct($config);
+		return owa_caller::__construct($config);
 		
 	}
 	
@@ -222,7 +222,7 @@ class owa_caller extends owa_base {
 		// Sets the correct mode of the error logger now that final config values are in place
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
-		
+		//print ('hello');
 		/**
 		 * @todo This needs to be refactored into stateless api calls 
 		 */

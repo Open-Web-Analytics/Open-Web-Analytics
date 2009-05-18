@@ -68,7 +68,7 @@ register_activation_hook(__FILE__,'owa_install');
 function &owa_getInstance($params = array()) {
 	
 	static $owa;
-
+	
 	if(!empty($owa)):
 		return $owa;
 	else:
