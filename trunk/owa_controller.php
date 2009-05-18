@@ -467,6 +467,38 @@ class owa_controller extends owa_base {
 		return;
 	}
 	
+	/**
+	 * redirects borwser to a particular view
+	 *
+	 * @param unknown_type $data
+	 */
+	function redirectBrowser($action, $pass_params = true) {
+		
+		$control_params = array('view_method', 'auth_status');
+		
+		$get = '';
+		
+		$get .= owa_coreAPI::getSetting('base', 'ns').'do'.'='.$action.'&';
+		
+		if ($pass_params === true) {
+
+			foreach ($this->data as $n => $v) {
+				
+				if (!in_array($n, $control_params)) {		
+				
+					$get .= owa_coreAPI::getSetting('base', 'ns').$n.'='.$v.'&';
+				
+				}
+			}
+		}
+				
+		$new_url = sprintf(owa_coreAPI::getSetting('base', 'link_template'), owa_coreAPI::getSetting('base', 'main_url'), $get);
+		
+		return owa_lib::redirectBrowser($new_url);
+		
+	}
+
+	
 }
 
 ?>
