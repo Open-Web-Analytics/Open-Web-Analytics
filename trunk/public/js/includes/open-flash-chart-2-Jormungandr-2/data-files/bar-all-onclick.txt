@@ -1,0 +1,91 @@
+{
+  "title":{
+    "text":  "Many data lines",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "colour":    "#9933CC",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_sketch",
+      "colour":    "#9933CC",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_glass",
+      "colour":    "#9933CC",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_3d",
+      "colour":    "#9933CC",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_filled",
+      "colour":    "#9933CC",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_cylinder",
+      "colour":    "#9933CC",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_cylinder_outline",
+      "colour":    "#3030FF",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_round_glass",
+      "colour":    "#CC0000",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_round",
+      "colour":    "#CC0000",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_dome",
+      "colour":    "#CCCC00",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_plastic",
+      "colour":    "#CCCC00",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    },
+    {
+      "type":      "bar_plastic_flat",
+      "colour":    "#CCCC00",
+      "on-click":  "trace:http://example.com",
+      "values" :   [{"top":7, "on-click":  "trace:http://google.com"},0,-7]
+    }
+  ],
+
+  "y_axis":{
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "offset":      0,
+    "min":         -10,
+    "max":         10
+  }
+}
+

@@ -607,38 +607,6 @@ class owa_genericTableView extends owa_view {
 
 }
 
-class owa_openFlashChartView extends owa_view {
-
-	function owa_openFlashChartView() {
-		
-		owa_openFlashChartView::__construct();
-		
-		return;
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-		
-	}
-	
-	function render($data) {
-		
-		// load template
-		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('ofc.tpl');
-		// set
-		$this->body->set('widget', $this->get('widget'));
-		$this->body->set('height', $this->get('height'));
-		$this->body->set('width', $this->get('width'));
-		$this->body->set('dom_id', $this->get('dom_id'));
-		$this->body->set('params', $this->get('params'));
-	
-		return;
-	
-	}
-
-}
 
 class owa_sparklineJsView extends owa_view {
 

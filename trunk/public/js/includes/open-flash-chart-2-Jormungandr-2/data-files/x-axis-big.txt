@@ -1,0 +1,51 @@
+{
+	"elements":[
+	{
+		"type":"scatter",
+		"colour":"#FF0000",
+		"outline-colour":"#577261",
+		"dot-style": {
+			"type":"anchor", "sides":4,
+			"alpha":1, "hollow":true,
+			"background-colour":"#a44a80", "background-alpha": 0.4,
+			"width":1, "tip":"X: #x_label#" },
+		"values":[
+			{"x":0,"y":0},
+			{"x":20000,"y":0},
+			{"x":20000,"y":20000},
+			{"x":0,"y":20000}
+		]
+	}
+	],
+	
+	"title":{
+		"text":"adsfasdfasdf"
+		},
+		
+	"bg_colour":"#FFFFFF",
+	
+	"x_axis":{
+		"grid-colour":"#FFFFFF",
+		"colour":"#000000",
+		"min":0,
+		"max":20000,
+		"steps":3000,
+		"labels": {
+			"_visible": true,
+			"_colour":	"#f09090",
+			"steps":	3000,
+			"_size" :	15,
+			"_align":	"right",
+			"rotate":	45,
+			"visible-steps": 3000
+		}
+	},
+	
+	"y_axis":{
+		"grid-colour":"#FFFFFF",
+		"colour":"#000000",
+		"min":0,
+		"max":20000,
+		"steps":2500
+	}
+}

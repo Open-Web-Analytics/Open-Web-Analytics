@@ -1,0 +1,50 @@
+﻿{
+	"y_legend":{
+		"text":   "Time of day",
+		"style": "{color: #736AFF;}"
+	},
+	
+	"menu":{
+		"colour":			"#E0E0ff",
+		"outline-colour":	"#707070",
+		"values" : [
+				{
+					"type":		"camera-icon",
+					"text":		"Save as image"
+				},
+				{
+					"type":		"text",
+					"text":		"Save as image 2"
+				},
+				{
+					"type":		"camera-icon",
+					"text":		"3!!",
+					"javascript-function":	"my_function"
+				}
+			]
+	},
+
+	"elements":[
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"text":      "Avg. wave height (cm)",
+			"font-size": 10,
+			"width":     2,
+			"values" :   [
+				1.5,1.69,1.88,2.06,2.21,2.34,2.43,
+				2.48,2.49,2.47,2.40,2.30,2.17,2.01,
+				1.83,1.64,1.44,1.24,1.05,0.88,0.74,
+				0.62,0.54,0.50,0.50,0.54,0.61,0.72,
+				0.86,1.03,1.22,1.41,1.61,1.81,1.99,
+				2.15,2.29,2.39,2.46,2.49,2.48,
+				{"value":2.44,"colour":"#FF0000","tip":"monkies"},
+				2.35,2.23,2.08]
+		}
+	],
+
+  "y_axis":{
+    "max":   3
+  }
+
+}

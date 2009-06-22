@@ -1,0 +1,51 @@
+{
+  "elements": [
+    {
+      "type": "line",
+      "values": [
+        1,
+        2,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "type": "line",
+      "values": [
+        null,
+        null,
+        null,
+        1,
+        2,
+        1,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "type": "line",
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        2,
+        1
+      ]
+    }
+  ],
+  "title": {
+    "text": "Thu Nov 20 2008"
+  }
+}

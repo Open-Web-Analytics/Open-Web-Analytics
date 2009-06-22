@@ -17,11 +17,12 @@ OWA.chart.prototype = {
 	
 	height: "100%",
 	
-	width: "100%",
+	width: "500",
 	
 	render: function() {
-	
-		 swfobject.embedSWF(this.config.js_url + "includes/" + "open-flash-chart.swf", this.dom_id, this.width, this.height, "9.0.0", "expressInstall.swf", {"get-data":"OWA.items['"+this.dom_id+"'].getData", id: this.dom_id});
+		 var flashvars = {};
+		 var attributes = {styleclass: "owa_ofcChart"};
+		 swfobject.embedSWF(this.config.js_url + "includes/" + this.config.ofc_version + "/" + "open-flash-chart.swf", this.dom_id, this.width, this.height, "9.0.0", "expressInstall.swf", {"get-data":"OWA.items['"+this.dom_id+"'].getData", id: this.dom_id}, {}, attributes);
 		 
 	},
 	
