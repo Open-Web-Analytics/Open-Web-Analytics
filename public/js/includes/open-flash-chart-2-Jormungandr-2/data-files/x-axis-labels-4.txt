@@ -1,0 +1,53 @@
+{
+  "title": {
+    "text": "Our New House Schedule"
+  },
+  "elements": [
+    {
+      "type": "hbar",
+      "colour": "#9933CC",
+      "text": "Page views",
+      "font-size": 10,
+      "values": [
+        {
+          "right": 4
+        },
+        {
+          "right": 4,
+          "left": 8
+        },
+        {
+          "right": 8,
+          "left": 11
+        }
+      ]
+    }
+  ],
+  "y_axis": {
+    "offset": 1,
+    "labels": [
+      "Make garden look sexy",
+      "Paint house",
+      "Move into house"
+    ]
+  },
+  "x_axis": {
+    "offset": false,
+    "labels": {
+      "labels": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ]
+    }
+  }
+}

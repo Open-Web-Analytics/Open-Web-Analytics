@@ -91,11 +91,9 @@ class owa_chartData {
 		if (!empty($name2)) {
 			$max_values[] = max($this->getSeriesData($name2));
 		}
-		//owa_coreAPI::debug("maxxx". print_r($this->getSeriesData($name), true));
-		//owa_coreAPI::debug("maxxx". max(array_values($this->getSeriesData($name))));
-		//owa_coreAPI::debug("maxxx". print_r($this->getSeriesData($name2), true));
-		//owa_coreAPI::debug("maxxx". max(array_values($this->getSeriesData($name2))));
+	
 		$max = max($max_values);
+		
 		return $max + 2;
 	}
 	

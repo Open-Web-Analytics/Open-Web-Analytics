@@ -1,0 +1,55 @@
+{
+  "y_legend":{
+    "text":   "Time of day",
+    "style": "{color: #736AFF;}"
+  },
+
+  "elements":[
+    {
+      "type":      "line",
+      "colour":    "#736AFF",
+      "text":      "Avg. wave height (cm)",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "line-style": {"style":"dash","on":10,"off":5},
+      "values" :   [
+        6,6,
+        {"value":7, "colour":"#FF0000", "tip":"LINE<br>#val#", "dot-size":12, "halo-size": 3 },
+        8,8]
+    },
+    {
+      "type":      "shape",
+      "colour":    "#FF0000",
+      "alpha":     0.2,
+      "values" :   [
+        {"x":2,"y":2},
+        {"x":4,"y":2},
+        {"x":4,"y":4},
+        {"x":3,"y":5},
+        {"x":2,"y":4}
+      ]
+    },
+    {
+      "type":      "line_dot",
+      "colour":    "#736AFF",
+      "text":      "Line Dot Key",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 1,
+      "tip":       "global dot<br>#val#",
+      "values" :  [
+        2,2,
+        {"value":3, "colour":"#FF0000", "tip":"DOT<br>#val#<br>Key: #key#<br>#x_label#, #x_legend#", "dot-size":12, "halo-size": 3 },
+        4,4] 
+    }
+  ],
+
+
+  "y_axis":{
+    "max":   10
+  }
+
+}

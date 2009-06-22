@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_INCLUDE_DIR.'ofc-2.0/open-flash-chart.php');
+require_once(OWA_OFC_DIR.'open-flash-chart.php');
 
 /**
  * Open Flash Charts
@@ -63,10 +63,10 @@ class owa_ofc {
 	function getAreaPlot() {
 	
 		// setup area plot
-		$area = new area_hollow();
+		$area = new area();
 		// set the circle line width:
 		$area->set_width( 3 );
-		$area->set_dot_size( 5 );
+		$area->set_default_dot_style( new hollow_dot(5) );
 		$area->set_halo_size( 1 );
 		$area->set_colour($this->line_color);
 		$area->set_fill_colour($this->area_fill_color);
@@ -99,10 +99,8 @@ class owa_ofc {
 			$area->set_key( $chartData->getSeriesLabel('area'), 12 );
 			
 			// y-axis specific settings
-			$this->y_axis->set_range($chartData->getMin('area'), $chartData->getMax('area'));
-			$this->y_axis->labels = null;
-			$this->y_axis->set_offset( false );
-			$this->y_axis->set_steps( $chartData->getMax('area') / 4 );
+			$steps = $chartData->getMax('area') / 4 ;
+			$this->y_axis->set_range($chartData->getMin('area'), $chartData->getMax('area'), $steps);
 			
 			//$x_axis->labels = $chartData->getSeriesData('x');
 			$this->x_axis->set_steps( 2 );
@@ -116,8 +114,8 @@ class owa_ofc {
 			$this->x_axis->set_labels( $x_labels );
 			
 			// Assemble chart
-			$this->chart->add_y_axis($this->y_axis);
-			$this->chart->x_axis = $this->x_axis;
+			$this->chart->set_y_axis($this->y_axis);
+			$this->chart->set_x_axis( $this->x_axis );
 			// add the area object to the chart:
 			$this->chart->add_element( $area );
 			
@@ -160,10 +158,12 @@ class owa_ofc {
 			//$area->set_values($chartData->getSeriesData('area'));
 			$area->set_values($numArray);
 			$area->set_key( $chartData->getSeriesLabel('area'), 12 );		
-			$this->y_axis->set_range(round($chartData->getMin('area')), round($chartData->getMax('area', 'bar')));
-			owa_coreAPI::debug("max". round($chartData->getMax('area', 'bar')));
-			$this->y_axis->set_offset( false );
-			$this->y_axis->set_steps( round($chartData->getMax('area', 'bar') / 4) );
+			
+			$steps = round($chartData->getMax('area', 'bar') / 4);
+			
+			$this->y_axis->set_range($chartData->getMin('area'), $chartData->getMax('area', 'bar'), $steps);
+			$this->y_axis->set_tick_length(20); 	
+
 			
 			$x_labels = new x_axis_labels();
 			$x_labels->set_steps( 2 );
@@ -176,6 +176,7 @@ class owa_ofc {
 			$this->chart->x_axis = $this->x_axis;
 			$this->chart->add_element($bar);
 			$this->chart->add_element($area);
+			
 			
 			return $this->chart->toPrettyString();
 		} else {

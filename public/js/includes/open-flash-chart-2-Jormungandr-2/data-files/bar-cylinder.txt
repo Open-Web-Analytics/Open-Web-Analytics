@@ -1,0 +1,75 @@
+{
+  "title":{
+    "text":  "Many data lines",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar_cylinder",
+      "alpha":     0.5,
+      "colour":    "#9933CC",
+      "text":      "Page views",
+      "font-size": 10,
+      "values" :   [5,{"top":7,"colour":"#A03030","tip":"#top#<br>hello"},-6,null,7]
+    },
+    {
+      "type":      "bar_cylinder_outline",
+      "alpha":     0.7,
+      "colour":    "#3030FF",
+      "text":      "Page views 2",
+      "font-size": 10,
+      "values" :   [4,9,9,-6,9]
+    },
+    {
+      "type":      "bar_round_glass",
+      "alpha":     0.7,
+      "colour":    "#CC0000",
+      "values" :   [6,5,7,-5]
+    },
+    {
+      "type":      "bar_round",
+      "alpha":     0.7,
+      "colour":    "#CC0000",
+      "values" :   [6,5,7,-5]
+    },
+    {
+      "type":      "bar_dome",
+      "alpha":     0.7,
+      "colour":    "#CCCC00",
+      "values" :   [6,-5,5,7]
+    },
+    {
+      "type":      "bar_round3d",
+      "alpha":     0.7,
+      "colour":    "#CCCC00",
+      "values" :   [6,-5,5,7]
+    }
+  ],
+
+  "x_axis":{
+    "stroke":1,
+    "tick_height":10,
+    "colour":"#d000d0",
+    "grid_colour":"#00ff00",
+    "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+   },
+
+  "y_axis":{
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "offset":      0,
+    "min":         -10,
+    "max":         20
+  }
+
+/* &x_axis_steps=2& */
+
+}
+

@@ -1,0 +1,40 @@
+{
+  "title":{
+    "text":"X Labels - Auto with Min=5 - Invisible Labels",
+    "style":"{font-size: 16px; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }"
+  },
+
+	"x_axis":{
+		"steps": 1,
+		"labels": {
+			"visible":false,
+			"labels":["a:[#val#]","b:[#val#]","c:[#val#]"]
+		}
+	},
+
+  "elements":[
+    {
+      "type":      "line_hollow",
+      "colour":    "#736AFF",
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 1,
+	  "tip": "#x_label#<br>#val#",
+      "values" :   [3,4,5]
+    }
+  ],
+
+  "tooltip":{
+    "shadow":false,
+    "stroke":5,
+    "colour":"#00d000",
+    "background":"#d0d0ff",
+    "title":"{font-size: 14px; color: #905050;}",
+    "body":"{font-size: 10px; font-weight: bold; color: #9090ff;}"
+  },
+
+  "y_axis":{
+    "max":   8
+  }
+
+}

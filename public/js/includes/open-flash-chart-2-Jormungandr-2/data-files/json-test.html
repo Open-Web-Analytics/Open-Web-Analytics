@@ -1,0 +1,136 @@
+﻿<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+<script type="text/javascript" src="../js/swfobject.js"></script>
+<script type="text/javascript" src="../js/json/json2.js"></script>
+
+<script type="text/javascript">
+
+function ofc_ready()
+{
+	alert('ofc_ready');
+	// tmp = findSWF("ofc");
+	// x = tmp.load( JSON.stringify(data) );
+}
+
+function open_flash_chart_data()
+{
+	alert( 'reading data' );
+	return JSON.stringify(data);
+}
+	
+function load()
+{
+  tmp = findSWF("ofc");
+  x = tmp.load( JSON.stringify(data_2) );
+}
+
+function findSWF(movieName) {
+  if (navigator.appName.indexOf("Microsoft")!= -1) {
+    return window[movieName];
+  } else {
+    return document[movieName];
+  }
+}
+	
+var data = {
+
+  "title_":{
+    "text":"Custom tooltip",
+    "style":"{font-size: 20px; font-family: Verdana; text-align: center;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "colour":    "#9933CC",
+      "text":      "Page views",
+      "font-size": 10,
+      "values" :   [9,6,7,9,5,7,6,9,9]
+    }
+  ],
+  "x_axis":{
+    "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+  },
+  "y_axis":{
+    "max":20
+  },
+  "tooltip":{
+    "shadow":false,
+    "stroke":5,
+    "colour":"#00d000",
+    "background":"#d0d0ff",
+    "title":"{font-size: 14px; color: #905050;}",
+    "body":"{font-size: 10px; font-weight: bold; color: #9090ff;}"
+  }
+}
+
+var data_2 = {
+  "title":{
+    "text":  "Many data lines",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "alpha":     0.5,
+      "colour":    "#9933CC",
+      "text":      "Page views",
+      "font-size": 10,
+      "values" :   [9,6,7,9,5,7,6,9,7]
+    },
+    {
+      "type":      "bar",
+      "alpha":     0.5,
+      "colour":    "#CC9933",
+      "text":      "Page views 2",
+      "font-size": 10,
+      "values" :   [9,6,7,9,5,7,6,9,7]
+    }
+  ],
+
+  "x_axis":{
+    "stroke":1,
+    "tick_height":10,
+    "colour":"#d000d0",
+    "grid_colour":"#00ff00",
+    "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+   },
+
+  "y_axis":{
+    "stroke":      4,
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "offset":      0,
+    "max":         20
+  }
+}
+
+
+
+</script>
+
+
+</head>
+<body>
+
+
+<div id="my_chart"></div>
+
+<script type="text/javascript">
+var so = new SWFObject("../open-flash-chart/open-flash-chart.swf?p=moo", "ofc", "300", "250", "9", "#FFFFFF");
+so.addParam("allowScriptAccess", "always" );//"sameDomain");
+so.write("my_chart");
+</script>
+
+<a href="javascript:load()">load json</a>
+
+</body>
+</html>
