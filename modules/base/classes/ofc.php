@@ -162,7 +162,7 @@ class owa_ofc {
 			$steps = round($chartData->getMax('area', 'bar') / 4);
 			
 			$this->y_axis->set_range($chartData->getMin('area'), $chartData->getMax('area', 'bar'), $steps);
-			$this->y_axis->set_tick_length(20); 	
+			$this->y_axis->set_tick_length(5); 	
 
 			
 			$x_labels = new x_axis_labels();

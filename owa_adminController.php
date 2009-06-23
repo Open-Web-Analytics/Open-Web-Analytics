@@ -21,7 +21,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
 /**
  * Administrative Controller Class
  *
- * This controller should be used for internal management functions
+ * This controller should be used for internal management pages/actions that require authentication
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
