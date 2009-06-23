@@ -232,25 +232,30 @@ class owa_view extends owa_base {
 			
 		endif;
 		
-		if (!empty($this->data['validation_errors'])):
+		// assign validation errors
+		if (!empty($this->data['validation_errors'])) {
 			$ves = new owa_template('base');
 			$ves->set_template('error_validation_summary.tpl');
 			$ves->set('validation_errors', $this->data['validation_errors']);
 			$validation_errors_summary = $ves->fetch();
 			$this->t->set('error_msg', $validation_errors_summary);
-		endif;		
+		}		
+		
+		
+		// fire post method
+		$this->post();
 		
 		// assign css and js ellements if the view is not a subview.
 		// subview css/js have been merged/pulls from subview and assigned here.
-		if ($this->is_subview != true):
-			if (!empty($this->css)):
+		if ($this->is_subview != true) {
+			if (!empty($this->css)) {
 				$this->t->set('css', $this->css);
-			endif;
+			}
 			
-			if (!empty($this->js)):
+			if (!empty($this->js)) {
 				$this->t->set('js', $this->js);
-			endif;
-		endif;
+			}
+		}
 		
 		//Assign body to main template
 		$this->t->set('config', $this->config);
@@ -258,7 +263,7 @@ class owa_view extends owa_base {
 		//Assign body to main template
 		$this->t->set('body', $this->body);
 		
-		if ($this->postProcessView === true) {
+		if ($this->postProcessView === true){
 			return $this->postProcess();
 		} else {
 			// Return fully asembled View
@@ -266,9 +271,24 @@ class owa_view extends owa_base {
 		}
 	}
 	
+	/**
+	 * Abstract Alternative rendering method reuires the setting of $this->postProcessView to fire
+	 * 
+	 */
 	function postProcess() {
+		
 		return false;
 	}
+	
+	/**
+	 * Post method fired right before view is rendered and returned
+	 * as output
+	 */
+	function post() {
+		
+		return false;
+	}
+	
 	
 	/**
 	 * Sets the theme to be used by a view
@@ -719,6 +739,29 @@ class owa_mailView extends owa_view {
 		$this->po->mailer->AddAddress($email, $name);
 		return;
 	}
+}
+
+class owa_adminView extends owa_view {
+	
+	var $postProcessView = true;
+	
+	function owa_adminView() {
+		
+		return owa_adminView::__construct();
+	}
+	
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function post() {
+		
+		$this->setJs('owa.admin.css');
+		return;
+	}
+	
+	
 }
 
 ?>

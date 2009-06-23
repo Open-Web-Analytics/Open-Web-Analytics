@@ -122,6 +122,7 @@ class owa_reportView extends owa_view {
 		$this->setCss('style.css', $this->config['public_url']."js/includes/jquery/tablesorter/themes/blue/");
 		$this->setCss("owa.report.css");
 		$this->setCss("owa.widgets.css");
+		
 		return;
 	}
 	
@@ -172,6 +173,12 @@ class owa_reportView extends owa_view {
 		
 		return $s->find();
 		
+	}
+	
+	function post() {
+		
+		$this->setCss("owa.admin.css");
+		return;
 	}
 	
 	
