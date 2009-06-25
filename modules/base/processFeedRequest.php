@@ -58,7 +58,7 @@ class owa_processFeedRequestController extends owa_processEventController {
 		$this->event->set('feed_reader_guid', $this->event->setEnvGUID());
 		
 		//update last-request time cookie
-		$this->event->setSiteSessionState(owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
+		$this->event->setSiteSessionState($this->getParam('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
 		
 		return;
 		
