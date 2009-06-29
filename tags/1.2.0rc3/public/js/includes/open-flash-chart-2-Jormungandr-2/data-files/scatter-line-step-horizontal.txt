@@ -1,0 +1,25 @@
+{
+
+  "elements":[
+    {
+      "type":      "scatter_line",
+      "colour":    "#FFB900",
+      "text":      "Avg",
+      "font-size": 10,
+      "dot-size":  10,
+      "stepgraph" : "horizontal",
+      "values" :   [
+                     {"x":-4,  "y":-5 },
+                     {"x":-4,  "y":-2 },
+                     {"x":-4,  "y":1 },
+                     {"x":3,   "y":3 },
+                     {"x":3.5, "y":3.5 },
+                     {"x":4.9, "y":4.9 }
+                   ]
+    }
+
+  ]
+}
+
+
+

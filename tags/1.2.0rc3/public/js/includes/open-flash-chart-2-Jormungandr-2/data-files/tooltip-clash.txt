@@ -1,0 +1,42 @@
+{
+  "y_legend":{
+    "text":   "Time of day",
+    "style": "{color: #736AFF;}"
+  },
+
+  "elements":[
+    {
+      "type":      "line",
+      "colour":    "#FF0000",
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "tip":       "#val#<br>Red [#x_label#]",
+      "values" :   [7,6,7,8,8]
+    },
+    {
+      "type":      "line_hollow",
+      "colour":    "#00FF00",
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 2,
+      "tip":       "#val#<br>Green [#x_label#]",
+      "values" :   [7,8,7,6,6]
+    },
+    {
+      "type":      "line_dot",
+      "colour":    "#0000FF",
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 2,
+      "tip":       "#val#<br>Blue [#x_label#]",
+      "values" :   [3,4,7,3,3]
+    }
+  ],
+
+
+  "y_axis":{
+    "max":   10
+  }
+
+}

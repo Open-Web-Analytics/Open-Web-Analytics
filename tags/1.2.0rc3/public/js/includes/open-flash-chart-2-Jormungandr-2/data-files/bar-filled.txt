@@ -1,0 +1,40 @@
+{
+  "title":{
+    "text":  "Filled",
+    "style": "{font-size:35px; color: #567300}"
+  },
+
+  "elements":[
+    {
+      "type":            "bar_filled",
+      "colour":          "#81AC00",
+      "outline-colour":  "#567300",
+      "values" :   [
+        3,
+        8,
+null,
+       -5,
+        {"top":5,"outline-colour": "#7030A0", "tip": "outline"},
+       4,
+       {"top":5, "colour": "#99FF00", "tip": "colour"},
+       {"top":-3,"colour": "#D08080", "outline-colour": "#FF0000", "tip": "colour + outline"},
+       null,
+       7.5]
+    }
+  ],
+
+  "x_axis":{
+    "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+   },
+
+  "y_axis":{
+    "min": -10,
+    "max":  10
+  },
+
+  "tooltip":{
+    "text": "My Tip<br>#top#,#bottom# = #val#"
+  }
+
+}
+

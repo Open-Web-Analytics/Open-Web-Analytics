@@ -1,0 +1,48 @@
+{
+  "title": {
+    "text": "Fri Jul 11 2008"
+  },
+  "elements": [
+    {
+      "type": "bar",
+      "values": [
+        130,
+        180,
+        200,
+        {
+          "top": 170
+        },
+        {
+          "top": 130,
+          "colour": "#000000",
+          "tip": "Hello<br>#top#"
+        },
+        null,
+        150
+      ]
+    },
+    {
+      "type": "bar_filled",
+      "values": [
+        140,
+        190,
+        180,
+        140,
+        {
+          "top": 200,
+          "bottom": 150,
+"tip":"#top# - #bottom#"
+        },
+        160,
+        130
+      ],
+      "colour": "#FFEF3F"
+    }
+  ],
+  "bg_colour": "#FFFFFF",
+  "y_axis": {
+    "min": 100,
+    "max": 200,
+    "steps": 10
+  }
+}
