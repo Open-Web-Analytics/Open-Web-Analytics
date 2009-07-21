@@ -1,0 +1,39 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+</head>
+<body>
+    
+<script type="text/javascript" src="../js/swfobject.js"></script>
+
+<div id="my_chart"></div>
+ 	
+<script type="text/javascript">
+
+    var my_chart = new SWFObject("../actionscript/open-flash-chart.swf", "ofc", "300", "200", "9", "#FFFFFF");
+	
+	my_chart.addVariable("variables","true");
+	my_chart.addVariable("title","report,{font-size: 16;}");
+	my_chart.addVariable("y_legend","data,12,0x736AFF");
+	my_chart.addVariable("y_label_size","14");
+	my_chart.addVariable("y_ticks","5,10,4");
+	
+	my_chart.addVariable("bar","50,0x9933CC,q,10");
+	my_chart.addVariable("line_dot_2","3,#CC3399,Line,10,5");
+	
+	my_chart.addVariable("values","29,62,58,27");
+	my_chart.addVariable("values_2","39,72,68,37");
+	
+	my_chart.addVariable("x_labels","2004,2005,2006,2007");
+				
+	my_chart.addVariable("x_axis_steps","2");
+	my_chart.addVariable("y_max","80");
+	my_chart.write("my_chart");
+
+so.addParam("allowScriptAccess", "always" );//"sameDomain");
+so.write("my_chart");
+</script>
+
+
+</body>
+</html>

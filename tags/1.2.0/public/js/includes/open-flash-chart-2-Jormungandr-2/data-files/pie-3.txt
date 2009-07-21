@@ -1,0 +1,18 @@
+{
+  "bg_colour": 	"#ffffff",
+  "elements":[
+    {
+      "type":          "pie",
+      "tip":           "#label#<br>$#val# (#percent#)",
+      "colours":       ["#00ff00","#ff0000","#0000ff"],
+      "alpha":         0.3,
+      "animate":		[ { "type": "fade" }],
+      "start-angle":   90,      
+      "gradient-fill": true,
+      "no-labe-ls":     true,
+      "values": [
+        {"value":13400,"label":"Income"},{"value":9344,"label":"Expense"},{"value":4066,"label":"Profit"}
+      ]
+    }
+  ]
+}

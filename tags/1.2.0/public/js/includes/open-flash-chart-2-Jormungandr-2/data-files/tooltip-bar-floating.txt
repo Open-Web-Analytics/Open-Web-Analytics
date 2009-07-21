@@ -1,0 +1,57 @@
+{
+  "title": {
+    "text": "Fri Jul 11 2008"
+  },
+  "elements": [
+    {
+      "type": "bar",
+      "values": [
+        130,
+        180,
+        200,
+        {
+          "top": 170
+        },
+        {
+          "top": 130,
+          "colour": "#000000",
+          "tip": "Hello<br>#top#"
+        },
+        null,
+        150
+      ]
+    },
+    {
+      "type": "bar_filled",
+      "values": [
+        140,
+        190,
+        180,
+        140,
+        {
+          "top": 200,
+          "bottom": 150,
+"tip":"#top# - #bottom#"
+        },
+        160,
+        130
+      ],
+      "colour": "#FFEF3F"
+    }
+  ],
+  "bg_colour": "#FFFFFF",
+  "y_axis": {
+    "min": 100,
+    "max": 200,
+    "steps": 10
+  },
+
+  "tooltip":{
+    "mouse": 1,
+    "stroke":1,
+    "colour":"#00d000",
+    "background":"#d0d0ff",
+    "title":"{font-size: 14px; color: #905050;}",
+    "body":"{font-size: 10px; font-weight: bold; color: #9090ff;}"
+  }
+}
