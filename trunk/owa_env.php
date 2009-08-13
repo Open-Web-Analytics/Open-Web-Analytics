@@ -27,22 +27,22 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
-define('OWA_DIR', dirname(__FILE__). DIRECTORY_SEPARATOR);
-define('OWA_BASE_DIR', dirname(__FILE__)); // depricated
-define('OWA_BASE_CLASSES_DIR', dirname(__FILE__). DIRECTORY_SEPARATOR); //depricated
+define('OWA_PATH', dirname(__FILE__));
+define('OWA_DIR', OWA_PATH. DIRECTORY_SEPARATOR);
+define('OWA_MODULES_DIR', OWA_DIR.'modules'.DIRECTORY_SEPARATOR);
+define('OWA_BASE_DIR', OWA_PATH); // depricated
+define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
 define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules'.DIRECTORY_SEPARATOR.'base'.DIRECTORY_SEPARATOR);
 define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'classes'.DIRECTORY_SEPARATOR);
 define('OWA_INCLUDE_DIR', OWA_DIR.'includes'.DIRECTORY_SEPARATOR);
 define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.9.13');
 define('OWA_PHPMAILER_DIR', OWA_INCLUDE_DIR.'PHPMailer_v2.0.3'.DIRECTORY_SEPARATOR);
 define('OWA_SPARKLINE_DIR', OWA_INCLUDE_DIR.'sparkline-php-0.2'.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR);
-define('OWA_JPGRAPH_DIR', OWA_INCLUDE_DIR.'jpgraph-1.20.3'.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR);
+define('OWA_JPGRAPH_DIR', OWA_INCLUDE_DIR.'jpgraph-1.20.3'.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR); //depricated
 define('OWA_OFC_VERSION', 'open-flash-chart-2-Jormungandr-2');
 define('OWA_OFC_DIR', OWA_INCLUDE_DIR.OWA_OFC_VERSION.DIRECTORY_SEPARATOR);
 define('OWA_PLUGINS_DIR', OWA_DIR.'plugins'); //depricated
 define('OWA_METRICS_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR.'metrics'.DIRECTORY_SEPARATOR); //depricated
-define('OWA_GRAPHS_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR.'graphs'.DIRECTORY_SEPARATOR); //depricated
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR);
 define('OWA_CONF_DIR', OWA_DIR.'conf'.DIRECTORY_SEPARATOR);
 define('OWA_DATA_DIR', OWA_DIR.'owa-data'.DIRECTORY_SEPARATOR);

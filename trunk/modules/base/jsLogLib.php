@@ -21,6 +21,32 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 
+
+
+class owa_jsLogLibController extends owa_controller {
+
+
+	function __construct($params) {
+	
+		return parent::__construct($params);
+	
+	}
+	
+	function owa_jsLogLibController($params) {
+		
+		return owa_jsLogLibController::__construct($params);
+	}
+	
+	function action($data) {
+	
+		$this->setView('base.jsLogLibView');
+		
+		return;
+	
+	}
+
+}
+
 /**
  * Javascript Page View Tracking Library View
  * 
@@ -36,13 +62,16 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 class owa_jsLogLibView extends owa_view {
 	
 	function owa_jsLogLibView() {
-		
-		$this->owa_view();
-		
-		return;
+				
+		return owa_jsLogLibView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 	
 		// load body template
@@ -57,9 +86,9 @@ class owa_jsLogLibView extends owa_view {
 		// load body template
 		$this->body->set_template('js_logger.tpl');
 		// load body template
-		$this->setJs('owa.js');
-		$this->setJs('includes/url_encode.js');
-		$this->setJs('owa.logger.js');
+		$this->setJs('owa', 'base/js/owa.js');
+		$this->setJs('url_encode', 'base/js/includes/url_encode.js');
+		$this->setJs('owa.logger', 'base/js/owa.logger.js');
 		$this->concatinateJs();
 		
 		return;

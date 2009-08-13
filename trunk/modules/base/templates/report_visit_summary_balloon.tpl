@@ -24,7 +24,7 @@ days ago.
 <table cellpadding="0" cellspacing="0" width="250" border="0" class="visit_summary">
 	<TR>
 		<TD class="visit_icon" align="left" valign="top" width="20">
-			<img src="<?=$this->makeImageLink('user_icon_small.gif', true);?>" alt="Visitor"> 
+			<img src="<?=$this->makeImageLink('base/i/user_icon_small.gif', true);?>" alt="Visitor"> 
 		</TD>	
 		<TD valign="top">
 			<a href="<?=$this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visit['visitor_id']), true,'',true);?>">
@@ -34,7 +34,7 @@ days ago.
 	</TR>							
 	<TR>					
 		<TD class="visit_icon" align="left" width="20" valign="top"><span class="h_label">
-			<img src="<?=$this->makeImageLink('document_icon.gif', true);?>" alt="Entry Page"> </span>
+			<img src="<?=$this->makeImageLink('base/i/document_icon.gif', true);?>" alt="Entry Page"> </span>
 		</TD>
 		<TD valign="top">
 			<a href="<?=$visit['document_url'];?>"><span class="inline_h4"><?=$this->escapeForXml($visit['document_page_title']);?></span></a><? if($visit['document_page_type']):?> (<?=$visit['document_page_type'];?>)<? endif;?><BR> 
@@ -44,7 +44,7 @@ days ago.
 	<? if (!empty($visit['referer_url'])):?>					
 	<TR>
 		<TD class="visit_icon" rowspan="2" align="left" width="20" valign="top">
-			<span class="h_label"><img src="<?=$this->makeImageLink('referer_icon.gif', true);?>" alt="Refering URL"> </span>
+			<span class="h_label"><img src="<?=$this->makeImageLink('base/i/referer_icon.gif', true);?>" alt="Refering URL"> </span>
 		</TD>
 		<TD valign="top" colspan="2">
 			<a href="<?=$visit['referer_url'];?>"><? if (!empty($visit['referer_page_title'])):?><span class="inline_h4"><?=$this->escapeForXml($this->truncate($visit['referer_page_title'], 80, '...'));?></span></a> <span class="info_text"><?=$this->truncate($visit['referer_url'], 35, '...');?></span><? else:?><?=$this->truncate($visit['referer_url'], 50, '...');?><? endif;?></a>

@@ -11,17 +11,9 @@
 <?php endforeach; ?>
 <?php endif;?>
 
-<script> 
-
-OWA.config.main_url = "<?=$config['main_url'];?>";
-OWA.config.public_url = "<?=$config['public_url'];?>";
-OWA.config.js_url = "<?=$config['public_url'].'js/';?>";
-OWA.config.action_url = "<?=$config['action_url'];?>";
-OWA.config.images_url = "<?=$config['images_url'];?>";
-OWA.config.log_url = "<?=$config['log_url'];?>";
-OWA.config.ns = "<?=$config['ns'];?>";
-OWA.config.link_template = "<?=$config['link_template'];?>";
-
+<script>
+<?php include('config_dom.tpl'); ?>
 </script>
+
 
 <!-- END HEAD -->

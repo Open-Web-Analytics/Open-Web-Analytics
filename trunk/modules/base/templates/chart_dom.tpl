@@ -9,5 +9,5 @@ OWA.items['<?=$dom_id;?>'].setData(<?=$data;?>);
 OWA.items['<?=$dom_id;?>'].config.ofc_version = '<?=OWA_OFC_VERSION;?>';
 
 OWA.items['<?=$dom_id;?>'].render();
-jQuery("#<?=$dom_id;?>").addclass('owa_ofcChart');
+jQuery("#<?=$dom_id;?>").addClass('owa_ofcChart');
 </script>
