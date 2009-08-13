@@ -15,7 +15,7 @@
 	
 	<div class="owa_widget-innercontainer">	
 		<div id="<?=$widget;?>_widget-status" class="owa_widget-status">
-			<img src="<?=$this->makeImageLink("loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...
+			<img src="<?=$this->makeImageLink("base/i/loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...
 		</div> 
 	
 		<div id="<?=$widget;?>_widget-content" class="owa_widget-content" style="height:<? //$params['height'];?>px;"><?=$subview;?></div>

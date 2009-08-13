@@ -10,9 +10,9 @@
 				<TD class="visit_icon" align="right" valign="bottom">
 					<span class="h_label">
 						<? if ($row['session_is_new_visitor'] == true): ?>
-						<img src="<?=$this->makeImageLink('newuser_icon_small.png');?>" alt="New Visitor" >
+						<img src="<?=$this->makeImageLink('base/i/newuser_icon_small.png');?>" alt="New Visitor" >
 						<? else:?>
-						<img src="<?=$this->makeImageLink('user_icon_small.png');?>" alt="Repeat Visitor">
+						<img src="<?=$this->makeImageLink('base/i/user_icon_small.png');?>" alt="Repeat Visitor">
 						<? endif;?>
 					</span>
 				</TD>
@@ -52,7 +52,7 @@
 				
 				<TR>					
 				<TD class="visit_icon" align="right" valign="top"><span class="h_label">
-					<img src="<?=$this->makeImageLink('document_icon.gif');?>" alt="Entry Page"></span>
+					<img src="<?=$this->makeImageLink('base/i/document_icon.gif');?>" alt="Entry Page"></span>
 				</TD>
 										
 				<TD valign="top">
@@ -64,7 +64,7 @@
 			<TR>
 				<TD class="visit_icon" rowspan="2" align="right" valign="top">
 				
-					<span class="h_label"><img src="<?=$this->makeImageLink('referer_icon.gif');?>" alt="Refering URL"></span>
+					<span class="h_label"><img src="<?=$this->makeImageLink('base/i/referer_icon.gif');?>" alt="Refering URL"></span>
 				</TD>
 
 				<TD valign="top" colspan="2">

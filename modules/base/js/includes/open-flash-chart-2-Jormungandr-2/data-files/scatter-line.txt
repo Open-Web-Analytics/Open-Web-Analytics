@@ -1,0 +1,42 @@
+{
+
+  "elements":[
+    {
+      "type":      "scatter_line",
+      "colour":    "#FFB900",
+      "text":      "Avg",
+      "font-size": 10,
+	  /* BUG: if you comment this out no line is drawn? why? */
+	  "dot-style": {"type":"solid-dot"},
+      "values" :   [
+                     {"x":-4,  "y":-5,  "tip":"HELLO" },
+                     {"x":-4,  "y":-2,  "colour":"#FF0000" },
+                     {"x":-4,  "y":1,   "dot-size":4},
+                     {"x":3,   "y":3,   "dot-size":5, "type": "hollow-dot"},
+                     {"x":3.5, "y":3.5, "dot-size":6},
+                     {"x":4.9, "y":4.9, "dot-size":7}
+                   ]
+    }
+
+  ],
+
+  "x_axis":{
+    "offset":  false,
+    "min":     -5,
+    "max":    5/*,
+    "labels":["mon","tue","wed","thur","fri","sat","sun"]*/
+  },
+
+  "y_axis":{
+    "min": -5,
+    "max": 5
+  },
+
+  "y_legend":{
+    "text":   "Time of day",
+    "style": "{font-size: 20px; color: #736AFF;}"
+  }
+}
+
+
+

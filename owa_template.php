@@ -203,7 +203,7 @@ class owa_template extends Template {
 			
 		}
 			
-		return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink($file));
+		return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink('base/i/'.$file));
 		
 	}
 	
@@ -435,15 +435,15 @@ class owa_template extends Template {
 		
 	}
 	
-	function makeImageLink($name, $absolute = false) {
+	function makeImageLink($path, $absolute = false) {
 		
-		if ($absolute == true):
-			$url = $this->config['images_absolute_url'];
-		else:
-			$url = $this->config['images_url'];
-		endif;
+		if ($absolute === true) {
+			$url = owa_coreAPI::getSetting('base', 'modules_url');
+		} else {
+			$url = owa_coreAPI::getSetting('base', 'modules_url');
+		}
 		
-		return $url.$name;
+		return $url.$path;
 		
 	}
 	

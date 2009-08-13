@@ -102,26 +102,26 @@ class owa_reportView extends owa_view {
 		$this->body->set_template('report.tpl');
 		
 		// set Js libs to be loaded
-		$this->setJs("includes/jquery/jquery-1.2.6.min.js");
-		$this->setJs("includes/jquery/jquery.sprintf.js");
-		$this->setJs("includes/jquery/jquery-ui-personalized-1.5.2.min.js");
-		$this->setJs("includes/jquery/tablesorter/jquery.tablesorter.js");
-		$this->setJs("includes/jquery/jquery.sparkline.min.js");
-		$this->setJs("owa.js");
-		$this->setJs('owa.report.js');
-		$this->setJs("owa.widgets.js");
-		$this->setJs("includes/swfobject.js");
-		$this->setJs("includes/json2.js");
-		$this->setJs("owa.chart.js");
-		$this->setJs("owa.sparkline.js");
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.2.6.min.js', '1.2.6');
+		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-personalized-1.5.2.min.js", '1.5.2', array('jquery'));
+		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array('jquery'));
+		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
+		$this->setJs("owa", "base/js/owa.js");
+		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
+		$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
+		$this->setJs("swfobject", "base/js/includes/swfobject.js");
+		$this->setJs("json2", "base/js/includes/json2.js");
+		$this->setJs("owa.chart", "base/js/owa.chart.js", '', array('owa', 'json2', 'swfobject', 'jquery'));
+		$this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
 		// data table style
 		//$this->setCss('flora/flora.css');
 		//$this->setCss('flora/flora.datepicker.css');
 		//$this->setCss('ui.datepicker.css');
-		$this->setCss('jquery-ui-themeroller.css');
-		$this->setCss('style.css', $this->config['public_url']."js/includes/jquery/tablesorter/themes/blue/");
-		$this->setCss("owa.report.css");
-		$this->setCss("owa.widgets.css");
+		$this->setCss('base/css/jquery-ui-themeroller.css');
+		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
+		$this->setCss("base/css/owa.report.css");
+		$this->setCss("base/css/owa.widgets.css");
 		
 		return;
 	}
@@ -177,7 +177,7 @@ class owa_reportView extends owa_view {
 	
 	function post() {
 		
-		$this->setCss("owa.admin.css");
+		$this->setCss("base/css/owa.admin.css");
 		return;
 	}
 	

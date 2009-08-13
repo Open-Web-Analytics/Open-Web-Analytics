@@ -6,6 +6,6 @@
 //]]>
 </script>
 
-<script type="text/javascript" src="<?=$this->makeAbsoluteLink(array('view' => 'base.jsLogLib'), '', $this->config['action_url'], true);?>"></script>
+<script type="text/javascript" src="<?=$this->makeAbsoluteLink(array('action' => 'base.jsLogLib'), '', $this->config['action_url'], true);?>"></script>
 
 <!-- End Open Web Analytics Code -->

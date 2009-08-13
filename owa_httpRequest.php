@@ -98,6 +98,7 @@ class owa_http {
 		// do not allow snoopy to follow links
 		$this->crawler->maxredirs = 5;
 		$this->crawler->agent = owa_coreAPI::getSetting('base', 'owa_user_agent');
+		//$this->crawler->agent = "Firefox";
 		//owa_coreAPI::debug('hello from owa_http constructor');
 		return;
 	

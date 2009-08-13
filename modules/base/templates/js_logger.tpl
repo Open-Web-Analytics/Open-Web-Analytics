@@ -26,12 +26,6 @@
 var owa_pv = new OWA.pageView(owa_params);
 owa_pv.log();
 
-<? //php if ($is_embedded === true): ?>
-
-	<?php //include('js_owa_params.tpl'); ?>
-
-<?php //endif;?>
-
 <?php if ($log_clicks === true): ?>
 // Create click logger and bind it to click events
 var owa_click = new OWA.click(owa_params);

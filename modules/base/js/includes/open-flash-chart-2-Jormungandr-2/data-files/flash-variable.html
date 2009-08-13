@@ -1,0 +1,32 @@
+﻿<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+<script type="text/javascript">
+
+function ofc_ready()
+{
+	alert('ofc_ready');
+}
+
+</script>
+
+</head>
+<body>
+    
+<script type="text/javascript" src="../js/swfobject.js"></script>
+
+<div id="my_chart"></div>
+ 	
+<script type="text/javascript">
+
+var so = new SWFObject("../open-flash-chart/open-flash-chart.swf", "ofc", "250", "200", "9", "#FFFFFF");
+so.addVariable("data-file", "../data-files/data-60.txt");
+so.addParam("allowScriptAccess", "always" );//"sameDomain");
+so.write("my_chart");
+
+</script>
+
+<div>boo</div>
+
+</body>
+</html>

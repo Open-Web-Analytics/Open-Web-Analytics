@@ -382,29 +382,30 @@ class owa_view extends owa_base {
 					
 	}
 	
-	function setCss($file, $path = '') {
+	function setCss($path) {
 		
-		if(empty($path)):
-			$path = $this->config['public_url'].'css'.DIRECTORY_SEPARATOR;
-		endif;
-		
-		$this->css[] = $path.$file;
+		$url = owa_coreAPI::getSetting('base', 'modules_url').$path;
+		$this->css[] = $url;
 		return;
 	}
 	
-	function setJs($file, $path = '', $version ='') {
+	function setJs($name, $path, $version ='', $deps = array()) {
 		
-		if(empty($path)):
-			$uri = owa_coreAPI::getSetting('base', 'public_url').'js'.DIRECTORY_SEPARATOR;
-		else:
-			$uri = $path;
-		endif;
+		if (empty($version)) {
+			$version = OWA_VERSION;
+		}
 		
-		$fs_path = owa_coreAPI::getSetting('base', 'public_path').'js'.DIRECTORY_SEPARATOR.$path;
+		$uid = $name.$version;
 		
-		$this->js[$file]['url'] = $uri.$file;
-		$this->js[$file]['path'] = $fs_path.$file;
-
+		$url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+		$this->js[$uid]['url'] = $url;
+		
+		// build file system path just in case we need to concatenate the JS into a single file.
+		$fs_path = OWA_MODULES_DIR.$path;
+		$this->js[$uid]['path'] = $fs_path;
+		$this->js[$uid]['deps'] = $deps;
+		$this->js[$uid]['version'] = $version;
+		
 		return;
 	}
 	
@@ -688,7 +689,7 @@ class owa_chartView extends owa_view {
 		$this->body->set('width', $this->get('width'));
 		$this->body->set('data', $this->get('chart_data'));
 		$this->body->set('dom_id', $this->get('dom_id').rand().'Chart');
-		$this->setJs("includes/swfobject.js");
+		$this->setJs('swfobject', "base/js/includes/swfobject.js");
 		return;
 	}
 	

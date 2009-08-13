@@ -45,7 +45,7 @@ class owa_widgetOwaNewsController extends owa_widgetController {
 	
 	function action() {
 		
-		$this->data['title'] = 'OWA News';
+		$this->set('title', 'OWA News');
 		
 		//$data['params'] = $this->params;
 		
@@ -53,9 +53,8 @@ class owa_widgetOwaNewsController extends owa_widgetController {
 		$rss = new owa_news;
 		//print_r($this->config);
 		$news = $rss->Get($this->config['owa_rss_url']);
-		$this->data['news'] = $news;
-
-		$this->data['view'] = 'base.widgetOwaNews';
+		$this->set('news', $news);
+		$this->setView('base.widgetOwaNews');
 			
 		return;	
 		

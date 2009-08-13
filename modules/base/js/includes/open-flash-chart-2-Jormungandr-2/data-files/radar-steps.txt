@@ -1,0 +1,31 @@
+{
+  "title":{
+    "text":"Fruit distribution",
+    "style":"{font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "area_hollow",
+      "colour":    "#FA3D37",
+      "fill":      "#FA3D37",
+      "fill-alpha": 0.2,
+      "text":      "Oranges",
+      "width":     3,
+      "font-size": 10,
+      "dot-size":  7,
+      "tip":       "Orange<br>#val#",
+      "loop":      true,
+      "values" :   [35,35,35]
+    }
+  ],
+  "radar_axis": {
+    "max":         50,
+    "steps":       10,
+    "stroke":      2,
+    "colour":      "#A1D4B5",
+    "grid-colour": "#C0DEBF"
+  },
+
+  "bg_colour": "#ffffff"
+}

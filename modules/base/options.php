@@ -41,7 +41,7 @@ class owa_optionsView extends owa_view {
 		return;
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'OWA Options');
@@ -61,12 +61,12 @@ class owa_optionsView extends owa_view {
 		
 		// Assign config data
 		$this->body->set('config', $this->config);
-		$this->setJs("includes/jquery/jquery-1.2.6.min.js");
-		$this->setJs("includes/jquery/jquery.sprintf.js");
-		$this->setJs("includes/jquery/jquery-ui-personalized-1.5.2.min.js");
-		$this->setJs("includes/jquery/tablesorter/jquery.tablesorter.js");
-		$this->setJs("owa.js");
-		$this->setCss('style.css', $this->config['public_url']."js/includes/jquery/tablesorter/themes/blue/");
+		$this->setJs("jquery", "base/js/includes/jquery/jquery-1.2.6.min.js", '1.2.6');
+		$this->setJs("sprinf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-personalized-1.5.2.min.js", '1.5.2', array('jquery'));
+		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array("jquery"));
+		$this->setJs("owa", "base/js/owa.js");
+		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		
 		return;
 	}

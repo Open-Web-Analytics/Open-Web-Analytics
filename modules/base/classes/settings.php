@@ -457,7 +457,7 @@
 				$base_url .= ':'.$_SERVER['SERVER_PORT'];
 			endif;
 			$config['base']['base_url'] = $base_url;					
-			$config['base']['public_url'] = OWA_PUBLIC_URL;
+			$config['base']['public_url'] = OWA_URL;
 			
 			if (defined('OWA_PUBLIC_PATH')):
 				$config['base']['public_path'] = OWA_PUBLIC_PATH;
@@ -465,12 +465,14 @@
 				$config['base']['public_path'] = OWA_PATH.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR;
 			endif;
 			
-			$config['base']['main_url'] = 'main.php';
-			$config['base']['main_absolute_url'] = OWA_PUBLIC_URL.$config['base']['main_url'];
-			$config['base']['action_url'] = $config['base']['main_absolute_url'];
-			$config['base']['images_url'] =  'i/';
-			$config['base']['images_absolute_url'] = OWA_PUBLIC_URL.$config['base']['images_url'];
-			$config['base']['log_url'] = OWA_PUBLIC_URL.'log.php';
+			$config['base']['main_url'] = OWA_URL.'index.php';
+			$config['base']['main_absolute_url'] = $config['base']['main_url'];
+			$config['base']['modules_url'] = OWA_URL.'modules'.DIRECTORY_SEPARATOR;
+			$config['base']['action_url'] = OWA_URL.'action.php';;
+			$config['base']['images_url'] =  $config['base']['modules_url'];
+			$config['base']['images_absolute_url'] = $config['base']['modules_url'];
+			$config['base']['log_url'] = OWA_URL.'log.php';
+			
 			
 			// Set cookie domain
 			if (!empty($_SERVER['HTTP_HOST'])):
