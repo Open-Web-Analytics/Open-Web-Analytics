@@ -7,15 +7,18 @@
 	<form method="POST">
 	
 	<table id="panel">
-		<?php if ($edit === true):?>
+		<?php if ($edit == true):?>
 		<TR>
 			<TH>Site ID:</TH>
 			<TD><?=$site['site_id'];?></TD>
+			<input type="hidden" name="<?=$this->getNs();?>site_id" value="<?=$site['site_id'];?>">
+
 		</TR>
 		<?php endif;?>
 		<TR>
 			<TH>Domain:</TH>
-			<?php if ($action == 'base.sitesEdit'):?>
+			<?php if ($edit == true):?>
+			<input type="hidden" name="<?=$this->getNs();?>domain" value="<?=$site['domain'];?>">
 			<TD><?=$site['domain'];?></TD>
 			<?php else:?>
 			<TD>

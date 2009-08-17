@@ -41,7 +41,6 @@
  		return parent::__construct();
  	}
  	
- 	
  	function validate() {
  		
  		$entity = owa_coreAPI::entityFactory($this->getConfig('entity'));
@@ -50,20 +49,20 @@
  		$error = $this->getErrorMsg();
  		
  		if (empty($error)) {
- 			$this->setErrorMessage('An entity with that value already exists.');
+ 			$this->setErrorMessage('An entity with that value does not exist.');
  		}
 
 		$id = $entity->get('id');
 		
 		// validation logic 
- 		if (!empty($id)) {
+ 		if (empty($id)) {
  			$this->hasError();
  		}	
 					
  		return;
  		
  	}
- 	
+ 	 	
  }
  
  

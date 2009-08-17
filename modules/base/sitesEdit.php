@@ -33,8 +33,32 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 class owa_sitesEditController extends owa_adminController {
 	
 	function owa_sitesEditController($params) {
-		$this->owa_adminController($params);
+		
+		return owa_sitesEditController::__construct($params);
+	}
+	
+	function __construct($params) {
+	
+		parent::__construct($params);
+		
 		$this->setRequiredCapability('edit_sites');
+		
+		// validations
+		
+		// check that user_id is present
+		$v1 = owa_coreAPI::validationFactory('required');
+		$v1->setValues($this->getParam('site_id'));
+		$this->setValidation('site_id', $v1);
+		
+		// Check user name exists
+		$v2 = owa_coreAPI::validationFactory('entityExists');
+		$v2->setConfig('entity', 'base.site');
+		$v2->setConfig('column', 'site_id');
+		$v2->setValues($this->getParam('site_id'));
+		$v2->setErrorMessage($this->getMsg(3208));
+		$this->setValidation('site_id', $v2);
+		
+		return;
 	}
 	
 	function action() {
