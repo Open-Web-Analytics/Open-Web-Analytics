@@ -90,52 +90,42 @@ class owa_sitesAddController extends owa_adminController {
 		$this->addValidation('domain', $this->params['domain'], 'subStringPosition', $domain_conf);
 		$this->addValidation('domain', $this->params['domain'], 'required');
 		
+		// Check user name exists
+		$v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
+		$v2->setConfig('entity', 'base.site');
+		$v2->setConfig('column', 'domain');
+		$v2->setValues($this->getParam('protocol').$this->getParam('domain'));
+		$v2->setErrorMessage($this->getMsg(3206));
+		$this->setValidation('domain', $v2);
+
 		return;
 	}
 	
 	function action() {
 				
 		$this->params['domain'] = $this->params['protocol'].$this->params['domain'];
-		
-		$s = owa_coreAPI::entityFactory('base.site');
-		$s->getByColumn('domain', $this->params['domain']);
-		$id = $s->get('id');
-		
-		if(empty($id)):
-			
-			$site = owa_coreAPI::entityFactory('base.site');
-			$site->set('site_id', md5($this->params['domain']));
-			$site->set('name', $this->params['name']);
-			$site->set('domain', $this->params['domain']);
-			$site->set('description', $this->params['description']);
-			$site->set('site_family', $this->params['site_family']);
-			$site->create();
-				
-			$data['view_method'] = 'redirect';
-			$data['do'] = 'base.sites';
-			$data['status_code'] = 3202;
-				
-		else:
-				
-			$data['view_method'] = 'delegate';
-			$data['view'] = 'base.options';
-			$data['subview'] = 'base.sitesProfile';
-			$data['error_code'] = 3206;
-			$data['site'] = $this->params;	
 						
-		endif;
-			
-		return $data;
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->set('site_id', md5($this->params['domain']));
+		$site->set('name', $this->params['name']);
+		$site->set('domain', $this->params['domain']);
+		$site->set('description', $this->params['description']);
+		$site->set('site_family', $this->params['site_family']);
+		$site->create();
+		
+		$this->setRedirectAction('base.sites');
+		$this->set('status_code', 3202);
+					
+		return;
 	}
 	
 	function errorAction() {
 		
 		$this->setView('base.options');
 		$this->setSubview('base.sitesProfile');
-		$this->set('error_code', 3309);
-		$this->set('site', $this->params);	
-		//$data['validation_errors'] = $this->getValidationErrorMsgs();
-	
+		$this->set('error_code', 3311);
+		$this->set('site', $this->params);
+		
 		return;
 	}
 	

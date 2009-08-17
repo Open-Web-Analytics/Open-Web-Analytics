@@ -60,7 +60,6 @@ class owa_sitesProfileController extends owa_adminController {
 		$this->set('edit', $this->getParam('edit'));
 		$this->setView('base.options');
 		$this->setSubview('base.sitesProfile');
-		
 		return;
 	}
 	
@@ -92,7 +91,7 @@ class owa_sitesProfileView extends owa_view {
 	}
 	
 	function render() {
-		
+		//print $this->get('edit'); 
 		//page title
 		
 		if ($this->get('edit')) {

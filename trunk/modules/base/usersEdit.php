@@ -39,8 +39,24 @@ class owa_usersEditController extends owa_adminController {
 	
 	function __construct($params) {
 	
+		parent::__construct($params);
+		
 		$this->setRequiredCapability('edit_users');
-		return parent::__construct($params);
+		
+		// check that user_id is present
+		$v1 = owa_coreAPI::validationFactory('required');
+		$v1->setValues($this->getParam('user_id'));
+		$this->setValidation('user_id', $v1);
+		
+		// Check user name exists
+		$v2 = owa_coreAPI::validationFactory('entityExists');
+		$v2->setConfig('entity', 'base.user');
+		$v2->setConfig('column', 'user_id');
+		$v2->setValues($this->getParam('user_id'));
+		$v2->setErrorMessage($this->getMsg(3001));
+		$this->setValidation('user_id', $v2);
+		return;
+		
 	}
 	
 	function action() {
@@ -51,7 +67,9 @@ class owa_usersEditController extends owa_adminController {
 		$u->getByColumn('user_id', $this->getParam('user_id'));
 		$u->set('email_address', $this->getParam('email_address'));
 		$u->set('real_name', $this->getParam('real_name'));
-		if ($this->getParam('id') != 1) {
+		
+		// never change the role of the admin user
+		if ($u->get('user_id') != 'admin') {
 			$u->set('role', $this->getParam('role'));
 		}
 		$u->update();
@@ -59,6 +77,16 @@ class owa_usersEditController extends owa_adminController {
 		$this->setRedirectAction('base.users');
 				
 		return $data;
+	}
+	
+	function errorAction() {
+		
+		$this->setView('base.options');
+		$this->setSubview('base.usersProfile');
+		$this->set('error_code', 3311);
+		$this->set('user', $this->params);	
+	
+		return;
 	}
 	
 }

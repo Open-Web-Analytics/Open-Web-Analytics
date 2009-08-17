@@ -9,7 +9,13 @@
 		<form method="POST">
 		<TR>
 			<TH>User Name</TH>
-			<TD><input type="text"<?php if ($edit === true):?>disabled<?php endif;?> size="30" name="<?=$this->getNs();?>user_id" value="<?=$user['user_id']?>"></TD>
+			<TD>
+			<?php if ($edit === true):?>
+			<input type="hidden" size="30" name="<?=$this->getNs();?>user_id" value="<?=$user['user_id']?>"><?=$user['user_id']?>
+			<? else:?>
+			<input type="text" size="30" name="<?=$this->getNs();?>user_id" value="<?=$user['user_id']?>">
+			<?php endif;?>
+			</TD>
 		</TR>
 		<TR>
 			<TH>Real Name</TH>

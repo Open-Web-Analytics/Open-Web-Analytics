@@ -17,7 +17,7 @@
 //
 
 /**
- * Sub String Position Validation
+ * Entity does not exist Validation
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -50,20 +50,20 @@
  		$error = $this->getErrorMsg();
  		
  		if (empty($error)) {
- 			$this->setErrorMessage('An entity with that value does not exist.');
+ 			$this->setErrorMessage('An entity with that value already exists.');
  		}
 
 		$id = $entity->get('id');
 		
 		// validation logic 
- 		if (empty($id)) {
+ 		if (!empty($id)) {
  			$this->hasError();
  		}	
 					
  		return;
  		
  	}
- 	
+ 		
  }
  
  

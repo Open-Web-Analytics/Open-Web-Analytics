@@ -58,6 +58,7 @@ $_owa_messages = array(
 3008 => array("Error. Your password must be %s characters long.", 1),
 3009 => array("Error. A user with that email address already exists.", 0),
 3010 => array("A user with that email address does not exist.", 0),
+3011 => array("Could not update user profile."),
 
 //sites management
 3200 => array("Error. Please fill in all required fields.",0),
@@ -65,8 +66,10 @@ $_owa_messages = array(
 3202 => array("Success. Site Added.",0),
 3203 => array("Error. Site Could not be added",0),
 3204 => array("Success. Site Deleted.",0),
-3206 => array("Error. I site with that domain already exists.",0),
+3206 => array("Error. A site with that domain already exists.",0),
 3207 => array("Error. You must enter a domain when adding a web site.",0),
+3208 => array("Error. That site does not exist.",0),
+
 
 //install
 3300 => array("Could not connect to the database. Please check the database connection settings in your configuration file and try again.",0),

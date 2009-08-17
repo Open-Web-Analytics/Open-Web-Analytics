@@ -51,19 +51,15 @@
  	 */
  	var $validations;
  	
- 	/**
- 	 * Validation objects
- 	 * 
- 	 * @var array
- 	 */
- 	var $validators;
- 	
  	function owa_validator() {
  		
- 		$this->owa_base;
+ 		return owa_validator::__construct();
  		
- 		return;
- 		
+ 	}
+ 	
+ 	function __construct() {
+ 	
+ 		return parent::__construct();
  	}
  	
  	/**
@@ -75,13 +71,13 @@
  	 * @param array 	$conf 		configuration array for the object being created
  	 */
  	function addValidation($name, $value, $validation, $conf) {
-		
-		$this->validations[] = $name;
-		
+				
 		// Construct validatation obj
-		$this->validators[$name] = $this->validationFactory($validation);
-		$this->validators[$name]->setValues($value);
-		$this->validators[$name]->setConfigArray($conf);
+		$obj = $this->validationFactory($validation);
+		$obj->setValues($value);
+		$obj->setConfigArray($conf);
+		
+		$this->validations[] = array('name' => $name, 'obj' => $obj);
 
 		return;
 		
@@ -89,8 +85,7 @@
 	
 	function setValidation($name, $obj) {
 		
-		$this->validations[] = $name;
-		$this->validators[$name]  = $obj;
+		$this->validations[] = array('name' => $name, 'obj' => $obj);
 		return;
 	}
 	
@@ -112,18 +107,18 @@
 		
 		foreach ($this->validations as $k) {
 			
-			$this->validators[$k]->validate();
+			$k['obj']->validate();
 			
-			if ($this->validators[$k]->hasError === true):
-				//print_r($this->validators[$k]);	
+			if ($k['obj']->hasError === true) {
+					
 				$this->hasErrors = true;
-				$this->errorMsgs[$k] = $this->validators[$k]->getErrorMsg();
+				$this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
 				
-				if ($this->validators[$k]->conf['stopOnError'] === true):
+				if ($k['obj']->conf['stopOnError'] === true) {
 					break;
-				endif;
+				}
 				
-			endif;
+			}
 		}
 	}
 	

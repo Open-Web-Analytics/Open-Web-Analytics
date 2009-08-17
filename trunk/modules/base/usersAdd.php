@@ -47,7 +47,7 @@ class owa_usersAddController extends owa_adminController {
 		// Check for user with the same email address
 		// this is needed or else the change password feature will not know which account
 		// to chane the password for.
-		$v1 = owa_coreAPI::validationFactory('entityExists');
+		$v1 = owa_coreAPI::validationFactory('entityDoesNotExist');
 		$v1->setConfig('entity', 'base.user');
 		$v1->setConfig('column', 'email_address');
 		$v1->setValues($this->getParam('email_address'));
@@ -55,7 +55,7 @@ class owa_usersAddController extends owa_adminController {
 		$this->setValidation('email_address', $v1);
 		
 		// Check user name.
-		$v2 = owa_coreAPI::validationFactory('entityExists');
+		$v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
 		$v2->setConfig('entity', 'base.user');
 		$v2->setConfig('column', 'user_id');
 		$v2->setValues($this->getParam('user_id'));
@@ -78,6 +78,7 @@ class owa_usersAddController extends owa_adminController {
 		$temp_passkey = $userManager->createNewUser($user_params);
 		
 		// log account creation event to event queue
+		// todo: this does not need to be asynch!
 		$eq = &eventQueue::get_instance();
 		$eq->log(array( 'user_id' 	=> $this->params['user_id'],
 						'real_name' => $this->params['real_name'],
