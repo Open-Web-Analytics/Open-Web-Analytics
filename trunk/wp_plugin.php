@@ -136,21 +136,27 @@ function owa_getCurrentWpUser() {
 
 // translates wordpress roles to owa roles
 function owa_translate_role($roles) {
+	
+	if (!empty($roles)) {
+	
+		if (in_array('administrator', $roles)) {
+			$owa_role = 'admin';
+		} elseif (in_array('editor', $roles)) {
+			$owa_role = 'viewer';
+		} elseif (in_array('author', $roles)) {
+			$owa_role = 'viewer';
+		} elseif (in_array('contributor', $roles)) {
+			$owa_role = 'viewer';
+		} elseif (in_array('subscriber', $roles)) {
+			$owa_role = 'everyone';
+		} else {
+			$owa_role = 'everyone';
+		}
 		
-	if (in_array('administrator', $roles)) {
-		$owa_role = 'admin';
-	} elseif (in_array('editor', $roles)) {
-		$owa_role = 'viewer';
-	} elseif (in_array('author', $roles)) {
-		$owa_role = 'viewer';
-	} elseif (in_array('contributor', $roles)) {
-		$owa_role = 'viewer';
-	} elseif (in_array('subscriber', $roles)) {
-		$owa_role = 'everyone';
 	} else {
 		$owa_role = 'everyone';
 	}
-
+	
 	return $owa_role;
 }
 
