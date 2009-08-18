@@ -81,16 +81,19 @@ class owa_caller extends owa_base {
 		$this->start_time = owa_lib::microtime_float();
 		
 		/* LOAD CONFIG FILE */
+		$file = OWA_DIR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
 		
-		$file = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
-		
-		if (file_exists($file)):
-			$config_file_exists = true;
+		if (file_exists($file)) {
 			include($file);
-		else:
+			$config_file_exists = true;
+		} elseif (file_exists($oldfile)) {
+			include($oldfile);
+			$config_file_exists = true;
+		} else {
 			$config_file_exists = false;
 			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
-		endif;
+		}
 		
 		/* SETUP STORAGE ENGINE */
 		
