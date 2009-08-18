@@ -45,21 +45,11 @@
 /** 
  * PUBLIC URL
  *
- * Define the URL of the public directory e.g. http://www.domain.com/root/dir/owa/public/ 
+ * Define the URL of OWA's base directory e.g. http://www.domain.com/path/to/owa/ 
  * Don't forget the slash at the end.
  */
  
-// define('OWA_PUBLIC_URL', ''); 
-
-/** 
- * PUBLIC PATH
- * Only needs to be defined if you move the public dir from it's original location
- *
- * Define the filesystem path of the public directory e.g. /path/to/owa/public/ 
- * Don't forget the slash at the end.
- */
- 
-// define('OWA_PUBLIC_PATH', ''); 
+// define('OWA_PUBLIC_URL', '');  
 
 /** 
  * OWA ERROR HANDLER
