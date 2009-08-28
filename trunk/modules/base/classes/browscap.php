@@ -159,8 +159,12 @@ class owa_browscap extends owa_base {
 	
 	function load($file) {
 	
-		return parse_ini_file($file, true);
-		
+		if(defined('INI_SCANNER_RAW')) {
+        	return parse_ini_file($file, true, INI_SCANNER_RAW);
+    	} else {
+        	return parse_ini_file($file, true);
+     	}
+
 	}
 	
 	function robotRegexCheck() {
