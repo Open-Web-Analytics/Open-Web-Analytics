@@ -1,7 +1,14 @@
 var OWA = {
 
 	items: new Object,
-	config: new Object
+	config: new Object,
+	setSetting: function(name, value) {
+		this.config[name] = value;
+	},
+	
+	getSetting: function(name) {
+		return this.config[name];
+	}
 
 };
 

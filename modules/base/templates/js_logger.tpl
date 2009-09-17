@@ -20,8 +20,6 @@
 // config values
 <?php $this->includeTemplate('config_dom.tpl');?>
 
-
-
 // Create a page view logger and log the page view
 OWALogger = new OWA.logger();
 
@@ -31,5 +29,8 @@ OWALogger.logPageView();
 <?php if ($log_clicks === true): ?>
 // Create click logger and register it to handle click events
 //OWALogger.trackClicks();
+<?php endif;?>
+
+<?php if (owa_coreAPI::getSetting('base', 'log_dom_stream') === true): ?>
 OWALogger.trackDomStream();
 <?php endif;?>
