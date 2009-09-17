@@ -110,8 +110,8 @@ class owa_reportClicksView extends owa_view {
 		$this->body->set('detail', $this->get('document_details'));
 		$this->body->set('document_id', $this->get('document_id'));
 		$this->body->set('summary_stats', $this->get('summary_stats_data'));
-		$this->setJs('dynifs.js');
-		$this->setJs('wz_jsgraphics.js');
+		$this->setJs('dynifs', 'base/js/dynifs.js');
+		$this->setJs('wz_jsgraphics', 'base/js/wz_jsgraphics.js');
 		
 		return;
 	}

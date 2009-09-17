@@ -15,7 +15,7 @@
 //
 
 /**
- * Javascript Tracking Library
+ * Javascript Logger Library
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,53 +25,324 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+ 
+/*
+OWA.event = function() {
+	this.id = Math.random();
+	this.element= null; 
+	this.colIndex= 0; 
+};
+*/
 
-
-OWA.log = function() {
-	
-	this.id = '';
+OWA.event = function() {
+	this.properties = new Object();
 }
 
-OWA.log.prototype = {
-    
-    // private method for issuing logging request
-    _makeAjaxRequest : function (properties) {
-    	
-    	var bug
-    	var get
-    	var init
-    
-    	url = this._assembleRequestUrl(properties);
-	   
-		if (window.XMLHttpRequest){
+OWA.event.prototype = {
 	
+		id : '',
+		
+		siteId : '',
+		
+		properties : '',
+		
+		get : function(name) {
+			
+			return this.properties[name];
+		},
+		
+		set : function(name, value) {
+			
+			this.properties[name] = value;
+			return;
+		},
+		
+		setEventType : function(event_type) {
+			this.set("event_type", event_type);
+			return;
+		},
+		
+		getProperties : function() {
+			
+			return this.properties;
+		},
+		
+		merge : function(properties) {
+			
+			for(param in properties) { 
+		       
+				this.set(param, properties[param]);
+				
+		    }
+	
+		}
+	
+	}
+
+
+OWA.logger = function(caller_params) {
+	this.page = new OWA.event();
+	this.startTime = this.getTimestamp();
+    this.page.set('page_url', document.URL);
+	this.setPageTitle(document.title);
+	this.page.set("referer", document.referrer);
+	if (typeof caller_params != 'undefined') {
+		this.page.merge(caller_params);
+	}
+	
+}
+
+OWA.logger.prototype = {
+
+	id : '',
+	siteId : '',
+	init: 0,
+	/**
+	 * Time When logger is loaded
+	 */
+	startTime: null,
+	endTime: null,
+	/**
+	 * Active status of logger
+	 */
+	active: true,
+	/**
+	 * Endpoint URl of logger service
+	 */
+	endpoint : '',
+	/**
+	 * Configuration options
+	 */
+	options : {
+		logClicks: true, 
+		logPage: true, 
+		logMovement: false, 
+		encodeProperties: true, 
+		movementInterval: 100
+	},
+	/**
+	 * DOM stream Event Binding Methods
+	 */ 
+	streamBindings : ['bindMovementEvents', 'bindScrollEvents','bindKeypressEvents', 'bindClickEvents'],
+	/**
+	 * Page view event
+	 */
+	page : '',
+	/**
+	 * Latest click event
+	 */
+	click : '',
+	/**
+	 * Latest Movement Event
+	 */
+	movement : '',
+	/**
+	 * Latest Keystroke Event
+	 */
+	keystroke : '',
+	/**
+	 * Latest Hover Event
+	 */
+	hover : '',
+	
+	last_event : '',
+	last_movement : '',
+	/**
+	 * DOM Stream Event Queue
+	 */
+	event_queue : new Array(),
+	player: '',
+	
+	/**
+	 * Convienence method for seting page title
+	 */
+	setPageTitle: function(title) {
+		
+		this.page.set("page_title", title);
+	},
+	
+	/**
+	 * Convienence method for seting page type
+	 */
+	setPageType : function(type) {
+		
+		this.page.set("page_type", type);
+	},
+	
+	/**
+	 * Sets the siteId to be appended to all logging events
+	 */
+	setSiteId : function(site_id) {
+		this.siteId = site_id;
+	},
+	
+	/**
+	 * Convienence method for getting siteId of the logger
+	 */
+	getSiteId : function() {
+		return this.siteId;
+	},
+	
+	setEndpoint : function (endpoint) {
+		this.endpoint = endpoint;
+	},
+	
+	getEndpoint : function() {
+		return this.endpoint;
+	},
+	
+	/**
+	 * Logs a page view event
+	 */
+	logPageView : function() {
+		
+		this.page.setEventType("base.page_request");	
+		return this.logEvent(this.page.getProperties());
+	},
+	
+	logDomStream : function() {
+    	
+		var event = new OWA.event;
+		event.setEventType('dom.stream');
+		event.set('site_id', this.getSiteId());
+		event.set('page_url', this.page.get('page_url'));
+		event.set('timestamp', this.startTime);
+		event.set('duration', this.getElapsedTime());
+		event.set('stream_events', JSON.stringify(this.event_queue));
+		//console.log('Stream: %s', JSON.stringify(this.event_queue));
+		this.logEventAjax(event, 'POST');
+	},
+	
+	/**
+	 * Deprecated
+	 */
+	log : function() {
+    	this.page.setEventType("base.page_request");
+    	return this.logEvent(this.page);
+    },
+    
+    /**
+     * Logs event asyncronously using AJAX GET
+     */
+    logEventAjax : function (event, method) {
+    	if (this.active) {
+    		
+    		if (event instanceof OWA.event) { 
+	    		var properties = event.getProperties(); 
+	    	} else {
+	    		var properties = event;
+	    	}
+	    	
+	    	method = method || 'GET';
+	    	
+	    	if (method === 'GET') {
+	    		return this.ajaxGet(properties);
+	    	} else {
+	    		this.ajaxPost(properties);
+	    		return;
+	    	}
+    		
+    	}
+    	
+    	
+    },
+    
+    isObjectType : function(obj, type) {
+    	return !!(obj && type && type.prototype && obj.constructor == type.prototype.constructor);
+	},
+
+    
+    /**
+     * Gets XMLHttpRequest Object
+     */
+    getAjaxObj : function() {
+    
+    	if (window.XMLHttpRequest){
 			// If IE7, Mozilla, Safari, etc: Use native object
 			var ajax = new XMLHttpRequest()
-	
-		} 
-		
-		else {
+		} else {
 			
 			if (window.ActiveXObject){
-		
 		          // ...otherwise, use the ActiveX control for IE5.x and IE6
 		          var ajax = new ActiveXObject("Microsoft.XMLHTTP"); 
 			}
 	
 		}
-	    
-		
+		return ajax;
+    },
+    
+    ajaxGet : function(properties) {
+    	
+    	var url = this._assembleRequestUrl(properties);
+		var ajax = this.getAjaxObj();
 		ajax.open("GET", url, false); 
 		ajax.send(null);
-		
-		// Uninitialize variable.
-		init = null;
-		
-		return;
     },
+    
+    /**
+     * AJAX POST Request
+     */
+    ajaxPost : function(properties) {
+    	
+    	var ajax = this.getAjaxObj();
+	    var params = this.prepareRequestParams(properties);
+	    
+		ajax.open("POST", this.getEndpoint(), false); 
+		//Send the proper header information along with the request
+		ajax.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		ajax.setRequestHeader("Content-length", params.length);
+		ajax.setRequestHeader("Connection", "close");
+		
+		ajax.onreadystatechange = function() {//Call a function when the state changes.
+			if(ajax.readyState == 4 && ajax.status == 200) {
+				//console.log("ajax response: %s", ajax.responseText);
+			}
+		}
 
-    // private method for issuing logging request
-    _makeRequest : function (properties) {
+		ajax.send(params);
+    	
+    },
+    
+    prepareRequestParams : function(properties) {
+    
+  		var get = '';
+    	
+    	// append site_id to properties
+    	properties.site_id = this.getSiteId();
+    	
+    	//assemble query string
+	    for(param in properties) {  // print out the params
+	       
+			value = '';
+			
+	  		if (typeof properties[param] != 'undefined') {
+    			
+    			// check to see if we should base64 encode the properties
+    			if (this.getOption('encodeProperties')) {
+    				value = this._base64_encode(properties[param]+'');
+    			} else {
+    				value = properties[param]+'';
+    			}
+    			
+    			value = Url.encode(value);
+    	
+	    	} else {
+    	
+    			value = '';
+    	
+    		}
+       
+    		get += "owa_" + param + "=" + value + "&";
+		}
+		
+		return get;
+    },
+    
+
+    /** 
+     * Logs event by inserting 1x1 pixel IMG tag into DOM
+     */
+    logEvent : function (properties) {
     	
     	var bug
     	var url
@@ -85,37 +356,17 @@ OWA.log.prototype = {
         return;
     },
     
+    /**
+     * Private method for helping assemble request params
+     */
     _assembleRequestUrl : function(properties) {
     
-    	var get
-    	var log_url
-    	
-    	get = '';
-    	
-   		log_url = OWA.config.log_url + '?';
-   		
-    	//assemble query string
-	    for(param in properties) {  // print out the params
-	       
-
-			value = '';
-			
-	  		if (typeof properties[param] != 'undefined') {
-    		
-    			value = Url.encode(this._base64_encode(properties[param]+''));
-    	
-	    	} else {
-    	
-    			value = '';
-    	
-    		}
-       
-    		get = get + "owa_" + param + "=" + value + "&";
-		}
-		
+    	// append site_id to properties
+    	properties.site_id = this.getSiteId();
+    	var get = this.prepareRequestParams(properties);
+    	var log_url = this.getEndpoint() + '?';
 		// add some radomness for cache busting
-		return log_url + get + Math.round(100*Math.random());
-    
+		return log_url + get;
     },
     
     _base64_encode : function(decStr) {
@@ -150,163 +401,22 @@ OWA.log.prototype = {
 		  }
 		
 		  return(encOut);
-		}
-
-}
-
-// OWA Page View object /////////////////////////////////////
-
-OWA.pageView = function(caller_params) {
-
-	this.properties = new Object();
-	
-	for(param in caller_params) {  // print out the params
-	       
-		this.properties[param] = caller_params[param];
-			
-    }
-
-	this._setProperties();
-	
-	return;
-};
-
-OWA.pageView.prototype = {
-
-	// public method for setting logging request properties
-    _setProperties : function () {
-    
-		this.properties["event_type"] = "base.page_request";	
-    
-		if (typeof this.properties["page_uri"] == 'undefined') {
-			this.properties["page_url"] = document.URL;
-		}
-		if (typeof this.properties["page_title"] == 'undefined') {
-			this.properties["page_title"] = document.title;
-		}
-		
-		if (typeof this.properties["referer"] == 'undefined') {
-			this.properties["referer"] = document.referrer;
-		}
-    
-        return;
-    },
-    
-    log : function() {
-    
-    	logger = new OWA.log;
-    	return logger._makeRequest(this.properties);
-    
-    }
-
-}
-
-
-
-// OWA click object /////////////////////////////////////////
-
-/**
- * Constructor of the click object
- *
- * @param   e   Event Object
- */
-OWA.click = function(caller_params) {
-
-	this.properties = new Object();
-	
-	for(param in caller_params) {  // print out the params
-	       
-		this.properties[param] = caller_params[param];
-			
-    }
-    
-	this.e = '';
-	
-	return;
-
-};
-
-OWA.click.prototype = {
-
-	properties : new Object,
-	
-	e : '',
-	
-	init: 0,
-	
-	
-	/**
-	 * Sets all properties of the click object
-	 *
-	 * @param   e   Event Object
-	 */
-	 setProperties : function(e) {
-		
-		this.e = e;
-	    this.properties["event_type"] = "base.click";
-	    this._setTarget();
-	    this._setTagName();
-	    this._setCoords();
-	    this.properties["dom_element_name"] = this.targ.name;
-	    this.properties["dom_element_value"] = this.targ.value;
-	    this.properties["dom_element_id"] = this.targ.id;
-	    this.properties["page_url"] = window.location.href;
-	    this.init = 1;
-	    
-	    return true;
 	},
+		
 	
-	log : function() {
-		
-		//alert(this.properties["site_id"]);
-		//alert("hello from click.log");
-		
-		if (this.init == 1) {
-		
-			var logger
-		
-			logger = new OWA.log;
-			logger._makeAjaxRequest(this.properties);
-		}
-			
-		this.init = 0;
-		return;
+	getViewportDimensions : function() {
 	
-	},
-	
-	/**
-	 * Sets coordinates of where in the browser the user clicked
-	 *
-	 */
-	_setCoords : function() {
-	
-		var windowWidth = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
-		var windowHeight = window.innerHeight ? window.innerHeight : document.body.offsetHeight;
-		
-	      if( typeof( this.e.pageX ) == 'number' ) {
-	      	
-	          this.properties["click_x"] = this.e.pageX + '';
-	          this.properties["click_y"] = this.e.pageY + '';
-	      }
-	      else {
-	      	 
-	          this.properties["click_x"] = this.e.clientX + '';
-	          this.properties["click_y"] = this.e.clientY + '';
-	      }
-		
-	    this.properties["dom_element_x"] = this._findPosX(this.targ) + '';
-	    this.properties["dom_element_y"] = this._findPosY(this.targ) + '';
-	    this.properties["page_width"] = windowWidth + '';
-		this.properties["page_height"] = windowHeight + '';
-		
-	    return;
+		var viewport = new Object();
+		viewport.width = window.innerWidth ? window.innerWidth : document.body.offsetWidth;
+		viewport.height = window.innerHeight ? window.innerHeight : document.body.offsetHeight;
+		return viewport;
 	},
 	
 	/**
 	 * Sets the X coordinate of where in the browser the user clicked
 	 *
 	 */
-	_findPosX : function(obj) {
+	findPosX : function(obj) {
 	
 		var curleft = 0;
 		if (obj.offsetParent)
@@ -326,7 +436,7 @@ OWA.click.prototype = {
 	 * Sets the Y coordinates of where in the browser the user clicked
 	 *
 	 */
-	_findPosY : function(obj) {
+	findPosY : function(obj) {
 	
 		var curtop = 0;
 		if (obj.offsetParent)
@@ -343,10 +453,10 @@ OWA.click.prototype = {
 	},
 	
 	/**
-	 * Sets the HTML element that actually generated the event
+	 * Get the HTML elementassociated with an event
 	 *
 	 */
-	_setTarget : function() {
+	_getTarget : function(e) {
 	
 	    // Determine the actual html element that generated the event
 		//if (this.e.target) {
@@ -355,86 +465,322 @@ OWA.click.prototype = {
 	    //} else if (this.e.srcElement) {
 	    //     this.targ = this.e.srcElement;
 	    // }
+	   
+	    targ = e.target || e.srcElement;
 	    
-	    this.targ = this.e.target || this.e.srcElement;
-	    
-		if (this.targ.nodeType == 3) {
+		if (targ.nodeType == 3) {
 		    // defeat Safari bug
-	        this.targ = target.parentNode;
+	        targ = target.parentNode;
 	    }
 	    
-	    return;
+	    return targ;
+	},
+	
+	/**
+	 * Sets coordinates of where in the browser the user clicked
+	 *
+	 */
+	getCoords : function(e) {
+		
+		var coords = new Object();
+		
+	    if ( typeof( e.pageX ) == 'number' ) {
+	    	coords.x = e.pageX + '';
+	        coords.y = e.pageY + '';
+	    } else {
+	        coords.x = e.clientX + '';
+	        coords.y = e.clientY + '';
+	    }
+		
+	    return coords;
 	},
 	
 	/**
 	 * Sets the tag name of html eleemnt that generated the event
 	 */
-	_setTagName : function() {
-	    
+	getDomElementProperties : function(targ) {
+		
+		var properties = new Object();
 	    // Set properties of the owa_click object.
-	    this.properties["dom_element_tag"] = this.targ.tagName;
+	    properties.dom_element_tag = targ.tagName;
 	    
-	    if (this.properties["dom_element_tag"] == "A") {
+	    if (targ.tagName == "A") {
 	    
-	        if (this.targ.textContent != undefined) {
-	             this.properties["dom_element_text"] = this.targ.textContent;
+	        if (targ.textContent != undefined) {
+	             properties.dom_element_text = targ.textContent;
 	        } else {
-	             this.properties["dom_element_text"] = this.targ.innerText;
+	             properties.dom_element_text = targ.innerText;
 	        }
 	        
-	        this.properties["target_url"] = this.targ.href;
+	        properties.target_url =  targ.href;
 	        
 	    }
-	    else if (this.properties["dom_element_tag"] == "INPUT") {
 	    
-	        this.properties["dom_element_text"] = this.targ.value;
+	    else if (targ.tagName == "INPUT") {
+	    
+	        properties.dom_element_text = targ.value;
 	    }
 	    
-	    else if (this.properties["html_element_tag"] == "IMG") {
+	    else if (targ.tagName == "IMG") {
 	    
-	        this.properties["target_url"] = this.targ.parentNode.href;
-	        this.properties["dom_element_text"] = this.targ.alt;
+	        properties.target_url = targ.parentNode.href;
+	        properties.dom_element_text = targ.alt;
 	    }
 	    
 	    else {
 	    
-	    	this.properties["target_url"] = this.targ.parentNode.href;
+	    	//properties.target_url = targ.parentNode.href || null;
 	    	
-	        if (this.targ.textContent != undefined) {
-	             this.properties["html_element_text"] = this.targ.textContent;
+	        if (targ.textContent != undefined) {
+	             properties.html_element_text = targ.textContent;
 	        } else {
-	             this.properties["html_element_text"] = this.targ.innerText;
+	             properties.html_element_text = targ.innerText;
 	        }
 	    }
 	
-	    return;
-	}	
+	    return properties;
+	},
+	
+	bindClickEvents : function() {
+		var that = this;
+		document.onclick = function (e) {that.clickEventHandler(e);}
+	},
+	
+	clickEventHandler : function(e) {
+		
+		// hack for IE7
+		e = e || window.event;
+		
+		var click = new OWA.event();
+		// set event type	
+		click.setEventType("dom.click");
+		
+		//clicked DOM element properties
+	    var targ = this._getTarget(e);
+	    click.set("dom_element_name", targ.name);
+	    click.set("dom_element_value", targ.value);
+	    click.set("dom_element_id", targ.id);
+	    click.set("dom_element_tag", targ.tagName);
+	    click.set("dom_element_class", targ.className);
+	    click.set("page_url", window.location.href);
+	    // view port dimensions - needed for calculating relative position
+	    var viewport = this.getViewportDimensions();
+		click.set("page_width", viewport.width);
+		click.set("page_height", viewport.height);
+	    click.merge(this.getDomElementProperties(targ));
+	    // set coordinates
+	    click.set("dom_element_x", this.findPosX(targ) + '');
+		click.set("dom_element_y", this.findPosY(targ) + '');
+		var coords = this.getCoords(e);
+		click.set('click_x', coords.x);
+		click.set('click_y', coords.y);
+		
+		//if all that works then log
+		if (this.getOption('logClicksAsTheyHappen')) {
+			this.logEventAjax(click);
+		}
+		// add to event queue is logging dom stream
+		if (this.getOption('trackDomStream')) {
+			this.addToEventQueue(click)
+		}
+		
+		this.click = click;
+		
+		return;	
+	},
+			
+	registerBeforeNavigateEvent : function() {
+		var that = this;
+		// Registers the handler for the before navigate event so that the dom stream can be logged
+		if (window.addEventListener) {
+			window.addEventListener('beforeunload', function (e) {that.logDomStream(e);}, false);
+		} else if(window.attachEvent) {
+			window.attachEvent('beforeunload', function (e) {that.logDomStream(e);});
+		}
+	
+	},
+	
+	callMethod : function(string, data) {
+		
+		return this[string](data);
+	},
+	
+	addDomStreamEventBinding : function(method_name) {
+		this.streamBindings.push(method_name);
+	},
+	
+	trackClicks : function(handler) {
+		// flag to tell handler to log clicks as they happen
+		this.setOption('logClicksAsTheyHappen', true);
+		this.bindClickEvents();
+	},
+	
+	trackDomStream : function() {
+		// needed by click handler 
+		this.setOption('trackDomStream', true);	
+		// loop through stream event bindings	
+		for (method in this.streamBindings) {
+			this.callMethod(this.streamBindings[method]);
+		}
+		
+		this.registerBeforeNavigateEvent();
+	},
+	
+	bindMovementEvents : function() {
+		
+		var that = this;
+		document.onmousemove = function (e) {that.movementEventHandler(e);}
+	},
+		
+	movementEventHandler : function(e) {
+		
+		// hack for IE7
+		e = e || window.event;
+		var now = this.getTime();
+		if (now > this.last_movement + this.getOption('movementInterval')) {
+			// set event type	
+			this.movement = new OWA.event();
+			this.movement.setEventType("dom.movement");
+			var coords = this.getCoords(e);
+			this.movement.set('cursor_x', coords.x);
+			this.movement.set('cursor_y', coords.y);
+			this.addToEventQueue(this.movement);
+			this.last_movement = now;
+		}
+		
+	},
+	
+	bindScrollEvents : function() {
+		
+		var that = this;
+		window.onscroll = function (e) {that.scrollEventHandler(e);}
+	},
+	
+	scrollEventHandler : function(e) {
+				
+		// hack for IE7
+		e = e || window.event;
+		
+		var now = this.getTimestamp();
+		
+		var event = new OWA.event();
+		event.setEventType('dom.scroll');
+		var coords = this.getScrollingPosition();
+		event.set('x', coords.x);
+		event.set('y', coords.y);
+		var targ = this._getTarget(e);
+		event.set("dom_element_name", targ.name);
+	    event.set("dom_element_value", targ.value);
+	    event.set("dom_element_id", targ.id);
+	    this.addToEventQueue(event);
+		this.last_scroll = now;
 
-}
+	},
+	
+	getScrollingPosition : function() {
+	
+		var position = [0, 0];
+		if (typeof window.pageYOffset != 'undefined') {
+			position = {x: window.pageXOffset, y: window.pageYOffset};
+		} else if (typeof document.documentElement.scrollTop != 'undefined' && document.documentElement.scrollTop > 0) {
+			position = {x: document.documentElement.scrollLeft, y: document.documentElement.scrollTop};
+		} else if (typeof document.body.scrollTop != 'undefined') {
+			position = {x: document.body.scrollLeft, y:	document.body.scrollTop};
+		}
+		return position;
+	},
+	
+	bindHoverEvents : function() {
+		
+		//handler = handler || this.hoverEventHandler;
+		//document.onmousemove = handler;
 
-/**
- * Helper function for setting properties on the click object
- *
- * Takes a DOM event object
- *
- * @param e Object
- */
-function owa_setClick(e) {
+	},
+	
+	bindKeypressEvents : function() {
+		
+		var that = this;
+		document.onkeypress = function (e) {that.keypressEventHandler(e);}
 
-	// hack for IE7
-	e = e || window.event;
-
-	owa_click.setProperties(e);
-	return;
-
-}
-
-/**
- * Helper Function for calling the log method on the click object
- *
- */
-function owa_logClick() {
-
-	owa_click.log();
-	return;
+	},
+	
+	keypressEventHandler : function(e) {
+		var key_code = e.keyCode? e.keyCode : e.charCode
+		var key_value = String.fromCharCode(key_code); 
+		var event = new OWA.event();
+		event.setEventType('dom.keypress');
+		event.set('key_value', key_value);
+		event.set('key_code', key_code);
+		var targ = this._getTarget(e);
+		event.set("dom_element_name", targ.name);
+	    event.set("dom_element_value", targ.value);
+	    event.set("dom_element_id", targ.id);
+	    event.set("dom_element_tag", targ.tagName);
+	    //console.log("Keypress: %s %d", key_value, key_code);
+		this.addToEventQueue(event);
+		
+	},
+		
+	getTimestamp : function() {
+	
+		return Math.round(new Date().getTime()/1000);
+	},
+	
+	getTime : function() {
+		return Math.round(new Date().getTime());
+	},
+	
+	getElapsedTime : function() {
+		
+		return this.getTimestamp() - this.startTime;
+	},
+	
+	getOption : function(name) {
+		
+		return this.options[name];
+	},
+	
+	setOption : function(name, value) {
+		this.options[name] = value;
+		return;
+	},
+	
+	setLastEvent : function(event) {
+		return;
+	},
+	
+	addToEventQueue : function(event) {
+		
+		if (this.active) {
+			var now = this.getTimestamp();
+			
+			if (event != undefined) {
+				this.event_queue.push(event.getProperties());
+				//console.debug("Now logging %s for: %d", event.get('event_type'), now);
+			} else {
+				//console.debug("No event properties to log");
+			}
+		}
+	},
+	
+	sleep : function(delay) {
+    	var start = new Date().getTime();
+    	while (new Date().getTime() < start + delay);
+	},
+	
+	pause : function() {
+		
+		this.active = false;
+	},
+	
+	restart : function() {
+		this.active = true;
+	},
+	
+	loadPlayer : function(stream) {
+		this.pause();
+		this.player = new OWA.streamPlayer();
+		this.player.load(this.event_queue);
+	}
+	
 }

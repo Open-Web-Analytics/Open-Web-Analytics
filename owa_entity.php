@@ -34,7 +34,10 @@ endif;
 
 class owa_entity {
 	
-	function owa_entity() {
+	var $properties = array();
+	var $_tableProperties = array();
+	
+	function __construct() {
 		
 		$vars = $this->getColumns();
 		
@@ -45,6 +48,11 @@ class owa_entity {
 		}
 		
 		return;
+	}
+		
+	function owa_entity() {
+		
+		return owa_entity::__construct();
 	}
 	
 	function _getProperties() {
@@ -64,7 +72,18 @@ class owa_entity {
 	
 	function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
 		
-		$all_cols = get_object_vars($this);
+		if (!empty($this->properties)) {
+			$all_cols = array_keys($this->properties);
+			$all_cols = array_flip($all_cols);
+		} else {
+			$all_cols = get_object_vars($this);
+			
+			unset($all_cols['_tableProperties']);
+			unset($all_cols['properties']);
+		}
+		
+		//print_r($all_cols);
+		
 		$table = $this->getTableName();
 		$new_cols = array();
 		$ns = '';
@@ -97,7 +116,6 @@ class owa_entity {
 	function getColumnsSql($as_namespace = '', $table_namespace = true) {
 	
 		return $this->getColumns(true, $as_namespace, $table_namespace);
-		
 	}
 	
 	/**
@@ -164,13 +182,10 @@ class owa_entity {
 	 */ 
 	function create() {	
 		
-		$db = owa_coreAPI::dbSingleton();
-		$config = owa_coreAPI::configSingleton();
-		$cache = owa_coreAPI::cacheSingleton();
-		
+		$db = owa_coreAPI::dbSingleton();		
 		$all_cols = $this->getColumns();
 		
-		$db->insertInto(get_class($this));
+		$db->insertInto($this->getTableName());
 		
 		// Control loop
 		foreach ($all_cols as $k => $v){
@@ -188,14 +203,20 @@ class owa_entity {
 		$status = $db->executeQuery();
 		
 		// Add to Cache
-		if ($status == true):
-			if ($config->get('base', 'cache_objects') == true):
-				$cache->set(get_class($this), 'id'.$this->id->value, $this);
-			endif;
-		endif;
-		
+		if ($status == true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+				$this->addToCache();
+			}
+		}
 		return $status;
+	}
+	
+	function addToCache() {
 		
+		if($this->isCachable()) {
+			$cache = owa_coreAPI::cacheSingleton();
+			$cache->set($this->getTableName(), 'id'.$this->id->value, $this);
+		}
 	}
 	
 	/**
@@ -204,10 +225,7 @@ class owa_entity {
 	 */
 	function update($where = '') {	
 		
-		$db = owa_coreAPI::dbSingleton();
-		$config = owa_coreAPI::configSingleton();
-		$cache = owa_coreAPI::cacheSingleton();
-		
+		$db = owa_coreAPI::dbSingleton();	
 		$db->updateTable(get_class($this));
 		
 		// get column list
@@ -235,11 +253,11 @@ class owa_entity {
 		$status = $db->executeQuery();
 
 		// Add to Cache
-		if ($status == true):
-			if ($config->get('base', 'cache_objects') == true):
-				$cache->replace(get_class($this), 'id'.$this->id->value, $this);
-			endif;
-		endif;
+		if ($status == true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+				$this->addToCache();
+			}
+		}
 		
 		return $status;
 		
@@ -254,18 +272,14 @@ class owa_entity {
 	 */
 	function partialUpdate($named_properties, $where) {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$config = owa_coreAPI::configSingleton();
-		$cache = owa_coreAPI::cacheSingleton();
-		
+		$db = owa_coreAPI::dbSingleton();		
 		$db->updateTable(get_class($this));
 		
 		foreach ($named_properties as $v) {
 			
-			if (!empty($this->$v->value)):
+			if (!empty($this->$v->value)){
 				$db->set($v, $this->get($v));
-			endif;
-			
+			}
 		}
 		
 		if(empty($where)):
@@ -276,17 +290,13 @@ class owa_entity {
 		
 		// Persist object
 		$status = $db->executeQuery();
-		
-		
 		// Add to Cache
-		if ($status == true):
-			if ($config->get('base', 'cache_objects') == true):
-				$cache->set(get_class($this), 'id'.$this->id->value, $this);
-			endif;
-		endif;
-		
+		if ($status == true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+				$this->addToCache();
+			}
+		}
 		return $status;
-		
 	}
 	
 	
@@ -296,26 +306,26 @@ class owa_entity {
 	 */
 	function delete($value = '', $col = 'id') {	
 		
-		$db = owa_coreAPI::dbSingleton();
-		$config = owa_coreAPI::configSingleton();
-		$cache = owa_coreAPI::cacheSingleton();
-		
+		$db = owa_coreAPI::dbSingleton();	
 		$db->deleteFrom(get_class($this));
 		
-		if (empty($value)):
+		if (empty($value)) {
 			$value = $this->get('id');
-		endif;
+		}
 		
 		$db->where($col, $value);	
 
 		$status = $db->executeQuery();
 	
 		// Add to Cache
-		if ($status == true):
-			if ($config->get('base', 'cache_objects') == true):
-				$cache->remove(get_class($this), 'id'.$this->id->value);
-			endif;
-		endif;
+		if ($status == true){
+			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+				if ($this->isCachable()) {
+					$cache = owa_coreAPI::cacheSingleton();
+					$cache->remove(get_class($this), 'id'.$this->id->value);
+				}
+			}
+		}
 		
 		return $status;
 		
@@ -334,62 +344,195 @@ class owa_entity {
 	}
 	
 	function getByColumn($col, $value) {
-		
-		$db = owa_coreAPI::dbSingleton();
-		$config = owa_coreAPI::configSingleton();
-		$cache = owa_coreAPI::cacheSingleton();
-		
+				
 		$cache_obj = '';
 		
-		if ($config->get('base', 'cache_objects') == true):
-			$cache_obj = $cache->get(get_class($this), $col.$value);
-		endif;
+		if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+			$cache = owa_coreAPI::cacheSingleton();
+			$cache_obj = $cache->get($this->getTableName(), $col.$value);
+		}
 			
-		if (!empty($cache_obj)):
+		if (!empty($cache_obj)) {
 		
 			$cache_obj_properties = $cache_obj->_getProperties();
 			$this->setProperties($cache_obj_properties);
 					
-		else:
-			
-			$db->selectFrom(get_class($this));
+		} else {
+		
+			$db = owa_coreAPI::dbSingleton();
+			$db->selectFrom($this->getTableName());
 			$db->selectColumn('*');
 			$db->where($col, $value);
 			$properties = $db->getOneRow();
 			
-			if (!empty($properties)):
+			if (!empty($properties)) {
 					
 				$this->setProperties($properties);
 				
-				if ($config->get('base', 'cache_objects') == true):
-					$cache->set(get_class($this), 'id'.$this->id->value, $this);	
-				endif;	
-					
-			endif;
-			
-		endif;
+				if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
 		
-		return; 
+					$this->addToCache();
+				}
+			}
+		} 
 	}
 
 	function getTableName() {
-		return get_class($this);
+		
+		if ($this->_tableProperties) {
+			return $this->_tableProperties['name'];
+		} else {
+			return get_class($this);
+		}
+		
 	}
-	/*
-
-	function setMeta($name, $value) {
 	
-		$this->_meta[$name] = $value;
+	function setTableName($name, $namespace = 'owa_') {
+		
+		$this->_tableProperties['name'] = $namespace.$name;
+	}	
+	
+	function setCachable() {
+	
+		$this->_tableProperties['cacheable'] = true;
+	}
+	
+	function isCachable() {
+		
+		return $this->_tableProperties['cacheable'];
+	}
+	
+	function setPrimaryKey($col) {
+		//backwards compatability
+		$this->properties[$col]->setPrimaryKey();
+		$this->_tableProperties['primary_key'] = $col;
+		
+	}
+	
+	function setForeignKey($col, $table) {
+	
+		$this->properties[$col]->setForeignKey($table);
+		$this->_tableProperties['foreign_keys'][$col] = $table;
+	}
+	
+	/**
+	 * Create Table
+	 *
+	 * Handled by DB abstraction layer because the SQL associated with this is way too DB specific
+	 */
+	function createTable() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		// Persist table
+		$status = $db->createTable($this);
+		
+		if ($status == true):
+			owa_coreAPI::notice(sprintf("%s Table Created.", $this->getTableName()));
+			return true;
+		else:
+			owa_coreAPI::notice(sprintf("%s Table Creation Failed.", $this->getTableName()));
+			return false;
+		endif;
+	
+	}
+	
+	/**
+	 * DROP Table
+	 *
+	 * Drops a table. will throw error is table does not exist
+	 */
+	function dropTable() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		// Persist table
+		$status = $db->dropTable($this->getTableName());
+		
+		if ($status == true):
+			return true;
+		else:
+			return false;
+		endif;
+	
+	}
+	
+	function addColumn($column_name) {
+		
+		$def = $this->getColumnDefinition($column_name);
+		// Persist table
+		$db = owa_coreAPI::dbSingleton();
+		$status = $db->addColumn($this->getTableName(), $column_name, $defs);
+		
+		if ($status == true):
+			return true;
+		else:
+			return false;
+		endif;
+		
+	}
+	
+	function dropColumn($column_name) {
+		
+		$db = owa_coreAPI::dbSingleton();
+		$status = $db->dropColumn($this->getTableName(), $column_name);
+		
+		if ($status == true):
+			return true;
+		else:
+			return false;
+		endif;		
+		
+	}
+	
+	function modifyColumn($column_name) {
+	
+		$def = $this->getColumnDefinition($column_name);		
+		$db = owa_coreAPI::dbSingleton();
+		$status = $db->modifyColumn($this->getTableName(), $column_name, $defs);
+		
+		if ($status == true):
+			return true;
+		else:
+			return false;
+		endif;		
+	
+	
+	}
+	
+	function renameColumn($old_column_name, $column_name) {
+	
+		$db = owa_coreAPI::dbSingleton();
+		$status = $db->renameColumn($this->getTableName(), $old_column_name, $column_name);
+		
+		if ($status == true):
+			return true;
+		else:
+			return false;
+		endif;		
+		
+	}
+	
+	function renameTable($new_table_name) {
+		
+		$db = owa_coreAPI::dbSingleton();
+		$status = $db->renameTable($this->getTableName(), $new_table_name);
+		
+		if ($status == true):
+			return true;
+		else:
+			return false;
+		endif;		
 		return;
 	}
 	
-	function getMeta($name) {
-		
-		return $this->_meta[$name];
+	function getColumnDefinition($column_name) {
+	
+		if (empty($this->properties)) {
+			return $this->entity->$column_name->getDefinition();
+		} else {
+			return $this->properties[$column_name]->getDefinition();
+		}
 	}
 
-*/
-	
 }
 
 ?>

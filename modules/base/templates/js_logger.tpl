@@ -21,27 +21,15 @@
 <?php $this->includeTemplate('config_dom.tpl');?>
 
 
-// Create page view logger and log page view
-// Takes owa_param object which is defined by the logging tag.
-var owa_pv = new OWA.pageView(owa_params);
-owa_pv.log();
 
+// Create a page view logger and log the page view
+OWALogger = new OWA.logger();
+
+OWALogger.setSiteId(owa_params.site_id);
+OWALogger.setEndpoint(OWA.config.log_url);
+OWALogger.logPageView();
 <?php if ($log_clicks === true): ?>
-// Create click logger and bind it to click events
-var owa_click = new OWA.click(owa_params);
-
-// Registers the handler for the on.click event so that click properties can be set
-document.onclick = owa_setClick;
-
-// Registers the handler for the beforenavigate event so that the click can be logged
-
-if(window.addEventListener) {
-
-window.addEventListener('beforeunload', owa_logClick, false);
-
-} else if(window.attachEvent) {
-
-window.attachEvent('beforeunload', owa_logClick);
-
-}
+// Create click logger and register it to handle click events
+//OWALogger.trackClicks();
+OWALogger.trackDomStream();
 <?php endif;?>
