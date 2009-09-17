@@ -1,10 +1,16 @@
 var OWA = {};
 
-OWA.heatmap = function() {
+OWA.heatmap = function(w, h) {
 
+	this.docDimensions = this.getDim(document);
+	
+	w = w || this.docDimensions.width;
+	h =h || this.docDimensions.height;
+	this.createCanvas(w,h);
 	this.canvas = document.getElementById('owa_heatmap');
 	this.context = this.canvas.getContext('2d');
-	this.docDimensions = this.getDim(document);
+	
+	this.calcRegions();
 };
 
 OWA.heatmap.prototype = {
@@ -219,7 +225,8 @@ OWA.heatmap.prototype = {
 	applyBlur: function() {
 		
 		// apply gausian blur
-		this.canvas.className = 'post';
+		
+		this.canvas.className = 'owa_blur';
 	},
 	
 
@@ -237,9 +244,10 @@ OWA.heatmap.prototype = {
         return {'w': w,'h':h};
     },
     
-    createCanvas: function() {
-    	var doc = this.getDim(document);
-    	document.write('<canvas id="owa_heatmap" width="'+doc.width+'px" height="'+doc.height+'px" style="z-index:99;"></canvas>');
+    createCanvas: function(w, h) {
+    
+    	document.write('<style>.owa_blur{filter: url(owa/modules/base/i/test.svg#f1);}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
+    	
     },
     
     getDataPoints: function() {
