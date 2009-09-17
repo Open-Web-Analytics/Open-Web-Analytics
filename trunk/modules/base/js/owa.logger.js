@@ -118,7 +118,8 @@ OWA.logger.prototype = {
 		logPage: true, 
 		logMovement: false, 
 		encodeProperties: true, 
-		movementInterval: 100
+		movementInterval: 100,
+		logDomStreamPercentage: 50
 	},
 	/**
 	 * DOM stream Event Binding Methods
@@ -616,14 +617,26 @@ OWA.logger.prototype = {
 	},
 	
 	trackDomStream : function() {
-		// needed by click handler 
-		this.setOption('trackDomStream', true);	
-		// loop through stream event bindings	
-		for (method in this.streamBindings) {
-			this.callMethod(this.streamBindings[method]);
-		}
 		
-		this.registerBeforeNavigateEvent();
+		// check random number against logging percentage
+		var rand = Math.floor(Math.random() * 100 + 1 );
+		
+		if (rand <= this.getOption('logDomStreamPercentage')) {
+			
+			// needed by click handler 
+			this.setOption('trackDomStream', true);	
+			// loop through stream event bindings	
+			for (method in this.streamBindings) {
+				this.callMethod(this.streamBindings[method]);
+			}
+			
+			this.registerBeforeNavigateEvent();
+		} else {
+			console.log("not tracking dom stream for this user.");
+		}
+			
+		
+		
 	},
 	
 	bindMovementEvents : function() {
@@ -751,7 +764,8 @@ OWA.logger.prototype = {
 	
 	addToEventQueue : function(event) {
 		
-		if (this.active) {
+		if (this.active && !this.isPausedBySibling()) {
+					
 			var now = this.getTimestamp();
 			
 			if (event != undefined) {
@@ -760,7 +774,13 @@ OWA.logger.prototype = {
 			} else {
 				//console.debug("No event properties to log");
 			}
+					
 		}
+	},
+	
+	isPausedBySibling: function() {
+			
+		return OWA.getSetting('loggerPause');
 	},
 	
 	sleep : function(delay) {

@@ -259,6 +259,11 @@ class owa_caller extends owa_base {
 			$this->service->setUpdateRequired();
 		endif;
 		
+		// set default timezone
+		if (function_exists('date_default_timezone_set')) {
+			date_default_timezone_set(owa_coreAPI::getSetting('base', 'timezone'));
+		}
+		
 		return;
 	
 	}
