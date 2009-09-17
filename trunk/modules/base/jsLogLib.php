@@ -73,6 +73,24 @@ class owa_jsLogLibView extends owa_view {
 	
 	function render($data) {
 		
+		
+		/*
+$request = http_get_request_headers();  
+		if (isset($request['If-Modified-Since']))  
+		{  
+		 $modifiedSince = explode(';', $request['If-Modified-Since']);  
+		 $modifiedSince = strtotime($modifiedSince[0]);  
+		}  
+		else  
+		{  
+		 $modifiedSince = 0;  
+		}
+		
+		if ($lastModified <= $modifiedSince)  {  
+			header('HTTP/1.1 304 Not Modified');  
+ 			exit(); 
+		}
+*/
 	
 		// load body template
 		$this->t->set_template('wrapper_blank.tpl');
@@ -86,10 +104,20 @@ class owa_jsLogLibView extends owa_view {
 		// load body template
 		$this->body->set_template('js_logger.tpl');
 		// load body template
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.3.2.min.js');
+		$this->setJs('json2', 'base/js/includes/json2.js');
 		$this->setJs('owa', 'base/js/owa.js');
 		$this->setJs('url_encode', 'base/js/includes/url_encode.js');
 		$this->setJs('owa.logger', 'base/js/owa.logger.js');
+		$this->setJs('owa.player', 'base/js/owa.player.js');
 		$this->concatinateJs();
+		/*
+		header('Cache-Control: public');
+		header('Expires: ' . gmdate('D, d M Y H:i:s', time()+24*60*60*3000) . ' GMT');
+		header('ETag: xyzzy');
+		header('Pragma: ');
+		header('Last-modified: '.gmdate('D, d M Y H:i:s', time()-24*60*60*30) . ' GMT');
+		*/
 		
 		return;
 	}

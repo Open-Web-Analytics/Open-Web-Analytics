@@ -1,4 +1,4 @@
-<?
+<?php
 /************************
 
 A class to make heatmaps much easier.

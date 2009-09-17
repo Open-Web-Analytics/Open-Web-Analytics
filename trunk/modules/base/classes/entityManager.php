@@ -68,104 +68,39 @@ class owa_entityManager extends owa_base {
 		
 	}
 	
-	/**
-	 * Create Table
-	 *
-	 * Handled by DB abstraction layer because the SQL associated with this is way too DB specific
-	 */
 	function createTable() {
 		
-		// Persist table
-		$status = $this->db->createTable($this->entity);
-		
-		if ($status == true):
-			$this->e->notice(sprintf("%s Table Created.", get_class($this->entity)));
-			return true;
-		else:
-			$this->e->notice(sprintf("%s Table Creation Failed.", get_class($this->entity)));
-			return false;
-		endif;
-	
+		return $this->entity->createTable();
 	}
 	
-	/**
-	 * DROP Table
-	 *
-	 * Drops a table. will throw error is table does not exist
-	 */
 	function dropTable() {
 		
-		// Persist table
-		$status = $this->db->dropTable(get_class($this->entity));
-		
-		if ($status == true):
-			return true;
-		else:
-			return false;
-		endif;
-	
+		return $this->entity->dropTable();
 	}
 	
 	function addColumn($column_name) {
 		
-		// Persist table
-		$status = $this->db->addColumn(get_class($this->entity), $column_name, $this->entity->$column_name->getDefinition());
-		
-		if ($status == true):
-			return true;
-		else:
-			return false;
-		endif;
-		
+		return $this->entity->addColumn($column_name);
 	}
 	
 	function dropColumn($column_name) {
 		
-		$status = $this->db->dropColumn(get_class($this->entity), $column_name);
-		
-		if ($status == true):
-			return true;
-		else:
-			return false;
-		endif;		
-		
+		return $this->entity->dropColumn($column_name);
 	}
 	
 	function modifyColumn($column_name) {
 	
-		$status = $this->db->modifyColumn(get_class($this->entity), $column_name, $this->entity->$column_name->getDefinition());
-		
-		if ($status == true):
-			return true;
-		else:
-			return false;
-		endif;		
-	
-	
+		return $this->entity->modifyColumn($column_name);
 	}
 	
 	function renameColumn($old_column_name, $column_name) {
 	
-		$status = $this->db->renameColumn(get_class($this->entity), $old_column_name, $column_name);
-		
-		if ($status == true):
-			return true;
-		else:
-			return false;
-		endif;		
-		
+		return $this->entity->renameColumn($old_column_name, $column_name);
 	}
 	
 	function renameTable($new_table_name) {
-	
-		$status = $this->db->renameTable(get_class($this->entity), $new_table_name);
 		
-		if ($status == true):
-			return true;
-		else:
-			return false;
-		endif;		
-		return;
+		return $this->entity->renameTable($new_table_name);
 	}
 	
 	/**

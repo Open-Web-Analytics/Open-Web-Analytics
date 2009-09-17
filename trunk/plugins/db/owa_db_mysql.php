@@ -246,10 +246,11 @@ class owa_db_mysql extends owa_db {
 		$count = count($all_cols);
 		
 		// Control loop
+		
 		foreach ($all_cols as $k => $v){
 			
 			// get column definition 
-			$columns .= $v.' '.$entity->$v->getDefinition();
+			$columns .= $v.' '.$entity->getColumnDefinition($v);
 						
 			// Add commas to column statement
 			if ($i < $count - 1):

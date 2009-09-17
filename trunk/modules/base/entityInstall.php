@@ -16,11 +16,10 @@
 // $Id$
 //
 
-include_once('owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
- * Special HTTP Requests Controler
+ * Entity Install Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,14 +30,28 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-$config = array();
-$config['delay_first_hit'] = false;
+class owa_entityInstallController extends owa_adminController {
+	
+	function __construct($params) {
+	
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
+	}
+	
+	function owa_entityInstallController($params) {
+	
+		return owa_entityInstallController::__construct($params);
+	}
 
-$owa = new owa_php($config);
-
-$owa->e->debug('Logging Event from Url...');
-
-// run controller or view and echo page content
-echo $owa->logEventFromUrl();
+	function action() {
+		
+		$e = owa_coreAPI::entityFactory($this->getParam('entity'));
+		$e->createTable();
+		$this->setRedirectAction('base.optionsModules');
+		$this->data['status_code'] = 2504;
+		
+		return;
+	}
+}
 
 ?>

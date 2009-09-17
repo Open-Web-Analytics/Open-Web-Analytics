@@ -56,7 +56,7 @@
 <TITLE>Error</TITLE>
 </HEAD>
 <BODY>
-<H1><CENTER>Could not retrieve the resource. Error: <? echo $error; ?></CENTER><H1>
+<H1><CENTER>Could not retrieve the resource. Error: <?php echo $error; ?></CENTER><H1>
 <HR>
 </BODY>
 </HTML>
