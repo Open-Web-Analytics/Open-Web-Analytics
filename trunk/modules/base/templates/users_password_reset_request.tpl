@@ -14,14 +14,14 @@
 		<div id="" style="color:#ffffff; padding:30px; height:100px; text-align:left;" >
 			<form method="POST">
 		    	<div class="inline_h3">E-mail address:</div>
-				<INPUT class="owa_largeFormField" type="text" size="30" name="<?=$this->getNs();?>email_address" value=""></TD>
+				<INPUT class="owa_largeFormField" type="text" size="30" name="<?php echo $this->getNs();?>email_address" value=""></TD>
 				</TR>
 				
 				<TR>
 					<TH scope="row"></TH>
 					<TD>
-						<input name="<?=$this->getNs();?>action" value="base.passwordResetRequest" type="hidden"><BR><BR>
-						<INPUT class="owa_largeFormField" type="submit" size="30" name="<?=$this->getNs();?>submit" value="Request New Password">
+						<input name="<?php echo $this->getNs();?>action" value="base.passwordResetRequest" type="hidden"><BR><BR>
+						<INPUT class="owa_largeFormField" type="submit" size="30" name="<?php echo $this->getNs();?>submit" value="Request New Password">
 					</TD>
 				</TR>
 		    	
@@ -43,7 +43,7 @@
 		
 	<BR>
 	<span class="info_text">
-	<!--<a href="<?=$this->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a> -->
+	<!--<a href="<?php echo $this->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a> -->
 	</span>	
 </div>
 

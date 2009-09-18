@@ -1,11 +1,11 @@
-<!-- Sparkline data for '<?=$dom_id;?>' -->
-<span id="<?=$dom_id;?>"><?=$data;?></span>
+<!-- Sparkline data for '<?php echo $dom_id;?>' -->
+<span id="<?php echo $dom_id;?>"><?php echo $data;?></span>
 
 <script>
-/* Sparkline DOM configuration for '<?=$dom_id;?>' */
-OWA.items['<?=$dom_id;?>'] = new OWA.sparkline();
-OWA.items['<?=$dom_id;?>'].setDomId('<?=$dom_id;?>');
-OWA.items['<?=$dom_id;?>'].setWidth('<?=$width;?>');
-OWA.items['<?=$dom_id;?>'].setHeight('<?=$height;?>');
-OWA.items['<?=$dom_id;?>'].render();
+/* Sparkline DOM configuration for '<?php echo $dom_id;?>' */
+OWA.items['<?php echo $dom_id;?>'] = new OWA.sparkline();
+OWA.items['<?php echo $dom_id;?>'].setDomId('<?php echo $dom_id;?>');
+OWA.items['<?php echo $dom_id;?>'].setWidth('<?php echo $width;?>');
+OWA.items['<?php echo $dom_id;?>'].setHeight('<?php echo $height;?>');
+OWA.items['<?php echo $dom_id;?>'].render();
 </script>

@@ -1,4 +1,4 @@
-<DIV class="panel_headline"><?=$headline;?></DIV>
+<DIV class="panel_headline"><?php echo $headline;?></DIV>
 <div id="panel">
 <fieldset>
 
@@ -10,44 +10,44 @@
 		<?php if ($edit == true):?>
 		<TR>
 			<TH>Site ID:</TH>
-			<TD><?=$site['site_id'];?></TD>
-			<input type="hidden" name="<?=$this->getNs();?>site_id" value="<?=$site['site_id'];?>">
+			<TD><?php echo $site['site_id'];?></TD>
+			<input type="hidden" name="<?php echo $this->getNs();?>site_id" value="<?php echo $site['site_id'];?>">
 
 		</TR>
 		<?php endif;?>
 		<TR>
 			<TH>Domain:</TH>
 			<?php if ($edit == true):?>
-			<input type="hidden" name="<?=$this->getNs();?>domain" value="<?=$site['domain'];?>">
-			<TD><?=$site['domain'];?></TD>
+			<input type="hidden" name="<?php echo $this->getNs();?>domain" value="<?php echo $site['domain'];?>">
+			<TD><?php echo $site['domain'];?></TD>
 			<?php else:?>
 			<TD>
 				
-				<select name="<?=$this->getNs();?>protocol">
+				<select name="<?php echo $this->getNs();?>protocol">
 					<option value="http://">http://</option>
 				    <option value="https://">https://</option>
 				</select>
   
-				<input type="text" name="<?=$this->getNs();?>domain" size="52" maxlength="70" value="<?=$site['domain'];?>"><BR>
-				<span class="validation_error"><?=$validation_errors['domain'];?></span>
+				<input type="text" name="<?php echo $this->getNs();?>domain" size="52" maxlength="70" value="<?php echo $site['domain'];?>"><BR>
+				<span class="validation_error"><?php echo $validation_errors['domain'];?></span>
 			</TD>
 			<?php endif;?>
 		</TR>
 		<TR>
 			<TH>Site Name:</TH>
-			<TD><input type="text" name="<?=$this->getNs();?>name" size="52" maxlength="70" value="<?=$site['name'];?>"></TD>
+			<TD><input type="text" name="<?php echo $this->getNs();?>name" size="52" maxlength="70" value="<?php echo $site['name'];?>"></TD>
 		</TR>
 		<TR>
 			<TH>Description:</TH>
 			<TD>
-				<textarea name="<?=$this->getNs();?>description" cols="52" rows="3"><?=$site['description'];?></textarea>
+				<textarea name="<?php echo $this->getNs();?>description" cols="52" rows="3"><?php echo $site['description'];?></textarea>
 			</TD>
 		</TR>
 		<TR>
 			<TH></TH>
 			<TD>
-				<input type="hidden" name="<?=$this->getNs();?>action" value="<?=$action;?>">
-				<input type="submit" name="<?=$this->getNs();?>submit_btn" value="Save">
+				<input type="hidden" name="<?php echo $this->getNs();?>action" value="<?php echo $action;?>">
+				<input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save">
 			</TD>
 		</TR>
 	</table>
