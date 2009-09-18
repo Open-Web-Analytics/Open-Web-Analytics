@@ -1,1 +1,1 @@
-<?=$img;?>
+<?php echo $img;?>

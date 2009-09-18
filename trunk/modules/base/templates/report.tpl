@@ -1,27 +1,27 @@
 <SCRIPT>
 
 
-OWA.items['<?=$dom_id;?>'] = new OWA.report();
-OWA.items['<?=$dom_id;?>'].dom_id = "<?=$dom_id;?>";
-OWA.items['<?=$dom_id;?>'].page_num = "<?=$pagination['page_num'];?>1";
-OWA.items['<?=$dom_id;?>'].max_page_num = "<?=$pagination['max_page_num'];?>";
-OWA.items['<?=$dom_id;?>'].max_page_num = "<?=$pagination['more_pages'];?>";
+OWA.items['<?php echo $dom_id;?>'] = new OWA.report();
+OWA.items['<?php echo $dom_id;?>'].dom_id = "<?php echo $dom_id;?>";
+OWA.items['<?php echo $dom_id;?>'].page_num = "<?php echo $pagination['page_num'];?>1";
+OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php echo $pagination['max_page_num'];?>";
+OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php echo $pagination['more_pages'];?>";
 <? //foreach ($params as $k => $v): ?>
-//OWA.items['<?=$dom_id;?>'].properties.<?=$k;?> = "<?=$v;?>";
+//OWA.items['<?php echo $dom_id;?>'].properties.<?php echo $k;?> = "<?php echo $v;?>";
 <? //endforeach;?>
-OWA.items['<?=$dom_id;?>'].properties = <?=$this->makeJson($params);?>;
+OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($params);?>;
 </SCRIPT>
 
-<div id="<?=$dom_id;?>" class="owa_reportContainer">
+<div id="<?php echo $dom_id;?>" class="owa_reportContainer">
 	
 
 <table width="100%">
 	<TR>
 		<TD valign="top" class="owa_reportLeftNavColumn">
-			<div id="owa_report-filters"><? include('filter_site.tpl');?></div>
+			<div id="owa_report-filters"><?php include('filter_site.tpl');?></div>
 			<div id="owa_reportNavPanel">
-				<? //$this->makeTwoLevelNav($top_level_report_nav);?>
-				<?=$this->makeNavigationMenu($top_level_report_nav);?>
+				<?php //$this->makeTwoLevelNav($top_level_report_nav);?>
+				<?php echo $this->makeNavigationMenu($top_level_report_nav);?>
 			</div>
 			
 		</TD>
@@ -31,12 +31,12 @@ OWA.items['<?=$dom_id;?>'].properties = <?=$this->makeJson($params);?>;
 			
 			<table id="report_header" cellpadding="0" cellspacing="0">
 				<TR>
-					<TD valign="top" class="report_headline"><?=$title;?></TD>
-					<TD class="owa_reportPeriod"><? include('filter_period.tpl');?></TD>			
+					<TD valign="top" class="report_headline"><?php echo $title;?></TD>
+					<TD class="owa_reportPeriod"><?php include('filter_period.tpl');?></TD>			
 				</TR>
 			</table>		
 			
-			<?=$subview;?>
+			<?php echo $subview;?>
 		
 		</TD>
 	</TR>

@@ -10,11 +10,11 @@
 	
 	<?php foreach ($visitors_age as $row):?>
 		<TR>
-			<TD><?=$this->daysAgo(mktime(23, 59, 59,$row['first_session_month'], $row['first_session_day'], $row['first_session_year']) );?> (<?=$this->get_month_label($row['first_session_month']);?> <?=$row['first_session_day'];?> <?=$row['first_session_year'];?>)</TD>
+			<TD><?php echo $this->daysAgo(mktime(23, 59, 59,$row['first_session_month'], $row['first_session_day'], $row['first_session_year']) );?> (<?php echo $this->get_month_label($row['first_session_month']);?> <?php echo $row['first_session_day'];?> <?php echo $row['first_session_year'];?>)</TD>
 			<TD>
-				<a href="<?=$this->makeLink(array('do' => 'base.reportVisitorsRoster', 
+				<a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitorsRoster', 
 				'first_session' => sprintf('%d%02d%02d', $row['first_session_year'], $row['first_session_month'], $row['first_session_day'])), true);?>">
-				<?=$row['count'];?></a>
+				<?php echo $row['count'];?></a>
 			</TD>
 		</TR>
 	<?php endforeach;?>

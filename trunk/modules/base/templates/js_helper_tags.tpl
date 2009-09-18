@@ -4,7 +4,7 @@
 
 <script type="text/javascript">
 //<![CDATA[
-document.write('<img src="<?=$this->makeAbsolutelink(array('action' => 'base.processFirstRequest', 'site_id' => $site_id), '', $this->config['action_url']);?>">');
+document.write('<img src="<?php echo $this->makeAbsolutelink(array('action' => 'base.processFirstRequest', 'site_id' => $site_id), '', $this->config['action_url']);?>">');
 //]]>
 </script>
 

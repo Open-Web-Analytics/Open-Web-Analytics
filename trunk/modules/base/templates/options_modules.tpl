@@ -1,7 +1,7 @@
-<div class="panel_headline"><?=$headline?></div>
+<div class="panel_headline"><?php echo $headline?></div>
 <div id="panel">
 
-<? if (!empty($modules)): ?>
+<?php if (!empty($modules)): ?>
 
 <table width="100%" id="module_roster" class="tablesorter">
 	<thead>
@@ -16,35 +16,35 @@
 	</TR>
 	</thead>
 	<tbody>
-	<? foreach ($modules as $k => $v): ?>
+	<?php foreach ($modules as $k => $v): ?>
 	
 	<TR>
-		<TD><?=$v['display_name'];?></TD>
-		<TD><?=$v['version'];?></TD>
-		<TD><?=$v['description'];?></TD>
-		<TD><?=$v['current_schema_version'];?></TD>
-		<TD><?=$v['required_schema_version'];?></TD>
-		<TD><?=$v['schema_uptodate'];?></TD>
+		<TD><?php echo $v['display_name'];?></TD>
+		<TD><?php echo $v['version'];?></TD>
+		<TD><?php echo $v['description'];?></TD>
+		<TD><?php echo $v['current_schema_version'];?></TD>
+		<TD><?php echo $v['required_schema_version'];?></TD>
+		<TD><?php echo $v['schema_uptodate'];?></TD>
 		<TD class="">
 		<?php if ($v['name'] != 'base'): ?>
-		<? if ($v['status'] == 'active'): ?>
-			<a href="<?=$this->makeLink(array('do' => 'base.moduleDeactivate', 'module' => $v['name']));?>">Deactivate</a>
-		<? else: ?>
-			<a href="<?=$this->makeLink(array('do' => 'base.moduleActivate', 'module' => $v['name']));?>">Activate</a>
-		<? endif; ?>
+		<?php if ($v['status'] == 'active'): ?>
+			<a href="<?php echo $this->makeLink(array('do' => 'base.moduleDeactivate', 'module' => $v['name']));?>">Deactivate</a>
+		<?php else: ?>
+			<a href="<?php echo $this->makeLink(array('do' => 'base.moduleActivate', 'module' => $v['name']));?>">Activate</a>
+		<?php endif; ?>
 		<?php endif;?>	
 		
 		</TD>
 	</TR>
 	
-	<? endforeach; ?>
+	<?php endforeach; ?>
 	</tbody>
 </table>
 
-<? else: ?>
+<?php else: ?>
 
 There are no additional modules installed.
 
-<? endif;?>
+<?php endif;?>
 
 </div>

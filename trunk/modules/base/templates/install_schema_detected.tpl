@@ -1,4 +1,4 @@
-<div class="panel_headline"><?=$headline;?></div>
+<div class="panel_headline"><?php echo $headline;?></div>
 
 <div class="subview_content">
 	

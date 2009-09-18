@@ -13,15 +13,15 @@
 		<TR>
 			
 			<TD class="item_cell">
-				<?=$this->choose_browser_icon($type['browser_type']);?> &nbsp;
+				<?php echo $this->choose_browser_icon($type['browser_type']);?> &nbsp;
 			<?php if (empty($type['browser_type'])):?>
 				Unknown Browser
 			<?php else:?>
-				 <?=$type['browser_type'];?>
+				 <?php echo $type['browser_type'];?>
 			<?php endif;?>
 			</TD>
 			<TD class="data_cell">
-				<?=$type['count'];?>
+				<?php echo $type['count'];?>
 			</TD>		
 		</TR>
 					

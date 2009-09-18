@@ -14,7 +14,7 @@
 // $Id$
 //
 
-<?=$js_includes;?>
+<?php echo $js_includes;?>
 
 
 // config values

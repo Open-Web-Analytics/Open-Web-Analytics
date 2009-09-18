@@ -3,7 +3,7 @@
 	<table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0">
 		<TR>
 			<TD class="owa_reportPeriodLabelText">
-				<span><?=$period_label;?><?=$date_label;?></span>						
+				<span><?php echo $period_label;?><?php echo $date_label;?></span>						
 			</TD>
 			<TD class="owa_reportRevealControl"></TD>	
 		</TR>
@@ -28,9 +28,9 @@
 		<TR>
 			<TD colspan="2">
 				<SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
-	<? foreach ($reporting_periods as $reporting_period => $value):?>
-					<OPTION VALUE="<?=$reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
-	<? endforeach;?>
+	<?php foreach ($reporting_periods as $reporting_period => $value):?>
+					<OPTION VALUE="<?php echo $reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
+	<?php endforeach;?>
 				</SELECT>	
 			</TD>
 		</TR>

@@ -1,8 +1,8 @@
-<? if ($news):?>
+<?php if ($news):?>
 <DIV style="text-align:left;">
-<? foreach ($news['items'] as $item => $value): ?>
-<a href="<?=$value['link'];?>"><span class="h_label"><?=$value['title'];?></span></a><span class="info_text"> - <?=$value['pubDate'];?></span>
-<P><?=$value['description'];?></P>
-<? endforeach;?>
+<?php foreach ($news['items'] as $item => $value): ?>
+<a href="<?php echo $value['link'];?>"><span class="h_label"><?php echo $value['title'];?></span></a><span class="info_text"> - <?php echo $value['pubDate'];?></span>
+<P><?php echo $value['description'];?></P>
+<?php endforeach;?>
 </DIV>
-<? endif;?>
+<?php endif;?>

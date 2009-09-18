@@ -16,13 +16,13 @@
 			<form method="POST">
 		    
 			<div class="inline_h3"><B>User Name:</B></div>
-			<INPUT class="owa_largeFormField" type="text" size="20" name="<?=$this->getNs();?>user_id" value="<?=$user_id;?>"><BR><BR>
+			<INPUT class="owa_largeFormField" type="text" size="20" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user_id;?>"><BR><BR>
 			<div class="inline_h3"><B>Password:</B></div>
-			<INPUT class="owa_largeFormField" type="password" size="20" name="<?=$this->getNs();?>password"><BR><BR>
-			<input type="hidden" size="70" name="<?=$this->getNs();?>go" value="<?=$go?>">
-			<input name="<?=$this->getNs();?>action" value="base.login" type="hidden">
+			<INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $this->getNs();?>password"><BR><BR>
+			<input type="hidden" size="70" name="<?php echo $this->getNs();?>go" value="<?php echo $go?>">
+			<input name="<?php echo $this->getNs();?>action" value="base.login" type="hidden">
 			<div style="text-align:;">
-			<INPUT class="owa_largeFormField" type="submit" name="<?=$this->getNs();?>submit_btn" value="Login">
+			<INPUT class="owa_largeFormField" type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Login">
 			</div>
 			</form>
 		 
@@ -41,7 +41,7 @@
 		
 	<BR>
 	<span class="info_text">
-	<a href="<?=$this->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a>
+	<a href="<?php echo $this->makeLink(array('do' => 'base.passwordResetForm'))?>">Forgot your password?</a>
 	</span>	
 </div>
 

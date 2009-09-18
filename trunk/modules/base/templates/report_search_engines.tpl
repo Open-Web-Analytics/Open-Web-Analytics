@@ -1,5 +1,5 @@
 <div class="owa_reportSectionHeader">
-	There were <?=$summary_stats['sessions'];?> visits from Search Engines.
+	There were <?php echo $summary_stats['sessions'];?> visits from Search Engines.
 </div>
 
 <div class="owa_reportSectionContent">
@@ -26,12 +26,12 @@
 			
 		<TR>
 			<td><?php if ($host['site_name']): ?>
-					<?=$host['site_name'];?> (<?=$host['site'];?>) 
+					<?php echo $host['site_name'];?> (<?php echo $host['site'];?>) 
 				<?php  else:?>
-					<?=$host['site'];?>
+					<?php echo $host['site'];?>
 				<?php endif;?>
 			</td>
-			<TD class="data_cell"><?=$host['count']?></TD>
+			<TD class="data_cell"><?php echo $host['count']?></TD>
 		</TR>
 					
 		<?php endforeach; ?>
@@ -42,5 +42,5 @@
 	<?php endif;?>
 
 
-<?=$this->makePagination($pagination, array('do' => 'base.reportSearchEngines'));?>
+<?php echo $this->makePagination($pagination, array('do' => 'base.reportSearchEngines'));?>
 </div>

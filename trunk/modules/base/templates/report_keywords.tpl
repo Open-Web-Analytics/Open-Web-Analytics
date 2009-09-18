@@ -1,4 +1,4 @@
-<div class="owa_reportSectionHeader">There were <?=$summary_stats['sessions'];?> visits from Search Engines.</div>
+<div class="owa_reportSectionHeader">There were <?php echo $summary_stats['sessions'];?> visits from Search Engines.</div>
 <div class="owa_reportSectionContent">
 
 <?php include('report_traffic_summary_metrics.tpl');?>
@@ -20,8 +20,8 @@
 	<?php foreach($keywords as $keyword): ?>
 		
 	<TR>
-		<td><?=$keyword['query_terms'];?></td>
-		<TD><?=$keyword['count']?></TD>
+		<td><?php echo $keyword['query_terms'];?></td>
+		<TD><?php echo $keyword['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>
@@ -31,5 +31,5 @@
 	There are no Keywords for this time period.
 <?php endif;?> 
 
-<?=$this->makePagination($pagination, array('do' => 'base.reportKeywords'));?>
+<?php echo $this->makePagination($pagination, array('do' => 'base.reportKeywords'));?>
 </div>

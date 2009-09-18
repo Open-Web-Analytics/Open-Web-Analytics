@@ -3,7 +3,7 @@
 <table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>
 		<TD colspan="2" class="headline">
-			<?=$headline;?>
+			<?php echo $headline;?>
 		</TD>
 	</TR>
 	<TR>
@@ -16,19 +16,19 @@
 		
 			<? foreach ($panels as $group => $items):?>
 			
-				<H4><?=$group;?></H4>
+				<H4><?php echo $group;?></H4>
 					<UL>
-					<? foreach ($items as $k => $v):?>
-						<? if ($v['view']):?>
-						<LI><a href="<?=$this->makeLink(array('view' => 'base.options', 'subview' => $v['view']));?>"><?=$v['anchortext'];?></a></LI>
-						<? else: ?>
-						<LI><a href="<?=$this->makeLink(array('do' => $v['do']));?>"><?=$v['anchortext'];?></a></LI>
-						<? endif; ?>
-					<? endforeach;?>
+					<?php foreach ($items as $k => $v):?>
+						<?php if ($v['view']):?>
+						<LI><a href="<?php echo $this->makeLink(array('view' => 'base.options', 'subview' => $v['view']));?>"><?php echo $v['anchortext'];?></a></LI>
+						<?php else: ?>
+						<LI><a href="<?php echo $this->makeLink(array('do' => $v['do']));?>"><?php echo $v['anchortext'];?></a></LI>
+						<?php endif; ?>
+					<?php endforeach;?>
 					</UL>
-			<? endforeach;?>
+			<?php endforeach;?>
 		</TD>
-		<TD class="layout_subview"><?=$subview;?></TD>
+		<TD class="layout_subview"><?php echo $subview;?></TD>
 	</TR>
 
 </table>
