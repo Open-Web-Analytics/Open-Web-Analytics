@@ -1,4 +1,4 @@
-<div class="panel_headline"><?=$headline;?></div>
+<div class="panel_headline"><?php echo $headline;?></div>
 
 <div class="subview_content">
 	
@@ -13,16 +13,16 @@
 	<table>
 		<TR>
 			<TH>User Name:</TH>
-			<TD><?=$u;?></TD>
+			<TD><?php echo $u;?></TD>
 		</TR>
 		<TR>
 			<TH>Password:</TH>
-			<TD><a href="<?=$this->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $key));?>"> Click here to set password</a></TD>
+			<TD><a href="<?php echo $this->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $key));?>"> Click here to set password</a></TD>
 		</TR>
 	</table>
 	
 	<h3>2. Place Javascript Tracking Tags or Use the PHP API</h3>
 	
-	<? include('invocation.tpl');?>
+	<?php include('invocation.tpl');?>
 
 </div>

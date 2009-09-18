@@ -1,5 +1,5 @@
 <div class="owa_reportSectionHeader">
-There were <?=$summary_stats['sessions'];?> visits from referring web sites.
+There were <?php echo $summary_stats['sessions'];?> visits from referring web sites.
 </div>
 
 <div class="owa_reportSectionContent">
@@ -25,8 +25,8 @@ There were <?=$summary_stats['sessions'];?> visits from referring web sites.
 	<?php foreach($anchors as $anchor): ?>
 		
 	<TR>
-		<TD class="item_cell"><?=$anchor['refering_anchortext'];?></td>
-		<TD class="data_cell"><?=$anchor['count']?></TD>
+		<TD class="item_cell"><?php echo $anchor['refering_anchortext'];?></td>
+		<TD class="data_cell"><?php echo $anchor['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>
@@ -36,6 +36,6 @@ There were <?=$summary_stats['sessions'];?> visits from referring web sites.
 	There are no refering anchors for this time period.
 <?php endif;?>
 
-<?=$this->makePagination($pagination, array('do' => 'base.reportAnchortext'));?>
+<?php echo $this->makePagination($pagination, array('do' => 'base.reportAnchortext'));?>
 
 </div>

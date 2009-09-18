@@ -12,9 +12,9 @@ There are no metrics yet for this time period.
 	<tbody>
 		<?php foreach($feed_trend as $row): ?>	
 		<TR>
-			<TD><?=$this->get_month_label($row['month']);?> <?=$row['day'];?> <?=$row['year'];?></TD>
-			<TD><?=$row['fetch_count'];?></TD>
-			<TD><?=$row['reader_count'];?></TD>
+			<TD><?php echo $this->get_month_label($row['month']);?> <?php echo $row['day'];?> <?php echo $row['year'];?></TD>
+			<TD><?php echo $row['fetch_count'];?></TD>
+			<TD><?php echo $row['reader_count'];?></TD>
 		</TR>		
 	   <?php endforeach; ?>
    </tbody>

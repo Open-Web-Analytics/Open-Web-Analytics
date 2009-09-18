@@ -10,20 +10,20 @@
 		<?php foreach($top_visitors as $vis): ?>		
 		<TR>
 			<TD>
-				<a href="<?=$this->makeLink(array('visitor_id' => $vis['vis_id'], 'do' => 'base.reportVisitor'), true);?>">
+				<a href="<?php echo $this->makeLink(array('visitor_id' => $vis['vis_id'], 'do' => 'base.reportVisitor'), true);?>">
 					<span class="">
 						<?php if (!empty($vis['user_name'])):?>
-							<?=$vis['user_name'];?>
+							<?php echo $vis['user_name'];?>
 						<?php elseif (!empty($vis['user_email'])):?>
-							<?=$vis['user_email'];?>
+							<?php echo $vis['user_email'];?>
 						<?php else: ?>
-							<?=$vis['vis_id'];?>
+							<?php echo $vis['vis_id'];?>
 						<?php endif; ?>
 					</span>
 				</a>		
 			</TD>
 			<TD>
-				<?=$vis['count']?>
+				<?php echo $vis['count']?>
 			</TD>
 		</TR>
 					

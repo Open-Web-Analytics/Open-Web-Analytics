@@ -2,10 +2,10 @@
 
 <script type="text/javascript">
 //<![CDATA[
-<? include('js_owa_params.tpl');?>
+<?php include('js_owa_params.tpl');?>
 //]]>
 </script>
 
-<script type="text/javascript" src="<?=$this->makeAbsoluteLink(array('action' => 'base.jsLogLib'), '', $this->config['action_url'], true);?>"></script>
+<script type="text/javascript" src="<?php echo $this->makeAbsoluteLink(array('action' => 'base.jsLogLib'), '', $this->config['action_url'], true);?>"></script>
 
 <!-- End Open Web Analytics Code -->

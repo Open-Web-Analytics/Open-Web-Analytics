@@ -1,4 +1,4 @@
-<? if (!empty($keywords)):?>
+<?php if (!empty($keywords)):?>
 <table width="100%">
 	<tr>
 		<th scope="col">Keyword</th>
@@ -8,13 +8,13 @@
 	<?php foreach($keywords as $keyword): ?>
 		
 	<TR>
-		<TD><?=$keyword['query_terms'];?></td>
-		<TD><?=$keyword['count']?></TD>
+		<TD><?php echo $keyword['query_terms'];?></td>
+		<TD><?php echo $keyword['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>
 
 	</table>
-<?else:?>
+<?php else:?>
 	There are no Keywords for this time period.
-<?endif;?>
+<?php endif;?>

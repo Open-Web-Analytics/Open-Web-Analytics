@@ -1,4 +1,4 @@
-<? if (!empty($se_hosts)):?>
+<?php if (!empty($se_hosts)):?>
 <table width="100%">
 	<tr>
 		<th scope="col">Search Engine</th>
@@ -8,18 +8,18 @@
 	<?php foreach($se_hosts as $host): ?>
 		
 	<TR>
-		<TD><? if ($host['site_name']): ?>
-				<?=$host['site_name'];?> (<?=$host['site'];?>) 
-			<? else:?>
-				<?=$host['site'];?>
-			<?endif;?>
+		<TD><?php if ($host['site_name']): ?>
+				<?php echo $host['site_name'];?> (<?php echo $host['site'];?>) 
+			<?php else:?>
+				<?php echo $host['site'];?>
+			<?php endif;?>
 		</td>
-		<TD><?=$host['count']?></TD>
+		<TD><?php echo $host['count']?></TD>
 	</TR>
 				
 	<?php endforeach; ?>
 
 	</table>
-<?else:?>
+<?php else:?>
 	There are no refering search engines for this time period.
-<?endif;?>
+<?php endif;?>

@@ -6,7 +6,7 @@
 
 <div class="special_wrap">
 
-<? include('report_document_summary_stats.tpl');?>
+<?php include('report_document_summary_stats.tpl');?>
 
 <P>
 <form>
@@ -16,9 +16,9 @@
 	&nbsp;View Clicks by Browser Type:
 	<select name="uas" size="" onchange="OnChange(this.form.uas, 'ua_id')">
 		<option value="" <?php if (empty($params['ua_id'])): echo 'selected'; endif; ?>>All Browser Types</option>
-  		<? foreach ($uas as $k => $v):?>
-    	<option value="<?=$v['id'];?>" <?php if ($params['ua_id'] == $v['id']): echo 'selected'; endif; ?>><?=$v['browser_type'];?></option>
-    	<? endforeach; ?>
+  		<?php foreach ($uas as $k => $v):?>
+    	<option value="<?php echo $v['id'];?>" <?php if ($params['ua_id'] == $v['id']): echo 'selected'; endif; ?>><?php echo $v['browser_type'];?></option>
+    	<?php endforeach; ?>
 	</select>
  <form>
 </P>
@@ -30,7 +30,7 @@
 	
 	<iframe
 		 id="iframe" name="iframe"
-		 src="<?=$detail['url'];?><? if (strpos($detail['url'], '?') == false): echo '?'; endif;?>&<?=$this->getNs;?>preview=1" 
+		 src="<?php echo $detail['url'];?><?php if (strpos($detail['url'], '?') == false): echo '?'; endif;?>&<?php echo $this->getNs;?>preview=1" 
 		 frameborder="0" 
 		 scrolling="No" 
 		 style="position:relative;width:100%;height:500px;border:0px dotted #BEBEBE;margin:0px;padding:0px; z-index:1;"
@@ -60,14 +60,14 @@
 	  	<?php foreach ($clicks as $click => $value):?>
 	  
 	  <?php if ($this->config['click_drawing_mode'] == 'center_on_page'): ?>
-	  relWidth = <?=$value['click_x'];?> / <? if($value['page_width']):?><?=$value['page_width'];?><?else:?><?echo '0';?><?endif;?>;
+	  relWidth = <?php echo $value['click_x'];?> / <? if($value['page_width']):?><?php echo $value['page_width'];?><?else:?><?echo '0';?><?endif;?>;
 	  clickX = divWidth * relWidth;
 	  //alert(divWidth +',' + relWidth);
 	  <?php else:?>
-	  clickX = <?=$value['click_x'];?>
+	  clickX = <?php echo $value['click_x'];?>
 	  <?php endif;?>
 	  
-	  jg_doc.fillEllipse(clickX, <?=$value['click_y'];?>,  <?=$value['count'] * 4.1;?>,  <?=$value['count'] * 4.1;?>); // co-ordinates related to the document
+	  jg_doc.fillEllipse(clickX, <?php echo $value['click_y'];?>,  <?php echo $value['count'] * 4.1;?>,  <?php echo $value['count'] * 4.1;?>); // co-ordinates related to the document
 	  <?php endforeach;?>
 	  <?php else:?>
 	  
@@ -97,7 +97,7 @@
 		var divHeight = document.getElementById("clickspage").offsetHeight;
 		var relWidth = '';
 		
-		var url = '<img src="<?=$this->graphLink(array('do' => 'base.heatmapClicks', 'document_id' => $document_id), true, $this->config['action_url']);?>&owa_width=' + divWidth + '&owa_height=' + divHeight + '">';
+		var url = '<img src="<?php echo $this->graphLink(array('do' => 'base.heatmapClicks', 'document_id' => $document_id), true, $this->config['action_url']);?>&owa_width=' + divWidth + '&owa_height=' + divHeight + '">';
 		document.getElementById('heatmap').innerHTML = url;
 		document.getElementById('clickspage2').style.visibility = 'hidden';
 		//alert('<!-- ' + url + ' -->');

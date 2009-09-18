@@ -1,5 +1,5 @@
 <div class="owa_reportSectionHeader">
-	There were <?=$summary_stats['sessions'];?> visits from Referring Web Sites.
+	There were <?php echo $summary_stats['sessions'];?> visits from Referring Web Sites.
 </div>
 
 <div class="owa_reportSectionContent">
@@ -11,5 +11,5 @@
 </div>
 
 <div class="owa_reportSectionContent">
-	<? include('report_referers.tpl');?>
+	<?php include('report_referers.tpl');?>
 </div>

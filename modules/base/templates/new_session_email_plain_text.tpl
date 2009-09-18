@@ -1,7 +1,7 @@
-New Visit to <?=$site['domain'];?> from:
+New Visit to <?php echo $site['domain'];?> from:
 
-Visitor: <?=$session['visitor_id'];?>
-Email or Username: <?=$session['user_email'];?> | <?=$session['user_name'];?>
-Host: <?=$session['host'];?>
-City/Country:  <?=$session['city'];?> <?=$session['country'];?>
-Entry page:  <?=$session['page_title'];?> (<?=$session['page_url'];?>)
+Visitor: <?php echo $session['visitor_id'];?>
+Email or Username: <?php echo $session['user_email'];?> | <?php echo $session['user_name'];?>
+Host: <?php echo $session['host'];?>
+City/Country:  <?php echo $session['city'];?> <?php echo $session['country'];?>
+Entry page:  <?php echo $session['page_title'];?> (<?php echo $session['page_url'];?>)

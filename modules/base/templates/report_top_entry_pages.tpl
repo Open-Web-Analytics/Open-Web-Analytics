@@ -11,9 +11,9 @@
 					
 		<TR>
 			<TD>
-				<a href="<?=$this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $page['id']), true);?>"><?=$page['page_title'];?></a> (<?=$page['page_type'];?>)
+				<a href="<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $page['id']), true);?>"><?php echo $page['page_title'];?></a> (<?php echo $page['page_type'];?>)
 			</TD>
-			<TD><?=$page['count']?></TD>
+			<TD><?php echo $page['count']?></TD>
 		</TR>
 					
 		<?php endforeach; ?>

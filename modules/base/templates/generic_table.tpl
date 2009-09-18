@@ -3,27 +3,27 @@
 <script>
 
 jQuery(document).ready(function() { 
-	jQuery("#<?=$table_id;?>").tablesorter();
+	jQuery("#<?php echo $table_id;?>").tablesorter();
 }); 
     
 </script>
 
-<table class="<?=$sort_table_class;?> <?=$table_class;?>" summary="" id="<?=$table_id;?>">
+<table class="<?php echo $sort_table_class;?> <?php echo $table_class;?>" summary="" id="<?php echo $table_id;?>">
 	<?php if (!empty($caption)): ?>
-	<caption><?=$caption;?></caption>
+	<caption><?php echo $caption;?></caption>
 	<?php endif;?>
 	<thead>
 		<TR>
 			<?php if (!empty($labels)):?>
 			<?php foreach ($labels as $label): ?>
-			<TH scope="<?=$th_scope;?>"><?=$label;?></TH>
+			<TH scope="<?php echo $th_scope;?>"><?php echo $label;?></TH>
 			<?php endforeach;?>
 			<?php endif;?>
 		</TR>
 	</thead>
 	<?php if (!empty($table_footer)): ?>
 	<tfoot>
-		<td colspan="<?=$col_count;?>"><?=$table_footer;?></td>
+		<td colspan="<?php echo $col_count;?>"><?php echo $table_footer;?></td>
 	</tfoot>
 	<?php endif;?>
 	<tbody>
@@ -33,7 +33,7 @@ jQuery(document).ready(function() {
 			<?php include($this->setTemplate($table_row_template));?>
 			<?php else: ?>
 			<?php foreach ($row as $item): ?>
-			<TD><?=$item;?></TD>
+			<TD><?php echo $item;?></TD>
 			<?php endforeach;?>	
 			<?php endif;?>	
 		</TR>
