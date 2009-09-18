@@ -27,7 +27,9 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-define('OWA_PATH', dirname(__FILE__));
+if (!defined('OWA_PATH')) {
+	define('OWA_PATH', dirname(__FILE__));
+}
 define('OWA_DIR', OWA_PATH. DIRECTORY_SEPARATOR);
 define('OWA_MODULES_DIR', OWA_DIR.'modules'.DIRECTORY_SEPARATOR);
 define('OWA_BASE_DIR', OWA_PATH); // depricated

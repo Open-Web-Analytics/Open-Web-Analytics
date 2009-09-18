@@ -231,7 +231,11 @@
  		
  		$values = $this->config->get('settings');
  		
- 		return $values[$module][$key];
+ 		if (array_key_exists($key, $values[$module])) {
+ 			return $values[$module][$key];
+ 		} else {
+ 			return false;
+ 		}
  		
  	}
  	

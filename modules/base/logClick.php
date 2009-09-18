@@ -60,7 +60,7 @@ class owa_logClickController extends owa_controller {
 		$c->set('document_id', owa_lib::setStringGuid($this->params['page_url'])); 
 		
 		// Make Target page id
-		$c->set('target_id', owa_lib::setStringGuid($c->get(target_url)));
+		$c->set('target_id', owa_lib::setStringGuid($c->get('target_url')));
 		
 		// Make position id used for group bys
 		$c->set('position', $c->get('click_x').$c->get('click_y'));

@@ -130,6 +130,8 @@ class ini_db extends owa_base {
 	 */
 	function match($haystack) {
 		
+		$needle = '';
+		
 		if (!empty($haystack)):
 		
 			$tmp = '';
