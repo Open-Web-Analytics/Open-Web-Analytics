@@ -1,4 +1,4 @@
-<span id="<?=$dom_id;?>Sparkline"><?=$values;?></span>
+<span id="<?php echo $dom_id;?>Sparkline"><?php echo $values;?></span>
 <script>
-	jQuery('#<?=$dom_id;?>Sparkline').sparkline('html', {width:'<?=$width;?>px', height:'<?=$height;?>px', spotRadius: 3});
+	jQuery('#<?php echo $dom_id;?>Sparkline').sparkline('html', {width:'<?php echo $width;?>px', height:'<?php echo $height;?>px', spotRadius: 3});
 </script>

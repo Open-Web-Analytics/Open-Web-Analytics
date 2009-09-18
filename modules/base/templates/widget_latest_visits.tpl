@@ -1,8 +1,8 @@
-<? if(!empty($visits)):?>
+<?php if(!empty($visits)):?>
 	<?php foreach($visits as $visit): ?>
 		
-	<? include('report_visit_summary.tpl');?>
+	<?php include('report_visit_summary.tpl');?>
 	
 <?php endforeach; ?>
 
-<? endif;?>
+<?php endif;?>

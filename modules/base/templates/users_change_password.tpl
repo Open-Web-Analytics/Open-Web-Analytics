@@ -14,12 +14,12 @@
 		<div id="" style="color:#ffffff; padding:30px; height:200px; text-align:left;" >
 			<form method="POST">    
 				<div class="inline_h2">New Password</div>
-				<INPUT class="owa_largeFormField" type="password" size="20" name="<?=$this->getNs();?>password"><BR><BR>
+				<INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $this->getNs();?>password"><BR><BR>
 				<div class="inline_h2">Re-type your Password</div>
-				<INPUT class="owa_largeFormField" type="password" size="20" name="<?=$this->getNs();?>password2"><BR><BR>
-				<input type="hidden" name="<?=$this->getNs();?>k" value="<?=$key;?>">
-				<input name="<?=$this->getNs();?>action" value="base.usersChangePassword" type="hidden">
-				<INPUT class="owa_largeFormField" type="submit" size="" name="<?=$this->getNs();?>submit_btn" value="Save Your New Password">
+				<INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $this->getNs();?>password2"><BR><BR>
+				<input type="hidden" name="<?php echo $this->getNs();?>k" value="<?php echo $key;?>">
+				<input name="<?php echo $this->getNs();?>action" value="base.usersChangePassword" type="hidden">
+				<INPUT class="owa_largeFormField" type="submit" size="" name="<?php echo $this->getNs();?>submit_btn" value="Save Your New Password">
 			</form>
 		</div>
 	</div>

@@ -8,6 +8,6 @@
 
 <?php include($this->setTemplate('head.tpl'));?>
 
-<?=$body;?>
+<?php echo $body;?>
 
 </div>

@@ -3,17 +3,17 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-		<title>Open Web Analytics - <?=$page_title;?></title>
+		<title>Open Web Analytics - <?php echo $page_title;?></title>
 		<?php include($this->setTemplate('css.tpl'));?>
 		
 		<?php include($this->setTemplate('head.tpl'));?>
 	</head>
 	
 	<body>
-		<!-- <div class="host_app_nav"><img src="<?=$this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div> -->
+		<!-- <div class="host_app_nav"><img src="<?php echo $this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div> -->
 		<div id="header"><? include($this->setTemplate('header.tpl'));?></div>
 		<?php include($this->setTemplate('msgs.tpl'));?>
-		<?=$body;?>
-		<!-- <div class="host_app_nav"><img src="<?=$this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div> -->
+		<?php echo $body;?>
+		<!-- <div class="host_app_nav"><img src="<?php echo $this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div> -->
 	</body>
 </html>

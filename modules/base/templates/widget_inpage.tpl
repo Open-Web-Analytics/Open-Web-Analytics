@@ -1,26 +1,26 @@
-<? include('widget_dom.tpl');?>
+<?php include('widget_dom.tpl');?>
 
-<div id="<?=$widget;?>" class="owa_widget-container" style="width:<? if ($params['width']): echo($params['width'].'px'); else: echo('auto'); endif;?>;">
+<div id="<?php echo $widget;?>" class="owa_widget-container" style="width:<?php if ($params['width']): echo($params['width'].'px'); else: echo('auto'); endif;?>;">
 	
-	<? if($widget_views): ?>
-		<div id="<?=$widget;?>_widget-controls" class="owa_widget-controls">
+	<?php if($widget_views): ?>
+		<div id="<?php echo $widget;?>_widget-controls" class="owa_widget-controls">
 			<?php if ($widget_views_count > 1): ?>
 			<span>Views: </span>
-			<? foreach ($widget_views as $k => $v): ?>
-			<a class="owa_widget-control" href="#<?=$widget;?>_widget-header" name="<?=$k;?>"><?=$v;?></a> / 
-			<? endforeach;?>
+			<?php foreach ($widget_views as $k => $v): ?>
+			<a class="owa_widget-control" href="#<?php echo $widget;?>_widget-header" name="<?php echo $k;?>"><?php echo $v;?></a> / 
+			<?php endforeach;?>
 			<?php endif;?>
 		</div>
-	<? endif; ?>
+	<?php endif; ?>
 	
 	<div class="owa_widget-innercontainer">	
-		<div id="<?=$widget;?>_widget-status" class="owa_widget-status">
-			<img src="<?=$this->makeImageLink("base/i/loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...
+		<div id="<?php echo $widget;?>_widget-status" class="owa_widget-status">
+			<img src="<?php echo $this->makeImageLink("base/i/loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...
 		</div> 
 	
-		<div id="<?=$widget;?>_widget-content" class="owa_widget-content" style="height:<? //$params['height'];?>px;"><?=$subview;?></div>
+		<div id="<?php echo $widget;?>_widget-content" class="owa_widget-content" style="height:<? //$params['height'];?>px;"><?php echo $subview;?></div>
 		
-		<div id="<?=$widget;?>_widget-pagination" class="owa_widget-pagination"></div>
+		<div id="<?php echo $widget;?>_widget-pagination" class="owa_widget-pagination"></div>
 		
 	</div>
 	

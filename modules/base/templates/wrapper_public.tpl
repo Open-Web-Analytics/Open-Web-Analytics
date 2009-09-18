@@ -3,7 +3,7 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-		<title><?=$page_title;?> - Open Web Analytics</title>
+		<title><?php echo $page_title;?> - Open Web Analytics</title>
 	</head>
 	
 	<body>
@@ -14,7 +14,7 @@
 		<table width="100%">
 			<TR>
 				<TD class="">
-					<img src="<?=$this->makeImageLink('base/i/owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"><BR>	
+					<img src="<?php echo $this->makeImageLink('base/i/owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"><BR>	
 				</TD>
 			</TR>
 		</table>
@@ -22,12 +22,12 @@
 	<BR>
 	<?php include($this->setTemplate('msgs.tpl'));?>
 	<BR>
-	<?=$content;?>
-	<?=$body;?>
+	<?php echo $content;?>
+	<?php echo $body;?>
 	
 	<BR><BR>
 	<div style="text-align:center">	
-		<span class="inline_h2">Open Source Web Analytics - v: <?=OWA_VERSION;?></span>
+		<span class="inline_h2">Open Source Web Analytics - v: <?php echo OWA_VERSION;?></span>
 	</div>
 	</body>
 </html>

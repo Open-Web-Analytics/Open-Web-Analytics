@@ -6,10 +6,10 @@
 
 <?php foreach ($modules as $k => $module): ?>
 	
-	<LI><?=$module; ?></LI>
+	<LI><?php echo $module; ?></LI>
 	
-<? endforeach;?>
+<?php endforeach;?>
 
 </UL>
 
-<a href="<?=$this->makeLink(array('do' => 'base.updatesApply'));?>">Apply updates</a>
+<a href="<?php echo $this->makeLink(array('do' => 'base.updatesApply'));?>">Apply updates</a>
