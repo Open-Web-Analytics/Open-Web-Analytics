@@ -425,7 +425,7 @@ class owa_lib {
 		
 		$url = 'http';	
 		
-		if($_SERVER['HTTPS']=='on'):
+		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'):
 			$url.= 's';
 		endif;
 		

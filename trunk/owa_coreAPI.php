@@ -849,9 +849,9 @@ class owa_coreAPI extends owa_base {
 		$params = array();
 		
 		// Apply caller's params to event properties
-		if (!empty($caller_params)):
+		if (!empty($caller_params)) {
 			$params = $caller_params;
-		endif;
+		}
 		
 		// add named user values
 		//$params['user_name'] = $cu->getUserData('user_id');
@@ -860,7 +860,7 @@ class owa_coreAPI extends owa_base {
 		
 		//change config value to incomming site_id
 		// NEEDED HERE?
-		if(array_key_exists('site_id', $caller_params)):
+		if(array_key_exists('site_id', $params)):
 			owa_coreAPI::setSetting('base', 'site_id', $params['site_id'], false);
 		else:
 			$params['site_id'] = owa_coreAPI::getSetting('base', 'site_id');

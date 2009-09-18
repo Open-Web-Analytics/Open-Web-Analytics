@@ -239,7 +239,7 @@ OWA.heatmap.prototype = {
             if( scr_h && off_h ) h=Math.max(scr_h, off_h);
         }
         
-        console.log("doc dims %s %s", w, h);
+        //console.log("doc dims %s %s", w, h);
         
         return {'w': w,'h':h};
     },

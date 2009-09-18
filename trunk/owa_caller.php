@@ -75,7 +75,11 @@ class owa_caller extends owa_base {
 	 * @param array $config
 	 * @return owa_caller
 	 */
-	function __construct($config) {
+	function __construct($config = array()) {
+		
+		if (empty($config)) {
+			$config = array();
+		}
 		
 		// Start time
 		$this->start_time = owa_lib::microtime_float();
@@ -191,11 +195,15 @@ class owa_caller extends owa_base {
 					
 		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
 		
-		if (!defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')):
-			$this->c->set('base', 'do_not_fetch_config_from_db', $config['do_not_fetch_config_from_db']);
-		else:
+		if (!defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')) {
+			
+			if (array_key_exists('do_not_fetch_config_from_db', $config)) {
+				$this->c->set('base', 'do_not_fetch_config_from_db', $config['do_not_fetch_config_from_db']);
+			}
+			
+		} else {
 			$this->c->set('base', 'do_not_fetch_config_from_db', OWA_CONFIG_DO_NOT_FETCH_FROM_DB);
-		endif;		
+		}		
 		
 		// Applies config from db or cache
 		// check here is needed for installs when the configuration table does not exist.

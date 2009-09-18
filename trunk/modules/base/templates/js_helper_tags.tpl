@@ -1,6 +1,6 @@
 <!-- OWA Helper Tag Tags -->
 
-<? if ($first_hit_tag === true):?>
+<?php if (isset($first_hit_tag) && $first_hit_tag === true):?>
 
 <script type="text/javascript">
 //<![CDATA[
@@ -8,7 +8,7 @@ document.write('<img src="<?=$this->makeAbsolutelink(array('action' => 'base.pro
 //]]>
 </script>
 
-<? endif;?>
+<?php endif;?>
 
 
 <script type="text/javascript">
@@ -20,7 +20,7 @@ document.write('<img src="<?=$this->makeAbsolutelink(array('action' => 'base.pro
 
 
 
-<? if ($click_tag === true):?>
+<?php if ($click_tag === true):?>
 
 <script type="text/javascript">
 // OWA click logging event bindings
@@ -55,4 +55,4 @@ window.attachEvent('beforeunload', owa_logClick);
 
 <div id="owa_click_bug"></div>
  						
-<? endif;?>
+<?php endif;?>
