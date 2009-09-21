@@ -499,6 +499,11 @@ class owa_controller extends owa_base {
 		return owa_lib::redirectBrowser($new_url);
 		
 	}
+	
+	function redirectBrowserToUrl($url) {
+		
+		return owa_lib::redirectBrowser($url);
+	}
 
 	
 }
