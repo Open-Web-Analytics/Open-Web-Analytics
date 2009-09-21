@@ -89,6 +89,10 @@ OWA.logger = function(caller_params) {
 	if (typeof caller_params != 'undefined') {
 		this.page.merge(caller_params);
 	}
+	var p = OWA.util.readCookie('owa_overlay');
+	if (p) {
+		this.loadHeatmap();
+	}
 	
 }
 
@@ -799,8 +803,21 @@ OWA.logger.prototype = {
 	
 	loadPlayer : function(stream) {
 		this.pause();
-		this.player = new OWA.streamPlayer();
+		this.player = new OWA.player();
 		this.player.load(this.event_queue);
+	},
+	
+	loadHeatmap: function() {
+		this.pause();
+		OWA.util.loadScript('owa/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
+		OWA.util.loadCss('owa/modules/base/css/owa.overlay.css', function(){});
+		OWA.util.loadScript('owa/modules/base/js/owa.heatmap.js', function(){
+			var hm = new OWA.heatmap();
+			hm.options.demoMode = true;
+			hm.options.liveMode = true;
+			hm.generate();
+			
+		});	
 	}
 	
 }

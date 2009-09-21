@@ -49,7 +49,7 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		
 		$this->data['title'] = 'Recent Visits';
 		
-		$this->e->debug(sprintf("start: %s, end: %s, Now: %s", date("F j, Y, g:i:s a", $this->params['start_time']), date("F j, Y, g:i:s a"), date("F j, Y, g:i:s a", time())));
+		//$this->e->debug(sprintf("start: %s, end: %s, Now: %s", date("F j, Y, g:i:s a", $this->params['start_time']), date("F j, Y, g:i:s a"), date("F j, Y, g:i:s a", time())));
 		
 		$data['params'] = $this->params;
 		
@@ -57,6 +57,7 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		$m = owa_coreApi::metricFactory('base.latestVisits');
 		$m->setConstraint('site_id', $this->params['site_id']);
 		$m->setPeriod($this->getPeriod());
+		//print_r($this->getPeriod());
 		$m->setOrder(OWA_SQL_DESCENDING); 
 		$m->setLimit(15);
 		$results = $m->generate();

@@ -31,6 +31,9 @@
 			<P>
 				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportClicks'), true);?>">Click Analysis</a></span> - See which part of the document are being clicked on.
 			</P>
+			<P>
+				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'url' => urlencode($detail['url']), 'overlay_action' => 'heatmap'), true);?>">Overlay</a></span>
+			</P>
 					
 		</TD>
 		</TR>

@@ -1,11 +1,11 @@
-OWA.streamPlayer = function() {
+OWA.player = function() {
 	
 	this.animate_interval = 150;
 	this.showPlayerControls();
 	
 }
 
-OWA.streamPlayer.prototype = {
+OWA.player.prototype = {
 	
 	timer : null,
 	queue_step : 1,
