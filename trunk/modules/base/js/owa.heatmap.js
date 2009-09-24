@@ -46,10 +46,15 @@ OWA.heatmap.prototype = {
 		jQuery('body').append('<div id="owa_overlay"></div>');
 		jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
 		jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_start">Start</div>');
+		jQuery('#owa_overlay_start').toggleClass('active');
 		jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_stop">Stop</div>');
-		jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_end">End</div>');
+		jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_end">X</div>');
 		jQuery('#owa_overlay_start').click(function(){that.startTimer()});
 		jQuery('#owa_overlay_stop').click(function(){that.stopTimer()});
+		jQuery('.owa_overlay_control').bind('click', function(){
+			jQuery(".owa_overlay_control").removeClass('active');
+			jQuery(this).addClass('active');
+		});
 		jQuery('#owa_overlay_end').click(function(){that.endSession()});
 	},
 	
