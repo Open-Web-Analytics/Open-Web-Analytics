@@ -172,24 +172,14 @@ class owa_db_mysql extends owa_db {
 	
 		$num_rows = 0;
 		
-		while ( $row = @mysql_fetch_object($this->new_result) ) {
+		while ( $row = @mysql_fetch_assoc($this->new_result) ) {
 			$this->result[$num_rows] = $row;
 			$num_rows++;
 		}
 		
 		if ($this->result):
-			$i = 0;
-			$new_array = array();
-			foreach($this->result as $row ) {
-				
-				// Hook for caching goes here
-				print_r($this->result);
-				$new_array[$i] = $row;
-				$i++;
-			}
-			
-			
-			return $new_array;
+					
+			return $this->result;
 			
 		else:
 			return null;
