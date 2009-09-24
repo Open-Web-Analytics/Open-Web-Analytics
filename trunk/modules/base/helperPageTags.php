@@ -125,10 +125,10 @@ class owa_helperPageTagsView extends owa_view {
 		
 		// load body template
 		$this->body->set_template('js_helper_tags.tpl');
-		$this->setJs('owa.js');
-		$this->setJs('includes/url_encode.js');
-		$this->setJs('owa.logger.js');
-		owa_coreAPI::debug('hello from help page tags view');
+		$this->setJs('owa', 'base/js/owa.js');
+		$this->setJs('url_encode', 'base/js/includes/url_encode.js');
+		$this->setJs('owa.logger', 'base/js/owa.logger.js');
+		//owa_coreAPI::debug('hello from help page tags view');
 		return;
 	}
 	
