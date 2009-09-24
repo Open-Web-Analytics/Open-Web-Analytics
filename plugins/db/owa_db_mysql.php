@@ -179,11 +179,12 @@ class owa_db_mysql extends owa_db {
 		
 		if ($this->result):
 			$i = 0;
+			$new_array = array();
 			foreach($this->result as $row ) {
 				
 				// Hook for caching goes here
-				
-				$new_array[$i] = (array) $row;
+				print_r($this->result);
+				$new_array[$i] = $row;
 				$i++;
 			}
 			
