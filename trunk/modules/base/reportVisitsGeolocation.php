@@ -112,8 +112,8 @@ class owa_reportVisitsGeolocationView extends owa_view {
 		// Assign data to templates
 		$this->body->set_template('report_geolocation.tpl');
 		$this->body->set('latest_visits', $this->get('latest_visits'));
-		$this->setjs('includes/jquery/jquery.jmap-r72.js');
-		$this->setjs('owa.map.js');
+		$this->setjs('jmaps', 'base/js/includes/jquery/jquery.jmap-r72.js');
+		$this->setjs('owa.map', 'base/js/owa.map.js');
 		//$this->setjs('includes/markermanager.js');
 		
 		return;
