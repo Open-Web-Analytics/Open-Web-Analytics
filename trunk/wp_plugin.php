@@ -28,7 +28,7 @@ Author URI: http://www.openwebanalytics.com
 require_once('owa_env.php');
 
 // Public folder URI
-define('OWA_PUBLIC_URL', get_bloginfo('url').'/wp-content/plugins/owa/public/');
+define('OWA_PUBLIC_URL', get_bloginfo('url').'/wp-content/plugins/owa/');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
@@ -283,10 +283,15 @@ function owa_get_page_type() {
 	
 	if (is_home()):
 		$type = "Home";
-	elseif (is_single()):
-		$type = "Post";
+	elseif (is_attachment()):
+		$type = "Attachment";
 	elseif (is_page()):
 		$type = "Page";
+	// general page catch, should be after more specific post types	
+	elseif (is_single()):
+		$type = "Post";
+	elseif (is_feed()):
+		$type = "Feed";
 	elseif (is_author()):
 		$type = "Author";
 	elseif (is_category()):
@@ -301,10 +306,13 @@ function owa_get_page_type() {
 		$type = "Year";
 	elseif (is_time()):
 		$type = "Time";
+	elseif (is_tag()):
+		$type = "Tag";
+	elseif (is_tax()):
+		$type = "Taxonomy";
+	// general archive catch, should be after specific archive types	
 	elseif (is_archive()):
 		$type = "Archive";
-	elseif (is_feed()):
-		$type = "Feed";
 	endif;
 	
 	return $type;
