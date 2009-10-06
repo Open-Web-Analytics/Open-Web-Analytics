@@ -15,7 +15,7 @@
 //
 
 /**
- * Javascript Logger Library
+ * Javascript Tracker Library
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -26,13 +26,6 @@
  * @since		owa 1.0.0
  */
  
-/*
-OWA.event = function() {
-	this.id = Math.random();
-	this.element= null; 
-	this.colIndex= 0; 
-};
-*/
 
 OWA.event = function() {
 	this.properties = new Object();
@@ -80,7 +73,7 @@ OWA.event.prototype = {
 	}
 
 
-OWA.logger = function(caller_params) {
+OWA.tracker = function(caller_params) {
 	this.page = new OWA.event();
 	this.startTime = this.getTimestamp();
     this.page.set('page_url', document.URL);
@@ -96,7 +89,7 @@ OWA.logger = function(caller_params) {
 	
 }
 
-OWA.logger.prototype = {
+OWA.tracker.prototype = {
 
 	id : '',
 	siteId : '',
@@ -199,7 +192,7 @@ OWA.logger.prototype = {
 	/**
 	 * Logs a page view event
 	 */
-	logPageView : function() {
+	trackPageView : function() {
 		
 		this.page.setEventType("base.page_request");	
 		return this.logEvent(this.page.getProperties());
@@ -329,7 +322,7 @@ OWA.logger.prototype = {
     				value = properties[param]+'';
     			}
     			
-    			value = Url.encode(value);
+    			//value = Url.encode(value);
     	
 	    	} else {
     	
