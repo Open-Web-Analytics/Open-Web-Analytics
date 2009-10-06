@@ -83,6 +83,12 @@
 		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[p3p_policy]" value="<?php echo $config['p3p_policy']?>"></div>
 	</div>
 	
+	<div class="setting" id="url_params">	
+		<div class="title">URL Parameters</div>
+		<div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[query_string_filters]" value="<?php echo $config['query_string_filters']?>"></div>
+	</div>
+	
     </fieldset>
     
     <BR>
