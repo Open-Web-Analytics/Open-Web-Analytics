@@ -104,13 +104,11 @@ $request = http_get_request_headers();
 		// load body template
 		$this->body->set_template('js_logger.tpl');
 		// load body template
-		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.3.2.min.js');
 		$this->setJs('json2', 'base/js/includes/json2.js');
 		$this->setJs('lazyload', 'base/js/includes/lazyload-2.0.min.js');
 		$this->setJs('owa', 'base/js/owa.js');
-		$this->setJs('url_encode', 'base/js/includes/url_encode.js');
-		$this->setJs('owa.logger', 'base/js/owa.logger.js');
-		//$this->setJs('owa.player', 'base/js/owa.player.js');
+		//$this->setJs('url_encode', 'base/js/includes/url_encode.js');
+		$this->setJs('owa.tracker', 'base/js/owa.logger.js');
 		$this->concatinateJs();
 		/*
 		header('Cache-Control: public');
