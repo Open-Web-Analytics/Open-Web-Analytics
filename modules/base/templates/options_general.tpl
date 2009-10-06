@@ -80,13 +80,13 @@
 	<div class="setting" id="p3p_policy">	
 		<div class="title">P3P Compact Privacy Policy</div>
 		<div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="http://www.p3pwriter.com/LRN_111.asp">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
-		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[p3p_policy]" value="<?php echo $config['p3p_policy']?>"></div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[p3p_policy]" value="<?php echo $config['p3p_policy'];?>"></div>
 	</div>
 	
 	<div class="setting" id="url_params">	
 		<div class="title">URL Parameters</div>
 		<div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>
-		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[query_string_filters]" value="<?php echo $config['query_string_filters']?>"></div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[query_string_filters]" value="<?php echo $config['query_string_filters'];?>"></div>
 	</div>
 	
     </fieldset>
