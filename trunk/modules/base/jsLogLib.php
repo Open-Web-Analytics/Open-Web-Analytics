@@ -108,7 +108,7 @@ $request = http_get_request_headers();
 		$this->setJs('lazyload', 'base/js/includes/lazyload-2.0.min.js');
 		$this->setJs('owa', 'base/js/owa.js');
 		//$this->setJs('url_encode', 'base/js/includes/url_encode.js');
-		$this->setJs('owa.tracker', 'base/js/owa.logger.js');
+		$this->setJs('owa.tracker', 'base/js/owa.tracker.js');
 		$this->concatinateJs();
 		/*
 		header('Cache-Control: public');
