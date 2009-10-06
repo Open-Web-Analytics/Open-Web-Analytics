@@ -210,7 +210,7 @@ class owa_entity {
 		
 		// Add to Cache
 		if ($status == true) {
-			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				$this->addToCache();
 			}
 		}
@@ -232,7 +232,7 @@ class owa_entity {
 	function update($where = '') {	
 		
 		$db = owa_coreAPI::dbSingleton();	
-		$db->updateTable(get_class($this));
+		$db->updateTable($this->getTableName());
 		
 		// get column list
 		$all_cols = $this->getColumns();
@@ -257,10 +257,9 @@ class owa_entity {
 		
 		// Persist object
 		$status = $db->executeQuery();
-
 		// Add to Cache
-		if ($status == true) {
-			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+		if ($status === true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				$this->addToCache();
 			}
 		}
@@ -298,7 +297,7 @@ class owa_entity {
 		$status = $db->executeQuery();
 		// Add to Cache
 		if ($status == true) {
-			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				$this->addToCache();
 			}
 		}
@@ -325,7 +324,7 @@ class owa_entity {
 	
 		// Add to Cache
 		if ($status == true){
-			if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				if ($this->isCachable()) {
 					$cache = owa_coreAPI::cacheSingleton();
 					$cache->remove(get_class($this), 'id'.$this->id->value);
@@ -353,7 +352,7 @@ class owa_entity {
 				
 		$cache_obj = '';
 		
-		if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+		if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 			$cache = owa_coreAPI::cacheSingleton();
 			$cache_obj = $cache->get($this->getTableName(), $col.$value);
 		}
@@ -375,7 +374,7 @@ class owa_entity {
 					
 				$this->setProperties($properties);
 				
-				if (owa_coreAPI::getSetting('base', 'cache_objects') == true) {
+				if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 		
 					$this->addToCache();
 				}
