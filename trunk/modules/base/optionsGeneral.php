@@ -80,7 +80,6 @@ class owa_optionsGeneralController extends owa_adminController {
 		parent::__construct($params);
 		$this->type = 'options';
 		$this->setRequiredCapability('edit_settings');
-		
 		return;
 	}
 	

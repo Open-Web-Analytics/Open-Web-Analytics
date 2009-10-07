@@ -181,12 +181,12 @@ class owa_entityManager extends owa_base {
 	
 	function set($name, $value) {
 		
-		return $this->entity->$name->value = $value;
+		return $this->entity->set($name, $value);
 	}
 	
 	function get($name) {
 		
-		return $this->entity->$name->value;
+		return $this->entity->get($name);
 	}
 	
 	function _getProperties() {
@@ -219,7 +219,7 @@ class owa_entityManager extends owa_base {
 		
 		$values = $this->entity->getColumns();
 		
-		$primary_obj_ns = $db->removeNs(get_class($this->entity));
+		$primary_obj_ns = $db->removeNs($this->entity->getTableName());
 		
 		foreach ($values as $k => $v) {
 			
@@ -231,7 +231,7 @@ class owa_entityManager extends owa_base {
 			
 		}
 		
-		$db->selectFrom(get_class($this->entity), $ns);
+		$db->selectFrom($this->entity->getTableName(), $ns);
 
 		// add related objects
 		if(!empty($params['related_objs'])):

@@ -29,54 +29,96 @@
  */
 
 class owa_click extends owa_entity {
-	
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $last_impression_id = array('data_type' => OWA_DTD_BIGINT); //BIGINT,
-	var $visitor_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $session_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $document_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $target_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $target_url = array('data_type' => OWA_DTD_BIGINT); // VARCHAR(255),
-	var $timestamp = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $year = array('data_type' => OWA_DTD_INT); // INT,
-	var $month = array('data_type' => OWA_DTD_INT); // INT,
-	var $day = array('data_type' => OWA_DTD_INT); // INT,
-	var $dayofyear = array('data_type' => OWA_DTD_INT); // INT,
-	var $weekofyear = array('data_type' => OWA_DTD_INT); // INT,
-	var $hour = array('data_type' => OWA_DTD_TINYINT2); // TINYINT(2),
-	var $minute = array('data_type' => OWA_DTD_TINYINT2); // TINYINT(2),
-	var $second = array('data_type' => OWA_DTD_INT); // INT,
-	var $msec = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $click_x = array('data_type' => OWA_DTD_INT); // INT,
-	var $click_y = array('data_type' => OWA_DTD_INT); // INT,
-	var $page_width = array('data_type' => OWA_DTD_INT); // INT,
-	var $page_height = array('data_type' => OWA_DTD_INT); // INT,
-	var $position = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $approx_position = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $dom_element_x = array('data_type' => OWA_DTD_INT); // INT,
-	var $dom_element_y = array('data_type' => OWA_DTD_INT); // INT,
-	var $dom_element_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $dom_element_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $dom_element_value = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $dom_element_tag = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $dom_element_text = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $tag_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $placement_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $campaign_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $ad_group_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $ad_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $site_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $ua_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $ip_address = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $host_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	
+		
 	function owa_click() {
 		
-		$this->owa_entity();
+		return owa_click::__construct();
+	}
+	
+	function __construct() {
 		
-		return;
-			
+		$this->setTableName('click');
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['last_impression_id'] = new owa_dbColumn;
+		$this->properties['last_impression_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['visitor_id'] = new owa_dbColumn;
+		$this->properties['visitor_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['session_id'] = new owa_dbColumn;
+		$this->properties['session_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['document_id'] = new owa_dbColumn;
+		$this->properties['document_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['target_id'] = new owa_dbColumn;
+		$this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['target_url'] = new owa_dbColumn;
+		$this->properties['target_url']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['timestamp'] = new owa_dbColumn;
+		$this->properties['timestamp']->setDataType(OWA_DTD_INT);
+		$this->properties['year'] = new owa_dbColumn;
+		$this->properties['year']->setDataType(OWA_DTD_INT);
+		$this->properties['month'] = new owa_dbColumn;
+		$this->properties['month']->setDataType(OWA_DTD_INT);
+		$this->properties['day'] = new owa_dbColumn;
+		$this->properties['day']->setDataType(OWA_DTD_INT);
+		$this->properties['dayofyear'] = new owa_dbColumn;
+		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['weekofyear'] = new owa_dbColumn;
+		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['hour'] = new owa_dbColumn;
+		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['minute'] = new owa_dbColumn;
+		$this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['second'] = new owa_dbColumn;
+		$this->properties['second']->setDataType(OWA_DTD_INT);
+		$this->properties['msec'] = new owa_dbColumn;
+		$this->properties['msec']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['click_x'] = new owa_dbColumn;
+		$this->properties['click_x']->setDataType(OWA_DTD_INT);
+		$this->properties['click_y'] = new owa_dbColumn;
+		$this->properties['click_y']->setDataType(OWA_DTD_INT);
+		$this->properties['page_width'] = new owa_dbColumn;
+		$this->properties['page_width']->setDataType(OWA_DTD_INT);
+		$this->properties['page_height'] = new owa_dbColumn;
+		$this->properties['page_height']->setDataType(OWA_DTD_INT);
+		$this->properties['position'] = new owa_dbColumn;
+		$this->properties['position']->setDataType(OWA_DTD_INT);
+		$this->properties['approx_position'] = new owa_dbColumn;
+		$this->properties['approx_position']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['dom_element_x'] = new owa_dbColumn;
+		$this->properties['dom_element_x']->setDataType(OWA_DTD_INT);
+		$this->properties['dom_element_y'] = new owa_dbColumn;
+		$this->properties['dom_element_y']->setDataType(OWA_DTD_INT);
+		$this->properties['dom_element_name'] = new owa_dbColumn;
+		$this->properties['dom_element_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['dom_element_id'] = new owa_dbColumn;
+		$this->properties['dom_element_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['dom_element_value'] = new owa_dbColumn;
+		$this->properties['dom_element_value']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['dom_element_tag'] = new owa_dbColumn;
+		$this->properties['dom_element_tag']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['dom_element_text'] = new owa_dbColumn;
+		$this->properties['dom_element_text']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['tag_id'] = new owa_dbColumn;
+		$this->properties['tag_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['placement_id'] = new owa_dbColumn;
+		$this->properties['placement_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['campaign_id'] = new owa_dbColumn;
+		$this->properties['campaign_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['ad_group_id'] = new owa_dbColumn;
+		$this->properties['ad_group_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['ad_id'] = new owa_dbColumn;
+		$this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['site_id'] = new owa_dbColumn;
+		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['ua_id'] = new owa_dbColumn;
+		$this->properties['ua_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['ip_address'] = new owa_dbColumn;
+		$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['host'] = new owa_dbColumn;
+		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['host_id'] = new owa_dbColumn;
+		$this->properties['host_id']->setDataType(OWA_DTD_VARCHAR255);
 	}
 	
 	

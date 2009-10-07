@@ -80,6 +80,18 @@ class owa_dbColumn {
  		return;
  	}
  	
+ 	function getValue() {
+ 	
+ 		return $this->value;
+ 	}
+ 	
+ 	function setValue($value) {
+ 	
+ 		$this->value = $value;
+ 		
+ 		return;
+ 	}
+ 	
  	function getDefinition() {
  	
  		$definition = '';
