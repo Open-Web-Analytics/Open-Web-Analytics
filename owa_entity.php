@@ -39,14 +39,17 @@ class owa_entity {
 	
 	function __construct() {
 		
-		$vars = $this->getColumns();
+		// for old style entities
+		if (empty($this->properties)) {
+			$vars = $this->getColumns();
 		
-		foreach ($vars as $k => $v) {
-			
-			$this->$v = new owa_dbColumn($this->$v);
-			$this->$v->set('name', $v);
+			foreach ($vars as $k => $v) {
+				
+				$this->$v = new owa_dbColumn($this->$v);
+				$this->$v->set('name', $v);
+			}
 		}
-		
+			
 		return;
 	}
 		
@@ -57,16 +60,20 @@ class owa_entity {
 	
 	function _getProperties() {
 		
-		$vars = get_object_vars($this);
-		
 		$properties = array();
 		
-		foreach ($vars as $k => $v) {
-			
-			$properties[$k] = $v->value;
-			
+		if (!empty($this->properties)) {
+			$vars = $this->properties;
+		} else {
+			$vars = get_object_vars($this);
 		}
 		
+		foreach ($vars as $k => $v) {
+				
+			$properties[$k] = $v->getValue();
+				
+		}
+
 		return $properties;	
 	}
 	
@@ -129,10 +136,15 @@ class owa_entity {
 		
 		foreach ($properties as $k => $v) {
 				
-				if (!empty($array[$v])):
-					$this->$v->value = $array[$v];
-					//print $this->getTableName().$v.':'.$this->$v->value;
-				endif;
+				if (!empty($array[$v])) {
+					if (!empty($this->properties)) {
+						$this->properties[$v]->setValue($array[$v]);
+					} else {
+						// old style entities
+						$this->$v->setValue($array[$v]);
+					}
+						
+				}
 				
 			}
 		
@@ -147,27 +159,27 @@ class owa_entity {
 	
 	function set($name, $value) {
 		
-		return $this->$name->value = $value;
+		if (!empty($this->properties)) {
+			$this->properties[$name]->setValue($value);
+		} else {
+			// old style entities
+			$this->$name->setValue($value);
+		}
 	}
 	
-	
+	// depricated
 	function setValues($values) {
 		
-		$properties = array_keys(get_object_vars($this));
-		
-		foreach ($properties as $k => $v) {
-				
-				$this->$v->value = $values[$v];
-		
-			}
-		
-		return;
-		
+		return $this->setProperties($values);
 	}
 	
 	function get($name) {
-		
-		return $this->$name->value;
+		if (!empty($this->properties)) {
+			return $this->properties[$name]->getValue();
+		} else {
+			// old style entities
+			return $this->$name->getValue();
+		}
 	}
 	
 	function getTableOptions() {
@@ -221,7 +233,7 @@ class owa_entity {
 		
 		if($this->isCachable()) {
 			$cache = owa_coreAPI::cacheSingleton();
-			$cache->set($this->getTableName(), 'id'.$this->id->value, $this);
+			$cache->set($this->getTableName(), 'id'.$this->get('id'), $this);
 		}
 	}
 	
@@ -241,7 +253,8 @@ class owa_entity {
 		foreach ($all_cols as $k => $v){
 		
 			// drop column is it is marked as auto-incement as DB will take care of that.
-			if (!empty($this->$v->value)):
+			
+			if ($this->get($v)):
 				$db->set($v, $this->get($v));
 			endif;
 				
@@ -278,11 +291,11 @@ class owa_entity {
 	function partialUpdate($named_properties, $where) {
 		
 		$db = owa_coreAPI::dbSingleton();		
-		$db->updateTable(get_class($this));
+		$db->updateTable($this->getTableName());
 		
 		foreach ($named_properties as $v) {
 			
-			if (!empty($this->$v->value)){
+			if ($this->get($v)){
 				$db->set($v, $this->get($v));
 			}
 		}
@@ -312,7 +325,7 @@ class owa_entity {
 	function delete($value = '', $col = 'id') {	
 		
 		$db = owa_coreAPI::dbSingleton();	
-		$db->deleteFrom(get_class($this));
+		$db->deleteFrom($this->getTableName());
 		
 		if (empty($value)) {
 			$value = $this->get('id');
@@ -327,7 +340,7 @@ class owa_entity {
 			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				if ($this->isCachable()) {
 					$cache = owa_coreAPI::cacheSingleton();
-					$cache->remove(get_class($this), 'id'.$this->id->value);
+					$cache->remove($this->getTableName(), 'id'.$this->get('id'));
 				}
 			}
 		}
@@ -532,7 +545,7 @@ class owa_entity {
 	function getColumnDefinition($column_name) {
 	
 		if (empty($this->properties)) {
-			return $this->entity->$column_name->getDefinition();
+			return $this->$column_name->getDefinition();
 		} else {
 			return $this->properties[$column_name]->getDefinition();
 		}
