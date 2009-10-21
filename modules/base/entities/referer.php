@@ -29,7 +29,8 @@
  */
 
 class owa_referer extends owa_entity {
-	
+	/*
+
 	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
 	var $url = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
 	var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
@@ -40,13 +41,38 @@ class owa_referer extends owa_entity {
 	var $snippet = array('data_type' => OWA_DTD_TEXT); // TEXT,
 	var $is_searchengine = array('data_type' => OWA_DTD_TINYINT); // tinyint(1),
 
+	*/
 	
 	function owa_referer() {
-		
-		$this->owa_entity();
-		
-		return;
 			
+		return owa_referer::__construct();		
+	}
+	
+	function __construct() {
+		
+		$this->setTableName('referer');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['url'] = new owa_dbColumn;
+		$this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['site_name'] = new owa_dbColumn;
+		$this->properties['site_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['site'] = new owa_dbColumn;
+		$this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['query_terms'] = new owa_dbColumn;
+		$this->properties['query_terms']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['refering_anchortext'] = new owa_dbColumn;
+		$this->properties['refering_anchortext']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['page_title'] = new owa_dbColumn;
+		$this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['snippet'] = new owa_dbColumn;
+		$this->properties['snippet']->setDataType(OWA_DTD_TEXT);
+		$this->properties['is_searchengine'] = new owa_dbColumn;
+		$this->properties['is_searchengine']->setDataType(OWA_DTD_TINYINT);
+
 	}
 	
 	

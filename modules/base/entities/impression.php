@@ -29,7 +29,8 @@
  */
 
 class owa_impression extends owa_entity {
-	
+	/*
+
 	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
 	var $visitor_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
 	var $session_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
@@ -56,12 +57,67 @@ class owa_impression extends owa_entity {
 	var $host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	var $host_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	
+	*/
 	function owa_impression() {
-		
-			$this->owa_entity();
 			
-		return;
-			
+		return owa_impression::__construct();	
+	}
+	
+	function __construct() {
+	
+		$this->setTableName('impression');
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['visitor_id'] = new owa_dbColumn;
+		$this->properties['visitor_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['session_id'] = new owa_dbColumn;
+		$this->properties['session_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['tag_id'] = new owa_dbColumn;
+		$this->properties['tag_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['placement_id'] = new owa_dbColumn;
+		$this->properties['placement_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['campaign_id'] = new owa_dbColumn;
+		$this->properties['campaign_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['ad_group_id'] = new owa_dbColumn;
+		$this->properties['ad_group_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['ad_id'] = new owa_dbColumn;
+		$this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['site_id'] = new owa_dbColumn;
+		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['last_impression_id'] = new owa_dbColumn;
+		$this->properties['last_impression_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_impression_timestamp'] = new owa_dbColumn;
+		$this->properties['last_impression_timestamp']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['timestamp'] = new owa_dbColumn;
+		$this->properties['timestamp']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['year'] = new owa_dbColumn;
+		$this->properties['year']->setDataType(OWA_DTD_INT);
+		$this->properties['month'] = new owa_dbColumn;
+		$this->properties['month']->setDataType(OWA_DTD_INT);
+		$this->properties['day'] = new owa_dbColumn;
+		$this->properties['day']->setDataType(OWA_DTD_INT);
+		$this->properties['dayofyear'] = new owa_dbColumn;
+		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['weekofyear'] = new owa_dbColumn;
+		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['hour'] = new owa_dbColumn;
+		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['minute'] = new owa_dbColumn;
+		$this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['msec'] = new owa_dbColumn;
+		$this->properties['msec']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['url'] = new owa_dbColumn;
+		$this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['ua_id'] = new owa_dbColumn;
+		$this->properties['ua_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['ip_address'] = new owa_dbColumn;
+		$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['host_id'] = new owa_dbColumn;
+		$this->properties['host_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['host'] = new owa_dbColumn;
+		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
 	}
 	
 	
