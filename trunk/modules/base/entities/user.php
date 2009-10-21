@@ -47,7 +47,7 @@ class owa_user extends owa_entity {
 		return owa_user::__construct();		
 	}
 	
-	function __consruct() {
+	function __construct() {
 	
 		$this->setTableName('user');
 		$this->setCachable();
