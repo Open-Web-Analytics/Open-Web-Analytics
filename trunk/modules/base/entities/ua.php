@@ -29,22 +29,35 @@
  */
 
 class owa_ua extends owa_entity {
-	
+	/*
+
 	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
 	var $ua = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
 	var $browser_type = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
 	var $browser = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	
+	*/
 	function owa_ua() {
 		
-		$this->owa_entity();
-		
-		return;
-			
+		return owa_ua::__construct();
 	}
 	
-	
-	
+	function __construct() {
+		
+		$this->setTableName('ua');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['ua'] = new owa_dbColumn;
+		$this->properties['ua']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['browser_type'] = new owa_dbColumn;
+		$this->properties['browser_type']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['browser'] = new owa_dbColumn;
+		$this->properties['browser']->setDataType(OWA_DTD_VARCHAR255);
+
+	}
 }
 
 

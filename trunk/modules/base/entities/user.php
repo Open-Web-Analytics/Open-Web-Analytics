@@ -29,7 +29,8 @@
  */
 
 class owa_user extends owa_entity {
-	
+	/*
+
 	var $id = array('data_type' => OWA_DTD_SERIAL, 'auto_increment' => true); // SERIAL,
 	var $user_id = array('data_type' => OWA_DTD_VARCHAR255, 'is_primary_key' => true); // varchar(255),
 	var $password = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
@@ -40,15 +41,37 @@ class owa_user extends owa_entity {
 	var $creation_date = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
 	var $last_update_date = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
 	
-	
+	*/
 	function owa_user() {
 		
-		$this->owa_entity();
-		
-		//$this->id->set('auto_increment', true);
-		
-		return;
-			
+		return owa_user::__construct();		
+	}
+	
+	function __consruct() {
+	
+		$this->setTableName('user');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_SERIAL);
+		$this->properties['id']->setAutoIncrement();
+		$this->properties['user_id'] = new owa_dbColumn;
+		$this->properties['user_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['user_id']->setPrimaryKey();
+		$this->properties['password'] = new owa_dbColumn;
+		$this->properties['password']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['role'] = new owa_dbColumn;
+		$this->properties['role']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['real_name'] = new owa_dbColumn;
+		$this->properties['real_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['email_address'] = new owa_dbColumn;
+		$this->properties['email_address']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['temp_passkey'] = new owa_dbColumn;
+		$this->properties['temp_passkey']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['creation_date'] = new owa_dbColumn;
+		$this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_update_date'] = new owa_dbColumn;
+		$this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
 	}
 	
 	

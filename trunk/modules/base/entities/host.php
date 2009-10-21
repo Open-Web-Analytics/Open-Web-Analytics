@@ -30,23 +30,43 @@
 
 class owa_host extends owa_entity {
 	
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $ip_address = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $full_host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $city = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $country = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $latitude = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $longitude = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	//var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
+	//var $ip_address = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $full_host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $city = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	//var $country = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	//var $latitude = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
+	//var $longitude = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
 	
 	function owa_host() {
 		
-		$this->owa_entity();
-		
-		return;
-			
+		return owa_host::__construct();
 	}
 	
+	function __construct() {
+		
+		$this->setTableName('host');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['ip_address'] = new owa_dbColumn;
+		$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['host'] = new owa_dbColumn;
+		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['full_host'] = new owa_dbColumn;
+		$this->properties['full_host']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['city'] = new owa_dbColumn;
+		$this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['country'] = new owa_dbColumn;
+		$this->properties['country']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['latitude'] = new owa_dbColumn;
+		$this->properties['latitude']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['longitude'] = new owa_dbColumn;
+		$this->properties['longitude']->setDataType(OWA_DTD_VARCHAR255);
+	}
 	
 	
 }

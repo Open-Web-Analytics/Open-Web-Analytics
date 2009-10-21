@@ -47,14 +47,44 @@ class owa_visitor extends owa_entity {
 	
 	function owa_visitor() {
 		
-			$this->owa_entity();
-			
-		return;
-			
+		return owa_visitor::__construct();		
 	}
 	
+	function __construct() {
 	
-	
+		$this->setTableName('vsitor');
+		//$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['user_name'] = new owa_dbColumn;
+		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['user_email'] = new owa_dbColumn;
+		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['first_session_id'] = new owa_dbColumn;
+		$this->properties['first_session_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['first_session_year'] = new owa_dbColumn;
+		$this->properties['first_session_year']->setDataType(OWA_DTD_INT);
+		$this->properties['first_session_month'] = new owa_dbColumn;
+		$this->properties['first_session_month']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['first_session_day'] = new owa_dbColumn;
+		$this->properties['first_session_day']->setDataType(OWA_DTD_INT);
+		$this->properties['first_session_dayofyear'] = new owa_dbColumn;
+		$this->properties['first_session_dayofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['timestamp'] = new owa_dbColumn;
+		$this->properties['timestamp']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_session_id'] = new owa_dbColumn;
+		$this->properties['last_session_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_session_year'] = new owa_dbColumn;
+		$this->properties['last_session_year']->setDataType(OWA_DTD_INT);
+		$this->properties['last_session_month'] = new owa_dbColumn;
+		$this->properties['last_session_month']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['last_session_day'] = new owa_dbColumn;
+		$this->properties['last_session_day']->setDataType(OWA_DTD_INT);
+		$this->properties['last_session_dayofyear'] = new owa_dbColumn;
+		$this->properties['last_session_dayofyear']->setDataType(OWA_DTD_INT);
+	}
 }
 
 

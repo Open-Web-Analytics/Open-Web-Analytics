@@ -41,7 +41,7 @@ class owa_entityManager extends owa_base {
 	function __construct($entity_name) {
 		//print "hello from emanager constructor";
 		$this->owa_base();
-		$this->db = &owa_coreAPI::dbSingleton();
+		//$this->db = &owa_coreAPI::dbSingleton();
 		$this->cache = &owa_coreAPI::cacheSingleton(); 
 		$this->cache->setCacheDir(OWA_CACHE_DIR);
 		$this->cache->setNonPersistantCollection('owa_session');

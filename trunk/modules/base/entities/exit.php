@@ -30,19 +30,37 @@
 
 class owa_exit extends owa_entity {
 	
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $url = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $site = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $exit_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
+	//var $url = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $site = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $exit_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
+	//var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	
 	function owa_exit() {
 		
-			$this->owa_entity();
-			
-		return;
-			
+		return owa_exit::__construct();	
+	}
+	
+	function __construct() {
+		
+		$this->setTableName('exit');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['url'] = new owa_dbColumn;
+		$this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['site_name'] = new owa_dbColumn;
+		$this->properties['site_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['site'] = new owa_dbColumn;
+		$this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['anchortext'] = new owa_dbColumn;
+		$this->properties['anchortext']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['page_title'] = new owa_dbColumn;
+		$this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
+		
 	}
 	
 	
