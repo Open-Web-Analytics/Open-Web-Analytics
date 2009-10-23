@@ -78,7 +78,7 @@ class owa_state {
 		}
 	}
 	
-	function setState($store, $name = '', $value, $store_type = '', $is_perminent = true) {
+	function setState($store, $name = '', $value, $store_type = '', $is_perminent = false) {
 	
 		owa_coreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
 		// first call to set for a store sets the meta
@@ -109,9 +109,9 @@ class owa_state {
 	}
 
 	
-	function set($store, $name = '', $value, $store_type = '', $is_perminent = true) {
+	function set($store, $name = '', $value, $store_type = '', $is_perminent = false) {
 		
-		$this->setState($store, $name, $value, $store_type);
+		$this->setState($store, $name, $value, $store_type, $is_perminent);
 		
 		// persist immeadiately if the store type is cookie
 		if ($this->stores_meta[$store]['type'] === 'cookie') {

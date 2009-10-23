@@ -233,6 +233,7 @@ class owa_entity {
 		
 		if($this->isCachable()) {
 			$cache = owa_coreAPI::cacheSingleton();
+			$cache->setCacheDir(OWA_CACHE_DIR);
 			$cache->set($this->getTableName(), 'id'.$this->get('id'), $this);
 		}
 	}
@@ -340,6 +341,7 @@ class owa_entity {
 			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				if ($this->isCachable()) {
 					$cache = owa_coreAPI::cacheSingleton();
+					$cache->setCacheDir(OWA_CACHE_DIR);
 					$cache->remove($this->getTableName(), 'id'.$this->get('id'));
 				}
 			}
@@ -367,6 +369,7 @@ class owa_entity {
 		
 		if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 			$cache = owa_coreAPI::cacheSingleton();
+			$cache->setCacheDir(OWA_CACHE_DIR);
 			$cache_obj = $cache->get($this->getTableName(), $col.$value);
 		}
 			

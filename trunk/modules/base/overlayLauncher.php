@@ -57,13 +57,18 @@ class owa_overlayLauncherController extends owa_reportController {
 		// set state
 		
 		foreach ($period_values as $k => $v) {
-			owa_coreAPI::setState('overlay', $k, $v, 'cookie', false);
+			owa_coreAPI::setState('overlay', $k, $v, 'cookie');
 		}
-		owa_coreAPI::setState('overlay', 'site_id', $this->getParam('site_id'), 'cookie', false);
-		owa_coreAPI::setState('overlay', 'document_id', $this->getParam('document_id'), 'cookie', false);
-		owa_coreAPI::setState('overlay', 'action', $this->getParam('overlay_action'), 'cookie', false);
+		owa_coreAPI::setState('overlay', 'site_id', $this->getParam('site_id'), 'cookie');
+		//owa_coreAPI::setState('overlay', 'document_id', $this->getParam('document_id'), 'cookie');
+		owa_coreAPI::setState('overlay', 'action', $this->getParam('overlay_action'), 'cookie');
+		
+		// load entity for document id to get URL
+		$d = owa_coreAPI::entityFactory('base.document');
+		$d->load($this->getParam('document_id'));
+		
 		// redirect browser
-		$this->redirectBrowserToUrl($this->getParam('url'));
+		$this->redirectBrowserToUrl($d->get('url'));
 		
 		return;	
 		
