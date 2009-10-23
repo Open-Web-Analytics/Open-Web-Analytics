@@ -480,10 +480,10 @@ class owa_coreAPI extends owa_base {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
 		endif;
 			
-		//return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
+		return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
 		
 		
-		return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
+		//return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
 		
 	}
 	

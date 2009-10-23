@@ -68,6 +68,11 @@ class owa_entityManager extends owa_base {
 		
 	}
 	
+	function load($value, $col ='id') {
+		
+		return $this->entity->load($value, $col);
+	}
+	
 	function createTable() {
 		
 		return $this->entity->createTable();
