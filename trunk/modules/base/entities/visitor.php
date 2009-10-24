@@ -29,7 +29,8 @@
  */
 
 class owa_visitor extends owa_entity {
-	
+	/*
+
 	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
 	var $user_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	var $user_email = array('data_type' => OWA_DTD_VARCHAR255); //  varchar(255),
@@ -45,6 +46,7 @@ class owa_visitor extends owa_entity {
 	var $last_session_day = array('data_type' => OWA_DTD_INT); // INT,
 	var $last_session_dayofyear = array('data_type' => OWA_DTD_INT); // INT,
 	
+	*/
 	function owa_visitor() {
 		
 		return owa_visitor::__construct();		

@@ -65,11 +65,14 @@ class owa_entity {
 		if (!empty($this->properties)) {
 			$vars = $this->properties;
 		} else {
+			//needed for backwards compatability
 			$vars = get_object_vars($this);
+			unset($vars['_tableProperties']);
+			unset($vars['properties']);
 		}
 		
 		foreach ($vars as $k => $v) {
-				
+			
 			$properties[$k] = $v->getValue();
 				
 		}
