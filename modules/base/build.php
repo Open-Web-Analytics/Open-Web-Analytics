@@ -17,7 +17,7 @@
 //
 
 require (OWA_INCLUDE_DIR.'jsmin-1.1.1.php');
-require_once(OWA_BASE_DIR.'/owa_cliController.php');
+require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
  * Build Controller
