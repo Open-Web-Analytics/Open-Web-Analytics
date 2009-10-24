@@ -108,7 +108,7 @@ class owa_helperPageTagsView extends owa_view {
 	
 	function render($data) {
 		
-		$this->body->set('site_id', $this->get('site_id'));
+		$this->body->set('site_id', "'$this->get('site_id')'");
 		
 		// will include the first ht tracking tag
 		if ($this->get('first_hit_tag')) {

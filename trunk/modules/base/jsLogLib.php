@@ -90,14 +90,13 @@ class owa_jsLogLibView extends owa_view {
 			$this->body->set('do_not_log_domstream', true);
 		}
 		
-		// load body template
-		$this->body->set_template('js_logger.tpl');
-		
 		//set siteId variable name to support old style owa_params js object
-		$this->body->set('site_id', "owa_params['site_id']");
+		$this->body->set("site_id", "owa_params['site_id']");
 		// set name of javascript object containing params that need to be logged
 		// depricated, but needed to support old style tags
-		$this->body->set('params_object', "owa_params");
+		$this->body->set("owa_params", true);
+		// load body template
+		$this->body->set_template('js_logger.tpl');
 		
 		// assemble JS libs
 		$this->setJs('json2', 'base/js/includes/json2.js');
