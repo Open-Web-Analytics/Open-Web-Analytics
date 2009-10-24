@@ -10,4 +10,4 @@ document.write('<img src="<?php echo $this->makeAbsolutelink(array('action' => '
 
 <?php endif;?>
 
-<?php include('js_tracker_invocation.php'); ?>
+<?php include('js_log_tag.tpl'); ?>
