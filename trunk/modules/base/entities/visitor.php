@@ -52,7 +52,7 @@ class owa_visitor extends owa_entity {
 	
 	function __construct() {
 	
-		$this->setTableName('vsitor');
+		$this->setTableName('visitor');
 		//$this->setCachable();
 		// properties
 		$this->properties['id'] = new owa_dbColumn;

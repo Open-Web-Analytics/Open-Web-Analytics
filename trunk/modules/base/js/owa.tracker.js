@@ -363,7 +363,15 @@ OWA.tracker.prototype = {
     	// append site_id to properties
     	properties.site_id = this.getSiteId();
     	var get = this.prepareRequestParams(properties);
-    	var log_url = this.getEndpoint() + '?';
+    	
+    	var log_url = this.getEndpoint();
+    	
+    	if (log_url.indexOf('?') === -1) {
+    		log_url += '?';
+    	} else {
+    		log_url += '&';
+    	}
+    	    	
 		// add some radomness for cache busting
 		return log_url + get;
     },
