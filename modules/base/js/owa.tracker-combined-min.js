@@ -1,4 +1,4 @@
-// OWA Tracker Min file created 1256366050 
+// OWA Tracker Min file created 1256367110 
 
 //// Start of json2 //// 
 
@@ -50,7 +50,8 @@ ajax.send(params);},prepareRequestParams:function(properties){var get='';propert
 get+="owa_"+param+"="+value+"&";}
 return get;},logEvent:function(properties){var bug
 var url
-url=this._assembleRequestUrl(properties);bug="<img src=\""+url+"\" height=\"1\" width=\"1\">";document.write(bug);return;},_assembleRequestUrl:function(properties){properties.site_id=this.getSiteId();var get=this.prepareRequestParams(properties);var log_url=this.getEndpoint()+'?';return log_url+get;},_base64_encode:function(decStr){var base64s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';var bits;var dual;var i=0;var encOut='';while(decStr.length>=i+3){bits=(decStr.charCodeAt(i++)&0xff)<<16|(decStr.charCodeAt(i++)&0xff)<<8|decStr.charCodeAt(i++)&0xff;encOut+=base64s.charAt((bits&0x00fc0000)>>18)+
+url=this._assembleRequestUrl(properties);bug="<img src=\""+url+"\" height=\"1\" width=\"1\">";document.write(bug);return;},_assembleRequestUrl:function(properties){properties.site_id=this.getSiteId();var get=this.prepareRequestParams(properties);var log_url=this.getEndpoint();if(log_url.indexOf('?')===-1){log_url+='?';}else{log_url+='&';}
+return log_url+get;},_base64_encode:function(decStr){var base64s='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';var bits;var dual;var i=0;var encOut='';while(decStr.length>=i+3){bits=(decStr.charCodeAt(i++)&0xff)<<16|(decStr.charCodeAt(i++)&0xff)<<8|decStr.charCodeAt(i++)&0xff;encOut+=base64s.charAt((bits&0x00fc0000)>>18)+
 base64s.charAt((bits&0x0003f000)>>12)+
 base64s.charAt((bits&0x00000fc0)>>6)+
 base64s.charAt((bits&0x0000003f));}
