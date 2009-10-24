@@ -48,7 +48,7 @@ class owa_sitesInvocationController extends owa_adminController {
 	
 	function action() {
 	
-		$this->set('site_id', "'$this->getParam('site_id')'");
+		$this->set('site_id', "'".$this->getParam('site_id')."'");
 		$this->setSubview('base.sitesInvocation');
 		$this->setView('base.options');
 		return;
@@ -74,12 +74,15 @@ class owa_sitesInvocationView extends owa_view {
 	
 	function owa_sitesInvocationView() {
 		
-		$this->owa_view();
-		
-		return;
+		return owa_sitesInvocationView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'Web Site Tracking Instructions');
