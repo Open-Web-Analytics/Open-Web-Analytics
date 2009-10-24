@@ -135,7 +135,7 @@ class owa_baseModule extends owa_module {
 		$this->_addHandler(array('base.page_request_logged', 'base.first_page_request_logged'), 'sessionHandlers');
 		
 		// Clicks
-		$this->_addHandler('base.click', 'clickHandlers');
+		$this->_addHandler('dom.click', 'clickHandlers');
 		
 		// Documents
 		$this->_addHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
