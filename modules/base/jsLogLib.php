@@ -48,7 +48,11 @@ class owa_jsLogLibController extends owa_controller {
 }
 
 /**
- * Javascript Page View Tracking Library View
+ * Combined Javascript Tracker Library and Invocation view
+ *
+ * Returns owa.tracker lib and invocation as a non minimized contatinated stream. This method
+ * has been depricated in favor of a static file approach and is maintained
+ * solely for backwards compatability with old style tags.
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -72,51 +76,37 @@ class owa_jsLogLibView extends owa_view {
 	}
 	
 	function render($data) {
-		
-		
-		/*
-$request = http_get_request_headers();  
-		if (isset($request['If-Modified-Since']))  
-		{  
-		 $modifiedSince = explode(';', $request['If-Modified-Since']);  
-		 $modifiedSince = strtotime($modifiedSince[0]);  
-		}  
-		else  
-		{  
-		 $modifiedSince = 0;  
-		}
-		
-		if ($lastModified <= $modifiedSince)  {  
-			header('HTTP/1.1 304 Not Modified');  
- 			exit(); 
-		}
-*/
 	
 		// load body template
 		$this->t->set_template('wrapper_blank.tpl');
-	
-		$this->body->set('log_pageview', true);
 		
-		if (owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
-			$this->body->set('log_clicks', true);
+		// check to see if we should log clicks.
+		if (!owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
+			$this->body->set('do_not_log_clicks', true);
+		}
+		
+		// check to see if we should log clicks.
+		if (!owa_coreAPI::getSetting('base', 'log_dom_stream')) {
+			$this->body->set('do_not_log_domstream', true);
 		}
 		
 		// load body template
 		$this->body->set_template('js_logger.tpl');
-		// load body template
+		
+		//set siteId variable name to support old style owa_params js object
+		$this->body->set('site_id', "owa_params['site_id']");
+		// set name of javascript object containing params that need to be logged
+		// depricated, but needed to support old style tags
+		$this->body->set('params_object', "owa_params");
+		
+		// assemble JS libs
 		$this->setJs('json2', 'base/js/includes/json2.js');
 		$this->setJs('lazyload', 'base/js/includes/lazyload-2.0.min.js');
 		$this->setJs('owa', 'base/js/owa.js');
-		//$this->setJs('url_encode', 'base/js/includes/url_encode.js');
 		$this->setJs('owa.tracker', 'base/js/owa.tracker.js');
+		//$this->setJs('url_encode', 'base/js/includes/url_encode.js');
 		$this->concatinateJs();
-		/*
-		header('Cache-Control: public');
-		header('Expires: ' . gmdate('D, d M Y H:i:s', time()+24*60*60*3000) . ' GMT');
-		header('ETag: xyzzy');
-		header('Pragma: ');
-		header('Last-modified: '.gmdate('D, d M Y H:i:s', time()-24*60*60*30) . ' GMT');
-		*/
+		
 		
 		return;
 	}

@@ -48,7 +48,7 @@ class owa_sitesController extends owa_adminController {
 	function action() {
 	
 		$s = owa_coreAPI::entityFactory('base.site');
-		$sites = $s->find();
+		$sites = owa_coreAPI::getSitesList();
 		//print_r($sites);
 		$this->set('tracked_sites', $sites);
 		$this->setSubview('base.sites');

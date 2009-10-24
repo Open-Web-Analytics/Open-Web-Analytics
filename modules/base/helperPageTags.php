@@ -115,11 +115,21 @@ class owa_helperPageTagsView extends owa_view {
 			$this->body->set('first_hit_tag', true);
 		}
 		
-		// will include the click tracking tag
-		if ($this->get('click_tag')) {
-			$this->body->set('click_tag', true);	
+		// do not log pageview via js as it was already logged via PHP
+		$this->body->set('do_not_log_pageview', true);
+		
+		//check to see if we shuld log clicks.
+		if (!owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
+			$this->body->set('do_not_log_clicks', true);
 		}
 		
+		// check to see if we should log clicks.
+		if (!owa_coreAPI::getSetting('base', 'log_dom_stream')) {
+			$this->body->set('do_not_log_domstream', true);
+		}
+		
+		$this->body->set('endpoint', owa_coreAPI::getSetting('base', 'log_url'))
+
 		// load body template
 		$this->t->set_template('wrapper_blank_whead.tpl');
 		
