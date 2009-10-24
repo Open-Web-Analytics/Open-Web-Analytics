@@ -23,12 +23,12 @@ require_once(OWA_DIR.'owa_php.php');
  * OWA Comand Line Interface (CLI)
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2009 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.2.1
  */
 
 
@@ -49,17 +49,16 @@ if (!empty($_POST)) {
 	
 } else {
 	// No params found
-	$e->debug("No CLI Args found.");
 	exit();
 }
 
 // Initialize owa
 $owa = &new owa_php;
-
+// setting CLI mode to true
+$owa->setSetting('base', 'cli_mode', true);
+// setting user auth
+$owa->setCurrentUser('admin', 'cli-user');
 // run controller or view and echo page content
 echo $owa->handleRequest($params);
-
-// unload owa
-
 
 ?>

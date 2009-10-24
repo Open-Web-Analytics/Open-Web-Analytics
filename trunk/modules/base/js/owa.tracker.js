@@ -74,6 +74,7 @@ OWA.event.prototype = {
 
 
 OWA.tracker = function(caller_params) {
+	this.setEndpoint(OWA.config.baseUrl + 'log.php');
 	this.page = new OWA.event();
 	this.startTime = this.getTimestamp();
     this.page.set('page_url', document.URL);

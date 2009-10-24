@@ -1173,6 +1173,16 @@ class owa_coreAPI extends owa_base {
 		return $service->isUpdateRequired();
 	}
 	
+	function getSitesList() {
+		
+		//$s = owa_coreAPI::entityFactory('base.site');
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom('owa_site');
+		$db->selectColumn('*');
+		return $db->getAllRows();
+		
+	}
+	
 	
 	
 }

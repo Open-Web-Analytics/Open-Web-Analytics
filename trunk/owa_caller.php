@@ -400,6 +400,24 @@ class owa_caller extends owa_base {
 	
 		return md5($value);
 	}
+	
+	function setSetting($module, $name, $value) {
+		
+		return owa_coreAPI::setSetting($module, $name, $value);
+	}
+	
+	function getSetting($module, $name) {
+		
+		return owa_coreAPI::setSetting($module, $name);
+	}
+	
+	function setCurrentUser($role, $login_name = '') {
+		$cu =&owa_coreAPI::getCurrentUser();
+		$cu->setRole($role);
+		$cu->setAuthStatus(true);
+	}
+	
+	
 		
 }
 

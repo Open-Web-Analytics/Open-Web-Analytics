@@ -169,11 +169,7 @@ class owa_reportView extends owa_view {
 	
 	function getSitesList() {
 		
-		//$s = owa_coreAPI::entityFactory('base.site');
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectFrom('owa_site');
-		$db->selectColumn('*');
-		return $db->getAllRows();
+		return owa_coreAPI::getSitesList();
 		
 	}
 	
