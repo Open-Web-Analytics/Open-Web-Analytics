@@ -67,10 +67,9 @@ class owa_logFeedRequestController extends owa_controller {
 		$result = $f->create();
 		
 		// makes request event processing idem potent
-		if ($result == true):
-			$eq = &eventQueue::get_instance();
-			$eq->log($this->params, $this->params['event_type'].'_logged');
-		endif;
+		if ($result == true) {
+			$this->logEvent($this->params['event_type'].'_logged', $this->params);
+		}
 			
 		return;
 			

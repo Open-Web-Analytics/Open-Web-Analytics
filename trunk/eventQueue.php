@@ -106,6 +106,7 @@ class eventQueue {
 	 * @return bool
 	 */
 	function notify($event_type, $event) {
+		
 		owa_coreAPI::debug("Notifying listeners of $event_type");
 		//print_r($this->listenersByEventType[$event_type] );
 		foreach ($this->listenersByEventType[$event_type] as $k => $observer_id) {
@@ -153,7 +154,7 @@ class eventQueue {
 	 * @param 	$event_type	string
 	 */
 	function log($event, $event_type) {
-		owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
+		//owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 		//switch for async event queuing
 		if (owa_coreAPI::getSetting('base', 'async_db')) {
 			$this->asyncNotify($event_type, $event);

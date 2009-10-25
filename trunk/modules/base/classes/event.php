@@ -55,6 +55,8 @@ class owa_event extends owa_base {
 	 */
 	var $state;
 	
+	var $eventType;
+	
 	/**
 	 * Time since last request.
 	 * 
@@ -494,7 +496,7 @@ class owa_event extends owa_base {
 	 *
 	 */
 	function set_new_visitor() {
-	
+		
 		// Create guid
         $this->set('visitor_id', $this->getSiteSpecificGuid());
 		
@@ -508,6 +510,7 @@ class owa_event extends owa_base {
         }
 		
 		$this->set('is_new_visitor', true);
+		
 		
 		return;
 	
@@ -585,6 +588,19 @@ class owa_event extends owa_base {
 	function getProperties() {
 		
 		return $this->properties;
+	}
+	
+	function getEventType() {
+		
+		if (!empty($this->eventType)) {
+			return $this->eventType;
+		} else {
+			return $this->get('event_type');
+		}
+	}
+	
+	function setEventType($value) {
+		$this->eventType = $value;
 	}
 	
 		

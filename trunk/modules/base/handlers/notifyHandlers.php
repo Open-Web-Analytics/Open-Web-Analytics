@@ -60,10 +60,10 @@ class owa_notifyHandlers extends owa_observer {
     
     	$this->m = $event;
     	
-    	switch ($event['event_type']) {
+    	switch ($event->getEventType()) {
 	   
 	    	case "base.new_session":
-	    		if ($this->config['announce_visitors'] == true) {
+	    		if (owa_coreAPI::getSetting('base', 'announce_visitors')) {
 			   		$this->handleEvent('base.notifyNewSession');
 				}
 		    	break;

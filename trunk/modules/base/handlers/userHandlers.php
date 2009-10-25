@@ -58,7 +58,7 @@ class owa_userHandlers extends owa_observer {
 		
     	$this->m = $event;
 
-    	switch ($event['event_type']) {
+    	switch ($event->getEventType()) {
     		case "base.reset_password":
     			$this->handleEvent('base.usersResetPassword');
     			break;
