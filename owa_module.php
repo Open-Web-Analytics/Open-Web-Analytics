@@ -237,35 +237,16 @@ class owa_module extends owa_base {
 	 * @param string $handler_name
 	 * @return boolean
 	 */
-	function registerEventHandler($event_name, $handler_name) {
-	
-		$handler_dir = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'handlers';
+	function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
 		
-		$class = 'owa_'.$handler_name;
-		
-		// Require class file if class does not already exist
-		if(!class_exists('owa_'.$handler_name)):	
-			require_once($handler_dir.DIRECTORY_SEPARATOR.$handler_name.'.php');
-		endif;
-		
-		$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-		$handler->_priority = PEAR_LOG_INFO;
-		
+		if (!is_object($handler_name)) {
+			
+			//$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
+			$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');	
+		}
+				
 		$eq = &eventQueue::get_instance();
-			
-		// Register event names for this handler
-		if(is_array($event_name)):
-			
-			foreach ($event_name as $k => $name) {	
-				$handler->_event_type[] = $name;	
-			}
-			
-		else:
-			$handler->_event_type[] = $event_name;
-			
-		endif;
-			
-		$eq->attach($handler);
+		$eq->attach($event_name, array($handler_name, $method));
 		
 		return;
 	

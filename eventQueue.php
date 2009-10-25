@@ -16,13 +16,13 @@
 // $Id$
 //
 
-require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
-require_once(OWA_PLUGIN_DIR . 'log/queue.php');
-require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
-require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
+if (!class_exists('owa_observer')) {
+
+	require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
+}
 
 /**
- * Event Queue
+ * Event Dispatcher
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -33,26 +33,174 @@ require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
  * @since		owa 1.0.0
  */
 class eventQueue {
-
+	
 	/**
-	 * Configuration
+	 * Stores listeners
 	 *
-	 * @var array
 	 */
-	var $config;
+	var $listeners;
+	
+	/**
+	 * Stores listener IDs by event type
+	 *
+	 */
+	var $lstenersByEventType;
+	
+	/**
+	 * PHP4 Constructor
+	 *
+	 */
+	function eventQueue() {
+ 
+		return eventQueue::__construct();	
+	}
 	
 	/**
 	 * Constructor
 	 *
-	 * @return eventQueue
 	 */
-	function eventQueue() {
- 
-		return;	
+	function __construct() {
+	
+	}
+	
+	/**
+	 * Attach
+	 *
+	 * Attaches observers by event type.
+	 * Takes a valid user defined callback function for use by PHP's call_user_func_array
+	 * 
+	 * @param 	$event_name	string
+	 * @param	$observer	mixed can be a function name or function array
+	 * @return bool
+	 */
+
+	function attach($event_name, $observer) {
+	
+        $id = md5(microtime());
+        
+        // Register event names for this handler
+		if(is_array($event_name)) {
+			
+			foreach ($event_name as $k => $name) {	
+	
+				$this->listenersByEventType[$name][] = $id;
+			}
+			
+		} else {
+		
+			$this->listenersByEventType[$event_name][] = $id;	
+		}
+		
+        $this->listeners[$id] = $observer;
+               
+        return true;
+    }
+
+	/**
+	 * Notify
+	 *
+	 * Notifies all handlers of events in order that they were registered
+	 * 
+	 * @param 	$event_type	string
+	 * @param	$event	array
+	 * @return bool
+	 */
+	function notify($event_type, $event) {
+		owa_coreAPI::debug("Notifying listeners of $event_type");
+		//print_r($this->listenersByEventType[$event_type] );
+		foreach ($this->listenersByEventType[$event_type] as $k => $observer_id) {
+			//print_r($this->listeners[$observer_id]);
+			call_user_func_array($this->listeners[$observer_id], array($event));
+		}
+	}
+	
+	/**
+	 * Notify Untill
+	 *
+	 * Notifies all handlers of events in order that they were registered
+	 * Stops notifying after first handler returns true
+	 * 
+	 * @param 	$event_type	string
+	 * @param	$event	array
+	 * @return bool
+	 */
+
+	function notifyUntill() {
+		owa_coreAPI::debug("Notifying Until listener for $event_type answers");
+	}
+	
+	/**
+	 * Filter
+	 *
+	 * Filters event by handlers in order that they were registered
+	 * 
+	 * @param 	$event_type	string
+	 * @param	$event	array
+	 * @return $event	mixed
+	 */
+	function filter($event_type, $event) {
+		owa_coreAPI::debug("Filtering $event_type");
+		return;
+	}
+	
+	/**
+	 * Log
+	 *
+	 * Notifies handlers of tracking events
+	 * Provides switch for async notification
+	 * 
+	 * @param	$event	array
+	 * @param 	$event_type	string
+	 */
+	function log($event, $event_type) {
+		owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
+		//switch for async event queuing
+		if (owa_coreAPI::getSetting('base', 'async_db')) {
+			$this->asyncNotify($event_type, $event);
+		} else {
+			$this->notify($event_type, $event);
+		}	
+	}
+	
+	/**
+	 * Async Notify
+	 *
+	 * Adds event to async notiication queue for notification by another process.
+	 * 
+	 * @param 	$event_type	string
+	 * @param	$event	array
+	 * @return bool
+	 */
+	function asyncNotify($event_type, $event) {
+		owa_coreAPI::debug("Adding event of $event_type to async notification queue.");
+		$q = $this->getAsyncEventQueue();
+		return $q->log($event, $event_type);
+	}
+	
+	function getAsyncEventQueue() {
+		
+		static $q;
+		
+		if (!empty($q)) {
+			
+			require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
+			require_once(OWA_PLUGIN_DIR . 'log/queue.php');
+			require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
+			
+			$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
+			$q = &Log::singleton('async_queue', $this->config['async_log_dir'].$this->config['async_log_file'], 'async_event_queue', $conf);
+			$q->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
+			// not sure why this is needed but it is.
+			$q->_filename	= $this->config['async_log_dir'].$this->config['async_log_file'];
+		}
+		
+		return $q;
+		
 	}
 
 	/**
-	 * Event Queue factory
+	 * Singleton
+	 *
 	 * @static 
 	 * @return 	object
 	 * @access 	public
@@ -61,22 +209,9 @@ class eventQueue {
 	
 		static $eq;
 		
-		$c = &owa_coreAPI::configSingleton();
-		$this->config = $c->fetch('base');
-		
-		if (!isset($eq)):
-			// Create an async event queue
-			if ($this->config['async_db'] == true):
-				$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-				$eq = &Log::singleton('async_queue', $this->config['async_log_dir'].$this->config['async_log_file'], 'async_event_queue', $conf);
-				$eq->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
-				// not sure why this is needed but it is.
-				$eq->_filename	= $this->config['async_log_dir'].$this->config['async_log_file'];
-			else:
-				//Create a normal event queue using 'queue' which is an extension to PEAR LOG.
-				$eq = Log::singleton('queue', '', 'event_queue');
-			endif; 
-		endif;
+		if (empty($eq)) {
+			$eq = new eventQueue();
+		}
 	
 		return $eq;
 	}
