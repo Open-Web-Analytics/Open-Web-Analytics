@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * OWA user management Event handlers
  * 
@@ -52,7 +56,7 @@ class owa_sessionHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
+    	$this->m = $event;
 
     	switch ($event['event_type']) {
     		case 'base.first_page_request_logged':

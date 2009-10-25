@@ -53,17 +53,9 @@ class owa_clickHandlers extends owa_observer {
      * @param 	object $event
      */
     function notify($event) {
-    
-    	$this->m = $event['message'];
-    	
-    	switch ($event['event_type']) {
-	    	case "base.click":
-	    		$this->handleEvent('base.logClick');
-	    	break;
-    	
-    	}
-    
-		return;
+    	owa_coreAPI::debug('handling click');
+    	$this->m = $event;
+   		$this->handleEvent('base.logClick');
 	}
 	
 }

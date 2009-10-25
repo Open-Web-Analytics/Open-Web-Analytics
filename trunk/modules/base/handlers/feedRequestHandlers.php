@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * Feed Request handlers
  * 
@@ -52,7 +56,7 @@ class owa_feedRequestHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
+    	$this->m = $event;
 
 		return $this->handleEvent('base.logFeedRequest');
     	

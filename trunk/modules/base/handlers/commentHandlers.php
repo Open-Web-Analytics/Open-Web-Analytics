@@ -52,7 +52,7 @@ class owa_commentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
+    	$this->m = $event;
 
 		return $this->handleEvent('base.logComment');
     	

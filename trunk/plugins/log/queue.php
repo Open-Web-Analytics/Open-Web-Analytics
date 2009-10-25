@@ -20,6 +20,7 @@
  * The Log_queue class is a concrete implementation of the Log:: abstract
  * class.  It simply consumes log events.
  *
+ * @depricated
  * @author  Peter Adams <peter@openwebanalytics.com>
  * @since   OWA 1.0
  * @package OWA
@@ -34,6 +35,8 @@ class Log_queue extends Log {
      * @access private
      */
     var $_event_type = '';
+    
+    var $listenersByEventType = array();
 
 
     /**
@@ -98,9 +101,9 @@ class Log_queue extends Log {
 		
         foreach ($this->_listeners as $id => $listener) {
             if ($event['priority'] <= $this->_listeners[$id]->_priority) {
-				
+				//owa_coreAPI::debug("search listener event type for ". $event['event_type']);
 				if (array_search($event['event_type'], $this->_listeners[$id]->_event_type) !== false):
-				
+					
 					$this->_listeners[$id]->notify($event);
 					
 				endif;

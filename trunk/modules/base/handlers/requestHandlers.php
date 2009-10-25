@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * Request Event Handler
  * 
@@ -54,20 +58,9 @@ class owa_requestHandlers extends owa_observer {
      */
     function notify($event) {
     
-    	$this->m = $event['message'];
-    	$this->handleEvent('base.logPageRequest');
-    	
-    	/*switch ($event['event_type']) {
-	    	case "base.page_request":
-	    		$this->handleEvent('base.logPageRequest');
-	    	break;
-	    	case "base.first_page_request":
-	    		$this->handleEvent('base.logPageRequest');
-	    	break;
-    	
-    	}*/
+    	$this->m = $event;
+    	return $this->handleEvent('base.logPageRequest');
     
-		return;
 	}
 	
 }

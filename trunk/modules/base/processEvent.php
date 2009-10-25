@@ -175,8 +175,6 @@ class owa_processEventController extends owa_controller {
 	
 	function post() {
 			
-		owa_coreAPI::debug('Logging '.'base.'.$this->state.' to event queue...');
-		
 		return $this->addToEventQueue();
 	
 	}
