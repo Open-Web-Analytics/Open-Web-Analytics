@@ -71,10 +71,9 @@ class owa_logPageRequestController extends owa_controller {
 		
 		$result = $r->create();
 		
-		if ($result == true):
-			$eq = &eventQueue::get_instance();
-			$eq->log($this->params, $this->params['event_type'].'_logged');
-		endif;
+		if ($result == true) {
+			$this->logEvent($this->params['event_type'].'_logged', $this->params);
+		}
 		
 		return;
 			

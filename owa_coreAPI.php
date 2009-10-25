@@ -823,7 +823,7 @@ class owa_coreAPI extends owa_base {
 		if (owa_coreAPI::getSetting('base', 'error_log_level') > 9):
 			owa_coreAPI::debug(print_r($this->e->backtrace(), true));
 		endif;
-				
+		
 		// do not log if the request is from a reserved IP
 		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
 		//	...

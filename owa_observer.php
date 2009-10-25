@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_PEARLOG_DIR . '/Log/observer.php');
 require_once(OWA_BASE_DIR . '/owa_coreAPI.php');
 
 /**
@@ -74,7 +73,7 @@ class owa_observer extends owa_base {
     
     function handleEvent($action) {
     	
-    	$data = owa_coreAPI::performAction($action, $this->m);
+    	$data = owa_coreAPI::performAction($action, $this->m->getProperties());
     	
     	return owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
     	

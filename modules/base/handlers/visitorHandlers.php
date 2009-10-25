@@ -59,7 +59,7 @@ class owa_visitorHandlers extends owa_observer {
 		
     	$this->m = $event;
 
-    	switch ($event['is_new_visitor']) {
+    	switch ($event->get('is_new_visitor')) {
     		
     		case true:
     			$this->handleEvent('base.logVisitor');

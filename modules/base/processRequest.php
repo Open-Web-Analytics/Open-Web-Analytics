@@ -60,9 +60,10 @@ class owa_processRequestController extends owa_processEventController {
 		
 		// assign visitor cookie
 		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
+		
 		// sessionize
 		$this->event->sessionize($this->event->get('inbound_session_id'));
-						
+			
 		return;
 		
 	}
