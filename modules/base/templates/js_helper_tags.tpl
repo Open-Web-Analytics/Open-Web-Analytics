@@ -1,6 +1,6 @@
 <!-- OWA Helper Tag Tags -->
 
-<?php if (isset($first_hit_tag) && $first_hit_tag === true):?>
+<?php if (isset($first_hit_tag)):?>
 
 <script type="text/javascript">
 //<![CDATA[
