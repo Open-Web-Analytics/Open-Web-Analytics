@@ -55,12 +55,13 @@ class owa_processFirstRequestController extends owa_processEventController {
 		$fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->getParam('site_id'));
 		//print_r($fh_state_name);
 		$fh = owa_coreAPI::getStateParam($fh_state_name);
-		//print_r($fh);
+		//owa_coreAPI::debug('cookiename: '.$fh_state_name);
+		//owa_coreAPI::debug(print_r($_COOKIE, true));
 		if (!empty($fh)) {
 			
 			$this->event->replaceProperties($fh);
 			$this->event->first_hit = true;
-		
+			//owa_coreAPI::debug(print_r($this->event, true));	
 			// Delete first_hit Cookie
 			owa_coreAPI::clearState($fh_state_name);
 

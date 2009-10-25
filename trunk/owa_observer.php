@@ -48,10 +48,7 @@ class owa_observer extends owa_base {
      * @var array
      */
 	var $m;
-    
-
-    
-
+   
     /**
      * Creates a new basic Log_observer instance.
      *
@@ -60,14 +57,9 @@ class owa_observer extends owa_base {
      *
      * @access public
      */
-    function owa_observer($priority = PEAR_LOG_INFO)
-    {
+    function owa_observer() {
         $this->id = md5(microtime());
-     
-        //$c = &owa_coreAPI::configSingleton();
-		//$this->config = $c->fetch('base');
-        //$this->e = &owa_coreAPI::errorSingleton();
-        //$this->api = &owa_coreAPI::singleton();
+   
         return;
     }
     
