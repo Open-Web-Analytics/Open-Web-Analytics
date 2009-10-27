@@ -17,10 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Log Comment Controller
@@ -37,38 +34,36 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_logCommentController extends owa_controller {
 	
 	function owa_logCommentController($params) {
+		
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
 		
+		$event = $this->getParam('event');	
 	
-		if (!empty($this->params['inbound_session_id'])):
+		if ($event->get('inbound_session_id')) {
 	
 			// Make entity
 			$s = owa_coreAPI::entityFactory('base.session');
 			
 			// Fetch from session from database
-			$s->getByPk('id', $this->params['inbound_session_id']);
+			$s->getByPk('id', $event->get('inbound_session_id'));
 			
 			$id = $s->get('id');
 			
-			if (!empty($id)):
+			if (!empty($id)){
 				// increment number of page views
 				$s->num_comments = $s->num_comments++;
 				
 				// Persist to database
 				$s->update('id');
-			endif;
+			}
 			
-		endif;
+		}
 		
-		return;
-			
+		return;		
 	}
-	
-	
 }
 
 ?>

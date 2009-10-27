@@ -312,6 +312,18 @@ class owa_caller extends owa_base {
 	}
 	
 	/**
+	 * Fires a tracking event
+	 * 
+	 * This function fires a tracking event that will be processed and then dispatched
+	 *
+	 * @param object $event
+	 * @return boolean
+	 */
+	function trackEvent($event) {
+		return owa_coreAPI::logEvent($event->getEventType, $event);
+	}
+	
+	/**
 	 * Logs event params taken from request scope (url, cookies, etc.).
 	 * Takes event type from url.
 	 *
@@ -323,14 +335,12 @@ class owa_caller extends owa_base {
 		ignore_user_abort(true);
 		$service = &owa_coreAPI::serviceSingleton();
 		$service->request->decodeRequestParams();
-	
-		return owa_coreAPI::logEvent(owa_coreAPI::getRequestParam('event_type'), $service->request->getAllOwaParams());
 		
-	}
+		$event = owa_coreAPI::supportClassFactory('base', 'event');
+		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
+		$event->setProperties($service->request->getAllOwaParams());
 	
-	function requestTag($site_id) {
-		
-		return $api->requestTag($site_id);
+		return owa_coreAPI::trackEvent($event);
 		
 	}
 	
@@ -369,7 +379,7 @@ class owa_caller extends owa_base {
 	}
 	
 	function handleSpecialActionRequest() {
-		owa_coreAPI::debug('hello from special action request method in caller');
+		//owa_coreAPI::debug('hello from special action request method in caller');
 		if(isset($_GET['owa_specialAction'])):
 			$this->e->debug("special action received");
 			echo $this->handleRequestFromUrl();
@@ -408,13 +418,18 @@ class owa_caller extends owa_base {
 	
 	function getSetting($module, $name) {
 		
-		return owa_coreAPI::setSetting($module, $name);
+		return owa_coreAPI::getSetting($module, $name);
 	}
 	
 	function setCurrentUser($role, $login_name = '') {
 		$cu =&owa_coreAPI::getCurrentUser();
 		$cu->setRole($role);
 		$cu->setAuthStatus(true);
+	}
+	
+	function makeEvent() {
+	
+		return owa_coreAPI::supportClassFactory('base', 'event');
 	}
 	
 	

@@ -17,13 +17,10 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
- * LogFeed Request Controller
+ * Log Feed Request Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -37,8 +34,8 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_logFeedRequestController extends owa_controller {
 	
 	function owa_logFeedRequestController($params) {
+	
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
@@ -46,29 +43,31 @@ class owa_logFeedRequestController extends owa_controller {
 		// Make entity
 		$f = owa_coreAPI::entityFactory('base.feed_request');
 		
-		$f->setProperties($this->params);
+		$event = $this->getParam('event');	
+		
+		$f->setProperties($event->getProperties());
 		
 		// Set Primary Key
-		$f->set('id', $this->params['guid']);
+		$f->set('id', $event->get('guid'));
 		
 		// Make ua id
-		$f->set('ua_id', owa_lib::setStringGuid($this->params['HTTP_USER_AGENT']));
+		$f->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 		
 		// Make OS id
-		$f->set('os_id', owa_lib::setStringGuid($this->params['os']));
+		$f->set('os_id', owa_lib::setStringGuid($event->get('os')));
 	
 		// Make document id	
-		$f->set('document_id', owa_lib::setStringGuid($this->params['page_url']));
+		$f->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
 		
 		// Generate Host id
-		$f->set('host_id', owa_lib::setStringGuid($this->params['host']));
+		$f->set('host_id', owa_lib::setStringGuid($event->get('host')));
 		
 		// Persist to database
 		$result = $f->create();
 		
-		// makes request event processing idem potent
 		if ($result == true) {
-			$this->logEvent($this->params['event_type'].'_logged', $this->params);
+			$event->setEventType($event->getEventType().'_logged');
+			$this->logEvent($event->getEventType(), $event);
 		}
 			
 		return;

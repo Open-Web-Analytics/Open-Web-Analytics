@@ -38,7 +38,6 @@ class owa_logVisitorUpdateController extends owa_controller {
 	
 	function owa_logVisitorUpdateController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
@@ -47,19 +46,21 @@ class owa_logVisitorUpdateController extends owa_controller {
 		
 		$v = owa_coreAPI::entityFactory('base.visitor');
 		
-		$v->getByPk('id', $this->params['visitor_id']);
+		$event = $this->getParam('event');
 		
-		if (!empty($this->params['user_name'])):
-			$v->set('user_name', $this->params['user_name']);
+		$v->getByPk('id', $event->get('visitor_id'));
+		
+		if ($$event->get('user_name'))):
+			$v->set('user_name', $event->get('user_name'));
 		endif;
-		if (!empty($this->params['user_email'])):
-			$v->set('user_email', $this->params['user_email']);
+		if ($event->get('user_email'))):
+			$v->set('user_email', $event->get('user_email'));
 		endif;
-		$v->set('last_session_id', $this->params['session_id']);
-		$v->set('last_session_year', $this->params['year']);
-		$v->set('last_session_month', $this->params['month']);
-		$v->set('last_session_day', $this->params['day']);
-		$v->set('last_session_dayofyear', $this->params['dayofyear']);		
+		$v->set('last_session_id', $event->get('session_id'));
+		$v->set('last_session_year', $event->get('year'));
+		$v->set('last_session_month', $event->get('month'));
+		$v->set('last_session_day', $event->get('day'));
+		$v->set('last_session_dayofyear', $event->get('dayofyear'));		
 		
 		$id = $v->get('id');
 		
@@ -68,13 +69,13 @@ class owa_logVisitorUpdateController extends owa_controller {
 			
 		// insert the visitor object just in case it's not found in the db	
 		else:
-			$v->set('id', $this->params['visitor_id']);
-			$v->set('first_session_id', $this->params['session_id']);
-			$v->set('first_session_year', $this->params['year']);
-			$v->set('first_session_month', $this->params['month']);
-			$v->set('first_session_day', $this->params['day']);
-			$v->set('first_session_dayofyear', $this->params['dayofyear']);	
-			$v->set('first_session_timestamp', $this->params['timestamp']);		
+			$v->set('id', $event->get('visitor_id'));
+			$v->set('first_session_id', $event->get('session_id'));
+			$v->set('first_session_year', $event->get('year'));
+			$v->set('first_session_month', $event->get('month'));
+			$v->set('first_session_day', $event->get('day'));
+			$v->set('first_session_dayofyear', $event->get('dayofyear'));	
+			$v->set('first_session_timestamp', $event->get('timestamp'));		
 			$v->create();
 		endif;
 		

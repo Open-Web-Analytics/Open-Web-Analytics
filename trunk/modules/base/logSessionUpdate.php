@@ -46,8 +46,10 @@ class owa_logSessionUpdateController extends owa_controller {
 		// Make entity
 		$s = owa_coreAPI::entityFactory('base.session');
 		
+		$event = $this->getParam('event');
+		
 		// Fetch from session from database
-		$s->getByPk('id', $this->params['session_id']);
+		$s->getByPk('id', $event->get('session_id'));
 		
 		$id = $s->get('id');
 		// fail safe for when there is no existing session in DB
@@ -62,21 +64,22 @@ class owa_logSessionUpdateController extends owa_controller {
 		
 		//print $num;
 		// update timestamp
-		$s->set('last_req', $this->params['last_req']);
+		$s->set('last_req', $event->get('last_req'));
 		
 		// update last page id
-		$s->set('last_page_id', owa_lib::setStringGuid($this->params['page_url']));
+		$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
 		
 		// Persist to database
 		$s->update();
 		
 		// setup event message
 		$session = $s->_getProperties();
-		$properties = array_merge($this->params, $session);
-		$properties['request_id'] = $this->params['guid'];
-		
+		$properties = array_merge($event->getProperties(), $session);
+		$properties['request_id'] = $event->get('guid');
+		$event->replaceProperties($properties);
+		$event->setEventType('base.session_update');
 		// Log session update event to event queue
-		$this->logEvent('base.session_update', $properties);
+		$this->logEvent($event->getEventType(), $event);
 			
 		return;
 			

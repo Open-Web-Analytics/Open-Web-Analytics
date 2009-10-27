@@ -17,9 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_location.php');
 
 /**
@@ -37,23 +35,25 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_location.php');
 class owa_logHostController extends owa_controller {
 	
 	function owa_logHostController($params) {
+	
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
 		
 		$h = owa_coreAPI::entityFactory('base.host');
 		
-		$h->setProperties($this->params);
+		$event = $this->getParam('event');	
 		
-		$h->set('id', owa_lib::setStringGuid($this->params['host'])); 
+		$h->setProperties($event->getProperties());
+		
+		$h->set('id', owa_lib::setStringGuid($event->get('host'))); 
 
 		// makes the geo-location object from the service specified in the config
-		$location = owa_location::factory($this->config['plugin_dir']."location".DIRECTORY_SEPARATOR, $this->config['geolocation_service']);
+		$location = owa_location::factory(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR, owa_coreAPI::getSetting('base', 'geolocation_service'));
 		
 		// lookup
-		$location->get_location($this->params['ip_address']);
+		$location->get_location($event->get('ip_address'));
 		
 		//set properties of the session
 		$h->set('country', $location->country);

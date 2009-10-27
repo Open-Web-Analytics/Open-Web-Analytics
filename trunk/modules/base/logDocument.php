@@ -38,18 +38,20 @@ class owa_logDocumentController extends owa_controller {
 	
 	function owa_logDocumentController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+		
 	}
 	
 	function action() {
 		
 		$d = owa_coreAPI::entityFactory('base.document');
 		
-		$d->setProperties($this->params);
-	
-		$d->set('url', $this->params['page_url']);
+		$event = $this->getParam('event');
 		
-		$d->set('id', owa_lib::setStringGuid($this->params['page_url'])); 
+		$d->setProperties($event->getProperties());
+	
+		$d->set('url', $event->get('page_url'));
+		
+		$d->set('id', owa_lib::setStringGuid($event->get('page_url'))); 
 		
 		$d->create();
 		

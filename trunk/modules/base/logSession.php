@@ -17,10 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Log New Session Controller
@@ -37,8 +34,8 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_logSessionController extends owa_controller {
 	
 	function owa_logSessionController($params) {
+		
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
@@ -47,58 +44,60 @@ class owa_logSessionController extends owa_controller {
 		
 		$s = owa_coreAPI::entityFactory('base.session');
 		
-		//print_r($r);
+		$event = $this->getParam('event');
 	
-		$s->setProperties($this->params);
+		$s->setProperties($event->getProperties());
 	
 		// Set Primary Key
-		$s->set('id', $this->params['session_id']);
+		$s->set('id', $event->get('session_id'));
 		 
 		// set initial number of page views
 		$s->set('num_pageviews', 1);
 			
 		// set prior session time properties		
-		$s->set('prior_session_lastreq', $this->params['last_req']);
-		$s->set('prior_session_id', $this->params['inbound_session_id']);
+		$s->set('prior_session_lastreq', $event->get('last_req'));
+		$s->set('prior_session_id', $event->get('inbound_session_id'));
 		
 		if ($s->get('prior_session_lastreq') > 0):
-			$s->set('time_sinse_priorsession', $s->get('timestamp') - $this->params['last_req']);
-			$s->set('prior_session_year', date("Y", $this->params['last_req']));
-			$s->set('prior_session_month', date("M", $this->params['last_req']));
-			$s->set('prior_session_day', date("d", $this->params['last_req']));
-			$s->set('prior_session_hour', date("G", $this->params['last_req']));
-			$s->set('prior_session_minute', date("i", $this->params['last_req']));
-			$s->set('prior_session_dayofweek', date("w", $this->params['last_req']));
+			$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
+			$s->set('prior_session_year', date("Y", $event->get('last_req')));
+			$s->set('prior_session_month', date("M", $event->get('last_req')));
+			$s->set('prior_session_day', date("d", $event->get('last_req')));
+			$s->set('prior_session_hour', date("G", $event->get('last_req')));
+			$s->set('prior_session_minute', date("i", $event->get('last_req')));
+			$s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
 		endif;
 						
 		// set source			
-		$s->set('source', $this->params['source']);
+		$s->set('source', $event->get('source'));
 						
 		// Make ua id
-		$s->set('ua_id', owa_lib::setStringGuid($this->params['HTTP_USER_AGENT']));
+		$s->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 		
 		// Make OS id
-		$s->set('os_id', owa_lib::setStringGuid($this->params['os']));
+		$s->set('os_id', owa_lib::setStringGuid($event->get('os')));
 	
 		// Make document ids	
-		$s->set('first_page_id', owa_lib::setStringGuid($this->params['page_url']));
+		$s->set('first_page_id', owa_lib::setStringGuid($event->get('page_url')));
 		$s->set('last_page_id', $s->get('first_page_id'));
 		
 		// Generate Referer id
-		$s->set('referer_id', owa_lib::setStringGuid($this->params['HTTP_REFERER']));
+		$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 		
 		// Generate Host id
-		$s->set('host_id', owa_lib::setStringGuid($this->params['host']));
+		$s->set('host_id', owa_lib::setStringGuid($event->get('host')));
 		
 		$s->create();
 		
 		// create event message
 		$session = $s->_getProperties();
-		$properties = array_merge($this->params, $session);
-		$properties['request_id'] = $this->params['guid'];
+		$properties = array_merge($event->getProperties(), $session);
+		$properties['request_id'] = $event->get('guid');
+		$event->replaceProperties($properties);
+		$event->setEventType('base.new_session');
 		
 		// log the new session event to the event queue
-		$this->logEvent('base.new_session', $properties);
+		$this->logEvent($event->getEventType(), $event);
 			
 		return;
 			

@@ -17,10 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Log User Agent Controller
@@ -37,19 +34,19 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_logUserAgentController extends owa_controller {
 	
 	function owa_logUserAgentController($params) {
+		
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
 		
 		$ua = owa_coreAPI::entityFactory('base.ua');
-		
-		$ua->setProperties($this->params);
+		$event = $this->getParam('event');
+		$ua->setProperties($event->getProperties());
 	
-		$ua->set('ua', $this->params['HTTP_USER_AGENT']);
+		$ua->set('ua', $event->get('HTTP_USER_AGENT'));
 		
-		$ua->set('id', owa_lib::setStringGuid($this->params['HTTP_USER_AGENT'])); 
+		$ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT'))); 
 		
 		$ua->create();
 		
