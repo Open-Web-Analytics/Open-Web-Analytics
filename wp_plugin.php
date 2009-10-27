@@ -199,29 +199,28 @@ function owa_main() {
 	global $user_level;
 	
 	$owa = owa_getInstance();
+	$event = $owa->makeEvent();
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
-	if (function_exists(is_preview)):
-		if (is_preview()):
-			$app_params['do_not_log'] = true;
-		endif;
-	endif;
-	
-	// WORDPRESS SPECIFIC DATA //
-	
-	$event_type = 'base.page_request';
-	// Get the type of page
-	$app_params['page_type'] = owa_get_page_type();
+	if (function_exists(is_preview)) {
+		if (is_preview()) {
+			$event->set('do_not_log',true);
+		}
+	}
+
+	$event->setEventType('base.page_request');
+	// Set the type of page
+	$event->set('page_type', owa_get_page_type());
 	
 	//Check to see if this is a Feed Reeder
-	if(is_feed()):
-		$event_type = 'base.feed_request';
-		$app_params['feed_format'] = $_GET['feed'];
-	endif;
+	if(is_feed()) {
+		$event->setEventType('base.feed_request');
+		$event->set('feed_format', $_GET['feed']);
+	}
 	
-	$app_params[$owa->config['source_param']] = $_GET[$owa->config['ns'].$owa->config['source_param']];
+	$event->set($owa->getSetting('base', 'source_param'), $_GET[$owa->getSetting('base', 'ns').$owa->getSetting('base', 'source_param')]);
 	
-	$cu =&owa_coreAPI::getCurrentUser();
+	$cu = &owa_coreAPI::getCurrentUser();
 	
 	// Track users by the email address of that they used when posting a comment
 	//$app_params['user_email'] = $cu->getUserData('email_address'); 
@@ -230,13 +229,13 @@ function owa_main() {
 	//$app_params['user_name'] = $cu->getUserData('user_id');
 	
 	// Get Title of Page
-	$app_params['page_title'] = owa_get_title($app_params['page_type']);
+	$event->set('page_title', owa_get_title($event->get('page_type')));
 	
 	// Create Site ID
-	$app_params['site_id'] = $owa->createSiteId(get_settings('siteurl'));
+	$event->set('site_id', $owa->createSiteId(get_settings('siteurl')));
 	
 	// Process the request by calling owa
-	$owa->logEvent($event_type, $app_params);
+	$owa->trackEvent($event);
 	
 	return;
 }

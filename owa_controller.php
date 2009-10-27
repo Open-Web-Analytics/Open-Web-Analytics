@@ -288,9 +288,17 @@ class owa_controller extends owa_base {
 		endif;
 		
 		$eq = &eventQueue::get_instance();
-		$event = owa_coreAPI::supportClassFactory('base', 'event');
-		$event->setProperties($properties);
-		return $eq->log($event, $event_type);
+		
+		if (!is_a($properties, 'owa_event')) {
+	
+			$event = owa_coreAPI::supportClassFactory('base', 'event');
+			$event->setProperties($properties);
+			$event->setEventType($event_type);
+		} else {
+			$event = $properties;
+		}
+		
+		return $eq->log($event, $event->getEventType());
 	}
 	
 	function createValidator() {

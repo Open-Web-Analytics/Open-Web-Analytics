@@ -42,14 +42,22 @@ class owa_processEventController extends owa_controller {
 	}
 	
 	function __construct($params) {
-	
-		$this->event = owa_coreAPI::supportClassFactory('base', 'event');
+		
+		$event = $params['event']; 
+		if (!empty($event)) {
+			$this->event = $params['event'];
+			
+		} else {
+			owa_coreAPI::debug("No event object was passed to controller.");
+			$this->event = owa_coreAPI::supportClassFactory('base', 'event');
+		}
+		
 		return parent::__construct($params);
 	
 	}
 	
 	/**
-	 * Main Constrol Logic
+	 * Main Control Logic
 	 *
 	 * @return unknown
 	 */
@@ -64,7 +72,7 @@ class owa_processEventController extends owa_controller {
 	 */
 	function pre() {
 		
-		$this->event->setProperties($this->params);
+		//$this->event->setProperties($this->params);
 		
 		// set site id if not already set. 
 		if (!$this->event->get('site_id')) {
@@ -79,7 +87,7 @@ class owa_processEventController extends owa_controller {
 		//$this->event->properties['guid'] = $this->event->guid;
 		
 		// extract site specific state from session store
-		$state = $this->loadSiteSessionState($this->getParam('site_id'));
+		$state = $this->loadSiteSessionState($this->event->get('site_id'));
 		
 		// TODO:Map standard params to standard event property names so we can do a merge of the entire site session state store
 		$this->event->set('inbound_session_id', $state[owa_coreAPI::getSetting('base', 'session_param')]);
@@ -99,9 +107,9 @@ class owa_processEventController extends owa_controller {
 		
 		// set referer
 		////needed in case javascript logger sets the referer variable but is blank
-		if (isset($this->params['referer'])) {
+		if ($this->event->get('referer')) {
 			//TODO: STANDARDIZE NAME to avoid doing this map
-			$this->event->set('HTTP_REFERER', $this->getParam('referer'));
+			$this->event->set('HTTP_REFERER', $this->event->get('referer'));
 		} else {
 			$this->event->set('HTTP_REFERER', owa_coreAPI::getServerParam('HTTP_REFERER'));
 		}
@@ -125,9 +133,10 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
 		// Set Ip Address
-		//if (empty($this->event->properties['ip_address'])):
+		// TODO: move this logic to request container
+		if (!$this->event->get('ip_address')) {
 			$this->event->setIp(owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR'), owa_coreAPI::getServerParam('HTTP_CLIENT_IP'), owa_coreAPI::getServerParam('REMOTE_ADDR'));
-		//endif;
+		}
 		
 		// Set host related properties
 		if (!$this->event->get('REMOTE_HOST')) {
@@ -162,7 +171,6 @@ class owa_processEventController extends owa_controller {
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
 			$this->event->cleanQueryStrings();
 		}
-		
 		
 		// set last request time state
 		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
@@ -210,8 +218,8 @@ class owa_processEventController extends owa_controller {
 	function addToEventQueue() {
 		//$properties = $this->event->getProperties();
 		$eq = &eventQueue::get_instance();
-		$eq->log($this->event, $this->event->get('event_type'));
-		return owa_coreAPI::debug('Logged '.$this->event->get('event_type').' to event queue with properties: '.print_r($this->event->getProperties(), true));
+		$eq->log($this->event, $this->event->getEventType());
+		return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
 
 	}
 

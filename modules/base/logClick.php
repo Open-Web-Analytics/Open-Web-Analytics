@@ -37,8 +37,8 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_logClickController extends owa_controller {
 	
 	function owa_logClickController($params) {
+		
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
@@ -46,18 +46,20 @@ class owa_logClickController extends owa_controller {
 		// Control logic
 		
 		//$this->e->debug("click controller params: ".print_r($this->params, true));
+		
+		$event = $this->getParam('event');
 			
 		$c = owa_coreAPI::entityFactory('base.click');
 				
-		$c->setProperties($this->params);
+		$c->setProperties($event->getProperties());
 		
 		// Set Click Id
-		$c->set('id', $this->params['guid']);
+		$c->set('id', $event->get('guid'));
 		
-		$c->set('ua_id', owa_lib::setStringGuid($this->params['HTTP_USER_AGENT']));
+		$c->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 		
 		// Make document id	
-		$c->set('document_id', owa_lib::setStringGuid($this->params['page_url'])); 
+		$c->set('document_id', owa_lib::setStringGuid($event->get('page_url'))); 
 		
 		// Make Target page id
 		$c->set('target_id', owa_lib::setStringGuid($c->get('target_url')));

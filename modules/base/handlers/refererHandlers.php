@@ -58,11 +58,10 @@ class owa_refererHandlers extends owa_observer {
 		
     	$this->m = $event;
 		$ref = $event->get('HTTP_REFERER');
-    	if (!empty($ref)):
+	
+    	if (!empty($ref)) {
     		return $this->handleEvent('base.logReferer');
-    	else:
-    		return false;
-    	endif;
+    	}
     }
     
 }

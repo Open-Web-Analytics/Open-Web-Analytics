@@ -43,36 +43,39 @@ class owa_logPageRequestController extends owa_controller {
 	
 	function action() {
 		
+		$event = $this->getParam('event');
+		
 		// Control logic
 		
 		$r = owa_coreAPI::entityFactory('base.request');
 		
 		//print_r($r);
 	
-		$r->setProperties($this->params);
+		$r->setProperties($event->getProperties());
 	
 		// Set Primary Key
-		$r->set('id', $this->params['guid']);
+		$r->set('id', $event->get('guid'));
 		
 		// Make ua id
-		$r->set('ua_id', owa_lib::setStringGuid($this->params['HTTP_USER_AGENT']));
+		$r->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 		
 		// Make OS id
-		$r->set('os_id', owa_lib::setStringGuid($this->params['os']));
+		$r->set('os_id', owa_lib::setStringGuid($event->get('os')));
 	
 		// Make document id	
-		$r->set('document_id', owa_lib::setStringGuid($this->params['page_url']));
+		$r->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
 		
 		// Generate Referer id
-		$r->set('referer_id', owa_lib::setStringGuid($this->params['HTTP_REFERER']));
+		$r->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 		
 		// Generate Host id
-		$r->set('host_id', owa_lib::setStringGuid($this->params['host']));
+		$r->set('host_id', owa_lib::setStringGuid($event->get('host')));
 		
 		$result = $r->create();
 		
 		if ($result == true) {
-			$this->logEvent($this->params['event_type'].'_logged', $this->params);
+			$event->setEventType($event->getEventType().'_logged');
+			$this->logEvent($event->getEventType(), $event);
 		}
 		
 		return;

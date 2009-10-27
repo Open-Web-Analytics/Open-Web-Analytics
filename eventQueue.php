@@ -105,14 +105,20 @@ class eventQueue {
 	 * @param	$event	array
 	 * @return bool
 	 */
-	function notify($event_type, $event) {
+	function notify($event) {
 		
-		owa_coreAPI::debug("Notifying listeners of $event_type");
+		owa_coreAPI::debug("Notifying listeners of ".$event->getEventType());
 		//print_r($this->listenersByEventType[$event_type] );
-		foreach ($this->listenersByEventType[$event_type] as $k => $observer_id) {
-			//print_r($this->listeners[$observer_id]);
-			call_user_func_array($this->listeners[$observer_id], array($event));
+		
+		$list = $this->listenersByEventType[$event->getEventType()];
+		if (!empty($list)) {
+				foreach ($this->listenersByEventType[$event->getEventType()] as $k => $observer_id) {
+				//print_r($this->listeners[$observer_id]);
+				call_user_func_array($this->listeners[$observer_id], array($event));
+			}
 		}
+		
+		
 	}
 	
 	/**
@@ -153,13 +159,13 @@ class eventQueue {
 	 * @param	$event	array
 	 * @param 	$event_type	string
 	 */
-	function log($event, $event_type) {
+	function log($event, $event_type = '') {
 		//owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 		//switch for async event queuing
 		if (owa_coreAPI::getSetting('base', 'async_db')) {
-			$this->asyncNotify($event_type, $event);
+			$this->asyncNotify($event);
 		} else {
-			$this->notify($event_type, $event);
+			$this->notify($event);
 		}	
 	}
 	
@@ -168,14 +174,13 @@ class eventQueue {
 	 *
 	 * Adds event to async notiication queue for notification by another process.
 	 * 
-	 * @param 	$event_type	string
 	 * @param	$event	array
 	 * @return bool
 	 */
-	function asyncNotify($event_type, $event) {
+	function asyncNotify($event) {
 		owa_coreAPI::debug("Adding event of $event_type to async notification queue.");
 		$q = $this->getAsyncEventQueue();
-		return $q->log($event, $event_type);
+		return $q->log($event, $event->getEventType());
 	}
 	
 	function getAsyncEventQueue() {

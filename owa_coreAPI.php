@@ -818,67 +818,35 @@ class owa_coreAPI extends owa_base {
 	 * @param string $event_type
 	 * @return boolean
 	 */
-	function logEvent($event_type, $caller_params = '') {
+	function logEvent($event_type, $message = '') {
+		
+		// debug
 		owa_coreAPI::debug("logging event $event_type");
-		if (owa_coreAPI::getSetting('base', 'error_log_level') > 9):
+		
+		if (owa_coreAPI::getSetting('base', 'error_log_level') > 9) {
+			owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
 			owa_coreAPI::debug(print_r($this->e->backtrace(), true));
-		endif;
+		}
 		
 		// do not log if the request is from a reserved IP
 		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
 		//	...
 		
-		// Check to see if named users should be logged
-				
-		if (owa_coreAPI::getSetting('base', 'log_named_users') != true):
+		// Check to see if named users should be logged		
+		if (owa_coreAPI::getSetting('base', 'log_named_users') != true) {
 			$cu = owa_coreAPI::getCurrentUser();	
 			$cu_user_id = $cu->getUserData('user_id');
 			
-			if(!empty($cu_user_id)):
+			if(!empty($cu_user_id)) {
 				return false;
-			endif;
-		endif;
-			
-		// do not log if the do not log param is set by caller.
-		if (owa_coreAPI::getRequestParam('do_not_log')):
-			return false;
-		endif;
-		
-		/////////////////// PARAMS ////////////////////
-		
-		$params = array();
-		
-		// Apply caller's params to event properties
-		if (!empty($caller_params)) {
-			$params = $caller_params;
+			}
 		}
-		
-		// add named user values
-		//$params['user_name'] = $cu->getUserData('user_id');
-		//$params['user_email'] = $cu->getUserData('email_address');
-		
-		
-		//change config value to incomming site_id
-		// NEEDED HERE?
-		if(array_key_exists('site_id', $params)):
-			owa_coreAPI::setSetting('base', 'site_id', $params['site_id'], false);
-		else:
-			$params['site_id'] = owa_coreAPI::getSetting('base', 'site_id');
-		endif;
-
-		owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
-				
-		// set event_type
-		$params['event_type'] = $event_type;
-		
-		// Filter input
-		$params = owa_lib::inputFilter($params);
-		
+			
+	
+		// do not log if the request is robotic
 		$service = &owa_coreAPI::serviceSingleton();
-		//Load browscap
 		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $service->request->getServerParam('HTTP_USER_AGENT'));
 		
-		// Abort if the request is from a robot
 		if (!owa_coreAPI::getSetting('base', 'log_robots')) {
 			if ($bcap->robotCheck()) {
 				owa_coreAPI::debug("ABORTING: request appears to be from a robot");
@@ -886,11 +854,29 @@ class owa_coreAPI extends owa_base {
 			}
 		}
 		
+		// form event if one was not passed
+		
+		if (!is_a($message, 'owa_event')) {
+			$event = owa_coreAPI::supportClassFactory('base', 'event');
+			$event->setProperties($message);
+			$event->setEventType($event_type);
+		} else {
+			$event = $message;
+		}
+								
+				
+		// Filter XSS exploits from event properties
+		$event->cleanProperties();
+		
+		// do not log if the do not log param is set by caller.
+		if ($event->get('do_not_log')) {
+			return false;
+		}
+		
 		// lookup which event processor to use to process this event type
-		$processor_action = owa_coreAPI::getEventProcessor($event_type);
+		$processor_action = owa_coreAPI::getEventProcessor($event->getEventType());
 		
-		return owa_coreAPI::handleRequest($params, $processor_action);
-		
+		return owa_coreAPI::handleRequest(array('event' => $event), $processor_action);
 	}
 
 	
@@ -1140,9 +1126,9 @@ class owa_coreAPI extends owa_base {
 		
 		$params = $service->request->getAllOwaParams();
 		
-		//if ($init != true) {
+		if ($init != true) {
 			owa_coreAPI::debug('Handling request with params: '. print_r($params, true));
-		//}
+		}
 		
 		// backwards compatability with old style view/controler scheme
 		if (array_key_exists('view', $params)) {
@@ -1150,18 +1136,18 @@ class owa_coreAPI extends owa_base {
 			$init = true;
 			return owa_coreAPI::displayView($params);
 		} 
-		
+	
 		if (empty($action)) {
 			$action = owa_coreAPI::getRequestParam('action');
 			if (empty($action)) {
 				$action = owa_coreAPI::getRequestParam('do');
-				owa_coreAPI::debug("post-merge ".print_r($service->request->getAllOwaParams(), true));
+		
 				if (empty($action)) {
 					$action = owa_coreAPI::getSetting('base', 'default_action');
 				}	
 			}
 		}
-				
+		
 		$init = true;
 		return owa_coreAPI::performAction($action, $params);
 						

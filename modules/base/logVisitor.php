@@ -17,10 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Log New Visitor Controller
@@ -50,19 +47,21 @@ class owa_logVisitorController extends owa_controller {
 		
 		$v = owa_coreAPI::entityFactory('base.visitor');
 	
-		$v->setProperties($this->params);
+		$event = $this->getParam('event');
+		
+		$v->setProperties($event->getProperties());
 	
 		// Set Primary Key
-		$v->set('id', $this->params['visitor_id']);
+		$v->set('id', $event->get('visitor_id'));
 		
-		$v->set('user_name', $this->params['user_name']);
-		$v->set('user_email', $this->params['user_email']);
-		$v->set('first_session_id', $this->params['session_id']);
-		$v->set('first_session_year', $this->params['year']);
-		$v->set('first_session_month', $this->params['month']);
-		$v->set('first_session_day', $this->params['day']);
-		$v->set('first_session_dayofyear', $this->params['dayofyear']);
-		$v->set('first_session_timestamp', $this->params['timestamp']);		
+		$v->set('user_name', $event->get('user_name'));
+		$v->set('user_email', $event->get('user_email'));
+		$v->set('first_session_id', $event->get('session_id'));
+		$v->set('first_session_year', $event->get('year'));
+		$v->set('first_session_month', $event->get('month'));
+		$v->set('first_session_day', $event->get('day'));
+		$v->set('first_session_dayofyear', $event->get('dayofyear'));
+		$v->set('first_session_timestamp', $event->get('timestamp'));		
 		
 		$v->create();
 			

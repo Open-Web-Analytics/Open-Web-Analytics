@@ -603,6 +603,11 @@ class owa_event extends owa_base {
 		$this->eventType = $value;
 	}
 	
+	function cleanProperties() {
+	
+		return $this->setProperties(owa_lib::inputFilter($this->getProperties()));
+	}
+	
 		
 }
 

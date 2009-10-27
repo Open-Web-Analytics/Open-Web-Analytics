@@ -50,7 +50,7 @@ class owa_processRequestController extends owa_processEventController {
 		// Control logic
 		
 		// Do not log if the first_hit cookie is still present.
-        $fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->getParam('site_id'));
+        $fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->event->get('site_id'));
 		$fh = owa_coreAPI::getStateParam($fh_state_name);
         
         if (!empty($fh)):
@@ -59,9 +59,11 @@ class owa_processRequestController extends owa_processEventController {
 		endif;
 		
 		// assign visitor cookie
+		// TODO: Move this logic to the controller
 		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
 		
 		// sessionize
+		// TODO: Move this logic to the controller
 		$this->event->sessionize($this->event->get('inbound_session_id'));
 			
 		return;
@@ -81,7 +83,7 @@ class owa_processRequestController extends owa_processEventController {
 			}
 		}
 		
-		owa_coreAPI::debug('Logging '.'base.'.$this->state.' to event queue...');
+		owa_coreAPI::debug('Logging '.'base.'.$this->event->getEventType().' to event queue...');
 		
 		return $this->addToEventQueue();
 	
