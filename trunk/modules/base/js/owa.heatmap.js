@@ -31,6 +31,16 @@ OWA.heatmap.prototype = {
 	regionHeight: null,
 	dirtyRegions: new Array(),
 	timer: '',
+	params: '',
+	
+	setParams: function (params) {
+		alert (params);
+	},
+	
+	getParams: function() {
+		
+		return this.params;
+	},
 	
 	/**
 	 * Marks a region as dirty so that it can be re-rendered
@@ -93,7 +103,7 @@ OWA.heatmap.prototype = {
 		if (this.options.demoMode === true) {
 			return this.getRandomData(this.options.randomDataCount);
 		} else {
-			return this.getData();
+			return this.fetchData();
 		}
 	},
 	
@@ -119,7 +129,13 @@ OWA.heatmap.prototype = {
 	 * Fetches data via ajax request
 	 */
 	fetchData: function() {
-	
+		
+		jQuery.get(OWA.config.getSetting('main_url'), 
+				  {owa_do: 'base.reportOverview', owa_document_url: document.location}),
+				  function(data){
+		     alert( "Data goten: " + data );
+		   }
+		 });
 	},
 	
 	/**
