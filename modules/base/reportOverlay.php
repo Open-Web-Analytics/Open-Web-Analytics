@@ -44,68 +44,41 @@ class owa_reportOverlayController extends owa_reportController {
 	
 	function action() {
 				
-		// dash counts	
-		$d = owa_coreAPI::metricFactory('base.dashCounts');
-		$d->setPeriod($this->getPeriod());
-		$d->setConstraint('site_id', $this->getParam('site_id')); 
-		$res = $d->generate();
-		//print_r($d->zeroFill($res));
-		$this->set('summary_stats_data', $d->zeroFill($res));
+		// Fetch document object
+		$d = owa_coreAPI::entityFactory('base.document');
+		$d->getByColumn('url', $this->getParam('document_url'));
+		$this->set('document_details', $d->_getProperties());
+		$this->set('document_id', $this->getParam('document_id'));
 		
-		// dash trend	
-		$dt = owa_coreAPI::metricFactory('base.dashCoreByDay');
-		$dt->setPeriod($this->makeTimePeriod('last_thirty_days'));
-		$dt->setConstraint('site_id', $this->getParam('site_id')); 
-		$trend = owa_lib::deconstruct_assoc($dt->generate());
-		//print_r($trend);
-		$this->set('site_trend', $trend);
+		// Get clicks
+		$c = owa_coreAPI::metricFactory('base.topClicks');
+		$c->setPeriod($this->getPeriod());
+		$c->setConstraint('site_id', $this->getParam('site_id')); 
+		$c->setConstraint('document_id', $d->get('id'));
+		
+		//$c->setConstraint('ua_id', $this->getParam('ua_id'));
+		
+		$c->setLimit(200);
+		$this->set('clicks', $c->generateResults());
+		
+		/*
+		// Get top user agents to populate pull-down
+		$ua = owa_coreAPI::metricFactory('base.clickBrowserTypes');
+		$ua->setPeriod($this->getPeriod());
+		$ua->setConstraint('site_id', $this->getParam('site_id')); 
+		$ua->setConstraint('document_id', $this->getParam('document_id'));
+		$ua->setLimit(10);
+		$this->set('uas', $ua->generate());
+		
+		*/
 		
 		// set view stuff
-		$this->setSubview('base.reportDashboard');
-		$this->setTitle('Analytics Dashboard');	
-			
+		$this->setView('base.json');
+					
 		return;	
 		
 	}
 	
 }
-		
-require_once(OWA_BASE_DIR.'/owa_view.php');
-
-/**
- * Overlay Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportOverlayView extends owa_view {
-	
-	function owa_reportOverlayView() {
-		
-		return owa_reportDashboardView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render() {
-		
-		$this->body->set_template('report_dashboard.tpl');
-		$this->body->set('summary_stats', $this->get('summary_stats_data'));			
-		$this->body->set('site_trend', $this->get('site_trend'));
-		return;
-	}
-	
-	
-}
-
 
 ?>

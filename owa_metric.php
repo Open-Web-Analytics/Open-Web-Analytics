@@ -295,6 +295,35 @@ class owa_metric extends owa_base {
 	
 	}
 	
+	function generateResults() {
+		
+		// set period specific constraints
+		$this->makeTimePeriod();
+		// set constraints
+		$this->db->multiWhere($this->getConstraints());
+		// sets metric specific SQL
+		$this->calculate();
+		// generate paginated result set
+		$rs = owa_coreAPI::supportClassFactory('base.paginatedResultSet');
+		// pass limit to db object if one exists
+		if (!empty($this->limit)) {
+			$rs->setLimit($this->limit);
+		}
+		
+		// pass limit to db object if one exists
+		if (!empty($this->page)) {
+			$rs->setPage($this->page);
+		}
+		
+		// get results
+		$rs->getResults($this->db);
+		
+		// add labels
+		$rs->setLabels($this->getLabels());
+		
+		return $rs; 
+	}
+	
 	function calculatePaginationCount() {
 		
 		if (method_exists($this, 'paginationCount')):

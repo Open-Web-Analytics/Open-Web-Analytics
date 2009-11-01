@@ -33,7 +33,6 @@ class owa_topClicks extends owa_metric {
 	function owa_topClicks($params = null) {
 		
 		return owa_topClicks::__construct($params);
-		
 	}
 	
 	function __construct($params= null) {
@@ -45,8 +44,8 @@ class owa_topClicks extends owa_metric {
 		
 		$this->db->selectFrom('owa_click');
 		$this->db->selectColumn("count(id) as count,
-									click_x,
-									click_y,
+									click_x as x,
+									click_y as y,
 									page_width,
 									page_height,
 									dom_element_x,
@@ -55,8 +54,6 @@ class owa_topClicks extends owa_metric {
 		
 		$this->db->groupBy('position');
 		$this->db->orderBy('count', 'DESC');
-				
-		return $this->db->getAllRows();
 	}
 	
 	

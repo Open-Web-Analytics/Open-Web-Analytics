@@ -80,7 +80,7 @@ class Template {
     function set($name, $value) {
     
     	if (is_object($value)) {
-    		if (is_a($value, 'owa_template')) {
+    		if (is_a($value, 'Template')) {
     			$value = $value->fetch();
     		}
     	} 
@@ -103,7 +103,7 @@ class Template {
 			$file = $this->template_dir.$file;
 		endif;
 
-        @extract($this->vars);          // Extract the vars to local namespace
+        extract($this->vars);          // Extract the vars to local namespace
         ob_start();                    // Start output buffering
         include($file);                // Include the file
         $contents = ob_get_contents(); // Get the contents of the buffer
