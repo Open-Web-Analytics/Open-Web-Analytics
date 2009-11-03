@@ -85,8 +85,7 @@ OWA.tracker = function(caller_params) {
 	}
 	var p = OWA.util.readCookie('owa_overlay');
 	if (p) {
-		alert('cookie detected');
-		this.loadHeatmap(p);
+		this.loadHeatmap();
 	}
 	
 }
@@ -152,6 +151,7 @@ OWA.tracker.prototype = {
 	 */
 	event_queue : new Array(),
 	player: '',
+	overlay: '',
 	
 	/**
 	 * Convienence method for seting page title
@@ -810,16 +810,16 @@ OWA.tracker.prototype = {
 		this.player.load(this.event_queue);
 	},
 	
-	loadHeatmap: function(p) {
+	loadHeatmap: function() {
 		this.pause();
 		OWA.util.loadScript('owa/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
 		OWA.util.loadCss('owa/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript('owa/modules/base/js/owa.heatmap.js', function(){
-			var hm = new OWA.heatmap();
+			this.overlay = new OWA.heatmap();
 			//hm.setParams(p);
-			hm.options.demoMode = true;
-			hm.options.liveMode = true;
-			hm.generate();
+			//hm.options.demoMode = true;
+			this.overlay.options.liveMode = true;
+			this.overlay.generate();
 		});	
 	}
 	

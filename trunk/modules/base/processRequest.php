@@ -53,10 +53,10 @@ class owa_processRequestController extends owa_processEventController {
         $fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->event->get('site_id'));
 		$fh = owa_coreAPI::getStateParam($fh_state_name);
         
-        if (!empty($fh)):
-        	$this->e->debug('Aborting request processing due to finding first hit cookie.');
-			return;
-		endif;
+        if (!empty($fh)) {
+        	$this->e->debug('Clearing left over first first hit cookie.');
+			owa_coreAPI::clearState($fh_state_name);
+		}
 		
 		// assign visitor cookie
 		// TODO: Move this logic to the controller

@@ -81,7 +81,46 @@ OWA.util =  {
 	loadCss: function (url, callback){
 
 	    return LazyLoad.css(url, callback);
+	},
+	
+	parseCookieString: function parseQuery(v) {
+		var queryAsAssoc = new Array();
+		var queryString = unescape(v);
+		var keyValues = queryString.split("|||");
+		//alert(keyValues);
+		for (var i in keyValues) {
+			var key = keyValues[i].split("=>");
+			queryAsAssoc[key[0]] = key[1];
+			//alert(key[0] +"="+ key[1]);
+		}
+		
+		return queryAsAssoc;
+	},
+	
+	parseCookieStringToJson: function parseQuery(v) {
+		var queryAsObj = new Object;
+		var queryString = unescape(v);
+		var keyValues = queryString.split("|||");
+		//alert(keyValues);
+		for (var i in keyValues) {
+			var key = keyValues[i].split("=>");
+			queryAsObj[key[0]] = key[1];
+			//alert(key[0] +"="+ key[1]);
+		}
+		//alert (queryAsObj.period);
+		return queryAsObj;
+	},
+	
+	nsParams: function(obj) {
+		var new_obj = new Object;
+		
+		for(param in obj) {
+			new_obj['owa_'+ param] = obj[param];
+		}
+		
+		return new_obj;
 	}
+
 }
 
 

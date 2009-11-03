@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
+require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * Overlay Report Controller
@@ -46,7 +47,7 @@ class owa_reportOverlayController extends owa_reportController {
 				
 		// Fetch document object
 		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByColumn('url', $this->getParam('document_url'));
+		$d->getByColumn('url', urldecode($this->getParam('document_url')));
 		$this->set('document_details', $d->_getProperties());
 		$this->set('document_id', $this->getParam('document_id'));
 		
@@ -57,9 +58,19 @@ class owa_reportOverlayController extends owa_reportController {
 		$c->setConstraint('document_id', $d->get('id'));
 		
 		//$c->setConstraint('ua_id', $this->getParam('ua_id'));
+		$limit = $this->getParam('limit');
+		if (!limit) {
+			$limit = 200;
+		}
 		
-		$c->setLimit(200);
-		$this->set('clicks', $c->generateResults());
+		if ($this->getParam('page')) {
+			$c->setPage($this->getParam('page'));
+		}
+		
+		$c->setLimit($limit);
+		$clicks = $c->generateResults();
+		//print_r($clicks);
+		$this->set('json', $clicks);
 		
 		/*
 		// Get top user agents to populate pull-down

@@ -37,7 +37,7 @@ class owa_paginatedResultSet extends owa_base {
 	
 	var $results_count;
 	
-	var $results;
+	var $rows;
 	
 	var $more;
 	var $total_pages;
@@ -62,14 +62,15 @@ class owa_paginatedResultSet extends owa_base {
 		$this->page = $page;
 	}
 	
-	function setMorePages($bool) {
+	function setMorePages() {
 		
-		$this->more = $bool;
+		$this->more = true;
 	}
 	
 	function calculateOffset() {
 		
 		$this->offset = $this->limit * ($this->page - 1);
+		return $this->offset;
 	}
 	
 	function countResults($results) {
@@ -77,9 +78,10 @@ class owa_paginatedResultSet extends owa_base {
 		$this->results_count = count($results);
 		
 		if ($this->results_count < $this->limit) {
-			$this-setMorePages(false);
+			// no more pages
 		} else {
-			$this->setMorePages(true);
+			// more pages
+			$this->setMorePages();
 			$this->total_pages = ceil($this->results_count / $this->limit);
 		}
 	}
@@ -88,17 +90,17 @@ class owa_paginatedResultSet extends owa_base {
 		
 		if (!empty($this->limit)) {
 			// query for more than we need	
-			$dao->setLimit($this->limit * 3);
+			$dao->limit($this->limit * 3);
 		}
 		
 		if (!empty($this->page)) {
 		
-			$dao->setOffset($this->calculateOffset());
+			$dao->offset($this->calculateOffset());
 		}
 		
 		$results = $dao->$method();
 		$this->countResults($results);
-		$this->results = array_slice($results, 0, $this->limit);
+		$this->rows = array_slice($results, 0, $this->limit);
 		
 	}
 	
@@ -106,7 +108,7 @@ class owa_paginatedResultSet extends owa_base {
 		
 		$set = array();
 		
-		$set['rows'] = $this->results;
+		$set['rows'] = $this->rows;
 		$set['count'] = $this->results_count;
 		$set['page'] = $this->page;
 		$set['total_pages'] = $this->total_pages;

@@ -43,8 +43,7 @@ class owa_topClicks extends owa_metric {
 	function calculate() {
 		
 		$this->db->selectFrom('owa_click');
-		$this->db->selectColumn("count(id) as count,
-									click_x as x,
+		$this->db->selectColumn("	click_x as x,
 									click_y as y,
 									page_width,
 									page_height,
@@ -52,8 +51,8 @@ class owa_topClicks extends owa_metric {
 									dom_element_y,
 									position");
 		
-		$this->db->groupBy('position');
-		$this->db->orderBy('count', 'DESC');
+		
+		$this->db->orderBy('position', 'DESC');
 	}
 	
 	
