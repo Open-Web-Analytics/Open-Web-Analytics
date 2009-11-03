@@ -20,7 +20,8 @@ OWA.heatmap.prototype = {
 		'demoMode': false, 
 		'liveMode': false, 
 		'mapInterval': 1000,
-		'randomDataCount': 200
+		'randomDataCount': 200,
+		'rowsPerFetch': 3
 	},
 	canvas: null,
 	context: null,
@@ -31,16 +32,9 @@ OWA.heatmap.prototype = {
 	regionHeight: null,
 	dirtyRegions: new Array(),
 	timer: '',
-	params: '',
-	
-	setParams: function (params) {
-		alert (params);
-	},
-	
-	getParams: function() {
-		
-		return this.params;
-	},
+	clicks: '',
+	nextPage: 0,
+	more: true,
 	
 	/**
 	 * Marks a region as dirty so that it can be re-rendered
@@ -94,19 +88,6 @@ OWA.heatmap.prototype = {
 		window.navigate(document.location);
 	},
 	
-	/**
-	 * Gets data, random if in demoMode
-	 */
-	getData: function() {
-
-		// get data 
-		if (this.options.demoMode === true) {
-			return this.getRandomData(this.options.randomDataCount);
-		} else {
-			return this.fetchData();
-		}
-	},
-	
 	startTimer: function() {
 		var that = this;
 		this.timer = setInterval(function(){that.map()}, this.options.mapInterval);
@@ -116,27 +97,117 @@ OWA.heatmap.prototype = {
 		if (!this.timer) return false;
 	  	clearInterval(this.timer);
 	},
-	
+		
 	/**
 	 * Gets data and plots it
 	 */
 	map: function() {
 		var data = this.getData();
-		this.plotDots(data);
+		
+		if (this.options.liveMode === true) {
+		
+			var more = this.checkForMoreClicks();
+			if (this.checkForMoreClicks()) {
+				console.log('there are more clicks to fetch.');
+			} else {
+				console.log('there are no more clicks to fetch.');
+				this.stopTimer();
+			}	
+		}
+	},
+	
+	/**
+	 * Gets data, random if in demoMode
+	 */
+	getData: function() {
+
+		// get data 
+		if (this.options.demoMode === true) {
+			return this.getRandomData(this.options.randomDataCount);
+		} else {
+			var data = this.fetchData(this.getNextPage());
+			
+			return;
+		}
+	},
+	
+	checkForMoreClicks: function() {
+		
+		return this.more;
+	},
+	
+	getNextPage: function() {
+		
+		return this.nextPage;
+	}, 
+	
+	setNextPage: function(page) {
+		console.log("setNextpage received page as %d", page);
+		this.nextPage++;	
+		console.log("setNextpage is setting page as %d", this.nextPage);
+	},
+	
+	setMore: function(bool) {
+		
+		this.more = bool;
 	},
 	
 	/**
 	 * Fetches data via ajax request
 	 */
-	fetchData: function() {
+	fetchData: function(page) {
+		var p = OWA.util.readCookie('owa_overlay');
+		//alert(unescape(p));
+		var params = OWA.util.parseCookieStringToJson(p);
+		params.action = 'base.reportOverlay';
+		params.document_url = escape(document.location);
+		params.limit = this.options.rowsPerFetch;
 		
-		jQuery.get(OWA.config.getSetting('main_url'), 
-				  {owa_do: 'base.reportOverview', owa_document_url: document.location}),
-				  function(data){
-		     alert( "Data goten: " + data );
-		   }
-		 });
+		// add page number if one was passed in
+		if (page) {
+			console.log("fetchData will fetch page %s", page);
+			params.page = page;
+		}
+		
+		//closure
+		var that = this;
+		
+		jQuery.get(OWA.getSetting('baseUrl'), OWA.util.nsParams(params), function(data) { that.plotClickData(data); }, 'json');
+		
+		//console.log(data.page);
+		return;
 	},
+	
+	plotClickData: function(data) {
+				
+		if (data) {
+			//console.log('setClicks says data is defined');
+			this.clicks = data;
+			
+			//set more flag
+			if (data.more === true) {
+				console.log("plotClickData says more flag was set to true");
+				this.setMore(true);
+				//set next page
+				this.setNextPage(data.page);
+			} else {
+				console.log("plotClickData says more flag was set to false");
+				this.setMore(false);
+			}
+			
+			//plot dots
+			this.plotDots(this.getClicks());
+			return true;
+		} else {
+			return false;
+		}
+		
+	},
+	
+	getClicks: function() {
+		//console.log("getClicks is logging %s", this.clicks['page']);
+		return this.clicks.rows;
+	},	
 	
 	/**
 	 * Looks up the a region's top lower right corner plot points
@@ -335,7 +406,7 @@ OWA.heatmap.prototype = {
 	 *
 	 */
 	plotDots: function(data) {
-		
+	
 		for( var i = 0; i < data.length; i++) {	
 			
 			if ((data[i].x + this.options.dotSize) > this.docDimensions.w) {

@@ -304,7 +304,7 @@ class owa_metric extends owa_base {
 		// sets metric specific SQL
 		$this->calculate();
 		// generate paginated result set
-		$rs = owa_coreAPI::supportClassFactory('base.paginatedResultSet');
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 		// pass limit to db object if one exists
 		if (!empty($this->limit)) {
 			$rs->setLimit($this->limit);
@@ -316,7 +316,7 @@ class owa_metric extends owa_base {
 		}
 		
 		// get results
-		$rs->getResults($this->db);
+		$rs->generate($this->db);
 		
 		// add labels
 		$rs->setLabels($this->getLabels());
