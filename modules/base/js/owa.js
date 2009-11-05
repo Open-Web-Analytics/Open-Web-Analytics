@@ -57,6 +57,25 @@ OWA.util =  {
 		else var expires = "";
 		document.cookie = name+"="+value+expires+"; path=/";
 	},
+	
+	dt_setcookie: function (name, value, expirydays) {
+	    var expiry = new Date();
+	    expiry.setDate(expiry.getDate() + expirydays);
+	    document.cookie = name+"="+escape(value)+";expires="+expiry.toGMTString();
+	    console.log(document.cookie);
+	    return document.cookie;
+	},
+	
+	setCookie2: function (name,value,days,path,domain,secure) {
+		var date = new Date();
+		date.setTime(date.getTime()+(days*24*60*60*1000));
+		
+		document.cookie = name + "=" + escape (value) +
+	    ((days) ? "; expires=" + date.toGMTString() : "") +
+	    ((path) ? "; path=" + path : "") +
+	    ((domain) ? "; domain=" + domain : "") +
+	    ((secure) ? "; secure" : "");
+	},
 
 	readCookie: function (name) {
 		var nameEQ = name + "=";
@@ -68,9 +87,22 @@ OWA.util =  {
 		}
 		return null;
 	},
-
-	eraseCookie: function(name) {
-		this.createCookie(name,"",-1);
+	
+	
+	eraseCookie: function (name) {
+		//console.log(this.readCookie('owa_v'));
+		
+		var domain = OWA.getSetting('cookie_domain') || document.domain;
+		//console.log(domain);
+		this.setCookie2(name,"",-1,"",domain);
+		var test = this.readCookie(name);
+		
+		if (test) {
+			domain = "."+domain;
+			console.log(domain);
+			this.setCookie2(name,"",-1,"",domain);	
+		}
+		
 	},
 	
 	loadScript: function (url, callback){

@@ -99,8 +99,13 @@ class owa_paginatedResultSet extends owa_base {
 		}
 		
 		$results = $dao->$method();
-		$this->countResults($results);
-		$this->rows = array_slice($results, 0, $this->limit);
+		
+		if (!empty($results)) {
+			$this->countResults($results);	
+			$this->rows = array_slice($results, 0, $this->limit);
+		} else {
+			$this->rows = array();
+		}
 		
 	}
 	

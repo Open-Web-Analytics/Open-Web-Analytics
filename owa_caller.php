@@ -340,7 +340,7 @@ class owa_caller extends owa_base {
 		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
 		$event->setProperties($service->request->getAllOwaParams());
 	
-		return owa_coreAPI::trackEvent($event);
+		return $this->trackEvent($event);
 		
 	}
 	
