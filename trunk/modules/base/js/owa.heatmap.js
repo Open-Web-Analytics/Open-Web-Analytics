@@ -21,7 +21,7 @@ OWA.heatmap.prototype = {
 		'liveMode': false, 
 		'mapInterval': 1000,
 		'randomDataCount': 200,
-		'rowsPerFetch': 3
+		'rowsPerFetch': 5
 	},
 	canvas: null,
 	context: null,
@@ -33,8 +33,9 @@ OWA.heatmap.prototype = {
 	dirtyRegions: new Array(),
 	timer: '',
 	clicks: '',
-	nextPage: 0,
+	nextPage: 1,
 	more: true,
+	lock: false,
 	
 	/**
 	 * Marks a region as dirty so that it can be re-rendered
@@ -85,7 +86,7 @@ OWA.heatmap.prototype = {
 	endSession: function() {
 		
 		OWA.util.eraseCookie('owa_overlay');
-		window.navigate(document.location);
+		window.location.href = document.location;
 	},
 	
 	startTimer: function() {
@@ -102,17 +103,26 @@ OWA.heatmap.prototype = {
 	 * Gets data and plots it
 	 */
 	map: function() {
-		var data = this.getData();
-		
+	
+		if (this.lock == true) {
+			console.log("skipping data fetch due to lock.");
+			return;
+		} else {
+			this.lock = true;
+		}
+	
 		if (this.options.liveMode === true) {
 		
 			var more = this.checkForMoreClicks();
-			if (this.checkForMoreClicks()) {
+			if (more === true) {
 				console.log('there are more clicks to fetch.');
+				var data = this.getData();
 			} else {
 				console.log('there are no more clicks to fetch.');
 				this.stopTimer();
 			}	
+		} else {
+			var data = this.getData();
 		}
 	},
 	
@@ -156,6 +166,7 @@ OWA.heatmap.prototype = {
 	 * Fetches data via ajax request
 	 */
 	fetchData: function(page) {
+	
 		var p = OWA.util.readCookie('owa_overlay');
 		//alert(unescape(p));
 		var params = OWA.util.parseCookieStringToJson(p);
@@ -185,7 +196,7 @@ OWA.heatmap.prototype = {
 			this.clicks = data;
 			
 			//set more flag
-			if (data.more === true) {
+			if (data.more === true && data.more != null) {
 				console.log("plotClickData says more flag was set to true");
 				this.setMore(true);
 				//set next page
@@ -197,6 +208,7 @@ OWA.heatmap.prototype = {
 			
 			//plot dots
 			this.plotDots(this.getClicks());
+			this.lock = false;
 			return true;
 		} else {
 			return false;
