@@ -40,7 +40,7 @@ class owa_logoutController extends owa_controller {
 	
 	function __construct($params) {
 	
-		return parent::__construct();
+		return parent::__construct($params);
 	}
 	
 	function action() {
