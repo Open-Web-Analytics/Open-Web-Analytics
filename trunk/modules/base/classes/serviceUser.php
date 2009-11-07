@@ -67,7 +67,12 @@ class owa_serviceUser extends owa_base {
 		
 		$caps = &owa_coreAPI::getSetting('base', 'capabilities');
 		
-		return $caps[$role];
+		if (array_key_exists($role, $caps)) {
+			return $caps[$role];
+		} else {
+			return array();
+		}
+		
 	}
 	
 	function getPreferences($user_id) {
@@ -100,11 +105,11 @@ class owa_serviceUser extends owa_base {
 	
 	function isCapable($cap) {
 		//owa_coreAPI::debug(print_r($this->user->getProperties(), true));
-		//owa_coreAPI::debug("cap ".$cap);
+		owa_coreAPI::debug("cap ".$cap);
 		// just in case there is no cap passed
 		if (!empty($cap)) {
 			//adding @ here as is_array throws warning that an empty array is not the right data type!
-			if (@in_array($cap, $this->capabilities)) {
+			if (in_array($cap, $this->capabilities)) {
 				return true;
 			} else {
 				return false;
