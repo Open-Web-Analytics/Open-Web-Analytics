@@ -7,7 +7,7 @@
 		<form method="POST">
 		<TR valign="top">
 			<TH>User Name:</TH>
-			<TD>Admin</TD>
+			<TD>admin</TD>
 		</TR>
 		<TR valign="top">
 			<TH>Real Name:</TH>
