@@ -4,7 +4,7 @@
  * Set the title of a chart, make one of these and pass it into
  * open_flash_chart set_title
  */
-class title
+class ofc_title
 {
 	function title( $text='' )
 	{

@@ -130,13 +130,13 @@ class owa_ofc {
 	
 	function bar() {
 	
-		$title = new title( date("D M d Y") );
+		//$title = new title( date("D M d Y") );
 		
 		$bar = $this->getBarPlot();
 		$bar->set_values( array(9,8,7,6,5,4,3,2,1) );
 		
 		$chart = new open_flash_chart();
-		$chart->set_title( $title );
+		//$chart->set_title( $title );
 		$chart->add_element( $bar );
 		
 		echo $chart->toPrettyString();
