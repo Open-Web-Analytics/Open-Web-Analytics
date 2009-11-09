@@ -22,7 +22,7 @@ require_once "$IP/includes/SpecialPage.php";
 
 /* MEDIAWIKI GLOBALS */
 global $wgCachePages, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword, $wgUser, $wgServer, $wgScriptPath, $wgScript;
-
+print_r($wgUser);
 /* OWA's MEDIAWIKI CONFIGURATION OVERRIDES */
 
 // Public folder URI
@@ -60,7 +60,7 @@ $wgCachePages = false;
 $wgCacheEpoch = 'date +%Y%m%d%H%M%S';
 
 // Register Extension with MediaWiki
-$wgExtensionFunctions[] = 'owa_main';
+//$wgExtensionFunctions[] = 'owa_main';
 $wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaWiki', 
 										'author' => 'Peter Adams <peter@openwebanalytics.com>', 
 										'url' => 'http://www.openwebanalytics.com' );
@@ -72,31 +72,21 @@ $wgExtensionCredits['specialpage'][] = array('name' => 'Open Web Analytics for M
 
 //Load Special Page
 $wgAutoloadClasses['SpecialOwa'] = __FILE__;
+// Adds OWA's admin interface to special page list
 $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
+// generic action hook for OWA special actions
 $wgHooks['UnknownAction'][] = 'owa_actions';
-
-
-
-/**
- * OWA Singleton Method
- *
- * Makes a singleton instance of OWA using the config array
- */
-function owa_factory() {
-
-	global $owa_config;
+// Hook for logging various page types
+$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
+$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
+$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
+// Hooks for adding page tracking tags 
+$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
+$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
+$wgHooks['CategoryPageView'][] = 'owa_footer';
 	
-	static $owa;
-	
-	if(!empty($owa)):
-		
-	else:
-		$owa = new owa_php($owa_config);	
-	endif;
-	
-	return $owa;
-}
+
 
 /**
  * Main Mediawiki Extension method
@@ -139,10 +129,9 @@ function owa_actions() {
 	
 	global $wgOut;
 	
-	$owa = owa_factory();
+	$owa = owa_php::singleton();
     owa_set_priviledges();
 	
-
 	$wgOut->disable();
 	$owa->handleSpecialActionRequest();
 	
@@ -161,7 +150,7 @@ function owa_set_priviledges() {
 
 	global $wgUser;
 	
-	$owa = owa_factory();
+	$owa = owa_php::singleton();
 	
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
@@ -216,7 +205,7 @@ function owa_logSpecialPage(&$specialPage) {
     $app_params['page_type'] = 'Special Page';
 
 	// Log the request
-	$owa = owa_factory();
+	$owa = owa_php::singleton();
 	owa_set_priviledges();
 	$owa->log($app_params);
 	
@@ -239,7 +228,7 @@ function owa_logCategoryPage(&$categoryPage) {
     $app_params['page_type'] = 'Category';
 	
 	// Log the request
-	$owa = owa_factory();
+	$owa = owa_php::singleton();
 	
 	$owa->log($app_params);
 	
@@ -267,7 +256,7 @@ function owa_logArticle(&$article) {
     $app_params['page_type'] = 'article';
     
 	// Log the request
-	$owa = owa_factory();
+	$owa = owa_php::singleton();
 	// wguser is not set by the time this hook is called for some reason.
 	//owa_set_priviledges();
 	$owa->log($app_params);
@@ -285,7 +274,7 @@ function owa_logArticle(&$article) {
 function owa_footer(&$article) {
 	
 	global $wgOut;
-	$owa = owa_factory();
+	$owa = owa_php::singleton();
 	
 	$tags = $owa->placeHelperPageTags(false);
 	
@@ -311,7 +300,7 @@ class SpecialOwa extends SpecialPage {
             global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
             
             $this->setHeaders();
-            $owa = owa_factory();
+            $owa = owa_php::singleton();
        		owa_set_priviledges();
             
             $params = array();

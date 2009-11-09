@@ -38,12 +38,33 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
  */
 
 class owa_php extends owa_caller {
+
+	function __construct($config = null) {
+		
+		return parent::__construct($config);
+	}
 	
 	function owa_php($config = null) {
 		
-		return $this->owa_caller($config);
-		
+		return owa_php::__construct($config);
 	}
+	
+	/**
+	 * OWA Singleton Method
+	 *
+	 * Makes a singleton instance of OWA using the config array
+	 */
+	function singleton($config = null) {
+		
+		static $owa;
+		
+		if(!empty($owa)) {
+			return $owa;
+		} else {
+			return new owa_php($config);	
+		}
+	}
+
 
 }
 
