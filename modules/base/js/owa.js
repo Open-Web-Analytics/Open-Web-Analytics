@@ -8,6 +8,18 @@ var OWA = {
 	
 	getSetting: function(name) {
 		return this.config[name];
+	},
+	
+	debug: function() {
+		
+		var debugging = OWA.getSetting('debug') || false; // or true
+		
+		if (debugging) {
+			
+			if(window.console && window.console.firebug) { 
+		 		console.log.apply(this, arguments);
+			}
+		}
 	}
 
 };
