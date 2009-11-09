@@ -30,7 +30,7 @@ require_once(OWA_BASE_DIR.'/owa_base.php');
  * @since		owa 1.0.0
  */
 
-class owa_event extends owa_base {
+class owa_event {
 	
 	/**
 	 * First hit flag
@@ -53,7 +53,7 @@ class owa_event extends owa_base {
 	 *
 	 * @var string
 	 */
-	var $state;
+	//var $state;
 	
 	var $eventType;
 	
