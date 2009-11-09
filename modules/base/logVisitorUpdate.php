@@ -50,12 +50,13 @@ class owa_logVisitorUpdateController extends owa_controller {
 		
 		$v->getByPk('id', $event->get('visitor_id'));
 		
-		if ($$event->get('user_name'))):
+		if ($event->get('user_name')) {
 			$v->set('user_name', $event->get('user_name'));
-		endif;
-		if ($event->get('user_email'))):
+		}
+		
+		if ($event->get('user_email')) {
 			$v->set('user_email', $event->get('user_email'));
-		endif;
+		}
 		$v->set('last_session_id', $event->get('session_id'));
 		$v->set('last_session_year', $event->get('year'));
 		$v->set('last_session_month', $event->get('month'));
@@ -64,11 +65,11 @@ class owa_logVisitorUpdateController extends owa_controller {
 		
 		$id = $v->get('id');
 		
-		if (!empty($id)):
+		if (!empty($id)) {
 			$v->update();
 			
 		// insert the visitor object just in case it's not found in the db	
-		else:
+		} else {
 			$v->set('id', $event->get('visitor_id'));
 			$v->set('first_session_id', $event->get('session_id'));
 			$v->set('first_session_year', $event->get('year'));
@@ -77,7 +78,7 @@ class owa_logVisitorUpdateController extends owa_controller {
 			$v->set('first_session_dayofyear', $event->get('dayofyear'));	
 			$v->set('first_session_timestamp', $event->get('timestamp'));		
 			$v->create();
-		endif;
+		}
 		
 		return;
 			
