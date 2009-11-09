@@ -48,7 +48,7 @@ class owa_sitesInvocationController extends owa_adminController {
 	
 	function action() {
 	
-		$this->set('site_id', "'".$this->getParam('site_id')."'");
+		$this->set('site_id', $this->getParam('site_id'));
 		$this->setSubview('base.sitesInvocation');
 		$this->setView('base.options');
 		return;
