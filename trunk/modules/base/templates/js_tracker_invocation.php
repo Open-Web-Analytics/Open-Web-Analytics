@@ -5,7 +5,7 @@ OWATracker = new OWA.tracker(<?php if ($owa_params == true): echo 'owa_params'; 
 <?php if ($endpoint): ?>
 OWATracker.setEndpoint('<?php echo $endpoint;?>');
 <?php endif;?>
-OWATracker.setSiteId(<?php if (strpos($site_id, 'owa_')){ echo sprintf("'%s'", $site_id); } else { echo $site_id; } ?>);
+OWATracker.setSiteId(<?php if (!strpos($site_id, 'owa_')){ echo sprintf("'%s'", $site_id); } else { echo $site_id; } ?>);
 <?php if (!$do_not_log_pageview): ?>
 OWATracker.trackPageView();
 <?php endif;?>
