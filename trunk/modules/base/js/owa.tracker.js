@@ -639,7 +639,7 @@ OWA.tracker.prototype = {
 			
 			this.registerBeforeNavigateEvent();
 		} else {
-			console.log("not tracking dom stream for this user.");
+			OWA.debug("not tracking dom stream for this user %d.", 50);
 		}
 			
 		
