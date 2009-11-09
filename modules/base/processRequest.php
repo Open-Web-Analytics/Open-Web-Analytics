@@ -83,7 +83,7 @@ class owa_processRequestController extends owa_processEventController {
 			}
 		}
 		
-		owa_coreAPI::debug('Logging '.'base.'.$this->event->getEventType().' to event queue...');
+		owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
 		
 		return $this->addToEventQueue();
 	

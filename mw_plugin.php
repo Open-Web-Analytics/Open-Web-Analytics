@@ -17,16 +17,15 @@
 //
 
 require_once('owa_env.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_mw.php');
 require_once "$IP/includes/SpecialPage.php";
 
 /* MEDIAWIKI GLOBALS */
 global $wgCachePages, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword, $wgUser, $wgServer, $wgScriptPath, $wgScript;
-print_r($wgUser);
 /* OWA's MEDIAWIKI CONFIGURATION OVERRIDES */
 
 // Public folder URI
-define('OWA_PUBLIC_URL', $wgServer.$wgScriptPath.'/extensions/owa/public/');
+define('OWA_PUBLIC_URL', $wgServer.$wgScriptPath.'/extensions/owa/');
 
 // Build OWA's Mediawiki specific config overrides array
 $owa_config = array();
@@ -49,10 +48,13 @@ $owa_config['main_absolute_url'] = $wgServer.$owa_config['main_url'];
 $owa_config['action_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction';
 $owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1';
 $owa_config['link_template'] = '%s&%s';
-//$owa_config['authentication'] = 'mediawiki';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
 $owa_config['is_embedded'] = true;
 $owa_config['delay_first_hit'] = true;
+$owa_config['error_handler'] = 'development';
+
+//create instance of OWA
+$owa = owa_mw::singleton($owa_config);
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
@@ -85,9 +87,9 @@ $wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
 $wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
 $wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
 $wgHooks['CategoryPageView'][] = 'owa_footer';
+// used to set OWA's current user
+$wgHooks['UserGetRights'][] = 'owa_set_priviledges';
 	
-
-
 /**
  * Main Mediawiki Extension method
  *
@@ -95,8 +97,8 @@ $wgHooks['CategoryPageView'][] = 'owa_footer';
  */
 function owa_main() {
 
-	global $wgHooks;
-
+	global $wgHooks, $wgUser;
+	//print_r($wgUser);
 	// Hook for logging Article Page Views
 	$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
@@ -127,11 +129,8 @@ function owa_main() {
  */
 function owa_actions() {
 	
-	global $wgOut;
-	
-	$owa = owa_php::singleton();
-    owa_set_priviledges();
-	
+	global $wgOut, $owa;
+
 	$wgOut->disable();
 	$owa->handleSpecialActionRequest();
 	
@@ -146,23 +145,21 @@ function owa_actions() {
  * This info is needed by OWA authentication system as well as to add dimensions
  * requests that are logged.
  */
-function owa_set_priviledges() {
-
-	global $wgUser;
+function owa_set_priviledges(&$user) {
 	
-	$owa = owa_php::singleton();
+	global $owa;	
 	
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
 	$cu = &owa_coreAPI::getCurrentUser();
-	$cu->setUserData('user_id', $wgUser->mName);
-	$cu->setUserData('email_address', $wgUser->mEmail);
-	$cu->setUserData('real_name', $wgUser->mRealName);
-	$cu->setRole(owa_translate_role($wgUser->mGroups));
+	$cu->setUserData('user_id', $user->mName);
+	$cu->setUserData('email_address', $user->mEmail);
+	$cu->setUserData('real_name', $user->mRealName);
+	$cu->setRole(owa_translate_role($user->mGroups));
 	//print_r($wgUser);
 	$cu->setAuthStatus(true);
 
-	return;
+	return true;
 }
 
 function owa_translate_role($level = array()) {
@@ -183,6 +180,8 @@ function owa_translate_role($level = array()) {
 		$owa_role = 'admin';
 	elseif (in_array("developer", $level)):
 		$owa_role = 'admin';
+	else:
+		$owa_role = 'everyone';
 	endif;
 	
 	return $owa_role;
@@ -197,7 +196,7 @@ function owa_translate_role($level = array()) {
  */
 function owa_logSpecialPage(&$specialPage) {
 	
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $owa;
 	
 	$app_params['user_name']= $wgUser->mName;
     $app_params['user_email'] = $wgUser->mEmail;
@@ -205,8 +204,6 @@ function owa_logSpecialPage(&$specialPage) {
     $app_params['page_type'] = 'Special Page';
 
 	// Log the request
-	$owa = owa_php::singleton();
-	owa_set_priviledges();
 	$owa->log($app_params);
 	
 	return true;
@@ -220,7 +217,7 @@ function owa_logSpecialPage(&$specialPage) {
  */
 function owa_logCategoryPage(&$categoryPage) {
 	
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $owa;
 	
 	$app_params['user_name']= $wgUser->mName;
     $app_params['user_email'] = $wgUser->mEmail;
@@ -228,8 +225,6 @@ function owa_logCategoryPage(&$categoryPage) {
     $app_params['page_type'] = 'Category';
 	
 	// Log the request
-	$owa = owa_php::singleton();
-	
 	$owa->log($app_params);
 	
 	return true;
@@ -243,7 +238,7 @@ function owa_logCategoryPage(&$categoryPage) {
  */
 function owa_logArticle(&$article) {
 
-	global $wgUser, $wgOut, $wgTitle;
+	global $wgUser, $wgOut, $wgTitle, $owa;
 	
 	$wgTitle->invalidateCache();
 	$wgOut->enableClientCache(false);
@@ -256,9 +251,6 @@ function owa_logArticle(&$article) {
     $app_params['page_type'] = 'article';
     
 	// Log the request
-	$owa = owa_php::singleton();
-	// wguser is not set by the time this hook is called for some reason.
-	//owa_set_priviledges();
 	$owa->log($app_params);
 	
 	return true;
@@ -274,7 +266,7 @@ function owa_logArticle(&$article) {
 function owa_footer(&$article) {
 	
 	global $wgOut;
-	$owa = owa_php::singleton();
+	$owa = owa_mw::singleton();
 	
 	$tags = $owa->placeHelperPageTags(false);
 	
@@ -282,6 +274,9 @@ function owa_footer(&$article) {
 		
 	return true;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////
 
 
 /**
@@ -297,11 +292,9 @@ class SpecialOwa extends SpecialPage {
     }
 
     function execute() {
-            global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
+            global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer, $owa;
             
             $this->setHeaders();
-            $owa = owa_php::singleton();
-       		owa_set_priviledges();
             
             $params = array();
             
