@@ -198,13 +198,13 @@ function owa_logSpecialPage(&$specialPage) {
 	
 	global $wgUser, $wgOut, $owa;
 	
-	$app_params['user_name']= $wgUser->mName;
-    $app_params['user_email'] = $wgUser->mEmail;
-    $app_params['page_title'] = $wgOut->mPagetitle;
-    $app_params['page_type'] = 'Special Page';
-
-	// Log the request
-	$owa->log($app_params);
+	$event = $owa->makeEvent();
+	$event->setEventType('base.page_request');
+	$event->set('user_name', $wgUser->mName);
+	$event->set('user_email', $wgUser->mEmail);
+	$event->set('page_title', $wgOut->mPagetitle);
+	$event->set('page_type', 'Special Page');
+	$owa->trackEvent($event);
 	
 	return true;
 }
@@ -219,13 +219,13 @@ function owa_logCategoryPage(&$categoryPage) {
 	
 	global $wgUser, $wgOut, $owa;
 	
-	$app_params['user_name']= $wgUser->mName;
-    $app_params['user_email'] = $wgUser->mEmail;
-    $app_params['page_title'] = $wgOut->mPagetitle;
-    $app_params['page_type'] = 'Category';
-	
-	// Log the request
-	$owa->log($app_params);
+	$event = $owa->makeEvent();
+	$event->setEventType('base.page_request');
+	$event->set('user_name', $wgUser->mName);
+	$event->set('user_email', $wgUser->mEmail);
+	$event->set('page_title', $wgOut->mPagetitle);
+	$event->set('page_type', 'Category');
+	$owa->trackEvent($event);
 	
 	return true;
 }
@@ -243,15 +243,14 @@ function owa_logArticle(&$article) {
 	$wgTitle->invalidateCache();
 	$wgOut->enableClientCache(false);
 	
-	
 	// Setup Application Specific Properties to be Logged with request
-	$app_params['user_name']= $wgUser->mName;
-    $app_params['user_email'] = $wgUser->mEmail;
-    $app_params['page_title'] = $article->mTitle->mTextform;
-    $app_params['page_type'] = 'article';
-    
-	// Log the request
-	$owa->log($app_params);
+	$event = $owa->makeEvent();
+	$event->setEventType('base.page_request');
+	$event->set('user_name', $wgUser->mName);
+	$event->set('user_email', $wgUser->mEmail);
+	$event->set('page_title', $article->mTitle->mTextform);
+	$event->set('page_type', 'Article');
+	$owa->trackEvent($event);
 	
 	return true;
 	
