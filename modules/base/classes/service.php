@@ -31,13 +31,18 @@
 
 class owa_service extends owa_base {
 	
-	var $init;
+	var $init = false;
 	var $request;
 	var $state;
 	var $current_user;
 	var $settings;
 	var $maps = array();
-	var $update_required;
+	var $update_required = false;
+	var $install_required = false;
+	var $modules_needing_updates = array();
+	var $modules = array();
+	var $entities = array();
+	var $metrics = array();
 	
 	function owa_service() {
 		
@@ -57,6 +62,73 @@ class owa_service extends owa_base {
 		$this->current_user->setUserData('user_id', $this->request->state->get('u'));
 		
 		return;
+	}
+	
+	function initializeFramework() {
+		
+		if (!$this->isInit()) {
+			$this->_loadModules();
+			$this->_loadEntities();
+			$this->_loadEventProcessors();
+			$this->setInit();
+		}
+		
+		return;
+	}
+	
+	function _loadModules() {
+			
+		$am = owa_coreAPI::getActiveModules();
+		
+		foreach ($am as $k => $v) {
+			
+			$m = owa_coreAPI::moduleClassFactory($v);
+			
+			$this->addModule($m);
+			
+			// check for schema updates
+			$check = $m->isSchemaCurrent();
+			
+			if ($check != true) {
+				$this->markModuleAsNeedingUpdate($m->name);
+			}
+		}
+		
+		// set schema update flag
+		if (!empty($this->modules_needing_updates)) {
+			$this->setUpdateRequired();
+		}
+		
+		return;
+	}
+	
+		
+	function _loadEntities() {
+		
+		foreach ($this->modules as $k => $module) {
+			
+			foreach ($module->entities as $entity_k => $entity_v) {
+				// TODO: remove this to make API stateless
+				//$this->entities[] = $module->name.$entity_v;
+				// proper call
+				$this->addEntity($entity_v, $module->name.'.'.$entity_v);
+			}
+		}
+		
+		return;
+	}
+	
+	function _loadEventProcessors() {
+		
+		$processors = array();
+		
+		foreach ($this->modules as $k => $module) {
+			
+			$processors = array_merge($processors, $module->event_processors);
+		}
+		
+		$this->setMap('event_processors', $processors);
+	
 	}
 	
 	function &getCurrentUser() {
@@ -107,6 +179,46 @@ class owa_service extends owa_base {
 		
 		return $this->update_required;
 	}
+	
+	function addModule($module) {
+		
+		$this->modules[$module->name] = $module;
+	}
+	
+	function markModuleAsNeedingUpdate($name) {
+		
+		$this->modules_needing_updates[] = $name;
+	}
+	
+	function getModulesNeedingUpdates($name) {
+		
+		return $this->modules_needing_updates;
+	}
+	
+	
+	function setInstallRequired() {
+		$this->install_required = true;
+	}
+	
+	function isInstallRequired() {
+		
+		return $this->install_required;
+	}
+	
+	function addEntity($entity_name, $class) {
+		
+		$this->entities[$entity_name] = $class;
+	}
+	
+	function setInit() {
+		$this->init = true;
+	}
+	
+	function isInit() {
+		
+		return $this->init;
+	}
+
 	
 }
 

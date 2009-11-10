@@ -70,9 +70,12 @@ class owa_coreAPI extends owa_base {
 	
 	function owa_coreAPI() {
 		
-		$this->owa_base();
+		return owa_coreAPI::__construct();
+	}
+	
+	function __construct() {
 		
-		return;
+		//return parent::__construct();
 	}
 	
 	function &singleton($params = array()) {
@@ -92,16 +95,16 @@ class owa_coreAPI extends owa_base {
 	
 	function setupStorageEngine($type) {
 	
-		if (!class_exists('owa_db')):
+		if (!class_exists('owa_db')) {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
-		endif;
+		}
 			
 		$connection_class = "owa_db_" . $type;
 		$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
 	
-	 	if (!require_once($connection_class_path)):
-	 		$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
-		endif;
+	 	if (!require_once($connection_class_path)) {
+	 		owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+		}
 		
 	 	return;
 
@@ -296,74 +299,6 @@ class owa_coreAPI extends owa_base {
 		
 		return $request;
 	
-	}
-	
-	function setupFramework() {
-		
-		if ($this->init != true) {
-			$this->_loadModules();
-			$this->_loadEntities();
-			$this->_loadEventProcessors();
-			$this->init = true;
-		}
-		
-		return;
-	}
-	
-	function _loadModules() {
-		
-		$am = $this->getActiveModules();
-		
-		foreach ($am as $k => $v) {
-			
-			$m = owa_coreAPI::moduleClassFactory($v);
-			
-			$this->modules[$m->name] = $m;
-			
-			// check for schema updates
-			$check = $this->modules[$m->name]->isSchemaCurrent();
-			
-			if ($check != true):
-				$this->modules_needing_updates[] = $m->name;
-			endif;
-		}
-		
-		// set schema update flag
-		if (!empty($this->modules_needing_updates)):
-			$this->update_required = true;
-		endif;
-		
-		return;
-	}
-	
-		
-	function _loadEntities() {
-		
-		foreach ($this->modules as $k => $module) {
-			
-			foreach ($module->entities as $entitiy_k => $entitiy_v) {
-			
-				$this->entities[] = $module->name.$entitiy_v;
-				
-			}
-		}
-		
-		return;
-	}
-	
-	function _loadEventProcessors() {
-		
-		$processors = array();
-		
-		foreach ($this->modules as $k => $module) {
-			
-			$processors = array_merge($processors, $module->event_processors);
-		}
-		
-		$service = &owa_coreAPI::serviceSingleton();
-		$service->setMap('event_processors', $processors);
-		return;
-		
 	}
 		
 	function moduleRequireOnce($module, $class_dir, $file) {
@@ -590,7 +525,7 @@ class owa_coreAPI extends owa_base {
 			
 		endif;
 		
-		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $this->params, false);
+		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', array(), false);
 		
 	}
 
@@ -606,7 +541,9 @@ class owa_coreAPI extends owa_base {
 		
 		$panels = array();
 		
-		foreach ($this->modules as $k => $v) {
+		$service = owa_coreAPI::serviceSingleton();
+		
+		foreach ($service->modules as $k => $v) {
 			$v->registerAdminPanels();
 			$module_panels = $v->getAdminPanels();
 			
@@ -632,7 +569,9 @@ class owa_coreAPI extends owa_base {
 		
 		$links = array();
 		
-		foreach ($this->modules as $k => $v) {
+		$service = owa_coreAPI::serviceSingleton();
+		
+		foreach ($service->modules as $k => $v) {
 			
 			// If the module does not have nav links, register them. needed in case this function is called twice on
 			// same view.
@@ -672,7 +611,9 @@ class owa_coreAPI extends owa_base {
 	
 		$links = array();
 		
-		foreach ($this->modules as $k => $v) {
+		$service = owa_coreAPI::serviceSingleton();
+		
+		foreach ($service->modules as $k => $v) {
 			
 			// If the module does not have nav links, register them. needed in case this function is called twice on
 			// same view.
@@ -741,7 +682,8 @@ class owa_coreAPI extends owa_base {
 		
 	function getActiveModules() {
 	
-		$config = $this->c->config->get('settings');
+		$c = owa_coreAPI::configSingleton();
+		$config = $c->config->get('settings');
 		
 		//print_r($config);
 		$active_modules = array();
@@ -759,7 +701,9 @@ class owa_coreAPI extends owa_base {
 	
 	function getModulesNeedingUpdates() {
 	
-		return $this->modules_needing_updates;
+		$service = owa_coreAPI::serviceSingleton();
+		
+		return $service->getModulesNeedingUpdates();
 	}
 	
 	/**
@@ -825,7 +769,7 @@ class owa_coreAPI extends owa_base {
 		
 		if (owa_coreAPI::getSetting('base', 'error_log_level') > 9) {
 			owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
-			owa_coreAPI::debug(print_r($this->e->backtrace(), true));
+			//owa_coreAPI::debug(print_r($this->e->backtrace(), true));
 		}
 		
 		// do not log if the request is from a reserved IP
@@ -883,7 +827,7 @@ class owa_coreAPI extends owa_base {
 	function displayImage($data) {
 		
 		header('Content-type: image/gif');
-		header('P3P: CP="'.$this->config['p3p_policy'].'"');
+		header('P3P: CP="'.owa_coreAPI::getSetting('base', 'p3p_policy').'"');
 		header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 		header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -936,18 +880,18 @@ class owa_coreAPI extends owa_base {
 	 */
 	function stripDocumentUrl($url) {
 		
-		if ($this->config['clean_query_string'] == true):
+		if (owa_coreAPI::getSetting('base', 'clean_query_string')):
 		
-			if (!empty($this->config['query_string_filters'])):
-				$filters = str_replace(' ', '', $this->config['query_string_filters']);
+			if (owa_coreAPI::getSetting('base', 'query_string_filters')):
+				$filters = str_replace(' ', '', owa_coreAPI::getSetting('base', 'query_string_filters'));
 				$filters = explode(',', $filters);
 			else:
 				$filters = array();
 			endif;
 			
 			// OWA specific params to filter
-			array_push($filters, $this->config['source_param']);
-			array_push($filters, $this->config['ns'].$this->config['feed_subscription_id']);
+			array_push($filters, owa_coreAPI::getSetting('base', 'source_param'));
+			array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_id'));
 			
 			//print_r($filters);
 			
