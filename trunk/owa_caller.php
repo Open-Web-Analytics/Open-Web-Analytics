@@ -237,14 +237,15 @@ class owa_caller extends owa_base {
 		/**
 		 * @todo This needs to be refactored into stateless api calls 
 		 */
-		$this->api = &owa_coreAPI::singleton();
+		//$this->api = &owa_coreAPI::singleton();
 		
 		/* LOAD SERVICE LAYER */
 		$this->service = &owa_coreAPI::serviceSingleton();
+		$this->service->initializeFramework();
 		
-		$this->api->caller_config_overrides = $config;
+		//$this->api->caller_config_overrides = $config;
 		// should only be called once to load all modules
-		$this->api->setupFramework();
+		//$this->api->setupFramework();
 		
 		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.

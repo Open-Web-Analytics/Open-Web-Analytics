@@ -548,11 +548,18 @@ class owa_module extends owa_base {
 	
 	function getSchemaVersion() {
 		
-		$current_schema = $this->c->get($this->name, 'schema_version');
+		$current_schema = owa_coreAPI::getSetting($this->name, 'schema_version');
 		
-		if (empty($current_schema)):
+		if (empty($current_schema)) {
 			$current_schema = 1;
-		endif;
+			
+			// if this is the base module then we need to let filters know to install the base schema
+			if ($this->name === 'base') {
+				$s = owa_coreAPI::serviceSingleton();
+				$s->setInstallRequired();
+			}
+			
+		}
 		
 		return $current_schema;
 	}

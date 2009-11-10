@@ -77,8 +77,10 @@ $wgAutoloadClasses['SpecialOwa'] = __FILE__;
 // Adds OWA's admin interface to special page list
 $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
-// generic action hook for OWA special actions
-$wgHooks['UnknownAction'][] = 'owa_actions';
+// used to set OWA's current user
+$wgHooks['UserGetRights'][] = 'owa_set_priviledges';
+
+//if ($owa->getSetting('base', 'install_complete')) {
 // Hook for logging various page types
 $wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 $wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
@@ -87,8 +89,8 @@ $wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
 $wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
 $wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
 $wgHooks['CategoryPageView'][] = 'owa_footer';
-// used to set OWA's current user
-$wgHooks['UserGetRights'][] = 'owa_set_priviledges';
+
+
 	
 /**
  * Main Mediawiki Extension method
@@ -145,44 +147,47 @@ function owa_actions() {
  * This info is needed by OWA authentication system as well as to add dimensions
  * requests that are logged.
  */
-function owa_set_priviledges(&$user) {
+function owa_set_priviledges() {
 	
-	global $owa;	
-	
+	global $owa, $wgUser;	
+	//print_r($wgUser);
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
 	$cu = &owa_coreAPI::getCurrentUser();
-	$cu->setUserData('user_id', $user->mName);
-	$cu->setUserData('email_address', $user->mEmail);
-	$cu->setUserData('real_name', $user->mRealName);
-	$cu->setRole(owa_translate_role($user->mGroups));
-	//print_r($wgUser);
+	$cu->setUserData('user_id', $wgUser->mName);
+	$cu->setUserData('email_address', $wgUser->mEmail);
+	$cu->setUserData('real_name', $wgUser->mRealName);
+	$cu->setRole(owa_translate_role($wgUser->mGroups));
+	
 	$cu->setAuthStatus(true);
-
+		
 	return true;
 }
 
 function owa_translate_role($level = array()) {
+	
+	if (!empty($level)) {
 
-	if (in_array("*", $level)):
-		$owa_role = 'everyone';
-	elseif (in_array("user", $level)):
-		$owa_role = 'viewer';
-	elseif (in_array("autoconfirmed", $level)):
-		$owa_role = 'viewer';
-	elseif (in_array("emailconfirmed", $level)):
-		$owa_role = 'viewer';
-	elseif (in_array("bot", $level)):
-		$owa_role = 'viewer';
-	elseif (in_array("sysop", $level)):
-		$owa_role = 'admin';
-	elseif (in_array("bureaucrat", $level)):
-		$owa_role = 'admin';
-	elseif (in_array("developer", $level)):
-		$owa_role = 'admin';
-	else:
-		$owa_role = 'everyone';
-	endif;
+		if (in_array("*", $level)):
+			$owa_role = 'everyone';
+		elseif (in_array("user", $level)):
+			$owa_role = 'viewer';
+		elseif (in_array("autoconfirmed", $level)):
+			$owa_role = 'viewer';
+		elseif (in_array("emailconfirmed", $level)):
+			$owa_role = 'viewer';
+		elseif (in_array("bot", $level)):
+			$owa_role = 'viewer';
+		elseif (in_array("sysop", $level)):
+			$owa_role = 'admin';
+		elseif (in_array("bureaucrat", $level)):
+			$owa_role = 'admin';
+		elseif (in_array("developer", $level)):
+			$owa_role = 'admin';
+		endif;
+	} else {
+		$owa_role = '';
+	}
 	
 	return $owa_role;
 
@@ -294,14 +299,15 @@ class SpecialOwa extends SpecialPage {
             global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer, $owa;
             
             $this->setHeaders();
-            
+            //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.
+            owa_set_priviledges();
             $params = array();
             
             // if no action is found...
             $do = owa_coreAPI::getRequestParam('do');
-            if (empty($do)):
+            if (empty($do)) {
             	// check to see that owa in installed.
-                if (empty($owa->config['install_complete'])):
+                if (!$owa->getSetting('base', 'install_complete')) {
 
                 	$site_url = $wgServer.$wgScriptPath;
                 	
@@ -313,14 +319,14 @@ class SpecialOwa extends SpecialPage {
     				$page = $owa->handleRequest($params);
     			
     			// send to daashboard
-                else: 
+               } else {
                 	$params['do'] = 'base.reportDashboard';
 		           	$page = $owa->handleRequest($params);
-                endif;
+                }
             // do action found on url
-            else:
+            } else {
            		$page = $owa->handleRequestFromURL(); 
-            endif;
+            }
             
            				
 
