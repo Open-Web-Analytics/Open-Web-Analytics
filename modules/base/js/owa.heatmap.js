@@ -510,7 +510,7 @@ OWA.heatmap.prototype = {
     
     createCanvas: function(w, h) {
     
-    	jQuery("body").append('<style>.owa_blur{filter: url(owa/modules/base/i/test.svg#f1);}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
+    	jQuery("body").append('<style>.owa_blur{filter: url(../i/test.svg#f1);}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
     	
     },
     
