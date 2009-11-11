@@ -95,9 +95,11 @@ class owa_request extends owa_entity {
 		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['user_email'] = new owa_dbColumn;
 		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['timestamp'] = new owa_dbColumn;
-		$this->properties['timestamp']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['timestamp']->setIndex();
+		$ts =  new owa_dbColumn;
+		$ts->setName('timestamp');
+		$ts->setDataType(OWA_DTD_BIGINT);
+		$ts->setIndex();
+		$this->setProperty($ts);
 		$this->properties['last_req'] = new owa_dbColumn;
 		$this->properties['last_req']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['year'] = new owa_dbColumn;

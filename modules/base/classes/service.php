@@ -218,6 +218,20 @@ class owa_service extends owa_base {
 		
 		return $this->init;
 	}
+	
+	function getModule($name) {
+		
+		if (array_key_exists($name, $this->modules)) {
+			return $this->modules[$name];
+		} else {
+			return false;
+		}
+		
+	}
+	
+	function getAllModules() {
+		return $this->modules;
+	}
 
 	
 }

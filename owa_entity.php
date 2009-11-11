@@ -556,6 +556,11 @@ class owa_entity {
 			return $this->properties[$column_name]->getDefinition();
 		}
 	}
+	
+	function setProperty($obj) {
+		
+		$this->properties[$obj->get('name')] = $obj;
+	}
 
 }
 
