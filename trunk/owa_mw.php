@@ -55,7 +55,8 @@ class owa_mw extends owa_caller {
 		if(!empty($owa)) {
 			return $owa;
 		} else {
-			return new owa_mw($config);	
+			$owa = new owa_mw($config);
+			return $owa;	
 		}
 	}
 

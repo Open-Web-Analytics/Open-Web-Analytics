@@ -54,7 +54,7 @@ $owa_config['delay_first_hit'] = true;
 $owa_config['error_handler'] = 'development';
 
 //create instance of OWA
-$owa = owa_mw::singleton($owa_config);
+//$owa = owa_mw::singleton($owa_config);
 
 // Turn MediaWiki Caching Off
 global $wgCachePages, $wgCacheEpoch;
@@ -78,7 +78,7 @@ $wgAutoloadClasses['SpecialOwa'] = __FILE__;
 $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
 // used to set OWA's current user
-$wgHooks['UserGetRights'][] = 'owa_set_priviledges';
+//$wgHooks['UserGetRights'][] = 'owa_set_priviledges';
 
 //if ($owa->getSetting('base', 'install_complete')) {
 // Hook for logging various page types
@@ -89,8 +89,6 @@ $wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
 $wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
 $wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
 $wgHooks['CategoryPageView'][] = 'owa_footer';
-
-
 	
 /**
  * Main Mediawiki Extension method
@@ -129,15 +127,37 @@ function owa_main() {
  * @url http://www.mediawiki.org/wiki/Manual:MediaWiki_hooks/UnknownAction
  * @return false
  */
-function owa_actions() {
+function owa_actions($action) {
 	
-	global $wgOut, $owa;
-
+	global $wgOut;
+	
 	$wgOut->disable();
-	$owa->handleSpecialActionRequest();
+	
+	if ($action === 'owa') {
+		$owa = owa_singleton();
+		//owa_set_priviledges();
+		$owa->handleSpecialActionRequest();
+	}
+	
 	
 	return false;
 
+}
+
+function owa_singleton() {
+
+	global $wgUser, $owa_config;
+	
+	$owa = &owa_mw::singleton($owa_config);
+	$cu = &owa_coreAPI::getCurrentUser();
+	$cu->setUserData('user_id', $wgUser->mName);
+	$cu->setUserData('email_address', $wgUser->mEmail);
+	$cu->setUserData('real_name', $wgUser->mRealName);
+	$cu->setRole(owa_translate_role($wgUser->mGroups));
+	$cu->setAuthStatus(true);
+	
+	return $owa;
+	
 }
 
 /**
@@ -149,7 +169,9 @@ function owa_actions() {
  */
 function owa_set_priviledges() {
 	
-	global $owa, $wgUser;	
+	global $wgUser;	
+	
+	$owa = owa_singleton();
 	//print_r($wgUser);
 	// preemptively set the current user info and mark as authenticated so that
 	// downstream controllers don't have to authenticate
@@ -201,7 +223,9 @@ function owa_translate_role($level = array()) {
  */
 function owa_logSpecialPage(&$specialPage) {
 	
-	global $wgUser, $wgOut, $owa;
+	global $wgUser, $wgOut;
+	
+	$owa = owa_singleton();
 	
 	$event = $owa->makeEvent();
 	$event->setEventType('base.page_request');
@@ -222,8 +246,10 @@ function owa_logSpecialPage(&$specialPage) {
  */
 function owa_logCategoryPage(&$categoryPage) {
 	
-	global $wgUser, $wgOut, $owa;
+	global $wgUser, $wgOut;
 	
+	$owa = owa_singleton();
+    //owa_set_priviledges();
 	$event = $owa->makeEvent();
 	$event->setEventType('base.page_request');
 	$event->set('user_name', $wgUser->mName);
@@ -243,12 +269,14 @@ function owa_logCategoryPage(&$categoryPage) {
  */
 function owa_logArticle(&$article) {
 
-	global $wgUser, $wgOut, $wgTitle, $owa;
+	global $wgUser, $wgOut, $wgTitle;
 	
 	$wgTitle->invalidateCache();
 	$wgOut->enableClientCache(false);
 	
 	// Setup Application Specific Properties to be Logged with request
+	$owa = owa_singleton();
+	//owa_set_priviledges();
 	$event = $owa->makeEvent();
 	$event->setEventType('base.page_request');
 	$event->set('user_name', $wgUser->mName);
@@ -270,7 +298,7 @@ function owa_logArticle(&$article) {
 function owa_footer(&$article) {
 	
 	global $wgOut;
-	$owa = owa_mw::singleton();
+	$owa = owa_singleton();
 	
 	$tags = $owa->placeHelperPageTags(false);
 	
@@ -296,11 +324,12 @@ class SpecialOwa extends SpecialPage {
     }
 
     function execute() {
-            global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer, $owa;
+            global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer;
             
             $this->setHeaders();
             //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.
-            owa_set_priviledges();
+            $owa = owa_singleton();
+            //owa_set_priviledges();
             $params = array();
             
             // if no action is found...
