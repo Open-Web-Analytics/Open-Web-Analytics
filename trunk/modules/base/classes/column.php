@@ -173,6 +173,11 @@ class owa_dbColumn {
  		$this->auto_increment = true;
  	}
  	
+ 	function setName($name) {
+ 	
+ 		$this->name = $name;
+ 	}
+ 	
  }
 
 ?>

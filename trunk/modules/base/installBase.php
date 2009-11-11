@@ -44,9 +44,9 @@ class owa_installBaseController extends owa_installController {
 	
 	function action() {
 		
-		$api = &owa_coreAPI::singleton();
-		
-		$status = $api->modules['base']->install();
+		$service = &owa_coreAPI::serviceSingleton();
+		$base = $service->getModule('base');
+		$status = $base->install();
 		
 		if ($status == true) {
 			$this->set('status_code', 3305);

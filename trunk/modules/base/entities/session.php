@@ -91,9 +91,11 @@ class owa_session extends owa_entity {
 		$this->properties['id']->setPrimaryKey();
 		$this->properties['visitor_id'] = new owa_dbColumn;
 		$this->properties['visitor_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['timestamp'] = new owa_dbColumn;
-		$this->properties['timestamp']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['timestamp']->setIndex();
+		$ts =  new owa_dbColumn;
+		$ts->setName('timestamp');
+		$ts->setDataType(OWA_DTD_BIGINT);
+		$ts->setIndex();
+		$this->setProperty($ts);
 		$this->properties['user_name'] = new owa_dbColumn;
 		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['user_email'] = new owa_dbColumn;

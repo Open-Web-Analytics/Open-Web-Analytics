@@ -90,6 +90,7 @@ class owa_installStartEmbeddedView extends owa_view {
 		$this->body->set_template('install_start_embedded.tpl');
 		
 		//page title
+		$this->t->set_template('wrapper_public.tpl');
 		$this->t->set('page_title', 'Open Web Analytics Installation');
 		
 		// assign data		
