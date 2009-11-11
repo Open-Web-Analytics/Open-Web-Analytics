@@ -116,6 +116,7 @@ class owa_caller extends owa_base {
 		
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
+		owa_coreAPI::debug('Request URL: '.$_SERVER['REQUEST_URI']);
 		//owa_coreAPI::debug(print_r($_SERVER, true));
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
