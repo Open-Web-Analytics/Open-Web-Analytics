@@ -43,7 +43,7 @@ OWA.heatmap.prototype = {
 	markRegionDirty: function(region_num) {
 		
 		this.dirtyRegions[region_num] = true;
-		//console.log("marking region dirty: %s", region_num);
+		//OWA.debug("marking region dirty: %s", region_num);
 	},
 	
 	showControlPanel: function() {
@@ -105,7 +105,7 @@ OWA.heatmap.prototype = {
 	map: function() {
 	
 		if (this.lock == true) {
-			console.log("skipping data fetch due to lock.");
+			OWA.debug("skipping data fetch due to lock.");
 			return;
 		} else {
 			this.lock = true;
@@ -115,10 +115,10 @@ OWA.heatmap.prototype = {
 		
 			var more = this.checkForMoreClicks();
 			if (more === true) {
-				console.log('there are more clicks to fetch.');
+				OWA.debug('there are more clicks to fetch.');
 				var data = this.getData();
 			} else {
-				console.log('there are no more clicks to fetch.');
+				OWA.debug('there are no more clicks to fetch.');
 				this.stopTimer();
 			}	
 		} else {
@@ -152,9 +152,9 @@ OWA.heatmap.prototype = {
 	}, 
 	
 	setNextPage: function(page) {
-		console.log("setNextpage received page as %d", page);
+		OWA.debug("setNextpage received page as %d", page);
 		this.nextPage++;	
-		console.log("setNextpage is setting page as %d", this.nextPage);
+		OWA.debug("setNextpage is setting page as %d", this.nextPage);
 	},
 	
 	setMore: function(bool) {
@@ -176,7 +176,7 @@ OWA.heatmap.prototype = {
 		
 		// add page number if one was passed in
 		if (page) {
-			console.log("fetchData will fetch page %s", page);
+			OWA.debug("fetchData will fetch page %s", page);
 			params.page = page;
 		}
 		
@@ -185,24 +185,24 @@ OWA.heatmap.prototype = {
 		
 		jQuery.get(OWA.getApiEndpoint(), OWA.util.nsParams(params), function(data) { that.plotClickData(data); }, 'json');
 		
-		//console.log(data.page);
+		//OWA.debug(data.page);
 		return;
 	},
 	
 	plotClickData: function(data) {
 				
 		if (data) {
-			//console.log('setClicks says data is defined');
+			//OWA.debug('setClicks says data is defined');
 			this.clicks = data;
 			
 			//set more flag
 			if (data.more === true && data.more != null) {
-				console.log("plotClickData says more flag was set to true");
+				OWA.debug("plotClickData says more flag was set to true");
 				this.setMore(true);
 				//set next page
 				this.setNextPage(data.page);
 			} else {
-				console.log("plotClickData says more flag was set to false");
+				OWA.debug("plotClickData says more flag was set to false");
 				this.setMore(false);
 			}
 			
@@ -217,7 +217,7 @@ OWA.heatmap.prototype = {
 	},
 	
 	getClicks: function() {
-		//console.log("getClicks is logging %s", this.clicks['page']);
+		//OWA.debug("getClicks is logging %s", this.clicks['page']);
 		return this.clicks.rows;
 	},	
 	
@@ -225,7 +225,7 @@ OWA.heatmap.prototype = {
 	 * Looks up the a region's top lower right corner plot points
 	 */
 	getRegion: function(num) {
-		//console.log("Getting dims for region %s", num);
+		//OWA.debug("Getting dims for region %s", num);
 		return this.regions[num];
 	},
 	
@@ -233,9 +233,9 @@ OWA.heatmap.prototype = {
 	 * Sets the color of a pixels a region based on their alpha values
 	 */
 	setColor: function(num) {
-		//console.log("About to set color for region %s", num);
+		//OWA.debug("About to set color for region %s", num);
 		var dims = this.getRegion(num);
-		//console.log("set color coords %s %s", dims.x, dims.y);
+		//OWA.debug("set color coords %s %s", dims.x, dims.y);
 		
 		// get the actual pixel data from the region
 		var canvasData = this.context.getImageData(dims.x, dims.y, this.regionWidth, this.regionHeight);
@@ -321,7 +321,7 @@ OWA.heatmap.prototype = {
 	fillAllRegions: function() {
 		
 		for (var i=0, n = this.regions.length; i < n; i++) {
-			//console.log("region %s", i);
+			//OWA.debug("region %s", i);
 			this.fillRegion(i);
 		}
 		
@@ -332,21 +332,21 @@ OWA.heatmap.prototype = {
 	 */
 	findRegion: function(x, y) {		
 		// walk the outer x map in ascending order
-		//console.log("finding region for %s", x,y);
+		//OWA.debug("finding region for %s", x,y);
 		for (i in this.regionsMap) {
 			// look for the first value that is greater that or equals to the x coordinate
-			//console.log("regionmap i: %s", i);
+			//OWA.debug("regionmap i: %s", i);
 			if (x <= i) {
 				// For that x coordinate walk the inner map in ascending order
-				//console.log("regionmap x chosen: %s", i);		
+				//OWA.debug("regionmap x chosen: %s", i);		
 				for ( n in this.regionsMap[i]) {
 					// find the first value that is greater than or equals to the y coordinate
-					//console.log("what is this %s", n);	
+					//OWA.debug("what is this %s", n);	
 					if (y <= n) {
 						// Return the region number
-						//console.log("stopping on regionmap y: %s", n);	
-						//console.log("regionmap y: %s", n);		
-						//console.log("region chosen: %s (i = %s, n = %s)", this.regionsMap[i][n], i , n);
+						//OWA.debug("stopping on regionmap y: %s", n);	
+						//OWA.debug("regionmap y: %s", n);		
+						//OWA.debug("region chosen: %s (i = %s, n = %s)", this.regionsMap[i][n], i , n);
 						return this.regionsMap[i][n];
 					} 
 
@@ -354,7 +354,7 @@ OWA.heatmap.prototype = {
 			} 
 		}
 		// Something went wrong as the coordinate does not fit into any region
-		//console.log("can't find region for %s %s", x, y);
+		//OWA.debug("can't find region for %s %s", x, y);
 	}, 
 	
 	/**
@@ -366,14 +366,14 @@ OWA.heatmap.prototype = {
 		// More regions will increase the speed of rendering.
 		this.regionWidth = Math.round((this.docDimensions.w / this.options.numRegions) * 100)/100;
 		this.regionHeight = Math.round((this.docDimensions.h / this.options.numRegions) * 100)/100;
-		//console.log("Region dims: %s %s", this.regionWidth, this.regionHeight);
+		//OWA.debug("Region dims: %s %s", this.regionWidth, this.regionHeight);
 		
 		var count = 0;
 		
 		// y loop
 		for (var y = this.regionHeight, n = this.docDimensions.h; y <= n; y+=this.regionHeight) {
 			y = Math.round(y  * 100)/100 -.01;
-			//console.log("calcregions y value", y);
+			//OWA.debug("calcregions y value", y);
 			// x loop
 			for (var x = this.regionWidth, nn = this.docDimensions.w; x <= nn; x+=this.regionWidth) {
 				x = Math.round(x * 100)/100 -.01;
@@ -385,11 +385,11 @@ OWA.heatmap.prototype = {
 				}
 				//add region to inner map
 				this.regionsMap[x][y] = count;
-				//console.log("adding to map: %s %s %s",x,y,count); 
+				//OWA.debug("adding to map: %s %s %s",x,y,count); 
 				count++;		
 			}
 
-			//console.log("x Count: %s", this.regions.length);		
+			//OWA.debug("x Count: %s", this.regions.length);		
 		}		
 		
 
@@ -430,9 +430,9 @@ OWA.heatmap.prototype = {
 			}
 			
 			// get current alpha channel
-			//console.log("getting image data for %s %s", data[i].x, data[i].y);
+			//OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
 			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);
-			//console.log("hi there.");
+			//OWA.debug("hi there.");
 			var pix = canvasData.data;
 			
 			// Loop over each pixel and invert the color.
@@ -440,14 +440,14 @@ OWA.heatmap.prototype = {
 			for (var ii = 0, n = pix.length; ii < n; ii += 4) {
 				//check current alpha
 		    	alpha = pix[ii+3];
-		    	//console.log("current alpha: %s", alpha);
+		    	//OWA.debug("current alpha: %s", alpha);
 		    	if (alpha < 255) {
 		    		
 		    		if ((255 - alpha) > this.options.alphaIncrement) {
 		    			// increment alpha
 		    			imgd.data[ii+3] = alpha+this.options.alphaIncrement;
 		    			//imgd.data[ii+3] = alpha;
-		    			//console.log("setting alpha to %s", imgd.data[ii+3]);
+		    			//OWA.debug("setting alpha to %s", imgd.data[ii+3]);
 		    		} else {
 		    			// set to opaque
 		    			imgd.data[ii+3] = 255;
@@ -456,7 +456,7 @@ OWA.heatmap.prototype = {
 		    	}
 		 	   	
 		    	//imgd.data[ii  ] = 255; // red
-		   		//console.log("alpha %s", alpha);
+		   		//OWA.debug("alpha %s", alpha);
 			}
 		
 			// Draw the ImageData object at the given (x,y) coordinates.
@@ -492,7 +492,7 @@ OWA.heatmap.prototype = {
         var w=200, h=200, scr_h, off_h;
         
         if( d.height ) { 
-        	//console.log("doc dims %s %s", d.width, d.height);
+        	//OWA.debug("doc dims %s %s", d.width, d.height);
         	return {'w':d.width,'h':d.height}; 
         }
         
@@ -503,7 +503,7 @@ OWA.heatmap.prototype = {
             if( scr_h && off_h ) h=Math.max(scr_h, off_h);
         }
         
-        //console.log("doc dims %s %s", w, h);
+        //OWA.debug("doc dims %s %s", w, h);
         
         return {'w': w,'h':h};
     },
