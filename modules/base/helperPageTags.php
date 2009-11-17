@@ -128,9 +128,15 @@ class owa_helperPageTagsView extends owa_view {
 			$this->body->set('do_not_log_domstream', true);
 		}
 		
-		// needed to override the endpoint used by the js tracker
-		$this->body->set('endpoint', owa_coreAPI::getSetting('base', 'log_url'));
-
+		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
+		
+			// needed to override the endpoint used by the js tracker
+			$this->body->set('endpoint', owa_coreAPI::getSetting('base', 'log_url'));
+		
+			// needed to override the endpoint used by the js tracker
+			$this->body->set('apiEndpoint', owa_coreAPI::getSetting('base', 'action_url'));
+		}
+		
 		// load body template
 		$this->t->set_template('wrapper_blank.tpl');
 		

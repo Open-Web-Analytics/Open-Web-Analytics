@@ -1,5 +1,8 @@
 // Set base URL
 OWA.setSetting('baseUrl', '<?php echo owa_coreAPI::getSetting('base', 'public_url');?>');
+<?php if ($apiEndpoint): ?>
+OWA.setApiEndpoint('<?php echo $apiEndpoint;?>');
+<?php endif;?>
 // Create a tracker
 OWATracker = new OWA.tracker(<?php if ($owa_params == true): echo 'owa_params'; endif;?>);
 <?php if ($endpoint): ?>

@@ -183,7 +183,7 @@ OWA.heatmap.prototype = {
 		//closure
 		var that = this;
 		
-		jQuery.get(OWA.getSetting('baseUrl'), OWA.util.nsParams(params), function(data) { that.plotClickData(data); }, 'json');
+		jQuery.get(OWA.getApiEndpoint(), OWA.util.nsParams(params), function(data) { that.plotClickData(data); }, 'json');
 		
 		//console.log(data.page);
 		return;

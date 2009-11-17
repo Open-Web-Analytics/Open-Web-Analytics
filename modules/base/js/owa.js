@@ -20,6 +20,13 @@ var OWA = {
 		 		console.log.apply(this, arguments);
 			}
 		}
+	},
+	setApiEndpoint : function (endpoint) {
+		this.config['api_endpoint'] = endpoint;
+	},
+	
+	getApiEndpoint : function() {
+		return this.config['api_endpoint'] || this.getSetting('base_url') + 'action.php';
 	}
 
 };
