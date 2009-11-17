@@ -190,7 +190,7 @@ OWA.tracker.prototype = {
 	
 	getEndpoint : function() {
 		return this.endpoint;
-	}
+	},
 	
 	/**
 	 * Logs a page view event
