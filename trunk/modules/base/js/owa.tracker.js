@@ -33,48 +33,49 @@ OWA.event = function() {
 
 OWA.event.prototype = {
 	
-		id : '',
-		
-		siteId : '',
-		
-		properties : '',
-		
-		get : function(name) {
-			
-			return this.properties[name];
-		},
-		
-		set : function(name, value) {
-			
-			this.properties[name] = value;
-			return;
-		},
-		
-		setEventType : function(event_type) {
-			this.set("event_type", event_type);
-			return;
-		},
-		
-		getProperties : function() {
-			
-			return this.properties;
-		},
-		
-		merge : function(properties) {
-			
-			for(param in properties) { 
-		       
-				this.set(param, properties[param]);
-				
-		    }
+	id : '',
 	
-		}
+	siteId : '',
 	
+	properties : '',
+	
+	get : function(name) {
+		
+		return this.properties[name];
+	},
+	
+	set : function(name, value) {
+		
+		this.properties[name] = value;
+		return;
+	},
+	
+	setEventType : function(event_type) {
+		this.set("event_type", event_type);
+		return;
+	},
+	
+	getProperties : function() {
+		
+		return this.properties;
+	},
+	
+	merge : function(properties) {
+		
+		for(param in properties) { 
+	       
+			this.set(param, properties[param]);
+			
+	    }
+
 	}
+
+}
 
 
 OWA.tracker = function(caller_params) {
 	this.setEndpoint(OWA.config.baseUrl + 'log.php');
+	this.setApiEndpoint(OWA.config.baseUrl + 'action.php');
 	this.page = new OWA.event();
 	this.startTime = this.getTimestamp();
     this.page.set('page_url', document.URL);
@@ -189,7 +190,7 @@ OWA.tracker.prototype = {
 	
 	getEndpoint : function() {
 		return this.endpoint;
-	},
+	}
 	
 	/**
 	 * Logs a page view event

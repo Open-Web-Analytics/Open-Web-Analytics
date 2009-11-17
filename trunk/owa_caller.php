@@ -289,6 +289,7 @@ class owa_caller extends owa_base {
 	 * Logs a Page Request
 	 *
 	 * @param array $app_params	This is an array of application specific request params
+	 * @depricated
 	 */
 	function log($caller_params = '') {
 		
@@ -306,6 +307,7 @@ class owa_caller extends owa_base {
 	 * @param array $caller_params
 	 * @param string $event_type
 	 * @return boolean
+	 * @depricated
 	 */
 	function logEvent($event_type, $caller_params = '') {
 		
