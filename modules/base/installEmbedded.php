@@ -38,7 +38,13 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 class owa_installEmbeddedController extends owa_controller {
 	
 	function owa_installEmbeddedController($params) {
-		$this->owa_controller($params);
+		
+		return owa_installEmbeddedController::__construct($params);
+	}
+	
+	function __construct($params) {
+		
+		parent::__construct($params);
 		$this->c->setSettingTemporary('base', 'cache_objects', false);
 		$this->setRequiredCapability('edit_modules');
 		return;
@@ -49,6 +55,11 @@ class owa_installEmbeddedController extends owa_controller {
 	    $service = &owa_coreAPI::serviceSingleton();
 	    
 	    $this->e->notice('starting Embedded install');
+	    
+	    //create config file
+	    
+	    $this->c->createConfigFile($this->params);
+	    
 		// install schema
 		$base = $service->getModule('base');
 		$status = $base->install();

@@ -52,6 +52,13 @@ class owa_installStartEmbeddedController extends owa_controller {
 		$this->set('name', $this->getParam('name'));
 		$this->set('domain', $this->getParam('domain'));
 		$this->set('description', $this->getParam('description'));
+		
+		$this->set('db_type', $this->getParam('db_type'));
+		$this->set('db_user', $this->getParam('db_user'));
+		$this->set('db_password', $this->getParam('db_password'));
+		$this->set('db_host', $this->getParam('db_host'));
+		$this->set('db_name', $this->getParam('db_name'));
+		
 		$this->setView('base.installStartEmbedded');
 		
 		return;
@@ -99,6 +106,12 @@ class owa_installStartEmbeddedView extends owa_view {
 		$this->body->set('domain', $this->get('domain'));
 		$this->body->set('name', $this->get('name'));
 		$this->body->set('description', $this->get('description'));
+		
+		$this->body->set('db_type', $this->get('db_type'));
+		$this->body->set('db_user', $this->get('db_user'));
+		$this->body->set('db_password', $this->get('db_password'));
+		$this->body->set('db_host', $this->get('db_host'));
+		$this->body->set('db_name', $this->get('db_name'));
 		
 		return;
 	}

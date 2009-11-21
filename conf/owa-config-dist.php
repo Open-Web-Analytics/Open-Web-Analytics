@@ -35,11 +35,11 @@
  *
  */
 
-//define('OWA_DB_TYPE', ''); // options: mysql
-//define('OWA_DB_NAME', ''); // name of the database
-//define('OWA_DB_HOST', ''); // host name of the server housing the database
-//define('OWA_DB_USER', ''); // database user
-//define('OWA_DB_PASSWORD', ''); // database user's password
+define('OWA_DB_TYPE', 'yourdbtypegoeshere'); // options: mysql
+define('OWA_DB_NAME', 'yourdbnamegoeshere'); // name of the database
+define('OWA_DB_HOST', 'yourdbhostgoeshere'); // host name of the server housing the database
+define('OWA_DB_USER', 'yourdbusergoeshere'); // database user
+define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
 
 
 /** 
@@ -49,7 +49,7 @@
  * Don't forget the slash at the end.
  */
  
-// define('OWA_PUBLIC_URL', '');  
+//define('OWA_PUBLIC_URL', '');  
 
 /** 
  * OWA ERROR HANDLER
