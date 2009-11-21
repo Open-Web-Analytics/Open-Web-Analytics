@@ -84,31 +84,6 @@ class owa_caller extends owa_base {
 		// Start time
 		$this->start_time = owa_lib::microtime_float();
 		
-		/* LOAD CONFIG FILE */
-		$file = OWA_DIR.'owa-config.php';
-		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
-		
-		if (file_exists($file)) {
-			include($file);
-			$config_file_exists = true;
-		} elseif (file_exists($oldfile)) {
-			include($oldfile);
-			$config_file_exists = true;
-		} else {
-			$config_file_exists = false;
-			//$this->e->debug("I can't find your configuration file...assuming that you didn't create one.");
-		}
-		
-		/* SETUP STORAGE ENGINE */
-		
-		// Must be called before any entities are created
-		
-		if (!defined('OWA_DB_TYPE')):
-			owa_coreAPI::setupStorageEngine($config['db_type']);
-		else:
-			owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
-		endif;
-		
 		/* SETUP CONFIGURATION AND ERROR LOGGER */
 		
 		// Parent Constructor. Sets default config entity and error logger
@@ -117,100 +92,21 @@ class owa_caller extends owa_base {
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
 		owa_coreAPI::debug('Request URL: '.$_SERVER['REQUEST_URI']);
-		//owa_coreAPI::debug(print_r($_SERVER, true));
+		
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
-		//$this->e->debug($bt[4]); 
+		//$this->e->debug($bt[4]); 		
 		
-		/* APPLY CONFIGURATION FILE OVERRIDES */
-		
-		if ($config_file_exists == true):
-			
-			/* ERROR LOGGING */
-		
-			// Looks for log level constant
-			if (defined('OWA_ERROR_LOG_LEVEL')):
-				$this->c->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
-			endif;
-		
-			/* PHP ERROR LOGGING */
-			
-			if (OWA_LOG_PHP_ERRORS === true):
-				$this->e->logPhpErrors();
-			endif;
-			
-			/* CONFIGURATION ID */
-			
-			if (defined('OWA_CONFIGURATION_ID')):
-				$this->c->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
-			endif;
-			
-			/* OBJECT CACHING */
-		
-			// Looks for object cache config constant
-			// must comebefore user db values are fetched from db
-			if (defined('OWA_CACHE_OBJECTS')):
-				$this->c->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
-			endif;
-			
-		endif;
-					
-		/* DATABASE CONFIGURATION */
-		
-		// Can either be set by calling application or the config file.
-		// This needs to come before the fetch of user overrides from the DB
-		// Constants defined in the config file have the final word
-		// values passed from calling application must be applied prior
-		// to the rest of the caller's overrides
-		
-		if (!defined('OWA_DB_TYPE')):
-			define('OWA_DB_TYPE', $config['db_type']);
-		endif;
-	
-		$this->c->set('base', 'db_type', OWA_DB_TYPE);
-				
-		if (!defined('OWA_DB_NAME')):
-			define('OWA_DB_NAME',  $config['db_name']);
-		endif;
-		
-		$this->c->set('base', 'db_name', OWA_DB_NAME);
-				
-		if (!defined('OWA_DB_HOST')):
-			define('OWA_DB_HOST',  $config['db_host']);
-		endif;		
-		
-		$this->c->set('base', 'db_host', OWA_DB_HOST);
-				
-		if (!defined('OWA_DB_USER')):
-			define('OWA_DB_USER',  $config['db_user']);
-		endif;
-		
-		$this->c->set('base', 'db_user', OWA_DB_USER);
-		
-		if (!defined('OWA_DB_PASSWORD')):
-			define('OWA_DB_PASSWORD',  $config['db_password']);
-		endif;
-		
-		$this->c->set('base', 'db_password', OWA_DB_PASSWORD);
-		
-					
-		/* APPLY USER CONFIGURATION OVERRIDES FROM DATABASE */
-		
-		if (!defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')) {
-			
-			if (array_key_exists('do_not_fetch_config_from_db', $config)) {
-				$this->c->set('base', 'do_not_fetch_config_from_db', $config['do_not_fetch_config_from_db']);
-			}
-			
-		} else {
-			$this->c->set('base', 'do_not_fetch_config_from_db', OWA_CONFIG_DO_NOT_FETCH_FROM_DB);
-		}		
-		
+		// load config values from DB
 		// Applies config from db or cache
 		// check here is needed for installs when the configuration table does not exist.
-		if ($this->c->get('base', 'do_not_fetch_config_from_db') != true):
-			$this->c->load($this->c->get('base', 'configuration_id'));
-		endif;
+		if (!defined('OWA_INSTALLING')) {
+			if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
+				if ($this->c->isConfigFilePresent())  {
+					$this->c->load($this->c->get('base', 'configuration_id'));
+				}
+			}
+		} 	
 
 		/* APPLY CALLER CONFIGURATION OVERRIDES */
 		
@@ -225,34 +121,19 @@ class owa_caller extends owa_base {
 		
 		/* SET ERROR HANDLER */
 		
-		// Looks for log handler constant from config file otherwise respects
-		// user and caller overrides
-		if (defined('OWA_ERROR_HANDLER')):
-			$this->c->set('base', 'error_handler', OWA_ERROR_HANDLER);
-		endif;
-		
 		// Sets the correct mode of the error logger now that final config values are in place
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
-		//print ('hello');
-		/**
-		 * @todo This needs to be refactored into stateless api calls 
-		 */
-		//$this->api = &owa_coreAPI::singleton();
 		
 		/* LOAD SERVICE LAYER */
 		$this->service = &owa_coreAPI::serviceSingleton();
 		$this->service->initializeFramework();
-		
-		//$this->api->caller_config_overrides = $config;
-		// should only be called once to load all modules
-		//$this->api->setupFramework();
-		
+			
 		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.
-		if (!empty($this->params['site_id'])):
+		if (!empty($this->params['site_id'])) {
 			$this->c->set('base', 'site_id', $this->params['site_id']);
-		endif;
+		}
 		
 		// re-fetch the array now that overrides have been applied.
 		// needed for backwards compatability 
@@ -265,9 +146,9 @@ class owa_caller extends owa_base {
 		
 		// check for required schema updates and sets update flag
 		// this is needed if the calling application or plugin needs to check for updates
-		if (!empty($this->api->modules_needing_updates)):
-			$this->service->setUpdateRequired();
-		endif;
+		//if (!empty($this->api->modules_needing_updates)):
+		//	$this->service->setUpdateRequired();
+		//endif;
 		
 		// set default timezone
 		if (function_exists('date_default_timezone_set')) {

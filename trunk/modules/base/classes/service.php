@@ -190,7 +190,7 @@ class owa_service extends owa_base {
 		$this->modules_needing_updates[] = $name;
 	}
 	
-	function getModulesNeedingUpdates($name) {
+	function getModulesNeedingUpdates() {
 		
 		return $this->modules_needing_updates;
 	}

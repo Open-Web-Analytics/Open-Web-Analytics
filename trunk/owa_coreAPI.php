@@ -114,30 +114,36 @@ class owa_coreAPI extends owa_base {
 		
 		static $db;
 	
-		if (!isset($db)):
+		if (!isset($db)) {
 			
 			//$c = &owa_coreAPI::configSingleton();
 			//$config = $c->fetch('base');
 			//$e = &owa_error::get_instance();
 			
-			if (!class_exists('owa_db')):
-				require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
-			endif;
-			
-			$connection_class = "owa_db_" . OWA_DB_TYPE;
-			$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
-	
-	 		if (!require_once($connection_class_path)):
-	 			$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
-	 							$connection_class_path));
-	 			return;
-			else:  	
-				$db = new $connection_class;
+			if (defined('OWA_DB_TYPE')) {
 				
-				//$this->e->debug(sprintf('Using db class at %s.',	$connection_class_path));
-			endif;	
+				if (!class_exists('owa_db')) {
+					require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
+				}
+							
+				$connection_class = "owa_db_" . OWA_DB_TYPE;
+				$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
+	
+		 		if (!require_once($connection_class_path)) {
+		 			owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+		 			return;
+				} else { 	
+					$db = new $connection_class;
+					
+					owa_coreAPI::debug(sprintf('Using db class at %s.',	$connection_class_path));
+				}
+				
+			} else {
+				owa_coreAPI::error('Cannot locate proper db type constant. Exiting.');
+			}
+				
 			
-		endif;
+		}
 		
 		return $db;
 		
@@ -410,6 +416,21 @@ class owa_coreAPI extends owa_base {
 	 * @return unknown
 	 */
 	function entityFactory($entity_name) {
+		
+		/* SETUP STORAGE ENGINE */
+		
+		// Must be called before any entities are created
+		
+		if (!defined('OWA_DTD_INT')) {
+			if (defined('OWA_DB_TYPE')) {
+				owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
+			} else {
+				owa_coreAPI::setupStorageEngine('mysql');
+			}
+				
+		}
+		
+		
 			
 		if (!class_exists('owa_entity')):
 			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
@@ -427,14 +448,11 @@ class owa_coreAPI extends owa_base {
 	 *
 	 * @param unknown_type $entity_name
 	 * @return unknown
+	 * @depricated
 	 */
 	function rawEntityFactory($entity_name) {
 			
-		if (!class_exists('owa_entity')):
-			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
-		endif;
-			
-		return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
+		return owa_coreAPI::entityFactory($entity_name);
 				
 	}
 		
@@ -763,6 +781,10 @@ class owa_coreAPI extends owa_base {
 	 * @return boolean
 	 */
 	function logEvent($event_type, $message = '') {
+		
+		if (owa_coreAPI::getRequestParam('overlay')) {
+			return false;
+		}
 		
 		// debug
 		owa_coreAPI::debug("logging event $event_type");

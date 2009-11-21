@@ -365,7 +365,8 @@ function owa_install() {
 	global $user_level;
 	
 	$params = array();
-	$params['do_not_fetch_config_from_db'] = true;
+	define('OWA_INSTALLING', true);
+	//$params['do_not_fetch_config_from_db'] = true;
 
 	$owa = owa_getInstance($params);
 	

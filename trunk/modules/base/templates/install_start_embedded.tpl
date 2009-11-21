@@ -11,6 +11,13 @@
 	<input type="hidden" name="<?php echo $this->getNs();?>name" value="<?php echo $name;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>description" value="<?php echo $description;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>do" value="base.installEmbedded">
+	
+	<input type="hidden" name="<?php echo $this->getNs();?>db_type" value="<?php echo $db_type;?>">
+	<input type="hidden" name="<?php echo $this->getNs();?>db_name" value="<?php echo $db_name;?>">
+	<input type="hidden" name="<?php echo $this->getNs();?>db_host" value="<?php echo $db_host;?>">
+	<input type="hidden" name="<?php echo $this->getNs();?>db_user" value="<?php echo $db_user;?>">
+	<input type="hidden" name="<?php echo $this->getNs();?>db_password" value="<?php echo $db_password;?>">
+	
 	<input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Install Open Web Analytics">
 	
 	</form>

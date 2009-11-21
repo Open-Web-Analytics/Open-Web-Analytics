@@ -54,10 +54,116 @@
  	 */
  	function owa_settings() {
 		
+ 		return owa_settings::__construct();
+ 	}
+ 	
+ 	function __construct() {
+ 	
+ 		// include/load config file
+ 		$this->loadConfigFile();
+ 		// create configuration object
  		$this->config = owa_coreAPI::rawEntityFactory('base.configuration');
+ 		// load the default settings
  		$this->getDefaultConfig();
+ 		// apply config constants
+ 		$this->applyConfigConstants();
+ 			
+ 	}
+ 	
+ 	function isConfigFilePresent() {
  		
- 		return;
+		$file = OWA_DIR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		
+		if (file_exists($file)) {
+			return true;
+		} elseif (file_exists($oldfile)) {
+			return true;
+		} else {
+			return false;
+		}
+ 	}
+ 	
+ 	function loadConfigFile() {
+ 	
+ 		/* LOAD CONFIG FILE */
+		$file = OWA_DIR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		
+		if (file_exists($file)) {
+			include_once($file);
+			$config_file_exists = true;
+		} elseif (file_exists($oldfile)) {
+			include_once($oldfile);
+			$config_file_exists = true;
+		} else {
+			$config_file_exists = false;
+		}
+ 	}
+ 	
+ 	function applyConfigConstants() {
+ 		
+ 		// Looks for log level constant
+		if (defined('OWA_ERROR_LOG_LEVEL')) {
+			$this->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
+		}
+	
+		/* PHP ERROR LOGGING */
+		
+		if (OWA_LOG_PHP_ERRORS === true) {
+			//$this->e->logPhpErrors();
+		}
+		
+		/* CONFIGURATION ID */
+		
+		if (defined('OWA_CONFIGURATION_ID')) {
+			$this->set('base', 'configuration_id', OWA_CONFIGURATION_ID);
+		}
+		
+		/* OBJECT CACHING */
+	
+		// Looks for object cache config constant
+		// must comebefore user db values are fetched from db
+		if (defined('OWA_CACHE_OBJECTS')) {
+			$this->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
+		}
+		
+		/* DATABASE CONFIGURATION */
+		
+		// This needs to come before the fetch of user overrides from the DB
+		// Constants defined in the config file have the final word
+		// values passed from calling application must be applied prior
+		// to the rest of the caller's overrides
+		
+		if (defined('OWA_DB_TYPE')) {
+			$this->set('base', 'db_type', OWA_DB_TYPE);
+		}
+						
+		if (defined('OWA_DB_NAME')) {
+			$this->set('base', 'db_name', OWA_DB_NAME);
+		}
+		
+		if (defined('OWA_DB_HOST')) {
+			$this->set('base', 'db_host', OWA_DB_HOST);
+		}
+		
+		if (!defined('OWA_DB_USER')) {
+			$this->set('base', 'db_user', OWA_DB_USER);
+		}
+		
+		if (defined('OWA_DB_PASSWORD')) {
+			$this->set('base', 'db_password', OWA_DB_PASSWORD);
+		}
+		
+		/* SET ERROR HANDLER */
+		if (defined('OWA_ERROR_HANDLER')) {
+			$this->set('base', 'error_handler', OWA_ERROR_HANDLER);
+		}
+		
+		if (defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')) {
+			$this->set('base', 'do_not_fetch_config_from_db', OWA_CONFIG_DO_NOT_FETCH_FROM_DB);
+		}
+		
  	}
  	
  	function applyModuleOverrides($module, $config) {
@@ -431,7 +537,7 @@
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
-			'cache_objects'					=> true,
+			'cache_objects'					=> false,
 			'log_named_users'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
@@ -497,7 +603,54 @@
  		
  	}
  	
- }
- 
+ 	function createConfigFile($config_values) {
+ 		
+ 		if (file_exists(OWA_DIR.'owa-config.php')) {
+ 			owa_coreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".OWA_DIR.'owa-config.php');
+ 			require_once(OWA_DIR . 'owa-config.php');
+			return true;
+ 		}
+ 		
+ 		if (!file_exists(OWA_DIR.'conf/owa-config-dist.php')) {
+ 			owa_coreAPI::error("We can't find the configuration file template. Are you sure you installed OWA's files correctly? Exiting.");
+ 			exit;
+ 		} else {
+ 			$configFileTemplate = file(OWA_DIR.'conf'.DIRECTORY_SEPARATOR . 'owa-config-dist.php');
+ 			owa_coreAPI::debug('found sample config file.');
+ 		}
+ 		
+ 		$handle = fopen(OWA_DIR . 'owa-config.php', 'w');
+
+		foreach ($configFileTemplate as $line_num => $line) {
+			switch (substr($line,0,20)) {
+				case "define('OWA_DB_TYPE'":
+					fwrite($handle, str_replace("yourdbtypegoeshere", $config_values['db_type'], $line));
+					break;
+				case "define('OWA_DB_NAME'":
+					fwrite($handle, str_replace("yourdbnamegoeshere", $config_values['db_name'], $line));
+					break;
+				case "define('OWA_DB_USER'":
+					fwrite($handle, str_replace("yourdbusergoeshere", $config_values['db_user'], $line));
+					break;
+				case "define('OWA_DB_PASSW":
+					fwrite($handle, str_replace("yourdbpasswordgoeshere", $config_values['db_password'], $line));
+					break;
+				case "define('OWA_DB_HOST'":
+					fwrite($handle, str_replace("yourdbhostgoeshere", $config_values['db_host'], $line));
+					break;
+				default:
+					fwrite($handle, $line);
+			}
+		}
+		
+		fclose($handle);
+		chmod(OWA_DIR . 'owa-config.php', 0666);
+		owa_coreAPI::debug('Config file created');
+		require_once(OWA_DIR . 'owa-config.php');
+		return true;
+	
+	}
+ 	
+}
  
 ?>
