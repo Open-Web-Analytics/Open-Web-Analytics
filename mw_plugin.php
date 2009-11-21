@@ -79,8 +79,8 @@ function owa_main() {
 	
 	//if ($owa->getSetting('base', 'install_complete')) {
 	
-		//$wgHooks['MediaWikiPerformAction'][] = 'owa_actions';
-		$wgHooks['UnknownAction'][] = 'owa_actions';
+		$wgHooks['MediaWikiPerformAction'][] = 'owa_actions';
+		//$wgHooks['UnknownAction'][] = 'owa_actions';
 		// Hook for logging Article Page Views	
 		$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
@@ -111,14 +111,14 @@ function owa_main() {
 function owa_actions($output, $article, $title, $user, $request, $wiki) {
 	
 	global $wgOut, $wgUser;
-	//print_r($wgUser);
 	
+	// populate the user object.
 	
+
 	if ($_GET['action'] === 'owa') {
 		$wgOut->disable();	
 		$owa = owa_singleton();
-		$wgUser->loadFromSession();
-		print_r($wgUser);
+		//print_r($wgUser);
 		//owa_set_priviledges();
 		$owa->handleSpecialActionRequest();
 		return false;
@@ -131,7 +131,7 @@ function owa_actions($output, $article, $title, $user, $request, $wiki) {
 function owa_singleton() {
 
 	global $wgUser, $owa_config;
-	
+	$wgUser->load();
 	$owa = &owa_mw::singleton($owa_config);
 	$cu = &owa_coreAPI::getCurrentUser();
 	$cu->setUserData('user_id', $wgUser->mName);
