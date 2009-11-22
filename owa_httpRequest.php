@@ -272,6 +272,8 @@ class owa_http {
 			$this->http->debug_response_body = 0;
 			$this->http->html_debug = 1;
 			$this->http->user_agent =  owa_coreAPI::getSetting('base', 'owa_user_agent');
+			$this->http->timeout = 3;
+			$this->http->data_timeout = 3;
 		}
 	}
 
