@@ -79,8 +79,8 @@ function owa_main() {
 	
 	//if ($owa->getSetting('base', 'install_complete')) {
 	
-		$wgHooks['MediaWikiPerformAction'][] = 'owa_actions';
-		//$wgHooks['UnknownAction'][] = 'owa_actions';
+		//$wgHooks['MediaWikiPerformAction'][] = 'owa_actions';
+		$wgHooks['UnknownAction'][] = 'owa_actions';
 		// Hook for logging Article Page Views	
 		$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
@@ -108,15 +108,15 @@ function owa_main() {
  * @url http://www.mediawiki.org/wiki/Manual:MediaWiki_hooks/UnknownAction
  * @return false
  */
-function owa_actions($output, $article, $title, $user, $request, $wiki) {
+function owa_actions($action) {
 	
 	global $wgOut, $wgUser;
 	
 	// populate the user object.
-	
+	$wgOut->disable();
 
 	if ($_GET['action'] === 'owa') {
-		$wgOut->disable();	
+			
 		$owa = owa_singleton();
 		//print_r($wgUser);
 		//owa_set_priviledges();
