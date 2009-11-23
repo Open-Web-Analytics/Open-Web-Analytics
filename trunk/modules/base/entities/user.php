@@ -74,9 +74,30 @@ class owa_user extends owa_entity {
 		$this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
 	}
 	
+	function createNewUser($user_params) {
 	
+		$temp_passkey = $this->generateTempPasskey($user_params['user_id']);
+		$this->set('user_id', $user_params['user_id']);
+		$this->set('role', $user_params['role']);
+		$this->set('real_name', $user_params['real_name']);
+		$this->set('email_address', $user_params['email_address']);
+		$this->set('temp_passkey', $temp_passkey);
+		$this->set('creation_date', time());
+		$this->set('last_update_date', time());
+		$ret = $this->create();
+		
+		if ($ret == true):
+			return $temp_passkey;
+		else:
+			return false;
+		endif;
 	
+	}
 	
+	function generateTempPasskey($seed) {
+		
+		return md5($seed.time().rand());
+	}
 	
 }
 

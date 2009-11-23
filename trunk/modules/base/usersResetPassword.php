@@ -45,9 +45,12 @@ class owa_usersResetPasswordController extends owa_controller {
 	}
 	
 	function action() {
+	
+		$event = $this->getParam('event');
+		
 		$auth = &owa_auth::get_instance();
 		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('email_address', $this->getParam('email_address'));
+		$u->getByColumn('email_address', $event->get('email_address'));
 		$u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
 		$status = $u->update();
 		$this->e->debug('status: '.$status);

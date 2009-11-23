@@ -156,11 +156,20 @@ class eventQueue {
 	 * Notifies handlers of tracking events
 	 * Provides switch for async notification
 	 * 
-	 * @param	$event	array
+	 * @param	$event_params	array
 	 * @param 	$event_type	string
 	 */
-	function log($event, $event_type = '') {
+	function log($event_params, $event_type = '') {
 		//owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
+		
+		if (!is_a($event_params,'owa_event')) {
+			$event = owa_coreAPI::supportClassFactory('base', 'event');
+			$event->setProperties($event_params);
+			$event->setEventType($event_type);
+		} else {
+			$event = $event_params;
+		}
+		
 		//switch for async event queuing
 		if (owa_coreAPI::getSetting('base', 'async_db')) {
 			$this->asyncNotify($event);

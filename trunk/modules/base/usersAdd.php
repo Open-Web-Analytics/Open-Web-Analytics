@@ -50,7 +50,7 @@ class owa_usersAddController extends owa_adminController {
 		$v1 = owa_coreAPI::validationFactory('entityDoesNotExist');
 		$v1->setConfig('entity', 'base.user');
 		$v1->setConfig('column', 'email_address');
-		$v1->setValues($this->getParam('email_address'));
+		$v1->setValues(trim($this->getParam('email_address')));
 		$v1->setErrorMessage($this->getMsg(3009));
 		$this->setValidation('email_address', $v1);
 		
@@ -58,7 +58,7 @@ class owa_usersAddController extends owa_adminController {
 		$v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
 		$v2->setConfig('entity', 'base.user');
 		$v2->setConfig('column', 'user_id');
-		$v2->setValues($this->getParam('user_id'));
+		$v2->setValues(trim($this->getParam('user_id')));
 		$v2->setErrorMessage($this->getMsg(3001));
 		$this->setValidation('user_id', $v2);
 
@@ -70,10 +70,10 @@ class owa_usersAddController extends owa_adminController {
 		$userManager = owa_coreApi::supportClassFactory('base', 'userManager');				
 				
 				
-		$user_params = array( 'user_id' 		=> $this->params['user_id'],
+		$user_params = array( 'user_id' 		=> trim($this->params['user_id']),
 							  'real_name' 		=> $this->params['real_name'],
 						      'role'			=> $this->params['role'],
-							  'email_address' 	=> $this->params['email_address']); 
+							  'email_address' 	=> trim($this->params['email_address'])); 
 							          
 		$temp_passkey = $userManager->createNewUser($user_params);
 		

@@ -40,10 +40,12 @@ class owa_usersNewAccountController extends owa_controller {
 	
 	function action() {
 		
+		$event = $this->getParam('event');
+		
 		// return email view
-		$data['user_id']= $this->params['user_id'];
-		$data['email_address']= $this->params['email_address'];
-		$data['temp_passkey'] = $this->params['temp_passkey'];
+		$data['user_id']= $event->get('user_id');
+		$data['email_address']= $event->get('email_address');
+		$data['temp_passkey'] = $event->get('temp_passkey');
 		$data['subject'] = 'OWA User Account Setup';
 		$data['view'] = 'base.usersNewAccount';
 		$data['view_method'] = 'email';

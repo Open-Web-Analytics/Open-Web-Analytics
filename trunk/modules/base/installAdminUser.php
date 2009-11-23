@@ -48,7 +48,7 @@ class owa_installAdminUserController extends owa_installController {
 		// Control logic
 		
 		$u = owa_coreAPI::entityFactory('base.user');
-		$auth = &owa_auth::get_instance();
+		//$auth = &owa_auth::get_instance();
 		
 		// check to see if an admin user already exists
 		$u->getByColumn('role', 'admin');

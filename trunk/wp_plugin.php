@@ -82,12 +82,7 @@ function &owa_getInstance($params = array()) {
 		// Will use Wordpress config unless there is a config file present.
 		// OWA uses this to setup it's own DB connection seperate from the one
 		// that Wordpress uses.
-		$owa_config['db_type'] = 'mysql';
-		$owa_config['db_name'] = DB_NAME;
-		$owa_config['db_host'] = DB_HOST;
-		$owa_config['db_user'] = DB_USER;
-		$owa_config['db_password'] = DB_PASSWORD;
-		
+				
 		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
 		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
 		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';
@@ -376,15 +371,23 @@ function owa_install() {
 	if ($user_level < 8):
     	return;
     else:
-    	$owa->config['fetch_config_from_db'] = false;
+    	//$owa->config['fetch_config_from_db'] = false;
     	
-    	$owa->config['db_type'] = 'mysql';
+    	//$owa->config['db_type'] = 'mysql';
+    	$public_url =  get_bloginfo('url').'/wp-content/plugins/owa/';
     	
     	$install_params = array('site_id' => md5(get_settings('siteurl')), 
     							'name' => get_bloginfo('name'),
     							'domain' => get_settings('siteurl'), 
     							'description' => get_bloginfo('description'),
-    							'action' => 'base.installEmbedded');
+    							'action' => 'base.installEmbedded',
+    							'db_type' => 'mysql',
+								'db_name' => DB_NAME,
+								'db_host' => DB_HOST,
+								'db_user' => DB_USER,
+								'db_password' => DB_PASSWORD,
+								'public_url' =>  $public_url
+								);
     							
     	$owa->handleRequest($install_params);
 	endif;

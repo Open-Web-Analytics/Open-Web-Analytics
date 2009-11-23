@@ -58,6 +58,7 @@ class owa_installStartEmbeddedController extends owa_controller {
 		$this->set('db_password', $this->getParam('db_password'));
 		$this->set('db_host', $this->getParam('db_host'));
 		$this->set('db_name', $this->getParam('db_name'));
+		$this->set('public_url', $this->getParam('public_url'));
 		
 		$this->setView('base.installStartEmbedded');
 		
@@ -112,6 +113,7 @@ class owa_installStartEmbeddedView extends owa_view {
 		$this->body->set('db_password', $this->get('db_password'));
 		$this->body->set('db_host', $this->get('db_host'));
 		$this->body->set('db_name', $this->get('db_name'));
+		$this->body->set('public_url', $this->get('public_url'));
 		
 		return;
 	}
