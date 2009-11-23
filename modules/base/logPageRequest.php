@@ -44,7 +44,6 @@ class owa_logPageRequestController extends owa_controller {
 	function action() {
 		
 		$event = $this->getParam('event');
-		
 		// Control logic
 		
 		$r = owa_coreAPI::entityFactory('base.request');
@@ -58,7 +57,7 @@ class owa_logPageRequestController extends owa_controller {
 		
 		// Make ua id
 		$r->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
-		
+	
 		// Make OS id
 		$r->set('os_id', owa_lib::setStringGuid($event->get('os')));
 	

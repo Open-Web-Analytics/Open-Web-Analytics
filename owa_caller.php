@@ -205,7 +205,7 @@ class owa_caller extends owa_base {
 	 * @return boolean
 	 */
 	function trackEvent($event) {
-		return owa_coreAPI::logEvent($event->getEventType, $event);
+		return owa_coreAPI::logEvent($event->getEventType(), $event);
 	}
 	
 	/**

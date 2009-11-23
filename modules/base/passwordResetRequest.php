@@ -41,10 +41,10 @@ class owa_passwordResetRequestController extends owa_controller {
 		
 		parent::__construct($params);
 		
-		$v1 = owa_coreAPI::validationFactory('entityDoesNotExist');
+		$v1 = owa_coreAPI::validationFactory('entityExists');
 		$v1->setConfig('entity', 'base.user');
 		$v1->setConfig('column', 'email_address');
-		$v1->setValues($this->getParam('email_address'));
+		$v1->setValues(trim($this->getParam('email_address')));
 		$v1->setErrorMessage($this->getMsg(3010));
 		$this->setValidation('email_address', $v1);
 		
@@ -60,7 +60,7 @@ class owa_passwordResetRequestController extends owa_controller {
 	
 		// return view
 		$this->setView('base.passwordResetForm');
-		$email_address = $this->getParam('email_address');
+		$email_address = trim($this->getParam('email_address'));
 		$msg = $this->getMsg(2000, $email_address);
 		$this->set('status_msg', $msg);	
 							

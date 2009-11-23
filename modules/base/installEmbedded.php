@@ -17,11 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
-
 
 /**
  * Embedded Install Controller
@@ -67,29 +63,10 @@ class owa_installEmbeddedController extends owa_controller {
 		// schema was installed successfully
 		if ($status == true):
 		    
-			// Check to see if default site already exists
-			$this->e->notice('Embedded install: checking for existance of default site.');
-			$site = owa_coreAPI::entityFactory('base.site');
-			$site->getByColumn('site_id', $this->params['site_id']);
-			$id = $site->get('id');
-		
-			if(empty($id)):
-		    	// Create default site
-				$site->set('site_id', $this->params['site_id']);
-				$site->set('name', $this->params['name']);
-				$site->set('description', $this->params['description']);
-				$site->set('domain', $this->params['domain']);
-				$site->set('site_family', $this->params['site_family']);
-				$site_status = $site->create();
-			
-				if ($site_status == true):
-					$this->e->notice('Embedded install: created default site.');
-				else:
-					$this->e->notice('Embedded install: creation of default site failed.');
-				endif;
-			else:
-				$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
-			endif;
+		    //create admin user
+		    $this->createAdminUser();
+		    
+			$this->createDefaultSite();
 			
 			// Persist install complete flag. 
 			$this->c->setSetting('base', 'install_complete', true);
@@ -101,10 +78,10 @@ class owa_installEmbeddedController extends owa_controller {
 				$this->e->notice('Could not persist Install Complete Flag to the Database');
 			endif;
 
-			$data = array();
-			$data['view'] = 'base.installFinishEmbedded';
+		
+			$this->setView('base.installFinishEmbedded');
 			
-			return $data;
+			return;
 		
 		// schema was not installed successfully
 		else:
@@ -112,6 +89,73 @@ class owa_installEmbeddedController extends owa_controller {
 			return false;
 		endif;		
 			
+	}
+	
+	function createAdminUser() {
+		
+		//create user entity
+		$u = owa_coreAPI::entityFactory('base.user');
+		// check to see if an admin user already exists
+		$u->getByColumn('role', 'admin');
+		$id_check = $u->get('id');		
+		// if not then proceed
+		if (empty($id_check)) {
+	
+			//Check to see if user name already exists
+			$u->getByColumn('user_id', 'admin');
+	
+			$id = $u->get('id');
+	
+			// Set user object Params
+			if (empty($id)) {
+			
+				// get current user info from host application
+				$cu = owa_coreAPI::getCurrentUser();
+				
+				$user_params = array();
+				$user_params['user_id'] = 'admin';
+				$user_params['real_name'] = $cu->getUserData('real_name');
+				$user_params['role'] = 'admin';
+				$user_params['email_address'] = $cu->getUserData('email_address');
+							          
+				$temp_passkey = $u->createNewUser($user_params);
+				
+				owa_coreAPI::debug("OWA admin user created successfully.");
+			
+			} else {				
+				owa_coreAPI::debug($this->getMsg(3306));
+			}
+		} else {
+			owa_coreAPI::debug("OWA admin user already exists.");
+		}
+
+	}
+	
+	function createDefaultSite() {
+	
+		// Check to see if default site already exists
+			$this->e->notice('Embedded install: checking for existance of default site.');
+			$site = owa_coreAPI::entityFactory('base.site');
+			$site->getByColumn('site_id', $this->getParam('site_id'));
+			$id = $site->get('id');
+		
+			if(empty($id)):
+		    	// Create default site
+				$site->set('site_id', $this->getParam('site_id'));
+				$site->set('name', $this->getParam('name'));
+				$site->set('description', $this->getParam('description'));
+				$site->set('domain', $this->getParam('domain'));
+				$site->set('site_family', $this->getParam('site_family'));
+				$site_status = $site->create();
+			
+				if ($site_status == true):
+					$this->e->notice('Embedded install: created default site.');
+				else:
+					$this->e->notice('Embedded install: creation of default site failed.');
+				endif;
+			else:
+				$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
+			endif;
 	}
 	
 	

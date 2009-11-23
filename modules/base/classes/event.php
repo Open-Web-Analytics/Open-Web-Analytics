@@ -102,8 +102,9 @@ class owa_event {
 	}
 	
 	function get($name) {
-	
+		
 		if(array_key_exists($name, $this->properties)) {
+			//print_r($this->properties[$name]);
 			return $this->properties[$name];
 		} else {
 			return false;

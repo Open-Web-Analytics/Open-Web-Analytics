@@ -345,6 +345,7 @@ class SpecialOwa extends SpecialPage {
 					$params['db_host'] = $wgDBserver;
 					$params['db_user'] = $wgDBuser;
 					$params['db_password'] = $wgDBpassword;
+					$params['public_url'] = $wgServer.$wgScriptPath.'/extensions/owa/';
     				$page = $owa->handleRequest($params);
     			
     			// send to daashboard

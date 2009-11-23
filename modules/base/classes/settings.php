@@ -638,6 +638,9 @@
 				case "define('OWA_DB_HOST'":
 					fwrite($handle, str_replace("yourdbhostgoeshere", $config_values['db_host'], $line));
 					break;
+				case "define('OWA_PUBLIC_U":
+					fwrite($handle, str_replace("/path/to/owa/goes/here/", $config_values['public_url'], $line));
+					break;
 				default:
 					fwrite($handle, $line);
 			}
