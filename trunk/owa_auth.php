@@ -348,7 +348,7 @@ class owa_auth extends owa_base {
 	 */
 	function encryptPassword($password) {
 		
-		return md5(strtolower($password).strlen($password));
+		return owa_lib::encryptPassword($password);
 	}
 	
 }

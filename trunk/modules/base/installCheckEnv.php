@@ -20,46 +20,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
- * Installer Server Environment Setup Check View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_installCheckEnvView extends owa_view {
-	
-	function owa_installCheckEnvView($params) {
-	
-		return owa_installCheckEnvView::__construct($params);
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		//page title
-		$this->t->set('page_title', 'Installer Server Environment Check');
-		$this->body->set('headline', 'Server Environment Check');
-		$this->body->set('errors', $data['errors']);
-		$this->body->set('env', $data['env']);
-		// load body template
-		$this->body->set_template('install_check_env.tpl');
-		
-		return;
-	}
-	
-	
-}
-
-/**
  * Server Environment Check Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
@@ -86,37 +46,95 @@ class owa_installCheckEnvController extends owa_installController {
 	function action() {
 		
 		$errors = array();
-		$warnings = array();
-		$env = array();
 		
 		// check PHP version
-		$env['php_version'] = phpversion();
-		$version = split('\.',$env['php_version']);
+		$version = split('\.',phpversion());
 		
-		if ($version[0] < 4):
-			$errors['php_version'] = $this->getMsg(3301);
-			$errors['count'] = $errors['count']++;
-		endif;
-		
-		// Check DB connection status
-		$db = &owa_coreAPI::dbSingleton();
-		$db->connect();
-		if ($db->connection_status != true):
-			$errors['count'] = $errors['count']++;
-			$errors['db_status'] = $this->getMsg(3300);
-			$env['db_status'] = 'Failed';
-		else:
-			$env['db_status'] = 'Success';
-		endif;
-		
-		// Check socket connection
+		if ($version[0] < 4) {
+			$errors['php_version']['name'] = 'PHP Version';
+			$errors['php_version']['value'] = phpversion();
+			$errors['php_version']['msg'] = $this->getMsg(3301);
+			$bad_environment = true;
+		}
 		
 		// Check permissions on log directory
 		
-		$this->set('errors', $errors);
-		$this->set('env', $env);
-		$this->setView('base.install');
-		$this->setSubview('base.installCheckEnv');
+		// Check for Windows OS
+		$os = php_uname("s");
+		if (strtoupper(substr($os, 0, 3)) === 'WIN') {
+			$errors['php_os']['value'] = 'Operating System';
+			$errors['php_os']['value'] = $os;
+			$errors['php_os']['msg'] = 'You are running PHP on an Operating System that OWA does not support.';
+			$bad_environment = true;
+		}
+		
+		// Check for config file and then test the db connection
+		if ($this->c->isConfigFilePresent()) {
+			$config_file_present = true;
+			$conn = $this->checkDbConnection();
+			if ($conn != true) {
+				$errors['db']['name'] = 'Database Connection';
+				$errors['db']['value'] = 'Connection failed';
+				$errors['db']['msg'] = 'Check the connection settings in your configuration file.' ;
+				$bad_environment = true;
+			}
+		}
+		
+		// if the environment is good
+		if ($bad_environment != true) {
+			// and the config file is present
+			if ($config_file_present === true) {
+				//skip to defaults entry step
+				$this->setRedirectAction('base.installDefaultsEntry');
+				return;		
+			} else {
+				// otherwise show config file entry form
+				$this->setView('base.install');
+				$this->setSubview('base.installConfigEntry');
+				return;
+			}
+		// if the environment is bad, then show environment error details.
+		} else {
+			$this->set('errors', $errors);
+			$this->setView('base.install');
+			$this->setSubview('base.installCheckEnv');
+		}
+
+		return;
+	}
+}
+
+/**
+ * Installer Server Environment Setup Check View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_installCheckEnvView extends owa_view {
+	
+	function owa_installCheckEnvView($params) {
+	
+		return owa_installCheckEnvView::__construct($params);
+	}
+	
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
+		
+		//page title
+		$this->t->set('page_title', 'Server Environment Check');
+		$this->body->set('errors', $this->get('errors'));
+		// load body template
+		$this->body->set_template('install_check_env.tpl');
 		
 		return;
 	}

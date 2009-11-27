@@ -16,9 +16,8 @@
 // $Id$
 //
 
-require_once 'owa_env.php';
-require_once(OWA_PEARLOG_DIR . '/Log.php');
-require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
+//require_once 'owa_env.php';
+
 //require_once(OWA_BASE_CLASS_DIR.'settings.php');
 
 /**
@@ -193,9 +192,10 @@ class owa_lib {
 	 *
 	 * @param string $msg
 	 * @access public
+	 * @depricated
 	 */
 	function errorHandler($msg) {
-		
+		require_once(OWA_PEARLOG_DIR . '/Log.php');
 		$conf = array('mode' => 0755, 'timeFormat' => '%X %x');
 		$error_logger = &Log::singleton('file', $this->config['error_log_file'], 'ident', $conf);
 		$this->error_logger->_lineFormat = '[%3$s]';
@@ -442,7 +442,12 @@ class owa_lib {
 	
 	function inputFilter($array) {
 		
-		$f = new InputFilter;
+		static $f;
+		
+		if (empty($f)) {
+			require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
+			$f = new InputFilter;
+		}
 		
 		return $f->process($array);
 		
@@ -944,6 +949,17 @@ class owa_lib {
       	endif;
    
       return $res; 
+	}
+	
+	/**
+	 * Simple Password Encryption
+	 *
+	 * @param string $password
+	 * @return string
+	 */
+	function encryptPassword($password) {
+		
+		return md5(strtolower($password).strlen($password));
 	}
 }
 

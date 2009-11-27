@@ -60,6 +60,7 @@ $_owa_messages = array(
 3009 => array("Error. A user with that email address already exists.", 0),
 3010 => array("A user with that email address does not exist.", 0),
 3011 => array("Could not update user profile."),
+3012 => array("Could not connect the database. Check your settings and try again.",0),
 
 //sites management
 3200 => array("Error. Please fill in all required fields.",0),
@@ -70,6 +71,7 @@ $_owa_messages = array(
 3206 => array("Error. A site with that domain already exists.",0),
 3207 => array("Error. You must enter a domain when adding a web site.",0),
 3208 => array("Error. That site does not exist.",0),
+3208 => array("Please remove the http:// from your begining of your domain.",0),
 
 
 //install
@@ -82,6 +84,8 @@ $_owa_messages = array(
 3306 => array("Error. User id already exists for some reason.",0),
 3307 => array("Updates failed. Check the log file for more details and try again.",0),
 3308 => array("Success. Updates were applied.",0),
+3309 => array("Site Domain is required.",0),
+3310 => array("E-mail Address is required.",0),
 // Graph related
 3500 => array("There is no data for\nthis time period.",0),
 

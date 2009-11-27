@@ -47,8 +47,6 @@
  		$substring = $this->getConfig('subString');
  		$pos = strpos($value, $substring);
  		
- 		//print $pos;
- 		//print_r($this);
  		$operator = $this->getConfig('operator');
  		$position = $this->getConfig('position');
  		

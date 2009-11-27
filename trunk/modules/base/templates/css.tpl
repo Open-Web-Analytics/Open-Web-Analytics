@@ -40,7 +40,28 @@ div {margin:0;}
 	text-align: center;
 }
 
-
+/* FORMS */
+.form-row {border-bottom:1px solid #efefef;padding:10px; float:none;}
+.form-label {width:;}
+.form-field {position: absolute; left: 380px;}
+.form-value {position: absolute; left: 380px; font-weight: bold;}
+.form-instructions {position: absolute; left: 650px; font-size:12px; color: #9f9f9f;}
+.owa-button {
+	border-radius:4px; 
+	background-color:orange; 
+	padding:15px 30px 15px 30px; 
+	color:#ffffff; 
+	font-size:18px;
+	font-weight:bold;
+	border: 1px solid #efefef;
+	-moz-border-radius: 3px; 
+	-webkit-border-radius: 3px;	
+	margin-top: 50px;
+}
+.owa-button:hover {
+	color: #000000;
+	border-color: #9f9f9f;
+}
 
 .owa_pagination {float:left; overflow: hidden;}
 .owa_pagination ul {list-style: none; padding: 0; margin: 0;}
