@@ -31,16 +31,7 @@
  */
 
 class owa_site extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_SERIAL, 'auto_increment' => true);
-	var $site_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $domain = array('data_type' => OWA_DTD_VARCHAR255, 'is_not_hull' => true); // VARCHAR(255),
-	var $name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $description = array('data_type' => OWA_DTD_TEXT); // TEXT,
-	var $site_family = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255)
 	
-	*/
 	function owa_site() {
 		
 		return owa_site::__construct();
@@ -65,6 +56,11 @@ class owa_site extends owa_entity {
 		$this->properties['description']->setDataType(OWA_DTD_TEXT);
 		$this->properties['site_family'] = new owa_dbColumn;
 		$this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
+	}
+	
+	function generateSiteId($domain) {
+		
+		return md5($domain);
 	}
 	
 	

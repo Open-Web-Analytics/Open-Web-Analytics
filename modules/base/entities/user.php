@@ -99,6 +99,11 @@ class owa_user extends owa_entity {
 		return md5($seed.time().rand());
 	}
 	
+	function generateRandomPassword() {
+	
+		return substr(owa_lib::encryptPassword(microtime()),0,6);
+	}
+	
 }
 
 

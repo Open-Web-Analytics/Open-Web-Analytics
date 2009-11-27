@@ -54,6 +54,102 @@ class owa_installController extends owa_controller {
 
 		return;
 	}
+	
+	function installSchema() {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		$base = $service->getModule('base');
+		$status = $base->install();
+		return $status;
+
+	}
+	
+	function createAdminUser($email_address) {
+		
+		//create user entity
+		$u = owa_coreAPI::entityFactory('base.user');
+		// check to see if an admin user already exists
+		$u->getByColumn('role', 'admin');
+		$id_check = $u->get('id');		
+		// if not then proceed
+		if (empty($id_check)) {
+	
+			//Check to see if user name already exists
+			$u->getByColumn('user_id', 'admin');
+	
+			$id = $u->get('id');
+	
+			// Set user object Params
+			if (empty($id)) {
+				
+				$password = $u->generateRandomPassword();
+				$u->set('user_id', 'admin');
+				$u->set('role', 'admin');
+				$u->set('real_name', '');
+				$u->set('email_address', $email_address);
+				$u->set('password', owa_lib::encryptPassword($password));
+				$u->set('creation_date', time());
+				$u->set('last_update_date', time());
+				$ret = $u->create();
+
+				owa_coreAPI::debug("Admin user created successfully.");
+				
+				return $password;
+				
+			} else {				
+				owa_coreAPI::debug($this->getMsg(3306));
+			}
+		} else {
+			owa_coreAPI::debug("Admin user already exists.");
+		}
+
+	}
+	
+	function createDefaultSite($domain) {
+	
+		// Check to see if default site already exists
+		$this->e->notice('Checking for existence of default site.');
+		$site = owa_coreAPI::entityFactory('base.site');
+		
+		// create site_id....how?
+		$site->getByColumn('site_id', $this->getParam('site_id'));
+		$id = $site->get('id');
+	
+		if(empty($id)) {
+	    	// Create default site
+	    	
+			$site->set('site_id', $site->generateSiteId($domain));
+			$site->set('name', $domain);
+			$site->set('description', '');
+			$site->set('domain', $domain);
+			$site->set('site_family', '');
+			$site_status = $site->create();
+		
+			if ($site_status == true) {
+				$this->e->notice('Created default site.');
+			} else {
+				$this->e->notice('Creation of default site failed.');
+			}
+			
+		} else {
+			$this->e->notice(sprintf("Default site already exists (id = %s). nothing to do here.", $id));
+		}
+		
+		return $site->get('site_id');
+	}
+	
+	function checkDbConnection() {
+		
+		// Check DB connection status
+		$db = &owa_coreAPI::dbSingleton();
+		$db->connect();
+		if ($db->connection_status === true) {
+			return true;
+		} else {
+			return false;
+		}
+
+	}
 
 }
 

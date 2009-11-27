@@ -76,7 +76,7 @@ class owa_installDetectedView extends owa_view {
 		$this->body->set_template('install_schema_detected.tpl');
 		
 		//page title
-		$this->t->set('page_title', 'OWA INstallation Detected');
+		$this->t->set('page_title', 'OWA Installation Detected');
 		
 		return;
 	}

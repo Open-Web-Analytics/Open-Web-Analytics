@@ -39,25 +39,82 @@ class owa_installBaseController extends owa_installController {
 	
 	function __construct($params) {
 		
-		return parent::__construct($params);
+		parent::__construct($params);
+		
+		// validations
+		$v1 = owa_coreAPI::validationFactory('required');
+		$v1->setValues($this->getParam('domain'));
+		$v1->setErrorMessage($this->getMsg(3309));
+		$this->setValidation('domain', $v1);
+		
+		// validations
+		$v2 = owa_coreAPI::validationFactory('required');
+		$v2->setValues($this->getParam('email_address'));
+		$v2->setErrorMessage($this->getMsg(3310));
+		$this->setValidation('email_address', $v2);
+		
+		// Check user name exists
+		$v3 = owa_coreAPI::validationFactory('entityDoesNotExist');
+		$v3->setConfig('entity', 'base.site');
+		$v3->setConfig('column', 'domain');
+		$v3->setValues($this->getParam('protocol').$this->getParam('domain'));
+		$v3->setErrorMessage($this->getMsg(3206));
+		$this->setValidation('domain', $v3);
+		
+		// Config for the domain validation
+		$v4 = owa_coreAPI::validationFactory('subStringPosition');
+		$v4->setConfig('subString', 'http');
+		$v4->setValues($this->getParam('domain'));
+		$v4->setConfig('position', 1);
+		$v4->setConfig('operator', '!=');
+		$v4->setErrorMessage($this->getMsg(3208));
+		$this->setValidation('domain', $v4);
+		
+		return;
 	}
 	
 	function action() {
 		
-		$service = &owa_coreAPI::serviceSingleton();
-		$base = $service->getModule('base');
-		$status = $base->install();
-		
+		$status = $this->installSchema();
+				
 		if ($status == true) {
 			$this->set('status_code', 3305);
+			
+			$password = $this->createAdminUser($this->getParam('email_address'));
+			
+			$site_id = $this->createDefaultSite($this->getParam('domain'));	
+			
+			// Set install complete flag. 
+			$this->c->setSetting('base', 'install_complete', true);
+			$save_status = $this->c->save();
+			
+			if ($save_status == true) {
+				$this->e->notice('Install Complete Flag added to configuration');
+			} else {
+				$this->e->notice('Could not add Install Complete Flag to configuration.');
+			}
+
+			$this->set('u', 'admin');
+			$this->set('p', $password);
+			$this->set('site_id', $site_id);
+			$this->setView('base.install');
+			$this->setSubview('base.installFinish');
+			//$this->set('status_code', 3304);
+			
 		} else {
-			$this->set('error_code', 3302);
+	
+			$this->set('error_msg', $this->getMsg(3302));
+			$this->errorAction();
 		}
-		
-		$this->setView('base.install');
-		$this->setSubView('base.installDefaultSiteProfileEntry');
-		
+				
 		return;
+	}
+	
+	function errorAction() {
+	
+		$this->set('defaults', $this->params);
+		$this->setView('base.install');
+		$this->setSubView('base.installDefaultsEntry');
 	}
 	
 

@@ -31,8 +31,8 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-// Initialize owa admin
-//$config['do_not_fetch_config_from_db'] = true;
+// Initialize owa
+define('OWA_ERROR_HANDLER', 'development');
 $config['main_url'] = 'install.php';
 $config['cache_objects'] = false;
 $owa = new owa_php($config);

@@ -62,9 +62,8 @@ class owa_installFinishController extends owa_installController {
 		$this->setView('base.install');
 		$this->setSubview('base.installFinish');
 		$this->set('site_id', $site->get('site_id'));
-		$this->set('status_code', $this->getParam('status_code')); 
 		$this->set('u', $this->getParam('u'));
-		$this->set('k', $this->getParam('k'));
+		$this->set('p', $this->getParam('p'));
 		
 		return;
 	}
@@ -93,7 +92,7 @@ class owa_installFinishView extends owa_view {
 		
 		$this->body->set('site_id', $this->get('site_id'));
 		$this->body->set('u', $this->get('u'));
-		$this->body->set('key', $this->get('k'));
+		$this->body->set('p', $this->get('p'));
 		// load body template
 		$this->body->set_template('install_finish.tpl');
 		
