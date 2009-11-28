@@ -204,7 +204,7 @@ class owa_controller extends owa_base {
 				//$data['view_method'] = 'delegate';
 				$this->setRedirectAction('base.loginForm');
 				$this->set('go', urlencode(owa_lib::get_current_url()));
-				$this->set('error_code', 2002);
+				//$this->set('error_code', 2002);
 				return $this->data;
 			else:
 				//check for needed capability again now that they are authenticated

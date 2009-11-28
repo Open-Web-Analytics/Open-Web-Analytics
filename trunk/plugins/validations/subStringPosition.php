@@ -54,17 +54,20 @@
  			
  			case "=":
  				
- 				if ($pos != $position):
+ 				if ($pos === $position) {
+ 					;
+ 				} else {
  					$this->hasError();
- 				endif;
- 				
+ 				}
+ 					
+ 						
  			break;
  			
  			case "!=":
  				
- 				if ($pos === $position):
+ 				if ($pos === $position) {
  					$this->hasError();
- 				endif;
+ 				}
  			
  			break;
  		}

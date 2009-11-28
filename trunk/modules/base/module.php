@@ -123,44 +123,43 @@ class owa_baseModule extends owa_module {
 	function _registerEventHandlers() {
 		
 		// User management
-		$this->_addHandler(array('base.set_password', 
-								'base.reset_password', 
-								'base.new_user_account'), 
-								'userHandlers');
+		$this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
 		
 		// Page Requests
-		$this->_addHandler(array('base.page_request', 'base.first_page_request'), 'requestHandlers');
+		$this->registerEventHandler(array('base.page_request', 'base.first_page_request'), 'requestHandlers');
 		
 		// Sessions
-		$this->_addHandler(array('base.page_request_logged', 'base.first_page_request_logged'), 'sessionHandlers');
+		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged'), 'sessionHandlers');
 		
 		// Clicks
-		$this->_addHandler('dom.click', 'clickHandlers');
+		$this->registerEventHandler('dom.click', 'clickHandlers');
 		
 		// Documents
-		$this->_addHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
+		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
 		
 		// Referers
-		$this->_addHandler('base.new_session', 'refererHandlers');
+		$this->registerEventHandler('base.new_session', 'refererHandlers');
 		
 		// User Agents
-		$this->_addHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
+		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		
 		// Hosts
-		$this->_addHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
+		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
 		
 		// Hosts
-		$this->_addHandler('base.new_comment', 'commentHandlers');
+		$this->registerEventHandler('base.new_comment', 'commentHandlers');
 		
 		// Hosts
-		$this->_addHandler('base.feed_request', 'feedRequestHandlers');
+		$this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
 		
 		// User management
-		$this->_addHandler('base.new_session', 'visitorHandlers');
+		$this->registerEventHandler('base.new_session', 'visitorHandlers');
 
 		// Nofifcation handlers
-		$this->_addHandler('base.new_session', 'notifyHandlers');
-
+		$this->registerEventHandler('base.new_session', 'notifyHandlers');
+		
+		// install complete handler
+		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
 		
 		return;
 		
@@ -194,6 +193,11 @@ class owa_baseModule extends owa_module {
 								'configuration',
 								'user'));
 		
+	}
+	
+	function installCompleteHandler($event) {
+		
+		//owa_coreAPI::debug('test handler: '.print_r($event, true));
 	}
 		
 }

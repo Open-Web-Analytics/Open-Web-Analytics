@@ -65,7 +65,7 @@ class owa_installBaseController extends owa_installController {
 		$v4 = owa_coreAPI::validationFactory('subStringPosition');
 		$v4->setConfig('subString', 'http');
 		$v4->setValues($this->getParam('domain'));
-		$v4->setConfig('position', 1);
+		$v4->setConfig('position', 0);
 		$v4->setConfig('operator', '!=');
 		$v4->setErrorMessage($this->getMsg(3208));
 		$this->setValidation('domain', $v4);
@@ -93,7 +93,17 @@ class owa_installBaseController extends owa_installController {
 			} else {
 				$this->e->notice('Could not add Install Complete Flag to configuration.');
 			}
-
+			
+			// fire install complete event.
+			$eq = &eventQueue::get_instance();
+			$event = $eq->eventFactory();
+			$event->set('u', 'admin');
+			$event->set('p', $password);
+			$event->set('site_id', $site_id);
+			$event->setEventType('install_complete');
+			$eq->notify($event);
+			
+			// set view
 			$this->set('u', 'admin');
 			$this->set('p', $password);
 			$this->set('site_id', $site_id);

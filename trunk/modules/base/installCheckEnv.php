@@ -90,6 +90,9 @@ class owa_installCheckEnvController extends owa_installController {
 			} else {
 				// otherwise show config file entry form
 				$this->setView('base.install');
+				// Todo: prepopulate public URL.
+				//$config = array('public_url', $url);
+				//$this->set('config', $config);
 				$this->setSubview('base.installConfigEntry');
 				return;
 			}

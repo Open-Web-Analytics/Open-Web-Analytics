@@ -78,7 +78,6 @@ class owa_usersAddController extends owa_adminController {
 		$temp_passkey = $userManager->createNewUser($user_params);
 		
 		// log account creation event to event queue
-		// todo: this does not need to be asynch!
 		$eq = &eventQueue::get_instance();
 		$eq->log(array( 'user_id' 	=> $this->params['user_id'],
 						'real_name' => $this->params['real_name'],

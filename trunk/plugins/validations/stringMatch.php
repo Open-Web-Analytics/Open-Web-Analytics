@@ -17,7 +17,7 @@
 //
 
 /**
- * Sub String Position Validation
+ * String Match Validation
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
