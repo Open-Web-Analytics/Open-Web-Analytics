@@ -1,7 +1,7 @@
 <div class="subview_content">
 	
-	<h1>That's It. Installation is Complete.</h1>
-	<p>Open Web Analytics has been successfully installed. Login using the user name and password below.</p>
+	<h1>Success! That's It. Installation is Complete.</h1>
+	<p>Open Web Analytics has been successfully installed. Login using the user name and password below and generate a tracker.</p>
 	<p class="form-row">
 		<span class="form-label">User Name:</span>
 		<span class="form-value"><?php echo $u;?></span>
@@ -13,8 +13,8 @@
 	</p>
 	<BR>
 	<p>		
-		<a href="<?php echo $this->makeLink(array("action" => "base.loginForm"), false, owa_coreAPI::getSetting('base','public_url'));?>">
-			<span class="owa-button">Login</span>
+		<a href="<?php echo $this->makeLink(array("action" => "base.sitesInvocation", "site_id" => $site_id), false, owa_coreAPI::getSetting('base','public_url'));?>">
+			<span class="owa-button">Login and generate a site tracker!</span>
 		</a>	
 	</p>	
 </div>

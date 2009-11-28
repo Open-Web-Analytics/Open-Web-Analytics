@@ -44,10 +44,10 @@ class owa_loginFormController extends owa_controller {
 	}
 	
 	function action() {
+		$cu = owa_coreAPI::getCurrentUser();
 		
-		$auth = &owa_auth::get_instance();
 		$this->set('go', $this->getParam('go'));
-		$this->set('user_id', $this->getParam('u'));
+		$this->set('user_id', $cu->getUserData('user_id'));
 		$this->setView('base.loginForm');
 				
 		return;

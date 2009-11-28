@@ -212,6 +212,11 @@ class eventQueue {
 		return $q;
 		
 	}
+	
+	function eventFactory() {
+		
+		return owa_coreAPI::supportClassFactory('base', 'event');
+	}
 
 	/**
 	 * Singleton
