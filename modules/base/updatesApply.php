@@ -46,9 +46,9 @@ class owa_updatesApplyController extends owa_controller {
 	function action() {
 		
 		// fetch list of modules that require updates
-		$api = &owa_coreAPI::singleton();
+		$s = &owa_coreAPI::serviceSingleton();
 		
-		$modules = $api->getModulesNeedingUpdates();
+		$modules = $s->getModulesNeedingUpdates();
 		//print_r($modules);
 		//return;
 		
@@ -58,7 +58,7 @@ class owa_updatesApplyController extends owa_controller {
 		
 		foreach ($modules as $k => $v) {
 		
-			$ret = $api->modules[$v]->update();
+			$ret = $s->modules[$v]->update();
 			
 			if ($ret != true):
 				$error = true;
@@ -68,14 +68,14 @@ class owa_updatesApplyController extends owa_controller {
 		}
 		
 		if ($error === true):
-			$this->set('error_msg', 'something went wrong here with the updates.');
+			$this->set('error_msg', $this->getMsg(3307));
 			$this->setView('base.error');
 			$this->setViewMethod('delegate');			
 		else:
 			
 			// add data to container
 			$this->set('status_code', 3308);
-			$this->set('do', 'base.optionsGeneral');
+			$this->set('do', 'base.loginForm');
 			$this->setViewMethod('redirect');
 		 
 		endif;		
