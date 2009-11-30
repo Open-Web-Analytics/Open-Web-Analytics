@@ -17,7 +17,7 @@
 //
 
 /**
- * 003 Update Class
+ * 004 Update Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,35 +25,24 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.2.1
  */
 
 
-class owa_base_003_update extends owa_update {
+class owa_base_004_update extends owa_update {
 
 	function up() {
 		
-		$db = owa_coreAPI::dbSingleton();
-		$s = &owa_coreAPI::serviceSingleton();
+		$ds = owa_coreAPI::entityFactory('base.domstream');
+		$ret = $ds->createTable();
 		
-		$entities = $s->modules[$this->module_name]->getEntities();
-		
-		foreach ($entities as $k => $v) {
-		
-			$ret = $db->alterTableType($this->c->get('base', 'ns').$v, 'InnoDB');
-			
-			if ($ret == true):
-				$this->e->notice(sprintf('Changed Table %s to InnoDB', $v));
-			else:
-				$this->e->notice(sprintf('Change to Table %s failed', $v));
-				return false;
-			endif;
-		
+		if ($ret == true) {
+			$this->e->notice('Domstream entity table created');
+			return true;
+		} else {
+			$this->e->notice('Domstream entity table creation failed');
+			return false;
 		}
-		
-		
-		return true;
-		
 		
 	}
 	
