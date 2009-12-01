@@ -106,14 +106,14 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryExits', 'Entry & Exit Pages', 3);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);								$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);							$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Keywords', 1);								
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Keywords', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);							$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);	
-		
-		return;
-		
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
+		$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);		
 	}
 	
 	/**
@@ -124,45 +124,32 @@ class owa_baseModule extends owa_module {
 		
 		// User management
 		$this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
-		
 		// Page Requests
 		$this->registerEventHandler(array('base.page_request', 'base.first_page_request'), 'requestHandlers');
-		
 		// Sessions
 		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged'), 'sessionHandlers');
-		
 		// Clicks
 		$this->registerEventHandler('dom.click', 'clickHandlers');
-		
 		// Documents
 		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
-		
 		// Referers
 		$this->registerEventHandler('base.new_session', 'refererHandlers');
-		
 		// User Agents
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
-		
 		// Hosts
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
-		
 		// Hosts
 		$this->registerEventHandler('base.new_comment', 'commentHandlers');
-		
 		// Hosts
 		$this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
-		
 		// User management
 		$this->registerEventHandler('base.new_session', 'visitorHandlers');
-
 		// Nofifcation handlers
 		$this->registerEventHandler('base.new_session', 'notifyHandlers');
-		
 		// install complete handler
 		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
-		
-		return;
-		
+		// domstreams
+		$this->registerEventHandler('install_complete', 'domstreamHandlers');
 	}
 	
 	function _registerEventProcessors() {
@@ -177,7 +164,7 @@ class owa_baseModule extends owa_module {
 		
 		//$this->_addEntity('testtable');
 								
-		$this->_addEntity(array('request', 
+		$this->registerEntity(array('request', 
 								'session', 
 								'document', 
 								'feed_request', 
@@ -191,7 +178,8 @@ class owa_baseModule extends owa_module {
 								'os',
 								'impression', 
 								'configuration',
-								'user'));
+								'user',
+								'domstream'));
 		
 	}
 	

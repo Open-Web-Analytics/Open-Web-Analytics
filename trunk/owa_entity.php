@@ -561,6 +561,22 @@ class owa_entity {
 		
 		$this->properties[$obj->get('name')] = $obj;
 	}
+	
+	function generateRandomUid($seed = '') {
+		
+		return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
+	}
+	
+	/**
+	 * Create guid from string
+	 *
+	 * @param 	string $string
+	 * @return 	integer
+	 */
+	function generateId($string) {
+	
+		return owa_lib::setStringGuid($string);
+	}
 
 }
 

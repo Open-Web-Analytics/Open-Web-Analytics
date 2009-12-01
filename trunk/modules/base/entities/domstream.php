@@ -45,6 +45,9 @@ class owa_domstream extends owa_entity {
 		$this->properties['document_id'] = new owa_dbColumn;
 		$this->properties['document_id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['document_id']->setForeignKey('owa_document');
+		$this->properties['site_id'] = new owa_dbColumn;
+		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['site_id']->setForeignKey('owa_site');
 		$this->properties['events'] = new owa_dbColumn;
 		$this->properties['events']->setDataType(OWA_DTD_TEXT);
 		$this->properties['duration'] = new owa_dbColumn;
@@ -53,6 +56,8 @@ class owa_domstream extends owa_entity {
 		$this->properties['timestamp']->setDataType(OWA_DTD_INT);
 		$this->properties['yyymmdd'] = new owa_dbColumn;
 		$this->properties['yyymmdd']->setDataType(OWA_DTD_INT);
+		$this->properties['page_url'] = new owa_dbColumn;
+		$this->properties['page_url']->setDataType(OWA_DTD_TEXT);
 	}
 	
 	function owa_domstream() {
