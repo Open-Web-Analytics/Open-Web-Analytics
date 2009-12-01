@@ -149,7 +149,7 @@ class owa_baseModule extends owa_module {
 		// install complete handler
 		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
 		// domstreams
-		$this->registerEventHandler('install_complete', 'domstreamHandlers');
+		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 	}
 	
 	function _registerEventProcessors() {
