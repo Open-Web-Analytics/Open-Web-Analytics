@@ -58,9 +58,11 @@ class owa_observer extends owa_base {
      * @access public
      */
     function owa_observer() {
-        $this->id = md5(microtime());
-   
-        return;
+        return owa_observer::__construct();
+    }
+    
+    function __construct() {
+    	$this->id = md5(microtime());
     }
     
     function handleEvent($action) {

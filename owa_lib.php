@@ -961,6 +961,15 @@ class owa_lib {
 		
 		return md5(strtolower($password).strlen($password));
 	}
+	
+	function timestampToYyyymmdd($timestamp = '') {
+		
+		if(empty($timestamp)) {
+			$timestamp = time();
+		}
+		
+		return date('Ymd', $timestamp);
+	}
 }
 
 ?>

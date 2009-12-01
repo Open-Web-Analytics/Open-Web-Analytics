@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
+require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
  * Entity Install Controller
@@ -30,7 +30,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @since		owa 1.0.0
  */
 
-class owa_entityInstallController extends owa_adminController {
+class owa_entityInstallController extends owa_cliController {
 	
 	function __construct($params) {
 	
@@ -47,9 +47,7 @@ class owa_entityInstallController extends owa_adminController {
 		
 		$e = owa_coreAPI::entityFactory($this->getParam('entity'));
 		$e->createTable();
-		$this->setRedirectAction('base.optionsModules');
-		$this->data['status_code'] = 2504;
-		
+
 		return;
 	}
 }
