@@ -84,8 +84,9 @@ OWA.tracker = function(caller_params) {
 		this.page.merge(caller_params);
 	}
 	var p = OWA.util.readCookie('owa_overlay');
+
 	if (p) {
-		this.loadHeatmap();
+		this.startOverlaySession(p);
 	}
 	
 }
@@ -810,8 +811,8 @@ OWA.tracker.prototype = {
 		this.player.load(this.event_queue);
 	},
 	
-	loadHeatmap: function() {
-		this.pause();
+	loadHeatmap: function(p) {
+		
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
 		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.heatmap.js', function(){
@@ -821,6 +822,25 @@ OWA.tracker.prototype = {
 			this.overlay.options.liveMode = true;
 			this.overlay.generate();
 		});	
+	},
+	
+	loadPlayer: function() {
+		OWA.debug("hi from loadPlayer");
+	},
+	
+	startOverlaySession: function(p) {
+	
+		// pause tracker so we dont log anything during an overlay session
+		this.pause();
+	    // get param from cookie	
+		var params = OWA.util.parseCookieStringToJson(p);
+		// evaluate the action param
+		if (params.action === 'loadHeatmap') {
+			this.loadHeatmap(p);
+		} else if (params.action === 'loadPlayer') {
+			this.loadPlayer(p);
+		}
+		
 	}
 	
 }

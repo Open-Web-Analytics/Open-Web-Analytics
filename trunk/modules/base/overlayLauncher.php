@@ -44,25 +44,9 @@ class owa_overlayLauncherController extends owa_reportController {
 	
 	function action() {
 		
-		
-		//merge in period values
-		$period_values = $this->period->getPeriodProperties();
-		//merge in site id
-		$state['site_id'] = $this->getParam('site_id');
-		$state['document_id'] = $this->getParam('document_id');
-		
-		//merge in document_id
-		
-		
-		// set state
-		
-		foreach ($period_values as $k => $v) {
-			owa_coreAPI::setState('overlay', $k, $v, 'cookie');
-		}
-		owa_coreAPI::setState('overlay', 'site_id', $this->getParam('site_id'), 'cookie');
-		//owa_coreAPI::setState('overlay', 'document_id', $this->getParam('document_id'), 'cookie');
-		owa_coreAPI::setState('overlay', 'action', $this->getParam('overlay_action'), 'cookie');
-		
+		// setup overlay cookiestate
+		owa_coreAPI::setState('overlay', '', urldecode($this->getParam('overlay_params')), 'cookie');
+				
 		// load entity for document id to get URL
 		$d = owa_coreAPI::entityFactory('base.document');
 		$d->load($this->getParam('document_id'));

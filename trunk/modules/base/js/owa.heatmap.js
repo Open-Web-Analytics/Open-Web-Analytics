@@ -366,14 +366,14 @@ OWA.heatmap.prototype = {
 		// More regions will increase the speed of rendering.
 		this.regionWidth = Math.round((this.docDimensions.w / this.options.numRegions) * 100)/100;
 		this.regionHeight = Math.round((this.docDimensions.h / this.options.numRegions) * 100)/100;
-		//OWA.debug("Region dims: %s %s", this.regionWidth, this.regionHeight);
+		OWA.debug("Region dims: %s %s", this.regionWidth, this.regionHeight);
 		
 		var count = 0;
 		
 		// y loop
 		for (var y = this.regionHeight, n = this.docDimensions.h; y <= n; y+=this.regionHeight) {
 			y = Math.round(y  * 100)/100 -.01;
-			//OWA.debug("calcregions y value", y);
+			OWA.debug("calcregions y value", y);
 			// x loop
 			for (var x = this.regionWidth, nn = this.docDimensions.w; x <= nn; x+=this.regionWidth) {
 				x = Math.round(x * 100)/100 -.01;
@@ -385,11 +385,11 @@ OWA.heatmap.prototype = {
 				}
 				//add region to inner map
 				this.regionsMap[x][y] = count;
-				//OWA.debug("adding to map: %s %s %s",x,y,count); 
+				OWA.debug("adding to map: %s %s %s",x,y,count); 
 				count++;		
 			}
 
-			//OWA.debug("x Count: %s", this.regions.length);		
+			OWA.debug("x Count: %s", this.regions.length);		
 		}		
 		
 
