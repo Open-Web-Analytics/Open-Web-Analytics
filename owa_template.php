@@ -339,9 +339,70 @@ class owa_template extends Template {
 		return $this->config['ns'];
 	}
 	
-	function graphLink($params, $add_state = false) {
+	function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
 		
-		return $this->makeLink($params, $add_state, $this->config['action_url']);
+		$all_params = array();
+		
+		// merge in state params
+		if ($add_state) {
+			$all_params = array_merge($all_params, $this->getAllStateParams());
+		}
+		//merge in params
+		$all_params = array_merge($all_params, $params);
+		
+		switch($format) {
+		
+			case 'query':
+				
+				$get = '';
+						
+				$count = count($all_params);
+				
+				$i = 0;
+				
+				foreach ($all_params as $n => $v) {
+					
+					$get .= owa_coreAPI::getSetting('base','ns').$n.'='.$v;
+					
+					$i++;
+					
+					if ($i < $count):
+						$get .= "&";
+					endif;
+				}
+				
+				$string= $get;
+				
+				break;
+				
+			case 'cookie':
+				
+				$string = owa_lib::implode_assoc('=>', '|||', $all_params);
+				break;
+		}
+		
+		
+		return $string;
+	
+	}
+	
+	function getAllStateParams() {
+		
+		$all_params = array();
+		
+		if (!empty($this->caller_params['link_state'])) {
+			$all_params = array_merge($all_params, $this->caller_params['link_state']);
+		}
+		
+		// add in period properties if available
+		$period = $this->get('timePeriod');
+		
+		if (!empty($period)) {
+			$all_params = array_merge($all_params, $period->getPeriodProperties());
+			//print_r($all_params);
+		}
+		
+		return $all_params;
 	}
 	
 	

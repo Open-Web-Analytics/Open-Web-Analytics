@@ -26,7 +26,7 @@ var OWA = {
 	},
 	
 	getApiEndpoint : function() {
-		return this.config['api_endpoint'] || this.getSetting('base_url') + 'action.php';
+		return this.config['api_endpoint'] || this.getSetting('baseUrl') + 'action.php';
 	}
 
 };
