@@ -574,7 +574,7 @@ class owa_entity {
 	 * @return 	integer
 	 */
 	function generateId($string) {
-	
+		//require_once(OWA_DIR.'owa_lib.php');
 		return owa_lib::setStringGuid($string);
 	}
 

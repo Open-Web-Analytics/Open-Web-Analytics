@@ -54,8 +54,8 @@ class owa_domstream extends owa_entity {
 		$this->properties['duration']->setDataType(OWA_DTD_INT);
 		$this->properties['timestamp'] = new owa_dbColumn;
 		$this->properties['timestamp']->setDataType(OWA_DTD_INT);
-		$this->properties['yyymmdd'] = new owa_dbColumn;
-		$this->properties['yyymmdd']->setDataType(OWA_DTD_INT);
+		$this->properties['yyyymmdd'] = new owa_dbColumn;
+		$this->properties['yyyymmdd']->setDataType(OWA_DTD_INT);
 		$this->properties['page_url'] = new owa_dbColumn;
 		$this->properties['page_url']->setDataType(OWA_DTD_TEXT);
 	}
