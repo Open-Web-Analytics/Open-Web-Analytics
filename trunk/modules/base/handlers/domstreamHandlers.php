@@ -61,15 +61,19 @@ class owa_domstreamHandlers extends owa_observer {
     function notify($event) {
 		
     	$ds = owa_coreAPI::entityFactory('base.domstream');
-		$ds->set('id', $ds->generateRandomUid());
+		//$ds->set('id', $ds->generateRandomUid());
+		$ds->set('id', $event->get('guid'));
 		$ds->set('visitor_id', $event->get('visitor_id'));
 		$ds->set('session_id', $event->get('session_id'));
-		$ds->set('document_id', $this->generateId($event->get('url')));
+		$ds->set('document_id', $ds->generateId($event->get('page_url')));
+		
 		$ds->set('page_url', $event->get('page_url'));
-		$ds->set('events', $event->get('events'));
+		$ds->set('events', $event->get('stream_events'));
 		$ds->set('duration', $event->get('duration'));
 		$ds->set('timestamp', $event->get('timestamp'));
+		//require_once(OWA_DIR.'owa_lib.php');
 		$ds->set('yyyymmdd', owa_lib::timestampToYyyymmdd($event->get('timestamp')));
+		owa_coreAPI::debug("yyyymmdd: ".owa_lib::timestampToYyyymmdd($event->get('timestamp')));
 		$ds->create();
     }
     

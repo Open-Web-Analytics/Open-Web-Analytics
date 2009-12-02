@@ -967,8 +967,10 @@ class owa_lib {
 		if(empty($timestamp)) {
 			$timestamp = time();
 		}
-		
-		return date('Ymd', $timestamp);
+		//print "before date";
+		$yyyymmdd = date("Ymd", $timestamp);
+		///print "after date";
+		return $yyyymmdd;
 	}
 }
 
