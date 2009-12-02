@@ -61,10 +61,11 @@ class owa_domstreamHandlers extends owa_observer {
     function notify($event) {
 		
     	$ds = owa_coreAPI::entityFactory('base.domstream');
-		//$ds->set('id', $ds->generateRandomUid());
-		$ds->set('id', $event->get('guid'));
+		$ds->set('id', $ds->generateRandomUid());
+		//$ds->set('id', $event->get('guid'));
 		$ds->set('visitor_id', $event->get('visitor_id'));
 		$ds->set('session_id', $event->get('session_id'));
+		$ds->set('site_id', $event->get('site_id'));
 		$ds->set('document_id', $ds->generateId($event->get('page_url')));
 		
 		$ds->set('page_url', $event->get('page_url'));

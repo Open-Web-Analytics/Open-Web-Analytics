@@ -57,14 +57,6 @@ class owa_processRequestController extends owa_processEventController {
         	$this->e->debug('Clearing left over first first hit cookie.');
 			owa_coreAPI::clearState($fh_state_name);
 		}
-		
-		// assign visitor cookie
-		// TODO: Move this logic to the controller
-		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
-		
-		// sessionize
-		// TODO: Move this logic to the controller
-		$this->event->sessionize($this->event->get('inbound_session_id'));
 			
 		return;
 		
