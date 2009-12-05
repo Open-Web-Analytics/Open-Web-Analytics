@@ -18,7 +18,11 @@
 
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_INCLUDE_DIR.'JSON.php');
+
+if (!class_exists('Services_JSON')) {
+	require_once(OWA_INCLUDE_DIR.'JSON.php');
+}
+
 
 /**
  * Overlay Report Controller

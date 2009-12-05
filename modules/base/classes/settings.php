@@ -115,12 +115,6 @@
 		if (defined('OWA_ERROR_LOG_LEVEL')) {
 			$this->set('base', 'error_log_level', OWA_ERROR_LOG_LEVEL);
 		}
-	
-		/* PHP ERROR LOGGING */
-		
-		if (OWA_LOG_PHP_ERRORS === true) {
-			//$this->e->logPhpErrors();
-		}
 		
 		/* CONFIGURATION ID */
 		

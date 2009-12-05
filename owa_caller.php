@@ -127,6 +127,12 @@ class owa_caller extends owa_base {
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));
 		
+		/* PHP ERROR LOGGING */
+		
+		if (defined('OWA_LOG_PHP_ERRORS')) {
+			$this->e->logPhpErrors();
+		}
+		
 		/* LOAD SERVICE LAYER */
 		$this->service = &owa_coreAPI::serviceSingleton();
 		$this->service->initializeFramework();
