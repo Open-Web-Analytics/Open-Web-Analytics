@@ -128,6 +128,11 @@ class owa_paginatedResultSet extends owa_base {
 		$this->labels = $labels;
 	}
 	
+	function displayPagination() {
+		
+		
+	}
+	
 }
 
 

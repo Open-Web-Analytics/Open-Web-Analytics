@@ -48,7 +48,7 @@ OWA.heatmap.prototype = {
 	
 	showControlPanel: function() {
 		var that = this;
-		jQuery('body').append('<div id="owa_overlay" style="position:absolute; top:30px; width:;right:0px; border:1px; background-color:#efefef; opacity:0.8; z-index:500;"></div>');
+		jQuery('body').append('<div id="owa_overlay"></div>');
 		jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
 		jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_start">Start</div>');
 		jQuery('#owa_overlay_start').toggleClass('active');

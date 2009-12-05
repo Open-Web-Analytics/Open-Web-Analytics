@@ -1,4 +1,20 @@
 #owa_overlay {position: fixed; top:20;right:20; padding:3px; margin: 0px; background-color:#303030; opacity: 0.7; z-index: 100; width:auto; vertical-align: bottom;}
-#owa_overlay_logo {background-image:url('../i/owa_logo_150w.jpg'); width:30px;height:15px; float:left; padding-right:10px; margin-right:5px;}
+#owa_overlay_logo {background-image:url('../i/owa_logo_72w.jpg'); width:62px;height:44px; float:left; padding-right:10px; margin-right:5px;}
 .owa_overlay_control {vertical-align:middle; height:auto; float:left; padding:0 10px 0 10px; border-left:1px solid #9f9f9f; font-weight: bold; color: #9f9f9f; font-family: sans-serif;}
 .active {color: #FF8C00;}
+div.owa_overlay_control:hover {
+	color:#FF8C00;
+}
+
+
+
+
+
+div.jGrowl div.jGrowl-notification {
+	font-size:				24px;
+}
+
+div.jGrowl div.jGrowl-notification div.header {
+	font-size:				16px;
+}
+
