@@ -14,17 +14,17 @@
 			<TD class="item_cell">
 			<a href="<?php echo $referer['url'];?>">
 			<span class="inline_h3">
-			<? if  (!empty($referer['page_title'])): ?>
+			<?php if  (!empty($referer['page_title'])): ?>
 			<?php echo $this->truncate($referer['page_title'], 75);?>
-			<? else:?>
+			<?php else:?>
 			<?php echo $this->truncate($referer['url'], 90);?>
-			<? endif;?>
+			<?php endif;?>
 			</span>
 			</a>
 			<BR>
-			<? if ($referer['snippet']):?>
+			<?php if ($referer['snippet']):?>
 			<?php echo $referer['snippet'];?><BR>
-			<? endif;?>
+			<?php endif;?>
 			<span class="info_text"><?php echo $this->truncate($referer['url'], 80);?></span></td>
 			<TD class="data_cell">
 				<?php echo $referer['count']?>

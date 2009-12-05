@@ -106,6 +106,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryExits', 'Entry & Exit Pages', 3);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 4);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);

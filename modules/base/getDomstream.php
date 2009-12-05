@@ -18,6 +18,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
+require_once(OWA_INCLUDE_DIR.'JSON.php');
 
 /**
  * Overlay Report Controller
@@ -31,11 +32,11 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportOverlayController extends owa_reportController {
+class owa_getDomstreamController extends owa_reportController {
 
-	function owa_reportOverlayController($params) {
+	function owa_getDomstreamController($params) {
 	
-		return owa_reportOverlayController::__construct($params);
+		return owa_getDomstreamController::__construct($params);
 	}
 	
 	function __construct($params) {
@@ -46,32 +47,11 @@ class owa_reportOverlayController extends owa_reportController {
 	function action() {
 		
 		// Fetch document object
-		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByColumn('url', urldecode($this->getParam('document_url')));
-		$this->set('document_details', $d->_getProperties());
-		$this->set('document_id', $this->getParam('document_id'));
-		
-		// Get clicks
-		$c = owa_coreAPI::metricFactory('base.topClicks');
-		$c->setPeriod($this->getPeriod());
-		$c->setConstraint('site_id', $this->getParam('site_id')); 
-		$c->setConstraint('document_id', $d->get('id'));
-		
-		//$c->setConstraint('ua_id', $this->getParam('ua_id'));
-		$limit = $this->getParam('limit');
-		if (!$limit) {
-			$limit = 200;
-		}
-		
-		if ($this->getParam('page')) {
-			$c->setPage($this->getParam('page'));
-		}
-		
-		$c->setLimit($limit);
-		$clicks = $c->generateResults();
-		//print_r($clicks);
-		$this->set('json', $clicks);
-		
+		$d = owa_coreAPI::entityFactory('base.domstream');
+		$d->load($this->getParam('domstream_id'));
+		$json = new Services_JSON();
+		$d->set('events', $json->decode($d->get('events')));
+		$this->set('json', $d->_getProperties());
 		// set view stuff
 		$this->setView('base.json');
 					

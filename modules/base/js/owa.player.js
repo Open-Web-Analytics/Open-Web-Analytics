@@ -1,6 +1,10 @@
 OWA.player = function() {
 	
-	this.animate_interval = 150;
+	OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
+	OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery.jgrowl_minimized.js', function(){});
+	OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/jquery.jgrowl.css', function(){});
+	OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
+	this.fetchData();
 	this.showPlayerControls();
 	
 }
@@ -23,8 +27,31 @@ OWA.player.prototype = {
 	},
 	
 	load : function(data) {
+	
 		this.stream = data;
+		// count the events in the queue
+		this.queue_count = this.stream.events.length;
 	},
+	
+	/**
+	 * Fetches data via ajax request
+	 */
+	fetchData: function() {
+	
+		var p = OWA.util.readCookie('owa_overlay');
+		//alert(unescape(p));
+		var params = OWA.util.parseCookieStringToJson(p);
+		params.action = 'base.getDomstream';
+		
+		//closure
+		var that = this;
+		
+		jQuery.get(OWA.getApiEndpoint(), OWA.util.nsParams(params), function(data) { that.load(data); }, 'json');
+		
+		//OWA.debug(data.page);
+		return;
+	},
+
 	
 	moveCursor : function(x, y) {
 		this.block();
@@ -50,7 +77,7 @@ OWA.player.prototype = {
 	step : function() {
 		
 		if (this.lock) {
-			//console.log("i am locked");
+			OWA.debug("Can not step as player is locked");
 			return;
 		}
 		
@@ -61,13 +88,22 @@ OWA.player.prototype = {
   			var event = this.getNextEvent();
 			// trigger dom stream events 			
  			//jQuery().trigger(event.event_type, [event]);
- 			this.playEvent(event.event_type, event);
+ 			this.playEvent(event);
      	}
 	},
 	
-	playEvent : function(event_type, event) {
-		
-		switch (event_type) {
+	getNextEvent : function() {
+		OWA.debug("Queue step is: "+ this.queue_step);
+		var event = this.stream.events[this.queue_step];
+		OWA.debug("getting event... " + event.event_type);
+		// increment the queue step
+    	this.queue_step++;
+    	return event;
+	},
+	
+	playEvent : function(event) {
+		OWA.debug("playing event of type: " + event.event_type);
+		switch (event.event_type) {
 			case 'dom.movement':
 				return this.movementEventHandler(event);
 			case 'dom.scroll':
@@ -83,29 +119,28 @@ OWA.player.prototype = {
 	
 		if (!this.timer) return false;
 	  	clearInterval(this.timer);
+	  	// change control static color
+   		jQuery('#owa_overlay_start').removeClass('active');
 	},
 	
 	play : function() {
+		OWA.debug("Now playing Domstream.");
 		
-		this.queue_count = this.stream.length;
+		if ((this.queue_step = this.queue_count)) {
+			this.queue_step = 1;
+		}
+		
 		this.start();
-	},
-	
-	getNextEvent : function() {
-		
-		var event = this.stream[this.queue_step];
-		// increment the queue step
-    	this.queue_step++;
-    	return event;
 	},
 	
 	showPlayerControls : function() {
 	
-		var player = '<div id="owa_player" style="position:fixed; top:0px; width:400px;right:0px; border:1px; background-color:#efefef; opacity:0.5; z-index:100;"></div>';
-		var startlink = '<li id="owa_player_start">Start</li>';
-		var pauselink = '<li id="owa_player_pause">Pause</li>';
+		var player = '<div id="owa_overlay"></div>';
+		var startlink = '<div class="owa_overlay_control" id="owa_player_start">Play</div>';
+		var pauselink = '<div class="owa_overlay_control" id="owa_player_stop">Pause</div>';
+		var closelink = '<div class="owa_overlay_control" id="owa_player_close">Close</div>';
 		var status_msg = '<li><textarea id="owa_player_status" style="width:270px;" rows="1"></textarea></li>';
-		var cursor = '<div id="cursor" style="position:absolute; z-index:99;"><img src="'+OWA.config.images_url+'base/i/cursor.png"></div>';
+		var cursor = '<div id="cursor" style="position:absolute; z-index:99;"><img src="'+OWA.getSetting('baseUrl')+'/modules/base/i/cursor2.png"></div>';
 		jQuery('body').append(player);
 		jQuery('body').append(cursor);
 		var latest_click_class = {'background-color': 'red', 
@@ -117,16 +152,21 @@ OWA.player.prototype = {
 		jQuery('html, body').append('<div id="owa-latest-click" style="display: none">*CLICK*</div>');
 		jQuery('#owa-latest-click').css(latest_click_class);
 		var that = this;
-		jQuery('#owa_player').append("<ul>")
-		jQuery('#owa_player').append(startlink);
-		jQuery('#owa_player').append(pauselink);
-		jQuery('#owa_player').append(status_msg);
-		jQuery('#owa_player').append("</ul>")
-		jQuery('#owa_player ul').css({'list-style-type': 'none', 'text-align' : 'left'});
-		jQuery('#owa_player li').css({'display' : 'inline', 'padding': '10px'});
+		jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
+		jQuery('#owa_overlay').append(startlink);
+		jQuery('#owa_overlay').append(pauselink);
+		jQuery('#owa_overlay').append(closelink);
+		jQuery('#owa_overlay_start').toggleClass('active');
+		jQuery('.owa_overlay_control').bind('click', function(){
+			jQuery(".owa_overlay_control").removeClass('active');
+			jQuery(this).addClass('active');
+		});
+		//jQuery('#owa_player').append(status_msg);
 		jQuery('#owa_player_start').bind('click', function(e) {that.play(e)});
+		jQuery('#owa_player_stop').bind('click', function(e) {that.stop(e)});
+		jQuery('#owa_player_close').bind('click', function(e) {OWA.endOverlaySession(e)});
 	},
-	
+		
 	setStatus : function(msg) {
 		
 		jQuery('#owa_player_status').prepend(msg+'\n');
@@ -155,6 +195,13 @@ OWA.player.prototype = {
 		var element_value = jQuery(accessor).val() || '';
 		element_value += event.key_value; 
 		jQuery(accessor).val(element_value);
+		jQuery.jGrowl(event.key_value, { 
+			life: 1500,
+			speed: 1000,
+			position: "bottom-right",
+			closer: false,
+			header: "Key Press:"
+		});
 	},
 	
 	clickEventHandler : function(event) {

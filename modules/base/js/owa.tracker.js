@@ -74,21 +74,29 @@ OWA.event.prototype = {
 
 
 OWA.tracker = function(caller_params) {
+	
+	// check to see if overlay sesson is active
+	var p = OWA.util.readCookie('owa_overlay');
+
+	if (p) {
+		// pause tracker so we dont log anything during an overlay session
+		this.pause();
+		// start overlay session
+		OWA.startOverlaySession(p);
+		//return
+		//return;
+	}
+		
 	this.setEndpoint(OWA.config.baseUrl + 'log.php');
 	this.page = new OWA.event();
 	this.startTime = this.getTimestamp();
     this.page.set('page_url', document.URL);
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
+	
 	if (typeof caller_params != 'undefined') {
 		this.page.merge(caller_params);
-	}
-	var p = OWA.util.readCookie('owa_overlay');
-
-	if (p) {
-		this.startOverlaySession(p);
-	}
-	
+	}	
 }
 
 OWA.tracker.prototype = {
@@ -345,16 +353,17 @@ OWA.tracker.prototype = {
      */
     logEvent : function (properties) {
     	
-    	var bug
-    	var url
-    
-    	url = this._assembleRequestUrl(properties);
-
-	   	bug = "<img src=\"" + url + "\" height=\"1\" width=\"1\">";
+    	if (this.active) {
+    	
+	    	var bug
+	    	var url
 	    
-	   	document.write(bug);
+	    	url = this._assembleRequestUrl(properties);
 	
-        return;
+		   	bug = "<img src=\"" + url + "\" height=\"1\" width=\"1\">";
+		    
+		   	document.write(bug);
+		}
     },
     
     /**
@@ -541,9 +550,11 @@ OWA.tracker.prototype = {
 	    	//properties.target_url = targ.parentNode.href || null;
 	    	
 	        if (targ.textContent != undefined) {
-	             properties.html_element_text = targ.textContent;
+	             //properties.html_element_text = targ.textContent;
+	             properties.html_element_text = '';
 	        } else {
-	             properties.html_element_text = targ.innerText;
+	            //properties.html_element_text = targ.innerText;
+	            properties.html_element_text = '';
 	        }
 	    }
 	
@@ -576,7 +587,8 @@ OWA.tracker.prototype = {
 	    var viewport = this.getViewportDimensions();
 		click.set("page_width", viewport.width);
 		click.set("page_height", viewport.height);
-	    click.merge(this.getDomElementProperties(targ));
+		var properties = this.getDomElementProperties(targ);
+	    click.merge(this.filterDomProperties(properties));
 	    // set coordinates
 	    click.set("dom_element_x", this.findPosX(targ) + '');
 		click.set("dom_element_y", this.findPosY(targ) + '');
@@ -596,6 +608,11 @@ OWA.tracker.prototype = {
 		this.click = click;
 		
 		return;	
+	},
+	
+	filterDomProperties : function() {
+		
+		
 	},
 			
 	registerBeforeNavigateEvent : function() {
@@ -803,44 +820,7 @@ OWA.tracker.prototype = {
 	
 	restart : function() {
 		this.active = true;
-	},
+	}	
 	
-	loadPlayer : function(stream) {
-		this.pause();
-		this.player = new OWA.player();
-		this.player.load(this.event_queue);
-	},
-	
-	loadHeatmap: function(p) {
 		
-		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
-		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.heatmap.js', function(){
-			this.overlay = new OWA.heatmap();
-			//hm.setParams(p);
-			//hm.options.demoMode = true;
-			this.overlay.options.liveMode = true;
-			this.overlay.generate();
-		});	
-	},
-	
-	loadPlayer: function() {
-		OWA.debug("hi from loadPlayer");
-	},
-	
-	startOverlaySession: function(p) {
-	
-		// pause tracker so we dont log anything during an overlay session
-		this.pause();
-	    // get param from cookie	
-		var params = OWA.util.parseCookieStringToJson(p);
-		// evaluate the action param
-		if (params.action === 'loadHeatmap') {
-			this.loadHeatmap(p);
-		} else if (params.action === 'loadPlayer') {
-			this.loadPlayer(p);
-		}
-		
-	}
-	
 }
