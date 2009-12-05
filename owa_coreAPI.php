@@ -782,7 +782,7 @@ class owa_coreAPI extends owa_base {
 	 */
 	function logEvent($event_type, $message = '') {
 		
-		if (owa_coreAPI::getRequestParam('overlay')) {
+		if (owa_coreAPI::getStateParam('overlay')) {
 			return false;
 		}
 		

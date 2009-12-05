@@ -85,11 +85,13 @@ function &owa_getInstance($params = array()) {
 				
 		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
 		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
-		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';
+		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/i/';
 		$owa_config['main_url'] = '../wp-admin/index.php?page=owa';
 		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa';
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
-		$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
+		//$owa_config['action_url'] = get_bloginfo('url').'/wp-content/plugins/owa/action.php';
+		//$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
+		$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
 		$owa_config['link_template'] = '%s&%s';
 		$owa_config['site_id'] = md5(get_settings('siteurl'));
 		$owa_config['is_embedded'] = true;
@@ -159,6 +161,7 @@ function owa_translate_role($roles) {
 function owa_handleSpecialActionRequest() {
 
 	$owa = owa_getInstance();
+	owa_coreAPI::debug("hello from WP special action handler");
 	return $owa->handleSpecialActionRequest();
 }
 

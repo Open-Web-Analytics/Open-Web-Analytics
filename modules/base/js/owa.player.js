@@ -81,7 +81,9 @@ OWA.player.prototype = {
 			return;
 		}
 		
-  		if ((this.queue_count > 0) && (this.queue_step >= this.queue_count)) {
+		if (this.queue_count === 0) {
+			this.stop();
+		} else if ((this.queue_count > 0) && (this.queue_step >= this.queue_count)) {
     		this.stop();
   		} else {
   			// get the next event in the queue
