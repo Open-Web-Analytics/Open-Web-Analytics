@@ -57,7 +57,13 @@ class owa_processRequestController extends owa_processEventController {
         	$this->e->debug('Clearing left over first first hit cookie.');
 			owa_coreAPI::clearState($fh_state_name);
 		}
-			
+		
+		//mark even state as first_page_request.
+		//$this->state = 'first_page_request';
+		if (!$this->event->get('inbound_visitor_id')) {
+			$this->event->setEventType('base.first_page_request');
+		}
+	
 		return;
 		
 	}

@@ -573,11 +573,7 @@ class owa_event {
 		
 		//mark new session flag on current request
 		$this->set('is_new_session', true);
-		
-		//mark even state as first_page_request.
-		//$this->state = 'first_page_request';
-		$this->setEventType('base.first_page_request');
-		
+				
 		//Set the session cookie
 		$this->setSiteSessionState($this->get('site_id'), owa_coreAPI::getSetting('base', 'session_param'), $this->get('session_id'));
 		
