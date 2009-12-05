@@ -1,4 +1,19 @@
-#owa_overlay {position: fixed; top:20;right:20; padding:3px; margin: 0px; background-color:#303030; opacity: 0.7; z-index: 100; width:auto; vertical-align: bottom;}
+#owa_overlay {
+	position: fixed;
+	top:20px;
+	right:20px; 
+	padding:3px; 
+	margin: 0px; 
+	background-color:#303030; 
+	opacity: 0.7; 
+	z-index: 100; 
+	width:auto; 
+	vertical-align: bottom;
+	font-family: sans-serif;
+	font-size: 14px;
+}
+
+
 #owa_overlay_logo {background-image:url('../i/owa_logo_72w.jpg'); width:62px;height:35px; float:left; padding-right:10px; margin-right:5px;}
 .owa_overlay_control {vertical-align:middle; height:auto; float:left; padding:0 10px 0 10px; border-left:1px solid #9f9f9f; font-weight: bold; color: #9f9f9f; font-family: sans-serif;}
 .active {color: #FF8C00;}

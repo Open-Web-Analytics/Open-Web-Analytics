@@ -68,14 +68,26 @@
 	
 	<div class="setting" id="first_hit">	
 		<div class="title">Delay First Hit</div>
-		<div class="description">This setting controls whether or not OWA should dealy logging the first hit of new visitors untill a secondary http request for a special web bug is made. This tactic is used to foil spiders/robots that spoof their user agents in an attempt to appear like a normal web browser.</div> 
+		<div class="description">This setting controls whether OWA should delay logging the first hit of new visitors untill a secondary http request for a special web bug is made. This tactic is used to foil spiders/robots that spoof their user agents in an attempt to appear like a normal web browser.</div> 
 		<div class="field">
 			<select name="<?php echo $this->getNs();?>config[delay_first_hit]">
 				<option value="0" <?php if ($config['delay_first_hit'] == false):?>SELECTED<?php endif;?>>Off</option>
 				<option value="1" <?php if ($config['delay_first_hit'] == true):?>SELECTED<?php endif;?>>On</option>	
 			</select>
 		</div>
+	</div>
+	
+	<div class="setting" id="log_dom_streams">	
+		<div class="title">Log Domstreams</div>
+		<div class="description">This setting controls whether OWA should should log Domstreams.</div> 
+		<div class="field">
+			<select name="<?php echo $this->getNs();?>config[log_dom_streams]">
+				<option value="0" <?php if ($config['log_dom_streams'] == false):?>SELECTED<?php endif;?>>Off</option>
+				<option value="1" <?php if ($config['log_dom_streams'] == true):?>SELECTED<?php endif;?>>On</option>	
+			</select>
+		</div>
 	</div>	
+
 	
 	<div class="setting" id="p3p_policy">	
 		<div class="title">P3P Compact Privacy Policy</div>
