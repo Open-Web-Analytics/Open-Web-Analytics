@@ -47,8 +47,8 @@ var OWA = {
 	loadPlayer: function() {
 		var that = this;
 		OWA.debug("Loading Domstream Player");
-		//OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
-		//OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
+		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
+		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.player.js', function(){
 			that.overlay = new OWA.player();	
 		});	
@@ -158,17 +158,17 @@ OWA.util =  {
 	
 	
 	eraseCookie: function (name) {
-		//console.log(this.readCookie('owa_v'));
+		//OWA.debug(this.readCookie('owa_overlay'));
 		
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
-		//console.log(domain);
-		this.setCookie2(name,"",-1,"",domain);
+		OWA.debug("erasing " + name + " in domain: " +domain);
+		this.setCookie2(name,"",-1,"/",domain);
 		var test = this.readCookie(name);
 		
 		if (test) {
 			domain = "."+domain;
-			console.log(domain);
-			this.setCookie2(name,"",-1,"",domain);	
+			OWA.debug("erasing " + name + " in domain: " +domain);
+			this.setCookie2(name,"",-1,"/",domain);	
 		}
 		
 	},
