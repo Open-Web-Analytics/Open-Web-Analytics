@@ -124,7 +124,7 @@ class owa_helperPageTagsView extends owa_view {
 		}
 		
 		// check to see if we should log clicks.
-		if (!owa_coreAPI::getSetting('base', 'log_dom_stream')) {
+		if (!owa_coreAPI::getSetting('base', 'log_dom_streams')) {
 			$this->body->set('do_not_log_domstream', true);
 		}
 		
