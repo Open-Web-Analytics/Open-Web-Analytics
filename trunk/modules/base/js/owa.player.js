@@ -55,7 +55,7 @@ OWA.player.prototype = {
 	
 	moveCursor : function(x, y) {
 		this.block();
-		jQuery('#cursor').animate({top: y +'px', left: x +'px'}, { queue:true, duration:100}, 'swing', this.unblock());	
+		jQuery('#owa-cursor').animate({top: y +'px', left: x +'px'}, { queue:true, duration:100}, 'swing', this.unblock());	
 		//console.log("Moving to X: %s Y: %s", x, y);
 		this.setStatus("Mouse Movement to: "+x+", "+y);
 	},
@@ -116,11 +116,12 @@ OWA.player.prototype = {
 	},
 	
 	stop : function() {
-	
+		
+		// change control static color
+   		jQuery('#owa_overlay_start').removeClass('active');
 		if (!this.timer) return false;
 	  	clearInterval(this.timer);
-	  	// change control static color
-   		jQuery('#owa_overlay_start').removeClass('active');
+	  	
 	},
 	
 	play : function() {
@@ -139,29 +140,24 @@ OWA.player.prototype = {
 		var startlink = '<div class="owa_overlay_control" id="owa_player_start">Play</div>';
 		var pauselink = '<div class="owa_overlay_control" id="owa_player_stop">Pause</div>';
 		var closelink = '<div class="owa_overlay_control" id="owa_player_close">Close</div>';
-		var status_msg = '<li><textarea id="owa_player_status" style="width:270px;" rows="1"></textarea></li>';
-		var cursor = '<div id="cursor" style="position:absolute; z-index:99;"><img src="'+OWA.getSetting('baseUrl')+'/modules/base/i/cursor2.png"></div>';
+		var status_msg = '<div id="owa-overlay-status">...</div>';
+		var cursor = '<div id="owa-cursor"><img src="'+OWA.getSetting('baseUrl')+'/modules/base/i/cursor2.png"></div>';
 		jQuery('body').append(player);
 		jQuery('body').append(cursor);
-		var latest_click_class = {'background-color': 'red', 
-								  'padding': '5px', 
-								  'color': 'white',
-								  'display': 'none',
-								  'font-weight': 'bold',
-								  'position': 'absolute'}
-		jQuery('html, body').append('<div id="owa-latest-click" style="display: none">*CLICK*</div>');
-		jQuery('#owa-latest-click').css(latest_click_class);
+		jQuery('html, body').append('<div id="owa-latest-click" style="display: none">CLICK</div>');
 		var that = this;
 		jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
 		jQuery('#owa_overlay').append(startlink);
 		jQuery('#owa_overlay').append(pauselink);
 		jQuery('#owa_overlay').append(closelink);
+		jQuery('#owa_overlay').append(status_msg);
+		
 		jQuery('#owa_overlay_start').toggleClass('active');
 		jQuery('.owa_overlay_control').bind('click', function(){
 			jQuery(".owa_overlay_control").removeClass('active');
 			jQuery(this).addClass('active');
 		});
-		//jQuery('#owa_player').append(status_msg);
+		
 		jQuery('#owa_player_start').bind('click', function(e) {that.play(e)});
 		jQuery('#owa_player_stop').bind('click', function(e) {that.stop(e)});
 		jQuery('#owa_player_close').bind('click', function(e) {OWA.endOverlaySession(e)});
