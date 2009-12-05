@@ -276,6 +276,7 @@ class owa_caller extends owa_base {
 		if(isset($_GET['owa_specialAction'])):
 			$this->e->debug("special action received");
 			echo $this->handleRequestFromUrl();
+			$this->e->debug("special action complete");
 			exit;
 		elseif(isset($_GET['owa_logAction'])):
 			$this->e->debug("log action received");
