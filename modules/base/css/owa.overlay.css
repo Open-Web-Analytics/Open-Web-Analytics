@@ -1,20 +1,42 @@
 #owa_overlay {position: fixed; top:20;right:20; padding:3px; margin: 0px; background-color:#303030; opacity: 0.7; z-index: 100; width:auto; vertical-align: bottom;}
-#owa_overlay_logo {background-image:url('../i/owa_logo_72w.jpg'); width:62px;height:44px; float:left; padding-right:10px; margin-right:5px;}
+#owa_overlay_logo {background-image:url('../i/owa_logo_72w.jpg'); width:62px;height:35px; float:left; padding-right:10px; margin-right:5px;}
 .owa_overlay_control {vertical-align:middle; height:auto; float:left; padding:0 10px 0 10px; border-left:1px solid #9f9f9f; font-weight: bold; color: #9f9f9f; font-family: sans-serif;}
 .active {color: #FF8C00;}
 div.owa_overlay_control:hover {
 	color:#FF8C00;
 }
 
-
-
-
-
 div.jGrowl div.jGrowl-notification {
-	font-size:				24px;
+	font-size: 24px;
+}
+div.jGrowl div.jGrowl-notification, div.jGrowl div.jGrowl-notification div.close {
+	background-color:#303030;
+	opacity: 0.7;
 }
 
 div.jGrowl div.jGrowl-notification div.header {
-	font-size:				16px;
+	font-size: 16px;
 }
 
+#owa-latest-click {
+	background-color: red; 
+	padding: 5px; 
+	color: white;
+	display: none;
+	font-size: 10px;
+	font-weight: bold;
+	position: absolute;
+}
+
+#owa-cursor {
+	position:absolute; 
+	z-index:99;
+}
+
+#owa-overlay-status {
+	font-size:10px;
+	color: #9f9f9f;
+	margin-top:5px;
+	padding:6px;
+	font-family: sans-serif;
+}
