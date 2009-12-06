@@ -816,6 +816,7 @@ class owa_coreAPI extends owa_base {
 		if (!owa_coreAPI::getSetting('base', 'log_robots')) {
 			if ($bcap->robotCheck()) {
 				owa_coreAPI::debug("ABORTING: request appears to be from a robot");
+				owa_coreAPI::setRequestParam('is_robot', true);
 				return;
 			}
 		}
@@ -944,6 +945,13 @@ class owa_coreAPI extends owa_base {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->getParam($name);
+		
+	}
+	
+	function setRequestParam($name, $value) {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->request->setParam($name, $value);
 		
 	}
 	

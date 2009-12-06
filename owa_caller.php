@@ -92,6 +92,8 @@ class owa_caller extends owa_base {
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
 		owa_coreAPI::debug('Request URL: '.$_SERVER['REQUEST_URI']);
+		owa_coreAPI::debug('User Agent: '.$_SERVER['HTTP_USER_AGENT']);
+
 		
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
@@ -239,17 +241,19 @@ class owa_caller extends owa_base {
 	
 	function placeHelperPageTags($echo = true) {
 		
-		$params = array();
-		$params['do'] = 'base.helperPageTags';
-		
-		if ($echo == false):
-			//return $this->handleHelperPageTagsRequest();
-			return $this->handleRequest($params);
-		else:
-			echo $this->handleRequest($params);
-			return;
-		endif;
-		
+		if(!owa_coreAPI::getRequestParam('is_robot')) {
+				
+			$params = array();
+			$params['do'] = 'base.helperPageTags';
+			
+			if ($echo == false) {
+				//return $this->handleHelperPageTagsRequest();
+				return $this->handleRequest($params);
+			} else {
+				echo $this->handleRequest($params);
+				return;
+			}
+		}
 	}
 	
 	function handleHelperPageTagsRequest() {
