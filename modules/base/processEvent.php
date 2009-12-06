@@ -171,11 +171,6 @@ class owa_processEventController extends owa_controller {
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
 			$this->event->cleanQueryStrings();
 		}
-		
-		// set last request time state
-		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
-		
-		
 	}
 	
 	function post() {

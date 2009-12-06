@@ -70,7 +70,11 @@ class owa_processRequestController extends owa_processEventController {
 		
 		// sessionize
 		// TODO: Move this logic to the controller
-		$this->event->sessionize($this->event->get('inbound_session_id'));		
+		$this->event->sessionize($this->event->get('inbound_session_id'));	
+		
+		// set last request time state
+		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
+			
 	}
 	
 	function post() {
