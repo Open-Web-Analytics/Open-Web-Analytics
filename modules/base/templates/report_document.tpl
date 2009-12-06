@@ -32,7 +32,7 @@
 				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportClicks'), true);?>">Click Analysis</a></span> - See which part of the document are being clicked on.
 			</P>
 			<P>
-				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'url' => urlencode($detail['url']), 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadHeatmap'), true, 'cookie'))));?>" target="_blank">Overlay</a></span>
+				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$detail['id'], 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadHeatmap'), true, 'cookie'))));?>" target="_blank">Overlay</a></span>
 			</P>
 			
 			<P>
