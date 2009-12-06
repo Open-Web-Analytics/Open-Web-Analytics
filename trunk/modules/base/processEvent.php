@@ -175,13 +175,7 @@ class owa_processEventController extends owa_controller {
 		// set last request time state
 		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('sec'));
 		
-		// assign visitor cookie
-		// TODO: Move this logic to the controller
-		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
 		
-		// sessionize
-		// TODO: Move this logic to the controller
-		$this->event->sessionize($this->event->get('inbound_session_id'));	
 	}
 	
 	function post() {

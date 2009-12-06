@@ -63,9 +63,14 @@ class owa_processRequestController extends owa_processEventController {
 		if (!$this->event->get('inbound_visitor_id')) {
 			$this->event->setEventType('base.first_page_request');
 		}
-	
-		return;
 		
+		// assign visitor cookie
+		// TODO: Move this logic to the controller
+		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
+		
+		// sessionize
+		// TODO: Move this logic to the controller
+		$this->event->sessionize($this->event->get('inbound_session_id'));		
 	}
 	
 	function post() {
