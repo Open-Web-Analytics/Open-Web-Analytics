@@ -4,6 +4,7 @@ OWA.heatmap = function(w, h) {
 	
 	w = w || this.docDimensions.w;
 	h = h || this.docDimensions.h;
+	OWA.debug("Canvas size: %s by %s", w, h);
 	this.createCanvas(w,h);
 	this.canvas = document.getElementById('owa_heatmap');
 	this.context = this.canvas.getContext('2d');
@@ -14,14 +15,14 @@ OWA.heatmap = function(w, h) {
 OWA.heatmap.prototype = {
 	
 	options: {
-		'dotSize': 5, 
-		'numRegions': 70, 
+		'dotSize': 8, 
+		'numRegions': 20, 
 		'alphaIncrement':50, 
 		'demoMode': false, 
 		'liveMode': false, 
 		'mapInterval': 1000,
 		'randomDataCount': 200,
-		'rowsPerFetch': 5
+		'rowsPerFetch': 50
 	},
 	canvas: null,
 	context: null,
@@ -429,10 +430,18 @@ OWA.heatmap.prototype = {
 				 data[i].y = data[i].y - this.options.dotSize;
 			}
 			
+			
+			if ((data[i].x <= this.docDimensions.w) && (data[i].y <= this.docDimensions.h)) {
+								
+			} else {
+				OWA.debug("not getting image data. coordinates %s %s are outside the canvas", data[i].x, data[i].y);
+				continue;
+			}
+			
 			// get current alpha channel
-			//OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
+				OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
 			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);
-			//OWA.debug("hi there.");
+			OWA.debug("canvas data retrieved.");
 			var pix = canvasData.data;
 			
 			// Loop over each pixel and invert the color.
