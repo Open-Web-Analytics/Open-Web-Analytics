@@ -36,6 +36,12 @@ class owa_cacheFacade extends owa_base {
 	
 	var $cache;
 	
+	function owa_cacheFacade($cache_dir) {
+		
+		return owa_cacheFacade::__construct($cache_dir);
+	
+	}
+	
 	function __construct($cache_dir) {
 		
 		// make this plugable soon
@@ -46,12 +52,6 @@ class owa_cacheFacade extends owa_base {
 		endif;
 		
 		return;
-	}
-	
-	function owa_cacheFacade($cache_dir) {
-		
-		return $this->__construct($cache_dir);
-	
 	}
 	
 	function get($collection, $key) {
