@@ -289,7 +289,7 @@ class owa_caller extends owa_base {
 			echo $this->logEventFromUrl();
 			exit;
 		else:
-			
+			return;
 		endif;
 
 	}
