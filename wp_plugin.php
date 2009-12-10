@@ -28,7 +28,7 @@ Author URI: http://www.openwebanalytics.com
 require_once('owa_env.php');
 
 // Public folder URI
-define('OWA_PUBLIC_URL', get_bloginfo('url').'/wp-content/plugins/owa/');
+//define('OWA_PUBLIC_URL', get_bloginfo('url').'/wp-content/plugins/owa/');
 
 // Check to see what version of wordpress is running
 $owa_wp_version = owa_parse_version($wp_version);
@@ -359,43 +359,30 @@ function owa_post_link($link) {
  *
  */
 function owa_install() {
-
-	global $user_level;
+	
+	define('OWA_INSTALLING', true);
 	
 	$params = array();
-	define('OWA_INSTALLING', true);
 	//$params['do_not_fetch_config_from_db'] = true;
 
 	$owa = owa_getInstance($params);
+		
+	$public_url =  get_bloginfo('url').'/wp-content/plugins/owa/';
 	
-	//check to see if the user has permissions to install or not...
-	get_currentuserinfo();
-	
-	if ($user_level < 8):
-    	return;
-    else:
-    	//$owa->config['fetch_config_from_db'] = false;
-    	
-    	//$owa->config['db_type'] = 'mysql';
-    	$public_url =  get_bloginfo('url').'/wp-content/plugins/owa/';
-    	
-    	$install_params = array('site_id' => md5(get_settings('siteurl')), 
-    							'name' => get_bloginfo('name'),
-    							'domain' => get_settings('siteurl'), 
-    							'description' => get_bloginfo('description'),
-    							'action' => 'base.installEmbedded',
-    							'db_type' => 'mysql',
-								'db_name' => DB_NAME,
-								'db_host' => DB_HOST,
-								'db_user' => DB_USER,
-								'db_password' => DB_PASSWORD,
-								'public_url' =>  $public_url
-								);
-    							
-    	$owa->handleRequest($install_params);
-	endif;
-
-	return;
+	$install_params = array('site_id' => md5(get_settings('siteurl')), 
+							'name' => get_bloginfo('name'),
+							'domain' => get_settings('siteurl'), 
+							'description' => get_bloginfo('description'),
+							'action' => 'base.installEmbedded',
+							'db_type' => 'mysql',
+							'db_name' => DB_NAME,
+							'db_host' => DB_HOST,
+							'db_user' => DB_USER,
+							'db_password' => DB_PASSWORD,
+							'public_url' =>  $public_url
+							);
+							
+	$owa->handleRequest($install_params);
 }
 
 /**
