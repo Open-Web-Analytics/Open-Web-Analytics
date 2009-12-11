@@ -24,9 +24,6 @@ require_once "$IP/includes/SpecialPage.php";
 global $wgCachePages, $wgUser, $wgServer, $wgScriptPath, $wgScript;
 /* OWA's MEDIAWIKI CONFIGURATION OVERRIDES */
 
-// Public folder URI
-define('OWA_PUBLIC_URL', $wgServer.$wgScriptPath.'/extensions/owa/');
-
 // Build OWA's Mediawiki specific config overrides array
 $owa_config = array();
 $wiki_url = $wgScriptPath;

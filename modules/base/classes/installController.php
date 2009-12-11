@@ -42,6 +42,12 @@ class owa_installController extends owa_controller {
 	
 	function __construct($params) {
 		
+		// needed just in case a re-install happens and updates are also needed.
+		// tells the controller to skip the updates redirect
+		if (!defined('OWA_INSTALLING')) {
+			define('OWA_INSTALLING', true);
+		}
+				
 		return parent::__construct($params);
 	}
 			
