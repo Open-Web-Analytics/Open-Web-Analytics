@@ -401,7 +401,7 @@ class owa_module extends owa_base {
 			$ret = $this->postInstall();
 			
 			if ($ret == true):
-				$this->e->notice("Post install proceadure success.");;
+				$this->e->notice("Post install proceadure was a success.");;
 			else:
 				$this->e->notice("Post install proceadure failed.");
 			endif;
@@ -426,7 +426,7 @@ class owa_module extends owa_base {
 	 */
 	function postInstall() {
 	
-		return false;
+		return true;
 	}
 		
 	/**

@@ -38,7 +38,7 @@ define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');
 define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s'); 
 define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s'); 
 define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s'); 
-define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE %s (%s) %s'); 
+define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE IF NOT EXISTS %s (%s) %s'); 
 define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');  
 define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)');
 define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s %s');

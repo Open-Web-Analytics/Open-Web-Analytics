@@ -166,8 +166,8 @@ class owa_controller extends owa_base {
 		// check if the schema needs to be updated and force the update
 		// not sure this should go here...
 		if ($this->is_admin === true):
-			// do not intercept if its the updatesApply action or else updates will never apply
-			if ($this->params['do'] != 'base.updatesApply'):
+			// do not intercept if its the updatesApply action or a re-install else updates will never apply
+			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING')):
 				
 				$api = &owa_coreAPI::singleton();
 				
