@@ -650,6 +650,41 @@ class owa_template extends Template {
 		return $pages;
 	}
 	
+	function makePaginationFromResultSet($pagination, $map = array(), $add_state = true, $template = '') {
+		
+		$pages = '';
+		//print_r($pagination);
+		if ($pagination->total_pages > 1) {
+	
+			$pages = '<div class="owa_pagination"><UL>';
+			
+			for ($i = 1; $i <= $pagination->total_pages;$i++) {
+				
+				if ($pagination->page != $i) {
+					$new_map = array();
+					$new_map = $map;
+					$new_map['page'] = $i;
+					$link = sprintf('<LI class="owa_reportPaginationControl"><a href="%s">%s</a></LI>', 
+														$this->makeLink($new_map, $add_state), 
+														$i);
+				
+				} else {
+					
+					$link = sprintf('<LI class="owa_reportPaginationControl">%s</LI>', $i);
+				}
+														
+				$pages .= $link;
+			}
+			
+			$pages .= '</UL></div>';
+					
+			
+		
+		}
+		
+		return $pages;
+	}
+	
 	function get($name) {
 	
 		if (array_key_exists($name, $this->vars)) {

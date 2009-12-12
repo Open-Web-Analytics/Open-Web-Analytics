@@ -35,7 +35,7 @@
 	</tbody>
 </table>
 
-<?php echo $domstreams->displayPagination(array('do' => 'base.reportReferringSites'));?>
+<?php echo $this->makePaginationFromResultSet($domstreams, array('do' => 'base.reportReferringSites'), true);?>
 
 <?php else:?>
 	There are no refering web pages for this time period.

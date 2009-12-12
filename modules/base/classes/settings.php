@@ -526,7 +526,7 @@
 			'summary_framework'				=> '',
 			'click_drawing_mode'			=> 'center_on_page',
 			'log_clicks'					=> true,
-			'log_dom_streams'				=> false,
+			'log_dom_streams'				=> true,
 			'timezone'						=> 'America/Los_Angeles',
 			'log_dom_stream_percentage'		=> 50,
 			'authentication'				=> 'simple',
