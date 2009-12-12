@@ -286,7 +286,7 @@ function owa_footer(&$wgOut, $sk) {
 	
 	global $wgRequest;
 	
-	if ($wgRequest->getVal('action') != 'edit') {
+	if ($wgRequest->getVal('action') != 'edit' && $wgRequest->getVal('title') != 'Special:Owa') {
 		
 		$owa = owa_singleton();
 		if ($owa->getSetting('base', 'install_complete')) {
