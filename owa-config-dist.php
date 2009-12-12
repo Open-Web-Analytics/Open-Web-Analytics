@@ -49,7 +49,7 @@ define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
  * Don't forget the slash at the end.
  */
  
-define('OWA_PUBLIC_URL', '/path/to/owa/goes/here/');  
+define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');  
 
 /** 
  * OWA ERROR HANDLER
