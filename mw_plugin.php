@@ -83,11 +83,8 @@ function owa_main() {
 		$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
 		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
 		$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
-		
-		// Hooks for adding page tracking tags 
-		$wgHooks['ArticlePageDataAfter'][] = 'owa_footer';
-		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_footer';
-		$wgHooks['CategoryPageView'][] = 'owa_footer';	
+		// Hook for adding helper page tracking tags 	
+		$wgHooks['BeforePageDisplay'][] = 'owa_footer';
 	//}
 		
     return;
@@ -285,15 +282,20 @@ function owa_logArticle(&$article) {
  * @param object $article
  * @return boolean
  */
-function owa_footer(&$article) {
+function owa_footer(&$wgOut, $sk) {
 	
-	global $wgOut;
-	$owa = owa_singleton();
-	if ($owa->getSetting('base', 'install_complete')) {
+	global $wgRequest;
 	
-		$tags = $owa->placeHelperPageTags(false);		
-		$wgOut->addHTML($tags);
-	}	
+	if ($wgRequest->getVal('action') != 'edit') {
+		
+		$owa = owa_singleton();
+		if ($owa->getSetting('base', 'install_complete')) {
+			
+			$tags = $owa->placeHelperPageTags(false);		
+			$wgOut->addHTML($tags);
+			
+		}
+	}
 	
 	return true;
 }
