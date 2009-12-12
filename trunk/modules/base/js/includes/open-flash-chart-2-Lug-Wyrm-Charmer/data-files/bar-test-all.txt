@@ -1,0 +1,83 @@
+﻿{
+
+  "title":{
+    "text":"Glass Bar Cart",
+    "style":"{font-size:20px; color: #FFFFFF; margin: 5px; background-color: #505050; padding:5px 20px 5px 20px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar_3d",
+      "colour":    "#9933CC",
+      "text":      "Page views",
+      "font-size": 10,
+      "values" :   [10,-6]
+    },
+    {
+      "type":      "bar_fade-",
+      "colour":    "#3334AD",
+      "text":      "Stuff",
+      "font-size": 10,
+      "values" :   [10,-10]
+    },
+    {
+      "type":      "bar",
+      "colour":    "#339966",
+      "text":      "Green Bar",
+      "font-size": 10,
+      "values" :   [7,-7]
+    },
+    {
+      "type":      "bar_glass",
+      "colour":    "#339966",
+      "text":      "Green Bar",
+      "font-size": 10,
+      "values" :   [10,-10]
+    },
+    {
+      "type":      "bar_filled",
+      "colour":    "#8822BB",
+      "outline-colour": "#8010A0",
+      "text":      "Outline",
+      "font-size": 10,
+      "values" :   [8,-8]
+    }
+
+  ],
+
+
+  "x_axis":{
+    "labels": { "labels" :["Jan","Feb"] },
+    "3d":     5
+  },
+
+  "y_axis":{
+    "min": -20,
+    "max":  20
+  },
+
+  "y_legend":{
+    "text":"OFC",
+    "style":"{font-size: 12px; color:#7E97A6;}"
+  }
+}
+
+/*
+
+&bg_colour=#E2E6E0&
+&show_y2=true&
+&y2_axis_colour=#164166&
+&y2_label_style=10,0x164166&
+&_y2_lines=2,4&
+
+&y2_min=-10&
+&y2_max=10&
+
+&y2_legend=Free Ram (mb),12,0x164166&
+
+&tool_tip=#x_legend#, € %25 #x_label#<br>#key#: £#val#.00<br>#val:time#&
+&x_legend=2007,12,0x164166&
+
+*/
+
+

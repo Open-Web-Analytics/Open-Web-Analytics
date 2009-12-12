@@ -1,0 +1,41 @@
+{
+  "title":{
+    "text":  "Candle",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "candle",
+      "alpha":     0.5,
+      "colour":    "#40d040",
+      "negative-colour":    "#d04040",
+      "text":      "Burn baby, burn",
+      "font-size": 10,
+	  "on-show":	{"type": "po-p", "cascade":1, "delay":0},
+      "tip":       "#x_label#<br>High: #high#<br>Open: #open#<br>Close: #close#<br>Low: #low#",
+      "values" :   [
+        {"high":19, "top":14, "bottom":11, "low":10, "tip":"LOOK<br>#top#,#bottom# = #val#"},
+        {"high":15, "top":10, "bottom":5, "low":0},
+        {"high":7, "top":7, "bottom":4, "low":3},
+        {"high":7, "top":3, "bottom":6, "low":2},
+        {"high":7, "top":4, "bottom":4, "low":2}
+        ]
+    }
+  ],
+
+  "x_axis":{
+    "labels": ["January","February","March"]
+   },
+
+  "y_axis":{
+    "max": 20
+  }
+
+}
+

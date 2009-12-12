@@ -1,0 +1,61 @@
+{
+
+  "title":{
+    "text":"Sample Scatter Anchors",
+    "style":"{font-size: 24px; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }"
+  },
+  "num_decimals":3,
+
+  "elements":[
+    {
+      "type":      "scatter",
+      "colour":	   "#30BfBc",
+	  "dot-style":    { "type":"anchor", "sides":3, "alpha":1, "hollow":true, "background-colour":"#a44a80", 
+						"background-alpha": 0.4, "width":1, "tip":"type = anchor\nsides = 3\nhollow" },
+      "animate":   0,
+	  "dot-size":  12,
+	  "width":     3,
+	  "halo-size": 2,
+	  "text":      "Sample Scatter Anchors",
+	  "tip":       "[#x#,#y#] #size#\nSample Anchors",
+	  "values" :   [
+					{"x": 1, "y": 8, "type":"point", "tip":"type = point" },
+					{"x": 2, "y": 8, "type":"solid-dot", "tip":"type = dot" },
+					{"x": 3, "y": 8, "type":"bow", "hollow":false, "rotation":-45, "tip":"type = bow" },
+					{"x": 4, "y": 8, "type":"bow", "hollow":true, "background-colour":"#b0101c", 
+											"rotation":45, "tip":"type = bow\nhollow" },
+					{"x": 5, "y": 8, "type":"bow", "hollow":true, "background-colour":"#b0101c", 
+											"rotation":90, "tip":"type = bow\nhollow" },
+					{"x": 6, "y": 8, "type":"star", "hollow":true, "rotation":0, "tip":"type = star\nhollow" },
+					{"x": 7, "y": 8, "type":"star", "hollow":true, "rotation":90, "tip":"type = star\nhollow", "dot-size":12 },
+					{"x": 8, "y": 8, "type":"star", "hollow":false, "rotation":180, "tip":"type = star", "dot-size":12 },
+					{"x": 9, "y": 8, "type":"dot", "tip":"type = solid dot", "dot-size":12 },
+					{"x": 1, "y": 4 },      // triangle from dot-style definition above
+					{"x": 2, "y": 4, "type":"anchor", "sides":4, "tip":"type = anchor<br>sides = 4\nhollow" },
+					{"x": 3, "y": 4, "type":"anchor", "sides":5, "tip":"type = anchor\nsides = 5\nhollow" },
+					{"x": 4, "y": 4, "type":"anchor", "sides":6, "tip":"type = anchor\nsides = 6\nhollow" },
+					{"x": 5, "y": 4, "type":"anchor", "sides":7, "tip":"type = anchor\nsides = 7\nhollow" },
+					{"x": 6, "y": 4, "type":"anchor", "sides":8, "tip":"type = anchor\nsides = 8\nhollow" },
+					{"x": 7, "y": 4, "type":"anchor", "sides":9, "tip":"type = anchor\nsides = 9\nhollow", "hollow":true, "background-colour":"#ffffff" },
+					{"x": 8, "y": 4, "type":"anchor", "sides":10, "tip":"type = anchor\nsides = 10\nhollow" }
+					]
+    }
+  ],
+  
+  "x_axis": {
+    "min":    0,
+    "max":    10,
+    "offset": 0,
+	"steps" : 1,
+	"3d" : 0,
+	"labels": { "rotate" : 0, "size": 10 }
+  },
+  
+  "y_axis": {
+    "min":    0,
+    "max":    10,
+	"stroke": 2,
+	"steps" : 1,
+    "offset": 0
+  }
+}

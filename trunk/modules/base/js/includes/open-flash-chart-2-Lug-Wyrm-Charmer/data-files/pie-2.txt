@@ -1,0 +1,18 @@
+{
+
+  "elements":[
+    {
+      "type":      "pie",
+      "colours":   ["#d01f3c","#356aa0","#C79810"],
+      "alpha":     0.2,
+      "border":    2,
+      "animate":		[ { "type": "fade" }],
+      "start-angle": 45,
+      "tip":         "#val#<br>#total#<br>#percent#<br>#label#",
+      "gradient-fill" :  true,
+      "label-colour":    "#0000d0",
+      "values" :
+        [10,10,{"value":100,"label":"hello (#val#)","font-size":20,"colour":"#00FF00","label-colour":"#00FFFF"},10]
+    }
+  ]
+}

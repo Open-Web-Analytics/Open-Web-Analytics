@@ -1,0 +1,24 @@
+﻿{
+  "elements":[
+    {
+      "type":      "line",
+      "colour":    "#736AFF",
+      "text":      "Avg. wave height (cm)",
+      "font-size": 10,
+      "width":     1,
+	  "dot-style": {
+		"type":"anchor", "sides":4,
+		"alpha":1, "hollow":true,
+		"background-colour":"#a44a80", "background-alpha": 0.4,
+		"width":1, "tip":"type = anchor<br>sides = 4<br>hollow" },
+    
+      "values" :   [3,0,-3]
+    }
+  ],
+
+  "y_axis":{
+	  "min": -5,
+    "max":   5
+  }
+
+}

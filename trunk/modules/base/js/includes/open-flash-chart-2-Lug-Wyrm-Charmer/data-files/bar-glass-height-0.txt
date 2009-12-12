@@ -1,0 +1,50 @@
+{
+  "title":{
+    "text":  "Many data lines",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar_glass",
+      "alpha":     0.5,
+      "colour":    "#9933CC",
+      "tip":       "Tip for purple bars<br>val=#val#, top=#top#",
+      "text--":      "Page views",
+      "font-size--": 10,
+      "values" :   [9,6,7,0,5,{"top":7,"colour":"#FF0000", "tip": "RED<br>Mooo<br>#val#"},6,9,7]
+    }
+  ],
+
+  "x_axis":{
+    "stroke":       1,
+    "tick_height":  10,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "labels": {
+      "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+    }
+   },
+
+  "y_axis":{
+    "stroke":      4,
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "offset":      0,
+    "max":         20
+  },
+
+  "tooltip":{
+    "text": "Global Tooltip<br>val=#val#, top=#top#"
+  }
+
+/* &x_axis_steps=2& */
+
+}
+

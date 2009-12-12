@@ -1,0 +1,89 @@
+﻿{
+  "title":{
+    "text":  "Many data lines",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "colour":    "#9933CC",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_sketch",
+      "colour":    "#9933CC",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_glass",
+      "colour":    "#9933CC",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_3d",
+      "colour":    "#9933CC",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_filled",
+      "colour":    "#9933CC",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_cylinder",
+      "colour":    "#9933CC",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_cylinder_outline",
+      "colour":    "#3030FF",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_round_glass",
+      "colour":    "#CC0000",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_round",
+      "colour":    "#CC0000",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    },
+    {
+      "type":      "bar_dome",
+      "colour":    "#CCCC00",
+      "values" :   [7,0,-7],
+      "axis":      "right"
+    }
+  ],
+
+  "y_axis":{
+    "tick-length": 3,
+    "colour":      "#d000d0",
+    "grid-visible":  false,
+    "offset":      0,
+    "min":         -10,
+    "max":         10
+  },
+
+  "y_axis_right":{    
+    "tick-length":   6,
+    "colour":        "#d0d0d0",
+    "of--fset":      0,
+    "min":           -17,
+    "max":           17,
+    "grid-visible":  true,
+    "grid-colour":   "#D0D0FF"
+  }
+}
+

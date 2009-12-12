@@ -1,0 +1,32 @@
+{
+  
+  "y_legend":{
+    "text":"OFC",
+    "style":"{font-size: 12px; color:#736AFF;}"
+  },
+
+  "elements":[
+    {
+      "type":      "area",
+      "colour":    "#CC3399",
+      "fill":      "#343399",
+      "fill-alpha": 0.5,
+      "width":     3,
+      "dot-size":  7,
+      "values" :   [0,0.37,0.73,1.07,1.36,1.59,1.77,1.87,1.89,1.85,1.72,1.53,1.28,0.97,0.63,0.26,-0.11,-0.48,-0.84,-1.16,-1.43,-1.65,-1.80,-1.88,-1.89,-1.82,-1.67,-1.46,-1.19,-0.88]
+    }
+  ],
+	"y_axis":{
+    "stroke":       1,
+    "tick-length":  3,
+    "colour":       "#d09090",
+    "grid-colour":  "#00ff00",
+    "offset":       false,
+    "min":         -4,
+    "max":          4,
+    "visible":      true,
+    "steps":        1
+  }
+
+
+}
