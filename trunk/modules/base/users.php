@@ -48,8 +48,13 @@ class owa_usersController extends owa_adminController {
 	function action() {
 		
 		$u = owa_coreAPI::entityFactory('base.user');
-		$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
-		$this->set('users', $u->find($params));
+		//$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom('owa_user');
+		$db->selectColumn("*");
+		$users = $db->getAllRows();
+		$this->set('users', $users);
 		$this->setView('base.options');
 		$this->setSubview('base.users');
 		return;

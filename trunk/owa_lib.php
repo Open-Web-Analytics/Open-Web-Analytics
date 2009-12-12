@@ -572,7 +572,7 @@ class owa_lib {
 			
 			$params = array_merge($params, $_COOKIE);
 		}
-		
+				
 		return $params;
 	}
 	
