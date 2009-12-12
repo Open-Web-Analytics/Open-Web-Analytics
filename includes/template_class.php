@@ -41,7 +41,7 @@ class Template {
 	 *
 	 * @var array
 	 */
-    var $vars;
+    var $vars = array();
     
     /**
      * Template file

@@ -47,7 +47,7 @@ class owa_reportOverlayController extends owa_reportController {
 		
 		// Fetch document object
 		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByColumn('url', urldecode($this->getParam('document_url')));
+		$d->getByColumn('id', $this->getParam('document_id'));
 		$this->set('document_details', $d->_getProperties());
 		$this->set('document_id', $this->getParam('document_id'));
 		
