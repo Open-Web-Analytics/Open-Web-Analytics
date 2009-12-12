@@ -51,7 +51,13 @@ class owa_reportDomstreamsController extends owa_reportController {
 		$d->setConstraint('site_id', $this->getParam('site_id'));
 		
 		if ($this->getParam('document_id')) {
-			$c->setConstraint('document_id', $this->getParam('document_id'));
+			$d->setConstraint('document_id', $this->getParam('document_id'));
+			$this->setTitle('Domstreams');
+			$doc = owa_coreAPI::entityFactory('base.document');
+			$doc->load($this->getParam('document_id'));
+			$this->set('document', $doc->_getProperties());
+		} else {
+			$this->setTitle('Latest Domstreams');
 		}
 		
 		if (!$this->getParam('limit')) {
@@ -71,7 +77,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 		
 		// set view stuff
 		$this->setSubview('base.reportDomstreams');
-		$this->setTitle('Latest Domstreams');
+		
 							
 	}
 	
@@ -105,6 +111,8 @@ class owa_reportDomstreamsView extends owa_view {
 		
 		$this->body->set('domstreams', $this->get('domstreams'));
 		$this->body->set_template('report_domstreams.tpl');
+		$doc = $this->get('document');
+		$this->body->set('document', $doc);
 	}
 
 }

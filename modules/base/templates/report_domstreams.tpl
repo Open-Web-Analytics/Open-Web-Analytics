@@ -1,3 +1,6 @@
+<?php if (!empty($document)): require('item_document.php'); endif;?>
+
+
 <?php if (!empty($domstreams)):?>
 <table class="tablesorter">
 	<thead>

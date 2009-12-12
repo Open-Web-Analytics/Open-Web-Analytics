@@ -1,16 +1,6 @@
 <div class="owa_reportSectionContent">
-	<table width="100%">
-		<TR>
-			<TD valign="top">
-				<span class="inline_h2"><?php echo $detail['page_title'];?></span><BR>
-				<span class="infotext"><?php echo $detail['url'];?> (<a href="<?php echo $detail['url'];?>">visit page</a>)</span>
-			</TD>
-			<TD valign="" style="text-align:right;">
-				<span class="infotext"><B>Page Type:</B></span><BR>
-				<span class="inline_h3"><?php echo $detail['page_type'];?></span>	
-			</TD>
-		</TR>
-	</table>
+
+<?php require('item_document.php');?>
 	
 	
 <BR>
@@ -32,11 +22,11 @@
 				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportClicks'), true);?>">Click Analysis</a></span> - See which part of the document are being clicked on.
 			</P>
 			<P>
-				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$detail['id'], 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadHeatmap'), true, 'cookie'))));?>" target="_blank">Overlay</a></span>
+				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document['id'], 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadHeatmap'), true, 'cookie'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
 			</P>
 			
 			<P>
-				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'url' => urlencode($detail['url']), 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadPlayer'), true, 'cookie'))));?>" target="_blank">Player</a></span>
+				<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams', 'document_id' => $document['id']), true);?>">Domstreams</a></span> - mouse movement recordings.
 			</P>
 					
 		</TD>
