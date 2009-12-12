@@ -94,7 +94,6 @@ class owa_caller extends owa_base {
 		owa_coreAPI::debug('Request URL: '.$_SERVER['REQUEST_URI']);
 		owa_coreAPI::debug('User Agent: '.$_SERVER['HTTP_USER_AGENT']);
 
-		
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 		
@@ -159,11 +158,6 @@ class owa_caller extends owa_base {
 		//if (!empty($this->api->modules_needing_updates)):
 		//	$this->service->setUpdateRequired();
 		//endif;
-		
-		// set default timezone
-		if (function_exists('date_default_timezone_set')) {
-			date_default_timezone_set(owa_coreAPI::getSetting('base', 'timezone'));
-		}
 		
 		return;
 	

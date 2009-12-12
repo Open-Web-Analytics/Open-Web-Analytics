@@ -23,7 +23,7 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.2.1
  */
  
 
@@ -610,8 +610,10 @@ OWA.tracker.prototype = {
 		return;	
 	},
 	
-	filterDomProperties : function() {
+	// stub for a filter that will strip certain properties or abort the logging
+	filterDomProperties : function(properties) {
 		
+		return properties;
 		
 	},
 			
@@ -820,6 +822,17 @@ OWA.tracker.prototype = {
 	
 	restart : function() {
 		this.active = true;
+	},
+	
+	// Event object Factory
+	makeEvent : function() {
+		return new OWA.event();
+	},
+	
+	// adds a new Domstream event binding. takes function name
+	addStreamEventBinding : function(name) {
+		
+		this.streamBindings.push(name);
 	}	
 	
 		

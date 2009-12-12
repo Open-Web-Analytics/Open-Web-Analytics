@@ -49,6 +49,7 @@ add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', 'owa_logComment');
 add_action('admin_menu', 'owa_options_menu');
+//add_action('wp_ajax_owa_specialAction', 'owa_handleSpecialActionRequest');
 // Installation hook
 register_activation_hook(__FILE__,'owa_install');
 /////////////////////////////////////////////////////////////////////////////////
@@ -81,16 +82,16 @@ function &owa_getInstance($params = array()) {
 		// that Wordpress uses.
 				
 		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-		$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
-		$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/i/';
+		//$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
+		//$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/i/';
 		$owa_config['main_url'] = '../wp-admin/index.php?page=owa';
 		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa';
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
+		//$owa_config['action_url'] = get_bloginfo('url').'/wp-admin/admin-ajax.php?action=owa_specialAction';
 		//$owa_config['action_url'] = get_bloginfo('url').'/wp-content/plugins/owa/action.php';
-		//$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
 		$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
 		$owa_config['link_template'] = '%s&%s';
-		$owa_config['site_id'] = md5(get_settings('siteurl'));
+		//$owa_config['site_id'] = md5(get_settings('siteurl'));
 		$owa_config['is_embedded'] = true;
 		$owa_config['delay_first_hit'] = true;
 	
