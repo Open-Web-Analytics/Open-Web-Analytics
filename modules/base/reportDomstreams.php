@@ -67,7 +67,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 		$d->setLimit($limit);
 		
 		if ($this->getParam('page')) {
-			$c->setPage($this->getParam('page'));
+			$d->setPage($this->getParam('page'));
 		}
 		
 		$ds = $d->generateResults();

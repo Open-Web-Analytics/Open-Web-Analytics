@@ -40,12 +40,12 @@ class owa_paginatedResultSet extends owa_base {
 	var $rows;
 	
 	var $more;
+	
 	var $total_pages;
 	
 	var $labels;
 	
 	var $query_limit;
-	
 	
 	
 	function __construct() {
@@ -76,13 +76,14 @@ class owa_paginatedResultSet extends owa_base {
 	function countResults($results) {
 	
 		$this->results_count = count($results);
+		$this->total_pages = ceil(($this->results_count + $this->offset) / $this->limit);
 		
 		if ($this->results_count < $this->limit) {
 			// no more pages
 		} else {
 			// more pages
 			$this->setMorePages();
-			$this->total_pages = ceil($this->results_count / $this->limit);
+			
 		}
 	}
 	
@@ -90,7 +91,7 @@ class owa_paginatedResultSet extends owa_base {
 		
 		if (!empty($this->limit)) {
 			// query for more than we need	
-			$dao->limit($this->limit * 3);
+			$dao->limit($this->limit * 5);
 		}
 		
 		if (!empty($this->page)) {
