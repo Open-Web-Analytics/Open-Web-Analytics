@@ -126,7 +126,8 @@ OWA.tracker.prototype = {
 		logMovement: false, 
 		encodeProperties: true, 
 		movementInterval: 100,
-		logDomStreamPercentage: 50
+		logDomStreamPercentage: 50,
+		domstreamEventThreshold: 5
 	},
 	/**
 	 * DOM stream Event Binding Methods
@@ -211,15 +212,22 @@ OWA.tracker.prototype = {
 	
 	logDomStream : function() {
     	
-		var event = new OWA.event;
-		event.setEventType('dom.stream');
-		event.set('site_id', this.getSiteId());
-		event.set('page_url', this.page.get('page_url'));
-		event.set('timestamp', this.startTime);
-		event.set('duration', this.getElapsedTime());
-		event.set('stream_events', JSON.stringify(this.event_queue));
-		//console.log('Stream: %s', JSON.stringify(this.event_queue));
-		this.logEventAjax(event, 'POST');
+    	if (this.event_queue.length > this.options.domstreamEventThreshold) {
+    	
+			var event = new OWA.event;
+			event.setEventType('dom.stream');
+			event.set('site_id', this.getSiteId());
+			event.set('page_url', this.page.get('page_url'));
+			event.set('timestamp', this.startTime);
+			event.set('duration', this.getElapsedTime());
+			event.set('stream_events', JSON.stringify(this.event_queue));
+			//console.log('Stream: %s', JSON.stringify(this.event_queue));
+			this.logEventAjax(event, 'POST');
+			OWA.debug("Domstream logged");
+			
+		} else {
+			OWA.debug("Domstream had too few events to log");
+		}
 	},
 	
 	/**
