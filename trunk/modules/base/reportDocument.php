@@ -100,7 +100,7 @@ class owa_reportDocumentController extends owa_reportController {
 
 
 /**
- * Visit Report View
+ * Document Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -134,7 +134,7 @@ class owa_reportDocumentView extends owa_view {
 		$this->body->set_template('report_document.tpl');
 		$this->body->set('core_metrics', $this->get('core_metrics_data'));
 		$this->body->set('summary_stats',  $this->get('summary_stats_data'));
-		$this->body->set('detail',  $this->get('document_details'));
+		$this->body->set('document',  $this->get('document_details'));
 		$this->body->set('top_referers',  $this->get('top_referers'));
 		$this->body->set('document_id', $this->data['params']['document_id']);
 		$this->body->set('chart1_data',  $this->get('chart1_data'));	
