@@ -97,7 +97,7 @@
 		var divHeight = document.getElementById("clickspage").offsetHeight;
 		var relWidth = '';
 		
-		var url = '<img src="<?php echo $this->graphLink(array('do' => 'base.heatmapClicks', 'document_id' => $document_id), true, $this->config['action_url']);?>&owa_width=' + divWidth + '&owa_height=' + divHeight + '">';
+		var url = '<img src="<?php echo $this->makeLink(array('do' => 'base.heatmapClicks', 'document_id' => $document_id), true, $this->config['action_url']);?>&owa_width=' + divWidth + '&owa_height=' + divHeight + '">';
 		document.getElementById('heatmap').innerHTML = url;
 		document.getElementById('clickspage2').style.visibility = 'hidden';
 		//alert('<!-- ' + url + ' -->');

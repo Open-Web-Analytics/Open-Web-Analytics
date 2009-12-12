@@ -55,12 +55,12 @@
 	border: 1px solid #efefef;
 	background-image: url(../i/document_icon_64.png);
 	background-repeat: no-repeat;
-	background-position-y: 10px;
-	padding: 10px 10px 10px 60px;
+	background-position: left center;
+	padding: 13px 10px 10px 63px;
 }
 
 .owa_document div {
-	padding:3px;
+	padding:2px;
 }
 
 .owa_document .title {
