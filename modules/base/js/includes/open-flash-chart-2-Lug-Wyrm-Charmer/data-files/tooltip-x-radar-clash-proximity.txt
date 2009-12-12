@@ -1,0 +1,63 @@
+{
+  "title":{
+    "text":"Ahhhh, sweet.",
+    "style":"{font-size: 13px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "area_line",
+      "colour":    "#FA3D37",
+      "fill":      "#FA3D37",
+      "fill-alpha": 0.3,
+      "text":      "Orange",
+      "width":     1,
+      "font-size": 10,
+      "dot-size":  3,
+      "halo-size": 1,
+      "tip":       "Orange<br>#val#",
+      "loop":      true,
+      "values" :   [2,2,2,2,2,2,2]
+    },
+    {
+      "type":      "area_line",
+      "colour":    "#3D37FA",
+      "fill":      "#3D37FA",
+      "fill-alpha": 0.3,
+      "text":      "Blue",
+      "width":     1,
+      "font-size": 10,
+      "dot-size":  3,
+      "halo-size": 1,
+      "tip":       "Blue<br>#val#",
+      "loop":      true,
+      "values" :   [{"value":3, "tip":"3 Accuratesse"},3,3,1.5,1,2,3]
+    }
+  ],
+
+  
+  "radar_axis": {
+    "max":         4,
+    "stroke":      1,
+    "colour":      "#909090",
+    "grid-colour": "#C0DEBF",
+    "steps":       4,
+
+    "labels":{
+      "colour"  :"#000000",
+      "labels": [
+        "0","1","2","3","4"
+      ]
+    },
+
+    "spoke-labels":{
+      "colour":  "#000000",
+      "labels":  ["Accuratesse","Analystich<br>vermogen","Creativiteit","Plannen en<br>organiseren","Probleemanalyse","Samenwerken in<br>teamverband","Zelfstandigheid"]
+    }
+  },
+
+  "tooltip":{
+    "mouse": 1,
+    "stroke":1
+  }
+}

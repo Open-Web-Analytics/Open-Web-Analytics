@@ -1,0 +1,47 @@
+    {
+      "elements": [
+        {
+          "type": "line",
+          "values": [
+            {         
+              "value": 3         
+            },
+            {         
+              "value": null         
+            },
+            {         
+              "value": 3         
+            }
+          ],
+          "dot-style": {
+            "type": "hollow-dot",
+            "colour": "#ff0000",
+            "dot-size": 4,
+            "halo-size": 1
+          }
+        },
+		
+		{
+          "type": "line",
+          "values": [2,null,2],
+          "dot-style": {
+            "type": "hollow-dot",
+            "colour": "#ff0000",
+            "dot-size": 4,
+            "halo-size": 1
+          }
+        },
+		
+		{
+          "type": "line",
+          "values": [
+			{"value": 4},null,4],
+          "dot-style": {
+            "type": "hollow-dot",
+            "colour": "#ff0000",
+            "dot-size": 4,
+            "halo-size": 1
+          }
+        }
+      ]
+    }

@@ -41,7 +41,8 @@ define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.11.5');
 define('OWA_PHPMAILER_DIR', OWA_INCLUDE_DIR.'PHPMailer_v2.0.3'.DIRECTORY_SEPARATOR);
 define('OWA_SPARKLINE_DIR', OWA_INCLUDE_DIR.'sparkline-php-0.2'.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR);
 define('OWA_JPGRAPH_DIR', OWA_INCLUDE_DIR.'jpgraph-1.20.3'.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR); //depricated
-define('OWA_OFC_VERSION', 'open-flash-chart-2-Jormungandr-2');
+//define('OWA_OFC_VERSION', 'open-flash-chart-2-Jormungandr-2');
+define('OWA_OFC_VERSION', 'open-flash-chart-2-Lug-Wyrm-Charmer');
 define('OWA_OFC_DIR', OWA_INCLUDE_DIR.OWA_OFC_VERSION.DIRECTORY_SEPARATOR);
 define('OWA_PLUGINS_DIR', OWA_DIR.'plugins'); //depricated
 define('OWA_METRICS_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR.'metrics'.DIRECTORY_SEPARATOR); //depricated

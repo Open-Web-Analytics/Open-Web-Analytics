@@ -1,0 +1,201 @@
+﻿{
+  "elements" : [
+    {
+      "tip" : "#val# of #total# messages<br>#percent#\npie radius = #radius#",
+      "colours" : [
+        "#000000",
+        "#4693B8"
+      ],
+      "alpha" : "0.8",
+      "start_angle" : 135,
+//	  "radius":200,
+	  "no-labels":false,
+      "animate" : false,
+      "values" : [
+        {
+          "value" : 135,
+          "label" : "Label Num 1"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 2"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 3"
+        },
+        {
+          "value" : 135,
+          "label" : ""
+        },
+        {
+          "value" : 135,
+          "label" : ""
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 6"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 7"
+        },
+        {
+          "value" : 4,
+          "label" : "small slice 1"
+        },
+        {
+          "value" : 4,
+          "label" : "small slice 2"
+        },
+        {
+          "value" : 4,
+          "label" : "small slice 3"
+        },
+        {
+          "value" : 4,
+          "label" : "small slice4 "
+        },
+        {
+          "value" : 4,
+          "label" : "small slice 5"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 8"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 9"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 10"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 11"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 12"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 13"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 14"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 15"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 16"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 17"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 18"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 19"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 20"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 21"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 22"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 23"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 24"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 25"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 26"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 27"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 28"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 29"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 30"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 31"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 32"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 33"
+        },
+        {
+          "value" : 135,
+          "label" : ""
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 35"
+        },
+        {
+          "value" : 135,
+          "label" : ""
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 36"
+        },
+        {
+          "value" : 135,
+          "label" : "Label Num 37"
+        },
+        {
+          "value" : 103,
+          "label" : "Label Num 38"
+        }
+      ],
+      "type" : "pie",
+      "border" : "2"
+    }
+  ],
+  "bg_colour" : "#FAFAFA",
+  "title" : {
+    "text" : "Auto-size Pie and Label Adjustment",
+    "style" : "{font-size: 14px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  }
+}
