@@ -1,1 +1,0 @@
-.owa {background-color: #fffff;}
