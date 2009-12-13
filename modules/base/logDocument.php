@@ -43,17 +43,26 @@ class owa_logDocumentController extends owa_controller {
 	
 	function action() {
 		
+		$event = $this->getParam('event');
+
 		$d = owa_coreAPI::entityFactory('base.document');
 		
-		$event = $this->getParam('event');
+		$id = owa_lib::setStringGuid($event->get('page_url'));
 		
-		$d->setProperties($event->getProperties());
+		$d->load($id);
+		
+		if (!$d->get('id')) {
+			
+			$d->setProperties($event->getProperties());
 	
-		$d->set('url', $event->get('page_url'));
+			$d->set('url', $event->get('page_url'));
 		
-		$d->set('id', owa_lib::setStringGuid($event->get('page_url'))); 
+			$d->set('id', $id); 
 		
-		$d->create();
+			$d->create();
+		}
+				
+		
 		
 		return;
 			
