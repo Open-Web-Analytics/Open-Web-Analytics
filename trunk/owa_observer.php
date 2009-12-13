@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR . '/owa_coreAPI.php');
-
 /**
  * Abstract observer class, wraps PEAR Log's observer to add event type.
  * 

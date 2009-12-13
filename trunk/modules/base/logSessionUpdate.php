@@ -76,10 +76,11 @@ class owa_logSessionUpdateController extends owa_controller {
 		$session = $s->_getProperties();
 		$properties = array_merge($event->getProperties(), $session);
 		$properties['request_id'] = $event->get('guid');
-		$event->replaceProperties($properties);
-		$event->setEventType('base.session_update');
+		$ne = owa_coreAPI::supportClassFactory('base', 'event');
+		$ne->setProperties($properties);
+		$ne->setEventType('base.session_update');
 		// Log session update event to event queue
-		$this->logEvent($event->getEventType(), $event);
+		$this->logEvent($ne->getEventType(), $ne);
 			
 		return;
 			

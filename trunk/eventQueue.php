@@ -109,12 +109,15 @@ class eventQueue {
 		
 		owa_coreAPI::debug("Notifying listeners of ".$event->getEventType());
 		//print_r($this->listenersByEventType[$event_type] );
-		
+		//print $event->getEventType();
 		$list = $this->listenersByEventType[$event->getEventType()];
+		//print_r($list);
 		if (!empty($list)) {
-				foreach ($this->listenersByEventType[$event->getEventType()] as $k => $observer_id) {
-				//print_r($this->listeners[$observer_id]);
+			foreach ($this->listenersByEventType[$event->getEventType()] as $k => $observer_id) {
+				//print_r($list);
 				call_user_func_array($this->listeners[$observer_id], array($event));
+				//owa_coreAPI::debug(print_r($event, true));
+				owa_coreAPI::debug(sprintf("%s event handled by %s.",$event->getEventType(), get_class($this->listeners[$observer_id][0])));
 			}
 		}
 		
