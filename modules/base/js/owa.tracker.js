@@ -745,6 +745,12 @@ OWA.tracker.prototype = {
 
 	},
 	
+	bindFocusEvents : function() {
+	
+		var that = this;
+	
+	},
+	
 	bindKeypressEvents : function() {
 		
 		var that = this;

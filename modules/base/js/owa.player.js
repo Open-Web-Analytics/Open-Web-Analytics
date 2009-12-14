@@ -200,6 +200,20 @@ OWA.player.prototype = {
 		
 	},
 	
+	showNotification : function(msg, header) {
+		jQuery.jGrowl.defaults.position = 'center';
+		jQuery.jGrowl.defaults.closer = false;
+		jQuery.jGrowl.defaults.pool = 1;
+		jQuery.jGrowl(msg, { 
+			life: 750,
+			speed: 300,
+			position: "center",
+			closer: false,
+			header: header
+		});
+	
+	},
+	
 	movementEventHandler : function(e) {
 		
 		return this.moveCursor(e.cursor_x, e.cursor_y);
@@ -245,11 +259,13 @@ OWA.player.prototype = {
 		}
 		
 		jQuery(accessor).click();
+		jQuery(accessor).focus();
 		jQuery('#owa-latest-click').css({'left': event.dom_element_x-10+'px', 'top': event.dom_element_y-10+'px'});
 		jQuery('#owa-latest-click').slideToggle('normal');
 		jQuery('#owa-latest-click').slideToggle('normal');
 		//console.log("Clicking: %s", accessor);
-		this.setStatus("Clicking: "+accessor);
+		//this.setStatus("Clicking: "+accessor);
+		this.showNotification(accessor, "Clicked On:")
 	
 	}
 

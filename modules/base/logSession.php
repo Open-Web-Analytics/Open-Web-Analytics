@@ -58,7 +58,7 @@ class owa_logSessionController extends owa_controller {
 		$s->set('prior_session_lastreq', $event->get('last_req'));
 		$s->set('prior_session_id', $event->get('inbound_session_id'));
 		
-		if ($s->get('prior_session_lastreq') > 0):
+		if ($s->get('prior_session_lastreq') > 0) {
 			$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
 			$s->set('prior_session_year', date("Y", $event->get('last_req')));
 			$s->set('prior_session_month', date("M", $event->get('last_req')));
@@ -66,7 +66,7 @@ class owa_logSessionController extends owa_controller {
 			$s->set('prior_session_hour', date("G", $event->get('last_req')));
 			$s->set('prior_session_minute', date("i", $event->get('last_req')));
 			$s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
-		endif;
+		}
 						
 		// set source			
 		$s->set('source', $event->get('source'));
@@ -93,11 +93,12 @@ class owa_logSessionController extends owa_controller {
 		$session = $s->_getProperties();
 		$properties = array_merge($event->getProperties(), $session);
 		$properties['request_id'] = $event->get('guid');
-		$event->replaceProperties($properties);
-		$event->setEventType('base.new_session');
+		$ne = owa_coreAPI::supportClassFactory('base', 'event');
+		$ne->setProperties($properties);
+		$ne->setEventType('base.new_session');
 		
 		// log the new session event to the event queue
-		$this->logEvent($event->getEventType(), $event);
+		$this->logEvent($ne->getEventType(), $ne);
 			
 		return;
 			
