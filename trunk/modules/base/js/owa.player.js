@@ -43,7 +43,7 @@ OWA.player.prototype = {
 	timer : null,
 	queue_step : 1,
 	queue_count : 0,
-	animateInterval : 150,
+	animateInterval : 250,
 	stream : null,
 	lock : false,
 	
@@ -152,6 +152,7 @@ OWA.player.prototype = {
    		jQuery('#owa_overlay_start').removeClass('active');
 		if (!this.timer) return false;
 	  	clearInterval(this.timer);
+	  	this.setStatus('Ready.');
 	  	
 	},
 	
@@ -163,40 +164,75 @@ OWA.player.prototype = {
 		}
 		
 		this.start();
+		this.setStatus('Playing...');
 	},
 	
 	showPlayerControls : function() {
 	
+		//create player control bar
 		var player = '<div id="owa_overlay"></div>';
-		var startlink = '<div class="owa_overlay_control" id="owa_player_start">Play</div>';
-		var pauselink = '<div class="owa_overlay_control" id="owa_player_stop">Pause</div>';
-		var closelink = '<div class="owa_overlay_control" id="owa_player_close">Close</div>';
-		var status_msg = '<div id="owa-overlay-status">...</div>';
-		var cursor = '<div id="owa-cursor"><img src="'+OWA.getSetting('baseUrl')+'/modules/base/i/cursor2.png"></div>';
 		jQuery('body').append(player);
-		jQuery('body').append(cursor);
-		jQuery('html, body').append('<div id="owa-latest-click" style="display: none">CLICK</div>');
-		var that = this;
-		jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
+		jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>'); //logo
+		var startlink = '<div class="owa_overlay_control" id="owa_player_start">Play</div>';
 		jQuery('#owa_overlay').append(startlink);
+		var pauselink = '<div class="owa_overlay_control" id="owa_player_stop">Pause</div>';
 		jQuery('#owa_overlay').append(pauselink);
+		var closelink = '<div class="owa_overlay_control" id="owa_player_close">Hide</div>';
 		jQuery('#owa_overlay').append(closelink);
+		var status_msg = '<div id="owa-overlay-status">...</div>';
 		jQuery('#owa_overlay').append(status_msg);
 		
+		//create hidden player controls container
+		var hiddenplayer = '<div id="owa_overlay_hidden"></div>';
+		jQuery('body').append(hiddenplayer);
+		jQuery("#owa_overlay_hidden").hide();
+		
+		//add cursor
+		var cursor = '<div id="owa-cursor"><img src="'+OWA.getSetting('baseUrl')+'/modules/base/i/cursor2.png"></div>';
+		jQuery('body').append(cursor);
+		
 		jQuery('#owa_overlay_start').toggleClass('active');
-		jQuery('.owa_overlay_control').bind('click', function(){
+		
+		// set active color. not sure this works right....
+		jQuery('.owa_overlay_control').click( function(){
 			jQuery(".owa_overlay_control").removeClass('active');
 			jQuery(this).addClass('active');
 		});
 		
+		//hide toolbar and make visible the 'show' button
+		jQuery("#owa_overlay_logo").click(function() {
+			jQuery("#owa_overlay").slideToggle("fast");
+		    jQuery("#owa_overlay_hidden").fadeIn("slow");    
+		});
+		  
+		//show toolbar and hide the 'show' button
+		jQuery("#owa_overlay_hidden").click(function() {
+			jQuery("#owa_overlay").slideToggle("fast");
+			jQuery("#owa_overlay_hidden").fadeOut();    
+		});
+		
+		//closure
+		var that = this;
+		
+		// start player
 		jQuery('#owa_player_start').bind('click', function(e) {that.play(e)});
+		
+		// pause player
 		jQuery('#owa_player_stop').bind('click', function(e) {that.stop(e)});
-		jQuery('#owa_player_close').bind('click', function(e) {OWA.endOverlaySession(e)});
+		
+		// eliminate overlay cookie when close button is pressed.
+		jQuery('#owa_player_close').click( function() {
+			jQuery("#owa_overlay").slideToggle("fast");
+		    jQuery("#owa_overlay_hidden").fadeIn("slow");   
+		});
+		
+		// eliminate overlay cookie when window closes.
+		jQuery(window).unload(function() {OWA.endOverlaySession()});
 	},
 		
 	setStatus : function(msg) {
 		
-		jQuery('#owa_player_status').prepend(msg+'\n');
+		jQuery('#owa-overlay-status').html(msg);
 		
 	},
 	
@@ -205,8 +241,8 @@ OWA.player.prototype = {
 		jQuery.jGrowl.defaults.closer = false;
 		jQuery.jGrowl.defaults.pool = 1;
 		jQuery.jGrowl(msg, { 
-			life: 750,
-			speed: 300,
+			life: 250,
+			speed: 25,
 			position: "center",
 			closer: false,
 			header: header
@@ -236,13 +272,8 @@ OWA.player.prototype = {
 		var element_value = jQuery(accessor).val() || '';
 		element_value += event.key_value; 
 		jQuery(accessor).val(element_value);
-		jQuery.jGrowl(event.key_value, { 
-			life: 1500,
-			speed: 1000,
-			position: "bottom-right",
-			closer: false,
-			header: "Key Press:"
-		});
+		this.showNotification(event.key_value, "Key Press:");
+		this.setStatus("Key Press: " + event.key_value);
 	},
 	
 	clickEventHandler : function(event) {
@@ -258,14 +289,19 @@ OWA.player.prototype = {
 			var accessor = event.dom_element_tag;
 		}
 		
+		var d = new Date();
+		var id = 'owa-click-marker' + '_' + d.getTime()+1;
+		var marker = '<div id="'+id+'" class="owa-click-marker"></div>';
+		jQuery('body').append(marker);
+		jQuery('#'+id).css({'position': 'absolute','left': event.click_x +'px', 'top': event.click_y +'px', 'z-index' : 89});
 		jQuery(accessor).click();
 		jQuery(accessor).focus();
-		jQuery('#owa-latest-click').css({'left': event.dom_element_x-10+'px', 'top': event.dom_element_y-10+'px'});
-		jQuery('#owa-latest-click').slideToggle('normal');
-		jQuery('#owa-latest-click').slideToggle('normal');
+		//jQuery('#owa-latest-click').slideToggle('normal');
 		//console.log("Clicking: %s", accessor);
 		//this.setStatus("Clicking: "+accessor);
-		this.showNotification(accessor, "Clicked On:")
+		this.setStatus("Click @ "+event.click_x+", "+event.click_y);
+		this.showNotification(accessor, "Clicked On DOM Element:");
+		
 	
 	}
 

@@ -91,6 +91,8 @@ OWA.heatmap.prototype = {
 			jQuery(this).addClass('active');
 		});
 		jQuery('#owa_overlay_end').click(function(){that.endSession()});
+		//eliminate session cookie when window closes.
+		jQuery(window).unload(function() {OWA.endOverlaySession()});
 	},
 	
 	/**
