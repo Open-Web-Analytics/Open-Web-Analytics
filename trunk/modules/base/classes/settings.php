@@ -378,17 +378,30 @@
  	 * @param string $module the name of the module
  	 * @param string $key the configuration key
  	 * @param string $value the configuration value
- 	 * @return 
+ 	 * @depricated 
  	 */
  	function setSetting($module, $key, $value) {
+ 	
+ 		return $this->persistSetting($module, $key, $value);
+ 	
+ 	}
+ 	
+ 	/**
+ 	 * Adds Setting value to be configuration and persistant data store
+ 	 * 
+ 	 * @param string $module the name of the module
+ 	 * @param string $key the configuration key
+ 	 * @param string $value the configuration value
+ 	 * @return 
+ 	 */
+ 	function persistSetting($module, $key, $value) {
  	
  		$this->set($module, $key, $value);
 	 	$this->db_settings[$module][$key] = $value;
 	 	$this->is_dirty = true;
-	 	
-	 	return;
- 	
  	}
+
+ 	
  	
  	/**
  	 * Adds Setting value to be configuration but DOES NOT add to persistant data store
