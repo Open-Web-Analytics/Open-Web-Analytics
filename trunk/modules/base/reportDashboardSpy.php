@@ -88,9 +88,8 @@ class owa_reportDashboardSpyView extends owa_view {
 		
 		$this->body->set_template('report_dashboard_spy.tpl');		
 		
-		//$this->setJs('includes/jquery/jquery.js');
-		$this->setJs('includes/jquery/spy.js');
-		$this->setJs('owa.spy.js');
+		$this->setJs('spy', 'base/js/includes/jquery/spy.js');
+		$this->setJs('owa.spy', 'base/js/owa.spy.js');
 				
 		return;
 	}
