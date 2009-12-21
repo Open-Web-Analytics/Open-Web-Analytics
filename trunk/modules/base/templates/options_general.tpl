@@ -211,25 +211,7 @@
 	
     <BR>
     
-    <fieldset name="owa-error-options" class="options">
-		<legend>Error Logging</legend>
-	
-		<div class="setting" id="error_handler">	
-			<div class="title">Error Logging Mode</div> 
-			<div class="description">Controls the level of detail that OWA will log to its error log file.</div>
-			<div class="field">
-				<select name="<?php echo $this->getNs();?>config[error_handler]">
-	
-					<option value="production" <?php if ($config['error_handler'] == 'production'):?>SELECTED<?php endif;?>>Production (Errors logged to file)</option>
-					<option value="development" <?php if ($config['error_handler'] == 'development'):?>SELECTED<?php endif;?>>Development (Debug and Error messages logged to file)</option>
-				</select>
-			</div>
-		</div>
-	
-	</fieldset>
-	
-	<BR>
-	
+    	
 	<fieldset name="owa-cache-options" class="options">
 		<legend>Object Cache</legend>
 	
