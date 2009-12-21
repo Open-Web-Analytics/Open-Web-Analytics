@@ -490,6 +490,13 @@ OWA.heatmap.prototype = {
 				continue;
 			}
 			
+			if ((data[i].x >= 0) && (data[i].y >= 0)) {
+				OWA.debug("plotting %s %s", data[i].x, data[i].y);				
+			} else {
+				OWA.debug("not getting image data. coordinates %s %s less than zero.", data[i].x, data[i].y);
+				continue;
+			}
+			
 			// get current alpha channel
 			OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
 			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);

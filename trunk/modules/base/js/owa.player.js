@@ -278,15 +278,19 @@ OWA.player.prototype = {
 	
 	clickEventHandler : function(event) {
 	
+		var accessor = '';
+		
 		if (event.dom_element_id != "" || undefined) { 
-			var accessor = '#'+event.dom_element_id; 
+			accessor = '#'+event.dom_element_id;
+			var accessor_msg = accessor;
 		} else if (event.dom_element_name) {
-			var accessor = event.dom_element_tag+"[name="+event.dom_element_name+"]";
+			accessor = event.dom_element_tag+"[name="+event.dom_element_name+"]";
+			var accessor_msg = accessor;
 			//console.log("accessor: %s", accessor); 
 		} else if(event.dom_element_class) {
-			var accessor = event.dom_element_tag+"."+event.dom_element_class;
+			var accessor_msg = event.dom_element_tag+"."+event.dom_element_class;
 		} else {
-			var accessor = event.dom_element_tag;
+			var accessor_msg = event.dom_element_tag;
 		}
 		
 		var d = new Date();
@@ -294,13 +298,16 @@ OWA.player.prototype = {
 		var marker = '<div id="'+id+'" class="owa-click-marker"></div>';
 		jQuery('body').append(marker);
 		jQuery('#'+id).css({'position': 'absolute','left': event.click_x +'px', 'top': event.click_y +'px', 'z-index' : 89});
-		jQuery(accessor).click();
-		jQuery(accessor).focus();
+		
+		if (accessor) {
+			jQuery(accessor).click();
+			jQuery(accessor).focus();
+		}
 		//jQuery('#owa-latest-click').slideToggle('normal');
 		//console.log("Clicking: %s", accessor);
 		//this.setStatus("Clicking: "+accessor);
 		this.setStatus("Click @ "+event.click_x+", "+event.click_y);
-		this.showNotification(accessor, "Clicked On DOM Element:");
+		this.showNotification(accessor_msg, "Clicked On DOM Element:");
 		
 	
 	}
