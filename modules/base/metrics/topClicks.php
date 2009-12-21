@@ -52,7 +52,7 @@ class owa_topClicks extends owa_metric {
 									position");
 		
 		
-		$this->db->orderBy('position', 'DESC');
+		$this->db->orderBy('click_y', 'ASC');
 	}
 	
 	

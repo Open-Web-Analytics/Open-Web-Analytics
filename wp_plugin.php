@@ -91,13 +91,14 @@ function &owa_getInstance($params = array()) {
 		//$owa_config['action_url'] = get_bloginfo('url').'/wp-content/plugins/owa/action.php';
 		$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
 		$owa_config['link_template'] = '%s&%s';
-		//$owa_config['site_id'] = md5(get_settings('siteurl'));
+		$owa_config['site_id'] = md5(get_settings('siteurl'));
 		$owa_config['is_embedded'] = true;
 		$owa_config['delay_first_hit'] = true;
 	
 		$config = array_merge($owa_config, $params);
 		
 		$owa = new owa_wp($config);
+		//print OWA_ERROR_HANDLER;//owa_coreAPI::getSetting('base', 'error_handler');
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();

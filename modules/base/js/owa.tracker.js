@@ -62,10 +62,12 @@ OWA.event.prototype = {
 	
 	merge : function(properties) {
 		
-		for(param in properties) { 
-	       
-			this.set(param, properties[param]);
+		for(param in properties) {
 			
+			if (properties.hasOwnProperty(param)) {
+	       
+				this.set(param, properties[param]);
+			}
 	    }
 
 	}
@@ -332,7 +334,8 @@ OWA.tracker.prototype = {
 	       
 			value = '';
 			
-	  		if (typeof properties[param] != 'undefined') {
+			if (properties.hasOwnProperty(param)) {
+	  		//if (typeof properties[param] != 'undefined') {
     			
     			// check to see if we should base64 encode the properties
     			if (this.getOption('encodeProperties')) {
@@ -660,9 +663,11 @@ OWA.tracker.prototype = {
 			
 			// needed by click handler 
 			this.setOption('trackDomStream', true);	
-			// loop through stream event bindings	
-			for (method in this.streamBindings) {
-				this.callMethod(this.streamBindings[method]);
+			// loop through stream event bindings
+			var len=this.streamBindings.length;
+			for(var i=0; i<len; i++) {	
+			//for (method in this.streamBindings) {
+				this.callMethod(this.streamBindings[i]);
 			}
 			
 			this.registerBeforeNavigateEvent();

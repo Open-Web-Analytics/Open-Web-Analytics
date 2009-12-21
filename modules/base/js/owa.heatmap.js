@@ -45,13 +45,14 @@ OWA.heatmap.prototype = {
 	
 	options: {
 		'dotSize': 8, 
-		'numRegions': 20, 
+		'numRegions': 40, 
 		'alphaIncrement':50, 
 		'demoMode': false, 
 		'liveMode': false, 
 		'mapInterval': 1000,
 		'randomDataCount': 200,
-		'rowsPerFetch': 50
+		'rowsPerFetch': 150,
+		'strokeRegions': false
 	},
 	canvas: null,
 	context: null,
@@ -60,7 +61,7 @@ OWA.heatmap.prototype = {
 	regionsMap: new Array(),
 	regionWidth: null,
 	regionHeight: null,
-	dirtyRegions: new Array(),
+	dirtyRegions: new Object(),
 	timer: '',
 	clicks: '',
 	nextPage: 1,
@@ -71,9 +72,12 @@ OWA.heatmap.prototype = {
 	 * Marks a region as dirty so that it can be re-rendered
 	 */
 	markRegionDirty: function(region_num) {
-		
-		this.dirtyRegions[region_num] = true;
-		//OWA.debug("marking region dirty: %s", region_num);
+		if (region_num >= 0) {
+			this.dirtyRegions[region_num] = true;
+			OWA.debug("marking region dirty: %s", region_num);
+		} else {
+			OWA.debug("no region to mark dirty!");
+		}
 	},
 	
 	showControlPanel: function() {
@@ -265,9 +269,9 @@ OWA.heatmap.prototype = {
 	 * Sets the color of a pixels a region based on their alpha values
 	 */
 	setColor: function(num) {
-		//OWA.debug("About to set color for region %s", num);
+		OWA.debug("About to set color for region %s", num);
 		var dims = this.getRegion(num);
-		//OWA.debug("set color coords %s %s", dims.x, dims.y);
+		OWA.debug("set color coords %s %s", dims.x, dims.y);
 		
 		// get the actual pixel data from the region
 		var canvasData = this.context.getImageData(dims.x, dims.y, this.regionWidth, this.regionHeight);
@@ -337,6 +341,12 @@ OWA.heatmap.prototype = {
 		this.fillRectangle(this.regions[num].x, this.regions[num].y, this.regionWidth, this.regionHeight, "rgba(0,0,0, 0.5)");
 	},
 	
+	strokeRegion: function(num) {
+	
+		this.context.strokeRect(this.regions[num].x, this.regions[num].y, this.regionWidth, this.regionHeight);
+	
+	},
+	
 	/**
 	 * Fills a rectangle with an rgba value
 	 */
@@ -362,26 +372,32 @@ OWA.heatmap.prototype = {
 	/**
 	 * Find the region that a set of coordinates falls into
 	 */
-	findRegion: function(x, y) {		
+	findRegion: function(x, y) {
+		x = parseFloat(x);
+		y = parseFloat(y);		
 		// walk the outer x map in ascending order
-		//OWA.debug("finding region for %s", x,y);
+		OWA.debug("finding region for %s", x,y);
 		for (i in this.regionsMap) {
 			// look for the first value that is greater that or equals to the x coordinate
-			//OWA.debug("regionmap i: %s", i);
-			if (x <= i) {
-				// For that x coordinate walk the inner map in ascending order
-				//OWA.debug("regionmap x chosen: %s", i);		
-				for ( n in this.regionsMap[i]) {
-					// find the first value that is greater than or equals to the y coordinate
-					//OWA.debug("what is this %s", n);	
-					if (y <= n) {
-						// Return the region number
-						//OWA.debug("stopping on regionmap y: %s", n);	
-						//OWA.debug("regionmap y: %s", n);		
-						//OWA.debug("region chosen: %s (i = %s, n = %s)", this.regionsMap[i][n], i , n);
-						return this.regionsMap[i][n];
-					} 
-
+			if (this.regionsMap.hasOwnProperty(i)) {
+				OWA.debug("regionmap i: %s", i);
+				if (x <= i) {
+					// For that x coordinate walk the inner map in ascending order
+					OWA.debug("regionmap x chosen: %s. x was: %s", i, x);		
+					for ( n in this.regionsMap[i]) {
+						// find the first value that is greater than or equals to the y coordinate
+						if (this.regionsMap[i].hasOwnProperty(n)) {
+							//OWA.debug("what is this %s", n);	
+							if (y <= n) {
+								// Return the region number
+								OWA.debug("stopping on regionmap y: %s", n);	
+								OWA.debug("regionmap y: %s", n);		
+								OWA.debug("region chosen: %s (i = %s, n = %s)", this.regionsMap[i][n], i , n);
+								return this.regionsMap[i][n];
+							}
+						}
+	
+					}
 				}
 			} 
 		}
@@ -404,11 +420,11 @@ OWA.heatmap.prototype = {
 		
 		// y loop
 		for (var y = this.regionHeight, n = this.docDimensions.h; y <= n; y+=this.regionHeight) {
-			y = Math.round(y  * 100)/100 -.01;
+			y = Math.round(y  * 100)/100 -.00;
 			OWA.debug("calcregions y value", y);
 			// x loop
 			for (var x = this.regionWidth, nn = this.docDimensions.w; x <= nn; x+=this.regionWidth) {
-				x = Math.round(x * 100)/100 -.01;
+				x = Math.round(x * 100)/100 -.00;
 				// add region
 				this.regions[count] = {'x': x - this.regionWidth, 'y': y - this.regionHeight};
 				//create inner y map
@@ -418,10 +434,15 @@ OWA.heatmap.prototype = {
 				//add region to inner map
 				this.regionsMap[x][y] = count;
 				OWA.debug("adding to map: %s %s %s",x,y,count); 
+				
+				if (this.options.strokeRegions === true) {
+					this.strokeRegion(count);	
+				}
+			
 				count++;		
 			}
 
-			OWA.debug("x Count: %s", this.regions.length);		
+			//OWA.debug("x Count: %s", this.regions.length);		
 		}		
 		
 
@@ -463,14 +484,14 @@ OWA.heatmap.prototype = {
 			
 			
 			if ((data[i].x <= this.docDimensions.w) && (data[i].y <= this.docDimensions.h)) {
-								
+				OWA.debug("plotting %s %s", data[i].x, data[i].y);				
 			} else {
 				OWA.debug("not getting image data. coordinates %s %s are outside the canvas", data[i].x, data[i].y);
 				continue;
 			}
 			
 			// get current alpha channel
-				OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
+			OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
 			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);
 			OWA.debug("canvas data retrieved.");
 			var pix = canvasData.data;
@@ -512,10 +533,12 @@ OWA.heatmap.prototype = {
 	processDirtyRegions: function() {
 	
 		for (i in this.dirtyRegions) {
-			this.setColor(i);
+			if (this.dirtyRegions.hasOwnProperty(i)) {
+				this.setColor(i);
+			}
 		}
 		
-		this.dirtyRegions = Array();
+		this.dirtyRegions = new Array();
 	
 	},
 	

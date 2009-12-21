@@ -94,9 +94,9 @@ OWA.util =  {
 		var nsObj = new Object();
 		
 		for(param in obj) {  // print out the params
-	       
-			nsObj[OWA.config.ns+param] = obj[param];
-			
+	    	if (obj.hasOwnProperty(param)) {
+	    		nsObj[OWA.config.ns+param] = obj[param];
+	    	}
 		}
 		
 		return nsObj;
@@ -189,8 +189,10 @@ OWA.util =  {
 		var keyValues = queryString.split("|||");
 		//alert(keyValues);
 		for (var i in keyValues) {
-			var key = keyValues[i].split("=>");
-			queryAsAssoc[key[0]] = key[1];
+			if (keyValues.hasOwnProperty(i)) {
+				var key = keyValues[i].split("=>");
+				queryAsAssoc[key[0]] = key[1];
+			}
 			//alert(key[0] +"="+ key[1]);
 		}
 		
@@ -203,9 +205,11 @@ OWA.util =  {
 		var keyValues = queryString.split("|||");
 		//alert(keyValues);
 		for (var i in keyValues) {
-			var key = keyValues[i].split("=>");
-			queryAsObj[key[0]] = key[1];
-			//alert(key[0] +"="+ key[1]);
+			if (keyValues.hasOwnProperty(i)) {
+				var key = keyValues[i].split("=>");
+				queryAsObj[key[0]] = key[1];
+				//alert(key[0] +"="+ key[1]);
+			}
 		}
 		//alert (queryAsObj.period);
 		return queryAsObj;
@@ -215,7 +219,9 @@ OWA.util =  {
 		var new_obj = new Object;
 		
 		for(param in obj) {
-			new_obj['owa_'+ param] = obj[param];
+			if (obj.hasOwnProperty(param)) {
+				new_obj['owa_'+ param] = obj[param];
+			}
 		}
 		
 		return new_obj;
