@@ -215,6 +215,12 @@
 			//print $db_settings;
 			// store copy of config for use with updates and set a flag
 			if (!empty($db_settings)):
+				
+				// needed to get rid of legacy setting that used to be stored in the DB.
+				if (in_array('error_handler', $db_settings)) {
+					unset($db_settings['error_handler']);
+				}
+			
 				$this->db_settings = $db_settings;
 				$this->config_from_db = true;
 			endif;
