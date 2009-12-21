@@ -123,7 +123,7 @@ class owa_caller extends owa_base {
 		$this->e->debug('Caller configuration overrides applied.');
 		
 		/* SET ERROR HANDLER */
-		//$this->c->set('base', 'error_handler', 'development');
+
 		// Sets the correct mode of the error logger now that final config values are in place
 		// This will flush buffered msgs that were thrown up untill this point
 		$this->e->setHandler($this->c->get('base', 'error_handler'));

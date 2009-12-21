@@ -98,7 +98,6 @@ function &owa_getInstance($params = array()) {
 		$config = array_merge($owa_config, $params);
 		
 		$owa = new owa_wp($config);
-		//print OWA_ERROR_HANDLER;//owa_coreAPI::getSetting('base', 'error_handler');
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();
