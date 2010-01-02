@@ -605,6 +605,21 @@ class owa_event {
 		return $this->setProperties(owa_lib::inputFilter($this->getProperties()));
 	}
 	
+	function setPageTitle($value) {
+		
+		$this->set('page_title', $value);
+	}
+	
+	function setSiteId($value) {
+		
+		$this->set('site_id', $value);
+	}
+	
+	function setPageType($value) {
+		
+		$this->set('page_type', $value);
+	}
+	
 		
 }
 
