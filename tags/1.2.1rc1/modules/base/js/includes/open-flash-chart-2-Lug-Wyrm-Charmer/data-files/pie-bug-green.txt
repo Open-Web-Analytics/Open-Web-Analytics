@@ -1,0 +1,74 @@
+{
+    "bg_colour": "#ffffff", 
+    "elements": [
+        {
+            "alpha": 0.5,
+			"animate":[{"type":"bounce","distance":5},{"type":"fade"}],
+            "border": 2, 
+            "colours": [
+                "#0247fe", 
+                "#3d01a4", 
+                "#8601af", 
+                "#a7194b", 
+                "#fe2712", 
+                "#fd5308", 
+                "#fb9902", 
+                "#fabc02", 
+                "#fefe33", 
+                "#d0ea2b", 
+                "#66b032", 
+                "#0392ce"
+            ], 
+            "label-colour": "#432baf", 
+            "start-angle": 0, 
+            "tip": "#val# of #total#<br>#percent# of 100%", 
+            "type": "pie", 
+            "values": [
+                {
+                    "label": "New Zealand", 
+                    "value": 52236
+                }, 
+                {
+                    "label": "Vodafone Mobile", 
+                    "value": 9560
+                }, 
+                {
+                    "label": "Airedale Street", 
+                    "value": 6367
+                }, 
+                {
+                    "label": "Ellerslie", 
+                    "value": 5870
+                }, 
+                {
+                    "label": "Auckland LICA", 
+                    "value": 2627
+                }, 
+                {
+                    "label": "Manukau City", 
+                    "value": 2360
+                }, 
+                {
+                    "label": "Telecom Mobile", 
+                    "value": 2068
+                }, 
+                {
+                    "label": "Remuera", 
+                    "value": 1747
+                }, 
+                {
+                    "label": "Henderson", 
+                    "value": 1231
+                }, 
+                {
+                    "label": "East Tamaki / Otara", 
+                    "value": 1187
+                }
+            ]
+        }
+    ], 
+    "title": {
+        "style": "{color: #888888; font-size: 16; text-align: center}", 
+        "text": "Top 10 Caller Locations by OGA"
+    }
+}

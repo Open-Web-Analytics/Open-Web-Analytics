@@ -1,0 +1,44 @@
+{
+
+  "title":{
+    "text":"Test stacked bar charts",
+    "style":"{font-size:16px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar_stack",
+      "colours":   ["#FF0000","#0000FF"],
+      "keys": [
+        {"colour":"#FFB900", "text": "Key 1", "font-size": 10},
+        {"colour":"#FFB9F0", "text": "Key 2", "font-size": 16}
+      ],
+      "ti--p":       "#total#<br>(bar total)",
+      "values": [
+        [2.5,{"val":5}],
+        [{"val":2.5},{"val":5},{"val":2.5}],
+        null,
+        [{"val":5},{"val":5},{"val":2},{"val":2},{"val":2,"colour":"#ff00ff","tip":"hello"},{"val":2},{"val":2}]
+        ]
+    },
+    {
+      "type":      "bar",
+      "colour":    "#9933CC",
+      "text":      "Bar",
+      "font-size": 10,
+      "values" :   [9,6,7,9]
+    }
+  ],
+
+  "x_axis":{
+    "labels": {
+      "labels": ["January","February","March","April"]
+    },
+    "stroke": 12,
+    "tick-height": 6
+  },
+
+  "y_axis":{
+    "max": 20
+  }
+}

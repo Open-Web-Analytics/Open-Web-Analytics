@@ -1,0 +1,40 @@
+{
+  "title":{
+    "text":"Area Chart",
+    "style":"{font-size: 30px;}"
+  },
+
+  "elements":[
+    {
+      "type":       "line",
+      "colour":     "#CC3399",
+      "values" :    [2,2],
+      "axis":       "right"
+    },
+{
+      "type":      "line",
+      "colour":     "#736AFF",
+      "line-style": {"style":"dash","on":10,"off":5},
+      "values" :    [3,3],
+      "axis":       "right"
+    },
+    {
+      "type":      "line",
+      "values" :   [4,4] ,
+      "axis":      "right"
+    }
+  ],
+
+  "y_axis":{
+    "max":           4,
+    "grid-visible":  true,
+    "grid-colour":   "#FFD0D0"
+  },
+
+  "y_axis_right":{    
+    "max":           5,
+    "grid-visible":  true,
+    "grid-colour":   "#D0D0FF"
+  }
+
+}

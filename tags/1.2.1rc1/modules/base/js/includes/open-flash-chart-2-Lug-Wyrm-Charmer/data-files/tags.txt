@@ -1,0 +1,150 @@
+{
+  "title":{
+    "text":  "Bars on Left Axis and Line on Right Axis",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+	{
+	  "type":"tags",
+	  "font":"Verdana",
+	  "font-size":10,
+	  "colour":"#000000",
+	  "pad-x":0,
+	  "pad-y":0,
+	  "rotate":0,
+	  "align-x":"center",
+	  "align-y":"above",
+	  "text":"$#y#",
+	  "values":[
+	            {"x":0,"y":9},
+	            {"x":1,"y":6, "align-y":"below"},
+	            {"x":2,"y":7},
+	            {"x":3,"y":9},
+	            {"x":4,"y":5},
+	            {"x":5,"y":7, "font":"Arial", "bold":true},
+	            {"x":6,"y":6},
+	            {"x":7,"y":9},
+
+				{"x":1,"y":13, "colour":"#0000F0", "underline": true,
+				 "text":"<a href=\"http://moo.com\">Click</a>", "on-cl--ick":"http://www.google.com"
+				},
+				 
+				{"x":1,"y":12.2, "colour":"#0000F0", "underline": true,
+				 "text":"<a href=\"#\">Call JS</a>", "on-click":"trace:farts"
+				},
+				
+				/* And one using the right axis just because we can */
+	            {"x":2,"y":78,"axis":"right", "pad-y":16, "font-size":20,
+				 "colour":"#00BB00","font":"Arial Black", "rotate":0,
+				 "text":"Click Tag to\nGoogle!!", "on-click":"http://www.google.com"
+				 }
+				 
+			]
+	},
+	{
+		"type":		"arrow",
+		"start":	{"x":2,"y":5},
+		"end":		{"x":4,"y":7},
+		"barb-length":	10,
+		"colour":	"#ff00ff"
+	},
+    {
+      "type":      "bar_glass",
+      "alpha":     0.5,
+      "colour":    "#9933CC",
+      "text--":      "Page views",
+	  "alpha":	0.6,
+      "font-size--": 10,
+      "values" :   [9,6,7,9,5,{"top":7,"colour":"#FF0000", "tip": "Mooo<br>#val#"},
+					6,9,{"top":7, "tip":"click to google<br>#val#", "on-click":"http://www.google.com"}]
+    },
+    {
+      "type":      "line_hollow",
+      "colour":    "#736AFF",
+      "text":      "Avg. wave height (cm)",
+      "font-size": 10,
+	  "axis": "right",
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "values" :   [
+        60,64,
+        {"value":78, "colour":"#FF0000", "tip":"Override<br>#val#", "dot-size":12, "halo-size": 3 },
+        58,50,41,41,36, 32 ]
+    },
+	
+	// Moved this tag to be last in "elements" so it shows up 
+	// on top of the bars instead of under it
+	{
+	  "type":"tags",
+	  "font":"Verdana",
+	  "font-size":10,
+	  "colour":"#000000",
+	  "pad-x":0,
+	  "pad-y":0,
+	  "rotate":0,
+	  "align-x":"center",
+	  "align-y":"above",
+	  "text":"$#y#",
+	  "values":[
+	            {"x":8,"y":0.5, "rotate":270, "font-size":12,
+	            "text":"click bar to\ngo to google" },
+				 
+	            {"x":6,"y":80, "rotate":45, "font-size":14,
+	            "text":"45 degrees\n(not aligned yet)", 
+	            "axis":"right", "background":"#AA99", "border":true }
+			]
+	}
+	
+  ],
+
+	"tooltip":{
+		"mouse": 0
+	},
+
+  "x_axis":{
+    "stroke":       1,
+    "tick_height":  10,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "labels": {
+      "labels": [
+		"January\n2008","February\n2008","March\n2008","April\n2008",
+		"May\n2008","June\n2008","July\n2008","August\n2008","September\n2008"]
+    }
+   },
+
+  "y_axis":{
+    "stroke":      4,
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "offset":      0,
+    "max":         20,
+	"steps":       4
+  },
+
+  "y_axis_right":{
+    "stroke":      4,
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+	"grid_visible": true,
+    "offset":      0,
+	"steps":       20,
+    "max":         100,
+	"min": 0
+  },
+
+  "tooltip":{
+    "text": "My Tip<br>val=#val#, top=#top#"
+  }
+
+}
+

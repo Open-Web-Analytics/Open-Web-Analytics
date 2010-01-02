@@ -1,0 +1,128 @@
+{
+
+  "title":{
+    "text":"Scatter Line with Area Fill",
+    "style":"{font-size: 24px; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }"
+  },
+  "num_decimals":3,
+
+  "elements":[
+    {
+      "type":      "scatter_line",
+      "colour":	   "#d01f3c",
+      "alpha":     0.6,
+      "border":    2,
+      "animate":   0,
+	  "width":     3,
+	  "line-style": { "style":"dash", "off":2 },
+	  "text":      "Area base is line Y=0",
+	  "tip":       "[#x#,#y#] #size#\nArea base is line Y=0",
+	  "line-style": { "style":"solid", "off":2 },
+	  "area-style": { "colour":"#b0101c", "y":0},
+	  "values" :   [
+					{"x": -50, "y": 80 },
+					{"x": -20, "y": 20 },
+					{"x": 0, "y": -40 },
+					{"x": 20, "y": 20 },
+					{"x": 50, "y": 80 }
+					]
+    },
+    {
+      "type":      "scatter_line",
+      "colour":    "#356aa0",
+      "animate":   0,
+	  "dot-size":  3,
+	  "text":      "Area base is line X=-80",
+	  "tip":       "[#x#,#y#] #size#\nArea base is line X=-80",
+	  "line-style": { "style":"solid", "off":2 },
+	  "area-style": { "colour":"#104a80", "alpha":0.5, "x":-80},
+	  "values" :   [
+					{"x": -90, "y": -80 },
+					{"x": -85, "y": -20 },
+					{"x": -80, "y": 0 },
+					{"x": -75, "y": 20 },
+					{"x": -70, "y": 80 }
+					]
+    },
+    {
+      "type":      "scatter_line",
+      "colour":    "#C79810",
+      "animate":   0,
+	  "dot-size":  3,
+	  "text":      "Area base is point (80,-60)",
+	  "tip":       "[#x#,#y#] #size#\nArea base is point (80,-60)",
+	  "line-style": { "style":"solid", "off":2 },
+	  "area-style": { "colour":"#A7780c", "x":80, "y":-60},
+	  "values" :   [
+					{"x": 70, "y": -50 },
+					{"x": 75, "y": -45 },
+					{"x": 85, "y": -45 },
+					{"x": 90, "y": -50 },
+					{"x": 90, "y": -70 },
+					{"x": 85, "y": -65 },
+					{"x": 75, "y": -65 },
+					{"x": 70, "y": -70 },
+					{"x": 70, "y": -50 }
+					]
+    },
+    {
+      "type":      "scatter_line",
+      "colour":	   "#1fd03c",
+      "animate":   0,
+	  "dot-size":  3,
+	  "halo-size": 1,
+	  "text":      "Area base is line Y=-90 with gaps",
+	  "tip":       "[#x#,#y#] #size#\nArea base is line Y=-90 with gaps",
+	  "line-style": { "style":"solid", "off":2 },
+	  "area-style": { "colour":"#10b01c", "y":-90},
+	  "values" :   [
+					{"x": -60, "y": -80 },
+					{"x": -40, "y": -85 },
+					{"x": null, "y": null },   // Create a gap in the chart
+					{"x": -30, "y": -85 },
+					{"x": -10, "y": -80 }
+					]
+    },
+    {
+      "type":      "scatter_line",
+      "colour":	   "#d03c1f",
+      "animate":   0,
+	  "dot-size":  3,
+	  "halo-size": 1,
+	  "text":      "Area base is point (80,50) with gaps",
+	  "tip":       "[#x#,#y#] #size#\nArea base is point (80,50) with gaps",
+	  "line-style": { "style":"solid", "off":2 },
+	  "area-style": { "colour":"#10b01c", "x":80, "y":50},
+	  "values" :   [
+					{"x": 70, "y": 80 },
+					{"x": 90, "y": 80 },
+					{"x": null, "y": null },   // Create a gap in the chart
+					{"x": 100, "y": 60 },
+					{"x": 100, "y": 40 },
+					{"x": null, "y": null },   // Create a gap in the chart
+					{"x": 90, "y": 20 },
+					{"x": 70, "y": 20 },
+					{"x": null, "y": null },   // Create a gap in the chart
+					{"x": 60, "y": 40 },
+					{"x": 60, "y": 60 }
+					]
+    }
+  ],
+  
+  "x_axis": {
+    "min":    -100,
+    "max":    100,
+    "offset": 0,
+	"steps" : 10,
+	"3d" : 0,
+	"labels": { "rotate" : -30, "size": 10 }
+  },
+  
+  "y_axis": {
+    "min":    -100,
+    "max":    100,
+	"stroke": 2,
+	"steps" : 10,
+    "offset": 0
+  }
+}

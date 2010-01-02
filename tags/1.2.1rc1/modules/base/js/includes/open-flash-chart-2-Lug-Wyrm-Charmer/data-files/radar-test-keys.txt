@@ -1,0 +1,44 @@
+{
+  "title":{
+    "text":"Radar: key 2 disabled",
+    "style":"{font-size: 20px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "line_hollow",
+      "colour":    "#736AFF",
+      "text":      "Key 1",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "loop":      true,
+      "values" :   [4,4,4,4,4,4,4]
+    },
+    {
+      "type":      "line_hollow",
+      "colour":    "#0000FF",
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "loop":      true,
+      "values" :   [8,8,8,8,8,8,8]
+    },
+    {
+      "type":      "line_dot",
+      "colour":    "#6AFF73",
+      "text":      "Key 3",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "loop":      true,
+      "values" :   [14,14,14,14,14,14,14]
+    }
+  ],
+
+  "radar_axis": {
+    "max": 20
+  }
+}
