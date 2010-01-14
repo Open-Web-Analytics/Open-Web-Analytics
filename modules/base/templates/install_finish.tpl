@@ -13,7 +13,7 @@
 	</p>
 	<BR>
 	<p>		
-		<a href="<?php echo $this->makeLink(array("action" => "base.sitesInvocation", "site_id" => $site_id), false, owa_coreAPI::getSetting('base','public_url'));?>">
+		<a href="<?php echo $this->makeLink(array("action" => "base.sitesInvocation", "site_id" => $site_id), false, owa_coreAPI::getSetting('base','public_url'));?>" target="_blank">
 			<span class="owa-button">Login and generate a site tracker!</span>
 		</a>	
 	</p>	
