@@ -14,7 +14,7 @@
 	<TR>
 		<TD valign="top" id="nav_left">
 		
-			<? foreach ($panels as $group => $items):?>
+			<?php foreach ($panels as $group => $items):?>
 			
 				<H4><?php echo $group;?></H4>
 					<UL>
