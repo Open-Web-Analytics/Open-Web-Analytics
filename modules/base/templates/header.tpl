@@ -10,9 +10,9 @@
 						<LI><a href="<?php echo $this->makeLink(array('do' => 'base.optionsGeneral'));?>">Settings</a></LI>
 						<LI><a href="http://wiki.openwebanalytics.com">Help</a></LI>
 						<LI><a href="http://trac.openwebanalytics.com">Report a Bug</a></LI>
-						<? if ($this->config['is_embedded'] == false):?>
+						<?php if ($this->config['is_embedded'] == false):?>
 						<LI>
-							<? if (owa_coreAPI::isCurrentUserAuthenticated()):?>
+							<?php if (owa_coreAPI::isCurrentUserAuthenticated()):?>
 							<a href="<?php echo $this->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
 							<?php else:?>
 							<a href="<?php echo $this->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
