@@ -1117,7 +1117,7 @@ class owa_coreAPI extends owa_base {
 				$action = owa_coreAPI::getRequestParam('do');
 				
 				if (empty($action)) {
-					$action = owa_coreAPI::getSetting('base', 'default_action');
+					$action = owa_coreAPI::getSetting('base', 'start_page');
 				}	
 			}
 		}

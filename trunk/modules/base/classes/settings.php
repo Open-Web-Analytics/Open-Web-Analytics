@@ -59,14 +59,16 @@
  	
  	function __construct() {
  	
- 		// include/load config file
- 		$this->loadConfigFile();
  		// create configuration object
  		$this->config = owa_coreAPI::rawEntityFactory('base.configuration');
  		// load the default settings
  		$this->getDefaultConfig();
+ 		// include/load config file
+ 		$this->loadConfigFile();
  		// apply config constants
  		$this->applyConfigConstants();
+ 		// setup directory paths
+ 		$this->setupPaths();
  		
  		// set default timezone
 		if (function_exists('date_default_timezone_set')) {
@@ -169,6 +171,14 @@
 		
 		if (defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')) {
 			$this->set('base', 'do_not_fetch_config_from_db', OWA_CONFIG_DO_NOT_FETCH_FROM_DB);
+		}
+		
+		if (defined('OWA_PUBLIC_URL')) {
+			$this->set('base', 'public_url', OWA_PUBLIC_URL);
+		}
+		
+		if (defined('OWA_PUBLIC_PATH')) {
+			$this->set('base', 'public_path', OWA_PUBLIC_PATH);
 		}
 		
  	}
@@ -525,12 +535,14 @@
 			'templates_dir'					=> OWA_BASE_DIR . '/templates/',
 			'plugin_dir'					=> OWA_BASE_DIR . '/plugins/',
 			'module_dir'					=> OWA_BASE_DIR . '/modules',
+			'public_path'					=> '',
 			'geolocation_lookup'            => true,
 			'geolocation_service'			=> 'hostip',
 			'report_wrapper'				=> 'wrapper_default.tpl',
 			'do_not_fetch_config_from_db'	=> false,
 			'announce_visitors'				=> false,
 			'public_url'					=> '',
+			'base_url'						=> '',
 			'action_url'					=> '',
 			'images_url'					=> '',
 			'reporting_url'					=> '',
@@ -574,63 +586,73 @@
 			'start_page'					=> 'base.reportDashboard',
 			'default_action'				=> 'base.loginForm',
 			'capabilities'					=> array('admin' => array('view_reports', 
-																			  'edit_settings', 
-																			  'edit_sites', 
-																			  'edit_users', 
-																			  'edit_modules'),
+																	  'edit_settings', 
+																	  'edit_sites', 
+																	  'edit_users', 
+																	  'edit_modules'),
 													 'analyst' => array('view_reports'), 
 													 'viewer' => array('view_reports'), 
 													 'everyone' => array())
 			
 			));
 			
-			$base_url  = "http";
-		
-			if(isset($_SERVER['HTTPS'])):
-				$base_url .= 's';
-			endif;
-						
-			$base_url .= '://'.$_SERVER['SERVER_NAME'];
-				
-			if($_SERVER['SERVER_PORT'] != 80):
-				$base_url .= ':'.$_SERVER['SERVER_PORT'];
-			endif;
-			
-			if (!defined('OWA_PUBLIC_URL')) {
-				define('OWA_PUBLIC_URL', '');
-			}
-			
-			$config['base']['base_url'] = $base_url;					
-			$config['base']['public_url'] = OWA_PUBLIC_URL;
-			
-			if (defined('OWA_PUBLIC_PATH')):
-				$config['base']['public_path'] = OWA_PUBLIC_PATH;
-			else:
-				$config['base']['public_path'] = OWA_PATH.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR;
-			endif;
-			
-			$config['base']['main_url'] = OWA_PUBLIC_URL.'index.php';
-			$config['base']['main_absolute_url'] = $config['base']['main_url'];
-			$config['base']['modules_url'] = OWA_PUBLIC_URL.'modules'.DIRECTORY_SEPARATOR;
-			$config['base']['action_url'] = OWA_PUBLIC_URL.'action.php';;
-			$config['base']['images_url'] =  $config['base']['modules_url'];
-			$config['base']['images_absolute_url'] = $config['base']['modules_url'];
-			$config['base']['log_url'] = OWA_PUBLIC_URL.'log.php';
-			
-			
-			// Set cookie domain
-			if (!empty($_SERVER['HTTP_HOST'])):
-				$config['base']['cookie_domain'] = $_SERVER['HTTP_HOST'];
-			else:		
-				$config['base']['cookie_domain'] = $_SERVER['SERVER_NAME'];
-			endif;
-			
-			
 			// set default values
 			$this->config->set('settings', $config);
 			
 			
 			return;
+ 		
+ 	}
+ 	
+ 	function setupPaths() {
+ 		
+ 		//build base url
+ 		$base_url  = "http";
+		
+		if(isset($_SERVER['HTTPS'])) {
+			$base_url .= 's';
+		}
+					
+		$base_url .= '://'.$_SERVER['SERVER_NAME'];
+			
+		if($_SERVER['SERVER_PORT'] != 80) {
+			$base_url .= ':'.$_SERVER['SERVER_PORT'];
+		}
+		
+		// there is some plugin use case where this is needed i think. if not get rid of it.
+		if (!defined('OWA_PUBLIC_URL')) {
+			define('OWA_PUBLIC_URL', '');
+		}
+		
+		// set base url
+		$this->set('base', 'base_url', $base_url);					
+		
+		//set public path if not defined in config file
+		$public_path = $this->get('base', 'public_path');
+		
+		if (empty($public_path)) {
+			$public_path = OWA_PATH.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR;
+			$this->set('base','public_path', $public_path); 
+		}
+		
+		// set various paths
+		$public_url = $this->get('base', 'public_url');
+		$main_url = $public_url.'index.php';
+		$this->set('base','main_url', $main_url);
+		$this->set('base','main_absolute_url', $main_url);
+		$modules_url = $public_url.'modules'.DIRECTORY_SEPARATOR;
+		$this->set('base','modules_url', $modules_url);
+		$this->set('base','action_url',$public_url.'action.php');
+		$this->set('base','images_url', $modules_url);
+		$this->set('base','images_absolute_url',$modules_url);
+		$this->set('base','log_url',$public_url.'log.php');
+		
+		// Set cookie domain
+		if (!empty($_SERVER['HTTP_HOST'])) {
+			$this->set('base','cookie_domain', $_SERVER['HTTP_HOST']);
+		} else {		
+			$this->set('base','cookie_domain', $_SERVER['SERVER_NAME']);
+		}
  		
  	}
  	
