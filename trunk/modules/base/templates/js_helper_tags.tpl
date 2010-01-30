@@ -10,4 +10,4 @@ document.write('<img src="<?php echo $this->makeAbsolutelink(array('action' => '
 
 <?php endif;?>
 
-<?php include('js_log_tag.tpl'); ?>
+<?php include($this->getTemplatePath('base','js_log_tag.tpl')); ?>

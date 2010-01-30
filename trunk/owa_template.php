@@ -93,9 +93,41 @@ class owa_template extends Template {
 		return;
 	}
 	
+	function getTemplatePath($module, $file) {
+	
+		$this->_setTemplateDir($module);
+	
+		if ($file == null) {
+			owa_coreAPI::error('No template file was specified.');
+			return false;
+		} else {
+			// check module's local modification template Directory
+			if (file_exists($this->module_local_template_dir.$file)) {
+				$fullfile = $this->module_local_template_dir.$file;
+				
+			// check theme's template Directory
+			} elseif(file_exists($this->theme_template_dir.$file)) {
+				$fullfile = $this->theme_template_dir.$file;
+				
+			// check module's template directory
+			} elseif(file_exists($this->module_template_dir.$file)) {
+				$fullfile = $this->module_template_dir.$file;
+			
+			// throw error
+			} else {
+				$this->e->err(sprintf('%s was not found in any template directory.', $file));
+				return false;
+			}
+        	return $fullfile;
+        }
+
+		
+		
+	}
+	
 	/**
      * Set the template file
-     *
+     * @depricated
      * @param string $file
      */
 	function set_template($file = null) {
@@ -124,6 +156,16 @@ class owa_template extends Template {
         
         	return true;
         endif;
+    }
+    
+    function setTemplateFile($module, $file) {
+    	
+    	//choose file
+    	$filepath = $this->getTemplatePath($module, $file);
+    	//set template
+    	if ($filepath) {
+    		$this->file = $filepath;  		
+    	}
     }
 	
 	/**

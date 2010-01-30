@@ -294,6 +294,7 @@ class owa_caller extends owa_base {
 		$total_time = $this->end_time - $this->start_time;
 		$this->e->debug(sprintf('Total session time: %s',$total_time));
 		$this->e->debug("goodbye from OWA");
+		owa_coreAPI::profileDisplay();
 		
 		return;
 	}

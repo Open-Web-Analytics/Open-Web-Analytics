@@ -5,6 +5,7 @@
 	
 		<textarea cols="75" rows="18">
 				
+
 <?php include('js_log_tag.tpl');?>
 				
 		</textarea>

@@ -811,15 +811,19 @@ class owa_coreAPI extends owa_base {
 	
 		// do not log if the request is robotic
 		$service = &owa_coreAPI::serviceSingleton();
-		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $service->request->getServerParam('HTTP_USER_AGENT'));
-		
+		$bcap = $service->getBrowscap();
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		if (!owa_coreAPI::getSetting('base', 'log_robots')) {
+			
 			if ($bcap->robotCheck()) {
 				owa_coreAPI::debug("ABORTING: request appears to be from a robot");
 				owa_coreAPI::setRequestParam('is_robot', true);
 				return;
 			}
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		}
+		
+		$service->setBrowscap($bcap);
 		
 		// form event if one was not passed
 		
@@ -1140,6 +1144,38 @@ class owa_coreAPI extends owa_base {
 		$db->selectFrom('owa_site');
 		$db->selectColumn('*');
 		return $db->getAllRows();
+		
+	}
+	
+	function profile($that = '', $function = '', $line = '', $msg = '') {
+	
+		if (defined('OWA_PROFILER')) {
+			if (OWA_PROFILER === true) {
+			
+				static $profiler;
+						
+				if (!class_exists('PhpQuickProfiler')) {
+					require_once(OWA_INCLUDE_DIR.'pqp/classes/PhpQuickProfiler.php');
+				}
+				
+				if (empty($profiler)) {
+					$profiler = new PhpQuickProfiler(PhpQuickProfiler::getMicroTime(), OWA_INCLUDE_DIR.'pqp/');
+				}
+				
+				$class = get_class($that);
+				Console::logSpeed($class."::$function - Line: $line - Msg: $msg");
+				Console::logMemory($that, $class. "::$function - Line: $line");
+				
+				return $profiler;
+			}
+		}
+	}
+	
+	function profileDisplay() {
+		$p = owa_coreAPI::profile();
+		if ($p) {
+			$p->display();
+		}
 		
 	}
 	

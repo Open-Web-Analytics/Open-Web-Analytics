@@ -43,6 +43,7 @@ class owa_service extends owa_base {
 	var $modules = array();
 	var $entities = array();
 	var $metrics = array();
+	var $browscap;
 	
 	function owa_service() {
 		
@@ -50,7 +51,7 @@ class owa_service extends owa_base {
 	}
 	
 	function __construct() {
-		
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		// setup request container
 		$this->request = owa_coreAPI::requestContainerSingleton();
 		// setup settings
@@ -64,6 +65,10 @@ class owa_service extends owa_base {
 		return;
 	}
 	
+	function __destruct() {
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+	}
+	
 	function initializeFramework() {
 		
 		if (!$this->isInit()) {
@@ -74,6 +79,20 @@ class owa_service extends owa_base {
 		}
 		
 		return;
+	}
+	
+	function setBrowscap($b) {
+		
+		$this->browscap = $b;
+	}
+	
+	function getBrowscap() {
+		
+		if (empty($this->browscap)) {
+			$this->browscap = owa_coreAPI::supportClassFactory('base', 'browscap', $this->request->getServerParam('HTTP_USER_AGENT'));
+		}
+	
+		return $this->browscap;
 	}
 	
 	function _loadModules() {

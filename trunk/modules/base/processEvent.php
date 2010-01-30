@@ -146,8 +146,8 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		// Browser related properties
-		
-		$bcap = owa_coreAPI::supportClassFactory('base', 'browscap', $this->event->get('HTTP_USER_AGENT'));
+		$service = owa_coreAPI::serviceSingleton();
+		$bcap = $service->getBrowscap();
 		$this->event->set('browser_type', $bcap->get('Browser'));
 		$this->event->set('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version'));
 		

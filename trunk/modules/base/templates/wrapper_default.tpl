@@ -5,15 +5,15 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
 		<title>Open Web Analytics - <?php echo $page_title;?></title>
-		<?php include($this->setTemplate('head.tpl'));?>
-		<?php include($this->setTemplate('css.tpl'));?>
+		<?php include($this->getTemplatePath('base','head.tpl'));?>
+		<?php include($this->getTemplatePath('base','css.tpl'));?>
 	</head>
 	
 	<body>
 	
-		<?php include($this->setTemplate('header.tpl'));?>
+		<?php include($this->getTemplatePath('base', 'header.tpl'));?>
 		
-		<?php include($this->setTemplate('msgs.tpl'));?>
+		<?php include($this->getTemplatePath('base', 'msgs.tpl'));?>
 			
 		<?php echo $body;?>
 	
