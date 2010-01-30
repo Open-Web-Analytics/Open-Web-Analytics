@@ -575,7 +575,7 @@
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
-			'cache_objects'					=> false,
+			'cache_objects'					=> true,
 			'log_named_users'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,

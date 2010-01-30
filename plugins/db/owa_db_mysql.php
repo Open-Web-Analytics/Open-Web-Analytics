@@ -81,10 +81,18 @@ class owa_db_mysql extends owa_db {
 	 * @access public
 	 */
 	function owa_db_mysql() {
+
+		return owa_db_mysql::__construct();
+	}
 	
-		$this->owa_db();
+	function __construct() {
 		
-		return;
+		return parent::__construct();
+	}
+	
+	function __destruct() {
+		
+		$this->close();
 	}
 	
 	function connect() {
@@ -121,10 +129,12 @@ class owa_db_mysql extends owa_db {
 	function query($sql) {
   
   		if ($this->connection_status == false):
+  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
   			$this->connect();
+  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
   		endif;
   
-  
+  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->e->debug(sprintf('Query: %s', $sql));
 		
 		$this->result = '';
@@ -133,9 +143,9 @@ class owa_db_mysql extends owa_db {
 		if (!empty($this->new_result)):
 			mysql_free_result($this->new_result);
 		endif;
-		
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 		$result = @mysql_unbuffered_query($sql, $this->connection);
-					
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);			
 		// Log Errors
 		if (mysql_errno($this->connection)):
 			$this->e->debug(sprintf('A MySQL error occured. Error: (%s) %s. Query: %s',
@@ -143,7 +153,7 @@ class owa_db_mysql extends owa_db {
 			htmlspecialchars(mysql_error($this->connection)),
 			$sql));
 		endif;			
-		
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->new_result = $result;
 		
 		return $this->new_result;

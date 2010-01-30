@@ -61,8 +61,12 @@ class owa_browscap extends owa_base {
 	
 	function owa_browscap($ua = '') {
 		
-		$this->owa_base();
+		return owa_browscap::__construct($ua);
+	}
+	
+	function __construct($ua = '') {
 		
+		parent::__construct();
 		// set user agent
 		$this->ua = $ua;
 		
@@ -74,36 +78,38 @@ class owa_browscap extends owa_base {
 		$this->browser = $this->lookup($this->ua);
 		$this->e->debug('Browser Name : '. $this->browser->Browser);
 		
-		return;
 	}
 	
 	function robotCheck() {
 		
-		if ($this->browser->Crawler == true):
+		if ($this->browser->Crawler === true) {
 			$robot = true;
-		else:
-			if($this->robotRegexCheck() === true):
+		} elseif ($this->browser->Browser === "Default Browser") {
+			if($this->robotRegexCheck() === true) {
 				$robot = true;
-			else:
+			} else {
 				$robot = false;
-			endif;
-		endif;
+			}
+		} else {
+			$robot = false;
+		}
 		owa_coreAPI::debug('Browscap Robot Check: '. $robot);
 		return $robot;
 	}
 	
 	function lookup($user_agent) {
 		
-		if ($this->config['cache_objects'] == true):
+		if (owa_coreAPI::getSetting('base','cache_objects') === true) {
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 			$cache_obj = $this->cache->get('browscap', $this->ua);
-		endif;
-			
-		if (!empty($cache_obj)):
+		}
 		
+		if (!empty($cache_obj)):
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 			return $cache_obj;
 					
 		else:
-		
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 			// lookup from DB
 			
 			//$ua = owa_coreAPI::entityFactory('base.ua');

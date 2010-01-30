@@ -137,9 +137,12 @@ class owa_db extends owa_base {
 	 */
 	function owa_db() {
 	
-		$this->owa_base();
+		return owa_db::__construct();
+	}
+	
+	function __construct() {
 		
-		return;
+		return parent::__construct();
 	}
 
 	/**
@@ -381,7 +384,7 @@ class owa_db extends owa_base {
 	}
 	
 	function _insertQuery() {
-	
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$params = $this->_fetchSqlParams('set_values');
 		
 		$count = count($params);
@@ -406,10 +409,12 @@ class owa_db extends owa_base {
 						
 			endif;	
 		}
-		
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->_setSql(sprintf(OWA_SQL_INSERT_ROW, $this->_sqlParams['table'], $sql_cols, $sql_values));
-		
-		return $this->_query();	
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+		$ret = $this->_query();	
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+		return $ret;
 	
 	}
 	
