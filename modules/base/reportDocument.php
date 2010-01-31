@@ -51,7 +51,7 @@ class owa_reportDocumentController extends owa_reportController {
 		$r->setPeriod($period);
 		$r->setConstraint('site_id', $this->getParam('site_id')); 
 		$r->setConstraint('document_id', $this->getParam('document_id')); 
-		$r->setOrder('DESC');
+		$r->setOrder('ASC');
 		$core_metrics_data =  $r->generate();
 		$this->set('core_metrics_data', $core_metrics_data);
 		
@@ -78,6 +78,7 @@ class owa_reportDocumentController extends owa_reportController {
 				
 		// trend chart
 		$series = owa_lib::deconstruct_assoc($core_metrics_data);
+		//print_r($series);
 		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
 		$cd->setSeries('x', owa_lib::makeDateArray($core_metrics_data, "n/j"), 'Day');
 		$cd->setSeries('area', $series['page_views'], 'Page Views');

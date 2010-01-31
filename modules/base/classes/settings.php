@@ -254,7 +254,9 @@
 					endif;
 				}
 				
-				$this->config->set('settings', $new_config);	
+				$this->config->set('settings', $new_config);
+				
+				$this->applyConfigConstants();	
 				
 			endif;
 			
