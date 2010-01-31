@@ -49,9 +49,10 @@ class owa_moduleDeactivateController extends owa_adminController {
 
 	function action() {
 		
-		$api = &owa_coreAPI::singleton();
+		$s = &owa_coreAPI::serviceSingleton();
 		
-		$api->modules[$this->params['module']]->deactivate();
+		$m = $s->getModule($this->params['module']);
+		$m->deactivate();
 		
 		$data['do'] = 'base.optionsModules';
 		$data['view_method'] = 'redirect';
