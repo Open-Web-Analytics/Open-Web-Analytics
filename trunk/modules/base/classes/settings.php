@@ -227,8 +227,8 @@
 			if (!empty($db_settings)):
 				
 				// needed to get rid of legacy setting that used to be stored in the DB.
-				if (in_array('error_handler', $db_settings)) {
-					unset($db_settings['error_handler']);
+				if (array_key_exists('error_handler', $db_settings['base'])) {
+					unset($db_settings['base']['error_handler']);
 				}
 			
 				$this->db_settings = $db_settings;
@@ -236,7 +236,7 @@
 			endif;
 						
 			if (!empty($db_settings)):
-			
+				//print_r($db_settings);
 				//$db_settings = unserialize($db_settings);
 				
 				$default = $this->config->get('settings');
@@ -255,8 +255,7 @@
 				}
 				
 				$this->config->set('settings', $new_config);
-				
-				$this->applyConfigConstants();	
+					
 				
 			endif;
 			
