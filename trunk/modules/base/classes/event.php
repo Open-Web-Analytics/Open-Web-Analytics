@@ -591,8 +591,11 @@ class owa_event {
 		
 		if (!empty($this->eventType)) {
 			return $this->eventType;
-		} else {
+		} elseif ($this->get('event_type')) {
 			return $this->get('event_type');
+		} else {
+			
+			return 'unknown_event_type';
 		}
 	}
 	
