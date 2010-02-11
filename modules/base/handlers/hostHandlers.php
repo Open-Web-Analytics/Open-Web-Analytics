@@ -43,9 +43,12 @@ class owa_hostHandlers extends owa_observer {
 	 */
     function owa_hostHandlers() {
         
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
+		return owa_hostHandlers::__construct();
+    }
+    
+    function __construct() {
+    	
+    	return parent::__construct();
     }
 	
     /**
@@ -56,9 +59,36 @@ class owa_hostHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event;
-
-		return $this->handleEvent('base.logHost');
+    	$h = owa_coreAPI::entityFactory('base.host');
+		
+		$h->getByColumn('host', $event->get('host'));
+		
+		if (!$h->get('id')) {
+		
+			$h->setProperties($event->getProperties());
+			
+			$h->set('id', owa_lib::setStringGuid($event->get('host'))); 
+	
+			// makes the geo-location object from the service specified in the config
+			$location = owa_location::factory(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR, owa_coreAPI::getSetting('base', 'geolocation_service'));
+			
+			// lookup
+			$location->get_location($event->get('ip_address'));
+			
+			//set properties of the session
+			$h->set('country', $location->country);
+			$h->set('city', $location->city);
+			$h->set('latitude', $location->latitude);
+			$h->set('longitude', $location->longitude);
+			
+			$h->create();
+			
+		} else {
+			owa_coreAPI::debug('Not Logging. Host already exists');
+			
+		}
+		
+		
     	
     }
     
