@@ -43,9 +43,9 @@ div {margin:0;}
 /* FORMS */
 .form-row {border-bottom:1px solid #efefef;padding:10px; float:none;}
 .form-label {width:;}
-.form-field {position: absolute; left: 380px;}
+.form-field {position: relative; left: 120px;}
 .form-value {position: absolute; left: 380px; font-weight: bold;}
-.form-instructions {position: absolute; left: 650px; font-size:12px; color: #9f9f9f;}
+.form-instructions {position: relative; left: 150px; font-size:12px; color: #9f9f9f;}
 .owa-button {
 	border-radius:4px; 
 	background-color:orange; 
