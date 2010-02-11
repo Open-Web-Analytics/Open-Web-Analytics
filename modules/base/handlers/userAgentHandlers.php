@@ -43,9 +43,12 @@ class owa_userAgentHandlers extends owa_observer {
 	 */
     function owa_userAgentHandlers() {
         
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
+		return owa_userAgentHandlers::__construct();
+    }
+    
+    function __construct() {
+    
+    	return parent::__construct();
     }
 	
     /**
@@ -56,10 +59,22 @@ class owa_userAgentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event;
-
-		return $this->handleEvent('base.logUserAgent');
-    	
+		$ua = owa_coreAPI::entityFactory('base.ua');
+		
+		$ua->getByColumn('ua', $event->get('HTTP_USER_AGENT'));
+		
+		if (!$ua->get('id')) {
+			
+			$ua->setProperties($event->getProperties());
+			$ua->set('ua', $event->get('HTTP_USER_AGENT'));
+			$ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT'))); 
+			$ua->create();
+			
+		} else {
+		
+			owa_coreAPI::debug('user agent already exists.');
+		}
+	
     }
     
 }

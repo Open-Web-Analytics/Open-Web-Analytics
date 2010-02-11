@@ -33,10 +33,9 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 // Initialize owa
 define('OWA_ERROR_HANDLER', 'development');
-$config['main_url'] = 'install.php';
-$config['cache_objects'] = false;
-$owa = new owa_php($config);
-
+define('OWA_CACHE_OBJECTS', false);
+$owa = new owa_php();
+$owa->setSetting('base','main_url', 'install.php');
 // run controller, echo page content
 $do = owa_coreAPI::getRequestParam('do'); 
 
