@@ -44,7 +44,13 @@ class eventQueue {
 	 * Stores listener IDs by event type
 	 *
 	 */
-	var $lstenersByEventType;
+	var $listenersByEventType;
+	
+	/**
+	 * Stores listener IDs by event type
+	 *
+	 */
+	var $listenersByFilterType;
 	
 	/**
 	 * PHP4 Constructor
@@ -95,6 +101,27 @@ class eventQueue {
                
         return true;
     }
+    
+    /**
+	 * Attach
+	 *
+	 * Attaches observers by filter type.
+	 * Takes a valid user defined callback function for use by PHP's call_user_func_array
+	 * 
+	 * @param 	$filter_name	string
+	 * @param	$observer	mixed can be a function name or function array
+	 * @return bool
+	 */
+
+	function attachFilter($filter_name, $observer, $priority = 10) {
+	
+        $id = md5(microtime());
+        
+        $this->listenersByFilterType[$filter_name][$priority][] = $id;
+		
+        $this->listeners[$id] = $observer;
+               
+    }
 
 	/**
 	 * Notify
@@ -144,13 +171,35 @@ class eventQueue {
 	 *
 	 * Filters event by handlers in order that they were registered
 	 * 
-	 * @param 	$event_type	string
-	 * @param	$event	array
-	 * @return $event	mixed
+	 * @param 	$filter_name	string
+	 * @param	$value	array
+	 * @return $new_value	mixed
 	 */
-	function filter($event_type, $event) {
-		owa_coreAPI::debug("Filtering $event_type");
-		return;
+	function filter($filter_name, $value = '') {
+		owa_coreAPI::debug("Filtering $filter_name");
+		
+		if (array_key_exists($filter_name, $this->listenersByFilterType)) {
+			// sort the filter list by priority
+			ksort($this->listenersByFilterType[$filter_name]);
+			//get the function arguments
+			$args = func_get_args();
+			// outer priority loop
+			foreach ($this->listenersByFilterType[$filter_name] as $priority) {
+				// inner filter class/function loop
+				foreach ($priority as $observer_id) {
+					// pass args to filter
+					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value passed: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], $value));
+					$value = call_user_func_array($this->listeners[$observer_id], array_slice($args,1));
+					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value returned: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], $value));
+					// set filterred value as value in args for next filter
+					$args[1] = $value;
+					// debug whats going on
+					owa_coreAPI::debug(sprintf("%s filtered by %s.", $filter_name, get_class($this->listeners[$observer_id][0])));
+				}
+			}
+		}
+		
+		return $value;
 	}
 	
 	/**
