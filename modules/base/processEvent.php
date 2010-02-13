@@ -35,6 +35,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 class owa_processEventController extends owa_controller {
 	
 	var $event;
+	var $eq;
 	
 	function owa_processEventController($params) {
 	
@@ -51,6 +52,8 @@ class owa_processEventController extends owa_controller {
 			owa_coreAPI::debug("No event object was passed to controller.");
 			$this->event = owa_coreAPI::supportClassFactory('base', 'event');
 		}
+		
+		$this->eq = eventQueue::get_instance();
 		
 		return parent::__construct($params);
 	
@@ -152,7 +155,7 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version'));
 		
 		// Set Operating System
-		$this->event->setOs($bcap->get('Platform'));
+		$this->event->set('os', $this->eq->filter('operating_system', $bcap->get('Platform'), $this->event->get('HTTP_USER_AGENT')));
 		
 		//Check for what kind of page request this is
 		if ($bcap->get('Crawler')) {
@@ -208,13 +211,11 @@ class owa_processEventController extends owa_controller {
 	}
 	
 	function addToEventQueue() {
-		//$properties = $this->event->getProperties();
-		$eq = &eventQueue::get_instance();
-		$eq->log($this->event, $this->event->getEventType());
+		
+		$this->eq->log($this->event, $this->event->getEventType());
 		return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
 
 	}
-
 	
 }
 

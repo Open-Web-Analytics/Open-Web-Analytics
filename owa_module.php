@@ -258,6 +258,32 @@ class owa_module extends owa_base {
 	 * @param array $event_name
 	 * @param string $handler_name
 	 * @return boolean
+	 */
+	function registerFilter($filter_name, $handler_name, $method, $priority = 10, $dir = 'filters') {
+		
+		if (!is_object($handler_name)) {
+			
+			//$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
+			$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');	
+		}
+		
+		
+
+		$eq = &eventQueue::get_instance();
+		$eq->attachFilter($filter_name, array($handler_name, $method), $priority);
+		
+		return;
+	
+	}
+	
+	
+	
+	/**
+	 * Attaches an event handler to the event queue
+	 *
+	 * @param array $event_name
+	 * @param string $handler_name
+	 * @return boolean
 	 * @depricated
 	 */
 	function _addHandler($event_name, $handler_name) {
