@@ -106,27 +106,36 @@ class owa_processEventController extends owa_controller {
 		//set user agent
 		if (!$this->event->get('HTTP_USER_AGENT')) {
 			$this->event->set('HTTP_USER_AGENT', owa_coreAPI::getServerParam('HTTP_USER_AGENT'));
-		}
+		} 
+		
+		$this->event->set('HTTP_USER_AGENT', $this->eq->filter('user_agent', $this->event->get('HTTP_USER_AGENT')));
 		
 		// set referer
 		////needed in case javascript logger sets the referer variable but is blank
 		if ($this->event->get('referer')) {
 			//TODO: STANDARDIZE NAME to avoid doing this map
-			$this->event->set('HTTP_REFERER', $this->event->get('referer'));
+			$referer = $this->event->get('referer');
 		} else {
-			$this->event->set('HTTP_REFERER', owa_coreAPI::getServerParam('HTTP_REFERER'));
+			$referer = owa_coreAPI::getServerParam('HTTP_REFERER');
 		}
+		
+		$this->event->set('HTTP_REFERER', $this->eq->filter('http_referer', $referer));
 		
 		
 		// set host
 		if (!$this->event->get('HTTP_HOST')) {
 			$this->event->set('HTTP_HOST', owa_coreAPI::getServerParam('HTTP_HOST'));
-		}	
+		}
+		
+		$this->event->set('HTTP_HOST', $this->eq->filter('http_host', $this->event->get('HTTP_HOST')));
 		
 		// set page type to unknown if not already set by caller
 		if (!$this->event->get('page_type')) {
 			$this->event->set('page_type', $this->getMsg(3600));
-		}
+			
+		} 
+		
+		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
 		
 		// Set the uri or else construct it from environmental vars
 		if (!$this->event->get('page_url')) {
