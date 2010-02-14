@@ -578,6 +578,7 @@
 			'per_site_visitors'				=> false,
 			'cache_objects'					=> true,
 			'log_named_users'				=> true,
+			'log_visitor_pii'				=> true,
 			'do_not_log_ips'				=> '',
 			'track_feed_links'				=> true,
 			'theme'							=> '',

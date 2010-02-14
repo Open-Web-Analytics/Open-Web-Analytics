@@ -157,7 +157,6 @@ class owa_event {
 	function timeSinceLastRequest() {
 	
         return ($this->get('timestamp') - $this->get('last_req'));
-	
 	}
 	
 	/**
@@ -177,36 +176,12 @@ class owa_event {
 				
 			}
 			
-			
-
 		endif;
-		
-		return;	
 	}
 	
 	function replaceProperties($properties) {
 		
 		$this->properties = $properties;
-		return;
-	}
-	
-	
-	/**
-	 * Cleans query strings of various session params
-	 * that are defined as a setting
-	 */
-	function cleanQueryStrings() {
-		
-		$properties = array('page_url', 'page_uri', 'target_url');
-		
-		foreach ($properties as $key) {
-
-			if ($this->get($key)) {
-				$this->set($key, $this->stripDocumentUrl($this->get($key)));
-			}
-				
-		}
-		
 		return;
 	}
 	
@@ -241,65 +216,25 @@ class owa_event {
 	
 	}
 	
-	/**
-	 * Resolve hostname from IP address
-	 * 
-	 * @access public
-	 */
-	function setHost($remote_host) {
 	
-		// See if host is already resolved
-		if (!empty($remote_host)) {
-			// Use pre-resolved host if available
-			$fullhost = $remote_host;
-		} else {
-			// Do the host lookup
-			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
-				$fullhost = @gethostbyaddr($this->get('ip_address'));
+	/**
+	 * Cleans query strings of various session params
+	 * that are defined as a setting
+	 */
+	function cleanQueryStrings() {
+		
+		$properties = array('page_url', 'page_uri', 'target_url');
+		
+		foreach ($properties as $key) {
+
+			if ($this->get($key)) {
+				$this->set($key, $this->stripDocumentUrl($this->get($key)));
 			}
-			
-			// if still empty then use the IP address
-			if (empty($fullhost)) {
-				// just use IP address
-				$fullhost = $this->get('ip_address');
-			}
+				
 		}
 		
-		if (!empty($fullhost)) {
-		
-			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-			if ($fullhost != $this->get('ip_address')) {
-		
-				$host_array = explode('.', $fullhost);
-				
-				// resort so top level domain is first in array
-				$host_array = array_reverse($host_array);
-				
-				// array of tlds. this should probably be in the config array not here.
-				$tlds = array('com', 'net', 'org', 'gov', 'mil');
-				
-				if (in_array($host_array[0], $tlds)) {
-					$host = $host_array[1].".".$host_array[0];
-				} else {
-					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
-				}
-					
-			} elseif ($fullhost === 'unknown') {
-				// Show the IP it's better than nothing. Should probably mark a dirty flag in the db
-				// when this happens so one can go back and try again later.
-				$host = $this->get('ip_address');
-				$fullhost = $this->get('ip_address');
-			} else {	
-				$host = $fullhost;					
-			}
-				
-			$this->set('host', $host);
-			$this->set('full_host', $fullhost);
-		
-		}
-				
 		return;
-	}	
+	}
 	
 	/**
 	 * Strip a URL of certain GET params
