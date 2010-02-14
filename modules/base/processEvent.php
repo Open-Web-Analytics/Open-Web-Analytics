@@ -145,23 +145,26 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
 		// Set Ip Address
-		// TODO: move this logic to request container
 		if (!$this->event->get('ip_address')) {
-			$this->event->setIp(owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR'), owa_coreAPI::getServerParam('HTTP_CLIENT_IP'), owa_coreAPI::getServerParam('REMOTE_ADDR'));
+			$this->event->set('ip_address', owa_coreAPI::getServerParam('REMOTE_ADDR'));
 		}
+		
+		$this->event->set('ip_address', $this->eq->filter('ip_address', $this->event->get('ip_address')));
 		
 		// Set host related properties
 		if (!$this->event->get('REMOTE_HOST')) {
-			$this->event->setHost(owa_coreAPI::getServerParam('REMOTE_HOST'));
-		} else {
-			$this->event->setHost($this->event->get('REMOTE_HOST'));
+			$this->event->set('REMOTE_HOST', owa_coreAPI::getServerParam('REMOTE_HOST'));
 		}
+		
+		$this->event->set('full_host', $this->eq->filter('full_host', $this->event->get('REMOTE_HOST'), $this->event->get('ip_address')));
+		$this->event->set('host', $this->eq->filter('host', $this->event->get('full_host'), $this->event->get('ip_address')));
 		
 		// Browser related properties
 		$service = owa_coreAPI::serviceSingleton();
 		$bcap = $service->getBrowscap();
-		$this->event->set('browser_type', $bcap->get('Browser'));
-		$this->event->set('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version'));
+		
+		$this->event->set('browser_type', $this->eq->filter('browser_type', $bcap->get('Browser')));
+		$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version')));
 		
 		// Set Operating System
 		$this->event->set('os', $this->eq->filter('operating_system', $bcap->get('Platform'), $this->event->get('HTTP_USER_AGENT')));
@@ -176,8 +179,8 @@ class owa_processEventController extends owa_controller {
 		// set user name and email
 		$cu = owa_coreAPI::getCurrentUser();
 		//print_r($cu);
-		$this->event->set('user_name', $cu->user->get('user_id'));
-		$this->event->set('user_email', $cu->user->get('email_address'));
+		$this->event->set('user_name', $this->eq->filter('user_name', $cu->user->get('user_id')));
+		$this->event->set('user_email', $this->eq->filter('user_email', $cu->user->get('email_address')));
 		
 		//Clean Query Strings - keep this at end of pre
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
