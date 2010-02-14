@@ -58,18 +58,11 @@ class owa_baseModule extends owa_module {
 		
 		// register filters
 		$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
+		$this->registerFilter('ip_address', $this, 'setIp', 0);
+		$this->registerFilter('full_host', $this, 'resolveHost', 0);
+		$this->registerFilter('host', $this, 'getHostDomain', 0);
 		
 		return parent::__construct();
-	}
-	
-	function osFilter($os, $ua) {
-		print $ua;
-		return 'MacOS XI';
-	}
-	
-	function osFilter2($os, $ua) {
-		print $ua;
-		return 'MacOS XII';
 	}
 	
 	/**
@@ -243,6 +236,94 @@ class owa_baseModule extends owa_module {
 		}
 			
 		return $os;
+	}
+	
+	/**
+	 * Get IP address from request
+	 *
+	 * @return string
+	 * @access private
+	 */
+	function setIp($ip) {
+	
+		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');
+		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam('HTTP_CLIENT_IP');
+		
+		// check for a non-unknown proxy address
+		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
+			
+			// if more than one use the last one
+			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false) {
+				$ip = $HTTP_X_FORWARDED_FOR;
+			} else {
+				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
+				$ip = $ips[0];
+			}
+		
+		// or else just use the remote address	
+		} else {
+		
+			if ($HTTP_CLIENT_IP) {
+		    	$ip = $HTTP_CLIENT_IP;
+			}
+			
+		}
+		
+		return $ip;
+	
+	}
+	
+	/**
+	 * Resolve hostname from IP address
+	 * 
+	 * @access public
+	 */
+	function resolveHost($remote_host = '', $ip_address = '') {
+	
+		// See if host is already resolved
+		if (empty($remote_host)) {
+			
+			// Do the host lookup
+			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
+				$remote_host = @gethostbyaddr($ip_address);
+			}
+			
+		}
+		
+		return $remote_host;
+	}
+	
+	function getHostDomain($fullhost = '', $ip_address = '') {
+	
+		$host = '';
+		
+		if (!empty($fullhost)) {
+		
+			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
+			if ($fullhost != $ip_address) {
+		
+				$host_array = explode('.', $fullhost);
+				
+				// resort so top level domain is first in array
+				$host_array = array_reverse($host_array);
+				
+				// array of tlds. this should probably be in the config array not here.
+				$tlds = array('com', 'net', 'org', 'gov', 'mil');
+				
+				if (in_array($host_array[0], $tlds)) {
+					$host = $host_array[1].".".$host_array[0];
+				} else {
+					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
+				}
+					
+			} elseif ($fullhost === 'unknown') {
+				;
+			}
+				
+		}
+		
+		return $host;
+	
 	}
 
 }

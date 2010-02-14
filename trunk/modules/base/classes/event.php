@@ -210,41 +210,6 @@ class owa_event {
 		return;
 	}
 	
-	
-	/**
-	 * Get IP address from request
-	 *
-	 * @return string
-	 * @access private
-	 */
-	function setIp($HTTP_X_FORWARDED_FOR, $HTTP_CLIENT_IP, $REMOTE_ADDR) {
-	
-		// check for a non-unknown proxy address
-		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false):
-			
-			// if more than one use the last one
-			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false):
-				$this->set('ip_address', $HTTP_X_FORWARDED_FOR);
-			else:
-				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
-				$this->set('ip_address', $ips[0]);
-			endif;
-		
-		// or else just use the remote address	
-		else:
-		
-			if ($HTTP_CLIENT_IP):
-		    	$this->set('ip_address', $HTTP_CLIENT_IP);
-		  	else:
-		    	$this->set('ip_address', $REMOTE_ADDR);
-			endif;
-			
-		endif;
-		
-		return;
-	
-	}
-	
 	/**
 	 * Create guid from process id
 	 *
