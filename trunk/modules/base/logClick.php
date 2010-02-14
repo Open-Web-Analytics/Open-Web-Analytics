@@ -17,10 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_lib.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Log Click Controller

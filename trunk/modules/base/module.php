@@ -62,6 +62,12 @@ class owa_baseModule extends owa_module {
 		$this->registerFilter('full_host', $this, 'resolveHost', 0);
 		$this->registerFilter('host', $this, 'getHostDomain', 0);
 		
+		//Clean Query Strings 
+		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
+			$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
+			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
+		}
+		
 		return parent::__construct();
 	}
 	
@@ -324,6 +330,57 @@ class owa_baseModule extends owa_module {
 		
 		return $host;
 	
+	}
+	
+	/**
+	 * Filter function Strips a URL of certain defined session or tracking params
+	 *
+	 * @return string
+	 */
+	function makeUrlCanonical($url) {
+		
+		if (owa_coreAPI::getSetting('base', 'query_string_filters')) {
+			$filters = str_replace(' ', '', owa_coreAPI::getSetting('base', 'query_string_filters'));
+			$filters = explode(',', $filters);
+		} else {
+			$filters = array();
+		}
+			
+		// OWA specific params to filter
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'source_param'));
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_id'));
+		
+		//print_r($filters);
+		
+		foreach ($filters as $filter => $value) {
+			
+		  $url = preg_replace(
+			'#\?' .
+			$value .
+			'=.*$|&' .
+			$value .
+			'=.*$|' .
+			$value .
+			'=.*&#msiU',
+			'',
+			$url
+		  );
+		  
+		}
+	        
+	        
+	    //check for dangling '?'. this might occure if all params are stripped.
+	        
+	    // returns last character of string
+		$test = substr($url, -1);   		
+		
+		// if dangling '?' is found clean up the url by removing it.
+		if ($test == '?') {
+			$url = substr($url, 0, -1);
+		}
+			
+     	return $url;
+		
 	}
 
 }

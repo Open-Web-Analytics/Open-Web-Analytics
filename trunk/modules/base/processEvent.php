@@ -137,12 +137,19 @@ class owa_processEventController extends owa_controller {
 		
 		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
 		
-		// Set the uri or else construct it from environmental vars
+		// Set the page url or else construct it from environmental vars
 		if (!$this->event->get('page_url')) {
 			$this->event->set('page_url', owa_lib::get_current_url());
 		}
 		
+		$this->event->set('page_url', $this->eq->filter('page_url', $this->event->get('page_url')));
+		// needed?
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
+		
+		// Filter the target url of clicks
+		if ($this->event->get('target_url')) {
+			$this->event->set('target_url', $this->eq->filter('target_url', $this->event->get('target_url')));
+		}
 		
 		// Set Ip Address
 		if (!$this->event->get('ip_address')) {
@@ -185,12 +192,6 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('user_email', $this->eq->filter('user_email', $cu->user->get('email_address')));
 		}
 		
-		
-		
-		//Clean Query Strings - keep this at end of pre
-		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
-			$this->event->cleanQueryStrings();
-		}
 	}
 	
 	function post() {

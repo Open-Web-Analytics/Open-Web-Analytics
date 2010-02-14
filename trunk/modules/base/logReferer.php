@@ -47,7 +47,6 @@ class owa_logRefererController extends owa_controller {
 	
 	function action() {
 	
-		owa_coreAPI::debug('hello from logrefeer');
 		// Make entity
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
