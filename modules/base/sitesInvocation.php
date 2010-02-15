@@ -49,6 +49,10 @@ class owa_sitesInvocationController extends owa_adminController {
 	function action() {
 	
 		$this->set('site_id', $this->getParam('site_id'));
+		
+		$s = owa_coreAPI::entityFactory('base.site');
+		$s->getByColumn('site_id', $this->getParam('site_id'));
+		$this->set('site', $s);
 		$this->setSubview('base.sitesInvocation');
 		$this->setView('base.options');
 		return;
@@ -84,9 +88,19 @@ class owa_sitesInvocationView extends owa_view {
 	
 	function render($data) {
 		
+		$site = $this->get('site');
+		
+		if ($site->get('name')) {
+			$name = sprintf("%s (%s)", $site->get('domain'), $site->get('name'));
+		} else {
+			$name = $site->get('domain');
+		}
+		
+		
 		//page title
-		$this->t->set('page_title', 'Web Site Tracking Instructions');
-		$this->body->set('headline', 'How to Start Tracking This Web Site');
+		$this->t->set('page_title', 'Tracking Tags');
+		$this->body->set('site', $site);
+		$this->body->set('name', $name);
 		// load body template
 		$this->body->set_template('sites_invocation.tpl');
 		

@@ -50,4 +50,14 @@
 	</TABLE>
 
 </fieldset>
+<?php if ($edit === true):?>
+<P>
+<fieldset class="options">
+
+	<legend>Change Password</legend>
+	<div style="padding:10px">
+	<a href="<?php echo $this->makeLink(array('do' => 'base.passwordResetForm'))?>">Change password for this user</a>
+	</div>
+</fieldset>
+<?php endif;?>
 </div>

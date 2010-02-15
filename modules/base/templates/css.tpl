@@ -57,10 +57,16 @@ div {margin:0;}
 	-moz-border-radius: 3px; 
 	-webkit-border-radius: 3px;	
 	margin-top: 50px;
+	text-decoration: none;
+	
 }
 .owa-button:hover {
 	color: #000000;
 	border-color: #9f9f9f;
+}
+
+.owa-button a  {
+	text-decoration: none;
 }
 
 .owa_pagination {float:left; overflow: hidden;}

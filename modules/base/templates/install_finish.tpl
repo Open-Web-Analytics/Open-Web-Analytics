@@ -4,11 +4,11 @@
 	<p>Open Web Analytics has been successfully installed. Login using the user name and password below and generate a tracker.</p>
 	<p class="form-row">
 		<span class="form-label">User Name:</span>
-		<span class="form-value"><?php echo $u;?></span>
+		<span class="form-field"><?php echo $u;?></span>
 	</p>
 	<p class="form-row">
 		<span class="form-label">Password:</span>
-		<span class="form-value"><?php echo $p;?></span>
+		<span class="form-field"><?php echo $p;?></span>
 		<span class="form-instructions">Be sure to change this password.</span>
 	</p>
 	<BR>
