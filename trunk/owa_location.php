@@ -74,34 +74,14 @@ class owa_location extends owa_base {
 	 */
 	function owa_location() {
 		
-		$this->owa_base();
-		
-		return;
+		return owa_location::__construct();
 	}
 	
-	function &factory($class_path, $plugin, $name = '', $ident = '', $conf = array()) {
-		
-        $classfile = $class_path . $plugin . '.php';
-
-        $class = 'owa_'.$plugin;
-        
-        /*
-         * Attempt to include our version of the named class, but don't treat
-         * a failure as fatal.  The caller may have already included their own
-         * version of the named class.
-         */
-        if (!class_exists($class)) {
-            include_once $classfile;
-        }
-
-        /* If the class exists, return a new instance of it. */
-        if (class_exists($class)) {
-            $obj = new $class;
-            return $obj;
-        }
-
-        return null;
-    }
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
 	
 }
 

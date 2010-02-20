@@ -24,8 +24,9 @@ div {margin:0;}
 .active_nav_link {background-color:#cccccc;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
 #owa_header {border-bottom: 3px solid orange;}
-.owa_navigation {float:left; overflow: hidden;}
-.owa_navigation ul {list-style: none; padding: 0; margin: 0;}
+.owa_logo {float:left;padding-right:30px;}
+.owa_navigation {float:; overflow:; vertical-align: baseline;}
+.owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:30px;}
 .owa_navigation li {text-decoration: none; float:left; margin: 2px;}
 .owa_navigation li a {
 	background: url() #fff bottom left repeat-x;
@@ -63,6 +64,9 @@ div {margin:0;}
 .owa-button:hover {
 	color: #000000;
 	border-color: #9f9f9f;
+	-moz-box-shadow:2px 2px 2px #999;
+    box-shadow:2px 2px 2px #999;
+    -webkit-box-shadow:2px 2px 2px #999;
 }
 
 .owa-button a  {

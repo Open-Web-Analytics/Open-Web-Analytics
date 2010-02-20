@@ -61,7 +61,7 @@ class owa_userAgentHandlers extends owa_observer {
 		
 		$ua = owa_coreAPI::entityFactory('base.ua');
 		
-		$ua->getByColumn('ua', $event->get('HTTP_USER_AGENT'));
+		$ua->getByColumn('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 		
 		if (!$ua->get('id')) {
 			
@@ -72,7 +72,7 @@ class owa_userAgentHandlers extends owa_observer {
 			
 		} else {
 		
-			owa_coreAPI::debug('user agent already exists.');
+			owa_coreAPI::debug('not logging, user agent already exists.');
 		}
 	
     }
