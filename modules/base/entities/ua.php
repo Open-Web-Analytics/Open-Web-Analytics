@@ -29,14 +29,7 @@
  */
 
 class owa_ua extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $ua = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $browser_type = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $browser = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
 	
-	*/
 	function owa_ua() {
 		
 		return owa_ua::__construct();

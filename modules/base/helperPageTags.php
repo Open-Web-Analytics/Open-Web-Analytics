@@ -121,20 +121,30 @@ class owa_helperPageTagsView extends owa_view {
 		//check to see if we shuld log clicks.
 		if (!owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
 			$this->body->set('do_not_log_clicks', true);
+		} else {
+			$this->body->set('do_not_log_clicks', false);
 		}
 		
 		// check to see if we should log clicks.
 		if (!owa_coreAPI::getSetting('base', 'log_dom_streams')) {
 			$this->body->set('do_not_log_domstream', true);
+		} else {
+			$this->body->set('do_not_log_domstream', false);
 		}
 		
 		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
 		
 			// needed to override the endpoint used by the js tracker
 			$this->body->set('endpoint', owa_coreAPI::getSetting('base', 'log_url'));
-		
+			
 			// needed to override the endpoint used by the js tracker
 			$this->body->set('apiEndpoint', owa_coreAPI::getSetting('base', 'action_url'));
+		} else {
+			// needed to override the endpoint used by the js tracker
+			$this->body->set('endpoint', '');
+			
+			// needed to override the endpoint used by the js tracker
+			$this->body->set('apiEndpoint', '');
 		}
 		
 		// load body template

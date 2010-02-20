@@ -19,7 +19,10 @@
 
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_controller.php');
 require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
+
+if (!class_exists('owa_http')) {
+	require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
+}
 
 /**
  * Log Referer Controller

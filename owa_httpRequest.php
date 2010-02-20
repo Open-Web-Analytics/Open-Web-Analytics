@@ -16,9 +16,9 @@
 // $Id$
 //
 
-if(!class_exists('Snoopy')):
+if(!class_exists('Snoopy')) {
 	require_once(OWA_INCLUDE_DIR.'/Snoopy.class.php');
-endif;
+}
 
 require_once(OWA_INCLUDE_DIR.'/httpclient-2008-03-18/http.php');
 

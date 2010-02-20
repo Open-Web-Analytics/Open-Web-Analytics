@@ -15,8 +15,12 @@
 //
 // $Id$
 //
+require_once(OWA_BASE_DIR.'/owa_location.php');
 
-require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
+if (!class_exists('owa_http')) {
+	owa_coreAPI::debug('owa_http already defined');
+	require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
+}
 
 /**
  * Geolocation plugin for Hostip.info web service
@@ -45,11 +49,14 @@ class owa_hostip extends owa_location {
 	 *
 	 * @return owa_hostip
 	 */
-	function owa_hostip(){
+	function owa_hostip() {
 		
-		$this->owa_location();
+		return owa_hostip::__construct();
+	}
+	
+	function __construct() {
 		
-		return;
+		return parent::__construct();
 	}
 	
 	function get_location_xml($ip) {
@@ -118,6 +125,5 @@ class owa_hostip extends owa_location {
 	}
 	
 }
-
 
 ?>

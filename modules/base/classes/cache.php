@@ -354,12 +354,13 @@ class owa_cache {
 								
 								if (!@ copy($temp_cache_file, $cache_file)):
 									$this->debug('could not rename or copy temp file to cache file');
+								else:
+									@ unlink($temp_cache_file);
+									$this->debug('removing temp cache file');
 								endif;
 								
 							endif;
 							
-							@ unlink($temp_cache_file);
-							$this->debug('removing temp cache file');
 							@ chmod($cache_file, $this->file_perms);
 							$this->debug('changing file permissions on cache file');
 						

@@ -61,7 +61,7 @@ class owa_hostHandlers extends owa_observer {
 		
     	$h = owa_coreAPI::entityFactory('base.host');
 		
-		$h->getByColumn('host', $event->get('host'));
+		$h->getByPk('id', owa_lib::setStringGuid($event->get('host')));
 		
 		if (!$h->get('id')) {
 		
@@ -70,7 +70,9 @@ class owa_hostHandlers extends owa_observer {
 			$h->set('id', owa_lib::setStringGuid($event->get('host'))); 
 	
 			// makes the geo-location object from the service specified in the config
-			$location = owa_location::factory(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR, owa_coreAPI::getSetting('base', 'geolocation_service'));
+			$ret = require_once(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR.'hostip.php');
+			//$location = new owa_hostip;
+			$location = owa_lib::factory(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR, '', owa_coreAPI::getSetting('base', 'geolocation_service'));
 			
 			// lookup
 			$location->get_location($event->get('ip_address'));
@@ -84,14 +86,11 @@ class owa_hostHandlers extends owa_observer {
 			$h->create();
 			
 		} else {
+		
 			owa_coreAPI::debug('Not Logging. Host already exists');
 			
-		}
-		
-		
-    	
+		}	
     }
-    
 }
 
 ?>

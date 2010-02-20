@@ -7,7 +7,7 @@ OWA.setSetting('baseUrl', '<?php echo owa_coreAPI::getSetting('base', 'public_ur
 OWA.setApiEndpoint('<?php echo $apiEndpoint;?>');
 <?php endif;?>
 // Create a tracker
-OWATracker = new OWA.tracker(<?php if ($owa_params == true): echo 'owa_params'; endif;?>);
+OWATracker = new OWA.tracker(<?php if (isset($owa_params) && $owa_params == true): echo 'owa_params'; endif;?>);
 <?php if ($endpoint): ?>
 OWATracker.setEndpoint('<?php echo $endpoint;?>');
 <?php endif;?>
