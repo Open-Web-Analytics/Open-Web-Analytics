@@ -251,38 +251,40 @@ class owa_cache {
 	
 	function makeCacheCollectionDir($collection) {
 		
+		// check to see if the caches directory is writable, return if not.
+		if (!is_writable($this->cache_dir)) {
+			return;
+		}
+		
+		
 		// localize the cache directory based on some id passed from caller
 		
-		if (!file_exists($this->cache_dir.$this->cache_id)):
+		if (!file_exists($this->cache_dir.$this->cache_id)) {
 			
 			mkdir($this->cache_dir.$this->cache_id);
 	                 
 	        chmod($this->cache_dir.$this->cache_id, $this->dir_perms);
 	        
-	    endif;
-		
-		
+	    }
 		
 		$collection_dir = $this->makeCollectionDirPath($collection);
 		
-		if (!file_exists($collection_dir)):
+		if (!file_exists($collection_dir)) {
 			
 			mkdir($collection_dir);
 	                 
 	        chmod($collection_dir, $this->dir_perms);
 	        
-	    endif;
+	    }
 	
-	    if (!file_exists($collection_dir."index.php")):
+	    if (!file_exists($collection_dir."index.php")) {
 	    
 	        
 	        touch($collection_dir."index.php");
 	        
 	        chmod($collection_dir."index.php", $this->file_perms);
 	        
-	    endif;
-		
-		return;
+	    }
 	}
 	
 	function prepare($obj) {

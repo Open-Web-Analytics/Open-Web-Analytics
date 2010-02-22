@@ -33,10 +33,14 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 class owa_optionsResetController extends owa_adminController {
 	
 	function owa_optionsResetController($params) {
-		$this->owa_adminController($params);
-		$this->setRequiredCapability('edit_settings');
+	
+		return owa_optionsResetController::__construct();
+	}
+	
+	function __construct($params) {
 		
-		return;
+		$this->setRequiredCapability('edit_settings');
+		return parent::__construct($params);	
 	}
 
 	function action() {
@@ -47,24 +51,19 @@ class owa_optionsResetController extends owa_adminController {
 		
 		$settings = unserialize($config->get('settings'));
 		
-		if (!empty($settings)):
-		
-			$settings['base'] = array();
-			$config->set('settings', serialize($settings));
+		if (!empty($settings)) {
+			$d_settings = array();
+			$d_settings['base'] = array();
+			$d_settings['base']['install_complete'] = true;
+			$d_settings['base']['schema_version'] = $settings['base']['schema_version'];
+			$config->set('settings', serialize($d_settings));
 			$config->update();
-		endif;
+		}
 		
 		$this->e->notice($this->getMsg(2503));
 	
-		$data = array();
-		
-		$data['do'] = 'base.optionsGeneral';
-		$data['view_method'] = 'redirect';
-		//$data['configuration'] = $nbsettings;
-		$data['status_code'] = 2503;
-		
-		return $data;
-	
+		$this->setStatusCode(2503);
+		$this->setRedirectAction('base.optionsGeneral');
 	}
 	
 }
