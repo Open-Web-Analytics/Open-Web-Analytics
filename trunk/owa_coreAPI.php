@@ -210,7 +210,7 @@ class owa_coreAPI extends owa_base {
 		return $s->get($module, $name);
 	}
 	
-	function setSetting($module, $name, $value, $persist = true) {
+	function setSetting($module, $name, $value, $persist = false) {
 		
 		$s = &owa_coreAPI::configSingleton();
 		
