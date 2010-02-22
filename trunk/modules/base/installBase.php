@@ -85,7 +85,7 @@ class owa_installBaseController extends owa_installController {
 			$site_id = $this->createDefaultSite($this->getParam('domain'));	
 			
 			// Set install complete flag. 
-			$this->c->setSetting('base', 'install_complete', true);
+			$this->c->persistSetting('base', 'install_complete', true);
 			$save_status = $this->c->save();
 			
 			if ($save_status == true) {

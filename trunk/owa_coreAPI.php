@@ -215,9 +215,9 @@ class owa_coreAPI extends owa_base {
 		$s = &owa_coreAPI::configSingleton();
 		
 		if ($persist === true) {
-			$s->setSetting($module, $name, $value);
+			$s->persistSetting($module, $name, $value);
 		} else {
-			$s->setSettingTemporary($module, $name, $value);
+			$s->setSetting($module, $name, $value);
 		}
 		
 	}

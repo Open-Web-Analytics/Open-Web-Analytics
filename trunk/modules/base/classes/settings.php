@@ -399,7 +399,7 @@
  	 */
  	function setSetting($module, $key, $value) {
  	
- 		return $this->persistSetting($module, $key, $value);
+ 		return $this->set($module, $key, $value);
  	
  	}
  	

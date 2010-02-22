@@ -16,7 +16,6 @@
 				</LI>
 				<?php endif;?>
 			</UL>
-		
 		<div class="post-nav"></div>
 		<?php if (!empty($service_msg)): ?>
 		<div class="owa_headerServiceMsg"><?php echo $service_msg; ?></div>

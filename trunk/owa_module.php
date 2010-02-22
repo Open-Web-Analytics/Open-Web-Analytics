@@ -527,7 +527,7 @@ class owa_module extends owa_base {
 		
 		//if ($this->name != 'base'):
 		
-			$this->c->setSetting($this->name, 'is_active', true);
+			$this->c->persistSetting($this->name, 'is_active', true);
 			$this->c->save();
 			$this->e->notice("Module $this->name activated");
 			
@@ -545,7 +545,7 @@ class owa_module extends owa_base {
 		
 		if ($this->name != 'base'):
 			
-			$this->c->setSetting($this->name, 'is_active', false);
+			$this->c->persistSetting($this->name, 'is_active', false);
 			$this->c->save();
 			
 		endif;

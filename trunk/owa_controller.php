@@ -514,6 +514,17 @@ class owa_controller extends owa_base {
 		
 		return owa_lib::redirectBrowser($url);
 	}
+	
+	function setStatusCode($code) {
+		
+		$this->data['status_code'] = $code;
+	}
+	
+	function setStatusMsg($msg) {
+		
+		$this->data['status_message'] = $msg;
+	}
+	
 
 	
 }
