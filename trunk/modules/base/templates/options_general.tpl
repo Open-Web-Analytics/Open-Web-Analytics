@@ -242,14 +242,6 @@
 	<fieldset name="owa-reports-options" class="options">
 		
 		<legend>Presentation</legend>
-		<?php if ($this->config['is_embedded'] == false):?>	
-		<div class="setting" id="reporting_wrapper">	
-			<div class="title">Reporting Template Wrapper</div>
-			<div class="description">This is the name of the template file used to wrap reports and admin screens</div>
-			<div class="field"><input type="text" name="<?php echo $this->getNs();?>config[report_wrapper]" value="<?php echo $config['report_wrapper']?>"></div>
-			
-		</div>
-    	<?php endif;?>
 		
 		<div class="setting" id="click_drawing_mode">	
 			<div class="title">Click Drawing Mode</div>
