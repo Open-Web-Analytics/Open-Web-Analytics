@@ -438,17 +438,20 @@
  	
  	/**
  	 * Replaces all values of a particular module's configuration
- 	 * 
+ 	 * @todo: search to see where else this is used. If unused then make it for use in persist only.
  	 */
- 	function replace($module, $values) {
+ 	function replace($module, $values, $persist = false) {
+ 		
+ 		if ($persist) {
+ 			$this->db_settings[$module] = $values; 
+ 			return;
+ 		}
  		
  		$settings = $this->config->get('settings');
  		
  		$settings[$module] = $values;
  		
  		$this->config->set('settings', $settings);
- 		
- 		return;
  	}
  	
  	/**
@@ -462,7 +465,7 @@
  		static $config2;
  		
  		if (!isset($config2)):
- 			print 'hello from alt constructor';
+ 			//print 'hello from alt constructor';
  			$config2 = &owa_coreAPI::configSingleton();
  		endif;
  		
@@ -708,7 +711,16 @@
 		return true;
 	
 	}
- 	
+	
+	function reset($module) {
+		
+		$defaults = array();
+		$defaults['install_complete'] = true;
+		$defaults['schema_version'] = $this->get($module, 'schema_version');
+		$this->replace('base', $defaults, true);	
+		return $this->save();
+		
+	} 	
 }
- 
+
 ?>
