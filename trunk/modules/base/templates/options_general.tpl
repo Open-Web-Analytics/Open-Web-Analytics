@@ -3,7 +3,6 @@
 <div class="subview_content">
 
 <form method="post" name="owa_options">
-
 	<fieldset name="owa-options" class="options">
 	<legend>Request Processing Options</legend>
 			
@@ -258,7 +257,8 @@
 	<BR>
 	
 	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
-	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsReset">Reset to Default Values</BUTTON>
+	<input type="hidden" name="<?php echo $this->getNs();?>module" value="base">
+	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsReset">Reset Base Module Configuration to Default Values</BUTTON>
 	
 </form>
 </div>

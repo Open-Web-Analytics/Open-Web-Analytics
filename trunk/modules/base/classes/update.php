@@ -95,7 +95,7 @@ class owa_update extends owa_base {
 		
 				if ($ret == true):
 					$this->e->notice("Post Update Proceadure Suceeded");
-					$this->c->setSetting($this->module_name, 'schema_version', $this->schema_version);
+					$this->c->persistSetting($this->module_name, 'schema_version', $this->schema_version);
 					$this->c->save();
 					return true;
 				else:
