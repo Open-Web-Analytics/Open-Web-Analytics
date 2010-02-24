@@ -47,14 +47,15 @@ class owa_optionsResetController extends owa_adminController {
 		
 		$config = owa_coreAPI::configSingleton();
 		
-		$ret = $config->reset('base');
+		$ret = $config->reset($this->get('module'));
 		
 		if ($ret) {
 		
 			$this->e->notice($this->getMsg(2503));
 			$this->setStatusCode(2503);
-			$this->setRedirectAction('base.optionsGeneral');
-		}
+		} 
+		
+		$this->setRedirectAction('base.optionsGeneral');
 	}
 }
 

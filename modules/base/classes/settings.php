@@ -713,13 +713,17 @@
 	}
 	
 	function reset($module) {
+	
+		if ($module) {
 		
-		$defaults = array();
-		$defaults['install_complete'] = true;
-		$defaults['schema_version'] = $this->get($module, 'schema_version');
-		$this->replace('base', $defaults, true);	
-		return $this->save();
-		
+			$defaults = array();
+			$defaults['install_complete'] = true;
+			$defaults['schema_version'] = $this->get($module, 'schema_version');
+			$this->replace('base', $defaults, true);	
+			return $this->save();
+		} else {
+			return false;
+		}			
 	} 	
 }
 
