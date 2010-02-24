@@ -19,7 +19,7 @@
 require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
- * Options Update Controller
+ * Base Options Update Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -45,43 +45,25 @@ class owa_optionsUpdateController extends owa_adminController {
 	}
 
 	function action() {
-	
-		$configuration_id = $this->c->get('base', 'configuration_id');
-		$config = owa_coreAPI::entityFactory('base.configuration');
-		$config->getByPk('id', $configuration_id);
 		
-		$settings = unserialize($config->get('settings'));
-		$new_settings = array();
-	
-		if (!empty($settings)):
-			if (!empty($settings['base'])):
-				$new_settings['base'] = array_merge($settings['base'], $this->params['config']);
-			else:
-				$new_settings['base'] = $this->params['config'];
-			endif;
-		else:
+		$c = owa_coreAPI::configSingleton();
+		
+		$config_values = $this->get('config');
+		
+		if (!empty($config_values)) {
 			
-			$new_settings['base'] = $this->params['config'];
-		endif;
+			foreach ($config_values as $k => $v) {
+			
+				list($module, $name) = split("\.", $k);
+				$c->persistSetting($module, $name, $v);	
+			}
+			
+			$c->save();
+			owa_coreAPI::notice("Configuration changes saved to database.");
+			$this->setStatusCode(2500);	
+		}
 		
-		$config->set('settings', serialize($new_settings));
-		
-		$id = $config->get('id');
-		
-		if (!empty($id)):
-			$config->update();
-		else:
-			$config->set('id', $configuration_id);
-			$config->create();
-		endif;
-	
-		$this->e->notice("Configuration changes saved to database.");
-
 		$this->setRedirectAction('base.optionsGeneral');
-		$this->set('status_code', 2500);
-		
-		return;
-	
 	}
 	
 }

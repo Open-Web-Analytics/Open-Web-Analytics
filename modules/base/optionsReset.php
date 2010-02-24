@@ -45,28 +45,17 @@ class owa_optionsResetController extends owa_adminController {
 
 	function action() {
 		
-		$config = owa_coreAPI::entityFactory('base.configuration');
+		$config = owa_coreAPI::configSingleton();
 		
-		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
+		$ret = $config->reset('base');
 		
-		$settings = unserialize($config->get('settings'));
+		if ($ret) {
 		
-		if (!empty($settings)) {
-			$d_settings = array();
-			$d_settings['base'] = array();
-			$d_settings['base']['install_complete'] = true;
-			$d_settings['base']['schema_version'] = $settings['base']['schema_version'];
-			$config->set('settings', serialize($d_settings));
-			$config->update();
+			$this->e->notice($this->getMsg(2503));
+			$this->setStatusCode(2503);
+			$this->setRedirectAction('base.optionsGeneral');
 		}
-		
-		$this->e->notice($this->getMsg(2503));
-	
-		$this->setStatusCode(2503);
-		$this->setRedirectAction('base.optionsGeneral');
 	}
-	
 }
-
 
 ?>
