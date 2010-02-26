@@ -36,7 +36,7 @@ $_owa_messages = array(
 2002 => array("<B>Login Failed</B>. Your user name or password did not match.",0),
 2003 => array("Your Account lacks the necessary privileges to access the requested resource.",0),
 2004 => array("You must login to access the requested resource.",0),
-2010 => array("Sucess. Logout Complete.",0),
+2010 => array("Success. Logout Complete.",0),
 2011 => array("Error. Can't find your temporary passkey in the db.",0),
 
 // Options/Configuration related

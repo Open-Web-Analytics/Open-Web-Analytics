@@ -74,7 +74,7 @@ class owa_installConfigController extends owa_installController {
 		$v5->setValues($this->getParam('public_url'));
 		$v5->setConfig('position', -1);
 		$v5->setConfig('operator', '=');
-		$v5->setErrorMessage("Your Public Url must end with a slash");
+		$v5->setErrorMessage("Your URL of OWA's base directory must end with a slash.");
 		$this->setValidation('public_url', $v5);
 		
 		// Config for the domain validation
