@@ -361,7 +361,7 @@
  		
  		$values = $this->config->get('settings');
  		
- 		if (array_key_exists($key, $values[$module])) {
+ 		if ($values[$module] && array_key_exists($key, $values[$module])) {
  			return $values[$module][$key];
  		} else {
  			return false;
