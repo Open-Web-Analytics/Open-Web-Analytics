@@ -1,0 +1,162 @@
+<?php 
+
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2006 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+require_once(OWA_DIR.'owa_controller.php');
+
+/**
+ * Abstract Install Controller
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+
+class owa_installController extends owa_controller {
+
+	var $is_installer = true;
+		
+	function owa_installController($params) {
+		
+		return owa_installController::__construct($params); 
+	}
+	
+	function __construct($params) {
+		
+		// needed just in case a re-install happens and updates are also needed.
+		// tells the controller to skip the updates redirect
+		if (!defined('OWA_INSTALLING')) {
+			define('OWA_INSTALLING', true);
+		}
+				
+		return parent::__construct($params);
+	}
+			
+	function pre() {
+		
+		if (owa_coreAPI::getSetting('base', 'install_complete')) {
+			owa_coreAPI::debug('Install complete redirecting to base.installDetected');
+			return $this->redirectBrowser('base.installDetected', false);
+		}
+
+		return;
+	}
+	
+	function installSchema() {
+		
+		$service = &owa_coreAPI::serviceSingleton();
+		$base = $service->getModule('base');
+		$status = $base->install();
+		return $status;
+
+	}
+	
+	function createAdminUser($email_address) {
+		
+		//create user entity
+		$u = owa_coreAPI::entityFactory('base.user');
+		// check to see if an admin user already exists
+		$u->getByColumn('role', 'admin');
+		$id_check = $u->get('id');		
+		// if not then proceed
+		if (empty($id_check)) {
+	
+			//Check to see if user name already exists
+			$u->getByColumn('user_id', 'admin');
+	
+			$id = $u->get('id');
+	
+			// Set user object Params
+			if (empty($id)) {
+				
+				$password = $u->generateRandomPassword();
+				$u->set('user_id', 'admin');
+				$u->set('role', 'admin');
+				$u->set('real_name', '');
+				$u->set('email_address', $email_address);
+				$u->set('password', owa_lib::encryptPassword($password));
+				$u->set('creation_date', time());
+				$u->set('last_update_date', time());
+				$ret = $u->create();
+
+				owa_coreAPI::debug("Admin user created successfully.");
+				
+				return $password;
+				
+			} else {				
+				owa_coreAPI::debug($this->getMsg(3306));
+			}
+		} else {
+			owa_coreAPI::debug("Admin user already exists.");
+		}
+
+	}
+	
+	function createDefaultSite($domain) {
+	
+		// Check to see if default site already exists
+		$this->e->notice('Checking for existence of default site.');
+		$site = owa_coreAPI::entityFactory('base.site');
+		
+		// create site_id....how?
+		$site->getByColumn('site_id', $this->getParam('site_id'));
+		$id = $site->get('id');
+	
+		if(empty($id)) {
+	    	// Create default site
+	    	
+			$site->set('site_id', $site->generateSiteId($domain));
+			$site->set('name', $domain);
+			$site->set('description', '');
+			$site->set('domain', $domain);
+			$site->set('site_family', '');
+			$site_status = $site->create();
+		
+			if ($site_status == true) {
+				$this->e->notice('Created default site.');
+			} else {
+				$this->e->notice('Creation of default site failed.');
+			}
+			
+		} else {
+			$this->e->notice(sprintf("Default site already exists (id = %s). nothing to do here.", $id));
+		}
+		
+		return $site->get('site_id');
+	}
+	
+	function checkDbConnection() {
+		
+		// Check DB connection status
+		$db = &owa_coreAPI::dbSingleton();
+		$db->connect();
+		if ($db->connection_status === true) {
+			return true;
+		} else {
+			return false;
+		}
+
+	}
+
+}
+
+?>

@@ -1,0 +1,78 @@
+{
+	"elements": 
+		[
+			{
+				"fill": "#988d5a",
+				"width": 3,
+				"dot-size": 0,
+				"colour": "#988d5a",
+				"values": 
+					[
+						{"value": 10.129090909090907, "tip": "mooo"},
+						-32.405162496404941,
+						"-100",
+						0,
+						-15.443510737628385
+					],
+				"font-size": 0,
+				"fillalpha": 0.3,
+				"type": "area",
+				"dot-style": 
+					{
+						"tip": "#val#%",
+						"dot-size": 0,
+						"value": 0
+					},
+				"loop": true
+			}
+		],
+	"bg_colour": "#ffffff",
+	"radar_axis": 
+		{
+			"labels": 
+				{
+					"labels": 
+						[]
+				},
+			"spoke-labels": 
+				{
+					"labels": 
+						[
+							{
+								"text": "Football",
+								"size": 10,
+								"visible": true
+							},
+							{
+								"text": "Tennis",
+								"size": 10,
+								"visible": true
+							},
+							{
+								"text": "Rugby",
+								"size": 10,
+								"visible": true
+							},
+							{
+								"text": "F1",
+								"size": 10,
+								"visible": true
+							},
+							{
+								"text": "Basket\u003Cbr>Ball",
+								"size": 10,
+								"visible": true
+							}
+						],
+					"colour": "#1a171b"
+				},
+			"colour": "#e5e5e5",
+			"grid-colour": "#e5e5e5",
+			"steps": 25,
+			"min": -100,
+			"max": 100,
+			"3d": 0
+		},
+	"x_axis": null,
+	"y_axis": null
+}

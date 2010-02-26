@@ -1,0 +1,31 @@
+{
+  "elements" : [
+    {
+      "tip" : "#val# of #total# messages<br>#percent#",
+      "colours" : [
+        "#000000",
+        "#4693B8"
+      ],
+      "alpha" : "0.8",
+      "start_angle" : 135,
+      "animate" : false,
+      "values" : [
+        {
+          "value" : 135,
+          "label" : "spam deliveries"
+        },
+        {
+          "value" : 103,
+          "label" : "normal deliveries"
+        }
+      ],
+      "type" : "pie",
+      "border" : "2"
+    }
+  ],
+  "bg_colour" : "#FAFAFA",
+  "title" : {
+    "text" : "mail distribution for b@b.com",
+    "style" : "{font-size: 14px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "title":{
+    "text":"Area Chart",
+    "style":"{font-size: 30px;}"
+  },
+
+  "y_legend":{
+    "text":"OFC",
+    "style":"{font-size: 12px; color:#736AFF;}"
+  },
+
+  "elements":[
+    {
+      "type":      "area",
+      "colour":    "#CC3399",
+      "fill":      "#343399",
+      "fill-alpha": 0.5,
+      "text":      "Page views",
+      "width":     3,
+      "font-size": 10,
+      "dot-style": {
+				"type":"anchor",
+				"sides":3,
+				"width":1,
+				"tip":"type = anchor\nsides = 3\nhollow" },
+      "values" : [
+		0,0.37,0.73,1.07,1.36,1.59,1.77,1.87,
+		1.89,1.85,1.72,1.53,1.28,0.97,0.63,
+		{"value" :0.26, "type":"star", "colour":"#FF0000", "dot-size":10},
+		-0.11,-0.48,-0.84,-1.16,-1.43,
+		-1.65,-1.80,-1.88,-1.89,-1.82,-1.67,-1.46,-1.19,-0.88]
+    }
+  ],
+  
+  "y_axis":{
+    "min": -2,
+    "max": 2
+  }
+}

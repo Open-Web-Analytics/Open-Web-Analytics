@@ -1,0 +1,220 @@
+{
+  "y_legend":{
+    "text":   "Time of day",
+    "style": "{color: #736AFF;}"
+  },
+
+	"elements":[
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* December 28 - January 3 */
+				5217,12957,13761,10001,4409,10737,6805
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* January 4 - January 10 */
+				7265,15366,17295,17434,19908,18646,7590
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* January 11 - January 17 */
+				8807,16022,19428,18060,19342,16441,9144
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* January 18 - January 24 */
+				6987,18623,18234,18695,19463,18197,8038
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* January 25 - January 31 */
+				7388,16279,17989,16972,17300,16900,8631
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* February 1 - February 7 */
+				7630,15920,18820,19736,19877,19036,9498
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* February 8 - February 14 */
+				8462,20963,21375,19958,20934,19418,7468
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* February 15 - February 21 */
+				8156,18542,21337,22606,20517,19413,8287
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* February 22 - February 28 */
+				7697,18689,19207,20320,18814,19901,8910
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* March 1 - March 7 */
+				9208,19608,20342,22017,21121,21887,9295
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* March 8 - March 14 */
+				10137,20351,22631,23537,22577,21766,8350
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* March 15 - March 21 */
+				8615,21410,20658,21802,21743,19196,9142
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* March 22 - March 28 */
+				9597,23737,25651,26392,24262,22219,10238
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* March 29 - April 4 */
+				8986,23116,26447,26273,23800,22472,9885
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* April 5 - April 11 */
+				9877,26088,27208,23224,23080,18266,10373
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* April 12 - April 18 */
+				8749,19981,25231,25573,25301,22133,11443
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* April 19 - April 25 */
+				9606,23534,26971,27599,28266,28851,14547
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* April 26 - May 2 */
+				8536,23146,25804,23278,23338,11409,8987
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* May 3 - May 9 */
+				9927,20798,23867,24617,22217,20556,9146
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* May 10 - May 16 */
+				8655,21463,23547,24920,27221,22235,10928
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* May 17 - May 23 */
+				9601,21913,25392,24938,22652,22858,9513
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* May 24 - May 30 */
+				9423,22241,25194,24351,23348,23821,8379
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* May 31 - June 6 */
+				10162,20333,28830,25407,24313,24205,10580
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* June 7 - June 13 */
+				9726,24385,28695,25270,22878,21605,9805
+		]},
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"width":     2,
+			"values" :   [
+				/* June 14 - June 20 */
+				9395,22256,26144,26589,26070,24894,10347
+		]}
+	],
+	"x_axis":{
+    "labels": {
+      "rotate": "vertical",
+      "labels":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+    }
+  },
+
+  "y_axis":{
+    "max":   30000
+  }
+
+}

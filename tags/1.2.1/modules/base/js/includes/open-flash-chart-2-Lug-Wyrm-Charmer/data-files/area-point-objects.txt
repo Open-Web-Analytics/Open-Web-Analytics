@@ -1,0 +1,112 @@
+{
+"elements": [
+	{
+		"type": "area",
+		"fill-alpha": 0.4,
+		"values": [
+			{
+			"value": 0,
+			"colour": "#D02020",
+			"tip": "October 2007 Search Rank<br>Rank 0 \/ 100"
+			},
+			{
+			"value": 0,
+			"colour": "#D02020",
+			"tip": "November 2007 Search Rank<br>Rank 0 \/ 100"
+			},
+			{
+			"value": 0,
+			"colour": "#D02020",
+			"tip": "December 2007 Search Rank<br>Rank 0 \/ 100"
+			},
+			{
+			"value": 0,
+			"colour": "#D02020",
+			"tip": "January 2008 Search Rank<br>Rank 0 \/ 100"
+			},
+			{
+			"value": 0,
+			"colour": "#D02020",
+			"tip": "February 2008 Search Rank<br>Rank 0 \/ 100"
+			},
+			{
+			"value": 0,
+			"colour": "#D02020",
+			"tip": "March 2008 Search Rank<br>Rank 0 \/ 100"
+			},
+			{
+			"value": 83,
+			"colour": "#D02020",
+			"tip": "April 2008 Search Rank<br>Rank 83 \/ 100"
+			},
+			{
+			"value": 76,
+			"colour": "#D02020",
+			"tip": "May 2008 Search Rank<br>Rank 76 \/ 100"
+			},
+			{
+			"value": 100,
+			"colour": "#D02020",
+			"tip": "June 2008 Search Rank<br>Rank 100 \/ 100"
+			},
+			{
+			"value": 80,
+			"colour": "#D02020",
+			"tip": "July 2008 Search Rank<br>Rank 80 \/ 100"
+			},
+			{
+			"value": 73,
+			"colour": "#D02020",
+			"tip": "August 2008 Search Rank<br>Rank 73 \/ 100"
+			},
+			{
+			"value": 100,
+			"colour": "#D02020",
+			"tip": "September 2008 Search Rank<br>Rank 100 \/ 100"
+			}
+		],
+		"width": 2,
+		"dot-size": 4,
+		"halo-size": 2,
+		"colour": "#ff9900",
+		"fill": "#dbecf6"
+	}
+	],
+	"bg_colour": "#ffffff",
+	"x_axis": {
+		"colour": "#aaaaaa",
+		"grid-colour": "#eeeeee",
+		"stroke": 1,
+		"tick-height": 4,
+		"labels": {
+			"labels": [
+				"Oct",
+				"Nov",
+				"Dec",
+				"Jan",
+				"Feb",
+				"Mar",
+				"Apr",
+				"May",
+				"Jun",
+				"Jul",
+				"Aug",
+				"Sep"
+			]
+		}
+	},
+	"y_axis": {
+		"colour": "#aaaaaa",
+		"grid-colour": "#eeeeee",
+		"stroke": 1,
+		"tick-length": 5,
+		"min": 0,
+		"max": 105,
+		"steps": 50
+	},
+	"tooltip": {
+		"stroke": 1,
+		"colour": "#000000",
+		"background": "#fffbca"
+	}
+}

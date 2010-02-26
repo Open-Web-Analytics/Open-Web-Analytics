@@ -1,0 +1,62 @@
+{
+  "title":{
+    "text":  "Many data lines",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "colour":    "#9933CC",
+      "alpha":     0.5,
+      "values" :   [9]
+    },
+    {
+      "type":      "bar_cylinder_outline",
+      "colour":    "#CC9933",
+      "alpha":     0.9,
+      "values" :   [{"top":7,"colour":"#30A030","tip":"#top#<br>hello"}]
+    },
+    {
+      "type":      "bar_cylinder_outline",
+      "colour":    "#CC9933",
+      "alpha":     0.9,
+      "values" :   [{"top":7,"colour":"#A03030","tip":"#top#<br>hello","alpha":0.2}]
+    },
+    {
+      "type":      "bar_sketch",
+      "colour":    "#0000FF",
+      "alpha":     0.5,
+      "values" :   [4]
+    },
+    {
+      "type":      "bar_glass",
+      "alpha":     0.5,
+      "colour":    "#CC9933",
+      "values" :   [6]
+    }
+  ],
+
+  "x_axis":{
+    "stroke":1,
+    "tick_height":10,
+    "colour":"#d000d0",
+    "grid_colour":"#00ff00",
+    "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+   },
+
+  "y_axis":{
+    "stroke":      4,
+    "tick_length": 3,
+    "colour":      "#d000d0",
+    "grid_colour": "#00ff00",
+    "offset":      0,
+    "max":         20
+  }
+}
+

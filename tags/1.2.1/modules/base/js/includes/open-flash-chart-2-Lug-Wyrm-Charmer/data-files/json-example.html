@@ -1,0 +1,43 @@
+<html>
+<head>
+
+<script type="text/javascript">
+
+function load()
+{
+  tmp = findSWF("ofc");
+  x = tmp.load('{"title":{"text":"hello"}, "x_axis":{"max":6},"elements":[{"type":"line","text":"moo","font-size":10,"values":[5,8,9,4,7,8]}]}');
+}
+
+function onrollout2()
+{
+  tmp = findSWF("ofc");
+  x = tmp.rollout();
+}
+
+function findSWF(movieName) {
+  if (navigator.appName.indexOf("Microsoft")!= -1) {
+    return window[movieName];
+  } else {
+    return document[movieName];
+  }
+}
+
+</script>
+
+</head>
+<body>
+    
+<script type="text/javascript" src="../js/swfobject.js"></script>
+
+<div id="my_chart" style="padding: 0px; margin:10px; border: 1px solid lightblue; width: 250px; height: 200px;" onmouseout="__onrollout();"></div>
+ 	
+<script type="text/javascript">
+var so = new SWFObject("../open-flash-chart/open-flash-chart.swf", "ofc", "250", "200", "9", "#FFFFFF");
+so.addParam("allowScriptAccess", "always" );//"sameDomain");
+so.write("my_chart");
+</script>
+
+<input type="submit" onclick="javascript:load()" value="go">
+</body>
+</html>
