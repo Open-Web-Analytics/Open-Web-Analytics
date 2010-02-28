@@ -807,8 +807,7 @@ class owa_coreAPI extends owa_base {
 				return false;
 			}
 		}
-			
-	
+		
 		// do not log if the request is robotic
 		$service = &owa_coreAPI::serviceSingleton();
 		$bcap = $service->getBrowscap();

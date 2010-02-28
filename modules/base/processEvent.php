@@ -171,7 +171,13 @@ class owa_processEventController extends owa_controller {
 		$bcap = $service->getBrowscap();
 		
 		$this->event->set('browser_type', $this->eq->filter('browser_type', $bcap->get('Browser')));
-		$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version')));
+		
+		if ($bcap->get('Version')) {
+			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version')));
+		} else {
+			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser')));
+		}
+		
 		
 		// Set Operating System
 		$this->event->set('os', $this->eq->filter('operating_system', $bcap->get('Platform'), $this->event->get('HTTP_USER_AGENT')));
