@@ -191,7 +191,7 @@ class owa_coreAPI extends owa_base {
 		
 		static $e;
 		
-		if(!isset($e)):
+		if(!$e) {
 			
 			if (!class_exists('owa_error')):
 				require_once(OWA_BASE_CLASS_DIR.'error.php');
@@ -199,7 +199,7 @@ class owa_coreAPI extends owa_base {
 			
 			$e = owa_coreAPI::supportClassFactory('base', 'error');
 			
-		endif;
+		}
 		
 		return $e;
 	}
@@ -952,6 +952,11 @@ class owa_coreAPI extends owa_base {
 		
 	}
 	
+	function getRequest() {
+		$service = &owa_coreAPI::serviceSingleton();
+		return $service->request;
+	}
+	
 	function setRequestParam($name, $value) {
 		
 		$service = &owa_coreAPI::serviceSingleton();
@@ -1177,6 +1182,16 @@ class owa_coreAPI extends owa_base {
 			$p->display();
 		}
 		
+	}
+	
+	function getEventDispatch() {
+		
+		if (!class_exists('eventQueue')) {
+			require_once(OWA_DIR.'/eventQueue.php');
+		}
+
+		$eq = &eventQueue::get_instance();
+		return $eq;
 	}
 	
 	

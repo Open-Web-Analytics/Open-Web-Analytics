@@ -40,6 +40,7 @@ class owa_requestContainer {
 	var $server;
 	var $guid;
 	var $state;
+	var $request_type;
 	
 	/**
 	 * Singleton returns request params
@@ -134,9 +135,11 @@ class owa_requestContainer {
 		if (!empty($_POST)):
 			// get params from _POST
 			$params = $_POST;
+			$this->request_type = 'post';
 		elseif (!empty($_GET)):
 			// get params from _GET
 			$params = $_GET;
+			$this->request_type = 'get';
 		elseif (!empty($this->cli_args)):
 			// get params from the command line args
 			// $argv is a php super global variable
@@ -146,6 +149,7 @@ class owa_requestContainer {
 				   $it = split("=",$this->cli_args[$i]);
 				   $params[$it[0]] = $it[1];
 			   }
+			   $this->request_type = 'cli';
 		endif;
 		
 		// merge in cookies into the request params
@@ -201,6 +205,11 @@ class owa_requestContainer {
 		} else {
 			return false;
 		}
+	}
+	
+	function getAllRequestParams() {
+		
+		return $this->request;
 	}
 	
 	function getAllOwaParams() {

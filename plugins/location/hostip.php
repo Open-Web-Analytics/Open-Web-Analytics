@@ -18,7 +18,7 @@
 require_once(OWA_BASE_DIR.'/owa_location.php');
 
 if (!class_exists('owa_http')) {
-	owa_coreAPI::debug('owa_http already defined');
+	//owa_coreAPI::debug('owa_http already defined');
 	require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
 }
 
@@ -90,8 +90,10 @@ class owa_hostip extends owa_location {
 	function get_location($ip) {
 		
 		$crawler = new owa_http;
-		$crawler->read_timeout = $this->config['ws_timeout'];
+		$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
+		
 		$crawler->fetch(sprintf($this->ws_url, $ip));
+	
 		$location = $crawler->crawler->results;
 				
 		$location =	str_replace("\n", "|", $location);
@@ -114,12 +116,12 @@ class owa_hostip extends owa_location {
 		$this->latitude = trim($result['Latitude']);
 		$this->longitude = trim($result['Longitude']);
 		
-		$this->e->debug(sprintf("HostIp web service response code: %s", $crawler->crawler->response_code));
+		owa_coreAPI::debug(sprintf("HostIp web service response code: %s", $crawler->crawler->response_code));
 		
 		// log headers if status is not a 200 
-		if (strstr($crawler->response_code, "200") === false):
-			$this->e->debug(sprintf("HostIp web service response headers: %s", print_r($crawler->crawler->headers, true)));
-		endif;
+		if (strstr($crawler->response_code, "200") === false) {
+			owa_coreAPI::debug(sprintf("HostIp web service response headers: %s", print_r($crawler->crawler->headers, true)));
+		}
 		
 		return;
 	}

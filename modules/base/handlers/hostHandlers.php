@@ -62,15 +62,16 @@ class owa_hostHandlers extends owa_observer {
     	$h = owa_coreAPI::entityFactory('base.host');
 		
 		$h->getByPk('id', owa_lib::setStringGuid($event->get('host')));
+		$id = $h->get('id'); 
 		
-		if (!$h->get('id')) {
-		
+		if (!$id) {
+			
 			$h->setProperties($event->getProperties());
 			
 			$h->set('id', owa_lib::setStringGuid($event->get('host'))); 
-	
+			
 			// makes the geo-location object from the service specified in the config
-			$ret = require_once(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR.'hostip.php');
+			$ret = require_once(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR.owa_coreAPI::getSetting('base', 'geolocation_service').'php');
 			//$location = new owa_hostip;
 			$location = owa_lib::factory(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR, '', owa_coreAPI::getSetting('base', 'geolocation_service'));
 			

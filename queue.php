@@ -16,11 +16,14 @@
 // $Id$
 //
 
+ignore_user_abort(true);
+set_time_limit(180);
+
+include_once('owa_env.php');
+require_once(OWA_BASE_DIR.'/owa_php.php');
+
 /**
- * Geo-location abstract class
- * 
- * Looks up the geographic location of a request based on IP address lookups in a variety of
- * databses or web services.
+ * Remote Event Queue Front Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -30,56 +33,16 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_location {
-	
-	/**
-	 * City 
-	 *
-	 * @var string
-	 */
-	var $city;
-	
-	/**
-	 * Country
-	 *
-	 * @var string
-	 */
-	var $country;
-	
-	/**
-	 * Latitude coordinates
-	 *
-	 * @var string
-	 */
-	var $latitude;
-	
-	/**
-	 * Longitude coordinates
-	 *
-	 * @var string
-	 */
-	var $longitude;
-	
-	/**
-	 * Location of concrete class plugins
-	 *
-	 * @var unknown_type
-	 */
-	var $plugin_dir;
-	
-	/**
-	 * Constructor
-	 *
-	 * @return owa_location
-	 */
-	function owa_location() {
-		
-		return owa_location::__construct();
-	}
-	
-	function __construct() {
-	
-	}
-}
+
+
+$owa = new owa_php();
+$owa->setSetting('base', 'is_remote_event_queue', true);
+$owa->e->debug($_POST);
+$req = owa_coreAPI::getRequest();
+$event = $owa->makeEvent();
+$event->setEventType($req->getRequestParam('event_type'));
+$event->setProperties($req->getAllRequestParams());
+$dispatch = owa_coreAPI::getEventDispatch();
+$dispatch->asyncNotify($event);
 
 ?>

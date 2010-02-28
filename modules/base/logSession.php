@@ -98,7 +98,8 @@ class owa_logSessionController extends owa_controller {
 		$ne->setEventType('base.new_session');
 		
 		// log the new session event to the event queue
-		$this->logEvent($ne->getEventType(), $ne);
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->notify($ne);
 			
 		return;
 			

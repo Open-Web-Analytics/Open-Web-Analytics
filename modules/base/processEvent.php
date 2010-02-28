@@ -53,7 +53,7 @@ class owa_processEventController extends owa_controller {
 			$this->event = owa_coreAPI::supportClassFactory('base', 'event');
 		}
 		
-		$this->eq = eventQueue::get_instance();
+		$this->eq = owa_coreAPI::getEventDispatch();
 		
 		return parent::__construct($params);
 	
@@ -230,7 +230,7 @@ class owa_processEventController extends owa_controller {
 	
 	function addToEventQueue() {
 		
-		$this->eq->log($this->event, $this->event->getEventType());
+		$this->eq->asyncNotify($this->event);
 		return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
 
 	}
