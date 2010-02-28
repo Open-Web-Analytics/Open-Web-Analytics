@@ -73,13 +73,6 @@ class owa_processFirstRequestController extends owa_processEventController {
 		return;
 		
 	}
-	
-	function post() {
-			
-		return $this->addToEventQueue();
-	}
-	
-	
 }
 
 ?>

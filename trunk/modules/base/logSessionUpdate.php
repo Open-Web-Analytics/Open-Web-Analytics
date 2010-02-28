@@ -80,7 +80,8 @@ class owa_logSessionUpdateController extends owa_controller {
 		$ne->setProperties($properties);
 		$ne->setEventType('base.session_update');
 		// Log session update event to event queue
-		$this->logEvent($ne->getEventType(), $ne);
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->notify($ne);
 			
 		return;
 			

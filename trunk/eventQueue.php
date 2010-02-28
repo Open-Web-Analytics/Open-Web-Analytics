@@ -222,12 +222,8 @@ class eventQueue {
 			$event = $event_params;
 		}
 		
-		//switch for async event queuing
-		if (owa_coreAPI::getSetting('base', 'async_db')) {
-			$this->asyncNotify($event);
-		} else {
-			$this->notify($event);
-		}	
+		$this->asyncNotify($event);
+			
 	}
 	
 	/**
@@ -239,30 +235,62 @@ class eventQueue {
 	 * @return bool
 	 */
 	function asyncNotify($event) {
-		owa_coreAPI::debug("Adding event of $event_type to async notification queue.");
-		$q = $this->getAsyncEventQueue();
-		return $q->log($event, $event->getEventType());
+		
+		// check config to see if async mode is enabled, if not fall back to realtime notification
+		if (owa_coreAPI::getSetting('base', 'queue_events')) {
+			owa_coreAPI::debug(sprintf("Adding event of %s to async %s queue.", $event->getEventType(), owa_coreAPI::getSetting('base', 'event_queue_type')));
+			// check to see first if OWA is not already acting as a remote event queue, 
+			// then check to see if we are configured to use a remote or local event queue
+			// then see if we have an endpoint
+			if (!owa_coreAPI::getSetting('base', 'is_remote_event_queue') && 
+			    owa_coreAPI::getSetting('base', 'use_remote_event_queue') &&
+			    owa_coreAPI::getSetting('base', 'remote_event_queue_type') &&
+			    owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint')) {
+			    // get a network queue
+				$q = $this->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'remote_event_queue_type'));
+			// use a local event queue
+			} else {
+				// get a local event queue
+				$q = $this->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
+			}
+			
+			// if an event queue is returned then pass it the event
+			if ($q) {
+			
+				return $q->addToQueue($event);
+			// otherwise skip the queue and just notify the listeners immeadiately. 
+			} else {
+				return $this->notify($event);
+			}
+			
+		// otherwise skip the queue and just notify the listeners immeadiately. 	
+		} else {
+			return $this->notify($event);
+		}	
 	}
 	
-	function getAsyncEventQueue() {
-		
+	function getAsyncEventQueue($type) {
+	
 		static $q;
 		
-		if (!empty($q)) {
+		if (!$q) {
 			
-			require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
-			require_once(OWA_PLUGIN_DIR . 'log/queue.php');
-			require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
-			
-			$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-			$q = &Log::singleton('async_queue', $this->config['async_log_dir'].$this->config['async_log_file'], 'async_event_queue', $conf);
-			$q->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
-			// not sure why this is needed but it is.
-			$q->_filename	= $this->config['async_log_dir'].$this->config['async_log_file'];
-		}
-		
+			switch($type) {
+				
+				case 'http':
+					$q = owa_coreAPI::supportClassFactory('base', 'httpEventQueue');
+					break;
+				case 'database':
+					$q = owa_coreAPI::supportClassFactory('base', 'dbEventQueue');
+					break;
+				case 'file':
+					$q = owa_coreAPI::supportClassFactory('base', 'fileEventQueue');
+					break;
+				default:
+					$q = false;
+			}
+		}		
 		return $q;
-		
 	}
 	
 	function eventFactory() {

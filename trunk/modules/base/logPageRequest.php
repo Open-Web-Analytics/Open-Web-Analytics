@@ -17,10 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Log Page View Controller
@@ -38,7 +35,6 @@ class owa_logPageRequestController extends owa_controller {
 	
 	function owa_logPageRequestController($params) {
 		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
 	}
 	
 	function action() {
@@ -74,7 +70,8 @@ class owa_logPageRequestController extends owa_controller {
 		
 		if ($result == true) {
 			$event->setEventType($event->getEventType().'_logged');
-			$this->logEvent($event->getEventType(), $event);
+			$eq = owa_coreAPI::getEventDispatch();
+			$eq->notify($event);
 		}
 		
 		return;

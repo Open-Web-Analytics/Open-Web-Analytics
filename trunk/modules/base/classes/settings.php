@@ -156,7 +156,7 @@
 			$this->set('base', 'db_host', OWA_DB_HOST);
 		}
 		
-		if (!defined('OWA_DB_USER')) {
+		if (defined('OWA_DB_USER')) {
 			$this->set('base', 'db_user', OWA_DB_USER);
 		}
 		
@@ -179,6 +179,22 @@
 		
 		if (defined('OWA_PUBLIC_PATH')) {
 			$this->set('base', 'public_path', OWA_PUBLIC_PATH);
+		}
+		
+		if (defined('OWA_QUEUE_EVENTS')) {
+			$this->set('base', 'queue_events', OWA_QUEUE_EVENTS);
+		}
+		
+		if (defined('OWA_USE_REMOTE_EVENT_QUEUE')) {
+			$this->set('base', 'use_remote_event_queue', OWA_USE_REMOTE_EVENT_QUEUE);
+		}
+		
+		if (defined('OWA_REMOTE_EVENT_QUEUE_TYPE')) {
+			$this->set('base', 'remote_event_queue_type', OWA_REMOTE_EVENT_QUEUE_TYPE);
+		}
+		
+		if (defined('OWA_REMOTE_EVENT_QUEUE_ENDPOINT')) {
+			$this->set('base', 'remote_event_queue_endpoint', OWA_REMOTE_EVENT_QUEUE_ENDPOINT);
 		}
 		
  	}
@@ -575,6 +591,11 @@
 			'mailer-smtpAuth'				=> '',
 			'mailer-username'				=> '',
 			'mailer-password'				=> '',
+			'queue_events'					=> false,
+			'event_queue_type'				=> '',
+			'use_remote_event_queue'		=> true,
+			'remote_event_queue_type'		=> 'http',
+			'remote_event_queue_endpoint'	=> '',
 			'cookie_domain'					=> '',
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,

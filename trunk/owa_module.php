@@ -176,9 +176,9 @@ class owa_module extends owa_base {
 		parent::__construct();
 		
 		// register event handlers unless OWA is operating in async handling mode
-		if ($this->config['async_db'] == false):
+		//if ($this->config['async_db'] == false):
 			$this->_registerEventHandlers();
-		endif;
+		//endif;
 		$this->_registerEventProcessors();
 		$this->_registerEntities();
 		
@@ -245,7 +245,7 @@ class owa_module extends owa_base {
 			$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');	
 		}
 				
-		$eq = &eventQueue::get_instance();
+		$eq = owa_coreAPI::getEventDispatch();
 		$eq->attach($event_name, array($handler_name, $method));
 		
 		return;
@@ -269,7 +269,7 @@ class owa_module extends owa_base {
 		
 		
 
-		$eq = &eventQueue::get_instance();
+		$eq = owa_coreAPI::getEventDispatch();
 		$eq->attachFilter($filter_name, array($handler_name, $method), $priority);
 		
 		return;
