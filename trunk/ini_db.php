@@ -155,6 +155,26 @@ class ini_db extends owa_base {
 		endif;
 	}
 	
+	function contains($haystack = '') {
+		
+		$pos = false;
+		
+		if ($haystack) {
+		
+			foreach ($this->db as $k => $needle) {
+				$needle = substr(strtolower(trim($needle)),1,-1);
+				$pos = strpos(strtolower($haystack), $needle);
+				
+				if ($pos) {
+					owa_coreAPI::debug(sprintf('Haystack contains "%s" at position %d', $needle, $pos));
+					return true;
+				}
+			}
+			
+			return false;	
+		}
+	}
+	
 	/**
 	 * Fetch a record set and perfrom a regex replace on the name
 	 *

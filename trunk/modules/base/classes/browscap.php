@@ -81,20 +81,14 @@ class owa_browscap extends owa_base {
 	}
 	
 	function robotCheck() {
-		
-		if ($this->browser->Crawler === true) {
-			$robot = true;
+		// must use == due to wacky type issues with phpBrowsecap ini file
+		if ($this->browser->Crawler == true) {
+			return true;
 		} elseif ($this->browser->Browser === "Default Browser") {
-			if($this->robotRegexCheck() === true) {
-				$robot = true;
-			} else {
-				$robot = false;
-			}
-		} else {
-			$robot = false;
+			return $this->robotRegexCheck();
 		}
-		owa_coreAPI::debug('Browscap Robot Check: '. $robot);
-		return $robot;
+		
+		return false;
 	}
 	
 	function lookup($user_agent) {
@@ -110,20 +104,7 @@ class owa_browscap extends owa_base {
 					
 		else:
 			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-			// lookup from DB
-			
-			//$ua = owa_coreAPI::entityFactory('base.ua');
-			//$ua->getByColumn('ua', $user_agent);
-			
-			//$browser = $ua->get('browser');
-			
-			//if (!empty($browser)):
-				
-			//	return $ua->_getProperties();
-			//else:
-			// ;
-			//endif;
-				
+						
 			// Load main browscap
 			$this->browscap_db = $this->load($this->config['browscap.ini']);
 	
@@ -154,14 +135,11 @@ class owa_browscap extends owa_base {
 				endif;
 			endif;
 
-			 
 			 return ((object)$cap);
 		 
 		endif;
 	
 	}
-	
-	
 	
 	function load($file) {
 	
@@ -176,10 +154,11 @@ class owa_browscap extends owa_base {
 	function robotRegexCheck() {
 		
 		$db = new ini_db(OWA_CONF_DIR.'robots.ini');
-		$match = $db->match($this->ua);
+		owa_coreAPI::debug('Checking for robot strings...');
+		$match = $db->contains($this->ua);
 		
 		if (!empty($match)):
-			$this->e->debug(sprintf('Last chance robot detect string: %s', $match[0]));
+			owa_coreAPI::debug('Robot detect string found.');
 			$this->browser->Crawler = true;
 			return true;
 		else:
