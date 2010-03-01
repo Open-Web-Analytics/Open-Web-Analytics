@@ -46,11 +46,11 @@ class owa_httpEventQueue extends owa_eventQueue {
 	function addToQueue($event) {
 		
 		if ($event) {
-			$properties = $event->getProperties();
-			$properties['event_type'] = $event->getEventType();
-			$properties = array_map('urlencode', $properties);
+			$properties['owa_event'] = base64_encode(serialize($event));
+			
+			//$properties = array_map('urlencode', $properties);
 			$properties = owa_lib::implode_assoc('=', '&', $properties);
-			//print_r($properties);
+			print_r($properties);
 			//return;
 		} else {
 			return;
