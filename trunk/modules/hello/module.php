@@ -56,7 +56,7 @@ class owa_helloModule extends owa_module {
 	 */
 	function registerAdminPanels() {
 		
-		$this->addAdminPanel(array( 'do' 			=> 'hello.admin', 
+		$this->addAdminPanel(array( 'do' 			=> 'hello.exampleSettings', 
 									'priviledge' 	=> 'admin', 
 									'anchortext' 	=> 'Hello World!',
 									'group'			=> 'Test',
