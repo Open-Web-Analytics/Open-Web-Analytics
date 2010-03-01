@@ -32,7 +32,6 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 class owa_moduleDeactivateController extends owa_adminController {
 	
-	
 	function __construct($params) {
 	
 		$this->setRequiredCapability('edit_modules');
@@ -44,22 +43,15 @@ class owa_moduleDeactivateController extends owa_adminController {
 	function owa_moduleDeactivateController($params) {
 		
 		return owa_moduleDeactivateController::__construct($params);
-		
 	}
 
 	function action() {
 		
 		$s = &owa_coreAPI::serviceSingleton();
-		
-		$m = $s->getModule($this->params['module']);
+		$m = $s->getModule($this->getParam('module'));
 		$m->deactivate();
-		
-		$data['do'] = 'base.optionsModules';
-		$data['view_method'] = 'redirect';
-		$data['status_code'] = 2502;
-		
-		return $data;
-	
+		$this->setRedirectAction('base.optionsModules');
+		$this->setStatusCode(2502);	
 	}
 	
 }
