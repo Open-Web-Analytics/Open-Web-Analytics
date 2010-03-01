@@ -39,9 +39,9 @@ $owa = new owa_php();
 $owa->setSetting('base', 'is_remote_event_queue', true);
 $owa->e->debug($_POST);
 $req = owa_coreAPI::getRequest();
-$event = $owa->makeEvent();
-$event->setEventType($req->getRequestParam('event_type'));
-$event->setProperties($req->getAllRequestParams());
+$ev = $owa->makeEvent();
+$event = unserialize(base64_decode(owa_coreAPI::getRequestParam('event')));
+$owa->e->debug(print_r($event,true));
 $dispatch = owa_coreAPI::getEventDispatch();
 $dispatch->asyncNotify($event);
 
