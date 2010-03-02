@@ -65,7 +65,7 @@ class owa_serviceUser extends owa_base {
 		
 	function getCapabilities($role) {
 		
-		$caps = &owa_coreAPI::getSetting('base', 'capabilities');
+		$caps = owa_coreAPI::getSetting('base', 'capabilities');
 		
 		if (array_key_exists($role, $caps)) {
 			return $caps[$role];
