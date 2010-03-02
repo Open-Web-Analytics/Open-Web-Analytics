@@ -135,7 +135,7 @@ class owa_auth extends owa_base {
 		if ($this->_is_user == false):
 		
 			// check to see if the current user has already been authenticated by something upstream
-			$cu = owa_coreAPI::getCurrentUser();
+			$cu = &owa_coreAPI::getCurrentUser();
 			if (!$cu->isAuthenticated()):
 				// check to see if they are a user.
 				$this->isUser();

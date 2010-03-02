@@ -59,7 +59,7 @@ class owa_auth_simple extends owa_auth {
 	function isUser() {
 		
 		// get current user
-		$cu = owa_coreAPI::getCurrentUser();
+		$cu = &owa_coreAPI::getCurrentUser();
 				
 		// fetches user object from DB
 		$this->getUser();
