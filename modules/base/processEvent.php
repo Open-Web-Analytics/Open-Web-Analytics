@@ -170,6 +170,9 @@ class owa_processEventController extends owa_controller {
 		$service = owa_coreAPI::serviceSingleton();
 		$bcap = $service->getBrowscap();
 		
+		// Assume browser untill told otherwise
+		$this->event->set('is_browser',true);
+		
 		$this->event->set('browser_type', $this->eq->filter('browser_type', $bcap->get('Browser')));
 		
 		if ($bcap->get('Version')) {
@@ -177,8 +180,7 @@ class owa_processEventController extends owa_controller {
 		} else {
 			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser')));
 		}
-		
-		
+	
 		// Set Operating System
 		$this->event->set('os', $this->eq->filter('operating_system', $bcap->get('Platform'), $this->event->get('HTTP_USER_AGENT')));
 		
@@ -187,7 +189,23 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('is_robot', true);
 			$this->event->set('is_browser', false);
 
-		}	
+		}
+		
+		// feed request properties
+		$et = $this->event->getEventType();
+		if ($et === 'base.feed_request') {
+			
+			// Feed subscription tracking code
+			if (!$this->event->get('feed_subscription_id')) {
+				$this->event->set('feed_subscription_id', $this->getParam(owa_coreAPI::getSetting('base', 'feed_subscription_param')));
+			}
+			
+			// needed??
+			$this->event->set('feed_reader_guid', $this->event->setEnvGUID());
+			// set feedreader flag to true, browser flag to false
+			$this->event->set('is_feedreader', true);
+			$this->event->set('is_browser', false);
+		}
 		
 		// record and filter visitor personally identifiable info (PII)		
 		if (owa_coreAPI::getSetting('base', 'log_visitor_pii')) {
@@ -236,7 +254,12 @@ class owa_processEventController extends owa_controller {
 	
 	function addToEventQueue() {
 		
-		$this->eq->asyncNotify($this->event);
+		// notify handlers that tracking event processing is complete
+		$tepc = $this->eq->makeEvent('tracking_event_processing_complete');
+		$tepc->set('tracking_event_type', $this->event->getEventType());
+		$this->eq->notify($tepc);
+		// pass event to handlers but filter it first
+		$this->eq->asyncNotify($this->eq->filter('processed_event', $this->event));
 		return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
 
 	}

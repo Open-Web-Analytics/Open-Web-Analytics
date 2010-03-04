@@ -1,5 +1,3 @@
-#!/usr/local/bin/php -q
-
 <?php
 
 //
@@ -18,14 +16,10 @@
 // $Id$
 //
 
-require_once 'owa_env.php';
-require_once 'asyncEventProcessor.php';
+require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
- * Batch Event Processing Script
- * 
- * This script should be run by another script or scheduled by a CRON type
- * scheduler.
+ * Entity Install Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -36,35 +30,25 @@ require_once 'asyncEventProcessor.php';
  * @since		owa 1.0.0
  */
 
-// parse args into it's own array
-if ($argv):
-   for ($i=1; $i<count($argv);$i++)
-   {
-       $it = split("=",$argv[$i]);
-       $_argv[$it[0]] = $it[1];
-   }
-
-endif;
-
-// create instance of OWA
-$config = array();
-$config['async_db'] = false;
-$owa = new asyncEventProcessor($config);
-
-//normal run
-if(empty($_argv)):
+class owa_processEventQueueController extends owa_cliController {
 	
-	$owa->process_standard();
-	return;   
-// Process a specific file
-// syntax is: file=filename.txt
-elseif (!empty($_argv['file'])):
+	function __construct($params) {
 	
-	$owa->process_specific($config['async_log_dir'].$_argv['file']);
-	return;
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
+	}
+	
+	function owa_processEventQueueController($params) {
+	
+		return owa_processEventController::__construct($params);
+	}
 
-endif;
-
-
+	function action() {
+		
+		$d = owa_coreAPI::getEventDispatch();
+		$q = $d->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
+		$q->processQueue();
+	}
+}
 
 ?>

@@ -21,6 +21,8 @@ if (!class_exists('owa_observer')) {
 	require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
 }
 
+require_once(OWA_BASE_CLASS_DIR.'event.php');
+
 /**
  * Event Dispatcher
  * 
@@ -296,6 +298,17 @@ class eventQueue {
 	function eventFactory() {
 		
 		return owa_coreAPI::supportClassFactory('base', 'event');
+	}
+	
+	function makeEvent($type = '') {
+		
+		$event = $this->eventFactory();
+		
+		if ($type) {
+			$event->setEventType($type);
+		}
+		
+		return $event;
 	}
 
 	/**

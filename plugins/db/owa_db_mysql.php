@@ -106,16 +106,14 @@ class owa_db_mysql extends owa_db {
 		
 		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
 			
-		if (!$this->connection || !$this->database_selection):
-				$this->e->alert('Could not connect to database.');
-				$this->connection_status = false;
-				return false;
-		else:
-				$this->connection_status = true;
-		endif;
-		
-		return;
-	
+		if (!$this->connection || !$this->database_selection) {
+			$this->e->alert('Could not connect to database.');
+			$this->connection_status = false;
+			return false;
+		} else {
+			$this->connection_status = true;
+			return true;
+		}
 	}
 	
 	

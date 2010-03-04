@@ -315,7 +315,7 @@ class Log_async_queue extends Log
                 		$this->_ident, 
                 		$this->priorityToString($priority),
                 		$event_type,
-                		urlencode(serialize($message))) . $this->_eol;
+                		$message) . $this->_eol;
                 
         /* If locking is enabled, acquire an exclusive lock on the file. */
         if ($this->_locking) {

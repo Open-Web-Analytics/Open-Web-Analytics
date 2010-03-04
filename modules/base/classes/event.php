@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_base.php');
-
 /**
  * Abstract OWA Event Class
  * 
@@ -85,14 +83,9 @@ class owa_event {
 	function __construct() {
 		
 		// Set GUID for event
-		$this->set('guid', $this->set_guid());
-		//needed?
 		$this->guid = $this->set_guid();
-		
-		// Assume browser untill told otherwise
-		$this->set('is_browser',true);
-		
-		return;
+		//needed?
+		$this->set('guid', $this->guid);
 	}
 	
 	function set($name, $value) {
@@ -242,7 +235,7 @@ class owa_event {
 	
 	
 
-/**
+	/**
 	 * Assigns visitor IDs
 	 *
 	 */
@@ -256,8 +249,6 @@ class owa_event {
 			$this->set('visitor_id', $inbound_visitor_id);
 			$this->set('is_repeat_visitor', true);
 		endif;
-		
-		return;
 	}
 
 	
@@ -284,49 +275,42 @@ class owa_event {
 		
 		$this->set('is_new_visitor', true);
 		
-		
-		return;
-	
 	}
 	
-/**
+	/**
 	 * Make Session IDs
 	 *
 	 */
 	function sessionize($inbound_session_id) {
-			
-			
-			
-			// check for inbound session id
-			if (!empty($inbound_session_id)):
-				 
-				 if ($this->get('last_req')):
-				 
-				 	// Calc time sinse the last request
-				 	// NEEDED???
-					$time_since_lastreq = $this->timeSinceLastRequest();
-					$this->set('time_sinse_lastreq', $time_since_lastreq);
-					$len = owa_coreAPI::getSetting('base', 'session_length');
-					if ($time_since_lastreq < $len):
-						owa_coreAPI::debug("Sessionize: last hit less than session length.");
-						$this->set('session_id', $inbound_session_id);		
-					else:
-					//prev session expired, because no hits in half hour.
-						owa_coreAPI::debug("Sessionize: prev session expired, because no hits in half hour.");
-						$this->create_new_session($this->get('visitor_id'));
-					endif;
+					
+		// check for inbound session id
+		if (!empty($inbound_session_id)):
+			 
+			 if ($this->get('last_req')):
+			 
+			 	// Calc time sinse the last request
+			 	// NEEDED???
+				$time_since_lastreq = $this->timeSinceLastRequest();
+				$this->set('time_sinse_lastreq', $time_since_lastreq);
+				$len = owa_coreAPI::getSetting('base', 'session_length');
+				if ($time_since_lastreq < $len):
+					owa_coreAPI::debug("Sessionize: last hit less than session length.");
+					$this->set('session_id', $inbound_session_id);		
 				else:
-				//session_id, but no last_req value. whats up with that?  who cares. just make new session.
-					owa_coreAPI::debug("Sessionize: session_id, but no last_req value. whats up with that?  who cares. just make new session.");
+				//prev session expired, because no hits in half hour.
+					owa_coreAPI::debug("Sessionize: prev session expired, because no hits in half hour.");
 					$this->create_new_session($this->get('visitor_id'));
 				endif;
 			else:
-			//no session yet. make one.
-				owa_coreAPI::debug("Sessionize: no session yet. make one.");
+			//session_id, but no last_req value. whats up with that?  who cares. just make new session.
+				owa_coreAPI::debug("Sessionize: session_id, but no last_req value. whats up with that?  who cares. just make new session.");
 				$this->create_new_session($this->get('visitor_id'));
 			endif;
-						
-		return;
+		else:
+		//no session yet. make one.
+			owa_coreAPI::debug("Sessionize: no session yet. make one.");
+			$this->create_new_session($this->get('visitor_id'));
+		endif;						
 	}
 	
 	/**
@@ -353,7 +337,6 @@ class owa_event {
 	
 	}
 
-		
 	function getProperties() {
 		
 		return $this->properties;
@@ -393,6 +376,11 @@ class owa_event {
 	function setPageType($value) {
 		
 		$this->set('page_type', $value);
+	}
+	
+	function getGuid() {
+		
+		return $this->guid;
 	}
 	
 		
