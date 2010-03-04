@@ -93,7 +93,7 @@ class owa_caller extends owa_base {
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
 		owa_coreAPI::debug('Request URL: '.$_SERVER['REQUEST_URI']);
 		owa_coreAPI::debug('User Agent: '.$_SERVER['HTTP_USER_AGENT']);
-
+		
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 		
@@ -136,8 +136,12 @@ class owa_caller extends owa_base {
 		
 		/* LOAD SERVICE LAYER */
 		$this->service = &owa_coreAPI::serviceSingleton();
-		$this->service->initializeFramework();
-			
+		// notify handlers of 'init' action
+		$dispatch = owa_coreAPI::getEventDispatch();
+		$dispatch->notify($dispatch->makeEvent('init'));
+		// initialize framework
+		$this->service->initializeFramework();	
+		
 		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.
 		if (!empty($this->params['site_id'])) {

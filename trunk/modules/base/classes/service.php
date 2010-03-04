@@ -52,24 +52,6 @@ class owa_service extends owa_base {
 	
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-		// setup request container
-		$this->request = owa_coreAPI::requestContainerSingleton();
-		// setup settings
-		//$this->settings = owa_coreAPI::configSingleton(); 
-		// setup current user
-		$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
-		$this->current_user->setRole('everyone');
-		// the 'log_users' confi directive relies on this being populated
-		$this->current_user->setUserData('user_id', $this->request->state->get('u'));
-		
-		return;
-	}
-	
-	function __destruct() {
-		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-	}
-	
-	function initializeFramework() {
 		
 		if (!$this->isInit()) {
 			$this->_loadModules();
@@ -77,8 +59,20 @@ class owa_service extends owa_base {
 			$this->_loadEventProcessors();
 			$this->setInit();
 		}
-		
-		return;
+	}
+	
+	function __destruct() {
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+	}
+	
+	function initializeFramework() {
+		// setup request container
+		$this->request = owa_coreAPI::requestContainerSingleton();
+		// setup current user
+		$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
+		$this->current_user->setRole('everyone');
+		// the 'log_users' config directive relies on this being populated
+		$this->current_user->setUserData('user_id', $this->request->state->get('u'));
 	}
 	
 	function setBrowscap($b) {

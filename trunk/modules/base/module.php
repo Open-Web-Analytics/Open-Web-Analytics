@@ -161,6 +161,8 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('base.new_session', 'notifyHandlers');
 		// install complete handler
 		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
+		//init
+		$this->registerEventHandler('init', $this, 'initTest');
 		// domstreams
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 	}
@@ -169,8 +171,7 @@ class owa_baseModule extends owa_module {
 		
 		$this->addEventProcessor('base.page_request', 'base.processRequest');
 		$this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
-		$this->addEventProcessor('base.page_request', 'base.processRequest');
-		$this->addEventProcessor('base.feed_request', 'base.processFeedRequest');
+		//$this->addEventProcessor('base.feed_request', 'base.processFeedRequest');
 	}
 	
 	function _registerEntities() {
@@ -381,6 +382,11 @@ class owa_baseModule extends owa_module {
 			
      	return $url;
 		
+	}
+	
+	function initTest($event) {
+		
+		owa_coreAPI::debug(print_r($event, true));
 	}
 
 }
