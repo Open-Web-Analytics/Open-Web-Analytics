@@ -161,8 +161,6 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('base.new_session', 'notifyHandlers');
 		// install complete handler
 		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
-		//init
-		$this->registerEventHandler('init', $this, 'initTest');
 		// domstreams
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 	}
@@ -384,11 +382,6 @@ class owa_baseModule extends owa_module {
 		
 	}
 	
-	function initTest($event) {
-		
-		owa_coreAPI::debug(print_r($event, true));
-	}
-
 }
 
 

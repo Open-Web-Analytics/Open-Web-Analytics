@@ -36,8 +36,9 @@ class owa_entity {
 	
 	var $properties = array();
 	var $_tableProperties = array();
+	var $cache;
 	
-	function __construct() {
+	function __construct($cache = '', $db = '') {
 		
 		// for old style entities
 		if (empty($this->properties)) {
@@ -49,7 +50,7 @@ class owa_entity {
 				$this->$v->set('name', $v);
 			}
 		}
-			
+		
 		return;
 	}
 		
@@ -69,6 +70,7 @@ class owa_entity {
 			$vars = get_object_vars($this);
 			unset($vars['_tableProperties']);
 			unset($vars['properties']);
+			unset($vars['cache']);
 		}
 		
 		foreach ($vars as $k => $v) {
@@ -86,10 +88,12 @@ class owa_entity {
 			$all_cols = array_keys($this->properties);
 			$all_cols = array_flip($all_cols);
 		} else {
+			//support for old style entities
 			$all_cols = get_object_vars($this);
 			
 			unset($all_cols['_tableProperties']);
 			unset($all_cols['properties']);
+			unset($all_cols['cache']);
 		}
 		
 		//print_r($all_cols);
@@ -225,20 +229,36 @@ class owa_entity {
 		
 		// Add to Cache
 		if ($status == true) {
-			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-				$this->addToCache();
-			}
+			$this->addToCache();
 		}
+		
 		return $status;
 	}
 	
 	function addToCache() {
 		
 		if($this->isCachable()) {
-			$cache = owa_coreAPI::cacheSingleton();
-			$cache->setCacheDir(OWA_CACHE_DIR);
-			$cache->set($this->getTableName(), 'id'.$this->get('id'), $this);
+			
+			// set the cache object
+			if (owa_coreAPI::getSetting('base', 'cache_objects')) {
+				$this->setCache();
+				$this->cache->set($this->getTableName(), 'id'.$this->get('id'), $this, $this->getCacheExpirationPeriod());
+			}
 		}
+	}
+	
+	function setCache($cache = '') {
+		
+		if (!$this->cache) {
+			
+			if ($cache) {
+				$this->cache = $cache;
+			} else {
+				$this->cache = &owa_coreAPI::cacheSingleton();
+			}
+			
+			$this->cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
+		}		
 	}
 	
 	/**
@@ -276,9 +296,7 @@ class owa_entity {
 		$status = $db->executeQuery();
 		// Add to Cache
 		if ($status === true) {
-			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-				$this->addToCache();
-			}
+			$this->addToCache();
 		}
 		
 		return $status;
@@ -314,10 +332,9 @@ class owa_entity {
 		$status = $db->executeQuery();
 		// Add to Cache
 		if ($status == true) {
-			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-				$this->addToCache();
-			}
+			$this->addToCache();
 		}
+		
 		return $status;
 	}
 	
@@ -343,9 +360,8 @@ class owa_entity {
 		if ($status == true){
 			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
 				if ($this->isCachable()) {
-					$cache = owa_coreAPI::cacheSingleton();
-					$cache->setCacheDir(OWA_CACHE_DIR);
-					$cache->remove($this->getTableName(), 'id'.$this->get('id'));
+					$this->setCache();
+					$this->cache->remove($this->getTableName(), 'id'.$this->get('id'));
 				}
 			}
 		}
@@ -371,9 +387,8 @@ class owa_entity {
 		$cache_obj = '';
 		
 		if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-			$cache = owa_coreAPI::cacheSingleton();
-			$cache->setCacheDir(OWA_CACHE_DIR);
-			$cache_obj = $cache->get($this->getTableName(), $col.$value);
+			$this->setCache();
+			$cache_obj = $this->cache->get($this->getTableName(), $col.$value);
 		}
 			
 		if (!empty($cache_obj)) {
@@ -392,11 +407,8 @@ class owa_entity {
 			if (!empty($properties)) {
 					
 				$this->setProperties($properties);
-				
-				if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-		
-					$this->addToCache();
-				}
+				// add to cache			
+				$this->addToCache();		
 			}
 		} 
 	}
@@ -419,6 +431,7 @@ class owa_entity {
 	function setCachable() {
 	
 		$this->_tableProperties['cacheable'] = true;
+		
 	}
 	
 	function isCachable() {
@@ -577,7 +590,21 @@ class owa_entity {
 		//require_once(OWA_DIR.'owa_lib.php');
 		return owa_lib::setStringGuid($string);
 	}
-
+	
+	function setCacheExpirationPeriod($seconds) {
+		
+		$this->_tableProperties['cache_expiration_period'] = $seconds;
+	}
+	
+	function getCacheExpirationPeriod() {
+		
+		if (array_key_exists('cache_expiration_period', $this->_tableProperties)) {
+			return $this->_tableProperties['cache_expiration_period'];
+		} else {
+			// default of thirty days
+			return (3600);
+		}
+	}
 }
 
 ?>
