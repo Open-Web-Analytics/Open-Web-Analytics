@@ -45,6 +45,7 @@ class owa_cache {
 	var $dir_perms = 0775;
 	var $global_collections = array();
 	var $non_persistant_collections = array();
+	var $collection_expiration_periods = array();
 	var $mutex;
 	var $e;
 
@@ -58,8 +59,12 @@ class owa_cache {
 	function __construct($cache_dir = '') {
 		
 		$this->e = &owa_coreAPI::errorSingleton();
-		return $this->cache_dir = $cache_dir;
-	
+		
+		if ($cache_dir) {
+			$this->cache_dir = $cache_dir;
+		} else {
+			$this->cache_dir = OWA_CACHE_DIR;
+		}
 	}
 
 	function owa_cache($cache_dir = '') {
@@ -81,7 +86,7 @@ class owa_cache {
 	
 	}
 	
-	function set($collection, $key, $value) {
+	function set($collection, $key, $value, $expires = '') {
 	
 		$hkey = $this->hash($key);
 		$this->cache[$collection][$hkey] = $value;
@@ -156,10 +161,20 @@ class owa_cache {
 	
 			// if no cache file then return false
 			if (!file_exists($cache_file)):
-				$this->debug(sprintf('CACHE MISS - Object Not Found in Cache or Cache File - Collection: %s, id: %s', $collection, $id));
+				$this->debug(sprintf('CACHE MISS - Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
 				$this->statistics['miss']++;
 				return false;
 			
+			// cache object has expired
+			elseif ((filectime($cache_file) + $this->getCollectionExpirationPeriod($collection)) < time()):
+				$this->debug("time: ".time());
+				$this->debug("ctime: ".filectime($cache_file));
+				$this->debug("diff: ".(time() - filectime($cache_file)));
+				$this->debug("exp period: ".$this->getCollectionExpirationPeriod($collection));
+				$this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
+				$this->debug(sprintf('CACHE EXPIRED - Object has expired - Collection: %s, id: %s', $collection, $id));
+				$this->statistics['miss']++;
+				return false;
 			// load from cache file	
 			else:
 		
@@ -482,8 +497,23 @@ class owa_cache {
 			unlink($file);
 		}
 		
-		return;
+		return true;
 		
+	}
+	
+	function setCollectionExpirationPeriod($collection_name, $seconds) {
+	
+		$this->collection_expiration_periods[$collection_name] = $seconds;
+	}
+	
+	function getCollectionExpirationPeriod($collection_name) {
+		
+		// for some reason an 'array_key_exists' check does not work here. using isset instead.
+		if (isset($this->collection_expiration_periods[$collection_name])) {
+			return $this->collection_expiration_periods[$collection_name];
+		} else {
+			return false;
+		}
 	}
 	
 }

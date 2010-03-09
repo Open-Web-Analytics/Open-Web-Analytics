@@ -58,6 +58,7 @@ class owa_browscap extends owa_base {
 	 */
 	var $ua;
 	var $cache;
+	var $cacheExpiration;
 	
 	function owa_browscap($ua = '') {
 		
@@ -72,8 +73,8 @@ class owa_browscap extends owa_base {
 		
 		// init cache
 		$this->cache = &owa_coreAPI::cacheSingleton(); 
-		$this->cache->setCacheDir(OWA_CACHE_DIR);
-
+		$this->cacheExpiration = 3600 * 24 * 7;
+		$this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 		//lookup robot in main browscap db
 		$this->browser = $this->lookup($this->ua);
 		$this->e->debug('Browser Name : '. $this->browser->Browser);
@@ -130,7 +131,7 @@ class owa_browscap extends owa_base {
 				
 				if ($this->config['cache_objects'] == true):
 					if ($cap['Browser'] != 'Default Browser'): 
-						$this->cache->set('browscap', $this->ua, (object)$cap);
+						$this->cache->set('browscap', $this->ua, (object)$cap, $this->cacheExpiration);
 					endif;
 				endif;
 			endif;

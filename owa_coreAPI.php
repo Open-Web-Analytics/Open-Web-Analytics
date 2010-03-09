@@ -281,8 +281,9 @@ class owa_coreAPI extends owa_base {
 			if (!class_exists('owa_cache')):
 				require_once(OWA_BASE_CLASS_DIR.'cache.php');
 			endif;
+			// make this plugable
+			$cache = owa_coreAPI::supportClassFactory('base', 'cache');
 			
-			$cache = owa_coreAPI::supportClassFactory('base', 'cacheFacade');
 			
 		endif;
 		
