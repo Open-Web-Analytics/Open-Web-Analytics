@@ -17,6 +17,7 @@
 //
 
 require_once (OWA_PEARLOG_DIR . '/Log.php');
+require_once (OWA_PEARLOG_DIR . '/Log/file.php');
 
 /**
  * Error handler

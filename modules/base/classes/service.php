@@ -92,11 +92,11 @@ class owa_service extends owa_base {
 	function _loadModules() {
 			
 		$am = owa_coreAPI::getActiveModules();
-		
+				
 		foreach ($am as $k => $v) {
 			
 			$m = owa_coreAPI::moduleClassFactory($v);
-			
+	
 			$this->addModule($m);
 			
 			// check for schema updates

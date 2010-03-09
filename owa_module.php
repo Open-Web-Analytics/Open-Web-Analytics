@@ -433,7 +433,7 @@ class owa_module extends owa_base {
 			endif;
 			
 			// save schema version to configuration
-			$this->c->setSetting($this->name, 'schema_version', $this->getRequiredSchemaVersion());
+			$this->c->persistSetting($this->name, 'schema_version', $this->getRequiredSchemaVersion());
 			//activate the module and save the configuration
 			$this->activate();
 			$this->e->notice("Installation complete.");
@@ -581,8 +581,8 @@ class owa_module extends owa_base {
 			
 			// if this is the base module then we need to let filters know to install the base schema
 			if ($this->name === 'base') {
-				$s = owa_coreAPI::serviceSingleton();
-				$s->setInstallRequired();
+			//	$s = owa_coreAPI::serviceSingleton();
+			//	$s->setInstallRequired();
 			}
 			
 		}

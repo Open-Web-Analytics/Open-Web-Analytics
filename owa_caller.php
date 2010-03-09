@@ -102,13 +102,13 @@ class owa_caller extends owa_base {
 		// Applies config from db or cache
 		// check here is needed for installs when the configuration table does not exist.
 		
-		//if (!defined('OWA_INSTALLING')) {
-			if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
+		if (!defined('OWA_INSTALLING')) {
+			//if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
 				if ($this->c->isConfigFilePresent())  {
 					$this->c->load($this->c->get('base', 'configuration_id'));
 				}
-			}
-		//}
+			//}
+		}
 		 	
 
 		/* APPLY CALLER CONFIGURATION OVERRIDES */
@@ -136,6 +136,7 @@ class owa_caller extends owa_base {
 		
 		/* LOAD SERVICE LAYER */
 		$this->service = &owa_coreAPI::serviceSingleton();
+		
 		// notify handlers of 'init' action
 		$dispatch = owa_coreAPI::getEventDispatch();
 		$dispatch->notify($dispatch->makeEvent('init'));
