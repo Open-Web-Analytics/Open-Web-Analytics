@@ -169,9 +169,9 @@ class owa_controller extends owa_base {
 			// do not intercept if its the updatesApply action or a re-install else updates will never apply
 			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING')):
 				
-				$api = &owa_coreAPI::singleton();
 				
-				if ($api->isUpdateRequired()):
+				
+				if (owa_coreAPI::isUpdateRequired()):
 					$this->e->debug('Updates Required. Redirecting action.');
 					$data = array();
 					$data['view_method'] = 'redirect';
