@@ -428,7 +428,7 @@ class owa_cache {
 	
 	function debug($msg) {
 		
-		$this->e->debug($msg);
+		owa_coreAPI::debug($msg);
 		return;
 	}
 	

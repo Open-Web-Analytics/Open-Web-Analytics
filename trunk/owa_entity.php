@@ -238,27 +238,10 @@ class owa_entity {
 	function addToCache() {
 		
 		if($this->isCachable()) {
-			
-			// set the cache object
-			if (owa_coreAPI::getSetting('base', 'cache_objects')) {
-				$this->setCache();
-				$this->cache->set($this->getTableName(), 'id'.$this->get('id'), $this, $this->getCacheExpirationPeriod());
-			}
+			$cache = &owa_coreAPI::cacheSingleton();
+			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
+			$cache->set($this->getTableName(), 'id'.$this->get('id'), $this, $this->getCacheExpirationPeriod());
 		}
-	}
-	
-	function setCache($cache = '') {
-		
-		if (!$this->cache) {
-			
-			if ($cache) {
-				$this->cache = $cache;
-			} else {
-				$this->cache = &owa_coreAPI::cacheSingleton();
-			}
-			
-			$this->cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
-		}		
 	}
 	
 	/**
@@ -312,7 +295,7 @@ class owa_entity {
 	 */
 	function partialUpdate($named_properties, $where) {
 		
-		$db = owa_coreAPI::dbSingleton();		
+		$db = &owa_coreAPI::dbSingleton();		
 		$db->updateTable($this->getTableName());
 		
 		foreach ($named_properties as $v) {
@@ -358,12 +341,10 @@ class owa_entity {
 	
 		// Add to Cache
 		if ($status == true){
-			if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-				if ($this->isCachable()) {
-					$this->setCache();
-					$this->cache->remove($this->getTableName(), 'id'.$this->get('id'));
-				}
-			}
+			if ($this->isCachable()) {
+				$cache =  &owa_coreAPI::cacheSingleton();
+				$cache->remove($this->getTableName(), 'id'.$this->get('id'));
+			}			
 		}
 		
 		return $status;
@@ -386,10 +367,11 @@ class owa_entity {
 				
 		$cache_obj = '';
 		
-		if (owa_coreAPI::getSetting('base', 'cache_objects') === true) {
-			$this->setCache();
-			$cache_obj = $this->cache->get($this->getTableName(), $col.$value);
-		}
+		if ($this->isCachable()) {
+			$cache =  &owa_coreAPI::cacheSingleton();
+			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
+			$cache_obj = $cache->get($this->getTableName(), $col.$value);
+		}		
 			
 		if (!empty($cache_obj)) {
 		
@@ -436,7 +418,12 @@ class owa_entity {
 	
 	function isCachable() {
 		
-		return $this->_tableProperties['cacheable'];
+		if (owa_coreAPI::getSetting('base', 'cache_objects')) {
+			return $this->_tableProperties['cacheable'];
+		} else {
+			return false;
+		}
+		
 	}
 	
 	function setPrimaryKey($col) {
