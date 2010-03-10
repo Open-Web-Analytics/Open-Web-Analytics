@@ -18,6 +18,8 @@
 
 require_once (OWA_PEARLOG_DIR . '/Log.php');
 require_once (OWA_PEARLOG_DIR . '/Log/file.php');
+require_once (OWA_PEARLOG_DIR . '/Log/composite.php');
+require_once (OWA_PEARLOG_DIR . '/Log/mail.php');
 
 /**
  * Error handler
@@ -50,6 +52,8 @@ class owa_error {
 	
 	var $init = false;
 	
+	var $c;
+	
 	
 	/**
 	 * PHP4 Constructor
@@ -57,8 +61,7 @@ class owa_error {
 	 */
 	function owa_error() {
 	 
-		return $this->__construct();
-	 
+		return owa_error::__construct();
 	}
 	
 	
@@ -68,18 +71,18 @@ class owa_error {
 	 */ 
 	function __construct() {
 				
-		// setup composit logger
-		
+		// setup composite logger
 		$this->logger = &Log::singleton('composite');
-		$this->addLogger('null');
-		
-		return; 
-	 
+		$this->addLogger('null');	 
 	}
 	
 	function __destruct() {
 	
 		return;
+	}
+	
+	function setConfig($c) {
+		$this->c = $c;
 	}
 	
 	function setErrorLevel() {
@@ -334,15 +337,15 @@ class owa_error {
 	function make_file_logger() {
 		
 		// fetch config object
-		$c = &owa_coreAPI::configSingleton();
+		//$c = &owa_coreAPI::configSingleton();
 
 		// test to see if file is writable
-		$handle = @fopen($c->get('base', 'error_log_file'), "a");
+		$handle = @fopen(owa_coreAPI::getSetting('base', 'error_log_file'), "a");
 		
 		if ($handle != false):
 			fclose($handle);
 			$conf = array('mode' => 0600, 'timeFormat' => '%X %x', 'lineFormat' => '%1$s %2$s [%3$s] %4$s');
-			$logger = &Log::singleton('file', $c->get('base', 'error_log_file'), getmypid(), $conf);
+			$logger = &Log::singleton('file', owa_coreAPI::getSetting('base', 'error_log_file'), getmypid(), $conf);
 			return $logger;
 		else:
 			return;
@@ -360,7 +363,7 @@ class owa_error {
 		$c = &owa_coreAPI::configSingleton();
 
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
-		$logger = &Log::singleton('mail', $c->get('base', 'notice_email'), getmypid(), $conf);
+		$logger = &Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
 		
 		return $logger;
 	}

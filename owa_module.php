@@ -584,7 +584,6 @@ class owa_module extends owa_base {
 			//	$s = owa_coreAPI::serviceSingleton();
 			//	$s->setInstallRequired();
 			}
-			
 		}
 		
 		return $current_schema;
