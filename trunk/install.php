@@ -32,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  */
 
 // Initialize owa
-define('OWA_ERROR_HANDLER', 'development');
+//define('OWA_ERROR_HANDLER', 'development');
 define('OWA_CACHE_OBJECTS', false);
 define('OWA_INSTALLING', true);
 $owa = new owa_php();
