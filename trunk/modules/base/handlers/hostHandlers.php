@@ -17,8 +17,9 @@
 //
 
 if(!class_exists('owa_observer')) {
-	require_once(OWA_BASE_DIR.'owa_observer.php');
+	require_once(OWA_DIR.'owa_observer.php');
 }	
+require_once(OWA_DIR.'owa_lib.php');
 
 /**
  * Host Event handlers
@@ -71,9 +72,13 @@ class owa_hostHandlers extends owa_observer {
 			$h->set('id', owa_lib::setStringGuid($event->get('host'))); 
 			
 			// makes the geo-location object from the service specified in the config
-			$ret = require_once(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR.owa_coreAPI::getSetting('base', 'geolocation_service').'.php');
+			$path = owa_coreAPI::getSetting('base', 'plugin_dir')."location/";
+			$class = owa_coreAPI::getSetting('base', 'geolocation_service');
+			$file = $class.'.php';
+			$ret = require_once($path.$file);
 			//$location = new owa_hostip;
-			$location = owa_lib::factory(owa_coreAPI::getSetting('base', 'plugin_dir')."location".DIRECTORY_SEPARATOR, '', owa_coreAPI::getSetting('base', 'geolocation_service'));
+			
+			$location = owa_lib::factory($path, 'owa_', $class);
 			
 			// lookup
 			$location->get_location($event->get('ip_address'));
