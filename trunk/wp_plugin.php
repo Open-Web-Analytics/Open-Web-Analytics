@@ -76,33 +76,31 @@ function &owa_getInstance($params = array()) {
 		// Build the OWA wordpress specific config overrides array
 		$owa_config = array();
 		
-		// OWA DATABASE CONFIGURATION 
-		// Will use Wordpress config unless there is a config file present.
-		// OWA uses this to setup it's own DB connection seperate from the one
-		// that Wordpress uses.
-				
+		// report and link templates	
 		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-		//$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
-		//$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/i/';
+		$owa_config['link_template'] = '%s&%s';
+		// embedded urls
 		$owa_config['main_url'] = '../wp-admin/index.php?page=owa';
 		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa';
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
-		//$owa_config['action_url'] = get_bloginfo('url').'/wp-admin/admin-ajax.php?action=owa_specialAction';
-		//$owa_config['action_url'] = get_bloginfo('url').'/wp-content/plugins/owa/action.php';
+		// needed?
 		$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
-		$owa_config['link_template'] = '%s&%s';
 		$owa_config['site_id'] = md5(get_settings('siteurl'));
+		// needed for some reason
 		$owa_config['is_embedded'] = true;
+		// this should be overridable by a user config value.
 		$owa_config['delay_first_hit'] = true;
-	
+		
+		// merge in passed params
 		$config = array_merge($owa_config, $params);
 		
+		// create owa instance w/ config
 		$owa = new owa_wp($config);
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();
       	     
-		// preemptively set OWA's current user info and mark as authenticated so that
+		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
 		$cu->setUserData('user_id', $current_user->user_login);
