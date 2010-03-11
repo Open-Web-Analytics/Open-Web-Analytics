@@ -336,6 +336,10 @@ class owa_caller extends owa_base {
 		return $this->trackEvent($event);
 	}
 	
+	function setErrorHandler($mode) {
+		$this->e->setHandler($mode);
+	}
+	
 }
 
 ?>
