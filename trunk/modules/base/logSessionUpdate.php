@@ -62,9 +62,8 @@ class owa_logSessionUpdateController extends owa_controller {
 		// increment number of page views
 		$s->set('num_pageviews', $s->get('num_pageviews') + 1);
 		
-		//print $num;
-		// update timestamp
-		$s->set('last_req', $event->get('last_req'));
+		// update timestamp of latest request that triggered the session update
+		$s->set('last_req', $event->get('timestamp'));
 		
 		// update last page id
 		$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));

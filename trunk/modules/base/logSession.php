@@ -67,6 +67,9 @@ class owa_logSessionController extends owa_controller {
 			$s->set('prior_session_minute', date("i", $event->get('last_req')));
 			$s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
 		}
+		
+		// set last_req to be the timestamp of the event that triggered this session.
+		$s->set('last_req', $event->get('timestamp'));
 						
 		// set source			
 		$s->set('source', $event->get('source'));
