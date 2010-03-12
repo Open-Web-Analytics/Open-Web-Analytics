@@ -207,7 +207,7 @@
  		
  		// merge default config with overrides 
  		
- 		if (!empty($config)):
+ 		if (!empty($config)) {
  		
  			$in_place_config = $this->config->get('settings');
  			
@@ -221,12 +221,7 @@
 		 	
 		 	//print_r($this->config->get('settings'));
 		 	
-	 	endif;
-	 	
-	 	
-	 	
-	 	return;
- 		
+	 	}	
  	}
  	
  	/**
@@ -615,6 +610,7 @@
 			'not_capable_view'				=> 'base.error',
 			'start_page'					=> 'base.reportDashboard',
 			'default_action'				=> 'base.loginForm',
+			'default_cache_expiration_period' => 604800,
 			'capabilities'					=> array('admin' => array('view_reports', 
 																	  'edit_settings', 
 																	  'edit_sites', 

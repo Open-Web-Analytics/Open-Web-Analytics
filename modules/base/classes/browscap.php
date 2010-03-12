@@ -73,7 +73,7 @@ class owa_browscap extends owa_base {
 		
 		// init cache
 		$this->cache = &owa_coreAPI::cacheSingleton(); 
-		$this->cacheExpiration = 3600 * 24 * 7;
+		$this->cacheExpiration = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
 		$this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 		//lookup robot in main browscap db
 		$this->browser = $this->lookup($this->ua);

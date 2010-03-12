@@ -410,10 +410,24 @@ class owa_entity {
 		$this->_tableProperties['name'] = $namespace.$name;
 	}	
 	
-	function setCachable() {
+	/**
+	 * Sets the entity as cachable for some period of time
+	 *
+	 * @todo	make this use the getSetting method but that requires a refactoring of
+	 *			the entity abstract class to not use an entity in it's constructor
+	 */
+	function setCachable($seconds = '') {
 	
 		$this->_tableProperties['cacheable'] = true;
 		
+		// set cache expiration period
+		if (!$seconds) {
+			// remove hard coded value. fix this see note above.
+			//$seconds = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
+			$seconds = 604800;
+		}
+		
+		$this->setCacheExpirationPeriod($seconds);
 	}
 	
 	function isCachable() {
