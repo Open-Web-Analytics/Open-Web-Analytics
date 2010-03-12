@@ -185,26 +185,13 @@
     <BR>
 	
     <fieldset name="owa-event-options" class="options">
-		<legend>Event Handling</legend>
-	
-		<div class="setting" id="async_db">	
-			<div class="title">Asynchronous Event Handling Mode</div> 
-			<div class="description">This mode allows tracking events to be logged to the database ansychronously. This mode requires a seperate process to be run at set intervals in order for statistics to be processed. See <a href="http://wiki.openwebanalytics.com/index.php?title=Event_processing">this page on the OWA wiki</a> for more information about how to use this feature.</div>
-			<div class="field">
-				<select name="<?php echo $this->getNs();?>config[base.async_db]">
-	
-					<option value="0" <?php if ($config['async_db'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
-					<option value="1" <?php if ($config['async_db'] == true):?>SELECTED<?php endif;?>>On</OPTION>
-				</select>
-			</div>
-		</div>
+		<legend>Event Queueing</legend>
 	
 		<div class="setting" id="async_log_dir">	
 			<div class="title">Event Log File Directory</div>
 			<div class="description">This is the location of log file that OWA will store events in untill they are processed (e.g. /path/to/owa/log/file/)</div>
 			<div class="field"><input type="text" size="80" name="<?php echo $this->getNs();?>config[base.async_log_dir]" value="<?php echo $config['async_log_dir']?>"></div>
 		</div>
-	
 	
     </fieldset>
 	
