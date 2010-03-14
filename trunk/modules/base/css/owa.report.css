@@ -53,7 +53,7 @@
 	color:#ffffff; 
 	background-color: #505050;
 	text-align: left; 
-	padding:5px; 
+	padding:0px; 
 	margin:5px; 
 	width:135px; 
 	float:left;
@@ -65,16 +65,21 @@
     -webkit-box-shadow:2px 2px 2px #999;
 }
 
+.owa_metricInfobox p {
+	padding:5px 7px 0px 7px;
+	margin:0;
+	
+}
+
 .owa_metricInfoboxLabel {
 	color:#A0A0A0;
-	padding:3px 0px 3px 0px;
-	margin:0;
+	font-size:14px;
+	padding-top:6px;
 }
 
 .owa_metricInfoboxLargeNumber {
 	color:#ffffff;
-	font-size:40px;
-	margin:0;
+	font-size:36px;
 }
 
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
