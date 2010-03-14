@@ -88,7 +88,7 @@ class owa_logSessionController extends owa_controller {
 		$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 		
 		// Generate Host id
-		$s->set('host_id', owa_lib::setStringGuid($event->get('host')));
+		$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
 		
 		$s->create();
 		
