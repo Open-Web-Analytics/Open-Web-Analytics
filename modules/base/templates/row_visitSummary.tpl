@@ -41,12 +41,11 @@
 					<?php echo $this->choose_browser_icon($row['ua_browser_type']);?>
 				</TD>
 				<TD class="owa_visitInfoboxItem">
-					<a href="<?php echo $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true);?>">
-						<span class="owa_largeNumber">
+					<span class="owa_largeNumber">
+						<a href="<?php echo $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true);?>">
 							<?php echo $row['session_num_pageviews'];?>
-						</span>
-					</a>
-					
+						</a>
+					</span>
 					<BR>
 					<span class="info_text">Pages</span>
 					
