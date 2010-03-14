@@ -68,11 +68,13 @@
 .owa_metricInfoboxLabel {
 	color:#A0A0A0;
 	padding:3px 0px 3px 0px;
+	margin:0;
 }
 
 .owa_metricInfoboxLargeNumber {
 	color:#ffffff;
 	font-size:40px;
+	margin:0;
 }
 
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
@@ -149,8 +151,6 @@
 	font-size:14px;
 	margin:0px;
 }
-
-
 
 .owa_userInfobox {
 	background-color: #ffffff;
