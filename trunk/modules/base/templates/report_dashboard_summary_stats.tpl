@@ -4,8 +4,8 @@
 	<tr>	
 		<td valign="top">
 			<div class="owa_metricInfobox">
-				<span class="owa_metricInfoboxLabel">Visits</span><BR>
-				<span class="owa_metricInfoboxLargeNumber"><?php echo $this->formatNumber($summary_stats['sessions'],0);?></span><BR>
+				<p class="owa_metricInfoboxLabel">Visits</p>
+				<p class="owa_metricInfoboxLargeNumber"><?php echo $this->formatNumber($summary_stats['sessions'],0);?></p>
 				<?php echo $this->displaySparkline('sessionsTrend', $site_trend['sessions']);?>
 			</div>
 			
