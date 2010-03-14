@@ -1,0 +1,67 @@
+{
+  "elements": [
+    {
+      "type": "bar",
+      "values": [ 6, 10, 12.5, 6, 9 ],
+      "tip": "Fund 1 Value:#val#",
+      "colour": "#fff100",
+      "text": "Fund 1",
+      "font-size": 12
+    },
+    {
+      "type": "bar",
+      "values": [ 4, -6, 3, 3, 6.4 ],
+      "tip": "Fund 2 Value:#val#",
+      "colour": "#ff0000",
+      "text": "Fund 2",
+      "font-size": 12
+    },
+    {
+      "type": "line",
+      "values": [ 8, 9, 10, 4, 5.1 ],
+      "halo-size": 0,
+      "width": 2,
+      "dot-size": 5,
+      "colour": "#000000",
+      "text": "S&P 500",
+      "font-size": 12
+    },
+    {
+      "type": "shape",
+      "colour": "#ff0000",
+      "values": [ { "x": -0.5, "y": 0 }, { "x": 5, "y": 0 }, { "x": 5, "y": -0.1 }, { "x": -0.5, "y": -0.1 } ]
+    }
+  ],
+
+  "title": {
+    "text": "Example Chart",
+    "style": "{font-size: 18px; color: #ff0000;font-weight: bold;padding: 10px; text-align: center;font-family: Verdana, Arial;}"
+  },
+
+  "bg_colour": "#ffffff",
+
+  "x_axis":
+  {
+    "colour": "#ffffff",
+    "grid-colour": "#ffffff",
+    "labels": { "colour": "#ff0000" }
+  },
+
+  "y_axis":
+  {
+    "min": -8,
+    "max": 16,
+    "steps": 2,
+    "grid-colour": "#ffffff",
+    "colour": "#CCCCCC",
+    "labels":{
+		"labels":[ "-8%", "error", "-6%", "x", "-4%", "x", "-2%", "x", "0%", "x", "2%", "x", "4%", "x", "6%", "x", "8%", "x", "10%", "x", "12%", "x", "14%", "x", "16%" ]
+	}
+  },
+
+  "y_legend":
+  {
+    "text": "Percentage of Gain\/Loss",
+    "style": "{font-size: 14px; color: #ff0000;padding: 5px;font-family: Verdana, Arial;}"
+  }
+}

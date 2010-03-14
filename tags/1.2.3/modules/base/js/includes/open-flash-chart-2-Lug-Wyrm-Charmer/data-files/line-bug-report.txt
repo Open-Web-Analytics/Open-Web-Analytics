@@ -1,0 +1,50 @@
+{
+	"elements":[
+		{
+			"type":"line",
+			"values":[1,0,0,0,0,0,0,0,1,0,0,0,6,2,0,0,0,0,0,6,0,0,0,0],
+			"colour":"#ffae00",
+			"text":"Returning Visits",
+			"font-size":12,
+			"tip":"Returning: #val#"
+		},
+		{
+			"type":"line",
+			"values":[7,5,5,8,6,6,7,11,4,7,5,3,3,11,8,9,12,10,11,11,8,4,10,2],
+			"colour":"#52aa4b",
+			"text":"Unique Visits",
+			"font-size":12,
+			"tip":"Unique: #val#"
+		},
+		{
+			"type":"line",
+			"values":[14,26,12,20,18,20,12,68,8,8,5,3,10,32,31,16,22,33,32,36,49,8,31,5],
+			"colour":"#335ac9",
+			"text":"Total Visits",
+			"font-size":12,
+			"tip":"Total: #val#"
+		}
+	],
+	"title":{
+		"text":"Visits data for Alan Edwardes from the 4th of June to the 5th of June",
+		"style":"{font-size:12px;padding-bottom:10px;text-align:left;color:#999999;}"
+	},
+	"y_axis":{
+		"stroke":1,
+		"colour":"#c6d9fd",
+		"grid-colour":"#dddddd",
+		"min":0,
+		"max":73,
+		"steps":5
+	},
+	"x_axis":{
+		"offset":false,
+		"stroke":1,
+		"colour":"#c6d9fd",
+		"grid-colour":"#dddddd",
+		"labels":{
+			"labels":["09pm","10pm","11pm","12am","01am","02am","03am","04am","05am","06am","07am","08am","09am","10am","11am","12pm","01pm","02pm","03pm","04pm","05pm","06pm","07pm","08pm"]
+			}
+		},
+	"bg_colour":"#ffffff"
+}

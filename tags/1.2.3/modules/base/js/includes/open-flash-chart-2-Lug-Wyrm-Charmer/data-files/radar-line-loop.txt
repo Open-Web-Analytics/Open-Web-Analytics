@@ -1,0 +1,36 @@
+{
+  "title":{
+    "text":"Pie for you sir?",
+    "style":"{font-size: 30px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "line",
+      "colour":    "#736AFF",
+      "text":      "Avg. wave height (cm)",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 0,
+      "loop":      true,
+      "values" :   [
+ 
+        5, 10, {"value":10,"colour":"#FF0000","tip":"monkies"}, 20, 18
+      ]
+    },
+    {
+      "type":      "line",
+      "colour":    "#73FF6A",
+      "width":     1,
+      "dot-size":  3,
+      "halo-size": 2,
+      "loop":      false,
+      "values" :   [20,20,20,20,20]
+    }
+  ],
+
+  "radar_axis": {
+    "max": 20
+  }
+}

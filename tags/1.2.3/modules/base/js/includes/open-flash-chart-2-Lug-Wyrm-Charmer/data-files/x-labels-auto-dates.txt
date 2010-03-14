@@ -1,0 +1,69 @@
+{
+  "title":{
+    "text":"X Labels - Auto Dates - Every 2nd Visible",
+    "style":"{font-size: 16px; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }"
+  },
+
+  "x_axis": {
+    "min": 1220245200,
+    "max": 1221368400,
+    "steps": 86400,        // <-- seconds in a day
+    "labels":{
+      "rotate":345,
+      "steps":86400,
+      "visible-steps":2,
+      "text":"#date:l jS, M Y#"      // <-- apply default date format to X axis labels
+    }
+  },
+
+  "elements":[
+    {
+      "type":      "scatter_line",
+      "colours":   ["#1f3cd0"],
+      "alpha":     0.6,
+      "border":    2,
+      "animate":   0,
+	  "dot-style": {
+		  "tip":       "#date:d M y#<br>#y#\n(left axis)",     // User formatted date
+		  "type":"solid-dot"},
+		
+      "width": 4,
+      "text":      "Test with Unix Timestamp as X Value",
+      "values" :   [
+            {"x":1220245200, "y":10}, // 1220245200 = unix time stamp for 01 Sep 2008
+            {"x":1220331600, "y":20},
+            {"x":1220418000, "y":30},
+            {"x":1220504400, "y":40},
+            {"x":1220590800, "y":50},
+            {"x":1220677200, "y":60},
+            {"x":1220763600, "y":70},
+            // skip a day -- {"x":1220850000, "y":80},
+            {"x":1220936400, "y":70},
+            {"x":1221022800, "y":60},
+            {"x":1221109200, "y":50},
+            {"x":1221195600, "y":40},
+            {"x":1221282000, "y":30},
+            {"x":1221368400, "y":20}
+          ]
+      }
+    ],
+  
+  "tooltip":{
+    "shadow":false,
+    "stroke":2,
+    "mouse":0,
+    "colour":"#00d000",
+    "background":"#d0d0ff",
+    "title":"{font-size: 14px; color: #905050;}",
+    "body":"{font-size: 10px; font-weight: bold; color: #9090ff;}",
+    "text":"title<br>body"
+  },
+	
+  "y_axis": {
+    "min":    0,
+    "max":    100,
+    "stroke": 2,
+    "steps" : 10,
+    "offset": 0
+  }
+}

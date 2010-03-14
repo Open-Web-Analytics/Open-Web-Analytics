@@ -1,0 +1,36 @@
+{
+
+  "elements":[
+    {
+      "type":      "scatter_line",
+      "colour":    "#FFB900",
+      "text":      "Avg",
+      "font-size": 10,
+      "dot-size":  10,
+      "values" :   [
+                     {"x":9,  "y":3 },
+                     {"x":3,  "y":3 },
+                     {"x":7,  "y":3 },
+                     {"x":8,  "y":5 }
+                   ]
+    }
+
+  ],
+
+  "x_axis":{
+    "steps": 1,
+
+    "labels":{
+      "visible": true,
+      "rotate": "vertical"
+    }
+  },
+
+  "y_axis":{
+    "min": -5,
+    "max": 5
+  }
+}
+
+
+

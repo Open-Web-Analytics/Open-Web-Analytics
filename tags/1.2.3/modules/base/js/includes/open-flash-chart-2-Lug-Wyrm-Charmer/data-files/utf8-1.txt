@@ -1,0 +1,38 @@
+{
+
+  "title":{
+    "text":"&#x20AC;&#xA3;€",
+    "style":"{font-size: 20px; font-family: Verdana; text-align: center;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "colour":    "#9933CC",
+      "text":      "Page views",
+      "font-size": 10,
+      "values" :   [9,6,7,9,5,7,6,9,9]
+    }
+  ],
+  "x_axis":{
+    "labels": ["January","February","March","April","May","June","July","August","Spetember"]
+  },
+  "y_axis":{
+    "max":20
+  },
+  "tooltip":{
+    "shadow":false,
+    "stroke":5,
+    "colour":"#00d000",
+    "background":"#d0d0ff",
+    "title":"{font-size: 14px; color: #905050;}",
+    "body":"{font-size: 10px; font-weight: bold; color: #9090ff;}"
+  }
+}
+
+/*
+
+&y_legendx=Open Flash Chart,12,0x736AFF&
+&x_axis_steps=2&
+
+*/

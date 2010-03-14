@@ -1,0 +1,63 @@
+/*
+
+many points from a single set in the same location
+many points from different sets in the same location
+
+tooltip is set to hover -- is this a bug??
+
+*/
+
+{
+  "title":{
+    "text":"Calculate Range",
+    "style":"{color: #736AFF; font-size: 25;}"
+  },
+
+  "elements":[
+    {
+      "type":      "scatter_line",
+      "dot-size":  10,
+      "tip":       "Scatter 1<br>#x#, #y#",
+      "colour":    "#000000",
+      "values" :   [
+                     {"x":0,  "y":0,  "tip":"HELLO 1" },
+                     {"x":1,  "y":0 }
+                   ]
+    },
+    {
+      "type":      "scatter",
+      "dot-size":  7,
+      "tip":       "Scatter 2<br>#x#, #y#",
+      "colour":    "#600060",
+      "values" :   [
+                     {"x":0,  "y":0,  "tip":"HELLO 2" },
+                     {"x":2,  "y":0  }
+                   ]
+    }
+
+  ],
+
+  "x_axis":{
+    "offset":  false,
+    "min":     -5,
+    "max":    5
+  },
+
+  "y_axis":{
+    "min": -5,
+    "max": 5
+  },
+
+  "y_legend":{
+    "text":   "Time of day",
+    "style": "{font-size: 20px; color: #736AFF;}"
+  },
+
+  "tooltip":{
+    "mouse": 2,
+    "stroke":1
+  }
+}
+
+
+

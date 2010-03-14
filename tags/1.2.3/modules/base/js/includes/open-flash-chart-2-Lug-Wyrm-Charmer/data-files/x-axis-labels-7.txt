@@ -1,0 +1,36 @@
+{ 
+	"elements": [
+		{
+			"type":		"line_dot",
+			"values":	[ 9, 8, 7, 6, 5, 4, 3, 2, 1 ],
+			"tip":		"#val# cccc<br>#x_label# cccc"
+		}
+	],
+	
+	"title": { "text": "X Axis Labels Complex Example" },
+	
+	"x_axis": {
+		"stroke": 1,
+		"colour": "#428C3E",
+		"tick-height": 5,
+		"grid-colour": "#86BF83",
+		"steps": 1,
+		"labels": {
+			"steps": 2,
+			"rotate": "vertical",
+			"colour": "#ff0000",
+			"size": 16,
+			"labels": [
+				"one",
+				"two",
+				"three",
+				"four",
+				"five",
+				{ "text": "six", "colour": "#0000FF", "size": 30, "rotate": 90 },
+				{ "text": "seven", "colour": "#0000FF", "size": 30, "rotate": 180 },
+				{ "text": "eight", "colour": "#8C773E", "size": 16, "rotate": 35, "visible": true },
+				{ "text": "nine", "colour": "#2683CF", "size": 16, "rotate": 0 }
+			]
+		}
+	}
+}

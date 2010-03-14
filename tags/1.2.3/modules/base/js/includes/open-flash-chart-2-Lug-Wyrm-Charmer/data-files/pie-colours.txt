@@ -1,0 +1,25 @@
+{
+
+	"title":{
+		"text":"Pie for you sir?",
+		"style":"{font-size: 30px;}"
+	},
+	"bg_colour": "#000000",
+
+	"elements":[
+		{
+			"type":      "pie",
+			"colours":   ["#d01f3c","#356aa0","#C79810"],
+			"alpha":     0.6,
+			"border":    2,
+			"ani-mate":   0,
+			"start-angle": 35,
+			"values" :   [
+				2,
+				3,
+				{"value":65,"label":"hello (#val#)", "tip":"99 bottles of beer","on-click":"http://eden"},
+				{"value":65,"on-click":"my_function"}
+			]
+		}
+	]
+}

@@ -1,0 +1,42 @@
+{
+  "title":{
+    "text":"Y Labels - Autmatic with Formatting",
+    "style":"{font-size: 16px; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }"
+  },
+
+  "x_axis":{ "steps": 5 },
+
+  "y_axis":{
+	  "steps": 0.5, "min" : 0, "max":3,
+	  "rotate":"vertical",
+	  "labels": {
+		  "text":"left #val#", 
+		  "colour":"#DD3030",
+		  "size":12
+		}
+  },
+  
+  "y_axis_right":{
+	  "steps": 1, "min" : 3, "max":0,
+	  "rotate":"vertical",
+	  "labels": {
+		  "text":"right #val#", 
+		  "colour":"#DD30DD",
+		  "size":10
+ }
+  },
+  
+  "elements":[
+    {
+      "type":      "line_hollow",
+      "colour":    "#736AFF",
+      "text":      "Avg. wave height (cm)",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  4,
+      "halo-size": 1,
+	  "tip": "#x_label#<br>#val#",
+      "values" :   [1.5,1.69,1.88,2.06,2.21,2.34,2.43,2.48,2.49,2.47,2.40,2.30,2.17,2.01,1.83,1.64,1.44,1.24,1.05,0.88,0.74,0.62,0.54,0.50,0.50,0.54,0.61,0.72,0.86,1.03,1.22,1.41,1.61,1.81,1.99,2.15,2.29,2.39,2.46,2.49,2.48,2.44,2.35,2.23,2.08]
+    }
+  ]
+}
