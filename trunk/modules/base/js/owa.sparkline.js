@@ -19,9 +19,11 @@ OWA.sparkline.prototype = {
 	
 	width: "125px",
 	
+	options: {width: '125px', height: '20px', spotRadius: 2, lineColor: '#ffffff', fillColor: ''},
+	
 	render: function() {
 		
-		 jQuery('#' + this.dom_id).sparkline('html', {width: '125px', height: '30px', spotRadius: 3});
+		 jQuery('#' + this.dom_id).sparkline('html', this.options);
 	},
 		
 	setHeight: function(height) {

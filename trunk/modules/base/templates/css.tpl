@@ -3,7 +3,7 @@
 /* HTML ENTITIES*/
 body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;}
 th {padding:6px 6px 6px 6px; text-align:left;}
-td {padding: 2px 6px 2px 6px;}
+td {padding: 2px 2px 2px 2px;}
 legend {font-size:16px;font-weight:bold;}
 fieldset{margin: 7px; border:1px solid #cccccc;}
 div {margin:0;}
