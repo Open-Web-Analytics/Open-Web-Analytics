@@ -826,6 +826,24 @@ class owa_template extends Template {
 		return $t->fetch();	
 	
 	}
+	
+	function formatNumber($num, $decimal_places) {
+		
+		return number_format($num, $decimal_places,'.',',');
+	}
+	
+	function getAvatarImage($email) {
+		
+		
+		
+		if (false != $email) {
+			$url = sprintf("http://www.gravatar.com/avatar/%s?s=50", md5($email));
+		} else {
+			$url = $this->makeImageLink('base/i/default_user_50x50.png');
+		}
+		
+		return $url;
+	}
 }
 
 
