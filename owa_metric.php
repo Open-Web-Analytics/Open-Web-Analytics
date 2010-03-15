@@ -258,7 +258,7 @@ class owa_metric extends owa_base {
 		return $data;
 	}
 	
-	function generate() {
+	function generate($method = 'calculate') {
 		
 		$this->makeTimePeriod();
 		
@@ -285,7 +285,7 @@ class owa_metric extends owa_base {
 		endif;
 	
 		
-		$results = $this->calculate();
+		$results = $this->$method();
 		
 		if (!empty($this->pagination)):
 			$this->pagination->countResults($results);

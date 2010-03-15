@@ -66,12 +66,12 @@
 }
 
 .owa_metricInfobox p {
-	padding:5px 7px 0px 7px;
+	padding:2px 7px 2px 7px;
 	margin:0;
 	
 }
 
-.owa_metricInfoboxLabel {
+p.owa_metricInfoboxLabel {
 	color:#A0A0A0;
 	font-size:14px;
 	padding-top:6px;
@@ -80,6 +80,7 @@
 .owa_metricInfoboxLargeNumber {
 	color:#ffffff;
 	font-size:36px;
+	padding-bottom: 0px;
 }
 
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
@@ -123,7 +124,7 @@
 	text-align: left; 
 	padding:5px; 
 	margin:5px; 
-	width:450px; 
+	width:475px; 
 	border-radius:5px;
 	-moz-border-radius: 5px; 
 	-webkit-border-radius: 5px;	
@@ -138,7 +139,7 @@
 
 .owa_visitInfoboxItemContainer, .owa_visitInfoboxItem   {
 	background-color: #ffffff;
-	border: 1px solid #A0A0A0;
+	border: 0px solid #A0A0A0;
 	border-collapse: collapse;
 }
 
@@ -148,6 +149,8 @@
 
 .owa_visitInfoboxItem   {
 	text-align:center;
+	border-left: 1px solid #efefef;
+	border-right: 1px solid #efefef;
 }
 
 .owa_visitInfoboxTitle {
@@ -190,7 +193,7 @@
 
 .owa_visitInfoboxDocContainer {
 	background-color: #efefef;
-	border: 1px solid #A0A0A0;
+	border: 1px solid #E0E0E0;
 	border-collapse: collapse;
 	width:100%;
 }

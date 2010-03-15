@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 /**
@@ -31,7 +30,7 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
  * @since		owa 1.0.0
  */
 
-class owa_coreAPI extends owa_base {
+class owa_coreAPI {
 	
 	var $modules;
 	
@@ -504,6 +503,7 @@ class owa_coreAPI extends owa_base {
 	 *
 	 * @param unknown_type $entity_name
 	 * @return unknown
+	 * @depricated
 	 */
 	function getMetric($metric_name, $params) {
 		

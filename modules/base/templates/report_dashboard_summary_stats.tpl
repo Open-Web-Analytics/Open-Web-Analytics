@@ -32,6 +32,8 @@
 				<p class="owa_metricInfoboxLargeNumber"><?php echo $summary_stats['unique_visitors'];?></p>
 				<p><?php echo $this->displaySparkline('uniqueVisitorsTrend', $site_trend['unique_visitors']);?></p>
 			</div>
+			
+			<?php echo $this->displayMetricInfobox('base.pageViewsCount', $this->get('period_obj'));?>
 		</td>
 	</tr>
 </table>

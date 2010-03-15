@@ -834,8 +834,6 @@ class owa_template extends Template {
 	
 	function getAvatarImage($email) {
 		
-		
-		
 		if (false != $email) {
 			$url = sprintf("http://www.gravatar.com/avatar/%s?s=50", md5($email));
 		} else {
@@ -843,6 +841,38 @@ class owa_template extends Template {
 		}
 		
 		return $url;
+	}
+	
+	function displayMetricInfobox($metric_name, $count_period, $options = array()) {
+		
+		$t = new owa_template;
+		
+		if (!empty($dom_id)) {
+			$dom_id = rand();
+		}
+		
+		$m = owa_coreAPI::metricFactory($metric_name);
+		$m->setPeriod($count_period);
+		
+		if (array_key_exists('constraints', $options)) {
+			$m->setConstraints($options['constraints']);
+		}
+		
+		$count = $m->generate('count');
+		
+		$trend_period = owa_coreAPI::makeTimePeriod('last_thirty_days', $options);
+		$m->setPeriod($trend_period);
+		$trend = $m->generate('trend');
+		$trend = owa_lib::deconstruct_assoc($trend);
+		
+		$t->set('dom_id', $dom_id);
+		$t->set('count', $count);	
+		$t->set('trend', $trend['count']);	
+		$t->set('label', $m->getLabels());
+		$t->set_template('metricInfobox.php');
+		
+		return $t->fetch();	
+		
 	}
 }
 
