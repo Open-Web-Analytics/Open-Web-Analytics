@@ -855,7 +855,16 @@ class owa_template extends Template {
 		$m->setPeriod($count_period);
 		
 		if (array_key_exists('constraints', $options)) {
-			$m->setConstraints($options['constraints']);
+	
+			foreach ($options['constraints'] as $k => $v) {
+				
+				if(is_array($v)):
+					$m->setConstraint($k, $v[1], $v[0]);
+				else:
+					$m->setConstraint($k, $value);	
+				endif;
+				
+			}			
 		}
 		
 		$count = $m->generate('count');
