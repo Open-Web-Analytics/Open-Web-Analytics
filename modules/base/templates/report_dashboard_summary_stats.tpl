@@ -4,36 +4,35 @@
 	<tr>	
 		<td valign="top">
 			<div class="owa_metricInfobox">
-				<p class="owa_metricInfoboxLabel">Visits</p>
-				<p class="owa_metricInfoboxLargeNumber"><?php echo $this->formatNumber($summary_stats['sessions'],0);?></p>
-				<p><?php echo $this->displaySparkline('sessionsTrend', $site_trend['sessions']);?></p>
+				<span class="large_number"><?php echo $summary_stats['sessions'];?></span> 
+				<span class="inline_h3">Visits</span><BR>
+				<?php echo $this->displaySparkline('sessionsTrend', $site_trend['sessions']);?>
 			</div>
 			
-			<div class="owa_metricInfobox">	 
-				<p class="owa_metricInfoboxLabel">Pages/Visit</p>
-				<p class="owa_metricInfoboxLargeNumber"><?php echo round($summary_stats['pages_per_visit'],1);?></p>		
-				<p><?php echo $this->displaySparkline('pagePerVisitTrend', $site_trend['pages_per_visit']);?></p>			
+			<div class="owa_metricInfobox">	
+				<span class="large_number"><?php echo round($summary_stats['pages_per_visit'],1);?></span> 
+				<span class="inline_h3">Pages/Visit</span><BR>				
+				<?php echo $this->displaySparkline('pagePerVisitTrend', $site_trend['pages_per_visit']);?>			
 			</div>
 		
 			<div class="owa_metricInfobox">
-				<p class="owa_metricInfoboxLabel">New Visitors</p>
-				<p class="owa_metricInfoboxLargeNumber"><?php echo $summary_stats['new_visitor'];?></p>
-				<p><?php echo $this->displaySparkline('newVisitorsTrend', $site_trend['new_visitor']);?></p>	
+				<span class="large_number"><?php echo $summary_stats['new_visitor'];?></span> 
+				<span class="inline_h3">New Visitors</span><BR>
+				<?php echo $this->displaySparkline('newVisitorsTrend', $site_trend['new_visitor']);?>	
+ 
 			</div>
 		
 			<div class="owa_metricInfobox">
-				<p class="owa_metricInfoboxLabel">Repeat Visitors</p>
-				<p class="owa_metricInfoboxLargeNumber"><?php echo $summary_stats['repeat_visitor'];?></p>
-				<p><?php echo $this->displaySparkline('repeatVisitorsTrend', $site_trend['repeat_visitor']);?></p>
+				<span class="large_number"><?php echo $summary_stats['repeat_visitor'];?></span>
+				<span class="inline_h3">Repeat Visitors</span><BR>
+				<?php echo $this->displaySparkline('repeatVisitorsTrend', $site_trend['repeat_visitor']);?>	
 			</div>
 	
 			<div class="owa_metricInfobox">
-				<p class="owa_metricInfoboxLabel">Unique Visitors</p>
-				<p class="owa_metricInfoboxLargeNumber"><?php echo $summary_stats['unique_visitors'];?></p>
-				<p><?php echo $this->displaySparkline('uniqueVisitorsTrend', $site_trend['unique_visitors']);?></p>
+				<span class="inline_h3"><span class="large_number"><?php echo $summary_stats['unique_visitors'];?></span> 
+				Unique Visitors</span><BR>
+				<?php echo $this->displaySparkline('uniqueVisitorsTrend', $site_trend['unique_visitors']);?>	
 			</div>
-			
-			<?php echo $this->displayMetricInfobox('base.pageViewsCount', $this->get('period_obj'));?>
 		</td>
 	</tr>
 </table>

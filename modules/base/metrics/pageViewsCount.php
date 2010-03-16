@@ -50,40 +50,22 @@ class owa_pageViewsCount extends owa_metric {
 		$db->multiWhere($this->getConstraints());
 		
 		return $db->getOneRow();
+
+
+		
+		/*
+
+		
+		
+		$s = owa_coreAPI::entityFactory('base.session');
+		
+		$this->setTimePeriod($this->params['period']);
+		
+		$this->params['select'] = "sum(session.num_pageviews) as page_views";
 	
-	}
-	
-	function count() {
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectFrom('owa_session', 'session');
-		$db->selectColumn("sum(session.num_pageviews) as page_views");
-		// pass constraints into where clause
-		$db->multiWhere($this->getConstraints());
-		$this->setLabels('Page Views');
-		$res = $db->getOneRow();
-		return $res['page_views'];
-	}
-	
-	function trend() {
-		
-		$this->db->selectFrom('owa_session', 'session');
-		$this->db->selectColumn("sum(session.num_pageviews) as count,
-									session.month, 
-									session.day, 
-									session.year");
-		
-		if (array_key_exists('groupby', $this->params)):
-			$this->db->groupBy($this->params['groupby']);
-		else:
-			$this->db->groupBy('session.day');
-		endif;
-		
-		$this->db->orderBy('session.year');
-		$this->db->orderBy('session.month');
-		$this->db->orderBy('session.day');
-		
-		return $this->db->getAllRows();
+		return $s->query($this->params);
+
+*/		
 	}
 	
 	

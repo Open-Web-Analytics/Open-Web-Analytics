@@ -136,8 +136,6 @@ class owa_reportView extends owa_view {
 		// set in various templates and params
 		$this->data['params']['period'] = $period->get();
 		$this->body->set('period', $period->get());
-		$this->body->set('period_obj', $period);
-		$this->subview->body->set('period_obj', $period);
 		$this->subview->body->set('period', $period->get());
 		
 		//$this->body->set('timePeriod', $period);

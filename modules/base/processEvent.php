@@ -209,22 +209,11 @@ class owa_processEventController extends owa_controller {
 		
 		// record and filter visitor personally identifiable info (PII)		
 		if (owa_coreAPI::getSetting('base', 'log_visitor_pii')) {
-			
+			// set user name and email
 			$cu = owa_coreAPI::getCurrentUser();
-			
-			// set user name
+			//print_r($cu);
 			$this->event->set('user_name', $this->eq->filter('user_name', $cu->user->get('user_id')));
-			
-			// set email_address
-			if ($this->event->get('email_address')) {
-				$email_adress = $this->event->get('email_address');
-			} else {
-				$email_address = $cu->user->get('email_address');
-			}
-			
-			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
-			
-			
+			$this->event->set('user_email', $this->eq->filter('user_email', $cu->user->get('email_address')));
 		}
 		
 	}

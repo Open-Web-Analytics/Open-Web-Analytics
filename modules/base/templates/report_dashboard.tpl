@@ -1,4 +1,4 @@
-<div class="owa_reportSectionHeader">Site Usage</div>
+<div class="section_header">Site Usage</div>
 <div class="owa_reportSectionContent">
 <?php include ('report_dashboard_summary_stats.tpl');?>
 
@@ -40,10 +40,10 @@
 
 	<table class="owa_reportElement">
 		<TR>
-			<TD valign="top" width="50%">
+			<TD valign="top" width="66%">
 				<?php echo $this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '', 'period' => $params['period']));?>
 			</TD>
-			<TD valign="top" width="50%">
+			<TD valign="top" width="33%">
 				<?php echo $this->getWidget('base.widgetOwaNews');?>
 			</TD>
 		</TR>
