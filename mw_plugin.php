@@ -202,7 +202,7 @@ function owa_translate_role($level = array()) {
  */
 function owa_logSpecialPage(&$specialPage) {
 	
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $wgServer, $wgScriptPath;
 	
 	$owa = owa_singleton();
 	
@@ -214,6 +214,7 @@ function owa_logSpecialPage(&$specialPage) {
 		$event->set('user_email', $wgUser->mEmail);
 		$event->set('page_title', $wgOut->mPagetitle);
 		$event->set('page_type', 'Special Page');
+		$event->setSiteId(md5($wgServer.$wgScriptPath));
 		$owa->trackEvent($event);
 	}
 		
@@ -228,7 +229,7 @@ function owa_logSpecialPage(&$specialPage) {
  */
 function owa_logCategoryPage(&$categoryPage) {
 	
-	global $wgUser, $wgOut;
+	global $wgUser, $wgOut, $wgServer, $wgScriptPath;
 	
 	$owa = owa_singleton();
     //owa_set_priviledges();
@@ -239,6 +240,7 @@ function owa_logCategoryPage(&$categoryPage) {
 		$event->set('user_email', $wgUser->mEmail);
 		$event->set('page_title', $wgOut->mPagetitle);
 		$event->set('page_type', 'Category');
+		$event->setSiteId(md5($wgServer.$wgScriptPath));
 		$owa->trackEvent($event);
 	}
 	return true;
@@ -252,7 +254,7 @@ function owa_logCategoryPage(&$categoryPage) {
  */
 function owa_logArticle(&$article) {
 
-	global $wgUser, $wgOut, $wgTitle;
+	global $wgUser, $wgOut, $wgTitle, $wgServer, $wgScriptPath;
 	
 	$wgTitle->invalidateCache();
 	$wgOut->enableClientCache(false);
@@ -269,6 +271,7 @@ function owa_logArticle(&$article) {
 		$event->set('user_email', $wgUser->mEmail);
 		$event->set('page_title', $article->mTitle->mTextform);
 		$event->set('page_type', 'Article');
+		$event->setSiteId(md5($wgServer.$wgScriptPath));
 		$owa->trackEvent($event);
 	}
 		
