@@ -1,0 +1,41 @@
+﻿{
+
+  "elements":[
+    {
+      "type":      "scatter",
+      "colour":    "#FFB900",
+      "text":      "Avg",
+      "font-size": 10,
+      "dot-style": {"type":"solid-dot", "on-click":"trace:moooo"},
+      "values" :   [
+                     {"x":-5,  "y":-5, "tip":"HELLO" },
+                     {"x":0,   "y":0,  "colour":"#FF0000" },
+                     {"x":5,   "y":5,  "dot-size":20, "on-click":"trace:big dot"},
+                     {"x":5,   "y":-5, "dot-size":5},
+                     {"x":-5,  "y":5,  "dot-size":5},
+                     {"x":0.5, "y":1,  "dot-size":15}
+                   ]
+    }
+
+  ],
+
+  "x_axis":{
+    "offset":  false,
+    "min":     -5,
+    "max":    5/*,
+    "labels":["mon","tue","wed","thur","fri","sat","sun"]*/
+  },
+
+  "y_axis":{
+    "min": -5,
+    "max": 5
+  },
+
+  "y_legend":{
+    "text":   "Time of day",
+    "style": "{font-size: 20px; color: #736AFF;}"
+  }
+}
+
+
+

@@ -1,0 +1,37 @@
+{
+  "title":{
+    "text":  "Floating bars, -10 to 10",
+    "style": "{font-size: 20px; color:#0000ff; font-family: Verdana; text-align: center;}"
+  },
+
+  "y_legend":{
+    "text": "Open Flash Chart",
+    "style": "{color: #736AFF; font-size: 12px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "bar",
+      "alpha":     0.5,
+      "colour":    "#9933CC",
+      "text":      "Page views",
+      "font-size": 10,
+      "values" :   [9,9,5,7,{"top":4,"bottom":-4,"tip":"LOOK<br>#top#,#bottom# = #val#"},-9,{"top":4,"bottom":-5}]
+    }
+  ],
+
+  "x_axis":{
+    "labels": ["January","February","March","April","May","June","July"]
+   },
+
+  "y_axis":{
+    "min": 10,
+    "max": -10
+  },
+
+  "tooltip":{
+    "text": "My Tip<br>#top#,#bottom# = #val#"
+  }
+
+}
+

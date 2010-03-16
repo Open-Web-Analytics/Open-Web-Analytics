@@ -1,0 +1,40 @@
+{
+  "title":{
+    "text":"Ahhhh, sweet.",
+    "style":"{font-size: 13px;}"
+  },
+
+  "elements":[
+    {
+      "type":      "line_hollow",
+      "colour":    "#D41E47",
+      "text":      "How I love thee",
+      "font-size": 10,
+      "width":     2,
+      "dot-size":  6,
+      "halo-size": 0,
+      "loop":      true,
+      "values" :   [3,5,6,7,8,9,10,11.5,13,11.5,10,9,8,7,6,5]
+    }
+  ],
+
+  
+  "radar_axis": {
+    "max":         13,
+    "stroke":      2,
+    "colour":      "#A1D4B5",
+    "grid-colour": "#C0DEBF",
+
+    "labels":{
+      "colour"  :"#ff0000",
+      "labels": [
+        "0","1",
+        "2",
+        {"text":"3","colour":"#00D000"},
+        "4",
+        "5 Hello",
+        "6","7","8","9","10","11","12","13"
+      ]
+    }
+  }
+}

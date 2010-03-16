@@ -1,0 +1,74 @@
+* {
+	font-family: Arial, Helvetica, sans-serif;
+}
+pre {
+	font-family: "Courier New", Courier, monospace;
+
+	font-size: 14px;
+	width: 100%;
+}
+h1 {
+		
+	font-size: 20px;
+	color: #4D4D4D;
+}
+h3 {
+	font-size: 16px;	
+
+	color: #3D3D3D;
+}
+th {
+	text-align: left;
+	padding: 5px;
+	background-color: #6E6E6E;
+}
+td {
+	color: #FFF;
+	padding: 5px;
+}
+table {
+	font-size: 12px;
+	background-color: #4D4D4D;
+	width: 1024px;
+	border: 1px solid #000;
+}
+.even {
+	background-color: #3D3D3D;
+}
+.odd {
+	background-color: #6E6E6E;
+}
+.highlight {
+	background-color: #3D3D3D;
+	font-weight: bold;
+}
+.header {
+	background-image: url(../img/header-bg.png);
+	background-repeat: no-repeat;
+	border-left: 1px solid #FFF;
+	border-right: 1px solid #000;
+	border-top: 1px solid #FFF;
+	padding-left: 30px;
+	padding-top: 8px;
+	height: auto;
+}
+.headerSortUp {
+	background-image: url(../img/header-asc.png);
+	background-repeat: no-repeat;
+	border-left: 1px solid #FFF;
+	border-right: 1px solid #000;
+	border-top: 1px solid #FFF;
+	padding-left: 30px;
+	padding-top: 8px;
+	height: auto;
+}
+.headerSortDown {
+	background-image: url(../img/header-desc.png);
+	background-repeat: no-repeat;
+	border-left: 1px solid #FFF;
+	border-right: 1px solid #000;
+	border-top: 1px solid #FFF;
+	padding-left: 30px;
+	padding-top: 8px;
+	height: auto;
+}

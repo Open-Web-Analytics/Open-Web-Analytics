@@ -1,0 +1,33 @@
+{
+  "elements": [
+    { "type": "line",
+      "width": 2,
+      "colour": "#195215",
+      "values": [
+        4, 7, 6, 7, 7, 19, 23, 19, 17, 14, 15, 12, 13, 17, 17, 10 ]
+},
+
+ {
+      "type": "line",
+      "width": 2,
+      "colour": "#8523171",
+      "values": [ 8, 5, 3, 4, 3, 10, 6, 4, 4, 5, 4, 3, 10, 9, 3, 8 ] },
+
+    {
+      "type": "line",
+      "width": 2,
+      "colour": "#8639811",
+      "values": [
+        9, 9, 18, 17, 17, 15, 12, 11, 8, 11, 11, 10, 8, 6, 5, 9 ] },
+    {
+      "type": "line_hollow",
+      "width": 2,
+      "colour": "#1972900",
+      "values": [ null, null, 21, 14, 12, 7, 4, 3, 2, 2, 8, 18, 15, 12, 14, 10 ] }
+
+ ],
+
+ "title": { "text": "Three lines example" },
+ "y_axis": { "min": 25, "max": 0, "steps": 5 },
+
+ "bg_colour": "#FFFFFF" }

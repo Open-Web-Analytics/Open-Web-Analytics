@@ -1,0 +1,17 @@
+{
+	"elements":[
+		{
+			"type":      "line",
+			"colour":    "#736AFF",
+			"text":      "Avg. wave height (cm)",
+			"font-size": 10,
+			"width":     2,
+			"dot-style": {
+				"on-click":  "trace:http://eden"},
+			"values" :   [
+				1.5,1.69,1.88,2.06,2.21,2.34,
+				{"value":2.44,"colour":"#FF0000","tip":"monkies","on-click":"trace:anchor_test"},
+				2.35,2.23,2.08]
+		}
+	]
+}

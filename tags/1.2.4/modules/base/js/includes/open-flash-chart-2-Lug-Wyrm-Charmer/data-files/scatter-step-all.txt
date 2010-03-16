@@ -1,0 +1,66 @@
+{
+  "elements": [
+    {
+      "type": "scatter_line",
+      "colour": "#ff0000",
+      "dot-size": 3,
+      "values": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "type": "scatter_line",
+      "colour": "#ff0000",
+      "dot-size": 3,
+      "values": [
+        {
+          "x": 4,
+          "y": 1
+        },
+        {
+          "x": 5,
+          "y": 2
+        },
+        {
+          "x": 6,
+          "y": 1
+        }
+      ],
+      "stepgraph": "horizontal"
+    },
+    {
+      "type": "scatter_line",
+      "colour": "#ff0000",
+      "dot-size": 3,
+      "values": [
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 9,
+          "y": 1
+        }
+      ],
+      "stepgraph": "vertical"
+    }
+  ],
+  "title": {
+    "text": "Thu Nov 20 2008"
+  }
+}

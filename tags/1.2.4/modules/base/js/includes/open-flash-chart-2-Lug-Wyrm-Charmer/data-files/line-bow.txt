@@ -1,0 +1,21 @@
+﻿{
+  "elements":[
+    {
+      "type":      "line",
+      "colour":    "#736AFF",
+      "text":      "Avg. wave height (cm)",
+      "font-size": 10,
+      "width":     1,
+	  "dot-style": {
+				"type":"bow", "dot-size": 6, "tip":"#val#<br>#x_label#" },
+    
+      "values" :   [3,0,-3]
+    }
+  ],
+
+  "y_axis":{
+	  "min": -5,
+    "max":   5
+  }
+
+}
