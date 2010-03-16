@@ -214,6 +214,12 @@ class owa_caller extends owa_base {
 	 * @return boolean
 	 */
 	function trackEvent($event) {
+	
+		// needed by helperpage tags function so it can append to first hit tag url
+		if (!owa_coreAPI::getRequestParam('site_id')) {	
+			owa_coreAPI::setRequestParam('site_id', $event->get('site_id'));					
+		}
+		
 		return owa_coreAPI::logEvent($event->getEventType(), $event);
 	}
 	
