@@ -53,12 +53,6 @@ class owa_service extends owa_base {
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		
-		if (!$this->isInit()) {
-			$this->_loadModules();
-			$this->_loadEntities();
-			$this->_loadEventProcessors();
-			$this->setInit();
-		}
 	}
 	
 	function __destruct() {
@@ -66,13 +60,23 @@ class owa_service extends owa_base {
 	}
 	
 	function initializeFramework() {
-		// setup request container
-		$this->request = owa_coreAPI::requestContainerSingleton();
-		// setup current user
-		$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
-		$this->current_user->setRole('everyone');
-		// the 'log_users' config directive relies on this being populated
-		$this->current_user->setUserData('user_id', $this->request->state->get('u'));
+	
+		if (!$this->isInit()) {
+			$this->_loadModules();
+			$this->_loadEntities();
+			$this->_loadMetrics();
+			$this->_loadEventProcessors();
+			$this->setInit();
+			
+			// setup request container
+			$this->request = owa_coreAPI::requestContainerSingleton();
+			// setup current user
+			$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
+			$this->current_user->setRole('everyone');
+			// the 'log_users' config directive relies on this being populated
+			$this->current_user->setUserData('user_id', $this->request->state->get('u'));				
+		}
+		
 	}
 	
 	function setBrowscap($b) {
@@ -129,6 +133,16 @@ class owa_service extends owa_base {
 		}
 		
 		return;
+	}
+	
+	function _loadMetrics() {
+		
+		foreach ($this->modules as $k => $module) {
+		
+			if (is_array($module->metrics)) {
+				$this->metrics = array_merge($module->metrics, $this->metrics);
+			}
+		}
 	}
 	
 	function _loadEventProcessors() {
@@ -244,6 +258,11 @@ class owa_service extends owa_base {
 	
 	function getAllModules() {
 		return $this->modules;
+	}
+	
+	function getMetricClass($name) {
+		//print_r($this->metrics[$name]);
+		return $this->metrics[$name];
 	}
 
 	

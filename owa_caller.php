@@ -136,12 +136,11 @@ class owa_caller extends owa_base {
 		
 		/* LOAD SERVICE LAYER */
 		$this->service = &owa_coreAPI::serviceSingleton();
-		
+		// initialize framework
+		$this->service->initializeFramework();	
 		// notify handlers of 'init' action
 		$dispatch = owa_coreAPI::getEventDispatch();
 		$dispatch->notify($dispatch->makeEvent('init'));
-		// initialize framework
-		$this->service->initializeFramework();	
 		
 		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.

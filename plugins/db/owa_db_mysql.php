@@ -59,6 +59,9 @@ define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN');
 define('OWA_SQL_JOIN_RIGHT_INNER', 'RIGHT INNER JOIN');
 define('OWA_SQL_DESCENDING', 'DESC');
 define('OWA_SQL_ASCENDING', 'ASC');
+define('OWA_SQL_REGEXP', 'REGEXP');
+define('OWA_SQL_NOTREGEXP', 'NOT REGEXP');
+define('OWA_SQL_LIKE', 'LIKE');
 
 
 /**
@@ -74,37 +77,32 @@ define('OWA_SQL_ASCENDING', 'ASC');
  */
 class owa_db_mysql extends owa_db {
 
-	/**
-	 * Constructor
-	 *
-	 * @return owa_db_mysql
-	 * @access public
-	 */
-	function owa_db_mysql() {
-
-		return owa_db_mysql::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function __destruct() {
-		
-		$this->close();
-	}
-	
 	function connect() {
 	
-		$this->connection = mysql_connect(
-				OWA_DB_HOST,
-				OWA_DB_USER,
-				OWA_DB_PASSWORD,
-				true
-    	);
+		if (!$this->connection) {
 		
-		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
+			if ($this->getConnectionParam('persistant')) {
+				
+				$this->connection = mysql_pconnect(
+					$this->getConnectionParam('host'),
+					$this->getConnectionParam('user'),
+					$this->getConnectionParam('password'),
+					$this->getConnectionParam('open_new_connection')
+	    		);
+	    		
+			} else {
+				
+				$this->connection = mysql_connect(
+					$this->getConnectionParam('host'),
+					$this->getConnectionParam('user'),
+					$this->getConnectionParam('password'),
+					$this->getConnectionParam('open_new_connection')
+	    		);
+			}
+			
+			$this->database_selection = mysql_select_db($this->getConnectionParam('name'), $this->connection);
+		}
+			
 			
 		if (!$this->connection || !$this->database_selection) {
 			$this->e->alert('Could not connect to database.');

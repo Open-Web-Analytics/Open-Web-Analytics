@@ -247,9 +247,6 @@ class owa_module extends owa_base {
 				
 		$eq = owa_coreAPI::getEventDispatch();
 		$eq->attach($event_name, array($handler_name, $method));
-		
-		return;
-	
 	}
 	
 	/**
@@ -267,17 +264,10 @@ class owa_module extends owa_base {
 			$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');	
 		}
 		
-		
-
 		$eq = owa_coreAPI::getEventDispatch();
 		$eq->attachFilter($filter_name, array($handler_name, $method), $priority);
-		
-		return;
-	
 	}
-	
-	
-	
+
 	/**
 	 * Attaches an event handler to the event queue
 	 *
@@ -624,6 +614,11 @@ class owa_module extends owa_base {
 	function addEventProcessor($event_type, $processor) {
 		$this->event_processors[$event_type] = $processor;
 		return;
+	}
+	
+	function registerMetric($metric_name, $class_name) {
+		
+		$this->metrics[$metric_name] = $class_name;
 	}
 	
 }

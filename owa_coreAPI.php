@@ -132,8 +132,14 @@ class owa_coreAPI {
 		 			owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
 		 			return;
 				} else { 	
-					$db = new $connection_class;
-					
+					$db = new $connection_class(owa_coreAPI::getSetting('base','db_host'), 
+												owa_coreAPI::getSetting('base','db_name'),
+												owa_coreAPI::getSetting('base','db_user'),
+												owa_coreAPI::getSetting('base','db_password'),
+												owa_coreAPI::getSetting('base','db_force_new_connections'),
+												owa_coreAPI::getSetting('base','db_make_persistant_connections')
+												);
+																	
 					owa_coreAPI::debug(sprintf('Using db class at %s.',	$connection_class_path));
 				}
 				
@@ -309,13 +315,20 @@ class owa_coreAPI {
 		
 	function moduleRequireOnce($module, $class_dir, $file) {
 		
-		if (!empty($class_dir)):
+		if (!empty($class_dir)) {
 		
 			$class_dir .= DIRECTORY_SEPARATOR;
 			
-		endif;
+		}
 		
-		return require_once(OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php');
+		$full_file_path = OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php';
+		
+		if (file_exists($full_file_path)) {
+			return require_once($full_file_path);
+		} else {
+			owa_coreAPI::debug("moduleRequireOnce says no file found at: $full_file_path");
+			return false;
+		}
 	}
 	
 	function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
@@ -501,33 +514,19 @@ class owa_coreAPI {
 	/**
 	 * Convienence method for generating metrics
 	 *
-	 * @param unknown_type $entity_name
-	 * @return unknown
-	 * @depricated
+	 * @param $metric_name string
+ 	 * @param $method string
+  	 * @param $params array
+	 * @return array
 	 */
-	function getMetric($metric_name, $params) {
+	function getMetric($metric_name, $method, $options) {
 		
 		$m = owa_coreAPI::metricFactory($metric_name);
+		$p = owa_coreAPI::makeTimePeriod($options['period'], $options);
+		$m->setPeriod($p);
+		$m->applyOptions($options);
 		
-		if (array_key_exists('constraints', $params)):
-			
-			foreach ($params['constraints'] as $k => $v) {
-				
-				if(is_array($v)):
-					$m->setConstraint($k, $v[1], $v[0]);
-				else:
-					$m->setConstraint($k, $value);	
-				endif;
-				
-			}
-			
-			unset($params['constraints']);
-			
-		endif;
-		
-		$m->applyOverrides($params);
-		
-		return $m->generate();
+		return $m->generate($method);
 	}
 	
 	/**
@@ -538,18 +537,17 @@ class owa_coreAPI {
 	 */
 	function metricFactory($metric_name) {
 		
-		if (!class_exists('owa_metric')):
+		if (!strpos($metric_name, '.')) {
+			$s = owa_coreAPI::serviceSingleton();
+			$metric_name = $s->getMetricClass($metric_name);
+		}
 		
-			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
-			
-		endif;
+		if (!class_exists('owa_metric')) {
+			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');	
+		}
 		
 		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', array(), false);
-		
 	}
-
-
-
 	
 	/**
 	 * Returns a consolidated list of admin/options panels from all active modules 
@@ -735,6 +733,11 @@ class owa_coreAPI {
 		
 		// Load 
 		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+		
+		if (!$controller || !method_exists($controller, 'doAction')) {
+			owa_coreAPI::debug("No controller is associated with $action.");
+			return;
+		}
 		
 		$data = $controller->doAction();
 						

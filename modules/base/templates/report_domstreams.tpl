@@ -5,9 +5,9 @@
 <table class="tablesorter">
 	<thead>
 		<tr>
-			<th>Date</th>
-			<th>Page URL</th>
-			<th>Duration</th>
+			<th><?php echo $domstreams->getLabel('timestamp');?></th>
+			<th><?php echo $domstreams->getLabel('page_url');?></th>
+			<th><?php echo $domstreams->getLabel('duration');?></th>
 			<th></th>
 		</tr>
 	</thead>

@@ -27,7 +27,7 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_paginatedResultSet extends owa_base {
+class owa_paginatedResultSet {
 
 	var $page = 1;
 	
@@ -47,6 +47,22 @@ class owa_paginatedResultSet extends owa_base {
 	
 	var $query_limit;
 	
+	var $periodInfo;
+	
+	/**
+	 * The URL that produces the results
+	 */
+	var $self;
+	
+	/**
+	 * The URL that produces the next page of results
+	 */	
+	var $next;
+	
+	/**
+	 * Aggregate values for metrics
+	 */
+	var $aggregates = array();
 	
 	function __construct() {
 	
@@ -114,13 +130,13 @@ class owa_paginatedResultSet extends owa_base {
 		
 		$set = array();
 		
+		$set['labels'] = $this->labels;
 		$set['rows'] = $this->rows;
 		$set['count'] = $this->results_count;
 		$set['page'] = $this->page;
 		$set['total_pages'] = $this->total_pages;
 		$set['more'] = $this->more;
-		$set['labels'] = $this->labels;
-		
+		$set['period'] = $this->getPeriodInfo();		
 		return $set;
 	}
 	
@@ -132,6 +148,34 @@ class owa_paginatedResultSet extends owa_base {
 	function displayPagination() {
 		
 		
+	}
+	
+	function getPeriodInfo() {
+		return $this->periodInfo;
+	}
+	
+	function setPeriodInfo($info) {
+		$this->periodInfo = $info;
+	}
+	
+	function getLabel($key) {
+		
+		if (array_key_exists($key, $this->labels)) {
+			return $this->labels[$key];
+		}
+	}
+	
+	function getAllLabels() {
+	
+		return $this->labels;
+	}
+	
+	function resultsToXml() {
+	
+	}
+	
+	function resultsToJson() {
+	
 	}
 	
 }

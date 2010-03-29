@@ -68,6 +68,8 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
 		
+		$this->registerMetric('page_views', 'base.pageViews');
+		
 		return parent::__construct();
 	}
 	
