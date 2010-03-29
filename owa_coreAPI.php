@@ -310,13 +310,20 @@ class owa_coreAPI extends owa_base {
 		
 	function moduleRequireOnce($module, $class_dir, $file) {
 		
-		if (!empty($class_dir)):
+		if (!empty($class_dir)) {
 		
 			$class_dir .= DIRECTORY_SEPARATOR;
 			
-		endif;
+		}
 		
-		return require_once(OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php');
+		$full_file_path = OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php';
+		
+		if (file_exists($full_file_path)) {
+			return require_once($full_file_path);		
+		} else {					
+			owa_coreAPI::debug("moduleRequireOnce says no file found at: $full_file_path");							
+			return false;													
+		}
 	}
 	
 	function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
@@ -735,6 +742,11 @@ class owa_coreAPI extends owa_base {
 		
 		// Load 
 		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+		
+		if (!$controller || !method_exists($controller, 'doAction')) {
+		        owa_coreAPI::debug("No controller is associated with $action.");		
+			return;						
+		}
 		
 		$data = $controller->doAction();
 						

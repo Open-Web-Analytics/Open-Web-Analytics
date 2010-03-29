@@ -440,6 +440,29 @@ class owa_lib {
 		return $url;
 	}
 	
+	function fileInclusionFilter($str) {
+		
+	        $str = str_replace("http://", "", $str);			
+		$str = str_replace("/", "", $str);					
+	        $str = str_replace("\\", "", $str);								
+		$str = str_replace("../", "", $str);									
+		$str = str_replace("..", "", $str);
+		$str = str_replace("?", "", $str);															
+		$str = str_replace("%00", "", $str);
+																																		
+		if (strpos($str, '%00')) {
+																					
+			$str = '';
+		}
+																																																				
+		if (strpos($str, null)) {
+																												
+			$str = '';																														
+		}
+																																			
+                return $str;																																							
+	}
+	
 	function inputFilter($array) {
 		
 		static $f;
@@ -474,15 +497,17 @@ class owa_lib {
          * a failure as fatal.  The caller may have already included their own
          * version of the named class.
          */
-        if (!class_exists($class)):
-            include_once $classfile;
-        endif;
+        if (!class_exists($class)) {
+		if (file_exists($classfile)) {
+			require_once ($classfile);
+		}
+        }
 
         /* If the class exists, return a new instance of it. */
-        if (class_exists($class)):
+        if (class_exists($class)) {
             $obj = &new $class($conf);
             return $obj;
-        endif;
+        }
 
         $null = null;
         return $null;
