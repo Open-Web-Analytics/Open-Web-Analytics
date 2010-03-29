@@ -159,6 +159,15 @@ class owa_requestContainer {
 		
 		// Clean Input arrays
 		$this->request = owa_lib::inputFilter($params);	
+		if (array_key_exists('owa_action', $this->request)) {
+			
+			$this->request['owa_action'] = owa_lib::fileInclusionFilter($this->request['owa_action']);
+		}
+		
+		if (array_key_exists('owa_do', $this->request)) {
+			
+			$this->request['owa_do'] = owa_lib::fileInclusionFilter($this->request['owa_do']);
+		}
 		// strip owa namespace
 		$this->owa_params = owa_lib::stripParams($this->request, owa_coreAPI::getSetting('base', 'ns'));
 		// translate certain request variables that are reserved in javascript

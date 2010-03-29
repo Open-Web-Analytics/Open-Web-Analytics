@@ -793,4 +793,27 @@ class owa_jsonView extends owa_view {
 	}
 }
 
+class owa_jsonResultsView extends owa_view {
+
+	function __construct() {
+		
+		if (!class_exists('Services_JSON')) {
+			require_once(OWA_INCLUDE_DIR.'JSON.php');
+		}
+		
+		return parent::__construct();
+	}
+	
+	function render() {
+	
+		// load template
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('json.php');
+		
+		$json = new Services_JSON();
+		// set
+		$this->body->set('json', $json->encode($this->get('data')));
+	}
+}
+
 ?>

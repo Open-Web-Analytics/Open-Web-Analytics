@@ -280,6 +280,19 @@ class owa_timePeriod {
 	
 	}
 	
+	function getAllInfo() {
+		
+		$info = array();
+		$info['period'] = $this->get();
+		$info['startDate'] = $this->startDate->getYyyymmdd();
+		$info['endDate'] = $this->endDate->getYyyymmdd();
+		$info['startTime'] = $this->startDate->getTimestamp();
+		$info['endTime'] = $this->endDate->getTimestamp();	
+		$info['label'] = $this->getLabel();
+		
+		return $info;
+	}
+	
 	function _setDifferences() {
 		
 		// calc years diff

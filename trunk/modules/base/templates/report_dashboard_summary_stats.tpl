@@ -33,7 +33,7 @@
 				<p><?php echo $this->displaySparkline('uniqueVisitorsTrend', $site_trend['unique_visitors']);?></p>
 			</div>
 			
-			<?php echo $this->displayMetricInfobox('base.pageViewsCount', $this->get('period_obj'), array('constraints' => array('site_id' => $site_id)));?>
+			<?php //echo $this->displayMetricInfobox('base.pageViewsCount', $this->get('period_obj'), array('constraints' => array('site_id' => $site_id)));?>
 		</td>
 	</tr>
 </table>

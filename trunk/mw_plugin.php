@@ -16,6 +16,11 @@
 // $Id$
 //
 
+// ensures that mediawiki is the only entry point.
+if (!defined('MEDIAWIKI')) {
+	exit;
+}
+
 require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_mw.php');
 require_once "$IP/includes/SpecialPage.php";

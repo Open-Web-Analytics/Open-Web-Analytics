@@ -87,7 +87,7 @@ class owa_reportView extends owa_view {
 		
 		// set site filter list
 		$this->body->set('sites', $this->getSitesList());
-		
+	
 		$this->body->set('dom_id', $this->data['dom_id']);
 		// add if here
 		$this->subview->body->set('dom_id', $this->data['dom_id']);
@@ -99,7 +99,7 @@ class owa_reportView extends owa_view {
 		
 		// load body template
 		$this->body->set_template('report.tpl');
-		
+			
 		// set Js libs to be loaded
 		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.2.6.min.js', '1.2.6');
 		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));

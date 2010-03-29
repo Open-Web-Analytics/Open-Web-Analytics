@@ -32,11 +32,13 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
 class owa_db extends owa_base {
 	
 	/**
-	 * Connection string
+	 * Database Connection
 	 *
-	 * @var string
+	 * @var object
 	 */
 	var $connection;
+	
+	var $connectionParams;
 	
 	/**
 	 * Number of queries
@@ -129,63 +131,44 @@ class owa_db extends owa_base {
 	 */
 	var $_last_sql_statement;
 	
-	/**
-	 * Constructor
-	 *
-	 * @return 	owa_db
-	 * @access 	public
-	 */
-	function owa_db() {
-	
-		return owa_db::__construct();
-	}
-	
-	function __construct() {
+	function __construct($db_host, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
+		
+		$this->connectionParams = array('host' => $db_host,
+		 								'user' => $db_user,
+		 								'password' => $db_password,
+		 								'name' => $db_name, 
+		 								'open_new_connection' => $open_new_connection,
+		 								'persistant' => $persistant); 
 		
 		return parent::__construct();
 	}
-
-	/**
-	 * Connection object factory
-	 *
-	 * @return 	object
-	 * @access 	public
-	 * @static 
-	 */
-	function &get_instance($params = array()) {
+	
+	function __destruct() {
 		
-		static $db;
+		$this->close();
+	}
+	
+	function connect() {
+	
 		
-		if (!isset($db)):
-			//print 'hello from db';
-			$c = &owa_coreAPI::configSingleton();
-			$config = $c->fetch('base');
-			
-			$e = &owa_error::get_instance();
-			
-			if (empty($config['db_class'])):
-				$class = $config['db_type'];
-			else:
-				$class = $config['db_class'];
-			endif;
-
-			$connection_class = "owa_db_" . $class;
-			$connection_class_path = $config['db_class_dir'] . $connection_class . ".php";
-
-	 		if (!@include($connection_class_path)):
-	 		
-	 			$e->emerg(sprintf('Cannot locate proper db class at %s. Exiting.',
-	 							$connection_class_path));
-	 			return;
-			else:  	
-				$db = new $connection_class;
-				
-				//$this->e->debug(sprintf('Using db class at %s.',	$connection_class_path));
-			endif;	
-			
-		endif;
+		return false;
+	}
+	
+	function pconnect() {
 		
-		return $db;
+		return false;
+	}
+	
+	function close() {
+		
+		return false;
+	}
+	
+	function getConnectionParam($name) {
+		
+		if (array_key_exists($name, $this->connectionParams)) {
+			return $this->connectionParams[$name];
+		}
 	}
 	
 	/**
@@ -231,6 +214,11 @@ class owa_db extends owa_base {
 	}
 	
 	function selectColumn($name, $as = '') {
+	
+		if (is_array($name)) {
+			$as = $name[1];
+			$name = $name[0];
+		}
 		
 		$this->_sqlParams['select_values'][] = array('name' => $name, 'as' => $as);
 		
@@ -353,34 +341,31 @@ class owa_db extends owa_base {
 	
 	function selectFrom($name, $as = '') {
 		
-		//if (empty($as)):
-		//	$as = $this->removeNs($name);
-		//endif;
+		if (is_array($name)) {
+			$as = $name[1];
+			$name = $name[0];
+		}
 		
 		$this->_sqlParams['query_type'] = 'select';
 		$this->_sqlParams['from'][$name] = array('name' => $name, 'as' => $as);
-		return;
 	}
 	
 	function insertInto($table) {
 		
 		$this->_sqlParams['query_type'] = 'insert';
 		$this->_sqlParams['table'] = $table;
-		return;
 	}
 	
 	function deleteFrom($table) {
 		
 		$this->_sqlParams['query_type'] = 'delete';
 		$this->_sqlParams['table'] = $table;
-		return;
 	}
 	
 	function updateTable($table) {
 		
 		$this->_sqlParams['query_type'] = 'update';
 		$this->_sqlParams['table'] = $table;
-		return;
 	}
 	
 	function _insertQuery() {
@@ -539,10 +524,32 @@ class owa_db extends owa_base {
 			foreach ($params as $k => $v) {
 				//print_r($v);	
 				switch (strtolower($v['operator'])) {
+					
+					case '==':
+						$where .= sprintf("%s = '%s'",$v['name'], $v['value']);
+						break;
+					
 					case 'between':
 					
 						$where .= sprintf("%s BETWEEN '%s' AND '%s'", $v['name'], $v['value']['start'], $v['value']['end']);
 						break;
+						
+					case '=~':
+						$where .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $v['value']);
+						break;
+						
+					case '!~':
+						$where .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $v['value']);
+						break;
+						
+					case '=@':
+						$where .= sprintf("LOCATE(%s, %s) > 0",$v['value'], $v['name']);
+						break;
+						
+					case '!@':
+						$where .= sprintf("LOCATE(%s, %s) = 0",$v['value'], $v['name']);
+						break;
+							
 					default:
 						$where .= sprintf("%s %s '%s'",$v['name'], $v['operator'], $v['value']);		
 						break;
@@ -680,13 +687,31 @@ class owa_db extends owa_base {
 	
 	function _makeOrderByClause() {
 		
-		$params = $this->_fetchSqlParams('orderby');
-		
-		if (!empty($params)):
+		$sorts = $this->_fetchSqlParams('orderby');
+		//print_r($sorts);
+		if (!empty($sorts)):
 		
 			$order = $this->_fetchSqlParams('order');
 			
-			return sprintf("ORDER BY %s", $this->_makeDelimitedValueListArray($params));
+			$i = 1;
+			$sort_string = '';
+			$count = count($sorts);
+			foreach ($sorts as $sort) {
+			
+				// needed for backwards compatability.
+				if (!isset($sort[1])) {
+					$sort[1] = $order;
+				}
+				
+				$sort_string .= sprintf("%s %s",$sort[0], $sort[1]);
+				if ($i < $count) {
+					$sort_string .= ', ';	
+				}
+				
+				$i++;
+			}
+			
+			return sprintf("ORDER BY %s", $sort_string);
 			
 		else:
 			return;	

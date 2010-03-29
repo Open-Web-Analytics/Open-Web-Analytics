@@ -35,7 +35,7 @@ class owa_latestDomstreams extends owa_metric {
 		return owa_latestDomstreams::__construct($params);
 	}
 	
-	function __construct($params= null) {
+	function __construct($params = null) {
 		
 		return parent::__construct($params);
 	}
@@ -43,7 +43,11 @@ class owa_latestDomstreams extends owa_metric {
 	function calculate() {
 		
 		$this->db->selectFrom('owa_domstream');
-		$this->db->selectColumn("*");
+		$this->db->selectColumn("id, timestamp, page_url, duration");
+		$this->db->selectColumn($this->setLabel('id', 'Domstream ID'));
+		$this->db->selectColumn($this->setLabel('page_url', 'Page URL'));
+		$this->db->selectColumn($this->setLabel('duration', 'Duration'));
+		$this->db->selectColumn($this->setLabel('timestamp', 'Timestamp'));
 		$this->db->orderBy('timestamp', 'DESC');
 	}
 	
