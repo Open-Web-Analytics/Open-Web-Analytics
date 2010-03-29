@@ -6,9 +6,9 @@ OWA.items['<?php echo $dom_id;?>'].dom_id = "<?php echo $dom_id;?>";
 OWA.items['<?php echo $dom_id;?>'].page_num = "<?php echo $pagination['page_num'];?>1";
 OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php echo $pagination['max_page_num'];?>";
 OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php echo $pagination['more_pages'];?>";
-<? //foreach ($params as $k => $v): ?>
+<?php //foreach ($params as $k => $v): ?>
 //OWA.items['<?php echo $dom_id;?>'].properties.<?php echo $k;?> = "<?php echo $v;?>";
-<? //endforeach;?>
+<?php //endforeach;?>
 OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($params);?>;
 </SCRIPT>
 
