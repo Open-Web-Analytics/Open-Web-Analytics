@@ -43,28 +43,10 @@ function owa_factory($params = array()) {
 		// Will use Gallery config unless there is a config file present.
 		// OWA uses this to setup it's own DB connection seperate from the one
 		// that Gallery uses.
-		
-		// Get Gallery's DB configuration
-		$db_config = $gallery->getConfig('storage.config');
-			$gallery->debug($db_config['type']);
-		// set OWA's database configuration values
-		if ($db_config['type'] === 'mysqli'):
-			$owa_config['db_type'] = 'mysql';
-		else:
-			$owa_config['db_type'] = $db_config['type'];
-		endif;
-		$gallery->debug($owa_config['db_type']);
-		$owa_config['db_name'] = $db_config['database'];
-		$owa_config['db_host'] = $db_config['hostname']; 
-		$owa_config['db_user'] = $db_config['username'];
-		$owa_config['db_password'] = $db_config['password'];
 			
 		//$gallery_base_url = $gallery->getConfig('galleryBaseUrl');
 		$urlgenerator = $gallery->getUrlGenerator();
 		$gallery_base_url = $urlgenerator->getCurrentUrlDir();
-		
-		// Public folder URL
-		define('OWA_PUBLIC_URL', $gallery_base_url.'modules/owa/public/');
 		
 		// Gallery specific config overrides array
 		
