@@ -64,13 +64,8 @@ class owa_logClickController extends owa_controller {
 		// Make position id used for group bys
 		$c->set('position', $c->get('click_x').$c->get('click_y'));
 		
-		$c->create();
-			
-		return;
-			
+		$c->create();			
 	}
-	
-	
 }
 
 ?>

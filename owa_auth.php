@@ -15,8 +15,6 @@
 //
 // $Id$
 //
-require_once(OWA_BASE_DIR.'/owa_base.php');
-require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 /**
  * User Authentication Object
@@ -44,14 +42,7 @@ class owa_auth extends owa_base {
 	 * @var array
 	 */
 	var $roles;
-	
-	/**
-	 * Database Access Object
-	 *
-	 * @var unknown_type
-	 */
-	var $db;
-	
+		
 	var $status_msg;
 	
 	/**
@@ -59,7 +50,7 @@ class owa_auth extends owa_base {
 	 *
 	 * @var array
 	 */
-	var $credentials;
+	var $credentials = array();
 	
 	/**
 	 * Status of Authentication
@@ -79,23 +70,33 @@ class owa_auth extends owa_base {
 	var $check_for_credentials = false;
 	
 	/**
-	 * Abstract class Constructor
+	 * Auth class Singleton
+	 *
+	 * @return object
+	 */
+	function &get_instance($plugin = '') {
+		
+		static $auth;
+		
+		if (!$auth) {
+			
+			$auth = new owa_auth();
+			
+		}
+		
+		return $auth;
+	}
+	
+	
+	/**
+	 * Class Constructor
 	 *
 	 * @return owa_auth
 	 */
-	function owa_auth() {
-		
-		return owa_auth::__construct();
-		
-	}
-	
 	function __construct() {
 		
 		parent::__construct();
-		$this->eq = &eventQueue::get_instance();
-		//sets credentials based on whatever is passed in on params
-		$this->_setCredentials(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'), owa_coreAPI::getRequestParam('pk'));
-		
+		$this->eq = owa_coreAPI::getEventDispatch();	
 	}
 		
 	/**
@@ -105,81 +106,83 @@ class owa_auth extends owa_base {
 	 */
 	function authenticateUser() {
 		
-		$data = array();
+		// look for an API key
+		if (owa_coreAPI::getRequestParam('apiKey')) {
+			// auth user by api key
+			$ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
+		} elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
+			// auth user by temporary passkey. used in forgot password situations
+			$ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
+		} elseif (owa_coreAPI::getRequestParam('user_id') && owa_coreAPI::getRequestParam('password')) {
+			// auth user by login form input
+			$ret = $this->authByInput(owa_coreAPI::getRequestParam('user_id'), owa_coreAPI::getRequestParam('password'));
+		} elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
+			// auth user by cookies
+			$ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
+		}
 		
-		// carve out for url passkey authentication
-		if(!empty($this->credentials['passkey'])):
-			$status = $this->authenticateUserByUrlPasskey($this->credentials['user_name'], $this->credentials['passkey']);
+		// filter results for modules can add their own auth logic.
+		$ret = $this->eq->filter('auth_status', $ret);
+		
+		return array('auth_status' => $ret);		
 			
-			if ($status == true):
-				$data['auth_status'] = true;
-				return $data;
-			else:
-				$data = $this->_setNotAuthenticatedView();
-				$data['auth_status'] = false;
-				return $data;	
-			endif;
-		endif;
-			
-		// if the user has no credentials then redirect them to the login page.
-		//if($this->check_for_credentails == true):
-			if ((empty($this->credentials['user_id'])) || (empty($this->credentials['password']))):
-				// show login page
-				$data = $this->_setNotAuthenticatedView();
-				$data['auth_status'] = false;
-				return $data;	
-			endif;
-		//endif;
+	}
 	
-		// lookup user if not already done.	
-		if ($this->_is_user == false):
+	function authByApiKey($key) {
 		
-			// check to see if the current user has already been authenticated by something upstream
-			$cu = &owa_coreAPI::getCurrentUser();
-			if (!$cu->isAuthenticated()):
-				// check to see if they are a user.
-				$this->isUser();
-			endif;
-			
-		endif;
-				
-		if ($this->_is_user == true):
-			$data['auth_status'] = true;
-					
-		else:
-			// Show not a user page
-			// if they are not a user then redirect to login error page
-			$data = $this->_setNotUserView();
-			$data['auth_status'] = false;
-		endif;
+		// fetch user object from the db
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->load($key, 'api_key');
 		
-		$this->e->debug('Auth Status: '.$data['auth_status']);
+		if ($this->u->get('user_id')) {
+			// get current user
+			$cu = &owa_coreAPI::getCurrentUser();				
+			// set as new current user in service layer
+			$cu->loadNewUserByObject($this->u);
+			$cu->setAuthStatus(true);
+			$this->_is_user = true;	
+			return true;
+		} else {
+			return false;
+		}
 		
-		return $data;
 		
 	}
 	
-	/**
-	 * Creates the concrete auth class
-	 *
-	 * @return object
-	 */
-	function &get_instance($plugin = '') {
+	function authByCookies($user_id, $password) {
+	
+		// set credentials
+		$this->credentials['user_id'] = $user_id;
+		$this->credentials['password'] = $password;
 		
-		static $auth_modules;
-		$auth_mdules = array();
+		// lookup user if not already done.	
+		if ($this->_is_user == false) {
 		
-		if (empty($auth_modules['plugin'])):
-			
-			$c = &owa_coreAPI::configSingleton();
-			$plugin = $c->get('base', 'authentication');
-			
-		endif;
+			// check to see if the current user has already been authenticated by something upstream
+			$cu = &owa_coreAPI::getCurrentUser();
+			if (!$cu->isAuthenticated()) {
+				// check to see if they are a user.
+				return $this->isUser();
+			}	
+		} else {
+			return true;
+		}
+	}
+	
+	function authByInput($user_id, $password) {
 		
-		// this needs to not be a singleton
-		$auth_modules[$plugin] = &owa_lib::singleton(OWA_PLUGIN_DIR.'auth'.DIRECTORY_SEPARATOR, 'owa_auth_', $plugin);
+		// set credentials
+		$this->credentials['user_id'] = $user_id;
+		// must encrypt password to see if it matches whats in the db
+		$this->credentials['password'] = $this->encryptPassword($password);
+		//owa_coreAPI::debug(print_r($this->credentials, true));
+		$ret = $this->isUser();
+	
+		if ($ret === true) {
+			$this->saveCredentials();
+		}
 		
-		return $auth_modules[$plugin];
+		return $ret;
 	}
 	
 	/**
@@ -208,28 +211,25 @@ class owa_auth extends owa_base {
 	 * @param unknown_type $key
 	 * @return unknown
 	 */
-	function authenticateUserByUrlPasskey($user_name, $passkey) {
+	function authenticateUserByUrlPasskey($user_id, $passkey) {
+	
+		// set credentials
+		$this->credentials['user_id'] = $user_id;
+		$this->credentials['passkey'] = $passkey;
 		
+		// fetch user obj
 		$this->getUser();
 		
-		$key =$this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
+		// generate a new passkey from its components in the db
+		$key = $this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
 		
+		// see if it matches the key on the url
 		if ($key == $passkey):
 			return true;
 		else:
 			return false;
 		endif;
 		
-	}
-	
-	/**
-	 * abstract method for Checking to see if the user credentials match a real user object in the DB
-	 *
-	 * @return boolean
-	 */
-	function isUser() {
-		
-		return false;
 	}
 	
 	/**
@@ -278,55 +278,16 @@ class owa_auth extends owa_base {
 		return $this->eq->log(array('user_id' => $user_id), 'user.set_initial_passkey');
 		
 	}
-	
-	function _setCredentials($user_id = '', $password = '', $passkey = '') {
-		
-		$this->credentials['user_id'] = $user_id;
-		$this->credentials['password'] = $password;
-		$this->credentials['passkey'] = $passkey;
-		
-		return;
-	}
-	
-	/**
-	 * Used to auth a new browser that has no credentials set
-	 *
-	 * @param string $user_id
-	 * @param string $password
-	 * @return boolean
-	 */
-	function authenticateNewBrowser($user_id, $password) {
-		
-		$this->e->debug("Login attempt from ". $user_id);
-		
-		$this->_setCredentials($user_id, $this->encryptPassword($password));
-		
-		$is_user = $this->isUser();
-		
-		$data = array();
-		
-		if ($is_user == true):
-			$this->e->debug('setting user credential cookies');
-			$this->saveCredentials();
-			$data['auth_status'] = true;
-			
-		else:
-			$data['auth_status'] = false;
-		endif;
-		
-		return $data;
-	}
-	
+
 	/**
 	 * Saves login credentails to persistant browser cookies
 	 * TODO: refactor to use state facility
 	 */
 	function saveCredentials() {
 		
+		$this->e->debug('saving user credentials to cookies');
 		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*30, '/', $this->config['cookie_domain']);
 		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*365*30, '/', $this->config['cookie_domain']);
-		
-		return;
 	}
 	
 	/**
@@ -349,6 +310,47 @@ class owa_auth extends owa_base {
 	function encryptPassword($password) {
 		
 		return owa_lib::encryptPassword($password);
+	}
+	
+	function getUser() {
+		
+		// fetch user object from the db
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->getByColumn('user_id', $this->credentials['user_id']);
+	}
+		
+	/**
+	 * Checks to see if the user credentials match a real user object in the DB
+	 *
+	 * @return boolean
+	 */
+	function isUser() {
+		
+		// get current user
+		$cu = &owa_coreAPI::getCurrentUser();
+				
+		// fetches user object from DB
+		$this->getUser();
+		//print $this->credentials['user_id'];
+		//print $this->u->get('user_id');
+		if ($this->credentials['user_id'] === $this->u->get('user_id')):
+			
+			if ($this->credentials['password'] === $this->u->get('password')):
+				$this->_is_user = true;	
+				
+				// set as new current user in service layer
+				$cu->loadNewUserByObject($this->u);
+				$cu->setAuthStatus(true);
+				return true;
+			else:
+				$this->_is_user = false;
+				return false;
+			endif;
+		else:
+			$this->_is_user = false;
+			return false;
+		endif;
+		
 	}
 	
 }

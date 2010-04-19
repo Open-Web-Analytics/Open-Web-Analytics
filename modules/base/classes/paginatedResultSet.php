@@ -29,26 +29,26 @@
  */
 class owa_paginatedResultSet {
 
-	var $page = 1;
-	
-	var $limit;
-	
-	var $offset = 0;
-	
-	var $results_count;
+		
+	var $timePeriod;
+	var $resultsPerPage;
+	var $resultsTotal;
+	var $resultsReturned;
+	var $resultsRows;
+		
+	/**
+	 * Aggregate values for metrics
+	 */
+	var $aggregates = array();
 	
 	var $rows;
 	
-	var $more;
-	
-	var $total_pages;
-	
 	var $labels;
 	
-	var $query_limit;
-	
-	var $periodInfo;
-	
+	var $more;
+	var $page = 1;
+	var $total_pages;
+		
 	/**
 	 * The URL that produces the results
 	 */
@@ -59,10 +59,11 @@ class owa_paginatedResultSet {
 	 */	
 	var $next;
 	
-	/**
-	 * Aggregate values for metrics
-	 */
-	var $aggregates = array();
+	var $results_count;
+	var $offset = 0;
+	var $limit;
+	var $query_limit;
+
 	
 	function __construct() {
 	
@@ -70,6 +71,7 @@ class owa_paginatedResultSet {
 	
 	function setLimit($limit) {
 	
+		$this->resultsPerPage = $limit;
 		$this->limit = $limit;
 	}
 	
@@ -91,16 +93,25 @@ class owa_paginatedResultSet {
 	
 	function countResults($results) {
 	
+		$this->resultsReturned = count($results);
 		$this->results_count = count($results);
-		$this->total_pages = ceil(($this->results_count + $this->offset) / $this->limit);
-		
-		if ($this->results_count < $this->limit) {
-			// no more pages
-		} else {
-			// more pages
-			$this->setMorePages();
+				
+		if ($this->limit) {
+			$this->total_pages = ceil(($this->results_count + $this->offset) / $this->limit);
 			
+			if ($this->results_count < $this->limit) {
+			// no more pages
+			} else {
+				// more pages
+				$this->setMorePages();
+				
+			}
 		}
+	}
+	
+	function getRowCount() {
+		
+		return $this->results_count;
 	}
 	
 	function generate($dao, $method = 'getAllRows') {
@@ -124,8 +135,9 @@ class owa_paginatedResultSet {
 			$this->rows = array();
 		}
 		
+		return $this->rows;
 	}
-	
+		
 	function getResultSetAsArray() {
 		
 		$set = array();
@@ -155,7 +167,7 @@ class owa_paginatedResultSet {
 	}
 	
 	function setPeriodInfo($info) {
-		$this->periodInfo = $info;
+		$this->timePeriod = $info;
 	}
 	
 	function getLabel($key) {
@@ -170,12 +182,60 @@ class owa_paginatedResultSet {
 		return $this->labels;
 	}
 	
-	function resultsToXml() {
 	
+	function formatResults($format) {
+		
+		$formats = array('html' => 'resultSetToHtml',
+						 'json'	=>	'resultSetToJson',
+						 'xml'	=>	'resultSetToXml',
+						 'php'	=>	'resultSetToSerializedPhp',
+						 'csv'	=>	'resultSetToCsv',
+						 'debug' => 'resultSetToDebug');
+		
+		if (array_key_exists($format, $formats)) {
+			
+			return $this->$formats[$format]();
+		} else {
+			return 'That format is not supported';
+		}
+				
 	}
 	
-	function resultsToJson() {
 	
+	function resultSetToXml() {
+	
+		$t = new owa_template;
+		
+		$t->set_template('resultSetXml.php');
+		$t->set('rs', $this);
+		
+		return $t->fetch();	
+	}
+	
+	function resultSetToJson() {
+		return json_encode($this);
+	}
+	
+	function resultSetToDebug() {
+		
+		return print_r($this, true);
+	}
+	
+	function resultSetToSerializedPhp() {
+		return serialize($this);
+	}
+	
+	function resultSetToHtml() {
+		$t = new owa_template;
+		
+		$t->set_template('resultSetHtml.php');
+		$t->set('rs', $this);
+		
+		return $t->fetch();	
+	}
+	
+	function getDataRows() {
+		return $this->resultsRows;
 	}
 	
 }

@@ -581,7 +581,6 @@
 			'log_dom_streams'				=> true,
 			'timezone'						=> 'America/Los_Angeles',
 			'log_dom_stream_percentage'		=> 50,
-			'authentication'				=> 'simple',
 			'owa_wiki_link_template'		=> 'http://wiki.openwebanalytics.com/index.php?title=%s',
 			'password_length'				=> 4,
 			'modules'						=> array('base'),

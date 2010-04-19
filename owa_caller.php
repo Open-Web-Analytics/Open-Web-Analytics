@@ -17,9 +17,9 @@
 //
 
 include_once('owa_env.php');
+require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_requestContainer.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
-require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
@@ -41,14 +41,7 @@ class owa_caller extends owa_base {
 	 * @var array
 	 */
 	var $params;
-	
-	/**
-	 * Core API
-	 *
-	 * @var object
-	 */
-	var $api;
-	
+		
 	var $start_time;
 	
 	var $end_time;

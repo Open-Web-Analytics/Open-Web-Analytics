@@ -512,7 +512,7 @@ class owa_db extends owa_base {
 	function _makeWhereClause() {
 	
 		$params = $this->_fetchSqlParams('where');
-	
+		//print_r($params);
 		if (!empty($params)):
 		
 			$count = count($params);
@@ -543,11 +543,11 @@ class owa_db extends owa_base {
 						break;
 						
 					case '=@':
-						$where .= sprintf("LOCATE(%s, %s) > 0",$v['value'], $v['name']);
+						$where .= sprintf("LOCATE('%s', %s) > 0",$v['value'], $v['name']);
 						break;
 						
 					case '!@':
-						$where .= sprintf("LOCATE(%s, %s) = 0",$v['value'], $v['name']);
+						$where .= sprintf("LOCATE('%s', %s) = 0",$v['value'], $v['name']);
 						break;
 							
 					default:
@@ -581,7 +581,7 @@ class owa_db extends owa_base {
 	function join($type, $table, $as, $foreign_key, $primary_key = '') {
 		
 		if (empty($primary_key)):
-			$primary_key = $table.'.id';
+			$primary_key = $as.'.id';
 		endif;
 		
 		
@@ -925,7 +925,7 @@ class owa_db extends owa_base {
 	 */
 	function addColumn($table_name, $column_name, $column_definition) {
 	
-		return $this->query(sprintf(OWA_SQL_ADD_COLUMN, $table_name. $column_name, $column_definition));
+		return $this->query(sprintf(OWA_SQL_ADD_COLUMN, $table_name, $column_name, $column_definition));
 
 	}
 	
@@ -935,7 +935,7 @@ class owa_db extends owa_base {
 	 */
 	function dropColumn($table_name, $column_name) {
 	
-		return $this->query(sprintf(OWA_SQL_DROP_COLUMN, $table_name. $column_name));
+		return $this->query(sprintf(OWA_SQL_DROP_COLUMN, $table_name, $column_name));
 
 	}
 	
@@ -945,7 +945,17 @@ class owa_db extends owa_base {
 	 */
 	function modifyColumn($table_name, $column_name, $column_definition) {
 	
-		return $this->query(sprintf(OWA_SQL_MODIFY_COLUMN, $table_name. $column_name, $column_definition));
+		return $this->query(sprintf(OWA_SQL_MODIFY_COLUMN, $table_name, $column_name, $column_definition));
+
+	}
+	
+	/**
+	 * Changes the definition of a column
+	 *
+	 */
+	function addIndex($table_name, $column_name, $index_definition = '') {
+	
+		return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $column_definition));
 
 	}
 

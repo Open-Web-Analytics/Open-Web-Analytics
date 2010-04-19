@@ -17,7 +17,7 @@
 //
 
 /**
- * Service User Class
+ * Service Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2008 Peter Adams <peter@openwebanalytics.com>
@@ -43,6 +43,8 @@ class owa_service extends owa_base {
 	var $modules = array();
 	var $entities = array();
 	var $metrics = array();
+	var $dimensions = array();
+	var $denormalizedDimensions = array();
 	var $browscap;
 	
 	function owa_service() {
@@ -65,6 +67,8 @@ class owa_service extends owa_base {
 			$this->_loadModules();
 			$this->_loadEntities();
 			$this->_loadMetrics();
+			$this->_loadDimensions();
+			$this->_loadApiMethods();	
 			$this->_loadEventProcessors();
 			$this->setInit();
 			
@@ -145,6 +149,51 @@ class owa_service extends owa_base {
 		}
 	}
 	
+	function loadCliCommands() {
+		
+		$command_map = array();
+		
+		foreach ($this->modules as $k => $module) {
+		
+			if (is_array($module->cli_commands)) {
+				$command_map = array_merge($module->cli_commands, $command_map);
+			}
+		}
+		
+		$this->setMap('cli_commands', $command_map);
+	}
+	
+	function _loadApiMethods() {
+		
+		$method_map = array();
+		
+		foreach ($this->modules as $k => $module) {
+		
+			if (is_array($module->cli_commands)) {
+				$method_map = array_merge($module->api_methods, $method_map);
+			}
+		}
+		
+		$this->setMap('api_methods', $method_map);
+	}
+	
+	function _loadDimensions() {
+		
+		foreach ($this->modules as $k => $module) {
+		
+			if (is_array($module->dimensions)) {
+				$this->dimensions = array_merge($module->dimensions, $this->dimensions);
+			}
+			
+			if (is_array($module->denormalizedDimensions)) {
+			
+				$this->denormalizedDimensions = array_merge($module->denormalizedDimensions, $this->denormalizedDimensions);
+			}
+			
+			//print_r($this->denormalizedDimensions);
+		}
+	}
+	
 	function _loadEventProcessors() {
 		
 		$processors = array();
@@ -194,6 +243,11 @@ class owa_service extends owa_base {
 		
 		$this->maps[$name] = $map;
 		return;
+	}
+	
+	function setMapValue($map_name, $name, $value) {
+		
+		$this->maps[$map_name][$name] = $value;
 	}
 	
 	function setUpdateRequired() {
@@ -261,10 +315,49 @@ class owa_service extends owa_base {
 	}
 	
 	function getMetricClass($name) {
-		//print_r($this->metrics[$name]);
-		return $this->metrics[$name];
+	
+		if (array_key_exists($name, $this->metrics)) {
+			return $this->metrics[$name];
+		}
+	}
+	
+	function getDimension($name) {
+		
+		if (array_key_exists($name, $this->dimensions)) {
+			return $this->dimensions[$name];
+		}
+	}
+	
+	function getDenormalizedDimension($name, $entity) {
+	
+		//print_r($this->denormalizedDimensions);
+		if (array_key_exists($name, $this->denormalizedDimensions)) {
+			if (array_key_exists($entity, $this->denormalizedDimensions[$name])) {	
+				return $this->denormalizedDimensions[$name][$entity];
+			}
+		}
+	}
+	
+	function getCliCommandClass($command) {
+		return $this->getMapValue('cli_commands', strtolower($command));
+	}
+	
+	function setCliCommandClass($command, $class) {
+		
+		$this->setMapValue('cli_commands', strtolower($command), $class);
 	}
 
+	function getApiMethodClass($method_name) {
+		
+		return $this->getMapValue('api_methods', $method_name);
+	}
+	
+	function setApiMethodClass($method_name, $class) {
+		
+		$this->setMapValue('api_methods', $method_name, $class);
+	}
+	
+	
 	
 }
 

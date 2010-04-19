@@ -17,7 +17,7 @@
 //
 
 /**
- * DOM Stream Fact Entity
+ * Action Event Fact Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,15 +28,15 @@
  * @since		owa 1.0.0
  */
 
-class owa_domstream extends owa_entity {
+class owa_action_fact extends owa_entity {
 	
 	function __construct() {
 		
-		$this->setTableName('domstream');
+		$this->setTableName('action_fact');
 		
-		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['id']->setPrimaryKey();
+		$id = new owa_dbColumn('id', OWA_DTD_BIGINT);
+		$id->setPrimaryKey();
+		$this->setProperty($id);
 		
 		$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
 		$visitor_id->setForeignKey('base.visitor');
@@ -53,17 +53,24 @@ class owa_domstream extends owa_entity {
 		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
 		$site_id->setForeignKey('base.site');
 		$this->setProperty($site_id);
-	
-		$this->properties['events'] = new owa_dbColumn;
-		$this->properties['events']->setDataType(OWA_DTD_TEXT);
-		$this->properties['duration'] = new owa_dbColumn;
-		$this->properties['duration']->setDataType(OWA_DTD_INT);
-		$this->properties['timestamp'] = new owa_dbColumn;
-		$this->properties['timestamp']->setDataType(OWA_DTD_INT);
-		$this->properties['yyyymmdd'] = new owa_dbColumn;
-		$this->properties['yyyymmdd']->setDataType(OWA_DTD_INT);
-		$this->properties['page_url'] = new owa_dbColumn;
-		$this->properties['page_url']->setDataType(OWA_DTD_TEXT);
+		
+		$timestamp = new owa_dbColumn('timestamp', OWA_DTD_INT);
+		$this->setProperty($timestamp);
+		
+		$yyyymmdd = new owa_dbColumn('yyyymmdd', OWA_DTD_INT);
+		$this->setProperty($yyyymmdd);
+		
+		$action_name = new owa_dbColumn('action_name', OWA_DTD_INT);
+		$this->setProperty($action_name);
+		
+		$action_label = new owa_dbColumn('label', OWA_DTD_VARCHAR255);
+		$this->setProperty($action_label);
+		
+		$action_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
+		$this->setProperty($action_value);
+		
+		$action_category = new owa_dbColumn('action_category', OWA_DTD_INT);
+		$this->setProperty($action_category);
 	}
 }
 

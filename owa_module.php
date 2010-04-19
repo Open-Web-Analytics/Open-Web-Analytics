@@ -161,28 +161,45 @@ class owa_module extends owa_base {
 	var $event_processors = array();
 	
 	/**
-	 * Constructor
-	 *
-	 * @return owa_module
+	 * Dimensions
+	 * 
+	 * @var array 
 	 */
-	function owa_module() {
-		
-		return owa_module::__construct();
-		
-	}
+	var $dimensions = array();
 	
+	/**
+	 * Dimensions
+	 * 
+	 * @var array 
+	 */
+	var $denormalizedDimensions = array();
+	
+	/**
+	 * cli_commands
+	 * 
+	 * @var array 
+	 */
+	var $cli_commands = array();
+	
+	/**
+	 * API Methods
+	 * 
+	 * @var array 
+	 */
+	var $api_methods = array();
+	
+	/**
+	 * Constructor
+	 * 
+	 *  
+	 */
 	function __construct() {
 		
 		parent::__construct();
 		
-		// register event handlers unless OWA is operating in async handling mode
-		//if ($this->config['async_db'] == false):
-			$this->_registerEventHandlers();
-		//endif;
+		$this->_registerEventHandlers();
 		$this->_registerEventProcessors();
 		$this->_registerEntities();
-		
-		return;
 	}
 	
 	/**
@@ -619,6 +636,25 @@ class owa_module extends owa_base {
 	function registerMetric($metric_name, $class_name) {
 		
 		$this->metrics[$metric_name] = $class_name;
+	}
+	
+	function registerDimension($dim_name, $entity, $column, $family, $label = '', $description = '') {
+		
+		$this->dimensions[$dim_name] = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description);
+	}
+	
+	function registerDenormalizedDimension($dim_name, $entity, $column, $family, $label = '', $description = '') {
+		$this->denormalizedDimensions[$dim_name][$entity] = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description);
+	}
+	
+	function registerCliCommand($command, $class) {
+		
+		$this->cli_commands[$command] = $class;
+	}
+	
+	function registerApiMethod($method_name, $class) {
+		
+		$this->api_methods[$method_name] = $class;
 	}
 	
 }
