@@ -62,6 +62,7 @@ define('OWA_SQL_ASCENDING', 'ASC');
 define('OWA_SQL_REGEXP', 'REGEXP');
 define('OWA_SQL_NOTREGEXP', 'NOT REGEXP');
 define('OWA_SQL_LIKE', 'LIKE');
+define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s');
 
 
 /**

@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_auth.php');
-
-
 /**
  * Abstract Controller Class
  * 
@@ -30,7 +27,6 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
 
 class owa_controller extends owa_base {
 	
@@ -61,15 +57,6 @@ class owa_controller extends owa_base {
 	 * @var string
 	 */
 	var $priviledge_level;
-	
-	/**
-	 * The auth module to use for this controller
-	 * This can be overriden by concrete controller classes
-	 * otherwise value will be pulled from the base module's configuration
-	 *
-	 * @var string
-	 */
-	var $auth_module;
 	
 	/**
 	 * data validation control object
@@ -145,14 +132,8 @@ class owa_controller extends owa_base {
 		// set request params
 		$this->params = $params;
 		
-		// sets the auth module. requires a configuration object.
-		$this->_setAuthModule();
-		
 		// set the default view method
-		$this->setViewMethod('delegate');
-		
-		return;
-	
+		$this->setViewMethod('delegate');	
 	}
 	
 	/**
@@ -167,9 +148,7 @@ class owa_controller extends owa_base {
 		// not sure this should go here...
 		if ($this->is_admin === true):
 			// do not intercept if its the updatesApply action or a re-install else updates will never apply
-			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING')):
-				
-				
+			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')):
 				
 				if (owa_coreAPI::isUpdateRequired()):
 					$this->e->debug('Updates Required. Redirecting action.');
@@ -182,42 +161,35 @@ class owa_controller extends owa_base {
 		endif;		
 		
 		/* CHECK USER FOR CAPABILITIES */
-		$cap = owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability());
-		owa_coreAPI::debug('Controller: is current user capable: '.$cap);
-		if ($cap != true):
-			// check to see if the user has already been authenticated by a plugin 
-			if (owa_coreAPI::isCurrentUserAuthenticated()):
-				$this->setView('base.error');
-				$this->set('error_msg', $this->getMsg(2003));
+		if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())) {
+		
+			owa_coreAPI::debug('User does not have capability required by this controller.');
+			
+			// check to see if the user has already been authenticated 
+			if (owa_coreAPI::isCurrentUserAuthenticated()) {
+				$this->authenticatedButNotCapableAction();
 				return $this->data;
-			endif;
+			}
 			
-			
-			/* PERFORM AUTHENTICATION */
-			// TODO: create authSingleton() to hold an array of multiple auth objects
-			// TODO: make auth object configurable by controller
-			
+			/* PERFORM AUTHENTICATION */	
 			$auth = &owa_auth::get_instance();
 			$status = $auth->authenticateUser();
 			// if auth was not successful then return login view.
-			if ($status['auth_status'] != true):
-				//$data['view_method'] = 'delegate';
-				$this->setRedirectAction('base.loginForm');
-				$this->set('go', urlencode(owa_lib::get_current_url()));
-				//$this->set('error_code', 2002);
+			if ($status['auth_status'] != true) {
+				$this->notAuthenticatedAction();
 				return $this->data;
-			else:
+			} else {
 				//check for needed capability again now that they are authenticated
-				if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())):
-					$this->setView('base.error');
-					$this->set('error_msg', $this->getMsg(2003));
+				if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())) {
+					$this->authenticatedButNotCapableAction();
+					//needed?
 					$this->set('go', urlencode(owa_lib::get_current_url()));
-					// set auth status for downstream views
+					// needed? -- set auth status for downstream views
 					$this->set('auth_status', true);
 					return $this->data;	
-				endif;
-			endif;
-		endif;
+				}
+			}
+		}
 		// TODO: These sets need to be removed and added to pre(), action() or post() methods 
 		// in various concrete controller classes as they screw up things when 
 		// redirecting from one controller to another.
@@ -230,34 +202,34 @@ class owa_controller extends owa_base {
 		$this->set('site_id', $this->get('site_id'));
 				
 		// set status msg - NEEDED HERE? doesnt owa_ view handle this?
-		if (array_key_exists('status_code', $this->params)):
+		if (array_key_exists('status_code', $this->params)) {
 			$this->set('status_code', $this->getParam('status_code'));
-		endif;
+		}
 		
 		// get error msg from error code passed on the query string from a redirect.
-		if (array_key_exists('error_code', $this->params)):
+		if (array_key_exists('error_code', $this->params)) {
 			$this->set('error_code', $this->getParam('error_code'));
-		endif;
+		}
 		 
 		// check to see if the controller has created a validator
-		if (!empty($this->v)):
+		if (!empty($this->v)) {
 			// if so do the validations required
 			$this->v->doValidations();
 			//check for errors
-			if ($this->v->hasErrors === true):
+			if ($this->v->hasErrors === true) {
 				//print_r($this->v);
 				// if errors, do the errorAction instead of the normal action
 				$this->set('validation_errors', $this->getValidationErrorMsgs());
 				$ret = $this->errorAction();
-				if (!empty($ret)):
+				if (!empty($ret)) {
 					$this->post();
 					return $ret;
-				else:
+				} else {
 					$this->post();
 					return $this->data;
-				endif;
-			endif;
-		endif;
+				}
+			}
+		}
 		
 		
 		/* PERFORM PRE ACTION */
@@ -269,15 +241,13 @@ class owa_controller extends owa_base {
 		// controllers that donot use $this->data
 		$ret = $this->action();
 
-		if (!empty($ret)):
+		if (!empty($ret)) {
 			$this->post();
 			return $ret;
-		else:
+		} else {
 			$this->post();
 			return $this->data;
-		endif;
-		
-		
+		}
 		
 	}
 	
@@ -345,16 +315,6 @@ class owa_controller extends owa_base {
 	
 	}
 	
-	function _setAuthModule() {
-	
-		if (empty($this->auth_module)):
-			$this->auth_module = $this->c->get('base', 'authentication');
-		endif;
-		
-		return;
-	
-	}
-	
 	// depricated
 	function _setCapability($capability) {
 	
@@ -376,16 +336,30 @@ class owa_controller extends owa_base {
 	
 	function getParam($name) {
 	
-		if (array_key_exists($name, $this->params)):
+		if (array_key_exists($name, $this->params)) {
 			return $this->params[$name];
-		else:
+		} else {
 			return false;
-		endif;
+		}
+	}
+	
+	function isParam($name) {
+	
+		if (array_key_exists($name, $this->params)) {
+			return true;
+		} else {
+			return false;
+		}	
 	}
 	
 	function get($name) {
 		
 		return $this->getParam($name);
+	}
+	
+	function getAllParams() {
+		
+		return $this->params;
 	}
 	
 	function pre() {
@@ -523,6 +497,18 @@ class owa_controller extends owa_base {
 	function setStatusMsg($msg) {
 		
 		$this->data['status_message'] = $msg;
+	}
+	
+	function authenticatedButNotCapableAction() {
+		
+		$this->setView('base.error');
+		$this->set('error_msg', $this->getMsg(2003));
+	}
+	
+	function notAuthenticatedAction() {
+
+		$this->setRedirectAction('base.loginForm');
+		$this->set('go', urlencode(owa_lib::get_current_url()));
 	}
 	
 

@@ -120,9 +120,20 @@ class owa_update extends owa_base {
 	 * @return boolean
 	 */
 	function rollback() {
-	
-		return false;
-	
+		
+		$current_version = $this->c->get($this->module_name, 'schema_version');
+		
+		//if ($current_version === $this->schema_version) {
+			$ret = $this->down();
+			if ($ret) {
+				$prior_version = $current_version - 1;
+				$this->c->persistSetting($this->module_name, 'schema_version', $prior_version);
+				$this->c->save();
+				$this->e->notice("Schema Rollback succeeded to version: $prior_version.");
+			}			
+		//}
+		
+		return true;
 	}
 	
 	/**

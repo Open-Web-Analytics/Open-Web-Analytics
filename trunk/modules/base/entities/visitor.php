@@ -29,28 +29,6 @@
  */
 
 class owa_visitor extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $user_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $user_email = array('data_type' => OWA_DTD_VARCHAR255); //  varchar(255),
-	var $first_session_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $first_session_year = array('data_type' => OWA_DTD_INT); // INT,
-	var $first_session_month = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $first_session_day = array('data_type' => OWA_DTD_INT); // INT,
-	var $first_session_dayofyear = array('data_type' => OWA_DTD_INT); // INT,
-	var $first_session_timestamp = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $last_session_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $last_session_year = array('data_type' => OWA_DTD_INT); // INT,
-	var $last_session_month = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $last_session_day = array('data_type' => OWA_DTD_INT); // INT,
-	var $last_session_dayofyear = array('data_type' => OWA_DTD_INT); // INT,
-	
-	*/
-	function owa_visitor() {
-		
-		return owa_visitor::__construct();		
-	}
 	
 	function __construct() {
 	
@@ -86,6 +64,10 @@ class owa_visitor extends owa_entity {
 		$this->properties['last_session_day']->setDataType(OWA_DTD_INT);
 		$this->properties['last_session_dayofyear'] = new owa_dbColumn;
 		$this->properties['last_session_dayofyear']->setDataType(OWA_DTD_INT);
+		$num_prior_sessions =  new owa_dbColumn;
+		$num_prior_sessions->setName('num_prior_sessions');
+		$num_prior_sessions->setDataType(OWA_DTD_INT);
+		$this->setProperty($num_prior_sessions);
 	}
 }
 

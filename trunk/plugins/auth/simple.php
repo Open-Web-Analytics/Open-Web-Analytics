@@ -32,85 +32,11 @@ require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 class owa_auth_simple extends owa_auth {
 	
-	function owa_auth_simple() {
-		
-		return owa_auth_simple::__construct();
-	}
-	
 	function __construct() {
 		$this->check_for_credentials = true;
 		return parent::__construct();
 	}
 	
-	function getUser() {
-		
-		// fetch user object from the db
-		$this->u = owa_coreAPI::entityFactory('base.user');
-		$this->u->getByColumn('user_id', $this->credentials['user_id']);
-		
-		return;
-	}
-		
-	/**
-	 * Checks to see if the user credentials match a real user object in the DB
-	 *
-	 * @return boolean
-	 */
-	function isUser() {
-		
-		// get current user
-		$cu = &owa_coreAPI::getCurrentUser();
-				
-		// fetches user object from DB
-		$this->getUser();
-		
-		if ($this->credentials['user_id'] == $this->u->get('user_id')):
-			
-			if ($this->credentials['password'] === $this->u->get('password')):
-				$this->_is_user = true;	
-				
-				// set as new current user in service layer
-				$cu->loadNewUserByObject($this->u);
-				$cu->setAuthStatus(true);
-				return true;
-			else:
-				$this->_is_user = false;
-				return false;
-			endif;
-		else:
-			$this->_is_user = false;
-			return false;
-		endif;
-		
-		
-		
-	}
-	
-	function _setNotPriviledgedView() {
-		$data['view_method'] = 'delegate';
-		$data['view'] = 'base.error';
-		$data['error_msg'] = $this->getMsg(2003);
-		$data['go'] = urlencode(owa_lib::get_current_url());
-		return $data;
-	}
-	
-	function _setNotUserView() {
-		
-		$data['view_method'] = 'delegate';
-		$data['view'] = 'base.login';
-		$data['go'] = urlencode(owa_lib::get_current_url());
-		$data['error_msg'] = $this->getMsg(2002);
-		return $data;
-	}
-	
-	function _setNotAuthenticatedView() {
-		
-		$data['view_method'] = 'delegate';
-		$data['view'] = 'base.login';
-		$data['go'] = urlencode(owa_lib::get_current_url());
-		$data['error_msg'] = $this->getMsg(2004);
-		return $data;
-	}
 	
 }
 

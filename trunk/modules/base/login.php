@@ -21,11 +21,6 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_loginController extends owa_controller {
 	
-	function owa_loginController($params) {
-
-		return owa_loginController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		return parent::__construct($params);
@@ -34,7 +29,7 @@ class owa_loginController extends owa_controller {
 	function action() {
 		
 		$auth = &owa_auth::get_instance();
-		$status = $auth->authenticateNewBrowser($this->getParam('user_id'), $this->getParam('password'));
+		$status = $auth->authenticateUser();
 		$go = $this->getParam('go');
 		// if authentication is successfull
 		if ($status['auth_status'] == true) {

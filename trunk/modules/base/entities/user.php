@@ -29,23 +29,6 @@
  */
 
 class owa_user extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_SERIAL, 'auto_increment' => true); // SERIAL,
-	var $user_id = array('data_type' => OWA_DTD_VARCHAR255, 'is_primary_key' => true); // varchar(255),
-	var $password = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $role = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $real_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $email_address = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $temp_passkey = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $creation_date = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $last_update_date = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	
-	*/
-	function owa_user() {
-		
-		return owa_user::__construct();		
-	}
 	
 	function __construct() {
 	
@@ -72,6 +55,10 @@ class owa_user extends owa_entity {
 		$this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['last_update_date'] = new owa_dbColumn;
 		$this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
+		$apiKey = new owa_dbColumn;
+		$apiKey->setName('api_key');
+		$apiKey->setDataType(OWA_DTD_VARCHAR255);
+		$this->setProperty($apiKey);
 	}
 	
 	function createNewUser($user_params) {
@@ -84,6 +71,7 @@ class owa_user extends owa_entity {
 		$this->set('temp_passkey', $temp_passkey);
 		$this->set('creation_date', time());
 		$this->set('last_update_date', time());
+		$this->set('api_key', $this->generateTempPasskey($user_params['user_id']));
 		$ret = $this->create();
 		
 		if ($ret == true):

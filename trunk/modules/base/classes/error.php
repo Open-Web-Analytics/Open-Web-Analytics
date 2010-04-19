@@ -126,12 +126,6 @@ class owa_error {
 			case "development":
 				$this->createDevelopmentHandler();
 				break;
-			case "cli_development":
-				$this->createCliDevelopmentHandler();
-				break;
-			case "cli_production":
-				$this->createCliProductionHandler();
-				break;
 			case "production":
 				$this->createProductionHandler();
 				break;
@@ -150,6 +144,10 @@ class owa_error {
 		
 		$mask = PEAR_LOG_ALL;
 		$this->addLogger('file', $mask);
+		
+		if (defined('OWA_CLI')) {
+			$this->addLogger('console', $mask);	
+		}
 		
 		return;
 	}
@@ -180,6 +178,10 @@ class owa_error {
 		$this->addLogger('file', $file_mask);
 		$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 		$this->addLogger('mail', $mail_mask);
+		
+		if (defined('OWA_CLI')) {
+			$this->addLogger('console', $file_mask);	
+		}
 		
 		return;
 	}

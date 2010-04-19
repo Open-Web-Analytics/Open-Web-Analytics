@@ -18,6 +18,7 @@
 
 require_once('owa_env.php');
 require_once(OWA_DIR.'owa_php.php');
+require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
  * OWA Comand Line Interface (CLI)
@@ -31,6 +32,7 @@ require_once(OWA_DIR.'owa_php.php');
  * @since		owa 1.2.1
  */
 
+define('OWA_CLI', true);
 
 if (!empty($_POST)) {
 	exit();
@@ -46,6 +48,8 @@ if (!empty($_POST)) {
 		   $it = split("=",$argv[$i]);
 		   $params[$it[0]] = $it[1];
 	   }
+	 unset($params['action']);
+	 unset($params['do']);
 	
 } else {
 	// No params found
@@ -59,6 +63,22 @@ $owa->setSetting('base', 'cli_mode', true);
 // setting user auth
 $owa->setCurrentUser('admin', 'cli-user');
 // run controller or view and echo page content
-echo $owa->handleRequest($params);
+$s = owa_coreAPI::serviceSingleton();
+$s->loadCliCommands();
+
+if (array_key_exists('cmd', $params)) {
+	
+	$cmd = $s->getCliCommandClass($params['cmd']);
+	
+	if ($cmd) {
+		$params['do'] = $cmd;
+		echo $owa->handleRequest($params);
+	} else {
+		echo "Invalid command name.";
+	}
+	
+} else {
+	echo "Missing a command argument.";
+}
 
 ?>

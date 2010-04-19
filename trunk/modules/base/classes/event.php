@@ -119,6 +119,7 @@ class owa_event {
 		$this->set('year', date("Y", $timestamp));
 		$this->set('month', date("n", $timestamp));
 		$this->set('day', date("d", $timestamp));
+		$this->set('yyyymmdd', date("Ymd", $timestamp));
 		$this->set('dayofweek', date("D", $timestamp));
 		$this->set('dayofyear', date("z", $timestamp));
 		$this->set('weekofyear', date("W", $timestamp));

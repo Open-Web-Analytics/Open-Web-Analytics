@@ -16,12 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
-
 /**
- * CLI Controller Class
- *
- * This controller should be used for internal management pages/actions that require authentication
+ * Page View metric
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,34 +25,21 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.3.0
  */
 
+class owa_pageViews extends owa_metric {
 
-class owa_cliController extends owa_adminController {
+	function __construct() {
 	
-	var $is_admin = true;
-	
-	/**
-	 * Constructor
-	 *
-	 * @param array $params
-	 * @return owa_controller
-	 */
-	function __construct($params) {
+		$this->setName('pageViews');
+		$this->setLabel('Page Views');
+		$this->setEntity('base.session');
+		$this->setColumn('num_pageviews');
+		$this->setSelect("sum(session.num_pageviews)");
 		
-		if (owa_coreAPI::getSetting('base', 'cli_mode')) {
-		
-			return parent::__construct($params);
-			
-		} else {
-		
-			owa_coreAPI::notice("Controller not called from CLI");
-			exit;
-		}
+		return parent::__construct();
 	}
-	
-		
 }
 
 ?>

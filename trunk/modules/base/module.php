@@ -51,10 +51,10 @@ class owa_baseModule extends owa_module {
 		$this->display_name = 'Open Web Analytics';
 		$this->group = 'Base';
 		$this->author = 'Peter Adams';
-		$this->version = 4;
+		$this->version = 5;
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 4;
+		$this->required_schema_version = 5;
 		
 		// register filters
 		$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
@@ -68,7 +68,22 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
 		
-		$this->registerMetric('page_views', 'base.pageViews');
+		// register metrics
+		$this->registerMetric('pageViews', 'base.pageViews');
+		$this->registerMetric('uniqueVisitors', 'base.uniqueVisitors');
+		$this->registerMetric('visits', 'base.visits');
+		$this->registerMetric('newVisitors', 'base.newVisitors');
+		$this->registerMetric('repeatVisitors', 'base.repeatVisitors');
+		$this->registerMetric('bounces', 'base.bounces');
+		$this->registerMetric('visitDuration', 'base.visitDuration');
+		
+		// register dimensions
+		$this->registerDimension('browserType', 'base.ua', 'browser', 'visitor', 'Browser Type');
+		$this->registerDenormalizedDimension('date', 'base.session', 'yyyymmdd', 'visitor', 'Date');
+		$this->registerCliCommand('update', 'base.updatesApplyCli');
+		
+		// register API methods
+		$this->registerApiMethod('getResultSet', 'base.getResultSet');
 		
 		return parent::__construct();
 	}
@@ -165,6 +180,8 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
 		// domstreams
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
+		// actions
+		$this->registerEventHandler('base.action', 'actionHandler');
 	}
 	
 	function _registerEventProcessors() {
@@ -193,7 +210,8 @@ class owa_baseModule extends owa_module {
 								'impression', 
 								'configuration',
 								'user',
-								'domstream'));
+								'domstream',
+								'action_fact'));
 		
 	}
 	

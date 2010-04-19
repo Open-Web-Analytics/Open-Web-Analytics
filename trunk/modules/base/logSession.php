@@ -53,11 +53,13 @@ class owa_logSessionController extends owa_controller {
 		 
 		// set initial number of page views
 		$s->set('num_pageviews', 1);
-			
+		$s->set('is_bounce', true);
+
 		// set prior session time properties		
 		$s->set('prior_session_lastreq', $event->get('last_req'));
+				
 		$s->set('prior_session_id', $event->get('inbound_session_id'));
-		
+	owa_coreAPI::debug('hi');	
 		if ($s->get('prior_session_lastreq') > 0) {
 			$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
 			$s->set('prior_session_year', date("Y", $event->get('last_req')));
@@ -82,16 +84,17 @@ class owa_logSessionController extends owa_controller {
 	
 		// Make document ids	
 		$s->set('first_page_id', owa_lib::setStringGuid($event->get('page_url')));
+			
 		$s->set('last_page_id', $s->get('first_page_id'));
-		
+	
 		// Generate Referer id
 		$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
-		
+			
 		// Generate Host id
 		$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
-		
+				
 		$s->create();
-		
+
 		// create event message
 		$session = $s->_getProperties();
 		$properties = array_merge($event->getProperties(), $session);

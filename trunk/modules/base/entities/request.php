@@ -29,50 +29,6 @@
  */
 
 class owa_request extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true);
-	var $visitor_id = array('data_type' => OWA_DTD_BIGINT); 
-	var $session_id = array('data_type' => OWA_DTD_BIGINT);
-	var $inbound_visitor_id = array('data_type' => OWA_DTD_BIGINT);
-	var $inbound_session_id = array('data_type' => OWA_DTD_BIGINT);
-	var $feed_subscription_id = array('data_type' => OWA_DTD_BIGINT);
-	var $user_name = array('data_type' => OWA_DTD_VARCHAR255);
-	var $user_email = array('data_type' => OWA_DTD_VARCHAR255);
-	var $timestamp = array('data_type' => OWA_DTD_BIGINT, 'index' => true);
-	var $last_req = array('data_type' => OWA_DTD_BIGINT);
-	var $year = array('data_type' => OWA_DTD_INT);
-	var $month = array('data_type' => OWA_DTD_INT);
-	var $day = array('data_type' => OWA_DTD_TINYINT2);
-	var $dayofweek = array('data_type' => OWA_DTD_VARCHAR10);
-	var $dayofyear = array('data_type' => OWA_DTD_INT);
-	var $weekofyear = array('data_type' => OWA_DTD_INT);
-	var $hour = array('data_type' => OWA_DTD_TINYINT2);
-	var $minute = array('data_type' => OWA_DTD_TINYINT2);
-	var $second = array('data_type' => OWA_DTD_TINYINT2);
-	var $msec = array('data_type' => OWA_DTD_INT);
-	var $referer_id = array('data_type' => OWA_DTD_VARCHAR255);
-	var $document_id = array('data_type' => OWA_DTD_VARCHAR255);
-	var $site = array('data_type' => OWA_DTD_VARCHAR255);
-	var $site_id = array('data_type' => OWA_DTD_VARCHAR255);
-	var $ip_address = array('data_type' => OWA_DTD_VARCHAR255);
-	var $host_id = array('data_type' => OWA_DTD_VARCHAR255);
-	var $os = array('data_type' => OWA_DTD_VARCHAR255);
-	var $os_id = array('data_type' => OWA_DTD_VARCHAR255);
-	var $ua_id = array('data_type' => OWA_DTD_VARCHAR255);
-	var $is_new_visitor = array('data_type' => OWA_DTD_TINYINT);
-	var $is_repeat_visitor = array('data_type' => OWA_DTD_TINYINT);
-	var $is_comment = array('data_type' => OWA_DTD_TINYINT);
-	var $is_entry_page = array('data_type' => OWA_DTD_TINYINT);
-	var $is_browser = array('data_type' => OWA_DTD_TINYINT);
-	var $is_robot = array('data_type' => OWA_DTD_TINYINT);
-	var $is_feedreader = array('data_type' => OWA_DTD_TINYINT);
-	
-	*/
-	function owa_request() {
-		
-		return owa_request::__construct();		
-	}
 	
 	function __construct() {
 	
@@ -81,14 +37,23 @@ class owa_request extends owa_entity {
 		$this->properties['id'] = new owa_dbColumn;
 		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['id']->setPrimaryKey();
-		$this->properties['visitor_id'] = new owa_dbColumn;
-		$this->properties['visitor_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['session_id'] = new owa_dbColumn;
-		$this->properties['session_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['inbound_visitor_id'] = new owa_dbColumn;
-		$this->properties['inbound_visitor_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['inbound_session_id'] = new owa_dbColumn;
-		$this->properties['inbound_session_id']->setDataType(OWA_DTD_BIGINT);
+		
+		$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
+		$visitor_id->setForeignKey('base.visitor');
+		$this->setProperty($visitor_id);
+		
+		$session_id = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
+		$session_id->setForeignKey('base.session');
+		$this->setProperty($session_id);
+		
+		$inbound_visitor_id = new owa_dbColumn('inbound_visitor_id', OWA_DTD_BIGINT);
+		$inbound_visitor_id->setForeignKey('base.visitor');
+		$this->setProperty($inbound_visitor_id);
+		
+		$inbound_session_id = new owa_dbColumn('inbound_session_id', OWA_DTD_BIGINT);
+		$inbound_session_id->setForeignKey('base.session');
+		$this->setProperty($inbound_session_id);
+		
 		$this->properties['feed_subscription_id'] = new owa_dbColumn;
 		$this->properties['feed_subscription_id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['user_name'] = new owa_dbColumn;
@@ -100,6 +65,11 @@ class owa_request extends owa_entity {
 		$ts->setDataType(OWA_DTD_BIGINT);
 		$ts->setIndex();
 		$this->setProperty($ts);
+		$yyyymmdd =  new owa_dbColumn;
+		$yyyymmdd->setName('yyyymmdd');
+		$yyyymmdd->setDataType(OWA_DTD_INT);
+		$yyyymmdd->setIndex();
+		$this->setProperty($yyyymmdd);
 		$this->properties['last_req'] = new owa_dbColumn;
 		$this->properties['last_req']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['year'] = new owa_dbColumn;
@@ -122,24 +92,40 @@ class owa_request extends owa_entity {
 		$this->properties['second']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['msec'] = new owa_dbColumn;
 		$this->properties['msec']->setDataType(OWA_DTD_INT);
-		$this->properties['referer_id'] = new owa_dbColumn;
-		$this->properties['referer_id']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['document_id'] = new owa_dbColumn;
-		$this->properties['document_id']->setDataType(OWA_DTD_VARCHAR255);
+		// wrong data type
+		$referer_id = new owa_dbColumn('referer_id', OWA_DTD_VARCHAR255);
+		$referer_id->setForeignKey('base.referer');
+		$this->setProperty($referer_id);
+		// wrong data type
+		$document_id = new owa_dbColumn('document_id', OWA_DTD_VARCHAR255);
+		$document_id->setForeignKey('base.document');
+		$this->setProperty($document_id);
+		
+		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
+		$site_id->setForeignKey('base.site');
+		$this->setProperty($site_id);
+		
 		$this->properties['site'] = new owa_dbColumn;
 		$this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['site_id'] = new owa_dbColumn;
-		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+	
 		$this->properties['ip_address'] = new owa_dbColumn;
 		$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['host_id'] = new owa_dbColumn;
-		$this->properties['host_id']->setDataType(OWA_DTD_VARCHAR255);
+		// wrong data type
+		$host_id = new owa_dbColumn('host_id', OWA_DTD_VARCHAR255);
+		$host_id->setForeignKey('base.host');
+		$this->setProperty($host_id);
+		// wrong data type
+		$os_id = new owa_dbColumn('os_id', OWA_DTD_VARCHAR255);
+		$os_id->setForeignKey('base.os');
+		$this->setProperty($os_id);
+		//drop
 		$this->properties['os'] = new owa_dbColumn;
 		$this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['os_id'] = new owa_dbColumn;
-		$this->properties['os_id']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['ua_id'] = new owa_dbColumn;
-		$this->properties['ua_id']->setDataType(OWA_DTD_VARCHAR255);
+		// wrong data type
+		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_VARCHAR255);
+		$ua_id->setForeignKey('base.ua');
+		$this->setProperty($ua_id);
+		
 		$this->properties['is_new_visitor'] = new owa_dbColumn;
 		$this->properties['is_new_visitor']->setDataType(OWA_DTD_TINYINT);
 		$this->properties['is_repeat_visitor'] = new owa_dbColumn;

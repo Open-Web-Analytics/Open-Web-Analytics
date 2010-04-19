@@ -397,6 +397,9 @@ class owa_coreAPI {
 		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'updates', '', $class, $params);
 
 		$obj->module_name = $module;
+		if (!$obj->schema_version) {
+			$obj->schema_version = $filename;
+		}
 		return $obj;
 	}
 		
@@ -449,9 +452,9 @@ class owa_coreAPI {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');	
 		endif;
 			
-		return owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
-		
-		
+		$entity = owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
+		$entity->name = $entity_name;
+		return $entity;
 		//return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
 		
 	}
@@ -512,21 +515,123 @@ class owa_coreAPI {
 	}
 	
 	/**
-	 * Convienence method for generating metrics
+	 * Convienence method for generating a data result set
 	 *
-	 * @param $metric_name string
- 	 * @param $method string
-  	 * @param $params array
-	 * @return array
+	 * Takes an array of values that contain necessary params to compute the results set.
+	 * Strings use ',' to seperate their values if needed. Array name/value pairs include:
+	 * 
+	 * array(metrics => 'foo,bar'
+	 *      , dimensions => 'dim1,dim2,dim3'
+	 *      , period => 'today'
+	 *      , startDate => 'yyyymmdd'
+	 *      , endDate => 'yyyymmdd'
+	 *      , startTime => timestamp
+	 *      , endTime => timestamp
+	 *      , constraints => 'con1=foo, con2=bar'
+	 *      , page => 1
+	 *      , offset => 0
+	 *      , limit => 10
+	 *      , sort => 'dim1,dim2'
+	 *
+	 *
+	 * @param $params array
+	 * @return paginatedResultSet obj
+	 * @link http://wiki.openwebanalytics.com/index.php?title=REST_API
 	 */
-	function getMetric($metric_name, $method, $options) {
+	function getResultSet($params) {
 		
-		$m = owa_coreAPI::metricFactory($metric_name);
-		$p = owa_coreAPI::makeTimePeriod($options['period'], $options);
-		$m->setPeriod($p);
-		$m->applyOptions($options);
+		if (array_key_exists('metrics', $params)) {
+			$metrics = explode(",", $params['metrics']);
+		} else {
+			return false;
+		}
+			
+		// count how many metrics there are
+		$count = count($metrics);
+		// create the metric obj for the first metric
+		$m = owa_coreAPI::metricFactory($metrics[0]);
+		//print_r($m->select);
+		// set dimensions
+		if (array_key_exists('dimensions', $params)) {
+			$m->setDimensions($m->dimensionsStringToArray($params['dimensions']));
+		}
+		//print_r($m->select);
+		//loop through the rest of the metrics and merge them into the first
+		if ($count > 1) {
+			
+			for($i = 1; $i < $count; ++$i) {
+				
+				$nm = owa_coreAPI::metricFactory($metrics[$i]);
+				$m->mergeMetric($nm);
+			}
+		}
+			
+		// set period
+		if (array_key_exists('period', $params)) {
+			$period = $params['period'];
+		} else {
+			$period = 'today';
+		}
 		
-		return $m->generate($method);
+		if (array_key_exists('startDate', $params)) {
+			$startDate = $params['startDate'];
+		} else {
+			$startDate = '';
+		}
+		
+		if (array_key_exists('endDate', $params)) {
+			$endDate = $params['endDate'];
+		} else {
+			$endDate = '';
+		}
+		
+		if (array_key_exists('startTime', $params)) {
+			$startTime = $params['startTime'];
+		} else {
+			$startTime = '';
+		}
+		
+		if (array_key_exists('endTime', $params)) {
+			$endTime = $params['endTime'];
+		} else {
+			$endTime = '';
+		}
+		
+		$m->setTimePeriod($period, 
+						  $startDate, 
+						  $endDate, 
+						  $startTime, 
+						  $endTime); 
+		
+		// set constraints
+		if (array_key_exists('constraints', $params)) {
+			$m->setConstraints($m->constraintsStringToArray($params['constraints']));
+		}
+		
+		// set sort order
+		if (array_key_exists('sort', $params)) {
+			$m->setSorts($m->sortStringToArray($params['sort']));
+		}
+		
+		// set limit
+		if (array_key_exists('limit', $params)) {
+			$m->setLimit($params['limit']);
+		}
+		
+		// set page
+		if (array_key_exists('page', $params)) {
+			$m->setPage($params['page']);
+		}
+		
+		// set offset
+		if (array_key_exists('offset', $params)) {
+			$m->setOffset($params['offset']);
+		}
+		
+		// get results
+		$rs = $m->getResults();
+
+		return $rs;
 	}
 	
 	/**
@@ -1197,6 +1302,11 @@ class owa_coreAPI {
 		return $eq;
 	}
 	
+	function getCliCommandClass($command) {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		return $s->getCliCommandClass($command);
+	}
 	
 	
 }

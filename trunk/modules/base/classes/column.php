@@ -52,20 +52,16 @@ class owa_dbColumn {
  	
  	var $default_value;
  	
- 	function owa_dbColumn($params = array()) {
+ 	function __construct($name ='', $data_type = '') {
  		
- 		return owa_dbColumn::__construct($params);
- 	}
- 	
- 	function __construct() {
- 		
- 		if (!empty($params)) {
- 			
- 			foreach ($params as $k => $v) {
- 				
- 				$this->$k = $v;	
- 			}
+ 		if ($name) {	
+ 			$this->setName($name);
  		}
+ 		
+ 		if ($data_type) {
+ 			$this->setDataType($data_type);
+ 		}
+ 		
  	}
  	
  	function get($name) {
@@ -163,9 +159,23 @@ class owa_dbColumn {
  		$this->label = $label;
  	}
  	
- 	function setForeignKey($table) {
+ 	function setForeignKey($entity, $column = 'id') {
  	
- 		$this->foreign_key = $table;
+ 		$this->foreign_key = array($entity, $column);
+ 	}
+ 	
+ 	function getForeignKey() {
+ 		
+ 		return $this->foreign_key;
+ 	}
+ 	
+ 	function isForeignKey() {
+ 		
+ 		if (!empty($this->foreign_key)) {
+ 			return true;
+ 		} else {
+ 			return false;
+ 		}
  	}
  	
  	function setAutoIncrement() {
@@ -176,6 +186,11 @@ class owa_dbColumn {
  	function setName($name) {
  	
  		$this->name = $name;
+ 	}
+ 	
+ 	function getName() {
+ 	
+ 		return $this->name;
  	}
  	
  }

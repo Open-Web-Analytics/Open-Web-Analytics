@@ -43,14 +43,22 @@ class owa_click extends owa_entity {
 		$this->properties['id']->setPrimaryKey();
 		$this->properties['last_impression_id'] = new owa_dbColumn;
 		$this->properties['last_impression_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['visitor_id'] = new owa_dbColumn;
-		$this->properties['visitor_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['session_id'] = new owa_dbColumn;
-		$this->properties['session_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['document_id'] = new owa_dbColumn;
-		$this->properties['document_id']->setDataType(OWA_DTD_BIGINT);
+		
+		$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
+		$visitor_id->setForeignKey('base.visitor');
+		$this->setProperty($visitor_id);
+		
+		$session_id = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
+		$session_id->setForeignKey('base.session');
+		$this->setProperty($session_id);
+		
+		$document_id = new owa_dbColumn('document_id', OWA_DTD_BIGINT);
+		$document_id->setForeignKey('base.document');
+		$this->setProperty($document_id);
+		
 		$this->properties['target_id'] = new owa_dbColumn;
 		$this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
+		
 		$this->properties['target_url'] = new owa_dbColumn;
 		$this->properties['target_url']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['timestamp'] = new owa_dbColumn;
@@ -109,22 +117,26 @@ class owa_click extends owa_entity {
 		$this->properties['ad_group_id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['ad_id'] = new owa_dbColumn;
 		$this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['site_id'] = new owa_dbColumn;
-		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['ua_id'] = new owa_dbColumn;
-		$this->properties['ua_id']->setDataType(OWA_DTD_BIGINT);
+		
+		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
+		$site_id->setForeignKey('base.site');
+		$this->setProperty($site_id);
+		
+		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
+		$ua_id->setForeignKey('base.ua');
+		$this->setProperty($ua_id);
+		
 		$this->properties['ip_address'] = new owa_dbColumn;
 		$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['host'] = new owa_dbColumn;
 		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['host_id'] = new owa_dbColumn;
-		$this->properties['host_id']->setDataType(OWA_DTD_VARCHAR255);
-	}
-	
-	
-	
+		
+		//wrong data type
+		$host_id = new owa_dbColumn('host_id', OWA_DTD_VARCHAR255);
+		$host_id->setForeignKey('base.host');
+		$this->setProperty($host_id);
+		
+	}	
 }
-
-
 
 ?>

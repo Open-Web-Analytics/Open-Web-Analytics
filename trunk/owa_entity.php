@@ -33,31 +33,16 @@ endif;
  */
 
 class owa_entity {
-	
+
+	var $name;
 	var $properties = array();
 	var $_tableProperties = array();
 	var $cache;
 	
 	function __construct($cache = '', $db = '') {
 		
-		// for old style entities
-		if (empty($this->properties)) {
-			$vars = $this->getColumns();
-		
-			foreach ($vars as $k => $v) {
-				
-				$this->$v = new owa_dbColumn($this->$v);
-				$this->$v->set('name', $v);
-			}
-		}
-		
-		return;
 	}
 		
-	function owa_entity() {
-		
-		return owa_entity::__construct();
-	}
 	
 	function _getProperties() {
 		
@@ -65,12 +50,6 @@ class owa_entity {
 		
 		if (!empty($this->properties)) {
 			$vars = $this->properties;
-		} else {
-			//needed for backwards compatability
-			$vars = get_object_vars($this);
-			unset($vars['_tableProperties']);
-			unset($vars['properties']);
-			unset($vars['cache']);
 		}
 		
 		foreach ($vars as $k => $v) {
@@ -405,8 +384,16 @@ class owa_entity {
 		
 	}
 	
-	function setTableName($name, $namespace = 'owa_') {
+	function getTableAlias() {
 		
+		if ($this->_tableProperties) {
+			return $this->_tableProperties['alias'];
+		}
+	}
+	
+	function setTableName($name, $namespace = 'owa_') {
+
+		$this->_tableProperties['alias'] = $name;
 		$this->_tableProperties['name'] = $namespace.$name;
 	}	
 	
@@ -446,11 +433,18 @@ class owa_entity {
 		$this->_tableProperties['primary_key'] = $col;
 		
 	}
+		
+	function getForeignKeyColumn($entity) {
+		if (array_key_exists('relatedEntities', $this->_tableProperties)) {
+			if (array_key_exists($entity, $this->_tableProperties['relatedEntities'])) {
+				return $this->_tableProperties['relatedEntities'][$entity];
+			}
+		}
+	}
 	
-	function setForeignKey($col, $table) {
-	
-		$this->properties[$col]->setForeignKey($table);
-		$this->_tableProperties['foreign_keys'][$col] = $table;
+	function getAllForeignKeys() {
+		
+		return;
 	}
 	
 	/**
@@ -498,7 +492,7 @@ class owa_entity {
 		$def = $this->getColumnDefinition($column_name);
 		// Persist table
 		$db = owa_coreAPI::dbSingleton();
-		$status = $db->addColumn($this->getTableName(), $column_name, $defs);
+		$status = $db->addColumn($this->getTableName(), $column_name, $def);
 		
 		if ($status == true):
 			return true;
@@ -574,6 +568,14 @@ class owa_entity {
 	function setProperty($obj) {
 		
 		$this->properties[$obj->get('name')] = $obj;
+		
+		if ($obj->isForeignKey()) {
+			$fk = $obj->getForeignKey();
+			
+			$this->_tableProperties['relatedEntities'][$fk[0]] = $obj->getName();
+			$this->_tableProperties['foreign_keys'][$obj->getName()] = $fk[0];
+		}
+		
 	}
 	
 	function generateRandomUid($seed = '') {
@@ -605,6 +607,11 @@ class owa_entity {
 			// default of thirty days
 			return (3600);
 		}
+	}
+	
+	function getName() {
+		
+		return $this->name;
 	}
 }
 
