@@ -89,7 +89,17 @@ class owa_base_005_update extends owa_update {
 			$this->e->notice('Failed to add api_key column to owa_user');
 			return false;
 		}
-
+		
+		$a = owa_coreAPI::entityFactory('base.action_fact');
+		$ret = $a->createTable();
+		
+		if ($ret === true) {
+			$this->e->notice('Action fact entity table created');
+		} else {
+			$this->e->notice('Action fact entity table creation failed');
+			return false;
+		}		
+		
 		// add apiKeys to each user
 		$users = $db->get_results("select user_id from owa_user");
 		
