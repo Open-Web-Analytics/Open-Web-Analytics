@@ -56,8 +56,8 @@ class owa_actionHandler extends owa_observer {
 		$a->set('timestamp', $event->get('timestamp'));
 		$a->set('yyyymmdd', $event->get('yyyymmdd'));
 		$a->set('action_name', $event->get('action_name'));
-		$a->set('action_category', $event->get('action_category'));
-		$a->set('label', $event->get('label'));
+		$a->set('action_group', $event->get('action_group'));
+		$a->set('action_label', $event->get('action_label'));
 		$a->set('numeric_value', $event->get('numeric_value'));
 		
 		$a->create();

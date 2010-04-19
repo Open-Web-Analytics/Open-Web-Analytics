@@ -54,6 +54,20 @@ class owa_action_fact extends owa_entity {
 		$site_id->setForeignKey('base.site');
 		$this->setProperty($site_id);
 		
+		// wrong data type
+		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
+		$ua_id->setForeignKey('base.ua');
+		$this->setProperty($ua_id);
+		
+		$host_id = new owa_dbColumn('host_id', OWA_DTD_BIGINT);
+		$host_id->setForeignKey('base.host');
+		$this->setProperty($host_id);
+		
+		// wrong data type
+		$os_id = new owa_dbColumn('os_id', OWA_DTD_BIGINT);
+		$os_id->setForeignKey('base.os');
+		$this->setProperty($os_id);
+		
 		$timestamp = new owa_dbColumn('timestamp', OWA_DTD_INT);
 		$this->setProperty($timestamp);
 		
@@ -63,14 +77,14 @@ class owa_action_fact extends owa_entity {
 		$action_name = new owa_dbColumn('action_name', OWA_DTD_INT);
 		$this->setProperty($action_name);
 		
-		$action_label = new owa_dbColumn('label', OWA_DTD_VARCHAR255);
+		$action_label = new owa_dbColumn('action_label', OWA_DTD_VARCHAR255);
 		$this->setProperty($action_label);
 		
 		$action_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
 		$this->setProperty($action_value);
 		
-		$action_category = new owa_dbColumn('action_category', OWA_DTD_INT);
-		$this->setProperty($action_category);
+		$action_group = new owa_dbColumn('action_group', OWA_DTD_INT);
+		$this->setProperty($action_group);
 	}
 }
 
