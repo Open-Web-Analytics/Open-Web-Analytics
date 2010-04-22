@@ -580,9 +580,13 @@ class owa_db extends owa_base {
 	
 	function join($type, $table, $as, $foreign_key, $primary_key = '') {
 		
-		if (empty($primary_key)):
-			$primary_key = $as.'.id';
-		endif;
+		if (!$primary_key) {
+			if (!$as) {
+					$primary_key = $table.'.id';
+			} else {
+				$primary_key = $as.'.id';
+			}
+		}
 		
 		
 		
