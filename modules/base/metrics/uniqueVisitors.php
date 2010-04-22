@@ -36,7 +36,7 @@ class owa_uniqueVisitors extends owa_metric {
 		$this->setLabel('Unique Visitors');
 		$this->setEntity('base.session');
 		$this->setSelect("count(distinct(session.visitor_id))");
-		
+		$this->setColumn('session.visitor_id');
 		return parent::__construct();
 	}
 }

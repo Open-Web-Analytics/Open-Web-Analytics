@@ -78,8 +78,16 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('visitDuration', 'base.visitDuration');
 		
 		// register dimensions
-		$this->registerDimension('browserType', 'base.ua', 'browser', 'visitor', 'Browser Type');
-		$this->registerDenormalizedDimension('date', 'base.session', 'yyyymmdd', 'visitor', 'Date');
+		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
+		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
+		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visit', 'The domain of the site.');
+		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visit', 'The name of the site.');
+		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visitor', 'The date.', '', true);
+		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visitor', 'The day.', '', true);
+		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visitor', 'The month.', '', true);
+		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visitor', 'The year.', '', true);
+		
+		// register CLI commands
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
 		
 		// register API methods
