@@ -442,6 +442,13 @@ class owa_entity {
 		}
 	}
 	
+	function isForeignKeyColumn($col) {
+	
+		if (array_key_exists($col, $this->properties)) {
+			return $this->properties[$col]->isForeignKey();
+		}
+	}
+	
 	function getAllForeignKeys() {
 		
 		return;
@@ -576,6 +583,12 @@ class owa_entity {
 			$this->_tableProperties['foreign_keys'][$obj->getName()] = $fk[0];
 		}
 		
+	}
+	
+	function getProperty($name) {
+		if (array_key_exists($name, $this->properties)) {
+			return $this->properties[$name];
+		}
 	}
 	
 	function generateRandomUid($seed = '') {

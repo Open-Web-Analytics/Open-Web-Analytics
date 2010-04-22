@@ -586,7 +586,7 @@ class owa_db extends owa_base {
 		
 		
 		
-		$this->_sqlParams['joins'][] = array('type' => $type, 
+		$this->_sqlParams['joins'][$table] = array('type' => $type, 
 											 'table' => $table, 
 											 'as' => $as, 
 											 'foreign_key' => $foreign_key, 
@@ -595,7 +595,7 @@ class owa_db extends owa_base {
 	}
 	
 	function _makeJoinClause() {
-	
+		
 		$params = $this->_fetchSqlParams('joins');
 	
 		if (!empty($params)):

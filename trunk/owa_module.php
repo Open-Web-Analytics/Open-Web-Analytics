@@ -638,13 +638,36 @@ class owa_module extends owa_base {
 		$this->metrics[$metric_name] = $class_name;
 	}
 	
-	function registerDimension($dim_name, $entity, $column, $family, $label = '', $description = '') {
-		
-		$this->dimensions[$dim_name] = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description);
-	}
+	/**
+	 * Register a dimension
+	 *
+	 * registers a dimension for use by metrics in producing results sets.
+	 * 
+	 * @param	$dim_name string
+	 * @param	$entity	string the entiy housing the dimension. uses module.name format
+	 * @param	$column	string the name of the column that represents the dimension
+	 * @param 	$family	string the name of the group or family that this dimension belongs to. optional.
+	 * @param	$description	string	a short description of this metric, used in various interfaces.
+	 * @param	$label	string the lable of the dimension
+	 * @param 	$foreign_key_name the name of the foreign key column that should 
+	 *          be used to relate the metric entity to the dimension's entity. 
+	 *          If one is not specfied, metrics will use any valid foreign key column they can find.
+	 *          Specifying this is important when the same column in a table is used by
+	 *          two different dimensions but the meaning of the column differs based on the value of the foreign key.
+	 *          a good example is the page_title column in the documents table. It is used by three dimensions:
+	 *          pageTitle, entryPageTitle, and existPageTitle. 
+	 * @param	$denormalized	boolean	flag marks the dimension as being denormalized into a fact table
+	 *          as opposed to being housed in a related table.
+	 */
+	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false) {
 	
-	function registerDenormalizedDimension($dim_name, $entity, $column, $family, $label = '', $description = '') {
-		$this->denormalizedDimensions[$dim_name][$entity] = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description);
+		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name);
+	
+		if ($denormalized) {
+			$this->denormalizedDimensions[$dim_name][$entity] = $dim;
+		} else {
+			$this->dimensions[$dim_name] = $dim;
+		}
 	}
 	
 	function registerCliCommand($command, $class) {

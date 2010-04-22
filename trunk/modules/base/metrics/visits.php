@@ -35,6 +35,7 @@ class owa_visits extends owa_metric {
 		$this->setName('visits');
 		$this->setLabel('Visits');
 		$this->setEntity('base.session');
+		$this->setColumn('session.id');
 		$this->setSelect("count(session.id)");
 		
 		return parent::__construct();

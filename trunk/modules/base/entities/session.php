@@ -163,7 +163,7 @@ class owa_session extends owa_entity {
 		$this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
 		
 		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
-		$site_id->setForeignKey('base.site');
+		$site_id->setForeignKey('base.site', 'site_id');
 		$this->setProperty($site_id);
 		
 		$this->properties['is_robot'] = new owa_dbColumn;
