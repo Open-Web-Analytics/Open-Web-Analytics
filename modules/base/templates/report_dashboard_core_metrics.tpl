@@ -1,6 +1,6 @@
 <?php if (empty($core_metrics)):?>
 There are no metrics yet for this time period.
-<?else:?>
+<?php else:?>
 <table id="core_metrics_table">
 	<tr>
 	<?php if ($period == 'this_year'): ?>		
@@ -41,4 +41,4 @@ There are no metrics yet for this time period.
 	</TR>		
    <?php endforeach; ?>
 </table>
-<?endif;?>
+<?php endif;?>

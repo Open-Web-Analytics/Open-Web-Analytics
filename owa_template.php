@@ -789,6 +789,21 @@ class owa_template extends Template {
 			return false;
 		}
 	}
+	
+	function displaySeriesAsSparkline($name, $result_set_obj, $id = '') {
+		
+		$series = array();
+		
+		if (!$id) {
+			$id = rand();
+		}
+		
+		$series = $result_set_obj->getSeries($name);
+	
+		if ($series) {
+			echo $this->displaySparkline($id, $series);
+		}
+	}
 
 	function makeTable($labels, $data, $table_class = '', $table_id = '', $is_sortable = true) {
 	
@@ -843,41 +858,22 @@ class owa_template extends Template {
 		return $url;
 	}
 	
-	function displayMetricInfobox($metric_name, $count_period, $options = array()) {
+	function displayMetricInfobox($params = array()) {
 		
 		$t = new owa_template;
 		
 		if (!empty($dom_id)) {
 			$dom_id = rand();
 		}
-		
-		$m = owa_coreAPI::metricFactory($metric_name);
-		$m->setPeriod($count_period);
-		
-		if (array_key_exists('constraints', $options)) {
 	
-			foreach ($options['constraints'] as $k => $v) {
-				
-				if(is_array($v)):
-					$m->setConstraint($k, $v[1], $v[0]);
-				else:
-					$m->setConstraint($k, $value);	
-				endif;
-				
-			}			
-		}
-		
-		$count = $m->generate('count');
-		
-		$trend_period = owa_coreAPI::makeTimePeriod('last_thirty_days', $options);
-		$m->setPeriod($trend_period);
-		$trend = $m->generate('trend');
-		$trend = owa_lib::deconstruct_assoc($trend);
+		$count = owa_coreAPI::getResultSet($params);
+		$params['period'] = 'last_thirty_days';
+		$params['dimensions'] = 'date';
+		$trend = owa_coreAPI::getResultSet($params);
 		
 		$t->set('dom_id', $dom_id);
 		$t->set('count', $count);	
-		$t->set('trend', $trend['count']);	
-		$t->set('label', $m->getLabels());
+		$t->set('trend', $trend);
 		$t->set_template('metricInfobox.php');
 		
 		return $t->fetch();	

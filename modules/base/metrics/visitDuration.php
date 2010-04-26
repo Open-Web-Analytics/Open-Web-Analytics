@@ -35,7 +35,7 @@ class owa_visitDuration extends owa_metric {
 		$this->setName('visitDuration');
 		$this->setLabel('Visit Duration');
 		$this->setEntity('base.session');
-		$this->setSelect("avg(session.last_req - session.timestamp)");
+		$this->setSelect(sprintf("avg(%s.last_req - %s.timestamp)", $this->entity->getTableAlias(), $this->entity->getTableAlias()));
 		
 		return parent::__construct();
 	}
