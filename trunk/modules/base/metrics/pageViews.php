@@ -34,9 +34,9 @@ class owa_pageViews extends owa_metric {
 	
 		$this->setName('pageViews');
 		$this->setLabel('Page Views');
-		$this->setEntity('base.session');
-		$this->setColumn('num_pageviews');
-		$this->setSelect("sum(session.num_pageviews)");
+		$this->setEntity('base.request');
+		$this->setColumn('id');
+		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
 		
 		return parent::__construct();
 	}

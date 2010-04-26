@@ -51,7 +51,7 @@ class owa_request extends owa_entity {
 		$this->setProperty($inbound_visitor_id);
 		
 		$inbound_session_id = new owa_dbColumn('inbound_session_id', OWA_DTD_BIGINT);
-		$inbound_session_id->setForeignKey('base.session');
+		//$inbound_session_id->setForeignKey('base.session');
 		$this->setProperty($inbound_session_id);
 		
 		$this->properties['feed_subscription_id'] = new owa_dbColumn;

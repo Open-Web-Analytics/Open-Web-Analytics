@@ -35,8 +35,8 @@ class owa_bounces extends owa_metric {
 		$this->setName('bounces');
 		$this->setLabel('Bounces');
 		$this->setEntity('base.session');
-		$this->setSelect("sum(CASE session.is_bounce WHEN TRUE THEN 1 ELSE 0 END)");
-		//$this->setColumn('session.is_bounce');
+		$this->setColumn('is_bounce');
+		$this->setSelect(sprintf("sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)", $this->getColumn()));
 		return parent::__construct();
 	}
 }

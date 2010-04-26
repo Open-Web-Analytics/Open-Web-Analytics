@@ -545,25 +545,27 @@ class owa_coreAPI {
 		} else {
 			return false;
 		}
-			
+		
 		// count how many metrics there are
 		$count = count($metrics);
+		
 		// create the metric obj for the first metric
-		$m = owa_coreAPI::metricFactory($metrics[0]);
+		require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
+		$rsm = new owa_resultSetManager;
+		
+		//loop through the rest of the metrics and merge them into the first
+		if ($metrics) {
+			
+			for($i = 0; $i < $count; ++$i) {
+				
+				$rsm->addMetric($metrics[$i]);
+			}
+		}
+		
 		//print_r($m->select);
 		// set dimensions
 		if (array_key_exists('dimensions', $params)) {
-			$m->setDimensions($m->dimensionsStringToArray($params['dimensions']));
-		}
-		//print_r($m->select);
-		//loop through the rest of the metrics and merge them into the first
-		if ($count > 1) {
-			
-			for($i = 1; $i < $count; ++$i) {
-				
-				$nm = owa_coreAPI::metricFactory($metrics[$i]);
-				$m->mergeMetric($nm);
-			}
+			$rsm->setDimensions($rsm->dimensionsStringToArray($params['dimensions']));
 		}
 			
 		// set period
@@ -597,7 +599,7 @@ class owa_coreAPI {
 			$endTime = '';
 		}
 		
-		$m->setTimePeriod($period, 
+		$rsm->setTimePeriod($period, 
 						  $startDate, 
 						  $endDate, 
 						  $startTime, 
@@ -605,17 +607,17 @@ class owa_coreAPI {
 		
 		// set constraints
 		if (array_key_exists('constraints', $params)) {
-			$m->setConstraints($m->constraintsStringToArray($params['constraints']));
+			$rsm->setConstraints($rsm->constraintsStringToArray($params['constraints']));
 		}
 		
 		// set sort order
 		if (array_key_exists('sort', $params)) {
-			$m->setSorts($m->sortStringToArray($params['sort']));
+			$rsm->setSorts($rsm->sortStringToArray($params['sort']));
 		}
 		
 		// set limit
 		if (array_key_exists('limit', $params)) {
-			$m->setLimit($params['limit']);
+			$rsm->setLimit($params['limit']);
 		}
 		
 		// set page
@@ -629,7 +631,7 @@ class owa_coreAPI {
 		}
 		
 		// get results
-		$rs = $m->getResults();
+		$rs = $rsm->getResults();
 
 		return $rs;
 	}

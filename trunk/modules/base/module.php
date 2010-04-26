@@ -80,12 +80,58 @@ class owa_baseModule extends owa_module {
 		// register dimensions
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
 		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
-		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visit', 'The domain of the site.');
-		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visit', 'The name of the site.');
-		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visitor', 'The date.', '', true);
-		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visitor', 'The day.', '', true);
-		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visitor', 'The month.', '', true);
-		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visitor', 'The year.', '', true);
+		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
+		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
+		$this->registerDimension('city', 'base.host', 'city', 'City', 'visitor', 'The city of the visitor.');
+		$this->registerDimension('country', 'base.host', 'country', 'Country', 'visitor', 'The country of the visitor.');
+		$this->registerDimension('latitude', 'base.host', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
+		$this->registerDimension('longitude', 'base.host', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
+		$this->registerDimension('timeSinceLastVisit', 'base.session', 'time_sinse_priorsession', 'Time Since Last Visit', 'visitor', 'The time since the last visit.', '', true);
+		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
+		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
+		
+		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visitor', 'The domain of the site.');
+		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visitor', 'The name of the site.');
+		$this->registerDimension('userName', 'base.visitor', 'user_name', 'User Name', 'visitor', 'The name or ID of the user.');
+		$this->registerDimension('userEmail', 'base.visitor', 'user_email', 'Email Address', 'visitor', 'The email address of the user.');
+		
+		// denormalized date dimensions
+		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true);
+		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
+		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visit', 'The month.', '', true);
+		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visit', 'The year.', '', true);
+		$this->registerDimension('dayofweek', 'base.session', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
+		$this->registerDimension('dayofyear', 'base.session', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
+		$this->registerDimension('weekofyear', 'base.session', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
+		
+		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true);
+		$this->registerDimension('day', 'base.request', 'day', 'Day', 'visit', 'The day.', '', true);
+		$this->registerDimension('month', 'base.request', 'month', 'Month', 'visit', 'The month.', '', true);
+		$this->registerDimension('year', 'base.request', 'year', 'Year', 'visit', 'The year.', '', true);
+		$this->registerDimension('dayofweek', 'base.request', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
+		$this->registerDimension('dayofyear', 'base.request', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
+		$this->registerDimension('weekofyear', 'base.request', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
+		
+		// visit
+		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
+		$this->registerDimension('entryPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the entry page.', 'first_page_id');
+		$this->registerDimension('entryPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the entry page.', 'first_page_id');
+		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
+		
+		// traffic sources
+		$this->registerDimension('referralPageUrl', 'base.referer', 'url', 'Referral Page URL', 'traffic sources', 'The url of the referring web page.');
+		$this->registerDimension('referralPageTitle', 'base.referer', 'page_title', 'Referral Page Title', 'traffic sources', 'The title of the referring web page.');
+		$this->registerDimension('referralSearchTerms', 'base.referer', 'query_terms', 'Search Terms', 'traffic sources', 'The referring search terms.');
+		$this->registerDimension('referralLinkText', 'base.referer', 'refering_anchortext', 'Referral Link Text', 'traffic sources', 'The text of the referring link.');
+		$this->registerDimension('isSearchEngine', 'base.referer', 'is_searchengine', 'Search Engine', 'traffic sources', 'Is traffic source a search engine.');
+		$this->registerDimension('referralWebSite', 'base.referer', 'site', 'Referral Web Site', 'traffic sources', 'The full domain of the referring web site.');
+		
+		// content
+		$this->registerDimension('pageUrl', 'base.document', 'url', 'Entry Page URL', 'content', 'The URL of the web page.');
+		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Entry Page Title', 'content', 'The title of the web page.');
+		$this->registerDimension('pageType', 'base.document', 'page_type', 'Entry Page Type', 'content', 'The page type of the web page.');
 		
 		// register CLI commands
 		$this->registerCliCommand('update', 'base.updatesApplyCli');

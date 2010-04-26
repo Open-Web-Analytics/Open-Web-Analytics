@@ -238,6 +238,25 @@ class owa_paginatedResultSet {
 		return $this->resultsRows;
 	}
 	
+	function getSeries($name) {
+		
+		$rows = $this->getDataRows();
+		
+		if ($rows) {
+			$series = array();
+			foreach ($rows as $row) {
+				foreach($row as $item) {
+					if ($item['name'] === $name) {
+						$series[] = $item['value'];
+					}
+				}
+			}
+			return $series;			
+		} else {
+			return false;
+		}
+	}
+	
 }
 
 
