@@ -31,21 +31,12 @@ class owa_clickHandlers extends owa_observer {
 
 	/**
 	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * @access 	public
-	 * @return 	Log_observer_request_logger
-	 */
-    function owa_clickHandlers() {
-	
-        // Call the base class constructor.
-        
-        $this->owa_observer();
-		
-		return;
+	 * 
+	 */   
+    function __construct() {
+    	
+    	return parent::__construct();
     }
-
     /**
      * Notify Handler
      *
@@ -53,11 +44,26 @@ class owa_clickHandlers extends owa_observer {
      * @param 	object $event
      */
     function notify($event) {
-    	owa_coreAPI::debug('handling click');
-    	$this->m = $event;
-   		$this->handleEvent('base.logClick');
+    				
+		$c = owa_coreAPI::entityFactory('base.click');
+		
+		$c->set('id', $event->get('guid'));
+		$c->setProperties($event->getProperties());
+		$c->set('visitor_id', $event->get('inbound_visitor_id'));
+		$c->set('session_id', $event->get('inbound_session_id'));
+		$c->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+		
+		// Make document id	
+		$c->set('document_id', owa_lib::setStringGuid($event->get('page_url'))); 
+		
+		// Make Target page id
+		$c->set('target_id', owa_lib::setStringGuid($c->get('target_url')));
+		
+		// Make position id used for group bys
+		$c->set('position', $c->get('click_x').$c->get('click_y'));
+		
+		$c->create();
 	}
-	
 }
 
 ?>

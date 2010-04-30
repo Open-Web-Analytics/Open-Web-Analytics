@@ -94,6 +94,8 @@ class owa_processEventController extends owa_controller {
 		
 		// TODO:Map standard params to standard event property names so we can do a merge of the entire site session state store
 		$this->event->set('inbound_session_id', $state[owa_coreAPI::getSetting('base', 'session_param')]);
+		
+		// last request timestamp
 		$this->event->set('last_req', $state[owa_coreAPI::getSetting('base', 'last_request_param')]);
 		
 		// set inbound visitor id
@@ -101,7 +103,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('inbound_visitor_id', $state[owa_coreAPI::getSetting('base', 'visitor_param')]);
 		} else {
 			$this->event->set('inbound_visitor_id', owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param')));
-		} 
+		}
 		
 		//set user agent
 		if (!$this->event->get('HTTP_USER_AGENT')) {
@@ -273,6 +275,29 @@ class owa_processEventController extends owa_controller {
 		$this->eq->asyncNotify($this->eq->filter('processed_event', $this->event));
 		return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
 
+	}
+	
+	/**
+	 * Creates new visitor
+	 * 
+	 * @access 	private
+	 *
+	 */
+	function setNewVisitor() {
+		
+		// Create guid
+        $this->event->set('visitor_id', $this->getSiteSpecificGuid());
+		
+        // Set visitor state        
+        if (owa_coreAPI::getSetting('base', 'per_site_visitors') === true) {
+        	// TODO: not sure how this will work if the config calls for maintaining state on the server....
+        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'site_session_param'), owa_coreAPI::getSetting('base', 'visitor_param'), $this->event->get('visitor_id'), 'cookie', true);
+        } else {
+        	// state for this must be maintained in a cookie
+        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', $this->event->get('visitor_id'), 'cookie', true);
+        }
+		
+		$this->event->set('is_new_visitor', true);
 	}
 	
 }

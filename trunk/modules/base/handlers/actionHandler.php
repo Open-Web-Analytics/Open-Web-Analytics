@@ -45,20 +45,19 @@ class owa_actionHandler extends owa_observer {
     	$a = owa_coreAPI::entityFactory('base.action_fact');
 		
 		$a->set('id', $a->generateRandomUid());
-		$a->set('visitor_id', $event->get('visitor_id'));
-		$a->set('session_id', $event->get('session_id'));
+		$a->set('visitor_id', $event->get('inbound_visitor_id'));
+		$a->set('session_id', $event->get('inbound_session_id'));
 		$a->set('site_id', $event->get('site_id'));
 		$a->set('document_id', $a->generateId($event->get('page_url')));
 		$a->set('ua_id', $a->generateId($event->get('HTTP_USER_AGENT')));
 		$a->set('host_id', $a->generateId($event->get('full_host')));
 		$a->set('os_id', $a->generateId($event->get('os')));
-		$a->set('duration', $event->get('duration'));
 		$a->set('timestamp', $event->get('timestamp'));
 		$a->set('yyyymmdd', $event->get('yyyymmdd'));
-		$a->set('action_name', $event->get('action_name'));
-		$a->set('action_group', $event->get('action_group'));
-		$a->set('action_label', $event->get('action_label'));
-		$a->set('numeric_value', $event->get('numeric_value'));
+		$a->set('action_name', strtolower(trim($event->get('action_name'))));
+		$a->set('action_group', strtolower(trim($event->get('action_group'))));
+		$a->set('action_label', strtolower(trim($event->get('action_label'))));
+		$a->set('numeric_value', $event->get('numeric_value') * 1);
 		
 		$a->create();
     }

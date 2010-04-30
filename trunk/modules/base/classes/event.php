@@ -232,51 +232,9 @@ class owa_event {
 	
 		$store_name = owa_coreAPI::getSetting('base', 'site_session_param').'_'.$site_id;
 		return owa_coreAPI::clearState($store_name);
-	}
+	}	
 	
 	
-
-	/**
-	 * Assigns visitor IDs
-	 *
-	 */
-	function assign_visitor($inbound_visitor_id) {
-		
-		// is this new visitor?
-	
-		if (empty($inbound_visitor_id)):
-			$this->set_new_visitor();
-		else:
-			$this->set('visitor_id', $inbound_visitor_id);
-			$this->set('is_repeat_visitor', true);
-		endif;
-	}
-
-	
-	
-	/**
-	 * Creates new visitor
-	 * 
-	 * @access 	public
-	 *
-	 */
-	function set_new_visitor() {
-		
-		// Create guid
-        $this->set('visitor_id', $this->getSiteSpecificGuid());
-		
-        // Set visitor state        
-        if (owa_coreAPI::getSetting('base', 'per_site_visitors') === true) {
-        	// TODO: not sure how this will work if the config calls for maintaining state on the server....
-        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'site_session_param'), owa_coreAPI::getSetting('base', 'visitor_param'), $this->get('visitor_id'), 'cookie', true);
-        } else {
-        	// state for this must be maintained in a cookie
-        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', $this->get('visitor_id'), 'cookie', true);
-        }
-		
-		$this->set('is_new_visitor', true);
-		
-	}
 	
 	/**
 	 * Make Session IDs

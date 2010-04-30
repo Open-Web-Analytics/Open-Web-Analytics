@@ -212,6 +212,21 @@ OWA.tracker.prototype = {
 		return this.logEvent(this.page.getProperties());
 	},
 	
+	trackAction : function(action_group, action_name, action_label, numeric_value) {
+		
+		var event = new OWA.event;
+		
+		event.setEventType('track.action');
+		event.set('site_id', this.getSiteId());
+		event.set('page_url', this.page.get('page_url'));
+		event.set('action_group', action_group);
+		event.set('action_name', action_name);
+		event.set('action_label', action_label);
+		event.set('numeric_value', numeric_value);
+		this.logEventAjax(event, 'POST');
+		OWA.debug("Action logged");
+	},
+	
 	logDomStream : function() {
     	
     	if (this.event_queue.length > this.options.domstreamEventThreshold) {
