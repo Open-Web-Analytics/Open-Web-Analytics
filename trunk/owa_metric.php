@@ -90,7 +90,13 @@ class owa_metric extends owa_base {
 	
 	var $time_period_constraint_format = 'timestamp';
 	
-	var $column;	
+	var $column;
+	
+	var $is_calculated = false;	
+	
+	var $data_type;
+	
+	var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string');
 		
 	function __construct($params = array()) {
 		
@@ -581,6 +587,22 @@ class owa_metric extends owa_base {
 	
 	function getEntityName() {
 		return $this->entity->getName();
+	}
+	
+	function isCalculated() {
+		return $this->is_calculated;
+	}
+	
+	function setDataType($string) {
+		
+		if (in_array($string, $this->supported_data_types)) {
+			$this->data_type = $string;
+		}
+		
+	}
+	
+	function getDataType() {
+		return $this->data_type;
 	}
 }
 
