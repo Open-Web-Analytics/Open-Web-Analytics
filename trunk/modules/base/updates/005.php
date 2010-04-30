@@ -133,7 +133,8 @@ class owa_base_005_update extends owa_update {
 		$feed_request->dropColumn('yyyymmdd');
 		$u = owa_coreAPI::entityFactory('base.user');
 		$u->dropColumn('api_key');
-		
+		$af = owa_coreAPI::entityFactory('base.action_fact');
+		$af->dropTable();
 		
 		return true;
 	}
