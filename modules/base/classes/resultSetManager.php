@@ -30,7 +30,7 @@ require_once(OWA_BASE_CLASS_DIR.'timePeriod.php');
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.3.0
  */
 
 class owa_resultSetManager extends owa_base {
@@ -90,6 +90,8 @@ class owa_resultSetManager extends owa_base {
 	var $base_table;
 	var $metrics = array();
 	var $metricsByTable = array();
+	var $childMetrics = array();
+	var $calculatedMetrics = array();
 	
 	function __construct($db = '') {
 		
@@ -388,13 +390,15 @@ class owa_resultSetManager extends owa_base {
 		
 		foreach ($row as $k => $v) {
 				
-			if (in_array($k, $this->dimensions)) {
+			if (array_key_exists($k, $this->dimensions)) {
 				$type = 'dimension';
-			} else {
+				$data_type =$this->dimensions[$k]['data_type'];
+			} elseif (array_key_exists($k, $this->metrics)){
 				$type = 'metric';
+				$data_type = $this->getMetric($k)->getDataType();
 			}
 			
-			$new_row[] = array('result_type' => $type, 'name' => $k, 'value' => $v, 'label' => $this->getLabel($k));	
+			$new_row[$k] = array('result_type' => $type, 'name' => $k, 'value' => $v, 'label' => $this->getLabel($k), 'data_type' => $data_type);	
 		}
 		
 		return $new_row;
@@ -412,11 +416,7 @@ class owa_resultSetManager extends owa_base {
 	}
 	
 	function getLabel($key = '') {
-		
-		if (!$key) {
-			$key = $this->getName();
-		}
-		
+				
 		return $this->labels[$key];
 	}
 	
@@ -640,25 +640,72 @@ class owa_resultSetManager extends owa_base {
 		}
 	}
 	
-	function addMetric($metric_name) {
+	function addMetric($metric_name, $child = false) {
 		
-		$m = owa_coreAPI::metricFactory($metric_name);
+		$ret = false;
 		
-		if ($m) {
+		$m = $this->getMetric($metric_name);
 		
-			if ($this->checkForFactTableRelation($m)) {
+		if (!$m) {
+			$m = owa_coreAPI::metricFactory($metric_name);
 		
-				// check 
-				$this->metrics[$metric_name] = $m;
-				$this->metricsByTable[$m->getTableName()] = $metric_name;
-				$this->addSelect($m->getSelect());
-				$this->addLabel($m->getName(), $m->getLabel());
+			if ($m) {
+			
+				// check to see if this is a calculated metric
+				if ($m->isCalculated()) {
+					
+					return $this->addCalculatedMetric($m);
+				}
+			
+				if ($this->checkForFactTableRelation($m)) {
+			 
+					$this->metrics[$metric_name] = $m;
+					$this->metricsByTable[$m->getTableName()] = $metric_name;
+					$this->addSelect($m->getSelect());
+					$this->addLabel($m->getName(), $m->getLabel());
+					
+					$ret = true;
+				}
+			
+			} else {
+				$this->addError("$metric_name is not a metric.");
 			}
-		
 		} else {
-			$this->addError("$metric_name is not a metric.");
+			$ret =  true;
 		}
 		
+		// necessary if the metric was first added asa child but later added as a parent.
+		if (!$child) {
+			
+			if (array_key_exists($metric_name, $this->childMetrics)) {
+				unset ($this->childMetrics[$metric_name]);
+			}
+		}
+		
+		return $ret;		
+	}
+	
+	function addCalculatedMetric($calc_metric_obj) {
+		
+		foreach ($calc_metric_obj->getChildMetrics() as $metric_name) {
+			
+			$ret = $this->addMetric($metric_name, true);
+			
+			if ($ret) {
+				// add child metrics to child metric maps
+				$this->childMetrics[$metric_name] = $metric_name;
+			} else {
+				$error = true;
+			}
+			
+		}
+		
+		if (!$error) {
+			// add label of calculated metric obj
+			$this->addLabel($calc_metric_obj->getName(),$calc_metric_obj->getLabel());
+			// add to calculated metric map
+			$this->calculatedMetrics[$calc_metric_obj->getName()] = $calc_metric_obj; 
+		}
 	}
 	
 	function addSelect($select_array) {
@@ -705,7 +752,7 @@ class owa_resultSetManager extends owa_base {
 		}
 		
 		
-		return $string;
+		//return $string;
 		
 	}
 	
@@ -794,7 +841,95 @@ class owa_resultSetManager extends owa_base {
 		
 		$rs->setPeriodInfo($this->params['period']->getAllInfo());
 		
+		$rs = $this->computeCalculatedMetrics($rs);
+		
 		return $rs;
+	}
+	
+	function computeCalculatedMetrics($rs) {
+		
+		foreach ($this->calculatedMetrics as $cm) {
+			
+			// add aggregate metric
+			$formula = $cm->getFormula();
+			
+			foreach ($cm->getChildMetrics() as $metric_name) {
+				
+				$ag_value = $rs->getAggregateMetric($metric_name);
+				
+				if (empty($ag_value)) {
+					$ag_value = 0;
+				}
+				
+				$formula = str_replace($metric_name, $ag_value, $formula);
+			}
+			
+			$value = $this->evalFormula($formula);
+			
+			$rs->setAggregateMetric($cm->getName(), $value, $cm->getLabel(), $cm->getDataType());
+			
+			// add dimensional metric
+			
+			if ($rs->getRowCount() > 0) {
+				
+				foreach ($rs->resultsRows as $k => $row) {
+					
+					// add aggregate metric
+					$formula = $cm->getFormula();
+						
+					foreach ($cm->getChildMetrics() as $metric_name) {
+					
+						$row_value = $row[$metric_name]['value'];
+						
+						if (empty($row_value)) {
+							$row_value = 0;
+						}
+					
+						$formula = str_replace($metric_name, $row_value, $formula);	
+					
+					}
+					
+					$value = $this->evalFormula($formula);
+				
+					$rs->appendRow($k, 'metric', $cm->getName(), $value, $cm->getLabel(), $cm->getDataType());
+				}
+			}
+			
+			foreach ($this->childMetrics as $metric_name) {
+				
+				$rs->removeMetric($metric_name);
+			}
+			
+		}
+		
+		return $rs;
+	}
+	
+	function evalFormula($formula) {
+		
+		//safety first. should only be computing numbers.
+			$formula = str_replace('$','', $formula);
+			
+			// need parens and @ to handle divsion by zero errors
+			$formula = '$value = @('.$formula.');';
+			//print $formula;
+			// calc
+			eval($formula);
+			
+			if (!$value) {
+				$value = 0;
+			}
+			
+			return $value;
+	}
+	
+	
+	
+	function getMetric($name) {
+		
+		if (array_key_exists($name, $this->metrics)) {
+			return $this->metrics[$name];
+		} 
 	}
 
 }

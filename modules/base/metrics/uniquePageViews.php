@@ -17,7 +17,7 @@
 //
 
 /**
- * Unique Visitors metric
+ * Unique Page Views Metric
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,14 +28,14 @@
  * @since		owa 1.3.0
  */
 
-class owa_visits extends owa_metric {
+class owa_uniquePageViews extends owa_metric {
 
 	function __construct() {
 	
-		$this->setName('visits');
-		$this->setLabel('Visits');
-		$this->setEntity('base.session');
-		$this->setColumn('id');
+		$this->setName('uniquePageViews');
+		$this->setLabel('Unique Page Views');
+		$this->setEntity('base.request');
+		$this->setColumn('document_id');
 		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
 		$this->setDataType('integer');
 		

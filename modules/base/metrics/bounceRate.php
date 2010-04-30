@@ -16,8 +16,12 @@
 // $Id$
 //
 
+if (!class_exists("owa_calculatedMetric")) {
+	require_once(OWA_BASE_CLASS_DIR.'calculatedMetric.php');
+}
+
 /**
- * Unique Visitors metric
+ * Bounce Rate Metric
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,17 +32,16 @@
  * @since		owa 1.3.0
  */
 
-class owa_visits extends owa_metric {
+class owa_bounceRate extends owa_calculatedMetric {
 
 	function __construct() {
 	
-		$this->setName('visits');
-		$this->setLabel('Visits');
-		$this->setEntity('base.session');
-		$this->setColumn('id');
-		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
-		$this->setDataType('integer');
-		
+		$this->setName('bounceRate');
+		$this->setLabel('Bounce Rate');
+		$this->setChildMetric('bounces');
+		$this->setChildMetric('visits');
+		$this->setFormula('bounces / visits');
+		$this->setDataType('percentage');
 		return parent::__construct();
 	}
 }

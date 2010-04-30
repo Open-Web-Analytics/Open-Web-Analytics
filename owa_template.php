@@ -791,9 +791,7 @@ class owa_template extends Template {
 	}
 	
 	function displaySeriesAsSparkline($name, $result_set_obj, $id = '') {
-		
-		$series = array();
-		
+			
 		if (!$id) {
 			$id = rand();
 		}

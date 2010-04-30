@@ -37,7 +37,7 @@ class owa_pageViews extends owa_metric {
 		$this->setEntity('base.request');
 		$this->setColumn('id');
 		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
-		
+		$this->setDataType('integer');
 		return parent::__construct();
 	}
 }

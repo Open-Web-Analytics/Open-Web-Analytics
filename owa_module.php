@@ -659,9 +659,9 @@ class owa_module extends owa_base {
 	 * @param	$denormalized	boolean	flag marks the dimension as being denormalized into a fact table
 	 *          as opposed to being housed in a related table.
 	 */
-	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false) {
+	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false, $data_type = 'string') {
 	
-		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name);
+		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type);
 	
 		if ($denormalized) {
 			$this->denormalizedDimensions[$dim_name][$entity] = $dim;

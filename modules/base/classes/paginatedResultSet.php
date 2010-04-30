@@ -59,7 +59,7 @@ class owa_paginatedResultSet {
 	 */	
 	var $next;
 	
-	var $results_count;
+	var $results_count = 0;
 	var $offset = 0;
 	var $limit;
 	var $query_limit;
@@ -257,7 +257,39 @@ class owa_paginatedResultSet {
 		}
 	}
 	
+	function getAggregateMetric($name) {
+		
+		return $this->aggregates[$name]['value'];
+	}
+	
+	function setAggregateMetric($name, $value, $label, $data_type) {
+		
+		$this->aggregates[$name] = array('result_type' => 'metric', 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type);
+	}
+	
+	function appendRow($row_num, $type, $name, $value, $label, $data_type) {
+	
+		$this->resultsRows[$row_num][$name] = array('result_type' => $type, 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type);	
+	}
+	
+	function removeMetric($name) {
+		
+		if (array_key_exists($name, $this->aggregates)) {
+			
+			unset($this->aggregates[$name]);
+		}
+		
+		if ($this->getRowCount() > 0) {
+			
+			foreach ($this->resultsRows as $k => $row) {
+				
+				if (array_key_exists($name, $row)) {
+			
+					unset($this->resultsRows[$k][$name]);
+				}
+			}
+		}
+	}
 }
-
 
 ?>

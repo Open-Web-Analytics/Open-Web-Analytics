@@ -76,6 +76,9 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('repeatVisitors', 'base.repeatVisitors');
 		$this->registerMetric('bounces', 'base.bounces');
 		$this->registerMetric('visitDuration', 'base.visitDuration');
+		$this->registerMetric('uniquePageViews', 'base.uniquePageViews');
+		$this->registerMetric('bounceRate', 'base.bounceRate');
+		$this->registerMetric('pagesPerVisit', 'base.pagesPerVisit');
 		
 		// register dimensions
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
@@ -96,7 +99,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('userEmail', 'base.visitor', 'user_email', 'Email Address', 'visitor', 'The email address of the user.');
 		
 		// denormalized date dimensions
-		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true);
+		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
 		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visit', 'The month.', '', true);
 		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visit', 'The year.', '', true);
@@ -104,7 +107,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('dayofyear', 'base.session', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
 		$this->registerDimension('weekofyear', 'base.session', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
 		
-		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true);
+		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('day', 'base.request', 'day', 'Day', 'visit', 'The day.', '', true);
 		$this->registerDimension('month', 'base.request', 'month', 'Month', 'visit', 'The month.', '', true);
 		$this->registerDimension('year', 'base.request', 'year', 'Year', 'visit', 'The year.', '', true);
