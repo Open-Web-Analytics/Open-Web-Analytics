@@ -49,6 +49,8 @@ class owa_caller extends owa_base {
 	var $update_required;
 	
 	var $service;
+	
+	var $site_id;
 		
 	/**
 	 * PHP4 Constructor
@@ -208,8 +210,16 @@ class owa_caller extends owa_base {
 	function trackEvent($event) {
 	
 		// needed by helperpage tags function so it can append to first hit tag url
-		if (!owa_coreAPI::getRequestParam('site_id')) {	
-			owa_coreAPI::setRequestParam('site_id', $event->get('site_id'));					
+		//if (!owa_coreAPI::getRequestParam('site_id')) {	
+		//	owa_coreAPI::setRequestParam('site_id', $event->get('site_id'));					
+		//}
+		
+		if (!$this->getSiteId()) {
+			$this->setSiteId($event->get('site_id'));
+		}
+		
+		if (!$this->getSiteId()) {
+			$this->setSiteId(owa_coreAPI::getRequestParam('site_id'));
 		}
 		
 		return owa_coreAPI::logEvent($event->getEventType(), $event);
@@ -332,6 +342,27 @@ class owa_caller extends owa_base {
 		
 		$event->setEventType('base.page_request');
 		return $this->trackEvent($event);
+	}
+	
+	function trackAction($action_group, $action_name, $action_label, $numeric_value) {
+		
+		$event->setEventType('track.action');
+		$event->set('action_group', $action_group);
+		$event->set('action_name', $action_name);
+		$event->set('action_label', $action_label);
+		$event->set('numeric_value', $numeric_value);
+		$event->set('site_id', $this->getSiteId());
+		return $this->trackEvent($event);
+	}
+	
+	function setSiteId($site_id) {
+		
+		$this->site_id = $site_id;
+	}
+	
+	function getSiteId() {
+		
+		return $this->site_id;
 	}
 	
 	function setErrorHandler($mode) {

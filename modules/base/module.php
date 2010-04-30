@@ -138,6 +138,7 @@ class owa_baseModule extends owa_module {
 		
 		// register CLI commands
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
+		$this->registerCliCommand('build', 'base.build');
 		
 		// register API methods
 		$this->registerApiMethod('getResultSet', 'base.getResultSet');
@@ -238,7 +239,7 @@ class owa_baseModule extends owa_module {
 		// domstreams
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 		// actions
-		$this->registerEventHandler('base.action', 'actionHandler');
+		$this->registerEventHandler('track.action', 'actionHandler');
 	}
 	
 	function _registerEventProcessors() {

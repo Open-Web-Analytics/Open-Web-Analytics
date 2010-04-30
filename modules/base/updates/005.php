@@ -107,8 +107,11 @@ class owa_base_005_update extends owa_update {
 			
 			$u = owa_coreAPI::entityFactory('base.user');
 			$u->load($user['user_id'],'user_id');
-			$u->set('api_key', $u->generateTempPasskey($u->get('user_id')));
-			$u->update();
+			
+			if (!$u->get('api_key')) {
+				$u->set('api_key', $u->generateTempPasskey($u->get('user_id')));
+				$u->update();
+			}
 		}
 		
 		// must return true

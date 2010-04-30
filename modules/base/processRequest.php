@@ -66,7 +66,12 @@ class owa_processRequestController extends owa_processEventController {
 		
 		// assign visitor cookie
 		// TODO: Move this logic to the controller
-		$this->event->assign_visitor($this->event->get('inbound_visitor_id'));	
+		if ($this->event->get('inbound_visitor_id')) {
+			$this->set('visitor_id', $this->event->get('inbound_visitor_id'));
+			$this->set('is_repeat_visitor', true);
+		} else {
+			$this->setNewVisitor();
+		}	
 		
 		// sessionize
 		// TODO: Move this logic to the controller
