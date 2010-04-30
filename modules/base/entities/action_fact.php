@@ -74,17 +74,17 @@ class owa_action_fact extends owa_entity {
 		$yyyymmdd = new owa_dbColumn('yyyymmdd', OWA_DTD_INT);
 		$this->setProperty($yyyymmdd);
 		
-		$action_name = new owa_dbColumn('action_name', OWA_DTD_INT);
+		$action_name = new owa_dbColumn('action_name', OWA_DTD_VARCHAR255);
 		$this->setProperty($action_name);
 		
 		$action_label = new owa_dbColumn('action_label', OWA_DTD_VARCHAR255);
 		$this->setProperty($action_label);
 		
-		$action_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
-		$this->setProperty($action_value);
-		
-		$action_group = new owa_dbColumn('action_group', OWA_DTD_INT);
+		$action_group = new owa_dbColumn('action_group', OWA_DTD_VARCHAR255);
 		$this->setProperty($action_group);
+		
+		$numeric_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
+		$this->setProperty($numeric_value);
 	}
 }
 
