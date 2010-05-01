@@ -234,8 +234,6 @@ class owa_baseModule extends owa_module {
 		// Hosts
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
 		// Hosts
-		$this->registerEventHandler('base.new_comment', 'commentHandlers');
-		// Hosts
 		$this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
 		// User management
 		$this->registerEventHandler('base.new_session', 'visitorHandlers');
