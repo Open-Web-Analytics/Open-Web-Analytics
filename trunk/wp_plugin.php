@@ -161,13 +161,19 @@ function owa_handleSpecialActionRequest() {
 	return $owa->handleSpecialActionRequest();
 }
 
-function owa_logComment() {
+function owa_logComment($id, $comment_data = '') {
 
+	if (isset($comment_data['user_ID']) {
+		$label = $comment_data['user_ID']; 
+	} else {
+		$label = '';
+	}
+	
 	$owa = owa_getInstance();
-	return $owa->logComment();
+	$owa->trackAction('wordpress', 'comment', $label);
+	
+	return true;
 }
-
-
 
 /**
  * Prints helper page tags to the footers of templates.
