@@ -105,6 +105,11 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('inbound_visitor_id', owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param')));
 		}
 		
+		// set repeat visitor flag if inbound visitor ID is found.		
+		if ($this->event->get('inbound_visitor_id')) {
+			$this->event->set('is_repeat_visitor', true);
+		}
+		
 		//set user agent
 		if (!$this->event->get('HTTP_USER_AGENT')) {
 			$this->event->set('HTTP_USER_AGENT', owa_coreAPI::getServerParam('HTTP_USER_AGENT'));
