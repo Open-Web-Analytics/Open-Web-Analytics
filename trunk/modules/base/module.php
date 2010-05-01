@@ -79,6 +79,9 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('uniquePageViews', 'base.uniquePageViews');
 		$this->registerMetric('bounceRate', 'base.bounceRate');
 		$this->registerMetric('pagesPerVisit', 'base.pagesPerVisit');
+		$this->registerMetric('actions', 'base.actions');
+		$this->registerMetric('uniqueActions', 'base.uniqueActions');
+		$this->registerMetric('actionsValue', 'base.actionsValue');
 		
 		// register dimensions
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
@@ -114,6 +117,10 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('dayofweek', 'base.request', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
 		$this->registerDimension('dayofyear', 'base.request', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
 		$this->registerDimension('weekofyear', 'base.request', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
+		
+		$this->registerDimension('actionName', 'base.action_fact', 'action_name', 'Action Name', 'actions', 'The name of the action.', '', true);
+		$this->registerDimension('actionGroup', 'base.action_fact', 'action_group', 'Action Group', 'actions', 'The group that an action belongs to.', '', true);
+		$this->registerDimension('actionLabel', 'base.action_fact', 'action_label', 'Action Label', 'actions', 'The label associated with an action.', '', true);
 		
 		// visit
 		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
