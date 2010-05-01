@@ -68,7 +68,6 @@ class owa_processRequestController extends owa_processEventController {
 		// TODO: Move this logic to the controller
 		if ($this->event->get('inbound_visitor_id')) {
 			$this->set('visitor_id', $this->event->get('inbound_visitor_id'));
-			$this->set('is_repeat_visitor', true);
 		} else {
 			$this->setNewVisitor();
 		}	
