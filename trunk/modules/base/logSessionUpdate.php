@@ -61,7 +61,7 @@ class owa_logSessionUpdateController extends owa_controller {
 		
 		// increment number of page views
 		$s->set('num_pageviews', $s->get('num_pageviews') + 1);
-		$s->set('is_bounce', false);
+		$s->set('is_bounce', 'false');
 		
 		// update timestamp of latest request that triggered the session update
 		$s->set('last_req', $event->get('timestamp'));

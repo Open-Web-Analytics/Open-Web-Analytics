@@ -1,12 +1,13 @@
-<div class="owa_reportSectionHeader">Site Usage</div>
+<div class="owa_reportSectionHeader">Metrics</div>
 <div class="owa_reportSectionContent">
 <?php include ('report_dashboard_summary_stats.tpl');?>
 </div>
 
-<div class="section_header">Site Actions</div>
+<?php if ($actions->getDataRows()):?>
+<div class="section_header">Actions</div>
 <div class="owa_reportSectionContent">
-<table>
-<tr>
+<table cellpadding="0" cellspacing="0" width="100%">
+	<tr>
 		<td valign="top">
 		<?php foreach($actions->getDataRows() as $k => $row):?>
 			<div class="owa_metricInfobox">
@@ -16,9 +17,9 @@
 		<?php endforeach;?>
 		</td>
 	</tr>
-
 </table>
 </div>
+<?php endif;?>
 
 <div class="section_header">Trends</div>
 <div class="owa_reportSectionContent">
