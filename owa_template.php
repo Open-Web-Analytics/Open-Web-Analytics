@@ -868,7 +868,7 @@ class owa_template extends Template {
 		$params['period'] = 'last_thirty_days';
 		$params['dimensions'] = 'date';
 		$trend = owa_coreAPI::getResultSet($params);
-		
+		$t->set('metric_name', $params['metrics']);
 		$t->set('dom_id', $dom_id);
 		$t->set('count', $count);	
 		$t->set('trend', $trend);

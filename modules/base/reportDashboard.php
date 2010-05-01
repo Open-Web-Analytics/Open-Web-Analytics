@@ -55,6 +55,20 @@ class owa_reportDashboardController extends owa_reportController {
 		//print_r($d->zeroFill($res));
 		$this->set('summary_stats_data', $d->zeroFill($res));
 		
+		
+		// action counts	
+		$params = array('period' 	  => $this->get('period'),
+						'startDate'	  => $this->get('startDate'),
+						'endDate'	  => $this->get('endDate'),
+						'metrics' 	  => 'actions',
+						'dimensions'  => 'actionName',
+						'constraints' => 'site_id='.$this->getParam('site_id')
+						);
+						
+		$rs = owa_coreAPI::getResultSet($params);	
+		//print_r($rs);			
+		$this->set('actions', $rs);
+		
 		// dash trend	
 		$dt = owa_coreAPI::metricFactory('base.dashCoreByDay');
 		$dt->setPeriod($this->makeTimePeriod('last_thirty_days'));
@@ -104,6 +118,7 @@ class owa_reportDashboardView extends owa_view {
 		$this->body->set_template('report_dashboard.tpl');
 		$this->body->set('summary_stats', $this->get('summary_stats_data'));			
 		$this->body->set('site_trend', $this->get('site_trend'));
+		$this->body->set('actions', $this->get('actions'));
 		return;
 	}
 	

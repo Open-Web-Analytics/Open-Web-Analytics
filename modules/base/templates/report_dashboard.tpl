@@ -1,7 +1,27 @@
 <div class="owa_reportSectionHeader">Site Usage</div>
 <div class="owa_reportSectionContent">
 <?php include ('report_dashboard_summary_stats.tpl');?>
+</div>
 
+<div class="section_header">Site Actions</div>
+<div class="owa_reportSectionContent">
+<table>
+<tr>
+		<td valign="top">
+		<?php foreach($actions->getDataRows() as $k => $row):?>
+			<div class="owa_metricInfobox">
+				<p class="owa_metricInfoboxLabel"><?php echo $row['actionName']['value'];?></p>
+				<p class="owa_metricInfoboxLargeNumber"><?php echo $row['actions']['value'];?></p>	
+			</div>
+		<?php endforeach;?>
+		</td>
+	</tr>
+
+</table>
+</div>
+
+<div class="section_header">Trends</div>
+<div class="owa_reportSectionContent">
 	<BR>
 	<div class="owa_reportElement">
 	<?php echo $this->getInpageWidget('base.widgetSiteStats', array('height' => '100px', 'width' => '', 'period' => 'last_thirty_days'));?>	
@@ -18,6 +38,7 @@
 		</TR>
 	</table>
 </div>
+
 
 <div class="section_header">Traffic Sources</div>
 <div class="owa_reportSectionContent">
