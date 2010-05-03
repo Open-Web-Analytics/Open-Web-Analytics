@@ -91,18 +91,6 @@ class owa_wp extends owa_caller {
 			return;
 		endif;
 	}
-	
-	/**
-	 * Convienence function for logging comments.
-	 * 
-	 * @return boolean 
-	 */
-	function logComment() {
-		
-		return owa_coreAPI::logEvent('base.new_comment');
-		
-	}
-
 }
 
 ?>

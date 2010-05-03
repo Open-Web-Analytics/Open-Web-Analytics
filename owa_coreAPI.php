@@ -32,26 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 class owa_coreAPI {
 	
-	var $modules;
-	
-	var $admin_panels;
-	
-	var $init;
-	
-	/**
-	 * Array of modules whose schemas are out of date
-	 *
-	 * @var array
-	 */
-	var $modules_needing_updates = array();
-	
-	/**
-	 * Flag for schema update required
-	 *
-	 * @var boolean
-	 */
-	var $update_required;
-	
 	/**
 	 * Container for request params
 	 * 
@@ -65,17 +45,6 @@ class owa_coreAPI {
 	 * @var array
 	 */
 	var $caller_config_overrides;
-	
-	
-	function owa_coreAPI() {
-		
-		return owa_coreAPI::__construct();
-	}
-	
-	function __construct() {
-		
-		//return parent::__construct();
-	}
 	
 	function &singleton($params = array()) {
 		
@@ -561,8 +530,7 @@ class owa_coreAPI {
 				$rsm->addMetric($metrics[$i]);
 			}
 		}
-		
-		//print_r($m->select);
+
 		// set dimensions
 		if (array_key_exists('dimensions', $params)) {
 			$rsm->setDimensions($rsm->dimensionsStringToArray($params['dimensions']));
@@ -882,13 +850,11 @@ class owa_coreAPI {
 	
 	/**
 	 * Logs an event to the event queue
-	 * 
-	 * This function sets the action to be perfromed, santizes, 
-	 * and adds all of PHP's $_SERVER vars to the $caller_params.
-	 * $_REQUEST vars are already added to $this->params in the constructor.
 	 *
-	 * @param array $caller_params
+	 * take an owa_event object as a message.
+	 *
 	 * @param string $event_type
+	 * @param object $message
 	 * @return boolean
 	 */
 	function logEvent($event_type, $message = '') {

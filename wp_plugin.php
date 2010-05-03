@@ -51,9 +51,9 @@ add_action('comment_post', 'owa_logComment');
 add_action('admin_menu', 'owa_options_menu');
 //add_action('wp_ajax_owa_specialAction', 'owa_handleSpecialActionRequest');
 // Installation hook
-register_activation_hook(__FILE__,'owa_install');
-/////////////////////////////////////////////////////////////////////////////////
+register_activation_hook(__FILE__, 'owa_install');
 
+/////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Singleton Method
@@ -159,11 +159,12 @@ function owa_handleSpecialActionRequest() {
 	$owa = owa_getInstance();
 	owa_coreAPI::debug("hello from WP special action handler");
 	return $owa->handleSpecialActionRequest();
+	
 }
 
 function owa_logComment($id, $comment_data = '') {
 
-	if (isset($comment_data['user_ID']) {
+	if (isset($comment_data['user_ID'])) {
 		$label = $comment_data['user_ID']; 
 	} else {
 		$label = '';
@@ -361,13 +362,14 @@ function owa_post_link($link) {
  *
  */
 function owa_install() {
-	
+
 	define('OWA_INSTALLING', true);
 	
 	$params = array();
 	//$params['do_not_fetch_config_from_db'] = true;
 
 	$owa = owa_getInstance($params);
+	$owa->setSetting('base', 'cache_objects', false);
 		
 	$public_url =  get_bloginfo('url').'/wp-content/plugins/owa/';
 	
@@ -383,7 +385,7 @@ function owa_install() {
 							'db_password' => DB_PASSWORD,
 							'public_url' =>  $public_url
 							);
-							
+	
 	$owa->handleRequest($install_params);
 }
 

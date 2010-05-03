@@ -187,7 +187,7 @@ class owa_resultSetManager extends owa_base {
 		if (array_key_exists($name, $this->dimensions)) {
 			return $this->dimensions[$name];
 		}
-		print_r($this->metrics[0]);
+		//print_r($this->metrics[0]);
 		// check for denormalized 
 		$bm = $this->getBaseMetric();
 		$service = owa_coreAPI::serviceSingleton();

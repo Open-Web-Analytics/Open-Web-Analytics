@@ -344,8 +344,9 @@ class owa_caller extends owa_base {
 		return $this->trackEvent($event);
 	}
 	
-	function trackAction($action_group, $action_name, $action_label, $numeric_value) {
+	function trackAction($action_group, $action_name, $action_label, $numeric_value = 0) {
 		
+		$event = $this->makeEvent();
 		$event->setEventType('track.action');
 		$event->set('action_group', $action_group);
 		$event->set('action_name', $action_name);
