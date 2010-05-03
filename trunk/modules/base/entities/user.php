@@ -61,20 +61,24 @@ class owa_user extends owa_entity {
 		$this->setProperty($apiKey);
 	}
 	
-	function createNewUser($user_params) {
+	function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
 	
-		$temp_passkey = $this->generateTempPasskey($user_params['user_id']);
+		if ($password) {
+			$password = $this->generateRandomPassword();
+		}
+		
 		$this->set('user_id', $user_params['user_id']);
 		$this->set('role', $user_params['role']);
 		$this->set('real_name', $user_params['real_name']);
 		$this->set('email_address', $user_params['email_address']);
-		$this->set('temp_passkey', $temp_passkey);
+		$this->set('temp_passkey', $this->generateTempPasskey($user_params['user_id']));
+		$this->set('password', owa_lib::encryptPassword($password));
 		$this->set('creation_date', time());
 		$this->set('last_update_date', time());
 		$this->set('api_key', $this->generateTempPasskey($user_params['user_id']));
 		$ret = $this->create();
 		
-		if ($ret == true):
+		if ($ret === true):
 			return $temp_passkey;
 		else:
 			return false;
