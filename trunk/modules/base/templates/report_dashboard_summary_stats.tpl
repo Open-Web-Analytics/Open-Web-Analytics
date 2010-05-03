@@ -39,6 +39,7 @@
 													'period' => $this->get('period_obj')->get()
 												  ));
 			?>
+			
 		</td>
 	</tr>
 </table>

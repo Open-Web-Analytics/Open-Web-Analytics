@@ -34,12 +34,7 @@ require_once(OWA_DIR.'owa_controller.php');
 class owa_installController extends owa_controller {
 
 	var $is_installer = true;
-		
-	function owa_installController($params) {
-		
-		return owa_installController::__construct($params); 
-	}
-	
+			
 	function __construct($params) {
 		
 		// needed just in case a re-install happens and updates are also needed.
@@ -47,6 +42,8 @@ class owa_installController extends owa_controller {
 		if (!defined('OWA_INSTALLING')) {
 			define('OWA_INSTALLING', true);
 		}
+		
+		//$this->c->setSetting('base', 'cache_objects', false);
 				
 		return parent::__construct($params);
 	}
@@ -89,10 +86,8 @@ class owa_installController extends owa_controller {
 			if (empty($id)) {
 				
 				$password = $u->generateRandomPassword();
-				$ret = $u->createNewUser('admin', 'admin', $password, $email_address, $real_name));
-				
+				$ret = $u->createNewUser('admin', 'admin', $password, $email_address, $real_name);
 				owa_coreAPI::debug("Admin user created successfully.");
-				
 				return $password;
 				
 			} else {				

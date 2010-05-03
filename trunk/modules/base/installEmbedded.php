@@ -17,7 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'owa_installController.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * Embedded Install Controller
@@ -35,11 +35,11 @@ class owa_installEmbeddedController extends owa_installController {
 	
 	function __construct($params) {
 		
-		parent::__construct($params);
-		$this->c->setSettingTemporary('base', 'cache_objects', false);
 		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
+		
 	}
-	
+
 	function action() {
 		
 	    $service = &owa_coreAPI::serviceSingleton();
@@ -59,6 +59,7 @@ class owa_installEmbeddedController extends owa_installController {
 		    
 		    //create admin user
 		    $cu = owa_coreAPI::getCurrentUser();
+		  	print_r($cu);
 		    $this->createAdminUser($cu->getUserData('email_address'), $cu->getUserData('real_name'));
 		    
 		    // create default site
@@ -80,8 +81,7 @@ class owa_installEmbeddedController extends owa_installController {
 		} else {
 			$this->e->notice('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');
 			return false;
-		}	
-			
+		}		
 	}
 }
 
