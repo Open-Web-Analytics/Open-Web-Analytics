@@ -51,12 +51,7 @@
  	 * Constructor
  	 * 
  	 * @param string id the id of the configuration array to load
- 	 */
- 	function owa_settings() {
-		
- 		return owa_settings::__construct();
- 	}
- 	
+ 	 */	
  	function __construct() {
  	
  		// create configuration object
