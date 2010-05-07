@@ -208,7 +208,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
-		$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);		
+		$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);
+		$this->addNavigationLink('Reports', '', 'base.reportActionTracking', 'Action Tracking', 5);		
 	}
 	
 	/**

@@ -27,21 +27,8 @@ Author URI: http://www.openwebanalytics.com
 
 require_once('owa_env.php');
 
-// Check to see what version of wordpress is running
-$owa_wp_version = owa_parse_version($wp_version);
-
-// hack for eliminating WP from printing db errors prior to WP v2.1 
-if ($owa_wp_version[0] == '2'):
-	if ($owa_wp_version[1] == '0'):
-		$wpdb->hide_errors();
-	endif;
-endif;
-
 // Filter and Action hook assignments
-//if (!is_admin()) {
 add_action('template_redirect', 'owa_main');
-//}
-
 add_action('wp_footer', 'owa_footer');
 add_filter('the_permalink_rss', 'owa_post_link');
 add_action('init', 'owa_handleSpecialActionRequest');
@@ -49,11 +36,144 @@ add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', 'owa_logComment');
 add_action('admin_menu', 'owa_options_menu');
-//add_action('wp_ajax_owa_specialAction', 'owa_handleSpecialActionRequest');
+add_action('user_register', 'owa_userRegistrationActionTracker');
+add_action('wp_login', 'owa_userLoginActionTracker');
+add_action('profile_update', 'owa_userProfileUpdateActionTracker', 10,2);
+add_action('password_reset', 'owa_userPasswordResetActionTracker');
+add_action('trackback_post', 'owa_trackbackActionTracker');
+add_action('add_attachment', 'owa_newAttachmentActionTracker');
+add_action('edit_attachment', 'owa_editAttachmentActionTracker');
+add_action('transition_post_status', 'owa_postActionTracker', 10, 3);
+add_action('wpmu_new_blog', 'owa_newBlogActionTracker', 10, 5);
 // Installation hook
 register_activation_hook(__FILE__, 'owa_install');
 
 /////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * New Blog Action Tracker
+ */
+function owa_newBlogActionTracker($blog_id, $user_id, $domain, $path, $site_id) {
+
+	$owa = owa_getInstance();
+	$owa->trackAction('wordpress', 'Blog Created', $domain);
+}
+
+/**
+ * Edit Post Action Tracker
+ */
+function owa_editPostActionTracker($post_id, $post) {
+
+	$owa = owa_getInstance();
+	$label = $post->post_title;
+	$owa->trackAction('wordpress', $post->post_type.' edited', $label);
+}
+
+/**
+ * Post Action Tracker
+ */
+function owa_postActionTracker($new_status, $old_status, $post) {
+	
+	if ($new_status === 'publish' && $old_status != 'publish') {
+		$action_name = $post->post_type.' publish';
+	} elseif ($new_status === $old_status) {
+		$action_name = $post->post_type.' edit';
+	}
+	
+	if ($action_name) {	
+		$owa = owa_getInstance();
+		owa_coreAPI::debug(sprintf("new: %s, old: %s, post: %s", $new_status, $old_status, print_r($post, true)));
+		$label = $post->post_title;
+		$owa->trackAction('wordpress', $action_name, $label);
+	}
+}
+
+/**
+ * New Attachment Action Tracker
+ */
+function owa_editAttachmentActionTracker($post_id) {
+
+	$owa = owa_getInstance();
+	$post = get_post($post_id);
+	$label = $post->post_title;
+	$owa->trackAction('wordpress', 'Attachment Edit', $label);
+}
+
+/**
+ * New Attachment Action Tracker
+ */
+function owa_newAttachmentActionTracker($post_id) {
+
+	$owa = owa_getInstance();
+	$post = get_post($post_id);
+	$label = $post->post_title;
+	$owa->trackAction('wordpress', 'Attachment Created', $label);
+}
+
+/**
+ * User Registration Action Tracker
+ */
+function owa_userRegistrationActionTracker($user_id) {
+	
+	$owa = owa_getInstance();
+	$user = get_userdata($user_id);
+	if (!empty($user->first_name) && !empty($user->last_name)) {
+		$label = $user->first_name.' '.$user->last_name;	
+	} else {
+		$label = $user->display_name;
+	}
+	
+	$owa->trackAction('wordpress', 'User Registration', $label);
+}
+
+/**
+ * User Login Action Tracker
+ */
+function owa_userLoginActionTracker($user_id) {
+
+	$owa = owa_getInstance();
+	$label = $user_id;
+	$owa->trackAction('wordpress', 'User Login', $label);
+}
+
+/**
+ * Profile Update Action Tracker
+ */
+function owa_userProfileUpdateActionTracker($user_id, $old_user_data = '') {
+
+	$owa = owa_getInstance();
+	$user = get_userdata($user_id);
+	if (!empty($user->first_name) && !empty($user->last_name)) {
+		$label = $user->first_name.' '.$user->last_name;	
+	} else {
+		$label = $user->display_name;
+	}
+	
+	$owa->trackAction('wordpress', 'User Profile Update', $label);
+}
+
+/**
+ * Password Reset Action Tracker
+ */
+function owa_userPasswordResetActionTracker($user) {
+	
+	$owa = owa_getInstance();
+	$label = $user->display_name;
+	$owa->trackAction('wordpress', 'User Password Reset', $label);
+}
+
+/**
+ * Trackback Action Tracker
+ */
+function owa_trackbackActionTracker($comment_id) {
+	
+	$owa = owa_getInstance();
+	$label = $comment_id;
+	$owa->trackAction('wordpress', 'Trackback', $label);
+}
+
+
+
 
 /**
  * Singleton Method
