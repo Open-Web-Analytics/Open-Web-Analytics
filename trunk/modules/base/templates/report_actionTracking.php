@@ -19,7 +19,22 @@
 <?php if ($actionsByName->getDataRows()):?>
 <div class="section_header">Actions by Name</div>
 <div class="owa_reportSectionContent">
+<?php echo $actionsByName->resultSetToJson();?>
+<?php //echo $this->makePaginationFromResultSet($actionsByName);?>
+<table id="grid"></table>
+<div id="pjmap"></div>
+<script>
+var data = <?php echo $actionsByName->resultSetToJson();?>
 
+rsh = new OWA.resultSetExplorer();
+rsh.dom_id = '#grid';
+rsh.getResultSet();
+//rsh.setResultSet(data);
+rsh.addAllRowsToGrid();
+rsh.refreshGrid();
+</script>
+
+<BR>
 </div>
 <?php endif;?>
 
@@ -29,3 +44,7 @@
 
 </div>
 <?php endif;?>
+
+<script>
+tableToGrid('.owa_dataGrid', {height:300, width:300});
+</script>

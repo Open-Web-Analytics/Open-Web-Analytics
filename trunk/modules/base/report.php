@@ -101,14 +101,15 @@ class owa_reportView extends owa_view {
 		$this->body->set_template('report.tpl');
 			
 		// set Js libs to be loaded
-		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.2.6.min.js', '1.2.6');
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
 		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
-		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-personalized-1.5.2.min.js", '1.5.2', array('jquery'));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
 		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array('jquery'));
 		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
 		$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
+		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("swfobject", "base/js/includes/swfobject.js");
 		$this->setJs("json2", "base/js/includes/json2.js");
 		$this->setJs("owa.chart", "base/js/owa.chart.js", '', array('owa', 'json2', 'swfobject', 'jquery'));
@@ -117,7 +118,7 @@ class owa_reportView extends owa_view {
 		//$this->setCss('flora/flora.css');
 		//$this->setCss('flora/flora.datepicker.css');
 		//$this->setCss('ui.datepicker.css');
-		$this->setCss('base/css/jquery-ui-themeroller.css');
+		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
 		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		$this->setCss("base/css/owa.report.css");
 		$this->setCss("base/css/owa.widgets.css");

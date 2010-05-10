@@ -509,18 +509,19 @@ class owa_coreAPI {
 	 */
 	function getResultSet($params) {
 		
+		
+		// create the metric obj for the first metric
+		require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
+		$rsm = new owa_resultSetManager;
+		
 		if (array_key_exists('metrics', $params)) {
-			$metrics = explode(",", $params['metrics']);
+			$metrics = $rsm->metricsStringToArray($params['metrics']);
 		} else {
 			return false;
 		}
 		
 		// count how many metrics there are
 		$count = count($metrics);
-		
-		// create the metric obj for the first metric
-		require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
-		$rsm = new owa_resultSetManager;
 		
 		//loop through the rest of the metrics and merge them into the first
 		if ($metrics) {

@@ -6,7 +6,7 @@
 	width:auto; 
 	color:#ffffff;
 	padding:5px 5px 5px 0px; 
-	margin: 0px 0 0px 0; 
+	margin: 10px 0 10px 0; 
 	font-size: 18px; 
 	font-weight:bold;
 	color: orange;
@@ -23,6 +23,38 @@
 .col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
 .data_cell {text-align:center; vertical-align:center;}
 .item_cell {}
+
+.owa_dataGrid td {
+	
+	line-height:;
+}
+
+
+table.dimensionalResultSet {
+	background-color: #505050;
+	color:#A0A0A0;
+	border-collapse: collapse;
+	margin:0;
+	width:100%;
+	border-radius:5px;
+	-moz-border-radius: 5px; 
+	-webkit-border-radius: 5px;	
+	-moz-box-shadow:2px 2px 2px #999;
+    box-shadow:2px 2px 2px #999;
+    -webkit-box-shadow:2px 2px 2px #999;	
+}
+
+.dimensionalResultSet td {
+	border-left:1px solid #efefef;
+	border-right:1px solid #efefef;
+	padding:5px 10px 5px 10px;
+}
+
+.dimensionalResultSet tr{
+	border-bottom:1px #efefef solid;
+	background-color: #ffffff;
+	color: #505050;
+}
 
 
 #owa_reportSiteFilter {width:; padding:5px; text-align: center; background-color:; margin-bottom:10px; border-bottom: 1px solid #efefef;}

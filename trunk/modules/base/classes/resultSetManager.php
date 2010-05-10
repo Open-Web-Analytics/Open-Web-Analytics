@@ -92,6 +92,7 @@ class owa_resultSetManager extends owa_base {
 	var $metricsByTable = array();
 	var $childMetrics = array();
 	var $calculatedMetrics = array();
+	var $query_params = array();
 	
 	function __construct($db = '') {
 		
@@ -150,6 +151,9 @@ class owa_resultSetManager extends owa_base {
 	function constraintsStringToArray($string) {
 		
 		if ($string) {
+			
+			// add string to query params array for use in URLs.
+			$this->query_params['constraints'] = $string;
 			
 			$constraints = explode(',', $string);
 		
@@ -271,6 +275,9 @@ class owa_resultSetManager extends owa_base {
 		
 		if ($string) {
 		
+			// add string to query params array for use in URLs.
+			$this->query_params['sort'] = $string;
+		
 			$sorts = explode(',', $string);
 			
 			$sort_array = array();
@@ -285,8 +292,8 @@ class owa_resultSetManager extends owa_base {
 					$order = 'ASC';
 				}
 		
-				$col_name = $this->getColumnName($column);
-				
+				//$col_name = $this->getColumnName($column);
+				$col_name = $column;
 				if ($col_name) {
 					$sort_array[$sort][0] = $col_name;
 					$sort_array[$sort][1] = $order;
@@ -495,8 +502,18 @@ class owa_resultSetManager extends owa_base {
 	
 	function dimensionsStringToArray($string) {
 		
+		// add string to query params array for use in URLs.
+		$this->query_params['dimensions'] = $string;
 		return explode(',', $string);
 	}
+	
+	function metricsStringToArray($string) {
+		
+		// add string to query params array for use in URLs.
+		$this->query_params['metrics'] = $string;
+		return explode(',', $string);
+	}
+
 	
 	function dimensionsArrayToString($array) {
 		
@@ -843,6 +860,17 @@ class owa_resultSetManager extends owa_base {
 		
 		$rs = $this->computeCalculatedMetrics($rs);
 		
+		// add urls
+		$urls = $this->makeResultSetUrls();
+		$rs->self = $urls['self'];
+		
+		if ($rs->more) {
+		
+			foreach ($urls as $k => $url) {
+				$rs->$k = $url;
+			}
+		}
+		
 		return $rs;
 	}
 	
@@ -923,13 +951,72 @@ class owa_resultSetManager extends owa_base {
 			return $value;
 	}
 	
-	
-	
 	function getMetric($name) {
 		
 		if (array_key_exists($name, $this->metrics)) {
 			return $this->metrics[$name];
 		} 
+	}
+	
+	function setQueryStringParam($name, $string) {
+		
+			$this->query_params[$name] = $string;
+	}
+	
+	function makeResultSetUrls() {
+		
+		$urls = array();
+		// get api url
+		$api_url = owa_coreAPI::getSetting('base', 'api_url');
+		// get base query params
+		$query_params = $this->query_params;
+		// add api command
+		$query_params['do'] = 'getResultSet';
+		//add format
+		if ($this->format) {
+			$query_params['format'] = $this->format;
+		}
+		// add current page if any
+		if ($this->page) {
+			$query_params['page'] = $this->page;
+		}
+		// add limit
+		if ($this->limit) {
+			$query_params['limit'] = $this->limit;
+		}
+		
+		// build url for this result set
+		$q = http_build_query($query_params);
+		$urls['self'] = sprintf("%s?%s", $api_url, $q);
+		
+		// build url for next page of result set
+		if ($this->page) {
+			$next_query_params = $query_params;
+			$next_query_params['page'] = $query_params['page'] + 1;
+		} else {
+			$next_query_params['page'] = 2;
+		} 
+		
+		$nq = http_build_query($query_params);
+		$urls['next'] = sprintf("%s?%s", $api_url, $nq);
+		
+		// build previous url if page is greater than 2	
+		if ($this->page >= 2) {
+			$previous_query_params = $query_params;
+			$previous_query_params['page'] = $query_params['page'] - 1;
+			$pq = http_build_query($query_params);
+			$urls['previous'] = sprintf("%s?%s", $api_url, $pq);
+		}
+		
+		if (array_key_exists('page', $query_params)) {
+			unset($query_params);
+		}
+		
+		// build pagination url template for use in constructing 
+		$q = http_build_query($query_params);
+		$url['base_url'] = sprintf("%s?%s", $api_url, $q);
+		
+		return $urls;
 	}
 
 }
