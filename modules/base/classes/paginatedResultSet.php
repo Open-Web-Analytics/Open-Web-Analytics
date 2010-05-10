@@ -50,14 +50,25 @@ class owa_paginatedResultSet {
 	var $total_pages;
 		
 	/**
-	 * The URL that produces the results
+	 * The API URL that produces the results
 	 */
 	var $self;
 	
 	/**
-	 * The URL that produces the next page of results
+	 * The API URL that produces the next page of results
 	 */	
 	var $next;
+	
+	/**
+	 * The API URL that produces the previous page of results
+	 */	
+	var $previous;
+	
+	/**
+	 * The base API URL that is used to construct client side pagination links. 
+	 * Does not contain any 'page' params.
+	 */	
+	var $base_url;
 	
 	var $results_count = 0;
 	var $offset = 0;
@@ -93,7 +104,7 @@ class owa_paginatedResultSet {
 	
 	function countResults($results) {
 	
-		$this->resultsReturned = count($results);
+		$this->resultsTotal = count($results);
 		$this->results_count = count($results);
 				
 		if ($this->limit) {
@@ -118,7 +129,7 @@ class owa_paginatedResultSet {
 		
 		if (!empty($this->limit)) {
 			// query for more than we need	
-			$dao->limit($this->limit * 5);
+			$dao->limit($this->limit * 10);
 		}
 		
 		if (!empty($this->page)) {
@@ -131,6 +142,7 @@ class owa_paginatedResultSet {
 		if (!empty($results)) {
 			$this->countResults($results);	
 			$this->rows = array_slice($results, 0, $this->limit);
+			$this->resultsReturned = count($this->rows);
 		} else {
 			$this->rows = array();
 		}
@@ -225,17 +237,34 @@ class owa_paginatedResultSet {
 		return serialize($this);
 	}
 	
-	function resultSetToHtml() {
+	function resultSetToHtml($class = 'dimensionalResultSet') {
 		$t = new owa_template;
 		
 		$t->set_template('resultSetHtml.php');
 		$t->set('rs', $this);
+		$t->set('class', $class);
 		
 		return $t->fetch();	
 	}
 	
 	function getDataRows() {
 		return $this->resultsRows;
+	}
+	
+	function addLinkToRowItem($item_name, $template, $subs) {
+		
+				
+		foreach ($this->resultsRows as $k => $row) {
+			
+			$sub_array = array();
+			
+			foreach ($subs as $sub) {
+				$sub_array[] = urlencode($this->resultsRows[$k][$sub]['value']);	
+			}
+		
+			$this->resultsRows[$k][$item_name]['link'] = vsprintf($template, $sub_array);		
+		}
+		
 	}
 	
 	function getSeries($name) {

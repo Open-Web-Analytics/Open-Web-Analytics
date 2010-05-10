@@ -61,8 +61,9 @@ class owa_reportActionTrackingController extends owa_reportController {
 						'metrics' 	  => 'actions',
 						'dimensions'  => 'actionName',
 						'constraints' => 'site_id='.$this->getParam('site_id'),
-						'sort'		  => 'actions-'
-						);
+						'sort'		  => 'actions-',
+						'limit'		  => 5
+					   );
 						
 		$rs = owa_coreAPI::getResultSet($params);	
 		//print_r($rs);			
@@ -110,9 +111,15 @@ class owa_reportActionTrackingView extends owa_view {
 	function render() {
 		
 		$this->body->set_template('report_actionTracking.php');
-		$this->body->set('aggregates', $this->get('aggregates'));			
-		$this->body->set('actionsByName', $this->get('actionsByName'));
+		$this->body->set('aggregates', $this->get('aggregates'));
+		
+		$actionsByName = $this->get('actionsByName');
+		$actionsByName->addLinkToRowItem('actionName', $this->body->makeLink(array('do' => 'reportActionTrend', 'actionName' => '%s'), true), array('actionName'));			
+		$this->body->set('actionsByName', $actionsByName);
 		$this->body->set('actionsByGroup', $this->get('actionsByGroup'));
+		$this->setCss('base/css/ui.jqgrid.css');
+		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
+		
 	}
 }
 

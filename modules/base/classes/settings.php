@@ -668,6 +668,7 @@
 		$this->set('base','images_url', $modules_url);
 		$this->set('base','images_absolute_url',$modules_url);
 		$this->set('base','log_url',$public_url.'log.php');
+		$this->set('base','api_url',$public_url.'api.php');
 		
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
