@@ -237,3 +237,47 @@ p.owa_metricInfoboxLabel {
 
 
 
+/* keep this */  
+.owa_genericHorizontalList ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:5px;}
+.owa_genericHorizontalList li {text-decoration: none; float:left; margin: 2px; padding:3px;}
+.owa_genericHorizontalList li a {
+	
+	height:;
+	line-height:;
+	float: left;
+	width: ;
+	display: block;
+	border: 1px solid #efefef;
+	text-decoration: none;
+	text-align: center;
+}
+
+.owa_resultsExplorerBottomControls {
+	background-color: #9f9f9f;
+	
+}
+
+.owa_resultsExplorerBottomControls ul {
+	
+	float:right;
+
+}
+.owa_rowCount {
+	
+	font-size:12px;
+	color: #9f9f9f;
+	margin-right:30px;
+}
+
+.owa_nextPageControl :hover, .owa_previousPageControl :hover{
+	backgroundcolor: #9f9f9f;
+	color: orange;
+	padding:5px;
+}
+
+.owa_nextPageControl, .owa_previousPageControl {
+	background-color: #efefef;
+	border: 1px solid #505050;
+	padding:5px;
+	font-size: 12px;
+}

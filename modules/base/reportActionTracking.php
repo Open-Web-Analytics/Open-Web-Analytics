@@ -117,6 +117,7 @@ class owa_reportActionTrackingView extends owa_view {
 		$actionsByName->addLinkToRowItem('actionName', $this->body->makeLink(array('do' => 'reportActionTrend', 'actionName' => '%s'), true), array('actionName'));			
 		$this->body->set('actionsByName', $actionsByName);
 		$this->body->set('actionsByGroup', $this->get('actionsByGroup'));
+		$this->body->set('dom_id', 'actionByNameResultsExplorer');
 		$this->setCss('base/css/ui.jqgrid.css');
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
 		

@@ -21,17 +21,18 @@
 <div class="owa_reportSectionContent">
 <?php echo $actionsByName->resultSetToJson();?>
 <?php //echo $this->makePaginationFromResultSet($actionsByName);?>
-<table id="grid"></table>
-<div id="pjmap"></div>
+<div id="<?php echo $dom_id;?>">
+	<table id="<?php echo $dom_id . '_grid';?>"></table>
+	<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>
+</div>
+
 <script>
 var data = <?php echo $actionsByName->resultSetToJson();?>
 
 rsh = new OWA.resultSetExplorer();
-rsh.dom_id = '#grid';
-rsh.getResultSet();
-//rsh.setResultSet(data);
-rsh.addAllRowsToGrid();
-rsh.refreshGrid();
+rsh.dom_id = '<?php echo $dom_id;?>';
+rsh.setResultSet(data);
+rsh.displayGrid();
 </script>
 
 <BR>

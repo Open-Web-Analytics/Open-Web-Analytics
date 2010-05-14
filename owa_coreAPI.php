@@ -583,20 +583,30 @@ class owa_coreAPI {
 		if (array_key_exists('sort', $params)) {
 			$rsm->setSorts($rsm->sortStringToArray($params['sort']));
 		}
-		
+				
 		// set limit
+		if (array_key_exists('resultsPerPage', $params)) {
+			$rsm->setLimit($params['resultsPerPage']);
+		}
+		
+		// set limit  (alt key)
 		if (array_key_exists('limit', $params)) {
 			$rsm->setLimit($params['limit']);
 		}
 		
 		// set page
 		if (array_key_exists('page', $params)) {
-			$m->setPage($params['page']);
+			$rsm->setPage($params['page']);
 		}
 		
 		// set offset
 		if (array_key_exists('offset', $params)) {
-			$m->setOffset($params['offset']);
+			$rsm->setOffset($params['offset']);
+		}
+		
+		// set format
+		if (array_key_exists('format', $params)) {
+			$rsm->setOffset($params['format']);
 		}
 		
 		// get results
