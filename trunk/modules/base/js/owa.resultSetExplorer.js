@@ -4,7 +4,7 @@ OWA.resultSetExplorer = function(options) {
 		this.options = options;
 	}
 	
-}
+};
 
 OWA.resultSetExplorer.prototype = {
 	
@@ -12,7 +12,7 @@ OWA.resultSetExplorer.prototype = {
 	options: {
 		url:'/wp-content/plugins/owa/api.php?owa_do=getResultSet&owa_metrics=actions&owa_dimensions=actionName&owa_period=this_week&owa_format=json'
 	},
-	resultSet: new Array(),
+	resultSet: [],
 	
 	getOption : function(name) {
 		
@@ -21,7 +21,7 @@ OWA.resultSetExplorer.prototype = {
 	
 	getRowValues : function(old) {
 		
-		var row = new Object();
+		var row = {};
 		
 		for (var item in old) {
 			row[item] = old[item].value;
@@ -39,24 +39,54 @@ OWA.resultSetExplorer.prototype = {
 	
 		var that = this;
 		
-		jQuery(that.dom_id).jqGrid({        
-		   	//url:'/wp-content/plugins/owa/api.php?owa_do=getResultSet&owa_metrics=actions&owa_dimensions=actionName&owa_period=this_week&owa_format=json',
-		   	jsonReader: {
-		   		repeatitems: false
-		   		//root: "resultsRows",
-		   		//cell: ''
-		   	},
+		var columns = [];
+		
+		for (var column in this.resultSet.resultsRows[0]) {
+		
+			var _sort_type = '';
+			var _align = '';
+			
+			if (this.resultSet.resultsRows[0][column].result_type === 'dimension') {
+				_align = 'left';
+			} else {
+				_align = 'right';
+			}
+			
+			if (this.resultSet.resultsRows[0][column].data_type === 'string') {
+				_sort_type = 'text';
+			} else {
+				_sort_type = 'number';
+			}
+			 
+		
+		 columns.push({name: this.resultSet.resultsRows[0][column].name +'.value', index: this.resultSet.resultsRows[0][column].name +'.value', label: this.resultSet.resultsRows[0][column].label, sorttype: _sort_type, align: _align});
+		
+		}
+		
+		jQuery("#"+ that.dom_id + '_grid').jqGrid({        
+			jsonReader: {
+		   		repeatitems: false,
+		   		root: "resultsRows",
+		   		cell: '',
+		   		id: 0,
+		   		page: 'page',
+		   		total: 'total_pages',
+		   		records: 'resultsReturned'
+			},
 			datatype: "local",
-		   	colModel:[
-		   		{name:'actionName', index:'actionName',label:'Action Name', sorttype:'text', align:'left' },
-		   		{name:'actions', index:'actions', label:'Actions', sorttype:'int', align:'right'}		
-		   	],
-		   	rowNum:2,
+		   	colModel:
+		   		columns
+		   	//[
+		   	//	{name:'actionName.value', index:'actionName.value',label:'Action Name', sorttype:'text', align:'left' },
+		   	//	{name:'actions.value', index:'actions.value', label:'Actions', sorttype:'int', align:'right'}		
+			//]
+			,
 		   	rownumbers: true,
-		    viewrecords: true,
-			//caption: "My Caption",
-			height: '100%',
-			autowidth: true
+		   	viewrecords: true,
+		   	rowNum:5,
+		   	//caption: "My Caption",
+		   	height: '100%',
+		   	autowidth: true
 		});
 	},
 	
@@ -74,35 +104,122 @@ OWA.resultSetExplorer.prototype = {
 		
 		rowid = id || that.makeRowGuid(row);
 		
-		jQuery(that.dom_id).jqGrid('addRowData',rowid,that.getRowValues(row));
+		jQuery("#"+that.dom_id + '_grid').jqGrid('addRowData',rowid,that.getRowValues(row));
 	},
 	
 	addAllRowsToGrid :function() {
-	
-		this.setGridOptions();
-	
-		if (this.resultSet.resultsRows.length > 0) {
+		
+		var that = this; 
+		jQuery("#"+that.dom_id + '_grid')[0].addJSONData(that.resultSet);
+		this.displayRowCount();
+		
+		/*
+if (this.resultSet.resultsRows.length > 0) {
 			
 			for(var i=0;i<=this.resultSet.resultsRows.length - 1;i++) {
 				
-				this.addRowToGrid(this.resultSet.resultsRows[i], i+1);
+				this.addRowToGrid(this.resultSet.resultsRows[i], i+this.resultSet.offset+1);
 			}
 		
+		}
+*/
+	},
+	
+	displayRowCount : function() {
+		
+		var start = '';
+		var end = '';
+		if (this.resultSet.page === 1) {
+			start = 1;
+			end = this.resultSet.resultsReturned;
+		} else {
+			start = ((this.resultSet.page -1)  * this.resultSet.resultsPerPage) + 1;
+			end = ((this.resultSet.page -1) * this.resultSet.resultsPerPage) + this.resultSet.resultsReturned; 	
+		}
+		
+		var p = '<li class="owa_rowCount">';
+		p += 'Results: '+ start + ' - ' + end;
+		p = p + '</li>';
+	
+		var that = this;
+		//alert ("#"+that.dom_id + '_grid' + ' > .owa_rowCount');
+		var check = jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html();
+		//alert(check);
+		if (check === null)	{
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
+		} else {
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html(p);			
 		}
 	},
 	
 	// fetch the result set from the server
-	getResultSet : function() {
+	getResultSet : function(url) {
 		
 		var that = this;
 		
-		jQuery.getJSON(that.getOption('url'), that.setResultSet(data));
+		// uses the built in jqgrid loading divs. just giveit a message and show it.
+		jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
+		jQuery("#load_"+that.dom_id+"_grid").show(); 
+		jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
+		jQuery.getJSON(url, '', function (data) {that.refreshGrid(data)});
 	},
 	
-	refreshGrid : function() {
-		
+	refreshGrid : function(data) {
+		this.setResultSet(data);
 		var that = this;
-		jQuery(that.dom_id).jqGrid('clearGridData',true);
+		jQuery("#"+that.dom_id + ' _grid').jqGrid('clearGridData',true);
 		this.addAllRowsToGrid();	
-	}
-}
+		
+		// hide the built in jqgrid loading divs. 
+		jQuery("#load_"+that.dom_id+"_grid").hide(); 
+		jQuery("#load_"+that.dom_id+"_grid").css("z-index", 101);
+		
+		// check to see if we need ot hide the previous page control.
+		if (this.resultSet.page == 1) {
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+		} else {
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
+		}
+		
+	},
+	
+	displayGrid : function () {
+		this.setGridOptions();
+		this.addAllRowsToGrid();
+		this.makeGridPagination();
+	},
+	
+	makeGridPagination : function() {
+		
+		if (this.resultSet.more) {
+			
+			var that = this;
+			
+			var p = '';
+			p = p + '<LI class="owa_previousPageControl">';
+			p = p + '<span>Previous Page</span></LI>';
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
+			jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid(that.resultSet.previous)});	
+			
+			var p = '';
+			p = p + '<LI class="owa_nextPageControl">';
+			p = p + '<span>Next Page</span></LI>';
+			
+			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(p);
+			jQuery(".owa_nextPageControl").bind('click', function() {that.pageGrid(that.resultSet.next)});
+			
+			if (this.resultSet.page == 1) {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+			}
+		}
+	},
+	
+	pageGrid : function (url) {
+	
+		this.getResultSet(url);
+		var that = this;
+			
+	}	
+	
+	
+};

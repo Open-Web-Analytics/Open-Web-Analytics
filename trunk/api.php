@@ -42,8 +42,8 @@ $owa->e->debug('API request received...');
 $s = owa_coreAPI::serviceSingleton();
 // lookup method class
 
-if (!$do) {
-	print "API Command missing from request."
+if (!owa_coreAPI::getRequestParam('do')) {
+	echo ("API Command missing from request.");
 	$owa->e->debug('API Command missing from request. Aborting.');
 	exit;
 }

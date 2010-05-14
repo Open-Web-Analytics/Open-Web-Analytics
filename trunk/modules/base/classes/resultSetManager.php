@@ -82,6 +82,7 @@ class owa_resultSetManager extends owa_base {
 	var $page;
 	var $limit;
 	var $order;
+	var $format;
 	var $constraint_operators = array('==','!=','>=', '<=', '>', '<', '=~', '!~', '=@','!@');
 	var $related_entities = array();
 	var $related_dimensions = array();
@@ -326,6 +327,7 @@ class owa_resultSetManager extends owa_base {
 	
 	function setFormat($value) {
 		if (!empty($value)) {
+			$this->format;
 			$this->params['result_format'] = $value;
 		}
 	}
@@ -349,6 +351,13 @@ class owa_resultSetManager extends owa_base {
 		} else {
 			owa_coreAPI::debug('no period params passed to owa_metric::setTimePeriod');
 			$col = 'timestamp';
+		}
+	
+		// add to query params array for use in URL construction		
+		if ($map) {
+			$this->query_params = array_merge($map, $this->query_params);
+		} else {
+			$this->query_params['period'] = $period_name;
 		}
 		
 		$p = owa_coreAPI::supportClassFactory('base', 'timePeriod');
@@ -866,9 +875,11 @@ class owa_resultSetManager extends owa_base {
 		
 		if ($rs->more) {
 		
-			foreach ($urls as $k => $url) {
-				$rs->$k = $url;
-			}
+			$rs->next = $urls['next'];
+		}
+		
+		if ($this->page >=2) {
+			$rs->previous = $urls['previous'];
 		}
 		
 		return $rs;
@@ -975,6 +986,8 @@ class owa_resultSetManager extends owa_base {
 		//add format
 		if ($this->format) {
 			$query_params['format'] = $this->format;
+		} else {
+			$query_params['format'] = 'json';
 		}
 		// add current page if any
 		if ($this->page) {
@@ -982,41 +995,53 @@ class owa_resultSetManager extends owa_base {
 		}
 		// add limit
 		if ($this->limit) {
-			$query_params['limit'] = $this->limit;
+			$query_params['resultsPerPage'] = $this->limit;
 		}
 		
 		// build url for this result set
-		$q = http_build_query($query_params);
+		$q = $this->buildQueryString($query_params);
 		$urls['self'] = sprintf("%s?%s", $api_url, $q);
 		
 		// build url for next page of result set
+		$next_query_params = $query_params;
 		if ($this->page) {
-			$next_query_params = $query_params;
 			$next_query_params['page'] = $query_params['page'] + 1;
 		} else {
 			$next_query_params['page'] = 2;
 		} 
 		
-		$nq = http_build_query($query_params);
+		$nq = $this->buildQueryString($next_query_params);
 		$urls['next'] = sprintf("%s?%s", $api_url, $nq);
 		
 		// build previous url if page is greater than 2	
 		if ($this->page >= 2) {
 			$previous_query_params = $query_params;
 			$previous_query_params['page'] = $query_params['page'] - 1;
-			$pq = http_build_query($query_params);
+			$pq = $this->buildQueryString($previous_query_params);
 			$urls['previous'] = sprintf("%s?%s", $api_url, $pq);
 		}
 		
-		if (array_key_exists('page', $query_params)) {
-			unset($query_params);
-		}
+		$base_query_params = $this->query_params;
+		$base_query_params['format'] = $this->format;
 		
 		// build pagination url template for use in constructing 
-		$q = http_build_query($query_params);
+		$q = $this->buildQueryString($base_query_params);
 		$url['base_url'] = sprintf("%s?%s", $api_url, $q);
 		
 		return $urls;
+	}
+	
+	function buildQueryString($params, $seperator = '&') {
+		
+		$new = array();
+		//get namespace
+		$ns = owa_coreAPI::getSetting('base', 'ns');
+		foreach ($params as $k => $v) {
+			
+			$new[$ns.$k] = $v;
+		}
+		
+		return http_build_query($new,'', $seperator);
 	}
 
 }
