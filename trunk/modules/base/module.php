@@ -82,6 +82,7 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('actions', 'base.actions');
 		$this->registerMetric('uniqueActions', 'base.uniqueActions');
 		$this->registerMetric('actionsValue', 'base.actionsValue');
+		$this->registerMetric('actionsPerVisit', 'base.actionsPerVisit');
 		
 		// register dimensions
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
@@ -148,7 +149,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('build', 'base.build');
 		
 		// register API methods
-		$this->registerApiMethod('getResultSet', 'base.getResultSet');
+		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
 		
 		return parent::__construct();
 	}
@@ -464,6 +465,118 @@ class owa_baseModule extends owa_module {
 			
      	return $url;
 		
+	}
+	
+	/**
+	 * Convienence method for generating a data result set
+	 *
+	 * Takes an array of values that contain necessary params to compute the results set.
+	 * Strings use ',' to seperate their values if needed. Array name/value pairs include:
+	 * 
+	 * array(metrics => 'foo,bar'
+	 *      , dimensions => 'dim1,dim2,dim3'
+	 *      , period => 'today'
+	 *      , startDate => 'yyyymmdd'
+	 *      , endDate => 'yyyymmdd'
+	 *      , startTime => timestamp
+	 *      , endTime => timestamp
+	 *      , constraints => 'con1=foo, con2=bar'
+	 *      , page => 1
+	 *      , offset => 0
+	 *      , limit => 10
+	 *      , sort => 'dim1,dim2'
+	 *
+	 *
+	 * @param $params array
+	 * @return paginatedResultSet obj
+	 * @link http://wiki.openwebanalytics.com/index.php?title=REST_API
+	 */
+	function getResultSet($metrics, $dimensions = '', $constraints = '', $sort = '', $limit = '', $page = '', $offset = '', $period = '', $startDate = '', $endDate = '', $startTime = '', $endTime = '', $format = '') {
+		
+		//print_r(func_get_args());
+		// create the metric obj for the first metric
+		require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
+		$rsm = new owa_resultSetManager;
+		
+		if ($metrics) {
+			$metrics = $rsm->metricsStringToArray($metrics);
+		} else {
+			return false;
+		}
+		
+		// count how many metrics there are
+		$count = count($metrics);
+		
+		//loop through the rest of the metrics and merge them into the first
+		if ($metrics) {
+			
+			for($i = 0; $i < $count; ++$i) {
+				
+				$rsm->addMetric($metrics[$i]);
+			}
+		}
+
+		// set dimensions
+		if ($dimensions) {
+			$rsm->setDimensions($rsm->dimensionsStringToArray($dimensions));
+		}
+			
+		// set period
+		if (!$period) {
+			$period = 'today';
+		}
+		
+		$rsm->setTimePeriod($period, 
+						  $startDate, 
+						  $endDate, 
+						  $startTime, 
+						  $endTime); 
+		
+		// set constraints
+		if ($constraints) {
+			
+			$rsm->setConstraints($rsm->constraintsStringToArray($constraints));
+		}
+		
+		// set sort order
+		if ($sort) {
+			$rsm->setSorts($rsm->sortStringToArray($sort));
+		}
+				
+		// set limit
+		if ($resultsPerPage) {
+			$rsm->setLimit($resultsPerPage);
+		}
+		
+		// set limit  (alt key)
+		if ($limit) {
+			$rsm->setLimit($limit);
+		}
+		
+		// set page
+		if ($page) {
+			$rsm->setPage($page);
+		}
+		
+		// set offset
+		if ($offset) {
+			$rsm->setOffset($offset);
+		}
+		
+		// set format
+		if ($format) {
+			$rsm->setOffset($format);
+		}
+		
+		// get results
+		$rs = $rsm->getResults();
+		
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
 	}
 	
 }

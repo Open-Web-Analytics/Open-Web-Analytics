@@ -36,26 +36,8 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 define('OWA_API', true);
 // invoke OWA
 $owa = new owa_php;
-// debug
-$owa->e->debug('API request received...');
-// load service
-$s = owa_coreAPI::serviceSingleton();
 // lookup method class
-
-if (!owa_coreAPI::getRequestParam('do')) {
-	echo ("API Command missing from request.");
-	$owa->e->debug('API Command missing from request. Aborting.');
-	exit;
-}
-
-$do = $s->getApiMethodClass(owa_coreAPI::getRequestParam('do'));
-// if exists, pass to OWA as a request
-if ($do) {
-	// run controller or view and echo page content
-	owa_coreAPI::setRequestParam('do', $do);
-	echo $owa->handleRequestFromUrl();
-} else {
-	echo "No API Method Found.";
-}
+$map = owa_coreAPI::getRequest()->getAllOwaParams();
+echo owa_coreAPI::executeApiCommand($map);
 
 ?>

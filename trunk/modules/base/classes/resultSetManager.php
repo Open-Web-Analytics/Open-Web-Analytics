@@ -677,6 +677,21 @@ class owa_resultSetManager extends owa_base {
 		
 			if ($m) {
 			
+				
+				// necessary if the metric was first added as a child but later added as a parent.
+				if (!$child) {
+					
+					if (array_key_exists($metric_name, $this->childMetrics)) {
+						unset ($this->childMetrics[$metric_name]);
+					}
+				} else {
+					// add child metrics to child metric maps
+					// check to see if it wasn't already added as a non-child metric.
+					if (!array_key_exists($metric_name, $this->metrics)){
+						$this->childMetrics[$metric_name] = $metric_name;
+					}
+				}
+			
 				// check to see if this is a calculated metric
 				if ($m->isCalculated()) {
 					
@@ -684,7 +699,7 @@ class owa_resultSetManager extends owa_base {
 				}
 			
 				if ($this->checkForFactTableRelation($m)) {
-			 
+			 		
 					$this->metrics[$metric_name] = $m;
 					$this->metricsByTable[$m->getTableName()] = $metric_name;
 					$this->addSelect($m->getSelect());
@@ -700,13 +715,7 @@ class owa_resultSetManager extends owa_base {
 			$ret =  true;
 		}
 		
-		// necessary if the metric was first added asa child but later added as a parent.
-		if (!$child) {
-			
-			if (array_key_exists($metric_name, $this->childMetrics)) {
-				unset ($this->childMetrics[$metric_name]);
-			}
-		}
+		
 		
 		return $ret;		
 	}
@@ -719,7 +728,10 @@ class owa_resultSetManager extends owa_base {
 			
 			if ($ret) {
 				// add child metrics to child metric maps
-				$this->childMetrics[$metric_name] = $metric_name;
+				// check to see if it wasn't already added as a non-child metric.
+				//if (!array_key_exists($metric_name, $this->metrics)){
+				//	$this->childMetrics[$metric_name] = $metric_name;
+				//}
 			} else {
 				$error = true;
 			}
@@ -917,7 +929,7 @@ class owa_resultSetManager extends owa_base {
 					$formula = $cm->getFormula();
 						
 					foreach ($cm->getChildMetrics() as $metric_name) {
-					
+						
 						$row_value = $row[$metric_name]['value'];
 						
 						if (empty($row_value)) {

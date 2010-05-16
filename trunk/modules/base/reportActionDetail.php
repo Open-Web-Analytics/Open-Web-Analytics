@@ -20,7 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
- * Action Tracking Report Controller
+ * Action Detail Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,7 +31,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.3.0
  */
 
-class owa_reportActionTrackingController extends owa_reportController {
+class owa_reportActionDetailController extends owa_reportController {
 
 	
 	function __construct($params) {
@@ -41,28 +41,37 @@ class owa_reportActionTrackingController extends owa_reportController {
 	
 	function action() {
 		
+		$constraints = '';
+		
+		if ($this->getParam('site_id')) {
+			
+			$constraints .= 'site_id=='.$this->getParam('site_id').',';
+		} 
+		
+		$constraints .= 'actionName=='.$this->getParam('actionName');
 		
 		// action counts	
 		$params = array('period' 	  => $this->get('period'),
 						'startDate'	  => $this->get('startDate'),
 						'endDate'	  => $this->get('endDate'),
-						'metrics' 	  => 'actions,uniqueActions,actionsPerVisit',
-						'constraints' => 'site_id='.$this->getParam('site_id')
+						'metrics' 	  => 'actions,actionsPerVisit,actionsValue',
+						'constraints' => $constraints,
+						'do'		  => 'getResultSet'
 						);
 						
-		$rs = owa_coreAPI::getResultSet($params);	
+		$rs = owa_coreAPI::executeApiCommand($params);	
 		//print_r($rs);			
 		$this->set('aggregates', $rs);
-		
+		$this->set('actionName', $this->getParam('actionName'));
 		
 		// set view stuff
-		$this->setSubview('base.reportActionTracking');
-		$this->setTitle('Action Tracking');		
+		$this->setSubview('base.reportActionDetail');
+		$this->setTitle('Action Detail for: '.$this->getParam('actionName'));
 	}
 }
 
 /**
- * Action Tracking Report View
+ * Action Detail Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -73,7 +82,7 @@ class owa_reportActionTrackingController extends owa_reportController {
  * @since		owa 1.3.0
  */
 
-class owa_reportActionTrackingView extends owa_view {
+class owa_reportActionDetailView extends owa_view {
 	
 	function __construct() {
 		
@@ -82,11 +91,9 @@ class owa_reportActionTrackingView extends owa_view {
 	
 	function render() {
 		
-		$this->body->set_template('report_actionTracking.php');
-		$this->body->set('aggregates', $this->get('aggregates'));
-		
-		
-		//$actionsByName->addLinkToRowItem('actionName', $this->body->makeLink(array('do' => 'reportActionTrend', 'actionName' => '%s'), true), array('actionName'));			
+		$this->body->set_template('report_actionDetail.php');
+		$this->body->set('aggregates', $this->get('aggregates'));	
+		$this->body->set('actionName', $this->get('actionName'));	
 	}
 }
 

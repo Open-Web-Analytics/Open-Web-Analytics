@@ -538,6 +538,16 @@ class owa_template extends Template {
 		
 	}
 	
+	function makeApiLink($params = array(), $add_state = false) {
+		
+		
+		$url = $this->config['api_url'];
+		
+		return $this->makeLink($params, $add_state, $url);
+		
+	}
+	
+	
 	function makeImageLink($path, $absolute = false) {
 		
 		if ($absolute === true) {

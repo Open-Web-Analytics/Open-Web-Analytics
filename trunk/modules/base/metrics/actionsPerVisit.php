@@ -32,7 +32,7 @@ if (!class_exists("owa_calculatedMetric")) {
  * @since		owa 1.3.0
  */
 
-class owa_bounceRate extends owa_calculatedMetric {
+class owa_actionsPerVisit extends owa_calculatedMetric {
 
 	function __construct() {
 	
