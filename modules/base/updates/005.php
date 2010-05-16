@@ -63,6 +63,15 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
+		$request = owa_coreAPI::entityFactory('base.request');
+		
+		$ret = $request->addColumn('prior_document_id');
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add prior_document_id column to owa_request');
+			return false;
+		}
+		
 		
 		$session = owa_coreAPI::entityFactory('base.session');
 		
@@ -127,8 +136,9 @@ class owa_base_005_update extends owa_update {
 		$session->dropColumn('is_bounce');
 		$request = owa_coreAPI::entityFactory('base.request');
 		$request->dropColumn('yyyymmdd');
-		$request = owa_coreAPI::entityFactory('base.click');
-		$request->dropColumn('yyyymmdd');
+		$request->dropColumn('prior_document_id');
+		$click = owa_coreAPI::entityFactory('base.click');
+		$click->dropColumn('yyyymmdd');
 		$feed_request = owa_coreAPI::entityFactory('base.feed_request');
 		$feed_request->dropColumn('yyyymmdd');
 		$u = owa_coreAPI::entityFactory('base.user');

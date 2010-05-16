@@ -125,11 +125,11 @@ class owa_processEventController extends owa_controller {
 			//TODO: STANDARDIZE NAME to avoid doing this map
 			$referer = $this->event->get('referer');
 		} else {
+			owa_coreAPI::debug('ref: '.owa_coreAPI::getServerParam('HTTP_REFERER'));
 			$referer = owa_coreAPI::getServerParam('HTTP_REFERER');
 		}
 		
 		$this->event->set('HTTP_REFERER', $this->eq->filter('http_referer', $referer));
-		
 		
 		// set host
 		if (!$this->event->get('HTTP_HOST')) {
@@ -154,6 +154,13 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('page_url', $this->eq->filter('page_url', $this->event->get('page_url')));
 		// needed?
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
+		
+		// set internal referer
+		$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
+		$page_parse = parse_url($this->event->get('page_url'));
+		if ($referer_parse['host'] === $page_parse['host']) {
+			$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
+		}
 		
 		// Filter the target url of clicks
 		if ($this->event->get('target_url')) {
