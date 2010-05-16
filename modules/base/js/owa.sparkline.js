@@ -19,7 +19,7 @@ OWA.sparkline.prototype = {
 	
 	width: "125px",
 	
-	options: {width: '125px', height: '20px', spotRadius: 2, lineColor: '#ffffff', fillColor: ''},
+	options: {width: '125px', height: '20px', spotRadius: 2, lineColor: '#9f9f9f', fillColor: ''},
 	
 	render: function() {
 		

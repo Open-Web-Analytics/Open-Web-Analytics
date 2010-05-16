@@ -483,136 +483,66 @@ class owa_coreAPI {
 		
 	}
 	
-	/**
-	 * Convienence method for generating a data result set
-	 *
-	 * Takes an array of values that contain necessary params to compute the results set.
-	 * Strings use ',' to seperate their values if needed. Array name/value pairs include:
-	 * 
-	 * array(metrics => 'foo,bar'
-	 *      , dimensions => 'dim1,dim2,dim3'
-	 *      , period => 'today'
-	 *      , startDate => 'yyyymmdd'
-	 *      , endDate => 'yyyymmdd'
-	 *      , startTime => timestamp
-	 *      , endTime => timestamp
-	 *      , constraints => 'con1=foo, con2=bar'
-	 *      , page => 1
-	 *      , offset => 0
-	 *      , limit => 10
-	 *      , sort => 'dim1,dim2'
-	 *
-	 *
-	 * @param $params array
-	 * @return paginatedResultSet obj
-	 * @link http://wiki.openwebanalytics.com/index.php?title=REST_API
-	 */
-	function getResultSet($params) {
+	function executeApiCommand($map) {
 		
+		// debug
+		owa_coreAPI::debug('API request received...');
 		
-		// create the metric obj for the first metric
-		require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
-		$rsm = new owa_resultSetManager;
-		
-		if (array_key_exists('metrics', $params)) {
-			$metrics = $rsm->metricsStringToArray($params['metrics']);
+		if (!array_key_exists('do', $map)) {
+			echo ("API Command missing from request.");
+			owa_coreAPI::debug('API Command missing from request. Aborting.');
+			exit;
 		} else {
-			return false;
+			// load service
+			$s = owa_coreAPI::serviceSingleton();
+			// lookup method class
+			$do = $s->getApiMethodClass($map['do']);
+				
 		}
 		
-		// count how many metrics there are
-		$count = count($metrics);
+		// if exists, pass to OWA as a request
+		if ($do) {
 		
-		//loop through the rest of the metrics and merge them into the first
-		if ($metrics) {
-			
-			for($i = 0; $i < $count; ++$i) {
+			/* PERFORM AUTHENTICATION */
+			if (array_key_exists('required_capability', $do)) {
 				
-				$rsm->addMetric($metrics[$i]);
+				$auth = &owa_auth::get_instance();
+				$status = $auth->authenticateUser();
+				// if auth was not successful then return login view.
+				if ($status['auth_status'] != true) {
+					return 'This method requires authentication.';
+				} else {
+					//check for needed capability again now that they are authenticated
+					if (!owa_coreAPI::isCurrentUserCapable($do['required_capability'])) {
+						return 'Your user does not have privileges to access this method.';	
+					}
+				}
 			}
-		}
-
-		// set dimensions
-		if (array_key_exists('dimensions', $params)) {
-			$rsm->setDimensions($rsm->dimensionsStringToArray($params['dimensions']));
-		}
-			
-		// set period
-		if (array_key_exists('period', $params)) {
-			$period = $params['period'];
-		} else {
-			$period = 'today';
-		}
-		
-		if (array_key_exists('startDate', $params)) {
-			$startDate = $params['startDate'];
-		} else {
-			$startDate = '';
-		}
-		
-		if (array_key_exists('endDate', $params)) {
-			$endDate = $params['endDate'];
-		} else {
-			$endDate = '';
-		}
-		
-		if (array_key_exists('startTime', $params)) {
-			$startTime = $params['startTime'];
-		} else {
-			$startTime = '';
-		}
-		
-		if (array_key_exists('endTime', $params)) {
-			$endTime = $params['endTime'];
-		} else {
-			$endTime = '';
-		}
-		
-		$rsm->setTimePeriod($period, 
-						  $startDate, 
-						  $endDate, 
-						  $startTime, 
-						  $endTime); 
-		
-		// set constraints
-		if (array_key_exists('constraints', $params)) {
-			$rsm->setConstraints($rsm->constraintsStringToArray($params['constraints']));
-		}
-		
-		// set sort order
-		if (array_key_exists('sort', $params)) {
-			$rsm->setSorts($rsm->sortStringToArray($params['sort']));
-		}
+					
+			if (array_key_exists('args', $do)) {
 				
-		// set limit
-		if (array_key_exists('resultsPerPage', $params)) {
-			$rsm->setLimit($params['resultsPerPage']);
+				$passed_args = array();
+				
+				foreach ($do['args'] as $arg) {
+					
+					$passed_args[] = $map[$arg];
+				}
+				
+				if ($file) {
+					
+					if (!class_exists($do['callback'][0])) {
+						require_once($file);
+					}
+				}
+				
+				$something = call_user_func_array($do['callback'], $passed_args);
+			}	
+			
+			return $something;
+		} else {
+			echo "No API Method Found.";
 		}
-		
-		// set limit  (alt key)
-		if (array_key_exists('limit', $params)) {
-			$rsm->setLimit($params['limit']);
-		}
-		
-		// set page
-		if (array_key_exists('page', $params)) {
-			$rsm->setPage($params['page']);
-		}
-		
-		// set offset
-		if (array_key_exists('offset', $params)) {
-			$rsm->setOffset($params['offset']);
-		}
-		
-		// set format
-		if (array_key_exists('format', $params)) {
-			$rsm->setOffset($params['format']);
-		}
-		
-		// get results
-		$rs = $rsm->getResults();
 
-		return $rs;
 	}
 	
 	/**

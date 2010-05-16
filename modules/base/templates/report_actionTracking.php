@@ -16,36 +16,43 @@
 
 </div>
 
-<?php if ($actionsByName->getDataRows()):?>
 <div class="section_header">Actions by Name</div>
 <div class="owa_reportSectionContent">
-<?php echo $actionsByName->resultSetToJson();?>
-<?php //echo $this->makePaginationFromResultSet($actionsByName);?>
-<div id="<?php echo $dom_id;?>">
-	<table id="<?php echo $dom_id . '_grid';?>"></table>
-	<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>
-</div>
 
-<script>
-var data = <?php echo $actionsByName->resultSetToJson();?>
-
-rsh = new OWA.resultSetExplorer();
-rsh.dom_id = '<?php echo $dom_id;?>';
-rsh.setResultSet(data);
-rsh.displayGrid();
-</script>
+	<div style="width:500px;" id="actionsByNameExplorer"></div>
+	<script>
+	
+	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+													  'metrics' => 'actions', 
+													  'dimensions' => 'actionName', 
+													  'sort' => 'actions-', 
+													  'resultsPerPage' => 5,
+													  'format' => 'json'), true);?>';
+													  
+	rsh = new OWA.resultSetExplorer('actionsByNameExplorer');
+	var link = '<?php echo $this->makeLink(array('do' => 'base.reportActionDetail', 'actionName' => '%s'), true);?>';
+	rsh.addLinkToColumn('actionName', link, ['actionName']);
+	rsh.load(aurl, 'grid');
+	</script>
 
 <BR>
 </div>
-<?php endif;?>
 
-<?php if ($actionsByGroup->getDataRows()):?>
 <div class="section_header">Actions By Group</div>
 <div class="owa_reportSectionContent">
+	<div style="width:500px;" id="actionsByGroupExplorer"></div>
+	<script>
+	var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+												  'metrics' => 'actions', 
+												  'dimensions' => 'actionGroup', 
+												  'sort' => 'actions-', 
+												  'resultsPerPage' => 5,
+												  'format' => 'json'), true);?>';
+												  
+	rshre = new OWA.resultSetExplorer('actionsByGroupExplorer');
+	rshre.load(url);
+	</script>
+
 
 </div>
-<?php endif;?>
 
-<script>
-tableToGrid('.owa_dataGrid', {height:300, width:300});
-</script>

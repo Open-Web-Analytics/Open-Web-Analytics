@@ -534,19 +534,7 @@ class owa_view extends owa_base {
 	
 	function setContentTypeHeader($type = 'html') {
 		
-		if (!$type) {	
-			$type = 'html';
-		}
-		
-		$content_types = array('html' => 'text/html', 
-							   'xml' => 'text/xml', 
-							   'json' => 'application/json', 
-							   'csv' => 'text/csv');
-		
-		if (array_key_exists($type, $content_types)) {
-			$mime = $content_types[$type];
-			header('Content-type: '.$mime);
-		}
+		owa_lib::setContentTypeHeader($type);
 	}
 	
 }

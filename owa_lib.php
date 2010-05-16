@@ -997,6 +997,23 @@ class owa_lib {
 		///print "after date";
 		return $yyyymmdd;
 	}
+	
+	function setContentTypeHeader($type = 'html') {
+		
+		if (!$type) {	
+			$type = 'html';
+		}
+		
+		$content_types = array('html' => 'text/html', 
+							   'xml' => 'text/xml', 
+							   'json' => 'application/json', 
+							   'csv' => 'text/csv');
+		
+		if (array_key_exists($type, $content_types)) {
+			$mime = $content_types[$type];
+			header('Content-type: '.$mime);
+		}
+	}
 }
 
 ?>

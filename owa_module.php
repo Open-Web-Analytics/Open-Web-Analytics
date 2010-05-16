@@ -674,12 +674,24 @@ class owa_module extends owa_base {
 		
 		$this->cli_commands[$command] = $class;
 	}
-	
+	/*
+
 	function registerApiMethod($method_name, $class) {
 		
 		$this->api_methods[$method_name] = $class;
 	}
 	
+	*/
+	function registerApiMethod($api_method_name, $user_function, $argument_names, $file = '', $required_capability = '') {
+			
+		$map = array('callback' => $user_function, 'args' => $argument_names, 'file' => $file);
+		
+		if ($required_capability) {
+			$map['required_capability'] = $required_capability;
+		}
+		
+		$this->api_methods[$api_method_name] = $map;
+	}
 }
 
 ?>

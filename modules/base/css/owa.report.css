@@ -7,9 +7,9 @@
 	color:#ffffff;
 	padding:5px 5px 5px 0px; 
 	margin: 10px 0 10px 0; 
-	font-size: 18px; 
-	font-weight:bold;
-	color: orange;
+	font-size: 22px; 
+	font-weight: 500;
+	color: #505050;
 	border-bottom:1px dotted #9f9f9f;
 }
 .owa_reportSectionContent {margin: 0px;}
@@ -82,19 +82,15 @@ table.dimensionalResultSet {
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
 .owa_metricInfobox {
-	color:#ffffff; 
-	background-color: #505050;
+	color:#505050; 
+	background-color: #ffffff;
 	text-align: left; 
+	border: 1px solid #9f9f9f;
 	padding:0px; 
 	margin:5px; 
 	width:135px; 
 	float:left;
-	border-radius:5px;
-	-moz-border-radius: 5px; 
-	-webkit-border-radius: 5px;	
-	-moz-box-shadow:2px 2px 2px #999;
-    box-shadow:2px 2px 2px #999;
-    -webkit-box-shadow:2px 2px 2px #999;
+	
 }
 
 .owa_metricInfobox p {
@@ -110,7 +106,7 @@ p.owa_metricInfoboxLabel {
 }
 
 .owa_metricInfoboxLargeNumber {
-	color:#ffffff;
+	color:#505050;
 	font-size:32px;
 	padding-bottom: 0px;
 }
@@ -269,15 +265,35 @@ p.owa_metricInfoboxLabel {
 	margin-right:30px;
 }
 
-.owa_nextPageControl :hover, .owa_previousPageControl :hover{
-	backgroundcolor: #9f9f9f;
+.owa_nextPageControl:hover, .owa_previousPageControl:hover{
 	color: orange;
-	padding:5px;
+	padding:;
+	border: 1px solid orange;
 }
 
 .owa_nextPageControl, .owa_previousPageControl {
 	background-color: #efefef;
 	border: 1px solid #505050;
+	color: #505050;
 	padding:5px;
 	font-size: 12px;
 }
+
+.owa_metricGridCell {
+	padding-right: 20px;
+}
+
+.owa_dimensionGridCell td {
+	padding-left: 30px;
+}
+
+.owa_dimensionGridCell a {
+	text-decoration: none;
+	color: blue;
+}
+
+.owa_dimensionGridCell a:hover{
+	text-decoration: underline;
+	color: blue;
+}
+
