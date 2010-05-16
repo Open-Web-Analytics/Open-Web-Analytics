@@ -47,10 +47,11 @@ class owa_reportActionTrackingController extends owa_reportController {
 						'startDate'	  => $this->get('startDate'),
 						'endDate'	  => $this->get('endDate'),
 						'metrics' 	  => 'actions,uniqueActions,actionsPerVisit',
-						'constraints' => 'site_id='.$this->getParam('site_id')
+						'constraints' => 'site_id='.$this->getParam('site_id'),
+						'do'		  => 'getResultSet'
 						);
 						
-		$rs = owa_coreAPI::getResultSet($params);	
+		$rs = owa_coreAPI::executeApiCommand($params);	
 		//print_r($rs);			
 		$this->set('aggregates', $rs);
 		

@@ -203,6 +203,7 @@ function &owa_getInstance($params = array()) {
 		$owa_config['main_url'] = '../wp-admin/index.php?page=owa';
 		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa';
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
+		$owa_config['api_url'] = get_bloginfo('url').'/index.php?owa_apiAction';
 		// needed?
 		$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
 		$owa_config['site_id'] = md5(get_settings('siteurl'));

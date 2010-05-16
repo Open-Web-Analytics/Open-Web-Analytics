@@ -873,11 +873,11 @@ class owa_template extends Template {
 		if (!empty($dom_id)) {
 			$dom_id = rand();
 		}
-	
-		$count = owa_coreAPI::getResultSet($params);
+		$params['do'] = 'getResultSet';
+		$count = owa_coreAPI::executeApiCommand($params);
 		$params['period'] = 'last_thirty_days';
 		$params['dimensions'] = 'date';
-		$trend = owa_coreAPI::getResultSet($params);
+		$trend = owa_coreAPI::executeApiCommand($params);
 		$t->set('metric_name', $params['metrics']);
 		$t->set('dom_id', $dom_id);
 		$t->set('count', $count);	
