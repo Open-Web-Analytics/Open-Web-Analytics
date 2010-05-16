@@ -126,6 +126,11 @@ class owa_request extends owa_entity {
 		$ua_id->setForeignKey('base.ua');
 		$this->setProperty($ua_id);
 		
+		//prior page
+		$prior_document_id = new owa_dbColumn('prior_document_id', OWA_DTD_BIGINT);
+		$document_id->setForeignKey('base.document');
+		$this->setProperty($prior_document_id);
+		
 		$this->properties['is_new_visitor'] = new owa_dbColumn;
 		$this->properties['is_new_visitor']->setDataType(OWA_DTD_TINYINT);
 		$this->properties['is_repeat_visitor'] = new owa_dbColumn;

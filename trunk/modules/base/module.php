@@ -65,6 +65,7 @@ class owa_baseModule extends owa_module {
 		//Clean Query Strings 
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
 			$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
+			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
 		

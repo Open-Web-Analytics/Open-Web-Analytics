@@ -60,6 +60,9 @@ class owa_logPageRequestController extends owa_controller {
 		// Make document id	
 		$r->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
 		
+		// Make prior document id	
+		$r->set('prior_document_id', owa_lib::setStringGuid($event->get('prior_page')));
+		
 		// Generate Referer id
 		$r->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 		
