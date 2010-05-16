@@ -295,6 +295,13 @@ class owa_caller extends owa_base {
 			$this->c->set('base', 'delay_first_hit', false);
 			echo $this->logEventFromUrl();
 			exit;
+		elseif(isset($_GET['owa_apiAction'])):
+			$this->e->debug("api action received");
+			define('OWA_API', true);
+			// lookup method class
+			$map = owa_coreAPI::getRequest()->getAllOwaParams();
+			echo owa_coreAPI::executeApiCommand($map);
+			exit;
 		else:
 			return;
 		endif;
