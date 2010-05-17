@@ -41,8 +41,8 @@ class owa_cache {
 	var $collections;
 	var $dirty_collections;
 	var $dirty_objs = array();
-	var $file_perms = 0775;
-	var $dir_perms = 0775;
+	var $file_perms = 0750;
+	var $dir_perms = 0750;
 	var $global_collections = array();
 	var $non_persistant_collections = array();
 	var $collection_expiration_periods = array();
