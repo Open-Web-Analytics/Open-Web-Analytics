@@ -723,7 +723,7 @@
 		}
 		
 		fclose($handle);
-		chmod(OWA_DIR . 'owa-config.php', 0666);
+		chmod(OWA_DIR . 'owa-config.php', 0750);
 		owa_coreAPI::debug('Config file created');
 		require_once(OWA_DIR . 'owa-config.php');
 		return true;

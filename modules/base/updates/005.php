@@ -123,6 +123,8 @@ class owa_base_005_update extends owa_update {
 			}
 		}
 		
+		chmod(OWA_DIR . 'owa-config.php', 0750);
+		
 		// must return true
 		return true;
 	}

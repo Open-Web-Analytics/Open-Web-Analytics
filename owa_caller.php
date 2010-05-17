@@ -53,18 +53,6 @@ class owa_caller extends owa_base {
 	var $site_id;
 		
 	/**
-	 * PHP4 Constructor
-	 *
-	 */
-	 
-	function owa_caller($config) {
-	
-		register_shutdown_function(array(&$this, "__destruct"));
-		return owa_caller::__construct($config);
-		
-	}
-	
-	/**
 	 * Constructor
 	 *
 	 * @param array $config
@@ -82,7 +70,7 @@ class owa_caller extends owa_base {
 		/* SETUP CONFIGURATION AND ERROR LOGGER */
 		
 		// Parent Constructor. Sets default config entity and error logger
-		$this->owa_base();
+		parent::__construct();
 		
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
