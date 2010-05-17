@@ -39,6 +39,7 @@ $owa_config['images_absolute_url'] = $owa_config['images_url'];
 $owa_config['main_url'] = $wgScriptPath.'/index.php?title=Special:Owa';
 $owa_config['main_absolute_url'] = $wgServer.$owa_config['main_url'];
 $owa_config['action_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction';
+$owa_config['api_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_apiAction';
 $owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1';
 $owa_config['link_template'] = '%s&%s';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
