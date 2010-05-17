@@ -123,7 +123,14 @@ class owa_base_005_update extends owa_update {
 			}
 		}
 		
-		chmod(OWA_DIR . 'owa-config.php', 0750);
+		// check for bad permissions on config file
+		if (file_exists(OWA_DIR . 'owa-config.php')) {
+			chmod(OWA_DIR . 'owa-config.php', 0750);
+		}
+		
+		if (file_exists(OWA_DIR . 'conf/owa-config.php')) {
+			chmod(OWA_DIR . 'conf/owa-config.php', 0750);
+		}
 		
 		// must return true
 		return true;
