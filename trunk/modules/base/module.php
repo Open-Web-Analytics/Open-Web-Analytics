@@ -98,8 +98,9 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
 		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
 		
-		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visitor', 'The domain of the site.');
-		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visitor', 'The name of the site.');
+		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visit', 'The domain of the site.');
+		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visit', 'The name of the site.');
+		$this->registerDimension('siteId', 'base.site', 'site_id', 'Site ID', 'visit', 'The ID of the site.');
 		$this->registerDimension('userName', 'base.visitor', 'user_name', 'User Name', 'visitor', 'The name or ID of the user.');
 		$this->registerDimension('userEmail', 'base.visitor', 'user_email', 'Email Address', 'visitor', 'The email address of the user.');
 		
@@ -123,6 +124,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('actionName', 'base.action_fact', 'action_name', 'Action Name', 'actions', 'The name of the action.', '', true);
 		$this->registerDimension('actionGroup', 'base.action_fact', 'action_group', 'Action Group', 'actions', 'The group that an action belongs to.', '', true);
 		$this->registerDimension('actionLabel', 'base.action_fact', 'action_label', 'Action Label', 'actions', 'The label associated with an action.', '', true);
+		$this->registerDimension('date', 'base.action_fact', 'yyyymmdd', 'Date', 'action', 'The date.', '', true, 'yyyymmdd');
 		
 		// visit
 		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');

@@ -152,12 +152,12 @@ class owa_resultSetManager extends owa_base {
 	function constraintsStringToArray($string) {
 		
 		if ($string) {
-			
+			//print_r($string);
 			// add string to query params array for use in URLs.
 			$this->query_params['constraints'] = $string;
 			
 			$constraints = explode(',', $string);
-		
+			//print_r($constraints);
 			$constraint_array = array();
 			
 			foreach($constraints as $constraint) {
@@ -169,13 +169,17 @@ class owa_resultSetManager extends owa_base {
 						
 						$dim = $this->lookupDimension($name);
 						//print_r($dim);
-						$constraint_array[$dim['column']] = array('name' => $dim['column'], 'value' => $value, 'operator' => $operator);
+						
+						// do not add constraint if the dimension is not found
+						if ($dim) {
+							$constraint_array[$dim['column']] = array('name' => $dim['column'], 'value' => $value, 'operator' => $operator);
+						}
 						//print_r($constraint_array);
 						break;
 					}
 				}
 			}
-			
+			//print_r($constraint_array);
 			return $constraint_array;
 		}
 	}
