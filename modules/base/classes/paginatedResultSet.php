@@ -34,7 +34,7 @@ class owa_paginatedResultSet {
 	var $resultsPerPage;
 	var $resultsTotal;
 	var $resultsReturned;
-	var $resultsRows;
+	var $resultsRows = array();
 		
 	/**
 	 * Aggregate values for metrics

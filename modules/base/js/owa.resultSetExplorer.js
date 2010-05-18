@@ -66,7 +66,10 @@ OWA.resultSetExplorer.prototype = {
 	
 	refreshGrid : function(data) {
 		
-		this.setResultSet(data);
+		if (data) {
+			this.setResultSet(data);
+		}
+		
 		var that = this;
 		
 		if (this.resultSet.resultsReturned > 0) {

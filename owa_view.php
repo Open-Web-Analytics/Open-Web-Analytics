@@ -476,7 +476,8 @@ class owa_view extends owa_base {
 		$sp = array('period' => null, 
 					'startDate' => null, 
 					'endDate' => null, 
-					'site_id' => null,  
+					'site_id' => null,
+					'siteId' => null,  
 					'startTime' => null, 
 					'endTime' => null);
 					
@@ -486,6 +487,11 @@ class owa_view extends owa_base {
 		if (!empty($p)):
 			$link_params = owa_lib::array_intersect_key($p, $sp);
 		endif;
+		
+		// needed for forwards compatability with 
+		if (array_key_exists('site_id', $link_params) && !array_key_exists('siteId', $link_params)) {
+			$link_params['siteId'] = $link_params['site_id']; 
+		}
 						
 		$this->body->caller_params['link_state'] =  $link_params;
 		

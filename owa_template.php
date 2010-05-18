@@ -747,6 +747,16 @@ class owa_template extends Template {
 		
 	}
 	
+	function substituteValue($string, $var_name) {
+		
+		$value = $this->get($var_name);
+		
+		if ($value) {
+			
+			return sprintf($string,$value);
+		}
+	}
+	
 	function makeNavigationMenu($links) {
 		
 		if (!empty($links)) {

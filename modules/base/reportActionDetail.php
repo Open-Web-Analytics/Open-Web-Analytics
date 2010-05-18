@@ -43,9 +43,9 @@ class owa_reportActionDetailController extends owa_reportController {
 		
 		$constraints = '';
 		
-		if ($this->getParam('site_id')) {
+		if ($this->getParam('site_id') || $this->getParam('siteId')) {
 			
-			$constraints .= 'site_id=='.$this->getParam('site_id').',';
+			$constraints .= 'siteId=='.$this->getParam('site_id').',';
 		} 
 		
 		$constraints .= 'actionName=='.$this->getParam('actionName');
