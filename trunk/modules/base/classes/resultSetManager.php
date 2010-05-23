@@ -898,6 +898,8 @@ class owa_resultSetManager extends owa_base {
 			$rs->previous = $urls['previous'];
 		}
 		
+		$rs->createResultSetHash();
+		
 		return $rs;
 	}
 	

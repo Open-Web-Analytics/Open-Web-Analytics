@@ -790,7 +790,7 @@ class owa_template extends Template {
 		}
 	}
 
-	function displaySparkline($id, $data, $width = '125px', $height = '35px') {
+	function displaySparkline($id, $data, $width = '100px', $height = '35px') {
 		
 		if (!empty($data)) {
 		
@@ -868,7 +868,7 @@ class owa_template extends Template {
 	function getAvatarImage($email) {
 		
 		if (false != $email) {
-			$url = sprintf("http://www.gravatar.com/avatar/%s?s=50", md5($email));
+			$url = sprintf("http://www.gravatar.com/avatar/%s?s=30", md5($email));
 		} else {
 			$url = $this->makeImageLink('base/i/default_user_50x50.png');
 		}

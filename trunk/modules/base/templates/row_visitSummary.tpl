@@ -8,7 +8,7 @@
 				<TD>
 					<table class="owa_userInfobox">
 						<TD class="owa_avatar">
-							<img src="<?php echo $this->getAvatarImage($row['visitor_user_email']);?>">
+							<img src="<?php echo $this->getAvatarImage($row['visitor_user_email']);?>" width="30" height="30">
 						</TD>
 						<TD class="owa_userLabel">
 							<a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $site_id));?>">
@@ -51,7 +51,7 @@
 					
 				</TD>
 				<TD class="owa_visitInfoboxItem">
-					<span class="owa_largeNumber">
+					<span class="">
 						<?php echo date("G:i:s",mktime(0,0,($row['session_last_req'] - $row['session_timestamp'])));?>
 					</span>
 					<BR>
@@ -67,16 +67,16 @@
 				</TD>
 										
 				<TD valign="top">
-					<span class="inline_h4">
+					<span class="">
 						<a href="<?php echo $row['document_url'];?>"><?php echo $row['document_page_title'];?></a>
 					</span>
-					<span class="info_text">
+					<span class="owa_secondaryText">
 						<?php if($row['document_page_type']):?> 
 						(<?php echo $row['document_page_type'];?>)
 						<?php endif;?>
 					</span>
 					<BR>
-					<span class="info_text"><?php echo $this->truncate($row['document_url'],80,'...');?></span>
+					<span class="owa_secondaryText"><?php echo $this->truncate($row['document_url'],80,'...');?></span>
 				</TD>							
 			</tr>
 			

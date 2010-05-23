@@ -48,13 +48,26 @@ class owa_reportDashboardController extends owa_reportController {
 		//print_r($cu);
 		
 		// dash counts	
-		$d = owa_coreAPI::metricFactory('base.dashCounts');
-		$d->setPeriod($this->getPeriod());
-		$d->setConstraint('site_id', $this->getParam('site_id')); 
-		$res = $d->generate();
+		//$d = owa_coreAPI::metricFactory('base.dashCounts');
+		//$d->setPeriod($this->getPeriod());
+		//$d->setConstraint('site_id', $this->getParam('site_id')); 
+		//$res = $d->generate();
 		//print_r($d->zeroFill($res));
-		$this->set('summary_stats_data', $d->zeroFill($res));
+		//$this->set('summary_stats_data', $d->zeroFill($res));
 		
+		// action counts	
+		$params = array('period' 	  => $this->get('period'),
+						'startDate'	  => $this->get('startDate'),
+						'endDate'	  => $this->get('endDate'),
+						'metrics' 	  => 'visits,pagesPerVisit,newVisitors,repeatVisitors,uniqueVisitors',
+						'dimensions'  => 'date',
+						'constraints' => 'site_id='.$this->getParam('site_id'),
+						'do'		  => 'getResultSet'
+						);
+						
+		$summary = owa_coreAPI::executeApiCommand($params);	
+		//print_r($summary);			
+		$this->set('summary', $summary);		
 		
 		// action counts	
 		$params = array('period' 	  => $this->get('period'),
@@ -117,7 +130,7 @@ class owa_reportDashboardView extends owa_view {
 	function render() {
 		
 		$this->body->set_template('report_dashboard.tpl');
-		$this->body->set('summary_stats', $this->get('summary_stats_data'));			
+		$this->body->set('summary', $this->get('summary'));			
 		$this->body->set('site_trend', $this->get('site_trend'));
 		$this->body->set('actions', $this->get('actions'));
 		return;

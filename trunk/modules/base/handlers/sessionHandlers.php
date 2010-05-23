@@ -41,11 +41,9 @@ class owa_sessionHandlers extends owa_observer {
 	 * @param 	array $conf
 	 * 
 	 */
-    function owa_sessionHandlers() {
+    function __construct() {
         
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
+		return parent::__construct();
     }
 	
     /**
@@ -56,15 +54,140 @@ class owa_sessionHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event;
-
     	if ($event->get('is_new_session')) {
-    		$this->handleEvent('base.logSession');
+    		$this->logSession($event);
     	} else {
-    		$this->handleEvent('base.logSessionUpdate');
+    		$this->logSessionUpdate($event);
     	}
+    }
+    
+    function logSession($event) {
+    	
+    	// Control logic
 		
-		return;
+		$s = owa_coreAPI::entityFactory('base.session');
+	
+		$s->setProperties($event->getProperties());
+	
+		// Set Primary Key
+		$s->set('id', $event->get('session_id'));
+		 
+		// set initial number of page views
+		$s->set('num_pageviews', 1);
+		$s->set('is_bounce', true);
+
+		// set prior session time properties		
+		$s->set('prior_session_lastreq', $event->get('last_req'));
+				
+		$s->set('prior_session_id', $event->get('inbound_session_id'));
+	owa_coreAPI::debug('hi');	
+		if ($s->get('prior_session_lastreq') > 0) {
+			$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
+			$s->set('prior_session_year', date("Y", $event->get('last_req')));
+			$s->set('prior_session_month', date("M", $event->get('last_req')));
+			$s->set('prior_session_day', date("d", $event->get('last_req')));
+			$s->set('prior_session_hour', date("G", $event->get('last_req')));
+			$s->set('prior_session_minute', date("i", $event->get('last_req')));
+			$s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
+		}
+		
+		// set last_req to be the timestamp of the event that triggered this session.
+		$s->set('last_req', $event->get('timestamp'));
+				
+		// set source
+		
+		if ($event->get('source')) {
+			$s->set('source', $event->get('source'));
+		} elseif ($event->get('external_referer')) {
+			
+			// if search
+			if ($event->get('query_terms')) {
+				$s->set('source', 'organic-search');
+				$event->set('source', 'organic-search');
+			} else {
+				$s->set('source', 'referral');
+				$event->set('source', 'referral');
+			}
+			
+		} else {
+			$s->set('source', 'direct');
+			$event->set('source', 'direct');
+		}			
+		
+						
+		// Make ua id
+		$s->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+		
+		// Make OS id
+		$s->set('os_id', owa_lib::setStringGuid($event->get('os')));
+	
+		// Make document ids	
+		$s->set('first_page_id', owa_lib::setStringGuid($event->get('page_url')));
+			
+		$s->set('last_page_id', $s->get('first_page_id'));
+	
+		// Generate Referer id
+		
+		if ($event->get('external_referer')) {
+			$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
+		}	
+		// Generate Host id
+		$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
+				
+		$s->create();
+
+		// create event message
+		$session = $s->_getProperties();
+		$properties = array_merge($event->getProperties(), $session);
+		$properties['request_id'] = $event->get('guid');
+		$ne = owa_coreAPI::supportClassFactory('base', 'event');
+		$ne->setProperties($properties);
+		$ne->setEventType('base.new_session');
+		
+		// log the new session event to the event queue
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->notify($ne);
+    }
+    
+    function logSessionUpdate($event) {
+    	
+    	// Make entity
+		$s = owa_coreAPI::entityFactory('base.session');
+		
+		// Fetch from session from database
+		$s->getByPk('id', $event->get('session_id'));
+		
+		$id = $s->get('id');
+		// fail safe for when there is no existing session in DB
+		if (empty($id)) {
+			
+			owa_coreAPI::error("Aborting session update as no existing session was found");
+			return false;
+		}
+		
+		// increment number of page views
+		$s->set('num_pageviews', $s->get('num_pageviews') + 1);
+		$s->set('is_bounce', 'false');
+		
+		// update timestamp of latest request that triggered the session update
+		$s->set('last_req', $event->get('timestamp'));
+		
+		// update last page id
+		$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
+		
+		// Persist to database
+		$s->update();
+		
+		// setup event message
+		$session = $s->_getProperties();
+		$properties = array_merge($event->getProperties(), $session);
+		$properties['request_id'] = $event->get('guid');
+		$ne = owa_coreAPI::supportClassFactory('base', 'event');
+		$ne->setProperties($properties);
+		$ne->setEventType('base.session_update');
+		// Log session update event to event queue
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->notify($ne);
     }
     
 }

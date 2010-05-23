@@ -29,7 +29,12 @@
  */
 class owa_paginatedResultSet {
 
-		
+	/**
+	 * Unique hash of result set used by front end
+	 * to see if there are any changes.
+	 */
+	var $guid;
+	
 	var $timePeriod;
 	var $resultsPerPage;
 	var $resultsTotal;
@@ -318,6 +323,11 @@ class owa_paginatedResultSet {
 				}
 			}
 		}
+	}
+	
+	function createResultSetHash() {
+		
+		$this->guid = md5(serialize($this));
 	}
 }
 

@@ -18,7 +18,8 @@
 
 if(!class_exists('owa_observer')) {
 	require_once(OWA_BASE_DIR.'owa_observer.php');
-}	
+}
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
 
 /**
  * Request Event Handler
@@ -41,13 +42,9 @@ class owa_requestHandlers extends owa_observer {
 	 * @access 	public
 	 * @return 	Log_observer_request_logger
 	 */
-    function owa_requestHandlers() {
-	
-        // Call the base class constructor.
-        
-        $this->owa_observer();
+    function __construct() {
 		
-		return;
+		return parent::__construct();
     }
 
     /**
@@ -58,11 +55,72 @@ class owa_requestHandlers extends owa_observer {
      */
     function notify($event) {
     
-    	$this->m = $event;
-    	return $this->handleEvent('base.logPageRequest');
-    
+    	$r = owa_coreAPI::entityFactory('base.request');
+		
+		//print_r($r);
+	
+		$r->setProperties($event->getProperties());
+	
+		// Set Primary Key
+		$r->set('id', $event->get('guid'));
+		
+		// Make ua id
+		$r->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+	
+		// Make OS id
+		$r->set('os_id', owa_lib::setStringGuid($event->get('os')));
+	
+		// Make document id	
+		$r->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
+		
+		// Make prior document id	
+		$r->set('prior_document_id', owa_lib::setStringGuid($event->get('prior_page')));
+		
+		// Generate Referer id
+		$r->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
+		
+		// Generate Host id
+		$r->set('host_id', owa_lib::setStringGuid($event->get('host')));
+		
+		if ($event->get('external_referer')) {
+			$qt = $this->extractSearchTerms($event->get('HTTP_REFERER'));
+			
+			if ($qt) {
+				$event->set('query_terms', $qt);
+			}
+		}
+		
+		$result = $r->create();
+		
+		if ($result == true) {
+			$event->setEventType($event->getEventType().'_logged');
+			$eq = owa_coreAPI::getEventDispatch();
+			$eq->notify($event);
+		}
+		
 	}
 	
+	
+	/**
+	 * Parses query terms from referer
+	 *
+	 * @param string $referer
+	 * @return string
+	 * @access private
+	 */
+	function extractSearchTerms($referer) {
+	
+		/*	Look for query_terms */
+		$db = new ini_db(owa_coreAPI::getSetting('base', 'query_strings.ini'));
+		
+		$match = $db->match($referer);
+		
+		if (!empty($match[1])) {
+		
+			return trim(strtolower(urldecode($match[1])));
+		
+		}
+	}
 }
 
 ?>

@@ -15,10 +15,9 @@ OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($para
 <div id="<?php echo $dom_id;?>" class="owa_reportContainer">
 	
 
-<table width="100%">
+<table width="100%" cellpadding=0 cellspacing=0>
 	<TR>
 		<TD valign="top" class="owa_reportLeftNavColumn">
-			<div id="owa_report-filters"><?php include('filter_site.tpl');?></div>
 			<div id="owa_reportNavPanel">
 				<?php //$this->makeTwoLevelNav($top_level_report_nav);?>
 				<?php echo $this->makeNavigationMenu($top_level_report_nav);?>
@@ -27,15 +26,20 @@ OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($para
 		</TD>
 		<TD valign="top" width="*">
 		
-						
+			<div id="" class="owa_genericHorizontalList owa_reportHeaderControls">
+				<UL>
+					<LI>
+						<?php include('filter_site.tpl');?>
+					</LI>
+					<LI>
+						<div class="owa_reportPeriod owa_reportControl"><?php include('filter_period.tpl');?></div>	
+					</LI>
+				</UL>
+			</div>	
 			
-			<table id="report_header" cellpadding="0" cellspacing="0">
-				<TR>
-					<TD valign="top" class="report_headline"><?php echo $title;?></TD>
-					<TD class="owa_reportPeriod"><?php include('filter_period.tpl');?></TD>			
-				</TR>
-			</table>		
-			
+			<div class="" style="clear:both;"></div>
+					
+			<div class="owa_reportTitle"><?php echo $title;?></div>
 			<?php echo $subview;?>
 		
 		</TD>

@@ -35,7 +35,7 @@ OWA.sparkline.prototype = {
 	setWidth: function(width) {
 		
 		this.width = width;
-		return;
+		this.options.width = width;
 	},
 	
 	setDomId: function(dom_id) {

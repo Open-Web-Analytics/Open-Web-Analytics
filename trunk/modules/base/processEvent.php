@@ -108,6 +108,7 @@ class owa_processEventController extends owa_controller {
 		// set visitor type flag if inbound visitor ID is found.		
 		if ($this->event->get('inbound_visitor_id')) {
 			$this->event->set('is_repeat_visitor', true);
+			$this->event->set('visitor_id', $this->event->get('inbound_visitor_id'));
 		} else {
 			$this->event->set('is_new_visitor', true);
 		}
@@ -160,6 +161,8 @@ class owa_processEventController extends owa_controller {
 		$page_parse = parse_url($this->event->get('page_url'));
 		if ($referer_parse['host'] === $page_parse['host']) {
 			$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
+		} else {
+			$this->event->set('external_referer', true);
 		}
 		
 		// Filter the target url of clicks
@@ -239,8 +242,6 @@ class owa_processEventController extends owa_controller {
 			}
 			
 			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
-			
-			
 		}
 		
 	}
