@@ -494,7 +494,7 @@
 			'last_request_param'			=> 'last_req',
 			'first_hit_param'				=> 'first_hit',
 			'feed_subscription_param'		=> 'sid',
-			'source_param'					=> 'from',
+			'source_param'					=> 'source',
 			'graph_param'					=> 'graph',
 			'period_param'					=> 'period',
 			'document_param'				=> 'document',

@@ -1,4 +1,4 @@
-<div class="owa_reportSectionHeader">Metrics</div>
+<div class="owa_reportSectionHeader">Action Metrics</div>
 <div class="owa_reportSectionContent">
 
 
@@ -16,13 +16,7 @@
 	</table>
 </div>
 
-<script type="text/javascript">
-	jQuery(function() {
-		$("#owa-actions-workbook").tabs();
-	});
-</script>
-
-
+<div class="owa_reportSectionHeader">Analysis Workbook</div>
 <div id="owa-actions-workbook" class="owa-workbook">
 	
 	<ul>
@@ -32,12 +26,29 @@
 	
 	<div id="actionsByLabel" class="owa_reportSectionContent">
 	
-		<div class="section_header">Action Labels</div>
-		<div style="width:500px;" id="actionsByLabelExplorer"></div>
 		
-		<script>
+		<div style="width:;" id="actionsByLabelExplorer"></div>
+				
+	</div>
+	
+	<div id="actionsByDate" class="owa_reportSectionContent">
+	
+		<div style="width:;" id="actionsByDateExplorer"></div>
 		
-		var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+	</div>
+	
+</div>
+
+<script type="text/javascript">
+	jQuery(function() {
+		jQuery("#owa-actions-workbook").tabs();
+	});
+	
+	jQuery('#owa-actions-workbook').bind('tabsshow', function(event, ui) {
+
+		if (ui.index === 0) {
+			
+			var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 														  'metrics' => 'actions,actionsValue', 
 														  'dimensions' => 'actionLabel', 
 														  'sort' => 'actions-', 
@@ -45,20 +56,14 @@
 														  'format' => 'json',
 														  'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId').'actionName=='.$actionName)), true);?>';
 														  
-		rsh = new OWA.resultSetExplorer('actionsByLabelExplorer');
-		rsh.load(aurl, 'grid');
-		</script>
+			rsh = new OWA.resultSetExplorer('actionsByLabelExplorer');
+			rsh.load(aurl, 'grid');
+			
+		}
 		
-	</div>
-	
-	<div id="actionsByDate" class="owa_reportSectionContent">
-	
-		<div class="section_header">Actions By Day</div>
-		<div style="width:500px;" id="actionsByDateExplorer"></div>
-		
-		<script>
-		
-		var aurl2 = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+		if (ui.index === 1) {
+			
+			var aurl2 = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 														  'metrics' => 'actions,actionsValue', 
 														  'dimensions' => 'date', 
 														  'sort' => 'date-', 
@@ -66,12 +71,16 @@
 														  'format' => 'json',
 														  'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId').'actionName=='.$actionName)), true);?>';
 														  
-		rsh2 = new OWA.resultSetExplorer('actionsByDateExplorer');
-		rsh2.load(aurl2, 'grid');
-		</script>
+			rsh2 = new OWA.resultSetExplorer('actionsByDateExplorer');
+			rsh2.load(aurl2, 'grid');		
+		}
 		
-	</div>
-	
-</div>
+    // Objects available in the function context:
+    //ui.tab     // anchor element of the selected (clicked) tab
+    //ui.panel   // element, that contains the selected/clicked tab contents
+    //ui.index   // zero-based index of the selected (clicked) tab
 
+	});
+	
+</script>
 

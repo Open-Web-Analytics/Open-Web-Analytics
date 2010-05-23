@@ -106,6 +106,7 @@ class owa_baseModule extends owa_module {
 		
 		// denormalized date dimensions
 		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('medium', 'base.session', 'source', 'Medium', 'visit', 'The medium used to deliver the visit.', '', true);
 		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
 		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visit', 'The month.', '', true);
 		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visit', 'The year.', '', true);
@@ -143,9 +144,9 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('referralWebSite', 'base.referer', 'site', 'Referral Web Site', 'traffic sources', 'The full domain of the referring web site.');
 		
 		// content
-		$this->registerDimension('pageUrl', 'base.document', 'url', 'Entry Page URL', 'content', 'The URL of the web page.');
-		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Entry Page Title', 'content', 'The title of the web page.');
-		$this->registerDimension('pageType', 'base.document', 'page_type', 'Entry Page Type', 'content', 'The page type of the web page.');
+		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.');
+		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.');
+		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.');
 		
 		// register CLI commands
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
@@ -201,7 +202,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
 		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
+		//$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryExits', 'Entry & Exit Pages', 3);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 4);

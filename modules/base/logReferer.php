@@ -75,7 +75,7 @@ class owa_logRefererController extends owa_controller {
 			if (strstr($event->get('HTTP_REFERER'), $event->get('HTTP_HOST')) == false):
 				$qt = $this->extractSearchTerms($event->get('HTTP_REFERER'));
 				if (!empty($qt)):
-					$r->set('query_terms', strtolower($qt));
+					$r->set('query_terms', $event->get('query_terms'));
 					$r->set('is_searchengine', true);
 				endif;
 			endif;
@@ -139,28 +139,7 @@ class owa_logRefererController extends owa_controller {
 	}
 	
 
-	/**
-	 * Parses query terms from referer
-	 *
-	 * @param string $referer
-	 * @return string
-	 * @access private
-	 */
-	function extractSearchTerms($referer) {
 	
-		/*	Look for query_terms */
-		$db = new ini_db(owa_coreAPI::getSetting('base', 'query_strings.ini'));
-		
-		$match = $db->match($referer);
-		
-		if (!empty($match[1])):
-		
-			return urldecode($match[1]);
-		
-		endif;
-		
-		return;
-	}
 	
 	
 }
