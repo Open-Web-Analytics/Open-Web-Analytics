@@ -13,39 +13,29 @@ OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($para
 </SCRIPT>
 
 <div id="<?php echo $dom_id;?>" class="owa_reportContainer">
-	
 
-<table width="100%" cellpadding=0 cellspacing=0>
-	<TR>
-		<TD valign="top" class="owa_reportLeftNavColumn">
-			<div id="owa_reportNavPanel">
-				<?php //$this->makeTwoLevelNav($top_level_report_nav);?>
-				<?php echo $this->makeNavigationMenu($top_level_report_nav);?>
-			</div>
-			
-		</TD>
-		<TD valign="top" width="*">
-		
-			<div id="" class="owa_genericHorizontalList owa_reportHeaderControls">
-				<UL>
-					<LI>
-						<?php include('filter_site.tpl');?>
-					</LI>
-					<LI>
-						<div class="owa_reportPeriod owa_reportControl"><?php include('filter_period.tpl');?></div>	
-					</LI>
-				</UL>
-			</div>	
-			
-			<div class="" style="clear:both;"></div>
+	<table width="100%" cellpadding="0" cellspacing="0">
+		<TR>
+			<TD valign="top" class="owa_reportLeftNavColumn">
+				<div class="reportSectionContainer">
+					<div id="owa_reportNavPanel">
+					<?php include('filter_site.tpl');?>
+						<?php //$this->makeTwoLevelNav($top_level_report_nav);?>
+						<?php echo $this->makeNavigationMenu($top_level_report_nav);?>
+					</div>
+				</div>			
+			</TD>
+			<TD valign="top" width="*">
+				<div class="reportSectionContainer">
+					<div class="owa_reportPeriod" style="float:right;"><?php include('filter_period.tpl');?></div>	
+					<div class="owa_reportTitle"><?php echo $title;?><span class="titleSuffix"><?php echo $this->get('titleSuffix');?></span></div>
 					
-			<div class="owa_reportTitle"><?php echo $title;?></div>
-			<?php echo $subview;?>
-		
-		</TD>
-	</TR>
-</table>
-		
-	
+					<div class="clear"></div>
+					<?php echo $subview;?>
+				
+				</div>
+			</TD>
+		</TR>
+	</table>	
 	
 </div>

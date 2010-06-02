@@ -591,7 +591,7 @@
 			'use_remote_event_queue'		=> true,
 			'remote_event_queue_type'		=> 'http',
 			'remote_event_queue_endpoint'	=> '',
-			'cookie_domain'					=> '',
+			'cookie_domain'					=> false,
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
@@ -672,10 +672,12 @@
 		
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
-			$this->set('base','cookie_domain', $_SERVER['HTTP_HOST']);
-		} else {		
-			$this->set('base','cookie_domain', $_SERVER['SERVER_NAME']);
-		}
+			if ($_SERVER['HTTP_HOST'] != 'localhost') {
+				$this->set('base','cookie_domain', $_SERVER['HTTP_HOST']);
+			}
+		} //else {		
+			//$this->set('base','cookie_domain', $_SERVER['SERVER_NAME']);
+		//}
  		
  	}
  	

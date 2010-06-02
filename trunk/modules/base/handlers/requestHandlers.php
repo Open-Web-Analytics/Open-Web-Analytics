@@ -80,7 +80,7 @@ class owa_requestHandlers extends owa_observer {
 		$r->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 		
 		// Generate Host id
-		$r->set('host_id', owa_lib::setStringGuid($event->get('host')));
+		$r->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
 		
 		if ($event->get('external_referer')) {
 			$qt = $this->extractSearchTerms($event->get('HTTP_REFERER'));

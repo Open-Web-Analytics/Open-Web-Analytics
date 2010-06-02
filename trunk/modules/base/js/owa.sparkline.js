@@ -1,47 +1,49 @@
-OWA.sparkline = function() {
+OWA.sparkline = function(dom_id) {
 
-	this.config = OWA.config;
+	this.config = OWA.config || '';
 	
-	return;	
+	this.dom_id = dom_id || '';
+	
+	this.data = '';
+
+	this.options = {
+		width: '100px', 
+		height: '20px', 
+		spotRadius: 2, 
+		//lineColor: '', 
+		//spotColor: '',
+		minSpotColor: '#FF0000',
+		maxSpotColor: '#00FF00'
+	
+	};
+	
 }
 
 OWA.sparkline.prototype = {
-
-	properties: new Object,
-	
-	config: '',
-	
-	dom_id: '',
-	
-	data: '',
-	
-	height: "50px",
-	
-	width: "125px",
-	
-	options: {width: '125px', height: '20px', spotRadius: 2, lineColor: '#9f9f9f', fillColor: ''},
 	
 	render: function() {
 		
 		 jQuery('#' + this.dom_id).sparkline('html', this.options);
 	},
+	
+	loadFromArray :function(data) {
+		jQuery('#' + this.dom_id).sparkline(data, this.options);
+	},
 		
 	setHeight: function(height) {
 		
-		this.height = height;
+		this.options.height = height;
 		return;
 	},
 	
 	setWidth: function(width) {
 		
-		this.width = width;
 		this.options.width = width;
 	},
 	
 	setDomId: function(dom_id) {
 		
 		this.dom_id = dom_id;
-		return;
 	}
 	
 }

@@ -81,9 +81,10 @@ class owa_logRefererController extends owa_controller {
 			endif;
 		endif;
 		
+		// set title. this will be updated later by the crawler.
+		$r->set('page_title', $event->get('HTTP_REFERER'));
 		// Set id
 		$r->set('id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
-		
 		// Persist to database
 		$r->create();
 		
@@ -95,8 +96,13 @@ class owa_logRefererController extends owa_controller {
 			$res = $crawler->getRequest($event->get('HTTP_REFERER'), $response);
 			owa_coreAPI::debug(print_r($res, true));
 			//Extract Title
-			$r->set('page_title', $crawler->extract_title());
-		
+			
+			$title = $crawler->extract_title();
+			
+			if ($title) {
+				$r->set('page_title', $title);	
+			}			
+			
 			$se = $r->get('is_searchengine');
 			//Extract anchortext and page snippet but not if it's a search engine...
 			if ($se != true):

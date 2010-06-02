@@ -15,6 +15,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 	this.currentContainerWidth = '';
 	this.currentWindowWidth = '';
 	this.view = '';
+	this.asyncQueue = [];
 	
 	this.domSelectors = {
 		areaChart: '', 
@@ -24,7 +25,10 @@ OWA.resultSetExplorer = function(dom_id, options) {
 	this.options = {
 		defaultView: 'grid', 
 		areaChart: {
-			series:[]
+			series:[],
+			showDots: true,
+			showLegend: true,
+			lineWidth: 4
 		}, 
 		pieChart: { 
 			metric: '',
@@ -32,20 +36,40 @@ OWA.resultSetExplorer = function(dom_id, options) {
 			metrics: [],
 			numSlices: 5
 		},
-		grid: '',
-		chartHeight: 200, 
+		sparkline: {
+			metric: ''
+		},
+		grid: {
+			showRowNumbers: true
+		},
+		template: {
+			template: '',
+			params: '',
+			mode: 'append',
+			dom_id: ''
+		},
+		metricBoxes: {
+			width: ''
+		},
+		chart: {showGrid: true},
+		chartHeight: 125, 
 		chartWidth:700,
 		autoResizeCharts: true,
-		views:['grid', 'areaChart','pie']
+		views:['grid', 'areaChart','pie', 'sparkline']
 	};
+	
+	this.viewObjects = {};
 };
 
 OWA.resultSetExplorer.prototype = {
 	
+	//remove
 	viewMethods: {
 		grid: 'refreshGrid', 
 		areaChart: 'makeAreaChart', 
-		pie: 'makePieChart'
+		pie: 'makePieChart',
+		sparkline: 'makeSparkline',
+		template: 'renderTemplate'
 	},
 	
 	getOption : function(name) {
@@ -56,6 +80,11 @@ OWA.resultSetExplorer.prototype = {
 	setView : function(name) {
 		
 		this.view = name;
+	},
+	
+	getAggregates : function() {
+		
+		return this.resultSet.aggregates;
 	},
 	
 	// called after data is rendered for a view
@@ -83,19 +112,16 @@ OWA.resultSetExplorer.prototype = {
 	
 	loadFromArray : function(json, view) {
 	
-		view = view || 'grid';
-		
-		this.injectDomElements();
-		this.setResultSet(json);
-		this.displayGrid();
-	},
-	
-	load : function(url, view) {
-	
 		if (view) {
 			this.view = view;
 		}
 		
+		this.loader(json);
+		
+	},
+	
+	load : function(url) {
+	
 		this.getResultSet(url);
 	},
 	
@@ -107,6 +133,17 @@ OWA.resultSetExplorer.prototype = {
 		this.gridInit = true;
 		this.currentView = 'grid';
 		
+	},
+	
+	makeGrid : function(dom_id) {
+		
+		dom_id = dom_id || this.dom_id;
+		
+		//if (typeof this.viewObjects[dom_id] != 'undefined') {
+			this.viewObjects[dom_id] = new OWA.dataGrid(dom_id);
+		//}
+	
+		this.viewObjects[dom_id].makeGrid(this.resultSet);
 	},
 		
 	refreshGrid : function() {
@@ -142,16 +179,37 @@ OWA.resultSetExplorer.prototype = {
 	loader : function(data) {
 		
 		if (data) {
+			// check to see if resultSet is new 
+			if (this.resultSet.length > 0) {
+				// if not new then return. nothing to do.
+				if (data.resultSet.guid === this.resultSet.guid) {
+					return;
+				}
+					
+			}
+			
 			this.setResultSet(data);
-		}
-		
-		if (!this.view) {
-			this.view = this.getOption('defaultView');
-		} 
-		
-		var method_name = this.viewMethods[this.view];
-		
-		this[method_name]();		
+				
+			if (this.view) {
+				var method_name = this.viewMethods[this.view];
+				this[method_name]();	
+			}
+			
+			if (this.asyncQueue.length > 0) {
+				
+				for(var i=0;i< this.asyncQueue.length;i++) {
+					
+					this.dynamicFunc(this.asyncQueue[i]);
+				}
+			}	
+		}	
+	},
+	
+	dynamicFunc : function (func){
+		//alert(func[0]);
+		var args = Array.prototype.slice.call(func, 1);
+		//alert(args);
+    	this[func[0]].apply(this, args);
 	},
 	
 	// fetch the result set from the server
@@ -234,7 +292,7 @@ OWA.resultSetExplorer.prototype = {
 				repeatitems: false,
 		   		root: "resultsRows",
 		   		cell: '',
-		   		id: 0,
+		   		id: '',
 		   		page: 'page',
 		   		total: 'total_pages',
 		   		records: 'resultsReturned'
@@ -242,7 +300,7 @@ OWA.resultSetExplorer.prototype = {
 			afterInsertRow: function(rowid, rowdata, rowelem) {return;},
 			datatype: 'local',
 			colModel: columns,
-			rownumbers: true,
+			rownumbers: that.options.grid.showRowNumbers,
 			viewrecords: true,
 			rowNum: that.resultSet.resultsReturned,
 			height: '100%',
@@ -255,10 +313,12 @@ OWA.resultSetExplorer.prototype = {
 			// urlFormatter allows for a single param substitution.
     		urlFormatter : function(cellvalue, options, rowdata) {
     			var sub_value = options.rowId;
+    			//alert(options.rowId);
     			var name = options.colModel.realColName; 
     			//var name = 'actionName';
     			//alert(that.columnLinks[name].template);
-    			var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
+    			//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
+    			var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
     			var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
     			return link;
 			}
@@ -382,16 +442,19 @@ OWA.resultSetExplorer.prototype = {
 					for (var y in this.columnLinks) {
 						
 						//alert(this.dom_id + ' : '+y);
-						//alert(this.columnLinks[y]);
+						
 						if (this.resultSet.resultsRows[i][y].name.length > 0) {
 							//if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
 							for (var z in this.columnLinks[y].params) {
-								
+								//alert(this.columnLinks[y].params[z]);	
+									
 								var template = this.columnLinks[y].template.replace(this.columnLinks[y].params[z] + '=%s', this.columnLinks[y].params[z] + '=' + this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value); 
+							
 							}
 							
 							
 							this.resultSet.resultsRows[i][this.columnLinks[y].name].link = template;
+							
 						}						
 						
 					}
@@ -422,17 +485,20 @@ OWA.resultSetExplorer.prototype = {
 		
 	},
 	
-	setupAreaChart : function() {
+	setupAreaChart : function(series, dom_id) {
 		
-		this.domSelectors.areaChart = "#"+this.dom_id + ' > .owa_barChart';
+		dom_id = dom_id || this.dom_id;
+		this.domSelectors.areaChart = "#"+dom_id + ' > .owa_areaChart';
 		
 		var that = this;
-		
-		
+	
 		var w = this.getContainerWidth();
 		var h = this.getContainerHeight() || this.getOption('chartHeight');
 		
-		jQuery("#"+that.dom_id).append('<div class="owa_barChart"></div>');
+		
+		jQuery("#"+dom_id).append('<div class="owa_areaChart"></div>');
+		
+		
 		jQuery(that.domSelectors.areaChart).css('width', w);
 		jQuery(that.domSelectors.areaChart).css('height', h);
 		
@@ -468,7 +534,7 @@ OWA.resultSetExplorer.prototype = {
     		//alert(sel);
     		//var that = this;
     		var chartw =jQuery(sel).width(); 
-    		var containerw = jQuery("#"+that.dom_id).width();
+    		var containerw = jQuery("#"+dom_id).width();
     		var ccontainerw = that.currentContainerWidth;
     		var ww = jQuery(window).width();
     		OWA.debug('cur-container-w: '+ccontainerw);
@@ -479,7 +545,7 @@ OWA.resultSetExplorer.prototype = {
 	    		
 	    		var d = that.currentWindowWidth - ww;
 	    		jQuery(sel).css('width', chartw - d);
-    			that.makeAreaChart();
+    			that.makeAreaChart(series, dom_id);
     		}
     		that.currentContainerWidth = containerw;
     		that.currentWindowWidth = ww;
@@ -493,10 +559,11 @@ OWA.resultSetExplorer.prototype = {
 	/**
 	 * Main method for displaying an area chart
 	 */
-	makeAreaChart : function() {
+	makeAreaChart : function(series, dom_id) {
 		
+		dom_id = dom_id || this.dom_id;
 		var dataseries = [];
-		var series = this.options.areaChart.series;
+		series = series || this.options.areaChart.series;
 		
 		for(var ii=0;ii<=series.length -1;ii++) {
 		
@@ -516,13 +583,13 @@ OWA.resultSetExplorer.prototype = {
 			
 		}
 		
-		var that = this;
+		//var that = this;
 		
-		var selector = "#"+that.dom_id + ' > .owa_barChart';
+		var selector = "#"+dom_id + ' > .owa_areaChart';
 		
-		if(jQuery("#"+that.dom_id + ' > .owa_barChart').length == 0) {
+		if(jQuery("#"+dom_id + ' > .owa_areaChart').length == 0) {
 		
-			this.setupAreaChart();
+			this.setupAreaChart(series, dom_id);
 		}
 		
 		var options = { 
@@ -535,16 +602,21 @@ OWA.resultSetExplorer.prototype = {
 				//mode: "time",
     			//timeformat: "%y/%m/%d"
     		},
-			grid: {show:true, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
+			grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
 			series: {
-				points: { show: true, fill: true},
-				lines: { show: true, fill: true, fillColor: "rgba(202,225,255, 0.6)", lineWidth: 4}
+				points: { show: this.options.areaChart.showDots, fill: this.options.areaChart.showDots},
+				lines: { show: true, fill: true, fillColor: "rgba(202,225,255, 0.6)", lineWidth: this.options.areaChart.lineWidth}
 				
 			},
-			colors: ["#1874CD", "#dba255", "#919733"]
+			colors: ["#1874CD", "#dba255", "#919733"],
+			legend: {
+				position: 'ne',
+				margin: [0,-10],
+				show:this.options.areaChart.showLegend
+			}
 		};
 		jQuery.plot(jQuery(selector), dataseries, options);
-		this.currentContainerWidth = jQuery("#"+that.dom_id).width();
+		this.currentContainerWidth = jQuery("#"+dom_id).width();
 		this.currentWindowWidth = jQuery(window).width();	
 	},
 	
@@ -572,12 +644,22 @@ OWA.resultSetExplorer.prototype = {
     	}
     },
     
+    getMetricValue : function(name) {
+    	//alert(this.resultSet.aggregates[name].label);
+    	if (this.resultSet.aggregates[name].value.length > 0) {
+    		return this.resultSet.aggregates[name].value;
+    	} else {
+    		return 0;
+    	}
+    },
+
+    
     setupPieChart : function() {
     	
     	var that = this;
     	var w = this.getContainerWidth();
     	//alert(w);
-		var h = this.getOption('chartHeight');
+		var h = this.getContainerWidth(); //this.getOption('chartHeight');
 		//alert(h);
     	jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
 		jQuery(that.domSelectors.pieChart).css('width', w);
@@ -653,11 +735,126 @@ OWA.resultSetExplorer.prototype = {
 			legend: {
 				show: false
 			},
-			colors: ["#1874CD", "#dba255", "#919733"]
+			colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
 		};
 	    
     	// GRAPH
 		jQuery.plot(jQuery(selector), data, options);
 		this.init.pieChart = true;
+    },
+    
+    renderTemplate : function(template, params, mode, dom_id) {
+    	
+    	template = template || this.options.template.template;
+    	params = params || this.options.template.params;
+    	mode = mode || this.options.template.mode;
+    	dom_id = dom_id || this.options.template.dom_id || this.dom_id;
+    	//jQuery.jqotetag('*');
+    	//dom_id = dom_id || this.dom_id; 
+    	
+    	if (mode === 'append') {
+    		
+      		jQuery('#' + dom_id).jqoteapp(template, params);
+    	} else if (mode === 'prepend') {
+    		jQuery('#' + dom_id).jqotepre(template, params);
+    	} else if (mode === 'replace') {
+    		jQuery('#' + dom_id).jqotesub(template, params);
+    	}
+    },
+    
+    makeSparkline : function(metric_name, dom_id) {
+    	metric_name = metric_name || this.options.sparkline.metric;
+    	dom_id = dom_id || this.dom_id;
+    	var sl = new OWA.sparkline(dom_id);
+    	var data = this.getSeries(metric_name);
+    	
+    	if (!data) {
+    		data = [0,0,0];
+    	}
+    	sl.loadFromArray(data); 
+    	
+    	this.currentView = 'sparkline';
+    },
+    
+    getSeries : function(value_name, value_name2) {
+    	
+    	if (this.resultSet.resultsRows.length > 0) {
+    		
+	    	var series = [];
+	    	//create data array
+			for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
+			
+				if (value_name2) {
+					var item =[this.resultSet.resultsRows[i][value_name].value, this.resultSet.resultsRows[i][value_name2].value];
+				} else {
+					var item = this.resultSet.resultsRows[i][value_name].value;
+					
+				}
+					
+				series.push(item);
+			}
+			
+			return series;
+		}
+    },
+    
+    makeMetricBoxes : function(dom_id, template, label, metrics) {
+    	dom_id = dom_id || this.dom_id;
+    	template = template || '#metricInfobox';
+    	
+    	for(var i in this.resultSet.aggregates) {
+    		var item = this.resultSet.aggregates[i];
+    		item.dom_id = dom_id+'-'+this.resultSet.aggregates[i].name+'-'+this.resultSet.guid;
+    		if (label) {
+	    		item.label = label;
+    		}
+    		
+    		if (this.options.metricBoxes.width) {
+    			item.width = this.options.metricBoxes.width;
+    		}
+    		jQuery('#' + dom_id).jqoteapp(template, item);
+    		this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline');		
+    	}
+    },
+    
+    renderResultsRows : function(dom_id, template) {
+    	
+    	if (this.resultSet.resultsRows.length > 0) {
+	    	var that = this;
+	    	dom_id = dom_id || this.dom_id;
+	    	
+	    	var table = '';
+	    	var data = [];
+	    	//re-order the data into an array
+	    	for (item in this.resultSet.resultsRows[0]) {
+	    		data.push(this.resultSet.resultsRows[0][item]);
+	    	}
+	    	
+	    	//make table headers
+	    	var ths = jQuery('#simpleTable-headers').jqote(data); 
+	    	// make outer table
+	    	table = jQuery('#simpleTable-outer').jqote({dom_id: dom_id+'_simpleTable', headers: ths});
+	    	// add to dom
+	    	jQuery('#'+dom_id).html(table);
+	    	// append rows
+	    	
+	    	
+	    	for(i=0;i<= this.resultSet.resultsRows.length -1;i++) {
+	    	
+	    		var cells = '';
+	    		for (item in this.resultSet.resultsRows[i]) {
+	    			cells += jQuery('#table-column').jqote(this.resultSet.resultsRows[i][item]);
+	    		}
+	    		
+	    		var row = jQuery('#table-row').jqote({columns: cells});
+	   			jQuery('#'+dom_id+'_simpleTable').append(row);	
+	    	}
+	    	
+	    	
+	    	
+		} else {
+			jQuery('#'+dom_id).html("No results to display.");
+		}
     }
+    
 };

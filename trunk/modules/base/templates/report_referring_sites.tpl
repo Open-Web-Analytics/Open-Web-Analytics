@@ -1,3 +1,7 @@
+<div class="owa_reportSectionContent">
+
+</div>
+
 <div class="owa_reportSectionHeader">
 	There were <?php echo $summary_stats['sessions'];?> visits from Referring Web Sites.
 </div>

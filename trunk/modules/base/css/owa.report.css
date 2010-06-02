@@ -1,29 +1,47 @@
 /* REPORT CSS */
+
+ul {margin-left:10px;}
 .owa {background-color: #efefef; font-family: Helvetica, Arial, sans-serif;}
 #report_header {width:100%; margin: 0 0 20px 0; }
 
 .owa_reportTitle, .report_headline {
 	font-size:26px; 
-	padding:5px; 
+	padding:5px 5px 5px 0px; 
 	font-weight:bold; 
 	color:#505050;
-	margin-bottom:10px
+	margin-bottom:20px;
+}
+
+.titleSuffix {
+	
+	font-weight: normal;
+	font-size: 20px;
 }
 
 .owa_reportContainer {width:auto; background-color:}
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
 .owa_reportSectionHeader, .section_header {
 	width:auto; 
+	padding-top:5px;
 	padding-bottom:10px; 
-	margin: 0px 0 10px 0; 
-	font-size: 16px; 
+	margin: 10px 0 10px 0; 
+	font-size: 18px; 
 	font-weight: ;
 	color: #666666;
+	border-top: 4px solid #cccccc;
 }
 
-.owa_reportSectionContent {
-	margin: 5px; 
-	padding:5px 10px 5px 10px; 
+.owa_reportHeadline {
+	font-weight:bold;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size:20px;
+	margin: 10px 0 10px 0;
+	color: #505050;
+}
+
+.reportSectionContainer {
+	margin: 10px;
+	padding:7px 7px 7px 7px; 
 	background-color: #ffffff;
 	-moz-border-radius:5px 5px 5px 5px;
 	-moz-box-shadow:2px 2px 2px 1px #9f9f9f;
@@ -31,10 +49,21 @@
 	box-shadow:2px 2px 2px 1px #9f9f9f;
 	-webkit-border-radius:5px 5px 5px 5px;
 	-webkit-box-shadow:2px 2px 2px 1px #9f9f9f;
+
+}
+
+.owa_reportSectionContent {
+	margin: 0 10px 0 10px;
+	padding:0px 7px 7px 0px; 
+	background-color: #ffffff;
 }
 
 #owa_reportHeader {
 	color:#505050; background-color:#cccccc;
+}
+
+.ui-jqgrid tr.jqgrow td {
+	font-size:10px;
 }
 
 .clear {
@@ -52,20 +81,26 @@
 
 .owa_moreLinks {
 	
-	text-align: right;
+	text-align:left;
 	margin-top:6px;
 	padding:2px;
 }
 
 .owa_moreLinks li {
-	border-top:3px solid #cccccc;
+	border-bottom:0px solid #cccccc;
+	text-align: right;
+	padding: 0px 0px 0px 0px;
+	
 }
-.owa_moreLinks li:hover {
-	border-top:3px solid orange;
+.owa_moreLinks a:hover {
+	border-bottom:2px solid orange;
 }
 
 .owa_moreLinks li a {
 	border:0px solid #ffffff;
+	font-size:10px;
+	text-decoration: none;
+	padding-left:0px;
 }
 
 .data_table {border-collapse: collapse;margin:0;width:100%;}
@@ -125,27 +160,28 @@
 	border: 1px solid #cccccc;
 	padding:0px; 
 	margin:3px; 
-	min-width:110px; 
+	min-width:110px;
+	width:100%; 
 	float:left;
 	
 }
 
-.owa_metricInfobox p {
+.owa_metricInfobox p,span {
 	padding:0px 7px 0px 7px;
 	margin:0px;
 	
 }
 
-p.owa_metricInfoboxLabel {
+p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel  {
 	color:#666666;
-	font-size:14px;
+	font-size:12px;
 	padding-top:6px;
 	margin-bottom:0px;
 }
 
-p.owa_metricInfoboxLargeNumber {
-	color:#000000;
-	font-size:32px;
+p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
+	color:#505050;
+	font-size:28px;
 	padding-bottom: 0px;
 	font-family: "Helvetica";
 	margin-top:5px;
@@ -156,7 +192,7 @@ p.owa_metricInfoboxLargeNumber {
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
 
 .owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
-.owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;}
+.owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}
 .owa_admin_nav_topmenu {
 	padding:0px;
 	border:1px solid #cccccc; 
@@ -349,4 +385,28 @@ p.owa_metricInfoboxLargeNumber {
 	text-decoration: underline;
 	color: blue;
 }
+
+.simpleTable {
+	font-size:12px;
+	width:100%;
+}
+
+.simpleTable th {
+	background-color: #efefef;
+	border-bottom: 1px solid #cccccc;
+	border-right: 1px solid #cccccc;
+	padding: 4px 5px 4px 5px;
+}
+
+.simpleTable td {
+	padding:3px 5px 3px 5px;
+	font-size:10px;
+
+}
+
+.metriccell {
+	text-align:right;
+	width:100px;
+}
+
 
