@@ -51,7 +51,10 @@
 
 </div>
 
+<?php if (!$this->get('hideGrid')):?>
 <div class="owa_reportSectionContent">
+	
+	
 	
 	<div id="dimension-grid"></div>
 	
@@ -74,9 +77,9 @@
 		dim.asyncQueue.push(['refreshGrid']);
 		dim.load(dimurl);
 	</script>
-	
-</div>
 
+</div>
+<?php endif;?>
 <script type="text/x-jqote-template" id="metricInfobox">
  <![CDATA[
  
