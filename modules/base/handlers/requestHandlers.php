@@ -19,7 +19,7 @@
 if(!class_exists('owa_observer')) {
 	require_once(OWA_BASE_DIR.'owa_observer.php');
 }
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
+
 
 /**
  * Request Event Handler
@@ -82,14 +82,6 @@ class owa_requestHandlers extends owa_observer {
 		// Generate Host id
 		$r->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
 		
-		if ($event->get('external_referer')) {
-			$qt = $this->extractSearchTerms($event->get('HTTP_REFERER'));
-			
-			if ($qt) {
-				$event->set('query_terms', $qt);
-			}
-		}
-		
 		$result = $r->create();
 		
 		if ($result == true) {
@@ -98,28 +90,6 @@ class owa_requestHandlers extends owa_observer {
 			$eq->notify($event);
 		}
 		
-	}
-	
-	
-	/**
-	 * Parses query terms from referer
-	 *
-	 * @param string $referer
-	 * @return string
-	 * @access private
-	 */
-	function extractSearchTerms($referer) {
-	
-		/*	Look for query_terms */
-		$db = new ini_db(owa_coreAPI::getSetting('base', 'query_strings.ini'));
-		
-		$match = $db->match($referer);
-		
-		if (!empty($match[1])) {
-		
-			return trim(strtolower(urldecode($match[1])));
-		
-		}
 	}
 }
 

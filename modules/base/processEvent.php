@@ -19,6 +19,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
 
 /**
  * Generic Event Processor Controller
@@ -162,14 +163,27 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		// set internal referer
-		$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
-		$page_parse = parse_url($this->event->get('page_url'));
-		if ($referer_parse['host'] === $page_parse['host']) {
-			$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
-		} else {
-			$this->event->set('external_referer', true);
+		if ($this->event->get('HTTP_REFERER')) {
+			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
+			$page_parse = parse_url($this->event->get('page_url'));
+			//print_r('ref '.$referer_parse['host']);
+			//print_r('page '.$this->event->get('page_url'));
+			//print_r('pageparse '.$page_parse['host']);
+			if ($referer_parse['host'] === $page_parse['host']) {
+				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
+			} else {
+				
+				$this->event->set('external_referer', true);
+			
+				// set query terms
+				$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
+				
+				if ($qt) {
+					$this->event->set('query_terms', $qt);
+				}
+			}
 		}
-		
+				
 		// Filter the target url of clicks
 		if ($this->event->get('target_url')) {
 			$this->event->set('target_url', $this->eq->filter('target_url', $this->event->get('target_url')));
@@ -322,6 +336,27 @@ class owa_processEventController extends owa_controller {
 		
 		return crc32(getmypid().time().rand().$this->event->get('site_id'));
 		
+	}
+	
+	/**
+	 * Parses query terms from referer
+	 *
+	 * @param string $referer
+	 * @return string
+	 * @access private
+	 */
+	function extractSearchTerms($referer) {
+	
+		/*	Look for query_terms */
+		$db = new ini_db(owa_coreAPI::getSetting('base', 'query_strings.ini'));
+		
+		$match = $db->match($referer);
+		
+		if (!empty($match[1])) {
+		
+			return trim(strtolower(urldecode($match[1])));
+		
+		}
 	}
 }
 
