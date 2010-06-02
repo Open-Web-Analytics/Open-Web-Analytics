@@ -1,34 +1,4 @@
-
-<div class="owa_reportSectionContent">
-	<div class="owa_reportSectionHeader">Trends</div>	
-	<div style="min-width:500px;" id="actionsTrend"></div>
-	<script>
-	
-		var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-														  'metrics' => 'actions', 
-														  'dimensions' => 'date', 
-														  'sort' => 'date', 
-														  'format' => 'json'), true);?>';
-														  
-		var trend = new OWA.resultSetExplorer('actionsTrend');
-		trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y:'actions'}]]);
-		trend.load(trendurl);
-	</script>
-	
-	<table cellpadding="0" cellspacing="0" width="100%">
-	<tr>
-		<td valign="top">
-		<?php foreach($aggregates->aggregates as $row):?>
-			<div class="owa_metricInfobox">
-				<p class="owa_metricInfoboxLabel"><?php echo $row['label'];?></p>
-				<p class="owa_metricInfoboxLargeNumber"><?php echo $row['value'];?></p>	
-			</div>
-		<?php endforeach;?>
-		</td>
-	</tr>
-</table>
-
-</div>
+<? include('report_dimensionalTrend.php');?>
 
 
 <table width="100%">

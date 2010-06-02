@@ -41,24 +41,18 @@ class owa_reportActionTrackingController extends owa_reportController {
 	
 	function action() {
 		
-		
-		// action counts	
-		$params = array('period' 	  => $this->get('period'),
-						'startDate'	  => $this->get('startDate'),
-						'endDate'	  => $this->get('endDate'),
-						'metrics' 	  => 'actions,uniqueActions,actionsPerVisit',
-						'constraints' => 'site_id='.$this->getParam('site_id'),
-						'do'		  => 'getResultSet'
-						);
-						
-		$rs = owa_coreAPI::executeApiCommand($params);	
-		//print_r($rs);			
-		$this->set('aggregates', $rs);
-		
-		
-		// set view stuff
 		$this->setSubview('base.reportActionTracking');
-		$this->setTitle('Action Tracking');		
+		$this->setTitle('Actions');
+		$this->set('metrics', 'actions,uniqueActions,actionsValue,actionsPerVisit');
+		//$this->set('dimensions', 'pageTitle,pageUrl');
+		$this->set('sort', 'actions');
+		$this->set('resultsPerPage', 30);
+		$this->set('dimensionLink', array('linkColumn' => 'pageTitle', 
+												'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
+												'valueColumns' => 'pageUrl'));
+		$this->set('trendChartMetric', 'actions');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.value %> actions performed on all pages.');
+				
 	}
 }
 
@@ -83,11 +77,18 @@ class owa_reportActionTrackingView extends owa_view {
 	
 	function render() {
 		
+		// Assign Data to templates
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set('hideGrid', true);
 		$this->body->set_template('report_actionTracking.php');
-		$this->body->set('aggregates', $this->get('aggregates'));
-		
-		
-		//$actionsByName->addLinkToRowItem('actionName', $this->body->makeLink(array('do' => 'reportActionTrend', 'actionName' => '%s'), true), array('actionName'));			
 	}
 }
 
