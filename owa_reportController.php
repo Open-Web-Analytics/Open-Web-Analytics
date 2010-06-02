@@ -86,10 +86,10 @@ class owa_reportController extends owa_adminController {
 		return;
 	}
 	
-	function setTitle($title) {
+	function setTitle($title, $suffix = '') {
 		
-		$this->data['title'] = $title;
-		return;
+		$this->set('title', $title);
+		$this->set('titleSuffix', $suffix);
 	}
 }
 

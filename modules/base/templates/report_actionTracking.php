@@ -1,5 +1,19 @@
-<div class="owa_reportSectionHeader">Metrics</div>
+
 <div class="owa_reportSectionContent">
+	<div class="owa_reportSectionHeader">Trends</div>	
+	<div style="min-width:500px;" id="actionsTrend"></div>
+	<script>
+	
+		var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+														  'metrics' => 'actions', 
+														  'dimensions' => 'date', 
+														  'sort' => 'date', 
+														  'format' => 'json'), true);?>';
+														  
+		var trend = new OWA.resultSetExplorer('actionsTrend');
+		trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y:'actions'}]]);
+		trend.load(trendurl);
+	</script>
 	
 	<table cellpadding="0" cellspacing="0" width="100%">
 	<tr>
@@ -16,43 +30,49 @@
 
 </div>
 
-<div class="section_header">Actions by Name</div>
-<div class="owa_reportSectionContent">
 
-	<div style="width:500px;" id="actionsByNameExplorer"></div>
-	<script>
-	
-	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-													  'metrics' => 'actions', 
-													  'dimensions' => 'actionName', 
-													  'sort' => 'actions-', 
-													  'resultsPerPage' => 5,
-													  'format' => 'json'), true);?>';
-													  
-	rsh = new OWA.resultSetExplorer('actionsByNameExplorer');
-	var link = '<?php echo $this->makeLink(array('do' => 'base.reportActionDetail', 'actionName' => '%s'), true);?>';
-	rsh.addLinkToColumn('actionName', link, ['actionName']);
-	rsh.load(aurl, 'grid');
-	</script>
-
-<BR>
-</div>
-
-<div class="section_header">Actions By Group</div>
-<div class="owa_reportSectionContent">
-	<div style="width:500px;" id="actionsByGroupExplorer"></div>
-	<script>
-	var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-												  'metrics' => 'actions', 
-												  'dimensions' => 'actionGroup', 
-												  'sort' => 'actions-', 
-												  'resultsPerPage' => 5,
-												  'format' => 'json'), true);?>';
-												  
-	rshre = new OWA.resultSetExplorer('actionsByGroupExplorer');
-	rshre.load(url);
-	</script>
-
-
-</div>
+<table width="100%">
+	<TR>
+		<TD valign="top" style="width:50%;">
+			<div class="owa_reportSectionContent">
+				<div class="section_header">Actions by Name</div>
+				<div style="min-width:250px;" id="actionsByNameExplorer"></div>
+				<script>
+				
+				var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+																  'metrics' => 'actions', 
+																  'dimensions' => 'actionName', 
+																  'sort' => 'actions-', 
+																  'resultsPerPage' => 5,
+																  'format' => 'json'), true);?>';
+																  
+				rsh = new OWA.resultSetExplorer('actionsByNameExplorer');
+				var link = '<?php echo $this->makeLink(array('do' => 'base.reportActionDetail', 'actionName' => '%s'), true);?>';
+				rsh.addLinkToColumn('actionName', link, ['actionName']);
+				rsh.asyncQueue.push(['refreshGrid']);
+				rsh.load(aurl, 'grid');
+				</script>
+			</div>
+		</TD>
+		
+		<TD valign="top" style="width:50%;">
+			<div class="owa_reportSectionContent">
+				<div class="section_header">Actions By Group</div>
+				<div style="min-width:300px;" id="actionsByGroupExplorer"></div>
+				<script>
+				var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+															  'metrics' => 'actions', 
+															  'dimensions' => 'actionGroup', 
+															  'sort' => 'actions-', 
+															  'resultsPerPage' => 5,
+															  'format' => 'json'), true);?>';
+															  
+				rshre = new OWA.resultSetExplorer('actionsByGroupExplorer');
+				rshre.asyncQueue.push(['refreshGrid']);
+				rshre.load(url);
+				</script>
+			</div>
+		</TD>
+	</TR>
+</table>
 

@@ -50,6 +50,7 @@ class owa_reportView extends owa_view {
 		
 		// Set Page headline
 		$this->body->set('title', $this->get('title'));
+		$this->body->set('titleSuffix', $this->get('titleSuffix'));
 		
 		// Report Period Filters
 		$this->body->set('reporting_periods', owa_lib::reporting_periods());
@@ -109,9 +110,11 @@ class owa_reportView extends owa_view {
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
 		$this->setJs('flot','base/js/includes/jquery/flot/jquery.flot.min.js');
 		$this->setJs('flot-pie','base/js/includes/jquery/flot/jquery.flot.pie.js');
+		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
 		$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
+		$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("swfobject", "base/js/includes/swfobject.js");
 		$this->setJs("json2", "base/js/includes/json2.js");
@@ -181,6 +184,74 @@ class owa_reportView extends owa_view {
 		return;
 	}
 	
+	
+}
+
+/**
+ *  Dimension Report View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_reportDimensionView extends owa_view {
+	
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
+		
+		// Assign Data to templates
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set_template('report_dimensionalTrend.php');
+	}
+	
+}
+
+/**
+ *  Dimension Detail Report View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_reportDimensionDetailView extends owa_view {
+	
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
+		
+		// Assign Data to templates
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimension', $this->get('dimension'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set_template('report_dimensionDetail.php');
+	}
 	
 }
 

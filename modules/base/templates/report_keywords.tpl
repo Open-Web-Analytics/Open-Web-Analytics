@@ -1,13 +1,13 @@
 <div class="owa_reportSectionHeader">There were <?php echo $summary_stats['sessions'];?> visits from Search Engines.</div>
 <div class="owa_reportSectionContent">
 
-<?php include('report_traffic_summary_metrics.tpl');?>
+
 
 </div>
 
-<div class="owa_reportSectionHeader">Top keywords that drove traffic</div> 
+
 <div class="owa_reportSectionContent">
-				
+<div class="owa_reportSectionHeader">Top keywords that drove traffic</div> 				
 <?php if (!empty($keywords)):?>
 <table class="tablesorter">
 	<thead>

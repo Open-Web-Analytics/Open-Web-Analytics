@@ -33,11 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportDocumentController extends owa_reportController {
 	
-	function owa_reportDocumentController($params) {
-		
-		return owa_reportDocumentController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		return parent::__construct($params);
@@ -45,56 +40,19 @@ class owa_reportDocumentController extends owa_reportController {
 	
 	function action() {
 		
-		// document request trends
-		$r = owa_coreAPI::metricFactory('base.requestCountsByDay');
-		$period = $this->makeTimePeriod('last_thirty_days');
-		$r->setPeriod($period);
-		$r->setConstraint('site_id', $this->getParam('site_id')); 
-		$r->setConstraint('document_id', $this->getParam('document_id')); 
-		$r->setOrder('ASC');
-		$core_metrics_data =  $r->generate();
-		$this->set('core_metrics_data', $core_metrics_data);
+		$pageUrl = $this->getParam('pageUrl');
 		
-		// document counts
-		$rc = owa_coreAPI::metricFactory('base.requestCounts');
-		$rc->setPeriod($this->getPeriod());
-		$rc->setConstraint('site_id', $this->getParam('site_id')); 
-		$rc->setConstraint('document_id', $this->getParam('document_id')); 
-		$this->set('summary_stats_data', $rc->generate());
-		
-		// load document details
-		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByPk('id', $this->getParam('document_id'));
-		$this->set('document_details', $d->_getProperties());
-		
-		// load top external referring sites
-		$ref = owa_coreAPI::metricFactory('base.topReferers');
-		$ref->setPeriod($this->getPeriod());
-		$ref->setConstraint('site_id', $this->getParam('site_id')); 
-		$ref->setConstraint('session.first_page_id', $this->getParam('document_id')); 
-		$ref->setLimit(30);
-		//$ref->setPage($this->getParam('page'));
-		$this->set('top_referers', $ref->generate());
-				
-		// trend chart
-		$series = owa_lib::deconstruct_assoc($core_metrics_data);
-		//print_r($series);
-		$cd = owa_coreAPI::supportClassFactory('base', 'chartData');
-		$cd->setSeries('x', owa_lib::makeDateArray($core_metrics_data, "n/j"), 'Day');
-		$cd->setSeries('area', $series['page_views'], 'Page Views');
-		$chart = owa_coreAPI::supportClassFactory('base', 'ofc');
-		$json = $chart->area($cd);
-		$this->set('chart1_data', $json);
-		
-		// view stuff
-		$this->setView('base.report');
 		$this->setSubview('base.reportDocument');
-		//$this->set('document_id', $this->getParam('document_id'));
-		$this->setTitle('Document Detail:');
+		$this->setTitle('Page Detail: ', $pageUrl);
+		$this->set('metrics', 'visits,pageViews,bounces');
+		$this->set('constraints', 'pageUrl=='.$pageUrl);
+		$this->set('resultsPerPage', 30);
+		$this->set('trendChartMetric', 'pageViews');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.pageViews.value %> page views for this page.');
 		
-		return;
-
-		
+		$d = owa_coreAPI::entityFactory('base.document');
+		$d->getByColumn('url', $pageUrl);
+		$this->set('document', $d);	
 	}
 
 }
@@ -114,11 +72,6 @@ class owa_reportDocumentController extends owa_reportController {
 
 class owa_reportDocumentView extends owa_view {
 	
-	function owa_reportDocumentView() {
-		
-		return owa_reportDocumentView::__construct();
-	}
-	
 	function __construct() {
 		
 		return parent::__construct();
@@ -126,21 +79,18 @@ class owa_reportDocumentView extends owa_view {
 	
 	function render($data) {
 		
-		$request_params = $this->get('params');
-		
-		$this->body->caller_params['link_state']['document_id'] = $this->data['params']['document_id'];
-		
-		// Assign data to templates
-		
+		// Assign Data to templates
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set('document', $this->get('document'));
 		$this->body->set_template('report_document.tpl');
-		$this->body->set('core_metrics', $this->get('core_metrics_data'));
-		$this->body->set('summary_stats',  $this->get('summary_stats_data'));
-		$this->body->set('document',  $this->get('document_details'));
-		$this->body->set('top_referers',  $this->get('top_referers'));
-		$this->body->set('document_id', $this->data['params']['document_id']);
-		$this->body->set('chart1_data',  $this->get('chart1_data'));	
-		$this->body->set('chart2_data',  $this->get('chart2_data'));	
-		return;
 	}
 	
 	

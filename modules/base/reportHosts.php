@@ -45,69 +45,20 @@ class owa_reportHostsController extends owa_reportController {
 	}
 	
 	function action() {
-		
-		// top hosts	
-		$h = owa_coreAPI::metricFactory('base.topHosts');
-		$h->setPeriod($this->getPeriod());
-		$h->setConstraint('site_id', $this->getParam('site_id')); 
-		$h->setLimit(15);
-		$h->setPage($this->getParam('page'));
-		$h->setOrder('DESC');
-		$this->set('top_hosts', $h->generate());
-		$this->setPagination($h->getPagination());
-		
-		// summary_stats_data	
-		$s = owa_coreAPI::metricFactory('base.dashCounts');
-		$s->setPeriod($this->getPeriod());
-		$s->setConstraint('site_id', $this->getParam('site_id'));
-		
-		$this->set('summary_stats_data', $s->generate());
 			
-		$this->setSubview('base.reportHosts');
-		$this->setTitle('Visiting Domains');
-				
-		return;
-		
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Host Names');
+		$this->set('metrics', 'visits,pageViews,bounces,actions');
+		$this->set('dimensions', 'hostName');
+		$this->set('sort', 'visits');
+		$this->set('resultsPerPage', 30);
+		$this->set('dimensionLink', array('linkColumn' => 'hostName', 
+												'template' => array('do' => 'base.reportHostDetail', 'hostName' => '%s'), 
+												'valueColumns' => 'hostName'));
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all hosts.');
+		$this->set('gridTitle', 'Top Hosts');		
 	}
-}
-
-
-/**
- * Visitor Hosts Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportHostsView extends owa_view {
-	
-	function owa_reportHostsView() {
-		
-		return owa_reportHostsView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
-	function render() {
-		
-		// Assign Data to templates
-		$this->body->set('domains', $this->data['top_hosts']);
-		$this->body->set('pagination', $this->data['pagination']);
-		$this->body->set('summary_stats', $this->data['summary_stats_data']);
-		$this->body->set_template('report_hosts.tpl');
-		
-		return;
-	}
-	
-	
 }
 
 

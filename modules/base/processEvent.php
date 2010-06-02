@@ -156,6 +156,11 @@ class owa_processEventController extends owa_controller {
 		// needed?
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
+		// Filter page title if set
+		if ($this->event->get('page_title')) {
+			$this->event->set('page_title', $this->eq->filter('page_title', trim($this->event->get('page_title'))));
+		}
+		
 		// set internal referer
 		$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
 		$page_parse = parse_url($this->event->get('page_url'));
@@ -311,6 +316,12 @@ class owa_processEventController extends owa_controller {
         	// state for this must be maintained in a cookie
         	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', $this->event->get('visitor_id'), 'cookie', true);
         }
+	}
+	
+	function getSiteSpecificGuid() {
+		
+		return crc32(getmypid().time().rand().$this->event->get('site_id'));
+		
 	}
 }
 

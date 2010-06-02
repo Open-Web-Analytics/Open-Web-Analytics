@@ -33,98 +33,27 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportReferringSitesController extends owa_reportController {
 	
-	function owa_reportReferringSitesController($params) {
-		
-		return owa_reportReferringSitesController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		return parent::__construct($params);
 	}
 	
 	function action() {
-				
-		// top referers
-		$r = owa_coreAPI::metricFactory('base.topReferers');
-		$r->setPeriod($this->getPeriod());
-		$r->setConstraint('site_id', $this->getParam('site_id')); 
-		$r->setConstraint('is_searchengine', 0);
-		$r->setLimit(30);
-		$r->setOrder('DESC');
-		$r->setPage($this->get('page'));
-		$this->set('top_referers', $r->generate());
-		$this->setPagination($r->getPagination());
-
-		// summary stats
-		$s = owa_coreAPI::metricFactory('base.dashCountsTraffic');
-		$s->setPeriod($this->getPeriod());
-		$s->setConstraint('site_id', $this->getParam('site_id')); 
-		$s->setConstraint('referer.is_searchengine', true, '!=');
-		$s->setConstraint('session.source', '', '='); 
-		$s->setConstraint('session.referer_id', '0', '!='); 
-		$this->set('summary_stats_data', $s->generate());
 		
-		// summary stats trend	used by sparklines
-		$t = owa_coreAPI::metricFactory('base.trafficSummaryTrend');
-		$t->setPeriod($this->makeTimePeriod('last_thirty_days'));
-		$t->setConstraint('site_id', $this->getParam('site_id')); 
-		$t->setConstraint('referer.is_searchengine', true, '!=');
-		$t->setConstraint('session.source', '', '='); 
-		$t->setConstraint('session.referer_id', '0', '!='); 
-		$trend = owa_lib::deconstruct_assoc($t->generate());
-		//print_r($trend);
-		$this->set('summary_trend', $trend);
-		
-		// set views
-		$this->setView('base.report');
-		$this->setSubview('base.reportReferringSites');
-		$this->setTitle('Referring Web Sites');
-				
-		return;
-		
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Referrals');
+		$this->set('metrics', 'visits,pageViews,bounces,actions');
+		$this->set('dimensions', 'referralPageTitle,referralPageUrl');
+		$this->set('sort', 'visits');
+		$this->set('resultsPerPage', 30);
+		$this->set('dimensionLink', array('linkColumn' => 'referralPageTitle', 
+												'template' => array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'), 
+												'valueColumns' => 'referralPageUrl'));
+		$this->set('constraints', 'source==referral');
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from referrals.');
+		$this->set('gridTitle', 'Top Referrals');		
 	}
 }
-
-
-/**
- * Referring Web Sites Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportReferringSitesView extends owa_view {
-	
-	function owa_reportReferringSitesView() {
-		
-		return owa_reportReferringSitesView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		// Assign Data to templates
-		
-		$this->body->set('referers', $data['top_referers']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		$this->body->set('summary_trend', $this->get('summary_trend'));
-		$this->body->set_template('report_referring_sites.tpl');
-
-		return;
-	}
-	
-	
-}
-
 
 ?>

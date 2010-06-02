@@ -217,6 +217,7 @@ function &owa_getInstance($params = array()) {
 		
 		// create owa instance w/ config
 		$owa = new owa_wp($config);
+		$owa->setSiteId(md5(get_settings('siteurl')));
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();

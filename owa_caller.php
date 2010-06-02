@@ -240,6 +240,7 @@ class owa_caller extends owa_base {
 				
 			$params = array();
 			$params['do'] = 'base.helperPageTags';
+			$params['site_id'] = $this->getSiteId();
 			
 			if ($echo == false) {
 				//return $this->handleHelperPageTagsRequest();

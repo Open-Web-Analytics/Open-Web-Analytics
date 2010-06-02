@@ -640,7 +640,7 @@ class owa_resultSetManager extends owa_base {
 				$fpk = $fpk_col->getForeignKey();
 				// add join
 				//print_r($fpk);	
-				$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $bm->entity->getTableAlias().'.'.$fk, $dimEntity->getTableAlias().'.'.$fpk[1]);
+				$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $bm->entity->getTableAlias().'.'.$fk, $dimEntity->getTableAlias().'.'.$fpk[1]);
 				//$this->related_entities[] = $dim['entity'];
 				$this->addColumn($dim['name'], $dimEntity->getTableAlias().'.'.$dim['column']);
 			} else {

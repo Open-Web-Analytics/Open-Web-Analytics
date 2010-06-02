@@ -40,7 +40,7 @@ class owa_actionsPerVisit extends owa_calculatedMetric {
 		$this->setLabel('Actions / Visit');
 		$this->setChildMetric('actions');
 		$this->setChildMetric('visits');
-		$this->setFormula('actions / visits');
+		$this->setFormula('round(actions / visits, 1)');
 		$this->setDataType('decimal');
 		return parent::__construct();
 	}

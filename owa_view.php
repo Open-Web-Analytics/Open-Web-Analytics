@@ -532,10 +532,10 @@ class owa_view extends owa_base {
 		$this->data = $data;
 	}
 	
-	function setTitle($title) {
+	function setTitle($title, $suffix = '') {
 		
 		$this->t->set('page_title', $title);
-		return;
+		$this->t->set('titleSuffix', $suffix);
 	}
 	
 	function setContentTypeHeader($type = 'html') {

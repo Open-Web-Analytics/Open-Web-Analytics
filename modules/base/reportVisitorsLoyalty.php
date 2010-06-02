@@ -54,12 +54,6 @@ class owa_reportVisitorsLoyaltyController extends owa_reportController {
 		$va->setPage($this->getParam('page'));
 		$this->set('visitors_age', $va->generate());
 		$this->setPagination($va->getPagination());
-		
-		// dash counts	
-		$d = owa_coreAPI::metricFactory('base.dashCounts');
-		$d->setPeriod($this->getPeriod());
-		$d->setConstraint('site_id', $this->getParam('site_id')); 
-		$this->set('summary_stats_data', $d->generate());	
 				
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitorsLoyalty');
@@ -101,10 +95,6 @@ class owa_reportVisitorsLoyaltyView extends owa_view {
 		
 		$this->body->set_template('report_visitors_loyalty.tpl');
 		$this->body->set('visitors_age', $this->get('visitors_age'));
-		$this->body->set('summary_stats', $this->get('summary_stats_data'));
-		//print_r($this->data['pagination']);
-		
-		return;
 	}
 	
 	

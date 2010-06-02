@@ -89,7 +89,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
 		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
 		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
-		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
+		$this->registerDimension('hostName', 'base.host', 'host', 'Host Name', 'visitor', 'The host name used by the visitor.');
 		$this->registerDimension('city', 'base.host', 'city', 'City', 'visitor', 'The city of the visitor.');
 		$this->registerDimension('country', 'base.host', 'country', 'Country', 'visitor', 'The country of the visitor.');
 		$this->registerDimension('latitude', 'base.host', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
@@ -214,7 +214,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
 		$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);
-		$this->addNavigationLink('Reports', '', 'base.reportActionTracking', 'Action Tracking', 5);		
+		$this->addNavigationLink('Reports', 'Content', 'base.reportActionTracking', 'Action Tracking', 5);		
 	}
 	
 	/**

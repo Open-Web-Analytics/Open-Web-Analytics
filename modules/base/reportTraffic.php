@@ -45,43 +45,11 @@ class owa_reportTrafficController extends owa_reportController {
 	}
 	
 	function action() {
-		
-		$ses = owa_coreApi::metricFactory('base.sessionsCount');
-		$ses->setConstraint('site_id', $this->getParam('site_id'));
-		$ses->setConstraint('is_browser', 1);
-		$ses->setPeriod($this->getPeriod());
-		$this->set('session_count', $ses->zeroFill($ses->generate()));
-		
-		$f = owa_coreApi::metricFactory('base.visitsFromFeedsCount');
-		$f->setConstraint('site_id', $this->getParam('site_id'));
-		$f->setPeriod($this->getPeriod());
-		$this->set('from_feeds', $f->zeroFill($f->generate()));
-		 
-		$se = owa_coreApi::metricFactory('base.visitsFromSearchEnginesCount');
-		$se->setConstraint('site_id', $this->getParam('site_id'));
-		$se->setConstraint('is_browser', 1);
-		$se->setPeriod($this->getPeriod());
-		$this->set('from_se', $se->zeroFill($se->generate()));
-		
-		$s = owa_coreApi::metricFactory('base.visitsFromSitesCount');
-		$s->setConstraint('site_id', $this->getParam('site_id'));
-		$s->setConstraint('is_browser', 1);
-		$s->setPeriod($this->getPeriod());
-		$this->set('from_sites', $s->generate());
-		 
-		$d = owa_coreApi::metricFactory('base.visitsFromDirectNavCount');
-		$d->setConstraint('site_id', $this->getParam('site_id'));
-		$d->setConstraint('is_browser', 1);
-		$d->setPeriod($this->getPeriod());
-		$this->set('from_direct', $d->generate());
-		
+	
 		// view stuff
 		$this->setView('base.report');
 		$this->setSubview('base.reportTraffic');
-		$this->setTitle('Traffic');
-		
-		return;
-		
+		$this->setTitle('Traffic Sources');	
 	}
 }
 
@@ -100,11 +68,6 @@ class owa_reportTrafficController extends owa_reportController {
 
 class owa_reportTrafficView extends owa_view {
 	
-	function owa_reportTrafficView() {
-			
-		return owa_reportTrafficView::__construct();
-	}
-	
 	function __construct() {
 
 		return parent::__construct();
@@ -121,13 +84,7 @@ class owa_reportTrafficView extends owa_view {
 		$this->body->set('from_se', $this->get('from_se'));
 		
 		$this->body->set_template('report_traffic.tpl');
-
-		$this->body->set('headline', 'Traffic Sources Report');
-		
-		return;
 	}
-	
-	
 }
 
 

@@ -1,7 +1,7 @@
 <div class="owa_reportSectionContent" style="width:auto;">
 <div class="owa_reportSectionHeader">Site Metrics</div>
 
-<div id="site-trend" style="height:125px;"></div>
+	<div id="site-trend" style="height:125px;"></div>
 	<script>
 	//OWA.setSetting('debug', true);
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -28,16 +28,8 @@
 			
 			
 			<div class="owa_reportSectionContent">
-				<div class="owa_reportSectionHeader">Visitor Types</div>
-				
-				
-				<div id="visitor-types" style="width:200px;text-align:center;"></div>		
-			
-				
-					
-	
-				
-				
+				<div class="owa_reportSectionHeader">Visitor Types</div>	
+				<div id="visitor-types" style="width:200px;text-align:center;margin-top:-15px;"></div>
 				<script>
 					//OWA.setSetting('debug', true);
 					var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -84,17 +76,18 @@
 				<div id="top-pages" style="min-width:350px"></div>
 				<script>
 				//OWA.setSetting('debug', true);
-				var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+				var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																'metrics' => 'pageViews', 
 																'dimensions' => 'pageTitle', 
 																'sort' => 'pageViews-',
 																'format' => 'json',
 																'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
 																  
-				rsh = new OWA.resultSetExplorer('top-pages');
+				tc = new OWA.resultSetExplorer('top-pages');
+				tc.options.grid.showRowNumbers = false;
 				//rsh.options.areaChart.series.push({x:'date',y:'visits'});
-				rsh.setView('grid');
-				rsh.load(aurl);
+				tc.setView('grid');
+				tc.load(tcurl);
 				
 				</script>
 			</div>
@@ -107,7 +100,7 @@
 				//OWA.setSetting('debug', true);
 				var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																'metrics' => 'visits', 
-																'dimensions' => 'referralPageUrl', 
+																'dimensions' => 'referralPageTitle', 
 																'sort' => 'visits-',
 																'format' => 'json',
 																'resultsPerPage' => 10,
@@ -115,6 +108,7 @@
 																  
 				rsh = new OWA.resultSetExplorer('top-referers');
 				//rsh.options.areaChart.series.push({x:'date',y:'visits'});
+				rsh.options.grid.showRowNumbers = false;
 				rsh.setView('grid');
 				rsh.load(aurl);
 				
@@ -133,7 +127,7 @@
 			<div class="owa_reportSectionContent" style="min-width:200px; height:;">
 				<div class="section_header">Actions</div>
 				
-				<div id="actions-trend" style="width:200px;height:100px;"></div>
+				<div id="actions-trend" style="width:200px;height:;"></div>
 				<script>
 				
 				var aturl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -147,7 +141,7 @@
 				at = new OWA.resultSetExplorer('actions-trend');
 				at.options.areaChart.series.push({x:'date',y:'actions'});
 				at.setView('areaChart');
-				at.load(aturl);
+				//at.load(aturl);
 				
 				
 				</script>
@@ -169,7 +163,7 @@
 				<div class="owa_genericHorizontalList owa_moreLinks">
 					<UL>
 						<LI>
-							<a href="">View Full Report</a>
+							<a href="">View Full Report &raquo;</a>
 						</LI>
 					</UL>
 				</div>
@@ -179,7 +173,7 @@
 		
 			<div class="owa_reportSectionContent">
 				<div class="section_header">OWA News</div>
-				<?php echo $this->getWidget('base.widgetOwaNews');?>
+				<?php echo $this->getWidget('base.widgetOwaNews','',false);?>
 			</div>
 		</TD>
 	</TR>
