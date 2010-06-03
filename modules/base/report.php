@@ -108,6 +108,7 @@ class owa_reportView extends owa_view {
 		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array('jquery'));
 		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
+		$this->setJs('excanvas','base/js/includes/excanvas.min.js', '', '', true);
 		$this->setJs('flot','base/js/includes/jquery/flot/jquery.flot.min.js');
 		$this->setJs('flot-pie','base/js/includes/jquery/flot/jquery.flot.pie.js');
 		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');

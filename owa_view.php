@@ -115,13 +115,7 @@ class owa_view extends owa_base {
 	/**
 	 * Constructor
 	 *
-	 * @return owa_view
 	 */
-	function owa_view($params = null) {
-		
-		return owa_view::__construct($params);
-	}
-	
 	function __construct($params = null) {
 	
 		parent::__construct($params);
@@ -129,8 +123,6 @@ class owa_view extends owa_base {
 		$this->t = new owa_template();
 		$this->body = new owa_template($this->module);
 		$this->setTheme();
-		return;
-
 	}
 	
 	/**
@@ -389,7 +381,7 @@ class owa_view extends owa_base {
 		return;
 	}
 	
-	function setJs($name, $path, $version ='', $deps = array()) {
+	function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
 		
 		if (empty($version)) {
 			$version = OWA_VERSION;
@@ -405,6 +397,7 @@ class owa_view extends owa_base {
 		$this->js[$uid]['path'] = $fs_path;
 		$this->js[$uid]['deps'] = $deps;
 		$this->js[$uid]['version'] = $version;
+		$this->js[$uid]['ie_only'] = $ie_only;
 		
 		return;
 	}
