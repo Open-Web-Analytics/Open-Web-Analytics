@@ -68,7 +68,12 @@ class owa_helperPageTagsController extends owa_controller {
 		}
 		
 		// site id needed for link state
-		$this->set('site_id', $this->getParam('site_id'));
+		
+		if ($this->getParam('site_id')) {
+			$this->set('site_id', $this->getParam('site_id'));
+		} else {
+			$this->set('site_id', owa_coreAPI::getSetting('base', 'site_id'));
+		}
 		
 		$this->setView('base.helperPageTags');
 		
