@@ -40,7 +40,8 @@ OWA.resultSetExplorer = function(dom_id, options) {
 			metric: ''
 		},
 		grid: {
-			showRowNumbers: true
+			showRowNumbers: true,
+			excludeColumns: []
 		},
 		template: {
 			template: '',
@@ -242,49 +243,25 @@ OWA.resultSetExplorer.prototype = {
 		var columns = [];
 		
 		for (var column in this.resultSet.resultsRows[0]) {
-		
-			var _sort_type = '';
-			var _align = '';
-			var _format = '';
-			var _class = '';
-			var _width = '';
-			var _resizable = true;
-			var _fixed = false;
 			
-			if (this.resultSet.resultsRows[0][column].result_type === 'dimension') {
-				_align = 'left';
-				_class = 'owa_dimensionGridCell';
+			// check to see if we should exclude any columns
+			if (this.options.grid.excludeColumns.length > 0) {
+				
+				for (var i=0;i<=this.options.grid.excludeColumns.length -1;i++) {
+					// if column name is not on the exclude list then add it.
+					if (this.options.grid.excludeColumns[i] != column) {
+						// add column	
+						var columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);		
+		 				columns.push(columnDef);			
+					}
+				}
+				
 			} else {
-				_align = 'right';
-				_class = 'owa_metricGridCell';
-				_width = 100;
-				_resizable = false;
-				_fixed = true;
+				// add column
+				var columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);		
+		 		columns.push(columnDef);
 			}
 			
-			if (this.resultSet.resultsRows[0][column].data_type === 'string') {
-				_sort_type = 'text';
-			} else {
-				_sort_type = 'number';
-			}
-			
-			if (this.resultSet.resultsRows[0][column].link) {
-				_format = 'urlFormatter';
-			}
-					
-		 	columns.push({
-		 		name: this.resultSet.resultsRows[0][column].name +'.value', 
- 				index: this.resultSet.resultsRows[0][column].name +'.value', 
- 				label: this.resultSet.resultsRows[0][column].label, 
- 				sorttype: _sort_type, 
- 				align: _align, 
- 				formatter: _format, 
- 				classes: _class, 
- 				width: _width, 
- 				resizable: _resizable,
- 				fixed: _fixed,
- 				realColName: this.resultSet.resultsRows[0][column].name
- 			});
 		}
 		
 		jQuery('#' + that.dom_id + '_grid').jqGrid({
@@ -323,6 +300,55 @@ OWA.resultSetExplorer.prototype = {
     			return link;
 			}
 		});
+	},
+	
+	makeGridColumnDef : function(column) {
+		
+		var _sort_type = '';
+		var _align = '';
+		var _format = '';
+		var _class = '';
+		var _width = '';
+		var _resizable = true;
+		var _fixed = false;
+		
+		if (column.result_type === 'dimension') {
+			_align = 'left';
+			_class = 'owa_dimensionGridCell';
+		} else {
+			_align = 'right';
+			_class = 'owa_metricGridCell';
+			_width = 100;
+			_resizable = false;
+			_fixed = true;
+		}
+		
+		if (column.data_type === 'string') {
+			_sort_type = 'text';
+		} else {
+			_sort_type = 'number';
+		}
+		
+		if (column.link) {
+			_format = 'urlFormatter';
+		}
+				
+	 	var columnDef = {
+ 			name: column.name +'.value', 
+			index: column.name +'.value', 
+			label: column.label, 
+			sorttype: _sort_type, 
+			align: _align, 
+			formatter: _format, 
+			classes: _class, 
+			width: _width, 
+			resizable: _resizable,
+			fixed: _fixed,
+			realColName: column.name
+		};
+		
+		return columnDef;
+		
 	},
 	
 	makeColumnDefinitions : function() {

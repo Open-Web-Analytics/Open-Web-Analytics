@@ -204,8 +204,10 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
 		//$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 2);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryExits', 'Entry & Exit Pages', 3);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 4);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryPages', 'Entry Pages', 3);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportExitPages', 'Exit Pages', 4);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 5);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportActionTracking', 'Action Tracking', 6);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
@@ -214,7 +216,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
 		$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportActionTracking', 'Action Tracking', 5);		
+				
 	}
 	
 	/**

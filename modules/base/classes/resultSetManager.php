@@ -138,7 +138,9 @@ class owa_resultSetManager extends owa_base {
 			// check for foreign key column by name if dimension specifies one
 			if (array_key_exists('foreign_key_name', $dim) && !empty($dim['foreign_key_name'])) {
 				// get foreign key col by 
-				$fk = $bm->entity->isForeignKey($dim['foreign_key_name']);
+				if ($bm->entity->isForeignKeyColumn($dim['foreign_key_name'])){
+					$fk = $dim['foreign_key_name'];
+				}
 			} else {
 				// if not check for foreign key by entity name
 			    //check to see if the metric's entity has a foreign key to the dimenesion table.
