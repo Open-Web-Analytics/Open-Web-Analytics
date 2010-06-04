@@ -74,6 +74,9 @@
 		var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
 		dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, ['<?php echo $dimensionLink['valueColumns'];?>']);
 		<?php endif; ?>
+		<?php if (!empty($excludeColumns)):?>
+		dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
+		<?php endif; ?>
 		dim.asyncQueue.push(['refreshGrid']);
 		dim.load(dimurl);
 	</script>
