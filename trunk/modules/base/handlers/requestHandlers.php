@@ -84,10 +84,15 @@ class owa_requestHandlers extends owa_observer {
 		
 		$result = $r->create();
 		
+		
 		if ($result == true) {
-			$event->setEventType($event->getEventType().'_logged');
+			
+			
+			//$nevent->setEventType($event->getEventType().'_logged');
 			$eq = owa_coreAPI::getEventDispatch();
-			$eq->notify($event);
+			$nevent = $eq->makeEvent($event->getEventType().'_logged');
+			$nevent->setProperties($event->getProperties());
+			$eq->notify($nevent);
 		}
 		
 	}

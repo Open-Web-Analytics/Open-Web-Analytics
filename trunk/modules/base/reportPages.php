@@ -42,15 +42,16 @@ class owa_reportPagesController extends owa_reportController {
 			
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Web Pages');
-		$this->set('metrics', 'visits,pageViews,bounces');
+		$this->set('metrics', 'visits,pageViews,bounces,uniquePageViews');
 		$this->set('dimensions', 'pageTitle,pageUrl');
+		$this->set('excludeColumns', "'pageUrl'");
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array('linkColumn' => 'pageTitle', 
 												'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
 												'valueColumns' => 'pageUrl'));
 		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> page views for all pages.');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.pageViews.value %> page views for <%= this.d.resultSet.aggregates.uniquePageViews.value %> unique pages.');
 		$this->set('gridTitle', 'Top Pages');		
 	}
 }
