@@ -144,9 +144,19 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('referralWebSite', 'base.referer', 'site', 'Referral Web Site', 'traffic sources', 'The full domain of the referring web site.');
 		
 		// content
-		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.');
-		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.');
-		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.');
+		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.', 'document_id');
+		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.', 'document_id');
+		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.', 'document_id');
+		
+		// feeds
+		$this->registerDimension('date', 'base.feed_request', 'yyyymmdd', 'Date', 'date', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('day', 'base.feed_request', 'day', 'Day', 'date', 'The day.', '', true);
+		$this->registerDimension('month', 'base.feed_request', 'month', 'Month', 'date', 'The month.', '', true);
+		$this->registerDimension('year', 'base.feed_request', 'year', 'Year', 'date', 'The year.', '', true);
+		$this->registerDimension('dayofweek', 'base.feed_request', 'dayofweek', 'Day of Week', 'date', 'The day of the week.', '', true);
+		$this->registerDimension('dayofyear', 'base.feed_request', 'dayofyear', 'Day of Year', 'date', 'The day of the year.', '', true);
+		$this->registerDimension('weekofyear', 'base.feed_request', 'weekofyear', 'Week of Year', 'date', 'The week of the year.', '', true);
+		$this->registerDimension('feedType', 'base.feed_request', 'feed_type', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
 		
 		// register CLI commands
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
@@ -154,6 +164,8 @@ class owa_baseModule extends owa_module {
 		
 		// register API methods
 		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
+		
+		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'resultsPerPage', 'page', 'format'));
 		
 		return parent::__construct();
 	}
@@ -583,6 +595,41 @@ class owa_baseModule extends owa_module {
 		} else {
 			return $rs;
 		}
+	}
+	
+	function getDomstreams($start_date, $end_date, $document_id = '', $site_id = '', $resultsPerPage = 20, $page = 1, $format = '') {
+		
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom('owa_domstream');
+		$db->selectColumn("id, timestamp, page_url, duration");
+		$db->selectColumn('id');
+		$db->selectColumn('page_url');
+		$db->selectColumn('duration');
+		$db->selectColumn('timestamp');
+		$db->where('yyyymmdd', array('start' => $start_date, 'end' => $end_date), 'BETWEEN');
+		if ($document_id) {
+			$db->where('document_id', $document_id);
+		}
+		
+		if ($site_id) {
+			$db->where('site_id', $site_id);
+		}
+		
+		$db->orderBy('timestamp', 'DESC');
+		
+		// pass limit to rs object if one exists
+		$rs->setLimit($this->limit);
+			
+		// pass page to rs object if one exists
+		$rs->setPage($page);
+		
+		$results = $rs->generate($db);
+		$rs->resultsRows = $results;
+		
+		$rs->setLabels(array('id' => 'Domstream ID', 'page_url' => 'Page Url', 'duration' => 'Duration', 'timestamp' => 'Timestamp'));
+		
+		return $rs;	
 	}
 	
 }

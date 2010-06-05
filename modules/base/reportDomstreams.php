@@ -44,34 +44,44 @@ class owa_reportDomstreamsController extends owa_reportController {
 	}
 	
 	function action() {
-				
-		// Get clicks
-		$d = owa_coreAPI::metricFactory('base.latestDomstreams');
-		$d->setPeriod($this->getPeriod());
-		$d->setConstraint('site_id', $this->getParam('site_id'));
 		
-		if ($this->getParam('document_id')) {
-			$d->setConstraint('document_id', $this->getParam('document_id'));
-			$this->setTitle('Domstreams');
+		$document_id = '';
+		
+		// get period		
+		$p = $this->getPeriod();
+				
+		// check for limits
+		if ($this->getParam('document_id') || $this->getParam('pageUrl')) {
 			$doc = owa_coreAPI::entityFactory('base.document');
-			$doc->load($this->getParam('document_id'));
+			
+			if ($this->getParam('pageUrl')) {
+				$doc->getByColumn($this->getParam('pageUrl'));
+				
+			} else {
+				$doc->load($this->getParam('document_id'));
+			}
+			
+			$document_id = $doc->get('id');
+			
+			$this->setTitle('Domstream Recordings: ', $doc->get('url'));
 			$this->set('document', $doc->_getProperties());
 		} else {
+			// latest domstream report
 			$this->setTitle('Latest Domstreams');
 		}
 		
-		if (!$this->getParam('limit')) {
-			$limit = 30;
-		}
+		$ds = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getDomstreams',
+			'startDate' 		=> $p->getStartDate()->getYyyymmdd(),
+			'endDate'			=> $p->getEndDate()->getYyyymmdd(),
+			'document_id'		=> $document_id,
+			'site_id'			=> $this->getParam('site_id'),
+			'page'				=> $this->getParam('page'),
+			'resultsPerPage'	=> $this->getParam('resultsPerPage'),
+			'format'			=> $this->getParam('format')
+		));
 		
-		$d->setLimit($limit);
-		
-		if ($this->getParam('page')) {
-			$d->setPage($this->getParam('page'));
-		}
-		
-		$ds = $d->generateResults();
-		//print_r($clicks);
 		$this->set('domstreams', $ds);
 		//print_r($ds);
 		

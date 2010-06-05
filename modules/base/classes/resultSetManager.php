@@ -139,8 +139,23 @@ class owa_resultSetManager extends owa_base {
 			if (array_key_exists('foreign_key_name', $dim) && !empty($dim['foreign_key_name'])) {
 				// get foreign key col by 
 				if ($bm->entity->isForeignKeyColumn($dim['foreign_key_name'])){
-					$fk = $dim['foreign_key_name'];
+					$fk = array('col' => $dim['foreign_key_name'], 'entity' => $bm->entity);
+				} else {
+					// check all other metric entities
+					
+					if (!empty($this->metrics)) {
+						
+						foreach ($this->metrics as $k => $metric) {
+							
+							if ($metric->entity->isForeignKeyColumn($dim['foreign_key_name'])){
+								$fk = array('col' => $dim['foreign_key_name'], 'entity' => $metric->entity);
+								
+								break;
+							}
+						}
+					}
 				}
+				
 			} else {
 				// if not check for foreign key by entity name
 			    //check to see if the metric's entity has a foreign key to the dimenesion table.
@@ -609,16 +624,16 @@ class owa_resultSetManager extends owa_base {
 	
 	function applyJoins() {
 			
-		foreach($this->related_dimensions as $dim) {
-		
-				$this->addRelation($dim);
-		}
-		
+				
 		foreach($this->metrics as $metric) {
 		
 				$this->addFactTableRelation($metric);
 		}
 		
+		foreach($this->related_dimensions as $dim) {
+		
+				$this->addRelation($dim);
+		}		
 	}
 	
 	function getBaseMetric() {
@@ -631,18 +646,21 @@ class owa_resultSetManager extends owa_base {
 		if (!in_array($dim['entity'], $this->related_entities)) {
 			
 			$fk = $this->getDimensionForeignKey($dim);
-			//print_r($dim);
+			//print_r($fk);
 			//print $fk;
 			if ($fk) {
+				
 				// create dimension entity
 				$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
 				// get foreign key column
-				$bm = $this->getBaseMetric();
-				$fpk_col = $bm->entity->getProperty($fk);
+				//$bm = $this->getBaseMetric();
+				//$fpk_col = $bm->entity->getProperty($fk);
+				$fpk_col = $fk['entity']->getProperty($fk['col']);
+				//print_r($fk['col']);
 				$fpk = $fpk_col->getForeignKey();
 				// add join
 				//print_r($fpk);	
-				$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $bm->entity->getTableAlias().'.'.$fk, $dimEntity->getTableAlias().'.'.$fpk[1]);
+				$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $fk['entity']->getTableAlias().'.'.$fk['col'], $dimEntity->getTableAlias().'.'.$fpk[1]);
 				//$this->related_entities[] = $dim['entity'];
 				$this->addColumn($dim['name'], $dimEntity->getTableAlias().'.'.$dim['column']);
 			} else {
