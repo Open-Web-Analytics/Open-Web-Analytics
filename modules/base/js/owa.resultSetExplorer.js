@@ -543,6 +543,11 @@ OWA.resultSetExplorer.prototype = {
                     jQuery("#tooltip").remove();
                     var x = item.datapoint[0].toFixed(0),
                         y = item.datapoint[1].toFixed(0);
+                        
+                    if (that.options.areaChart.flot.xaxis.mode === 'time') {
+                    	
+                    	x = that.timestampFormatter(x);
+                    }
                     
                     that.showTooltip(item.pageX, item.pageY,
                                 x+'<BR><B>'+item.series.label + ":</B> " + y);
@@ -581,6 +586,31 @@ OWA.resultSetExplorer.prototype = {
 		
 	},
 	
+	formatValue : function(type, value) {
+	
+		switch(type) {
+			// convery yyyymmdd to javascript timestamp as  flot requires that
+			case 'yyyymmdd':
+				 date = jQuery.datepicker.parseDate('yymmdd', value);
+				 value = Date.parse(date);
+
+				break;
+		}
+		
+		return value;
+	},
+	
+	timestampFormatter : function(timestamp) {
+		
+		var d = new Date(timestamp*1);
+		var curr_date = d.getDate();
+		var curr_month = d.getMonth() + 1;
+		var curr_year = d.getFullYear();
+		//alert(d+' date: '+curr_month);
+		var date =  curr_month + "/" + curr_date + "/" + curr_year;
+		return date;
+	},
+	
 	
 	/**
 	 * Main method for displaying an area chart
@@ -600,7 +630,9 @@ OWA.resultSetExplorer.prototype = {
 			
 			//create data array
 			for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
-				var item =[this.resultSet.resultsRows[i][x_series_name].value, this.resultSet.resultsRows[i][y_series_name].value];
+				data_type_x = this.resultSet.resultsRows[i][x_series_name].data_type;
+				data_type_y = this.resultSet.resultsRows[i][y_series_name].data_type;
+				var item =[this.formatValue(data_type_x, this.resultSet.resultsRows[i][x_series_name].value), this.formatValue(data_type_y, this.resultSet.resultsRows[i][y_series_name].value)];
 				data.push(item);
 			}
 			//alert(this.resultSet.resultsRows[i][series[ii].x].value);
@@ -625,8 +657,6 @@ OWA.resultSetExplorer.prototype = {
 			xaxis:{
 				ticks: data.length/2,
 				tickDecimals: null
-				//mode: "time",
-    			//timeformat: "%y/%m/%d"
     		},
 			grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
 			series: {
@@ -641,6 +671,16 @@ OWA.resultSetExplorer.prototype = {
 				show:this.options.areaChart.showLegend
 			}
 		};
+		
+		if (data_type_x === 'yyyymmdd') {
+			
+			options.xaxis.mode = "time";
+    		options.xaxis.timeformat = "%m/%d/%y";
+		}
+		
+		this.options.areaChart.flot = options;
+		
+		
 		jQuery.plot(jQuery(selector), dataseries, options);
 		this.currentContainerWidth = jQuery("#"+dom_id).width();
 		this.currentWindowWidth = jQuery(window).width();	

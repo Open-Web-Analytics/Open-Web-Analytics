@@ -113,6 +113,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('dayofweek', 'base.session', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
 		$this->registerDimension('dayofyear', 'base.session', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
 		$this->registerDimension('weekofyear', 'base.session', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
+		$this->registerDimension('siteId', 'base.session', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		
 		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('day', 'base.request', 'day', 'Day', 'visit', 'The day.', '', true);
@@ -121,11 +122,13 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('dayofweek', 'base.request', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
 		$this->registerDimension('dayofyear', 'base.request', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
 		$this->registerDimension('weekofyear', 'base.request', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
+		$this->registerDimension('siteId', 'base.request', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		
 		$this->registerDimension('actionName', 'base.action_fact', 'action_name', 'Action Name', 'actions', 'The name of the action.', '', true);
 		$this->registerDimension('actionGroup', 'base.action_fact', 'action_group', 'Action Group', 'actions', 'The group that an action belongs to.', '', true);
 		$this->registerDimension('actionLabel', 'base.action_fact', 'action_label', 'Action Label', 'actions', 'The label associated with an action.', '', true);
 		$this->registerDimension('date', 'base.action_fact', 'yyyymmdd', 'Date', 'action', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('siteId', 'base.acton_fact', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		
 		// visit
 		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
@@ -163,7 +166,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('build', 'base.build');
 		
 		// register API methods
-		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
+		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
 		
 		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'resultsPerPage', 'page', 'format'));
 		
@@ -509,7 +512,7 @@ class owa_baseModule extends owa_module {
 	 * @return paginatedResultSet obj
 	 * @link http://wiki.openwebanalytics.com/index.php?title=REST_API
 	 */
-	function getResultSet($metrics, $dimensions = '', $constraints = '', $sort = '', $limit = '', $page = '', $offset = '', $period = '', $startDate = '', $endDate = '', $startTime = '', $endTime = '', $format = '') {
+	function getResultSet($metrics, $dimensions = '', $siteId = '', $constraints = '', $sort = '', $limit = '', $page = '', $offset = '', $period = '', $startDate = '', $endDate = '', $startTime = '', $endTime = '', $format = '') {
 		
 		//print_r(func_get_args());
 		// create the metric obj for the first metric
@@ -554,6 +557,11 @@ class owa_baseModule extends owa_module {
 		if ($constraints) {
 			
 			$rsm->setConstraints($rsm->constraintsStringToArray($constraints));
+		}
+		
+		//site_id
+		if ($siteId) {
+			$rsm->setConstraints($rsm->constraintsStringToArray('siteId=='.$siteId));
 		}
 		
 		// set sort order

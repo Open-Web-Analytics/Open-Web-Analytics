@@ -8,9 +8,10 @@
 													'metrics' => 'visits', 
 													'dimensions' => 'date', 
 													'sort' => 'date',
-													'format' => 'json',
-													'period' => 'last_thirty_days',
-													'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))));?>';
+													'format' => 'json'
+													//'period' => 'last_thirty_days',
+													//'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))
+													), true);?>';
 													  
 	rsh = new OWA.resultSetExplorer('site-trend');
 	rsh.options.areaChart.series.push({x:'date',y:'visits'});

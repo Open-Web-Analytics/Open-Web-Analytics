@@ -108,13 +108,13 @@ function owa_reportSetPeriod() {
 function owa_report_reload() {
 
 	// add new site_id to properties
-	var site_id = jQuery("#owa_reportSiteFilterSelect option:selected").val(); 
+	var siteId = jQuery("#owa_reportSiteFilterSelect option:selected").val(); 
 	//alert(site_id);
 	
 	// reload the report
 	var reportname = jQuery(this).parents(".owa_reportContainer").get(0).id;
 	//alert(reportname);
-	OWA.items[reportname].properties.site_id = site_id;
+	OWA.items[reportname].properties.siteId = siteId;
 	OWA.items[reportname].reload();
 	
 	return;
