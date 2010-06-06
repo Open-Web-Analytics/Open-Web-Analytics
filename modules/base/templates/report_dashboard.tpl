@@ -1,31 +1,32 @@
 <div class="owa_reportSectionContent" style="width:auto;">
 <div class="owa_reportSectionHeader">Site Metrics</div>
 
-	<div id="site-trend" style="height:125px;"></div>
+	<div id="trend-chart" style="height:125px;"></div>
+	<div id="trend-metrics" style="height:;"></div>
 	<script>
 	//OWA.setSetting('debug', true);
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-													'metrics' => 'visits', 
+													'metrics' => 'visits,pageViews,bounces,pagesPerVisit,visitDuration,actionsPerVisit', 
 													'dimensions' => 'date', 
 													'sort' => 'date',
 													'format' => 'json'
-													//'period' => 'last_thirty_days',
-													//'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))
 													), true);?>';
 													  
 	rsh = new OWA.resultSetExplorer('site-trend');
-	rsh.options.areaChart.series.push({x:'date',y:'visits'});
-	rsh.setView('areaChart');
+	rsh.asyncQueue.push(['makeAreaChart', [{x: 'date', y: 'visits'}], 'trend-chart']);
+	rsh.options.metricBoxes.width = '150px';
+	rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
+	//rsh.options.areaChart.series.push({x:'date',y:'visits'});
+	//rsh.setView('areaChart');
 	rsh.load(aurl);
 	
 	</script>
-	
-	<?php include ('report_dashboard_summary_stats.tpl');?>
+
 </div>
 
 <table style="padding:0px;">
 	<TR>
-		<TD style="width:20%" valign="top">
+		<TD style="width:25%" valign="top">
 			
 			
 			<div class="owa_reportSectionContent">
@@ -69,7 +70,7 @@
 			
 		</TD>
 		
-		<TD style="width:60%" valign="top">
+		<TD style="width:50%" valign="top">
 			
 			<div class="owa_reportSectionContent">
 				<div class="owa_reportSectionHeader">Top Content</div>
@@ -81,8 +82,8 @@
 																'metrics' => 'pageViews', 
 																'dimensions' => 'pageTitle', 
 																'sort' => 'pageViews-',
-																'format' => 'json',
-																'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
+																'format' => 'json'
+																),true);?>';
 																  
 				tc = new OWA.resultSetExplorer('top-pages');
 				tc.options.grid.showRowNumbers = false;
@@ -104,8 +105,8 @@
 																'dimensions' => 'referralPageTitle', 
 																'sort' => 'visits-',
 																'format' => 'json',
-																'resultsPerPage' => 10,
-																'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
+																'resultsPerPage' => 10
+																),true);?>';
 																  
 				rsh = new OWA.resultSetExplorer('top-referers');
 				//rsh.options.areaChart.series.push({x:'date',y:'visits'});
@@ -118,7 +119,7 @@
 			
 			<div class="owa_reportSectionContent">
 				<div class="section_header">Latest Visits</div>
-				<?php echo $this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '', 'period' => $params['period']), false);?>
+				<?php echo $this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '100%', 'period' => $params['period']), false);?>
 			</div>
 			
 		</TD>
@@ -179,3 +180,15 @@
 		</TD>
 	</TR>
 </table>
+
+<script type="text/x-jqote-template" id="metricInfobox">
+ <![CDATA[
+ 
+	<div class="owa_metricInfobox" style="width:<%= this.width %>;">
+	<p class="owa_metricInfoboxLabel"><%= this.label %></p>
+	<p class="owa_metricInfoboxLargeNumber"><%= this.value %></p>
+	<p id='<%= this.dom_id %>-sparkline'></p>
+	</div>
+
+]]>
+</script>
