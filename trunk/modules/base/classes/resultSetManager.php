@@ -159,7 +159,32 @@ class owa_resultSetManager extends owa_base {
 			} else {
 				// if not check for foreign key by entity name
 			    //check to see if the metric's entity has a foreign key to the dimenesion table.
-				$fk = $bm->entity->getForeignKeyColumn($dim['entity']);
+				$fk = array(); 
+				
+				$fkcol = $bm->entity->getForeignKeyColumn($dim['entity']);
+				
+				if ($fkcol) {
+					$fk['col'] = $fkcol;
+					$fk['entity'] = $bm->entity;
+				} else {
+					
+					// check all other metric entities
+					
+					if (!empty($this->metrics)) {
+						
+						foreach ($this->metrics as $k => $metric) {
+							
+							$fkcol = $metric->entity->getForeignKeyColumn($dim['entity']);
+							if ($fkcol){
+								$fk = array('col' => $fkcol, 'entity' => $metric->entity);
+								
+								break;
+							}
+						}
+					}
+					
+					
+				}
 			}
 
 			return $fk;
@@ -448,6 +473,8 @@ class owa_resultSetManager extends owa_base {
 		switch ($type) {
 			
 			case 'yyyymmdd':
+				
+				
 				
 				break;
 		}

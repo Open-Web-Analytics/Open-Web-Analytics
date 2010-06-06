@@ -114,19 +114,19 @@ class owa_reportView extends owa_view {
 		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
-		$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
+		//$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
 		$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
-		$this->setJs("swfobject", "base/js/includes/swfobject.js");
+		//$this->setJs("swfobject", "base/js/includes/swfobject.js");
 		$this->setJs("json2", "base/js/includes/json2.js");
-		$this->setJs("owa.chart", "base/js/owa.chart.js", '', array('owa', 'json2', 'swfobject', 'jquery'));
+		//$this->setJs("owa.chart", "base/js/owa.chart.js", '', array('owa', 'json2', 'swfobject', 'jquery'));
 		$this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
 		
 		// css libs to be loaded
 		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
 		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		$this->setCss("base/css/owa.report.css");
-		$this->setCss("base/css/owa.widgets.css");
+		//$this->setCss("base/css/owa.widgets.css");
 		$this->setCss('base/css/ui.jqgrid.css');
 	}
 	
