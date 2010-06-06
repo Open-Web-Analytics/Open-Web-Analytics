@@ -65,7 +65,7 @@ class owa_reportController extends owa_adminController {
 				
 		// set default period if necessary
 		if (empty($this->params['period'])):
-			$this->params['period'] = 'today';
+			$this->params['period'] = 'last_thirty_days';
 		endif;
 		
 		$this->setPeriod($this->getParam('period'));

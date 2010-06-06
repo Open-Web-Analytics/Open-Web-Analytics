@@ -435,10 +435,24 @@ class owa_resultSetManager extends owa_base {
 				$data_type = $this->getMetric($k)->getDataType();
 			}
 			
-			$new_row[$k] = array('result_type' => $type, 'name' => $k, 'value' => $v, 'label' => $this->getLabel($k), 'data_type' => $data_type);	
+			
+			
+			$new_row[$k] = array('result_type' => $type, 'name' => $k, 'value' => $this->formatValue($data_type, $v), 'label' => $this->getLabel($k), 'data_type' => $data_type);	
 		}
 		
 		return $new_row;
+	}
+	
+	function formatValue($type, $value) {
+		
+		switch ($type) {
+			
+			case 'yyyymmdd':
+				
+				break;
+		}
+		
+		return $value;
 	}
 	
 	/**
