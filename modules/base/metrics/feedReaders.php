@@ -3,7 +3,7 @@
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
-// Copyright 2006 Peter Adams. All rights reserved.
+// Copyright 2010 Peter Adams. All rights reserved.
 //
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
@@ -17,40 +17,29 @@
 //
 
 /**
- * Dashboard Core metrics By Day
+ * Feed Readers metric
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2010 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.3.0
  */
 
-class owa_feedSummaryCount extends owa_metric {
-	
-	function owa_feedSummaryCount($params = null) {
-		
-		return owa_feedSummaryCount::__construct($params);
-	}
-	
-	function __construct($params = null) {
-	
-		return parent::__construct($params);
-	}
-	
-	function calculate() {
-		
-		$this->db->selectFrom('owa_feed_request');
-		$this->db->selectColumn("count(id) as fetch_count, 
-								 count(distinct feed_reader_guid) as reader_count");
-		
-		return $this->zeroFill($this->db->getOneRow());
-	}
-	
-	
-}
+class owa_feedReaders extends owa_metric {
 
+	function __construct() {
+	
+		$this->setName('feedReaders');
+		$this->setLabel('Feed Readers');
+		$this->setEntity('base.feed_request');
+		$this->setColumn('feed_reader_guid');
+		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
+		$this->setDataType('integer');
+		return parent::__construct();
+	}
+}
 
 ?>

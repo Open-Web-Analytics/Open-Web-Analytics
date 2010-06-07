@@ -84,6 +84,9 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('uniqueActions', 'base.uniqueActions');
 		$this->registerMetric('actionsValue', 'base.actionsValue');
 		$this->registerMetric('actionsPerVisit', 'base.actionsPerVisit');
+		$this->registerMetric('feedRequests', 'base.feedRequests');
+		$this->registerMetric('feedReaders', 'base.feedReaders');
+		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
 		
 		// register dimensions
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
@@ -160,6 +163,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('dayofyear', 'base.feed_request', 'dayofyear', 'Day of Year', 'date', 'The day of the year.', '', true);
 		$this->registerDimension('weekofyear', 'base.feed_request', 'weekofyear', 'Week of Year', 'date', 'The week of the year.', '', true);
 		$this->registerDimension('feedType', 'base.feed_request', 'feed_type', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
+		$this->registerDimension('siteId', 'base.feed_request', 'site_id', 'Site ID', 'request', 'The ID of the the web site.', '', true);
 		
 		// register CLI commands
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
