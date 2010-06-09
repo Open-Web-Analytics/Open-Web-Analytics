@@ -82,15 +82,7 @@ class owa_reportDashboardController extends owa_reportController {
 		$rs = owa_coreAPI::executeApiCommand($params);	
 		//print_r($rs);			
 		$this->set('actions', $rs);
-		
-		// dash trend	
-		$dt = owa_coreAPI::metricFactory('base.dashCoreByDay');
-		$dt->setPeriod($this->makeTimePeriod('last_thirty_days'));
-		$dt->setConstraint('site_id', $this->getParam('site_id')); 
-		$trend = owa_lib::deconstruct_assoc($dt->generate());
-		//print_r($trend);
-		$this->set('site_trend', $trend);
-		
+			
 		// set view stuff
 		$this->setSubview('base.reportDashboard');
 		$this->setTitle('Analytics Dashboard');	

@@ -33,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 class owa_helloModule extends owa_module {
 	
 	
-	function owa_helloModule() {
+	function __construct() {
 		
 		$this->name = 'hello';
 		$this->display_name = 'Hello World';
@@ -44,10 +44,7 @@ class owa_helloModule extends owa_module {
 		$this->config_required = false;
 		$this->required_schema_version = 1;
 		
-		$this->owa_module();
-		//$this->c->set('hello', 'schema_version', '1');
-		
-		return;
+		return parent::__construct();
 	}
 	
 	/**
