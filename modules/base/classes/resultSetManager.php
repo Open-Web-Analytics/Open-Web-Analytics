@@ -18,6 +18,7 @@
 
 require_once(OWA_BASE_CLASS_DIR.'pagination.php');
 require_once(OWA_BASE_CLASS_DIR.'timePeriod.php');
+require_once(OWA_DIR.'owa_template.php');
 
 /**
  * Result Set Manager
