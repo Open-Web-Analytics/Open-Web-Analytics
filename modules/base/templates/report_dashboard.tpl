@@ -76,6 +76,9 @@
 				<div class="owa_reportSectionHeader">Top Content</div>
 				
 				<div id="top-pages" style="min-width:350px"></div>
+				<div class="owa_moreLinks">
+					<a href="<?php echo $this->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
+				</div>
 				<script>
 				//OWA.setSetting('debug', true);
 				var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -99,6 +102,9 @@
 				<div class="owa_reportSectionHeader">Top Referers</div>
 				
 				<div id="top-referers" style="min-width:350px"></div>
+				<div class="owa_moreLinks">
+					<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
+				</div>
 				<script>
 				//OWA.setSetting('debug', true);
 				var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
