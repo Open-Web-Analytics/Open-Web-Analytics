@@ -76,11 +76,11 @@ class owa_reportVisitorsController extends owa_reportController {
 		$this->set('browser_types', $b->generate());		
 		
 		// dash counts	
-		$d = owa_coreAPI::metricFactory('base.dashCounts');
-		$d->setPeriod($this->getPeriod());
-		$d->setConstraint('site_id', $this->getParam('site_id')); 
-		$d->setOrder('ASC');
-		$this->set('summary_stats_data', $d->zeroFill($d->generate()));
+		//$d = owa_coreAPI::metricFactory('base.dashCounts');
+		//$d->setPeriod($this->getPeriod());
+		//$d->setConstraint('site_id', $this->getParam('site_id')); 
+		//$d->setOrder('ASC');
+		//$this->set('summary_stats_data', $d->zeroFill($d->generate()));
 
 		// view stuff
 		$this->setView('base.report');

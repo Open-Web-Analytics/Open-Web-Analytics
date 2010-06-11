@@ -474,7 +474,7 @@ OWA.resultSetExplorer.prototype = {
 							for (var z in this.columnLinks[y].params) {
 								//alert(this.columnLinks[y].params[z]);	
 									
-								var template = this.columnLinks[y].template.replace(this.columnLinks[y].params[z] + '=%s', this.columnLinks[y].params[z] + '=' + this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value); 
+								var template = this.columnLinks[y].template.replace(this.columnLinks[y].params[z] + '=%s', this.columnLinks[y].params[z] + '=' + OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
 							
 							}
 							
