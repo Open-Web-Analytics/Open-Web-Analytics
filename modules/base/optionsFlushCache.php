@@ -41,12 +41,6 @@ class owa_optionsFlushCacheController extends owa_adminController {
 	
 	}
 	
-	function owa_optionsFlushCacheController($params) {
-		
-		return owa_optionsFlushCacheController::__construct($params);
-		
-	}
-
 	function action() {
 	
 		$cache = &owa_coreAPI::cacheSingleton(); 

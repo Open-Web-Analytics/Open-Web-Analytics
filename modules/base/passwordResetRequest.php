@@ -32,11 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 class owa_passwordResetRequestController extends owa_controller {
 	
-	function owa_passwordResetRequestController($params) {
-	
-		return owa_passwordResetRequestController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		parent::__construct($params);
@@ -47,8 +42,6 @@ class owa_passwordResetRequestController extends owa_controller {
 		$v1->setValues(trim($this->getParam('email_address')));
 		$v1->setErrorMessage($this->getMsg(3010));
 		$this->setValidation('email_address', $v1);
-		
-		return;
 	}
 	
 	function action() {

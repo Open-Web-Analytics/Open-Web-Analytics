@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  */
 
 class owa_passwordResetFormController extends owa_controller {
-	
-	function owa_passwordResetFormController($params) {
-	
-		return owa_passwordResetFormController::__construct($params);
-	}
-	
+		
 	function __construct($params) {
 		
 		return parent::__construct($params);
@@ -65,12 +60,7 @@ class owa_passwordResetFormController extends owa_controller {
  */
 
 class owa_passwordResetFormView extends owa_view {
-	
-	function owa_passwordResetFormView() {
 		
-		return owa_passwordResetFormView::__construct();
-	}
-	
 	function __construct() {
 		
 		return parent::__construct();

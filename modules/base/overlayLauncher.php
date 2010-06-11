@@ -31,11 +31,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_overlayLauncherController extends owa_reportController {
-
-	function owa_overlayLauncherController($params) {
-	
-		return owa_overlayLauncherController::__construct($params);
-	}
 	
 	function __construct($params) {
 		
