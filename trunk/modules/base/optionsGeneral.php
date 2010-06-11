@@ -33,15 +33,11 @@ require_once(OWA_DIR.'owa_adminController.php');
 
 class owa_optionsGeneralView extends owa_view {
 	
-	function owa_optionsGeneralView($params) {
-		
-		$this->owa_view($params);
-		//set priviledge level
-		//$this->_setPriviledgeLevel('admin');
-		//set page type
+	function __construct($params) {
+
 		$this->_setPageType('Administration Page');
 		
-		return;
+		return parent::__construct();
 	}
 	
 	function render($data) {
@@ -83,15 +79,6 @@ class owa_optionsGeneralController extends owa_adminController {
 		return;
 	}
 	
-	/**
-	 * PHP 4 Style Constructor
-	 */
-	function owa_optionsGeneralController($params) {
-		
-		return owa_optionsGeneralController::__construct($params);
-	}
-	
-
 	function action() {
 		
 		$this->data['configuration'] = $this->c->fetch('base');
@@ -106,7 +93,5 @@ class owa_optionsGeneralController extends owa_adminController {
 	}
 	
 }
-
-
 
 ?>

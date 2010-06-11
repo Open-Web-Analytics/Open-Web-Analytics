@@ -32,11 +32,6 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 class owa_optionsResetController extends owa_adminController {
 	
-	function owa_optionsResetController($params) {
-	
-		return owa_optionsResetController::__construct();
-	}
-	
 	function __construct($params) {
 		
 		$this->setRequiredCapability('edit_settings');

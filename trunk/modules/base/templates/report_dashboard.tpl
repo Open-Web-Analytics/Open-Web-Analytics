@@ -80,16 +80,17 @@
 				//OWA.setSetting('debug', true);
 				var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																'metrics' => 'pageViews', 
-																'dimensions' => 'pageTitle', 
+																'dimensions' => 'pageTitle,pageUrl', 
 																'sort' => 'pageViews-',
 																'format' => 'json'
 																),true);?>';
 																  
-				tc = new OWA.resultSetExplorer('top-pages');
-				tc.options.grid.showRowNumbers = false;
-				//rsh.options.areaChart.series.push({x:'date',y:'visits'});
-				tc.setView('grid');
-				tc.load(tcurl);
+				OWA.items.tc = new OWA.resultSetExplorer('top-pages');
+				OWA.items.tc.options.grid.showRowNumbers = false;
+				OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'));?>', ['pageUrl']);
+				OWA.items.tc.options.grid.excludeColumns = ['pageUrl'];
+				OWA.items.tc.asyncQueue.push(['refreshGrid']);
+				OWA.items.tc.load(tcurl);
 				
 				</script>
 			</div>
@@ -102,17 +103,18 @@
 				//OWA.setSetting('debug', true);
 				var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																'metrics' => 'visits', 
-																'dimensions' => 'referralPageTitle', 
+																'dimensions' => 'referralPageTitle,referralPageUrl', 
 																'sort' => 'visits-',
 																'format' => 'json',
 																'resultsPerPage' => 10
 																),true);?>';
 																  
-				rsh = new OWA.resultSetExplorer('top-referers');
-				//rsh.options.areaChart.series.push({x:'date',y:'visits'});
-				rsh.options.grid.showRowNumbers = false;
-				rsh.setView('grid');
-				rsh.load(aurl);
+				OWA.items.topreferers = new OWA.resultSetExplorer('top-referers');
+				OWA.items.topreferers.options.grid.showRowNumbers = false;
+				OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'));?>', ['referralPageUrl']);
+				OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
+				OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
+				OWA.items.topreferers.load(aurl);
 				
 				</script>
 			</div>
@@ -165,7 +167,7 @@
 				<div class="owa_genericHorizontalList owa_moreLinks">
 					<UL>
 						<LI>
-							<a href="">View Full Report &raquo;</a>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">View Full Report &raquo;</a>
 						</LI>
 					</UL>
 				</div>

@@ -32,12 +32,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
  */
 
 class owa_optionsModulesController extends owa_adminController {
-	
-	function owa_optionsModulesController($params) {
 		
-		return owa_optionsModulesController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		$this->setRequiredCapability('edit_modules');
@@ -118,19 +113,17 @@ class owa_optionsModulesController extends owa_adminController {
 
 class owa_optionsModulesView extends owa_view {
 	
-	function owa_optionsModulesView($params) {
+	function __construct($params) {
 		
-		$this->owa_view($params);
 		//set priviledge level
 		$this->_setPriviledgeLevel('admin');
 		//set page type
 		$this->_setPageType('Administration Page');
 		
-		return;
+		return parent::__construct();
 	}
 	
 	function construct($data) {
-		
 		
 		//$this->c->get('base', 'modules'));
 		
@@ -142,12 +135,7 @@ class owa_optionsModulesView extends owa_view {
 	
 		// Assign module data
 		$this->body->set('modules', $this->get('modules'));
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>

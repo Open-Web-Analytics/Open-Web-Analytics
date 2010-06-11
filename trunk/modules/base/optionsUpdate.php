@@ -32,11 +32,6 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 class owa_optionsUpdateController extends owa_adminController {
 	
-	function owa_optionsUpdateController($params) {
-		
-		return owa_optionsUpdateController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		$this->setRequiredCapability('edit_settings');

@@ -32,13 +32,11 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_optionsView extends owa_view {
 	
-	function owa_OptionsView() {
-		
-		$this->owa_view();
+	function __construct() {
 		
 		$this->default_subview = 'base.optionsGeneral';
 		
-		return;
+		return parent::__construct();
 	}
 	
 	function render($data) {
@@ -68,11 +66,7 @@ class owa_optionsView extends owa_view {
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		
-		return;
 	}
-	
-	
 }
-
 
 ?>
