@@ -165,11 +165,16 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('feedType', 'base.feed_request', 'feed_type', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
 		$this->registerDimension('siteId', 'base.feed_request', 'site_id', 'Site ID', 'request', 'The ID of the the web site.', '', true);
 		
-		// register CLI commands
+		// IDs
+		
+		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
+		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');		
+		
+		/// register CLI commands ///
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
 		$this->registerCliCommand('build', 'base.build');
 		
-		// register API methods
+		/// register API methods ///
 		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
 		
 		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'resultsPerPage', 'page', 'format'));
