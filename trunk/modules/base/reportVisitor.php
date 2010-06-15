@@ -45,27 +45,16 @@ class owa_reportVisitorController extends owa_reportController {
 	
 	function action() {
 		
+		$visitorId = $this->getParam('visitorId');
 		
-		//setup Metrics
-		$m = owa_coreApi::metricFactory('base.latestVisits');
-		$m->setConstraint('site_id', $this->getParam('site_id'));
-		$m->setConstraint('owa_session.visitor_id', $this->getParam('visitor_id'));
-		$period = $this->makeTimePeriod('all_time');
-		$m->setPeriod($period);
-		$m->setOrder('DESC'); 
-		$m->setLimit(15);
-		$m->setPage($this->getParam('page'));
-		$results = $m->generate();
-		$pagination = $m->getPagination();
-		$this->set('visits', $results);
-		$this->set('pagination', $pagination);
-		$this->set('visitor_id', $this->getParam('visitor_id'));
+		if (!$visitorId) {
+			$visitorId = $this->getParam('visitor_id');
+		}
+				
+		$this->set('visitor_id', $visitorId);
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitor');
-		$this->setTitle('Visitor History');
-				
-		return;
-		
+		$this->setTitle('Visitor History:', $visitorId);	
 	}
 	
 }
@@ -83,12 +72,7 @@ class owa_reportVisitorController extends owa_reportController {
  */
 
 class owa_reportVisitorView extends owa_view {
-	
-	function owa_reportVisitorView() {
 		
-		return owa_reportVisitorView::__construct();
-	}
-	
 	function __construct() {
 	
 		return parent::__construct();
@@ -101,8 +85,6 @@ class owa_reportVisitorView extends owa_view {
 		$this->body->set_template('report_visitor.tpl');	
 		$this->body->set('visitor_id', $this->get('visitor_id'));
 		$this->body->set('visits', $this->get('visits'));
-
-		return;
 	}
 	
 	
