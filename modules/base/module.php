@@ -177,7 +177,9 @@ class owa_baseModule extends owa_module {
 		/// register API methods ///
 		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
 		
-		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'resultsPerPage', 'page', 'format'));
+		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'));
+		
+		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'));
 		
 		return parent::__construct();
 	}
@@ -614,7 +616,7 @@ class owa_baseModule extends owa_module {
 		}
 	}
 	
-	function getDomstreams($start_date, $end_date, $document_id = '', $site_id = '', $resultsPerPage = 20, $page = 1, $format = '') {
+	function getDomstreams($start_date, $end_date, $document_id = '', $siteId = '', $resultsPerPage = 20, $page = 1, $format = '') {
 		
 		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 		$db = owa_coreAPI::dbSingleton();
@@ -629,14 +631,14 @@ class owa_baseModule extends owa_module {
 			$db->where('document_id', $document_id);
 		}
 		
-		if ($site_id) {
-			$db->where('site_id', $site_id);
+		if ($siteId) {
+			$db->where('site_id', $siteId);
 		}
 		
 		$db->orderBy('timestamp', 'DESC');
 		
 		// pass limit to rs object if one exists
-		$rs->setLimit($this->limit);
+		$rs->setLimit($resultsPerPage);
 			
 		// pass page to rs object if one exists
 		$rs->setPage($page);
@@ -645,6 +647,61 @@ class owa_baseModule extends owa_module {
 		$rs->resultsRows = $results;
 		
 		$rs->setLabels(array('id' => 'Domstream ID', 'page_url' => 'Page Url', 'duration' => 'Duration', 'timestamp' => 'Timestamp'));
+		
+		return $rs;	
+	}
+	
+	function getLatestVisits($startDate = '', $endDate = '', $visitorId = '', $siteId = '', $resultsPerPage = 20, $page = 1, $format = '') {
+		
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		$db = owa_coreAPI::dbSingleton();
+		
+		$s = owa_coreAPI::entityFactory('base.session');
+		$h = owa_coreAPI::entityFactory('base.host');
+		$ua = owa_coreAPI::entityFactory('base.ua');
+		$d = owa_coreAPI::entityFactory('base.document');
+		$v = owa_coreAPI::entityFactory('base.visitor');
+		$r = owa_coreAPI::entityFactory('base.referer');
+		
+		$db->selectFrom($s->getTableName());
+		
+		$db->selectColumn($s->getColumnsSql('session_'));
+		$db->selectColumn($h->getColumnsSql('host_'));
+		$db->selectColumn($ua->getColumnsSql('ua_'));
+		$db->selectColumn($d->getColumnsSql('document_'));
+		$db->selectColumn($v->getColumnsSql('visitor_'));
+		$db->selectColumn($r->getColumnsSql('referer_'));
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
+			
+		$db->orderBy('session_timestamp','DESC');
+		
+		if ($visitorId) {
+			$db->where('visitor_id', $visitorId);
+		}
+		
+		if ($siteId) {
+			$db->where('site_id', $siteId);
+		}
+		
+		if ($startDate && $endDate) {
+			$db->where('owa_session.yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
+		}
+		
+		$db->orderBy('timestamp', 'DESC');
+		
+		// pass limit to rs object if one exists
+		$rs->setLimit($resultsPerPage);
+			
+		// pass page to rs object if one exists
+		$rs->setPage($page);
+		
+		$results = $rs->generate($db);
+		$rs->resultsRows = $results;
 		
 		return $rs;	
 	}
