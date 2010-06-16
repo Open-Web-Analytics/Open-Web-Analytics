@@ -41,11 +41,10 @@ class owa_feedRequestHandlers extends owa_observer {
 	 * @param 	array $conf
 	 * 
 	 */
-    function owa_feedRequestHandlers() {
+    function __construct() {
         
     	// Call the base class constructor.
-        $this->owa_observer();
-		return;
+   		return parent::__construct();
     }
 	
     /**
@@ -56,12 +55,37 @@ class owa_feedRequestHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event;
-
-		return $this->handleEvent('base.logFeedRequest');
-    	
+    	// Make entity
+		$f = owa_coreAPI::entityFactory('base.feed_request');
+		
+		$f->setProperties($event->getProperties());
+		
+		// Set Primary Key
+		$f->set('id', $event->get('guid'));
+		
+		// Make ua id
+		$f->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+		
+		// Make OS id
+		$f->set('os_id', owa_lib::setStringGuid($event->get('os')));
+	
+		// Make document id	
+		$f->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
+		
+		// Generate Host id
+		$f->set('host_id', owa_lib::setStringGuid($event->get('host')));
+		
+		// Persist to database
+		$result = $f->create();
+		
+		if ($result == true) {
+			
+			$eq = owa_coreAPI::getEventDispatch();
+			$nevent = $eq->makeEvent($event->getEventType().'_logged');
+			$nevent->setProperties($event->getProperties());
+			$eq->notify($nevent);
+		}    	
     }
-    
 }
 
 ?>

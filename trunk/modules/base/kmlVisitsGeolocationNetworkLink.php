@@ -37,12 +37,10 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_kmlVisitsGeolocationNetworkLinkController extends owa_reportController {
 
-	function owa_kmlVisitsGeolocationNetworkLinkController($params) {
+	function __construct($params) {
 		
-		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
-	
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -93,15 +91,14 @@ class owa_kmlVisitsGeolocationNetworkLinkController extends owa_reportController
 
 class owa_kmlVisitsGeolocationNetworkLinkView extends owa_view {
 	
-	function owa_kmlVisitsGeolocationNetworkLinkView() {
+	function __construct() {
 		
-		$this->owa_view();
 		$this->priviledge_level = 'guest';
 		
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		$this->t->set_template('wrapper_blank.tpl');
 		
@@ -121,10 +118,7 @@ class owa_kmlVisitsGeolocationNetworkLinkView extends owa_view {
 		
 		header('Content-type: application/vnd.google-earth.kml+xml; charset=UTF-8', true);	
 		//header('Content-type: application/keyhole', true);
-		return;
 	}
-	
-	
 }
 
 
