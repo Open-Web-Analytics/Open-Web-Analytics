@@ -34,11 +34,8 @@ class owa_optionsFlushCacheController extends owa_adminController {
 	
 	function __construct($params) {
 	
-		parent::__construct($params);
 		$this->setRequiredCapability('edit_settings');
-		
-		return;
-	
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -59,6 +56,5 @@ class owa_optionsFlushCacheController extends owa_adminController {
 	}
 	
 }
-
 
 ?>

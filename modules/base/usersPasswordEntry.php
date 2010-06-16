@@ -87,13 +87,7 @@ class owa_usersPasswordEntryView extends owa_view {
 		$this->body->set_template('users_change_password.tpl');
 		$this->body->set('headline', $this->getMsg(3005));
 		$this->body->set('key', $this->get('key'));
-		
-		return;
-		
 	}
-	
-	
 }
-
 
 ?>

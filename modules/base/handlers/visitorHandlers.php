@@ -42,11 +42,9 @@ class owa_visitorHandlers extends owa_observer {
 	 * @param 	array $conf
 	 * 
 	 */
-    function owa_visitorHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
+    function __construct() {
+       
+		return parent::__construct();
     }
 	
     /**
@@ -57,22 +55,74 @@ class owa_visitorHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event;
-
     	switch ($event->get('is_new_visitor')) {
     		
     		case true:
-    			$this->handleEvent('base.logVisitor');
+    			$this->logVisitor($event);
     			break;
     		case false:
-    			$this->handleEvent('base.logVisitorUpdate');
+    			$this->logVisitorUpdate($event);
     			break;
-    		
     	}
-		
-		return;
     }
     
+    function logVisitor($event) {
+    	
+    	$v = owa_coreAPI::entityFactory('base.visitor');
+	
+		$v->setProperties($event->getProperties());
+	
+		// Set Primary Key
+		$v->set('id', $event->get('visitor_id'));
+		
+		$v->set('user_name', $event->get('user_name'));
+		$v->set('user_email', $event->get('user_email'));
+		$v->set('first_session_id', $event->get('session_id'));
+		$v->set('first_session_year', $event->get('year'));
+		$v->set('first_session_month', $event->get('month'));
+		$v->set('first_session_day', $event->get('day'));
+		$v->set('first_session_dayofyear', $event->get('dayofyear'));
+		$v->set('first_session_timestamp', $event->get('timestamp'));		
+		
+		$v->create();
+    }
+    
+    function logVisitorUpdate($event) {
+    	
+    	$v = owa_coreAPI::entityFactory('base.visitor');
+
+		$v->getByPk('id', $event->get('visitor_id'));
+		
+		if ($event->get('user_name')) {
+			$v->set('user_name', $event->get('user_name'));
+		}
+		
+		if ($event->get('user_email')) {
+			$v->set('user_email', $event->get('user_email'));
+		}
+		$v->set('last_session_id', $event->get('session_id'));
+		$v->set('last_session_year', $event->get('year'));
+		$v->set('last_session_month', $event->get('month'));
+		$v->set('last_session_day', $event->get('day'));
+		$v->set('last_session_dayofyear', $event->get('dayofyear'));		
+		
+		$id = $v->get('id');
+		
+		if (!empty($id)) {
+			$v->update();
+			
+		// insert the visitor object just in case it's not found in the db	
+		} else {
+			$v->set('id', $event->get('visitor_id'));
+			$v->set('first_session_id', $event->get('session_id'));
+			$v->set('first_session_year', $event->get('year'));
+			$v->set('first_session_month', $event->get('month'));
+			$v->set('first_session_day', $event->get('day'));
+			$v->set('first_session_dayofyear', $event->get('dayofyear'));	
+			$v->set('first_session_timestamp', $event->get('timestamp'));		
+			$v->create();
+		}
+    }
 }
 
 ?>

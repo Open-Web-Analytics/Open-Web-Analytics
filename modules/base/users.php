@@ -78,11 +78,9 @@ class owa_usersController extends owa_adminController {
 
 class owa_usersView extends owa_view {
 	
-	function owa_usersView($params) {
+	function __construct($params) {
 		
-		$this->owa_view($params);
-		
-		return;
+		return parent::__construct();
 	}
 	
 	function render() {
@@ -98,9 +96,6 @@ class owa_usersView extends owa_view {
 		//$this->setJs('includes/jquery/tablesorter/jquery.tablesorter.js');
 		return;
 	}
-	
-	
 }
-
 
 ?>

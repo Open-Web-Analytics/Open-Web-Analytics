@@ -59,7 +59,7 @@ class owa_sitesController extends owa_adminController {
 
 
 /**
- * Users Roster View
+ * Sites Roster View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -72,11 +72,9 @@ class owa_sitesController extends owa_adminController {
 
 class owa_sitesView extends owa_view {
 	
-	function owa_sitesView() {
+	function __construct() {
 		
-		$this->owa_view();
-		
-		return;
+		return parent::__construct();
 	}
 	
 	function render() {
@@ -87,12 +85,7 @@ class owa_sitesView extends owa_view {
 		$this->body->set_template('sites.tpl');
 		$this->body->set('headline', 'Web Sites Roster');
 		$this->body->set('tracked_sites', $this->get('tracked_sites'));
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>

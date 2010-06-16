@@ -32,8 +32,8 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 class owa_sitesDeleteController extends owa_adminController {
 	
-	function owa_siteDeleteController($params) {
-		$this->owa_adminController($params);
+	function __construct($params) {
+		parent::__construct($params);
 		$this->setRequiredCapability('edit_sites');
 	}
 	

@@ -80,11 +80,9 @@ class owa_usersProfileController extends owa_controller {
 
 class owa_usersProfileView extends owa_view {
 	
-	function owa_usersProfileView($params) {
+	function __construct() {
 		
-		$this->owa_view($params);
-		
-		return;
+		return parent::__construct();
 	}
 	
 	function render($data) {
@@ -102,8 +100,7 @@ class owa_usersProfileView extends owa_view {
 		$this->body->set_template('users_addoredit.tpl');
 		$this->body->set('roles', owa_coreAPI::getAllRoles());	
 		$this->body->set('user', $this->get('profile'));
-			
-		return;
+		
 	}
 	
 	
