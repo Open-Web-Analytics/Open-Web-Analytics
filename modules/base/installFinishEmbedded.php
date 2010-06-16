@@ -33,18 +33,15 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class owa_installFinishEmbeddedView extends owa_view {
+		
+	function __construct() {
 	
-	function owa_installFinishEmbeddedView() {
-		
-		$this->owa_view();
 		$this->priviledge_level = 'guest';
-		
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 
-		
 		// Set Page title
 		$this->t->set('page_title', 'Installation Complete');
 		
@@ -52,17 +49,8 @@ class owa_installFinishEmbeddedView extends owa_view {
 		$this->body->set('headline', 'Installation is Complete');
 		
 		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('install_finish_embedded.tpl');
-		
-		
-		return;
-	}
-	
-	
+		$this->body->set_template('install_finish_embedded.tpl');	
+	}	
 }
-
-
-
-
 
 ?>

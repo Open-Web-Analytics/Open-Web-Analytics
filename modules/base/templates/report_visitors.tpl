@@ -1,21 +1,24 @@
 <div class="owa_reportSectionContent">
 	<div id="visitor-trend" style="height:125px;"></div>
-	<div class="owa_reportSectionHeader">
-		There were <?php echo $summary_stats['unique_visitors'];?> unique visitors to this web site.
-	</div>
+	<div id="trend-metrics"></div>
+	
 	<script>
 	//OWA.setSetting('debug', true);
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-													'metrics' => 'uniqueVisitors', 
+													'metrics' => 'uniqueVisitors,newVisitors,repeatVisitors', 
 													'dimensions' => 'date', 
 													'sort' => 'date',
 													'format' => 'json'), true);?>';
 													  
 	OWA.items.visitortrend = new OWA.resultSetExplorer('visitor-trend');
 	OWA.items.visitortrend.asyncQueue.push(['makeAreaChart', [{x:'date',y:'uniqueVisitors'}], 'visitor-trend']);
+	OWA.items.visitortrend.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
+	OWA.items.visitortrend.options.metricBoxes.width = '125px';
 	OWA.items.visitortrend.load(aurl);
 	
 	</script>
+	<div class="clear"></div>
+	<div class="owa_reportSectionHeader" id="vists-headline"></div>
 	
 </div>
 
@@ -91,3 +94,15 @@
 			</td>
 		</TR>
 	</table>
+	
+	<script type="text/x-jqote-template" id="metricInfobox">
+ <![CDATA[
+ 
+	<div class="owa_metricInfobox" style="width:<%= this.width %>;">
+	<p class="owa_metricInfoboxLabel"><%= this.label %></p>
+	<p class="owa_metricInfoboxLargeNumber"><%= this.value %></p>
+	<p id='<%= this.dom_id %>-sparkline'></p>
+	</div>
+
+]]>
+</script>
