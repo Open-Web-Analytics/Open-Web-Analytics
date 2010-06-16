@@ -34,9 +34,9 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_usersSetPasswordController extends owa_controller {
 	
-	function owa_usersSetPasswordController($params) {
-		$this->owa_controller($params);
-		
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -78,24 +78,17 @@ class owa_usersSetPasswordController extends owa_controller {
 
 class owa_usersSetPasswordView extends owa_view {
 	
-	function owa_usersSetPasswordView() {
+	function __construct() {
 		
-		$this->owa_view();
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('users_set_password_email.tpl');
 		$this->body->set('ip', $data['ip']);
-			
-		return;
-		
 	}
-	
-	
 }
-
 
 ?>

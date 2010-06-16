@@ -92,8 +92,6 @@ class owa_usersChangePasswordController extends owa_controller {
 		//$this->set('password2',  $this->getParam('password2'));
 		return;
 	}
-	
-	
 }
 
 ?>

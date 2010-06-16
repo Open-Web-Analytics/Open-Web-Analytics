@@ -123,7 +123,7 @@ class owa_optionsModulesView extends owa_view {
 		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		//$this->c->get('base', 'modules'));
 		

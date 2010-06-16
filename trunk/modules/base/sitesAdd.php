@@ -34,15 +34,12 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 class owa_sitesAddView extends owa_view {
 	
-	function owa_sitesAddView() {
+	function __construct() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'admin';
-		
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'Add Web Site');
@@ -77,9 +74,9 @@ class owa_sitesAddView extends owa_view {
 
 class owa_sitesAddController extends owa_adminController {
 	
-	function owa_sitesAddController($params) {
+	function __construct($params) {
 		
-		$this->owa_adminController($params);
+		parent::__construct($params);
 		
 		$this->setRequiredCapability('edit_sites');
 		

@@ -34,37 +34,31 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 class owa_updatesView extends owa_view {
 	
-	function owa_updatesView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+	function __construct() {
+	
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		//switch wrapper if OWA is not embedded
 		// needed becasue this view might be rendered before anything else.
-		if ($this->config['is_embedded'] != true):
+		if ($this->config['is_embedded'] != true) {
 			$this->t->set_template('wrapper_public.tpl');
-		endif;
+		}
 		
 		$this->body->set_template('updates.tpl');// This is the inner template
 		$this->body->set('headline', 'Your database needs to be upgraded...');
 		$this->body->set('modules', $data['modules']);
-		
-	
 	}
 }
 
 class owa_updatesController extends owa_controller {
 	
-	function owa_updatesController($params) {
-		$this->owa_controller($params);
+	function __construct($params) {
+		
 		$this->priviledge_level = 'guest';
-	
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -79,8 +73,6 @@ class owa_updatesController extends owa_controller {
 		
 		return $data;
 	}
-	
-	
 }
 
 ?>

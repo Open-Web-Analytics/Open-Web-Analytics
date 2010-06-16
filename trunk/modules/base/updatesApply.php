@@ -67,26 +67,18 @@ class owa_updatesApplyController extends owa_controller {
 		
 		}
 		
-		if ($error === true):
+		if ($error === true) {
 			$this->set('error_msg', $this->getMsg(3307));
 			$this->setView('base.error');
 			$this->setViewMethod('delegate');			
-		else:
+		} else {
 			
 			// add data to container
 			$this->set('status_code', 3308);
 			$this->set('do', 'base.optionsGeneral');
 			$this->setViewMethod('redirect');
-		 
-		endif;		
-		
-		return;
-	
-	
+		}		
 	}
-	
 }
-
-
 
 ?>

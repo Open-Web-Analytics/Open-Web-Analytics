@@ -33,8 +33,8 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_usersNewAccountController extends owa_controller {
 	
-	function owa_usersNewAccountController($params) {
-		$this->owa_controller($params);
+	function __construct($params) {
+		return parent::__construct($params);
 		
 	}
 	
@@ -90,13 +90,8 @@ class owa_usersNewAccountView extends owa_mailView {
 		// mailer specific
 		$this->setMailSubject($data['subject']);
 		$this->addMailToAddress($data['email_address'], $data['name']);
-		
-		return;
-		
+			
 	}
-	
-	
 }
-
 
 ?>

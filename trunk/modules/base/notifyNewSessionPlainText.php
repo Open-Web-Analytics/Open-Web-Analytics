@@ -16,9 +16,9 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
+
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
+
 /**
  * New Session Notification View
  * 
@@ -33,25 +33,18 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 
 class owa_notifyNewSessionPlainTextView extends owa_view {
 	
-	function owa_notifyNewSessionPlainTextView() {
-		
-		$this->owa_view();
-		return;
-	}
+	function __construct() {
 	
-	function construct($data) {
+		return parent::__construct();
+	}
+		
+	function render($data) {
 		
 		$this->t->set_template('wrapper_blank.tpl');
 		$this->body->set_template('new_session_email_plain_text.tpl');
 		$this->body->set('site', $data['site']);
-		$this->body->set('session', $data['session']);
-			
-		return;
-		
+		$this->body->set('session', $data['session']);	
 	}
-	
-	
 }
-
 
 ?>

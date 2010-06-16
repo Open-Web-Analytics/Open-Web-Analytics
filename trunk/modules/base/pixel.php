@@ -17,7 +17,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 
@@ -37,15 +36,12 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 class owa_pixelView extends owa_view {
 	
-	function owa_pixelView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+	function __construct() {
+
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		// Set Page title
 		$this->t->set_template('wrapper_blank.tpl');
@@ -61,11 +57,7 @@ class owa_pixelView extends owa_view {
 		
 		header('Content-type: image/gif', true);
 		
-		return;
-	}
-	
-	
+	}	
 }
-
 
 ?>
