@@ -555,7 +555,7 @@ class owa_coreAPI {
 		
 		if (!strpos($metric_name, '.')) {
 			$s = owa_coreAPI::serviceSingleton();
-			$metric_name = $s->getMetricClass($metric_name);
+			$metric_name = $s->getMetricClasses($metric_name);
 		}
 		
 		if (!class_exists('owa_metric')) {

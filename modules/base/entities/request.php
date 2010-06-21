@@ -33,6 +33,7 @@ class owa_request extends owa_entity {
 	function __construct() {
 	
 		$this->setTableName('request');
+		$this->setSummaryLevel(0);
 		// properties
 		$this->properties['id'] = new owa_dbColumn;
 		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
@@ -43,7 +44,7 @@ class owa_request extends owa_entity {
 		$this->setProperty($visitor_id);
 		
 		$session_id = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
-		$session_id->setForeignKey('base.session');
+		//$session_id->setForeignKey('base.session');
 		$this->setProperty($session_id);
 		
 		$inbound_visitor_id = new owa_dbColumn('inbound_visitor_id', OWA_DTD_BIGINT);

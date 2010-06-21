@@ -539,7 +539,7 @@ class owa_metric extends owa_base {
 			$as = $this->getName();
 		}
 		
-		$this->select[] = array($column, $as);
+		$this->select = array($column, $as);
 	}
 	
 	function getSelect() {

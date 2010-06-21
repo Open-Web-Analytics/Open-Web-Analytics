@@ -635,7 +635,7 @@ class owa_module extends owa_base {
 	
 	function registerMetric($metric_name, $class_name) {
 		
-		$this->metrics[$metric_name] = $class_name;
+		$this->metrics[$metric_name][] = $class_name;
 	}
 	
 	/**
@@ -661,7 +661,7 @@ class owa_module extends owa_base {
 	 */
 	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false, $data_type = 'string') {
 	
-		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type);
+		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type, 'denormalized' => $denormalized);
 	
 		if ($denormalized) {
 			$this->denormalizedDimensions[$dim_name][$entity] = $dim;

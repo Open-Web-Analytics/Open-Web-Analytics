@@ -42,7 +42,7 @@ class owa_reportPagesController extends owa_reportController {
 			
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Web Pages');
-		$this->set('metrics', 'visits,pageViews,bounces,uniquePageViews');
+		$this->set('metrics', 'pageViews,uniquePageViews');
 		$this->set('dimensions', 'pageTitle,pageUrl');
 		$this->set('excludeColumns', "'pageUrl'");
 		$this->set('sort', 'visits');
