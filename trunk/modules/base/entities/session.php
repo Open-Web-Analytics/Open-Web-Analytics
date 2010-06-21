@@ -39,6 +39,7 @@ class owa_session extends owa_entity {
 	
 		// table name
 		$this->setTableName('session');
+		$this->setSummaryLevel(1);
 		
 		// properties
 		$this->properties['id'] = new owa_dbColumn;

@@ -626,6 +626,23 @@ class owa_entity {
 		
 		return $this->name;
 	}
+	
+	function setSummaryLevel($num) {
+		
+		$this->_tableProperties['summary_level'] = $num;
+	}
+	
+	function getSummaryLevel() {
+		
+		if (array_key_exists('summary_level', $this->_tableProperties)) {
+			
+			return $this->_tableProperties['summary_level'];
+		
+		} else {
+		
+			return 0;
+		}
+	}
 }
 
 ?>

@@ -144,8 +144,9 @@ class owa_service extends owa_base {
 		foreach ($this->modules as $k => $module) {
 		
 			if (is_array($module->metrics)) {
-				$this->metrics = array_merge($module->metrics, $this->metrics);
-			}
+				
+				$this->metrics = array_merge_recursive($module->metrics, $this->metrics);
+			}	
 		}
 	}
 	
@@ -314,9 +315,10 @@ class owa_service extends owa_base {
 		return $this->modules;
 	}
 	
-	function getMetricClass($name) {
-	
+	function getMetricClasses($name) {
+		
 		if (array_key_exists($name, $this->metrics)) {
+		
 			return $this->metrics[$name];
 		}
 	}

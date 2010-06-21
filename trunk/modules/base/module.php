@@ -71,6 +71,8 @@ class owa_baseModule extends owa_module {
 		
 		// register metrics
 		$this->registerMetric('pageViews', 'base.pageViews');
+		$this->registerMetric('pageViews', 'base.pageViewsFromSessionFact');
+		
 		$this->registerMetric('uniqueVisitors', 'base.uniqueVisitors');
 		$this->registerMetric('visits', 'base.visits');
 		$this->registerMetric('newVisitors', 'base.newVisitors');
@@ -531,22 +533,26 @@ class owa_baseModule extends owa_module {
 		$rsm = new owa_resultSetManager;
 		
 		if ($metrics) {
-			$metrics = $rsm->metricsStringToArray($metrics);
+			$rsm->metrics = $rsm->metricsStringToArray($metrics);
 		} else {
 			return false;
 		}
 		
+		
+		
 		// count how many metrics there are
-		$count = count($metrics);
+		//$count = count($metrics);
 		
 		//loop through the rest of the metrics and merge them into the first
-		if ($metrics) {
+		/*
+if ($metrics) {
 			
 			for($i = 0; $i < $count; ++$i) {
 				
 				$rsm->addMetric($metrics[$i]);
 			}
 		}
+*/
 
 		// set dimensions
 		if ($dimensions) {

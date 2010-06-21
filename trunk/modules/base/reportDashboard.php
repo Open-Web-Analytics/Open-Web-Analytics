@@ -43,32 +43,7 @@ class owa_reportDashboardController extends owa_reportController {
 	}
 	
 	function action() {
-		
-		$cu = owa_coreAPI::getCurrentUser();
-		//print_r($cu);
-		
-		// dash counts	
-		//$d = owa_coreAPI::metricFactory('base.dashCounts');
-		//$d->setPeriod($this->getPeriod());
-		//$d->setConstraint('site_id', $this->getParam('site_id')); 
-		//$res = $d->generate();
-		//print_r($d->zeroFill($res));
-		//$this->set('summary_stats_data', $d->zeroFill($res));
-		
-		// action counts	
-		$params = array('period' 	  => $this->get('period'),
-						'startDate'	  => $this->get('startDate'),
-						'endDate'	  => $this->get('endDate'),
-						'metrics' 	  => 'visits,pagesPerVisit,newVisitors,repeatVisitors,uniqueVisitors',
-						'dimensions'  => 'date',
-						'constraints' => 'site_id='.$this->getParam('site_id'),
-						'do'		  => 'getResultSet'
-						);
-						
-		$summary = owa_coreAPI::executeApiCommand($params);	
-		//print_r($summary);			
-		$this->set('summary', $summary);		
-		
+				
 		// action counts	
 		$params = array('period' 	  => $this->get('period'),
 						'startDate'	  => $this->get('startDate'),
@@ -85,10 +60,7 @@ class owa_reportDashboardController extends owa_reportController {
 			
 		// set view stuff
 		$this->setSubview('base.reportDashboard');
-		$this->setTitle('Analytics Dashboard');	
-			
-		return;	
-		
+		$this->setTitle('Analytics Dashboard');		
 	}
 	
 }

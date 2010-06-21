@@ -95,6 +95,8 @@ class owa_resultSetManager extends owa_base {
 	var $childMetrics = array();
 	var $calculatedMetrics = array();
 	var $query_params = array();
+	var $baseEntity;
+	var $metricObjectsByEntityMap = array();
 	
 	function __construct($db = '') {
 		
@@ -115,13 +117,12 @@ class owa_resultSetManager extends owa_base {
 		}
 		
 		if (!empty($value)) {
-			$this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
+			$this->params['constraints'][] = array('operator' => $operator, 'value' => $value, 'name' => $name);
 		}
 	}
 	
-	// remove
 	function setConstraints($array) {
-	
+		
 		if (is_array($array)) {
 			
 			if (is_array($this->params['constraints'])) {
@@ -129,66 +130,6 @@ class owa_resultSetManager extends owa_base {
 			} else {
 				$this->params['constraints'] = $array;
 			}
-		}
-	}
-	
-	function getDimensionForeignKey($dim) {
-		
-		if ($dim) {
-			$bm = $this->getBaseMetric();
-			// check for foreign key column by name if dimension specifies one
-			if (array_key_exists('foreign_key_name', $dim) && !empty($dim['foreign_key_name'])) {
-				// get foreign key col by 
-				if ($bm->entity->isForeignKeyColumn($dim['foreign_key_name'])){
-					$fk = array('col' => $dim['foreign_key_name'], 'entity' => $bm->entity);
-				} else {
-					// check all other metric entities
-					
-					if (!empty($this->metrics)) {
-						
-						foreach ($this->metrics as $k => $metric) {
-							
-							if ($metric->entity->isForeignKeyColumn($dim['foreign_key_name'])){
-								$fk = array('col' => $dim['foreign_key_name'], 'entity' => $metric->entity);
-								
-								break;
-							}
-						}
-					}
-				}
-				
-			} else {
-				// if not check for foreign key by entity name
-			    //check to see if the metric's entity has a foreign key to the dimenesion table.
-				$fk = array(); 
-				
-				$fkcol = $bm->entity->getForeignKeyColumn($dim['entity']);
-				
-				if ($fkcol) {
-					$fk['col'] = $fkcol;
-					$fk['entity'] = $bm->entity;
-				} else {
-					
-					// check all other metric entities
-					
-					if (!empty($this->metrics)) {
-						
-						foreach ($this->metrics as $k => $metric) {
-							
-							$fkcol = $metric->entity->getForeignKeyColumn($dim['entity']);
-							if ($fkcol){
-								$fk = array('col' => $fkcol, 'entity' => $metric->entity);
-								
-								break;
-							}
-						}
-					}
-					
-					
-				}
-			}
-
-			return $fk;
 		}
 	}
 	
@@ -210,14 +151,9 @@ class owa_resultSetManager extends owa_base {
 					if (strpos($constraint, $operator)) {
 						list ($name, $value) = split($operator, $constraint);
 						
-						$dim = $this->lookupDimension($name);
-						//print_r($dim);
-						
-						// do not add constraint if the dimension is not found
-						if ($dim) {
-							$constraint_array[$dim['column']] = array('name' => $dim['column'], 'value' => $value, 'operator' => $operator);
-						}
-						//print_r($constraint_array);
+						$constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+					
+
 						break;
 					}
 				}
@@ -232,22 +168,222 @@ class owa_resultSetManager extends owa_base {
 		return $this->params['constraints'];
 	}
 	
+	function applyConstraints() {
 		
-	function lookupDimension($name) {
+		$nconstraints = array();
+		
+		foreach ($this->getConstraints() as $k => $constraint) {
+			
+			$dim = $this->lookupDimension($constraint['name'], $this->baseEntity);
+			
+			//$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+			
+			
+			$col = $dim['column'];
+			$constraint['name'] = $col;
+			$nconstraints[$col] = $constraint;
+			$this->db->multiWhere($nconstraints);
+			//print_r($nconstraints);
+		
+		}
+		
+	}
+	
+	
+	function chooseBaseEntity() {
+		
+		$metric_imps = array();
+		
+		// load metric implementations
+		foreach ($this->metrics as $metric_name) {
+			
+			$metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
+			
+			
+		}
+		//print_r($metric_imps);
+		owa_coreAPI::debug('pre-reduce set of entities to choose from: '.print_r($metric_imps, true));
+		
+		$entities = array();
+		// reduce entities	
+		foreach ($metric_imps as $mimp) {
+			
+			if (empty($entities)) {
+				$entities = $mimp;
+			}
+			
+			$entities = $this->reduceTables($mimp, $entities);
+			
+			if (empty($entities)) {
+				return $this->addError('illegal metric combination');
+			}
+		}
+		
+		owa_coreAPI::debug('post-reduce set of entities to choose from: '.print_r($entities, true));
+		
+		// check summary level of entities
+		$niceness = array();
+		
+		foreach ($entities as $entity) {
+			
+			$niceness[$entity] = owa_coreAPI::entityFactory($entity)->getSummaryLevel();
+		}
+		//sort by summary level
+		arsort($niceness);
+		
+		owa_coreAPI::debug('Entities summary levels: '.print_r($niceness, true));
+		
+		$entity_count = count($niceness);
+		$i = 1;
+		//check entities for dimension relations
+		foreach ($niceness as $entity_name => $summary_level) {
+			
+			$error = false;
+			
+			//cycle through each dimension frm dim list and those found in constraints.
+			$dims = array_merge($this->dimensions, $this->getDimensionsFromConstraints());
+			foreach ($dims as $dimension) {
+				
+				$check = $this->isDimensionRelated($dimension, $entity_name);
+				
+				// is the realtionship check fails then move onto the next entity.
+				if (!$check) {
+					$error = true;
+					break;
+				}
+			}
+			
+			// is no error then everythig is related and we are good to go.
+			if (!$error) {
+				owa_coreAPI::debug('optimal base entity is: '.$entity_name);
+				$this->baseEntity = owa_coreAPI::entityFactory($entity_name);
+				return $this->baseEntity;
+			}
+			
+			if ($i === $entity_count) {
+				$this->addError('illegal dimension combination: '.$dimension);
+			} else {
+				$i++;
+			}
+		}
+	}
+	
+	function getDimensionsFromConstraints() {
+		
+		$dims = array();
+		
+		if (!empty($this->constraints)) {		
+			foreach ($this->constraints as $constraint => $carray) {
+				
+				$dims = array_merge(array_keys($carray));
+			}
+		}
+		
+		return $dims;
+	}
+		
+	function isDimensionRelated($dimension_name, $entity_name) {
+		
+		$entity = owa_coreAPI::entityFactory($entity_name);
+		
+		$dimension = $this->lookupDimension($dimension_name, $entity);
+		
+		if ($dimension['denormalized'] === true) {
+			$this->related_dimensions[$dimension['name']] = $dimension;
+			owa_coreAPI::debug("Dimension: $dimension_name is denormalized into $entity_name");
+			return true;
+		} else {
+		
+			$fk = $this->getDimensionForeignKey($dimension, $entity);
+			
+			if ($fk) {
+				owa_coreAPI::debug("Dimension: $dimension_name is related to $entity_name");
+				$this->related_dimensions[$dimension['name']] = $dimension;
+				return true;
+			}
+		}
+	}
+	
+	function getMetricEntities($metric_name) {
+		
+		//get the class implementations
+		$s = owa_coreAPI::serviceSingleton();
+		$classes = $s->getMetricClasses($metric_name);
+		
+		$entities = array();
+		
+		// cycles through metric classes and get their entity names
+		foreach ($classes as $class) {
+			$m = owa_coreAPI::metricFactory($class);
+			
+			// check to see if this is a calculated metric
+				if ($m->isCalculated()) {
+					
+					foreach ($m->getChildMetrics() as $cmetric_name) {
+						$this->addCalculatedMetric($m);
+						$entities = array_merge($this->getMetricEntities($cmetric_name), $entities);
+					}
+					
+				} else {
+					$this->metricObjectsByEntityMap[$m->getEntityName()][$metric_name] = $m;
+					$entities[$metric_name][] = $m->getEntityName();	
+				}
+			
+		}
+		
+		return $entities;
+	}
+	
+	function reduceTables($new, $old) {
+		
+		return array_intersect($new, $old);
+	}
+	
+	function getDimensionForeignKey($dimension, $entity) {
+
+		if ($dimension) {
+			//$entity = ;
+			$dim = $dimension;
+			
+			// check for foreign key column by name if dimension specifies one
+			if (array_key_exists('foreign_key_name', $dim) && !empty($dim['foreign_key_name'])) {
+				// get foreign key col by 
+				if ($entity->isForeignKeyColumn($dim['foreign_key_name'])){
+					$fk = array('col' => $dim['foreign_key_name'], 'entity' => $entity);
+				}
+				
+			} else {
+				// if not check for foreign key by entity name
+			    //check to see if the metric's entity has a foreign key to the dimenesion table.
+				$fk = array(); 
+				
+				$fkcol = $entity->getForeignKeyColumn($dim['entity']);
+				
+				if ($fkcol) {
+					$fk['col'] = $fkcol;
+					$fk['entity'] = $entity;
+				} 
+			}
+
+			return $fk;
+		}
+	}
+		
+	function lookupDimension($name, $entity) {
 		
 		// check dimensions
-		if (array_key_exists($name, $this->dimensions)) {
-			return $this->dimensions[$name];
+		if (array_key_exists($name, $this->related_dimensions)) {
+			return $this->related_dimensions[$name];
 		}
 		//print_r($this->metrics[0]);
 		// check for denormalized 
-		$bm = $this->getBaseMetric();
+		
 		$service = owa_coreAPI::serviceSingleton();
-		$dim = $service->getDenormalizedDimension($name, $bm->entity->getName());
+		$dim = $service->getDenormalizedDimension($name, $entity->getName());
 		
 		if ($dim) {
 			//apply table aliasing to dimension column
-			$dim['column'] = $bm->entity->getTableAlias().'.'.$dim['column'];
+			$dim['column'] = $entity->getTableAlias().'.'.$dim['column'];
 		} else {
 		
 			// check for normalized dim
@@ -256,23 +392,8 @@ class owa_resultSetManager extends owa_base {
 			} else {
 				
 				$dim = $service->getDimension($name);
-				
-				if ($dim) {
-				
-					$fk = $this->getDimensionForeignKey($dim);
-					
-					// if a foreign 
-					if ($fk) {
-						// create dimension entity
-						$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
-						$dim['column'] = $dimEntity->getTableAlias().'.'.$dim['column'];
-				
-						// add to local dim map
-						$this->related_dimensions[$name] = $dim;
-					} else {
-						$this->addError("The dimension $name cannot be combined with these metrics.");
-					}
-				}
+				$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+				$dim['column'] = $dimEntity->getTableAlias().'.'.$dim['column'];
 			}
 		}
 		
@@ -341,18 +462,32 @@ class owa_resultSetManager extends owa_base {
 				}
 		
 				//$col_name = $this->getColumnName($column);
-				$col_name = $column;
-				if ($col_name) {
-					$sort_array[$sort][0] = $col_name;
-					$sort_array[$sort][1] = $order;
-					return $sort_array;
-				} else {
-					$this->addError("$column is not a valid column to sort on");
-				}		
+				$check = $this->isSortValid($column);
+				
+				if ($check) {
+								
+					$col_name = $column;
+					
+					if ($col_name) {
+						$sort_array[$sort][0] = $col_name;
+						$sort_array[$sort][1] = $order;
+						
+					} else {
+						$this->addError("$column is not a valid column to sort on");
+					}	
+				}	
 			}
+			
+			return $sort_array;
 		}
 	}
-
+	
+	function isSortValid($needle) {
+		
+		$haystack = array_merge($this->metrics, $this->dimensions);
+		return in_array($needle, $haystack);
+	}
+	
 	function setPage($value) {
 		
 		if (!empty($value)) {
@@ -390,14 +525,17 @@ class owa_resultSetManager extends owa_base {
 		if ($startDate && $endDate) {
 			$period_name = 'date_range';
 			$map = array('startDate' => $startDate, 'endDate' => $endDate);
-			$col = 'yyyymmdd';
+			$dimension_name = 'date';
+			$format = 'yyyymmdd';
 		} elseif ($startTime && $endTime) {
 			$period_name = 'time_range';
 			$map = array('startTime' => $startTime, 'endTime' => $endTime);
-			$col = 'timestamp';
+			$dimension_name = 'timestamp';
+			$format = 'timestamp';
 		} else {
-			owa_coreAPI::debug('no period params passed to owa_metric::setTimePeriod');
-			$col = 'timestamp';
+			owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
+			$dimension_name = 'date';
+			$format = 'yyyymmdd';
 		}
 	
 		// add to query params array for use in URL construction		
@@ -413,12 +551,11 @@ class owa_resultSetManager extends owa_base {
 		
 		$this->setPeriod($p);
 		
-		$bm = $this->getBaseMetric();
-		$start = $p->startDate->get($col);
-		$end = $p->endDate->get($col);
-		$col = $bm->entity->getTableAlias().'.'.$col;
+		$start = $p->startDate->get($format);
+		$end = $p->endDate->get($format);
 		
-		$this->setConstraint($col, array('start' => $start, 'end' => $end), 'BETWEEN');
+		$this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
+
 		
 	}
 	
@@ -453,10 +590,11 @@ class owa_resultSetManager extends owa_base {
 		
 		foreach ($row as $k => $v) {
 				
-			if (array_key_exists($k, $this->dimensions)) {
+			if (in_array($k, $this->dimensions)) {
 				$type = 'dimension';
-				$data_type =$this->dimensions[$k]['data_type'];
-			} elseif (array_key_exists($k, $this->metrics)){
+				$dim = $this->lookupDimension($k, $this->baseEntity);
+				$data_type = $dim['data_type'];
+			} elseif (in_array($k, $this->metrics)){
 				$type = 'metric';
 				$data_type = $this->getMetric($k)->getDataType();
 			}
@@ -546,18 +684,7 @@ class owa_resultSetManager extends owa_base {
 	function setDimension($name) {
 		
 		if ($name) {
-			
-			$dim = $this->lookupDimension($name);
-			
-			if ($dim) {
-				// add to dimension map
-				$this->dimensions[$dim['name']] = $dim;
-				// add label
-				$this->addLabel($dim['name'], $dim['label']);
-			} else {
-				
-				$this->addError("$name is not a registered dimension");
-			}
+			$this->dimensions[] = $name;
 		}
 	}
 	
@@ -597,15 +724,17 @@ class owa_resultSetManager extends owa_base {
 	 */
 	function applyDimensions() {
 		
-		foreach ($this->dimensions as $dim) {
-							
+		foreach ($this->dimensions as $dimension_name) {
+			$dim = $this->lookupDimension($dimension_name, $this->baseEntity);
 			// add column name to select statement
 			$this->db->selectColumn($dim['column'], $dim['name']);
 			// add groupby
 			$this->db->groupBy($dim['column']);
+			$this->addLabel($dim['name'], $dim['label']);
 		}
 	}
 	
+	// dangerous. remove
 	function addFactTableRelation($metric) {
 		
 		$bm = $this->getBaseMetric();
@@ -636,6 +765,7 @@ class owa_resultSetManager extends owa_base {
 		}
 	}
 	
+	
 	function checkForFactTableRelation($metric) {
 		
 		if (!empty($this->related_metrics)) {
@@ -665,29 +795,27 @@ class owa_resultSetManager extends owa_base {
 	}
 	
 	function applyJoins() {
-			
-				
-		foreach($this->metrics as $metric) {
-		
-				$this->addFactTableRelation($metric);
-		}
 		
 		foreach($this->related_dimensions as $dim) {
-		
-				$this->addRelation($dim);
+			$this->addRelation($dim);
 		}		
 	}
 	
+	// remove
 	function getBaseMetric() {
 		$keys = array_keys($this->metrics);
 		return $this->metrics[$keys[0]];	
 	}
 	
 	function addRelation($dim) {
-		
-		if (!in_array($dim['entity'], $this->related_entities)) {
 			
-			$fk = $this->getDimensionForeignKey($dim);
+			// if denomalized, skip
+			if ($dim['denormalized'] === true) {
+				return;
+			}
+			
+			// have already determined base enttiy at this point so use that.
+			$fk = $this->getDimensionForeignKey($dim, $this->baseEntity);
 			//print_r($fk);
 			//print $fk;
 			if ($fk) {
@@ -698,6 +826,8 @@ class owa_resultSetManager extends owa_base {
 				//$bm = $this->getBaseMetric();
 				//$fpk_col = $bm->entity->getProperty($fk);
 				$fpk_col = $fk['entity']->getProperty($fk['col']);
+				//$fpk_col = $this->baseEntity->getProperty($fk['col']);
+
 				//print_r($fk['col']);
 				$fpk = $fpk_col->getForeignKey();
 				// add join
@@ -707,31 +837,12 @@ class owa_resultSetManager extends owa_base {
 				$this->addColumn($dim['name'], $dimEntity->getTableAlias().'.'.$dim['column']);
 			} else {
 				// add error result set
-				owa_coreAPI::debug(sprintf('%s metric does not have relation to dimension %s', $bm->getName(), $dim['name'])); 
+				owa_coreAPI::debug(sprintf('%s metric does not have relation to dimension %s', $fk['entity']->getName(), $dim['name'])); 
 			}
-		}
-	}
-	
-	/**
-	 * Sets a denormalized dimension
-	 *
-	 * Denormalized dimensions are looked up in this map by key
-	 * and always begin with "denorm" (e.g. "denorm.key")
-	 */
-	function setDenormalizedDimension($name, $column) {
-	
-		$bm = $this->getBaseMetric();
-		$this->denormalizedDimensions[$name] = array('name' => $name, 'entity' => $bm->entity->getName(), 'column' => $column);
 		
 	}
 	
-	function getDenormalizedDimension($name) {
-	
-		if (array_key_exists($name, $this->denormalizedDimensions)) {
-			return $this->denormalizedDimensions[$name];
-		}
-	}
-	
+	// remove
 	function addMetric($metric_name, $child = false) {
 		
 		$ret = false;
@@ -788,28 +899,11 @@ class owa_resultSetManager extends owa_base {
 	
 	function addCalculatedMetric($calc_metric_obj) {
 		
-		foreach ($calc_metric_obj->getChildMetrics() as $metric_name) {
-			
-			$ret = $this->addMetric($metric_name, true);
-			
-			if ($ret) {
-				// add child metrics to child metric maps
-				// check to see if it wasn't already added as a non-child metric.
-				//if (!array_key_exists($metric_name, $this->metrics)){
-				//	$this->childMetrics[$metric_name] = $metric_name;
-				//}
-			} else {
-				$error = true;
-			}
-			
-		}
+		// add label of calculated metric obj
+		$this->addLabel($calc_metric_obj->getName(),$calc_metric_obj->getLabel());
+		// add to calculated metric map
+		$this->calculatedMetrics[$calc_metric_obj->getName()] = $calc_metric_obj; 
 		
-		if (!$error) {
-			// add label of calculated metric obj
-			$this->addLabel($calc_metric_obj->getName(),$calc_metric_obj->getLabel());
-			// add to calculated metric map
-			$this->calculatedMetrics[$calc_metric_obj->getName()] = $calc_metric_obj; 
-		}
 	}
 	
 	function addSelect($select_array) {
@@ -824,15 +918,41 @@ class owa_resultSetManager extends owa_base {
 		}
 	}
 	
-	// passes all select arrays to the db layer
 	function applySelects() {
-		
-		$selects = $this->getSelects();
-		
-		if (!empty($selects)) {
-		
-			foreach ($selects as $select) {
+		//print_r($this->metrics);
+		foreach($this->metrics as $k => $metric_name) {
+			
+			if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
+			
+				$m = $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$metric_name];
+						
+				$select = $m->getSelect();
+				//print_r ($select);
 				$this->db->selectColumn($select[0], $select[1]);
+			}
+			
+			$this->addLabel($m->getName(), $m->getLabel());
+		}
+		
+		// add selects for calculated metrics
+		if (!empty($this->calculatedMetrics)) {
+
+			// loop through calculated metric objects
+			foreach ($this->calculatedMetrics as $cmetric) {
+				//create child metrics
+				foreach( $cmetric->getChildMetrics() as $child_name) {
+					// check to see if the metric has already been added
+					if (!in_array($child_name, $this->metrics)) {
+					
+						$child = $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$child_name];
+						$select = $child->getSelect();
+						//print_r ($select[0]);
+						$this->db->selectColumn($select[0], $select[1]);
+						// needed so we can remove this temp metric later
+						$this->childMetrics[] = $child_name;
+						owa_coreAPI::debug("Added $child_name to ChildMetrics array");
+					}
+				}
 			}
 		}
 	}
@@ -883,85 +1003,94 @@ class owa_resultSetManager extends owa_base {
 	 */
 	function getResults() {
 		
-		$bm = $this->getBaseMetric();
-		// set constraints
-		$this->applyJoins();
-		$this->db->multiWhere($this->getConstraints());
-		$this->applySelects();
-	
-		$this->db->selectFrom($bm->entity->getTableName(), $bm->entity->getTableAlias());
 		// get paginated result set object
 		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
-		// generate aggregate results
-		$results = $this->db->getOneRow();
-		// merge into result set
-		if ($results) {
-			$rs->aggregates = array_merge($this->applyMetaDataToSingleResultRow($results), $rs->aggregates);
-		}
 		
-		// setup dimensional query
-		if (!empty($this->dimensions)) {
+		$bm = $this->chooseBaseEntity();
+		$bname = $bm->getName();
+		
+		owa_coreAPI::debug("Using $bname as base entity for making result set.");
+		
+		if ($bm) {
 			
-			// apply dimensional SQL
-			$this->applyDimensions();
-			
+			// set constraints
+			$this->applyJoins();
+			$this->applyConstraints();
 			$this->applySelects();
 		
-			$this->db->selectFrom($bm->entity->getTableName(), $bm->entity->getTableAlias());
-			
-			// pass limit to db object if one exists
-			if (!empty($this->limit)) {
-				$rs->setLimit($this->limit);
-			}
-			// pass limit to db object if one exists
-			if (!empty($this->page)) {
-				$rs->setPage($this->page);
+			$this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+			// generate aggregate results
+			$results = $this->db->getOneRow();
+			// merge into result set
+			if ($results) {
+				$rs->aggregates = array_merge($this->applyMetaDataToSingleResultRow($results), $rs->aggregates);
 			}
 			
-			$this->applyJoins();
-			$this->db->multiWhere($this->getConstraints());
+			// setup dimensional query
+			if (!empty($this->dimensions)) {
+				$this->applyJoins();
+				// apply dimensional SQL
+				$this->applyDimensions();
+				
+				$this->applySelects();
 			
-			$sorts = $this->params['orderby'];
-			// apply sort by
-			if ($sorts) {
-				foreach ($sorts as $sort) {
-					$this->db->orderBy($sort[0], $sort[1]);
+				$this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+				
+				// pass limit to db object if one exists
+				if (!empty($this->limit)) {
+					$rs->setLimit($this->limit);
 				}
+				// pass limit to db object if one exists
+				if (!empty($this->page)) {
+					$rs->setPage($this->page);
+				}
+				
+				$this->applyConstraints();
+				
+				$sorts = $this->params['orderby'];
+				// apply sort by
+				if ($sorts) {
+					foreach ($sorts as $sort) {
+						$this->db->orderBy($sort[0], $sort[1]);
+					}
+				}
+				
+				// add labels
+				$rs->setLabels($this->getLabels());	
+			
+				// generate dimensonal results
+				$results = $rs->generate($this->db);
+				
+				$rs->resultsRows = $this->applyMetaDataToResults($results);
 			}
 			
 			// add labels
-			$rs->setLabels($this->getLabels());	
-		
-			// generate dimensonal results
-			$results = $rs->generate($this->db);
+			$rs->setLabels($this->getLabels());
 			
-			$rs->resultsRows = $this->applyMetaDataToResults($results);
+			// add period info
+			
+			$rs->setPeriodInfo($this->params['period']->getAllInfo());
+			
+			$rs = $this->computeCalculatedMetrics($rs);
+			
+			// add urls
+			$urls = $this->makeResultSetUrls();
+			$rs->self = $urls['self'];
+			
+			if ($rs->more) {
+			
+				$rs->next = $urls['next'];
+			}
+			
+			if ($this->page >=2) {
+				$rs->previous = $urls['previous'];
+			}
+			
+			$rs->createResultSetHash();
 		}
 		
-		// add labels
-		$rs->setLabels($this->getLabels());
-		
-		// add period info
-		
-		$rs->setPeriodInfo($this->params['period']->getAllInfo());
-		
-		$rs = $this->computeCalculatedMetrics($rs);
-		
-		// add urls
-		$urls = $this->makeResultSetUrls();
-		$rs->self = $urls['self'];
-		
-		if ($rs->more) {
-		
-			$rs->next = $urls['next'];
-		}
-		
-		if ($this->page >=2) {
-			$rs->previous = $urls['previous'];
-		}
-		
-		$rs->createResultSetHash();
-		
+		$rs->errors = $this->errors;
+				
 		return $rs;
 	}
 	
@@ -1044,8 +1173,8 @@ class owa_resultSetManager extends owa_base {
 	
 	function getMetric($name) {
 		
-		if (array_key_exists($name, $this->metrics)) {
-			return $this->metrics[$name];
+		if (in_array($name, $this->metrics)) {
+			return $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$name];
 		} 
 	}
 	

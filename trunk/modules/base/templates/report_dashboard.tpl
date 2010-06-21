@@ -6,7 +6,7 @@
 	<script>
 	//OWA.setSetting('debug', true);
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-													'metrics' => 'visits,pageViews,bounces,pagesPerVisit,visitDuration,actionsPerVisit', 
+													'metrics' => 'visits,pageViews,bounces,pagesPerVisit,visitDuration', 
 													'dimensions' => 'date', 
 													'sort' => 'date',
 													'format' => 'json'
