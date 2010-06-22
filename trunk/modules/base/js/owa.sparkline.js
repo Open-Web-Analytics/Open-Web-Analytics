@@ -7,14 +7,15 @@ OWA.sparkline = function(dom_id) {
 	this.data = '';
 
 	this.options = {
+		type: 'line',
+		lineWidth: 2,
 		width: '100px', 
 		height: '20px', 
-		spotRadius: 2, 
+		spotRadius: 0, 
 		//lineColor: '', 
 		//spotColor: '',
 		minSpotColor: '#FF0000',
 		maxSpotColor: '#00FF00'
-	
 	};
 	
 }

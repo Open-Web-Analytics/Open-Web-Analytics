@@ -241,14 +241,20 @@ class owa_resultSetManager extends owa_base {
 			$error = false;
 			
 			//cycle through each dimension frm dim list and those found in constraints.
-			$dims = array_merge($this->dimensions, $this->getDimensionsFromConstraints());
+			$dims = array_unique(array_merge($this->dimensions, $this->getDimensionsFromConstraints()));
+			
+			owa_coreAPI::debug(sprintf('Dimensions: %s',print_r($this->dimensions, true)));
+			
+			owa_coreAPI::debug(sprintf('Checking the following dimensions for relation to %s: %s',$entity_name, print_r($dims, true)));
+			
 			foreach ($dims as $dimension) {
 				
 				$check = $this->isDimensionRelated($dimension, $entity_name);
-				
+				owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
 				// is the realtionship check fails then move onto the next entity.
 				if (!$check) {
 					$error = true;
+					owa_coreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
 					break;
 				}
 			}
@@ -272,10 +278,13 @@ class owa_resultSetManager extends owa_base {
 		
 		$dims = array();
 		
-		if (!empty($this->constraints)) {		
-			foreach ($this->constraints as $constraint => $carray) {
+		$constraints = $this->getConstraints();
+		//print_r($constraints);
+		if (!empty($constraints)) {
 				
-				$dims = array_merge(array_keys($carray));
+			foreach ($constraints as $carray) {
+				
+				$dims[] = $carray['name'];
 			}
 		}
 		
@@ -373,7 +382,7 @@ class owa_resultSetManager extends owa_base {
 		
 		// check dimensions
 		if (array_key_exists($name, $this->related_dimensions)) {
-			return $this->related_dimensions[$name];
+			//return $this->related_dimensions[$name];
 		}
 		//print_r($this->metrics[0]);
 		// check for denormalized 
