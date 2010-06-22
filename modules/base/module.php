@@ -75,6 +75,7 @@ class owa_baseModule extends owa_module {
 		
 		$this->registerMetric('uniqueVisitors', 'base.uniqueVisitors');
 		$this->registerMetric('visits', 'base.visits');
+		$this->registerMetric('visits', 'base.visitsFromRequestFact');
 		$this->registerMetric('newVisitors', 'base.newVisitors');
 		$this->registerMetric('repeatVisitors', 'base.repeatVisitors');
 		$this->registerMetric('bounces', 'base.bounces');
