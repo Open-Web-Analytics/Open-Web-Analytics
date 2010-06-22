@@ -32,65 +32,32 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitorsController extends owa_reportController {
-	
-	function owa_reportVisitorsController($params) {
 		
-		return owa_reportVisitorsController::__construct($params);
-		
-	}
-	
 	function __construct($params = null) {
 	
 		return parent::__construct($params);
 	}
 	
 	function action() {
-				
-		// Top Visitors	
-		$v = owa_coreAPI::metricFactory('base.topVisitors');
-		$v->setPeriod($this->getPeriod());
-		$v->setConstraint('site_id', $this->getParam('site_id')); 
-		$v->setOrder('DESC');
-		$v->setLimit(10);
-		$this->set('top_visitors_data', $v->generate());
-		
-		
-		//latest visitors 
-		$m = owa_coreApi::metricFactory('base.latestVisits');
-		$m->setConstraint('site_id', $this->getParam('site_id'));
-		$m->setPeriod($this->getPeriod());
-		$m->setOrder('DESC'); 
-		$m->setLimit(25);
-		$m->setPage($this->getParam('page'));
-		$results = $m->generate();
-		$pagination = $m->getPagination();
-		$this->set('latest_visits', $results);
-		$this->setPagination($pagination);
-		
-		// browser types
-		$b = owa_coreAPI::metricFactory('base.sessionBrowserTypes');
-		$b->setPeriod($this->getPeriod());
-		$b->setConstraint('site_id', $this->getParam('site_id')); 
-		$b->setOrder('DESC');
-		$b->setLimit(10);
-		$this->set('browser_types', $b->generate());		
-		
-		// dash counts	
-		//$d = owa_coreAPI::metricFactory('base.dashCounts');
-		//$d->setPeriod($this->getPeriod());
-		//$d->setConstraint('site_id', $this->getParam('site_id')); 
-		//$d->setOrder('ASC');
-		//$this->set('summary_stats_data', $d->zeroFill($d->generate()));
 
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'resultsPerPage'	=> 10
+		));
+		
+		$this->set('latest_visits', $rs);
+		
 		// view stuff
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitors');
 		$this->setTitle('Visitors');
-		
-		return;
-		
 	}
-	
 }
 
 /**
@@ -106,31 +73,17 @@ class owa_reportVisitorsController extends owa_reportController {
  */
 
 class owa_reportVisitorsView extends owa_view {
-	
-	function owa_reportVisitorsView() {
 		
-		return owa_reportVisitorsView::__construct();
-	}
-	
 	function __construct() {
 	
 		return parent::__construct();
 	}
 	
 	function render($data) {
-		
-		// Assign data to templates
-		
+			
 		$this->body->set_template('report_visitors.tpl');
-		$this->body->set('top_visitors', $this->get('top_visitors_data'));
-		$this->body->set('browser_types', $this->get('browser_types'));
-		$this->body->set('summary_stats', $this->get('summary_stats_data'));
 		$this->body->set('visits', $this->get('latest_visits'));		
-		return;
 	}
-	
-	
 }
-
 
 ?>

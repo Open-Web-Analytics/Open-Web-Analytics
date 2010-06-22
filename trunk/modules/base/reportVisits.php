@@ -64,7 +64,6 @@ class owa_reportVisitsController extends owa_reportController {
 		));
 		
 		$this->set('visits', $rs);
-		$this->set('pagination', $pagination);
 		$this->set('visitor_id', $visitorId);
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisits');

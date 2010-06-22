@@ -392,8 +392,16 @@ class owa_resultSetManager extends owa_base {
 			} else {
 				
 				$dim = $service->getDimension($name);
-				$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+				
+				if ($dim) {
+					$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
 				$dim['column'] = $dimEntity->getTableAlias().'.'.$dim['column'];
+				} else {
+					$msg = "$name is not a registered dimension.";
+					owa_coreAPI::debug($msg);
+					$this->addError($msg);
+				}
+				
 			}
 		}
 		
@@ -735,7 +743,8 @@ class owa_resultSetManager extends owa_base {
 	}
 	
 	// dangerous. remove
-	function addFactTableRelation($metric) {
+	/*
+function addFactTableRelation($metric) {
 		
 		$bm = $this->getBaseMetric();
 		if ($metric->entity->getTableName() != $bm->entity->getTableName()) {
@@ -793,6 +802,7 @@ class owa_resultSetManager extends owa_base {
 			return true;
 		}
 	}
+*/
 	
 	function applyJoins() {
 		
@@ -801,11 +811,13 @@ class owa_resultSetManager extends owa_base {
 		}		
 	}
 	
-	// remove
+	/*
+// remove
 	function getBaseMetric() {
 		$keys = array_keys($this->metrics);
 		return $this->metrics[$keys[0]];	
 	}
+*/
 	
 	function addRelation($dim) {
 			
@@ -1007,12 +1019,13 @@ class owa_resultSetManager extends owa_base {
 		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 		
 		$bm = $this->chooseBaseEntity();
-		$bname = $bm->getName();
-		
-		owa_coreAPI::debug("Using $bname as base entity for making result set.");
-		
+				
 		if ($bm) {
 			
+			$bname = $bm->getName();
+		
+			owa_coreAPI::debug("Using $bname as base entity for making result set.");
+	
 			// set constraints
 			$this->applyJoins();
 			$this->applyConstraints();

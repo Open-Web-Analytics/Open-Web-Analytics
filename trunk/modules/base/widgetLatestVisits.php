@@ -53,15 +53,19 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		
 		$data['params'] = $this->params;
 		
-		//setup Metrics
-		$m = owa_coreApi::metricFactory('base.latestVisits');
-		$m->setConstraint('site_id', $this->params['site_id']);
-		$m->setPeriod($this->getPeriod());
-		//print_r($this->getPeriod());
-		$m->setOrder(OWA_SQL_DESCENDING); 
-		$m->setLimit(15);
-		$results = $m->generate();
-		$this->set('rows', $results);	
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'resultsPerPage'	=> 10
+		));
+		
+		//$this->set('latest_visits', $rs);
+		$this->set('rows', $rs->resultsRows);	
 		$this->setView('base.genericTable');
 		$this->set('show_error', false);
 		$this->set('table_row_template', 'row_visitSummary.tpl');	
