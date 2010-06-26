@@ -485,9 +485,6 @@ class owa_coreAPI {
 	
 	function executeApiCommand($map) {
 		
-		// debug
-		owa_coreAPI::debug('API request received...');
-		
 		if (!array_key_exists('do', $map)) {
 			echo ("API Command missing from request.");
 			owa_coreAPI::debug('API Command missing from request. Aborting.');
@@ -502,23 +499,7 @@ class owa_coreAPI {
 		
 		// if exists, pass to OWA as a request
 		if ($do) {
-		
-			/* PERFORM AUTHENTICATION */
-			if (array_key_exists('required_capability', $do)) {
 				
-				$auth = &owa_auth::get_instance();
-				$status = $auth->authenticateUser();
-				// if auth was not successful then return login view.
-				if ($status['auth_status'] != true) {
-					return 'This method requires authentication.';
-				} else {
-					//check for needed capability again now that they are authenticated
-					if (!owa_coreAPI::isCurrentUserCapable($do['required_capability'])) {
-						return 'Your user does not have privileges to access this method.';	
-					}
-				}
-			}
-					
 			if (array_key_exists('args', $do)) {
 				
 				$passed_args = array();

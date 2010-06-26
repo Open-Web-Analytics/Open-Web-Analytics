@@ -36,8 +36,6 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 define('OWA_API', true);
 // invoke OWA
 $owa = new owa_php;
-// lookup method class
-$map = owa_coreAPI::getRequest()->getAllOwaParams();
-echo owa_coreAPI::executeApiCommand($map);
+echo $owa->handleRequest('', 'base.apiRequest');
 
 ?>
