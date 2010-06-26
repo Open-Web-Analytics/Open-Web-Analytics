@@ -40,19 +40,28 @@ class owa_reportDocumentController extends owa_reportController {
 	
 	function action() {
 		
-		$pageUrl = $this->getParam('pageUrl');
+		$d = owa_coreAPI::entityFactory('base.document');	
 		
-		$this->setSubview('base.reportDocument');
-		$this->setTitle('Page Detail: ', $pageUrl);
+		if ($this->getParam('pageUrl')) {
+			$pageUrl = $this->getParam('pageUrl');
+			$d->getByColumn('url', $pageUrl);
+			$this->set('constraints', 'pageUrl=='.$pageUrl);
+			$this->setTitle('Page Detail: ', $pageUrl);
+		}
+		
+		if ($this->getParam('pagePath')) {
+			$pagePath = $this->getParam('pagePath');
+			$d->getByColumn('uri', $pagePath);
+			$this->set('constraints', 'pagePath=='.$pagePath);
+			$this->setTitle('Page Detail: ', $pagePath);
+		}
+		
+		$this->set('document', $d);
 		$this->set('metrics', 'visits,pageViews');
-		$this->set('constraints', 'pageUrl=='.$pageUrl);
 		$this->set('resultsPerPage', 30);
 		$this->set('trendChartMetric', 'pageViews');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.pageViews.value %> page views for this page.');
-		
-		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByColumn('url', $pageUrl);
-		$this->set('document', $d);	
+		$this->setSubview('base.reportDocument');
 	}
 
 }
@@ -92,9 +101,6 @@ class owa_reportDocumentView extends owa_view {
 		$this->body->set('document', $this->get('document'));
 		$this->body->set_template('report_document.tpl');
 	}
-	
-	
 }
-
 
 ?>

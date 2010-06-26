@@ -71,12 +71,12 @@ $_owa_messages = array(
 3206 => array("Error. A site with that domain already exists.",0),
 3207 => array("Error. You must enter a domain when adding a web site.",0),
 3208 => array("Error. That site does not exist.",0),
-3208 => array("Please remove the http:// from your begining of your domain.",0),
+3208 => array("Please remove the http:// from your beginning of your domain.",0),
 
 
 //install
 3300 => array("Could not connect to the database. Please check the database connection settings in your configuration file and try again.",0),
-3301 => array("The version of PHP installed on this server is too old. Please upgrade to at least PHP 4.",0),
+3301 => array("This version of OWA requires PHP 5.2.x or higher.",0),
 3302 => array("Database Schema Installation failed. Please check the error log file for more details.",0),
 3303 => array("Success. Default Site Added.",0),
 3304 => array("Success. Admin User Added.",0),
