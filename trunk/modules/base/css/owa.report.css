@@ -128,7 +128,7 @@ ul {margin-left:10px;}
 }
 
 #owa_reportSiteFilter {text-align: center;}
-#owa_reportSiteFilterSelect {font-size: 18px;}
+#owa_reportSiteFilterSelect {font-size: 12px;}
 #owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline;}
 
 .owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
@@ -145,12 +145,13 @@ ul {margin-left:10px;}
 #owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
 .owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
 
-#owa_reportNavPanel {width:100%;}
+#owa_reportNavPanel {width:175px;}
 #report_top_level_nav_ul {width:;}
 
 .owa_reportLeftNavColumn {width:150px; margin-right:0px; border-right: 0px solid orange; padding: 5px 5px 5px 5px;}
 .owa_reportLeftNavColumn a {
 	text-decoration: none;
+	
 }
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
@@ -199,12 +200,14 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	border:1px solid #cccccc; 
 	background-color:#ffffff;
 	-moz-border-radius: 5px 5px; 
+}
 
-
+.owa_admin_nav_subgroup_item {
+	padding:3px 3px 3px 10px;
 }
 .owa_admin_nav_topmenu_container {background-color: #efefef;}
-.owa_admin_nav_topmenu_item {border-bottom: 1px solid #cccccc;background-color: #efefef;padding:0px;height:28px; vertical-align: middle; font-weight: bold;}
-.owa_admin_nav_topmenu_toggle {border-left:1px solid #cfcfcf;width:25px;height:28px;float:right;background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
+.owa_admin_nav_topmenu_item {border-bottom: 1px solid #cccccc;background-color: #efefef;padding:0px;height:20px; vertical-align: middle; font-weight: bold; font-size:12px;	}
+.owa_admin_nav_topmenu_toggle {border-left:1px solid #cfcfcf;width:25px;height:20px;float:right;background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
 
 .owa_document {
 	border: 1px solid #efefef;

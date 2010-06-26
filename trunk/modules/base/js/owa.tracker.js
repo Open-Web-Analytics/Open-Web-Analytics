@@ -206,7 +206,11 @@ OWA.tracker.prototype = {
 	/**
 	 * Logs a page view event
 	 */
-	trackPageView : function() {
+	trackPageView : function(url) {
+		
+		if (url) {
+			this.page.set('page_url', url);
+		}
 		
 		this.page.setEventType("base.page_request");	
 		return this.logEvent(this.page.getProperties());

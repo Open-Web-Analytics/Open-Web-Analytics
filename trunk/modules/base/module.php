@@ -138,10 +138,10 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('siteId', 'base.acton_fact', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		
 		// visit
-		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
+		$this->registerDimension('entryPagePath', 'base.document', 'uri', 'Entry Page Path', 'visit', 'The URL path of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the entry page.', 'first_page_id');
-		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPagePath', 'base.document', 'uri', 'Entry Page Path', 'visit', 'The URL path of the exit page.', 'last_page_id');
 		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
 		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
 		
@@ -155,6 +155,7 @@ class owa_baseModule extends owa_module {
 		
 		// content
 		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.', 'document_id');
+		$this->registerDimension('pagePath', 'base.document', 'uri', 'Page Path', 'content', 'The URL path of the web page.', 'document_id');
 		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.', 'document_id');
 		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.', 'document_id');
 		
@@ -475,7 +476,7 @@ class owa_baseModule extends owa_module {
 			
 		// OWA specific params to filter
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'source_param'));
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_id'));
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 		
 		//print_r($filters);
 		
@@ -524,7 +525,7 @@ class owa_baseModule extends owa_module {
 		}
 				
 		// check and remove trailing slash
-		if (substr($url, -1, -1) === '/') {
+		if (substr($url, -1) === '/') {
 			
 			$url = substr($url, 0, -1);
 		}

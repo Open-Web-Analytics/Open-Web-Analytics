@@ -107,7 +107,7 @@ class owa_refererHandlers extends owa_observer {
 			owa_coreAPI::debug(print_r($res, true));
 			//Extract Title
 			
-			$title = $crawler->extract_title();
+			$title = trim($crawler->extract_title());
 			
 			if ($title) {
 				$r->set('page_title', $title);	

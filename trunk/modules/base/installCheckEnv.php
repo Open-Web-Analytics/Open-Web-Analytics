@@ -50,7 +50,7 @@ class owa_installCheckEnvController extends owa_installController {
 		// check PHP version
 		$version = split('\.',phpversion());
 		
-		if ($version[0] < 4) {
+		if ($version[0] < 5) {
 			$errors['php_version']['name'] = 'PHP Version';
 			$errors['php_version']['value'] = phpversion();
 			$errors['php_version']['msg'] = $this->getMsg(3301);

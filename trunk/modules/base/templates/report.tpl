@@ -16,11 +16,16 @@ OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($para
 
 	<table width="100%" cellpadding="0" cellspacing="0">
 		<TR>
+			<TD colspan="2">
+				<div class="reportSectionContainer">
+				<?php include('filter_site.tpl');?>
+				</div>
+			</TD>
+		</TR>
+		<TR>
 			<TD valign="top" class="owa_reportLeftNavColumn">
 				<div class="reportSectionContainer">
 					<div id="owa_reportNavPanel">
-					<?php include('filter_site.tpl');?>
-						<?php //$this->makeTwoLevelNav($top_level_report_nav);?>
 						<?php echo $this->makeNavigationMenu($top_level_report_nav);?>
 					</div>
 				</div>			
