@@ -459,6 +459,13 @@ class owa_baseModule extends owa_module {
 	 */
 	function makeUrlCanonical($url) {
 		
+		//remove anchors
+		$pos = strpos('#', $url);
+		if($pos) {
+			
+			$url = substr($url, 0, $pos - 1);
+		}
+		
 		if (owa_coreAPI::getSetting('base', 'query_string_filters')) {
 			$filters = str_replace(' ', '', owa_coreAPI::getSetting('base', 'query_string_filters'));
 			$filters = explode(',', $filters);
@@ -496,6 +503,29 @@ class owa_baseModule extends owa_module {
 		
 		// if dangling '?' is found clean up the url by removing it.
 		if ($test == '?') {
+			$url = substr($url, 0, -1);
+		}
+		
+		//check and remove default page
+		$default_page = owa_coreAPI::getSetting('base', 'default_page');
+		
+		if ($default_page) {
+		
+			$default_length = strlen($default_page);
+			
+			if ($default_length) {
+				
+				//test for string
+				$default_test = substr($url, 0 - $default_length, $default_length);
+				if ($default_test === $default_page) {
+					$url = substr($url, 0, 0 - $default_length);
+				}
+			}
+		}
+				
+		// check and remove trailing slash
+		if (substr($url, -1, -1) === '/') {
+			
 			$url = substr($url, 0, -1);
 		}
 			

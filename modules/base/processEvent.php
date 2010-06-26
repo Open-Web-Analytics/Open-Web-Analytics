@@ -162,10 +162,19 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('page_title', $this->eq->filter('page_title', trim($this->event->get('page_title'))));
 		}
 		
+		$page_parse = parse_url($this->event->get('page_url'));
+		
+		if (!array_key_exists('path', $page_parse) || empty($page_parse['path'])) {
+			$page_parse['path'] = '/';
+		}
+		
+		if (!$this->event->get('page_uri')) {
+			$this->event->set('page_uri', $this->eq->filter('page_uri', sprintf('%s?%s', $page_parse['path'], $page_parse['query'])));
+		}
+				
 		// set internal referer
 		if ($this->event->get('HTTP_REFERER')) {
 			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
-			$page_parse = parse_url($this->event->get('page_url'));
 			//print_r('ref '.$referer_parse['host']);
 			//print_r('page '.$this->event->get('page_url'));
 			//print_r('pageparse '.$page_parse['host']);
