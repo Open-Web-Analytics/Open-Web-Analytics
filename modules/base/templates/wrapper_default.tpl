@@ -16,6 +16,8 @@
 		<?php include($this->getTemplatePath('base', 'msgs.tpl'));?>
 			
 		<?php echo $body;?>
+		
+		<?php include($this->getTemplatePath('base', 'footer.php'));?>
 	
 	</body>
 	

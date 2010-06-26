@@ -10,4 +10,6 @@
 
 <?php echo $body;?>
 
+<?php include($this->getTemplatePath('base', 'footer.php'));?>
+
 </div>
