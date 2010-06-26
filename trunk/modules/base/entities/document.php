@@ -30,11 +30,6 @@
 
 class owa_document extends owa_entity {
 	
-	//var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true);
-	//var $url = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	//var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	//var $page_type = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	
 	function __construct() {
 		
 		$this->setTableName('document');
@@ -43,23 +38,14 @@ class owa_document extends owa_entity {
 		$this->properties['id']->setPrimaryKey();
 		$this->properties['url'] = new owa_dbColumn;
 		$this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['uri'] = new owa_dbColumn;
+		$this->properties['uri']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['page_title'] = new owa_dbColumn;
 		$this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['page_type'] = new owa_dbColumn;
 		$this->properties['page_type']->setDataType(OWA_DTD_VARCHAR255);
 		$this->setCachable();
 	}
-	
-	function owa_document() {
-		
-		return owa_document::__construct();
-			
-	}
-	
-	
-	
 }
-
-
 
 ?>

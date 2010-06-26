@@ -40,12 +40,10 @@ class owa_documentHandlers extends owa_observer {
 	 * @param 	string $priority
 	 * @param 	array $conf
 	 * 
-	 */
-    function owa_documentHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
+	 */    
+    function __construct() {
+    	
+    	return parent::__construct();
     }
 	
     /**
@@ -68,6 +66,8 @@ class owa_documentHandlers extends owa_observer {
 			$d->setProperties($event->getProperties());
 	
 			$d->set('url', $event->get('page_url'));
+			
+			$d->set('uri', $event->get('page_uri'));
 		
 			$d->set('id', $id); 
 		

@@ -606,6 +606,7 @@
 			'not_capable_view'				=> 'base.error',
 			'start_page'					=> 'base.reportDashboard',
 			'default_action'				=> 'base.loginForm',
+			'default_page'					=> '',
 			'default_cache_expiration_period' => 604800,
 			'capabilities'					=> array('admin' => array('view_reports', 
 																	  'edit_settings', 

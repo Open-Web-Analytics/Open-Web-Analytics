@@ -99,6 +99,17 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
+		// add api column
+		$d = owa_coreAPI::entityFactory('base.document');
+		$d->addColumn('uri');
+		$ret = $db->query("update owa_document set uri = substring_index(SUBSTR(url FROM 1+ length(substring_index(url, '/', 3))), '#', 1) ");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add uri column to owa_document');
+			return false;
+		}
+		
+		
 		$a = owa_coreAPI::entityFactory('base.action_fact');
 		$ret = $a->createTable();
 		
@@ -156,6 +167,8 @@ class owa_base_005_update extends owa_update {
 		$feed_request->dropColumn('yyyymmdd');
 		$u = owa_coreAPI::entityFactory('base.user');
 		$u->dropColumn('api_key');
+		$u = owa_coreAPI::entityFactory('base.document');
+		$u->dropColumn('uri');
 		$af = owa_coreAPI::entityFactory('base.action_fact');
 		$af->dropTable();
 		
