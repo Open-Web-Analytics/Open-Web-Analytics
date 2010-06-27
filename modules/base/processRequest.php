@@ -35,11 +35,6 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 class owa_processRequestController extends owa_processEventController {
 	
-	function owa_processRequestController($params) {
-		
-		return owa_processRequestController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		return parent::__construct($params);
