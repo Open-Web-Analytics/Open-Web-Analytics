@@ -273,7 +273,7 @@ class owa_processEventController extends owa_controller {
 				$user_name = $cu->user->get('user_id');
 			}
 
-			$this->event->set('user_name', $this->eq->filter('user_name', trim($user_name)));
+			$this->event->set('user_name', $this->eq->filter('user_name', trim(strtolower($user_name))));
 			
 			// set email_address
 			if ($this->event->get('email_address')) {
@@ -282,7 +282,7 @@ class owa_processEventController extends owa_controller {
 				$email_address = $cu->user->get('email_address');
 			}
 			
-			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
+			$this->event->set('user_email', $this->eq->filter('user_email', trim(strtolower($email_address))));
 		}
 		
 	}
