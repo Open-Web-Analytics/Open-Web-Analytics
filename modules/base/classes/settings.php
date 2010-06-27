@@ -673,6 +673,11 @@
 		
 		$domain = (empty($_SERVER['HTTP_HOST'])) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST']; // modified
 		
+		// do not set a cookie domain when running under localhost
+		if ($domain === 'localhost') {
+			$domain = false;
+		}
+		
 		// check for post in domain, strip it if found.
 		$port = strpos($domain, ':'); // modified
 		
