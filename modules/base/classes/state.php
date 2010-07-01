@@ -148,7 +148,7 @@ class owa_state {
 	
 	function getPermExpiration() {
 	
-		$time = time()+3600*24*365*20;
+		$time = time()+3600*24*365*15;
 		return $time;
 	}
 	
