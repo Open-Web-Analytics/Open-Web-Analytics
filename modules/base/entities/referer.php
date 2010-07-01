@@ -29,24 +29,6 @@
  */
 
 class owa_referer extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $url = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $site = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $query_terms = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $refering_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // varchar(255),
-	var $snippet = array('data_type' => OWA_DTD_TEXT); // TEXT,
-	var $is_searchengine = array('data_type' => OWA_DTD_TINYINT); // tinyint(1),
-
-	*/
-	
-	function owa_referer() {
-			
-		return owa_referer::__construct();		
-	}
 	
 	function __construct() {
 		
@@ -72,13 +54,7 @@ class owa_referer extends owa_entity {
 		$this->properties['snippet']->setDataType(OWA_DTD_TEXT);
 		$this->properties['is_searchengine'] = new owa_dbColumn;
 		$this->properties['is_searchengine']->setDataType(OWA_DTD_TINYINT);
-
 	}
-	
-	
-	
 }
-
-
 
 ?>

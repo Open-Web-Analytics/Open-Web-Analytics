@@ -99,7 +99,7 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
-		// add api column
+		// add uri column
 		$d = owa_coreAPI::entityFactory('base.document');
 		$d->addColumn('uri');
 		$ret = $db->query("update owa_document set uri = substring_index(SUBSTR(url FROM 1+ length(substring_index(url, '/', 3))), '#', 1) ");
@@ -108,7 +108,6 @@ class owa_base_005_update extends owa_update {
 			$this->e->notice('Failed to add uri column to owa_document');
 			return false;
 		}
-		
 		
 		$a = owa_coreAPI::entityFactory('base.action_fact');
 		$ret = $a->createTable();
@@ -132,6 +131,53 @@ class owa_base_005_update extends owa_update {
 				$u->set('api_key', $u->generateTempPasskey($u->get('user_id')));
 				$u->update();
 			}
+		}
+		
+		// change character encoding to UTF-8
+		$tables = array('owa_request', 'owa_session', 'owa_feed_request', 'owa_click', 'owa_document', 'owa_ua', 'owa_site', 'owa_user', 'owa_configuration', 'owa_visitor', 'owa_os', 'owa_impression', 'owa_host', 'owa_exit','owa_domstream');
+		
+		foreach ($tables as $table) {
+			
+			// change snippet dtd 
+			$ret = $db->query(sprintf("ALTER TABLE %s CONVERT TO CHARACTER SET utf8", $table));
+			
+			if (!$ret) {
+				$this->e->notice('Failed to change table character encoding for: ' .$table);
+				return false;
+			}
+			
+		}
+		
+		// change snippet dtd 
+		$ret = $db->query("ALTER TABLE owa_referer MODIFY snippet MEDIUMTEXT");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to modify snippet column of owa_referer');
+			return false;
+		}
+		
+		// change snippet dtd 
+		$ret = $db->query("ALTER TABLE owa_domstream MODIFY page_url VARCHAR(255)");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to modify page_url column of owa_domstream');
+			return false;
+		}
+		
+		// change snippet dtd 
+		$ret = $db->query("ALTER TABLE owa_domstream MODIFY events MEDIUMTEXT");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to modify events column of owa_domstream');
+			return false;
+		}
+		
+		// change snippet dtd 
+		$ret = $db->query("ALTER TABLE owa_site MODIFY description MEDIUMTEXT");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to modify description column of owa_site');
+			return false;
 		}
 		
 		// check for bad permissions on config file

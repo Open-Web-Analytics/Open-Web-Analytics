@@ -28,7 +28,7 @@ define('OWA_DTD_PRIMARY_KEY', 'PRIMARY KEY');
 define('OWA_DTD_VARCHAR10', 'VARCHAR(10)');
 define('OWA_DTD_VARCHAR255', 'VARCHAR(255)');
 define('OWA_DTD_VARCHAR', 'VARCHAR(%s)');
-define('OWA_DTD_TEXT', 'TEXT'); 
+define('OWA_DTD_TEXT', 'MEDIUMTEXT'); 
 define('OWA_DTD_INDEX', 'KEY');
 define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT');
 define('OWA_DTD_NOT_NULL', 'NOT NULL');
@@ -105,6 +105,13 @@ class owa_db_mysql extends owa_db {
 			}
 			
 			$this->database_selection = mysql_select_db($this->getConnectionParam('name'), $this->connection);
+			
+			if (function_exists('mysql_set_charset')) {
+				mysql_set_charset('utf8',$this->connection);
+			} else {
+				$this->query("SET NAMES 'utf8'");
+			}
+			
 		}
 			
 			
