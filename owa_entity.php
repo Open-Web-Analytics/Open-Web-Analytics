@@ -643,6 +643,11 @@ class owa_entity {
 			return 0;
 		}
 	}
+	
+	function setCharacterEncoding($encoding) {
+		
+		$this->_tableProperties['character_encoding'] = $encoding;
+	}
 }
 
 ?>

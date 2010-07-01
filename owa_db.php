@@ -963,6 +963,94 @@ class owa_db extends owa_base {
 		return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $column_definition));
 
 	}
+	
+	/**
+	 * Creates a new table
+	 *
+	 */
+	function createTable($entity) {
+	
+		//create column defs
+		
+		$all_cols = $entity->getColumns();
+		
+		$columns = '';
+	
+		$table_defs = '';
+		
+		$i = 0;
+		$count = count($all_cols);
+		
+		// Control loop
+		
+		foreach ($all_cols as $k => $v){
+			
+			// get column definition 
+			$columns .= $v.' '.$entity->getColumnDefinition($v);
+						
+			// Add commas to column statement
+			if ($i < $count - 1):
+				
+				$columns .= ', ';
+					
+			endif;	
+			
+			$i++;
+				
+		}
+		
+		// make table options
+		$table_options = '';
+		$options = $entity->getTableOptions();
+		
+		// table type
+		switch ($options['table_type']) {
+		
+			case "disk":
+				$table_type = OWA_DTD_TABLE_TYPE_DISK;
+				break;
+			case "memory":
+				$table_type = OWA_DTD_TABLE_TYPE_MEMORY;
+				break;
+			default:
+				$table_type = OWA_DTD_TABLE_TYPE_DEFAULT;
+	
+		}
+		
+		$table_options .= sprintf(OWA_DTD_TABLE_TYPE, $table_type);
+		
+		// character encoding type
+		
+		// just in case the propoerties is not i nthe array, add a default value.
+		if (!array_key_exists('character_encoding', $options)) {
+			
+			$options['character_encoding'] = OWA_DTD_CHARACTER_ENCODING_UTF8;			
+		}
+	
+		$table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
+	
+		return $this->query(sprintf(OWA_SQL_CREATE_TABLE, get_class($entity), $columns, $table_options));
+	}
+	
+
+	
+	/**
+	 * Begins a SQL transaction statement
+	 *
+	 */
+	function beginTransaction() {
+	
+		return $this->query(OWA_SQL_BEGIN_TRANSACTION);
+	}
+	
+	/**
+	 * Ends a SQL transaction statement
+	 *
+	 */
+	function endTransaction() {
+	
+		return $this->query(OWA_SQL_END_TRANSACTION);
+	}
 
 }
 

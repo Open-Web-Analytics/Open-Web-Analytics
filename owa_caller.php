@@ -288,8 +288,7 @@ class owa_caller extends owa_base {
 			$this->e->debug("api action received");
 			define('OWA_API', true);
 			// lookup method class
-			$map = owa_coreAPI::getRequest()->getAllOwaParams();
-			echo owa_coreAPI::executeApiCommand($map);
+			echo $this->handleRequest('', 'base.apiRequest');
 			exit;
 		else:
 			return;
