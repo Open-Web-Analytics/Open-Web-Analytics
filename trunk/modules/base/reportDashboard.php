@@ -57,7 +57,7 @@ class owa_reportDashboardController extends owa_reportController {
 		$rs = owa_coreAPI::executeApiCommand($params);	
 		//print_r($rs);			
 		$this->set('actions', $rs);
-			
+	
 		// set view stuff
 		$this->setSubview('base.reportDashboard');
 		$this->setTitle('Analytics Dashboard');		
@@ -81,11 +81,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_reportDashboardView extends owa_view {
 	
-	function owa_reportDashboardView() {
-		
-		return owa_reportDashboardView::__construct();
-	}
-	
 	function __construct() {
 		
 		return parent::__construct();
@@ -97,7 +92,6 @@ class owa_reportDashboardView extends owa_view {
 		$this->body->set('summary', $this->get('summary'));			
 		$this->body->set('site_trend', $this->get('site_trend'));
 		$this->body->set('actions', $this->get('actions'));
-		return;
 	}
 	
 	

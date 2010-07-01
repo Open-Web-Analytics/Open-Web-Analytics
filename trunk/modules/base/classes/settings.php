@@ -77,6 +77,9 @@
  		//if ($this->isConfigFilePresent()) {
  		//	$this->load($this->get('base', 'configuration_id'));
  		//}
+ 		
+ 		// include storage engine class so that DTD constants get loaded
+ 		owa_coreAPI::setupStorageEngine($this->get('base','db_type'));
  			
  	}
  	
@@ -494,7 +497,7 @@
 			'last_request_param'			=> 'last_req',
 			'first_hit_param'				=> 'first_hit',
 			'feed_subscription_param'		=> 'sid',
-			'source_param'					=> 'from',
+			'source_param'					=> 'source',
 			'graph_param'					=> 'graph',
 			'period_param'					=> 'period',
 			'document_param'				=> 'document',
@@ -591,7 +594,7 @@
 			'use_remote_event_queue'		=> true,
 			'remote_event_queue_type'		=> 'http',
 			'remote_event_queue_endpoint'	=> '',
-			'cookie_domain'					=> '',
+			'cookie_domain'					=> false,
 			'ws_timeout'					=> 10,
 			'is_active'						=> true,
 			'per_site_visitors'				=> false,
@@ -606,6 +609,7 @@
 			'not_capable_view'				=> 'base.error',
 			'start_page'					=> 'base.reportDashboard',
 			'default_action'				=> 'base.loginForm',
+			'default_page'					=> '',
 			'default_cache_expiration_period' => 604800,
 			'capabilities'					=> array('admin' => array('view_reports', 
 																	  'edit_settings', 
@@ -668,24 +672,17 @@
 		$this->set('base','images_url', $modules_url);
 		$this->set('base','images_absolute_url',$modules_url);
 		$this->set('base','log_url',$public_url.'log.php');
+		$this->set('base','api_url',$public_url.'api.php');
 		
 		// Set cookie domain
-		
-		$domain = (empty($_SERVER['HTTP_HOST'])) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST']; // modified
-		
-		// do not set a cookie domain when running under localhost
-		if ($domain === 'localhost') {
-			$domain = false;
-		}
-		
-		// check for post in domain, strip it if found.
-		$port = strpos($domain, ':'); // modified
-		
-		if ( $port !== false ) {
-			$domain = substr($domain, 0, $port); // modified
-		}
-		
-		$this->set('base','cookie_domain', $domain);
+		if (!empty($_SERVER['HTTP_HOST'])) {
+			if ($_SERVER['HTTP_HOST'] != 'localhost') {
+				$this->set('base','cookie_domain', $_SERVER['HTTP_HOST']);
+			}
+		} //else {		
+			//$this->set('base','cookie_domain', $_SERVER['SERVER_NAME']);
+		//}
+ 		
  	}
  	
  	function createConfigFile($config_values) {
@@ -732,7 +729,7 @@
 		}
 		
 		fclose($handle);
-		chmod(OWA_DIR . 'owa-config.php', 0666);
+		chmod(OWA_DIR . 'owa-config.php', 0750);
 		owa_coreAPI::debug('Config file created');
 		require_once(OWA_DIR . 'owa-config.php');
 		return true;

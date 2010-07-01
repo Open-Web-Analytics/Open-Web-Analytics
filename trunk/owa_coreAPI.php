@@ -68,13 +68,17 @@ class owa_coreAPI {
 		}
 			
 		$connection_class = "owa_db_" . $type;
-		$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
+		
+		if (!class_exists($connection_class)) {
+			$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
 	
-	 	if (!require_once($connection_class_path)) {
-	 		owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+		 	if (!require_once($connection_class_path)) {
+		 		owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
+		 		return false;
+			}
 		}
 		
-	 	return;
+	 	return true;
 
 	}
 	
@@ -84,46 +88,31 @@ class owa_coreAPI {
 	
 		if (!isset($db)) {
 			
-			//$c = &owa_coreAPI::configSingleton();
-			//$config = $c->fetch('base');
-			//$e = &owa_error::get_instance();
-			
-			if (defined('OWA_DB_TYPE')) {
-				
-				if (!class_exists('owa_db')) {
-					require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
-				}
-							
-				$connection_class = "owa_db_" . OWA_DB_TYPE;
-				$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
+			$db_type = owa_coreAPI::getSetting('base', 'db_type');
+			$ret = owa_coreAPI::setupStorageEngine($db_type);
 	
-		 		if (!require_once($connection_class_path)) {
-		 			owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
-		 			return;
-				} else { 	
-					$db = new $connection_class(owa_coreAPI::getSetting('base','db_host'), 
-												owa_coreAPI::getSetting('base','db_name'),
-												owa_coreAPI::getSetting('base','db_user'),
-												owa_coreAPI::getSetting('base','db_password'),
-												owa_coreAPI::getSetting('base','db_force_new_connections'),
-												owa_coreAPI::getSetting('base','db_make_persistant_connections')
-												);
-																	
-					owa_coreAPI::debug(sprintf('Using db class at %s.',	$connection_class_path));
-				}
-				
-			} else {
-				owa_coreAPI::error('Cannot locate proper db type constant. Exiting.');
+		 	if (!$ret) {
+		 		owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+		 		return;
+			} else { 	
+				$connection_class = 'owa_db_'.$db_type;
+				$db = new $connection_class(
+					owa_coreAPI::getSetting('base','db_host'), 
+					owa_coreAPI::getSetting('base','db_name'),
+					owa_coreAPI::getSetting('base','db_user'),
+					owa_coreAPI::getSetting('base','db_password'),
+					owa_coreAPI::getSetting('base','db_force_new_connections'),
+					owa_coreAPI::getSetting('base','db_make_persistant_connections')
+				);	
 			}
-				
-			
 		}
 		
 		return $db;
-		
 	}
 	
-	function authSingleton() {
+	
+	/*
+function authSingleton() {
 			
 		static $auth_modules;
 		$auth_mdules = array();
@@ -143,6 +132,7 @@ class owa_coreAPI {
 		
 		return;
 	}
+*/
 	
 	function &configSingleton($params = array()) {
 		

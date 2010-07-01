@@ -106,8 +106,10 @@ class owa_auth extends owa_base {
 	 */
 	function authenticateUser() {
 		
-		// look for an API key
-		if (owa_coreAPI::getRequestParam('apiKey')) {
+		// check existing auth status first in case someone else took care of this already.
+		if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
+			$ret = true;
+		} elseif (owa_coreAPI::getRequestParam('apiKey')) {
 			// auth user by api key
 			$ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
 		} elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
