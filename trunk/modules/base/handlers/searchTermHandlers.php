@@ -48,7 +48,7 @@ class owa_searchTermHandlers extends owa_observer {
 		if ($terms) {
 		
     		$st = owa_coreAPI::entityFactory('base.search_term_dim');
-			$st_id = owa_lib::setStringGuid($terms)
+			$st_id = owa_lib::setStringGuid($terms);
 			$st->getByPk('id', $st_id);
 			$id = $st->get('id'); 
 		
