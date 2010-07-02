@@ -163,7 +163,8 @@ class owa_base_005_update extends owa_update {
     			session.referring_search_term_id = (CRC32(LOWER(referer.query_terms))) 
 			WHERE
     			session.referer_id = referer.id and
-    			session.referer_id != ''"
+    			session.referer_id != 0 AND
+    			referer.query_terms != ''"
     	);
 		
 		if (!$ret) {
