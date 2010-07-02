@@ -32,11 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportAnchortextController extends owa_reportController {
 	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$this->setView('base.report');
@@ -46,12 +41,17 @@ class owa_reportAnchortextController extends owa_reportController {
 		$this->set('dimensions', 'referralLinkText');
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array('linkColumn' => 'referralLinkText', 
-												'template' => array('do' => 'base.reportReferralLinkTextDetail', 'referralLinkText' => '%s'), 
-												'valueColumns' => 'referralLinkText'));
+		$this->set('constraints', 'source==referral');
+		$this->set('dimensionLink', array(
+			'linkColumn' => 'referralLinkText', 
+			'template' => array(
+				'do' => 'base.reportReferralLinkTextDetail', 
+				'referralLinkText' => '%s'
+			), 
+			'valueColumns' => 'referralLinkText'
+		));
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from referrals.');								
-		
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from referrals.');
 	}
 }
 
