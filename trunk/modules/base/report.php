@@ -115,7 +115,7 @@ class owa_reportView extends owa_view {
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
 		//$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
-		$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
+		//$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
 		//$this->setJs("swfobject", "base/js/includes/swfobject.js");
 		$this->setJs("json2", "base/js/includes/json2.js");
