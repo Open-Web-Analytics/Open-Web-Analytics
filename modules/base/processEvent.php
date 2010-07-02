@@ -157,26 +157,19 @@ class owa_processEventController extends owa_controller {
 		// needed?
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
+		// Filter page title if set
+		if ($this->event->get('page_title')) {
+			$this->event->set('page_title', $this->eq->filter('page_title', trim($this->event->get('page_title'))));
+		}
+		
 		$page_parse = parse_url($this->event->get('page_url'));
-		owa_coreAPI::debug('page parse: '.print_r($page_parse, true));
+		
 		if (!array_key_exists('path', $page_parse) || empty($page_parse['path'])) {
 			$page_parse['path'] = '/';
 		}
 		
 		if (!$this->event->get('page_uri')) {
-		
-			if (array_key_exists('path', $page_parse) && array_key_exists('query', $page_parse)) {
-				$this->event->set('page_uri', $this->eq->filter('page_uri', sprintf('%s?%s', $page_parse['path'], $page_parse['query'])));
-			} else {
-				$this->event->set('page_uri', $page_parse['path']);
-			}
-		}
-		
-		// Filter page title if set
-		if ($this->event->get('page_title')) {
-			$this->event->set('page_title', $this->eq->filter('page_title', trim($this->event->get('page_title'))));
-		} else {
-			$this->event->set('page_title', $this->event->get('page_uri'));
+			$this->event->set('page_uri', $this->eq->filter('page_uri', sprintf('%s?%s', $page_parse['path'], $page_parse['query'])));
 		}
 				
 		// set internal referer
@@ -195,7 +188,7 @@ class owa_processEventController extends owa_controller {
 				$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
 				
 				if ($qt) {
-					$this->event->set('query_terms', $qt);
+					$this->event->set('search_terms', $qt);
 				}
 			}
 		}
@@ -267,13 +260,7 @@ class owa_processEventController extends owa_controller {
 			$cu = owa_coreAPI::getCurrentUser();
 			
 			// set user name
-			if ($this->event->get('user_name')) {
-				$user_name = $this->event->get('user_name');
-			} else {
-				$user_name = $cu->user->get('user_id');
-			}
-
-			$this->event->set('user_name', $this->eq->filter('user_name', trim(strtolower($user_name))));
+			$this->event->set('user_name', $this->eq->filter('user_name', $cu->user->get('user_id')));
 			
 			// set email_address
 			if ($this->event->get('email_address')) {
@@ -282,7 +269,7 @@ class owa_processEventController extends owa_controller {
 				$email_address = $cu->user->get('email_address');
 			}
 			
-			$this->event->set('user_email', $this->eq->filter('user_email', trim(strtolower($email_address))));
+			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
 		}
 		
 	}
