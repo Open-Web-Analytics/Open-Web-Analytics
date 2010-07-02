@@ -1,39 +1,11 @@
 <div class="owa_reportSectionContent">
-	<div id="trend-chart" style="height:125px; min-width:400px;padding-right:30px;"></div>
+	<div id="trend-chart"></div>
+	<div class="owa_reportHeadline" id="content-headline"></div>
+	<div id="trend-metrics"></div>
 </div>
-<div class="owa_reportSectionContent">
 
-	<table style="width:auto;margin-top:-15px;">
-		<TR>
-			<TD width="50%" valign="top">
-				<div class="owa_reportSectionHeader">Related Reports</div>
-
-				<UL>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'));?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
-					</LI>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportActions'));?>">Actions</a></span> - See which actions your user performed.
-					</LI>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
-					</LI>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Feeds</a></span> - See trends for feed subscribers and usage.
-					</LI>
-				</UL>
-				
-				</div>
-				
-			</TD>
-			
-			<TD  valign="top">
-				<div id="trend-metrics"></div>
-			</TD>
-			
-		</TR>
-	</table>
-</div>
+<div class="clear"></div>
+<BR>
 
 <table style="width:100%;margin-top:;">
 	<tr>
@@ -54,10 +26,6 @@
 					</UL>
 				</div>
 			</div>
-		
-		</td>
-		
-		<td valign="top" style="width:50%;">
 			
 			<div class="owa_reportSectionContent" style="min-width:350px;">
 				<div class="owa_reportSectionHeader">Top Page Types</div>
@@ -70,18 +38,38 @@
 					</UL>
 				</div>
 			</div>
+		
+		</td>
+		
+		<td valign="top" style="width:50%;">
+			<div class="owa_reportSectionHeader">Content Reports</div>
+
+				<UL>
+					<LI>
+						<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'));?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
+					</LI>
+					<LI>
+						<a href="<?php echo $this->makeLink(array('do' => 'base.reportActions'));?>">Actions</a></span> - See which actions your user performed.
+					</LI>
+					<LI>
+						<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
+					</LI>
+					<LI>
+						<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Feeds</a></span> - See trends for feed subscribers and usage.
+					</LI>
+				</UL>
+				
+				</div>
+			
 		</td>
 	</tr>
 </table>
-
-
-
 
 <script>
 //OWA.setSetting('debug', true);
 
 var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-												'metrics' => 'visits,pageViews,bounces,actions', 
+												'metrics' => 'visits,pageViews,bounces', 
 												'dimensions' => 'date', 
 												'sort' => 'date',
 												'format' => 'json',
@@ -147,9 +135,9 @@ OWA.items.toppagetypes.load(toppagetypesurl);
 
 </script>
 
-<script type="text/x-jqote-template" id="visits-headline-template">
+<script type="text/x-jqote-template" id="content-headline-template">
 <![CDATA[
-	There were <%= this.data.resultSet.aggregates.visits.value %> <% if (this.data.resultSet.aggregates.pageViews.value > 1) {this.label = 'page views';} else {this.label = 'page view';} %> <%= this.label %> of all pages.
+	There were <%= this.data.resultSet.aggregates.pageViews.value %> <% if (this.data.resultSet.aggregates.pageViews.value > 1) {this.label = 'page views';} else {this.label = 'page view';} %> <%= this.label %> of all pages.
 ]]> 
 </script>
 
