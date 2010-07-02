@@ -267,6 +267,8 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
 		// Referers
 		$this->registerEventHandler('base.new_session', 'refererHandlers');
+		// Referers
+		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
 		// User Agents
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
