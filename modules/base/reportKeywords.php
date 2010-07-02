@@ -47,9 +47,9 @@ class owa_reportKeywordsController extends owa_reportController {
 			'template' => array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), 
 			'valueColumns' => 'referralSearchTerms'
 		));
-		
+		$this->set('constraints', 'source==organic-search');
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from search terms.');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from search engines.');
 	}
 }
 
