@@ -69,6 +69,17 @@ class owa_visitor extends owa_entity {
 		$num_prior_sessions->setDataType(OWA_DTD_INT);
 		$this->setProperty($num_prior_sessions);
 	}
+	
+	function getVisitorName() {
+		
+		if ($this->get('user_name')) {
+			return $this->get('user_name');
+		} elseif ($this->get('email_address')) {
+			return $this->get('email_address');		
+		} else {
+			return $this->get('id');
+		}
+	}
 }
 
 

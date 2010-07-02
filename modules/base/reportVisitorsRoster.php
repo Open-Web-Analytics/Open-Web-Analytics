@@ -33,20 +33,23 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitorsRosterController extends owa_reportController {
+		
+	function __construct($params) {
 	
-	function owa_reportVisitorsRosterController($params) {
-		
-		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
-		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$m = owa_coreAPI::metricFactory('base.visitorsList');
-		$m->setPeriod($this->getPeriod());
-		$m->setConstraint('site_id', $this->getParam('site_id'));
+		
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
+		$db->selectFrom('owa_session', 'session');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
+	
+		$db->where('site_id', $this->getParam('site_id'));
 		
 		// make new timeperiod of a day
 		$period = owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
@@ -54,17 +57,15 @@ class owa_reportVisitorsRosterController extends owa_reportController {
 		$end = $period->getEndDate();
 		//print_r($period);
 		// set new period so lables show up right.
-		$m->setConstraint('first_session_timestamp', 
+		$db->where('first_session_timestamp', 
 				   array('start' => $start->getTimestamp(), 'end' => $end->getTimestamp()), 
 				   'BETWEEN');
 		
-		$ret = $m->generate();
+		$ret = $db->getAllRows();
 	
 		$this->set('visitors', $ret);	
 		$this->setSubview('base.reportVisitorsRoster');
-		
-		return;
-		
+		$this->setTitle('New Visitors from', $period->getStartDate()->label);		
 	}
 	
 }
@@ -83,15 +84,12 @@ class owa_reportVisitorsRosterController extends owa_reportController {
 
 class owa_reportVisitorsRosterView extends owa_view {
 	
-	function owa_reportVisitorsRosterView() {
+	function __construct() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		// Assign data to templates
 		
@@ -103,8 +101,6 @@ class owa_reportVisitorsRosterView extends owa_view {
 			
 		$this->body->set('visitors', $data['visitors']);
 		
-		
-		return;
 	}
 	
 	

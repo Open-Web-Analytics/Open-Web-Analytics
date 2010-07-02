@@ -46,6 +46,9 @@ class owa_reportVisitsController extends owa_reportController {
 			$visitorId = $this->getParam('visitor_id');
 		}
 		
+		$v = owa_coreAPI::entityFactory('base.visitor');
+		$v->load($visitorId);
+		
 		if ($this->getParam('date')) {
 			$startDate = $this->getParam('date');
 			$endDate = $this->getParam('date');
@@ -64,10 +67,11 @@ class owa_reportVisitsController extends owa_reportController {
 		));
 		
 		$this->set('visits', $rs);
+		$this->set('visitor', $v);
 		$this->set('visitor_id', $visitorId);
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisits');
-		$this->setTitle('Visitor History: ', $visitorId);	
+		$this->setTitle('Visit History For: ', $v->getVisitorName());	
 	}
 	
 }
@@ -85,21 +89,15 @@ class owa_reportVisitsController extends owa_reportController {
  */
 
 class owa_reportVisitsView extends owa_view {
-		
-	/*
-function __construct() {
-	
-		return parent::__construct();
-	}
-*/
-	
-	function render($data) {
+			
+	function render() {
 		
 		// Assign data to templates
 		
 		$this->body->set_template('report_visits.php');	
 		$this->body->set('visitor_id', $this->get('visitor_id'));
-		$this->body->set('visits', $this->get('visits')->resultsRows);
+		$this->body->set('visits', $this->get('visits'));
+		$this->body->set('visitor', $this->get('visitor'));
 	}
 }
 

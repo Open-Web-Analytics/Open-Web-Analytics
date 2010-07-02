@@ -89,6 +89,13 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
+		$ret = $session->addColumn('referring_search_term_id');
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add referring_search_term_id column in owa_session');
+			return false;
+		}
+		
 		
 		// add api column
 		$u = owa_coreAPI::entityFactory('base.user');
@@ -116,6 +123,51 @@ class owa_base_005_update extends owa_update {
 			$this->e->notice('Action fact entity table created');
 		} else {
 			$this->e->notice('Action fact entity table creation failed');
+			return false;
+		}		
+		
+		$st = owa_coreAPI::entityFactory('base.search_term_dim');
+		$ret = $st->createTable();
+		
+		if ($ret === true) {
+			$this->e->notice('Search Term Dimension entity table created');
+		} else {
+			$this->e->notice('Search Term Dimension  entity table creation failed');
+			return false;
+		}
+		
+		// migrate search terms to new table
+		$ret = $db->query(
+			"INSERT 
+				owa_search_term_dim (id, terms, term_count) 
+			SELECT 
+				(CRC32(LOWER(query_terms))) as id, 
+				query_terms as terms, 
+				SUM( LENGTH(query_terms) - LENGTH(REPLACE(query_terms, ' ', ''))+1) as term_count 
+			FROM 
+				owa_referer
+			WHERE
+				query_terms != ''"
+		);
+		
+		if (!$ret) {
+			$this->e->notice('Failed to migrate search terms to new table.');
+			return false;
+		}
+		
+		//populate search term foreign key in session table
+		$ret = $db->query(
+			"UPDATE 
+				owa_session as session, owa_referer as referer
+			SET
+    			session.referring_search_term_id = (CRC32(LOWER(referer.query_terms))) 
+			WHERE
+    			session.referer_id = referer.id and
+    			session.referer_id != ''"
+    	);
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add referring_search_term_id values to owa_session');
 			return false;
 		}		
 		
@@ -204,6 +256,7 @@ class owa_base_005_update extends owa_update {
 		$session = owa_coreAPI::entityFactory('base.session');
 		$session->dropColumn('yyyymmdd');
 		$session->dropColumn('is_bounce');
+		$session->dropColumn('referring_search_term_id');
 		$request = owa_coreAPI::entityFactory('base.request');
 		$request->dropColumn('yyyymmdd');
 		$request->dropColumn('prior_document_id');
@@ -217,6 +270,8 @@ class owa_base_005_update extends owa_update {
 		$u->dropColumn('uri');
 		$af = owa_coreAPI::entityFactory('base.action_fact');
 		$af->dropTable();
+		$st = owa_coreAPI::entityFactory('base.search_term_dim');
+		$st->dropTable();
 		
 		return true;
 	}
