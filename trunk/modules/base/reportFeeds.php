@@ -35,7 +35,7 @@ class owa_reportFeedsController extends owa_reportController {
 		
 	function action() {
 	
-		$this->set('metrics', 'feedReaders');
+		$this->set('metrics', 'feedReaders,feedRequests,feedSubscriptions');
 		$this->set('resultsPerPage', 30);
 		$this->set('trendChartMetric', 'feedReaders');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.feedReaders.value %> readers of all feeds.');
@@ -65,9 +65,15 @@ class owa_reportFeedsView extends owa_view {
 	
 		// Assign Data to templates
 	
-		$this->body->set('feed_trend', $this->get('feed_trend'));
-		$this->body->set('feed_counts', $this->get('feed_counts'));
-		$this->body->set('feed_chart_data', $this->get('feed_chart_data'));
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
 		$this->body->set_template('report_feeds.tpl');
 	}	
 }
