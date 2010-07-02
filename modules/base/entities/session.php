@@ -144,7 +144,7 @@ class owa_session extends owa_entity {
 		$this->setProperty($referer_id);
 		
 		$referring_search_term_id = new owa_dbColumn('referring_search_term_id', OWA_DTD_BIGINT);
-		$referring_search_term_id->setForeignKey('base.referer');
+		$referring_search_term_id->setForeignKey('base.search_term_dim');
 		$this->setProperty($referring_search_term_id);
 		
 		$ip_address = new owa_dbColumn('ip_address', OWA_DTD_VARCHAR255);
