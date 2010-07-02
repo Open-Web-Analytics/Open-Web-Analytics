@@ -33,15 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 class owa_baseModule extends owa_module {
 	
 	/**
-	 * PHP 4 constructor
-	 * Remains for backwards compatibility
-	 */
-	function owa_baseModule() {
-		
-		return owa_baseModule::__construct();
-	}
-	
-	/**
 	 * Constructor
 	 * 
 	 */
@@ -95,7 +86,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
 		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
 		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
-		$this->registerDimension('hostName', 'base.host', 'host', 'Host Name', 'visitor', 'The host name used by the visitor.');
+		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
 		$this->registerDimension('city', 'base.host', 'city', 'City', 'visitor', 'The city of the visitor.');
 		$this->registerDimension('country', 'base.host', 'country', 'Country', 'visitor', 'The country of the visitor.');
 		$this->registerDimension('latitude', 'base.host', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
