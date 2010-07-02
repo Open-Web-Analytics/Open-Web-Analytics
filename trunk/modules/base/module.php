@@ -181,6 +181,8 @@ class owa_baseModule extends owa_module {
 		
 		$this->registerApiMethod('getClickstream', array($this, 'getClickstream'), array( 'sessionId', 'resultsPerPage', 'page','format'));
 		
+		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
+		
 		return parent::__construct();
 	}
 	
@@ -690,6 +692,51 @@ if ($metrics) {
 			return $rs->formatResults($format);		
 		} else {
 			return $rs;
+		}
+	}
+	
+	function getVisitDetail($sessionId, $format = '') {
+	
+		if ($sessionId) {
+		
+			$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+			$db = owa_coreAPI::dbSingleton();
+			
+			$s = owa_coreAPI::entityFactory('base.session');
+			$h = owa_coreAPI::entityFactory('base.host');
+			$ua = owa_coreAPI::entityFactory('base.ua');
+			$d = owa_coreAPI::entityFactory('base.document');
+			$v = owa_coreAPI::entityFactory('base.visitor');
+			$r = owa_coreAPI::entityFactory('base.referer');
+			
+			$db->selectFrom($s->getTableName());
+			
+			$db->selectColumn($s->getColumnsSql('session_'));
+			$db->selectColumn($h->getColumnsSql('host_'));
+			$db->selectColumn($ua->getColumnsSql('ua_'));
+			$db->selectColumn($d->getColumnsSql('document_'));
+			$db->selectColumn($v->getColumnsSql('visitor_'));
+			$db->selectColumn($r->getColumnsSql('referer_'));
+			
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
+			
+			
+			$db->where($s->getTableName().'.id', $sessionId);
+			
+			
+			$results = $rs->generate($db);
+			$rs->resultsRows = $results;
+			
+			if ($format) {
+				owa_lib::setContentTypeHeader($format);
+				return $rs->formatResults($format);		
+			} else {
+				return $rs;
+			}
 		}
 	}
 	

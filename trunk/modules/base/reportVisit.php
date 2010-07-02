@@ -49,6 +49,14 @@ class owa_reportVisitController extends owa_reportController {
 		$this->set('latest_visits', $m->generate());
 */
 		
+		$visit = owa_coreAPI::executeApiCommand(array(
+			
+			'do'		=> 'getVisitDetail',
+			'sessionId'	=> $this->getParam('session_id')
+		
+		));
+
+		
 		//setup Metrics
 		$rs = owa_coreAPI::executeApiCommand(array(
 			
@@ -58,7 +66,7 @@ class owa_reportVisitController extends owa_reportController {
 		));
 		
 		$this->set('clickstream', $rs);
-				
+		$this->set('visit', $visit);
 		$this->set('session_id', $this->getParam('session_id'));
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisit');
@@ -83,10 +91,9 @@ class owa_reportVisitView extends owa_view {
 	function render() {
 		
 		// Assign data to templates
-
 		$this->body->set_template('report_visit.tpl');	
 		$this->body->set('session_id', $this->get('session_id'));
-		$this->body->set('visits', $this->get('latest_visits'));
+		$this->body->set('visits', $this->get('visit'));
 		$this->body->set('clickstream', $this->get('clickstream'));
 	}
 }
