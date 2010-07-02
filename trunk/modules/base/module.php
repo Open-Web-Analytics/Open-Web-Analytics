@@ -130,11 +130,13 @@ class owa_baseModule extends owa_module {
 		
 		// visit
 		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
+		$this->registerDimension('entryPagePath', 'base.document', 'uri', 'Entry Page URI', 'visit', 'The URI of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the entry page.', 'first_page_id');
-		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
-		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
-		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Exit Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPagePath', 'base.document', 'uri', 'Exit Page Path', 'visit', 'The URI of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Exit Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Exit Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
 		
 		// traffic sources
 		$this->registerDimension('referralPageUrl', 'base.referer', 'url', 'Referral Page URL', 'traffic sources', 'The url of the referring web page.');
@@ -146,6 +148,7 @@ class owa_baseModule extends owa_module {
 		
 		// content
 		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.', 'document_id');
+		$this->registerDimension('pagePath', 'base.document', 'uri', 'Page Path', 'content', 'The path of the web page.', 'document_id');
 		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.', 'document_id');
 		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.', 'document_id');
 		
