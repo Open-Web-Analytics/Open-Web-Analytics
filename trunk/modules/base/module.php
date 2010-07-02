@@ -661,6 +661,7 @@ if ($metrics) {
 		$db->selectColumn('page_url');
 		$db->selectColumn('duration');
 		$db->selectColumn('timestamp');
+		$db->selectColumn('events');
 		$db->where('yyyymmdd', array('start' => $start_date, 'end' => $end_date), 'BETWEEN');
 		if ($document_id) {
 			$db->where('document_id', $document_id);
@@ -679,8 +680,7 @@ if ($metrics) {
 		$rs->setPage($page);
 		
 		$results = $rs->generate($db);
-		$rs->resultsRows = $results;
-		
+
 		$rs->setLabels(array('id' => 'Domstream ID', 'page_url' => 'Page Url', 'duration' => 'Duration', 'timestamp' => 'Timestamp'));
 		
 		return $rs;	
