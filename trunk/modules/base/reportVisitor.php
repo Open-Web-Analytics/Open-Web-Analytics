@@ -45,11 +45,15 @@ class owa_reportVisitorController extends owa_reportController {
 		if (!$visitorId) {
 			$visitorId = $this->getParam('visitor_id');
 		}
+		
+		$v = owa_coreAPI::entityFactory('base.visitor');
+		$v->load($visitorId);
 				
 		$this->set('visitor_id', $visitorId);
+		$this->set('visitor', $v);
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitor');
-		$this->setTitle('Visitor History:', $visitorId);	
+		$this->setTitle('Visitor History:', $v->getVisitorName());	
 	}
 	
 }
@@ -80,6 +84,7 @@ class owa_reportVisitorView extends owa_view {
 		$this->body->set_template('report_visitor.tpl');	
 		$this->body->set('visitor_id', $this->get('visitor_id'));
 		$this->body->set('visits', $this->get('visits'));
+		$this->body->set('visitor', $this->get('visitor'));
 	}
 	
 	

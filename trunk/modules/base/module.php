@@ -138,24 +138,23 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('siteId', 'base.acton_fact', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		
 		// visit
-		$this->registerDimension('entryPagePath', 'base.document', 'uri', 'Entry Page Path', 'visit', 'The URL path of the entry page.', 'first_page_id');
+		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the entry page.', 'first_page_id');
-		$this->registerDimension('exitPagePath', 'base.document', 'uri', 'Entry Page Path', 'visit', 'The URL path of the exit page.', 'last_page_id');
+		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
 		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
 		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
 		
 		// traffic sources
 		$this->registerDimension('referralPageUrl', 'base.referer', 'url', 'Referral Page URL', 'traffic sources', 'The url of the referring web page.');
 		$this->registerDimension('referralPageTitle', 'base.referer', 'page_title', 'Referral Page Title', 'traffic sources', 'The title of the referring web page.');
-		$this->registerDimension('referralSearchTerms', 'base.referer', 'query_terms', 'Search Terms', 'traffic sources', 'The referring search terms.');
+		$this->registerDimension('referralSearchTerms', 'base.search_term_dim', 'terms', 'Search Terms', 'traffic sources', 'The referring search terms.', 'referrring_search_term_id');
 		$this->registerDimension('referralLinkText', 'base.referer', 'refering_anchortext', 'Referral Link Text', 'traffic sources', 'The text of the referring link.');
 		$this->registerDimension('isSearchEngine', 'base.referer', 'is_searchengine', 'Search Engine', 'traffic sources', 'Is traffic source a search engine.');
 		$this->registerDimension('referralWebSite', 'base.referer', 'site', 'Referral Web Site', 'traffic sources', 'The full domain of the referring web site.');
 		
 		// content
 		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.', 'document_id');
-		$this->registerDimension('pagePath', 'base.document', 'uri', 'Page Path', 'content', 'The URL path of the web page.', 'document_id');
 		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.', 'document_id');
 		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.', 'document_id');
 		
@@ -180,11 +179,11 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('build', 'base.build');
 		
 		/// register API methods ///
-		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'),'','view_reports');
+		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'limit', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
 		
-		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'),'','view_reports');
+		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'));
 		
-		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'),'','view_reports');
+		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'));
 		
 		return parent::__construct();
 	}
@@ -313,7 +312,8 @@ class owa_baseModule extends owa_module {
 								'configuration',
 								'user',
 								'domstream',
-								'action_fact'));
+								'action_fact',
+								'search_term_dim'));
 		
 	}
 	
@@ -476,7 +476,7 @@ class owa_baseModule extends owa_module {
 			
 		// OWA specific params to filter
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'source_param'));
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_id'));
 		
 		//print_r($filters);
 		
@@ -525,7 +525,7 @@ class owa_baseModule extends owa_module {
 		}
 				
 		// check and remove trailing slash
-		if (substr($url, -1) === '/') {
+		if (substr($url, -1, -1) === '/') {
 			
 			$url = substr($url, 0, -1);
 		}
