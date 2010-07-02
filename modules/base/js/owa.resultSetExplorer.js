@@ -617,73 +617,79 @@ OWA.resultSetExplorer.prototype = {
 	 */
 	makeAreaChart : function(series, dom_id) {
 		
-		dom_id = dom_id || this.dom_id;
-		var dataseries = [];
-		series = series || this.options.areaChart.series;
-		
-		for(var ii=0;ii<=series.length -1;ii++) {
-		
-			var x_series_name = series[ii].x;
-			var y_series_name = series[ii].y;
-		
-			var data = [];
-			
-			//create data array
-			for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
-				data_type_x = this.resultSet.resultsRows[i][x_series_name].data_type;
-				data_type_y = this.resultSet.resultsRows[i][y_series_name].data_type;
-				var item =[this.formatValue(data_type_x, this.resultSet.resultsRows[i][x_series_name].value), this.formatValue(data_type_y, this.resultSet.resultsRows[i][y_series_name].value)];
-				data.push(item);
-			}
-			//alert(this.resultSet.resultsRows[i][series[ii].x].value);
-			var l = this.getMetricLabel(y_series_name);
-			dataseries.push({ label: l,  data: data});
-			
-		}
-		
-		//var that = this;
-		
-		var selector = "#"+dom_id + ' > .owa_areaChart';
-		
-		if(jQuery("#"+dom_id + ' > .owa_areaChart').length == 0) {
-		
-			this.setupAreaChart(series, dom_id);
-		}
-		
-		var options = { 
-			
-			yaxis: { 
-				tickDecimals:0 }, 
-			xaxis:{
-				ticks: data.length/2,
-				tickDecimals: null
-    		},
-			grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
-			series: {
-				points: { show: this.options.areaChart.showDots, fill: this.options.areaChart.showDots},
-				lines: { show: true, fill: true, fillColor: "rgba(202,225,255, 0.6)", lineWidth: this.options.areaChart.lineWidth}
+		if (this.resultSet.resultsRows.length > 0) {
 				
-			},
-			colors: ["#1874CD", "#dba255", "#919733"],
-			legend: {
-				position: 'ne',
-				margin: [0,-10],
-				show:this.options.areaChart.showLegend
-			}
-		};
-		
-		if (data_type_x === 'yyyymmdd') {
+			dom_id = dom_id || this.dom_id;
+			var dataseries = [];
+			series = series || this.options.areaChart.series;
 			
-			options.xaxis.mode = "time";
-    		options.xaxis.timeformat = "%m/%d/%y";
+			for(var ii=0;ii<=series.length -1;ii++) {
+			
+				var x_series_name = series[ii].x;
+				var y_series_name = series[ii].y;
+			
+				var data = [];
+				
+				//create data array
+				for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
+					data_type_x = this.resultSet.resultsRows[i][x_series_name].data_type;
+					data_type_y = this.resultSet.resultsRows[i][y_series_name].data_type;
+					var item =[this.formatValue(data_type_x, this.resultSet.resultsRows[i][x_series_name].value), this.formatValue(data_type_y, this.resultSet.resultsRows[i][y_series_name].value)];
+					data.push(item);
+				}
+				//alert(this.resultSet.resultsRows[i][series[ii].x].value);
+				var l = this.getMetricLabel(y_series_name);
+				dataseries.push({ label: l,  data: data});
+				
+			}
+			
+			//var that = this;
+			
+			var selector = "#"+dom_id + ' > .owa_areaChart';
+			
+			if(jQuery("#"+dom_id + ' > .owa_areaChart').length == 0) {
+			
+				this.setupAreaChart(series, dom_id);
+			}
+			
+			var options = { 
+				
+				yaxis: { 
+					tickDecimals:0 }, 
+				xaxis:{
+					ticks: data.length/2,
+					tickDecimals: null
+	    		},
+				grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
+				series: {
+					points: { show: this.options.areaChart.showDots, fill: this.options.areaChart.showDots},
+					lines: { show: true, fill: true, fillColor: "rgba(202,225,255, 0.6)", lineWidth: this.options.areaChart.lineWidth}
+					
+				},
+				colors: ["#1874CD", "#dba255", "#919733"],
+				legend: {
+					position: 'ne',
+					margin: [0,-10],
+					show:this.options.areaChart.showLegend
+				}
+			};
+			
+			if (data_type_x === 'yyyymmdd') {
+				
+				options.xaxis.mode = "time";
+	    		options.xaxis.timeformat = "%m/%d/%y";
+			}
+			
+			this.options.areaChart.flot = options;
+		
+	
+			jQuery.plot(jQuery(selector), dataseries, options);
+			this.currentContainerWidth = jQuery("#"+dom_id).width();
+			this.currentWindowWidth = jQuery(window).width();
+		} else {
+			jQuery(selector).append("No data for this time period");
 		}
-		
-		this.options.areaChart.flot = options;
-		
-		
-		jQuery.plot(jQuery(selector), dataseries, options);
-		this.currentContainerWidth = jQuery("#"+dom_id).width();
-		this.currentWindowWidth = jQuery(window).width();	
+			
 	},
 	
 	// shows a tool tip for flot charts
