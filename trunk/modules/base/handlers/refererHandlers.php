@@ -108,7 +108,7 @@ class owa_refererHandlers extends owa_observer {
 			if ($title) {
 				
 				if (function_exists('iconv')) {
-					$title = iconv('UTF-8','UTF-8',$title);
+					$title = iconv('UTF-8','UTF-8//TRANSLIT',$title);
 				}
 			
 				$r->set('page_title', $title);	
@@ -122,7 +122,7 @@ class owa_refererHandlers extends owa_observer {
 				
 				if ($snippet) {
 					if (function_exists('iconv')) {
-						$snippet = iconv('UTF-8','UTF-8',$snippet);
+						$snippet = iconv('UTF-8','UTF-8//TRANSLIT',$snippet);
 					}
 					$r->set('snippet', $snippet);
 				}
@@ -132,7 +132,7 @@ class owa_refererHandlers extends owa_observer {
 				if ($anchortext) {
 					
 					if (function_exists('iconv')) {
-						$anchortext = iconv('UTF-8','UTF-8',$anchortext);
+						$anchortext = iconv('UTF-8','UTF-8//TRANSLIT',$anchortext);
 					}
 					//$this->e->debug('Referering Snippet is: '. $this->snippet);
 					$r->set('refering_anchortext', $anchortext);
