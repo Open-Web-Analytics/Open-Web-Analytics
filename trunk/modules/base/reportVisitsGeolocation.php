@@ -33,21 +33,9 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportVisitsGeolocationController extends owa_reportController {
 	
-	function owa_reportVisitsGeolocationController($params) {
-		
-		return owa_reportVisitsGeolocationController::__construct($params);
-
-	}
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	
-	}
-	
 	function action() {
 	
-		$site_id = $this->getParam('site_id');
+		$site_id = $this->getParam('siteId');
 		if ($site_id):
 			//get site labels
 			$s = owa_coreAPI::entityFactory('base.site');
@@ -59,25 +47,20 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
 			$this->set('site_description', 'All Sites Tracked by OWA');
 		endif;
 		
-		//setup Metrics
-		$m = owa_coreApi::metricFactory('base.latestVisits');
-		$m->setConstraint('site_id', $this->getParam('site_id'));
-		//$period = $this->makeTimePeriod('all_time');
-		$m->setPeriod($this->getPeriod());
-		$m->setLimit(500);
-		$m->setOrder('DESC');
-		$m->setPage($this->getParam('page'));
-		$this->set('latest_visits', $m->generate());
-		$pagination = $m->getPagination();
-		$this->setPagination($pagination);
-	
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'resultsPerPage'	=> 500
+		));
+		
 		$this->setTitle('Visitor Geo-location');
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitsGeolocation');
-		
-		
-		return;
-
 	}
 
 }
@@ -96,17 +79,7 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
  */
 
 class owa_reportVisitsGeolocationView extends owa_view {
-	
-	function owa_reportVisitsGeolocationView() {
-				
-		return owa_reportVisitsGeolocationView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
+		
 	function render($data) {
 		
 		// Assign data to templates
@@ -114,13 +87,7 @@ class owa_reportVisitsGeolocationView extends owa_view {
 		$this->body->set('latest_visits', $this->get('latest_visits'));
 		$this->setjs('jmaps', 'base/js/includes/jquery/jquery.jmap-r72.js');
 		$this->setjs('owa.map', 'base/js/owa.map.js');
-		//$this->setjs('includes/markermanager.js');
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>
