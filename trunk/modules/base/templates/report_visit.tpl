@@ -13,7 +13,7 @@
 					<TH>Time</TH>
 					<TH>Page</TH>
 				</TR>
-				<?php foreach($clickstream as $s): ?>
+				<?php foreach($clickstream->resultsRows as $s): ?>
 				<TR>
 					<TD colspan="2">
 						<table class="owa_infobox" size="100%">

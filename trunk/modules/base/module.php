@@ -179,6 +179,8 @@ class owa_baseModule extends owa_module {
 		
 		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'));
 		
+		$this->registerApiMethod('getClickstream', array($this, 'getClickstream'), array( 'sessionId', 'resultsPerPage', 'page','format'));
+		
 		return parent::__construct();
 	}
 	
@@ -683,7 +685,12 @@ if ($metrics) {
 
 		$rs->setLabels(array('id' => 'Domstream ID', 'page_url' => 'Page Url', 'duration' => 'Duration', 'timestamp' => 'Timestamp'));
 		
-		return $rs;	
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
 	}
 	
 	function getLatestVisits($startDate = '', $endDate = '', $visitorId = '', $siteId = '', $resultsPerPage = 20, $page = 1, $format = '') {
@@ -738,7 +745,45 @@ if ($metrics) {
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
 		
-		return $rs;	
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
+	}
+	
+	function getClickstream($sessionId, $resultsPerPage = 100, $page = 1, $format = '') {
+		
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		$db = owa_coreAPI::dbSingleton();
+		
+		$db->selectFrom('owa_request', 'request');
+		$db->selectColumn("*");
+		// pass constraints into where clause
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'document_id', 'document.id');
+		
+		if ($sessionId) {
+			$db->where('session_id', $sessionId);
+		}
+				
+		$db->orderBy('timestamp','DESC');
+		
+		// pass limit to rs object if one exists
+		$rs->setLimit($resultsPerPage);
+			
+		// pass page to rs object if one exists
+		$rs->setPage($page);
+		
+		$results = $rs->generate($db);
+		$rs->resultsRows = $results;
+		
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
 	}
 	
 }

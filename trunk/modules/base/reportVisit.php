@@ -36,19 +36,10 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportVisitController extends owa_reportController {
 	
-	function owa_reportVisitController($params) {
-		
-		return owa_reportVisitController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
-		//setup Metrics
+		/*
+//setup Metrics
 		$m = owa_coreApi::metricFactory('base.latestVisits');
 		$m->setConstraint('site_id', $this->getParam('site_id'));
 		$m->setConstraint('owa_session.id', $this->getParam('session_id'));
@@ -56,26 +47,23 @@ class owa_reportVisitController extends owa_reportController {
 		$m->setPeriod($period); 
 		$m->setLimit(1);
 		$this->set('latest_visits', $m->generate());
+*/
 		
 		//setup Metrics
-		$c = owa_coreApi::metricFactory('base.clickstream');
-		$c->setConstraint('site_id', $this->getParam('site_id'));
-		$c->setConstraint('session_id', $this->getParam('session_id'));
-		$period = $this->makeTimePeriod('all_time');
-		$c->setPeriod($period); 
-		$c->setLimit(35);
-		$c->setPage($this->getParam('page'));
-		$this->set('clickstream', $c->generate());
-		$pagination = $c->getPagination();
-		$this->setPagination($pagination);
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'do'		=> 'getClickstream',
+			'sessionId'	=> $this->getParam('session_id')
+		
+		));
+		
+		$this->set('clickstream', $rs);
+				
 		$this->set('session_id', $this->getParam('session_id'));
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisit');
 		$this->setTitle('Visit Clickstream');
-		return;
-			
 	}
-	
 }	
 
 /**
@@ -92,17 +80,7 @@ class owa_reportVisitController extends owa_reportController {
 
 class owa_reportVisitView extends owa_view {
 	
-	function owa_reportVisitView() {
-		
-		return owa_reportVisitView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
-	function construct($data) {
+	function render() {
 		
 		// Assign data to templates
 
@@ -110,12 +88,7 @@ class owa_reportVisitView extends owa_view {
 		$this->body->set('session_id', $this->get('session_id'));
 		$this->body->set('visits', $this->get('latest_visits'));
 		$this->body->set('clickstream', $this->get('clickstream'));
-
-		return;
 	}
-	
-	
 }
-
 
 ?>
