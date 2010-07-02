@@ -82,10 +82,6 @@ class owa_refererHandlers extends owa_observer {
 		// Set site
 		$url = parse_url($event->get('HTTP_REFERER'));
 		$r->set('site', $url['host']);
-		
-		if ($event->get('query_terms')) {
-			$r->set('query_terms', $event->get('query_terms'));
-		}
 				
 		if ($event->get('source') === 'organic-search') {
 			$r->set('is_searchengine', true);
@@ -110,16 +106,39 @@ class owa_refererHandlers extends owa_observer {
 			$title = trim($crawler->extract_title());
 			
 			if ($title) {
+				
+				if (function_exists('iconv')) {
+					$title = iconv('UTF-8','UTF-8',$title);
+				}
+			
 				$r->set('page_title', $title);	
 			}			
 			
 			$se = $r->get('is_searchengine');
 			//Extract anchortext and page snippet but not if it's a search engine...
 			if ($se != true) {
-				$r->set('snippet', $crawler->extract_anchor_snippet($event->get('inbound_page_url')));
-				//$this->e->debug('Referering Snippet is: '. $this->snippet);
-				$r->set('refering_anchortext', $crawler->anchor_info['anchor_text']);
-				//$this->e->debug('Anchor text is: '. $this->anchor_text);
+			
+				$snippet = $crawler->extract_anchor_snippet($event->get('inbound_page_url'));
+				
+				if ($snippet) {
+					if (function_exists('iconv')) {
+						$snippet = iconv('UTF-8','UTF-8',$snippet);
+					}
+					$r->set('snippet', $snippet);
+				}
+				
+				$anchortext = $crawler->anchor_info['anchor_text'];
+				
+				if ($anchortext) {
+					
+					if (function_exists('iconv')) {
+						$anchortext = iconv('UTF-8','UTF-8',$anchortext);
+					}
+					//$this->e->debug('Referering Snippet is: '. $this->snippet);
+					$r->set('refering_anchortext', $anchortext);
+					//$this->e->debug('Anchor text is: '. $this->anchor_text);
+				}
+				
 			}
 				
 			//write to DB
