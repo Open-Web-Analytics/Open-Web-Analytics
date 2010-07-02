@@ -139,7 +139,7 @@ class owa_baseModule extends owa_module {
 		// traffic sources
 		$this->registerDimension('referralPageUrl', 'base.referer', 'url', 'Referral Page URL', 'traffic sources', 'The url of the referring web page.');
 		$this->registerDimension('referralPageTitle', 'base.referer', 'page_title', 'Referral Page Title', 'traffic sources', 'The title of the referring web page.');
-		$this->registerDimension('referralSearchTerms', 'base.search_term_dim', 'terms', 'Search Terms', 'traffic sources', 'The referring search terms.', 'referrring_search_term_id');
+		$this->registerDimension('referralSearchTerms', 'base.search_term_dim', 'terms', 'Search Terms', 'traffic sources', 'The referring search terms.', 'referring_search_term_id');
 		$this->registerDimension('referralLinkText', 'base.referer', 'refering_anchortext', 'Referral Link Text', 'traffic sources', 'The text of the referring link.');
 		$this->registerDimension('isSearchEngine', 'base.referer', 'is_searchengine', 'Search Engine', 'traffic sources', 'Is traffic source a search engine.');
 		$this->registerDimension('referralWebSite', 'base.referer', 'site', 'Referral Web Site', 'traffic sources', 'The full domain of the referring web site.');
