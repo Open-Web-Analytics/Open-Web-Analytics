@@ -802,11 +802,17 @@ OWA.resultSetExplorer.prototype = {
 	    var options = {
 			series: {
 				pie: { 
-					show: true
+					show: true,
+					//showLabel: true,
+					label: {
+						show: true
+					}
 				}
 			},
 			legend: {
-				show: false
+				show: true,
+				position: "ne",
+				margin: [-100,50]
 			},
 			colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
 		};
