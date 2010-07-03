@@ -89,6 +89,7 @@
 <script>
 //OWA.setSetting('debug', true);
 
+(function() {
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 													'metrics' => 'visits,pageViews,bounces,pagesPerVisit,visitDuration', 
 													'dimensions' => 'date', 
@@ -103,7 +104,9 @@
 	//rsh.options.areaChart.series.push({x:'date',y:'visits'});
 	//rsh.setView('areaChart');
 	rsh.load(aurl);
+})();
 
+(function() {
 	var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 													'metrics' => 'pageViews', 
 													'dimensions' => 'pageTitle,pageUrl', 
@@ -117,9 +120,9 @@
 	OWA.items.tc.options.grid.excludeColumns = ['pageUrl'];
 	OWA.items.tc.asyncQueue.push(['refreshGrid']);
 	OWA.items.tc.load(tcurl);
-				
+})();			
 
-
+(function() {
 	var traurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 													'metrics' => 'visits', 
 													'dimensions' => 'referralPageTitle,referralPageUrl', 
@@ -127,14 +130,17 @@
 													'format' => 'json',
 													'resultsPerPage' => 10
 													),true);?>';
-													  
+
+												  
 	OWA.items.topreferers = new OWA.resultSetExplorer('top-referers');
 	OWA.items.topreferers.options.grid.showRowNumbers = false;
 	OWA.items.topreferers.addLinkToColumn('referralPageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'));?>', ['referralPageUrl']);
 	OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
 	OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
 	OWA.items.topreferers.load(traurl);
+})();
 	
+(function() {
 	var aturl = '<?php echo $this->makeApiLink(array(
 		'do' => 'getResultSet', 
 		'metrics' => 'actions', 
@@ -149,7 +155,9 @@
 	at.options.areaChart.series.push({x:'date',y:'actions'});
 	at.setView('areaChart');
 	//at.load(aturl);
-	
+})();
+
+(function() {
 	var vmurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																	'metrics' => 'visits', 
 																	'dimensions' => 'medium', 
@@ -162,7 +170,9 @@
 	vm.options.pieChart.dimension = 'medium';
 	vm.setView('pie');
 	vm.load(vmurl);
-	
+})();
+
+(function() {	
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 													'metrics' => 'repeatVisitors,newVisitors', 
 													'dimensions' => '', 
@@ -174,7 +184,7 @@
 	vt.options.pieChart.metrics = ['repeatVisitors', 'newVisitors'];
 	vt.setView('pie');
 	vt.load(aurl);
-				
+})();				
 				
 </script>
 
