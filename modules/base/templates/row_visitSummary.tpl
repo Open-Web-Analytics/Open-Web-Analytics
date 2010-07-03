@@ -1,5 +1,5 @@
 <TD>
-	<div class="owa_visitInfobox">
+	<div class="owa_visitInfobox" style="width:auto;">
 	
 		<p class="owa_visitInfoboxTitle"><?php echo date(DATE_RFC822,$row['session_timestamp']);?> &raquo; <?php echo $row['host_host'];?></p>
 		
