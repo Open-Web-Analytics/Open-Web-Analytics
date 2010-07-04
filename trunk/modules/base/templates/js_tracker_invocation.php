@@ -1,5 +1,5 @@
 <?php if (owa_coreAPI::getSetting('base', 'error_handler') === 'development'): ?>
-OWA.setSetting('debug', true);
+//OWA.setSetting('debug', true);
 <?php endif;?>
 // Set base URL
 OWA.setSetting('baseUrl', '<?php echo owa_coreAPI::getSetting('base', 'public_url');?>');
