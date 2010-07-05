@@ -60,11 +60,6 @@ class owa_browscap extends owa_base {
 	var $cache;
 	var $cacheExpiration;
 	
-	function owa_browscap($ua = '') {
-		
-		return owa_browscap::__construct($ua);
-	}
-	
 	function __construct($ua = '') {
 		
 		parent::__construct();

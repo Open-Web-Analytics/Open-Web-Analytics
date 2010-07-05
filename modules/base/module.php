@@ -525,7 +525,7 @@ class owa_baseModule extends owa_module {
 		}
 				
 		// check and remove trailing slash
-		if (substr($url, -1, -1) === '/') {
+		if (substr($url, -1) === '/') {
 			
 			$url = substr($url, 0, -1);
 		}

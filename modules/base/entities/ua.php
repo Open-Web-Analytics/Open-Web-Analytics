@@ -29,12 +29,7 @@
  */
 
 class owa_ua extends owa_entity {
-	
-	function owa_ua() {
 		
-		return owa_ua::__construct();
-	}
-	
 	function __construct() {
 		
 		$this->setTableName('ua');
@@ -52,7 +47,5 @@ class owa_ua extends owa_entity {
 
 	}
 }
-
-
 
 ?>

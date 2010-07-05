@@ -47,11 +47,6 @@ class owa_service extends owa_base {
 	var $denormalizedDimensions = array();
 	var $browscap;
 	
-	function owa_service() {
-		
-		return owa_service::__construct();
-	}
-	
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		

@@ -41,7 +41,7 @@ class owa_lib {
 	 * @param array $array
 	 * @return string 
 	 */
-	function implode_assoc($inner_glue, $outer_glue, $array) {
+	public static function implode_assoc($inner_glue, $outer_glue, $array) {
 	   $output = array();
 	   foreach( $array as $key => $item ) {
 			  $output[] = $key . $inner_glue . $item;
@@ -60,7 +60,7 @@ class owa_lib {
 	 * @return array $data_arrays
 	 * @access public
 	 */
-	function deconstruct_assoc($a_array) {
+	public static function deconstruct_assoc($a_array) {
 		if (!empty($a_array)):
 		
 			$data_arrays = array();
@@ -87,7 +87,7 @@ class owa_lib {
 	}
 	
 	
-	function decon_assoc($a_array) {
+	public static function decon_assoc($a_array) {
 		
 		$data_arrays = array();
 	
@@ -102,7 +102,7 @@ class owa_lib {
 	}
 
 	// php 4 compatible function
-	function array_intersect_key() {
+	public static function array_intersect_key() {
 	
         $arrs = func_get_args();
         $result = array_shift($arrs);
@@ -117,7 +117,7 @@ class owa_lib {
      }
 	
 	// php4 compatible function
-	function array_walk_recursive(&$input, $funcname, $userdata = "")
+	public static function array_walk_recursive(&$input, $funcname, $userdata = "")
     {
         if (!is_callable($funcname))
         {
@@ -168,7 +168,7 @@ class owa_lib {
 	 * @return array
 	 * @access public
 	 */
-	function time_now() {
+	public static function time_now() {
 		
 		$timestamp = time();
 		
@@ -208,7 +208,7 @@ class owa_lib {
 	 *
 	 * @return array
 	 */
-	function months() {
+	public static function months() {
 		
 		return array(
 					
@@ -228,13 +228,13 @@ class owa_lib {
 		
 	}
 	
-	function days() {
+	public static function days() {
 		
 		return array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
 					15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
 	}
 	
-	function years() {
+	public static function years() {
 		
 		static $years;
 		
@@ -265,7 +265,7 @@ class owa_lib {
 	 * @param int $month
 	 * @return string
 	 */
-	function get_month_label($month) {
+	public static function get_month_label($month) {
 		
 		static $months;
 		
@@ -286,7 +286,7 @@ class owa_lib {
 	 * @param string $day
 	 * @return string
 	 */
-	function setDaySuffix($day) {
+	public static function setDaySuffix($day) {
 		
 		switch ($day) {
 			
@@ -313,7 +313,7 @@ class owa_lib {
 	 * @param array $params
 	 * @return string
 	 */
-	function getDatelabel($params) {
+	public static function getDatelabel($params) {
 		
 		switch ($params['period']) {
 		
@@ -361,7 +361,7 @@ class owa_lib {
 	 * @depricated
 	 * @return array
 	 */
-	function reporting_periods() {
+	public static function reporting_periods() {
 		
 		return array(
 					
@@ -391,7 +391,7 @@ class owa_lib {
 	 * @depricated
 	 * @return array
 	 */
-	function date_reporting_periods() {
+	public static function date_reporting_periods() {
 		
 		return array(
 					
@@ -409,7 +409,7 @@ class owa_lib {
 	 * @param unknown_type $period
 	 * @return unknown
 	 */
-	function get_period_label($period) {
+	public static function get_period_label($period) {
 	
 		$periods = owa_lib::reporting_periods();
 		
@@ -421,7 +421,7 @@ class owa_lib {
 	 *
 	 * @return string
 	 */
-	function get_current_url() {
+	public static function get_current_url() {
 		
 		$url = 'http';	
 		
@@ -440,7 +440,7 @@ class owa_lib {
 		return $url;
 	}
 	
-	function inputFilter($array) {
+	public static function inputFilter($array) {
 		
 		static $f;
 		
@@ -453,7 +453,7 @@ class owa_lib {
 		
 	}
 	
-	function fileInclusionFilter($str) {
+	public static function fileInclusionFilter($str) {
 		
 		$str = str_replace("http://", "", $str);
 		$str = str_replace("/", "", $str);
@@ -483,7 +483,7 @@ class owa_lib {
 	 * @param array $conf
 	 * @return object
 	 */
-	function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
+	public static function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
 		
         //$class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
         $class_dir = $class_dir.DIRECTORY_SEPARATOR;
@@ -522,7 +522,7 @@ class owa_lib {
      * @param array $conf
      * @return object
      */
-    function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
+    public static function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
     	
         static $instance;
         
@@ -539,7 +539,7 @@ class owa_lib {
      *
      * @param string $url
      */
-    function redirectBrowser($url) {
+    public static function redirectBrowser($url) {
     	
     	//ob_clean();
 	    // 302 redirect to URL 
@@ -548,7 +548,7 @@ class owa_lib {
 		return;
     }
 	
-	function makeLinkQueryString($query_params) {
+	public static function makeLinkQueryString($query_params) {
 		
 		$new_query_params = array();
 		
@@ -583,7 +583,7 @@ class owa_lib {
 		
 	}
 	
-	function getRequestParams() {
+	public static function getRequestParams() {
 		
 		$params = array();
 		
@@ -601,7 +601,7 @@ class owa_lib {
 		return $params;
 	}
 	
-	function rekeyArray($array, $new_keys) {
+	public static function rekeyArray($array, $new_keys) {
 	
 		$new_keys = $new_keys;
 		$new_array = array();
@@ -618,7 +618,7 @@ class owa_lib {
 	}
 	
 	
-	function stripParams($params, $ns = '') {
+	public static function stripParams($params, $ns = '') {
 		
 		$striped_params = array();
 		
@@ -656,7 +656,7 @@ class owa_lib {
 	 * @return unknown
 	 * @deprecated 
 	 */
-	function moduleRequireOnce($module, $file) {
+	public static function moduleRequireOnce($module, $file) {
 		
 		return require_once(OWA_BASE_DIR.'/modules/'.$module.'/'.$file.'.php');
 	}
@@ -670,7 +670,7 @@ class owa_lib {
 	 * @return unknown
 	 * @deprecated 
 	 */
-	function moduleFactory($modulefile, $class_suffix = null, $params = '') {
+	public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
 		
 		list($module, $file) = split("\.", $modulefile);
 		$class = 'owa_'.$file.$class_suffix;
@@ -691,7 +691,7 @@ class owa_lib {
 	 *
 	 * @param unknown_type $data
 	 */
-	function redirectToView($data) {
+	public static function redirectToView($data) {
 		//print_r($data);
 		$c = &owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
@@ -722,7 +722,7 @@ class owa_lib {
 	 * @param array $data
 	 * @deprecated 
 	 */
-	function displayView($data, $params = array()) {
+	public static function displayView($data, $params = array()) {
 		
 		$view =  owa_lib::moduleFactory($data['view'], 'View', $params);
 		
@@ -730,7 +730,7 @@ class owa_lib {
 		
 	}
 	
-	function &coreAPISingleton() {
+	public static function &coreAPISingleton() {
 		
 		static $api;
 		
@@ -749,7 +749,7 @@ class owa_lib {
 	 * @return 	integer
 	 * @access 	private
 	 */
-	function setStringGuid($string) {
+	public static function setStringGuid($string) {
 		if (!empty($string)):
 			return crc32(strtolower($string));
 		else:
@@ -763,6 +763,8 @@ class owa_lib {
 	 * @param 	array $constraints
 	 * @return 	string $where
 	 * @access 	public
+	 * @depricated
+	 * @todo remove
 	 */
 	function addConstraints($constraints) {
 	
@@ -824,7 +826,7 @@ class owa_lib {
 		
 	}
 	
-	function assocFromString($string_state, $inner = '=>', $outer = '|||') {
+	public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 	
 		if (!empty($string_state)):
 		
@@ -858,7 +860,7 @@ class owa_lib {
  	 * Simple function to replicate PHP 5 behaviour
  	 */
 	
-	function microtime_float() {
+	public static function microtime_float() {
 	    list($usec, $sec) = explode(" ", microtime());
     	return ((float)$usec + (float)$sec);
 	}
@@ -867,7 +869,7 @@ class owa_lib {
 	 * Lists all files in a Directory
 	 *
 	 */
-	function listDir($start_dir='.', $recursive = true) {
+	public static function listDir($start_dir='.', $recursive = true) {
 
 		$files = array();
 		
@@ -902,7 +904,7 @@ class owa_lib {
 	
 	}
 
-	function makeDateArray($result, $format) {
+	public static function makeDateArray($result, $format) {
 		
 		if (!empty($result)) {
 		
@@ -922,7 +924,7 @@ class owa_lib {
 		
 	}
 	
-	function makeDates($timestamps, $format) { 
+	public static function makeDates($timestamps, $format) { 
 		
 		sort($timestamps);
 			
@@ -938,7 +940,7 @@ class owa_lib {
 		
 	}
 	
-	function html2txt($document){
+	public static function html2txt($document){
 		$search = array('@<script[^>]*?>.*?</script>@si',  // Strip out javascript
 		               '@<style[^>]*?>.*?</style>@siU',    // Strip style tags properly
 		               '@<[\/\!]*?[^<>]*?>@si',            // Strip out HTML tags
@@ -948,7 +950,7 @@ class owa_lib {
 		return $text;	
 	}
 	
-	function escapeNonAsciiChars($string) {
+	public static function escapeNonAsciiChars($string) {
 	
 		return preg_replace('/[^(\x20-\x7F)]*/','', $string);
 	}
@@ -961,7 +963,7 @@ class owa_lib {
 	 * @param string $trailing
 	 * @return string
 	 */
-	function truncate ($str, $length=10, $trailing='...')  {
+	public static function truncate ($str, $length=10, $trailing='...')  {
 	 
     	// take off chars for the trailing 
     	$length-=strlen($trailing); 
@@ -982,12 +984,12 @@ class owa_lib {
 	 * @param string $password
 	 * @return string
 	 */
-	function encryptPassword($password) {
+	public static function encryptPassword($password) {
 		
 		return md5(strtolower($password).strlen($password));
 	}
 	
-	function timestampToYyyymmdd($timestamp = '') {
+	public static function timestampToYyyymmdd($timestamp = '') {
 		
 		if(empty($timestamp)) {
 			$timestamp = time();
@@ -998,7 +1000,7 @@ class owa_lib {
 		return $yyyymmdd;
 	}
 	
-	function setContentTypeHeader($type = 'html') {
+	public static function setContentTypeHeader($type = 'html') {
 		
 		if (!$type) {	
 			$type = 'html';

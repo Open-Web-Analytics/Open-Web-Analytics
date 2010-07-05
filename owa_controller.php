@@ -108,17 +108,7 @@ class owa_controller extends owa_base {
 	var $authenticate_user;
 	
 	var $state;
-	
-	/**
-	 * PHP4 Constructor
-	 *
-	 * @param array $params
-	 */
-	function owa_controller($params) {
-	
-		return owa_controller::__construct($params);
-	}
-	
+		
 	/**
 	 * Constructor
 	 *

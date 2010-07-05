@@ -34,24 +34,7 @@ require_once(OWA_DIR.'owa_lib.php');
  */
 
 class owa_hostHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_hostHandlers() {
-        
-		return owa_hostHandlers::__construct();
-    }
-    
-    function __construct() {
     	
-    	return parent::__construct();
-    }
-	
     /**
      * Notify Event Handler
      *

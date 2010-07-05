@@ -30,11 +30,6 @@
 
 class owa_session extends owa_entity {
 	
-	function owa_session() {
-		
-		return owa_session::__construct();			
-	}
-	
 	function __construct() {
 	
 		// table name

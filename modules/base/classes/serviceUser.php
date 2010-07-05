@@ -40,13 +40,6 @@ class owa_serviceUser extends owa_base {
 		
 		//parent::__construct();
 		$this->user = owa_coreApi::entityFactory('base.user');
-		
-		return;
-	}
-	
-	function owa_serviceUser() {
-		
-		return owa_serviceUser::__construct();
 	}
 	
 	function load($user_id) {

@@ -31,22 +31,8 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
  */
 
 class owa_coreAPI {
-	
-	/**
-	 * Container for request params
-	 * 
-	 * @var array
-	 */
-	var $params;
-	
-	/**
-	 * Container for caller config overrides.
-	 * 
-	 * @var array
-	 */
-	var $caller_config_overrides;
-	
-	function &singleton($params = array()) {
+		
+	public static function &singleton($params = array()) {
 		
 		static $api;
 		
@@ -61,7 +47,7 @@ class owa_coreAPI {
 		return $api;
 	}
 	
-	function setupStorageEngine($type) {
+	public static function setupStorageEngine($type) {
 	
 		if (!class_exists('owa_db')) {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
@@ -82,7 +68,7 @@ class owa_coreAPI {
 
 	}
 	
-	function &dbSingleton() {
+	public static function &dbSingleton() {
 		
 		static $db;
 	
@@ -109,32 +95,8 @@ class owa_coreAPI {
 		
 		return $db;
 	}
-	
-	
-	/*
-function authSingleton() {
-			
-		static $auth_modules;
-		$auth_mdules = array();
 		
-		if (empty($auth_modules['plugin'])):
-			
-			$c = &owa_coreAPI::configSingleton();
-			$plugin = $c->get('base', 'authentication');
-			
-		endif;
-		
-		// this needs to not be a singleton
-		$auth_modules[$plugin] = &owa_lib::singleton(OWA_PLUGIN_DIR.'auth'.DIRECTORY_SEPARATOR, 'owa_auth_', $plugin);
-		
-		return $auth_modules[$plugin];
-
-		
-		return;
-	}
-*/
-	
-	function &configSingleton($params = array()) {
+	public static function &configSingleton($params = array()) {
 		
 		static $config;
 		
@@ -151,7 +113,7 @@ function authSingleton() {
 		return $config;
 	}
 	
-	function &errorSingleton() {
+	public static function &errorSingleton() {
 		
 		static $e;
 		
@@ -168,13 +130,13 @@ function authSingleton() {
 		return $e;
 	}
 	
-	function &getSetting($module, $name) {
+	public static function getSetting($module, $name) {
 		
 		$s = &owa_coreAPI::configSingleton();
 		return $s->get($module, $name);
 	}
 	
-	function setSetting($module, $name, $value, $persist = false) {
+	public static function setSetting($module, $name, $value, $persist = false) {
 		
 		$s = &owa_coreAPI::configSingleton();
 		
@@ -187,13 +149,13 @@ function authSingleton() {
 	}
 	
 	
-	function getAllRoles() {
+	public static function getAllRoles() {
 		
 		$caps = owa_coreAPI::getSetting('base', 'capabilities');
 		return array_keys($caps);
 	}
 	
-	function &getCurrentUser() {
+	public static function &getCurrentUser() {
 		
 		$s = &owa_coreAPI::serviceSingleton();
 		return $s->getCurrentUser();
@@ -203,7 +165,7 @@ function authSingleton() {
 	 * check to see if the current user has a capability
 	 * always returns a bool
 	 */
-	function isCurrentUserCapable($capability) {
+	public static function isCurrentUserCapable($capability) {
 		
 		$cu = &owa_coreAPI::getCurrentUser();
 		owa_coreAPI::debug("Current User Role: ".$cu->getRole());
@@ -213,13 +175,13 @@ function authSingleton() {
 		return $ret;
 	}
 	
-	function isCurrentUserAuthenticated() {
+	public static function isCurrentUserAuthenticated() {
 		
 		$cu = &owa_coreAPI::getCurrentUser();
 		return $cu->isAuthenticated();
 	}
 	
-	function &serviceSingleton() {
+	public static function &serviceSingleton() {
 		
 		static $s;
 		
@@ -236,7 +198,7 @@ function authSingleton() {
 		return $s;
 	}
 	
-	function &cacheSingleton($params = array()) {
+	public static function &cacheSingleton($params = array()) {
 		
 		static $cache;
 		
@@ -254,7 +216,7 @@ function authSingleton() {
 		return $cache;
 	}
 	
-	function requestContainerSingleton() {
+	public static function requestContainerSingleton() {
 	
 		static $request;
 		
@@ -272,7 +234,7 @@ function authSingleton() {
 	
 	}
 		
-	function moduleRequireOnce($module, $class_dir, $file) {
+	public static function moduleRequireOnce($module, $class_dir, $file) {
 		
 		if (!empty($class_dir)) {
 		
@@ -290,7 +252,7 @@ function authSingleton() {
 		}
 	}
 	
-	function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+	public static function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
 		
 		list($module, $file) = split("\.", $modulefile);
 		$class = $class_ns.$file.$class_suffix;
@@ -309,7 +271,7 @@ function authSingleton() {
 		return $obj;
 	}
 	
-	function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+	public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
 		
 		$class = $class_ns.$file.$class_suffix;
 	
@@ -328,7 +290,7 @@ function authSingleton() {
 	 *  
 	 * @return Object module class object
 	 */
-	function moduleClassFactory($module) {
+	public static function moduleClassFactory($module) {
 		
 		if (!class_exists('owa_module')):
 			require_once(OWA_BASE_CLASSES_DIR.'owa_module.php');
@@ -341,7 +303,7 @@ function authSingleton() {
 	}
 
 	
-	function updateFactory($module, $filename, $class_ns = 'owa_') {
+	public static function updateFactory($module, $filename, $class_ns = 'owa_') {
 	
 		require_once(OWA_BASE_CLASS_DIR.'update.php');
 		
@@ -362,7 +324,7 @@ function authSingleton() {
 		return $obj;
 	}
 		
-	function subViewFactory($subview, $params = array()) {
+	public static function subViewFactory($subview, $params = array()) {
 		
 		list($module, $class) = split("\.", $subview);
 		//print_r($module.' ' . $class);
@@ -374,7 +336,7 @@ function authSingleton() {
 		return $subview;
 	}
 	
-	function &supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
+	public static function &supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 		
 		$obj = &owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, $class_ns, $class, $params);
 		$obj->module = $module;
@@ -390,7 +352,7 @@ function authSingleton() {
 	 * @param unknown_type $entity_name
 	 * @return unknown
 	 */
-	function entityFactory($entity_name) {
+	public static function entityFactory($entity_name) {
 		
 		/* SETUP STORAGE ENGINE */
 		
@@ -424,23 +386,12 @@ function authSingleton() {
 	 * @param unknown_type $entity_name
 	 * @return unknown
 	 * @depricated
+	 * @todo REMOVE
 	 */
-	function rawEntityFactory($entity_name) {
+	public static function rawEntityFactory($entity_name) {
 			
 		return owa_coreAPI::entityFactory($entity_name);
 				
-	}
-		
-	/**
-	 * Factory for generating graphs
-	 *
-	 * @param unknown_type $entity_name
-	 * @return unknown
-	 */
-	function graphFactory($graph_name, $params = array()) {
-		
-		return owa_coreAPI::moduleSpecificFactory($graph_name, 'graphs', '', $params, false);
-		
 	}
 	
 	/**
@@ -452,7 +403,7 @@ function authSingleton() {
 	 * @param array $params
 	 * @return unknown
 	 */
-	function moduleSpecificFactory($modulefile, $class_dir, $class_suffix = null, $params = '', $add_module_name = true, $class_ns = 'owa_') {
+	public static function moduleSpecificFactory($modulefile, $class_dir, $class_suffix = null, $params = '', $add_module_name = true, $class_ns = 'owa_') {
 		
 		list($module, $file) = split("\.", $modulefile);
 		$class = $class_ns.$file.$class_suffix;
@@ -473,7 +424,7 @@ function authSingleton() {
 		
 	}
 	
-	function executeApiCommand($map) {
+	public static function executeApiCommand($map) {
 		
 		if (!array_key_exists('do', $map)) {
 			echo ("API Command missing from request.");
@@ -522,7 +473,7 @@ function authSingleton() {
 	 * @param unknown_type $entity_name
 	 * @return unknown
 	 */
-	function metricFactory($metric_name) {
+	public static function metricFactory($metric_name) {
 		
 		if (!strpos($metric_name, '.')) {
 			$s = owa_coreAPI::serviceSingleton();
@@ -541,7 +492,7 @@ function authSingleton() {
 	 *
 	 * @return array
 	 */
-	function getAdminPanels() {
+	public static function getAdminPanels() {
 		
 		$panels = array();
 		
@@ -569,7 +520,7 @@ function authSingleton() {
 	 * @param string sortby the array value to sort the navigation array by
 	 * @return array
 	 */
-	function getNavigation($view, $nav_name, $sortby ='order') {
+	public static function getNavigation($view, $nav_name, $sortby ='order') {
 		
 		$links = array();
 		
@@ -611,7 +562,7 @@ function authSingleton() {
 		 
 	}
 	
-	function getGroupNavigation($group, $sortby ='order') {
+	public static function getGroupNavigation($group, $sortby ='order') {
 	
 		$links = array();
 		
@@ -662,7 +613,8 @@ function authSingleton() {
 		return $links[$group];
 		
 		//print_r($links[$view][$nav_name]);
-		if (!empty($links[$group])):
+		/*
+if (!empty($links[$group])):
 			// anonymous sorting function, takes sort by variable.
 			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
 	   		
@@ -673,18 +625,22 @@ function authSingleton() {
 		else: 
 			return false;
 		endif;
+*/
 	
 	
 	
 	}
 	
-	function getNavSort($a, $b) {
+	/**
+	 * @Todo REMOVE
+	 */
+	public static function getNavSort($a, $b) {
 		
 		return strnatcmp($a['order'], $b['order']);
 	}
 	
 		
-	function getActiveModules() {
+	public static function getActiveModules() {
 	
 		$c = owa_coreAPI::configSingleton();
 		$config = $c->config->get('settings');
@@ -703,7 +659,7 @@ function authSingleton() {
 	
 	}
 	
-	function getModulesNeedingUpdates() {
+	public static function getModulesNeedingUpdates() {
 	
 		$service = owa_coreAPI::serviceSingleton();
 		
@@ -716,7 +672,7 @@ function authSingleton() {
 	 * @param $action string
 	 * 
 	 */
-	function performAction($action, $params = array()) {
+	public static function performAction($action, $params = array()) {
 		
 		// Load 
 		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
@@ -755,9 +711,6 @@ function authSingleton() {
 			return;
 			
 		endif;
-		
-		
-		
 	}
 	
 	/**
@@ -769,7 +722,7 @@ function authSingleton() {
 	 * @param object $message
 	 * @return boolean
 	 */
-	function logEvent($event_type, $message = '') {
+	public static function logEvent($event_type, $message = '') {
 		
 		if (owa_coreAPI::getStateParam('overlay')) {
 			return false;
@@ -800,7 +753,7 @@ function authSingleton() {
 		// do not log if the request is robotic
 		$service = &owa_coreAPI::serviceSingleton();
 		$bcap = $service->getBrowscap();
-		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+		owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);
 		if (!owa_coreAPI::getSetting('base', 'log_robots')) {
 			
 			if ($bcap->robotCheck()) {
@@ -808,14 +761,14 @@ function authSingleton() {
 				owa_coreAPI::setRequestParam('is_robot', true);
 				return;
 			}
-			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+			owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);
 		}
 		
 		$service->setBrowscap($bcap);
 		
 		// form event if one was not passed
-		
-		if (!is_a($message, 'owa_event')) {
+		$class= 'owa_event';
+		if (!($message instanceof $class)) {
 			$event = owa_coreAPI::supportClassFactory('base', 'event');
 			$event->setProperties($message);
 			$event->setEventType($event_type);
@@ -839,7 +792,7 @@ function authSingleton() {
 	}
 
 	
-	function displayImage($data) {
+	public static function displayImage($data) {
 		
 		header('Content-type: image/gif');
 		header('P3P: CP="'.owa_coreAPI::getSetting('base', 'p3p_policy').'"');
@@ -849,10 +802,7 @@ function authSingleton() {
 		header('Cache-Control: post-check=0, pre-check=0', false);
 		header('Pragma: no-cache');
 		
-		print owa_coreAPI::displayView($data);
-		
-		return;
-		
+		echo owa_coreAPI::displayView($data);		
 	}
 	
 	
@@ -864,7 +814,7 @@ function authSingleton() {
 	 * @return string
 	 * 
 	 */
-	function displayView($data, $viewfile = '') {
+	public static function displayView($data, $viewfile = '') {
 		
 		if (empty($viewfile)):
 			$viewfile = $data['view'];
@@ -876,7 +826,7 @@ function authSingleton() {
 		
 	}
 	
-	function displaySubView($data, $viewfile = '') {
+	public static function displaySubView($data, $viewfile = '') {
 		
 		if (empty($viewfile)):
 			$viewfile = $data['view'];
@@ -890,8 +840,9 @@ function authSingleton() {
 	
 	/**
 	 * Strip a URL of certain GET params
-	 *
+	 * @depricated
 	 * @return string
+	 * @todo REMOVE
 	 */
 	function stripDocumentUrl($url) {
 		
@@ -906,7 +857,7 @@ function authSingleton() {
 			
 			// OWA specific params to filter
 			array_push($filters, owa_coreAPI::getSetting('base', 'source_param'));
-			array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_id'));
+			array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 			
 			//print_r($filters);
 			
@@ -933,26 +884,26 @@ function authSingleton() {
 		
 	}
 	
-	function getRequestParam($name) {
+	public static function getRequestParam($name) {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->getParam($name);
 		
 	}
 	
-	function getRequest() {
+	public static function getRequest() {
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request;
 	}
 	
-	function setRequestParam($name, $value) {
+	public static function setRequestParam($name, $value) {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->setParam($name, $value);
 		
 	}
 	
-	function makeTimePeriod($time_period, $params = array()) {
+	public static function makeTimePeriod($time_period, $params = array()) {
 		
 		$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
 		$map = array();
@@ -983,7 +934,7 @@ function authSingleton() {
 	 * 
 	 * @return Object
 	 */
-	function validationFactory($class_file) {
+	public static function validationFactory($class_file) {
 		
 		if (!class_exists('owa_validation')):
 			require_once(OWA_BASE_CLASS_DIR.'validation.php');
@@ -993,28 +944,28 @@ function authSingleton() {
 		
 	}
 	
-	function debug($msg) {
+	public static function debug($msg) {
 		
 		$e = owa_coreAPI::errorSingleton();
 		$e->debug($msg);
 		return;
 	}
 	
-	function error($msg) {
+	public static function error($msg) {
 		
 		$e = owa_coreAPI::errorSingleton();
 		$e->err($msg);
 		return;
 	}
 	
-	function notice($msg) {
+	public static function notice($msg) {
 		
 		$e = owa_coreAPI::errorSingleton();
 		$e->notice($msg);
 		return;
 	}
 	
-	function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
+	public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
 	
 		if (empty($domain)) {
 			$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
@@ -1037,37 +988,37 @@ function authSingleton() {
 		return;
 	}
 	
-	function deleteCookie($cookie_name, $path = '/', $domain = '') {
+	public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
 	
 		return owa_coreAPI::createCookie($cookie_name, '', time()-3600*24*365*10, $path, $domain);
 	}
 	
-	function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
+	public static function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
 	}
 	
-	function getStateParam($store, $name = '') {
+	public static function getStateParam($store, $name = '') {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->state->get($store, $name);	
 	}
 	
-	function getServerParam($name = '') {
+	public static function getServerParam($name = '') {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->getServerParam($name);	
 	}
 	
-	function clearState($store) {
+	public static function clearState($store) {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		$service->request->state->clear($store); 
 				
 	}
 	
-	function getEventProcessor($event_type) {
+	public static function getEventProcessor($event_type) {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		$processor = $service->getMapValue('event_processors', $event_type);
@@ -1085,7 +1036,7 @@ function authSingleton() {
 	 *
 	 * @return unknown
 	 */
-	function handleRequest($caller_params = null, $action = '') {
+	public static function handleRequest($caller_params = null, $action = '') {
 		
 		static $init;
 		
@@ -1124,13 +1075,13 @@ function authSingleton() {
 						
 	}
 	
-	function isUpdateRequired() {
+	public static function isUpdateRequired() {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->isUpdateRequired();
 	}
 	
-	function getSitesList() {
+	public static function getSitesList() {
 		
 		//$s = owa_coreAPI::entityFactory('base.site');
 		$db = owa_coreAPI::dbSingleton();
@@ -1140,7 +1091,7 @@ function authSingleton() {
 		
 	}
 	
-	function profile($that = '', $function = '', $line = '', $msg = '') {
+	public static function profile($that = '', $function = '', $line = '', $msg = '') {
 	
 		if (defined('OWA_PROFILER')) {
 			if (OWA_PROFILER === true) {
@@ -1164,7 +1115,7 @@ function authSingleton() {
 		}
 	}
 	
-	function profileDisplay() {
+	public static function profileDisplay() {
 		$p = owa_coreAPI::profile();
 		if ($p) {
 			$p->display();
@@ -1172,7 +1123,7 @@ function authSingleton() {
 		
 	}
 	
-	function getEventDispatch() {
+	public static function getEventDispatch() {
 		
 		if (!class_exists('eventQueue')) {
 			require_once(OWA_DIR.'/eventQueue.php');
@@ -1182,7 +1133,7 @@ function authSingleton() {
 		return $eq;
 	}
 	
-	function getCliCommandClass($command) {
+	public static function getCliCommandClass($command) {
 		
 		$s = owa_coreAPI::serviceSingleton();
 		return $s->getCliCommandClass($command);

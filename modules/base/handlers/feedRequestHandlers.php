@@ -33,20 +33,7 @@ if(!class_exists('owa_observer')) {
  */
 
 class owa_feedRequestHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function __construct() {
-        
-    	// Call the base class constructor.
-   		return parent::__construct();
-    }
-	
+    	
     /**
      * Notify Event Handler
      *

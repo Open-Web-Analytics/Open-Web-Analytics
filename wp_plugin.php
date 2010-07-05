@@ -221,14 +221,14 @@ function &owa_getInstance($params = array()) {
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();
-      	     
+      	     //print_r($current_user);
 		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
 		$cu->setUserData('user_id', $current_user->user_login);
 		owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
 		$cu->setUserData('email_address', $current_user->user_email);
-		$cu->setUserData('real_name', $current_user->user_identity);
+		$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
 		$cu->setRole(owa_translate_role($current_user->roles));
 		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
@@ -325,7 +325,7 @@ function owa_main() {
 	$event = $owa->makeEvent();
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
-	if (function_exists(is_preview)) {
+	if (function_exists('is_preview')) {
 		if (is_preview()) {
 			$event->set('do_not_log',true);
 		}
@@ -341,7 +341,10 @@ function owa_main() {
 		$event->set('feed_format', $_GET['feed']);
 	}
 	
-	$event->set($owa->getSetting('base', 'source_param'), $_GET[$owa->getSetting('base', 'ns').$owa->getSetting('base', 'source_param')]);
+	//eliminate use of _GET by using OWA's request param method.
+	if (array_key_exists($owa->getSetting('base', 'ns').$owa->getSetting('base', 'source_param'), $_GET)) {
+		$event->set($owa->getSetting('base', 'source_param'), $_GET[$owa->getSetting('base', 'ns').$owa->getSetting('base', 'source_param')]);
+	}
 	
 	$cu = &owa_coreAPI::getCurrentUser();
 	

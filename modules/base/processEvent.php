@@ -38,11 +38,6 @@ class owa_processEventController extends owa_controller {
 	var $event;
 	var $eq;
 	
-	function owa_processEventController($params) {
-	
-		return owa_processEventController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		$event = $params['event']; 
@@ -169,7 +164,13 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		if (!$this->event->get('page_uri')) {
-			$this->event->set('page_uri', $this->eq->filter('page_uri', sprintf('%s?%s', $page_parse['path'], $page_parse['query'])));
+		
+			if (array_key_exists('query', $page_parse) || !empty($page_parse['query'])) {
+				$this->event->set('page_uri', $this->eq->filter('page_uri', sprintf('%s?%s', $page_parse['path'], $page_parse['query'])));	
+			} else {
+				$this->event->set('page_uri', $this->eq->filter('page_uri', $page_parse['path']));
+			}
+			
 		}
 				
 		// set internal referer

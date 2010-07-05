@@ -56,11 +56,6 @@ class owa_date {
 		return;
 	}
 	
-	function owa_date() {
-		
-		return owa_date::__construct();
-	}
-	
 	function set($date, $format = 'yyyymmdd') {
 	
 		switch ($format) {

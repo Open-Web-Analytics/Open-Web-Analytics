@@ -80,7 +80,8 @@ class Template {
     function set($name, $value) {
     
     	if (is_object($value)) {
-    		if (is_a($value, 'Template')) {
+    		$class  = 'Template';
+    		if ($value instanceof $this) {
     			$value = $value->fetch();
     		}
     	} 

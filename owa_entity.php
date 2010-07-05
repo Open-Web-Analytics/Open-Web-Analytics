@@ -420,7 +420,9 @@ class owa_entity {
 	function isCachable() {
 		
 		if (owa_coreAPI::getSetting('base', 'cache_objects')) {
-			return $this->_tableProperties['cacheable'];
+			if (array_key_exists('cacheable', $this->_tableProperties)) {
+				return $this->_tableProperties['cacheable'];
+			}
 		} else {
 			return false;
 		}
