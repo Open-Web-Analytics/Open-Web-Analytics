@@ -526,10 +526,10 @@ class owa_lib {
     	
         static $instance;
         
-        if (!isset($instance)):
+        if (!isset($instance)) {
         	// below missing a reference becasue the static vriable can not handle a reference 
-        	$instance = owa_lib::factory($class_dir, $class_prefix, $class_name, $conf = array());
-        endif;
+        	$instance = owa_lib::factory($class_dir, $class_prefix, $class_name, $conf);
+        }
         
         return $instance;
     }
