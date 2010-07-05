@@ -141,9 +141,9 @@ class owa_base_005_update extends owa_update {
 			"INSERT 
 				owa_search_term_dim (id, terms, term_count) 
 			SELECT 
-				(CRC32(LOWER(query_terms))) as id, 
+				distinct(CRC32(LOWER(query_terms))) as id, 
 				query_terms as terms, 
-				SUM( LENGTH(query_terms) - LENGTH(REPLACE(query_terms, ' ', ''))+1) as term_count 
+				length(query_terms) + 1 - length(replace(query_terms,' ','')) as term_count 
 			FROM 
 				owa_referer
 			WHERE
@@ -171,6 +171,41 @@ class owa_base_005_update extends owa_update {
 			$this->e->notice('Failed to add referring_search_term_id values to owa_session');
 			return false;
 		}		
+		
+		//populate search source in session table
+		$ret = $db->query(
+			"UPDATE 
+				owa_session as session
+			SET
+    			session.source = 'organic-search'
+			WHERE
+    			session.referring_search_term_id IS NOT null"
+    	);
+		
+		if (!$ret) {
+			$this->e->notice('Failed to populate session.source values for organic-search');
+			return false;
+		}
+		
+		//populate search source in session table
+		$ret = $db->query(
+			"UPDATE 
+				owa_session as session
+			SET
+    			session.source = 'referral'
+			WHERE
+    			session.referer_id != 0 AND
+    			session.referer_id != '' AND
+    			session.referer_id != null AND
+    			session.source != 'feed' AND
+    			session.source != 'organic-search'"
+    	);
+		
+		if (!$ret) {
+			$this->e->notice('Failed to populate session.source values for referral');
+			return false;
+		}		
+		
 		
 		// add apiKeys to each user
 		$users = $db->get_results("select user_id from owa_user");
