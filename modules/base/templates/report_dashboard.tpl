@@ -111,7 +111,9 @@
 													'metrics' => 'pageViews', 
 													'dimensions' => 'pageTitle,pageUrl', 
 													'sort' => 'pageViews-',
-													'format' => 'json'
+													'format' => 'json',
+													'page'	=> 1,
+													'resultsPerPage' => 10
 													),true);?>';
 													  
 	OWA.items.tc = new OWA.resultSetExplorer('top-pages');

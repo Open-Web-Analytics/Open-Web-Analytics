@@ -1230,8 +1230,9 @@ function addFactTableRelation($metric) {
 		}
 		
 		// build url for this result set
+		$link_template = owa_coreAPI::getSetting('base', 'link_template');
 		$q = $this->buildQueryString($query_params);
-		$urls['self'] = sprintf("%s?%s", $api_url, $q);
+		$urls['self'] = sprintf($link_template, $api_url, $q);
 		
 		// build url for next page of result set
 		$next_query_params = $query_params;
@@ -1242,14 +1243,14 @@ function addFactTableRelation($metric) {
 		} 
 		
 		$nq = $this->buildQueryString($next_query_params);
-		$urls['next'] = sprintf("%s?%s", $api_url, $nq);
+		$urls['next'] = sprintf($link_template, $api_url, $nq);
 		
 		// build previous url if page is greater than 2	
 		if ($this->page >= 2) {
 			$previous_query_params = $query_params;
 			$previous_query_params['page'] = $query_params['page'] - 1;
 			$pq = $this->buildQueryString($previous_query_params);
-			$urls['previous'] = sprintf("%s?%s", $api_url, $pq);
+			$urls['previous'] = sprintf($link_template, $api_url, $pq);
 		}
 		
 		$base_query_params = $this->query_params;
@@ -1257,7 +1258,7 @@ function addFactTableRelation($metric) {
 		
 		// build pagination url template for use in constructing 
 		$q = $this->buildQueryString($base_query_params);
-		$url['base_url'] = sprintf("%s?%s", $api_url, $q);
+		$url['base_url'] = sprintf($link_template, $api_url, $q);
 		
 		return $urls;
 	}
