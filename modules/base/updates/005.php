@@ -196,7 +196,7 @@ class owa_base_005_update extends owa_update {
 			WHERE
     			session.referer_id != 0 AND
     			session.referer_id != '' AND
-    			session.referer_id != null AND
+    			session.referer_id IS NOT null AND
     			session.source != 'feed' AND
     			session.source != 'organic-search'"
     	);
