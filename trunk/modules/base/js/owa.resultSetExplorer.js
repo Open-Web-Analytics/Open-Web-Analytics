@@ -1,3 +1,4 @@
+OWA.setSetting('debug', true);
 OWA.resultSetExplorer = function(dom_id, options) {
 	
 	this.dom_id = dom_id || '';
@@ -151,6 +152,25 @@ OWA.resultSetExplorer.prototype = {
 			
 		var that = this;
 		
+		// custom formattter functions.
+		jQuery.extend(jQuery.fn.fmatter , {
+			// urlFormatter allows for a single param substitution.
+    		urlFormatter : function(cellvalue, options, rowdata) {
+    			var sub_value = options.rowId;
+    			//alert(options.rowId);
+    			var name = options.colModel.realColName; 
+    			//var name = 'actionName';
+    			//alert(that.columnLinks[name].template);
+    			OWA.debug(options.rowId-1+' '+name);
+    			//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
+    			var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
+    			var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
+    			return link;
+			}
+		});
+		
+		
+		
 		if (this.resultSet.resultsReturned > 0) {
 		
 			// happens with first results set when loading from URL.
@@ -285,7 +305,8 @@ OWA.resultSetExplorer.prototype = {
 			hoverrows: false
 		});
 		
-		// custom formattter functions.
+		/*
+// custom formattter functions.
 		jQuery.extend(jQuery.fn.fmatter , {
 			// urlFormatter allows for a single param substitution.
     		urlFormatter : function(cellvalue, options, rowdata) {
@@ -294,12 +315,14 @@ OWA.resultSetExplorer.prototype = {
     			var name = options.colModel.realColName; 
     			//var name = 'actionName';
     			//alert(that.columnLinks[name].template);
+    			OWA.debug(options.rowId-1+' '+name);
     			//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
     			var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
     			var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
     			return link;
 			}
 		});
+*/
 	},
 	
 	makeGridColumnDef : function(column) {
@@ -419,7 +442,7 @@ OWA.resultSetExplorer.prototype = {
 			p = p + '<span>Next Page</span></LI>';
 			
 			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(p);
-			jQuery(".owa_nextPageControl").bind('click', function() {that.pageGrid(that.resultSet.next)});
+			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid(that.resultSet.next)});
 			
 			if (this.resultSet.page == 1) {
 				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
@@ -592,8 +615,9 @@ OWA.resultSetExplorer.prototype = {
 		switch(type) {
 			// convery yyyymmdd to javascript timestamp as  flot requires that
 			case 'yyyymmdd':
-				 date = jQuery.datepicker.parseDate('yymmdd', value);
-				 value = Date.parse(date);
+				
+				date = jQuery.datepicker.parseDate('yymmdd', value);
+				value = Date.parse(date);
 
 				break;
 		}
@@ -609,6 +633,7 @@ OWA.resultSetExplorer.prototype = {
 		var curr_year = d.getFullYear();
 		//alert(d+' date: '+curr_month);
 		var date =  curr_month + "/" + curr_date + "/" + curr_year;
+		//var date =  curr_month + "/" + curr_date;
 		return date;
 	},
 	
@@ -678,7 +703,8 @@ OWA.resultSetExplorer.prototype = {
 			if (data_type_x === 'yyyymmdd') {
 				
 				options.xaxis.mode = "time";
-	    		options.xaxis.timeformat = "%m/%d/%y";
+	    		//options.xaxis.timeformat = "%m/%d/%y";
+	    		options.xaxis.timeformat = "%m/%d";
 			}
 			
 			this.options.areaChart.flot = options;
