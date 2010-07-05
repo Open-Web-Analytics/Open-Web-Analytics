@@ -1,4 +1,4 @@
-OWA.setSetting('debug', true);
+//OWA.setSetting('debug', true);
 OWA.resultSetExplorer = function(dom_id, options) {
 	
 	this.dom_id = dom_id || '';
