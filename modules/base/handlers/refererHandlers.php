@@ -112,7 +112,9 @@ class owa_refererHandlers extends owa_observer {
 				}
 			
 				$r->set('page_title', $title);	
-			}			
+			} else {
+				$r->set('page_title', $r->get('url'));
+			}		
 			
 			$se = $r->get('is_searchengine');
 			//Extract anchortext and page snippet but not if it's a search engine...
