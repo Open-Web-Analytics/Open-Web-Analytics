@@ -552,11 +552,6 @@ class owa_genericTableView extends owa_view {
 		
 	}
 	
-	function owa_genericTableView() {
-	
-		return owa_genericTableView::__construct(); 
-	}
-	
 	function render($data) {
 	
 		$this->t->set_template('wrapper_blank.tpl');		
@@ -635,11 +630,6 @@ class owa_genericTableView extends owa_view {
 
 class owa_sparklineJsView extends owa_view {
 
-	function owa_sparklineJsView() {
-	
-		return owa_sparklinejSView::__construct();
-	}
-	
 	function __construct() {
 	
 		return parent::__construct();
@@ -666,11 +656,6 @@ class owa_sparklineJsView extends owa_view {
 }
 
 class owa_chartView extends owa_view {
-
-	function owa_chartView() {
-	
-		return owa_chartView::__construct();
-	}
 	
 	function __construct() {
 	
@@ -704,11 +689,6 @@ class owa_mailView extends owa_view {
 	// post office
 	var $po;
 	var $postProcessView = true;
-	
-	function owa_mailView() {
-		
-		return owa_mailView::__construct();
-	}
 	
 	function __construct() {
 		
@@ -750,11 +730,6 @@ class owa_adminView extends owa_view {
 	
 	var $postProcessView = true;
 	
-	function owa_adminView() {
-		
-		return owa_adminView::__construct();
-	}
-	
 	function __construct() {
 		
 		return parent::__construct();
@@ -771,11 +746,6 @@ class owa_adminView extends owa_view {
 
 class owa_jsonView extends owa_view {
 
-	function owa_jsonView() {
-		
-		return owa_jsonView::__construct();
-	}
-	
 	function __construct() {
 		
 		if (!class_exists('Services_JSON')) {

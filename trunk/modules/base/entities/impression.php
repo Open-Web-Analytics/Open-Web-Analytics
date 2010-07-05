@@ -29,39 +29,6 @@
  */
 
 class owa_impression extends owa_entity {
-	/*
-
-	var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	var $visitor_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $session_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $tag_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $placement_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $campaign_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $ad_group_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $ad_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $site_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $last_impression_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $last_impression_timestamp = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $timestamp = array('data_type' => OWA_DTD_BIGINT); // BIGINT,
-	var $year = array('data_type' => OWA_DTD_INT); // INT,
-	var $month = array('data_type' => OWA_DTD_INT); // INT,
-	var $day = array('data_type' => OWA_DTD_INT); // INT,
-	var $dayofyear = array('data_type' => OWA_DTD_INT); // INT,
-	var $weekofyear = array('data_type' => OWA_DTD_INT); // INT,
-	var $hour = array('data_type' => OWA_DTD_TINYINT2); // tinyINT,
-	var $minute = array('data_type' => OWA_DTD_TINYINT2); // tinyINT,
-	var $msec = array('data_type' => OWA_DTD_BIGINT); // INT,
-	var $url = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $ua_id = array('data_type' => OWA_DTD_BIGINT); // BIGINT
-	var $ip_address = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $host = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	var $host_id = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	
-	*/
-	function owa_impression() {
-			
-		return owa_impression::__construct();	
-	}
 	
 	function __construct() {
 	

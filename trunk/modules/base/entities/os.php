@@ -30,14 +30,6 @@
 
 class owa_os extends owa_entity {
 	
-	//var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	//var $name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-		
-	function owa_os() {
-	
-		return owa_os::__construct();
-	}
-	
 	function __construct() {
 		
 		$this->setTableName('os');

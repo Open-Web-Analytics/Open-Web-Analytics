@@ -82,10 +82,7 @@ class owa_base {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->e = &owa_coreAPI::errorSingleton();
 		$this->c = &owa_coreAPI::configSingleton();
-		$this->config = &$this->c->fetch('base');
-		
-		return;
-	
+		$this->config = $this->c->fetch('base');
 	}
 	
 	/**

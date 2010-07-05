@@ -33,19 +33,7 @@ if(!class_exists('owa_observer')) {
  */
 
 class owa_documentHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */    
-    function __construct() {
     	
-    	return parent::__construct();
-    }
-	
     /**
      * Notify Event Handler
      *

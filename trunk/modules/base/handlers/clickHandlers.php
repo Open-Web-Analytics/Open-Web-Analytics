@@ -29,14 +29,6 @@
  */
 class owa_clickHandlers extends owa_observer {
 
-	/**
-	 * Constructor
-	 * 
-	 */   
-    function __construct() {
-    	
-    	return parent::__construct();
-    }
     /**
      * Notify Handler
      *

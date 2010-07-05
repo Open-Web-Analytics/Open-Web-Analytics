@@ -32,11 +32,6 @@
 
 class owa_site extends owa_entity {
 	
-	function owa_site() {
-		
-		return owa_site::__construct();
-	}
-	
 	function __construct() {
 		
 		$this->setTableName('site');

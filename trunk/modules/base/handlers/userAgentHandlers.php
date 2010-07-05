@@ -33,24 +33,7 @@ if(!class_exists('owa_observer')) {
  */
 
 class owa_userAgentHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_userAgentHandlers() {
-        
-		return owa_userAgentHandlers::__construct();
-    }
-    
-    function __construct() {
-    
-    	return parent::__construct();
-    }
-	
+    	
     /**
      * Notify Event Handler
      *

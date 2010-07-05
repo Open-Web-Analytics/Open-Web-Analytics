@@ -74,12 +74,7 @@ class owa_event {
 	/**
 	 * Constructor
 	 * @access public
-	 */
-	function owa_event() {
-		
-		return owa_event::__construct();
-	}
-	
+	 */	
 	function __construct() {
 		
 		// Set GUID for event

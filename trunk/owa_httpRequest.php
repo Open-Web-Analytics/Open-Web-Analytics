@@ -83,12 +83,7 @@ class owa_http {
 	var $response_code;
 	
 	var $request_headers;
-	
-	function owa_http() {
 		
-		return owa_http::__construct();
-	}
-	
 	function __construct() {
 	
 		$c = &owa_coreAPI::configSingleton();

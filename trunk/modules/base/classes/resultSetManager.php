@@ -97,6 +97,7 @@ class owa_resultSetManager extends owa_base {
 	var $query_params = array();
 	var $baseEntity;
 	var $metricObjectsByEntityMap = array();
+	var $errors = array();
 	
 	function __construct($db = '') {
 		

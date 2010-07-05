@@ -45,13 +45,7 @@ class owa_state {
 	
 		$this->persistState();
 	}
-	
-	function owa_state() {
 		
-		register_shutdown_function(array(&$this, "__destruct"));
-		return owa_state::__construct();
-	}
-	
 	function persistState() {
 	
 		return false;

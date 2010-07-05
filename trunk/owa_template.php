@@ -130,7 +130,7 @@ class owa_template extends Template {
      * @depricated
      * @param string $file
      */
-	function set_template($file) {
+	function set_template($file = null) {
 	
 		if (!$file):
 			owa_coreAPI::error('No template file was specified.');

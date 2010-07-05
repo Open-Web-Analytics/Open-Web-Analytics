@@ -39,17 +39,7 @@ class owa_configuration extends owa_entity {
 		$this->properties['settings'] = new owa_dbColumn;
 		$this->properties['settings']->setDataType(OWA_DTD_TEXT);
 		$this->setCachable();
-		
-		return;
-			
-	}
-	
-	function owa_configuration() {
-		return owa_configuration::__construct(); 
-	}
-	
+	}	
 }
-
-
 
 ?>

@@ -67,13 +67,6 @@ class owa_cache {
 		}
 	}
 
-	function owa_cache($cache_dir = '') {
-		
-		register_shutdown_function(array(&$this, "__destruct"));
-		return $this->__construct($cache_dir);
-	
-	}
-	
 	function setGlobalCollection($collection) {
 	
 		return $this->global_collections[] = $collection;

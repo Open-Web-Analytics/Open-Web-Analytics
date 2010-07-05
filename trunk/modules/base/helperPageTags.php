@@ -34,16 +34,6 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 class owa_helperPageTagsController extends owa_controller {
 	
-	function owa_helperPageTagsController($params) {
-	
-		return owa_helperPageTagsController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		// Control logic
@@ -100,16 +90,6 @@ class owa_helperPageTagsController extends owa_controller {
  */
 
 class owa_helperPageTagsView extends owa_view {
-	
-	function owa_helperPageTagsView() {
-		
-		return owa_helperPageTagsView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
 	
 	function render($data) {
 		

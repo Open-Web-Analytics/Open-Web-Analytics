@@ -29,19 +29,7 @@
  */
 
 class owa_exit extends owa_entity {
-	
-	//var $id = array('data_type' => OWA_DTD_BIGINT, 'is_primary_key' => true); // BIGINT,
-	//var $url = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	//var $site_name = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	//var $site = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	//var $exit_anchortext = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	//var $page_title = array('data_type' => OWA_DTD_VARCHAR255); // VARCHAR(255),
-	
-	function owa_exit() {
 		
-		return owa_exit::__construct();	
-	}
-	
 	function __construct() {
 		
 		$this->setTableName('exit');

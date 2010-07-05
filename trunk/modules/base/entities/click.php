@@ -29,11 +29,6 @@
  */
 
 class owa_click extends owa_entity {
-		
-	function owa_click() {
-		
-		return owa_click::__construct();
-	}
 	
 	function __construct() {
 		

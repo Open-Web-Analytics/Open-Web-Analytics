@@ -54,17 +54,6 @@ class owa_error {
 	
 	var $c;
 	
-	
-	/**
-	 * PHP4 Constructor
-	 *
-	 */
-	function owa_error() {
-	 
-		return owa_error::__construct();
-	}
-	
-	
 	/**
 	 * Constructor
 	 *

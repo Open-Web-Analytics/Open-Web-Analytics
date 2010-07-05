@@ -33,21 +33,7 @@ if(!class_exists('owa_observer')) {
  */
 
 class owa_userHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_userHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
-    }
-	
+    	
     /**
      * Notify Event Handler
      *

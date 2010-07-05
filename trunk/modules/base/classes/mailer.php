@@ -34,11 +34,6 @@ class owa_mailer extends owa_base {
 		
 	var $mailer;
 	
-	function owa_mailer() {
-		
-		return owa_mailer::__construct();
-	}
-	
 	/**
 	 * Constructor
 	 *
