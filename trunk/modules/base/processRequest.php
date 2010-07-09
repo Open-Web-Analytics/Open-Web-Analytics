@@ -71,6 +71,39 @@ class owa_processRequestController extends owa_processEventController {
 		// TODO: Move this logic to the controller
 		$this->event->sessionize($this->event->get('inbound_session_id'));	
 		
+		// set variety of 
+		if ($this->event->get('is_new_session')) {
+			
+			// if this is not the first sessio nthen calc days sisne last session
+			if ($this->event->get('last_req')) {
+				$this->event->set('days_sinse_prior_session', round(($this->event->get('timestamp') - $this->event->get('last_req'))/(3600*24)));
+			}
+			
+			// if check for first session timestamp (fsts) value in vistor cookie
+			if (owa_coreAPI::getStateParam('v', 'fsts')) {
+				$fsts = owa_coreAPI::getStateParam('v', 'fsts'); 
+			} else {
+				// else use last session as as proxy, better than nothing
+				$fsts = $this->event->get('last_req');
+			}
+			
+			// calc days sinse first session
+			if ($fsts) {
+				$this->event->set('days_sinse_first_session', round(($this->event->get('timestamp') - $fsts)/(3600*24)));	
+			} else {
+				// this means that first session timestamp was not set in the cookie even though it's not a new user...so we set it. 
+				// This can happen with users prior to 1.3.0. when this value was introduced into the cookie.
+				$this->event->set('days_sinse_first_session', 0);
+				
+				if ($this->event->get('inbound_visitor_id')) {
+					owa_coreAPI::setState('v', 'fsts', $this->event->get('timestamp'), 'cookie', true);
+				}
+			}
+			
+			// increment visit count in cookie //
+			owa_coreAPI::setState('v', 'nps', $this->event->get('num_prior_sessions') + 1, 'cookie', true);
+		}
+			
 		// set last request time state
 		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('timestamp'));
 			

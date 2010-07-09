@@ -93,13 +93,18 @@ class owa_state {
 		// set values
 		if (empty($name)) {
 			$this->stores[$store] = $value;
+			//owa_coreAPI::debug(print_r($this->stores, true));
 		} else {
-			$this->stores[$store][$name] = $value;
+			//just in case the store was set first as a string instead of as an array.
+			if (array_key_exists($store, $this->stores) && !is_array($this->stores[$store])) {
+				$this->stores[$store] = array($name => $value);
+			} else {
+				$this->stores[$store][$name] = $value;
+			}
+			
 		}
 		
 		$this->dirty_stores[] = $store;
-		
-		return;
 	}
 
 	

@@ -69,6 +69,9 @@ class owa_requestHandlers extends owa_observer {
 		// Generate Host id
 		$r->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
 		
+		// Generate Host id
+		$r->set('num_prior_sessions', $event->get('num_prior_sessions'));
+		
 		$result = $r->create();
 		
 		

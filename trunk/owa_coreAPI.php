@@ -315,7 +315,7 @@ class owa_coreAPI {
 			owa_coreAPI::moduleRequireOnce($module, 'updates', $filename);
 		endif;
 			
-		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'updates', '', $class, $params);
+		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'updates', '', $class);
 
 		$obj->module_name = $module;
 		if (!$obj->schema_version) {
@@ -972,6 +972,7 @@ if (!empty($links[$group])):
 		}
 		
 		if (is_array($cookie_value)) {
+			
 			$cookie_value = owa_lib::implode_assoc('=>', '|||', $cookie_value);
 		}
 		

@@ -156,16 +156,14 @@ class owa_event {
 	 */
 	function setProperties($properties = null) {
 	
-		if(!empty($properties)):
+		if(!empty($properties)) {
 			
-			foreach ($properties as $key => $value) {
-				if (!empty($value)):
-					$this->properties[$key] = $value;
-				endif;
-				
+			if (empty($this->properties)) {
+				$this->properties = $properties;
+			} else {	
+				$this->properties = array_merge($properties, $this->properties);
 			}
-			
-		endif;
+		}
 	}
 	
 	function replaceProperties($properties) {

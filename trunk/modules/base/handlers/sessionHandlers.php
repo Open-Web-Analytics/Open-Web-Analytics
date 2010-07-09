@@ -81,6 +81,9 @@ class owa_sessionHandlers extends owa_observer {
 		
 		// set last_req to be the timestamp of the event that triggered this session.
 		$s->set('last_req', $event->get('timestamp'));
+		$s->set('days_sinse_first_session', $event->get('days_sinse_first_session'));
+		$s->set('days_sinse_prior_session', $event->get('days_sinse_prior_session'));
+		$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
 				
 		// set source
 		

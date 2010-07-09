@@ -45,28 +45,14 @@ class owa_timePeriod {
 		
 		$this->startDate = owa_coreAPI::supportClassFactory('base', 'date');
 		$this->endDate = owa_coreAPI::supportClassFactory('base', 'date');
-		
-	
-		return;
 	}
 	
-	function owa_timePeriod() {
-		
-		return owa_timePeriod::__construct();
-	}
-	
-	function set($value, $map = array()) {
+	function set($value = '', $map = array()) {
 	
 		$this->period = $value;
-		
 		$this->_setDates($map);
-		
 		$this->_setLabel($value);
-		
 		$this->_setDifferences();
-		
-		return;
-	
 	}
 	
 	function getStartDate() {
@@ -99,8 +85,6 @@ class owa_timePeriod {
 			$periods = $this->getPeriodLabels();
 			$this->label = $periods[$value]['label'];
 		}
-		
-		return;
 	}
 	
 	/**
@@ -256,8 +240,6 @@ class owa_timePeriod {
 		
 		$this->startDate->set($start, 'timestamp');
 		$this->endDate->set($end, 'timestamp');
-
-		return;
 	}
 	
 	function getPeriodProperties() {
@@ -302,11 +284,7 @@ class owa_timePeriod {
 		
 		$this->diff_years = $diff['YearsSinse'];
 		$this->diff_months = $diff['MonthsSinse'];
-		$this->diff_days = $diff['DaysSinse'];		
-		
-		return;
-		
-		
+		$this->diff_days = $diff['DaysSinse'];
 	}
 	
 	function getMonthsDifference() {
@@ -404,14 +382,12 @@ class owa_timePeriod {
             if (($m>0||$y>0) && $d>0) $diff2 .= ", "; 
             if ($d>0) $diff2 .= $d==1 ? "Days: 1" : "Days: $d"; 
             
-        } 
+        }
+        
         $ReturnArray['NiceString'] = $diff; 
         $ReturnArray['NiceString2'] = $diff2; 
         return $ReturnArray; 
-    }  
-			
+    }	
 }
-
-
 
 ?>

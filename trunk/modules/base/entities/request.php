@@ -132,6 +132,9 @@ class owa_request extends owa_entity {
 		$document_id->setForeignKey('base.document');
 		$this->setProperty($prior_document_id);
 		
+		$nps = new owa_dbColumn('num_prior_sessions', OWA_DTD_INT);
+		$this->setProperty($nps);
+		
 		$this->properties['is_new_visitor'] = new owa_dbColumn;
 		$this->properties['is_new_visitor']->setDataType(OWA_DTD_TINYINT);
 		$this->properties['is_repeat_visitor'] = new owa_dbColumn;

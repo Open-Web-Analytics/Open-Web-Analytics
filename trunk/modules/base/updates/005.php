@@ -72,8 +72,23 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
+		$ret = $request->addColumn('num_prior_sessions');
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add num_prior_sessions column to owa_request');
+			return false;
+		}
+		
 		
 		$session = owa_coreAPI::entityFactory('base.session');
+		
+		$ret = $session->addColumn('num_prior_sessions');
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add num_prior_sessions column to owa_session');
+			return false;
+		}
+		
 		
 		$ret = $session->addColumn('is_bounce');
 		
@@ -96,6 +111,34 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
+		$ret = $session->addColumn('days_sinse_prior_session');
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add days_sinse_prior_session column in owa_session');
+			return false;
+		}
+		
+		$ret = $db->query("update owa_session set days_sinse_prior_session = round(time_sinse_priorsession/(3600*24)) WHERE time_sinse_priorsession IS NOT NULL and time_sinse_priorsession > 0");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to populate days_sinse_prior_session column in owa_session');
+			return false;
+		}
+
+		$ret = $session->addColumn('days_sinse_first_session');
+		
+		$ret = $db->query("update owa_session, owa_visitor set owa_session.days_sinse_first_session = round((owa_session.timestamp - owa_visitor.first_session_timestamp)/(3600*24)) WHERE owa_session.visitor_id = owa_visitor.id AND owa_visitor.first_session_timestamp IS NOT NULL");
+		
+		if (!$ret) {
+			$this->e->notice('Failed to populate days_sinse_first_session column in owa_session');
+			return false;
+		}
+
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add days_sinse_first_session column in owa_session');
+			return false;
+		}
 		
 		// add api column
 		$u = owa_coreAPI::entityFactory('base.user');
@@ -293,9 +336,13 @@ class owa_base_005_update extends owa_update {
 		$session->dropColumn('yyyymmdd');
 		$session->dropColumn('is_bounce');
 		$session->dropColumn('referring_search_term_id');
+		$session->dropColumn('days_sinse_first_session');
+		$session->dropColumn('days_sinse_prior_session');
+		$session->dropColumn('num_prior_sessions');
 		$request = owa_coreAPI::entityFactory('base.request');
 		$request->dropColumn('yyyymmdd');
 		$request->dropColumn('prior_document_id');
+		$request->dropColumn('num_prior_sessions');
 		$click = owa_coreAPI::entityFactory('base.click');
 		$click->dropColumn('yyyymmdd');
 		$feed_request = owa_coreAPI::entityFactory('base.feed_request');

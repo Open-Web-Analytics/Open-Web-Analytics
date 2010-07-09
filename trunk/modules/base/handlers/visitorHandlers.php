@@ -70,8 +70,8 @@ class owa_visitorHandlers extends owa_observer {
 		$v->set('first_session_month', $event->get('month'));
 		$v->set('first_session_day', $event->get('day'));
 		$v->set('first_session_dayofyear', $event->get('dayofyear'));
-		$v->set('first_session_timestamp', $event->get('timestamp'));		
-		
+		$v->set('first_session_timestamp', $event->get('timestamp'));
+		$v->set('num_prior_sessions', $event->get('num_prior_sessions'));
 		$v->create();
     }
     
@@ -92,7 +92,8 @@ class owa_visitorHandlers extends owa_observer {
 		$v->set('last_session_year', $event->get('year'));
 		$v->set('last_session_month', $event->get('month'));
 		$v->set('last_session_day', $event->get('day'));
-		$v->set('last_session_dayofyear', $event->get('dayofyear'));		
+		$v->set('last_session_dayofyear', $event->get('dayofyear'));
+		$v->set('num_prior_sessions', $event->get('num_prior_sessions'));	
 		
 		$id = $v->get('id');
 		

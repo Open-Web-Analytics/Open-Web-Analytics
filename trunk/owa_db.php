@@ -960,7 +960,7 @@ class owa_db extends owa_base {
 	 */
 	function addIndex($table_name, $column_name, $index_definition = '') {
 	
-		return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $column_definition));
+		return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $index_definition));
 
 	}
 	
