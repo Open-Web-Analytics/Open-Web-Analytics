@@ -74,11 +74,6 @@ class owa_requestContainer {
 		
 	}
 	
-	function owa_requestContainer() {
-	
-		return owa_requestContainer::__construct();
-	}
-	
 	function __construct() {
 		
 		$this->guid = crc32(microtime().getmypid());

@@ -169,7 +169,6 @@ class owa_event {
 	function replaceProperties($properties) {
 		
 		$this->properties = $properties;
-		return;
 	}
 	
 	/**
