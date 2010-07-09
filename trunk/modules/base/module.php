@@ -641,7 +641,7 @@ if ($metrics) {
 		
 		// set format
 		if ($format) {
-			$rsm->setOffset($format);
+			$rsm->setFormat($format);
 		}
 		
 		// get results
