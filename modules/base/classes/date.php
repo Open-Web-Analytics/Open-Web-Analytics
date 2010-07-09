@@ -87,15 +87,11 @@ class owa_date {
 		$this->num_days_in_month = date('t', $this->timestamp);
 		$this->label = date('m/d/Y', $this->timestamp);
 		$this->label_formal = date('F jS Y', $this->timestamp);
-		
-		return;
-	
 	}
 	
 	function get($name){
 		
 		return $this->$name;
-		
 	}
 	
 	function getDay() {

@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -34,16 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportVisitorsLoyaltyController extends owa_reportController {
 	
-	function owa_reportVisitorsLoyaltyController($params) {
-				
-		return owa_reportVisitorsLoyaltyController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		// visitors age	
@@ -59,10 +48,19 @@ class owa_reportVisitorsLoyaltyController extends owa_reportController {
 		$this->setSubview('base.reportVisitorsLoyalty');
 		$this->setTitle('Visitor Loyalty');
 		
-		return;
 		
+		/*
+		$visits_initial_timeperiod = owa_coreAPI::executeApiCommand(array(
+			'do'				=> 	'getResultSet',
+			'metrics'			=>	'visits',
+			'dimensions'		=>	'firstVisitDate',
+			'sort'				=>	'firstVisitsDate-',
+			'page'				=>	$this->getParam('page'),
+			'resultsPerPage'	=>	$limit,
+			'constraints'		=> 	'firstVisitDate>='.$this->getParam('startDate').',firstVisitDate<='.$this->getParam('endDate')
+		));	
+		*/	
 	}
-	
 }
 
 /**
@@ -78,17 +76,7 @@ class owa_reportVisitorsLoyaltyController extends owa_reportController {
  */
 
 class owa_reportVisitorsLoyaltyView extends owa_view {
-	
-	function owa_reportVisitorsLoyaltyView() {
-					
-		return owa_reportVisitorsLoyaltyView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
+		
 	function render($data) {
 		
 		// Assign data to templates

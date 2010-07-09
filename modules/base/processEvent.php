@@ -40,15 +40,15 @@ class owa_processEventController extends owa_controller {
 	
 	function __construct($params) {
 		
-		$event = $params['event']; 
-		if (!empty($event)) {
-			$this->event = $params['event'];
+		if (array_key_exists('event', $params) && !empty($params['event'])) {
 			
+			$this->event = $params['event'];
+				
 		} else {
 			owa_coreAPI::debug("No event object was passed to controller.");
 			$this->event = owa_coreAPI::supportClassFactory('base', 'event');
 		}
-		
+				
 		$this->eq = owa_coreAPI::getEventDispatch();
 		
 		return parent::__construct($params);
@@ -95,10 +95,16 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('last_req', $state[owa_coreAPI::getSetting('base', 'last_request_param')]);
 		
 		// set inbound visitor id
-		if (owa_coreAPI::getSetting('base', 'per_site_visitors')) {
-			$this->event->set('inbound_visitor_id', $state[owa_coreAPI::getSetting('base', 'visitor_param')]);
-		} else {
+		
+		$vstate = owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param'));
+		
+		//check for old style visitor cookie
+		if (!is_array($vstate) && !empty($vstate)) {
 			$this->event->set('inbound_visitor_id', owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param')));
+			owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', '', 'cookie', true);
+			owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid', $vstate, 'cookie', true);
+		} else {
+			$this->event->set('inbound_visitor_id', owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid'));
 		}
 		
 		// set visitor type flag if inbound visitor ID is found.		
@@ -273,6 +279,13 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
 		}
 		
+		//read the num prior session value from cookie. set to 0 if false.
+		$nps = owa_coreAPI::getStateParam('v', 'nps');
+		if (!$nps) {
+			$nps = 0;
+		}
+		//set the value on the event
+		$this->event->set('num_prior_sessions', $nps);
 	}
 	
 	function post() {
@@ -332,14 +345,12 @@ class owa_processEventController extends owa_controller {
 		// Create guid
         $this->event->set('visitor_id', $this->getSiteSpecificGuid());
 		
-        // Set visitor state        
-        if (owa_coreAPI::getSetting('base', 'per_site_visitors') === true) {
-        	// TODO: not sure how this will work if the config calls for maintaining state on the server....
-        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'site_session_param'), owa_coreAPI::getSetting('base', 'visitor_param'), $this->event->get('visitor_id'), 'cookie', true);
-        } else {
-        	// state for this must be maintained in a cookie
-        	owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', $this->event->get('visitor_id'), 'cookie', true);
-        }
+        // Set visitor state
+        // state for this must be maintained in a cookie
+        owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid', $this->event->get('visitor_id'), 'cookie', true);
+        owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'fsts', $this->event->get('timestamp'), 'cookie', true);
+        
+        
 	}
 	
 	function getSiteSpecificGuid() {

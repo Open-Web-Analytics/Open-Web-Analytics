@@ -113,6 +113,10 @@ class owa_session extends owa_entity {
 		$this->properties['prior_session_hour']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['prior_session_minute'] = new owa_dbColumn;
 		$this->properties['prior_session_minute']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['days_sinse_prior_session'] = new owa_dbColumn;
+		$this->properties['days_sinse_prior_session']->setDataType(OWA_DTD_INT);
+		$this->properties['days_sinse_first_session'] = new owa_dbColumn;
+		$this->properties['days_sinse_first_session']->setDataType(OWA_DTD_INT);
 		$this->properties['os'] = new owa_dbColumn;
 		$this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
 		
@@ -165,6 +169,9 @@ class owa_session extends owa_entity {
 		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
 		$site_id->setForeignKey('base.site', 'site_id');
 		$this->setProperty($site_id);
+		
+		$nps = new owa_dbColumn('num_prior_sessions', OWA_DTD_INT);
+		$this->setProperty($nps);
 		
 		$this->properties['is_robot'] = new owa_dbColumn;
 		$this->properties['is_robot']->setDataType(OWA_DTD_TINYINT);
