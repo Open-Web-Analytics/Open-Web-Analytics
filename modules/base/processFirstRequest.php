@@ -35,11 +35,6 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 class owa_processFirstRequestController extends owa_processEventController {
 	
-	function owa_processFirstRequestController($params) {
-	
-		return owa_processFirstRequestController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		return parent::__construct($params);
@@ -60,6 +55,7 @@ class owa_processFirstRequestController extends owa_processEventController {
 		if (!empty($fh)) {
 			
 			$this->event->replaceProperties($fh);
+			$this->event->setEventType('base.first_page_request');
 			$this->event->first_hit = true;
 			//owa_coreAPI::debug(print_r($this->event, true));	
 			// Delete first_hit Cookie
@@ -69,9 +65,6 @@ class owa_processFirstRequestController extends owa_processEventController {
 				
 		$this->setView('base.pixel');
 		$this->setViewMethod('image');
-		
-		return;
-		
 	}
 }
 
