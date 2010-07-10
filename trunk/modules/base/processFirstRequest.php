@@ -47,7 +47,7 @@ class owa_processFirstRequestController extends owa_processEventController {
 	
 	function action() {
 	
-		$fh_state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->getParam('site_id'));
+		$fh_state_name = owa_coreAPI::getSetting('base', 'first_hit_param');
 		//print_r($fh_state_name);
 		$fh = owa_coreAPI::getStateParam($fh_state_name);
 		owa_coreAPI::debug('cookiename: '.$fh_state_name);

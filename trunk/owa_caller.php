@@ -229,7 +229,7 @@ class owa_caller extends owa_base {
 		$event = owa_coreAPI::supportClassFactory('base', 'event');
 		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
 		$event->setProperties($service->request->getAllOwaParams());
-	
+		//owa_coreAPI::debug("logeventfromurl event".print_r($event, true));
 		return $this->trackEvent($event);
 		
 	}
@@ -272,7 +272,7 @@ class owa_caller extends owa_base {
 	}
 	
 	function handleSpecialActionRequest() {
-		//owa_coreAPI::debug('hello from special action request method in caller');
+		
 		if(isset($_GET['owa_specialAction'])):
 			$this->e->debug("special action received");
 			echo $this->handleRequestFromUrl();
@@ -291,6 +291,7 @@ class owa_caller extends owa_base {
 			echo $this->handleRequest('', 'base.apiRequest');
 			exit;
 		else:
+			owa_coreAPI::debug('hello from special action request method in caller. no action to do.');
 			return;
 		endif;
 

@@ -188,6 +188,7 @@ function &owa_getInstance($params = array()) {
 	static $owa;
 	
 	if(!empty($owa)):
+		
 		return $owa;
 	else:
 	
@@ -225,11 +226,20 @@ function &owa_getInstance($params = array()) {
 		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
-		$cu->setUserData('user_id', $current_user->user_login);
-		owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
-		$cu->setUserData('email_address', $current_user->user_email);
-		$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
-		$cu->setRole(owa_translate_role($current_user->roles));
+		
+		if (isset($current_user->user_login)) {
+			$cu->setUserData('user_id', $current_user->user_login);
+			owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
+		}
+		
+		if (isset($current_user->user_email)) {	
+			$cu->setUserData('email_address', $current_user->user_email);
+		}
+		
+		if (isset($current_user->first_name)) {
+			$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
+			$cu->setRole(owa_translate_role($current_user->roles));
+		}
 		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
 		$cu->setAuthStatus(true);
@@ -305,12 +315,7 @@ function owa_logComment($id, $comment_data = '') {
 function owa_footer() {
 	
 	$owa = owa_getInstance();
-	
-	$owa->placeHelperPageTags();
-	
-	
-	return;
-	
+	$owa->placeHelperPageTags();	
 }	
 
 /**
@@ -319,9 +324,11 @@ function owa_footer() {
  */
 function owa_main() {
 	
-	global $user_level;
+	//global $user_level;
 	
 	$owa = owa_getInstance();
+	
+	owa_coreAPI::debug('wp main request method');
 	$event = $owa->makeEvent();
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
@@ -339,6 +346,7 @@ function owa_main() {
 	if(is_feed()) {
 		$event->setEventType('base.feed_request');
 		$event->set('feed_format', $_GET['feed']);
+		
 	}
 	
 	//eliminate use of _GET by using OWA's request param method.
@@ -362,8 +370,6 @@ function owa_main() {
 	
 	// Process the request by calling owa
 	$owa->trackEvent($event);
-	
-	return;
 }
 
 /**
