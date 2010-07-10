@@ -317,7 +317,7 @@ class owa_processEventController extends owa_controller {
 	 */
 	function log_first_hit() {
 			
-		$state_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'first_hit_param'), $this->event->get('site_id'));
+		$state_name = owa_coreAPI::getSetting('base', 'first_hit_param');
 		$this->event->set('event_type', 'base.first_page_request');
 		return owa_coreAPI::setState($state_name, '', $this->event->getProperties(), 'cookie', true);	
 	}
@@ -327,10 +327,15 @@ class owa_processEventController extends owa_controller {
 		// notify handlers that tracking event processing is complete
 		$tepc = $this->eq->makeEvent('tracking_event_processing_complete');
 		$tepc->set('tracking_event_type', $this->event->getEventType());
-		$this->eq->notify($tepc);
-		// pass event to handlers but filter it first
-		$this->eq->asyncNotify($this->eq->filter('processed_event', $this->event));
-		return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
+		
+		if (!$this->event->get('do_not_log')) {
+			$this->eq->notify($tepc);
+			// pass event to handlers but filter it first
+			$this->eq->asyncNotify($this->eq->filter('processed_event', $this->event));
+			return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
+		} else {
+			owa_coreAPI::debug("Not logging event due to 'do not log' flag being set.");
+		}
 
 	}
 	

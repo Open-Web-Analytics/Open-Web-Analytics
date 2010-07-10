@@ -36,10 +36,6 @@ class owa_wp extends owa_caller {
 	 *
 	 * @return owa_wp
 	 */
-	function owa_wp($config = null) {
-		
-		return owa_wp::__construct($config);
-	}
 	
 	function __construct($config = null) {
 		

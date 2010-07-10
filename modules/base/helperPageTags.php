@@ -44,9 +44,10 @@ class owa_helperPageTagsController extends owa_controller {
 			$service = &owa_coreAPI::serviceSingleton();
 			//check for persistant cookie
 			$v = $service->request->getOwaCookie('v');
+			$fh = $service->request->getOwaCookie(owa_coreAPI::getSetting('base', 'first_hit_param')); 
 			owa_coreAPI::debug("helperPagesTags controller v cookie value:".print_r($v,true));
 			
-			if (empty($v)) {
+			if (empty($v) || !empty($fh)) {
 				owa_coreAPI::debug("helperPageTags controller first_hit_tag = true");	
 				$this->set('first_hit_tag', true);
 			}		
@@ -67,10 +68,7 @@ class owa_helperPageTagsController extends owa_controller {
 		}
 		
 		$this->setView('base.helperPageTags');
-		
-		return;
 	}
-	
 }
 
 
