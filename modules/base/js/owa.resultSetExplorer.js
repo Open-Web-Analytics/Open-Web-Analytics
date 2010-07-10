@@ -573,7 +573,7 @@ OWA.resultSetExplorer.prototype = {
                     	x = that.timestampFormatter(x);
                     }
                     
-                    that.showTooltip(item.pageX, item.pageY,
+                    that.showTooltip(item.pageX -75, item.pageY -50,
                                 x+'<BR><B>'+item.series.label + ":</B> " + y);
                 }
             } else {

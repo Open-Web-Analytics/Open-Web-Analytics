@@ -47,13 +47,6 @@ class owa_reportController extends owa_adminController {
 	
 	}
 	
-	// PHP 4 style constructor
-	function owa_reportController($params) {
-		
-		return owa_reportController::__construct($params);
-		
-	}
-	
 	/**
 	 * pre action
 	 *
@@ -64,9 +57,10 @@ class owa_reportController extends owa_adminController {
 		$this->data['params'] = $this->params;
 				
 		// set default period if necessary
-		if (empty($this->params['period'])):
-			$this->params['period'] = 'last_thirty_days';
-		endif;
+		if (empty($this->params['period'])) {
+			$this->params['period'] = 'last_seven_days';
+			$this->set('is_default_period', true);
+		}
 		
 		$this->setPeriod($this->getParam('period'));
 		

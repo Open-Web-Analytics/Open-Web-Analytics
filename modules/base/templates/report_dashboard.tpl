@@ -90,21 +90,34 @@
 //OWA.setSetting('debug', true);
 
 (function() {
-	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-													'metrics' => 'visits,pageViews,bounces,pagesPerVisit,visitDuration', 
-													'dimensions' => 'date', 
-													'sort' => 'date',
-													'format' => 'json'
-													), true);?>';
+
+	var aurl = '<?php 
+					
+					echo $this->makeApiLink(array(
+						'do'			=> 'getResultSet', 
+						'metrics'		=> 'visits,pageViews,bounces,pagesPerVisit,visitDuration', 
+						'dimensions' 	=> 'date', 
+						'sort' 			=> 'date',
+						'format' 		=> 'json',
+						'siteId'		=> $this->get('siteId'),
+						'period'		=> $period
+						
+					));
+				?>';
 													  
 	rsh = new OWA.resultSetExplorer('site-trend');
+
 	rsh.asyncQueue.push(['makeAreaChart', [{x: 'date', y: 'visits'}], 'trend-chart']);
 	rsh.options.metricBoxes.width = '150px';
 	rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
 	//rsh.options.areaChart.series.push({x:'date',y:'visits'});
 	//rsh.setView('areaChart');
 	rsh.load(aurl);
+
+
 })();
+
+
 
 (function() {
 	var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
