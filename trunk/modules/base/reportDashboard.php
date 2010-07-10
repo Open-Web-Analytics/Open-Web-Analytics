@@ -31,16 +31,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportDashboardController extends owa_reportController {
-
-	function owa_reportDashboardController($params) {
-	
-		return owa_reportDashboardController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
 	
 	function action() {
 				
@@ -80,11 +70,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_reportDashboardView extends owa_view {
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
 	
 	function render() {
 		

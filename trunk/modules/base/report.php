@@ -33,16 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_reportView extends owa_view {
 	
-	function owa_reportView() {
-		
-		return owa_reportView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		// Set Page title
@@ -57,6 +47,7 @@ class owa_reportView extends owa_view {
 		
 		// Set reporting period
 		$this->setPeriod($this->data['period']);
+		$this->subview->body->set('is_default_period', $this->get('is_default_period'));
 	
 		//create the report control params array
 		$this->report_params = $this->data['params'];
