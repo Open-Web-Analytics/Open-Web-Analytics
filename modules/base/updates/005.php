@@ -63,6 +63,21 @@ class owa_base_005_update extends owa_update {
 			return false;
 		}
 		
+		$ret = $visitor->addColumn('first_session_yyyymmdd');
+		
+		if (!$ret) {
+			$this->e->notice('Failed to add first_session_yyyymmdd column to owa_visitor');
+			return false;
+		}
+		
+		$ret = $db->query("update owa_visitor set first_session_yyyymmdd = 
+						concat(cast(first_session_year as CHAR), lpad(CAST(first_session_month AS CHAR), 2, '0'), lpad(CAST(first_session_day AS CHAR), 2, '0')) ");
+						
+		if (!$ret) {
+			$this->e->notice('Failed to populate first_session_yyyymmdd column in owa_visitor');
+			return false;
+		}
+		
 		$request = owa_coreAPI::entityFactory('base.request');
 		
 		$ret = $request->addColumn('prior_document_id');
@@ -332,6 +347,7 @@ class owa_base_005_update extends owa_update {
 	
 		$visitor = owa_coreAPI::entityFactory('base.visitor');
 		$visitor->dropColumn('num_prior_sessions');
+		$visitor->dropColumn('first_session_yyyymmdd');
 		$session = owa_coreAPI::entityFactory('base.session');
 		$session->dropColumn('yyyymmdd');
 		$session->dropColumn('is_bounce');

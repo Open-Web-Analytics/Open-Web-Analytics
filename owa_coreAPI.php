@@ -1140,6 +1140,13 @@ if (!empty($links[$group])):
 		return $s->getCliCommandClass($command);
 	}
 	
+	public static function getGeolocationFromIpAddress($ip_address) {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$s->geolocation->getLocationFromIp($ip_address);
+		return $s->geolocation;
+	}
+	
 	
 }
 

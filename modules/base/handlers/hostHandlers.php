@@ -48,6 +48,8 @@ class owa_hostHandlers extends owa_observer {
 		$h->getByPk('id', owa_lib::setStringGuid($event->get('full_host')));
 		$id = $h->get('id'); 
 		
+		//$geo = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+		//owa_coreAPI::debug('geo: ' .print_r($geo, true));
 		if (!$id) {
 			
 			$h->setProperties($event->getProperties());
