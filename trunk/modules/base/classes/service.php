@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once(OWA_BASE_CLASS_DIR.'geolocation.php');
+
 /**
  * Service Class
  * 
@@ -46,6 +48,7 @@ class owa_service extends owa_base {
 	var $dimensions = array();
 	var $denormalizedDimensions = array();
 	var $browscap;
+	var $geolocation;
 	
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
@@ -73,7 +76,10 @@ class owa_service extends owa_base {
 			$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
 			$this->current_user->setRole('everyone');
 			// the 'log_users' config directive relies on this being populated
-			$this->current_user->setUserData('user_id', $this->request->state->get('u'));				
+			$this->current_user->setUserData('user_id', $this->request->state->get('u'));	
+			
+			// load geolocation obj.
+			$this->geolocation = owa_geolocation::getInstance();			
 		}
 		
 	}
@@ -353,9 +359,6 @@ class owa_service extends owa_base {
 		
 		$this->setMapValue('api_methods', $method_name, $class);
 	}
-	
-	
-	
 }
 
 

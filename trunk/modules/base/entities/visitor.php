@@ -54,6 +54,8 @@ class owa_visitor extends owa_entity {
 		$this->properties['first_session_dayofyear']->setDataType(OWA_DTD_INT);
 		$this->properties['first_session_timestamp'] = new owa_dbColumn;
 		$this->properties['first_session_timestamp']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['first_session_yyyymmdd'] = new owa_dbColumn;
+		$this->properties['first_session_yyyymmdd']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['last_session_id'] = new owa_dbColumn;
 		$this->properties['last_session_id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['last_session_year'] = new owa_dbColumn;

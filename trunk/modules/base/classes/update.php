@@ -123,15 +123,27 @@ class owa_update extends owa_base {
 		
 		$current_version = $this->c->get($this->module_name, 'schema_version');
 		
-		//if ($current_version === $this->schema_version) {
+		// check to see that you are rolling back either an update that was successfully applied or one that might have failed.
+		// we dont want people applying rollbacks out of sequence.
+		if ($current_version === $this->schema_version || $current_version === $this->schema_version - 1) {
 			$ret = $this->down();
 			if ($ret) {
+				// only touch the current schema number if needed
+				
 				$prior_version = $current_version - 1;
-				$this->c->persistSetting($this->module_name, 'schema_version', $prior_version);
-				$this->c->save();
-				$this->e->notice("Schema Rollback succeeded to version: $prior_version.");
+
+				if ($current_version === $this->schema_version) {
+					$this->c->persistSetting($this->module_name, 'schema_version', $prior_version);
+					$this->c->save();
+				}
+				
+				$this->e->notice("Rollback succeeded to version: $prior_version.");
+			} else {
+				$this->e->notice("Rollback failed.");
 			}			
-		//}
+		} else {
+			$this->e->notice(sprintf('Rollback of update %s cannot be applied because it does not appear that it update %s has been applied to your instance. Your current schema version is only %s', $this->schema_version, $this->schema_version, $current_version));
+		}
 		
 		return true;
 	}

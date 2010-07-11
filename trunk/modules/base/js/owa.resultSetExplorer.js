@@ -838,7 +838,7 @@ OWA.resultSetExplorer.prototype = {
 			legend: {
 				show: true,
 				position: "ne",
-				margin: [-100,50]
+				margin: [-160,50]
 			},
 			colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
 		};

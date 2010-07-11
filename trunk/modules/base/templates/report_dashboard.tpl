@@ -21,7 +21,7 @@
 			
 			<div class="owa_reportSectionContent">
 				<div class="owa_reportSectionHeader">Visitor Types</div>	
-				<div id="visitor-types" style="width:250px;margin-top:-25px;"></div>
+				<div id="visitor-types" style="width:250px;margin-top:-10px;"></div>
 			</div>
 			
 			<div class="owa_reportSectionContent">
@@ -66,7 +66,7 @@
 			
 			<div class="owa_reportSectionContent">
 				<div class="owa_reportSectionHeader">Traffic Sources</div>
-				<div id="visitor-mediums" style="width:250px;margin-top:-25px;"></div>	
+				<div id="visitor-mediums" style="width:250px;margin-top:-10px;"></div>	
 			</div>
 			
 			<div class="owa_reportSectionContent">
