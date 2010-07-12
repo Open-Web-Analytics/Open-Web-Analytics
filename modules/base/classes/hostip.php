@@ -79,7 +79,7 @@ class owa_hostip extends owa_location {
 	 */
 	function get_location($location_map) {
 		
-		if (array_key_exists('ip_address',$location_map) && !empty($location_map['ip_address'])) {
+		if (array_key_exists('ip_address',$location_map) && !empty($location_map['ip_address']) && empty($location_map['country'])) {
 				
 			$crawler = new owa_http;
 			$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
