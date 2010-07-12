@@ -50,7 +50,7 @@ class owa_geolocation {
 		
 		if (empty($this->properties) || $refresh === true) {
 			
-			$geo = array('ip_address' 	=> $ip_adrress, 
+			$geo = array('ip_address' 	=> $ip_address, 
 						 'city' 		=>  '',
 						 'country' 		=>  '',
 						 'state'		=>  '',
@@ -67,7 +67,7 @@ class owa_geolocation {
 	
 	function getProperty($name) {
 		
-		if (array_key_exists($name, $properties)) {
+		if (array_key_exists($name, $this->properties)) {
 			return $this->properties[$name];
 		}
 	}
@@ -79,37 +79,37 @@ class owa_geolocation {
 	
 	function getCity() {
 		
-		if (array_key_exists('city', $properties)) {
+		if (array_key_exists('city', $this->properties)) {
 			return $this->properties['city'];
 		}
 	}
 	
 	function getState() {
-		if (array_key_exists('state', $properties)) {
+		if (array_key_exists('state', $this->properties)) {
 			return $this->properties['state'];
 		}
 	}
 	
 	function getCountry() {
-		if (array_key_exists('country', $properties)) {
+		if (array_key_exists('country', $this->properties)) {
 			return $this->properties['country'];
 		}
 	}
 	
 	function getCountryCode() {
-		if (array_key_exists('country_code', $properties)) {
+		if (array_key_exists('country_code', $this->properties)) {
 			return $this->properties['country_code'];
 		}
 	}
 	
 	function getLatitude() {
-		if (array_key_exists('latitude', $properties)) {
+		if (array_key_exists('latitude', $this->properties)) {
 			return $this->properties['latitude'];
 		}
 	}
 	
 	function getLongitude() {
-		if (array_key_exists('longitude', $properties)) {
+		if (array_key_exists('longitude', $this->properties)) {
 			return $this->properties['longitude'];
 		}
 	}
