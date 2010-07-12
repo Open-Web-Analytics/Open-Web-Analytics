@@ -52,7 +52,7 @@ class owa_baseModule extends owa_module {
 		$this->registerFilter('ip_address', $this, 'setIp', 0);
 		$this->registerFilter('full_host', $this, 'resolveHost', 0);
 		$this->registerFilter('host', $this, 'getHostDomain', 0);
-		$this->registerFilter('geolocation', 'hostip', 'get_locaton', 10, 'classes');
+		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
 		
 		//Clean Query Strings 
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {

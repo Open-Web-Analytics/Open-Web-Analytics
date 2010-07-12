@@ -77,38 +77,51 @@ class owa_hostip extends owa_location {
 	 *
 	 * @param string $ip
 	 */
-	function get_location($ip) {
+	function get_location($location_map) {
 		
-		$crawler = new owa_http;
-		$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
-		
-		$crawler->fetch(sprintf($this->ws_url, $ip));
-		owa_coreAPI::debug(sprintf("HostIp web service response code: %s", $crawler->crawler->response_code));
-		$location = $crawler->crawler->results;
-		
-		$location =	str_replace("\n", "|", $location);
+		if (array_key_exists('ip_address',$location_map) && !empty($location_map['ip_address'])) {
+				
+			$crawler = new owa_http;
+			$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
 			
-		$loc_array = explode("|", $location);
-		//print_r($loc_array);
-		
-		$result = array();
+			$crawler->fetch(sprintf($this->ws_url, $location_map['ip_address']));
+			owa_coreAPI::debug(sprintf("HostIp web service response code: %s", $crawler->crawler->response_code));
+			$location = $crawler->crawler->results;
+			//owa_coreAPI::debug(print_r($location,true));
+			$location =	str_replace("\n", "|", $location);
 				
-		foreach ($loc_array as $k => $v) {
-				
-			list($name, $value) = split(":", $v, 2);	
-			$result[$name] = $value;
-		}
-				
-		//print_r($result);
-		$location_map = array();
-       	$location_map['city'] = $result['City'];
-		$location_map['country'] = trim($result['Country']);
-		$location_map['latitude'] = trim($result['Latitude']);
-		$location_map['longitude'] = trim($result['Longitude']);
-		
-		// log headers if status is not a 200 
-		if (strstr($crawler->response_code, "200") === false) {
-			owa_coreAPI::debug(sprintf("HostIp web service response headers: %s", print_r($crawler->crawler->headers, true)));
+			$loc_array = explode("|", $location);
+			//print_r($loc_array);
+			
+			$result = array();
+					
+			foreach ($loc_array as $k => $v) {
+					
+				list($name, $value) = split(":", $v, 2);	
+				$result[$name] = $value;
+			}
+			
+			if (!empty($result['City'])) {
+				list ($city, $state) = split(',', $result['City']);
+			}
+			
+			if (!empty($result['Country'])) {
+				list($country, $country_code) = explode('(', $result['Country']);	
+				$country_code = substr($country_code,0,-1);
+				//owa_coreAPI::debug($result['Country'].' c: '. $country.' cc: '.$country_code);
+			}
+			
+	       	$location_map['city'] = strtolower(trim($city));
+	       	$location_map['state'] =  strtolower(trim($state));
+			$location_map['country'] =  strtolower(trim($country));
+			$location_map['country_code'] =  strtoupper(trim($country_code));
+			$location_map['latitude'] = trim($result['Latitude']);
+			$location_map['longitude'] = trim($result['Longitude']);
+			
+			// log headers if status is not a 200 
+			if (!strpos($crawler->response_code, '200')) {
+				owa_coreAPI::debug(sprintf("HostIp web service response headers: %s", print_r($crawler->crawler->headers, true)));
+			}
 		}
 		
 		return $location_map;

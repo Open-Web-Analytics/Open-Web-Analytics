@@ -48,31 +48,20 @@ class owa_hostHandlers extends owa_observer {
 		$h->getByPk('id', owa_lib::setStringGuid($event->get('full_host')));
 		$id = $h->get('id'); 
 		
-		//$geo = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-		//owa_coreAPI::debug('geo: ' .print_r($geo, true));
 		if (!$id) {
 			
 			$h->setProperties($event->getProperties());
 			
 			$h->set('id', owa_lib::setStringGuid($event->get('full_host'))); 
 			
-			// makes the geo-location object from the service specified in the config
-			$path = owa_coreAPI::getSetting('base', 'plugin_dir')."location/";
-			$class = owa_coreAPI::getSetting('base', 'geolocation_service');
-			$file = $class.'.php';
-			$ret = require_once($path.$file);
-			//$location = new owa_hostip;
-			
-			$location = owa_lib::factory($path, 'owa_', $class);
-			
-			// lookup
-			$location->get_location($event->get('ip_address'));
+			$location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+			owa_coreAPI::debug('geolocation: ' .print_r($location, true));
 			
 			//set properties of the session
-			$h->set('country', $location->country);
-			$h->set('city', $location->city);
-			$h->set('latitude', $location->latitude);
-			$h->set('longitude', $location->longitude);
+			$h->set('country', $location->getCountry());
+			$h->set('city', $location->getCity());
+			$h->set('latitude', $location->getLatitude());
+			$h->set('longitude', $location->getLongitude());
 			
 			$h->create();
 			

@@ -1143,10 +1143,9 @@ if (!empty($links[$group])):
 	public static function getGeolocationFromIpAddress($ip_address) {
 		
 		$s = owa_coreAPI::serviceSingleton();
-		$s->geolocation->getLocationFromIp($ip_address);
+		$s->geolocation->getGeolocationFromIp($ip_address);
 		return $s->geolocation;
 	}
-	
 	
 }
 
