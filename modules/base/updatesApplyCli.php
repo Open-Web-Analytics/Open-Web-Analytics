@@ -60,34 +60,30 @@ class owa_updatesApplyCliController extends owa_cliController {
 		//return;
 		
 		// foreach do update in order
-		
-		$error = false;
-		
-		foreach ($modules as $k => $v) {
-		
-			$ret = $s->modules[$v]->update();
+		if (!empty($modules)) {
+			$error = false;
 			
-			if ($ret != true):
-				$error = true;
-				break;
-			endif;
-		
+			foreach ($modules as $k => $v) {
+			
+				$ret = $s->modules[$v]->update();
+				
+				if ($ret != true):
+					$error = true;
+					break;
+				endif;
+			
+			}
+			
+			if ($error === true) {
+				owa_coreAPI::notice($this->getMsg(3307));		
+			} else {
+				
+				// add data to container
+				owa_coreAPI::notice($this->getMsg(3308));
+			}
+		} else {
+			owa_coreAPI::notice("There are no modules with pending updates to apply.");
 		}
-		
-		if ($error === true):
-			$this->set('error_msg', $this->getMsg(3307));
-			$this->setView('base.error');
-			$this->setViewMethod('delegate');			
-		else:
-			
-			// add data to container
-			$this->set('status_code', 3308);
-			$this->set('do', 'base.optionsGeneral');
-			$this->setViewMethod('redirect');
-		 
-		endif;		
-		
-		return;
 	
 	
 	}
@@ -97,9 +93,9 @@ class owa_updatesApplyCliController extends owa_cliController {
 		$s = &owa_coreAPI::serviceSingleton();
 		$modules = $s->getModulesNeedingUpdates();
 		if ($modules) {
-			echo sprintf("Updates pending include: %s",print_r($modules, true));
+			owa_coreAPI::notice(sprintf("Updates pending include: %s",print_r($modules, true)));
 		} else {
-			echo "No updates pending";
+			owa_coreAPI::notice("No updates are pending.");
 		}
 	}
 	
@@ -108,12 +104,14 @@ class owa_updatesApplyCliController extends owa_cliController {
 		list($module, $seq) = explode('.', $update);
 		$u = owa_coreAPI::updateFactory($module, $seq);
 		$u->apply();
+		owa_coreAPI::notice("Updates applied successfully.");
 	}
 	
 	function rollback($update) {
 		list($module, $seq) = explode('.', $update);
 		$u = owa_coreAPI::updateFactory($module, $seq);
 		$u->rollback();
+		owa_coreAPI::notice("Rollback completed.");
 	}
 	
 }

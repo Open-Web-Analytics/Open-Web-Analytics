@@ -189,6 +189,16 @@ class owa_module extends owa_base {
 	var $api_methods = array();
 	
 	/**
+	 * Update from CLI Required flag
+	 *
+	 * Used by controllers to see if an update error was becuase it needs
+	 * to be applied from the command line instead of via the browser.
+	 * 
+	 * @var boolean 
+	 */
+	var $update_from_cli_required;
+	
+	/**
 	 * Constructor
 	 * 
 	 *  
@@ -461,6 +471,11 @@ class owa_module extends owa_base {
 	
 		return true;
 	}
+	
+	function isCliUpdateModeRequired() {
+	
+		return $this->update_from_cli_required;
+	}
 		
 	/**
 	 * Checks for and applies schema upgrades for the module
@@ -487,6 +502,14 @@ class owa_module extends owa_base {
 			
 				if ($seq <= $this->required_schema_version):
 					$this->updates[$seq] = owa_coreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
+					// if the cli update mode is required and we are not running via cli then return an error.
+					owa_coreAPI::debug('cli update mode required: '.$this->updates[$seq]->isCliModeRequired());
+					if ($this->updates[$seq]->isCliModeRequired() === true && !defined('OWA_CLI')) {
+						//set flag in module
+						$this->update_from_cli_required = true;
+						owa_coreAPI::notice("Aborting update $seq. This update must be applied using the command line interface.");
+						return false;
+					}
 					// set schema version from sequence number in file name. This ensures that only one update
 					// class can ever be in use for a particular schema version
 					$this->updates[$seq]->schema_version = $seq;

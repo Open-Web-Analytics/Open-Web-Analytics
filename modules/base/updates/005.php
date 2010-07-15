@@ -32,6 +32,7 @@
 class owa_base_005_update extends owa_update {
 	
 	var $schema_version = 5;
+	var $is_cli_mode_required = true;
 	
 	function up() {
 		

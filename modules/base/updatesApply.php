@@ -18,7 +18,6 @@
 
 require_once(OWA_DIR.'owa_controller.php');
 
-
 /**
  * Updates Application Controller
  * 
@@ -33,16 +32,6 @@ require_once(OWA_DIR.'owa_controller.php');
 
 class owa_updatesApplyController extends owa_controller {
 	
-	function owa_updatesApplyController($params) {
-		
-		return owa_updatesApplyController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-
 	function action() {
 		
 		// fetch list of modules that require updates
@@ -62,13 +51,21 @@ class owa_updatesApplyController extends owa_controller {
 			
 			if ($ret != true):
 				$error = true;
+				// if there is an error check to see if it's because the cli update mode is required
+				$cli_update_required = $s->modules[$v]->isCliUpdateModeRequired();
 				break;
 			endif;
 		
 		}
 		
 		if ($error === true) {
-			$this->set('error_msg', $this->getMsg(3307));
+		
+			if($cli_update_required) {
+				$this->set('error_msg', $this->getMsg(3311));
+			} else {
+				$this->set('error_msg', $this->getMsg(3307));
+			}
+		
 			$this->setView('base.error');
 			$this->setViewMethod('delegate');			
 		} else {
