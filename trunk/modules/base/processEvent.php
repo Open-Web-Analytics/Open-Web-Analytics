@@ -39,7 +39,7 @@ class owa_processEventController extends owa_controller {
 	var $eq;
 	
 	function __construct($params) {
-		
+	
 		if (array_key_exists('event', $params) && !empty($params['event'])) {
 			
 			$this->event = $params['event'];
@@ -95,17 +95,20 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('last_req', $state[owa_coreAPI::getSetting('base', 'last_request_param')]);
 		
 		// set inbound visitor id
+		$vstate = owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid');
 		
-		$vstate = owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param'));
-		
-		//check for old style visitor cookie
-		if (!is_array($vstate) && !empty($vstate)) {
-			$this->event->set('inbound_visitor_id', owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param')));
-			owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), '', '', 'cookie', true);
-			owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid', $vstate, 'cookie', true);
-		} else {
-			$this->event->set('inbound_visitor_id', owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid'));
+		if (!$vstate) {
+			// look for old style cookie
+			$vstate = owa_coreAPI::getStateParam(owa_coreAPI::getSetting('base', 'visitor_param'));
+			// if we find one, then rewrite cookie to new format using vid param
+			if (!empty($vstate)) {
+				// reset the cookie to new style		
+				owa_coreAPI::clearState(owa_coreAPI::getSetting('base', 'visitor_param'));
+				owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'vid', $vstate, 'cookie', true);
+			}			
 		}
+		
+		$this->event->set('inbound_visitor_id', $vstate);
 		
 		// set visitor type flag if inbound visitor ID is found.		
 		if ($this->event->get('inbound_visitor_id')) {
