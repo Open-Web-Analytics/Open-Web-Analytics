@@ -33,12 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  */
 
 class owa_updatesView extends owa_view {
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
+		
 	function render($data) {
 		
 		//switch wrapper if OWA is not embedded
@@ -55,21 +50,13 @@ class owa_updatesView extends owa_view {
 
 class owa_updatesController extends owa_controller {
 	
-	function __construct($params) {
-		
-		$this->priviledge_level = 'guest';
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$data = array();
-		
-		$api = &owa_coreAPI::singleton();
 				
 		$data['view_method'] = 'delegate';
 		$data['view'] = 'base.updates';
-		$data['modules'] = $api->getModulesNeedingUpdates();
+		$data['modules'] = owa_coreAPI::getModulesNeedingUpdates();
 		
 		return $data;
 	}

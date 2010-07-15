@@ -57,12 +57,16 @@ class owa_update extends owa_base {
 	 */
 	var $schema_version;
 	
+	var $is_cli_mode_required;
+	
 	function __construct() {
-		
-		$this->owa_base();
-		//$this->db = &owa_coreAPI::dbSingleton();
 				
-		return;
+		return parent::__construct();
+	}
+	
+	function isCliModeRequired() {
+		
+		return $this->is_cli_mode_required;
 	}
 	
 	/**
