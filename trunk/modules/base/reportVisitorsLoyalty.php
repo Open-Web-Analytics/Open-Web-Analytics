@@ -42,12 +42,12 @@ class owa_reportVisitorsLoyaltyController extends owa_reportController {
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Visitor Loyalty');
 		$this->set('metrics', 'visits');
-		$this->set('dimensions', 'daysSinceFirstVisit');
-		$this->set('sort', 'daysSinceFirstVisit-');
+		$this->set('dimensions', 'priorVisitCount');
+		$this->set('sort', 'priorVisitCount-');
 		$this->set('resultsPerPage', 30);
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all sources.');
-		$this->set('gridTitle', 'Days Since First Visit');		
+		$this->set('gridTitle', 'Number of Prior Visits');		
 		
 	}
 }

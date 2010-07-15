@@ -79,7 +79,7 @@ class owa_processRequestController extends owa_processEventController {
 			
 			// if this is not the first sessio nthen calc days sisne last session
 			if ($this->event->get('last_req')) {
-				$this->event->set('days_sinse_prior_session', round(($this->event->get('timestamp') - $this->event->get('last_req'))/(3600*24)));
+				$this->event->set('days_since_prior_session', round(($this->event->get('timestamp') - $this->event->get('last_req'))/(3600*24)));
 			}
 			
 			// if check for first session timestamp (fsts) value in vistor cookie
@@ -92,11 +92,11 @@ class owa_processRequestController extends owa_processEventController {
 			
 			// calc days sinse first session
 			if ($fsts) {
-				$this->event->set('days_sinse_first_session', round(($this->event->get('timestamp') - $fsts)/(3600*24)));	
+				$this->event->set('days_since_first_session', round(($this->event->get('timestamp') - $fsts)/(3600*24)));	
 			} else {
 				// this means that first session timestamp was not set in the cookie even though it's not a new user...so we set it. 
 				// This can happen with users prior to 1.3.0. when this value was introduced into the cookie.
-				$this->event->set('days_sinse_first_session', 0);
+				$this->event->set('days_since_first_session', 0);
 				
 				if ($this->event->get('inbound_visitor_id')) {
 					owa_coreAPI::setState('v', 'fsts', $this->event->get('timestamp'), 'cookie', true);
