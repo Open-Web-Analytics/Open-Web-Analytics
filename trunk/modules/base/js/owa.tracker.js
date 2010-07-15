@@ -75,7 +75,7 @@ OWA.event.prototype = {
 }
 
 
-OWA.tracker = function(caller_params) {
+OWA.tracker = function(caller_params, options) {
 	
 	// check to see if overlay sesson is active
 	var p = OWA.util.readCookie('owa_overlay');
@@ -96,6 +96,25 @@ OWA.tracker = function(caller_params) {
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
 	
+	
+	/*
+if (options.length > 0) {
+		for(param in options) {
+			
+			if (options.hasOwnProperty(param)) {
+	       
+				this.options[param] = options[param];
+			}
+	    }
+	}
+*/
+	
+	// merge page params from the global object if it exists
+	if (owa_params.length > 0) {
+		this.page.merge(owa_params);
+	}
+		
+	// merge page params from map passed into the constructor
 	if (typeof caller_params != 'undefined') {
 		this.page.merge(caller_params);
 	}	
