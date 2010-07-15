@@ -61,6 +61,8 @@ class owa_state {
 				if (array_key_exists($name, $this->stores[$store])) {	
 						
 					return $this->stores[$store][$name];
+				} else {
+					return false;
 				}
 			} else {
 
@@ -105,6 +107,7 @@ class owa_state {
 		}
 		
 		$this->dirty_stores[] = $store;
+		//owa_coreAPI::debug(print_r($this->stores, true));
 	}
 
 	

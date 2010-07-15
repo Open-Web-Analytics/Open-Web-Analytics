@@ -44,7 +44,7 @@ $owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logA
 $owa_config['link_template'] = '%s&%s';
 $owa_config['site_id'] = md5($wgServer.$wiki_url);
 $owa_config['is_embedded'] = true;
-$owa_config['delay_first_hit'] = true;
+$owa_config['delay_first_hit'] = false;
 $owa_config['error_handler'] = 'development';
 $owa_config['query_string_filters'] = 'returnto';
 

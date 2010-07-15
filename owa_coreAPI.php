@@ -1072,6 +1072,7 @@ if (!empty($links[$group])):
 		}
 		
 		$init = true;
+		owa_coreAPI::debug('About to perform action: '.$action);
 		return owa_coreAPI::performAction($action, $params);
 						
 	}
