@@ -113,10 +113,10 @@ class owa_session extends owa_entity {
 		$this->properties['prior_session_hour']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['prior_session_minute'] = new owa_dbColumn;
 		$this->properties['prior_session_minute']->setDataType(OWA_DTD_TINYINT2);
-		$this->properties['days_sinse_prior_session'] = new owa_dbColumn;
-		$this->properties['days_sinse_prior_session']->setDataType(OWA_DTD_INT);
-		$this->properties['days_sinse_first_session'] = new owa_dbColumn;
-		$this->properties['days_sinse_first_session']->setDataType(OWA_DTD_INT);
+		$this->properties['days_since_prior_session'] = new owa_dbColumn;
+		$this->properties['days_since_prior_session']->setDataType(OWA_DTD_INT);
+		$this->properties['days_since_first_session'] = new owa_dbColumn;
+		$this->properties['days_since_first_session']->setDataType(OWA_DTD_INT);
 		$this->properties['os'] = new owa_dbColumn;
 		$this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
 		
