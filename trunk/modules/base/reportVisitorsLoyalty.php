@@ -34,59 +34,22 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportVisitorsLoyaltyController extends owa_reportController {
 	
 	function action() {
-		
-		// visitors age	
-		$va = owa_coreAPI::metricFactory('base.visitorsAge');
-		$va->setPeriod($this->getPeriod());
-		$va->setConstraint('site_id', $this->getParam('site_id'));
-		$va->setLimit(500); 
-		$va->setPage($this->getParam('page'));
-		$this->set('visitors_age', $va->generate());
-		$this->setPagination($va->getPagination());
-				
+						
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitorsLoyalty');
 		$this->setTitle('Visitor Loyalty');
 		
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Visitor Loyalty');
+		$this->set('metrics', 'visits');
+		$this->set('dimensions', 'daysSinceFirstVisit');
+		$this->set('sort', 'daysSinceFirstVisit-');
+		$this->set('resultsPerPage', 30);
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all sources.');
+		$this->set('gridTitle', 'Days Since First Visit');		
 		
-		/*
-		$visits_initial_timeperiod = owa_coreAPI::executeApiCommand(array(
-			'do'				=> 	'getResultSet',
-			'metrics'			=>	'visits',
-			'dimensions'		=>	'firstVisitDate',
-			'sort'				=>	'firstVisitsDate-',
-			'page'				=>	$this->getParam('page'),
-			'resultsPerPage'	=>	$limit,
-			'constraints'		=> 	'firstVisitDate>='.$this->getParam('startDate').',firstVisitDate<='.$this->getParam('endDate')
-		));	
-		*/	
 	}
 }
-
-/**
- * Visitors Loyalty Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportVisitorsLoyaltyView extends owa_view {
-		
-	function render($data) {
-		
-		// Assign data to templates
-		
-		$this->body->set_template('report_visitors_loyalty.tpl');
-		$this->body->set('visitors_age', $this->get('visitors_age'));
-	}
-	
-	
-}
-
 
 ?>
