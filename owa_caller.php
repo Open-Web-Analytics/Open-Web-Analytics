@@ -234,13 +234,14 @@ class owa_caller extends owa_base {
 		
 	}
 	
-	function placeHelperPageTags($echo = true) {
+	function placeHelperPageTags($echo = true, $options = array()) {
 		
 		if(!owa_coreAPI::getRequestParam('is_robot')) {
 				
 			$params = array();
 			$params['do'] = 'base.helperPageTags';
 			$params['site_id'] = $this->getSiteId();
+			$params['options'] = $options;
 			
 			if ($echo == false) {
 				//return $this->handleHelperPageTagsRequest();

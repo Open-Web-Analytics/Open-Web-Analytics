@@ -44,11 +44,9 @@ class owa_helperPageTagsController extends owa_controller {
 			$service = &owa_coreAPI::serviceSingleton();
 			//check for persistant cookie
 			$v = $service->request->getOwaCookie('v');
-			$fh = $service->request->getOwaCookie(owa_coreAPI::getSetting('base', 'first_hit_param')); 
-			owa_coreAPI::debug("helperPagesTags controller v cookie value:".print_r($v,true));
 			
-			if (empty($v) || !empty($fh)) {
-				owa_coreAPI::debug("helperPageTags controller first_hit_tag = true");	
+			if (empty($v)) {
+				
 				$this->set('first_hit_tag', true);
 			}		
 		}
@@ -67,7 +65,9 @@ class owa_helperPageTagsController extends owa_controller {
 			$this->set('site_id', owa_coreAPI::getSetting('base', 'site_id'));
 		}
 		
+		$this->set('options', $this->getParam('options'));
 		$this->setView('base.helperPageTags');
+	
 	}
 }
 
@@ -92,6 +92,7 @@ class owa_helperPageTagsView extends owa_view {
 	
 	function render($data) {
 		
+		$options = $this->get('options');
 		$this->body->set('site_id', $this->get('site_id'));
 		
 		// will include the first ht tracking tag
@@ -99,8 +100,18 @@ class owa_helperPageTagsView extends owa_view {
 			$this->body->set('first_hit_tag', true);
 		}
 		
-		// do not log pageview via js as it was already logged via PHP
-		$this->body->set('do_not_log_pageview', true);
+		// do not log pageview via js as it was already logged via PHP or unless explicitly told to do so.
+		if (array_key_exists('trackPageview', $options)) {
+			if ($options['trackPageview'] === true) {
+				$do_not_trackPageview = false;	
+			} else {
+				$do_not_trackPageview = true;
+			}
+		} else {
+			$do_not_trackPageview = true;
+		}
+		
+		$this->body->set('do_not_log_pageview', $do_not_trackPageview);
 		
 		//check to see if we shuld log clicks.
 		if (!owa_coreAPI::getSetting('base', 'log_dom_clicks')) {

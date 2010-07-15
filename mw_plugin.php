@@ -49,9 +49,9 @@ $owa_config['error_handler'] = 'development';
 $owa_config['query_string_filters'] = 'returnto';
 
 // Turn MediaWiki Caching Off
-global $wgCachePages, $wgCacheEpoch;
-$wgCachePages = false;
-$wgCacheEpoch = 'date +%Y%m%d%H%M%S';
+//global $wgCachePages, $wgCacheEpoch;
+//$wgCachePages = false;
+//$wgCacheEpoch = 'date +%Y%m%d%H%M%S';
 
 // Register Extension with MediaWiki
 $wgExtensionFunctions[] = 'owa_main';
@@ -221,7 +221,12 @@ function owa_logSpecialPage(&$specialPage) {
 		$event->set('page_title', $wgOut->mPagetitle);
 		$event->set('page_type', 'Special Page');
 		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		$owa->trackEvent($event);
+		//$owa->trackEvent($event);
+		$tag = sprintf('<script>
+						// owa tracking page params
+						var owa_params = %s
+						</script>', json_encode($event->getProperties()));
+		$wgOut->addHTML($tag);
 	}
 		
 	return true;
@@ -247,7 +252,12 @@ function owa_logCategoryPage(&$categoryPage) {
 		$event->set('page_title', $wgOut->mPagetitle);
 		$event->set('page_type', 'Category');
 		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		$owa->trackEvent($event);
+		//$owa->trackEvent($event);
+		$tag = sprintf('<script>
+						// owa tracking page params
+						var owa_params = %s
+						</script>', json_encode($event->getProperties()));
+		$wgOut->addHTML($tag);
 	}
 	return true;
 }
@@ -262,8 +272,8 @@ function owa_logArticle(&$article) {
 
 	global $wgUser, $wgOut, $wgTitle, $wgServer, $wgScriptPath;
 	
-	$wgTitle->invalidateCache();
-	$wgOut->enableClientCache(false);
+	//$wgTitle->invalidateCache();
+	//$wgOut->enableClientCache(false);
 	
 	// Setup Application Specific Properties to be Logged with request
 	$owa = owa_singleton();
@@ -278,7 +288,12 @@ function owa_logArticle(&$article) {
 		$event->set('page_title', $article->mTitle->mTextform);
 		$event->set('page_type', 'Article');
 		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		$owa->trackEvent($event);
+		//$owa->trackEvent($event);
+		$tag = sprintf('<script>
+						// owa tracking page params
+						var owa_params = %s
+						</script>', json_encode($event->getProperties()));
+		$wgOut->addHTML($tag);
 	}
 		
 	return true;
@@ -300,7 +315,7 @@ function owa_footer(&$wgOut, $sk) {
 		$owa = owa_singleton();
 		if ($owa->getSetting('base', 'install_complete')) {
 			
-			$tags = $owa->placeHelperPageTags(false);		
+			$tags = $owa->placeHelperPageTags(false, array('trackPageview' => true));		
 			$wgOut->addHTML($tags);
 			
 		}
