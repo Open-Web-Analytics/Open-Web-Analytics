@@ -43,7 +43,7 @@ class owa_reportActionTrackingController extends owa_reportController {
 		
 		$this->setSubview('base.reportActionTracking');
 		$this->setTitle('Actions');
-		$this->set('metrics', 'actions,uniqueActions,actionsValue,actionsPerVisit');
+		$this->set('metrics', 'actions,uniqueActions,actionsValue');
 		//$this->set('dimensions', 'pageTitle,pageUrl');
 		$this->set('sort', 'actions');
 		$this->set('resultsPerPage', 30);
