@@ -43,12 +43,12 @@ class owa_reportReferralDetailController extends owa_reportController {
 		$referral = $this->getParam('referralPageUrl');
 		$this->setSubview('base.reportDimensionDetail');
 		$this->setTitle('Referral: ', $referral);
-		$this->set('metrics', 'visits,pageViews,bounces,actions');
+		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralPageTitle,referralWebSite');
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);
 		
-		$this->set('constraints', 'refferalPageUrl=='.$referral);
+		$this->set('constraints', 'referralPageUrl=='.urlencode($referral));
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this referral.');	
 	}
