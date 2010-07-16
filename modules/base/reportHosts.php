@@ -32,18 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportHostsController extends owa_reportController {
-	
-	function owa_reportHostsController($params) {
 		
-		return owa_reportController::__construct($params);
-		
-	}
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
 	function action() {
 			
 		$this->setSubview('base.reportDimension');
