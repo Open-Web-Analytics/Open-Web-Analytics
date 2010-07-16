@@ -48,7 +48,7 @@ class owa_reportReferralLinkTextDetailController extends owa_reportController {
 		$this->set('dimensions', 'referralLinkText');
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);
-		$this->set('constraints', 'referralLinkText=='.$linkText);
+		$this->set('constraints', 'referralLinkText=='.urlencode($linkText));
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from links with this text.');								
 		
