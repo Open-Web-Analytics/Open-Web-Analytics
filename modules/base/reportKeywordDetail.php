@@ -20,7 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * Visitor Hosts Report Controller
+ * Keyword Detail Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,19 +31,19 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since		owa 1.0.0
  */
 
-class owa_reportHostDetailController extends owa_reportController {
+class owa_reportKeywordDetailController extends owa_reportController {
 	
 	function action() {
 		
-		$searchTerm = $this->getParam('referringSearchTerm');
+		$searchTerm = $this->getParam('referralSearchTerms');
 		
 		$this->setSubview('base.reportDimensionDetail');
 		$this->setTitle('Search Term Detail: ', $searchTerm);
 		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimension', 'referringSearchTerm');
+		$this->set('dimension', 'referralSearchTerms');
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this search term.');
-		$this->set('constraints', 'referringSearchTerm=='.$searchTerm);	
+		$this->set('constraints', 'referralSearchTerms=='.urlencode($searchTerm));	
 	}
 }
 
