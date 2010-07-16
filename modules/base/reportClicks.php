@@ -20,19 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportClicksController extends owa_reportController {
-	
-	function owa_reportClicksController($params) {
 		
-		return owa_reportClicksController::__construct($params);
-	
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
-	
 	function action() {
 		
 					
@@ -70,8 +58,6 @@ class owa_reportClicksController extends owa_reportController {
 		$this->setView('base.report');
 		$this->setSubview('base.reportClicks');
 		$this->setTitle('Click Analysis');
-		
-		return;
 	}
 }
 
@@ -89,17 +75,7 @@ class owa_reportClicksController extends owa_reportController {
  */
 
 class owa_reportClicksView extends owa_view {
-	
-	function owa_reportClicksView() {
 		
-		return owa_reportClicksView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		// Assign data to templates
@@ -113,11 +89,7 @@ class owa_reportClicksView extends owa_view {
 		$this->setJs('dynifs', 'base/js/dynifs.js');
 		$this->setJs('wz_jsgraphics', 'base/js/wz_jsgraphics.js');
 		
-		return;
 	}
-	
-	
 }
-
 
 ?>

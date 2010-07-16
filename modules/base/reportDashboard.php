@@ -78,9 +78,6 @@ class owa_reportDashboardView extends owa_view {
 		$this->body->set('site_trend', $this->get('site_trend'));
 		$this->body->set('actions', $this->get('actions'));
 	}
-	
-	
 }
-
 
 ?>

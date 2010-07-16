@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportDocumentController extends owa_reportController {
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
+		
 	function action() {
 		
 		$d = owa_coreAPI::entityFactory('base.document');	
@@ -45,14 +40,14 @@ class owa_reportDocumentController extends owa_reportController {
 		if ($this->getParam('pageUrl')) {
 			$pageUrl = $this->getParam('pageUrl');
 			$d->getByColumn('url', $pageUrl);
-			$this->set('constraints', 'pageUrl=='.$pageUrl);
+			$this->set('constraints', 'pageUrl=='.urlencode($pageUrl));
 			$this->setTitle('Page Detail: ', $pageUrl);
 		}
 		
 		if ($this->getParam('pagePath')) {
 			$pagePath = $this->getParam('pagePath');
 			$d->getByColumn('uri', $pagePath);
-			$this->set('constraints', 'pagePath=='.$pagePath);
+			$this->set('constraints', 'pagePath=='.urlencode($pagePath));
 			$this->setTitle('Page Detail: ', $pagePath);
 		}
 		

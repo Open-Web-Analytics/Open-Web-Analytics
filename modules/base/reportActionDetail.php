@@ -33,40 +33,18 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_reportActionDetailController extends owa_reportController {
 
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
+	
+	
+		$actionName = $this->getParam('actionName');
 		
-		$constraints = '';
-		
-		if ($this->getParam('site_id') || $this->getParam('siteId')) {
-			
-			$constraints .= 'siteId=='.$this->getParam('site_id').',';
-		} 
-		
-		$constraints .= 'actionName=='.$this->getParam('actionName');
-		
-		// action counts	
-		$params = array('period' 	  => $this->get('period'),
-						'startDate'	  => $this->get('startDate'),
-						'endDate'	  => $this->get('endDate'),
-						'metrics' 	  => 'actions,actionsPerVisit,actionsValue',
-						'constraints' => $constraints,
-						'do'		  => 'getResultSet'
-						);
-						
-		$rs = owa_coreAPI::executeApiCommand($params);	
-		//print_r($rs);			
-		$this->set('aggregates', $rs);
-		$this->set('actionName', $this->getParam('actionName'));
-		
-		// set view stuff
-		$this->setSubview('base.reportActionDetail');
-		$this->setTitle('Action Detail for: '.$this->getParam('actionName'));
+		$this->setSubview('base.reportDimensionDetail');
+		$this->setTitle('Action Detail: ', $actionName);
+		$this->set('metrics', 'actions,actionsValue');
+		$this->set('dimension', 'actionName');
+		$this->set('trendChartMetric', 'actions');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.value %> actions performed on this web site.');
+		$this->set('constraints', 'actionName=='.urlencode($actionName));	
 	}
 }
 

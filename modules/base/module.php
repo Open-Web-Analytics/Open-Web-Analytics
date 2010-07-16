@@ -78,7 +78,7 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('actions', 'base.actions');
 		$this->registerMetric('uniqueActions', 'base.uniqueActions');
 		$this->registerMetric('actionsValue', 'base.actionsValue');
-		$this->registerMetric('actionsPerVisit', 'base.actionsPerVisit');
+		//$this->registerMetric('actionsPerVisit', 'base.actionsPerVisit');
 		$this->registerMetric('feedRequests', 'base.feedRequests');
 		$this->registerMetric('feedReaders', 'base.feedReaders');
 		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
