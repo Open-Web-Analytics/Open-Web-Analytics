@@ -33,22 +33,17 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportHostDetailController extends owa_reportController {
 	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$hostName = $this->getParam('hostName');
 		
 		$this->setSubview('base.reportDimensionDetail');
 		$this->setTitle('Host Detail: ', $hostName);
-		$this->set('metrics', 'visits,pageViews,bounces,actions');
+		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimension', 'hostName');
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this host.');
-		$this->set('constraints', 'hostName=='.$hostName);	
+		$this->set('constraints', 'hostName=='.urlencode($hostName));	
 	}
 }
 
