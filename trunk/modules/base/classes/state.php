@@ -53,12 +53,12 @@ class owa_state {
 	}
 	
 	function get($store, $name = '') {
-		
+		owa_coreAPI::debug("Getting state - store: ".$store.' key: '.$name);
 		if (array_key_exists($store, $this->stores)) {
 		
 			if (!empty($name)) {
-				
-				if (array_key_exists($name, $this->stores[$store])) {	
+				// check to ensure this is an array, could be a string.
+				if (is_array($this->stores[$store]) && array_key_exists($name, $this->stores[$store])) {	
 						
 					return $this->stores[$store][$name];
 				} else {
