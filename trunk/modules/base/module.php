@@ -116,6 +116,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('daysSinceLastVisit', 'base.session', 'days_since_prior_session', 'Days Since Last Visit', 'visit', 'The number of days since the last visit.', '', true);
 		$this->registerDimension('daysSinceFirstVisit', 'base.session', 'days_since_first_session', 'Days Since First Visit', 'visit', 'The number of days since the first visit of the user.', '', true);
 		$this->registerDimension('priorVisitCount', 'base.session', 'num_prior_sessions', 'Prior Visits.', 'visit', 'The number of prior visits, excluding the current one.', '', true);
+		$this->registerDimension('priorVisitCount', 'base.request', 'num_prior_sessions', 'Prior Visits.', 'visit', 'The number of prior visits, excluding the current one.', '', true);
 		
 		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('day', 'base.request', 'day', 'Day', 'visit', 'The day.', '', true);
