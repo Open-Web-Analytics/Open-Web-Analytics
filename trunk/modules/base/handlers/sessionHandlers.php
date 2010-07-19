@@ -87,7 +87,7 @@ class owa_sessionHandlers extends owa_observer {
 				
 		// set source
 		
-		if ($event->get('source')) {
+		if ($event->get(owa_coreAPI::getSetting('base', 'source_param'))) {
 			$s->set('source', $event->get('source'));
 		} elseif ($event->get('external_referer')) {
 			
