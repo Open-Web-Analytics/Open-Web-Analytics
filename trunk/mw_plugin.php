@@ -48,11 +48,6 @@ $owa_config['delay_first_hit'] = false;
 $owa_config['error_handler'] = 'development';
 $owa_config['query_string_filters'] = 'returnto';
 
-// Turn MediaWiki Caching Off
-//global $wgCachePages, $wgCacheEpoch;
-//$wgCachePages = false;
-//$wgCacheEpoch = 'date +%Y%m%d%H%M%S';
-
 // Register Extension with MediaWiki
 $wgExtensionFunctions[] = 'owa_main';
 $wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaWiki', 
@@ -91,6 +86,13 @@ function owa_main() {
 		$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
 		// Hook for adding helper page tracking tags 	
 		$wgHooks['BeforePageDisplay'][] = 'owa_footer';
+		$wgHooks['ArticleInsertComplete'][] = 'owa_newArticleAction';
+		$wgHooks['ArticleSaveComplete'][] = 'owa_editArticleAction';
+		$wgHooks['ArticleDeleteComplete'][] = 'owa_deleteArticleAction';
+		$wgHooks['AddNewAccount'][] = 'owa_addUserAction';
+		$wgHooks['UploadComplete'][] = 'owa_addUploadAction';
+		$wgHooks['UserLoginComplete'][] = 'owa_userLoginAction';
+		$wgHooks['ArticleEditUpdateNewTalk'][] ='owa_editTalkPageAction';
 	//}
 		
     return;
@@ -298,6 +300,107 @@ function owa_logArticle(&$article) {
 		
 	return true;
 	
+}
+
+/**
+ * Logs New Articles
+ *
+ * @param object $categoryPage
+ * @return boolean
+ */
+function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision) {
+	
+	$owa = owa_singleton();
+    //owa_set_priviledges();
+    if ($owa->getSetting('base', 'install_complete')) {
+    	$label = $article->mTitle->mTextform;
+		$owa->trackAction('mediawiki', 'Article Created', $label);
+		owa_coreAPI::debug("logging action event from MW new article hook");
+	}
+	
+	return true;
+}
+
+function owa_editArticleAction($article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision, &$status, $baseRevId, &$redirect) {
+	
+	if ($flags & EDIT_UPDATE) {
+		
+		$owa = owa_singleton();
+	    //owa_set_priviledges();
+	    if ($owa->getSetting('base', 'install_complete')) {
+	    	owa_coreAPI::debug('MW: '.print_r($revision, true));
+	    	$label = $article->mTitle->mTextform;
+			$owa->trackAction('mediawiki', 'Article Edit', $label);
+			owa_coreAPI::debug("logging action event from MW edit article hook");	
+		}
+	}
+		
+	return true;
+}
+
+function owa_deleteArticleAction( &$article, &$user, $reason, $id ) {
+	
+	$owa = owa_singleton();
+    //owa_set_priviledges();
+    if ($owa->getSetting('base', 'install_complete')) {
+    	$label = $article->mTitle->mTextform;
+		$owa->trackAction('mediawiki', 'Article Deleted', $label);
+		owa_coreAPI::debug("logging action event from MW delete article hook");
+	}
+	
+	return true;
+}
+
+function owa_addUserAction( $user, $byEmail ) {
+	
+	$owa = owa_singleton();
+    //owa_set_priviledges();
+    if ($owa->getSetting('base', 'install_complete')) {
+    	$label = '';
+		$owa->trackAction('mediawiki', 'User Account Added', $label);
+		owa_coreAPI::debug("logging action event from MW new user account hook");
+	}
+	
+	return true;
+}
+
+function owa_addUploadAction( &$image ) {
+	
+	$owa = owa_singleton();
+    if ($owa->getSetting('base', 'install_complete')) {
+    	$label = $image->mLocalFile->mime;
+		$owa->trackAction('mediawiki', 'File Upload', $label);	
+		owa_coreAPI::debug("logging action event from MW upload complete hook");
+	}
+	
+	return true;
+}
+
+function owa_userLoginAction( &$user, &$inject_html ) {
+	
+	$owa = owa_singleton();
+    //owa_set_priviledges();
+    if ($owa->getSetting('base', 'install_complete')) {
+    	$label = '';
+		$owa->trackAction('mediawiki', 'Login', $label);
+		owa_coreAPI::debug("logging action event from MW user login hook");	
+	}
+	
+	return true;
+	
+}
+
+function editTalkPageAction( $article ) {
+
+	$owa = owa_singleton();
+    //owa_set_priviledges();
+    if ($owa->getSetting('base', 'install_complete')) {
+    	$label = $article->mTitle->mTextform;
+		$owa->trackAction('mediawiki', 'Talk Page Edit', $label);
+		owa_coreAPI::debug("logging action event from MW talk page edit hook");	
+	}
+	
+	return true;
 }
 
 /**

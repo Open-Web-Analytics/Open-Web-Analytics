@@ -72,11 +72,6 @@ class owa_location {
 	 *
 	 * @return owa_location
 	 */
-	function owa_location() {
-		
-		return owa_location::__construct();
-	}
-	
 	function __construct() {
 	
 	}
