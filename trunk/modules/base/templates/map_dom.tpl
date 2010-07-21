@@ -8,7 +8,7 @@
 
 OWA.items['map'] = new OWA.map();
 OWA.items['map'].dom_id = 'map';
-<?php foreach($latest_visits as $k => $visit): ?>
+<?php foreach($latest_visits->resultsRows as $k => $visit): ?>
 <?php if (!empty($visit['host_longitude'])):?>
 OWA.items['map'].markers[<?php echo $k;?>] = {pointLatLng: [<?php echo trim($visit['host_latitude']);?>, <?php echo trim($visit['host_longitude']);?>], pointHTML: '<?php echo preg_replace("/[\n\r]/", '', $this->subTemplate('report_visit_summary_balloon.tpl', array('visit' => $visit)));?>'};
 <?php endif;?>
