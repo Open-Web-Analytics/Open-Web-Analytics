@@ -19,7 +19,7 @@
 					?>';
 																				  
 						OWA.items.pastvisits = new OWA.resultSetExplorer('past-visits');
-						OWA.items.pastvisits.addLinkToColumn('date', '<?php echo $this->makeLink(array('do' => 'base.reportVisits', 'visitorId' => $visitor_id, 'date' => '%s')); ?>', ['date']);
+						OWA.items.pastvisits.addLinkToColumn('visits', '<?php echo $this->makeLink(array('do' => 'base.reportVisits', 'visitorId' => $visitor_id, 'date' => '%s')); ?>', ['date']);
 						OWA.items.pastvisits.asyncQueue.push(['refreshGrid']);
 						OWA.items.pastvisits.load(pvurl);
 	</script>

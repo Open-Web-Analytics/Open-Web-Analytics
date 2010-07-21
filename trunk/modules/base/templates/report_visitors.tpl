@@ -25,6 +25,13 @@
 		
 	<table width="100%">
 		<TR>
+			<td>
+				<div class="owa_reportSectionContent" style="width:500px;">	
+					<div class="owa_reportSectionHeader">Latest Visits</div>
+					<?php include('report_latest_visits.tpl')?>
+					<?php echo $this->makePagination($pagination, array('do' => $params['do']));?>
+				</div>
+			</td>
 			<TD width="50%" valign="top">
 				<div class="owa_reportSectionContent">
 					<div class="section_header inline_h2">Visitor Reports</div>
@@ -84,14 +91,6 @@
 				</div>
 				
 			</TD>
-			
-			<td>
-				<div class="owa_reportSectionContent" style="width:500px;">	
-					<div class="owa_reportSectionHeader">Latest Visits</div>
-					<?php include('report_latest_visits.tpl')?>
-					<?php echo $this->makePagination($pagination, array('do' => $params['do']));?>
-				</div>
-			</td>
 		</TR>
 	</table>
 	

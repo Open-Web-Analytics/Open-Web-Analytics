@@ -831,8 +831,18 @@ OWA.resultSetExplorer.prototype = {
 					show: true,
 					//showLabel: true,
 					label: {
-						show: true
-					}
+						show: true,
+						background: {
+							color: '#ffffff',
+							opacity: '.7'
+						},
+						radius:1,
+						formatter: function(label, slice){
+							return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+Math.round(slice.percent)+'%</div>';
+						},
+						//formatter: function(label, slice){ return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+label+'<br/>'+Math.round(slice.percent)+'%</div>';}
+
+					},
 				}
 			},
 			legend: {
@@ -867,11 +877,11 @@ OWA.resultSetExplorer.prototype = {
     	}
     },
     
-    makeSparkline : function(metric_name, dom_id) {
+    makeSparkline : function(metric_name, dom_id, filter) {
     	metric_name = metric_name || this.options.sparkline.metric;
     	dom_id = dom_id || this.dom_id;
     	var sl = new OWA.sparkline(dom_id);
-    	var data = this.getSeries(metric_name);
+    	var data = this.getSeries(metric_name, '',filter);
     	
     	if (!data) {
     		data = [0,0,0];
@@ -881,7 +891,7 @@ OWA.resultSetExplorer.prototype = {
     	this.currentView = 'sparkline';
     },
     
-    getSeries : function(value_name, value_name2) {
+    getSeries : function(value_name, value_name2, filter) {
     	
     	if (this.resultSet.resultsRows.length > 0) {
     		
@@ -889,6 +899,13 @@ OWA.resultSetExplorer.prototype = {
 	    	//create data array
 			for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
 			
+				if (filter) {
+					check = filter(this.resultSet.resultsRows[i]);
+					if (!check) {
+						continue;
+					}
+				}
+				
 				if (value_name2) {
 					var item =[this.resultSet.resultsRows[i][value_name].value, this.resultSet.resultsRows[i][value_name2].value];
 				} else {
@@ -903,7 +920,7 @@ OWA.resultSetExplorer.prototype = {
 		}
     },
     
-    makeMetricBoxes : function(dom_id, template, label, metrics) {
+    makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
     	dom_id = dom_id || this.dom_id;
     	template = template || '#metricInfobox';
     	
@@ -918,7 +935,7 @@ OWA.resultSetExplorer.prototype = {
     			item.width = this.options.metricBoxes.width;
     		}
     		jQuery('#' + dom_id).jqoteapp(template, item);
-    		this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline');		
+    		this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);		
     	}
     },
     
