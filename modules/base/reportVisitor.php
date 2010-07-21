@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitorController extends owa_reportController {
-	
-	function __construct($params) {
 		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$visitorId = $this->getParam('visitorId');
@@ -71,11 +66,6 @@ class owa_reportVisitorController extends owa_reportController {
  */
 
 class owa_reportVisitorView extends owa_view {
-		
-	function __construct() {
-	
-		return parent::__construct();
-	}
 	
 	function render($data) {
 		

@@ -1,10 +1,11 @@
 <?php if(!empty($visits)):?>
-	<?php foreach($visits->resultsRows as $visit): ?>
-		
-		<?php include('report_visit_summary.tpl');?>
-		<BR>
+<table>
+	<?php foreach($visits->resultsRows as $row): ?>
+		<TR>
+		<?php include('row_visitSummary.tpl');?>
+		</TR>
 	<?php endforeach; ?>
-
+</table>
 	<?php echo $this->makePaginationFromResultSet($visits);?>
 <?php else:?>
 	There were no visits during this time period.

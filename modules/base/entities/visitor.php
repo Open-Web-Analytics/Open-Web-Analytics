@@ -76,8 +76,8 @@ class owa_visitor extends owa_entity {
 		
 		if ($this->get('user_name')) {
 			return $this->get('user_name');
-		} elseif ($this->get('email_address')) {
-			return $this->get('email_address');		
+		} elseif ($this->get('user_email')) {
+			return $this->get('user_email');		
 		} else {
 			return $this->get('id');
 		}

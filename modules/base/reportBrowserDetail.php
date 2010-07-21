@@ -20,7 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * Traffic Report Controller
+ * Browser Detail Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,39 +28,22 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.3.0
  */
 
-class owa_reportTrafficController extends owa_reportController {
-		
-	function action() {
+class owa_reportBrowserDetailController extends owa_reportController {
 	
-		// view stuff
-		$this->setView('base.report');
-		$this->setSubview('base.reportTraffic');
-		$this->setTitle('Traffic Sources');	
-	}
-}
-
-/**
- * Traffic Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportTrafficView extends owa_view {
+	function action() {
 		
-	function render($data) {
+		$browser = $this->getParam('browserType');
 		
-		// Assign Data to templates
-		
-		$this->body->set_template('report_traffic.tpl');
+		$this->setSubview('base.reportDimensionDetail');
+		$this->setTitle('Browser: ', $browser);
+		$this->set('metrics', 'visits,pageViews,bounces');
+		//$this->set('dimension', 'referralSearchTerms');
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this browser type.');
+		$this->set('constraints', 'browserType=='.urlencode($browser));	
 	}
 }
 

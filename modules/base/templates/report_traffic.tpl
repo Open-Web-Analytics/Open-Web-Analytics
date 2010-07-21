@@ -6,11 +6,11 @@
 
 	<table style="width:auto;margin-top:-15px;">
 		<TR>
-			<TD width="50%" valign="top">
+			<TD valign="top" style="width:50%;">
 				<div id="traffic-sources" style="width:250px;"></div>
 			</TD>
 			
-			<TD  valign="top">
+			<TD valign="top" style="width:50%;">
 				<div id="trend-metrics"></div>
 			</TD>
 			
@@ -95,13 +95,13 @@ OWA.items.rsh.load(aurl);
 
 var tturl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 														'metrics' => 'visits', 
-														'dimensions' => 'date', 
+														'dimensions' => 'date,medium', 
 														'sort' => 'date',
 														'format' => 'json',
-														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId')).'medium=@organic'),true);?>';
+														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId').',medium=@organic')),true);?>';
 																	  
 OWA.items.tt = new OWA.resultSetExplorer('trend-metrics');
-OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines']);
+OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines', '',function(row) {if (row.medium.value === 'organic-search') return true;}]);
 OWA.items.tt.load(tturl);
 
 var tt1url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -121,7 +121,7 @@ var tt2url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
 														'dimensions' => 'date', 
 														'sort' => 'date',
 														'format' => 'json',
-														'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId')).'medium==referal'),true);?>';
+														'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId')).'medium==referral'),true);?>';
 														  
 OWA.items.tt2 = new OWA.resultSetExplorer('trend-metrics');
 
@@ -148,10 +148,11 @@ var topkeywordsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet'
 												'dimensions' => 'referralSearchTerms', 
 												'sort' => 'visits-',
 												'format' => 'json',
+												'resultsPerPage' => 25,
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
 OWA.items.topkeywords = new OWA.resultSetExplorer('top-keywords');
-OWA.items.topkeywords.asyncQueue.push(['renderResultsRows', 'top-keywords']);
+OWA.items.topkeywords.asyncQueue.push(['refreshGrid']);
 OWA.items.topkeywords.load(topkeywordsurl);
 
 var topreferralsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -159,10 +160,11 @@ var topreferralsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet
 												'dimensions' => 'referralPageUrl', 
 												'sort' => 'visits-',
 												'format' => 'json',
+												'resultsPerPage' => 25,
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
-OWA.items.topreferrals = new OWA.resultSetExplorer('top-keywords');
-OWA.items.topreferrals.asyncQueue.push(['renderResultsRows', 'top-referrals']);
+OWA.items.topreferrals = new OWA.resultSetExplorer('top-referrals');
+OWA.items.topreferrals.asyncQueue.push(['refreshGrid', 'top-referrals']);
 OWA.items.topreferrals.load(topreferralsurl);
 
 
