@@ -170,16 +170,7 @@ OWA.items.topreferrals.load(topreferralsurl);
 
 </script>
 
-<script type="text/x-jqote-template" id="metricInfobox">
-<![CDATA[
- 
-	<div class="owa_metricInfobox">
-	<p class="owa_metricInfoboxLabel"><%= this.label %></p>
-	<span class="owa_metricInfoboxLargeNumber"><%= this.value %></span>
-	<span id='<%= this.dom_id %>-sparkline'></span>
-	</div>
-
-</script>
+<?php require_once('js_report_templates.php');?>
 
 <script type="text/x-jqote-template" id="visits-headline-template">
 <![CDATA[

@@ -166,7 +166,12 @@ OWA.resultSetExplorer.prototype = {
     			var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
     			var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
     			return link;
+			},
+			useServerFormatter : function(cellvalue, options, rowdata) {
+				var name = options.colModel.realColName; 
+				return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
 			}
+			
 		});
 		
 		
@@ -354,6 +359,8 @@ OWA.resultSetExplorer.prototype = {
 		
 		if (column.link) {
 			_format = 'urlFormatter';
+		} else {
+			_format = 'useServerFormatter';
 		}
 				
 	 	var columnDef = {

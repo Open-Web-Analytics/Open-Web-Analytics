@@ -94,14 +94,4 @@
 		</TR>
 	</table>
 	
-	<script type="text/x-jqote-template" id="metricInfobox">
- <![CDATA[
- 
-	<div class="owa_metricInfobox" style="width:<%= this.width %>;">
-	<p class="owa_metricInfoboxLabel"><%= this.label %></p>
-	<p class="owa_metricInfoboxLargeNumber"><%= this.value %></p>
-	<p id='<%= this.dom_id %>-sparkline'></p>
-	</div>
-
-]]>
-</script>
+<?php require_once('js_report_templates.php');?>
