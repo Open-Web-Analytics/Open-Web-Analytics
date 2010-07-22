@@ -98,11 +98,8 @@
 						'metrics'		=> 'visits,pageViews,bounces,pagesPerVisit,visitDuration', 
 						'dimensions' 	=> 'date', 
 						'sort' 			=> 'date',
-						'format' 		=> 'json',
-						'siteId'		=> $this->get('siteId'),
-						'period'		=> $period
-						
-					));
+						'format' 		=> 'json'	
+					), true);
 				?>';
 													  
 	rsh = new OWA.resultSetExplorer('site-trend');

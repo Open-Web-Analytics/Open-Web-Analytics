@@ -98,6 +98,7 @@ class owa_resultSetManager extends owa_base {
 	var $baseEntity;
 	var $metricObjectsByEntityMap = array();
 	var $errors = array();
+	var $formatters = array();
 	
 	function __construct($db = '') {
 		
@@ -106,6 +107,11 @@ class owa_resultSetManager extends owa_base {
 		} else {
 			$this->db = owa_coreAPI::dbSingleton();
 		}
+		
+		$this->formatters = array(
+			//'yyyymmdd' => array($this, 'dateFormatter'), 
+			'integer' 	=> array($this, 'numberFormatter')
+		);
 		
 		return parent::__construct();
 	}
@@ -627,16 +633,23 @@ class owa_resultSetManager extends owa_base {
 	
 	function formatValue($type, $value) {
 		
-		switch ($type) {
+		if (array_key_exists($type, $this->formatters)) {
 			
-			case 'yyyymmdd':
+			$formatter = $this->formatters[$type];
+			
+			if (!empty($formatter)) {
 				
-				
-				
-				break;
+				$value = call_user_func($formatter, $value);
+			}
 		}
+		 
 		
 		return $value;
+	}
+	
+	function numberFormatter($value) {
+		
+		return number_format($value);
 	}
 	
 	/**
@@ -752,83 +765,13 @@ class owa_resultSetManager extends owa_base {
 		}
 	}
 	
-	// dangerous. remove
-	/*
-function addFactTableRelation($metric) {
-		
-		$bm = $this->getBaseMetric();
-		if ($metric->entity->getTableName() != $bm->entity->getTableName()) {
-	
-			if (!in_array($metric->getEntityName(), $this->related_entities)) {
-				$fk = $bm->entity->getForeignKeyColumn($metric->getEntityName());
-				
-				if ($fk) {
-					$fpk_col = $bm->entity->getProperty($fk);
-					$fpk = $fpk_col->getForeignKey();
-					$this->db->join(OWA_SQL_JOIN, $metric->entity->getTableName(), $metric->entity->getTableAlias(), $bm->entity->getTableAlias().'.'.$fk, $metric->entity->getTableAlias().'.'.$fpk[1]);
-				} else {
-					// try the other way
-					$fk = $metric->entity->getForeignKeyColumn($bm->getEntityName());
-					
-					if ($fk) {
-						$fpk_col = $metric->entity->getProperty($fk);
-						$fpk = $fpk_col->getForeignKey();
-						$this->db->join(OWA_SQL_JOIN, $metric->entity->getTableName(), $metric->entity->getTableAlias(), $metric->entity->getTableAlias().'.'.$fk, $bm->entity->getTableAlias().'.'.$fpk[1]);
-						
-					} else {
-						$this->addError(sprintf('Cannot find relation betwwen  %s or %s', $metric->getEntityName(), $bm->getEntityName()));
-					// no fact table realtion found
-					}
-				}
-			}
-		}
-	}
-	
-	
-	function checkForFactTableRelation($metric) {
-		
-		if (!empty($this->related_metrics)) {
-			// foreach related metric
-			foreach ($this->related_metrics as $rmetric) {
-				// check for foreign key
-				$fk = $rmetric->entity->getForeignKeyColumn($metric->getEntityName());
-				
-				if ($fk) {
-					return true;
-				} else {
-					// try the other way
-					$fk = $metric->entity->getForeignKeyColumn($rmetric->getEntityName());
-					
-					if ($fk) {
-						return true;						
-					} else {
-						$this->addError(sprintf('Cannot find relation between  %s or %s', $metric->getEntityName(), $bm->getEntityName()));
-					// no fact table realtion found
-					}
-				}
-			}
-			
-		} else {
-			return true;
-		}
-	}
-*/
-	
 	function applyJoins() {
 		
 		foreach($this->related_dimensions as $dim) {
 			$this->addRelation($dim);
 		}		
 	}
-	
-	/*
-// remove
-	function getBaseMetric() {
-		$keys = array_keys($this->metrics);
-		return $this->metrics[$keys[0]];	
-	}
-*/
-	
+		
 	function addRelation($dim) {
 			
 			// if denomalized, skip
