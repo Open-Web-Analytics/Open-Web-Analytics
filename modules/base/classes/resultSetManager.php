@@ -109,8 +109,10 @@ class owa_resultSetManager extends owa_base {
 		}
 		
 		$this->formatters = array(
-			//'yyyymmdd' => array($this, 'dateFormatter'), 
+			//'yyyymmdd' => array($this, 'dateFormatter'),
+			'timestamp'	=> array($this, 'formatSeconds'), 
 			'integer' 	=> array($this, 'numberFormatter')
+			
 		);
 		
 		return parent::__construct();
@@ -625,7 +627,12 @@ class owa_resultSetManager extends owa_base {
 			
 			
 			
-			$new_row[$k] = array('result_type' => $type, 'name' => $k, 'value' => $this->formatValue($data_type, $v), 'label' => $this->getLabel($k), 'data_type' => $data_type);	
+			$new_row[$k] = array(
+				'result_type' => $type, 
+				'name' 		  => $k, 
+				'value' 	  => $v,
+				'formatted_value' => $this->formatValue($data_type, $v),
+				'label' => $this->getLabel($k), 'data_type' => $data_type);	
 		}
 		
 		return $new_row;
@@ -650,6 +657,11 @@ class owa_resultSetManager extends owa_base {
 	function numberFormatter($value) {
 		
 		return number_format($value);
+	}
+	
+	function formatSeconds($value) {
+		
+		return date("G:i:s",mktime(0,0,($value)));
 	}
 	
 	/**
@@ -1080,7 +1092,7 @@ class owa_resultSetManager extends owa_base {
 			
 			$value = $this->evalFormula($formula);
 			
-			$rs->setAggregateMetric($cm->getName(), $value, $cm->getLabel(), $cm->getDataType());
+			$rs->setAggregateMetric($cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
 			
 			// add dimensional metric
 			
@@ -1105,7 +1117,7 @@ class owa_resultSetManager extends owa_base {
 					
 					$value = $this->evalFormula($formula);
 				
-					$rs->appendRow($k, 'metric', $cm->getName(), $value, $cm->getLabel(), $cm->getDataType());
+					$rs->appendRow($k, 'metric', $cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
 				}
 			}
 			
