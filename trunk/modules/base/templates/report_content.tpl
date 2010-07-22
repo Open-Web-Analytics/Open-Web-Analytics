@@ -101,13 +101,16 @@ OWA.items.vm.load(vmurl);
 
 var toppagesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 												'metrics' => 'visits', 
-												'dimensions' => 'pageTitle', 
+												'dimensions' => 'pageTitle,pageUrl', 
 												'sort' => 'visits-',
 												'format' => 'json',
+												'resultsPerPage' => 25,
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
 OWA.items.toppages = new OWA.resultSetExplorer('top-pages');
-OWA.items.toppages.asyncQueue.push(['renderResultsRows', 'top-pages']);
+OWA.items.toppages.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'));?>', ['pageUrl']);
+OWA.items.toppages.options.grid.excludeColumns = ['pageUrl'];
+OWA.items.toppages.asyncQueue.push(['refreshGrid']);
 OWA.items.toppages.load(toppagesurl);
 
 var toppagetypesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 

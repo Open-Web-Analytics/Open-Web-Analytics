@@ -32,11 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportReferralLinkTextDetailController extends owa_reportController {
 	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$linkText = $this->getParam('referralLinkText');
@@ -44,7 +39,7 @@ class owa_reportReferralLinkTextDetailController extends owa_reportController {
 		$this->setView('base.report');
 		$this->setSubview('base.reportDimensionDetail');
 		$this->setTitle('Referral Link Text: ', $linkText);
-		$this->set('metrics', 'visits,pageViews,bounces,actions');
+		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralLinkText');
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);

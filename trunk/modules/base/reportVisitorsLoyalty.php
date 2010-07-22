@@ -43,7 +43,7 @@ class owa_reportVisitorsLoyaltyController extends owa_reportController {
 		$this->setTitle('Visitor Loyalty');
 		$this->set('metrics', 'visits');
 		$this->set('dimensions', 'priorVisitCount');
-		$this->set('sort', 'priorVisitCount-');
+		$this->set('sort', 'priorVisitCount');
 		$this->set('resultsPerPage', 30);
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all sources.');

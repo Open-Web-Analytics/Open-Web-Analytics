@@ -32,12 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_reportActionTrackingController extends owa_reportController {
-
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
 	
 	function action() {
 		
@@ -69,12 +63,7 @@ class owa_reportActionTrackingController extends owa_reportController {
  */
 
 class owa_reportActionTrackingView extends owa_view {
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		// Assign Data to templates
