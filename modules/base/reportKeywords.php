@@ -40,7 +40,7 @@ class owa_reportKeywordsController extends owa_reportController {
 		$this->setTitle('Referring Search Terms');
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralSearchTerms');
-		$this->set('sort', 'visits');
+		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array(
 			'linkColumn' => 'referralSearchTerms', 
