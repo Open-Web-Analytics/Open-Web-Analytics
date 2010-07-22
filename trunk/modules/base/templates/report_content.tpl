@@ -27,18 +27,6 @@
 				</div>
 			</div>
 			
-			<div class="owa_reportSectionContent" style="min-width:350px;">
-				<div class="owa_reportSectionHeader">Top Page Types</div>
-				<div id="top-pagetypes"></div>
-				<div class="owa_genericHorizonalList owa_moreLinks">
-					<UL>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportPageTypes'), true);?>">View Full Report &raquo;</a>	
-						</LI>
-					</UL>
-				</div>
-			</div>
-		
 		</td>
 		
 		<td valign="top" style="width:50%;">
@@ -59,7 +47,19 @@
 					</LI>
 				</UL>
 				
+			</div>
+			
+			<div class="owa_reportSectionContent" style="min-width:350px;">
+				<div class="owa_reportSectionHeader">Top Page Types</div>
+				<div id="top-pagetypes"></div>
+				<div class="owa_genericHorizonalList owa_moreLinks">
+					<UL>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportPageTypes'), true);?>">View Full Report &raquo;</a>	
+						</LI>
+					</UL>
 				</div>
+			</div>
 			
 		</td>
 	</tr>
@@ -121,22 +121,14 @@ var toppagetypesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
 OWA.items.toppagetypes = new OWA.resultSetExplorer('top-pagetypes');
-OWA.items.toppagetypes.asyncQueue.push(['renderResultsRows', 'top-pagetypes']);
+OWA.items.toppagetypes.asyncQueue.push(['refreshGrid']);
+OWA.items.toppagetypes.addLinkToColumn('pageType', '<?php echo $this->makeLink(array('do' => 'base.reportPageTypeDetail', 'pageType' => '%s'));?>', ['pageType']);
 OWA.items.toppagetypes.load(toppagetypesurl);
 
 
 </script>
 
-<script type="text/x-jqote-template" id="metricInfobox">
-<![CDATA[
- 
-	<div class="owa_metricInfobox" style="width:<%= this.width %>">
-	<p class="owa_metricInfoboxLabel"><%= this.label %></p>
-	<span class="owa_metricInfoboxLargeNumber"><%= this.value %></span>
-	<span id='<%= this.dom_id %>-sparkline'></span>
-	</div>
-
-</script>
+<?php require_once('js_report_templates.php');?>
 
 <script type="text/x-jqote-template" id="content-headline-template">
 <![CDATA[
