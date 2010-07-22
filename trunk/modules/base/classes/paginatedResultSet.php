@@ -296,14 +296,14 @@ class owa_paginatedResultSet {
 		return $this->aggregates[$name]['value'];
 	}
 	
-	function setAggregateMetric($name, $value, $label, $data_type) {
+	function setAggregateMetric($name, $value, $label, $data_type, $formatted_value = '') {
 		
-		$this->aggregates[$name] = array('result_type' => 'metric', 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type);
+		$this->aggregates[$name] = array('result_type' => 'metric', 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type, 'formatted_value' => $formatted_value);
 	}
 	
-	function appendRow($row_num, $type, $name, $value, $label, $data_type) {
+	function appendRow($row_num, $type, $name, $value, $label, $data_type, $formatted_value = '') {
 	
-		$this->resultsRows[$row_num][$name] = array('result_type' => $type, 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type);	
+		$this->resultsRows[$row_num][$name] = array('result_type' => $type, 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type, 'formatted_value' => $formatted_value);	
 	}
 	
 	function removeMetric($name) {
