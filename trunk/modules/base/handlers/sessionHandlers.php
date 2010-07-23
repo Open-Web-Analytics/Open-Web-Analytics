@@ -92,7 +92,7 @@ class owa_sessionHandlers extends owa_observer {
 		} elseif ($event->get('external_referer')) {
 			
 			// if search
-			if ($event->get('query_terms')) {
+			if ($event->get('search_terms')) {
 				$s->set('source', 'organic-search');
 				$event->set('source', 'organic-search');
 			} else {

@@ -37,11 +37,6 @@ class owa_processEventQueueController extends owa_cliController {
 		$this->setRequiredCapability('edit_modules');
 		return parent::__construct($params);
 	}
-	
-	function owa_processEventQueueController($params) {
-	
-		return owa_processEventController::__construct($params);
-	}
 
 	function action() {
 		

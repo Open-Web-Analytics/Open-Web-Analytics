@@ -140,6 +140,8 @@ class owa_paginatedResultSet {
 		if (!empty($this->page)) {
 		
 			$dao->offset($this->calculateOffset());
+		} else {
+			$this->page = 1;
 		}
 		
 		$results = $dao->$method();
