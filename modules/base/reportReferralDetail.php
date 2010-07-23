@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportReferralDetailController extends owa_reportController {
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
+		
 	function action() {
 		
 		$referral = $this->getParam('referralPageUrl');
@@ -45,9 +40,8 @@ class owa_reportReferralDetailController extends owa_reportController {
 		$this->setTitle('Referral: ', $referral);
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralPageTitle,referralWebSite');
-		$this->set('sort', 'visits');
-		$this->set('resultsPerPage', 30);
-		
+		$this->set('sort', 'visits-');
+		$this->set('resultsPerPage', 25);
 		$this->set('constraints', 'referralPageUrl=='.urlencode($referral));
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this referral.');	
