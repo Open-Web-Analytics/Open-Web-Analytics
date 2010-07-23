@@ -706,6 +706,8 @@ class owa_template extends Template {
 		
 		$pages = '';
 		//print_r($pagination);
+		//print $pagination->total_pages;
+		
 		if ($pagination->total_pages > 1) {
 	
 			$pages = '<div class="owa_pagination"><UL>';
@@ -713,9 +715,15 @@ class owa_template extends Template {
 			for ($i = 1; $i <= $pagination->total_pages;$i++) {
 				
 				if ($pagination->page != $i) {
+					
 					$new_map = array();
-					$new_map = $map;
+					
+					if (is_array($map)) {
+						$new_map = array_merge($map, $new_map);
+					}
+					
 					$new_map['page'] = $i;
+					
 					$link = sprintf('<LI class="owa_reportPaginationControl"><a href="%s">%s</a></LI>', 
 														$this->makeLink($new_map, $add_state), 
 														$i);

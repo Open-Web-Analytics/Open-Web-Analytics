@@ -6,7 +6,7 @@
 		</TR>
 	<?php endforeach; ?>
 </table>
-	<?php echo $this->makePaginationFromResultSet($visits);?>
+	<?php //echo $this->makePaginationFromResultSet($visits);?>
 <?php else:?>
 	There were no visits during this time period.
 <?php endif;?>
