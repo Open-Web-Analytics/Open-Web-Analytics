@@ -31,19 +31,14 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportSearchEnginesController extends owa_reportController {
-		
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
+			
 	function action() {
 				
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Search Engines');
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralWebSite');
-		$this->set('sort', 'visits');
+		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array('linkColumn' => 'referralWebSite', 
 												'template' => array('do' => 'base.reportSearchEngineDetail', 'referralWebSite' => '%s'), 

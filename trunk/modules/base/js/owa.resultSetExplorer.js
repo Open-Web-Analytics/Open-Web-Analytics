@@ -27,7 +27,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 		defaultView: 'grid', 
 		areaChart: {
 			series:[],
-			showDots: true,
+			showDots: false,
 			showLegend: true,
 			lineWidth: 4
 		}, 
@@ -684,13 +684,15 @@ OWA.resultSetExplorer.prototype = {
 			
 				this.setupAreaChart(series, dom_id);
 			}
+
+			var num_ticks = data.length/2;
 			
 			var options = { 
 				
 				yaxis: { 
 					tickDecimals:0 }, 
 				xaxis:{
-					ticks: data.length/2,
+					ticks: 10,
 					tickDecimals: null
 	    		},
 				grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
