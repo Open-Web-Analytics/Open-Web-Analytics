@@ -95,7 +95,7 @@
 					
 					echo $this->makeApiLink(array(
 						'do'			=> 'getResultSet', 
-						'metrics'		=> 'visits,pageViews,bounces,pagesPerVisit,visitDuration', 
+						'metrics'		=> 'visits,pageViews,bounceRate,pagesPerVisit,visitDuration', 
 						'dimensions' 	=> 'date', 
 						'sort' 			=> 'date',
 						'format' 		=> 'json'	
