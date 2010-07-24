@@ -193,6 +193,8 @@ OWA.resultSetExplorer.prototype = {
 			// check to see if we need ot hide the previous page control.
 			if (this.resultSet.page == 1) {
 				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+			} else if (this.resultSet.page == this.resultSet.total_pages) {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').hide();
 			} else {
 				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
 			}
@@ -404,7 +406,7 @@ OWA.resultSetExplorer.prototype = {
 	
 	displayRowCount : function() {
 		
-		if (this.resultSet.more) {
+		if (this.resultSet.total_pages > 1) {
 
 			var start = '';
 			var end = '';
@@ -454,6 +456,7 @@ OWA.resultSetExplorer.prototype = {
 			if (this.resultSet.page == 1) {
 				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
 			}
+			
 		}
 	},
 	
