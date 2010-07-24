@@ -69,7 +69,7 @@
 //OWA.setSetting('debug', true);
 
 var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-												'metrics' => 'visits,pageViews,bounces', 
+												'metrics' => 'visits,pageViews,bounceRate', 
 												'dimensions' => 'date', 
 												'sort' => 'date',
 												'format' => 'json',
@@ -108,7 +108,7 @@ var toppagesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
 OWA.items.toppages = new OWA.resultSetExplorer('top-pages');
-OWA.items.toppages.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'));?>', ['pageUrl']);
+OWA.items.toppages.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'),true);?>', ['pageUrl']);
 OWA.items.toppages.options.grid.excludeColumns = ['pageUrl'];
 OWA.items.toppages.asyncQueue.push(['refreshGrid']);
 OWA.items.toppages.load(toppagesurl);
@@ -122,7 +122,7 @@ var toppagetypesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet
 												  
 OWA.items.toppagetypes = new OWA.resultSetExplorer('top-pagetypes');
 OWA.items.toppagetypes.asyncQueue.push(['refreshGrid']);
-OWA.items.toppagetypes.addLinkToColumn('pageType', '<?php echo $this->makeLink(array('do' => 'base.reportPageTypeDetail', 'pageType' => '%s'));?>', ['pageType']);
+OWA.items.toppagetypes.addLinkToColumn('pageType', '<?php echo $this->makeLink(array('do' => 'base.reportPageTypeDetail', 'pageType' => '%s'),true);?>', ['pageType']);
 OWA.items.toppagetypes.load(toppagetypesurl);
 
 

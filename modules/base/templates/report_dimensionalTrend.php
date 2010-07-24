@@ -9,7 +9,7 @@
 	<div id="pie" style="min-width:300px;"></div>
 	<script>
 	var hpurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-														'metrics' => 'pageViews,visits,bounces', 
+														'metrics' => 'pageViews,visits,bounceRate', 
 														'dimensions' => 'hostName', 
 														'sort' => 'visits-',
 														'format' => 'json',

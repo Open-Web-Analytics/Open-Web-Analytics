@@ -61,7 +61,7 @@
 																				),true);?>';
 																				  
 						OWA.items.browsertypes = new OWA.resultSetExplorer('top-browsers');
-						OWA.items.browsertypes.addLinkToColumn('browserType', '<?php echo $this->makeLink(array('do' => 'base.reportBrowserDetail', 'browserType' => '%s')); ?>', ['browserType']);
+						OWA.items.browsertypes.addLinkToColumn('browserType', '<?php echo $this->makeLink(array('do' => 'base.reportBrowserDetail', 'browserType' => '%s'),true); ?>', ['browserType']);
 						OWA.items.browsertypes.asyncQueue.push(['refreshGrid']);
 						OWA.items.browsertypes.load(bturl);
 						

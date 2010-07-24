@@ -152,6 +152,7 @@ var topkeywordsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet'
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
 OWA.items.topkeywords = new OWA.resultSetExplorer('top-keywords');
+OWA.items.topkeywords.addLinkToColumn('referralSearchTerms', '<?php echo $this->makeLink(array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), true);?>', ['referralSearchTerms']);
 OWA.items.topkeywords.asyncQueue.push(['refreshGrid']);
 OWA.items.topkeywords.load(topkeywordsurl);
 
@@ -164,6 +165,7 @@ var topreferralsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 												  
 OWA.items.topreferrals = new OWA.resultSetExplorer('top-referrals');
+OWA.items.topreferrals.addLinkToColumn('referralPageUrl', '<?php echo $this->makeLink(array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),true);?>', ['referralPageUrl']);
 OWA.items.topreferrals.asyncQueue.push(['refreshGrid', 'top-referrals']);
 OWA.items.topreferrals.load(topreferralsurl);
 
