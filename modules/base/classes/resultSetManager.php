@@ -110,7 +110,8 @@ class owa_resultSetManager extends owa_base {
 		
 		$this->formatters = array(
 			//'yyyymmdd' => array($this, 'dateFormatter'),
-			'timestamp'	=> array($this, 'formatSeconds'), 
+			'timestamp'	=> array($this, 'formatSeconds'),
+			'percentage' => array($this, 'formatPercentage'), 
 			'integer' 	=> array($this, 'numberFormatter')
 			
 		);
@@ -662,6 +663,11 @@ class owa_resultSetManager extends owa_base {
 	function formatSeconds($value) {
 		
 		return date("G:i:s",mktime(0,0,($value)));
+	}
+	
+	function formatPercentage($value) {
+		
+		return number_format($value * 100, 2).'%';
 	}
 	
 	/**
