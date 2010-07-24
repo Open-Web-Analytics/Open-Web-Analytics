@@ -20,7 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * Visitors Loyalty Report Controller
+ * Visitors Age Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,21 +28,21 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.3.0
  */
 
-class owa_reportVisitorsLoyaltyController extends owa_reportController {
+class owa_reportVisitorsAgeController extends owa_reportController {
 	
 	function action() {
-						
+							
 		$this->setSubview('base.reportDimension');
-		$this->setTitle('Visitor Loyalty');
+		$this->setTitle('Visitor Age');
 		$this->set('metrics', 'visits');
-		$this->set('dimensions', 'priorVisitCount');
-		$this->set('sort', 'priorVisitCount');
+		$this->set('dimensions', 'daysSinceFirstVisit');
+		$this->set('sort', 'daysSinceFirstVisit');
 		$this->set('resultsPerPage', 25);
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all sources.');	
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all sources.');
 	}
 }
 

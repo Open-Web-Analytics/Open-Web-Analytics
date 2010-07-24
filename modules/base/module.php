@@ -47,13 +47,16 @@ class owa_baseModule extends owa_module {
 		$this->config_required = false;
 		$this->required_schema_version = 5;
 		
-		// register filters
+		/**
+		 * Register Filters
+		 *
+		 * The following lines register filter methods. 
+		 */
 		$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
 		$this->registerFilter('ip_address', $this, 'setIp', 0);
 		$this->registerFilter('full_host', $this, 'resolveHost', 0);
 		$this->registerFilter('host', $this, 'getHostDomain', 0);
 		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
-		
 		//Clean Query Strings 
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
 			$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
@@ -61,10 +64,13 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
 		
-		// register metrics
+		/**
+		 * Register Metrics
+		 *
+		 * The following lines register various data metrics. 
+		 */
 		$this->registerMetric('pageViews', 'base.pageViews');
 		$this->registerMetric('pageViews', 'base.pageViewsFromSessionFact');
-		
 		$this->registerMetric('uniqueVisitors', 'base.uniqueVisitors');
 		$this->registerMetric('visits', 'base.visits');
 		$this->registerMetric('visits', 'base.visitsFromRequestFact');
@@ -83,7 +89,11 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('feedReaders', 'base.feedReaders');
 		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
 		
-		// register dimensions
+		/**
+		 * Register Dimensions
+		 *
+		 * The following lines register various data dimensions. 
+		 */
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
 		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
 		$this->registerDimension('osType', 'base.os', 'name', 'Operating System', 'visitor', 'The operating System of the visitor.');
@@ -104,7 +114,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('userName', 'base.visitor', 'user_name', 'User Name', 'visitor', 'The name or ID of the user.');
 		$this->registerDimension('userEmail', 'base.visitor', 'user_email', 'Email Address', 'visitor', 'The email address of the user.');
 		
-		// denormalized date dimensions
+		// Date and time oriented dimensions
 		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('medium', 'base.session', 'source', 'Medium', 'visit', 'The medium used to deliver the visit.', '', true);
 		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
@@ -116,8 +126,8 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('siteId', 'base.session', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		$this->registerDimension('daysSinceLastVisit', 'base.session', 'days_since_prior_session', 'Days Since Last Visit', 'visit', 'The number of days since the last visit.', '', true);
 		$this->registerDimension('daysSinceFirstVisit', 'base.session', 'days_since_first_session', 'Days Since First Visit', 'visit', 'The number of days since the first visit of the user.', '', true);
-		$this->registerDimension('priorVisitCount', 'base.session', 'num_prior_sessions', 'Prior Visits.', 'visit', 'The number of prior visits, excluding the current one.', '', true);
-		$this->registerDimension('priorVisitCount', 'base.request', 'num_prior_sessions', 'Prior Visits.', 'visit', 'The number of prior visits, excluding the current one.', '', true);
+		$this->registerDimension('priorVisitCount', 'base.session', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
+		$this->registerDimension('priorVisitCount', 'base.request', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
 		
 		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('day', 'base.request', 'day', 'Day', 'visit', 'The day.', '', true);
@@ -173,12 +183,20 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
 		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');		
 		
-		/// register CLI commands ///
+		/**
+		 * Register CLI Commands
+		 *
+		 * The following lines register various command line interface (CLI) controller. 
+		 */
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
 		$this->registerCliCommand('build', 'base.build');
 		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
 		
-		/// register API methods ///
+		/**
+		 * Register API methods
+		 *
+		 * The following lines register various API methods. 
+		 */
 		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'resultsPerPage', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
 		
 		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'));
@@ -248,8 +266,10 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportBrowsers', 'Browser Types', 4);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportOs', 'Operating Systems', 5);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsRecency', 'Visitor Recency', 4);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsAge', 'Visitor Age', 5);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportBrowsers', 'Browser Types', 6);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportOs', 'Operating Systems', 7);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Keywords', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
@@ -302,7 +322,6 @@ class owa_baseModule extends owa_module {
 		
 		$this->addEventProcessor('base.page_request', 'base.processRequest');
 		$this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
-		//$this->addEventProcessor('base.feed_request', 'base.processFeedRequest');
 	}
 	
 	function _registerEntities() {
