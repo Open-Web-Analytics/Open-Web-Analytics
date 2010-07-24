@@ -86,6 +86,7 @@ class owa_baseModule extends owa_module {
 		// register dimensions
 		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
 		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
+		$this->registerDimension('osType', 'base.os', 'name', 'Operating System', 'visitor', 'The operating System of the visitor.');
 		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
 		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
 		$this->registerDimension('city', 'base.host', 'city', 'City', 'visitor', 'The city of the visitor.');
@@ -169,7 +170,6 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('siteId', 'base.feed_request', 'site_id', 'Site ID', 'request', 'The ID of the the web site.', '', true);
 		
 		// IDs
-		
 		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
 		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');		
 		
@@ -236,7 +236,9 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
 		//$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 2);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);
+		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 7);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryPages', 'Entry Pages', 3);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportExitPages', 'Exit Pages', 4);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 5);
@@ -244,6 +246,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportBrowsers', 'Browser Types', 4);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportOs', 'Operating Systems', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Keywords', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
@@ -270,8 +274,10 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
 		// Referers
 		$this->registerEventHandler('base.new_session', 'refererHandlers');
-		// Referers
+		// Search Terms
 		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
+		// operating systems
+		$this->registerEventHandler('base.new_session', 'osHandlers');
 		// User Agents
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts

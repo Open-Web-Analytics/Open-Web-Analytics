@@ -20,7 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
- * Pages Report Controller
+ * Operating System Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,21 +31,21 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since		owa 1.3.0
  */
 
-class owa_reportPageTypesController extends owa_reportController {
+class owa_reportOsController extends owa_reportController {
 	
 	function action() {
 			
 		$this->setSubview('base.reportDimension');
-		$this->setTitle('Page Types');
-		$this->set('metrics', 'visits,pageViews');
-		$this->set('dimensions', 'pageType');
-		$this->set('sort', 'pageViews-');
+		$this->setTitle('Operating Systems');
+		$this->set('metrics', 'visits,pageViews,bounces');
+		$this->set('dimensions', 'osType');
+		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 25);
-		$this->set('dimensionLink', array('linkColumn' => 'pageType', 
-												'template' => array('do' => 'base.reportPageTypeDetail', 'pageType' => '%s'), 
-												'valueColumns' => 'pageType'));
-		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.pageViews.value %> page views for all page types.');
+		$this->set('dimensionLink', array('linkColumn' => 'osType', 
+												'template' => array('do' => 'base.reportOsDetail', 'osType' => '%s'), 
+												'valueColumns' => 'osType'));
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.formatted_value %> visits for all operating systems.');
 		$this->set('gridTitle', 'Top Page Types');		
 	}
 }
