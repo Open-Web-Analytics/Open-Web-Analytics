@@ -43,7 +43,8 @@ class owa_reportView extends owa_view {
 		$this->body->set('titleSuffix', $this->get('titleSuffix'));
 		
 		// Report Period Filters
-		$this->body->set('reporting_periods', owa_lib::reporting_periods());
+		$pl = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+		$this->body->set('reporting_periods', $pl->getPeriodLabels());
 		
 		// Set reporting period
 		$this->setPeriod($this->data['period']);
