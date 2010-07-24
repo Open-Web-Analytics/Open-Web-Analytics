@@ -176,6 +176,7 @@ class owa_baseModule extends owa_module {
 		/// register CLI commands ///
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
 		$this->registerCliCommand('build', 'base.build');
+		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
 		
 		/// register API methods ///
 		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'resultsPerPage', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
@@ -187,6 +188,7 @@ class owa_baseModule extends owa_module {
 		$this->registerApiMethod('getClickstream', array($this, 'getClickstream'), array( 'sessionId', 'resultsPerPage', 'page','format'));
 		
 		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
+		
 		
 		return parent::__construct();
 	}

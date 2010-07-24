@@ -185,31 +185,25 @@ class owa_cache {
 	function flush() {
 	
 		$tld = $this->readDir($this->cache_dir);
-		$this->debug(print_r($tld, true));
+		$this->debug("Reading cache file list from: ". $this->cache_dir);
 		$this->deleteFiles($tld['files']);
 		
 		foreach ($tld['dirs'] as $k => $dir) {
 			
 			$sld = $this->readDir($dir);
-			$this->debug(print_r($sld, true));	
+			$this->debug("Reading cache file list from: ". $dir);	
 			$this->deleteFiles($sld['files']);
 		
 			foreach ($sld['dirs'] as $sk => $sdir) {
-				$this->debug($sdir);
 				$ssld = $this->readDir($sdir);
-				$this->debug(print_r($ssld, true));	
+				$this->debug("Reading cache file list from: ". $sdir);	
 				$this->deleteFiles($ssld['files']);	
 				
 				rmdir($sdir);
 			}
-			
+	
 			rmdir($dir);		
-		}
-		
-		
-				
-		return;
-			
+		}			
 	}
 	
 	function remove($collection, $key) {
@@ -421,8 +415,8 @@ class owa_cache {
 	
 	function debug($msg) {
 		
-		owa_coreAPI::debug($msg);
-		return;
+		return owa_coreAPI::debug($msg);
+		
 	}
 	
 	function error($msg) {
@@ -484,10 +478,15 @@ class owa_cache {
 	}
 	
 	function deleteFiles($files) {
-	
-		foreach ($files as $file) {
-			$this->debug("About to unlink: ".$file);
-			unlink($file);
+		
+		if (!empty($files)) {
+		
+			foreach ($files as $file) {
+				$this->debug("About to unlink cache file: ".$file);
+				unlink($file);
+			}
+		} else {
+			owa_coreAPI::debug('No Cache Files to delete.');
 		}
 		
 		return true;
