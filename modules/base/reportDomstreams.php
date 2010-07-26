@@ -33,16 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_reportDomstreamsController extends owa_reportController {
 
-	function owa_reportDomstreamsController($params) {
-	
-		return owa_reportDomstreamsController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$document_id = '';

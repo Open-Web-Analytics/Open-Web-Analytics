@@ -699,6 +699,7 @@ if ($metrics) {
 		$db->selectColumn('page_url');
 		$db->selectColumn('duration');
 		$db->selectColumn('timestamp');
+		$db->selectColumn('document_id');
 		$db->selectColumn('events');
 		$db->where('yyyymmdd', array('start' => $start_date, 'end' => $end_date), 'BETWEEN');
 		if ($document_id) {
