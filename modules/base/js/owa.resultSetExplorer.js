@@ -687,15 +687,21 @@ OWA.resultSetExplorer.prototype = {
 			
 				this.setupAreaChart(series, dom_id);
 			}
-
-			var num_ticks = data.length/2;
+			
+			//determin number of x axis ticks.
+			if (data.length > 10) {
+			
+				var num_ticks = 10;
+			} else {
+				var num_ticks = data.length;
+			}
 			
 			var options = { 
 				
 				yaxis: { 
 					tickDecimals:0 }, 
 				xaxis:{
-					ticks: 10,
+					ticks: num_ticks,
 					tickDecimals: null
 	    		},
 				grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
