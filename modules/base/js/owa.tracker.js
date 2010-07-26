@@ -108,10 +108,11 @@ if (options.length > 0) {
 	    }
 	}
 */
-	
-	// merge page params from the global object if it exists
-	if (owa_params.length > 0) {
-		this.page.merge(owa_params);
+	if (typeof owa_params != 'undefined') {
+		// merge page params from the global object if it exists
+		if (owa_params.length > 0) {
+			this.page.merge(owa_params);
+		}
 	}
 		
 	// merge page params from map passed into the constructor

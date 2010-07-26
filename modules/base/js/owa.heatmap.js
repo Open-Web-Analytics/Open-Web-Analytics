@@ -26,7 +26,7 @@
  * @version		$Revision$	      
  * @since		owa 1.2.1
  */
-
+OWA.setSetting('debug', true);
 OWA.heatmap = function(w, h) {
 
 	this.docDimensions = this.getDim(document);
@@ -51,7 +51,7 @@ OWA.heatmap.prototype = {
 		'liveMode': false, 
 		'mapInterval': 1000,
 		'randomDataCount': 200,
-		'rowsPerFetch': 150,
+		'rowsPerFetch': 100,
 		'strokeRegions': false
 	},
 	canvas: null,
@@ -207,7 +207,9 @@ OWA.heatmap.prototype = {
 		//alert(unescape(p));
 		var params = OWA.util.parseCookieStringToJson(p);
 		params.action = 'base.reportOverlay';
-		params.document_url = escape(document.location);
+		params.document_url = OWA.util.urlEncode(document.location);
+		//params.document_url = document.location;
+		//OWA.debug('encoded url: '+OWA.util.urlEncode(document.location));
 		params.limit = this.options.rowsPerFetch;
 		
 		// add page number if one was passed in

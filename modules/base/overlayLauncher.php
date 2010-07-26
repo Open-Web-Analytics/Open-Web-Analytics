@@ -32,11 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_overlayLauncherController extends owa_reportController {
 	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		// setup overlay cookiestate

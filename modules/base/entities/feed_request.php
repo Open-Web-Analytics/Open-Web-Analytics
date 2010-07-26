@@ -118,6 +118,12 @@ class owa_feed_request extends owa_entity {
 		$this->properties['os'] = new owa_dbColumn;
 		$this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
 		
+		$yyyymmdd =  new owa_dbColumn;
+		$yyyymmdd->setName('yyyymmdd');
+		$yyyymmdd->setDataType(OWA_DTD_INT);
+		$yyyymmdd->setIndex();
+		$this->setProperty($yyyymmdd);
+		
 	}
 	
 	

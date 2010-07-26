@@ -179,6 +179,8 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('feedType', 'base.feed_request', 'feed_type', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
 		$this->registerDimension('siteId', 'base.feed_request', 'site_id', 'Site ID', 'request', 'The ID of the the web site.', '', true);
 		
+		//clicks
+		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		// IDs
 		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
 		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');		
