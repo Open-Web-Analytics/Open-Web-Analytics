@@ -38,16 +38,6 @@ if (!class_exists('Services_JSON')) {
 
 class owa_getDomstreamController extends owa_reportController {
 
-	function owa_getDomstreamController($params) {
-	
-		return owa_getDomstreamController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		// Fetch document object
@@ -57,12 +47,8 @@ class owa_getDomstreamController extends owa_reportController {
 		$d->set('events', $json->decode($d->get('events')));
 		$this->set('json', $d->_getProperties());
 		// set view stuff
-		$this->setView('base.json');
-					
-		return;	
-		
+		$this->setView('base.json');	
 	}
-	
 }
 
 ?>
