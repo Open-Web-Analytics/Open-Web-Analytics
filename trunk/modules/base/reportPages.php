@@ -37,10 +37,10 @@ class owa_reportPagesController extends owa_reportController {
 			
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Web Pages');
-		$this->set('metrics', 'pageViews,uniquePageViews');
+		$this->set('metrics', 'pageViews');
 		$this->set('dimensions', 'pageTitle,pageUrl');
 		$this->set('excludeColumns', "'pageUrl'");
-		$this->set('sort', 'visits');
+		$this->set('sort', 'pageViews-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array('linkColumn' => 'pageTitle', 
 												'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 

@@ -131,6 +131,12 @@ class owa_click extends owa_entity {
 		$host_id->setForeignKey('base.host');
 		$this->setProperty($host_id);
 		
+		$yyyymmdd =  new owa_dbColumn;
+		$yyyymmdd->setName('yyyymmdd');
+		$yyyymmdd->setDataType(OWA_DTD_INT);
+		$yyyymmdd->setIndex();
+		$this->setProperty($yyyymmdd);
+		
 	}	
 }
 

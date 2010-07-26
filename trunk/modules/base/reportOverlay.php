@@ -32,24 +32,22 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_reportOverlayController extends owa_reportController {
-
-	function owa_reportOverlayController($params) {
-	
-		return owa_reportOverlayController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
 	
 	function action() {
 		
 		// Fetch document object
 		$d = owa_coreAPI::entityFactory('base.document');
-		$d->getByColumn('id', $this->getParam('document_id'));
+		
+		if ($this->getParam('document_id')) {
+			$document_id = $this->getParam('document_id');
+		} else {
+			$eq = owa_coreAPI::getEventDispatch();
+			$document_id = $d->generateId($eq->filter('page_url',urldecode($this->getParam('document_url'))));
+		}
+			
+		$d->getByColumn('id', $document_id);
 		$this->set('document_details', $d->_getProperties());
-		$this->set('document_id', $this->getParam('document_id'));
+		$this->set('document_id', $document_id);
 		
 		// Get clicks
 		$c = owa_coreAPI::metricFactory('base.topClicks');
@@ -60,7 +58,7 @@ class owa_reportOverlayController extends owa_reportController {
 		//$c->setConstraint('ua_id', $this->getParam('ua_id'));
 		$limit = $this->getParam('limit');
 		if (!$limit) {
-			$limit = 200;
+			$limit = 100;
 		}
 		
 		if ($this->getParam('page')) {
@@ -73,10 +71,7 @@ class owa_reportOverlayController extends owa_reportController {
 		$this->set('json', $clicks);
 		
 		// set view stuff
-		$this->setView('base.json');
-					
-		return;	
-		
+		$this->setView('base.json');	
 	}
 	
 }
