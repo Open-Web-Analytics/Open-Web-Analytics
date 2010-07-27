@@ -39,10 +39,10 @@ class owa_reportActionDetailController extends owa_reportController {
 		$actionName = $this->getParam('actionName');
 		$actionGroup = $this->getParam('actionGroup');
 		
-		$this->setSubview('base.reportDimensionDetail');
+		$this->setSubview('base.reportDimension');
 		$this->setTitle('Action Detail: ', $actionGroup.': '.$actionName);
 		$this->set('metrics', 'actions,actionsValue');
-		//$this->set('dimension', 'actionName');
+		$this->set('dimension', 'actionLabel');
 		$this->set('trendChartMetric', 'actions');
 		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.value %> actions of this type.');
 		$this->set('constraints', 'actionName=='.urlencode($actionName).',actionGroup=='.urlencode($actionGroup));	
