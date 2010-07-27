@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<title>Open Web Analytics - <?php echo $page_title;?></title>
 		<?php include($this->getTemplatePath('base','head.tpl'));?>
 		<?php include($this->getTemplatePath('base','css.tpl'));?>

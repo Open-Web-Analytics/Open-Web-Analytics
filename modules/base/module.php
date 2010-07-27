@@ -478,9 +478,11 @@ class owa_baseModule extends owa_module {
 				}
 					
 			} elseif ($fullhost === 'unknown') {
-				;
+				$host = $ip_address;
 			}
 				
+		} else {
+			$host = $ip_address;
 		}
 		
 		return $host;
