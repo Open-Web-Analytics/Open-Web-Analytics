@@ -501,14 +501,16 @@ OWA.resultSetExplorer.prototype = {
 					for (var y in this.columnLinks) {
 						
 						//alert(this.dom_id + ' : '+y);
+						var template = this.columnLinks[y].template;
 						
 						if (this.resultSet.resultsRows[i][y].name.length > 0) {
 							//if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
+							
 							for (var z in this.columnLinks[y].params) {
 								//alert(this.columnLinks[y].params[z]);	
 									
 								//var template = this.columnLinks[y].template.replace(this.columnLinks[y].params[z] + '=%s', this.columnLinks[y].params[z] + '=' + OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
-								var template = this.columnLinks[y].template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
+								template = template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
 							
 							}
 							
