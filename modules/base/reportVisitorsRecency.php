@@ -42,7 +42,7 @@ class owa_reportVisitorsRecencyController extends owa_reportController {
 		$this->set('sort', 'daysSinceLastVisit');
 		$this->set('resultsPerPage', 25);
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all sources.');	
+		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.formatted_value %> visits from all sources.');	
 	}
 }
 
