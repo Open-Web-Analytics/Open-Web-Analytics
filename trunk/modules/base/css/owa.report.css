@@ -18,7 +18,7 @@ ul {margin-left:10px;}
 	font-size: 20px;
 }
 
-.owa_reportContainer {width:auto; background-color:}
+.owa_reportContainer {width:auto; background-color: ; height:;}
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
 .owa_reportSectionHeader, .section_header {
 	width:auto; 

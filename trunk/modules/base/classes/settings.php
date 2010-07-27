@@ -65,7 +65,7 @@
  		// setup directory paths
  		$this->setupPaths();
  		
- 		// set default timezone if not set already
+ 		// set default timezone if not set already. Needed to avoid an E_WARNING.
  		if (!ini_get('date.timezone')) {
  		
 			if (function_exists('date_default_timezone_set')) {
