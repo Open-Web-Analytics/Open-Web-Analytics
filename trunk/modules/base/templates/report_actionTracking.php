@@ -38,6 +38,8 @@
 															  'format' => 'json'), true);?>';
 															  
 				rshre = new OWA.resultSetExplorer('actionsByGroupExplorer');
+				var link = '<?php echo $this->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>';
+				rshre.addLinkToColumn('actionGroup', link, ['actionGroup']);
 				rshre.asyncQueue.push(['refreshGrid']);
 				rshre.load(url);
 				</script>

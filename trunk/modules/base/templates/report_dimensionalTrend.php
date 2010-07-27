@@ -72,7 +72,24 @@
 		
 		<?php if (!empty($dimensionLink)):?>
 		var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
-		dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, ['<?php echo $dimensionLink['valueColumns'];?>']);
+		var values = <?php if (is_array($dimensionLink['valueColumns'])) { 
+						$values = "[";
+						$i = 0;
+						$count = count($dimensionLink['valueColumns']);
+						foreach ($dimensionLink['valueColumns'] as $v) {
+							$values .= "'$v'";
+							if ($i < $count) {
+								$values .= ', ';
+							}
+							$i++;
+						}
+						$values .= "]";
+						echo $values; 
+					} else {
+						echo "['".$dimensionLink['valueColumns']."']";
+					}
+					?>;
+		dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
 		<?php endif; ?>
 		<?php if (!empty($excludeColumns)):?>
 		dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
