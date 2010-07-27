@@ -17,7 +17,7 @@
 //
 
 /**
- * Visitor Entity
+ * Operating System Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -40,13 +40,7 @@ class owa_os extends owa_entity {
 		$this->properties['id']->setPrimaryKey();
 		$this->properties['name'] = new owa_dbColumn;
 		$this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
-
-	}
-	
-	
-	
+	}	
 }
-
-
 
 ?>

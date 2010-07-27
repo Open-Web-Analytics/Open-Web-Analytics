@@ -42,12 +42,8 @@ class owa_overlayLauncherController extends owa_reportController {
 		$d->load($this->getParam('document_id'));
 		
 		// redirect browser
-		$this->redirectBrowserToUrl($d->get('url'));
-		
-		return;	
-		
+		$this->redirectBrowserToUrl($d->get('url'));	
 	}
-	
 }
 
 ?>

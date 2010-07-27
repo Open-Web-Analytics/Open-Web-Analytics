@@ -413,4 +413,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	width:100px;
 }
 
+.owa_dimensionDetail {
+	border: 1px solid #cccccc;
+	width:inherit;
+	height:128px;
+}
 
