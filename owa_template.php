@@ -249,6 +249,20 @@ class owa_template extends Template {
 		
 	}
 	
+	function getBrowserIcon($browser_family, $size = '128x128', $module = 'base') {
+		
+		if ($browser_family) {
+			$browser_family = strtolower($browser_family);
+		}
+		
+		
+		if (file_exists(OWA_MODULES_DIR.$module.'/i/browsers/'.$size.'/'.$browser_family.'.png')) {
+			return $this->makeImageLink('base/i/browsers/'.$size.'/'.$browser_family.'.png');
+		} else {
+			return $this->makeImageLink('base/i/browsers/'.$size.'/default.png');
+		}
+	}
+	
 	
 	function makeLinkQueryString($query_params) {
 		
@@ -904,6 +918,14 @@ class owa_template extends Template {
 		
 		return $t->fetch();	
 		
+	}
+	
+	function renderDimension($template, $properties) {
+		
+		$t = new owa_template;
+		$t->set('properties', $properties);
+		$t->set_template($template);
+		return $t->fetch();
 	}
 }
 

@@ -1,3 +1,9 @@
+<?php if ($dimension_properties): ?>
+<div class="owa_reportSectionContent">
+	<?php echo $this->renderDimension($dimension_template, $dimension_properties);?>
+</div>
+<?php endif;?>
+
 <div class="owa_reportSectionContent">
 	
 	<div id="trend-chart"></div>

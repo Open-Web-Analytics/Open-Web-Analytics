@@ -43,7 +43,7 @@
 					<tr>
 						<td valign="top">
 						<?php foreach($actions->getDataRows() as $k => $row):?>
-							<div class="owa_metricInfobox">
+							<div class="owa_metricInfobox" style="width:150px;">
 								<p class="owa_metricInfoboxLabel"><?php echo $row['actionName']['value'];?></p>
 								<p class="owa_metricInfoboxLargeNumber"><?php echo $row['actions']['value'];?></p>	
 							</div>

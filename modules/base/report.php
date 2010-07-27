@@ -194,11 +194,6 @@ class owa_reportView extends owa_view {
 
 class owa_reportDimensionView extends owa_view {
 	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		// Assign Data to templates
@@ -230,12 +225,7 @@ class owa_reportDimensionView extends owa_view {
  */
 
 class owa_reportDimensionDetailView extends owa_view {
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		// Assign Data to templates
@@ -244,6 +234,8 @@ class owa_reportDimensionDetailView extends owa_view {
 		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
 		$this->body->set('trendTitle', $this->get('trendTitle'));
 		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('dimension_properties', $this->get('dimension_properties'));
+		$this->body->set('dimension_template', $this->get('dimension_template'));
 		$this->body->set_template('report_dimensionDetail.php');
 	}
 	

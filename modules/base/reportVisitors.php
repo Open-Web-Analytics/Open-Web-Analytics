@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitorsController extends owa_reportController {
-		
-	function __construct($params = null) {
-	
-		return parent::__construct($params);
-	}
-	
+
 	function action() {
 
 		$rs = owa_coreAPI::executeApiCommand(array(

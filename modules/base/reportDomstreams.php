@@ -84,7 +84,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 }
 
 /**
- * Domstream Report Controller
+ * Domstream Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -97,16 +97,6 @@ class owa_reportDomstreamsController extends owa_reportController {
 
 class owa_reportDomstreamsView extends owa_view {
 
-	function owa_reportDomstreamsView() {
-	
-		return owa_reportDomstreamsView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		$this->body->set('domstreams', $this->get('domstreams'));
