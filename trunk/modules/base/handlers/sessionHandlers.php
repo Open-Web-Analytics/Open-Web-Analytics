@@ -95,6 +95,7 @@ class owa_sessionHandlers extends owa_observer {
 			if ($event->get('search_terms')) {
 				$s->set('source', 'organic-search');
 				$event->set('source', 'organic-search');
+				$s->set('referring_search_term_id', $this->generateId($event->get('search_terms')));
 			} else {
 				$s->set('source', 'referral');
 				$event->set('source', 'referral');
