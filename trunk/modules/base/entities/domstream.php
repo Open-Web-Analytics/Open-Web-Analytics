@@ -51,7 +51,7 @@ class owa_domstream extends owa_entity {
 		$this->setProperty($document_id);
 		
 		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
-		$site_id->setForeignKey('base.site');
+		$site_id->setForeignKey('base.site', 'site_id');
 		$this->setProperty($site_id);
 	
 		$this->properties['events'] = new owa_dbColumn;

@@ -51,7 +51,7 @@ class owa_feed_request extends owa_entity {
 		$this->setProperty($document_id);
 		
 		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
-		$site_id->setForeignKey('base.site');
+		$site_id->setForeignKey('base.site', 'site_id');
 		$this->setProperty($site_id);
 		
 		// wrong data type
