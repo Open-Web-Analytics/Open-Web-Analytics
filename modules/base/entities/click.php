@@ -114,7 +114,7 @@ class owa_click extends owa_entity {
 		$this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
 		
 		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
-		$site_id->setForeignKey('base.site');
+		$site_id->setForeignKey('base.site', 'site_id');
 		$this->setProperty($site_id);
 		
 		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
