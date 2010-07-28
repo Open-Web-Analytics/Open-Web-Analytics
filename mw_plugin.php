@@ -136,6 +136,7 @@ function owa_singleton() {
 	global $wgUser, $owa_config;
 	$wgUser->load();
 	$owa = &owa_mw::singleton($owa_config);
+	$owa->setSiteId($owa_config['site_id']);
 	$cu = &owa_coreAPI::getCurrentUser();
 	$cu->setUserData('user_id', $wgUser->mName);
 	$cu->setUserData('email_address', $wgUser->mEmail);
