@@ -49,8 +49,8 @@ class owa_processRequestController extends owa_processEventController {
 		$fh = owa_coreAPI::getStateParam($fh_state_name);
         
         if (!empty($fh)) {
-        	//$this->e->debug('Clearing left over first first hit cookie.');
-			//owa_coreAPI::clearState($fh_state_name);
+        	$this->e->debug('Clearing left over first first hit cookie.');
+			owa_coreAPI::clearState($fh_state_name);
 			$this->e->debug('Left over first first hit cookie found...aborting request as likely a robot.');
 			$this->event->set('do_not_log', true);
 			return;
