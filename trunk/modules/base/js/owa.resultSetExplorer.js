@@ -1,4 +1,4 @@
-//OWA.setSetting('debug', true);
+OWA.setSetting('debug', true);
 OWA.resultSetExplorer = function(dom_id, options) {
 	
 	this.dom_id = dom_id || '';
@@ -101,7 +101,10 @@ OWA.resultSetExplorer.prototype = {
 		var row = {};
 		
 		for (var item in old) {
-			row[item] = old[item].value;
+			
+			if (old.hasOwnProperty(item)) {
+				row[item] = old[item].value;
+			}
 		}
 	
 		return row;
@@ -155,18 +158,19 @@ OWA.resultSetExplorer.prototype = {
 		// custom formattter functions.
 		jQuery.extend(jQuery.fn.fmatter , {
 			// urlFormatter allows for a single param substitution.
-    		urlFormatter : function(cellvalue, options, rowdata) {
-    			var sub_value = options.rowId;
-    			//alert(options.rowId);
-    			var name = options.colModel.realColName; 
-    			//var name = 'actionName';
-    			//alert(that.columnLinks[name].template);
-    			OWA.debug(options.rowId-1+' '+name);
-    			//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
-    			var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
-    			var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
-    			return link;
+			urlFormatter : function(cellvalue, options, rowdata) {
+				var sub_value = options.rowId;
+				//alert(options.rowId);
+				var name = options.colModel.realColName;
+				//var name = 'actionName';
+				//alert(that.columnLinks[name].template);
+				OWA.debug(options.rowId-1+' '+name);
+				//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
+				var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
+				var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
+				return link;
 			},
+			
 			useServerFormatter : function(cellvalue, options, rowdata) {
 				var name = options.colModel.realColName; 
 				return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
@@ -179,7 +183,7 @@ OWA.resultSetExplorer.prototype = {
 		if (this.resultSet.resultsReturned > 0) {
 		
 			// happens with first results set when loading from URL.
-			if (this.gridInit != true) {
+			if (this.gridInit !== true) {
 				this.displayGrid();
 			}
 			
@@ -237,7 +241,7 @@ OWA.resultSetExplorer.prototype = {
 		//alert(func[0]);
 		var args = Array.prototype.slice.call(func, 1);
 		//alert(args);
-    	this[func[0]].apply(this, args);
+		this[func[0]].apply(this, args);
 	},
 	
 	// fetch the result set from the server
@@ -249,7 +253,7 @@ OWA.resultSetExplorer.prototype = {
 		jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
 		jQuery("#load_"+that.dom_id+"_grid").show(); 
 		jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
-		jQuery.getJSON(url, '', function (data) {that.loader(data)});
+		jQuery.getJSON(url, '', function (data) {that.loader(data);});
 	},
 	
 	injectDomElements : function() {
@@ -269,6 +273,8 @@ OWA.resultSetExplorer.prototype = {
 		
 		var columns = [];
 		
+		var columnDef = '';
+		
 		for (var column in this.resultSet.resultsRows[0]) {
 			
 			// check to see if we should exclude any columns
@@ -278,15 +284,15 @@ OWA.resultSetExplorer.prototype = {
 					// if column name is not on the exclude list then add it.
 					if (this.options.grid.excludeColumns[i] != column) {
 						// add column	
-						var columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);		
-		 				columns.push(columnDef);			
+						columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);
+						columns.push(columnDef);			
 					}
 				}
 				
 			} else {
 				// add column
-				var columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);		
-		 		columns.push(columnDef);
+				columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);
+				columns.push(columnDef);
 			}
 			
 		}
@@ -294,12 +300,12 @@ OWA.resultSetExplorer.prototype = {
 		jQuery('#' + that.dom_id + '_grid').jqGrid({
 			jsonReader: {
 				repeatitems: false,
-		   		root: "resultsRows",
-		   		cell: '',
-		   		id: '',
-		   		page: 'page',
-		   		total: 'total_pages',
-		   		records: 'resultsReturned'
+				root: "resultsRows",
+				cell: '',
+				id: '',
+				page: 'page',
+				total: 'total_pages',
+				records: 'resultsReturned'
 			},
 			afterInsertRow: function(rowid, rowdata, rowelem) {return;},
 			datatype: 'local',
@@ -313,23 +319,23 @@ OWA.resultSetExplorer.prototype = {
 		});
 		
 		/*
-// custom formattter functions.
+		// custom formattter functions.
 		jQuery.extend(jQuery.fn.fmatter , {
 			// urlFormatter allows for a single param substitution.
-    		urlFormatter : function(cellvalue, options, rowdata) {
-    			var sub_value = options.rowId;
-    			//alert(options.rowId);
-    			var name = options.colModel.realColName; 
-    			//var name = 'actionName';
-    			//alert(that.columnLinks[name].template);
-    			OWA.debug(options.rowId-1+' '+name);
-    			//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
-    			var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
-    			var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
-    			return link;
+			urlFormatter : function(cellvalue, options, rowdata) {
+				var sub_value = options.rowId;
+				//alert(options.rowId);
+				var name = options.colModel.realColName;
+				//var name = 'actionName';
+				//alert(that.columnLinks[name].template);
+				OWA.debug(options.rowId-1+' '+name);
+				//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
+				var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
+				var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
+				return link;
 			}
 		});
-*/
+		*/
 	},
 	
 	makeGridColumnDef : function(column) {
@@ -365,8 +371,8 @@ OWA.resultSetExplorer.prototype = {
 			_format = 'useServerFormatter';
 		}
 				
-	 	var columnDef = {
- 			name: column.name +'.value', 
+		var columnDef = {
+			name: column.name +'.value', 
 			index: column.name +'.value', 
 			label: column.label, 
 			sorttype: _sort_type, 
@@ -415,7 +421,7 @@ OWA.resultSetExplorer.prototype = {
 				end = this.resultSet.resultsReturned;
 			} else {
 				start = ((this.resultSet.page -1)  * this.resultSet.resultsPerPage) + 1;
-				end = ((this.resultSet.page -1) * this.resultSet.resultsPerPage) + this.resultSet.resultsReturned; 	
+				end = ((this.resultSet.page -1) * this.resultSet.resultsPerPage) + this.resultSet.resultsReturned;
 			}
 			
 			var p = '<li class="owa_rowCount">';
@@ -444,14 +450,14 @@ OWA.resultSetExplorer.prototype = {
 			p = p + '<LI class="owa_previousPageControl">';
 			p = p + '<span>Previous Page</span></LI>';
 			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
-			jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid(that.resultSet.previous)});	
+			jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid(that.resultSet.previous);});	
 			
-			var p = '';
-			p = p + '<LI class="owa_nextPageControl">';
-			p = p + '<span>Next Page</span></LI>';
+			var pn = '';
+			pn = pn + '<LI class="owa_nextPageControl">';
+			pn = pn + '<span>Next Page</span></LI>';
 			
-			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(p);
-			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid(that.resultSet.next)});
+			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(pn);
+			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid(that.resultSet.next);});
 			
 			if (this.resultSet.page == 1) {
 				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
@@ -471,15 +477,15 @@ OWA.resultSetExplorer.prototype = {
 		this.columnLinks = {};
 		if (col_name) {
 			var item = {};
-			item.name = col_name
-			item.template = link_template
+			item.name = col_name;
+			item.template = link_template;
 			item.params = sub_params;
 			
 			this.columnLinks[col_name] = item;
 			item = '';
 		}
 		
-		this._columnLinksCount++
+		this._columnLinksCount++;
 		//alert(this.dom_id);
 	},
 	
@@ -499,26 +505,24 @@ OWA.resultSetExplorer.prototype = {
 				for(var i=0;i<=this.resultSet.resultsRows.length - 1;i++) {
 					
 					for (var y in this.columnLinks) {
-						
-						//alert(this.dom_id + ' : '+y);
-						var template = this.columnLinks[y].template;
-						
-						if (this.resultSet.resultsRows[i][y].name.length > 0) {
-							//if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
+						if (this.columnLinks.hasOwnProperty(y)) {
+							//alert(this.dom_id + ' : '+y);
+							var template = this.columnLinks[y].template;
 							
-							for (var z in this.columnLinks[y].params) {
-								//alert(this.columnLinks[y].params[z]);	
+							if (this.resultSet.resultsRows[i][y].name.length > 0) {
+								//if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
+								
+								for (var z in this.columnLinks[y].params) {
 									
-								//var template = this.columnLinks[y].template.replace(this.columnLinks[y].params[z] + '=%s', this.columnLinks[y].params[z] + '=' + OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
-								template = template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
-							
-							}
-							
-							
-							this.resultSet.resultsRows[i][this.columnLinks[y].name].link = template;
-							
+									if (this.columnLinks[y].params.hasOwnProperty(z)) {
+									
+										template = template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
+									}
+								}
+								
+								this.resultSet.resultsRows[i][this.columnLinks[y].name].link = template;
+							}						
 						}						
-						
 					}
 				}
 			}
@@ -530,13 +534,10 @@ OWA.resultSetExplorer.prototype = {
 		var that = this;
 		
 		if (this.getOption('autoResizeCharts')) {
-			var w = jQuery("#"+that.dom_id).width();
+			return jQuery("#"+that.dom_id).width();
 		} else {
-			var w = this.getOption('chartWidth')
+			return this.getOption('chartWidth');
 		}
-		
-		return w;
-	
 	},
 	
 	getContainerHeight : function() {
@@ -570,7 +571,7 @@ OWA.resultSetExplorer.prototype = {
 
 	        jQuery("#x").text(pos.x.toFixed(2));
 	        jQuery("#y").text(pos.y.toFixed(2));
-        	
+	        
             if (item) {
                 if (previousPoint != item.datapoint) {
                     
@@ -581,8 +582,8 @@ OWA.resultSetExplorer.prototype = {
                         y = item.datapoint[1].toFixed(0);
                         
                     if (that.options.areaChart.flot.xaxis.mode === 'time') {
-                    	
-                    	x = that.timestampFormatter(x);
+                    
+						x = that.timestampFormatter(x);
                     }
                     
                     that.showTooltip(item.pageX -75, item.pageY -50,
@@ -593,33 +594,28 @@ OWA.resultSetExplorer.prototype = {
                 previousPoint = null;            
             }
        
-    	});
-    	
-    	jQuery(window).resize(function () {
-    		
-    		var sel = that.domSelectors.areaChart;
-    		//alert(sel);
-    		//var that = this;
-    		var chartw =jQuery(sel).width(); 
-    		var containerw = jQuery("#"+dom_id).width();
-    		var ccontainerw = that.currentContainerWidth;
-    		var ww = jQuery(window).width();
-    		OWA.debug('cur-container-w: '+ccontainerw);
-    		OWA.debug('new-container-w: '+containerw);
-    		
-    		
-    		if (containerw != ccontainerw) {
-	    		
-	    		var d = that.currentWindowWidth - ww;
-	    		jQuery(sel).css('width', chartw - d);
-    			that.makeAreaChart(series, dom_id);
-    		}
-    		that.currentContainerWidth = containerw;
-    		that.currentWindowWidth = ww;
-    	});
-    	
-    	
-		
+       });
+       
+		jQuery(window).resize(function () {
+			var sel = that.domSelectors.areaChart;
+			//alert(sel);
+			//var that = this;
+			var chartw =jQuery(sel).width();
+			var containerw = jQuery("#"+dom_id).width();
+			var ccontainerw = that.currentContainerWidth;
+			var ww = jQuery(window).width();
+			OWA.debug('cur-container-w: '+ccontainerw);
+			OWA.debug('new-container-w: '+containerw);
+			
+			if (containerw != ccontainerw) {
+				
+			var d = that.currentWindowWidth - ww;
+				jQuery(sel).css('width', chartw - d);
+				that.makeAreaChart(series, dom_id);
+			}
+			that.currentContainerWidth = containerw;
+			that.currentWindowWidth = ww;
+		});
 	},
 	
 	formatValue : function(type, value) {
@@ -655,18 +651,20 @@ OWA.resultSetExplorer.prototype = {
 	 */
 	makeAreaChart : function(series, dom_id) {
 		
+		var selector = "#"+dom_id + ' > .owa_areaChart';
+		
 		if (this.resultSet.resultsRows.length > 0) {
 				
 			dom_id = dom_id || this.dom_id;
 			var dataseries = [];
 			series = series || this.options.areaChart.series;
-			
+			var data = [];
 			for(var ii=0;ii<=series.length -1;ii++) {
 			
 				var x_series_name = series[ii].x;
 				var y_series_name = series[ii].y;
 			
-				var data = [];
+				
 				
 				//create data array
 				for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
@@ -683,19 +681,18 @@ OWA.resultSetExplorer.prototype = {
 			
 			//var that = this;
 			
-			var selector = "#"+dom_id + ' > .owa_areaChart';
 			
-			if(jQuery("#"+dom_id + ' > .owa_areaChart').length == 0) {
+			
+			if(jQuery("#"+dom_id + ' > .owa_areaChart').length === 0) {
 			
 				this.setupAreaChart(series, dom_id);
 			}
 			
-			//determin number of x axis ticks.
+			var num_ticks = data.length;
+			// reduce number of x axis ticks if data set has too many points.
 			if (data.length > 10) {
 			
-				var num_ticks = 10;
-			} else {
-				var num_ticks = data.length;
+				num_ticks = 10;
 			}
 			
 			var options = { 
@@ -705,7 +702,7 @@ OWA.resultSetExplorer.prototype = {
 				xaxis:{
 					ticks: num_ticks,
 					tickDecimals: null
-	    		},
+				},
 				grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
 				series: {
 					points: { show: this.options.areaChart.showDots, fill: this.options.areaChart.showDots},
@@ -723,8 +720,8 @@ OWA.resultSetExplorer.prototype = {
 			if (data_type_x === 'yyyymmdd') {
 				
 				options.xaxis.mode = "time";
-	    		//options.xaxis.timeformat = "%m/%d/%y";
-	    		options.xaxis.timeformat = "%m/%d";
+				//options.xaxis.timeformat = "%m/%d/%y";
+				options.xaxis.timeformat = "%m/%d";
 			}
 			
 			this.options.areaChart.flot = options;
@@ -755,32 +752,31 @@ OWA.resultSetExplorer.prototype = {
     },
     
     getMetricLabel : function(name) {
-    	//alert(this.resultSet.aggregates[name].label);
-    	if (this.resultSet.aggregates[name].label.length > 0) {
-    		return this.resultSet.aggregates[name].label;
-    	} else {
-    		return 'unknown';
-    	}
-    },
-    
+		//alert(this.resultSet.aggregates[name].label);
+		if (this.resultSet.aggregates[name].label.length > 0) {
+			return this.resultSet.aggregates[name].label;
+		} else {
+			return 'unknown';
+		}
+	},
+	
     getMetricValue : function(name) {
-    	//alert(this.resultSet.aggregates[name].label);
-    	if (this.resultSet.aggregates[name].value.length > 0) {
-    		return this.resultSet.aggregates[name].value;
-    	} else {
-    		return 0;
-    	}
-    },
-
-    
-    setupPieChart : function() {
-    	
-    	var that = this;
-    	var w = this.getContainerWidth();
-    	//alert(w);
+		//alert(this.resultSet.aggregates[name].label);
+		if (this.resultSet.aggregates[name].value.length > 0) {
+			return this.resultSet.aggregates[name].value;
+		} else {
+			return 0;
+		}
+	},
+	
+	setupPieChart : function() {
+	
+		var that = this;
+		var w = this.getContainerWidth();
+		//alert(w);
 		var h = this.getContainerWidth(); //this.getOption('chartHeight');
 		//alert(h);
-    	jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
+		jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
 		jQuery(that.domSelectors.pieChart).css('width', w);
 		jQuery(that.domSelectors.pieChart).css('height', h);
     },
@@ -804,11 +800,11 @@ OWA.resultSetExplorer.prototype = {
 				var metric = this.options.pieChart.metric;
 				
 				//create data array
-				
+				var iterations = 0; 
 				if (numSlices > this.resultSet.resultsRows.length) {
-					var iterations = this.resultSet.resultsRows.length;
+					iterations = this.resultSet.resultsRows.length;
 				} else {
-					var iterations = numSlices;
+					iterations = numSlices;
 				}
 				
 				
@@ -831,15 +827,15 @@ OWA.resultSetExplorer.prototype = {
 		} else {
 			// plots a set of values taken from the aggregrate metrics array
 			var metrics = this.options.pieChart.metrics;
-			for(var i=0;i<=metrics.length -1 ;i++) {
-				var value = this.resultSet.aggregates[metrics[i]].value * 1; 
-				data.push({label: this.getMetricLabel(metrics[i]), data: value});
+			for(var ii=0;ii<=metrics.length -1 ;ii++) {
+				var value = this.resultSet.aggregates[metrics[ii]].value * 1; 
+				data.push({label: this.getMetricLabel(metrics[ii]), data: value});
 			}
 			
 			
 		}
 		
-		if (this.init.pieInit != true) {
+		if (this.init.pieInit !== true) {
 		
 			this.setupPieChart();
 		}
@@ -859,12 +855,13 @@ OWA.resultSetExplorer.prototype = {
 						radius:1,
 						formatter: function(label, slice){
 							return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+Math.round(slice.percent)+'%</div>';
-						},
+						}
 						//formatter: function(label, slice){ return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+label+'<br/>'+Math.round(slice.percent)+'%</div>';}
 
-					},
+					}
 				}
 			},
+			
 			legend: {
 				show: true,
 				position: "ne",
@@ -872,51 +869,51 @@ OWA.resultSetExplorer.prototype = {
 			},
 			colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
 		};
-	    
-    	// GRAPH
+		
+		//GRAPH
 		jQuery.plot(jQuery(selector), data, options);
 		this.init.pieChart = true;
     },
     
-    renderTemplate : function(template, params, mode, dom_id) {
-    	
-    	template = template || this.options.template.template;
-    	params = params || this.options.template.params;
-    	mode = mode || this.options.template.mode;
-    	dom_id = dom_id || this.options.template.dom_id || this.dom_id;
-    	//jQuery.jqotetag('*');
-    	//dom_id = dom_id || this.dom_id; 
-    	
-    	if (mode === 'append') {
-    		
-      		jQuery('#' + dom_id).jqoteapp(template, params);
-    	} else if (mode === 'prepend') {
-    		jQuery('#' + dom_id).jqotepre(template, params);
-    	} else if (mode === 'replace') {
-    		jQuery('#' + dom_id).jqotesub(template, params);
-    	}
-    },
-    
-    makeSparkline : function(metric_name, dom_id, filter) {
-    	metric_name = metric_name || this.options.sparkline.metric;
-    	dom_id = dom_id || this.dom_id;
-    	var sl = new OWA.sparkline(dom_id);
-    	var data = this.getSeries(metric_name, '',filter);
-    	
-    	if (!data) {
-    		data = [0,0,0];
-    	}
-    	sl.loadFromArray(data); 
-    	
-    	this.currentView = 'sparkline';
-    },
-    
-    getSeries : function(value_name, value_name2, filter) {
-    	
-    	if (this.resultSet.resultsRows.length > 0) {
-    		
-	    	var series = [];
-	    	//create data array
+	renderTemplate : function(template, params, mode, dom_id) {
+		
+		template = template || this.options.template.template;
+		params = params || this.options.template.params;
+		mode = mode || this.options.template.mode;
+		dom_id = dom_id || this.options.template.dom_id || this.dom_id;
+		//jQuery.jqotetag('*');
+		//dom_id = dom_id || this.dom_id; 
+		
+		if (mode === 'append') {
+			jQuery('#' + dom_id).jqoteapp(template, params);
+		} else if (mode === 'prepend') {
+			jQuery('#' + dom_id).jqotepre(template, params);
+		} else if (mode === 'replace') {
+			jQuery('#' + dom_id).jqotesub(template, params);
+		}
+	},
+	
+	makeSparkline : function(metric_name, dom_id, filter) {
+		metric_name = metric_name || this.options.sparkline.metric;
+		dom_id = dom_id || this.dom_id;
+		var sl = new OWA.sparkline(dom_id);
+		var data = this.getSeries(metric_name, '',filter);
+		
+		if (!data) {
+			data = [0,0,0];
+		}
+		
+		sl.loadFromArray(data);
+		
+		this.currentView = 'sparkline';
+	},
+	
+	getSeries : function(value_name, value_name2, filter) {
+		
+		if (this.resultSet.resultsRows.length > 0) {
+			
+			var series = [];
+			//create data array
 			for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
 			
 				if (filter) {
@@ -926,10 +923,11 @@ OWA.resultSetExplorer.prototype = {
 					}
 				}
 				
+				var item = '';
 				if (value_name2) {
-					var item =[this.resultSet.resultsRows[i][value_name].value, this.resultSet.resultsRows[i][value_name2].value];
+					item =[this.resultSet.resultsRows[i][value_name].value, this.resultSet.resultsRows[i][value_name2].value];
 				} else {
-					var item = this.resultSet.resultsRows[i][value_name].value;
+					item = this.resultSet.resultsRows[i][value_name].value;
 					
 				}
 					
@@ -940,60 +938,65 @@ OWA.resultSetExplorer.prototype = {
 		}
     },
     
-    makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
-    	dom_id = dom_id || this.dom_id;
-    	template = template || '#metricInfobox';
-    	
-    	for(var i in this.resultSet.aggregates) {
-    		var item = this.resultSet.aggregates[i];
-    		item.dom_id = dom_id+'-'+this.resultSet.aggregates[i].name+'-'+this.resultSet.guid;
-    		if (label) {
-	    		item.label = label;
-    		}
-    		
-    		if (this.options.metricBoxes.width) {
-    			item.width = this.options.metricBoxes.width;
-    		}
-    		jQuery('#' + dom_id).jqoteapp(template, item);
-    		this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);		
-    	}
+	makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
+		dom_id = dom_id || this.dom_id;
+		template = template || '#metricInfobox';
+		
+		for(var i in this.resultSet.aggregates) {
+		
+			if (this.resultSet.aggregates.hasOwnProperty(i)) {
+				var item = this.resultSet.aggregates[i];
+				item.dom_id = dom_id+'-'+this.resultSet.aggregates[i].name+'-'+this.resultSet.guid;
+				if (label) {
+					item.label = label;
+				}
+				
+				if (this.options.metricBoxes.width) {
+					item.width = this.options.metricBoxes.width;
+				}
+				jQuery('#' + dom_id).jqoteapp(template, item);
+				this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);	
+			}	
+		}
     },
     
-    renderResultsRows : function(dom_id, template) {
-    	
-    	if (this.resultSet.resultsRows.length > 0) {
-	    	var that = this;
-	    	dom_id = dom_id || this.dom_id;
-	    	
-	    	var table = '';
-	    	var data = [];
-	    	//re-order the data into an array
-	    	for (item in this.resultSet.resultsRows[0]) {
-	    		data.push(this.resultSet.resultsRows[0][item]);
-	    	}
-	    	
-	    	//make table headers
-	    	var ths = jQuery('#simpleTable-headers').jqote(data); 
-	    	// make outer table
-	    	table = jQuery('#simpleTable-outer').jqote({dom_id: dom_id+'_simpleTable', headers: ths});
-	    	// add to dom
-	    	jQuery('#'+dom_id).html(table);
-	    	// append rows
-	    	
-	    	
-	    	for(i=0;i<= this.resultSet.resultsRows.length -1;i++) {
-	    	
-	    		var cells = '';
-	    		for (item in this.resultSet.resultsRows[i]) {
-	    			cells += jQuery('#table-column').jqote(this.resultSet.resultsRows[i][item]);
-	    		}
-	    		
-	    		var row = jQuery('#table-row').jqote({columns: cells});
-	   			jQuery('#'+dom_id+'_simpleTable').append(row);	
-	    	}
-	    	
-	    	
-	    	
+	renderResultsRows : function(dom_id, template) {
+	
+		if (this.resultSet.resultsRows.length > 0) {
+			var that = this;
+			dom_id = dom_id || this.dom_id;
+			
+			var table = '';
+			var data = [];
+			//re-order the data into an array
+			for (var d_item in this.resultSet.resultsRows[0]) {
+				
+				if (this.resultSet.resultsRows[0].hasOwnProperty(d_item)) {
+					data.push(this.resultSet.resultsRows[0][d_item]);
+				}
+			}
+			
+			//make table headers
+			var ths = jQuery('#simpleTable-headers').jqote(data); 
+			// make outer table
+			table = jQuery('#simpleTable-outer').jqote({dom_id: dom_id+'_simpleTable', headers: ths});
+			// add to dom
+			jQuery('#'+dom_id).html(table);
+			// append rows
+			for(i=0;i<= this.resultSet.resultsRows.length -1;i++) {
+			
+				var cells = '';
+				for (var r_item in this.resultSet.resultsRows[i]) {
+				
+					if (this.resultSet.resultsRows[i].hasOwnProperty(r_item)) {
+						cells += jQuery('#table-column').jqote(this.resultSet.resultsRows[i][r_item]);
+					}
+				}
+				
+				var row = jQuery('#table-row').jqote({columns: cells});
+				jQuery('#'+dom_id+'_simpleTable').append(row);	
+			}
+	    
 		} else {
 			jQuery('#'+dom_id).html("No results to display.");
 		}

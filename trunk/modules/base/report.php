@@ -94,13 +94,14 @@ class owa_reportView extends owa_view {
 		$this->body->set_template('report.tpl');
 			
 		// set Js libs to be loaded
+		
 		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
 		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
 		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
 		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array('jquery'));
 		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
-		$this->setJs('excanvas','base/js/includes/excanvas.min.js', '', '', true);
+		$this->setJs('excanvas','base/js/includes/excanvas.compiled.js', '', '', true);
 		$this->setJs('flot','base/js/includes/jquery/flot/jquery.flot.min.js');
 		$this->setJs('flot-pie','base/js/includes/jquery/flot/jquery.flot.pie.js');
 		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
