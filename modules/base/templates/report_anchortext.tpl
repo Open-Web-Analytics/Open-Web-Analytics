@@ -1,7 +1,7 @@
 <div class="owa_reportSectionContent">
 	<div id="trend-title" class="owa_reportSectionHeader"></div>
 	<div id="trend-chart"></div><BR>
-	<div id="trend-metrics" style="height:auto;"></div>
+	<div id="trend-metrics" style="height:auto;width:auto;"></div>
 	<div style="clear:both;"></div>
 	<script>
 		
