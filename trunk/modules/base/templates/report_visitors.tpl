@@ -1,11 +1,11 @@
 <div class="owa_reportSectionContent">
-	<div id="visitor-trend" style="height:125px;"></div>
+	<div id="visitor-trend" style="height:125px;width:auto;"></div>
 	<div id="trend-metrics"></div>
 	
 	<script>
 	//OWA.setSetting('debug', true);
 	var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-													'metrics' => 'uniqueVisitors,newVisitors,repeatVisitors', 
+													'metrics' => 'uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration', 
 													'dimensions' => 'date', 
 													'sort' => 'date',
 													'format' => 'json'), true);?>';
@@ -13,12 +13,13 @@
 	OWA.items.visitortrend = new OWA.resultSetExplorer('visitor-trend');
 	OWA.items.visitortrend.asyncQueue.push(['makeAreaChart', [{x:'date',y:'uniqueVisitors'}], 'visitor-trend']);
 	OWA.items.visitortrend.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
-	OWA.items.visitortrend.options.metricBoxes.width = '125px';
+	OWA.items.visitortrend.asyncQueue.push(['renderTemplate','#visitors-headline-template', {data: OWA.items.visitortrend}, 'replace', 'visitors-headline']);
+	OWA.items.visitortrend.options.metricBoxes.width = '135px';
 	OWA.items.visitortrend.load(aurl);
 	
 	</script>
 	<div class="clear"></div>
-	<div class="owa_reportSectionHeader" id="vists-headline"></div>
+	<div class="owa_reportHeadline" id="visitors-headline"></div>
 	
 </div>
 
@@ -95,3 +96,9 @@
 	</table>
 	
 <?php require_once('js_report_templates.php');?>
+
+<script type="text/x-jqote-template" id="visitors-headline-template">
+<![CDATA[
+	There were <%= this.data.resultSet.aggregates.uniqueVisitors.formatted_value %> <% if (this.data.resultSet.aggregates.uniqueVisitors.value > 1) {this.label = 'visitors';} else {this.label = 'visitor';} %> <%= this.label %> to this web site.
+]]> 
+</script>

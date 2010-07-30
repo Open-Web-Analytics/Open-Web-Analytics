@@ -651,11 +651,12 @@ OWA.resultSetExplorer.prototype = {
 	 */
 	makeAreaChart : function(series, dom_id) {
 		
+		dom_id = dom_id || this.dom_id;
 		var selector = "#"+dom_id + ' > .owa_areaChart';
 		
 		if (this.resultSet.resultsRows.length > 0) {
 				
-			dom_id = dom_id || this.dom_id;
+			
 			var dataseries = [];
 			series = series || this.options.areaChart.series;
 			var data = [];

@@ -1,5 +1,5 @@
 <div class="owa_reportSectionContent">
-	<div id="trend-chart"></div>
+	<div id="trend-chart" style="height:125px;width:auto;"></div>
 	<div class="owa_reportHeadline" id="content-headline"></div>
 	<div id="trend-metrics"></div>
 </div>
