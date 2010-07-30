@@ -6,7 +6,7 @@
 
 <div class="owa_reportSectionContent">
 	
-	<div id="trend-chart"></div>
+	<div id="trend-chart" style="height:125px;width:auto;"></div>
 
 	
 	<div id="trend-title" class="owa_reportHeadline"></div>	
