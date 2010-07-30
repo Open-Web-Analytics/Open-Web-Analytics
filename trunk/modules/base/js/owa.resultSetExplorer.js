@@ -1,4 +1,32 @@
-OWA.setSetting('debug', true);
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Copyright 2010 Peter Adams. All rights reserved.
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// $Id$
+//
+
+/**
+ * Result Set Explorer Library
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @web			<a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
+ * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.3.0
+ */
+ 
 OWA.resultSetExplorer = function(dom_id, options) {
 	
 	this.dom_id = dom_id || '';
@@ -740,7 +768,9 @@ OWA.resultSetExplorer.prototype = {
 			
 
 		} else {
-			jQuery(selector).append("No data for this time period");
+			jQuery('#'+ dom_id).append("No data is available for this time period");
+			jQuery('#'+ dom_id).css('height', '50px');
+
 		}
 			
 	},
@@ -794,7 +824,7 @@ OWA.resultSetExplorer.prototype = {
      
 	    this.domSelectors.pieChart = "#"+this.dom_id + ' > .owa_pieChart';
 	    var selector = this.domSelectors.pieChart;
-						
+		var that = this;			
 		//create data array
 		var data = [];
 		var count = 0;
@@ -832,15 +862,23 @@ OWA.resultSetExplorer.prototype = {
 				
 			} else {
 				//no results
+				jQuery('#'+ that.dom_id).append("No data is available for this time period");
+				jQuery('#'+ that.dom_id).css('height', '50px');
+
 			}
 		} else {
-			// plots a set of values taken from the aggregrate metrics array
-			var metrics = this.options.pieChart.metrics;
-			for(var ii=0;ii<=metrics.length -1 ;ii++) {
-				var value = this.resultSet.aggregates[metrics[ii]].value * 1; 
-				data.push({label: this.getMetricLabel(metrics[ii]), data: value});
-			}
-			
+		
+			if (this.resultSet.aggregates.length > 0) {
+				// plots a set of values taken from the aggregrate metrics array
+				var metrics = this.options.pieChart.metrics;
+				for(var ii=0;ii<=metrics.length -1 ;ii++) {
+					var value = this.resultSet.aggregates[metrics[ii]].value * 1; 
+					data.push({label: this.getMetricLabel(metrics[ii]), data: value});
+				}
+			} else {
+				jQuery('#'+ that.dom_id).append("No data is available for this time period");
+				jQuery('#'+ that.dom_id).css('height', '50px');
+			}			
 			
 		}
 		
