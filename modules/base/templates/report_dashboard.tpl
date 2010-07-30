@@ -1,7 +1,7 @@
 <div class="owa_reportSectionContent" style="width:auto;">
 <div class="owa_reportSectionHeader">Site Metrics</div>
 
-	<div id="trend-chart" style="height:125px;"></div>
+	<div id="trend-chart" style="height:125px; width:auto;"></div>
 	<div id="trend-metrics" style="height:;"></div>
 
 </div>
@@ -89,7 +89,7 @@
 <script>
 //OWA.setSetting('debug', true);
 
-(function() {
+
 
 	var aurl = '<?php 
 					
@@ -102,17 +102,16 @@
 					), true);
 				?>';
 													  
-	rsh = new OWA.resultSetExplorer('site-trend');
+	var rsh = new OWA.resultSetExplorer('site-trend');
 
 	rsh.asyncQueue.push(['makeAreaChart', [{x: 'date', y: 'visits'}], 'trend-chart']);
 	rsh.options.metricBoxes.width = '150px';
 	rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
-	//rsh.options.areaChart.series.push({x:'date',y:'visits'});
-	//rsh.setView('areaChart');
+	
 	rsh.load(aurl);
 
 
-})();
+
 
 
 

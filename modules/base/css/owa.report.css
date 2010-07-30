@@ -1,7 +1,7 @@
 /* REPORT CSS */
 
 ul {margin-left:10px;}
-.owa {background-color: #efefef; font-family: Helvetica, Arial, sans-serif;}
+.owa {background-color: #efefef; font-family: Helvetica, Arial, sans-serif; width:auto;}
 #report_header {width:100%; margin: 0 0 20px 0; }
 
 .owa_reportTitle, .report_headline {
