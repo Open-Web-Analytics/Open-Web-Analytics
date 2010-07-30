@@ -1,11 +1,11 @@
 <div class="owa_reportSectionContent" style="width:auto;">
 <div class="owa_reportSectionHeader">Site Metrics</div>
 
-	<div id="trend-chart" style="height:125px; width:auto;"></div>
-	<div id="trend-metrics" style="height:;"></div>
+	<div id="trend-chart" style="height:125px;"></div><BR>
+	<div id="trend-metrics" style="width:auto;"></div>
 
 </div>
-
+<div class="clear"></div>
 <table style="padding:0px;width:auto;">
 	<TR>
 		<TD style="width:50%" valign="top">
