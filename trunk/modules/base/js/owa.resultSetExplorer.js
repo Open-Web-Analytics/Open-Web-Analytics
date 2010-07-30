@@ -555,12 +555,13 @@ OWA.resultSetExplorer.prototype = {
 		
 		var that = this;
 	
-		var w = this.getContainerWidth();
+		//var w = this.getContainerWidth();
+		var w = jQuery("#"+dom_id).css('width');
+		//alert(w);
 		var h = this.getContainerHeight() || this.getOption('chartHeight');
 		
 		
 		jQuery("#"+dom_id).append('<div class="owa_areaChart"></div>');
-		
 		
 		jQuery(that.domSelectors.areaChart).css('width', w);
 		jQuery(that.domSelectors.areaChart).css('height', h);
@@ -594,28 +595,8 @@ OWA.resultSetExplorer.prototype = {
                 previousPoint = null;            
             }
        
-       });
-       
-		jQuery(window).resize(function () {
-			var sel = that.domSelectors.areaChart;
-			//alert(sel);
-			//var that = this;
-			var chartw =jQuery(sel).width();
-			var containerw = jQuery("#"+dom_id).width();
-			var ccontainerw = that.currentContainerWidth;
-			var ww = jQuery(window).width();
-			OWA.debug('cur-container-w: '+ccontainerw);
-			OWA.debug('new-container-w: '+containerw);
-			
-			if (containerw != ccontainerw) {
-				
-			var d = that.currentWindowWidth - ww;
-				jQuery(sel).css('width', chartw - d);
-				that.makeAreaChart(series, dom_id);
-			}
-			that.currentContainerWidth = containerw;
-			that.currentWindowWidth = ww;
 		});
+       
 	},
 	
 	formatValue : function(type, value) {
@@ -726,11 +707,38 @@ OWA.resultSetExplorer.prototype = {
 			}
 			
 			this.options.areaChart.flot = options;
-		
-	
 			jQuery.plot(jQuery(selector), dataseries, options);
 			this.currentContainerWidth = jQuery("#"+dom_id).width();
 			this.currentWindowWidth = jQuery(window).width();
+			
+			// resize window handler
+			var that = this;
+			jQuery(window).resize(function () {
+				var sel = that.domSelectors.areaChart;
+				//alert(sel);
+				//var that = this;
+				var chartw =jQuery(sel).width();
+				var containerw = jQuery("#"+dom_id).width();
+				var ccontainerw = that.currentContainerWidth;
+				var ww = jQuery(window).width();
+				OWA.debug('cur-container-w: '+ccontainerw);
+				OWA.debug('new-container-w: '+containerw);
+				
+				// check to see if the container or the window width has changed
+				// redraw the graph if it has.
+				if ((containerw != ccontainerw) || (ww != that.currentWindowWidth)) {
+					
+					//var d = that.currentWindowWidth - ww;
+					var d =  ww - that.currentWindowWidth;
+					//alert(d);
+					jQuery(sel).css('width', chartw + d);
+					that.makeAreaChart(series, dom_id);
+				}
+				that.currentContainerWidth = containerw;
+				that.currentWindowWidth = ww;
+			});			
+			
+
 		} else {
 			jQuery(selector).append("No data for this time period");
 		}
