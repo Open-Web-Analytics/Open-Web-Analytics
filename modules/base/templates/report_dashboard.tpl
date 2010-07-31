@@ -26,7 +26,8 @@
 			
 			<div class="owa_reportSectionContent">
 				<div class="section_header">Latest Visits</div>
-				<?php echo $this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '100%', 'period' => $params['period']), false);?>
+				<?php //echo $this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '100%', 'period' => $params['period']), false);?>
+				<?php include('report_latest_visits.tpl')?>
 			</div>
 			
 		</TD>

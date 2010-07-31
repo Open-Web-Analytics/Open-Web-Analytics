@@ -9,6 +9,14 @@ legend {font-size:16px;font-weight:bold;}
 fieldset{margin: 7px; border:1px solid #cccccc;}
 div {margin:0;}
 
+.owa a {
+	color: #21759B;
+}
+
+.owa a:hover {
+	color: orange;
+}
+
 /* COLORS */
 .red {background-color:red;}
 .yellow {background-color:yellow;}
@@ -37,14 +45,12 @@ div {margin:0;}
 	width: 9em;
 	display: block;
 	border: 0.1em solid #efefef;
-	color: #505050;
 	text-decoration: none;
 	text-align: center;
 }
 
 .owa_navigation li a:hover {
 	
-	color:orange;
 	border-color: orange;
 }
 

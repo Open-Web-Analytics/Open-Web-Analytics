@@ -1,5 +1,5 @@
 <div class="owa_infobox">					
-	<table cellpadding="0" cellspacing="0" width="" border="0" class="visit_summary">
+	<table cellpadding="0" cellspacing="0" width="" border="0" class="visit_summary" style="">
 		<TR>
 			<!-- left col -->
 			<TD valign="top" class="owa_visitSummaryLeftCol">
