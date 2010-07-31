@@ -10,7 +10,11 @@
 	</head>
 	
 	<body>
-	
+		<style>
+			html {background-color: #F2F2F2;}
+		</style>
+		
+		<div class="owa">
 		<?php include($this->getTemplatePath('base', 'header.tpl'));?>
 		
 		<?php include($this->getTemplatePath('base', 'msgs.tpl'));?>
@@ -18,7 +22,7 @@
 		<?php echo $body;?>
 		
 		<?php include($this->getTemplatePath('base', 'footer.php'));?>
-	
+		</div>
 	</body>
 	
 </html>

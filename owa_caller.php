@@ -367,6 +367,16 @@ class owa_caller extends owa_base {
 		$this->e->setHandler($mode);
 	}
 	
+	function isOwaInstalled() {
+		
+		$version = owa_coreAPI::getSetting('base', 'schema_version');
+		if ($version > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 }
 
 ?>
