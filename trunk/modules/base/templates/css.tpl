@@ -1,6 +1,7 @@
 <style>
 
 /* HTML ENTITIES*/
+
 body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;}
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 2px 2px 2px;}
@@ -36,9 +37,15 @@ div {margin:0;}
 	width: 9em;
 	display: block;
 	border: 0.1em solid #efefef;
-	color: ;
+	color: #505050;
 	text-decoration: none;
 	text-align: center;
+}
+
+.owa_navigation li a:hover {
+	
+	color:orange;
+	border-color: orange;
 }
 
 /* FORMS */
@@ -215,8 +222,4 @@ div {margin:0;}
 .spiffyfg{
   background:#494444;}
   
-
-  
-  
-   
 </style>

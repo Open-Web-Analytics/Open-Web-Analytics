@@ -233,7 +233,22 @@ OWA.util =  {
     	// Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
     	// PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
     	return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+').replace(/~/g, '%7E');
-	}  
+	},
+	
+	parseUrlParams : function(url) {
+		
+		var _GET = {};
+		for(var i,a,m,n,o,v,p=location.href.split(/[?&]/),l=p.length,k=1;k<l;k++)
+			if( (m=p[k].match(/(.*?)(\..*?|\[.*?\])?=([^#]*)/)) && m.length==4){
+				n=decodeURI(m[1]).toLowerCase(),o=_GET,v=decodeURI(m[3]);
+				if(m[2])
+					for(a=decodeURI(m[2]).replace(/\[\s*\]/g,"[-1]").split(/[\.\[\]]/),i=0;i<a.length;i++)
+						o=o[n]?o[n]:o[n]=(parseInt(a[i])==a[i])?[]:{}, n=a[i].replace(/^["\'](.*)["\']$/,"$1");
+						n!='-1'?o[n]=v:o[o.length]=v;
+			}
+		
+		return _GET;
+	}
 }
 
 

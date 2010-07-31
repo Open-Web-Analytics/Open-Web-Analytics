@@ -1,7 +1,7 @@
 /* REPORT CSS */
 
 ul {margin-left:10px;}
-.owa {background-color: #efefef; font-family: Helvetica, Arial, sans-serif; width:auto;}
+.owa {font-family: Helvetica, Arial, sans-serif; width:auto;}
 #report_header {width:100%; margin: 0 0 20px 0; }
 
 .owa_reportTitle, .report_headline {
@@ -145,14 +145,20 @@ ul {margin-left:10px;}
 #owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
 .owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
 
-#owa_reportNavPanel {width:175px;}
+#owa_reportNavPanel {width:150px;}
 #report_top_level_nav_ul {width:;}
 
 .owa_reportLeftNavColumn {width:150px; margin-right:0px; border-right: 0px solid orange; padding: 5px 5px 5px 5px;}
 .owa_reportLeftNavColumn a {
 	text-decoration: none;
+	color: #505050;
 	
 }
+
+.owa_reportLeftNavColumn a:hover {
+	color: orange;
+}
+
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
 .owa_metricInfobox {

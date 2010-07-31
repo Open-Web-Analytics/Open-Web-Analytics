@@ -49,7 +49,7 @@ class owa_optionsView extends owa_view {
 		
 		// fetch admin links from all modules
 		// need api call here.
-		$this->body->set('headline', 'OWA Configuration Options');
+		$this->body->set('headline', 'OWA Settings');
 		
 		// get admin panels
 		$api = &owa_coreAPI::singleton();
