@@ -47,6 +47,19 @@ class owa_reportDashboardController extends owa_reportController {
 		$rs = owa_coreAPI::executeApiCommand($params);	
 		//print_r($rs);			
 		$this->set('actions', $rs);
+		
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'resultsPerPage'	=> 10
+		));
+		
+		$this->set('latest_visits', $rs);
 	
 		// set view stuff
 		$this->setSubview('base.reportDashboard');
@@ -76,6 +89,7 @@ class owa_reportDashboardView extends owa_view {
 		$this->body->set_template('report_dashboard.tpl');
 		$this->body->set('summary', $this->get('summary'));			
 		$this->body->set('site_trend', $this->get('site_trend'));
+		$this->body->set('visits', $this->get('latest_visits'));
 		$this->body->set('actions', $this->get('actions'));
 	}
 }

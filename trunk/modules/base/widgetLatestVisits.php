@@ -39,12 +39,7 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		$this->setDefaultFormat('table');
 		return parent::__construct($params);
 	}
-	
-	function owa_widgetLatestVisitsController($params) {
-			
-		return owa_widgetLatestVisitsController::__construct($params);
-	}
-	
+		
 	function action() {
 		
 		$this->data['title'] = 'Recent Visits';
@@ -70,10 +65,7 @@ class owa_widgetLatestVisitsController extends owa_widgetController {
 		$this->set('show_error', false);
 		$this->set('table_row_template', 'row_visitSummary.tpl');	
 		$this->set('is_sortable', false);	
-		return;	
-		
 	}
-	
 }
 
 ?>

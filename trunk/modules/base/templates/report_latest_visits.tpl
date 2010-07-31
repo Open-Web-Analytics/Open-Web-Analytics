@@ -1,5 +1,5 @@
 <?php if(!empty($visits)):?>
-<table>
+<table style="width:100%;">
 	<?php foreach($visits->resultsRows as $row): ?>
 		<TR>
 		<?php include('row_visitSummary.tpl');?>
