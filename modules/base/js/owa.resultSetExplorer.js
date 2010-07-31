@@ -868,7 +868,7 @@ OWA.resultSetExplorer.prototype = {
 			}
 		} else {
 		
-			if (this.resultSet.aggregates.length > 0) {
+			if (!jQuery.isEmptyObject(that.resultSet.aggregates)) {
 				// plots a set of values taken from the aggregrate metrics array
 				var metrics = this.options.pieChart.metrics;
 				for(var ii=0;ii<=metrics.length -1 ;ii++) {
