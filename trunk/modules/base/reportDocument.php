@@ -76,11 +76,6 @@ class owa_reportDocumentController extends owa_reportController {
 
 class owa_reportDocumentView extends owa_view {
 	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		// Assign Data to templates
@@ -94,6 +89,8 @@ class owa_reportDocumentView extends owa_view {
 		$this->body->set('constraints', $this->get('constraints'));
 		$this->body->set('gridTitle', $this->get('gridTitle'));
 		$this->body->set('document', $this->get('document'));
+		$this->body->set('dimension_properties', $this->get('document'));
+		$this->body->set('dimension_template', 'item_document.php');
 		$this->body->set_template('report_document.tpl');
 	}
 }
