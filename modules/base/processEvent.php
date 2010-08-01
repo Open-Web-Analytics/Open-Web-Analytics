@@ -332,7 +332,7 @@ class owa_processEventController extends owa_controller {
 		$tepc->set('tracking_event_type', $this->event->getEventType());
 		
 		if (!$this->event->get('do_not_log')) {
-			$this->eq->filter($tepc);
+			$this->eq->filter('tracking_event_processing_complete', $tepc);
 			// pass event to handlers but filter it first
 			$this->eq->asyncNotify($this->eq->filter('processed_event', $this->event));
 			return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
