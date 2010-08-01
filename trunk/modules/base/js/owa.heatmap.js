@@ -43,7 +43,7 @@ OWA.heatmap = function(w, h) {
 OWA.heatmap.prototype = {
 	
 	options: {
-		'dotSize': 15, 
+		'dotSize': 12, 
 		'numRegions': 40, 
 		'alphaIncrement':50, 
 		'demoMode': false, 
