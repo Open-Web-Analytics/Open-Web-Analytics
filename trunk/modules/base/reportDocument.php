@@ -41,16 +41,15 @@ class owa_reportDocumentController extends owa_reportController {
 			$pageUrl = $this->getParam('pageUrl');
 			$d->getByColumn('url', $pageUrl);
 			$this->set('constraints', 'pageUrl=='.urlencode($pageUrl));
-			$this->setTitle('Page Detail: ', $pageUrl);
 		}
 		
 		if ($this->getParam('pagePath')) {
 			$pagePath = $this->getParam('pagePath');
 			$d->getByColumn('uri', $pagePath);
 			$this->set('constraints', 'pagePath=='.urlencode($pagePath));
-			$this->setTitle('Page Detail: ', $pagePath);
 		}
 		
+		$this->setTitle('Page Detail');
 		$this->set('document', $d);
 		$this->set('metrics', 'visits,pageViews');
 		$this->set('resultsPerPage', 30);
