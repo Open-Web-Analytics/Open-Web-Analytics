@@ -26,7 +26,6 @@
  * @version		$Revision$	      
  * @since		owa 1.2.1
  */
-OWA.setSetting('debug', true);
 OWA.heatmap = function(w, h) {
 
 	this.docDimensions = this.getDim(document);
@@ -44,7 +43,7 @@ OWA.heatmap = function(w, h) {
 OWA.heatmap.prototype = {
 	
 	options: {
-		'dotSize': 8, 
+		'dotSize': 15, 
 		'numRegions': 40, 
 		'alphaIncrement':50, 
 		'demoMode': false, 
@@ -52,7 +51,8 @@ OWA.heatmap.prototype = {
 		'mapInterval': 1000,
 		'randomDataCount': 200,
 		'rowsPerFetch': 100,
-		'strokeRegions': false
+		'strokeRegions': false,
+		'svgUrl': OWA.getSetting('baseUrl')+'/modules/base/i/test.svg#f1'
 	},
 	canvas: null,
 	context: null,
@@ -581,8 +581,8 @@ OWA.heatmap.prototype = {
     },
     
     createCanvas: function(w, h) {
-    
-    	jQuery("body").append('<style>.owa_blur{filter: url('+OWA.getSetting('baseUrl')+'/modules/base/i/test.svg#f1);}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
+    	var that = this;
+    	jQuery("body").append('<style>.owa_blur{filter: url('+that.options.svgUrl+');}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
     	
     },
     
