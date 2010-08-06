@@ -322,7 +322,7 @@ function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$
 	return true;
 }
 
-function owa_editArticleAction($article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision, &$status, $baseRevId, &$redirect) {
+function owa_editArticleAction($article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision, &$status, $baseRevId, &$redirect = '') {
 	
 	if ($flags & EDIT_UPDATE) {
 		
@@ -369,7 +369,8 @@ function owa_addUploadAction( &$image ) {
 	
 	$owa = owa_singleton();
     if ($owa->getSetting('base', 'install_complete')) {
-    	$label = $image->mLocalFile->mime;
+    	//$label = $image->mLocalFile->mime;
+    	$label = '';
 		$owa->trackAction('mediawiki', 'File Upload', $label);	
 		owa_coreAPI::debug("logging action event from MW upload complete hook");
 	}
