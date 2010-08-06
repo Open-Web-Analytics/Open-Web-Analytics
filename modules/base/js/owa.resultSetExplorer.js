@@ -55,7 +55,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 		defaultView: 'grid', 
 		areaChart: {
 			series:[],
-			showDots: false,
+			showDots: true,
 			showLegend: true,
 			lineWidth: 4
 		}, 
