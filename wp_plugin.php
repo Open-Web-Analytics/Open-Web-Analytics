@@ -74,6 +74,11 @@ function owa_editPostActionTracker($post_id, $post) {
  */
 function owa_postActionTracker($new_status, $old_status, $post) {
 	
+	// we don't want to track autosaves...
+	if(wp_is_post_autosave($post)) {
+		return;
+	}
+	
 	if ($new_status === 'publish' && $old_status != 'publish') {
 		$action_name = $post->post_type.' publish';
 	} elseif ($new_status === $old_status) {

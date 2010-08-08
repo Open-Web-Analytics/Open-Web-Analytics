@@ -55,7 +55,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 		defaultView: 'grid', 
 		areaChart: {
 			series:[],
-			showDots: false,
+			showDots: true,
 			showLegend: true,
 			lineWidth: 4
 		}, 
@@ -868,7 +868,7 @@ OWA.resultSetExplorer.prototype = {
 			}
 		} else {
 		
-			if (!jQuery.isEmptyObject(that.resultSet.aggregates)) {
+			if (this.resultSet.aggregates.length > 0) {
 				// plots a set of values taken from the aggregrate metrics array
 				var metrics = this.options.pieChart.metrics;
 				for(var ii=0;ii<=metrics.length -1 ;ii++) {
