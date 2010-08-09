@@ -254,7 +254,7 @@ class owa_coreAPI {
 	
 	public static function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
 		
-		list($module, $file) = split("\.", $modulefile);
+		list($module, $file) = explode(".", $modulefile);
 		$class = $class_ns.$file.$class_suffix;
 		//print $class;
 		// Require class file if class does not already exist
@@ -326,7 +326,7 @@ class owa_coreAPI {
 		
 	public static function subViewFactory($subview, $params = array()) {
 		
-		list($module, $class) = split("\.", $subview);
+		list($module, $class) = explode(".", $subview);
 		//print_r($module.' ' . $class);
 		//owa_lib::moduleRequireOnce($module, $class);
 	
@@ -405,7 +405,7 @@ class owa_coreAPI {
 	 */
 	public static function moduleSpecificFactory($modulefile, $class_dir, $class_suffix = null, $params = '', $add_module_name = true, $class_ns = 'owa_') {
 		
-		list($module, $file) = split("\.", $modulefile);
+		list($module, $file) = explode(".", $modulefile);
 		$class = $class_ns.$file.$class_suffix;
 		
 		// Require class file if class does not already exist
