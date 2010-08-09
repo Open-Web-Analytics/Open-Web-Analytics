@@ -678,13 +678,8 @@
 		
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
-			if ($_SERVER['HTTP_HOST'] != 'localhost') {
-				$this->set('base','cookie_domain', $_SERVER['HTTP_HOST']);
-			}
-		} //else {		
-			//$this->set('base','cookie_domain', $_SERVER['SERVER_NAME']);
-		//}
- 		
+			$this->setCookieDomain($_SERVER['HTTP_HOST']);
+		}
  	}
  	
  	function createConfigFile($config_values) {
@@ -750,7 +745,17 @@
 		} else {
 			return false;
 		}			
-	} 	
+	}
+	
+	function setCookieDomain ($domain) {
+		
+		 if ($_SERVER['HTTP_HOST'] != 'localhost') {
+		 	
+		 	$pattern = '/(.*):.*/';
+		 	$replacement='$1';
+		 	$this->set('base','cookie_domain', preg_replace($pattern, $replacement, $httpHost));		 	
+		 }
+	}	
 }
 
 ?>
