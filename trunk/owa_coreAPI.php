@@ -967,9 +967,13 @@ if (!empty($links[$group])):
 	
 	public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
 	
-		if (empty($domain)) {
-			$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
+		if (!empty($domain)) {
+			$c = owa_coreAPI::configSingleton();
+			// sanitizes the domain
+			$c->setCookieDomain($domain);
 		}
+		
+		$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
 		
 		if (is_array($cookie_value)) {
 			
