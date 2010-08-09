@@ -828,7 +828,7 @@ OWA.resultSetExplorer.prototype = {
 		//create data array
 		var data = [];
 		var count = 0;
-		
+
 		if (this.options.pieChart.dimension.length > 0) {
 		// plots a dimensional set of data
 		
@@ -867,8 +867,8 @@ OWA.resultSetExplorer.prototype = {
 
 			}
 		} else {
-		
-			if (this.resultSet.aggregates.length > 0) {
+			
+			 if (!jQuery.isEmptyObject(that.resultSet.aggregates)) {
 				// plots a set of values taken from the aggregrate metrics array
 				var metrics = this.options.pieChart.metrics;
 				for(var ii=0;ii<=metrics.length -1 ;ii++) {
@@ -876,8 +876,12 @@ OWA.resultSetExplorer.prototype = {
 					data.push({label: this.getMetricLabel(metrics[ii]), data: value});
 				}
 			} else {
+				//OWA.setSetting('debug', true);
+				//OWA.debug('there was no data');
+				//alert('hi');
 				jQuery('#'+ that.dom_id).append("No data is available for this time period");
 				jQuery('#'+ that.dom_id).css('height', '50px');
+				
 			}			
 			
 		}

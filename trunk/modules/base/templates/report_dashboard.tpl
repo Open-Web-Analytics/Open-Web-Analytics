@@ -192,10 +192,10 @@
 													'format' => 'json',
 													'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
 													  
-	var vt = new OWA.resultSetExplorer('visitor-types');
-	vt.options.pieChart.metrics = ['repeatVisitors', 'newVisitors'];
-	vt.setView('pie');
-	vt.load(aurl);
+	OWA.items.vt = new OWA.resultSetExplorer('visitor-types');
+	OWA.items.vt.options.pieChart.metrics = ['repeatVisitors', 'newVisitors'];
+	OWA.items.vt.asyncQueue.push(['makePieChart']);
+	OWA.items.vt.load(aurl);
 })();				
 				
 </script>
