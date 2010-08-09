@@ -753,7 +753,7 @@
 		 	
 		 	$pattern = '/(.*):.*/';
 		 	$replacement='$1';
-		 	$this->set('base','cookie_domain', preg_replace($pattern, $replacement, $httpHost));		 	
+		 	$this->set('base','cookie_domain', preg_replace($pattern, $replacement, $domain));		 	
 		 }
 	}	
 }
