@@ -282,9 +282,9 @@ class owa_timePeriod {
 		$end = $this->endDate->getYyyymmdd();	
 		$diff = $this->getDateDifference($start, $end);
 		
-		$this->diff_years = $diff['YearsSinse'];
-		$this->diff_months = $diff['MonthsSinse'];
-		$this->diff_days = $diff['DaysSinse'];
+		$this->diff_years = $diff['YearsSince'];
+		$this->diff_months = $diff['MonthsSince'];
+		$this->diff_days = $diff['DaysSince'];
 	}
 	
 	function getMonthsDifference() {
@@ -330,10 +330,10 @@ class owa_timePeriod {
     function getDateDifference($StartDateString=NULL, $EndDateString=NULL) { 
         $ReturnArray = array(); 
         
-        $SDSplit = sscanf('%4d%2d%2d',$StartDateString); 
+        $SDSplit = sscanf($StartDateString,'%4d%2d%2d'); 
         $StartDate = mktime(0,0,0,$SDSplit[1],$SDSplit[2],$SDSplit[0]); 
         
-        $EDSplit = sscanf('%4d%2d%2d',$StartDateString); 
+        $EDSplit = sscanf($EndDateString,'%4d%2d%2d'); 
         $EndDate = mktime(0,0,0,$EDSplit[1],$EDSplit[2],$EDSplit[0]); 
         
         $DateDifference = $EndDate-$StartDate; 
