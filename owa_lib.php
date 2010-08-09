@@ -672,7 +672,7 @@ class owa_lib {
 	 */
 	public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
 		
-		list($module, $file) = split("\.", $modulefile);
+		list($module, $file) = explode(".", $modulefile);
 		$class = 'owa_'.$file.$class_suffix;
 		
 		// Require class file if class does not already exist
@@ -842,7 +842,7 @@ class owa_lib {
 				
 				foreach ($array as $key => $value) {
 		
-					list($realkey, $realvalue) = split($inner, $value);
+					list($realkey, $realvalue) = explode($inner, $value);
 					$state[$realkey] = $realvalue;
 		
 				}
