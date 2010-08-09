@@ -20,7 +20,7 @@ if(!class_exists('Snoopy')) {
 	require_once(OWA_INCLUDE_DIR.'/Snoopy.class.php');
 }
 
-require_once(OWA_INCLUDE_DIR.'/httpclient-2008-03-18/http.php');
+require_once(OWA_HTTPCLIENT_DIR.'http.php');
 
 /**
  * Wrapper for Snoopy http request class
