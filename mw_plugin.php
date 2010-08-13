@@ -27,12 +27,10 @@ require_once "$IP/includes/SpecialPage.php";
 
 /* MEDIAWIKI GLOBALS */
 global $wgCachePages, $wgUser, $wgServer, $wgScriptPath, $wgScript;
-/* OWA's MEDIAWIKI CONFIGURATION OVERRIDES */
 
-// Build OWA's Mediawiki specific config overrides array
+/* OWA's CONFIGURATION OVERRIDES */
 $owa_config = array();
 $wiki_url = $wgScriptPath;
-
 $owa_config['report_wrapper'] = 'wrapper_mediawiki.tpl';
 $owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
 $owa_config['images_absolute_url'] = $owa_config['images_url'];
@@ -50,17 +48,21 @@ $owa_config['query_string_filters'] = 'returnto';
 
 // Register Extension with MediaWiki
 $wgExtensionFunctions[] = 'owa_main';
-$wgExtensionCredits['other'][] = array( 'name' => 'Open Web Analytics for MediaWiki', 
-										'author' => 'Peter Adams <peter@openwebanalytics.com>', 
-										'url' => 'http://www.openwebanalytics.com' );
+$wgExtensionCredits['other'][] = array( 
+		'name' 			=> 'Open Web Analytics for MediaWiki', 
+		'author' 		=> 'Peter Adams <peter@openwebanalytics.com>', 
+		'url' 			=> 'http://www.openwebanalytics.com');
 										
-$wgExtensionCredits['specialpage'][] = array('name' => 'Open Web Analytics for MediaWiki', 
-  											 'author' => 'Peter Adams', 
-  											 'url' => 'http://www.openwebanalytics.com',
-  											 'description' => 'Open Web Analytics for MedaWiki');
+$wgExtensionCredits['specialpage'][] = array(
+		'name' 			=> 'Open Web Analytics for MediaWiki', 
+  		'author' 		=> 'Peter Adams', 
+  		'url' 			=> 'http://www.openwebanalytics.com',
+  		'description' 	=> 'Open Web Analytics for MedaWiki'
+);
 
 //Load Special Page
 $wgAutoloadClasses['SpecialOwa'] = __FILE__;
+
 // Adds OWA's admin interface to special page list
 $wgSpecialPages['Owa'] = 'SpecialOwa';
 $wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
@@ -74,27 +76,21 @@ function owa_main() {
 
 	global $wgHooks;
 	
-	//$owa = owa_singleton();
-	
-	//if ($owa->getSetting('base', 'install_complete')) {
-	
-		//$wgHooks['MediaWikiPerformAction'][] = 'owa_actions';
-		$wgHooks['UnknownAction'][] = 'owa_actions';
-		// Hook for logging Article Page Views	
-		$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
-		$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
-		$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
-		// Hook for adding helper page tracking tags 	
-		$wgHooks['BeforePageDisplay'][] = 'owa_footer';
-		$wgHooks['ArticleInsertComplete'][] = 'owa_newArticleAction';
-		$wgHooks['ArticleSaveComplete'][] = 'owa_editArticleAction';
-		$wgHooks['ArticleDeleteComplete'][] = 'owa_deleteArticleAction';
-		$wgHooks['AddNewAccount'][] = 'owa_addUserAction';
-		$wgHooks['UploadComplete'][] = 'owa_addUploadAction';
-		$wgHooks['UserLoginComplete'][] = 'owa_userLoginAction';
-		$wgHooks['ArticleEditUpdateNewTalk'][] ='owa_editTalkPageAction';
-	//}
-		
+	$wgHooks['UnknownAction'][] = 'owa_actions';
+	// Hook for logging Article Page Views	
+	$wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
+	$wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
+	$wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
+	// Hook for adding helper page tracking tags 	
+	$wgHooks['BeforePageDisplay'][] = 'owa_footer';
+	$wgHooks['ArticleInsertComplete'][] = 'owa_newArticleAction';
+	$wgHooks['ArticleSaveComplete'][] = 'owa_editArticleAction';
+	$wgHooks['ArticleDeleteComplete'][] = 'owa_deleteArticleAction';
+	$wgHooks['AddNewAccount'][] = 'owa_addUserAction';
+	$wgHooks['UploadComplete'][] = 'owa_addUploadAction';
+	$wgHooks['UserLoginComplete'][] = 'owa_userLoginAction';
+	$wgHooks['ArticleEditUpdateNewTalk'][] ='owa_editTalkPageAction';
+				
     return;
 }
 
@@ -119,7 +115,6 @@ function owa_actions($action) {
 	$wgOut->disable();
 
 	if ($_GET['action'] === 'owa') {
-			
 		$owa = owa_singleton();
 		//print_r($wgUser);
 		//owa_set_priviledges();
@@ -128,7 +123,6 @@ function owa_actions($action) {
 	} else {
 		return true;
 	}
-	
 }
 
 function owa_singleton() {
@@ -215,21 +209,24 @@ function owa_logSpecialPage(&$specialPage) {
 	
 	$owa = owa_singleton();
 	
-	if ($owa->getSetting('base', 'install_complete')) {
+	if ( $owa->getSetting( 'base', 'install_complete' ) ) {
 	
 		$event = $owa->makeEvent();
-		$event->setEventType('base.page_request');
-		$event->set('user_name', $wgUser->mName);
-		$event->set('user_email', $wgUser->mEmail);
-		$event->set('page_title', $wgOut->mPagetitle);
-		$event->set('page_type', 'Special Page');
-		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		//$owa->trackEvent($event);
-		$tag = sprintf('<script>
-						// owa tracking page params
-						var owa_params = %s
-						</script>', json_encode($event->getProperties()));
-		$wgOut->addHTML($tag);
+		$event->setEventType( 'base.page_request' );
+		$event->set( 'user_name', $wgUser->mName );
+		$event->set( 'user_email', $wgUser->mEmail );
+		$event->set( 'page_title', $wgOut->mPagetitle );
+		$event->set( 'page_type', 'Special Page' );
+		$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
+		$tag = sprintf(
+				'<script>
+				// owa tracking page params
+				var owa_params = %s
+				</script>'
+				, json_encode( $event->getProperties() )
+		);
+		
+		$wgOut->addHTML( $tag );
 	}
 		
 	return true;
@@ -246,7 +243,6 @@ function owa_logCategoryPage(&$categoryPage) {
 	global $wgUser, $wgOut, $wgServer, $wgScriptPath;
 	
 	$owa = owa_singleton();
-    //owa_set_priviledges();
     if ($owa->getSetting('base', 'install_complete')) {
 		$event = $owa->makeEvent();
 		$event->setEventType('base.page_request');
@@ -255,11 +251,11 @@ function owa_logCategoryPage(&$categoryPage) {
 		$event->set('page_title', $wgOut->mPagetitle);
 		$event->set('page_type', 'Category');
 		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		//$owa->trackEvent($event);
 		$tag = sprintf('<script>
 						// owa tracking page params
 						var owa_params = %s
-						</script>', json_encode($event->getProperties()));
+						</script>', json_encode($event->getProperties())
+		);
 		$wgOut->addHTML($tag);
 	}
 	return true;
@@ -274,33 +270,30 @@ function owa_logCategoryPage(&$categoryPage) {
 function owa_logArticle(&$article) {
 
 	global $wgUser, $wgOut, $wgTitle, $wgServer, $wgScriptPath;
-	
-	//$wgTitle->invalidateCache();
-	//$wgOut->enableClientCache(false);
-	
+		
 	// Setup Application Specific Properties to be Logged with request
 	$owa = owa_singleton();
 	
-	if ($owa->getSetting('base', 'install_complete')) {
-		owa_coreAPI::debug("logging event from MW article hook");
-		//owa_set_priviledges();
+	if ($owa->getSetting( 'base', 'install_complete' ) ) {
+		owa_coreAPI::debug( "logging event from MW article hook" );
 		$event = $owa->makeEvent();
-		$event->setEventType('base.page_request');
-		$event->set('user_name', $wgUser->mName);
-		$event->set('user_email', $wgUser->mEmail);
-		$event->set('page_title', $article->mTitle->mTextform);
-		$event->set('page_type', 'Article');
-		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		//$owa->trackEvent($event);
-		$tag = sprintf('<script>
-						// owa tracking page params
-						var owa_params = %s
-						</script>', json_encode($event->getProperties()));
-		$wgOut->addHTML($tag);
+		$event->setEventType( 'base.page_request' );
+		$event->set( 'user_name', $wgUser->mName );
+		$event->set( 'user_email', $wgUser->mEmail );
+		$event->set( 'page_title', $article->mTitle->mTextform );
+		$event->set( 'page_type', 'Article' );
+		$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
+		$tag = sprintf(
+				'<script>
+				// owa tracking page params
+				var owa_params = %s
+				</script>'
+				, json_encode( $event->getProperties() ) );
+		
+		$wgOut->addHTML( $tag );
 	}
 		
 	return true;
-	
 }
 
 /**
@@ -324,10 +317,9 @@ function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$
 
 function owa_editArticleAction($article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision, &$status, $baseRevId, &$redirect) {
 	
-	if ($flags & EDIT_UPDATE) {
+	if ( $flags & EDIT_UPDATE ) {
 		
 		$owa = owa_singleton();
-	    //owa_set_priviledges();
 	    if ($owa->getSetting('base', 'install_complete')) {
 	    	owa_coreAPI::debug('MW: '.print_r($revision, true));
 	    	$label = $article->mTitle->mTextform;
@@ -342,7 +334,6 @@ function owa_editArticleAction($article, &$user, $text, $summary, $minoredit, &$
 function owa_deleteArticleAction( &$article, &$user, $reason, $id ) {
 	
 	$owa = owa_singleton();
-    //owa_set_priviledges();
     if ($owa->getSetting('base', 'install_complete')) {
     	$label = $article->mTitle->mTextform;
 		$owa->trackAction('mediawiki', 'Article Deleted', $label);
@@ -355,7 +346,6 @@ function owa_deleteArticleAction( &$article, &$user, $reason, $id ) {
 function owa_addUserAction( $user, $byEmail ) {
 	
 	$owa = owa_singleton();
-    //owa_set_priviledges();
     if ($owa->getSetting('base', 'install_complete')) {
     	$label = '';
 		$owa->trackAction('mediawiki', 'User Account Added', $label);
@@ -380,7 +370,6 @@ function owa_addUploadAction( &$image ) {
 function owa_userLoginAction( &$user, &$inject_html ) {
 	
 	$owa = owa_singleton();
-    //owa_set_priviledges();
     if ($owa->getSetting('base', 'install_complete')) {
     	$label = '';
 		$owa->trackAction('mediawiki', 'Login', $label);
@@ -394,7 +383,6 @@ function owa_userLoginAction( &$user, &$inject_html ) {
 function editTalkPageAction( $article ) {
 
 	$owa = owa_singleton();
-    //owa_set_priviledges();
     if ($owa->getSetting('base', 'install_complete')) {
     	$label = $article->mTitle->mTextform;
 		$owa->trackAction('mediawiki', 'Talk Page Edit', $label);
@@ -428,10 +416,6 @@ function owa_footer(&$wgOut, $sk) {
 	return true;
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////
-
-
 /**
  * OWA Special Page Class
  *
@@ -445,58 +429,52 @@ class SpecialOwa extends SpecialPage {
     }
 
     function execute() {
-    	global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer, $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword;
+    
+    	global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer, 
+    		   $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword;
             
-            $this->setHeaders();
-            //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.
-            $owa = owa_singleton();
-            //owa_set_priviledges();
-            $params = array();
-            
-            // if no action is found...
-            $do = owa_coreAPI::getRequestParam('do');
-            if (empty($do)) {
-            	// check to see that owa in installed.
-                if (!$owa->getSetting('base', 'install_complete')) {
-					
-					define('OWA_INSTALLING', true);
-					               	
-                	$site_url = $wgServer.$wgScriptPath;
+        $this->setHeaders();
+        //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.
+        $owa = owa_singleton();
+        $params = array();
+        
+        // if no action is found...
+        $do = owa_coreAPI::getRequestParam('do');
+        if (empty($do)) {
+        	// check to see that owa in installed.
+            if (!$owa->getSetting('base', 'install_complete')) {
+				
+				define('OWA_INSTALLING', true);
+				               	
+            	$site_url = $wgServer.$wgScriptPath;
 
-                	$params = array('site_id' => md5($site_url), 
-    							'name' => $wgSitename,
-    							'domain' => $site_url, 
-    							'description' => '',
-    							'do' => 'base.installStartEmbedded');
-    				$params['db_type'] = $wgDBtype;
-					$params['db_name'] = $wgDBname;
-					$params['db_host'] = $wgDBserver;
-					$params['db_user'] = $wgDBuser;
-					$params['db_password'] = $wgDBpassword;
-					$params['public_url'] = $wgServer.$wgScriptPath.'/extensions/owa/';
-    				$page = $owa->handleRequest($params);
-    			
-    			// send to daashboard
-               } else {
-                	$params['do'] = 'base.reportDashboard';
-		           	$page = $owa->handleRequest($params);
-                }
-            // do action found on url
-            } else {
-           		$page = $owa->handleRequestFromURL(); 
+            	$params = array(
+            			'site_id' 		=> md5($site_url), 
+						'name' 			=> $wgSitename,
+						'domain' 		=> $site_url, 
+						'description' 	=> '',
+						'do' 			=> 'base.installStartEmbedded');
+				
+				$params['db_type'] = $wgDBtype;
+				$params['db_name'] = $wgDBname;
+				$params['db_host'] = $wgDBserver;
+				$params['db_user'] = $wgDBuser;
+				$params['db_password'] = $wgDBpassword;
+				$params['public_url'] = $wgServer.$wgScriptPath.'/extensions/owa/';
+				$page = $owa->handleRequest($params);
+			
+			// send to daashboard
+           } else {
+            	$params['do'] = 'base.reportDashboard';
+	           	$page = $owa->handleRequest($params);
             }
-            
-           				
-
-			// switch for output scenario
-			//if (empty($owa->config['schema_version'])):
-				return $wgOut->addHTML($page);					
-			//else:
-			//	$wgOut->disable();
-			//	echo $page;
-			//	return;
-			//endif;
-            
+        // do action found on url
+        } else {
+       		$page = $owa->handleRequestFromURL(); 
+        }
+        
+		return $wgOut->addHTML($page);					
+			
     }
 
     function loadMessages() {
@@ -521,10 +499,7 @@ class SpecialOwa extends SpecialPage {
 		}
 		
 		return true;
-    }
-        
+    }      
 }
-
-
 
 ?>
