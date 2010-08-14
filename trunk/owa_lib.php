@@ -730,18 +730,6 @@ class owa_lib {
 		
 	}
 	
-	public static function &coreAPISingleton() {
-		
-		static $api;
-		
-		if(!isset($api)):
-			require_once('owa_coreAPI.php');
-			$api = new owa_coreAPI;
-		endif;
-		
-		return $api;
-	}
-	
 	/**
 	 * Create guid from string
 	 *

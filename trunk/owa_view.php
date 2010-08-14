@@ -123,6 +123,7 @@ class owa_view extends owa_base {
 		$this->t = new owa_template();
 		$this->body = new owa_template($this->module);
 		$this->setTheme();
+		//header('Content-type: text/html; charset=utf-8');
 	}
 	
 	/**
