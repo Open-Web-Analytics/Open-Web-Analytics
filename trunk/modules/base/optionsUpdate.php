@@ -35,6 +35,7 @@ class owa_optionsUpdateController extends owa_adminController {
 	function __construct($params) {
 	
 		$this->setRequiredCapability('edit_settings');
+		$this->setNonceRequired();
 		return parent::__construct($params);
 	
 	}

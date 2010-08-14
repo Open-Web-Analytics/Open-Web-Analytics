@@ -46,6 +46,7 @@
 		<TR>
 			<TH></TH>
 			<TD>
+				<?php echo $this->createNonceFormField($action);?>
 				<input type="hidden" name="<?php echo $this->getNs();?>action" value="<?php echo $action;?>">
 				<input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save">
 			</TD>

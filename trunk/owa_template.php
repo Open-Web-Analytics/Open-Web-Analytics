@@ -19,6 +19,7 @@
 require_once(OWA_INCLUDE_DIR.'template_class.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
+require_once(OWA_BASE_CLASS_DIR.'sanitizer.php');
 
 /**
  * OWA Wrapper for template class
