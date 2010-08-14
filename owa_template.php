@@ -927,6 +927,14 @@ class owa_template extends Template {
 		$t->set_template($template);
 		return $t->fetch();
 	}
+		
+	function createNonceFormField($action) {
+		
+		return sprintf(
+				'<input type="hidden" name="%snonce" value="%s">', 
+				owa_coreAPI::getSetting('base', 'ns'), 
+				owa_coreAPI::createNonce($action));
+	}
 }
 
 

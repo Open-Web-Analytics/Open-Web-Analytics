@@ -1152,6 +1152,22 @@ if (!empty($links[$group])):
 		return $s->geolocation;
 	}
 	
+	public static function getNonceTimeInterval() {
+		
+		return  ceil( time() / owa_coreAPI::getSetting( 'base', 'nonce_expiration_period') );
+	}
+	
+	public static function createNonce($action) {
+		
+		$time = owa_coreAPI::getNonceTimeInterval();
+		$cu = owa_coreAPI::getCurrentUser();
+		$user_id = $cu->getUserData( 'user_id' );
+		$full_nonce = $time . $action . $user_id . 'owa_nonce';
+		$nonce = substr(md5($full_nonce), -12, 10);
+		
+		return $nonce;
+	}
+	
 }
 
 ?>

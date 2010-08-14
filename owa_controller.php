@@ -136,19 +136,41 @@ class owa_controller extends owa_base {
 		
 		// check if the schema needs to be updated and force the update
 		// not sure this should go here...
-		if ($this->is_admin === true):
+		if ($this->is_admin === true) {
 			// do not intercept if its the updatesApply action or a re-install else updates will never apply
-			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')):
+			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 				
-				if (owa_coreAPI::isUpdateRequired()):
+				if (owa_coreAPI::isUpdateRequired()) {
 					$this->e->debug('Updates Required. Redirecting action.');
 					$data = array();
 					$data['view_method'] = 'redirect';
 					$data['action'] = 'base.updates';
 					return $data;
-				endif;
-			endif;
-		endif;		
+				}
+			}
+		}
+		
+		
+		/* Check validity of nonce */
+		
+		$nonce = $this->getParam('nonce');
+		if ($nonce) {
+			
+			$is_nonce_valid = $this->verifyNonce($nonce);
+			
+			if (!$is_nonce_valid) {
+				$this->e->debug('Nonce is not valid.');
+				$ret = $this->notAuthenticatedAction();
+				if (!empty($ret)) {
+					$this->post();
+					return $ret;
+				} else {
+					$this->post();
+					return $this->data;
+				}
+			}
+		}
+				
 		
 		/* CHECK USER FOR CAPABILITIES */
 		if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())) {
@@ -499,6 +521,23 @@ class owa_controller extends owa_base {
 
 		$this->setRedirectAction('base.loginForm');
 		$this->set('go', urlencode(owa_lib::get_current_url()));
+	}
+	
+	function verifyNonce($nonce) {
+		
+		$action = $this->getParam('do');
+		
+		if (!$action) {
+			$action = $this->getParam('action');	
+		}
+		
+		$matching_nonce = owa_coreAPI::createNonce($action);
+		owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
+		print("passed nonce: $nonce | matching nonce: $matching_nonce");
+		exit;
+		if ($nonce === $matching_nonce) {
+			return true;
+		}
 	}
 	
 
