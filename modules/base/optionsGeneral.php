@@ -36,7 +36,7 @@ class owa_optionsGeneralView extends owa_view {
 	function __construct($params) {
 
 		$this->_setPageType('Administration Page');
-		
+	
 		return parent::__construct();
 	}
 	

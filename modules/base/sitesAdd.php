@@ -33,12 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  */
 
 class owa_sitesAddView extends owa_view {
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		//page title
@@ -50,14 +45,10 @@ class owa_sitesAddView extends owa_view {
 		$this->body->set('action', 'base.sitesAdd');
 		
 		//Check to see if user is passed by constructor or else fetch the object.
-		if ($data['site']):
+		if ($data['site']) {
 			$this->body->set('site', $data['site']);
-		endif;
-		
-		return;
+		}
 	}
-	
-	
 }
 
 /**
@@ -94,8 +85,9 @@ class owa_sitesAddController extends owa_adminController {
 		$v2->setValues($this->getParam('protocol').$this->getParam('domain'));
 		$v2->setErrorMessage($this->getMsg(3206));
 		$this->setValidation('domain', $v2);
-
-		return;
+		
+		// require nonce for this action
+		$this->setNonceRequired();
 	}
 	
 	function action() {
@@ -112,8 +104,6 @@ class owa_sitesAddController extends owa_adminController {
 		
 		$this->setRedirectAction('base.sites');
 		$this->set('status_code', 3202);
-					
-		return;
 	}
 	
 	function errorAction() {
@@ -122,8 +112,6 @@ class owa_sitesAddController extends owa_adminController {
 		$this->setSubview('base.sitesProfile');
 		$this->set('error_code', 3311);
 		$this->set('site', $this->params);
-		
-		return;
 	}
 	
 }

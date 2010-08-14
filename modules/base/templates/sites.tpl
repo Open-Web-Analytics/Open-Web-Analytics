@@ -23,7 +23,7 @@ if it is to be tracked/reported seperately.</P>
 			<?php if (!empty($value['description'])):?>
 			<span class="info_text"><?php echo $value['description'];?></span><BR>
 			<?php endif;?>
-			<span class="info_text"><a href="<?php echo $value['domain'];?>"><?php echo $value['domain'];?></a></span><BR>
+			<span class="info_text"><a href="<?php echo owa_sanitize::escapeForDisplay($value['domain']);?>"><?php echo $value['domain'];?></a></span><BR>
 		</TD>
 		<TD>
 			<?php echo $value['site_family'];?>

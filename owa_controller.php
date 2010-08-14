@@ -108,6 +108,13 @@ class owa_controller extends owa_base {
 	var $authenticate_user;
 	
 	var $state;
+	
+	/**
+	 * Flag for requiring nonce before performing write actions
+	 * 
+	 * @var Bool
+	 */
+	var $is_nonce_required = false;
 		
 	/**
 	 * Constructor
@@ -152,25 +159,25 @@ class owa_controller extends owa_base {
 		
 		
 		/* Check validity of nonce */
-		
-		$nonce = $this->getParam('nonce');
-		if ($nonce) {
-			
-			$is_nonce_valid = $this->verifyNonce($nonce);
-			
-			if (!$is_nonce_valid) {
-				$this->e->debug('Nonce is not valid.');
-				$ret = $this->notAuthenticatedAction();
-				if (!empty($ret)) {
-					$this->post();
-					return $ret;
-				} else {
-					$this->post();
-					return $this->data;
+		if ($this->is_nonce_required) {
+			$nonce = $this->getParam('nonce');
+			if ($nonce) {
+				
+				$is_nonce_valid = $this->verifyNonce($nonce);
+				
+				if (!$is_nonce_valid) {
+					$this->e->debug('Nonce is not valid.');
+					$ret = $this->notAuthenticatedAction();
+					if (!empty($ret)) {
+						$this->post();
+						return $ret;
+					} else {
+						$this->post();
+						return $this->data;
+					}
 				}
 			}
-		}
-				
+		}				
 		
 		/* CHECK USER FOR CAPABILITIES */
 		if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())) {
@@ -532,15 +539,19 @@ class owa_controller extends owa_base {
 		}
 		
 		$matching_nonce = owa_coreAPI::createNonce($action);
-		owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
-		print("passed nonce: $nonce | matching nonce: $matching_nonce");
-		exit;
+		//owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
 		if ($nonce === $matching_nonce) {
 			return true;
 		}
 	}
 	
-
+	/**
+	 * Sets nonce flag for the controller.
+	 */
+	function setNonceRequired() {
+		
+		$this->is_nonce_required = true;
+	}
 	
 }
 
