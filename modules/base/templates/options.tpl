@@ -1,4 +1,4 @@
-<div>
+<div class="section">
 
 <table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>

@@ -17,6 +17,11 @@ div {margin:0;}
 	color: orange;
 }
 
+.owa .section {
+	background-color:#ffffff;
+	margin:20px;
+}
+
 /* COLORS */
 .red {background-color:red;}
 .yellow {background-color:yellow;}
@@ -113,7 +118,7 @@ div {margin:0;}
 .inline_h2_grey {font-size:20px; color:#cccccc;}
 .inline_h3 {font-size:16px;}
 .inline_h4 {font-size:14px;}
-.headline {font-size:20px; background-color:orange;color:#ffffff;border-color:#000000;padding:6px; font-weight:bold;margin: 0px 0px 0px 0px;}
+.headline {font-size:20px; background-color:orange;color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
 .panel_headline {font-size:18px; background-color:#FFF8DC;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
 
@@ -121,8 +126,8 @@ div {margin:0;}
 
 .h_label {font-size:14px; font-weight:bold;}
 .indented_header_row {padding:0px 0px 0px 20px;}
-#layout_panels {border:1px solid;border-collapse: collapse; width:100%; vertical-align:top;}
-#layout_panels td {border:1px solid;border-collapse: collapse; vertical-align:top;}
+#layout_panels {border:1px solid #999999;border-collapse: collapse; width:100%; vertical-align:top;}
+#layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
 #panel td {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}

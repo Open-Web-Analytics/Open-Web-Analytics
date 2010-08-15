@@ -159,22 +159,23 @@ class owa_controller extends owa_base {
 		
 		
 		/* Check validity of nonce */
-		if ($this->is_nonce_required) {
+		 
+		if ($this->is_nonce_required == true) {
 			$nonce = $this->getParam('nonce');
+			
 			if ($nonce) {
-				
 				$is_nonce_valid = $this->verifyNonce($nonce);
-				
-				if (!$is_nonce_valid) {
-					$this->e->debug('Nonce is not valid.');
-					$ret = $this->notAuthenticatedAction();
-					if (!empty($ret)) {
-						$this->post();
-						return $ret;
-					} else {
-						$this->post();
-						return $this->data;
-					}
+			}
+			
+			if (!$nonce || !$is_nonce_valid) {
+				$this->e->debug('Nonce is not valid.');
+				$ret = $this->notAuthenticatedAction();
+				if (!empty($ret)) {
+					$this->post();
+					return $ret;
+				} else {
+					$this->post();
+					return $this->data;
 				}
 			}
 		}				
