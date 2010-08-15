@@ -19,7 +19,7 @@
 require_once(OWA_INCLUDE_DIR.'template_class.php');
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
-require_once(OWA_BASE_CLASS_DIR.'sanitizer.php');
+require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
 
 /**
  * OWA Wrapper for template class
@@ -470,37 +470,42 @@ class owa_template extends Template {
 	 * @param boolean $add_state
 	 * @return string
 	 */
-	function makeLink($params = array(), $add_state = false, $url = '', $xml = false) {
-		//print_r($this->get('params'));
+	function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
+		
 		$all_params = array();
-		//print_r($this->caller_params['link_state']);
+		
 		//Loads link state passed by caller
-		if ($add_state == true):
-			if (!empty($this->caller_params['link_state'])):
+		if ($add_state == true) {
+			if (!empty($this->caller_params['link_state'])) {
 				$all_params = array_merge($all_params, $this->caller_params['link_state']);
-			endif;
+			}
 			
 			// add in period properties if available
 			$period = $this->get('timePeriod');
 			
-			if (!empty($period)):
+			if (!empty($period)) {
 				$all_params = array_merge($all_params, $period->getPeriodProperties());
-				//print_r($all_params);
-			endif;
-			
-		endif;
-		
+				
+			}
+		}
 		
 		// Load overrides
-		if (!empty($params)):
+		if (!empty($params)) {
 			$params = array_filter($params);
-			//print_r($params);
 			$all_params = array_merge($all_params, $params);
-		endif;
+		}
 		
-		//print_r($all_params);
-		//print_r($this->get('timePeriod')->getPeriodProperties());
-		
+		// add nonce if called for
+		if ($add_nonce) {
+			if ( array_key_exists('do', $all_params) ) {
+				$action = $all_params['do'];	
+			} elseif ( array_key_exists('action', $all_params) ) {
+				$action = $all_params['action'];
+			}
+			
+			$all_params['nonce'] = owa_coreAPI::createNonce($action);
+		}
+				
 		$get = '';
 		
 		if (!empty($all_params)):
@@ -928,13 +933,38 @@ class owa_template extends Template {
 		$t->set_template($template);
 		return $t->fetch();
 	}
-		
+	
+	/**
+	 * Creates a hidden nonce form field
+	 *
+	 * @param 	string	$action the action that the nonce should be tied to.
+	 * @return	string The html fragment
+	 */	
 	function createNonceFormField($action) {
 		
 		return sprintf(
 				'<input type="hidden" name="%snonce" value="%s">', 
 				owa_coreAPI::getSetting('base', 'ns'), 
 				owa_coreAPI::createNonce($action));
+	}
+	
+	function makeNonceLink() {
+	
+	}
+	
+	/**
+	 * Outputs data into the template
+	 *
+	 * @param	string	$output		The String to be output into the template
+	 * @param	bool	$sanitize	Flag that will sanitize the output for display
+	 */
+	function out($output, $sanitize = true) {
+		
+		if ($sanitize) {
+			echo owa_sanitize::escapeForDisplay($output);
+		} else {
+			echo $output;
+		}
 	}
 }
 
