@@ -294,13 +294,11 @@ class owa_auth extends owa_base {
 	
 	/**
 	 * Removes credentials
-	 * TODO: refactor to use state facility
 	 * @return boolean
 	 */
 	function deleteCredentials() {
 		
-		return setcookie($this->config['ns'].'p', '', time()-3600*24*365*30, '/', $this->config['cookie_domain']);
-
+		return owa_coreAPI::clearState('p');
 	}
 	
 	/**
@@ -333,8 +331,6 @@ class owa_auth extends owa_base {
 				
 		// fetches user object from DB
 		$this->getUser();
-		//print $this->credentials['user_id'];
-		//print $this->u->get('user_id');
 		if ($this->credentials['user_id'] === $this->u->get('user_id')):
 			
 			if ($this->credentials['password'] === $this->u->get('password')):

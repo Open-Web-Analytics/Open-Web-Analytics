@@ -995,7 +995,7 @@ if (!empty($links[$group])):
 	
 	public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
 	
-		return owa_coreAPI::createCookie($cookie_name, '', time()-3600*24*365*10, $path, $domain);
+		return owa_coreAPI::createCookie($cookie_name, false, time()-3600*25, $path, $domain);
 	}
 	
 	public static function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
