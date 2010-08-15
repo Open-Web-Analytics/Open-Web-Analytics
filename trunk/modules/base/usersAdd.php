@@ -32,17 +32,13 @@ require_once(OWA_BASE_DIR.'/eventQueue.php');
  */
 
 class owa_usersAddController extends owa_adminController {
-	
-	function owa_usersAddController($params) {
 		
-		return owa_usersAddController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		parent::__construct($params);
 		
 		$this->setRequiredCapability('edit_users');
+		$this->setNonceRequired();
 		
 		// Check for user with the same email address
 		// this is needed or else the change password feature will not know which account

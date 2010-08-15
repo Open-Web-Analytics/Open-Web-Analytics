@@ -41,6 +41,7 @@
 		<TR>
 			<TD>
 				<input type="hidden" name="<?php echo $this->getNs();?>id" value="<?php echo $user['id'];?>">
+				<?php echo $this->createNonceFormField($action);?>
 				<input type="hidden" name="<?php echo $this->getNs();?>action" value="<?php echo $action;?>">
 				<input type="submit" value="Save" name="<?php echo $this->getNs();?>save_button">
 			</TD>
