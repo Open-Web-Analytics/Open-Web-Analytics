@@ -20,6 +20,7 @@
 				<TR>
 					<TH scope="row"></TH>
 					<TD>
+						
 						<input name="<?php echo $this->getNs();?>action" value="base.passwordResetRequest" type="hidden"><BR><BR>
 						<INPUT class="owa_largeFormField" type="submit" size="30" name="<?php echo $this->getNs();?>submit" value="Request New Password">
 					</TD>

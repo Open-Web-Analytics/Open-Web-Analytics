@@ -8,26 +8,29 @@
 	
 	<body>
 	
-	<?php include($this->setTemplate('css.tpl'));?>
-	
-	<DIV id="header" style="text-align:center;">
-		<table width="100%">
-			<TR>
-				<TD class="">
-					<img src="<?php echo $this->makeImageLink('base/i/owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"><BR>	
-				</TD>
-			</TR>
-		</table>
-	</div>
-	<BR>
-	<?php include($this->setTemplate('msgs.tpl'));?>
-	<BR>
-	<?php echo $content;?>
-	<?php echo $body;?>
-	
-	<BR><BR><BR><BR>
-	<div style="text-align:center">	
-		<span class="inline_h4"><a href="http://www.openwebanalytics.com">Web Analytics</a> powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a> - v: <?php echo OWA_VERSION;?></span>
-	</div>
+		<?php include($this->setTemplate('css.tpl'));?>
+		
+		<div class="owa">
+			<DIV id="header" style="text-align:center;">
+				<table width="100%">
+					<TR>
+						<TD class="">
+							<img src="<?php echo $this->makeImageLink('base/i/owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"><BR>	
+						</TD>
+					</TR>
+				</table>
+			</div>
+			<BR>
+			<?php include($this->setTemplate('msgs.tpl'));?>
+			<BR>
+			<?php echo $content;?>
+			<?php echo $body;?>
+			
+			<BR><BR><BR><BR>
+			<div style="text-align:center">	
+				<span class="inline_h4"><a href="http://www.openwebanalytics.com">Web Analytics</a> powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a> - v: <?php echo OWA_VERSION;?></span>
+			</div>
+		
+		</div>
 	</body>
 </html>

@@ -32,28 +32,15 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  */
 
 class owa_logoutController extends owa_controller {
-	
-	function owa_loginController($params) {
 		
-		return owa_loginController::__construct($params);
-	}
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
-		$auth = &owa_auth::get_instance();
-		$auth->deleteCredentials();
-		$this->setRedirectAction('base.loginForm');
-		//$this->set('status_code', 2010);
+		//$auth = &owa_auth::get_instance();
+		//$auth->deleteCredentials();
 		
-		return;
+		$this->setRedirectAction('base.loginForm');
+		owa_coreAPI::clearState('p');
 	}
-	
-	
 }
 
 ?>

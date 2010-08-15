@@ -41,8 +41,6 @@ class owa_passwordResetFormController extends owa_controller {
 	function action() {
 		
 		$this->setView('base.passwordResetForm');
-				
-		return;
 	}
 }
 
@@ -68,8 +66,7 @@ class owa_passwordResetFormView extends owa_view {
 	
 	function render($data) {
 		$this->t->set_template('wrapper_public.tpl');
-		$this->body->set_template('users_password_reset_request.tpl');		
-		return;
+		$this->body->set_template('users_password_reset_request.tpl');
 	}
 	
 }

@@ -20,12 +20,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_loginController extends owa_controller {
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
+		
 	function action() {
 		
 		$auth = &owa_auth::get_instance();
@@ -59,11 +54,7 @@ class owa_loginController extends owa_controller {
 			$this->set('user_id', $this->getParam('user_id'));
 		
 		}
-		
-		return;
 	}
-	
-	
 }
 
 ?>

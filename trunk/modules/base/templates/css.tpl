@@ -217,6 +217,12 @@ div {margin:0;}
 #keywords{width:400px;}
 #owa_header {background-color:#FFFFFF; padding:4px; font-weight:bold; clear: both;}
 #side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
+#login_box {
+	-moz-border-radius:10px 10px 10px 10px;
+	border-radius:10px 10px 10px 10px;
+	-webkit-border-radius:10px 10px 10px 10px;
+	background-color: #494444;
+}
 
 /* ROUNDER CORNERS */
 .spiffy{display:block;}
