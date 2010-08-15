@@ -219,36 +219,39 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerAdminPanels() {
 		
-		$this->addAdminPanel(array('do' 			=> 'base.optionsGeneral', 
-									'priviledge' 	=> 'admin', 
-									'anchortext' 	=> 'Main Configuration',
-									'group'			=> 'General',
-									'order'			=> 1));
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.optionsGeneral', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Main Configuration',
+				'group'			=> 'General',
+				'order'			=> 1)
+		);
 		
-		
-		
-		$this->addAdminPanel(array('do' 			=> 'base.users', 
-										'priviledge' 	=> 'admin', 
-										'anchortext' 	=> 'User Management',
-										'group'			=> 'General',
-										'order'			=> 2));
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.users', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'User Management',
+				'group'			=> 'General',
+				'order'			=> 2)
+		);
 									
 		
 									
-		$this->addAdminPanel(array('do' 			=> 'base.sites', 
-									'priviledge' 	=> 'admin', 
-									'anchortext' 	=> 'Site Roster',
-									'group'			=> 'General',
-									'order'			=> 3));
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.sites', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Tracked Sites',
+				'group'			=> 'General',
+				'order'			=> 3)
+		);
 								
-		$this->addAdminPanel(array('do' 			=> 'base.optionsModules', 
-									'priviledge' 	=> 'admin', 
-									'anchortext' 	=> 'Modules Admin',
-									'group'			=> 'General',
-									'order'			=> 3));
-									
-		return;
-		
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.optionsModules', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Modules',
+				'group'			=> 'General',
+				'order'			=> 3)
+		);		
 	}
 	
 	function registerNavigation() {
@@ -257,7 +260,6 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
 		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
-		//$this->addNavigationLink('Reports', 'Content', 'base.reportClicks', 'Click Map Report', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 7);
@@ -276,9 +278,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Search Terms', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
-		//$this->addNavigationLink('Reports', 'Dashboard', 'base.reportDashboardSpy', 'Latest Visits Spy', 1);
-				
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);		
 	}
 	
 	/**
@@ -328,27 +328,27 @@ class owa_baseModule extends owa_module {
 	}
 	
 	function _registerEntities() {
-		
-		//$this->_addEntity('testtable');
 								
-		$this->registerEntity(array('request', 
-								'session', 
-								'document', 
-								'feed_request', 
-								'click', 
-								'ua', 
-								'referer', 
-								'site', 
-								'visitor', 
-								'host',
-								'exit',
-								'os',
-								'impression', 
-								'configuration',
-								'user',
-								'domstream',
-								'action_fact',
-								'search_term_dim'));
+		$this->registerEntity(array(
+				'request', 
+				'session', 
+				'document', 
+				'feed_request', 
+				'click', 
+				'ua', 
+				'referer', 
+				'site', 
+				'visitor', 
+				'host',
+				'exit',
+				'os',
+				'impression', 
+				'configuration',
+				'user',
+				'domstream',
+				'action_fact',
+				'search_term_dim')
+		);
 		
 	}
 	
@@ -368,28 +368,28 @@ class owa_baseModule extends owa_module {
 		if (empty($os)) {
 		
 			$matches = array(
-				'Win.*NT 5\.0'=>'Windows 2000',
-				'Win.*NT 5.1'=>'Windows XP',
+				'Win.*NT 5\.0'					=>'Windows 2000',
+				'Win.*NT 5.1'					=>'Windows XP',
 				'Win.*(Vista|XP|2000|ME|NT|9.?)'=>'Windows $1',
-				'Windows .*(3\.11|NT)'=>'Windows $1',
-				'Win32'=>'Windows [prior to 1995]',
-				'Linux 2\.(.?)\.'=>'Linux 2.$1.x',
-				'Linux'=>'Linux [unknown version]',
-				'FreeBSD .*-CURRENT$'=>'FreeBSD -CURRENT',
-				'FreeBSD (.?)\.'=>'FreeBSD $1.x',
-				'NetBSD 1\.(.?)\.'=>'NetBSD 1.$1.x',
-				'(Free|Net|Open)BSD'=>'$1BSD [unknown]',
-				'HP-UX B\.(10|11)\.'=>'HP-UX B.$1.x',
-				'IRIX(64)? 6\.'=>'IRIX 6.x',
-				'SunOS 4\.1'=>'SunOS 4.1.x',
-				'SunOS 5\.([4-6])'=>'Solaris 2.$1.x',
-				'SunOS 5\.([78])'=>'Solaris $1.x',
-				'Mac_PowerPC'=>'Mac OS [PowerPC]',
-				'Mac OS X'=>'Mac OS X',
-				'X11'=>'UNIX [unknown]',
-				'Unix'=>'UNIX [unknown]',
-				'BeOS'=>'BeOS [unknown]',
-				'QNX'=>'QNX [unknown]',
+				'Windows .*(3\.11|NT)'			=>'Windows $1',
+				'Win32'							=>'Windows [prior to 1995]',
+				'Linux 2\.(.?)\.'				=>'Linux 2.$1.x',
+				'Linux'							=>'Linux [unknown version]',
+				'FreeBSD .*-CURRENT$'			=>'FreeBSD -CURRENT',
+				'FreeBSD (.?)\.'				=>'FreeBSD $1.x',
+				'NetBSD 1\.(.?)\.'				=>'NetBSD 1.$1.x',
+				'(Free|Net|Open)BSD'			=>'$1BSD [unknown]',
+				'HP-UX B\.(10|11)\.'			=>'HP-UX B.$1.x',
+				'IRIX(64)? 6\.'					=>'IRIX 6.x',
+				'SunOS 4\.1'					=>'SunOS 4.1.x',
+				'SunOS 5\.([4-6])'				=>'Solaris 2.$1.x',
+				'SunOS 5\.([78])'				=>'Solaris $1.x',
+				'Mac_PowerPC'					=>'Mac OS [PowerPC]',
+				'Mac OS X'						=>'Mac OS X',
+				'X11'							=>'UNIX [unknown]',
+				'Unix'							=>'UNIX [unknown]',
+				'BeOS'							=>'BeOS [unknown]',
+				'QNX'							=>'QNX [unknown]',
 			);
 			
 			$uas = array_map(create_function('$a', 'return "#.*$a.*#";'), array_keys($matches));

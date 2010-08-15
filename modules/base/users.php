@@ -31,14 +31,8 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
 class owa_usersController extends owa_adminController {
-	
-	function owa_usersController($params) {
 		
-		return owa_usersController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		$this->setRequiredCapability('edit_users');
@@ -47,9 +41,6 @@ class owa_usersController extends owa_adminController {
 	
 	function action() {
 		
-		$u = owa_coreAPI::entityFactory('base.user');
-		//$params['constraints']['creation_date'] = array('operator' => '!=', 'value' => '0');
-		
 		$db = owa_coreAPI::dbSingleton();
 		$db->selectFrom('owa_user');
 		$db->selectColumn("*");
@@ -57,10 +48,7 @@ class owa_usersController extends owa_adminController {
 		$this->set('users', $users);
 		$this->setView('base.options');
 		$this->setSubview('base.users');
-		return;
-	
 	}
-
 }
 
 
@@ -75,26 +63,15 @@ class owa_usersController extends owa_adminController {
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
 class owa_usersView extends owa_view {
-	
-	function __construct($params) {
 		
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		//page title
 		$this->t->set('page_title', 'User Roster');
-		
-		// load body template
 		$this->body->set_template('users.tpl');
 		$this->body->set('headline', 'User Roster');
-				
 		$this->body->set('users', $this->get('users'));
-		//$this->setJs('includes/jquery/tablesorter/jquery.tablesorter.js');
-		return;
 	}
 }
 

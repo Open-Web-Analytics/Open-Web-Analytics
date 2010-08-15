@@ -32,14 +32,10 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 class owa_usersDeleteController extends owa_adminController {
 	
-	function owa_usersDeleteController($params) {
-		
-		return owa_usersDeleteController::__construct($params); 	
-	}
-	
 	function __construct($params) {
 	
 		$this->setRequiredCapability('edit_users');
+		$this->setNonceRequired();
 		return parent::__construct($params);
 	}
 	
@@ -52,11 +48,7 @@ class owa_usersDeleteController extends owa_adminController {
 				
 		$this->setRedirectAction('base.users');
 		$this->set('status_code', 3004);
-		
-		return;
 	}
-	
 }
-
 
 ?>

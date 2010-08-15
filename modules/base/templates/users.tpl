@@ -31,7 +31,7 @@
 				<TD><?php echo date("F j, Y, g:i a", $value['last_update_date']);?></TD>
 				<TD><a href="<?php echo $this->makeLink(array('do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']));?>">Edit</a>  
 				<?php if ($value['id'] != 1):?>
-				| <a href="<?php echo $this->makeLink(array('do' => 'base.usersDelete', 'user_id' => $value['user_id']));?>">Delete</a></TD>
+				| <a href="<?php echo $this->makeLink( array( 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ), false, false, false, true );?>">Delete</a></TD>
 				<?php endif;?>
 			</TR>
 			<?php endforeach;?>	

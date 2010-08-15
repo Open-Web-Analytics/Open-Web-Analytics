@@ -32,16 +32,12 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 class owa_sitesEditController extends owa_adminController {
 	
-	function owa_sitesEditController($params) {
-		
-		return owa_sitesEditController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		parent::__construct($params);
 		
 		$this->setRequiredCapability('edit_sites');
+		$this->setNonceRequired();
 		
 		// validations
 		
@@ -57,8 +53,6 @@ class owa_sitesEditController extends owa_adminController {
 		$v2->setValues($this->getParam('site_id'));
 		$v2->setErrorMessage($this->getMsg(3208));
 		$this->setValidation('site_id', $v2);
-		
-		return;
 	}
 	
 	function action() {
@@ -75,16 +69,9 @@ class owa_sitesEditController extends owa_adminController {
 		$data['view_method'] = 'redirect';
 		$data['do'] = 'base.sites';
 		$data['status_code'] = 3201;
-		//assign original form data so the user does not have to re-enter the data
-		
-		
-		//$data['site'] = $this->params;
-		
 		
 		return $data;
 	}
-	
 }
-
 
 ?>

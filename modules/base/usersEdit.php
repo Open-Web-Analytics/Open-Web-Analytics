@@ -31,17 +31,13 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  */
 
 class owa_usersEditController extends owa_adminController {
-	
-	function owa_usersEditController($params) {
 		
-		return owa_usersEditController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		parent::__construct($params);
 		
 		$this->setRequiredCapability('edit_users');
+		$this->setNonceRequired();
 		
 		// check that user_id is present
 		$v1 = owa_coreAPI::validationFactory('required');

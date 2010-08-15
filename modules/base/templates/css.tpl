@@ -133,7 +133,9 @@ div {margin:0;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
-#nav_left {width:240px;}
+#nav_left {width:240px; padding:10px}
+#nav_left li {padding-bottom:5px;}
+.owa .introtext {padding:0px 10px 0px 10px; line-height: 25px;}
 
 
 /* WIZARD */
@@ -177,8 +179,29 @@ div {margin:0;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
 .visible {display:;}
 .invisible {display:none;}
-.status {color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 20px 10px 20px 10px; background-color: green; font-size: 14px; font-weight:bold;}
-.error{color: #ffffff; border: 2px solid #000000; margin:20px 40px 20px 40px; padding: 20px 10px 20px 10px; background-color: red; font-size: 14px; font-weight:bold;}
+
+.owa .error, .owa .status {
+	color: #ffffff; 
+	border: 2px solid #FF0000; 
+	margin:20px 40px 20px 40px; 
+	padding: 20px 10px 20px 20px; 
+	background-color: #FF4040; 
+	font-size: 14px; 
+	font-weight:;
+	-moz-border-radius:5px 5px 5px 5px;
+	-moz-box-shadow:2px 2px 2px 1px #9f9f9f;
+	border-radius:5px 5px 5px 5px;
+	box-shadow:2px 2px 2px 1px #9f9f9f;
+	-webkit-border-radius:5px 5px 5px 5px;
+	-webkit-box-shadow:2px 2px 2px 1px #9f9f9f;
+}
+
+.owa .status {
+	background-color: #71ad2b;
+	border-color: #519600;
+	color: #FFFFFF;
+}
+
 .tiny_icon{width:10px;padding-left:0px;}
 .wrap {margin:0px;padding:10px;}
 .validation_error {color:red;}
