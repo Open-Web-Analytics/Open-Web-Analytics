@@ -86,7 +86,7 @@ class owa_cache {
 		$this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
 		$this->statistics['added']++;
 		
-		if (!in_array($collection, $this->non_persistant_collections)):
+		if (!in_array($collection, $this->non_persistant_collections)) {
 			$this->dirty_objs[$collection][] = $hkey;
 			//$this->debug(print_r($this->dirty_objs, true));
 			$this->dirty_collections[$collection] = true; 
@@ -94,11 +94,9 @@ class owa_cache {
 			$this->statistics['dirty']++;
 		// check to see if cache file exists and remove it just in case the collection
 		// was recently added to the non persistant list.
-		else:
+		} else {
 			$this->removeCacheFile($this->makeCollectionDirPath($collection).$hkey.'.php');
-		endif;
-	
-		return;
+		}
 			
 	}
 	
@@ -109,32 +107,27 @@ class owa_cache {
 		$this->debug(sprintf('Replacing Object in Cache - Collection: %s, id: %s', $collection, $hkey));
 		$this->statistics['replaced']++;
 		
-		if (!in_array($collection, $this->non_persistant_collections)):
+		if (!in_array($collection, $this->non_persistant_collections)) {
 			// check to make sure the dirty collection exists and object is not already in there.
-			if (!empty($this->dirty_objs[$collection])):
-				if(!in_array($hkey, $this->dirty_objs[$collection])):
+			if (!empty($this->dirty_objs[$collection])) {
+				if(!in_array($hkey, $this->dirty_objs[$collection])) {
 					$this->dirty_objs[$collection][] = $hkey;
-					//$this->debug(print_r($this->dirty_objs, true));
 					$this->dirty_collections[$collection] = true; 
 					$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
 					$this->statistics['dirty']++;
-				endif;
-			else:
+				}
+			} else {
 				$this->dirty_objs[$collection][] = $hkey;
-				//$this->debug(print_r($this->dirty_objs, true));
 				$this->dirty_collections[$collection] = true; 
 				$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
 				$this->statistics['dirty']++;
-			endif;
+			}
 			
 		// check to see if cache file exists and remove it just in case the collection
 		// was recently added to the non persistant list.
-		else:
+		} else {
 			$this->removeCacheFile($this->makeCollectionDirPath($collection).$hkey.'.php');
-		endif;
-
-		
-		return;
+		}
 	}
 	
 	function get($collection, $key) {
@@ -143,23 +136,23 @@ class owa_cache {
 		$id = $this->hash($key);
 		
 		// check warm cache and return
-		if (isset($this->cache[$collection][$id])):
+		if (isset($this->cache[$collection][$id])) {
 			$this->debug(sprintf('CACHE HIT (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));	
 		$this->statistics['warm']++;
 		//load from cache file	
-		else:
+		} else {
 		
 			$cache_file = $this->makeCollectionDirPath($collection).$id.'.php'; 
 			$this->debug("check cache file: ".$cache_file);
 	
 			// if no cache file then return false
-			if (!file_exists($cache_file)):
+			if (!file_exists($cache_file)) {
 				$this->debug(sprintf('CACHE MISS - Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
 				$this->statistics['miss']++;
 				return false;
 			
 			// cache object has expired
-			elseif ((filectime($cache_file) + $this->getCollectionExpirationPeriod($collection)) < time()):
+			} elseif ((filectime($cache_file) + $this->getCollectionExpirationPeriod($collection)) < time()) {
 				$this->debug("time: ".time());
 				$this->debug("ctime: ".filectime($cache_file));
 				$this->debug("diff: ".(time() - filectime($cache_file)));
@@ -169,17 +162,16 @@ class owa_cache {
 				$this->statistics['miss']++;
 				return false;
 			// load from cache file	
-			else:
+			} else {
 		
 				$this->cache[$collection][$id] = unserialize(base64_decode(substr(@ file_get_contents($cache_file), strlen($this->cache_file_header), -strlen($this->cache_file_footer))));
 				$this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
 				$this->statistics['cold']++;
-			endif;
-			
-		endif;
-		
-		return $this->cache[$collection][$id];
+			}
 	
+		}
+		
+		return $this->cache[$collection][$id];	
 	}
 	
 	function flush() {
@@ -239,16 +231,11 @@ class owa_cache {
 	
 	function makeCollectionDirPath($collection) {
 	
-		
-		if (!in_array($collection, $this->global_collections)):
-	
+		if (!in_array($collection, $this->global_collections)) {
 			return $this->cache_dir.$this->cache_id.DIRECTORY_SEPARATOR.$collection.DIRECTORY_SEPARATOR;
-		
-		else:
-		
-			return $this->cache_dir.$collection.DIRECTORY_SEPARATOR;
-			
-		endif;
+		} else {
+			return $this->cache_dir.$collection.DIRECTORY_SEPARATOR;	
+		}
 	}
 	
 	function makeCacheCollectionDir($collection) {
@@ -263,10 +250,8 @@ class owa_cache {
 		
 		if (!file_exists($this->cache_dir.$this->cache_id)) {
 			
-			mkdir($this->cache_dir.$this->cache_id);
-	                 
+			mkdir($this->cache_dir.$this->cache_id);                 
 	        chmod($this->cache_dir.$this->cache_id, $this->dir_perms);
-	        
 	    }
 		
 		$collection_dir = $this->makeCollectionDirPath($collection);
@@ -274,25 +259,19 @@ class owa_cache {
 		if (!file_exists($collection_dir)) {
 			
 			mkdir($collection_dir);
-	                 
 	        chmod($collection_dir, $this->dir_perms);
-	        
 	    }
 	
 	    if (!file_exists($collection_dir."index.php")) {
 	    
-	        
-	        touch($collection_dir."index.php");
-	        
+	        touch($collection_dir."index.php");    
 	        chmod($collection_dir."index.php", $this->file_perms);
-	        
 	    }
 	}
 	
 	function prepare($obj) {
 	
 		return;
-	
 	}
 	
 	function __destruct() {
@@ -300,8 +279,6 @@ class owa_cache {
 		$this->persistCache();
 		$this->debug($this->getStats());
 		$this->persistStats();
-		
-		return;
 	}
 	
 	function persistCache() {
@@ -309,20 +286,19 @@ class owa_cache {
 		$this->debug("starting to persist cache...");
 		
 		// check for dirty objects
-		if (!empty($this->dirty_objs)):
+		if (!empty($this->dirty_objs)) {
 			
 			$this->debug('Dirty Objects: '.print_r($this->dirty_objs, true));
 				
-			if ( ! $this->acquire_lock() ):
+			if ( ! $this->acquire_lock() ) {
 				$this->debug("could not persist cache due to not acquiring lock.");
 	            return false;
-	        else:
+	        } else {
 				$this->debug("starting to persist cache...");
 				// make directories for collections
 				foreach ($this->dirty_collections as $k => $v) {
 					
-					$this->makeCacheCollectionDir($k);
-						
+					$this->makeCacheCollectionDir($k);		
 				}
 				
 				// persist dirty objects
@@ -346,59 +322,49 @@ class owa_cache {
 						// open the temp cache file for writing
 						$tcf_handle = @fopen($temp_cache_file, 'w');
 						
-						if ( false === $tcf_handle ):
+						if ( false === $tcf_handle ) {
 							$this->debug('could not acquire temp file handler');
-						else:
+						} else {
 							
 							fputs($tcf_handle, $data);
 							
 							fclose($tcf_handle);
 							
-							if (!@ rename($temp_cache_file, $cache_file)):
+							if (!@ rename($temp_cache_file, $cache_file)) {
 								
-								if (!@ copy($temp_cache_file, $cache_file)):
+								if (!@ copy($temp_cache_file, $cache_file)) {
 									$this->debug('could not rename or copy temp file to cache file');
-								else:
+								} else {
 									@ unlink($temp_cache_file);
 									$this->debug('removing temp cache file');
-								endif;
-								
-							endif;
+								}	
+							}
 							
 							@ chmod($cache_file, $this->file_perms);
 							$this->debug('changing file permissions on cache file');
-						
-						endif;
+						}
 					}
-				}
-				
-				
-				
-				
-			endif;
+				}	
+			}
+			
 			$this->release_lock();
 		
-		else:
+		} else {
 			$this->debug("There seem to be no dirty objects in the cache to persist.");
-		endif;
-	
-		return;
-		
+		}
 	}
 	
 	function removeCacheFile($cache_file) {
 	
 		// Remove the cache file
-		if (file_exists($cache_file)):
+		if (file_exists($cache_file)) {
 			@ unlink($cache_file);
 			$this->debug('Cache File Removed: '.$cache_file);
 			$this->statistics['removed']++;
 			return true;
-		else:
+		} else {
 			return false;
-		endif;
-
-	
+		}
 	}
 	
 	function persistStats() {
@@ -410,13 +376,11 @@ class owa_cache {
 	function hash($id) {
 	
 		return md5($id);
-	
 	}
 	
 	function debug($msg) {
 		
 		return owa_coreAPI::debug($msg);
-		
 	}
 	
 	function error($msg) {
@@ -433,47 +397,45 @@ class owa_cache {
 	function acquire_lock() {
 		// Acquire a write lock.
 		$this->mutex = @fopen($this->cache_dir.$this->lock_file_name, 'w');
-	    if (false == $this->mutex):
+	    if (false == $this->mutex) {
 	    	return false;
-	    else:
+	    } else {
 		    flock($this->mutex, LOCK_EX);
 	        return true;
-	    endif;
+	    }
 	}
 	
 	function release_lock() {
         // Release write lock.
         flock($this->mutex, LOCK_UN);
 	    fclose($this->mutex);
-	    return;
 	}
 	
 	function readDir($dir) {
 	
-		if ($handle = opendir($dir)):
+		if ($handle = opendir($dir)) {
  	
  			while (($file = readdir($handle)) !== false) {
 				
-				if (is_dir($dir.$file)):
+				if (is_dir($dir.$file)) {
 				
-					if (strpos($file, '.') === false): 
+					if (strpos($file, '.') === false) {
 						$data['dirs'][] = $dir.$file.DIRECTORY_SEPARATOR;
-					endif; 
-				else:
-					if (strpos($file, '.php') == true): 
+					} 
+				} else {
+					if (strpos($file, '.php') == true) { 
 						$data['files'][] = $dir.$file; 
-					endif;
+					}
 					
-					if (strpos($file, '.lock') == true): 
+					if (strpos($file, '.lock') == true) {
 						$data['files'][] = $dir.$file; 
-					endif;
-				endif;			
+					}
+				}			
 			}
 	
-		endif;
+		}
 		
  		closedir($handle);
-		
 		return $data;
 	}
 	
@@ -485,12 +447,12 @@ class owa_cache {
 				$this->debug("About to unlink cache file: ".$file);
 				unlink($file);
 			}
+			
 		} else {
 			owa_coreAPI::debug('No Cache Files to delete.');
 		}
 		
 		return true;
-		
 	}
 	
 	function setCollectionExpirationPeriod($collection_name, $seconds) {
@@ -507,7 +469,6 @@ class owa_cache {
 			return false;
 		}
 	}
-	
 }
 
 ?>
