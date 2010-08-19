@@ -21,32 +21,13 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class owa_installDetectedController extends owa_controller {
-
-	function owa_installDetectedController($params) {
-	
-		return owa_installDetectedController::__construct($params); 
-			
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	
 	function action() {
 	
 		$this->setView('base.install');
 		$this->setSubview('base.installDetected');
-		
-		return;
-	
 	}
-
 }
-
-
-
 
 /**
  * Installation Detected View
@@ -61,28 +42,13 @@ class owa_installDetectedController extends owa_controller {
  */
 class owa_installDetectedView extends owa_view {
 	
-	function owa_installDetectedView() {
-		
-		return owa_installDetectedView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		$this->body->set_template('install_schema_detected.tpl');
 		
 		//page title
 		$this->t->set('page_title', 'OWA Installation Detected');
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>

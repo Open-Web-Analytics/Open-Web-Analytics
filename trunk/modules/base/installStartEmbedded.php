@@ -39,12 +39,6 @@ class owa_installStartEmbeddedController extends owa_controller {
 		$this->setRequiredCapability('edit_modules');
 		return parent::__construct($params);
 	}
-
-	
-	function owa_installEmbeddedController($params) {
-	
-		return owa_installEmbeddedController::__construct($params);
-	}
 	
 	function action() {
 		
@@ -61,14 +55,9 @@ class owa_installStartEmbeddedController extends owa_controller {
 		$this->set('public_url', $this->getParam('public_url'));
 		
 		$this->setView('base.installStartEmbedded');
-		
-		return;
 	}
-
-
-
-
 }
+
 /**
  * Installation Start View for Embedded Configurations
  * 
@@ -80,19 +69,8 @@ class owa_installStartEmbeddedController extends owa_controller {
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
 class owa_installStartEmbeddedView extends owa_view {
-	
-	function owa_installStartEmbeddedView() {
 		
-		return owa_installStartEmbeddedView::__construct();
-	}
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		$this->body->set_template('install_start_embedded.tpl');
@@ -114,12 +92,7 @@ class owa_installStartEmbeddedView extends owa_view {
 		$this->body->set('db_host', $this->get('db_host'));
 		$this->body->set('db_name', $this->get('db_name'));
 		$this->body->set('public_url', $this->get('public_url'));
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>

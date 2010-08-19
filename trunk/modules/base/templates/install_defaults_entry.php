@@ -19,6 +19,7 @@
 		</p>
 				
 		<p>
+			<?php echo $this->createNonceFormField('base.installBase');?>
 			<input type="hidden" value="base.installBase" name="<?php echo $this->getNs();?>action">
 			<input class="owa-button" type="submit" value="Continue..." name="<?php echo $this->getNs();?>save_button">
 		</p>

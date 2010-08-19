@@ -31,29 +31,15 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_installConfigEntryView extends owa_view {
-	
-	function owa_installConfigEntryView($params) {
-	
-		return owa_installConfigEntryView::__construct($params);
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
+			
 	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'Configuration File Generator');
 		// load body template
 		$this->body->set('config', $this->get('config'));
-		$this->body->set_template('install_config_entry.php');
-		
-		return;
+		$this->body->set_template('install_config_entry.php');	
 	}
-	
-	
 }
 
 ?>

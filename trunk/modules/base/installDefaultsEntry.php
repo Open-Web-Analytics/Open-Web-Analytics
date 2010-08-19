@@ -32,23 +32,11 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  */
 
 class owa_installDefaultsEntryController extends owa_installController {
-	
-	function owa_installDefaultsEntryController($params) {
 		
-		return owa_installDefaultsEntryController::__construct($params);
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$this->setView('base.install');
 		$this->setSubview('base.installDefaultsEntry');
-
-		return;
 	}
 }
 
@@ -65,17 +53,7 @@ class owa_installDefaultsEntryController extends owa_installController {
  */
 
 class owa_installDefaultsEntryView extends owa_view {
-	
-	function owa_installDefaultsEntryView($params) {
-	
-		return owa_installDefaultsEntryView::__construct($params);
-	}
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		// page title
@@ -84,11 +62,7 @@ class owa_installDefaultsEntryView extends owa_view {
 		$this->body->set('defaults', $this->get('defaults'));
 		// load body template
 		$this->body->set_template('install_defaults_entry.php');
-		
-		return;
 	}
-	
-	
 }
 
 ?>

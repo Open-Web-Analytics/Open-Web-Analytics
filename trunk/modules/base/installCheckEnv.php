@@ -32,12 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  */
 
 class owa_installCheckEnvController extends owa_installController {
-	
-	function owa_installCheckEnvController($params) {
 		
-		return owa_installCheckEnvController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		return parent::__construct($params);
@@ -102,8 +97,6 @@ class owa_installCheckEnvController extends owa_installController {
 			$this->setView('base.install');
 			$this->setSubview('base.installCheckEnv');
 		}
-
-		return;
 	}
 }
 
@@ -120,17 +113,7 @@ class owa_installCheckEnvController extends owa_installController {
  */
 
 class owa_installCheckEnvView extends owa_view {
-	
-	function owa_installCheckEnvView($params) {
-	
-		return owa_installCheckEnvView::__construct($params);
-	}
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		//page title
@@ -138,12 +121,7 @@ class owa_installCheckEnvView extends owa_view {
 		$this->body->set('errors', $this->get('errors'));
 		// load body template
 		$this->body->set_template('install_check_env.tpl');
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>
