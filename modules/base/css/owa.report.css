@@ -79,7 +79,7 @@ ul {margin-left:10px;}
 	width:80%;
 }
 
-.owa_moreLinks {
+.owa .moreLink, .owa_moreLinks {
 	
 	text-align:left;
 	margin-top:6px;
@@ -95,11 +95,11 @@ ul {margin-left:10px;}
 	list-style-type: none;
 	
 }
-.owa_moreLinks a:hover {
+.owa_moreLinks a:hover, .owa .moreLink a:hover {
 	border-bottom:2px solid orange;
 }
 
-.owa_moreLinks li a, .owa_moreLinks a {
+.owa_moreLinks li a, .owa_moreLinks a, .owa .moreLink a  {
 	border:0px solid #ffffff;
 	font-size:10px;
 	text-decoration: none;
@@ -425,5 +425,30 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	border: 1px solid #cccccc;
 	width:inherit;
 	height:128px;
+	padding:10px;
 }
 
+.owa_dimensionDetail .title, .owa .refererDetailPanel .url{
+	
+	font-size:18px;
+}
+
+.owa_dimensionDetail .icon {
+	
+	padding-right:10px;
+}
+
+.owa .refererDetailPanel  {
+
+	height:auto;
+}
+
+.owa .refererDetailPanel .url  {
+	
+}
+
+.owa .refererDetailPanel .snippet {
+	font-size:10px;
+	color: #9f9f9f;
+	
+}
