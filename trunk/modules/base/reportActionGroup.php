@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -43,16 +42,20 @@ class owa_reportActionGroupController extends owa_reportController {
 		$this->set('dimensions', 'actionGroup,actionName');
 		$this->set('sort', 'actions-');
 		$this->set('resultsPerPage', 25);
-		$this->set('dimensionLink', array('linkColumn' => 'actionName', 
-												'template' => array('do' => 'base.reportActionDetail', 'actionName' => '%s', 'actionGroup' => '%s'), 
-												'valueColumns' => array('actionName', 'actionGroup')));
+		$this->set('dimensionLink', array(
+				'linkColumn' => 'actionName', 
+				'template' => array(
+						'do' => 'base.reportActionDetail', 
+						'actionName' => '%s', 
+						'actionGroup' => '%s'), 
+				'valueColumns' => array('actionName', 'actionGroup')));
+				
 		$this->set('trendChartMetric', 'actions');
 		$this->set('constraints', 'actionGroup=='.urlencode($actionGroup));
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.formatted_value %> actions for this action group.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for this action group.');
 		$this->set('excludeColumns', "'actionGroup'");
 		//$this->set('gridTitle', 'Top Page Types');		
 	}
 }
-
 
 ?>

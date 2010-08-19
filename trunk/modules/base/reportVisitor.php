@@ -68,17 +68,12 @@ class owa_reportVisitorController extends owa_reportController {
 class owa_reportVisitorView extends owa_view {
 	
 	function render($data) {
-		
-		// Assign data to templates
-		
+	
 		$this->body->set_template('report_visitor.tpl');	
 		$this->body->set('visitor_id', $this->get('visitor_id'));
 		$this->body->set('visits', $this->get('visits'));
 		$this->body->set('visitor', $this->get('visitor'));
-	}
-	
-	
+	}	
 }
-
 
 ?>

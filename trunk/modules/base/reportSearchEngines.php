@@ -40,12 +40,13 @@ class owa_reportSearchEnginesController extends owa_reportController {
 		$this->set('dimensions', 'referralWebSite');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array('linkColumn' => 'referralWebSite', 
-												'template' => array('do' => 'base.reportSearchEngineDetail', 'referralWebSite' => '%s'), 
-												'valueColumns' => 'referralWebSite'));
+		$this->set('dimensionLink', array(
+				'linkColumn' 	=> 'referralWebSite', 
+				'template' 		=> array('do' => 'base.reportSearchEngineDetail', 'referralWebSite' => '%s'), 
+				'valueColumns' 	=> 'referralWebSite'));
 		$this->set('constraints', 'source==organic-search');
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from search engines.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.');
 		$this->set('gridTitle', 'Top Search Engines');		
 	}
 }

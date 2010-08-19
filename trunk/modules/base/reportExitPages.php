@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -41,15 +40,16 @@ class owa_reportExitPagesController extends owa_reportController {
 		$this->set('dimensions', 'exitPageTitle,exitPagePath,exitPageUrl');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array('linkColumn' => 'exitPageTitle', 
-												'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
-												'valueColumns' => 'exitPageUrl'));
+		$this->set('dimensionLink', array(
+				'linkColumn'	=> 'exitPageTitle', 
+				'template'		=> array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
+				'valueColumns' 	=> 'exitPageUrl'));
+				
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits to the site.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site.');
 		$this->set('gridTitle', 'Top Exit Pages');	
 		$this->set('excludeColumns', "'exitPageUrl'");	
 	}
 }
-
 
 ?>

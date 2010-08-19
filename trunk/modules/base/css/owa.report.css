@@ -85,12 +85,14 @@ ul {margin-left:10px;}
 	margin-top:6px;
 	padding:2px;
 	
+	
 }
 
 .owa_moreLinks li {
 	border-bottom:0px solid #cccccc;
 	text-align: right;
 	padding: 0px 0px 0px 0px;
+	list-style-type: none;
 	
 }
 .owa_moreLinks a:hover {
@@ -335,6 +337,10 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	display: block;
 	text-decoration: none;
 	text-align: center;
+}
+
+.owa .relatedReports li {
+	padding-bottom: 10px;
 }
 
 .owa_resultsExplorerBottomControls {

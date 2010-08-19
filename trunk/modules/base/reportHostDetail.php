@@ -42,7 +42,7 @@ class owa_reportHostDetailController extends owa_reportController {
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimension', 'hostName');
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this host.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.');
 		$this->set('constraints', 'hostName=='.urlencode($hostName));	
 	}
 }

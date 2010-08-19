@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -41,14 +40,14 @@ class owa_reportOsController extends owa_reportController {
 		$this->set('dimensions', 'osType');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 25);
-		$this->set('dimensionLink', array('linkColumn' => 'osType', 
-												'template' => array('do' => 'base.reportOsDetail', 'osType' => '%s'), 
-												'valueColumns' => 'osType'));
+		$this->set('dimensionLink', array(
+				'linkColumn' 	=> 'osType', 
+				'template' 		=> array('do' => 'base.reportOsDetail', 'osType' => '%s'), 
+				'valueColumns' 	=> 'osType'));
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.formatted_value %> visits for all operating systems.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all operating systems.');
 		$this->set('gridTitle', 'Top Page Types');		
 	}
 }
-
 
 ?>

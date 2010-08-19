@@ -54,7 +54,7 @@ class owa_reportDocumentController extends owa_reportController {
 		$this->set('metrics', 'visits,pageViews');
 		$this->set('resultsPerPage', 30);
 		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.pageViews.value %> page views for this page.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page.');
 		$this->setSubview('base.reportDocument');
 	}
 

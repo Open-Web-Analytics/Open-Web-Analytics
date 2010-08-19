@@ -37,33 +37,15 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportVisitController extends owa_reportController {
 	
 	function action() {
-		
-		/*
-//setup Metrics
-		$m = owa_coreApi::metricFactory('base.latestVisits');
-		$m->setConstraint('site_id', $this->getParam('site_id'));
-		$m->setConstraint('owa_session.id', $this->getParam('session_id'));
-		$period = $this->makeTimePeriod('all_time');
-		$m->setPeriod($period); 
-		$m->setLimit(1);
-		$this->set('latest_visits', $m->generate());
-*/
-		
+				
 		$visit = owa_coreAPI::executeApiCommand(array(
-			
-			'do'		=> 'getVisitDetail',
-			'sessionId'	=> $this->getParam('session_id')
-		
-		));
+				'do'		=> 'getVisitDetail',
+				'sessionId'	=> $this->getParam('session_id') ) );
 
-		
 		//setup Metrics
 		$rs = owa_coreAPI::executeApiCommand(array(
-			
-			'do'		=> 'getClickstream',
-			'sessionId'	=> $this->getParam('session_id')
-		
-		));
+				'do'		=> 'getClickstream',
+				'sessionId'	=> $this->getParam('session_id') ) );
 		
 		$this->set('clickstream', $rs);
 		$this->set('visit', $visit);

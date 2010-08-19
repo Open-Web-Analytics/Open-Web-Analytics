@@ -25,22 +25,22 @@
 		<div class="owa_reportSectionContent">
 		
 			<div class="owa_reportSectionHeader">Related Reports</div>
-
-			<UL>
-				<LI>
-					<a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are comming from.
-				</LI>
-				<LI>
-					<a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
-				</LI>
-				<LI>
-					<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
-				</LI>
-				<LI>
-					<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
-				</LI>
-			</UL>
-			
+				<div class="relatedReports">
+					<UL>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
+						</LI>
+					</UL>
+				</div>
 			</div>
 		
 			<div class="owa_reportSectionContent" style="min-width:350px;">
@@ -176,39 +176,6 @@ OWA.items.topreferrals.load(topreferralsurl);
 
 <script type="text/x-jqote-template" id="visits-headline-template">
 <![CDATA[
-	There were <%= this.data.resultSet.aggregates.visits.value %> <% if (this.data.resultSet.aggregates.visits.value > 1) {this.label = 'visits';} else {this.label = 'visit';} %> <%= this.label %> from all sources.
+	There were <*= this.data.resultSet.aggregates.visits.formatted_value *> <* if (this.data.resultSet.aggregates.visits.value > 1) {this.label = 'visits';} else {this.label = 'visit';} *> <*= this.label *> from all sources.
 ]]> 
-</script>
-
-<script type="text/x-jqote-template" id="table-column">
-<![CDATA[
-
-<TD class="<%= this.result_type%>cell"><%= this.value %></TD>
-		
-]]> 
-</script>
-
-<script type="text/x-jqote-template" id="table-row">
-<![CDATA[
-<TR>
-<%= this.columns%>
-</TR>		
-]]> 
-</script>
-
-<script type="text/x-jqote-template" id="simpleTable-outer">
-<![CDATA[
-
-<table id="<%= this.dom_id %>" class="simpleTable">
-	<tr>
-		<%= this.headers %>
-	</tr>
-</table>
-]]>
-</script>
-
-<script type="text/x-jqote-template" id="simpleTable-headers">
-<![CDATA[
-<th class="<%= this.result_type %>"><%= this.label %></th>
-]]>
 </script>

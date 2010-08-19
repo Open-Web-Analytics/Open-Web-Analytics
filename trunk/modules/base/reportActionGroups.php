@@ -17,7 +17,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -46,11 +45,8 @@ class owa_reportActionGroupsController extends owa_reportController {
 												'template' => array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), 
 												'valueColumns' => 'actionGroup'));
 		$this->set('trendChartMetric', 'actions');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.formatted_value %> actions for all action groups.');
-		
-		//$this->set('gridTitle', 'Top Page Types');		
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions for all action groups.');
 	}
 }
-
 
 ?>

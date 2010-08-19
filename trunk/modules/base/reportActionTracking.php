@@ -45,7 +45,7 @@ class owa_reportActionTrackingController extends owa_reportController {
 												'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
 												'valueColumns' => 'pageUrl'));
 		$this->set('trendChartMetric', 'actions');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.value %> actions performed on all pages.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions performed on all pages.');
 				
 	}
 }

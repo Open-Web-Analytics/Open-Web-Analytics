@@ -30,6 +30,8 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @package     owa
  * @version		$Revision$	      
  * @since		owa 1.0.0
+ * @depricated
+ * @todo		remove
  */
 
 class owa_reportVisitorsRosterController extends owa_reportController {
@@ -83,28 +85,13 @@ class owa_reportVisitorsRosterController extends owa_reportController {
  */
 
 class owa_reportVisitorsRosterView extends owa_view {
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
-		// Assign data to templates
-		
-		//print_r($data['visitors']);
-		
-		$this->body->set_template('report_visitors_roster.tpl');
-	
+		$this->body->set_template('report_visitors_roster.tpl');	
 		$this->body->set('headline', 'Visitors');
-			
 		$this->body->set('visitors', $data['visitors']);
-		
 	}
-	
-	
 }
-
 
 ?>

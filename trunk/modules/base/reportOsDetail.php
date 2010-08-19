@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -43,7 +42,7 @@ class owa_reportOsDetailController extends owa_reportController {
 		$this->set('constraints', 'osType=='.urlencode($os));
 		$this->set('sort', 'visits-');
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits for this operating system.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for this operating system.');
 		//$this->set('gridTitle', 'Top Page Types');		
 	}
 }

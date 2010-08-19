@@ -38,7 +38,7 @@ class owa_reportFeedsController extends owa_reportController {
 		$this->set('metrics', 'feedReaders,feedRequests,feedSubscriptions');
 		$this->set('resultsPerPage', 30);
 		$this->set('trendChartMetric', 'feedReaders');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.feedReaders.value %> readers of all feeds.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.feedReaders.formatted_value *> readers of all feeds.');
 		$this->set('dimensions', 'feedType');	
 		// view stuff
 		$this->setView('base.report');

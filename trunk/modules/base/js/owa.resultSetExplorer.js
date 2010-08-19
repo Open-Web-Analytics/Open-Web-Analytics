@@ -932,7 +932,7 @@ OWA.resultSetExplorer.prototype = {
 		params = params || this.options.template.params;
 		mode = mode || this.options.template.mode;
 		dom_id = dom_id || this.options.template.dom_id || this.dom_id;
-		//jQuery.jqotetag('*');
+		jQuery.jqotetag('*');
 		//dom_id = dom_id || this.dom_id; 
 		
 		if (mode === 'append') {
@@ -1005,8 +1005,15 @@ OWA.resultSetExplorer.prototype = {
 				if (this.options.metricBoxes.width) {
 					item.width = this.options.metricBoxes.width;
 				}
+				
+				
+				// set alt tag for jqote. needed to avoid problem with php's asp_tags ini directive
+				jQuery.jqotetag('*');
 				jQuery('#' + dom_id).jqoteapp(template, item);
-				this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);	
+			
+				
+				this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);
+				
 			}	
 		}
     },
@@ -1026,7 +1033,8 @@ OWA.resultSetExplorer.prototype = {
 					data.push(this.resultSet.resultsRows[0][d_item]);
 				}
 			}
-			
+			// set alt tag for jqote. needed to avoid problem with php's asp_tags ini directive
+			jQuery.jqotetag('*');
 			//make table headers
 			var ths = jQuery('#simpleTable-headers').jqote(data); 
 			// make outer table

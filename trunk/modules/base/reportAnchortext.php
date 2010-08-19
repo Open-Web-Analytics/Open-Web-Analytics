@@ -43,15 +43,14 @@ class owa_reportAnchortextController extends owa_reportController {
 		$this->set('resultsPerPage', 30);
 		$this->set('constraints', 'source==referral');
 		$this->set('dimensionLink', array(
-			'linkColumn' => 'referralLinkText', 
-			'template' => array(
-				'do' => 'base.reportReferralLinkTextDetail', 
-				'referralLinkText' => '%s'
-			), 
-			'valueColumns' => 'referralLinkText'
-		));
+				'linkColumn' => 'referralLinkText', 
+				'template' => array(
+						'do' => 'base.reportReferralLinkTextDetail', 
+						'referralLinkText' => '%s'), 
+				'valueColumns' => 'referralLinkText'));
+				
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from referrals.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
 	}
 }
 

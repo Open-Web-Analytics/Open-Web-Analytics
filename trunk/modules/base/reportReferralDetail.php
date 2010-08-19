@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -44,7 +43,7 @@ class owa_reportReferralDetailController extends owa_reportController {
 		$this->set('resultsPerPage', 25);
 		$this->set('constraints', 'referralPageUrl=='.urlencode($referral));
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this referral.');	
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this referral.');	
 	}
 }
 
