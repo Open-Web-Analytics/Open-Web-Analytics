@@ -84,7 +84,6 @@
 																				  
 						OWA.items.topvisitors = new OWA.resultSetExplorer('top-visitors');
 						OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s')); ?>', ['visitorId']);
-						//OWA.items.topvisitors.options.grid.excludeColumns = [];
 						OWA.items.topvisitors.asyncQueue.push(['refreshGrid']);
 						OWA.items.topvisitors.load(tvurl);
 						
@@ -99,6 +98,6 @@
 
 <script type="text/x-jqote-template" id="visitors-headline-template">
 <![CDATA[
-	There were <%= this.data.resultSet.aggregates.uniqueVisitors.formatted_value %> <% if (this.data.resultSet.aggregates.uniqueVisitors.value > 1) {this.label = 'visitors';} else {this.label = 'visitor';} %> <%= this.label %> to this web site.
+	There were <*= this.data.resultSet.aggregates.uniqueVisitors.formatted_value *> <* if (this.data.resultSet.aggregates.uniqueVisitors.value > 1) {this.label = 'visitors';} else {this.label = 'visitor';} *> <*= this.label *> to this web site.
 ]]> 
 </script>

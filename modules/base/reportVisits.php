@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitsController extends owa_reportController {
-	
-	function __construct($params) {
 		
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
 		$visitorId = $this->getParam('visitorId');
@@ -62,9 +57,7 @@ class owa_reportVisitsController extends owa_reportController {
 			'page'			=> $this->getParam('page'),
 			'startDate'		=> $startDate,
 			'endDate'		=> $endDate,		
-			'format'		=> ''
-		
-		));
+			'format'		=> '' ) );
 		
 		$this->set('visits', $rs);
 		$this->set('visitor', $v);
@@ -73,7 +66,6 @@ class owa_reportVisitsController extends owa_reportController {
 		$this->setSubview('base.reportVisits');
 		$this->setTitle('Visit History For: ', $v->getVisitorName());	
 	}
-	
 }
 
 /**
@@ -91,8 +83,6 @@ class owa_reportVisitsController extends owa_reportController {
 class owa_reportVisitsView extends owa_view {
 			
 	function render() {
-		
-		// Assign data to templates
 		
 		$this->body->set_template('report_visits.php');	
 		$this->body->set('visitor_id', $this->get('visitor_id'));

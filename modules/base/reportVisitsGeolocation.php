@@ -34,30 +34,28 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 class owa_reportVisitsGeolocationController extends owa_reportController {
 	
 	function action() {
-	print 'hello';
+	
+		$site_id = $this->getParam('siteId');
 		
-$site_id = $this->getParam('siteId');
-		if ($site_id):
+		if ($site_id) {
 			//get site labels
 			$s = owa_coreAPI::entityFactory('base.site');
 			$s->getByColumn('site_id', $site_id);
 			$this->set('site_name', $s->get('name'));
 			$this->set('site_description', $s->get('description'));
-		else:
+		} else {
 			$this->set('site_name', 'All Sites');
 			$this->set('site_description', 'All Sites Tracked by OWA');
-		endif;
+		}
 	
 		$rs = owa_coreAPI::executeApiCommand(array(
-			
-			'do'				=> 'getLatestVisits',
-			'siteId'			=> $this->getParam('siteId'),
-			'page'				=> $this->getParam('page'),
-			'startDate'			=> $this->getParam('startDate'),
-			'endDate'			=> $this->getParam('endDate'),
-			'period'			=> $this->getParam('period'),
-			'resultsPerPage'	=> 200
-		));
+				'do'				=> 'getLatestVisits',
+				'siteId'			=> $this->getParam('siteId'),
+				'page'				=> $this->getParam('page'),
+				'startDate'			=> $this->getParam('startDate'),
+				'endDate'			=> $this->getParam('endDate'),
+				'period'			=> $this->getParam('period'),
+				'resultsPerPage'	=> 200 ) );
 		
 		$this->set('latest_visits', $rs);
 		$this->setTitle('Visitor Geo-location');

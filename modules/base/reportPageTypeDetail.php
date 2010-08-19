@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -43,7 +42,7 @@ class owa_reportPageTypeDetailController extends owa_reportController {
 		$this->set('constraints', 'pageType=='.urlencode($pageType));
 		$this->set('sort', 'pageViews-');
 		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.pageViews.value %> page views for this page type.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.');
 		$this->set('gridTitle', 'Top Page Types');		
 	}
 }

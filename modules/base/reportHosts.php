@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -41,14 +40,15 @@ class owa_reportHostsController extends owa_reportController {
 		$this->set('dimensions', 'hostName');
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array('linkColumn' => 'hostName', 
-												'template' => array('do' => 'base.reportHostDetail', 'hostName' => '%s'), 
-												'valueColumns' => 'hostName'));
+		$this->set('dimensionLink', array(
+				'linkColumn' 	=> 'hostName', 
+				'template' 		=> array('do' => 'base.reportHostDetail', 'hostName' => '%s'), 
+				'valueColumns' 	=> 'hostName'));
+				
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from all hosts.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all hosts.');
 		$this->set('gridTitle', 'Top Hosts');		
 	}
 }
-
 
 ?>

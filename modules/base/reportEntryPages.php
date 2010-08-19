@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -41,11 +40,13 @@ class owa_reportEntryPagesController extends owa_reportController {
 		$this->set('dimensions', 'entryPageTitle,entryPagePath,entryPageUrl');
 		$this->set('sort', 'pageViews-');
 		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array('linkColumn' => 'entryPageTitle', 
-												'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
-												'valueColumns' => 'entryPageUrl'));
+		$this->set('dimensionLink', array(
+				'linkColumn' => 'entryPageTitle', 
+				'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
+				'valueColumns' => 'entryPageUrl'));
+				
 		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits to the site through all entry pages.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages.');
 		$this->set('gridTitle', 'Top Entry Pages');	
 		$this->set('excludeColumns', "'entryPageUrl'");	
 	}

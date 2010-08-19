@@ -43,8 +43,7 @@ class owa_reportVisitorsController extends owa_reportController {
 			'startDate'			=> $this->getParam('startDate'),
 			'endDate'			=> $this->getParam('endDate'),
 			'period'			=> $this->getParam('period'),
-			'resultsPerPage'	=> 10
-		));
+			'resultsPerPage'	=> 10 ) );
 		
 		$this->set('latest_visits', $rs);
 		
@@ -68,12 +67,7 @@ class owa_reportVisitorsController extends owa_reportController {
  */
 
 class owa_reportVisitorsView extends owa_view {
-		
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
+			
 	function render($data) {
 			
 		$this->body->set_template('report_visitors.tpl');

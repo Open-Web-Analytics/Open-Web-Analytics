@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * Action Detail Report Controller
@@ -35,7 +34,6 @@ class owa_reportActionDetailController extends owa_reportController {
 
 	function action() {
 	
-	
 		$actionName = $this->getParam('actionName');
 		$actionGroup = $this->getParam('actionGroup');
 		
@@ -44,35 +42,8 @@ class owa_reportActionDetailController extends owa_reportController {
 		$this->set('metrics', 'actions,actionsValue');
 		$this->set('dimension', 'actionLabel');
 		$this->set('trendChartMetric', 'actions');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.actions.value %> actions of this type.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.');
 		$this->set('constraints', 'actionName=='.urlencode($actionName).',actionGroup=='.urlencode($actionGroup));	
-	}
-}
-
-/**
- * Action Detail Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
- */
-
-class owa_reportActionDetailView extends owa_view {
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render() {
-		
-		$this->body->set_template('report_actionDetail.php');
-		$this->body->set('aggregates', $this->get('aggregates'));	
-		$this->body->set('actionName', $this->get('actionName'));	
 	}
 }
 

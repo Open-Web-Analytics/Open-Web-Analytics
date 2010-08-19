@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -42,7 +41,7 @@ class owa_reportKeywordDetailController extends owa_reportController {
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimension', 'referralSearchTerms');
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.value %> visits from this search term.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.');
 		$this->set('constraints', 'referralSearchTerms=='.urlencode($searchTerm));	
 	}
 }

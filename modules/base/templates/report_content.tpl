@@ -31,22 +31,22 @@
 		
 		<td valign="top" style="width:50%;">
 			<div class="owa_reportSectionHeader">Content Reports</div>
-
-				<UL>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'));?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
-					</LI>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportActions'));?>">Actions</a></span> - See which actions your user performed.
-					</LI>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
-					</LI>
-					<LI>
-						<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Feeds</a></span> - See trends for feed subscribers and usage.
-					</LI>
-				</UL>
-				
+				<div class="relatedReports">
+					<UL>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'));?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportActions'));?>">Actions</a></span> - See which actions your user performed.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Feeds</a></span> - See trends for feed subscribers and usage.
+						</LI>
+					</UL>
+				</div>	
 			</div>
 			
 			<div class="owa_reportSectionContent" style="min-width:350px;">
@@ -132,39 +132,7 @@ OWA.items.toppagetypes.load(toppagetypesurl);
 
 <script type="text/x-jqote-template" id="content-headline-template">
 <![CDATA[
-	There were <%= this.data.resultSet.aggregates.pageViews.value %> <% if (this.data.resultSet.aggregates.pageViews.value > 1) {this.label = 'page views';} else {this.label = 'page view';} %> <%= this.label %> of all pages.
+	There were <*= this.data.resultSet.aggregates.pageViews.value *> <* if (this.data.resultSet.aggregates.pageViews.value > 1) {this.label = 'page views';} else {this.label = 'page view';} *> <*= this.label *> of all pages.
 ]]> 
 </script>
 
-<script type="text/x-jqote-template" id="table-column">
-<![CDATA[
-
-<TD class="<%= this.result_type%>cell"><%= this.value %></TD>
-		
-]]> 
-</script>
-
-<script type="text/x-jqote-template" id="table-row">
-<![CDATA[
-<TR>
-<%= this.columns%>
-</TR>		
-]]> 
-</script>
-
-<script type="text/x-jqote-template" id="simpleTable-outer">
-<![CDATA[
-
-<table id="<%= this.dom_id %>" class="simpleTable">
-	<tr>
-		<%= this.headers %>
-	</tr>
-</table>
-]]>
-</script>
-
-<script type="text/x-jqote-template" id="simpleTable-headers">
-<![CDATA[
-<th class="<%= this.result_type %>"><%= this.label %></th>
-]]>
-</script>

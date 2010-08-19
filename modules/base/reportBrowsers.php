@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -41,12 +40,13 @@ class owa_reportBrowsersController extends owa_reportController {
 		$this->set('dimensions', 'browserType');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 25);
-		$this->set('dimensionLink', array('linkColumn' => 'browserType', 
-												'template' => array('do' => 'base.reportBrowserDetail', 'browserType' => '%s'), 
-												'valueColumns' => 'browserType'));
+		$this->set('dimensionLink', array(
+				'linkColumn' => 'browserType', 
+				'template' => array('do' => 'base.reportBrowserDetail', 'browserType' => '%s'), 
+				'valueColumns' => 'browserType'));
+				
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <%= this.d.resultSet.aggregates.visits.formatted_value %> visits for all browser types.');
-		//$this->set('gridTitle', 'Top Page Types');		
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all browser types.');		
 	}
 }
 
