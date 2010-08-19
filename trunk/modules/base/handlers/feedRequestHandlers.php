@@ -62,6 +62,7 @@ class owa_feedRequestHandlers extends owa_observer {
 		// Generate Host id
 		$f->set('host_id', owa_lib::setStringGuid($event->get('host')));
 		
+		$f->set('subscription_id', $event->get( 'feed_subscription_id' ) );
 		// Persist to database
 		$result = $f->create();
 		
