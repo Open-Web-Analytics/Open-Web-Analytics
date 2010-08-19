@@ -31,15 +31,13 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  */
 
 class owa_installBaseController extends owa_installController {
-	
-	function owa_installBaseController($params) {
-				
-		return owa_installBaseController::__construct($params);
-	}
-	
+		
 	function __construct($params) {
 		
 		parent::__construct($params);
+		
+		// require nonce
+		$this->setNonceRequired();
 		
 		// validations
 		$v1 = owa_coreAPI::validationFactory('required');
@@ -69,8 +67,6 @@ class owa_installBaseController extends owa_installController {
 		$v4->setConfig('operator', '!=');
 		$v4->setErrorMessage($this->getMsg(3208));
 		$this->setValidation('domain', $v4);
-		
-		return;
 	}
 	
 	function action() {
@@ -126,9 +122,6 @@ class owa_installBaseController extends owa_installController {
 		$this->setView('base.install');
 		$this->setSubView('base.installDefaultsEntry');
 	}
-	
-
 }
-
 
 ?>

@@ -57,6 +57,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
 			<span class="form-instructions">This is the password to connect to the database.</span>
 		</p>
 		<p>
+			<?php echo $this->createNonceFormField('base.installConfig');?>
 			<input type="hidden" value="base.installConfig" name="<?php echo $this->getNs();?>action">
 			<input class="owa-button"type="submit" value="Continue..." name="<?php echo $this->getNs();?>save_button">
 		<p>

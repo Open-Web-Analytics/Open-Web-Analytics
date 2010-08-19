@@ -34,16 +34,6 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 
 class owa_installFinishController extends owa_installController {
-
-	function owa_installFinishController($params) {
-	
-		return owa_installFinishController::__construct($params); 	
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
 	
 	function action() {
 	
@@ -51,11 +41,11 @@ class owa_installFinishController extends owa_installController {
 		$this->c->setSetting('base', 'install_complete', true);
 		$save_status = $this->c->save();
 		
-		if ($save_status == true):
+		if ($save_status == true) {
 			$this->e->notice('Install Complete Flag added to configuration');
-		else:
+		} else {
 			$this->e->notice('Could not persist Install Complete Flag to the Database');
-		endif;
+		}
 		
 		$site = owa_coreAPI::entityFactory('base.site');
 		$site->getByPk('id', '1');
@@ -64,23 +54,11 @@ class owa_installFinishController extends owa_installController {
 		$this->set('site_id', $site->get('site_id'));
 		$this->set('u', $this->getParam('u'));
 		$this->set('p', $this->getParam('p'));
-		
-		return;
 	}
 }
 
 
 class owa_installFinishView extends owa_view {
-	
-	function owa_installFinishView() {
-				
-		return owa_installFinishView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
 	
 	function render($data) {
 		
@@ -95,15 +73,7 @@ class owa_installFinishView extends owa_view {
 		$this->body->set('p', $this->get('p'));
 		// load body template
 		$this->body->set_template('install_finish.tpl');
-		
-		return;
 	}
-	
-	
 }
-
-
-
-
 
 ?>

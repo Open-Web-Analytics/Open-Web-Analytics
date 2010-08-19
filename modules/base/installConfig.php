@@ -31,15 +31,13 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  */
 
 class owa_installConfigController extends owa_installController {
-	
-	function owa_installConfigController($params) {
 		
-		return owa_installConfigController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		parent::__construct($params);
+		
+		// require nonce
+		$this->setNonceRequired();
 		
 		//required params
 		$v1 = owa_coreAPI::validationFactory('required');

@@ -176,7 +176,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('dayofweek', 'base.feed_request', 'dayofweek', 'Day of Week', 'date', 'The day of the week.', '', true);
 		$this->registerDimension('dayofyear', 'base.feed_request', 'dayofyear', 'Day of Year', 'date', 'The day of the year.', '', true);
 		$this->registerDimension('weekofyear', 'base.feed_request', 'weekofyear', 'Week of Year', 'date', 'The week of the year.', '', true);
-		$this->registerDimension('feedType', 'base.feed_request', 'feed_type', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
+		$this->registerDimension('feedType', 'base.feed_request', 'feed_format', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
 		$this->registerDimension('siteId', 'base.feed_request', 'site_id', 'Site ID', 'request', 'The ID of the the web site.', '', true);
 		
 		//clicks

@@ -21,32 +21,13 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class owa_installStartController extends owa_installController {
-
-	function owa_installStartController($params) {
-	
-		return owa_installStartController::__construct($params); 
-			
-	}
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
 	
 	function action() {
 	
 		$this->setView('base.install');
 		$this->setSubview('base.installStart');
-		
-		return;
-	
 	}
-
 }
-
-
-
 
 /**
  * Installation View
@@ -61,32 +42,14 @@ class owa_installStartController extends owa_installController {
  */
 class owa_installStartView extends owa_view {
 	
-	function owa_installStartView() {
-		
-		return owa_installStartView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		$this->body->set_template('install_start.tpl');
-
 		//page title
 		$this->t->set('page_title', 'OWA Installation Start');
-
 		// fetch admin links from all modules
-		
 		$this->body->set('headline', 'Get Started...');
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>
