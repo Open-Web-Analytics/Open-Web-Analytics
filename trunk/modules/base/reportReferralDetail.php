@@ -35,8 +35,21 @@ class owa_reportReferralDetailController extends owa_reportController {
 	function action() {
 		
 		$referral = $this->getParam('referralPageUrl');
+		
 		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Referral: ', $referral);
+		$this->setTitle('Referral:');
+		
+		$r = owa_coreAPI::entityFactory('base.referer');
+		$r->getByColumn('url', $referral);
+		
+		$this->set('dimension_properties', array(
+				'title' 	=> $r->get('page_title'),
+				'url'		=> $r->get('url'),
+				'snippet'	=> $r->get('snippet') ) );
+				
+		$this->set('dimension_template', 'dimension_referral.php');
+		
+		
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralPageTitle,referralWebSite');
 		$this->set('sort', 'visits-');
