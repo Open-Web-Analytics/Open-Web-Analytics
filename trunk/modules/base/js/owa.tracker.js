@@ -77,6 +77,8 @@ OWA.event.prototype = {
 
 OWA.tracker = function(caller_params, options) {
 	
+	this.urlParams = [];
+	
 	// check to see if overlay sesson is active
 	var p = OWA.util.readCookie('owa_overlay');
 
@@ -85,8 +87,6 @@ OWA.tracker = function(caller_params, options) {
 		this.pause();
 		// start overlay session
 		OWA.startOverlaySession(p);
-		//return
-		//return;
 	}
 		
 	this.setEndpoint(OWA.config.baseUrl + 'log.php');
@@ -96,18 +96,6 @@ OWA.tracker = function(caller_params, options) {
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
 	
-	
-	/*
-if (options.length > 0) {
-		for(param in options) {
-			
-			if (options.hasOwnProperty(param)) {
-	       
-				this.options[param] = options[param];
-			}
-	    }
-	}
-*/
 	if (typeof owa_params != 'undefined') {
 		// merge page params from the global object if it exists
 		if (owa_params.length > 0) {
@@ -118,7 +106,10 @@ if (options.length > 0) {
 	// merge page params from map passed into the constructor
 	if (typeof caller_params != 'undefined') {
 		this.page.merge(caller_params);
-	}	
+	}
+	
+	// setup campaign cookie
+	this.recordCampaign();
 }
 
 OWA.tracker.prototype = {
@@ -139,6 +130,8 @@ OWA.tracker.prototype = {
 	 * Endpoint URl of logger service
 	 */
 	endpoint : '',
+	campaignState : '',
+	isNewCampaign: false,
 	/**
 	 * Configuration options
 	 */
@@ -149,7 +142,8 @@ OWA.tracker.prototype = {
 		encodeProperties: true, 
 		movementInterval: 100,
 		logDomStreamPercentage: 50,
-		domstreamEventThreshold: 5
+		domstreamEventThreshold: 5,
+		numPriorCampaigns: 5
 	},
 	/**
 	 * DOM stream Event Binding Methods
@@ -891,7 +885,79 @@ OWA.tracker.prototype = {
 	addStreamEventBinding : function(name) {
 		
 		this.streamBindings.push(name);
-	}	
+	},
 	
+	recordCampaign : function() {
 		
+		// load existing campaign cookie.
+		this.campaignState =  OWA.util.readCookie('owa_c');
+		if (this.campaignState) {
+			campaignState = unescape(campaignState);
+		}
+		
+		// load GET params from URL
+		if (!this.urlParams.length > 0)	{	
+			this.urlParams = OWA.util.parseUrlParams(document.URL);
+			OWA.debug('GET: '+ JSON.stringify(this.urlParams));
+		}
+		
+		// look for attributes in the url of the page
+		var campaignKeys = [
+				{ public: 'owa_medium', private: 'md' },
+				{ public: 'owa_campaign', private: 'cn' },
+				{ public: 'owa_source', private: 'sr' },
+				{ public: 'owa_terms', private: 'tr' }, 
+				{ public: 'owa_ad', private: 'ad' },
+				{ public: 'owa_ad_type', private: 'at' } ];
+		
+		// pull campaign params from _GET
+		var campaign_params_array = [];
+		for (var i = 0, n = campaignKeys.length; i < n; i++) {
+			
+			if (this.urlParams[campaignKeys[i].public]) {
+				campaign_params_array.push(campaignKeys[i].private + '=' + this.urlParams[campaignKeys[i].public]);
+				OWA.debug('campaign params array: ' + JSON.stringify(campaign_params_array));
+			}	
+		}
+		
+		// if any campaign params
+		if (campaign_params_array.length > 0) {
+			this.isNewCampaign = true;
+			// turn into a string
+			var campaign_string = OWA.util.implode('.', campaign_params_array);
+			var newCookievalue = '';	
+			OWA.debug('existing cookie: ' + campaignState);
+			
+			// if there is prior campaign state
+			if (this.campaignState) {
+				// check for how many prior campaigns are in the cookie
+				var campaignStateArray = this.campaignState.split('|');
+				OWA.debug('campaign state array: ' + JSON.stringify(campaignStateArray));
+				var prior_campaign_count = campaignStateArray.length;	
+				OWA.debug('prior campaign count: ' + prior_campaign_count);
+				// if the prior campaign count is at the limit...
+				if (prior_campaign_count === this.options.numPriorCampaigns) {
+					// splice array to make room for the new one
+					var removed = campaignStateArray.splice(0,1);
+					OWA.debug('campaign state array post slice: ' + JSON.stringify(campaignStateArray));
+				}
+			
+				// add new campaign info as element in array
+				campaignStateArray.push(campaign_string); 
+				// glue the array back into a string
+				newCookieValue = OWA.util.implode('|', campaignStateArray);
+				
+			} else {
+				newCookieValue = campaign_string;
+			}
+			
+			this.campaignState = newCookieValue;
+			
+			OWA.debug('new campaign cookie value: ' + newCookieValue);
+			// set the cookie
+			var domain = OWA.getSetting('cookie_domain') || document.domain;
+			OWA.util.setCookie('owa_c',newCookieValue,60,'/',domain);
+		}		
+	}
+	
 }
