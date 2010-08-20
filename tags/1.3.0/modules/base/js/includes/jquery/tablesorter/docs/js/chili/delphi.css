@@ -1,0 +1,17 @@
+/*
+===============================================================================
+Chili is the jQuery code highlighter plugin
+...............................................................................
+                                               Copyright 2007 / Andrea Ercolino
+-------------------------------------------------------------------------------
+LICENSE: http://www.opensource.org/licenses/mit-license.php
+WEBSITE: http://noteslog.com/chili/
+===============================================================================
+*/
+
+.delphi .mlcom   { color: #4040c2; }
+.delphi .com     { color: green; }
+.delphi .string  { color: teal; }
+.delphi .keyword { color: navy; font-weight: bold; }
+.delphi .direct  { color: red; }
+.delphi .number  { color: red; }
