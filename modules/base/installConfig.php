@@ -92,7 +92,12 @@ class owa_installConfigController extends owa_installController {
 		define('OWA_DB_HOST', $this->getParam('db_host'));
 		define('OWA_DB_NAME', $this->getParam('db_name'));
 		define('OWA_DB_USER', $this->getParam('db_user'));
-		define('OWA_DB_PASSWORD', $this->getParam('db_password'));	
+		define('OWA_DB_PASSWORD', $this->getParam('db_password'));
+		owa_coreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
+		owa_coreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
+		owa_coreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
+		owa_coreAPI::setSetting('base', 'db_user', OWA_DB_USER);
+		owa_coreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);	
 						
 		// Check DB connection status
 		$db = &owa_coreAPI::dbSingleton();
