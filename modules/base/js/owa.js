@@ -2,7 +2,10 @@ var OWA = {
 
 	items: new Object,
 	overlay: '',
-	config: new Object,
+	config: {
+		ns: 'owa_'
+	},
+	state: [],
 	overlayActive: false,
 	setSetting: function(name, value) {
 		this.config[name] = value;
@@ -303,9 +306,96 @@ OWA.util =  {
 	    else {
 	        return pieces;
 	    }
+	},
+	
+	setState : function(store_name, key, value, expiration) {
+	
+	},
+	
+	getState : function(store_name, key) {
+	
+	},
+	
+	loadState : function(store_name) {
+	
+		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
+		var state = this.assocFromString(store);
+		
+		OWA.state[store_name] = state;
+		OWA.debug('state store %s: %s', store_name, JSON.stringify(state));
+	},
+	
+	loadStateJson : function(store_name) {
+		var store = unescape(this.readCookie( OWA.getSetting('ns') + store_name ) );
+		if (store) {
+			state = JSON.parse(store);
+		}
+		OWA.state[store_name] = state;
+		OWA.debug('state store %s: %s', store_name, JSON.stringify(state));
+	},
+	
+	clearState : function(store_name) {
+	
+	},
+	
+	is_array : function(input) {
+  		return typeof(input)=='object'&&(input instanceof Array);	
+  	},
+  	
+  	countObjectProperties : function( obj ) {
+  		
+    	var size = 0, key;
+    	for (key in obj) {
+        	if (obj.hasOwnProperty(key)) size++;
+    	}
+    	return size;
+  	},
+	
+	assocFromString : function(str, inner, outer) {
+		
+		inner = inner || '=>';
+		outer = outer || '|||';
+		
+		if (str){
+		
+			if (!this.strpos(str, outer)) {
+	
+				return str;
+				
+			} else {
+				
+				var assoc = [];
+				outer_array = str.split(outer);
+				//OWA.debug('outer array: %s', JSON.stringify(outer_array));
+				for (var i = 0, n = outer_array.length; i < n; i++) {
+				
+					var inside_array = outer_array[i].split(inner);
+					
+					assoc[inside_array[0]] = inside_array[1];
+				}	
+			}
+			
+			OWA.debug('assoc from string: ' + JSON.stringify(assoc));
+			return assoc;
+		}
+	},
+	
+	getDomainFromUrl : function (url, strip_www) {
+		
+		var domain = url.split(/\/+/g)[1];
+		
+		if (strip_www === true) {
+			var fp = domain.split('.')[0];
+			
+			if (fp === 'www') {
+				return domain.substring(4);
+			} else {
+				return domain;
+			}
+			
+		} else {
+			return domain;
+		}
 	}
+	
 }
-
-
-
-

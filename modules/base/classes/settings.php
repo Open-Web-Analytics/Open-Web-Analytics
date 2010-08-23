@@ -614,6 +614,16 @@
 			'default_cache_expiration_period'	=> 604800,
 			//'nonce_expiration_period'			=> 84600,
 			'nonce_expiration_period'			=> 43200,
+			'max_prior_campaigns'				=> 5,
+			'campaign_params'					=> array(
+					'cn'	=> 'campaign',
+					'md'	=> 'medium',
+					'sr'	=> 'source',
+					'tr'	=> 'terms',
+					'ad'	=> 'ad',
+					'at'	=> 'ad_type'),
+			'trafficAttributionMode'			=> 'direct',
+			'campaignAttributionWindow'			=> 60,
 			'capabilities'						=> array(
 					'admin' => array(
 							'view_reports', 
