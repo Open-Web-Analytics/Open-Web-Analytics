@@ -85,7 +85,7 @@ class owa_sessionHandlers extends owa_observer {
 		$s->set('days_since_prior_session', $event->get('days_since_prior_session'));
 		$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
 				
-		// set source
+		// set medium
 		
 		if ($event->get(owa_coreAPI::getSetting('base', 'source_param'))) {
 			$s->set('source', $event->get('source'));

@@ -105,6 +105,12 @@ class owa_processRequestController extends owa_processEventController {
 			
 			// increment visit count in cookie //
 			owa_coreAPI::setState('v', 'nps', $this->event->get('num_prior_sessions') + 1, 'cookie', true);
+			
+		}
+		
+		// atributes traffic
+		if (!$this->event->get('is_attributed')) {
+			$this->attributeTraffic();
 		}
 			
 		// set last request time state

@@ -108,8 +108,8 @@ OWA.tracker = function(caller_params, options) {
 		this.page.merge(caller_params);
 	}
 	
-	// setup campaign cookie
-	this.recordCampaign();
+	// attribute traffic
+	this.attributeTraffic();
 }
 
 OWA.tracker.prototype = {
@@ -130,8 +130,9 @@ OWA.tracker.prototype = {
 	 * Endpoint URl of logger service
 	 */
 	endpoint : '',
-	campaignState : '',
+	campaignState : [],
 	isNewCampaign: false,
+	isTrafficAttributed: false,
 	/**
 	 * Configuration options
 	 */
@@ -143,7 +144,9 @@ OWA.tracker.prototype = {
 		movementInterval: 100,
 		logDomStreamPercentage: 50,
 		domstreamEventThreshold: 5,
-		numPriorCampaigns: 5
+		maxPriorCampaigns: 5,
+		campaignAttributionWindow: 60,
+		trafficAttributionMode: 'direct'
 	},
 	/**
 	 * DOM stream Event Binding Methods
@@ -887,14 +890,14 @@ OWA.tracker.prototype = {
 		this.streamBindings.push(name);
 	},
 	
-	recordCampaign : function() {
+	attributeTraffic : function() {
 		
 		// load existing campaign cookie.
-		this.campaignState =  OWA.util.readCookie('owa_c');
-		if (this.campaignState) {
-			campaignState = unescape(campaignState);
-		}
+		OWA.util.loadStateJson('c');
 		
+		if (OWA.state.c) {
+			this.campaignState = OWA.state.c;
+		}		
 		// load GET params from URL
 		if (!this.urlParams.length > 0)	{	
 			this.urlParams = OWA.util.parseUrlParams(document.URL);
@@ -903,61 +906,208 @@ OWA.tracker.prototype = {
 		
 		// look for attributes in the url of the page
 		var campaignKeys = [
-				{ public: 'owa_medium', private: 'md' },
-				{ public: 'owa_campaign', private: 'cn' },
-				{ public: 'owa_source', private: 'sr' },
-				{ public: 'owa_terms', private: 'tr' }, 
-				{ public: 'owa_ad', private: 'ad' },
-				{ public: 'owa_ad_type', private: 'at' } ];
+				{ public: 'owa_medium', private: 'md', full: 'medium' },
+				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
+				{ public: 'owa_source', private: 'sr', full: 'source' },
+				{ public: 'owa_search_terms', private: 'tr', full: 'search_terms' }, 
+				{ public: 'owa_ad', private: 'ad', full: 'ad' },
+				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ];
 		
 		// pull campaign params from _GET
-		var campaign_params_array = [];
+		var campaign_params = {};
 		for (var i = 0, n = campaignKeys.length; i < n; i++) {
 			
 			if (this.urlParams[campaignKeys[i].public]) {
-				campaign_params_array.push(campaignKeys[i].private + '=' + this.urlParams[campaignKeys[i].public]);
-				OWA.debug('campaign params array: ' + JSON.stringify(campaign_params_array));
+				campaign_params[campaignKeys[i].private] = this.urlParams[campaignKeys[i].public];
+				OWA.debug('campaign params obj: ' + JSON.stringify(campaign_params));
+				this.isNewCampaign = true;
 			}	
 		}
 		
-		// if any campaign params
-		if (campaign_params_array.length > 0) {
-			this.isNewCampaign = true;
-			// turn into a string
-			var campaign_string = OWA.util.implode('.', campaign_params_array);
-			var newCookievalue = '';	
-			OWA.debug('existing cookie: ' + campaignState);
+		// attribution object
+		var attribution = {
+			medium: '',
+			source: '',
+			campaign: '',
+			ad: '',
+			ad_type: '',
+			search_terms: ''
+		};
+		
+		// if traffic attribution mode is direct, then add the touch to the
+		// campaign cookie.
+		if (this.options.trafficAttributionMode === 'direct') {
+			// check to see if this request is from a new campaign.
+			if ( this.isNewCampaign ) {
 			
-			// if there is prior campaign state
-			if (this.campaignState) {
-				// check for how many prior campaigns are in the cookie
-				var campaignStateArray = this.campaignState.split('|');
-				OWA.debug('campaign state array: ' + JSON.stringify(campaignStateArray));
-				var prior_campaign_count = campaignStateArray.length;	
-				OWA.debug('prior campaign count: ' + prior_campaign_count);
-				// if the prior campaign count is at the limit...
-				if (prior_campaign_count === this.options.numPriorCampaigns) {
+				OWA.debug( 'campaign state length: %s', this.campaignState.length );
+				// add the new campaing params to the prior touches array
+				this.campaignState.push( campaign_params );
+				// if there is prior campaign touches, check to see if there is room for one more touch
+				if ( this.campaignState.length > this.options.maxPriorCampaigns ) {
+					OWA.debug( 'existing campaign touches' );
 					// splice array to make room for the new one
-					var removed = campaignStateArray.splice(0,1);
-					OWA.debug('campaign state array post slice: ' + JSON.stringify(campaignStateArray));
+					var removed = this.campaignState.splice( 0, 1 );
+					OWA.debug('campaign state array post slice: ' + JSON.stringify( this.campaignState ) );
 				}
-			
-				// add new campaign info as element in array
-				campaignStateArray.push(campaign_string); 
-				// glue the array back into a string
-				newCookieValue = OWA.util.implode('|', campaignStateArray);
 				
-			} else {
-				newCookieValue = campaign_string;
+				// set/reset the campaign cookie.
+				this.setCampaignCookie( this.campaignState );
+				
+				// set flag
+				this.isTrafficAttributed = true;
 			}
+		} 
+		
+		// if attribution mode is 'original' then only add the touch if
+		// there is no prior touch in the cookie
+		if ( this.options.trafficAttributionMode === 'original' ) {
 			
-			this.campaignState = newCookieValue;
+			// orignal touch was set previously. jus use that.
+			if ( this.campaignState.length > 0 ) {
+				// do nothing
+				OWA.debug( 'Original attribution detected.' );
+				// set the attributes from the first campaign touch
+				campaign_params = this.campaignState[0];
+				// set flag
+				this.isTrafficAttributed = true;
+		
+			// no orginal touch, set one if its a new campaign touch
+			} else {
+				OWA.debug( 'Setting Original Campaign touch.' );
+				if (this.isNewCampaign) {
+					this.campaignState.push( campaign_params );
+					// set cookie
+					this.setCampaignCookie( this.campaignState );
+					// set flag
+					this.isTrafficAttributed = true;
+				}
+			}
+		}
+		
+		// set the attributes
+		var count = OWA.util.countObjectProperties(campaign_params);
+		if (count > 0) {
 			
-			OWA.debug('new campaign cookie value: ' + newCookieValue);
-			// set the cookie
-			var domain = OWA.getSetting('cookie_domain') || document.domain;
-			OWA.util.setCookie('owa_c',newCookieValue,60,'/',domain);
-		}		
+			for (prop in campaign_params) {
+									
+				if (prop === 'md') {
+					attribution.medium = campaign_params[prop];
+				} else {
+					attribution.medium = '(not set)';
+				}
+				if (prop === 'sr') {
+					attribution.source = campaign_params[prop];
+				} else {
+					attribution.source = '(not set)';
+				}
+				if (prop === 'cn') {
+					attribution.campaign = campaign_params[prop];
+				} else {
+					attribution.campaign = '(not set)';
+				}
+				if (prop === 'ad') {
+					attribution.ad = campaign_params[prop];
+				} else {
+					attribution.ad = '(not set)';
+				}
+				if (prop === 'at') {
+					attribution.ad_type = campaign_params[prop];
+				} else {
+					attribution.ad_type = '(not set)';
+				}
+				if (prop === 'tr') {
+					attribution.search_terms = campaign_params[prop];
+				} else {
+					attribution.search_terms = '(not set)';
+				}
+			}
+		}
+
+		// if there is no campaign attribution then look for the standard medium/sources:
+		// search, referal, or direct.
+		if ( !this.isTrafficAttributed ) {
+			var referer = this.page.get('referer');
+			
+			if (referer) {
+				
+				var from_se = this.checkRefererForSearchEngine(referer); // make this
+				
+				if (from_se) {
+					attribution.medium =  'organic-search';
+					attribution.source = OWA.util.getDomainFromUrl( referer, true );
+				} else {
+					attribution.medium = 'referral';
+					attribution.source = OWA.util.getDomainFromUrl( referer, true );
+				}
+			} else {
+				attribution.medium = 'direct';
+				attribution.source = '(none)';
+			}
+		}
+		
+		// set attribution properties on page view object
+		
+		// set medium
+		this.page.set('medium', attribution.medium);
+		// set source
+		this.page.set('source', attribution.source);
+		
+		// set campaign
+		if (attribution.campaign.length > 0) {
+			this.page.set('campaign', attribution.campaign);
+		}
+		
+		//set ad
+		if (attribution.ad.length > 0) {
+			this.page.set('ad', attribution.ad);
+		}
+		
+		//set ad type
+		if (attribution.ad_type.length > 0) {
+			this.page.set('ad_type', attribution.ad_type);
+		}
+		
+		//set search_terms
+		if (attribution.search_terms.length > 0) {
+			this.page.set('search_terms', attribution.search_terms);
+		}
+		
+		// set campaign touches
+		if (this.campaignState.length > 0) {
+			this.page.set('campaign_touches', JSON.stringify(this.campaignState));
+		}
+		
+		// tells upstream processing to skip attribution
+		this.page.set('is_attributed', true);
+		
+		// store the attribution object in the session cookie
+		// ...
+	},
+	
+	setCampaignCookie : function(values) {
+		
+		// set or reset the campaign cookie
+		OWA.debug('new campaign cookie value: ' + JSON.stringify(values));
+		var domain = OWA.getSetting('cookie_domain') || document.domain;
+		OWA.util.setCookie('owa_c',JSON.stringify(values),this.options.campaignAttributionWindow,'/',domain);
+	},
+	
+	checkRefererForSearchEngine : function (referer) {
+		
+		var _get = OWA.util.parseUrlParams(referer);
+		
+		var query_params = [
+				'q', 'p','search', 'Keywords','ask','keyword','keywords','kw','pattern', 				'pgm','qr','qry','qs','qt','qu','query','queryterm','question',
+				'sTerm','searchfor','searchText','srch','su','what'
+		];
+		
+		for (var i = 0, n = query_params.length; i < n; i++) {
+			if ( _get[query_params[i]] ) {
+				OWA.debug( 'Found search engine query param: ' + query_params[i] );
+				return true;
+			}
+		}
 	}
 	
 }

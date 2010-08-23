@@ -56,6 +56,7 @@ class owa_baseModule extends owa_module {
 		$this->registerFilter('ip_address', $this, 'setIp', 0);
 		$this->registerFilter('full_host', $this, 'resolveHost', 0);
 		$this->registerFilter('host', $this, 'getHostDomain', 0);
+		$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
 		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
 		//Clean Query Strings 
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
@@ -871,6 +872,25 @@ if ($metrics) {
 		}
 	}
 	
+	function attributeCampaign( $tracking_event ) {
+		
+		$mode = owa_coreAPI::getSetting('base', 'campaign_attribution_mode');
+		// direct mode means that that we attribute the latest campaign touch
+		// if the request originaled from the touching the campaign.
+		if ( $mode === 'direct' ) {
+			if ( $tracking_event->get( 'from_campaign' ) ) {
+				$campaigns = array_reverse( $tracking_event->get( 'campaign_touches' ) );
+				//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
+				return $campaigns[0];
+			}
+		// orginal mode means that we always attribute the request to the
+		// first touch regardless of the medium/source that generated the request
+		} elseif ( $mode === 'original' ) {
+			$campaigns = $tracking_event->get( 'campaign_touches' );
+			//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
+			return $campaigns[0];
+		}
+	}
 }
 
 

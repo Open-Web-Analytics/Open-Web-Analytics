@@ -84,7 +84,7 @@ class owa_processEventController extends owa_controller {
 		// re-Set GUID for event so that it is truely unique taking into account the site_id that was just set
 		//$this->event->guid = $this->event->set_guid();
 		//$this->event->properties['guid'] = $this->event->guid;
-		
+	
 		// extract site specific state from session store
 		$state = $this->loadSiteSessionState($this->event->get('site_id'));
 		
@@ -382,6 +382,189 @@ class owa_processEventController extends owa_controller {
 		
 		}
 	}
+	
+	function attributeTraffic() {
+		
+		// if not then look for individual campaign params on the event. 
+		// this happens when the client is php and the params are on the url
+		$campaign_params = array_values( owa_coreAPI::getSetting( 'base', 'campaign_params' ) );
+		$campaign_properties = array();
+		$campaign_state = array();
+		foreach ($campaign_params as $k => $param) {
+			if ( $this->event->get( $param ) ) {
+				$campaign_properties[$k] = $this->event->get( $param );
+			}
+		}
+		
+		// load existings campaing state
+		$campaign_state = owa_coreAPI::getStateParam( 'c' );
+		if ( $campaign_state ) {
+			$campaign_state = json_decode( $campaign_state );
+		} else {
+			$campaign_state = array();
+		}
+		
+				
+		$mode = owa_coreAPI::getSetting('base', 'trafficAttributionMode');
+		$attribution = array(
+				'medium' 	=> '',
+				'source' 	=> '',
+				'campaign' 	=> '',
+				'ad' 	=> '',
+				'ad_type' 	=> '',
+				'search_terms' 	=> ''
+		);
+		
+		if ($mode === 'direct') {
+			
+			// add new campaign info to existing campaign cookie.
+			if ( !empty( $campaign_properties ) ) {
+		
+				// add new campaign into state array
+				$campaign_state[] = (object) $campaign_properties;
+				
+				// if more than x slice the first one off to make room
+				$count = count( $campaign_state );
+				$max = owa_coreAPI::getSetting( 'base', 'max_prior_campaigns');
+				if ($count > $max ) {
+					array_shift( $campaign_state );
+				}
+					
+				// reset state
+				$this->setCampaignCookie($campaign_state);
+				
+				// set flag
+				$this->event->set('is_attributed', true);
+			}
+		}
+		
+		// if attribution mode is 'original' then only add the touch if
+		// there is no prior touch in the cookie	
+		if ($mode === 'original') {
+			
+			$orginal = false;
+			
+			// orignal touch was set previously. jus use that.
+			if (!empty($campaign_state)) {
+				// do nothing
+				owa_coreAPI::debug('Original attribution detected.');
+				// set the attributes from the first campaign touch
+				$campaign_properties = $campaign_state[0];
+				$this->event->set('is_attributed', true);
+		
+			// no orginal touch, set one if it's a new campaign touch
+			} else {
+				
+				if (!empty($campaign_properties)) {
+					owa_coreAPI::debug('Setting original Campaign attrbution.');
+					$campaign_state[] = $campaign_properties;
+					// set cookie
+					$this->setCampaignCookie($campaign_state);
+					$this->event->set('is_attributed', true);
+				}
+			}
+			
+		}
+		
+		// set the attributes
+		if (!empty($campaign_properties)) {
+		
+			foreach ($campaign_properties as $k => $v) {
+									
+				if ($k === 'md') {
+					$attribution['medium'] = $campaign_properties[$k];
+				} else {
+					$attribution['medium'] = '(not set)';
+				}
+				
+				if ($k === 'sr') {
+					$attribution['source'] = $campaign_properties[$k];
+				} else {
+					$attribution['source'] = '(not set)';
+				}
+				
+				if ($k === 'cn') {
+					$attribution['campaign'] = $campaign_properties[$k];
+				} else {
+					$attribution['campaign'] = '(not set)';
+				}
+				
+				if ($k === 'ad') {
+					$attribution['ad'] = $campaign_properties[$k];
+				} else {
+					$attribution['ad'] = '(not set)';
+				} 
+				
+				if ($k === 'at') {
+					$attribution['ad_type'] = $campaign_properties[$k];
+				} else {
+					$attribution['ad_type'] = '(not set)';
+				}
+				
+				if ($k === 'tr') {
+					$attribution['search_terms'] = $campaign_properties[$k];
+				} else {
+					$attribution['search_terms'] = '(not set)';
+				}
+			}		
+		}
+			
+		// if no campaign attribution look for standard medium/source:
+		// organic-search, referral, direct
+		if (!$this->event->get('is_attributed')) {
+		
+			// if there is an external referer
+			if ( $this->event->get( 'external_referer' ) ) {
+		
+				// see if its from a search engine
+				if ($this->event->get( 'search_terms' ) ) {
+					$attribution['medium'] = 'organic-search';
+					// put the domain here.
+					$attribution['source'] = ''; //????
+				} else {
+					// assume its a plain old referral
+					$attribution['medium'] = 'referral';
+					// put the domain here.
+					$attribution['source'] = ''; //????
+				}
+			} else {
+				// set as direct
+				$attribution['medium'] = 'direct';
+			}
+			
+			$this->event->set('is_attributed', true);
+		}
+		
+		$this->event->set('medium', $attribution['medium']);
+		$this->event->set('medium', $attribution['source']);
+		
+		if (!empty($attribution['campaign'])) {
+			$this->event->set('campaign', $attribution['campaign']);
+		}
+		
+		if (!empty($attribution['ad'])) {
+			$this->event->set('ad', $attribution['ad']);
+		}
+		
+		if (!empty($attribution['ad_type'])) {
+			$this->event->set('ad_type', $attribution['ad_type']);
+		}
+		
+		if (!empty($attribution['search_terms'])) {
+			$this->event->set('search_terms', $attribution['search_terms']);
+		}
+		
+		$this->event->set('campaign_touches', owa_coreAPI::getStateParam('c'));
+	}
+	
+	function setCampaignCookie($values) {
+		// reset state
+		owa_coreAPI::setState('c', '', 
+				json_encode( $values ), 
+				'cookie', 
+				owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' ) );
+	}
+	
 }
 
 
