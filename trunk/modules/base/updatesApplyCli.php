@@ -103,8 +103,11 @@ class owa_updatesApplyCliController extends owa_cliController {
 	
 		list($module, $seq) = explode('.', $update);
 		$u = owa_coreAPI::updateFactory($module, $seq);
-		$u->apply();
-		owa_coreAPI::notice("Updates applied successfully.");
+		$ret = $u->apply();
+		
+		if ($ret) {
+			owa_coreAPI::notice("Updates applied successfully.");
+		}
 	}
 	
 	function rollback($update) {

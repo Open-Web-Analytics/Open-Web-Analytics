@@ -24,6 +24,19 @@
 		
 		<div class="owa_reportSectionContent">
 		
+			<div class="owa_reportSectionContent" style="min-width:350px;">
+				<div class="owa_reportSectionHeader">Top Sources</div>
+				
+				<div id="top-sources"></div>
+				<div class="owa_genericHorizonalList owa_moreLinks">
+					<UL>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportSources'), true);?>">View Full Report &raquo;</a>	
+						</LI>
+					</UL>
+				</div>
+			</div>
+		
 			<div class="owa_reportSectionHeader">Related Reports</div>
 				<div class="relatedReports">
 					<UL>
@@ -169,6 +182,20 @@ OWA.items.topreferrals.addLinkToColumn('referralPageUrl', '<?php echo $this->mak
 OWA.items.topreferrals.asyncQueue.push(['refreshGrid', 'top-referrals']);
 OWA.items.topreferrals.load(topreferralsurl);
 
+var topsources_url = '<?php echo $this->makeApiLink(array(
+		'do' => 'getResultSet', 
+		'metrics' => 'visits', 
+		'dimensions' => 'source,medium', 
+		'sort' => 'visits-',
+		'format' => 'json',
+		'resultsPerPage' => 25,
+		'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
+												  
+OWA.items.topsources = new OWA.resultSetExplorer('top-sources');
+OWA.items.topsources.addLinkToColumn('source', '<?php echo $this->makeLink(array('do' => 'base.reportSourceDetail', 'source' => '%s' , 'medium' => '%s'),true);?>', ['source', 'medium']);
+OWA.items.topsources.asyncQueue.push(['refreshGrid', 'top-sources']);
+OWA.items.topsources.load(topsources_url);
+
 
 </script>
 
@@ -176,6 +203,6 @@ OWA.items.topreferrals.load(topreferralsurl);
 
 <script type="text/x-jqote-template" id="visits-headline-template">
 <![CDATA[
-	There were <*= this.data.resultSet.aggregates.visits.formatted_value *> <* if (this.data.resultSet.aggregates.visits.value > 1) {this.label = 'visits';} else {this.label = 'visit';} *> <*= this.label *> from all sources.
+	There were <*= this.data.resultSet.aggregates.visits.formatted_value *> <* if (this.data.resultSet.aggregates.visits.value > 1) {this.label = 'visits';} else {this.label = 'visit';} *> <*= this.label *> from all mediums.
 ]]> 
 </script>

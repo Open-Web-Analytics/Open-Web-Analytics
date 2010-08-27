@@ -451,10 +451,14 @@ class owa_coreAPI {
 				
 				foreach ($do['args'] as $arg) {
 					
-					$passed_args[] = $map[$arg];
+					if (isset($map[$arg])) {
+						$passed_args[] = $map[$arg];
+					} else {
+						$passed_args[] = '';
+					}
 				}
 				
-				if ($file) {
+				if (!empty($do['file'])) {
 					
 					if (!class_exists($do['callback'][0])) {
 						require_once($file);
@@ -541,13 +545,13 @@ class owa_coreAPI {
 			$module_nav = $v->getNavigationLinks();
 			
 	
-			if (!empty($module_nav)):
+			if (!empty($module_nav)) {
 				// assemble the navigation for a specific view's named navigation element'	
 				foreach ($module_nav as $key => $value) {
 					
 					$links[$value['view']][$value['nav_name']][] = $value;
 				}
-			endif;
+			}
 			
 		}
 		

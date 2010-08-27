@@ -385,15 +385,27 @@ class owa_processEventController extends owa_controller {
 	
 	function attributeTraffic() {
 		
-		// if not then look for individual campaign params on the event. 
+		// if not then look for individual campaign params on the request. 
 		// this happens when the client is php and the params are on the url
-		$campaign_params = array_values( owa_coreAPI::getSetting( 'base', 'campaign_params' ) );
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
 		$campaign_properties = array();
 		$campaign_state = array();
 		foreach ($campaign_params as $k => $param) {
-			if ( $this->event->get( $param ) ) {
-				$campaign_properties[$k] = $this->event->get( $param );
+			if ( $this->getParam( $param ) ) {
+				$campaign_properties[$k] = $this->getParam( $param );
 			}
+		}
+		
+		owa_coreAPI::debug('campaign properties: '. print_r($campaign_properties, true));
+		
+		// backfill values for incomplete param combos
+		
+		if (array_key_exists('at', $campaign_properties) && !array_key_exists('ad', $campaign_properties)) {
+			$campaign_properties['ad'] = '(not set)';
+		}
+		
+		if (array_key_exists('ad', $campaign_properties) && !array_key_exists('at', $campaign_properties)) {
+			$campaign_properties['at'] = '(not set)';
 		}
 		
 		// load existings campaing state
@@ -410,8 +422,8 @@ class owa_processEventController extends owa_controller {
 				'medium' 	=> '',
 				'source' 	=> '',
 				'campaign' 	=> '',
-				'ad' 	=> '',
 				'ad_type' 	=> '',
+				'ad' 	=> '',
 				'search_terms' 	=> ''
 		);
 		
@@ -473,38 +485,26 @@ class owa_processEventController extends owa_controller {
 									
 				if ($k === 'md') {
 					$attribution['medium'] = $campaign_properties[$k];
-				} else {
-					$attribution['medium'] = '(not set)';
 				}
 				
 				if ($k === 'sr') {
 					$attribution['source'] = $campaign_properties[$k];
-				} else {
-					$attribution['source'] = '(not set)';
 				}
 				
 				if ($k === 'cn') {
 					$attribution['campaign'] = $campaign_properties[$k];
-				} else {
-					$attribution['campaign'] = '(not set)';
+				}
+					
+				if ($k === 'at') {
+					$attribution['ad_type'] = $campaign_properties[$k];
 				}
 				
 				if ($k === 'ad') {
 					$attribution['ad'] = $campaign_properties[$k];
-				} else {
-					$attribution['ad'] = '(not set)';
-				} 
-				
-				if ($k === 'at') {
-					$attribution['ad_type'] = $campaign_properties[$k];
-				} else {
-					$attribution['ad_type'] = '(not set)';
 				}
 				
 				if ($k === 'tr') {
 					$attribution['search_terms'] = $campaign_properties[$k];
-				} else {
-					$attribution['search_terms'] = '(not set)';
 				}
 			}		
 		}
@@ -520,12 +520,12 @@ class owa_processEventController extends owa_controller {
 				if ($this->event->get( 'search_terms' ) ) {
 					$attribution['medium'] = 'organic-search';
 					// put the domain here.
-					$attribution['source'] = ''; //????
+					$attribution['source'] = $this->getDomainFromUrl($this->get('external_referer')); //????
 				} else {
 					// assume its a plain old referral
 					$attribution['medium'] = 'referral';
 					// put the domain here.
-					$attribution['source'] = ''; //????
+					$attribution['source'] = $this->getDomainFromUrl($this->get('external_referer')); //????
 				}
 			} else {
 				// set as direct
@@ -536,7 +536,7 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		$this->event->set('medium', $attribution['medium']);
-		$this->event->set('medium', $attribution['source']);
+		$this->event->set('source', $attribution['source']);
 		
 		if (!empty($attribution['campaign'])) {
 			$this->event->set('campaign', $attribution['campaign']);
@@ -554,7 +554,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('search_terms', $attribution['search_terms']);
 		}
 		
-		$this->event->set('campaign_touches', owa_coreAPI::getStateParam('c'));
+		$this->event->set('attribs', owa_coreAPI::getStateParam('c'));
 	}
 	
 	function setCampaignCookie($values) {
@@ -565,6 +565,23 @@ class owa_processEventController extends owa_controller {
 				owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' ) );
 	}
 	
+	function getDomainFromUrl($url, $strip_www = true) {
+		
+		$split_url = preg_split('/\/+/g', $url);
+		$domain = $split_url[1];
+		if ($strip_www === true) {
+			$domain_parts = explode('.', $domain);
+			$fp = $domain_parts[0];
+			if ($fp === 'www') {
+				return substring($domain, 4);
+			} else {
+				return $domain;
+			}
+			
+		} else {
+			return $domain;
+		}
+	}	
 }
 
 

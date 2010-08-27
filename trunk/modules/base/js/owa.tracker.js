@@ -924,13 +924,22 @@ OWA.tracker.prototype = {
 			}	
 		}
 		
+		// check for incomplete combos and backfill values if needed
+		if (campaign_params['at'] && !campaign_params['ad']) {
+			campaign_params['ad'] = '(not set)';
+		}
+		
+		if (campaign_params['ad'] && !campaign_params['at']) {
+			campaign_params['at'] = '(not set)';
+		}
+		
 		// attribution object
 		var attribution = {
 			medium: '',
 			source: '',
 			campaign: '',
-			ad: '',
 			ad_type: '',
+			ad: '',
 			search_terms: ''
 		};
 		
@@ -993,33 +1002,21 @@ OWA.tracker.prototype = {
 									
 				if (prop === 'md') {
 					attribution.medium = campaign_params[prop];
-				} else {
-					attribution.medium = '(not set)';
 				}
 				if (prop === 'sr') {
 					attribution.source = campaign_params[prop];
-				} else {
-					attribution.source = '(not set)';
 				}
 				if (prop === 'cn') {
 					attribution.campaign = campaign_params[prop];
-				} else {
-					attribution.campaign = '(not set)';
+				} 
+				if (prop === 'at') {
+					attribution.ad_type = campaign_params[prop];
 				}
 				if (prop === 'ad') {
 					attribution.ad = campaign_params[prop];
-				} else {
-					attribution.ad = '(not set)';
-				}
-				if (prop === 'at') {
-					attribution.ad_type = campaign_params[prop];
-				} else {
-					attribution.ad_type = '(not set)';
 				}
 				if (prop === 'tr') {
 					attribution.search_terms = campaign_params[prop];
-				} else {
-					attribution.search_terms = '(not set)';
 				}
 			}
 		}
@@ -1075,7 +1072,7 @@ OWA.tracker.prototype = {
 		
 		// set campaign touches
 		if (this.campaignState.length > 0) {
-			this.page.set('campaign_touches', JSON.stringify(this.campaignState));
+			this.page.set('attribs', JSON.stringify(this.campaignState));
 		}
 		
 		// tells upstream processing to skip attribution

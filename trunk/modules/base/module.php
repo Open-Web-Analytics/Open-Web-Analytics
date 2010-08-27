@@ -107,7 +107,13 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('timeSinceLastVisit', 'base.session', 'time_sinse_priorsession', 'Time Since Last Visit', 'visitor', 'The time since the last visit.', '', true);
 		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
 		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
-		$this->registerDimension('source', 'base.session', 'source', 'Visit Source', 'visitor', 'Source of visit.', '', true);
+		
+		// campaign related
+		$this->registerDimension('medium', 'base.session', 'medium', 'Medium', 'visit', 'The medium of channel of visit.', '', true);
+		$this->registerDimension('source', 'base.source_dim', 'source_domain', 'Source', 'visit', 'The traffic source of the visit.');
+		$this->registerDimension('campaign', 'base.campaign_dim', 'name', 'Campaign', 'visit', 'The campaign that originated the visit.');
+		$this->registerDimension('ad', 'base.ad_dim', 'name', 'Ad', 'visit', 'The name of the ad that originated the visit.');
+		$this->registerDimension('adType', 'base.ad_dim', 'type', 'Ad Type', 'visit', 'The type of ad that originated the visit.');
 		
 		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visit', 'The domain of the site.');
 		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visit', 'The name of the site.');
@@ -117,7 +123,6 @@ class owa_baseModule extends owa_module {
 		
 		// Date and time oriented dimensions
 		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('medium', 'base.session', 'source', 'Medium', 'visit', 'The medium used to deliver the visit.', '', true);
 		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
 		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visit', 'The month.', '', true);
 		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visit', 'The year.', '', true);
@@ -279,7 +284,10 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Search Terms', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);		
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);		
 	}
 	
 	/**
@@ -304,7 +312,13 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
 		// operating systems
 		$this->registerEventHandler('base.new_session', 'osHandlers');
-		// User Agents
+		// source dimension
+		$this->registerEventHandler('base.new_session', 'sourceHandlers');
+		// campaign dimension
+		$this->registerEventHandler('base.new_session', 'campaignHandlers');
+		// ad dimension
+		$this->registerEventHandler('base.new_session', 'adHandlers');
+		// User Agent dimension
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
@@ -513,7 +527,11 @@ class owa_baseModule extends owa_module {
 		}
 			
 		// OWA specific params to filter
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'source_param'));
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'source');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'medium');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'campaign');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad_type');
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 		
 		//print_r($filters);

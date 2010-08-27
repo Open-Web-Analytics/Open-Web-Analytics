@@ -619,7 +619,7 @@
 					'cn'	=> 'campaign',
 					'md'	=> 'medium',
 					'sr'	=> 'source',
-					'tr'	=> 'terms',
+					'tr'	=> 'search_terms',
 					'ad'	=> 'ad',
 					'at'	=> 'ad_type'),
 			'trafficAttributionMode'			=> 'direct',
@@ -633,7 +633,8 @@
 							'edit_modules'),
 					'analyst' => array('view_reports'), 
 					'viewer' => array('view_reports'), 
-					'everyone' => array())
+					'everyone' => array()),
+			'goals'								=> array()
 			
 			));
 			

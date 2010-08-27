@@ -86,27 +86,35 @@ class owa_sessionHandlers extends owa_observer {
 		$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
 				
 		// set medium
+		$s->set('medium', $event->get('medium'));
 		
-		if ($event->get(owa_coreAPI::getSetting('base', 'source_param'))) {
-			$s->set('source', $event->get('source'));
-		} elseif ($event->get('external_referer')) {
+		// set source
+		if ($event->get('source')) {
+			$s->set('source_id', $s->generateId( 
+				trim( strtolower( $event->get('source') ) ) ) );		
+		}
 			
-			// if search
-			if ($event->get('search_terms')) {
-				$s->set('source', 'organic-search');
-				$event->set('source', 'organic-search');
-				$s->set('referring_search_term_id', $s->generateId(trim(strtolower($event->get('search_terms')))));
-			} else {
-				$s->set('source', 'referral');
-				$event->set('source', 'referral');
-			}
-			
-		} else {
-			$s->set('source', 'direct');
-			$event->set('source', 'direct');
-		}			
+		// set search terms
+		if ($event->get('search_terms')) {
+			$s->set('referring_search_term_id', $s->generateId( 
+				trim( strtolower( $event->get('search_terms') ) ) ) );		
+		}
 		
-						
+		// set campaign
+		if ($event->get('campaign')) {
+			$s->set('campaign_id', $s->generateId( 
+				trim( strtolower( $event->get('campaign') ) ) ) );		
+		}
+		
+		// set ad
+		if ($event->get('ad')) {
+			$s->set('ad_id', $s->generateId( 
+				trim( strtolower( $event->get('ad') ) ) ) );		
+		}
+		
+		// set campaign touches
+		$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
+		
 		// Make ua id
 		$s->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 		

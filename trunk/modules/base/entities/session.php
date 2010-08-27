@@ -157,8 +157,6 @@ class owa_session extends owa_entity {
 		$host_id->setForeignKey('base.host');
 		$this->setProperty($host_id);
 		
-		$this->properties['source'] = new owa_dbColumn;
-		$this->properties['source']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['city'] = new owa_dbColumn;
 		$this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['country'] = new owa_dbColumn;
@@ -179,6 +177,29 @@ class owa_session extends owa_entity {
 		$this->properties['is_browser']->setDataType(OWA_DTD_TINYINT);
 		$this->properties['is_feedreader'] = new owa_dbColumn;
 		$this->properties['is_feedreader']->setDataType(OWA_DTD_TINYINT);
+		
+		//$this->properties['source'] = new owa_dbColumn;
+		//$this->properties['source']->setDataType(OWA_DTD_VARCHAR255);
+		
+
+		$medium = new owa_dbColumn('medium',OWA_DTD_VARCHAR255);
+		$this->setProperty($medium);
+		
+		$source_id = new owa_dbColumn('source_id', OWA_DTD_BIGINT);
+		$source_id->setForeignKey('base.source_dim');
+		$this->setProperty($source_id);
+		
+		$ad_id = new owa_dbColumn('ad_id', OWA_DTD_BIGINT);
+		$ad_id->setForeignKey('base.ad_dim');
+		$this->setProperty($ad_id);
+		
+		$campaign_id = new owa_dbColumn('campaign_id', OWA_DTD_BIGINT);
+		$campaign_id->setForeignKey('base.campaign_dim');
+		$this->setProperty($campaign_id);
+		
+		$this->properties['latest_attributions'] = new owa_dbColumn;
+		$this->properties['latest_attributions']->setDataType(OWA_DTD_TEXT);
+		
 	}
 }
 
