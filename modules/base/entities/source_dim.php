@@ -17,7 +17,7 @@
 //
 
 /**
- * Search Term Entity
+ * Source Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,26 +25,22 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @since		owa 1.4.0
  */
 
-class owa_search_term_dim extends owa_entity {
+class owa_source_dim extends owa_entity {
 	
 	function __construct() {
 		
-		$this->setTableName('search_term_dim');
+		$this->setTableName('source_dim');
 		$this->setCachable();
 		// properties
 		$this->properties['id'] = new owa_dbColumn;
 		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['id']->setPrimaryKey();
-		$this->properties['terms'] = new owa_dbColumn;
-		$this->properties['terms']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['term_count'] = new owa_dbColumn;
-		$this->properties['term_count']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['source_domain'] = new owa_dbColumn;
+		$this->properties['source_domain']->setDataType(OWA_DTD_VARCHAR255);
 	}
 }
-
-
 
 ?>

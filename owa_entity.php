@@ -528,7 +528,7 @@ class owa_entity {
 	
 		$def = $this->getColumnDefinition($column_name);		
 		$db = owa_coreAPI::dbSingleton();
-		$status = $db->modifyColumn($this->getTableName(), $column_name, $defs);
+		$status = $db->modifyColumn($this->getTableName(), $column_name, $def);
 		
 		if ($status == true):
 			return true;
@@ -539,10 +539,16 @@ class owa_entity {
 	
 	}
 	
-	function renameColumn($old_column_name, $column_name) {
+	function renameColumn($old_column_name, $column_name, $use_old_column_for_defs = false) {
 	
+		if ($use_old_column_for_defs) {
+			$def = $this->getColumnDefinition($old_column_name);
+		} else {
+			$def = $this->getColumnDefinition($column_name);
+		}
+		
 		$db = owa_coreAPI::dbSingleton();
-		$status = $db->renameColumn($this->getTableName(), $old_column_name, $column_name);
+		$status = $db->renameColumn($this->getTableName(), $old_column_name, $column_name, $def);
 		
 		if ($status == true):
 			return true;

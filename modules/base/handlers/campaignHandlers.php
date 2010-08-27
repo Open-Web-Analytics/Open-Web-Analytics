@@ -16,8 +16,12 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_DIR.'owa_observer.php');
+}	
+
 /**
- * Search Term Entity
+ * Campaign Event handlers
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,26 +29,38 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @since		owa 1.4.0
  */
 
-class owa_search_term_dim extends owa_entity {
-	
-	function __construct() {
+class owa_campaignHandlers extends owa_observer {
+    	
+    /**
+     * Notify Event Handler
+     *
+     * @param 	unknown_type $event
+     * @access 	public
+     */
+    function notify($event) {
 		
-		$this->setTableName('search_term_dim');
-		$this->setCachable();
-		// properties
-		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['id']->setPrimaryKey();
-		$this->properties['terms'] = new owa_dbColumn;
-		$this->properties['terms']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['term_count'] = new owa_dbColumn;
-		$this->properties['term_count']->setDataType(OWA_DTD_VARCHAR255);
-	}
+		if ($event->get('campaign')) {
+	    	$d = owa_coreAPI::entityFactory('base.campaign_dim');
+			
+			$new_id = $d->generateId(trim( strtolower( $event->get('campaign') ) ) );
+			$d->getByPk('id', $new_id);
+			$id = $d->get('id'); 
+			
+			if (!$id) {
+				
+				$d->set('id', $new_id);
+				$d->set('name', $event->get('campaign'));
+				$d->create();
+				
+			} else {
+			
+				owa_coreAPI::debug('Not Persisting. Campaign already exists.');
+			}	
+		}
+    }
 }
-
-
 
 ?>

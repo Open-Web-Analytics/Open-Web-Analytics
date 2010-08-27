@@ -87,7 +87,7 @@ class owa_reportView extends owa_view {
 		$this->body->set('do', $this->data['do']);
 		
 		// Set navigation
-		$this->body->set('sub_nav', owa_coreAPI::getNavigation($this->get('nav_tab'), 'sub_nav'));
+		//$this->body->set('sub_nav', owa_coreAPI::getNavigation($this->get('nav_tab'), 'sub_nav'));
 		$this->body->set('top_level_report_nav', owa_coreAPI::getGroupNavigation('Reports'));
 		
 		// load body template

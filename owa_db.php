@@ -918,20 +918,27 @@ class owa_db extends owa_base {
 	 *
 	 */
 	function renameTable($table_name, $new_table_name) {
-	
+		
 		return $this->query(sprintf(OWA_SQL_RENAME_TABLE, $table_name, $new_table_name));
+	}
 	
+	/**
+	 * Renames column
+	 * idempotent
+	 */
+	function renameColumn($table_name, $old, $new, $defs) {
+	
+		return $this->query(sprintf(OWA_SQL_RENAME_COLUMN, $table_name, $old, $new, $defs));
 	}
 
 	
 	/**
 	 * Adds new column to table
-	 *
+	 * idempotent
 	 */
 	function addColumn($table_name, $column_name, $column_definition) {
 	
 		return $this->query(sprintf(OWA_SQL_ADD_COLUMN, $table_name, $column_name, $column_definition));
-
 	}
 	
 	/**

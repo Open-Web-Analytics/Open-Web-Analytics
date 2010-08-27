@@ -260,12 +260,14 @@ class owa_resultSetManager extends owa_base {
 			foreach ($dims as $dimension) {
 				
 				$check = $this->isDimensionRelated($dimension, $entity_name);
-				owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
+				
 				// is the realtionship check fails then move onto the next entity.
 				if (!$check) {
 					$error = true;
 					owa_coreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
 					break;
+				} else {
+					owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
 				}
 			}
 			
@@ -319,6 +321,8 @@ class owa_resultSetManager extends owa_base {
 				owa_coreAPI::debug("Dimension: $dimension_name is related to $entity_name");
 				$this->related_dimensions[$dimension['name']] = $dimension;
 				return true;
+			} else {
+				owa_coreAPI::debug("Could not find a foreign key for $dimension_name in $entity_name");
 			}
 		}
 	}
@@ -377,7 +381,7 @@ class owa_resultSetManager extends owa_base {
 				$fk = array(); 
 				
 				$fkcol = $entity->getForeignKeyColumn($dim['entity']);
-				
+				owa_coreAPI::debug("Foreign Key check: ". print_r($fkcol, true));
 				if ($fkcol) {
 					$fk['col'] = $fkcol;
 					$fk['entity'] = $entity;
@@ -548,6 +552,8 @@ class owa_resultSetManager extends owa_base {
 	}
 	
 	function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
+		
+		$map = false;
 		
 		if ($startDate && $endDate) {
 			$period_name = 'date_range';
