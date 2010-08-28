@@ -20,7 +20,7 @@ require_once(OWA_DIR.'owa_view.php');
 require_once(OWA_DIR.'owa_adminController.php');
 
 /**
- * Admin Settings/Options Controller
+ * Goals Entry Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,36 +28,45 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.4.0
  */
 
-class owa_optionsGeneralController extends owa_adminController {
+class owa_optionsGoalEntryController extends owa_adminController {
 	
 	function __construct($params) {
 	
 		parent::__construct($params);
 		$this->type = 'options';
 		$this->setRequiredCapability('edit_settings');
-		return;
 	}
 	
 	function action() {
 		
-		$this->data['configuration'] = $this->c->fetch('base');
-			
-		// add data to container
-		$this->data['view'] = 'base.options';
-		$this->data['subview'] = 'base.optionsGeneral';
-		$this->data['view_method'] = 'delegate';
+		$number = $this->getParam('goal_number');
 		
-		return $this->data;
-	
+		$goals = owa_coreAPI::getSetting('base', 'goals');
+		
+		$goal = $goals[$number];
+		$this->set( 'goal', $goal );
+		//print_r($goal);
+		
+		if (array_key_exists('goal_number', $goal)) {
+			$this->set('goal_number', $goal['goal_number']);
+			
+		} else {
+			// needed for first time edit
+			$this->set('goal_number', $number);
+			
+		}
+				
+		$this->setView('base.options');
+		$this->setSubView('base.optionsGoalEntry');
+		
 	}
-	
 }
 
 /**
- * Options View
+ * Goals Roster View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -65,21 +74,19 @@ class owa_optionsGeneralController extends owa_adminController {
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.4.0
  */
 
-class owa_optionsGeneralView extends owa_view {
+class owa_optionsGoalEntryView extends owa_view {
 		
-	function render($data) {
+	function render() {
 		
-		// load template
-		$this->body->set_template('options_general.tpl');
-		// fetch admin links from all modules
-		$this->body->set('headline', 'General Configuration Options');
-		
-		//print_r($data['config']);
-		// assign config data
-		$this->body->set('config', $data['configuration']);
+		$this->body->set_template( 'options_goal_entry.php' );
+		$this->body->set( 'headline', 'Edit Goal');
+		$this->body->set( 'goal', $this->get( 'goal' ) );
+		$this->body->set( 'goal_number', $this->get( 'goal_number' ) );
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js');
+		$this->setJs('jqote', 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 	}
 }
 

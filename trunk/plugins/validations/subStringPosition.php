@@ -30,11 +30,6 @@
  
  class owa_subStringPositionValidation extends owa_validation {
  	
- 	function owa_subStringPositionValidation() {
- 		
- 		return owa_subStringPositionValidation::__construct();
- 	}
- 	
  	function __construct() {
  		
  		return parent::__construct();

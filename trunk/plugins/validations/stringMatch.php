@@ -30,12 +30,6 @@
  
  class owa_stringMatchValidation extends owa_validation {
  	
- 	
- 	function owa_stringMatchValidation() {
- 		
- 		return owa_stringMatchValidation::__construct();
- 	}
- 	
  	function __construct() {
  		
  		return parent::__construct();

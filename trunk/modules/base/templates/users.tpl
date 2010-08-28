@@ -8,7 +8,7 @@
 
 	<?php if($users):?>
 	
-	<table class="tablesorter">
+	<table class="management">
 		<thead>
 			<TR>
 				<TH>User ID</TH>

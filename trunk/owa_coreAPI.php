@@ -152,6 +152,13 @@ class owa_coreAPI {
 		
 	}
 	
+	public static function persistSetting($module, $name, $value) {
+		
+		$s = &owa_coreAPI::configSingleton();
+		$s->persistSetting($module, $name, $value);
+		
+	}
+	
 	
 	public static function getAllRoles() {
 		
