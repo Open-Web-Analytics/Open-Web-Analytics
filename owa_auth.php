@@ -74,7 +74,7 @@ class owa_auth extends owa_base {
 	 *
 	 * @return object
 	 */
-	function &get_instance($plugin = '') {
+	public static function &get_instance($plugin = '') {
 		
 		static $auth;
 		

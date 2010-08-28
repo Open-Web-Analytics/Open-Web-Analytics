@@ -7,7 +7,7 @@ if it is to be tracked/reported separately.</P>
 	<legend>Tracked Web Sites <span class="legend_link">(<a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a Site</a>)<span></legend>
 
 
-<TABLE size="100%" border="0" class="tablesorter">
+<TABLE size="100%" border="0" class="management">
 	<thead>
 	<TR>
 		<TH>Name & Description</TH>

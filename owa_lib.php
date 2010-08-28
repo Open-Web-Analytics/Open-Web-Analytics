@@ -1004,6 +1004,20 @@ class owa_lib {
 			header('Content-type: '.$mime);
 		}
 	}
+	
+	public static function array_values_assoc($assoc) {
+		
+		$values = array();
+		
+		foreach ($assoc as $k => $v) {
+			
+			if (!empty($v)) {
+				$values[] = $v;
+			}
+		}
+		
+		return $values;
+	}
 }
 
 ?>
