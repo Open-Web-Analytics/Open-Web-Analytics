@@ -189,7 +189,6 @@ class owa_sessionHandlers extends owa_observer {
 		$eq = owa_coreAPI::getEventDispatch();
 		$eq->notify($ne);
     }
-    
 }
 
 ?>

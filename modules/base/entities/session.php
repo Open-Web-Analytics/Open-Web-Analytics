@@ -200,6 +200,34 @@ class owa_session extends owa_entity {
 		$this->properties['latest_attributions'] = new owa_dbColumn;
 		$this->properties['latest_attributions']->setDataType(OWA_DTD_TEXT);
 		
+		// create goal related columns
+		$goals = owa_coreAPI::getSetting('base', 'goals');
+		foreach ($goals as $num => $g) {
+			$col_name = 'goal_'.$num;
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_TINYINT);
+			$this->setProperty($goal_col);
+			$col_name = 'goal_'.$num.'_start';
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_TINYINT);
+			$this->setProperty($goal_col);
+			$col_name = 'goal_'.$num.'_value';
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_INT);
+			$this->setProperty($goal_col);
+		}
+	
+		$num_goals = new owa_dbColumn('num_goals', OWA_DTD_TINYINT);
+		$this->setProperty($num_goals);
+	
+		$goals_value = new owa_dbColumn('goals_value', OWA_DTD_INT);
+		$this->setProperty($goals_value);	
+		
+		//location
+		$location_id = new owa_dbColumn('location_id', OWA_DTD_BIGINT);
+		$location_id->setForeignKey('base.location_dim');
+		$this->setProperty($location_id);
+		
+		// language
+		$language = new owa_dbColumn('language', OWA_DTD_VARCHAR255);
+		$this->setProperty($language);
 	}
 }
 

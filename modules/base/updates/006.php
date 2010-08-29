@@ -36,67 +36,54 @@ class owa_base_006_update extends owa_update {
 	
 	function up() {
 		
-		
 		$session = owa_coreAPI::entityFactory('base.session');
+		$session_columns = array(
+				'num_goals', 
+				'goals_value', 
+				'location_id', 
+				'language', 
+				'source_id', 
+				'ad_id', 
+				'campaign_id', 
+				'latest_attributions');
+				
+		// create goal related columns
+		$goals = owa_coreAPI::getSetting('base', 'goals');
 		
+		foreach ( $goals as $num => $g ) {
+			$session_columns[] = 'goal_'.$num;
+			$session_columns[] = 'goal_'.$num.'_start';
+			$session_columns[] = 'goal_'.$num.'_value';
+		}
+		// add columns to owa_session
+		foreach ( $session_columns as $session_col_name ) {
+			$ret = $session->addColumn( $session_col_name );
+			if ( $ret === true ) {
+				$this->e->notice( "$session_col_name added to owa_session" );
+			} else {
+				$this->e->notice( "Adding $session_col_name to owa_session failed." );
+				return false;
+			}
+		}
+		//rename col
 		$ret = $session->renameColumn('source', 'medium');	
 		if (!$ret) {
 			$this->e->notice('Failed to rename source column to medium in owa_session');
 			return false;
 		}
 		
-		$ret = $session->addColumn('source_id');
-		if (!$ret) {
-			$this->e->notice('Failed to add source_id column to owa_session');
-			return false;
-		}
-		
-		$ret = $session->addColumn('ad_id');
-		if (!$ret) {
-			$this->e->notice('Failed to add ad_id column to owa_session');
-			return false;
-		}
-		
-		$ret = $session->addColumn('campaign_id');
-		if (!$ret) {
-			$this->e->notice('Failed to add campaign_id column to owa_session');
-			return false;
-		}
-		
-		$ret = $session->addColumn('latest_attributions');
-		if (!$ret) {
-			$this->e->notice('Failed to add latest_attributions column to owa_session');
-			return false;
-		}
-		
-		$ad = owa_coreAPI::entityFactory('base.ad_dim');
-		$ret = $ad->createTable();
-		
-		if ($ret === true) {
-			$this->e->notice('Ad Dimension entity table created');
-		} else {
-			$this->e->notice('Ad Dimension entity table creation failed');
-			return false;
-		}
-		
-		$source = owa_coreAPI::entityFactory('base.source_dim');
-		$ret = $source->createTable();
-		
-		if ($ret === true) {
-			$this->e->notice('Source Dimension entity table created');
-		} else {
-			$this->e->notice('Source Dimension entity table creation failed');
-			return false;
-		}
-		
-		$campaign = owa_coreAPI::entityFactory('base.campaign_dim');
-		$ret = $campaign->createTable();
-		
-		if ($ret === true) {
-			$this->e->notice('Campaign Dimension entity table created');
-		} else {
-			$this->e->notice('Campaign Dimension entity table creation failed');
-			return false;
+		//create new entitiy tables
+		$new_entities = array('base.ad_dim', 'base.source_dim', 'base.campaign_dim');
+		foreach ($new_entities as $entity_name) {
+			$entity = owa_coreAPI::entityFactory($entity_name);
+			$ret = $entity->createTable();
+				
+			if ($ret === true) {
+				$this->e->notice("$entity_name table created.");
+			} else {
+				$this->e->notice("$entity_name table failed.");
+				return false;
+			}
 		}
 		
 		// must return true
@@ -106,18 +93,42 @@ class owa_base_006_update extends owa_update {
 	function down() {
 	
 		$session = owa_coreAPI::entityFactory('base.session');
-		$session->dropColumn('source_id');
+		// owa_session columns to drop
+		$session_columns = array(
+				'num_goals', 
+				'goals_value', 
+				'location_id', 
+				'language', 
+				'source_id', 
+				'ad_id', 
+				'campaign_id', 
+				'latest_attributions');
+				
+		// add in goal related columns
+		$goals = owa_coreAPI::getSetting('base', 'goals');
+		foreach ($goals as $num => $g) {
+			$session_columns[] = 'goal_'.$num;
+			$session_columns[] = 'goal_'.$num.'_start';
+			$session_columns[] = 'goal_'.$num.'_value';
+		}
+		//drop columns from owa_session
+		foreach ($session_columns as $session_col_name) {
+			$session->dropColumn($session_col_name);
+		}
+		//rename col back to original
 		$session->renameColumn('medium', 'source', true);
-		$session->dropColumn('ad_id');
-		$session->dropColumn('campaign_id');
-		$session->dropColumn('latest_attributions');
-		$ad = owa_coreAPI::entityFactory('base.ad_dim');
-		$ad->dropTable();
-		$source = owa_coreAPI::entityFactory('base.source_dim');
-		$source->dropTable();
-		$campaign = owa_coreAPI::entityFactory('base.campaign_dim');
-		$campaign->dropTable();
-			
+		
+		//drop tables
+		$new_entities = array(
+				'base.ad_dim', 
+				'base.source_dim', 
+				'base.campaign_dim');
+		
+		foreach ($new_entities as $entity_name) {
+			$entity = owa_coreAPI::entityFactory($entity_name);
+			$ret = $entity->dropTable();
+		}
+				
 		return true;
 	}
 }

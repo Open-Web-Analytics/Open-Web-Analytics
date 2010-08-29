@@ -173,7 +173,7 @@ function addNewStep() {
 		num = count + 1;
 	}
 	
-	if (num < 10) {
+	if (num < 11) {
 	
 		OWA.debug('num: '+num);
 		var empty_step = {step_number: num, is_required: '', name: '', url: ''};
@@ -197,7 +197,14 @@ function renderStep(step) {
 <td class=""><input type="text" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][url]" value="<*= this.url *>"></td>
 <td class=""><input type="text" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][name]" value="<*= this.name *>"></td>
 <td class="">
-	<input type="text" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][is_required]" value="<*= this.is_required *>">
+
+
+<input type="checkbox" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][is_required]" value="true" 
+<* if ( this.is_required ) { *> 
+CHECKED 
+<* } *> 
+>
+
 </td>
 
 </tr>

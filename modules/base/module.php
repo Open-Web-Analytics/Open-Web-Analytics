@@ -313,7 +313,10 @@ class owa_baseModule extends owa_module {
 		// Clicks
 		$this->registerEventHandler('dom.click', 'clickHandlers');
 		// Documents
-		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
+		$this->registerEventHandler(array(
+				'base.page_request_logged', 
+				'base.first_page_request_logged', 
+				'base.feed_request_logged') , 'documentHandlers');
 		// Referers
 		$this->registerEventHandler('base.new_session', 'refererHandlers');
 		// Search Terms
@@ -326,6 +329,8 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('base.new_session', 'campaignHandlers');
 		// ad dimension
 		$this->registerEventHandler('base.new_session', 'adHandlers');
+		// conversions
+		$this->registerEventHandler(array('base.new_session', 'base.session_update'), 'conversionHandlers');
 		// User Agent dimension
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
