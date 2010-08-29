@@ -142,6 +142,11 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('HTTP_HOST', owa_coreAPI::getServerParam('HTTP_HOST'));
 		}
 		
+		// set language
+		if (!$this->event->get( 'language' ) ) {
+			$this->event->set( 'language', $this->eq->filter('language', substr(owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ),0,5 ) ) );
+		}
+		
 		$this->event->set('HTTP_HOST', $this->eq->filter('http_host', $this->event->get('HTTP_HOST')));
 		
 		// set page type to unknown if not already set by caller

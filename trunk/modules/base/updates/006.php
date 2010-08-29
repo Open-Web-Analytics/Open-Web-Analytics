@@ -72,8 +72,28 @@ class owa_base_006_update extends owa_update {
 			return false;
 		}
 		
+		$request = owa_coreAPI::entityFactory('base.request');
+		$request_columns = array( 
+				'location_id',
+				'language');
+		
+		// add columns to owa_session
+		foreach ( $request_columns as $request_col_name ) {
+			$ret = $request->addColumn( $request_col_name );
+			if ( $ret === true ) {
+				$this->e->notice( "$request_col_name added to owa_request" );
+			} else {
+				$this->e->notice( "Adding $request_col_name to owa_request failed." );
+				return false;
+			}
+		}
+		
 		//create new entitiy tables
-		$new_entities = array('base.ad_dim', 'base.source_dim', 'base.campaign_dim');
+		$new_entities = array(
+				'base.ad_dim', 
+				'base.source_dim', 
+				'base.campaign_dim',
+				'base.location_dim');
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);
 			$ret = $entity->createTable();
@@ -118,11 +138,23 @@ class owa_base_006_update extends owa_update {
 		//rename col back to original
 		$session->renameColumn('medium', 'source', true);
 		
+		//drop request columns
+		$request = owa_coreAPI::entityFactory('base.request');
+		$request_columns = array( 
+				'location_id',
+				'language');
+		
+		// add columns to owa_session
+		foreach ( $request_columns as $request_col_name ) {
+			$ret = $request->dropColumn( $request_col_name );
+		}
+		
 		//drop tables
 		$new_entities = array(
 				'base.ad_dim', 
 				'base.source_dim', 
-				'base.campaign_dim');
+				'base.campaign_dim',
+				'base.location_dim');
 		
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);

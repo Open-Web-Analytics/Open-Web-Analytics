@@ -321,6 +321,8 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('base.new_session', 'refererHandlers');
 		// Search Terms
 		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
+		// Location
+		$this->registerEventHandler('base.new_session', 'locationHandlers');
 		// operating systems
 		$this->registerEventHandler('base.new_session', 'osHandlers');
 		// source dimension
@@ -639,22 +641,6 @@ class owa_baseModule extends owa_module {
 		} else {
 			return false;
 		}
-		
-		
-		
-		// count how many metrics there are
-		//$count = count($metrics);
-		
-		//loop through the rest of the metrics and merge them into the first
-		/*
-if ($metrics) {
-			
-			for($i = 0; $i < $count; ++$i) {
-				
-				$rsm->addMetric($metrics[$i]);
-			}
-		}
-*/
 
 		// set dimensions
 		if ($dimensions) {

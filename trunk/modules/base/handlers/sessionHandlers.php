@@ -133,6 +133,9 @@ class owa_sessionHandlers extends owa_observer {
 		}	
 		// Generate Host id
 		$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
+		
+		// this should already be set by the request handler.
+		$s->set( 'location_id', $event->get( 'location_id' ) );
 				
 		$s->create();
 
