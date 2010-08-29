@@ -161,7 +161,10 @@ class owa_entity {
 	
 	function get($name) {
 		if (!empty($this->properties)) {
-			return $this->properties[$name]->getValue();
+			if (array_key_exists($name, $this->properties)) {
+				return $this->properties[$name]->getValue();
+			}
+			
 		} else {
 			// old style entities
 			return $this->$name->getValue();

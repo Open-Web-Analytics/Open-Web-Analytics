@@ -92,7 +92,7 @@ class owa_optionsGoalEditController extends owa_adminController {
 					// check that step is_required is present
 					$v1 = owa_coreAPI::validationFactory('required');
 					$v1->setValues($step['is_required']);
-					$this->setValidation('step_is_required_'.$num, $v1);
+					//$this->setValidation('step_is_required_'.$num, $v1);
 				}
 				
 				$check = owa_lib::array_values_assoc($step);
@@ -110,11 +110,17 @@ class owa_optionsGoalEditController extends owa_adminController {
 	}
 	
 	function action() {
-	
+		
+		$goal = $this->getParam('goal');
 		$all_goals = owa_coreAPI::getSetting('base', 'goals');
-		$all_goals[$goal['goal_number']] = $goal;
-		owa_coreAPI::debug('New goals: '.print_r($all_goals,true));
-		owa_coreAPI::persistSetting('base', 'goals', $all_goals);	
+		
+		if (array_key_exists($goal['goal_number'], $all_goals)) {
+			$all_goals[$goal['goal_number']] = $goal;
+			owa_coreAPI::debug('New goals: '.print_r($all_goals,true));
+			owa_coreAPI::persistSetting('base', 'goals', $all_goals);
+			$this->setStatusCode(2504);
+		}
+		
 		$this->setRedirectAction('base.optionsGoals');
 	}
 	
