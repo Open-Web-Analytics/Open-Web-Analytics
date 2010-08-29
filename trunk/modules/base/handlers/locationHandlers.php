@@ -89,7 +89,7 @@ class owa_locationHandlers extends owa_observer {
 			
 		} else {
 		
-			owa_coreAPI::debug('Not Logging. Host already exists');
+			owa_coreAPI::debug('Not Logging. Location already exists');
 			
 		}	
     }
