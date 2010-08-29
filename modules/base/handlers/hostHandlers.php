@@ -54,15 +54,6 @@ class owa_hostHandlers extends owa_observer {
 			
 			$h->set('id', owa_lib::setStringGuid($event->get('full_host'))); 
 			
-			$location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-			owa_coreAPI::debug('geolocation: ' .print_r($location, true));
-			
-			//set properties of the session
-			$h->set('country', $location->getCountry());
-			$h->set('city', $location->getCity());
-			$h->set('latitude', $location->getLatitude());
-			$h->set('longitude', $location->getLongitude());
-			
 			$h->create();
 			
 		} else {

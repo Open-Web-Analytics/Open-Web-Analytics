@@ -54,24 +54,6 @@ class owa_hostip extends owa_location {
 		return parent::__construct();
 	}
 	
-	function get_location_xml($ip) {
-		
-		$url = sprintf($this->ws_url,
-						$ip);
-						
-		$crawler = new owa_http;
-		$crawler->fetch($url);
-		
-		$result = '';
-				
-		// XML parsing needs to go here.
-       		
-       	$this->city = trim($result['City'], "\n");
-		$this->country = trim($result['Country'], "\n");
-		$this->latitude = $result['Latitude'];
-		$this->longitude = $result['Longitude'];
-	}
-	
 	/**
 	 * Fetches the location from the hostip.info web service
 	 *
