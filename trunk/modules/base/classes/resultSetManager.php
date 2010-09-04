@@ -336,8 +336,8 @@ class owa_resultSetManager extends owa_base {
 		$entities = array();
 		
 		// cycles through metric classes and get their entity names
-		foreach ($classes as $class) {
-			$m = owa_coreAPI::metricFactory($class);
+		foreach ($classes as $name => $map) {
+			$m = owa_coreAPI::metricFactory($map['class'], $map['params']);
 			
 			// check to see if this is a calculated metric
 				if ($m->isCalculated()) {

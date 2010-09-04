@@ -70,9 +70,7 @@ class owa_processEventController extends owa_controller {
 	 * Must be called before all other event property setting functions
 	 */
 	function pre() {
-		
-		//$this->event->setProperties($this->params);
-		
+			
 		// set site id if not already set. 
 		if (!$this->event->get('site_id')) {
 			$this->event->set('site_id', owa_coreAPI::getSetting('base', 'site_id'));	
@@ -81,10 +79,6 @@ class owa_processEventController extends owa_controller {
 		// Set all time related properties
 		$this->event->setTime(owa_coreAPI::getServerParam('REQUEST_TIME'));
 		
-		// re-Set GUID for event so that it is truely unique taking into account the site_id that was just set
-		//$this->event->guid = $this->event->set_guid();
-		//$this->event->properties['guid'] = $this->event->guid;
-	
 		// extract site specific state from session store
 		$state = $this->loadSiteSessionState($this->event->get('site_id'));
 		
@@ -123,10 +117,12 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('HTTP_USER_AGENT', owa_coreAPI::getServerParam('HTTP_USER_AGENT'));
 		} 
 		
-		$this->event->set('HTTP_USER_AGENT', $this->eq->filter('user_agent', $this->event->get('HTTP_USER_AGENT')));
+		$this->event->set( 'HTTP_USER_AGENT', $this->eq->filter( 'user_agent', $this->event->get( 'HTTP_USER_AGENT' ) ) );
+		//set user agent id
+		$this->event->set( 'ua_id', owa_lib::setStringGuid( $this->event->get( 'HTTP_USER_AGENT' ) ) );
 		
 		// set referer
-		////needed in case javascript logger sets the referer variable but is blank
+		// needed in case javascript logger sets the referer variable but is blank
 		if ($this->event->get('referer')) {
 			//TODO: STANDARDIZE NAME to avoid doing this map
 			$referer = $this->event->get('referer');
@@ -152,7 +148,6 @@ class owa_processEventController extends owa_controller {
 		// set page type to unknown if not already set by caller
 		if (!$this->event->get('page_type')) {
 			$this->event->set('page_type', $this->getMsg(3600));
-			
 		} 
 		
 		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
@@ -162,7 +157,9 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('page_url', owa_lib::get_current_url());
 		}
 		
-		$this->event->set('page_url', $this->eq->filter('page_url', $this->event->get('page_url')));
+		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ) ) );
+		// set document/page id
+		$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
 		// needed?
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
@@ -189,23 +186,30 @@ class owa_processEventController extends owa_controller {
 				
 		// set internal referer
 		if ($this->event->get('HTTP_REFERER')) {
+
 			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
-			//print_r('ref '.$referer_parse['host']);
-			//print_r('page '.$this->event->get('page_url'));
-			//print_r('pageparse '.$page_parse['host']);
+
 			if ($referer_parse['host'] === $page_parse['host']) {
 				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
 			} else {
 				
 				$this->event->set('external_referer', true);
+				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );
 			
-				// set query terms
-				$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
-				
-				if ($qt) {
-					$this->event->set('search_terms', $qt);
-				}
+				if ( ! $this->event->get( 'search_terms' ) ) {
+					// set query terms
+					$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
+					
+					if ($qt) {
+						$this->event->set('search_terms', trim( strtolower( $qt ) ) );	
+					}
+				}				
 			}
+		}
+		
+		// set referring search term id		
+		if ($this->event->get( 'search_terms' ) ) {
+			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get('search_terms') ) ) ) );
 		}
 				
 		// Filter the target url of clicks
@@ -224,9 +228,14 @@ class owa_processEventController extends owa_controller {
 		if (!$this->event->get('REMOTE_HOST')) {
 			$this->event->set('REMOTE_HOST', owa_coreAPI::getServerParam('REMOTE_HOST'));
 		}
-		
-		$this->event->set('full_host', $this->eq->filter('full_host', $this->event->get('REMOTE_HOST'), $this->event->get('ip_address')));
-		$this->event->set('host', $this->eq->filter('host', $this->event->get('full_host'), $this->event->get('ip_address')));
+		// host properties
+		$this->event->set( 'full_host', $this->eq->filter( 'full_host', 
+				$this->event->get( 'REMOTE_HOST' ), 
+				$this->event->get( 'ip_address' ) ) );
+				
+		$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
+		// Generate host_id
+		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'full_host' ) ) );
 		
 		// Browser related properties
 		$service = owa_coreAPI::serviceSingleton();
@@ -244,7 +253,8 @@ class owa_processEventController extends owa_controller {
 		}
 	
 		// Set Operating System
-		$this->event->set('os', $this->eq->filter('operating_system', $bcap->get('Platform'), $this->event->get('HTTP_USER_AGENT')));
+		$this->event->set( 'os', $this->eq->filter( 'operating_system', $bcap->get( 'Platform' ), $this->event->get( 'HTTP_USER_AGENT' ) ) );
+		$this->event->set( 'os_id', owa_lib::setStringGuid( $this->event->get( 'os' ) ) );
 		
 		//Check for what kind of page request this is
 		if ($bcap->get('Crawler')) {

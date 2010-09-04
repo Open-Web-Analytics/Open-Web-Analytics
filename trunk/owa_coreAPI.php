@@ -488,7 +488,7 @@ class owa_coreAPI {
 	 * @param unknown_type $entity_name
 	 * @return unknown
 	 */
-	public static function metricFactory($metric_name) {
+	public static function metricFactory($metric_name, $params = array()) {
 		
 		if (!strpos($metric_name, '.')) {
 			$s = owa_coreAPI::serviceSingleton();
@@ -499,7 +499,7 @@ class owa_coreAPI {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');	
 		}
 		
-		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', array(), false);
+		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
 	}
 	
 	/**
@@ -1181,6 +1181,46 @@ if (!empty($links[$group])):
 		$nonce = substr(md5($full_nonce), -12, 10);
 		
 		return $nonce;
+	}
+	
+	public static function summarize($map) {
+		
+		$entity = owa_coreAPI::entityFactory($map['entity']);
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom($entity->getTableName(), $entity->getTableAlias());
+		
+		foreach ($map['columns'] as $col => $action) {
+			
+			switch ($action) {
+				
+				case 'sum':
+					$col_def = sprintf("SUM(%s)", $col);
+					$name = $col.'_sum';
+					break;
+				case 'count':
+					$col_def = sprintf("COUNT(%s)", $col);
+					$name = $col.'_count';
+					break;
+				case 'count_distinct':
+					$col_def = sprintf("COUNT(distinct %s)", $col);
+					$name = $col.'_dcount';
+					break;
+			}
+			
+			$db->selectColumn($col_def, $name);
+		}
+		
+		foreach ($map['constraints'] as $con_col => $con_value) {
+			
+			if ( is_array( $con_value ) ) {
+				$db->where($con_col, $con_value['value'], $con_value['operator']);
+			} else {
+				$db->where($con_col, $con_value);
+			}
+		}
+		
+		$ret = $db->getOneRow();
+		return $ret;
 	}
 	
 }

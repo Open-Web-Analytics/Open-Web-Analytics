@@ -54,26 +54,39 @@ class owa_conversionHandlers extends owa_observer {
 			
 			// only record one goal of a particular type per session
 			if ($id) {
-			
+				//record conversion
 				if ( !empty( $conversion_info['conversion'] ) ) {
 					$goal_column = 'goal_'.$conversion_info['conversion'];
 					$already = $s->get( $goal_column );
 					if ( $already != true )	{
 						// there is a goal conversion					
 						$s->set( $goal_column , true );
-						
-						if ( !empty($conversion_info['value'] ) ) {
-							$goal_value_column = 'goal_'.$conversion_info['conversion'].'_value';
-							$s->set( $goal_value_column, $conversion_info['value'] );
-							$update = true;
-						}	
 						owa_coreAPI::debug( "$goal_column was achieved." );
 					} else {
 						owa_coreAPI::debug( 'Not updating session. Goal was already achieved in same session.' );
 						return true;
 					}
-				}
 					
+					// set goal value
+					$goal_value_column = 'goal_'.$conversion_info['conversion'].'_value';
+					$value = '';
+					
+					// pull dynamic value from commerce transaction total if set otherwise
+					// use static value 
+					if ( $event->get('ct_total' ) ) {
+						$value = $event->get( 'ct_total' );
+					} else {
+						$value = $conversion_info['value'];
+					}
+					$existing_value = $s->get( $goal_value_column );
+					// Allow a value to be set if one has not be set already.
+					// this is needed to support dynamic values passed by commerce transaction events
+					if ( ! empty( $value ) && empty( $existing_value ) ) {
+						$s->set( $goal_value_column, owa_lib::prepareCurrencyValue( $value ) );
+						$update = true;
+					}	
+				}
+				//record goal start
 				if ( !empty($conversion_info['start'] ) ) {
 					$goal_start_column = 'goal_'.$conversion_info['start'].'_start';
 					$already_started = $s->get( $goal_start_column );
@@ -83,14 +96,24 @@ class owa_conversionHandlers extends owa_observer {
 						$s->set( $goal_start_column, true );
 						$update = true;
 						owa_coreAPI::debug( "$goal_start_column was started." );
-						$s->update();
+						
 					} else {
 						owa_coreAPI::debug( "$goal_start_column was already started." );
 					}
 				}
-					
-					
+				
+				//update object
 				if ( $update ) {
+					
+					// summarize goal conversions
+					$s->set('num_goals', $this->countGoalConversions($s));
+				
+					// summarize goal conversion value
+					$s->set('goals_value', $this->sumGoalValues($s));
+				
+					// summarize goal starts
+					$s->set('num_goal_starts', $this->countGoalStarts($s));
+				
 					$ret = $s->update();
 					if ( $ret ) {
 						// create a new_conversion event so that the total conversion 
@@ -171,7 +194,7 @@ class owa_conversionHandlers extends owa_observer {
 		    			}			
 		    		}
 		    		
-		    		$goal_info['conversion_value'] = $goal_value;
+		    		$goal_info['value'] = $goal_value;
     			} else {
     				owa_coreAPI::debug("Goal $num not active.");
     			}
@@ -251,15 +274,15 @@ class owa_conversionHandlers extends owa_observer {
 			case 'begins':
 				
 				$length = strlen( $goal['details']['goal_url'] );
-				$check = substr_compare( $page_uri, $goal['details']['goal_url'], 0, $length, true );
-				if ( $check == 0 ) {
+				$check = strpos( $page_uri, $goal['details']['goal_url']);
+				if ( $check === 0 ) {
 					$match = $goal['goal_number']; 
 				}
 				break;
 				
 			case 'regex':
 				
-				$pattern = sprintf('/\%s/i', $goal['details']['goal_url']);
+				$pattern = sprintf('@%s@i', $goal['details']['goal_url']);
 				$check = preg_match( $pattern, $page_uri );
 				if ( $check > 0 ) {
 					$match = $goal['goal_number'];
@@ -276,7 +299,7 @@ class owa_conversionHandlers extends owa_observer {
 		if ( array_key_exists( 'funnel_steps', $goal['details'] ) ) {
 			// check the first step
 			$step = $goal['details']['funnel_steps'][1];
-			$pattern = sprintf('/\%s/i', $step['url']);
+			$pattern = sprintf('@%s@i', $step['url']);
 			$check = preg_match($pattern, $page_uri );
 			if ($check > 0) {
 				return $goal['goal_number'];
@@ -284,6 +307,45 @@ class owa_conversionHandlers extends owa_observer {
 		}
     }
     
+    function countGoalConversions($session) {
+    	
+    	$goals = owa_coreAPI::getSetting('base', 'goals');
+    	$num = count($goals);
+    	$count = 0;
+    	for ($i = 0;$i < $num;$i++) {
+    		$col_name = 'goal_'.$i;
+    		$count = $count + $session->get($col_name);
+    		
+    	}
+    	owa_coreAPI::debug('session total goal count: '.$count);
+    	return $count;
+    }
+	
+	function countGoalStarts($session) {
+	
+		$goals = owa_coreAPI::getSetting('base', 'goals');
+    	$num = count($goals);
+    	$count = 0;
+    	for ($i = 0;$i < $num;$i++) {
+    		$col_name = 'goal_'.$i.'_start';
+    		$count = $count + $session->get($col_name);
+    	}
+    	owa_coreAPI::debug('session total goal starts: '.$count);
+    	return $count;
+    }
+    
+    function sumGoalValues($session) {
+    	
+    	$goals = owa_coreAPI::getSetting('base', 'goals');
+    	$num = count($goals);
+    	$sum = 0;
+    	for ($i = 0;$i < $num;$i++) {
+    		$col_name = 'goal_'.$i.'_value';
+    		$sum = $sum + $session->get($col_name);
+    	}
+    	owa_coreAPI::debug('session total goal value: '.$sum);
+    	return $sum;
+    }
 }
 
 ?>

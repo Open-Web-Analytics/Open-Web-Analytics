@@ -51,6 +51,8 @@ class owa_caller extends owa_base {
 	var $service;
 	
 	var $site_id;
+	
+	var $commerce_event;
 		
 	/**
 	 * Constructor
@@ -210,6 +212,10 @@ class owa_caller extends owa_base {
 			$this->setSiteId(owa_coreAPI::getRequestParam('site_id'));
 		}
 		
+		if ( ! $event->get('site_id') ) {
+			$event->set( 'site_id', $this->getSiteId() );
+		}
+		
 		return owa_coreAPI::logEvent($event->getEventType(), $event);
 	}
 	
@@ -341,7 +347,7 @@ class owa_caller extends owa_base {
 		return $this->trackEvent($event);
 	}
 	
-	function trackAction($action_group, $action_name, $action_label, $numeric_value = 0) {
+	function trackAction($action_group = '', $action_name, $action_label = '', $numeric_value = 0) {
 		
 		$event = $this->makeEvent();
 		$event->setEventType('track.action');
@@ -351,6 +357,63 @@ class owa_caller extends owa_base {
 		$event->set('numeric_value', $numeric_value);
 		$event->set('site_id', $this->getSiteId());
 		return $this->trackEvent($event);
+	}
+	
+	/** 
+	 * Creates a commerce Transaction event
+	 *
+	 * Creates a parent commerce.transaction event
+	 */
+	function addTransaction( $order_id, $order_source = '', $total = 0, $tax = 0, $shipping = 0, $gateway = '', $page_url = '' ) {
+		
+		$this->commerce_event = $this->makeEvent();
+		$this->commerce_event->setEventType( 'commerce.transaction' );
+		$this->commerce_event->set( 'ct_order_id', $order_id );
+		$this->commerce_event->set( 'ct_order_source', $order_source );
+		$this->commerce_event->set( 'ct_total', $total );
+		$this->commerce_event->set( 'ct_tax', $tax );
+		$this->commerce_event->set( 'ct_shipping', $shipping );
+		$this->commerce_event->set( 'ct_gateway', $gateway );
+		$this->commerce_event->set( 'page_url', $page_url );
+		$this->commerce_event->set( 'ct_line_items', array() );
+	}
+	
+	/** 
+	 * Adds a line item to a commerce transaction
+	 *
+	 * Creates and a commerce.line_item event and adds it to the parent transaction event
+	 */
+	function addTransactionLineItem($order_id, $sku = '', $product_name = '', $category = '', $unit_price = 0, $quantity = 0) {
+		
+		if ( empty( $this->commerce_event ) ) {
+			$this->addTransaction('none set');
+		}
+		
+		$event = $this->makeEvent();
+		$event->setEventType( 'commerce.line_item' );
+		$event->set( 'li_order_id', $order_id );
+		$event->set( 'li_sku', $sku );
+		$event->set( 'li_product_name', $product_name );
+		$event->set( 'li_category', $category );
+		$event->set( 'li_unit_price', $unit_price );
+		$event->set( 'li_quantity', $quantity );
+		
+		$items = $this->commerce_event->get( 'ct_line_items' );
+		$items[] = $event;
+		$this->commerce_event->set( 'ct_line_items', $items );
+	}
+	
+	/** 
+	 * tracks a commerce events
+	 *
+	 * Tracks a parent transaction event by sending it to the event queue
+	 */
+	function trackTransaction() {
+		
+		if ( ! empty( $this->commerce_event ) ) {
+			$this->trackEvent( $this->commerce_event );
+			$this->commerce_event = '';
+		}
 	}
 	
 	function setSiteId($site_id) {

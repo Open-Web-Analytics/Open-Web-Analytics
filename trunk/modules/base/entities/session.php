@@ -210,14 +210,17 @@ class owa_session extends owa_entity {
 			$goal_col = new owa_dbColumn($col_name, OWA_DTD_TINYINT);
 			$this->setProperty($goal_col);
 			$col_name = 'goal_'.$num.'_value';
-			$goal_col = new owa_dbColumn($col_name, OWA_DTD_INT);
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_BIGINT);
 			$this->setProperty($goal_col);
 		}
 	
 		$num_goals = new owa_dbColumn('num_goals', OWA_DTD_TINYINT);
 		$this->setProperty($num_goals);
+		
+		$num_goal_starts = new owa_dbColumn('num_goal_starts', OWA_DTD_TINYINT);
+		$this->setProperty($num_goal_starts);
 	
-		$goals_value = new owa_dbColumn('goals_value', OWA_DTD_INT);
+		$goals_value = new owa_dbColumn('goals_value', OWA_DTD_BIGINT);
 		$this->setProperty($goals_value);	
 		
 		//location
@@ -228,6 +231,29 @@ class owa_session extends owa_entity {
 		// language
 		$language = new owa_dbColumn('language', OWA_DTD_VARCHAR255);
 		$this->setProperty($language);
+		
+		// transaction count
+		$commerce_trans_count = new owa_dbColumn('commerce_trans_count', OWA_DTD_INT);
+		$this->setProperty($commerce_trans_count);
+		// revenue including tax and shipping
+		$commerce_trans_revenue = new owa_dbColumn('commerce_trans_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_trans_revenue);
+		// revenue excluding tax and shipping
+		$commerce_items_revenue = new owa_dbColumn('commerce_items_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_items_revenue);
+		// distinct number of items
+		$commerce_items_count = new owa_dbColumn('commerce_items_count', OWA_DTD_INT);
+		$this->setProperty($commerce_items_count);
+		// total quantity of all items
+		$commerce_items_quantity = new owa_dbColumn('commerce_items_quantity', OWA_DTD_INT);
+		$this->setProperty($commerce_items_quantity);
+		// shipping revenue
+		$commerce_shipping_revenue = new owa_dbColumn('commerce_shipping_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_shipping_revenue);
+		// tax revenue
+		$commerce_tax_revenue = new owa_dbColumn('commerce_tax_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_tax_revenue);
+		
 	}
 }
 

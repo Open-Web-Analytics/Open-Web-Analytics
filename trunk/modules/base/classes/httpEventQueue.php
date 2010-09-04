@@ -50,7 +50,7 @@ class owa_httpEventQueue extends owa_eventQueue {
 			
 			//$properties = array_map('urlencode', $properties);
 			$properties = owa_lib::implode_assoc('=', '&', $properties);
-			print_r($properties);
+			//print_r($properties);
 			//return;
 		} else {
 			return;

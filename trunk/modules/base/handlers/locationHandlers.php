@@ -69,6 +69,11 @@ class owa_locationHandlers extends owa_observer {
 			$location_id = $h->generateId($key);
 		}
 		
+		// look up the county code if it's missing
+		if ( ! $event->get('country_code') && $event->get('country') ) {
+			$event->set( 'country_code', $this->lookupCountryCodeFromName( $event->get('country') ) );
+		}
+		
 		$h->getByPk('id', $location_id );
 		$id = $h->get('id'); 
 		
@@ -93,6 +98,15 @@ class owa_locationHandlers extends owa_observer {
 			
 		}	
     }
+    
+    function lookupCountryCodeFromName($name) {
+    	include_once(OWA_DIR.'conf/countryNames2Codes.php');
+    	$name = trim(strtolower($name));
+    	if (array_key_exists($name, $countryName2Code)) {
+        	return $countryName2Code[$name];
+    	}
+    	return false;
+	}
 }
 
 ?>

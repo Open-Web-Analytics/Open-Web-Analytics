@@ -112,6 +112,20 @@ class owa_processRequestController extends owa_processEventController {
 		if (!$this->event->get('is_attributed')) {
 			$this->attributeTraffic();
 		}
+		
+		if ( $this->event->get( 'source' ) ) {
+			$this->event->set( 'source_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'source' ) ) ) ) );
+		}
+		
+		if ( $this->event->get( 'campaign' ) ) {
+			$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
+		}
+		
+		if ( $this->event->get( 'ad' ) ) {
+			$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
+		}
+		
+		
 			
 		// set last request time state
 		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('timestamp'));
