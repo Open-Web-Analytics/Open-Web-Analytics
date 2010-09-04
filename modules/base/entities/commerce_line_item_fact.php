@@ -17,7 +17,7 @@
 //
 
 /**
- * Action Event Fact Entity
+ * Commerce Transaction Line Item Fact Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,14 +25,14 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @since		owa 1.4.0
  */
 
-class owa_action_fact extends owa_entity {
+class owa_commerce_line_item_fact extends owa_entity {
 	
 	function __construct() {
 		
-		$this->setTableName('action_fact');
+		$this->setTableName('commerce_line_item_fact');
 		
 		$id = new owa_dbColumn('id', OWA_DTD_BIGINT);
 		$id->setPrimaryKey();
@@ -54,7 +54,6 @@ class owa_action_fact extends owa_entity {
 		$site_id->setForeignKey('base.site', 'site_id');
 		$this->setProperty($site_id);
 		
-		// wrong data type
 		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
 		$ua_id->setForeignKey('base.ua');
 		$this->setProperty($ua_id);
@@ -63,10 +62,32 @@ class owa_action_fact extends owa_entity {
 		$host_id->setForeignKey('base.host');
 		$this->setProperty($host_id);
 		
-		// wrong data type
 		$os_id = new owa_dbColumn('os_id', OWA_DTD_BIGINT);
 		$os_id->setForeignKey('base.os');
 		$this->setProperty($os_id);
+		
+		$location_id = new owa_dbColumn('location_id', OWA_DTD_BIGINT);
+		$location_id->setForeignKey('base.location_dim');
+		$this->setProperty($location_id);
+		
+		$medium = new owa_dbColumn('medium',OWA_DTD_VARCHAR255);
+		$this->setProperty($medium);
+		
+		$source_id = new owa_dbColumn('source_id', OWA_DTD_BIGINT);
+		$source_id->setForeignKey('base.source_dim');
+		$this->setProperty($source_id);
+		
+		$ad_id = new owa_dbColumn('ad_id', OWA_DTD_BIGINT);
+		$ad_id->setForeignKey('base.ad_dim');
+		$this->setProperty($ad_id);
+		
+		$campaign_id = new owa_dbColumn('campaign_id', OWA_DTD_BIGINT);
+		$campaign_id->setForeignKey('base.campaign_dim');
+		$this->setProperty($campaign_id);
+		
+		$referring_search_term_id = new owa_dbColumn('referring_search_term_id', OWA_DTD_BIGINT);
+		$referring_search_term_id->setForeignKey('base.search_term_dim');
+		$this->setProperty($referring_search_term_id);
 		
 		$timestamp = new owa_dbColumn('timestamp', OWA_DTD_INT);
 		$this->setProperty($timestamp);
@@ -74,17 +95,28 @@ class owa_action_fact extends owa_entity {
 		$yyyymmdd = new owa_dbColumn('yyyymmdd', OWA_DTD_INT);
 		$this->setProperty($yyyymmdd);
 		
-		$action_name = new owa_dbColumn('action_name', OWA_DTD_VARCHAR255);
-		$this->setProperty($action_name);
+		$order_id = new owa_dbColumn('order_id', OWA_DTD_VARCHAR255);
+		$order_id->setIndex();
+		$this->setProperty($order_id);
 		
-		$action_label = new owa_dbColumn('action_label', OWA_DTD_VARCHAR255);
-		$this->setProperty($action_label);
+		$sku = new owa_dbColumn('sku', OWA_DTD_VARCHAR255);
+		$this->setProperty($sku);
 		
-		$action_group = new owa_dbColumn('action_group', OWA_DTD_VARCHAR255);
-		$this->setProperty($action_group);
+		$product_name = new owa_dbColumn('product_name', OWA_DTD_VARCHAR255);
+		$this->setProperty($product_name);
 		
-		$numeric_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
-		$this->setProperty($numeric_value);
+		$category = new owa_dbColumn('category', OWA_DTD_VARCHAR255);
+		$this->setProperty($category);
+		
+		$unit_price = new owa_dbColumn('unit_price', OWA_DTD_BIGINT);
+		$this->setProperty($unit_price);
+		
+		$quantity = new owa_dbColumn('quantity', OWA_DTD_INT);
+		$this->setProperty($quantity);
+		
+		$item_revenue = new owa_dbColumn('item_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($item_revenue);
+		
 	}
 }
 

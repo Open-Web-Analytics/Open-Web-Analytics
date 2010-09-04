@@ -3,7 +3,7 @@
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
-// Copyright 2006 Peter Adams. All rights reserved.
+// Copyright 2006-2010 Peter Adams. All rights reserved.
 //
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
@@ -24,7 +24,7 @@ if(!class_exists('owa_observer')) {
  * OWA user management Event handlers
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
@@ -167,20 +167,29 @@ class owa_sessionHandlers extends owa_observer {
 			owa_coreAPI::error("Aborting session update as no existing session was found");
 			return false;
 		}
+
+		// idempotent check needed in case updates are processed out of order.
+		// dont update the database if the event timestamp is older that the last_req
+		// timestamp that is already set on the session object.		
+		$last_req_time = $s->get('last_req');
+		$event_req_time = $event->get('timestamp');
+
+		if ($event_req_time > $last_req_time) {
 		
-		// increment number of page views
-		$s->set('num_pageviews', $s->get('num_pageviews') + 1);
-		$s->set('is_bounce', 'false');
-		
-		// update timestamp of latest request that triggered the session update
-		$s->set('last_req', $event->get('timestamp'));
-		
-		// update last page id
-		$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
-		
-		// Persist to database
-		$s->update();
-		
+			// increment number of page views
+			$s->set('num_pageviews', $this->summarizePageviews($id));
+			$s->set('is_bounce', 'false');
+			
+			// update timestamp of latest request that triggered the session update
+			$s->set('last_req', $event->get('timestamp'));
+			
+			// update last page id
+			$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
+			
+			// Persist to database
+			$s->update();
+		}
+				
 		// setup event message
 		$session = $s->_getProperties();
 		$properties = array_merge($event->getProperties(), $session);
@@ -191,6 +200,16 @@ class owa_sessionHandlers extends owa_observer {
 		// Log session update event to event queue
 		$eq = owa_coreAPI::getEventDispatch();
 		$eq->notify($ne);
+    }
+    
+    function summarizePageviews($id) {
+    	
+    	$ret = owa_coreAPI::summarize(array(
+    			'entity'		=> 'base.request',
+    			'columns'		=> array('id' => 'count_distinct'),
+    			'constraints'	=> array( 'session_id' => $id ) ) );
+    	
+    	return $ret['id_dcount'];
     }
 }
 

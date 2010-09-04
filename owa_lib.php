@@ -1018,6 +1018,11 @@ class owa_lib {
 		
 		return $values;
 	}
+	
+	public static function prepareCurrencyValue($string) {
+		
+		return $string * 100;
+	}
 }
 
 ?>

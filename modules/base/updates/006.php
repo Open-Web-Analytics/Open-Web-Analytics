@@ -39,13 +39,21 @@ class owa_base_006_update extends owa_update {
 		$session = owa_coreAPI::entityFactory('base.session');
 		$session_columns = array(
 				'num_goals', 
+				'num_goal_starts',
 				'goals_value', 
 				'location_id', 
 				'language', 
 				'source_id', 
 				'ad_id', 
 				'campaign_id', 
-				'latest_attributions');
+				'latest_attributions',
+				'commerce_trans_count',
+				'commerce_trans_revenue',
+				'commerce_items_revenue',
+				'commerce_items_count',
+				'commerce_items_quantity',
+				'commerce_shipping_revenue',
+				'commerce_tax_revenue');
 				
 		// create goal related columns
 		$goals = owa_coreAPI::getSetting('base', 'goals');
@@ -93,7 +101,9 @@ class owa_base_006_update extends owa_update {
 				'base.ad_dim', 
 				'base.source_dim', 
 				'base.campaign_dim',
-				'base.location_dim');
+				'base.location_dim',
+				'base.commerce_transaction_fact',
+				'base.commerce_line_item_fact');
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);
 			$ret = $entity->createTable();
@@ -115,14 +125,22 @@ class owa_base_006_update extends owa_update {
 		$session = owa_coreAPI::entityFactory('base.session');
 		// owa_session columns to drop
 		$session_columns = array(
-				'num_goals', 
+				'num_goals',
+				'num_goal_starts',
 				'goals_value', 
 				'location_id', 
 				'language', 
 				'source_id', 
 				'ad_id', 
 				'campaign_id', 
-				'latest_attributions');
+				'latest_attributions',
+				'commerce_trans_count',
+				'commerce_trans_revenue',
+				'commerce_items_revenue',
+				'commerce_items_count',
+				'commerce_items_quantity',
+				'commerce_shipping_revenue',
+				'commerce_tax_revenue');
 				
 		// add in goal related columns
 		$goals = owa_coreAPI::getSetting('base', 'goals');
@@ -154,7 +172,9 @@ class owa_base_006_update extends owa_update {
 				'base.ad_dim', 
 				'base.source_dim', 
 				'base.campaign_dim',
-				'base.location_dim');
+				'base.location_dim',
+				'base.commerce_transaction_fact',
+				'base.commerce_line_item_fact');
 		
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);

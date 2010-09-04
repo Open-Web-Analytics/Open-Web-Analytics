@@ -656,9 +656,10 @@ class owa_module extends owa_base {
 		return;
 	}
 	
-	function registerMetric($metric_name, $class_name) {
+	function registerMetric($metric_name, $class_name, $params = array()) {
 		
-		$this->metrics[$metric_name][] = $class_name;
+		$map = array('class' => $class_name, 'params' => $params);
+		$this->metrics[$metric_name][] = $map;
 	}
 	
 	/**

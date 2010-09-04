@@ -90,6 +90,26 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('feedReaders', 'base.feedReaders');
 		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
 		
+		// goals
+		$goals = owa_coreAPI::getSetting('base', 'goals');
+		
+		foreach ($goals as $num => $goal) {
+			$params = array('goal_number' => $num);
+			
+			$metric_name = 'goal'.$num.'Completions';
+			$this->registerMetric($metric_name, 'base.goalNCompletions', $params);
+			
+			$metric_name = 'goal'.$num.'Starts';
+			$this->registerMetric($metric_name, 'base.goalNStarts', $params);
+			
+			$metric_name = 'goal'.$num.'Value';
+			$this->registerMetric($metric_name, 'base.goalNValue', $params);
+		}
+		
+		$this->registerMetric('goalCompletionsAll', 'base.goalCompletionsAll');
+		$this->registerMetric('goalStartsAll', 'base.goalStartsAll');
+		$this->registerMetric('goalValueAll', 'base.goalValueAll');
+		
 		/**
 		 * Register Dimensions
 		 *
@@ -100,14 +120,18 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('osType', 'base.os', 'name', 'Operating System', 'visitor', 'The operating System of the visitor.');
 		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
 		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
-		$this->registerDimension('city', 'base.host', 'city', 'City', 'visitor', 'The city of the visitor.');
-		$this->registerDimension('country', 'base.host', 'country', 'Country', 'visitor', 'The country of the visitor.');
-		$this->registerDimension('latitude', 'base.host', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
-		$this->registerDimension('longitude', 'base.host', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
+		$this->registerDimension('city', 'base.location_dim', 'city', 'City', 'visitor', 'The city of the visitor.');
+		$this->registerDimension('country', 'base.location_dim', 'country', 'Country', 'visitor', 'The country of the visitor.');
+		$this->registerDimension('latitude', 'base.location_dim', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
+		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
+		$this->registerDimension('countryCode', 'base.location_dim', 'country_code', 'Country Code', 'visitor', 'The ISO country code of the visitor.');
+		$this->registerDimension('stateRegion', 'base.location_dim', 'state', 'State/Region', 'visitor', 'The state or region of the visitor.');
+		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
 		$this->registerDimension('timeSinceLastVisit', 'base.session', 'time_sinse_priorsession', 'Time Since Last Visit', 'visitor', 'The time since the last visit.', '', true);
 		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
 		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
-		
+		$this->registerDimension('language', 'base.session', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
+		$this->registerDimension('language', 'base.request', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
 		// campaign related
 		$this->registerDimension('medium', 'base.session', 'medium', 'Medium', 'visit', 'The medium of channel of visit.', '', true);
 		$this->registerDimension('source', 'base.source_dim', 'source_domain', 'Source', 'visit', 'The traffic source of the visit.');
@@ -322,7 +346,7 @@ class owa_baseModule extends owa_module {
 		// Search Terms
 		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
 		// Location
-		$this->registerEventHandler('base.new_session', 'locationHandlers');
+		$this->registerEventHandler( array( 'base.new_session', 'commerce.transaction' ), 'locationHandlers' );
 		// operating systems
 		$this->registerEventHandler('base.new_session', 'osHandlers');
 		// source dimension
@@ -332,7 +356,10 @@ class owa_baseModule extends owa_module {
 		// ad dimension
 		$this->registerEventHandler('base.new_session', 'adHandlers');
 		// conversions
-		$this->registerEventHandler(array('base.new_session', 'base.session_update'), 'conversionHandlers');
+		$this->registerEventHandler(array(
+				'base.new_session', 
+				'base.session_update', 
+				'commerce.transaction_persisted' ), 'conversionHandlers');
 		// User Agent dimension
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
@@ -349,6 +376,9 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 		// actions
 		$this->registerEventHandler('track.action', 'actionHandler');
+		// Commerce
+		$this->registerEventHandler('commerce.transaction', 'commerceTransactionHandlers');
+		$this->registerEventHandler('commerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
 	}
 	
 	function _registerEventProcessors() {

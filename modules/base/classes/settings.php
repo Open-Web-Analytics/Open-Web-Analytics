@@ -652,7 +652,8 @@
 					13	=> array(),
 					14	=> array(),
 					15	=> array()
-			)
+			),
+			'goal_groups' 						=> array()
 			
 			));
 			

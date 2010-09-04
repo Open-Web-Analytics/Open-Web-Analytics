@@ -74,37 +74,33 @@ class owa_requestHandlers extends owa_observer {
 		
 		$r->set('language', $event->get('language'));
 		
-		if (!$event->get('country')) {
-			$location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-			owa_coreAPI::debug('geolocation: ' .print_r($location, true));
-			$event->set('country', $location->getCountry());
-			$event->set('city', $location->getCity());
-			$event->set('latitude', $location->getLatitude());
-			$event->set('longitude', $location->getLongitude());
-			$event->set('country_code', $location->getCountryCode());
-			$event->set('state', $location->getState());
+		if ( ! $event->get( 'country' ) ) {
+			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+			owa_coreAPI::debug( 'geolocation: ' .print_r( $location, true ) );
+			$event->set( 'country', $location->getCountry() );
+			$event->set( 'city', $location->getCity() );
+			$event->set( 'latitude', $location->getLatitude() );
+			$event->set( 'longitude', $location->getLongitude() );
+			$event->set( 'country_code', $location->getCountryCode() );
+			$event->set( 'state', $location->getState() );
 		}
 		
 		// Generate Host id
-		$key = $event->get( 'country' ) . $event->get( 'city' );
-		$location_id = owa_lib::setStringGuid( $key );
+		$location_id_string =  $event->get( 'country' ) . $event->get( 'state' ) . $event->get( 'city' ); 
+		$location_id = owa_lib::setStringGuid( $location_id_string );
 		$event->set( 'location_id', $location_id );
 		
 		$r->set( 'location_id',  $event->get( 'location_id' ) );
 		
 		$result = $r->create();
 		
-		
 		if ($result == true) {
-			
-			
-			//$nevent->setEventType($event->getEventType().'_logged');
+		
 			$eq = owa_coreAPI::getEventDispatch();
 			$nevent = $eq->makeEvent($event->getEventType().'_logged');
 			$nevent->setProperties($event->getProperties());
 			$eq->notify($nevent);
 		}
-		
 	}
 }
 
