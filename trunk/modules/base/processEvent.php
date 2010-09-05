@@ -165,7 +165,7 @@ class owa_processEventController extends owa_controller {
 		
 		// Filter page title if set
 		if ($this->event->get('page_title')) {
-			$this->event->set('page_title', $this->eq->filter('page_title', trim($this->event->get('page_title'))));
+			$this->event->set('page_title', owa_lib::utf8Encode($this->eq->filter('page_title', trim($this->event->get('page_title')))));
 		}
 		
 		$page_parse = parse_url($this->event->get('page_url'));

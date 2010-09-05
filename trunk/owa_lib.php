@@ -1023,6 +1023,65 @@ class owa_lib {
 		
 		return $string * 100;
 	}
+	
+	public static function utf8Encode($string) {
+		
+		if ( owa_lib::checkForUtf8( $string ) ) {
+			return $string; 
+		} else { 
+    		if (function_exists('iconv')) {
+				return iconv('UTF-8','UTF-8//TRANSLIT', $string);
+			} else {
+				// at least worth a try
+				return utf8_encode($string);
+			}
+		}
+	}
+	
+	public static function checkForUtf8($str) {
+	
+		if ( function_exists( 'mb_detect_encoding' ) ) {
+			$cur_encoding = mb_detect_encoding( $str ) ; 
+			if ( $cur_encoding == "UTF-8" && mb_check_encoding( $str,"UTF-8" ) ) {
+				return true;
+			}
+		} else {
+		 
+		    $len = strlen( $str ); 
+		    for( $i = 0; $i < $len; $i++ ) { 
+		        
+		        $c = ord( $str[$i] ); 
+		        if ($c > 128) { 
+		            
+		            if ( ( $c > 247 ) ) {
+		            	return false; 
+		            } elseif ( $c > 239 ) {
+		            	$bytes = 4; 
+		            } elseif ( $c > 223 ) {
+		            	$bytes = 3; 
+		            } elseif ( $c > 191 ) {
+		            	$bytes = 2; 
+		            } else {
+		            	return false; 
+		            }
+		            
+		            if ( ( $i + $bytes ) > $len ) {
+		            	return false; 
+		            }
+		            
+		            while ( $bytes > 1 ) { 
+		                $i++; 
+		                $b = ord( $str[$i] ); 
+		                if ( $b < 128 || $b > 191 ) {
+		                	return false;
+		                }
+		                $bytes--; 
+		            } 
+		        } 
+		    } 
+		    return true; 
+		}
+	}
 }
 
 ?>
