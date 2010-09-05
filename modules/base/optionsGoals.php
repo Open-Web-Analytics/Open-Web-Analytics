@@ -38,14 +38,17 @@ class owa_optionsGoalsController extends owa_adminController {
 		parent::__construct($params);
 		$this->type = 'options';
 		$this->setRequiredCapability('edit_settings');
-		return;
 	}
 	
 	function action() {
-		
+		//$c = owa_coreAPI::configSingleton();
+		//$c->defaultSetting('base', 'goal_groups');
 		$goals = owa_coreAPI::getSetting('base', 'goals');
+		$goal_groups = owa_coreAPI::getSetting('base', 'goal_groups');
 		$this->set('goals', $goals);
+		$this->set('goal_groups', $goal_groups);
 		print_r($goals);
+		print_r($goal_groups);
 		$this->setView('base.options');
 		$this->setSubView('base.optionsGoals');
 	}
@@ -72,6 +75,7 @@ class owa_optionsGoalsView extends owa_view {
 		// fetch admin links from all modules
 		$this->body->set( 'headline', 'Conversion Goals');
 		$this->body->set( 'goals', $this->get( 'goals' ) );
+		$this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
 	}
 }
 

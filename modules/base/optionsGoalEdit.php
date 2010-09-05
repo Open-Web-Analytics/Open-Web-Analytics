@@ -55,6 +55,11 @@ class owa_optionsGoalEditController extends owa_adminController {
 		$v1->setValues($goal['goal_status']);
 		$this->setValidation('goal_status', $v1);
 		
+		// check that goal status is present
+		$v1 = owa_coreAPI::validationFactory('required');
+		$v1->setValues($goal['goal_group']);
+		$this->setValidation('goal_group', $v1);
+		
 		// check that goal type is present
 		$v1 = owa_coreAPI::validationFactory('required');
 		$v1->setValues($goal['goal_type']);
@@ -113,11 +118,13 @@ class owa_optionsGoalEditController extends owa_adminController {
 		
 		$goal = $this->getParam('goal');
 		$all_goals = owa_coreAPI::getSetting('base', 'goals');
-		
+		$goal_groups = owa_coreAPI::getSetting('base', 'goal_groups'); 
 		if (array_key_exists($goal['goal_number'], $all_goals)) {
 			$all_goals[$goal['goal_number']] = $goal;
+			$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
 			owa_coreAPI::debug('New goals: '.print_r($all_goals,true));
 			owa_coreAPI::persistSetting('base', 'goals', $all_goals);
+			owa_coreAPI::persistSetting('base', 'goal_groups', $goal_groups);
 			$this->setStatusCode(2504);
 		}
 		

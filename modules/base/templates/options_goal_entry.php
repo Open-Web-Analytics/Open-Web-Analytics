@@ -15,13 +15,37 @@
 			
 			<tr>
 				
-				<th>Name:</th>
+				<th valign="top">Name:</th>
 				<td>
 					<input name="<?php echo $this->getNs();?>goal[goal_name]" type="text" size="40" value="<?php $this->out($goal['goal_name']);?>">
 				</td>
 			</tr>
 			<tr>
-				<th>Status:</th>
+				<th valign="top">Group:
+					<p class="formInstructions">
+						The group that you want to assign this goal to. Goal groups are presented as a tab view on most reports.
+					</p>
+				</th>
+				<td>
+					
+					<select name="<?php echo $this->getNs();?>goal[goal_group]">
+						<?php foreach ($goal_groups as $k => $group): ?>
+						<option value="<?php $this->out($k, false);?>" <?php if ( isset( $goal['goal_group'] ) && $goal['goal_group'] == $k ) { echo 'SELECTED';}?>><?php 
+						if ( !empty( $group ) ) {
+							$this->out($k." - $group");
+						} else {
+							$this->out($k);
+						}
+						?></option>
+						<? endforeach;?>
+					</select>
+					<BR><BR>Edit the group label:
+					
+					<input name="<?php echo $this->getNs();?>new_goal_group_name" type="text" size="20" value="<?php $this->out($goal_groups[$goal['goal_group']]);?>">
+				</td>
+			</tr>
+			<tr>
+				<th valign="top">Status:</th>
 				<td>
 					<select name="<?php echo $this->getNs();?>goal[goal_status]">
 						<option value="active" <?php if (isset($goal['goal_status']) && $goal['goal_status'] != 'disabled'){echo 'SELECTED';}?>>
@@ -37,7 +61,12 @@
 			</tr>
 			
 			<tr>
-				<th>Goal Value:</th>
+				<th valign="top">
+					Value:
+					<p class="formInstructions">
+						The value associated with achieving this goal. 
+					</p>
+				</th>
 				<td>
 					<input name="<?php echo $this->getNs();?>goal[goal_value]" type="text" size="20" value="<?php $this->out($goal['goal_value']);?>"> 
 					<span class="optional">Optional</span>
@@ -45,7 +74,12 @@
 			</tr>
 			
 			<tr>
-				<th>Goal Type:</th>
+				<th valign="top">
+					Type:
+					<p class="formInstructions">
+						The type of goal.
+					</p>
+				</th>
 				<td>
 					<input type="radio" name="<?php echo $this->getNs();?>goal[goal_type]" value="url_destination" <?php if (isset($goal['goal_type']) && $goal['goal_type'] === 'url_destination'){echo 'CHECKED';}?> > URL Destination<BR>
 					

@@ -297,6 +297,13 @@ div {margin:0;}
 	color: #9f9f9f;
 }
 
+.owa .formInstructions {
+	font-size: 10px;
+	color: #505050;
+	
+	font-weight: normal;
+}
+
 
   
 </style>
