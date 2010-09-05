@@ -42,13 +42,14 @@ class owa_optionsGoalEntryController extends owa_adminController {
 	
 	function action() {
 		
-		$number = $this->getParam('goal_number');
+		$number = $this->getParam( 'goal_number' );
 		
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-		
+		$goals = owa_coreAPI::getSetting( 'base', 'goals' );
+		$goal_groups = owa_coreAPI::getSetting( 'base', 'goal_groups' );
+		$this->set( 'goal_groups', $goal_groups );
 		$goal = $goals[$number];
 		$this->set( 'goal', $goal );
-		//print_r($goal);
+		print_r($goal);
 		
 		if (array_key_exists('goal_number', $goal)) {
 			$this->set('goal_number', $goal['goal_number']);
@@ -84,6 +85,7 @@ class owa_optionsGoalEntryView extends owa_view {
 		$this->body->set_template( 'options_goal_entry.php' );
 		$this->body->set( 'headline', 'Edit Goal');
 		$this->body->set( 'goal', $this->get( 'goal' ) );
+		$this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
 		$this->body->set( 'goal_number', $this->get( 'goal_number' ) );
 		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js');
 		$this->setJs('jqote', 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
