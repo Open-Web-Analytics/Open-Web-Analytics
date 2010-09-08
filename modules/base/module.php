@@ -42,10 +42,10 @@ class owa_baseModule extends owa_module {
 		$this->display_name = 'Open Web Analytics';
 		$this->group = 'Base';
 		$this->author = 'Peter Adams';
-		$this->version = 5;
+		$this->version = 6;
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 5;
+		$this->required_schema_version = 6;
 		
 		/**
 		 * Register Filters
@@ -407,7 +407,13 @@ class owa_baseModule extends owa_module {
 				'user',
 				'domstream',
 				'action_fact',
-				'search_term_dim')
+				'search_term_dim',
+				'ad_dim', 
+				'source_dim', 
+				'campaign_dim',
+				'location_dim',
+				'commerce_transaction_fact',
+				'commerce_line_item_fact')
 		);
 		
 	}
