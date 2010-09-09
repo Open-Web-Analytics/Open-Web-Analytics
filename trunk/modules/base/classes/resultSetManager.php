@@ -1156,7 +1156,7 @@ class owa_resultSetManager extends owa_base {
 			$formula = str_replace('$','', $formula);
 			
 			// need parens and @ to handle divsion by zero errors
-			$formula = '$value = @('.$formula.');';
+			$formula = '$value = ('.$formula.');';
 			//print $formula;
 			// calc
 			@eval($formula);
