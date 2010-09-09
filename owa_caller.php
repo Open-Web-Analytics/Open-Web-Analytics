@@ -53,6 +53,8 @@ class owa_caller extends owa_base {
 	var $site_id;
 	
 	var $commerce_event;
+	
+	var $pageview_event;
 		
 	/**
 	 * Constructor
@@ -344,6 +346,7 @@ class owa_caller extends owa_base {
 	function trackPageView($event) {
 		
 		$event->setEventType('base.page_request');
+		$this->pageview_event = $event;
 		return $this->trackEvent($event);
 	}
 	

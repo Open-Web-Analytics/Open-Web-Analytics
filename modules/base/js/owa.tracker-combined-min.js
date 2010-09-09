@@ -1,4 +1,4 @@
-// OWA Tracker Min file created 1282867988 
+// OWA Tracker Min file created 1284011752 
 
 //// Start of json2 //// 
 
@@ -54,14 +54,14 @@ return retVal;}}
 else{return pieces;}},setState:function(store_name,key,value,expiration){},getState:function(store_name,key){},loadState:function(store_name){var store=unescape(this.readCookie(OWA.getSetting('ns')+store_name));var state=this.assocFromString(store);OWA.state[store_name]=state;OWA.debug('state store %s: %s',store_name,JSON.stringify(state));},loadStateJson:function(store_name){var store=unescape(this.readCookie(OWA.getSetting('ns')+store_name));if(store){state=JSON.parse(store);}
 OWA.state[store_name]=state;OWA.debug('state store %s: %s',store_name,JSON.stringify(state));},clearState:function(store_name){},is_array:function(input){return typeof(input)=='object'&&(input instanceof Array);},countObjectProperties:function(obj){var size=0,key;for(key in obj){if(obj.hasOwnProperty(key))size++;}
 return size;},assocFromString:function(str,inner,outer){inner=inner||'=>';outer=outer||'|||';if(str){if(!this.strpos(str,outer)){return str;}else{var assoc=[];outer_array=str.split(outer);for(var i=0,n=outer_array.length;i<n;i++){var inside_array=outer_array[i].split(inner);assoc[inside_array[0]]=inside_array[1];}}
-OWA.debug('assoc from string: '+JSON.stringify(assoc));return assoc;}},getDomainFromUrl:function(url,strip_www){var domain=url.split(/\/+/g)[1];if(strip_www===true){var fp=domain.split('.')[0];if(fp==='www'){return domain.substring(4);}else{return domain;}}else{return domain;}}}
+OWA.debug('assoc from string: '+JSON.stringify(assoc));return assoc;}},getDomainFromUrl:function(url,strip_www){var domain=url.split(/\/+/g)[1];if(strip_www===true){var fp=domain.split('.')[0];if(fp==='www'){return domain.substring(4);}else{return domain;}}else{return domain;}},getCurrentUnixTimestamp:function(){return Math.round(new Date().getTime()/1000);}}
 //// End of owa //// 
 //// Start of owa.tracker //// 
 
 OWA.event=function(){this.properties=new Object();}
 OWA.event.prototype={id:'',siteId:'',properties:'',get:function(name){return this.properties[name];},set:function(name,value){this.properties[name]=value;return;},setEventType:function(event_type){this.set("event_type",event_type);return;},getProperties:function(){return this.properties;},merge:function(properties){for(param in properties){if(properties.hasOwnProperty(param)){this.set(param,properties[param]);}}}}
 OWA.tracker=function(caller_params,options){this.urlParams=[];var p=OWA.util.readCookie('owa_overlay');if(p){this.pause();OWA.startOverlaySession(p);}
-this.setEndpoint(OWA.config.baseUrl+'log.php');this.page=new OWA.event();this.startTime=this.getTimestamp();this.page.set('page_url',document.URL);this.setPageTitle(document.title);this.page.set("referer",document.referrer);if(typeof owa_params!='undefined'){if(owa_params.length>0){this.page.merge(owa_params);}}
+this.setEndpoint(OWA.config.baseUrl+'log.php');this.page=new OWA.event();this.startTime=this.getTimestamp();this.page.set('page_url',document.URL);this.setPageTitle(document.title);this.page.set("referer",document.referrer);this.page.set('timestamp',this.startTime);if(typeof owa_params!='undefined'){if(owa_params.length>0){this.page.merge(owa_params);}}
 if(typeof caller_params!='undefined'){this.page.merge(caller_params);}
 this.attributeTraffic();}
 OWA.tracker.prototype={id:'',siteId:'',init:0,startTime:null,endTime:null,active:true,endpoint:'',campaignState:[],isNewCampaign:false,isTrafficAttributed:false,options:{logClicks:true,logPage:true,logMovement:false,encodeProperties:true,movementInterval:100,logDomStreamPercentage:50,domstreamEventThreshold:5,maxPriorCampaigns:5,campaignAttributionWindow:60,trafficAttributionMode:'direct'},streamBindings:['bindMovementEvents','bindScrollEvents','bindKeypressEvents','bindClickEvents'],page:'',click:'',movement:'',keystroke:'',hover:'',last_event:'',last_movement:'',event_queue:new Array(),player:'',overlay:'',setPageTitle:function(title){this.page.set("page_title",title);},setPageType:function(type){this.page.set("page_type",type);},setSiteId:function(site_id){this.siteId=site_id;},getSiteId:function(){return this.siteId;},setEndpoint:function(endpoint){this.endpoint=endpoint;},getEndpoint:function(){return this.endpoint;},trackPageView:function(url){if(url){this.page.set('page_url',url);}
@@ -107,20 +107,22 @@ if(!this.urlParams.length>0){this.urlParams=OWA.util.parseUrlParams(document.URL
 var campaignKeys=[{public:'owa_medium',private:'md',full:'medium'},{public:'owa_campaign',private:'cn',full:'campaign'},{public:'owa_source',private:'sr',full:'source'},{public:'owa_search_terms',private:'tr',full:'search_terms'},{public:'owa_ad',private:'ad',full:'ad'},{public:'owa_ad_type',private:'at',full:'ad_type'}];var campaign_params={};for(var i=0,n=campaignKeys.length;i<n;i++){if(this.urlParams[campaignKeys[i].public]){campaign_params[campaignKeys[i].private]=this.urlParams[campaignKeys[i].public];OWA.debug('campaign params obj: '+JSON.stringify(campaign_params));this.isNewCampaign=true;}}
 if(campaign_params['at']&&!campaign_params['ad']){campaign_params['ad']='(not set)';}
 if(campaign_params['ad']&&!campaign_params['at']){campaign_params['at']='(not set)';}
-var attribution={medium:'',source:'',campaign:'',ad_type:'',ad:'',search_terms:''};if(this.options.trafficAttributionMode==='direct'){if(this.isNewCampaign){OWA.debug('campaign state length: %s',this.campaignState.length);this.campaignState.push(campaign_params);if(this.campaignState.length>this.options.maxPriorCampaigns){OWA.debug('existing campaign touches');var removed=this.campaignState.splice(0,1);OWA.debug('campaign state array post slice: '+JSON.stringify(this.campaignState));}
+var attribution={medium:'',source:'',campaign:'',ad_type:'',ad:'',search_terms:''};if(this.options.trafficAttributionMode==='direct'){if(this.isNewCampaign){campaign_params['ts']=this.page.get('timestamp');OWA.debug('campaign state length: %s',this.campaignState.length);this.campaignState.push(campaign_params);if(this.campaignState.length>this.options.maxPriorCampaigns){OWA.debug('existing campaign touches');var removed=this.campaignState.splice(0,1);OWA.debug('campaign state array post slice: '+JSON.stringify(this.campaignState));}
 this.setCampaignCookie(this.campaignState);this.isTrafficAttributed=true;}}
-if(this.options.trafficAttributionMode==='original'){if(this.campaignState.length>0){OWA.debug('Original attribution detected.');campaign_params=this.campaignState[0];this.isTrafficAttributed=true;}else{OWA.debug('Setting Original Campaign touch.');if(this.isNewCampaign){this.campaignState.push(campaign_params);this.setCampaignCookie(this.campaignState);this.isTrafficAttributed=true;}}}
+if(this.options.trafficAttributionMode==='original'){if(this.campaignState.length>0){OWA.debug('Original attribution detected.');campaign_params=this.campaignState[0];this.isTrafficAttributed=true;}else{OWA.debug('Setting Original Campaign touch.');if(this.isNewCampaign){campaign_params['ts']=this.page.get('timestamp');this.campaignState.push(campaign_params);this.setCampaignCookie(this.campaignState);this.isTrafficAttributed=true;}}}
 var count=OWA.util.countObjectProperties(campaign_params);if(count>0){for(prop in campaign_params){if(prop==='md'){attribution.medium=campaign_params[prop];}
 if(prop==='sr'){attribution.source=campaign_params[prop];}
 if(prop==='cn'){attribution.campaign=campaign_params[prop];}
 if(prop==='at'){attribution.ad_type=campaign_params[prop];}
 if(prop==='ad'){attribution.ad=campaign_params[prop];}
-if(prop==='tr'){attribution.search_terms=campaign_params[prop];}}}
+if(prop==='tr'){attribution.search_terms=campaign_params[prop];}
+if(prop==='ts'){attribution.timestamp=campaign_params[prop];}}}
 if(!this.isTrafficAttributed){var referer=this.page.get('referer');if(referer){var from_se=this.checkRefererForSearchEngine(referer);if(from_se){attribution.medium='organic-search';attribution.source=OWA.util.getDomainFromUrl(referer,true);}else{attribution.medium='referral';attribution.source=OWA.util.getDomainFromUrl(referer,true);}}else{attribution.medium='direct';attribution.source='(none)';}}
 this.page.set('medium',attribution.medium);this.page.set('source',attribution.source);if(attribution.campaign.length>0){this.page.set('campaign',attribution.campaign);}
 if(attribution.ad.length>0){this.page.set('ad',attribution.ad);}
 if(attribution.ad_type.length>0){this.page.set('ad_type',attribution.ad_type);}
 if(attribution.search_terms.length>0){this.page.set('search_terms',attribution.search_terms);}
 if(this.campaignState.length>0){this.page.set('attribs',JSON.stringify(this.campaignState));}
+if(this.campaignState.length>0){this.page.set('campaign_timestamp',attribution.timestamp);}
 this.page.set('is_attributed',true);},setCampaignCookie:function(values){OWA.debug('new campaign cookie value: '+JSON.stringify(values));var domain=OWA.getSetting('cookie_domain')||document.domain;OWA.util.setCookie('owa_c',JSON.stringify(values),this.options.campaignAttributionWindow,'/',domain);},checkRefererForSearchEngine:function(referer){var _get=OWA.util.parseUrlParams(referer);var query_params=['q','p','search','Keywords','ask','keyword','keywords','kw','pattern','pgm','qr','qry','qs','qt','qu','query','queryterm','question','sTerm','searchfor','searchText','srch','su','what'];for(var i=0,n=query_params.length;i<n;i++){if(_get[query_params[i]]){OWA.debug('Found search engine query param: '+query_params[i]);return true;}}}}
 //// End of owa.tracker //// 

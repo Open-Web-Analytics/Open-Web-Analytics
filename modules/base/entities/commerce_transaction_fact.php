@@ -117,6 +117,12 @@ class owa_commerce_transaction_fact extends owa_entity {
 		
 		$shipping = new owa_dbColumn('shipping_revenue', OWA_DTD_BIGINT);
 		$this->setProperty($shipping);
+		
+		$days_since_first_session = new owa_dbColumn('days_since_first_session', OWA_DTD_INT);
+		$this->setProperty($days_since_first_session);
+		
+		$nps = new owa_dbColumn('num_prior_sessions', OWA_DTD_INT);
+		$this->setProperty($nps);
 	}
 }
 

@@ -110,10 +110,10 @@ class owa_resultSetManager extends owa_base {
 		
 		$this->formatters = array(
 			//'yyyymmdd' => array($this, 'dateFormatter'),
-			'timestamp'	=> array($this, 'formatSeconds'),
-			'percentage' => array($this, 'formatPercentage'), 
-			'integer' 	=> array($this, 'numberFormatter')
-			
+			'timestamp'		=> array($this, 'formatSeconds'),
+			'percentage' 	=> array($this, 'formatPercentage'), 
+			'integer' 		=> array($this, 'numberFormatter'),
+			'currency'		=> array($this, 'formatCurrency')
 		);
 		
 		return parent::__construct();
@@ -676,6 +676,13 @@ class owa_resultSetManager extends owa_base {
 		return number_format($value * 100, 2).'%';
 	}
 	
+	function formatCurrency($value) {
+	
+		setlocale( LC_MONETARY, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
+		$value = $value /100;
+		return money_format( '%.2n',$value );
+	}
+	
 	/**
 	 * Sets an individual label
 	 * return the key so that it can be nested
@@ -1152,7 +1159,7 @@ class owa_resultSetManager extends owa_base {
 			$formula = '$value = @('.$formula.');';
 			//print $formula;
 			// calc
-			eval($formula);
+			@eval($formula);
 			
 			if (!$value) {
 				$value = 0;

@@ -95,6 +95,7 @@ OWA.tracker = function(caller_params, options) {
     this.page.set('page_url', document.URL);
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
+	this.page.set('timestamp', this.startTime);
 	
 	if (typeof owa_params != 'undefined') {
 		// merge page params from the global object if it exists
@@ -948,7 +949,8 @@ OWA.tracker.prototype = {
 		if (this.options.trafficAttributionMode === 'direct') {
 			// check to see if this request is from a new campaign.
 			if ( this.isNewCampaign ) {
-			
+				// set campaign timestamp
+				campaign_params['ts'] = this.page.get('timestamp');
 				OWA.debug( 'campaign state length: %s', this.campaignState.length );
 				// add the new campaing params to the prior touches array
 				this.campaignState.push( campaign_params );
@@ -985,6 +987,8 @@ OWA.tracker.prototype = {
 			} else {
 				OWA.debug( 'Setting Original Campaign touch.' );
 				if (this.isNewCampaign) {
+					// set campaign timestamp
+					campaign_params['ts'] = this.page.get('timestamp');
 					this.campaignState.push( campaign_params );
 					// set cookie
 					this.setCampaignCookie( this.campaignState );
@@ -1017,6 +1021,10 @@ OWA.tracker.prototype = {
 				}
 				if (prop === 'tr') {
 					attribution.search_terms = campaign_params[prop];
+				}
+				
+				if (prop === 'ts') {
+					attribution.timestamp = campaign_params[prop];
 				}
 			}
 		}
@@ -1075,11 +1083,14 @@ OWA.tracker.prototype = {
 			this.page.set('attribs', JSON.stringify(this.campaignState));
 		}
 		
+		// set campaign timestamp
+		if (this.campaignState.length > 0) {
+			this.page.set('campaign_timestamp', attribution.timestamp);
+		}
+		
 		// tells upstream processing to skip attribution
 		this.page.set('is_attributed', true);
-		
-		// store the attribution object in the session cookie
-		// ...
+	
 	},
 	
 	setCampaignCookie : function(values) {
