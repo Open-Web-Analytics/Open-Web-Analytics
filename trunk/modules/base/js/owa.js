@@ -396,6 +396,10 @@ OWA.util =  {
 		} else {
 			return domain;
 		}
+	},
+	
+	getCurrentUnixTimestamp : function() {
+		return Math.round(new Date().getTime() / 1000);
 	}
 	
 }

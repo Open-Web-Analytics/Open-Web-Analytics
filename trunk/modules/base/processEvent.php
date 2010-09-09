@@ -302,8 +302,27 @@ class owa_processEventController extends owa_controller {
 		if (!$nps) {
 			$nps = 0;
 		}
-		//set the value on the event
+		// set the value on the event
 		$this->event->set('num_prior_sessions', $nps);
+		
+		// days since first session
+		// if check for first session timestamp (fsts) value in vistor cookie
+		if (owa_coreAPI::getStateParam('v', 'fsts')) {
+			$fsts = owa_coreAPI::getStateParam('v', 'fsts'); 
+		} else {
+			// else use last session as as proxy, better than nothing
+			$fsts = $this->event->get('last_req');
+		}
+		
+		// calc days sinse first session
+		if ($fsts) {
+			$this->event->set('days_since_first_session', round(($this->event->get('timestamp') - $fsts)/(3600*24)));	
+		} else {
+			// this means that first session timestamp was not set in the cookie even though it's not a new user...so we set it. 
+			// This can happen with users prior to 1.3.0. when this value was introduced into the cookie.
+			$this->event->set('days_since_first_session', 0);
+		}
+				
 	}
 	
 	function post() {
@@ -446,7 +465,9 @@ class owa_processEventController extends owa_controller {
 			
 			// add new campaign info to existing campaign cookie.
 			if ( !empty( $campaign_properties ) ) {
-		
+				
+				// add timestamp
+				$campaign_properties['ts'] = $this->event->get('timestamp');
 				// add new campaign into state array
 				$campaign_state[] = (object) $campaign_properties;
 				
@@ -483,6 +504,8 @@ class owa_processEventController extends owa_controller {
 			} else {
 				
 				if (!empty($campaign_properties)) {
+					// add timestamp
+					$campaign_properties['ts'] = $this->event->get('timestamp');
 					owa_coreAPI::debug('Setting original Campaign attrbution.');
 					$campaign_state[] = $campaign_properties;
 					// set cookie
@@ -521,6 +544,10 @@ class owa_processEventController extends owa_controller {
 				if ($k === 'tr') {
 					$attribution['search_terms'] = $campaign_properties[$k];
 				}
+				
+				if ($k === 'ts') {
+					$attribution['timestamp'] = $campaign_properties[$k];
+				}
 			}		
 		}
 			
@@ -545,6 +572,8 @@ class owa_processEventController extends owa_controller {
 			} else {
 				// set as direct
 				$attribution['medium'] = 'direct';
+				$attribution['source'] = '(none)';
+
 			}
 			
 			$this->event->set('is_attributed', true);
@@ -567,6 +596,10 @@ class owa_processEventController extends owa_controller {
 		
 		if (!empty($attribution['search_terms'])) {
 			$this->event->set('search_terms', $attribution['search_terms']);
+		}
+		
+		if (!empty($attribution['timestamp'])) {
+			$this->event->set('campaign_timestamp', $attribution['timestamp']);
 		}
 		
 		$this->event->set('attribs', owa_coreAPI::getStateParam('c'));

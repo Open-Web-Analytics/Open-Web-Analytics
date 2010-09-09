@@ -652,10 +652,12 @@
 								'edit_settings', 
 								'edit_sites', 
 								'edit_users', 
-								'edit_modules'),
+								'edit_modules'
+						),
 						'analyst' => array('view_reports'), 
 						'viewer' => array('view_reports'), 
-						'everyone' => array()),
+						'everyone' => array()
+				),
 				'goals'								=> array(
 						1	=> array(),
 						2	=> array(),
@@ -678,7 +680,10 @@
 						2	=> 'Goal Group 2',
 						3	=> 'Goal Group 3',
 						4	=> 'Goal Group 4',
-						5	=> 'Goal group 5')
+						5	=> 'Goal group 5'
+				),
+				'enableCommerceReporting'			=> true,
+				'currencyLocal'						=> 'en_US'
 				
 			)
 		);

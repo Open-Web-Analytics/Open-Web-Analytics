@@ -71,6 +71,8 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			$ct->set( 'total_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_total' ), 2 ) ) );
 			$ct->set( 'tax_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_tax' ), 2 ) ) );
 			$ct->set( 'shipping_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_shipping' ), 2 ) ) );
+			$ct->set('days_since_first_session', $event->get('days_since_first_session'));
+			$ct->set('num_prior_sessions', $event->get('num_prior_sessions'));
 			$ret = $ct->create();
 			
 			// persist line items

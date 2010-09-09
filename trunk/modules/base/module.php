@@ -110,6 +110,24 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('goalStartsAll', 'base.goalStartsAll');
 		$this->registerMetric('goalValueAll', 'base.goalValueAll');
 		
+		// ecommerce metrics
+		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantity');
+		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantityFromSessionFact');
+		$this->registerMetric('lineItemRevenue', 'base.lineItemRevenue');
+		$this->registerMetric('lineItemRevenue', 'base.lineItemRevenueFromSessionFact');
+		$this->registerMetric('transactions', 'base.transactions');
+		$this->registerMetric('transactions', 'base.transactionsFromSessionFact');
+		$this->registerMetric('transactionRevenue', 'base.transactionRevenue');
+		$this->registerMetric('transactionRevenue', 'base.transactionRevenueFromSessionFact');
+		$this->registerMetric('taxRevenue', 'base.taxRevenue');
+		$this->registerMetric('taxRevenue', 'base.taxRevenueFromSessionFact');
+		$this->registerMetric('shippingRevenue', 'base.shippingRevenue');
+		$this->registerMetric('shippingRevenue', 'base.shippingRevenueFromSessionFact');
+		$this->registerMetric('uniqueLineItems', 'base.uniqueLineItems');
+		$this->registerMetric('uniqueLineItems', 'base.uniqueLineItemsFromSessionFact');
+		$this->registerMetric('revenuePerTransaction', 'base.revenuePerTransaction');
+		$this->registerMetric('revenuePerVisit', 'base.revenuePerVisit');
+		$this->registerMetric('ecommerceConversionRate', 'base.ecommerceConversionRate');
 		/**
 		 * Register Dimensions
 		 *
@@ -156,7 +174,9 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('siteId', 'base.session', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		$this->registerDimension('daysSinceLastVisit', 'base.session', 'days_since_prior_session', 'Days Since Last Visit', 'visit', 'The number of days since the last visit.', '', true);
 		$this->registerDimension('daysSinceFirstVisit', 'base.session', 'days_since_first_session', 'Days Since First Visit', 'visit', 'The number of days since the first visit of the user.', '', true);
+	
 		$this->registerDimension('priorVisitCount', 'base.session', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
+		
 		$this->registerDimension('priorVisitCount', 'base.request', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
 		
 		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
@@ -213,8 +233,49 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		// IDs
 		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
-		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');		
+		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');
 		
+		// commerce dimensions
+		$this->registerDimension(
+				'daysToTransaction', 
+				'base.session', 
+				'days_since_first_session', 
+				'Days To Purchase', 
+				'ecommerce', 
+				'The number of days between the first visit and a e-commerce transaction.',
+				'', 
+				true
+		);
+		
+		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', 'Days To Purchase', 'ecommerce', 'The number of days since the first visit and an e-commerce transaction.', '', true);
+		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transaction.', '', true);
+		$this->registerDimension('vistsToTransaction', 'base.session', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transactions', '', true);
+		// productName
+		$this->registerDimension(
+				'productName', 
+				'base.commerce_line_item_fact', 
+				'product_name', 
+				'Product Name', 
+				'ecommerce', 
+				'The name of the product purchased.', 
+				'', 
+				true
+		);
+		// productSku
+		$this->registerDimension('productSku', 'base.commerce_line_item_fact', 'sku', 'Product SKU', 'ecommerce', 'The SKU code of the product purchased.', '', true);
+		// productCategory
+		$this->registerDimension('productCategory', 'base.commerce_line_item_fact', 'category', 'Product Category', 'ecommerce', 'The category of product purchased.', '', true);
+		// transactionOriginator
+		$this->registerDimension('transactionOriginator', 'base.commerce_transaction_fact', 'order_source', 'Originator', 'ecommerce', 'The store or location that originated the transaction.', '', true);
+		// transactionId
+		$this->registerDimension('transactionId', 'base.commerce_transaction_fact', 'order_id', 'Transaction ID', 'ecommerce', 'The id of the e-commerce transaction.', '', true);
+		$this->registerDimension('transactionGateway', 'base.commerce_transaction_fact', 'gateway', 'Payment Gateway', 'ecommerce', 'The payment gateway or provider used in the e-commerce transaction.', '', true);
+		// daysToTransaction
+		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', "Days To Purchase', 'ecommerce', 'The number of days between the visitor's first visit and when transaction occurred.", '', true);
+		// visitsToTransaction
+		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', "Visits To Purchase', 'ecommerce', 'The number of visits before the transaction occurred.", '', true);
+		$this->registerDimension('date', 'base.commerce_line_item_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('date', 'base.commerce_transaction_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
 		/**
 		 * Register CLI Commands
 		 *
@@ -298,6 +359,9 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
 		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
+		if (owa_coreAPI::getSetting('base', 'enableCommerceReporting')) {
+			$this->addNavigationLink('Reports', '', 'base.reportCommerce', 'Ecommerce', 5);
+		}
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 7);
@@ -414,7 +478,7 @@ class owa_baseModule extends owa_module {
 				'location_dim',
 				'commerce_transaction_fact',
 				'commerce_line_item_fact')
-		);
+			);
 		
 	}
 	
