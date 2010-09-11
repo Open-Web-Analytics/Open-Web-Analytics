@@ -178,13 +178,16 @@ class owa_fileEventQueue extends owa_eventQueue {
 					
 				// Parse the row
 				$event = $this->parse_log_row($buffer);
-				print_r($event);
-				// debug
-				owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
+				
 				// Log event to the event queue
 				if (!empty($event)) {
+					print_r($event);
+					// debug
+					owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
 					// send event object to event queue
 					$dispatch->notify($event);	
+				} else {
+					owa_coreAPI::debug("No event found in log row. Must be end of file.");
 				}						
 			}
 			//Close file
@@ -226,15 +229,16 @@ class owa_fileEventQueue extends owa_eventQueue {
 	 * @return array
 	 */
 	function parse_log_row($row) {
-	
-		$raw_event = explode("|*|", $row);
-		//print_r($raw_event);
-		//$row_array = array( 'timestamp' 		=> $raw_event[0], 'event_type'	=> $raw_event[3], 'event_obj'		=> $raw_event[4]); 
-		$row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]); 
-		//print_r($row_array);			
-		$event = unserialize(urldecode($row_array['event_obj']));
-		//print_r($event);
-		return $event;
+		if ($row) {
+			$raw_event = explode("|*|", $row);
+			//print_r($raw_event);
+			//$row_array = array( 'timestamp' 		=> $raw_event[0], 'event_type'	=> $raw_event[3], 'event_obj'		=> $raw_event[4]); 
+			$row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]); 
+			//print_r($row_array);			
+			$event = unserialize(urldecode($row_array['event_obj']));
+			//print_r($event);
+			return $event;
+		}
 	}
 	
 	function create_lock_file() {
