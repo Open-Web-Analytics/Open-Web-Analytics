@@ -19,8 +19,9 @@
 require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
 require_once(OWA_BASE_CLASS_DIR.'event.php');
 require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
-require_once(OWA_PLUGIN_DIR . 'log/queue.php');
-require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
+require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log/file.php');
+//require_once(OWA_PLUGIN_DIR . 'log/queue.php');
+//require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
 
 /**
  * http Event Queue
@@ -56,7 +57,8 @@ class owa_fileEventQueue extends owa_eventQueue {
 		
 		//make file queue
 		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-		$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
+		//$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
+		$this->queue = &Log::singleton('file', $this->event_file, 'async_event_queue', $conf);
 		$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
 		// not sure why this is needed but it is.
 		$this->queue->_filename	= $this->event_file;
@@ -68,7 +70,7 @@ class owa_fileEventQueue extends owa_eventQueue {
 			$this->makeQueue();
 		}
 		
-		$this->queue->log(urlencode(serialize($event)), $event->getEventType());
+		$this->queue->log(urlencode(serialize($event)));
 	
 	}
 	
@@ -229,10 +231,8 @@ class owa_fileEventQueue extends owa_eventQueue {
 	
 		$raw_event = explode("|*|", $row);
 		//print_r($raw_event);
-		$row_array = array( 'timestamp' 		=> $raw_event[0],
-						'event_type'	=> $raw_event[3],
-						'event_obj'		=> $raw_event[4]
-					); 
+		//$row_array = array( 'timestamp' 		=> $raw_event[0], 'event_type'	=> $raw_event[3], 'event_obj'		=> $raw_event[4]); 
+		$row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]); 
 		//print_r($row_array);			
 		$event = unserialize(urldecode($row_array['event_obj']));
 		//print_r($event);
