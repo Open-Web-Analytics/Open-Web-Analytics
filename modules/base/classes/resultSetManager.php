@@ -1159,7 +1159,7 @@ class owa_resultSetManager extends owa_base {
 			$formula = '$value = ('.$formula.');';
 			//print $formula;
 			// calc
-			@eval($formula);
+			@ eval($formula);
 			
 			if (!$value) {
 				$value = 0;

@@ -683,7 +683,9 @@
 						5	=> 'Goal group 5'
 				),
 				'enableCommerceReporting'			=> true,
-				'currencyLocal'						=> 'en_US'
+				'currencyLocal'						=> 'en_US',
+				'memcachedServers'					=> array(),
+				'cacheType'							=> 'file'
 				
 			)
 		);

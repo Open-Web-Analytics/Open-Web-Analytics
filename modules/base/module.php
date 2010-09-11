@@ -66,6 +66,12 @@ class owa_baseModule extends owa_module {
 		}
 		
 		/**
+		 * Register Service Implementations
+		 *
+		 * The following lines register various service implementations. 
+		 */
+		
+		/**
 		 * Register Metrics
 		 *
 		 * The following lines register various data metrics. 
@@ -300,6 +306,9 @@ class owa_baseModule extends owa_module {
 		
 		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
 		
+		$this->registerApiMethod('getTransactionDetail', array($this, 'getTransactionDetail'), array( 'transactionId', 'format'));
+		
+		$this->registerApiMethod('processEventQueue', array($this, 'processEventQueue'), array());
 		
 		return parent::__construct();
 	}
@@ -383,7 +392,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);		
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 1);		
 	}
 	
 	/**
@@ -989,6 +999,35 @@ class owa_baseModule extends owa_module {
 		}
 	}
 	
+	/**
+	 * Retrieves full detail of an ecommerce transaction
+	 *
+	 * @param	$transactionId	string the id of the transaction you want
+	 * @param	$format			string the format you want returned
+	 * @return	
+	 */
+	function getTransactionDetail( $transactionId, $format = 'php' ) {
+		
+		$t = owa_coreAPI::entityFactory( 'base.commerce_transaction_fact' );
+		$t->getbyColumn('order_id',$transactionId);
+		$trans_detail = array();
+	
+		$id = $t->get( 'id' );
+		if ( $id ) {
+			$trans_detail = $t->_getProperties();
+			// fetch line items	
+			$db = owa_coreAPI::dbSingleton();
+		
+			$db->selectFrom( 'owa_commerce_line_item_fact' );
+			$db->selectColumn( '*' );
+			$db->where( 'order_id', $transactionId );
+			$lis = $db->getAllRows();
+			$trans_detail['line_items'] = $lis;
+		}
+		
+		return $trans_detail;
+	}
+	
 	function attributeCampaign( $tracking_event ) {
 		
 		$mode = owa_coreAPI::getSetting('base', 'campaign_attribution_mode');
@@ -1007,6 +1046,13 @@ class owa_baseModule extends owa_module {
 			//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
 			return $campaigns[0];
 		}
+	}
+	
+	function processEventQueue() {
+		
+		$d = owa_coreAPI::getEventDispatch();
+		$q = $d->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
+		$q->processQueue();
 	}
 }
 
