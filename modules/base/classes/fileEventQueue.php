@@ -20,11 +20,9 @@ require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
 require_once(OWA_BASE_CLASS_DIR.'event.php');
 require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
 require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log/file.php');
-//require_once(OWA_PLUGIN_DIR . 'log/queue.php');
-//require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
 
 /**
- * http Event Queue
+ * File based Event Queue Implementation
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
