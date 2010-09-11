@@ -290,7 +290,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
 		$this->registerCliCommand('build', 'base.build');
 		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
-		
+		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
 		/**
 		 * Register API methods
 		 *
@@ -307,8 +307,6 @@ class owa_baseModule extends owa_module {
 		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
 		
 		$this->registerApiMethod('getTransactionDetail', array($this, 'getTransactionDetail'), array( 'transactionId', 'format'));
-		
-		$this->registerApiMethod('processEventQueue', array($this, 'processEventQueue'), array());
 		
 		return parent::__construct();
 	}
@@ -1046,13 +1044,6 @@ class owa_baseModule extends owa_module {
 			//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
 			return $campaigns[0];
 		}
-	}
-	
-	function processEventQueue() {
-		
-		$d = owa_coreAPI::getEventDispatch();
-		$q = $d->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
-		$q->processQueue();
 	}
 }
 
