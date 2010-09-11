@@ -695,18 +695,21 @@
  	function setupPaths() {
  		
  		//build base url
- 		$base_url  = "http";
+ 		$base_url = '';
+ 		$proto  = "http";
 		
 		if(isset($_SERVER['HTTPS'])) {
-			$base_url .= 's';
+			$proto .= 's';
 		}
-					
-		$base_url .= '://'.$_SERVER['SERVER_NAME'];
-			
-		if($_SERVER['SERVER_PORT'] != 80) {
-			$base_url .= ':'.$_SERVER['SERVER_PORT'];
+		if(isset($_SERVER['SERVER_NAME'])) {			
+			$base_url .= $proto.'://'.$_SERVER['SERVER_NAME'];
 		}
 		
+		if(isset($_SERVER['SERVER_PORT'])) {
+			if($_SERVER['SERVER_PORT'] != 80) {
+				$base_url .= ':'.$_SERVER['SERVER_PORT'];
+			}
+		}
 		// there is some plugin use case where this is needed i think. if not get rid of it.
 		if (!defined('OWA_PUBLIC_URL')) {
 			define('OWA_PUBLIC_URL', '');
