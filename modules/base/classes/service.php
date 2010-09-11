@@ -342,12 +342,14 @@ class owa_service extends owa_base {
 	}
 	
 	function getCliCommandClass($command) {
-		return $this->getMapValue('cli_commands', strtolower($command));
+		print_r($this->maps['cli_commands']);
+		print_r($command);
+		return $this->getMapValue('cli_commands', $command);
 	}
 	
 	function setCliCommandClass($command, $class) {
 		
-		$this->setMapValue('cli_commands', strtolower($command), $class);
+		$this->setMapValue('cli_commands', $command, $class);
 	}
 
 	function getApiMethodClass($method_name) {
