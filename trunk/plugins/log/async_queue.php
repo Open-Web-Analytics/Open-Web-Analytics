@@ -290,6 +290,7 @@ class Log_async_queue extends Log
      * @return boolean  True on success or false on failure.
      * @access public
      */
+   
     function log($message, $event_type, $priority = null)
     {
         /* If a priority hasn't been specified, use the default value. */
