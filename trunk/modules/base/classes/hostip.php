@@ -78,13 +78,15 @@ class owa_hostip extends owa_location {
 			$result = array();
 					
 			foreach ($loc_array as $k => $v) {
-					
-				list($name, $value) = split(":", $v, 2);	
-				$result[$name] = $value;
+				
+				if (!empty($v)) {
+					list($name, $value) = explode(":", $v, 2);	
+					$result[$name] = $value;
+				}
 			}
 			
 			if (!empty($result['City'])) {
-				list ($city, $state) = split(',', $result['City']);
+				list ($city, $state) = explode(',', $result['City']);
 			}
 			
 			if (!empty($result['Country'])) {

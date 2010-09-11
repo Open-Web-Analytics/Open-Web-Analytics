@@ -78,8 +78,13 @@ class owa_caller extends owa_base {
 		
 		// Log version debug
 		$this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
-		owa_coreAPI::debug('Request URL: '.$_SERVER['REQUEST_URI']);
-		owa_coreAPI::debug('User Agent: '.$_SERVER['HTTP_USER_AGENT']);
+		if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
+			owa_coreAPI::debug( 'Request URL: '.$_SERVER['REQUEST_URI'] );
+		}
+		
+		if ( array_key_exists('HTTP_USER_AGENT', $_SERVER ) ) {
+			owa_coreAPI::debug( 'User Agent: '.$_SERVER['HTTP_USER_AGENT'] );
+		}
 		
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
@@ -90,11 +95,11 @@ class owa_caller extends owa_base {
 		// check here is needed for installs when the configuration table does not exist.
 		
 		if (!defined('OWA_INSTALLING')) {
-			//if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
+			if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
 				if ($this->c->isConfigFilePresent())  {
 					$this->c->load($this->c->get('base', 'configuration_id'));
 				}
-			//}
+			}
 		}
 		 	
 

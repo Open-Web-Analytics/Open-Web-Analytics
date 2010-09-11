@@ -213,16 +213,25 @@ class owa_coreAPI {
 		
 		static $cache;
 		
-		if(!isset($cache)):
+		if ( !isset ( $cache ) ) {
+			$cache_type = owa_coreAPI::getSetting('base', 'cacheType');
 			
-			if (!class_exists('owa_cache')):
-				require_once(OWA_BASE_CLASS_DIR.'cache.php');
-			endif;
+			switch ($cache_type) {
+				
+				case "memcached":
+					$implementation = array('owa_memcacheCache', OWA_BASE_CLASS_DIR.'memcacheCache.php');
+					break;
+				default:
+					$implementation = array('owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php');
+					
+			}
+			
+			if ( ! class_exists( $implementation[0] ) ) {
+				require_once( $implementation[1] );
+			}
 			// make this plugable
-			$cache = owa_coreAPI::supportClassFactory('base', 'cache');
-			
-			
-		endif;
+			$cache = new $implementation[0];		
+		}
 		
 		return $cache;
 	}
@@ -625,25 +634,7 @@ class owa_coreAPI {
 			
 		}
 		
-		return $links[$group];
-		
-		//print_r($links[$view][$nav_name]);
-		/*
-if (!empty($links[$group])):
-			// anonymous sorting function, takes sort by variable.
-			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
-	   		
-	   		// sort the array
-	   		$ret = usort($links[$group], create_function('$a,$b', $code));
-			
-			return $links[$group];
-		else: 
-			return false;
-		endif;
-*/
-	
-	
-	
+		return $links[$group];	
 	}
 	
 	/**
