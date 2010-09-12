@@ -393,7 +393,7 @@ class owa_error {
 		$err .= "\t<scriptlinenum>" . $linenum . "</scriptlinenum>\n";
 	
 		if (in_array($errno, $user_errors)) {
-			$err .= "\t<vartrace>" . wddx_serialize_value($vars, "Variables") . "</vartrace>\n";
+		//	$err .= "\t<vartrace>" . wddx_serialize_value($vars, "Variables") . "</vartrace>\n";
 		}
 		
 		$err .= "</errorentry>\n\n";
