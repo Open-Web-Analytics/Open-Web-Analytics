@@ -49,7 +49,7 @@ class owa_installEmbeddedController extends owa_installController {
 	    //create config file
 	    
 	    $this->c->createConfigFile($this->params);
-	    
+            $this->c->applyConfigConstants();	    
 		// install schema
 		$base = $service->getModule('base');
 		$status = $base->install();
@@ -59,7 +59,7 @@ class owa_installEmbeddedController extends owa_installController {
 		    
 		    //create admin user
 		    $cu = owa_coreAPI::getCurrentUser();
-		  	print_r($cu);
+		
 		    $this->createAdminUser($cu->getUserData('email_address'), $cu->getUserData('real_name'));
 		    
 		    // create default site
