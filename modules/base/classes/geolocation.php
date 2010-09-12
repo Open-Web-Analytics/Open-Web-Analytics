@@ -46,7 +46,7 @@ class owa_geolocation {
 	
 	}
 	
-	function getGeolocationFromIp($ip_address, $refresh = false) {
+	function getGeolocationFromIp($ip_address, $refesh = false) {
 		
 		if (empty($this->properties) || $refresh === true) {
 			
@@ -60,8 +60,9 @@ class owa_geolocation {
 			
 			$eq = owa_coreAPI::getEventDispatch();
 			$geo = $eq->filter('geolocation', $geo);
-			$this->properties = $geo;
 		}
+		
+		$this->properties = $geo;
 	}
 	
 	function getProperty($name) {

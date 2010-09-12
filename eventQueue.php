@@ -184,9 +184,9 @@ class eventQueue {
 				// inner filter class/function loop
 				foreach ($priority as $observer_id) {
 					// pass args to filter
-					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value passed: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], print_r($value, true)));
+					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value passed: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], $value));
 					$value = call_user_func_array($this->listeners[$observer_id], array_slice($args,1));
-					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value returned: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], print_r($value, true)));
+					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value returned: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], $value));
 					// set filterred value as value in args for next filter
 					$args[1] = $value;
 					// debug whats going on

@@ -74,7 +74,7 @@ class owa_auth extends owa_base {
 	 *
 	 * @return object
 	 */
-	public static function &get_instance($plugin = '') {
+	function &get_instance($plugin = '') {
 		
 		static $auth;
 		
@@ -121,9 +121,6 @@ class owa_auth extends owa_base {
 		} elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
 			// auth user by cookies
 			$ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
-		} else {
-			$ret = false;
-			owa_coreAPI::debug("Could not find any credentials to authenticate with.");
 		}
 		
 		// filter results for modules can add their own auth logic.

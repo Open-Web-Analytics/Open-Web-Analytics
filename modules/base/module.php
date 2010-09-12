@@ -42,10 +42,10 @@ class owa_baseModule extends owa_module {
 		$this->display_name = 'Open Web Analytics';
 		$this->group = 'Base';
 		$this->author = 'Peter Adams';
-		$this->version = 6;
+		$this->version = 5;
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 6;
+		$this->required_schema_version = 5;
 		
 		/**
 		 * Register Filters
@@ -56,7 +56,6 @@ class owa_baseModule extends owa_module {
 		$this->registerFilter('ip_address', $this, 'setIp', 0);
 		$this->registerFilter('full_host', $this, 'resolveHost', 0);
 		$this->registerFilter('host', $this, 'getHostDomain', 0);
-		$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
 		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
 		//Clean Query Strings 
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
@@ -64,12 +63,6 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
-		
-		/**
-		 * Register Service Implementations
-		 *
-		 * The following lines register various service implementations. 
-		 */
 		
 		/**
 		 * Register Metrics
@@ -96,44 +89,6 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('feedReaders', 'base.feedReaders');
 		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
 		
-		// goals
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-		
-		foreach ($goals as $num => $goal) {
-			$params = array('goal_number' => $num);
-			
-			$metric_name = 'goal'.$num.'Completions';
-			$this->registerMetric($metric_name, 'base.goalNCompletions', $params);
-			
-			$metric_name = 'goal'.$num.'Starts';
-			$this->registerMetric($metric_name, 'base.goalNStarts', $params);
-			
-			$metric_name = 'goal'.$num.'Value';
-			$this->registerMetric($metric_name, 'base.goalNValue', $params);
-		}
-		
-		$this->registerMetric('goalCompletionsAll', 'base.goalCompletionsAll');
-		$this->registerMetric('goalStartsAll', 'base.goalStartsAll');
-		$this->registerMetric('goalValueAll', 'base.goalValueAll');
-		
-		// ecommerce metrics
-		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantity');
-		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantityFromSessionFact');
-		$this->registerMetric('lineItemRevenue', 'base.lineItemRevenue');
-		$this->registerMetric('lineItemRevenue', 'base.lineItemRevenueFromSessionFact');
-		$this->registerMetric('transactions', 'base.transactions');
-		$this->registerMetric('transactions', 'base.transactionsFromSessionFact');
-		$this->registerMetric('transactionRevenue', 'base.transactionRevenue');
-		$this->registerMetric('transactionRevenue', 'base.transactionRevenueFromSessionFact');
-		$this->registerMetric('taxRevenue', 'base.taxRevenue');
-		$this->registerMetric('taxRevenue', 'base.taxRevenueFromSessionFact');
-		$this->registerMetric('shippingRevenue', 'base.shippingRevenue');
-		$this->registerMetric('shippingRevenue', 'base.shippingRevenueFromSessionFact');
-		$this->registerMetric('uniqueLineItems', 'base.uniqueLineItems');
-		$this->registerMetric('uniqueLineItems', 'base.uniqueLineItemsFromSessionFact');
-		$this->registerMetric('revenuePerTransaction', 'base.revenuePerTransaction');
-		$this->registerMetric('revenuePerVisit', 'base.revenuePerVisit');
-		$this->registerMetric('ecommerceConversionRate', 'base.ecommerceConversionRate');
 		/**
 		 * Register Dimensions
 		 *
@@ -144,24 +99,14 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('osType', 'base.os', 'name', 'Operating System', 'visitor', 'The operating System of the visitor.');
 		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
 		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
-		$this->registerDimension('city', 'base.location_dim', 'city', 'City', 'visitor', 'The city of the visitor.');
-		$this->registerDimension('country', 'base.location_dim', 'country', 'Country', 'visitor', 'The country of the visitor.');
-		$this->registerDimension('latitude', 'base.location_dim', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
-		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
-		$this->registerDimension('countryCode', 'base.location_dim', 'country_code', 'Country Code', 'visitor', 'The ISO country code of the visitor.');
-		$this->registerDimension('stateRegion', 'base.location_dim', 'state', 'State/Region', 'visitor', 'The state or region of the visitor.');
-		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
+		$this->registerDimension('city', 'base.host', 'city', 'City', 'visitor', 'The city of the visitor.');
+		$this->registerDimension('country', 'base.host', 'country', 'Country', 'visitor', 'The country of the visitor.');
+		$this->registerDimension('latitude', 'base.host', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
+		$this->registerDimension('longitude', 'base.host', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
 		$this->registerDimension('timeSinceLastVisit', 'base.session', 'time_sinse_priorsession', 'Time Since Last Visit', 'visitor', 'The time since the last visit.', '', true);
 		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
 		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
-		$this->registerDimension('language', 'base.session', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
-		$this->registerDimension('language', 'base.request', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
-		// campaign related
-		$this->registerDimension('medium', 'base.session', 'medium', 'Medium', 'visit', 'The medium of channel of visit.', '', true);
-		$this->registerDimension('source', 'base.source_dim', 'source_domain', 'Source', 'visit', 'The traffic source of the visit.');
-		$this->registerDimension('campaign', 'base.campaign_dim', 'name', 'Campaign', 'visit', 'The campaign that originated the visit.');
-		$this->registerDimension('ad', 'base.ad_dim', 'name', 'Ad', 'visit', 'The name of the ad that originated the visit.');
-		$this->registerDimension('adType', 'base.ad_dim', 'type', 'Ad Type', 'visit', 'The type of ad that originated the visit.');
+		$this->registerDimension('source', 'base.session', 'source', 'Visit Source', 'visitor', 'Source of visit.', '', true);
 		
 		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visit', 'The domain of the site.');
 		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visit', 'The name of the site.');
@@ -171,6 +116,7 @@ class owa_baseModule extends owa_module {
 		
 		// Date and time oriented dimensions
 		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('medium', 'base.session', 'source', 'Medium', 'visit', 'The medium used to deliver the visit.', '', true);
 		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
 		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visit', 'The month.', '', true);
 		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visit', 'The year.', '', true);
@@ -180,9 +126,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('siteId', 'base.session', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
 		$this->registerDimension('daysSinceLastVisit', 'base.session', 'days_since_prior_session', 'Days Since Last Visit', 'visit', 'The number of days since the last visit.', '', true);
 		$this->registerDimension('daysSinceFirstVisit', 'base.session', 'days_since_first_session', 'Days Since First Visit', 'visit', 'The number of days since the first visit of the user.', '', true);
-	
 		$this->registerDimension('priorVisitCount', 'base.session', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
-		
 		$this->registerDimension('priorVisitCount', 'base.request', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
 		
 		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
@@ -239,49 +183,8 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
 		// IDs
 		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
-		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');
+		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');		
 		
-		// commerce dimensions
-		$this->registerDimension(
-				'daysToTransaction', 
-				'base.session', 
-				'days_since_first_session', 
-				'Days To Purchase', 
-				'ecommerce', 
-				'The number of days between the first visit and a e-commerce transaction.',
-				'', 
-				true
-		);
-		
-		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', 'Days To Purchase', 'ecommerce', 'The number of days since the first visit and an e-commerce transaction.', '', true);
-		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transaction.', '', true);
-		$this->registerDimension('vistsToTransaction', 'base.session', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transactions', '', true);
-		// productName
-		$this->registerDimension(
-				'productName', 
-				'base.commerce_line_item_fact', 
-				'product_name', 
-				'Product Name', 
-				'ecommerce', 
-				'The name of the product purchased.', 
-				'', 
-				true
-		);
-		// productSku
-		$this->registerDimension('productSku', 'base.commerce_line_item_fact', 'sku', 'Product SKU', 'ecommerce', 'The SKU code of the product purchased.', '', true);
-		// productCategory
-		$this->registerDimension('productCategory', 'base.commerce_line_item_fact', 'category', 'Product Category', 'ecommerce', 'The category of product purchased.', '', true);
-		// transactionOriginator
-		$this->registerDimension('transactionOriginator', 'base.commerce_transaction_fact', 'order_source', 'Originator', 'ecommerce', 'The store or location that originated the transaction.', '', true);
-		// transactionId
-		$this->registerDimension('transactionId', 'base.commerce_transaction_fact', 'order_id', 'Transaction ID', 'ecommerce', 'The id of the e-commerce transaction.', '', true);
-		$this->registerDimension('transactionGateway', 'base.commerce_transaction_fact', 'gateway', 'Payment Gateway', 'ecommerce', 'The payment gateway or provider used in the e-commerce transaction.', '', true);
-		// daysToTransaction
-		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', "Days To Purchase', 'ecommerce', 'The number of days between the visitor's first visit and when transaction occurred.", '', true);
-		// visitsToTransaction
-		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', "Visits To Purchase', 'ecommerce', 'The number of visits before the transaction occurred.", '', true);
-		$this->registerDimension('date', 'base.commerce_line_item_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('date', 'base.commerce_transaction_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
 		/**
 		 * Register CLI Commands
 		 *
@@ -290,7 +193,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('update', 'base.updatesApplyCli');
 		$this->registerCliCommand('build', 'base.build');
 		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
-		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
+		
 		/**
 		 * Register API methods
 		 *
@@ -306,7 +209,6 @@ class owa_baseModule extends owa_module {
 		
 		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
 		
-		$this->registerApiMethod('getTransactionDetail', array($this, 'getTransactionDetail'), array( 'transactionId', 'format'));
 		
 		return parent::__construct();
 	}
@@ -350,14 +252,6 @@ class owa_baseModule extends owa_module {
 				'group'			=> 'General',
 				'order'			=> 3)
 		);		
-		
-		$this->addAdminPanel(array(
-				'do' 			=> 'base.optionsGoals', 
-				'priviledge' 	=> 'admin', 
-				'anchortext' 	=> 'Goal Settings',
-				'group'			=> 'General',
-				'order'			=> 3)
-		);		
 	}
 	
 	function registerNavigation() {
@@ -366,9 +260,6 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
 		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
-		if (owa_coreAPI::getSetting('base', 'enableCommerceReporting')) {
-			$this->addNavigationLink('Reports', '', 'base.reportCommerce', 'Ecommerce', 5);
-		}
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 7);
@@ -387,11 +278,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Search Terms', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 1);		
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);		
 	}
 	
 	/**
@@ -409,30 +296,14 @@ class owa_baseModule extends owa_module {
 		// Clicks
 		$this->registerEventHandler('dom.click', 'clickHandlers');
 		// Documents
-		$this->registerEventHandler(array(
-				'base.page_request_logged', 
-				'base.first_page_request_logged', 
-				'base.feed_request_logged') , 'documentHandlers');
+		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged', 'base.feed_request_logged'), 'documentHandlers');
 		// Referers
 		$this->registerEventHandler('base.new_session', 'refererHandlers');
 		// Search Terms
 		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
-		// Location
-		$this->registerEventHandler( array( 'base.new_session', 'commerce.transaction' ), 'locationHandlers' );
 		// operating systems
 		$this->registerEventHandler('base.new_session', 'osHandlers');
-		// source dimension
-		$this->registerEventHandler('base.new_session', 'sourceHandlers');
-		// campaign dimension
-		$this->registerEventHandler('base.new_session', 'campaignHandlers');
-		// ad dimension
-		$this->registerEventHandler('base.new_session', 'adHandlers');
-		// conversions
-		$this->registerEventHandler(array(
-				'base.new_session', 
-				'base.session_update', 
-				'commerce.transaction_persisted' ), 'conversionHandlers');
-		// User Agent dimension
+		// User Agents
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
@@ -448,9 +319,6 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 		// actions
 		$this->registerEventHandler('track.action', 'actionHandler');
-		// Commerce
-		$this->registerEventHandler('commerce.transaction', 'commerceTransactionHandlers');
-		$this->registerEventHandler('commerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
 	}
 	
 	function _registerEventProcessors() {
@@ -479,14 +347,8 @@ class owa_baseModule extends owa_module {
 				'user',
 				'domstream',
 				'action_fact',
-				'search_term_dim',
-				'ad_dim', 
-				'source_dim', 
-				'campaign_dim',
-				'location_dim',
-				'commerce_transaction_fact',
-				'commerce_line_item_fact')
-			);
+				'search_term_dim')
+		);
 		
 	}
 	
@@ -650,11 +512,7 @@ class owa_baseModule extends owa_module {
 		}
 			
 		// OWA specific params to filter
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'source');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'medium');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'campaign');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad_type');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'source_param'));
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 		
 		//print_r($filters);
@@ -749,6 +607,22 @@ class owa_baseModule extends owa_module {
 		} else {
 			return false;
 		}
+		
+		
+		
+		// count how many metrics there are
+		//$count = count($metrics);
+		
+		//loop through the rest of the metrics and merge them into the first
+		/*
+if ($metrics) {
+			
+			for($i = 0; $i < $count; ++$i) {
+				
+				$rsm->addMetric($metrics[$i]);
+			}
+		}
+*/
 
 		// set dimensions
 		if ($dimensions) {
@@ -997,54 +871,6 @@ class owa_baseModule extends owa_module {
 		}
 	}
 	
-	/**
-	 * Retrieves full detail of an ecommerce transaction
-	 *
-	 * @param	$transactionId	string the id of the transaction you want
-	 * @param	$format			string the format you want returned
-	 * @return	
-	 */
-	function getTransactionDetail( $transactionId, $format = 'php' ) {
-		
-		$t = owa_coreAPI::entityFactory( 'base.commerce_transaction_fact' );
-		$t->getbyColumn('order_id',$transactionId);
-		$trans_detail = array();
-	
-		$id = $t->get( 'id' );
-		if ( $id ) {
-			$trans_detail = $t->_getProperties();
-			// fetch line items	
-			$db = owa_coreAPI::dbSingleton();
-		
-			$db->selectFrom( 'owa_commerce_line_item_fact' );
-			$db->selectColumn( '*' );
-			$db->where( 'order_id', $transactionId );
-			$lis = $db->getAllRows();
-			$trans_detail['line_items'] = $lis;
-		}
-		
-		return $trans_detail;
-	}
-	
-	function attributeCampaign( $tracking_event ) {
-		
-		$mode = owa_coreAPI::getSetting('base', 'campaign_attribution_mode');
-		// direct mode means that that we attribute the latest campaign touch
-		// if the request originaled from the touching the campaign.
-		if ( $mode === 'direct' ) {
-			if ( $tracking_event->get( 'from_campaign' ) ) {
-				$campaigns = array_reverse( $tracking_event->get( 'campaign_touches' ) );
-				//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
-				return $campaigns[0];
-			}
-		// orginal mode means that we always attribute the request to the
-		// first touch regardless of the medium/source that generated the request
-		} elseif ( $mode === 'original' ) {
-			$campaigns = $tracking_event->get( 'campaign_touches' );
-			//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
-			return $campaigns[0];
-		}
-	}
 }
 
 

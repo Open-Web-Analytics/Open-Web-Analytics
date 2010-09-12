@@ -93,7 +93,11 @@ class owa_refererHandlers extends owa_observer {
 			
 			if ($title) {
 				
-				$r->set('page_title', owa_lib::utf8Encode( $title ) );	
+				if (function_exists('iconv')) {
+					$title = iconv('UTF-8','UTF-8//TRANSLIT',$title);
+				}
+			
+				$r->set('page_title', $title);	
 			} else {
 				$r->set('page_title', $r->get('url'));
 			}		
@@ -114,9 +118,15 @@ class owa_refererHandlers extends owa_observer {
 				$anchortext = $crawler->anchor_info['anchor_text'];
 				
 				if ($anchortext) {
-			
-					$r->set('refering_anchortext', owa_lib::utf8Encode( $anchortext ) );
+					
+					if (function_exists('iconv')) {
+						$anchortext = iconv('UTF-8','UTF-8//TRANSLIT',$anchortext);
+					}
+					//$this->e->debug('Referering Snippet is: '. $this->snippet);
+					$r->set('refering_anchortext', $anchortext);
+					//$this->e->debug('Anchor text is: '. $this->anchor_text);
 				}
+				
 			}
 				
 			//write to DB

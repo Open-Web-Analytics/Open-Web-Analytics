@@ -17,7 +17,7 @@
 //
 
 /**
- * Search Term Entity
+ * User Agent Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,7 +25,7 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @since		owa 1.0.0
  */
 
 class owa_search_term_dim extends owa_entity {

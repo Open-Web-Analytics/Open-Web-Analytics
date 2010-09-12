@@ -152,13 +152,6 @@ class owa_coreAPI {
 		
 	}
 	
-	public static function persistSetting($module, $name, $value) {
-		
-		$s = &owa_coreAPI::configSingleton();
-		$s->persistSetting($module, $name, $value);
-		
-	}
-	
 	
 	public static function getAllRoles() {
 		
@@ -213,25 +206,16 @@ class owa_coreAPI {
 		
 		static $cache;
 		
-		if ( !isset ( $cache ) ) {
-			$cache_type = owa_coreAPI::getSetting('base', 'cacheType');
+		if(!isset($cache)):
 			
-			switch ($cache_type) {
-				
-				case "memcached":
-					$implementation = array('owa_memcacheCache', OWA_BASE_CLASS_DIR.'memcacheCache.php');
-					break;
-				default:
-					$implementation = array('owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php');
-					
-			}
-			
-			if ( ! class_exists( $implementation[0] ) ) {
-				require_once( $implementation[1] );
-			}
+			if (!class_exists('owa_cache')):
+				require_once(OWA_BASE_CLASS_DIR.'cache.php');
+			endif;
 			// make this plugable
-			$cache = new $implementation[0];		
-		}
+			$cache = owa_coreAPI::supportClassFactory('base', 'cache');
+			
+			
+		endif;
 		
 		return $cache;
 	}
@@ -467,14 +451,10 @@ class owa_coreAPI {
 				
 				foreach ($do['args'] as $arg) {
 					
-					if (isset($map[$arg])) {
-						$passed_args[] = $map[$arg];
-					} else {
-						$passed_args[] = '';
-					}
+					$passed_args[] = $map[$arg];
 				}
 				
-				if (!empty($do['file'])) {
+				if ($file) {
 					
 					if (!class_exists($do['callback'][0])) {
 						require_once($file);
@@ -497,7 +477,7 @@ class owa_coreAPI {
 	 * @param unknown_type $entity_name
 	 * @return unknown
 	 */
-	public static function metricFactory($metric_name, $params = array()) {
+	public static function metricFactory($metric_name) {
 		
 		if (!strpos($metric_name, '.')) {
 			$s = owa_coreAPI::serviceSingleton();
@@ -508,7 +488,7 @@ class owa_coreAPI {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');	
 		}
 		
-		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
+		return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', array(), false);
 	}
 	
 	/**
@@ -561,13 +541,13 @@ class owa_coreAPI {
 			$module_nav = $v->getNavigationLinks();
 			
 	
-			if (!empty($module_nav)) {
+			if (!empty($module_nav)):
 				// assemble the navigation for a specific view's named navigation element'	
 				foreach ($module_nav as $key => $value) {
 					
 					$links[$value['view']][$value['nav_name']][] = $value;
 				}
-			}
+			endif;
 			
 		}
 		
@@ -634,7 +614,25 @@ class owa_coreAPI {
 			
 		}
 		
-		return $links[$group];	
+		return $links[$group];
+		
+		//print_r($links[$view][$nav_name]);
+		/*
+if (!empty($links[$group])):
+			// anonymous sorting function, takes sort by variable.
+			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
+	   		
+	   		// sort the array
+	   		$ret = usort($links[$group], create_function('$a,$b', $code));
+			
+			return $links[$group];
+		else: 
+			return false;
+		endif;
+*/
+	
+	
+	
 	}
 	
 	/**
@@ -1172,46 +1170,6 @@ class owa_coreAPI {
 		$nonce = substr(md5($full_nonce), -12, 10);
 		
 		return $nonce;
-	}
-	
-	public static function summarize($map) {
-		
-		$entity = owa_coreAPI::entityFactory($map['entity']);
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectFrom($entity->getTableName(), $entity->getTableAlias());
-		
-		foreach ($map['columns'] as $col => $action) {
-			
-			switch ($action) {
-				
-				case 'sum':
-					$col_def = sprintf("SUM(%s)", $col);
-					$name = $col.'_sum';
-					break;
-				case 'count':
-					$col_def = sprintf("COUNT(%s)", $col);
-					$name = $col.'_count';
-					break;
-				case 'count_distinct':
-					$col_def = sprintf("COUNT(distinct %s)", $col);
-					$name = $col.'_dcount';
-					break;
-			}
-			
-			$db->selectColumn($col_def, $name);
-		}
-		
-		foreach ($map['constraints'] as $con_col => $con_value) {
-			
-			if ( is_array( $con_value ) ) {
-				$db->where($con_col, $con_value['value'], $con_value['operator']);
-			} else {
-				$db->where($con_col, $con_value);
-			}
-		}
-		
-		$ret = $db->getOneRow();
-		return $ret;
 	}
 	
 }

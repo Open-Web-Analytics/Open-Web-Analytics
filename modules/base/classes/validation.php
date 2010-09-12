@@ -42,6 +42,11 @@
  	
  	var $errorMsgTemplate;
  	
+ 	function owa_validation($conf = array()) {
+ 			
+ 		return owa_validation::__construct($conf);
+ 	}
+ 	
  	function __construct($conf = array()) {
  	
  		if (array_key_exists('errorMsgTemplate', $conf)):

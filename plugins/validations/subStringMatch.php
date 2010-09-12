@@ -30,6 +30,11 @@
  
  class owa_subStringMatchValidation extends owa_validation {
  	
+ 	function owa_subStringMatchValidation() {
+ 		
+ 		return owa_subStringMatchValidation::__construct();
+ 	}
+ 	
  	function __construct() {
  		
  		return parent::__construct();

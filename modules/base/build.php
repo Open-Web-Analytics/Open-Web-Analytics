@@ -42,6 +42,11 @@ class owa_buildController extends owa_cliController {
 		return;
 	}
 	
+	function owa_buildController($params) {
+		
+		return owa_buildController::__construct($params);
+	}
+	
 	function action() {
 		
 		

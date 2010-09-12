@@ -50,7 +50,9 @@ class owa_usersEditController extends owa_adminController {
 		$v2->setConfig('column', 'user_id');
 		$v2->setValues($this->getParam('user_id'));
 		$v2->setErrorMessage($this->getMsg(3001));
-		$this->setValidation('user_id', $v2);	
+		$this->setValidation('user_id', $v2);
+		return;
+		
 	}
 	
 	function action() {
@@ -69,6 +71,8 @@ class owa_usersEditController extends owa_adminController {
 		$u->update();
 		$this->set('status_code', 3003);
 		$this->setRedirectAction('base.users');
+				
+		return $data;
 	}
 	
 	function errorAction() {
@@ -76,7 +80,9 @@ class owa_usersEditController extends owa_adminController {
 		$this->setView('base.options');
 		$this->setSubview('base.usersProfile');
 		$this->set('error_code', 3311);
-		$this->set('user', $this->params);
+		$this->set('user', $this->params);	
+	
+		return;
 	}
 	
 }

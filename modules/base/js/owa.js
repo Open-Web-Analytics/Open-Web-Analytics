@@ -2,10 +2,7 @@ var OWA = {
 
 	items: new Object,
 	overlay: '',
-	config: {
-		ns: 'owa_'
-	},
-	state: [],
+	config: new Object,
 	overlayActive: false,
 	setSetting: function(name, value) {
 		this.config[name] = value;
@@ -26,7 +23,6 @@ var OWA = {
 			}
 		}
 	},
-	
 	setApiEndpoint : function (endpoint) {
 		this.config['api_endpoint'] = endpoint;
 	},
@@ -138,7 +134,7 @@ OWA.util =  {
 	    return document.cookie;
 	},
 	
-	setCookie: function (name,value,days,path,domain,secure) {
+	setCookie2: function (name,value,days,path,domain,secure) {
 		var date = new Date();
 		date.setTime(date.getTime()+(days*24*60*60*1000));
 		
@@ -166,13 +162,13 @@ OWA.util =  {
 		
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
 		OWA.debug("erasing " + name + " in domain: " +domain);
-		this.setCookie(name,"",-1,"/",domain);
+		this.setCookie2(name,"",-1,"/",domain);
 		var test = this.readCookie(name);
 		
 		if (test) {
 			domain = "."+domain;
 			OWA.debug("erasing " + name + " in domain: " +domain);
-			this.setCookie(name,"",-1,"/",domain);	
+			this.setCookie2(name,"",-1,"/",domain);	
 		}
 		
 	},
@@ -252,154 +248,9 @@ OWA.util =  {
 			}
 		
 		return _GET;
-	},
-	
-	strpos : function(haystack, needle, offset) {
-	    // Finds position of first occurrence of a string within another  
-	    // 
-	    // version: 1008.1718
-	    // discuss at: http://phpjs.org/functions/strpos
-	    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-	    // +   improved by: Onno Marsman    
-	    // +   bugfixed by: Daniel Esteban
-	    // +   improved by: Brett Zamir (http://brett-zamir.me)
-	    // *     example 1: strpos('Kevin van Zonneveld', 'e', 5);
-	    // *     returns 1: 14
-	    var i = (haystack+'').indexOf(needle, (offset || 0));
-	    return i === -1 ? false : i;
-	},
-	
-	strCountOccurances : function(haystack, needle) {
-		return haystack.split(needle).length - 1;
-	},
-	
-	implode : function(glue, pieces) {
-	    // Joins array elements placing glue string between items and return one string  
-	    // 
-	    // version: 1008.1718
-	    // discuss at: http://phpjs.org/functions/implode
-	    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-	    // +   improved by: Waldo Malqui Silva
-	    // +   improved by: Itsacon (http://www.itsacon.net/)
-	    // +   bugfixed by: Brett Zamir (http://brett-zamir.me)
-	    // *     example 1: implode(' ', ['Kevin', 'van', 'Zonneveld']);
-	    // *     returns 1: 'Kevin van Zonneveld'
-	    // *     example 2: implode(' ', {first:'Kevin', last: 'van Zonneveld'});
-	    // *     returns 2: 'Kevin van Zonneveld'
-	    var i = '', retVal='', tGlue='';
-	    if (arguments.length === 1) {
-	        pieces = glue;
-	        glue = '';
-	    }
-	    if (typeof(pieces) === 'object') {
-	        if (pieces instanceof Array) {
-	            return pieces.join(glue);
-	        }
-	        else {
-	            for (i in pieces) {
-	                retVal += tGlue + pieces[i];
-	                tGlue = glue;
-	            }
-	            return retVal;
-	        }
-	    }
-	    else {
-	        return pieces;
-	    }
-	},
-	
-	setState : function(store_name, key, value, expiration) {
-	
-	},
-	
-	getState : function(store_name, key) {
-	
-	},
-	
-	loadState : function(store_name) {
-	
-		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
-		var state = this.assocFromString(store);
-		
-		OWA.state[store_name] = state;
-		OWA.debug('state store %s: %s', store_name, JSON.stringify(state));
-	},
-	
-	loadStateJson : function(store_name) {
-		var store = unescape(this.readCookie( OWA.getSetting('ns') + store_name ) );
-		if (store) {
-			state = JSON.parse(store);
-		}
-		OWA.state[store_name] = state;
-		OWA.debug('state store %s: %s', store_name, JSON.stringify(state));
-	},
-	
-	clearState : function(store_name) {
-	
-	},
-	
-	is_array : function(input) {
-  		return typeof(input)=='object'&&(input instanceof Array);	
-  	},
-  	
-  	countObjectProperties : function( obj ) {
-  		
-    	var size = 0, key;
-    	for (key in obj) {
-        	if (obj.hasOwnProperty(key)) size++;
-    	}
-    	return size;
-  	},
-	
-	assocFromString : function(str, inner, outer) {
-		
-		inner = inner || '=>';
-		outer = outer || '|||';
-		
-		if (str){
-		
-			if (!this.strpos(str, outer)) {
-	
-				return str;
-				
-			} else {
-				
-				var assoc = [];
-				outer_array = str.split(outer);
-				//OWA.debug('outer array: %s', JSON.stringify(outer_array));
-				for (var i = 0, n = outer_array.length; i < n; i++) {
-				
-					var inside_array = outer_array[i].split(inner);
-					
-					assoc[inside_array[0]] = inside_array[1];
-				}	
-			}
-			
-			OWA.debug('assoc from string: ' + JSON.stringify(assoc));
-			return assoc;
-		}
-	},
-	
-	getDomainFromUrl : function (url, strip_www) {
-		
-		var domain = url.split(/\/+/g)[1];
-		
-		if (strip_www === true) {
-			var fp = domain.split('.')[0];
-			
-			if (fp === 'www') {
-				return domain.substring(4);
-			} else {
-				return domain;
-			}
-			
-		} else {
-			return domain;
-		}
-	},
-	
-	getCurrentUnixTimestamp : function() {
-		return Math.round(new Date().getTime() / 1000);
 	}
-	
 }
+
+
+
+

@@ -110,10 +110,10 @@ class owa_resultSetManager extends owa_base {
 		
 		$this->formatters = array(
 			//'yyyymmdd' => array($this, 'dateFormatter'),
-			'timestamp'		=> array($this, 'formatSeconds'),
-			'percentage' 	=> array($this, 'formatPercentage'), 
-			'integer' 		=> array($this, 'numberFormatter'),
-			'currency'		=> array($this, 'formatCurrency')
+			'timestamp'	=> array($this, 'formatSeconds'),
+			'percentage' => array($this, 'formatPercentage'), 
+			'integer' 	=> array($this, 'numberFormatter')
+			
 		);
 		
 		return parent::__construct();
@@ -260,14 +260,12 @@ class owa_resultSetManager extends owa_base {
 			foreach ($dims as $dimension) {
 				
 				$check = $this->isDimensionRelated($dimension, $entity_name);
-				
+				owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
 				// is the realtionship check fails then move onto the next entity.
 				if (!$check) {
 					$error = true;
 					owa_coreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
 					break;
-				} else {
-					owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
 				}
 			}
 			
@@ -321,8 +319,6 @@ class owa_resultSetManager extends owa_base {
 				owa_coreAPI::debug("Dimension: $dimension_name is related to $entity_name");
 				$this->related_dimensions[$dimension['name']] = $dimension;
 				return true;
-			} else {
-				owa_coreAPI::debug("Could not find a foreign key for $dimension_name in $entity_name");
 			}
 		}
 	}
@@ -336,8 +332,8 @@ class owa_resultSetManager extends owa_base {
 		$entities = array();
 		
 		// cycles through metric classes and get their entity names
-		foreach ($classes as $name => $map) {
-			$m = owa_coreAPI::metricFactory($map['class'], $map['params']);
+		foreach ($classes as $class) {
+			$m = owa_coreAPI::metricFactory($class);
 			
 			// check to see if this is a calculated metric
 				if ($m->isCalculated()) {
@@ -381,7 +377,7 @@ class owa_resultSetManager extends owa_base {
 				$fk = array(); 
 				
 				$fkcol = $entity->getForeignKeyColumn($dim['entity']);
-				owa_coreAPI::debug("Foreign Key check: ". print_r($fkcol, true));
+				
 				if ($fkcol) {
 					$fk['col'] = $fkcol;
 					$fk['entity'] = $entity;
@@ -553,8 +549,6 @@ class owa_resultSetManager extends owa_base {
 	
 	function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
 		
-		$map = false;
-		
 		if ($startDate && $endDate) {
 			$period_name = 'date_range';
 			$map = array('startDate' => $startDate, 'endDate' => $endDate);
@@ -674,13 +668,6 @@ class owa_resultSetManager extends owa_base {
 	function formatPercentage($value) {
 		
 		return number_format($value * 100, 2).'%';
-	}
-	
-	function formatCurrency($value) {
-	
-		setlocale( LC_MONETARY, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
-		$value = $value /100;
-		return money_format( '%.2n',$value );
 	}
 	
 	/**
@@ -1156,10 +1143,10 @@ class owa_resultSetManager extends owa_base {
 			$formula = str_replace('$','', $formula);
 			
 			// need parens and @ to handle divsion by zero errors
-			$formula = '$value = ('.$formula.');';
+			$formula = '$value = @('.$formula.');';
 			//print $formula;
 			// calc
-			@ eval($formula);
+			eval($formula);
 			
 			if (!$value) {
 				$value = 0;

@@ -51,6 +51,12 @@
  	 */
  	var $validations;
  	
+ 	function owa_validator() {
+ 		
+ 		return owa_validator::__construct();
+ 		
+ 	}
+ 	
  	function __construct() {
  	
  		return parent::__construct();

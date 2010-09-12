@@ -3,7 +3,7 @@
 
 <?php if (!empty($modules)): ?>
 
-<table width="100%" id="module_roster" class="management">
+<table width="100%" id="module_roster" class="tablesorter">
 	<thead>
 	<TR>
 		<TH>Module</TH>

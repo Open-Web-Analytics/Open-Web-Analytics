@@ -96,7 +96,7 @@ class owa_metric extends owa_base {
 	
 	var $data_type;
 	
-	var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency');
+	var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string');
 		
 	function __construct($params = array()) {
 		

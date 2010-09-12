@@ -70,7 +70,9 @@ class owa_processEventController extends owa_controller {
 	 * Must be called before all other event property setting functions
 	 */
 	function pre() {
-			
+		
+		//$this->event->setProperties($this->params);
+		
 		// set site id if not already set. 
 		if (!$this->event->get('site_id')) {
 			$this->event->set('site_id', owa_coreAPI::getSetting('base', 'site_id'));	
@@ -78,6 +80,10 @@ class owa_processEventController extends owa_controller {
 		
 		// Set all time related properties
 		$this->event->setTime(owa_coreAPI::getServerParam('REQUEST_TIME'));
+		
+		// re-Set GUID for event so that it is truely unique taking into account the site_id that was just set
+		//$this->event->guid = $this->event->set_guid();
+		//$this->event->properties['guid'] = $this->event->guid;
 		
 		// extract site specific state from session store
 		$state = $this->loadSiteSessionState($this->event->get('site_id'));
@@ -117,12 +123,10 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('HTTP_USER_AGENT', owa_coreAPI::getServerParam('HTTP_USER_AGENT'));
 		} 
 		
-		$this->event->set( 'HTTP_USER_AGENT', $this->eq->filter( 'user_agent', $this->event->get( 'HTTP_USER_AGENT' ) ) );
-		//set user agent id
-		$this->event->set( 'ua_id', owa_lib::setStringGuid( $this->event->get( 'HTTP_USER_AGENT' ) ) );
+		$this->event->set('HTTP_USER_AGENT', $this->eq->filter('user_agent', $this->event->get('HTTP_USER_AGENT')));
 		
 		// set referer
-		// needed in case javascript logger sets the referer variable but is blank
+		////needed in case javascript logger sets the referer variable but is blank
 		if ($this->event->get('referer')) {
 			//TODO: STANDARDIZE NAME to avoid doing this map
 			$referer = $this->event->get('referer');
@@ -138,16 +142,12 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('HTTP_HOST', owa_coreAPI::getServerParam('HTTP_HOST'));
 		}
 		
-		// set language
-		if (!$this->event->get( 'language' ) ) {
-			$this->event->set( 'language', $this->eq->filter('language', substr(owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ),0,5 ) ) );
-		}
-		
 		$this->event->set('HTTP_HOST', $this->eq->filter('http_host', $this->event->get('HTTP_HOST')));
 		
 		// set page type to unknown if not already set by caller
 		if (!$this->event->get('page_type')) {
 			$this->event->set('page_type', $this->getMsg(3600));
+			
 		} 
 		
 		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
@@ -157,15 +157,13 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('page_url', owa_lib::get_current_url());
 		}
 		
-		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ) ) );
-		// set document/page id
-		$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
+		$this->event->set('page_url', $this->eq->filter('page_url', $this->event->get('page_url')));
 		// needed?
 		$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
 		// Filter page title if set
 		if ($this->event->get('page_title')) {
-			$this->event->set('page_title', owa_lib::utf8Encode($this->eq->filter('page_title', trim($this->event->get('page_title')))));
+			$this->event->set('page_title', $this->eq->filter('page_title', trim($this->event->get('page_title'))));
 		}
 		
 		$page_parse = parse_url($this->event->get('page_url'));
@@ -186,30 +184,23 @@ class owa_processEventController extends owa_controller {
 				
 		// set internal referer
 		if ($this->event->get('HTTP_REFERER')) {
-
 			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
-
+			//print_r('ref '.$referer_parse['host']);
+			//print_r('page '.$this->event->get('page_url'));
+			//print_r('pageparse '.$page_parse['host']);
 			if ($referer_parse['host'] === $page_parse['host']) {
 				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
 			} else {
 				
 				$this->event->set('external_referer', true);
-				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );
 			
-				if ( ! $this->event->get( 'search_terms' ) ) {
-					// set query terms
-					$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
-					
-					if ($qt) {
-						$this->event->set('search_terms', trim( strtolower( $qt ) ) );	
-					}
-				}				
+				// set query terms
+				$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
+				
+				if ($qt) {
+					$this->event->set('search_terms', $qt);
+				}
 			}
-		}
-		
-		// set referring search term id		
-		if ($this->event->get( 'search_terms' ) ) {
-			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get('search_terms') ) ) ) );
 		}
 				
 		// Filter the target url of clicks
@@ -228,14 +219,9 @@ class owa_processEventController extends owa_controller {
 		if (!$this->event->get('REMOTE_HOST')) {
 			$this->event->set('REMOTE_HOST', owa_coreAPI::getServerParam('REMOTE_HOST'));
 		}
-		// host properties
-		$this->event->set( 'full_host', $this->eq->filter( 'full_host', 
-				$this->event->get( 'REMOTE_HOST' ), 
-				$this->event->get( 'ip_address' ) ) );
-				
-		$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
-		// Generate host_id
-		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'full_host' ) ) );
+		
+		$this->event->set('full_host', $this->eq->filter('full_host', $this->event->get('REMOTE_HOST'), $this->event->get('ip_address')));
+		$this->event->set('host', $this->eq->filter('host', $this->event->get('full_host'), $this->event->get('ip_address')));
 		
 		// Browser related properties
 		$service = owa_coreAPI::serviceSingleton();
@@ -253,8 +239,7 @@ class owa_processEventController extends owa_controller {
 		}
 	
 		// Set Operating System
-		$this->event->set( 'os', $this->eq->filter( 'operating_system', $bcap->get( 'Platform' ), $this->event->get( 'HTTP_USER_AGENT' ) ) );
-		$this->event->set( 'os_id', owa_lib::setStringGuid( $this->event->get( 'os' ) ) );
+		$this->event->set('os', $this->eq->filter('operating_system', $bcap->get('Platform'), $this->event->get('HTTP_USER_AGENT')));
 		
 		//Check for what kind of page request this is
 		if ($bcap->get('Crawler')) {
@@ -302,27 +287,8 @@ class owa_processEventController extends owa_controller {
 		if (!$nps) {
 			$nps = 0;
 		}
-		// set the value on the event
+		//set the value on the event
 		$this->event->set('num_prior_sessions', $nps);
-		
-		// days since first session
-		// if check for first session timestamp (fsts) value in vistor cookie
-		if (owa_coreAPI::getStateParam('v', 'fsts')) {
-			$fsts = owa_coreAPI::getStateParam('v', 'fsts'); 
-		} else {
-			// else use last session as as proxy, better than nothing
-			$fsts = $this->event->get('last_req');
-		}
-		
-		// calc days sinse first session
-		if ($fsts) {
-			$this->event->set('days_since_first_session', round(($this->event->get('timestamp') - $fsts)/(3600*24)));	
-		} else {
-			// this means that first session timestamp was not set in the cookie even though it's not a new user...so we set it. 
-			// This can happen with users prior to 1.3.0. when this value was introduced into the cookie.
-			$this->event->set('days_since_first_session', 0);
-		}
-				
 	}
 	
 	function post() {
@@ -416,220 +382,6 @@ class owa_processEventController extends owa_controller {
 		
 		}
 	}
-	
-	function attributeTraffic() {
-		
-		// if not then look for individual campaign params on the request. 
-		// this happens when the client is php and the params are on the url
-		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
-		$campaign_properties = array();
-		$campaign_state = array();
-		foreach ($campaign_params as $k => $param) {
-			if ( $this->getParam( $param ) ) {
-				$campaign_properties[$k] = $this->getParam( $param );
-			}
-		}
-		
-		owa_coreAPI::debug('campaign properties: '. print_r($campaign_properties, true));
-		
-		// backfill values for incomplete param combos
-		
-		if (array_key_exists('at', $campaign_properties) && !array_key_exists('ad', $campaign_properties)) {
-			$campaign_properties['ad'] = '(not set)';
-		}
-		
-		if (array_key_exists('ad', $campaign_properties) && !array_key_exists('at', $campaign_properties)) {
-			$campaign_properties['at'] = '(not set)';
-		}
-		
-		// load existings campaing state
-		$campaign_state = owa_coreAPI::getStateParam( 'c' );
-		if ( $campaign_state ) {
-			$campaign_state = json_decode( $campaign_state );
-		} else {
-			$campaign_state = array();
-		}
-		
-				
-		$mode = owa_coreAPI::getSetting('base', 'trafficAttributionMode');
-		$attribution = array(
-				'medium' 	=> '',
-				'source' 	=> '',
-				'campaign' 	=> '',
-				'ad_type' 	=> '',
-				'ad' 	=> '',
-				'search_terms' 	=> ''
-		);
-		
-		if ($mode === 'direct') {
-			
-			// add new campaign info to existing campaign cookie.
-			if ( !empty( $campaign_properties ) ) {
-				
-				// add timestamp
-				$campaign_properties['ts'] = $this->event->get('timestamp');
-				// add new campaign into state array
-				$campaign_state[] = (object) $campaign_properties;
-				
-				// if more than x slice the first one off to make room
-				$count = count( $campaign_state );
-				$max = owa_coreAPI::getSetting( 'base', 'max_prior_campaigns');
-				if ($count > $max ) {
-					array_shift( $campaign_state );
-				}
-					
-				// reset state
-				$this->setCampaignCookie($campaign_state);
-				
-				// set flag
-				$this->event->set('is_attributed', true);
-			}
-		}
-		
-		// if attribution mode is 'original' then only add the touch if
-		// there is no prior touch in the cookie	
-		if ($mode === 'original') {
-			
-			$orginal = false;
-			
-			// orignal touch was set previously. jus use that.
-			if (!empty($campaign_state)) {
-				// do nothing
-				owa_coreAPI::debug('Original attribution detected.');
-				// set the attributes from the first campaign touch
-				$campaign_properties = $campaign_state[0];
-				$this->event->set('is_attributed', true);
-		
-			// no orginal touch, set one if it's a new campaign touch
-			} else {
-				
-				if (!empty($campaign_properties)) {
-					// add timestamp
-					$campaign_properties['ts'] = $this->event->get('timestamp');
-					owa_coreAPI::debug('Setting original Campaign attrbution.');
-					$campaign_state[] = $campaign_properties;
-					// set cookie
-					$this->setCampaignCookie($campaign_state);
-					$this->event->set('is_attributed', true);
-				}
-			}
-			
-		}
-		
-		// set the attributes
-		if (!empty($campaign_properties)) {
-		
-			foreach ($campaign_properties as $k => $v) {
-									
-				if ($k === 'md') {
-					$attribution['medium'] = $campaign_properties[$k];
-				}
-				
-				if ($k === 'sr') {
-					$attribution['source'] = $campaign_properties[$k];
-				}
-				
-				if ($k === 'cn') {
-					$attribution['campaign'] = $campaign_properties[$k];
-				}
-					
-				if ($k === 'at') {
-					$attribution['ad_type'] = $campaign_properties[$k];
-				}
-				
-				if ($k === 'ad') {
-					$attribution['ad'] = $campaign_properties[$k];
-				}
-				
-				if ($k === 'tr') {
-					$attribution['search_terms'] = $campaign_properties[$k];
-				}
-				
-				if ($k === 'ts') {
-					$attribution['timestamp'] = $campaign_properties[$k];
-				}
-			}		
-		}
-			
-		// if no campaign attribution look for standard medium/source:
-		// organic-search, referral, direct
-		if (!$this->event->get('is_attributed')) {
-		
-			// if there is an external referer
-			if ( $this->event->get( 'external_referer' ) ) {
-		
-				// see if its from a search engine
-				if ($this->event->get( 'search_terms' ) ) {
-					$attribution['medium'] = 'organic-search';
-					// put the domain here.
-					$attribution['source'] = $this->getDomainFromUrl($this->get('external_referer')); //????
-				} else {
-					// assume its a plain old referral
-					$attribution['medium'] = 'referral';
-					// put the domain here.
-					$attribution['source'] = $this->getDomainFromUrl($this->get('external_referer')); //????
-				}
-			} else {
-				// set as direct
-				$attribution['medium'] = 'direct';
-				$attribution['source'] = '(none)';
-
-			}
-			
-			$this->event->set('is_attributed', true);
-		}
-		
-		$this->event->set('medium', $attribution['medium']);
-		$this->event->set('source', $attribution['source']);
-		
-		if (!empty($attribution['campaign'])) {
-			$this->event->set('campaign', $attribution['campaign']);
-		}
-		
-		if (!empty($attribution['ad'])) {
-			$this->event->set('ad', $attribution['ad']);
-		}
-		
-		if (!empty($attribution['ad_type'])) {
-			$this->event->set('ad_type', $attribution['ad_type']);
-		}
-		
-		if (!empty($attribution['search_terms'])) {
-			$this->event->set('search_terms', $attribution['search_terms']);
-		}
-		
-		if (!empty($attribution['timestamp'])) {
-			$this->event->set('campaign_timestamp', $attribution['timestamp']);
-		}
-		
-		$this->event->set('attribs', owa_coreAPI::getStateParam('c'));
-	}
-	
-	function setCampaignCookie($values) {
-		// reset state
-		owa_coreAPI::setState('c', '', 
-				json_encode( $values ), 
-				'cookie', 
-				owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' ) );
-	}
-	
-	function getDomainFromUrl($url, $strip_www = true) {
-		
-		$split_url = preg_split('/\/+/g', $url);
-		$domain = $split_url[1];
-		if ($strip_www === true) {
-			$domain_parts = explode('.', $domain);
-			$fp = $domain_parts[0];
-			if ($fp === 'www') {
-				return substring($domain, 4);
-			} else {
-				return $domain;
-			}
-			
-		} else {
-			return $domain;
-		}
-	}	
 }
 
 

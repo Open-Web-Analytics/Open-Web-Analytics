@@ -30,6 +30,11 @@
  
  class owa_stringLengthValidation extends owa_validation {
  	
+ 	function owa_stringLengthValidation() {
+ 		
+ 		return  owa_stringLengthValidation::__construct();
+ 	}
+ 	
  	function __construct() {
  		
  		return parent::__construct();

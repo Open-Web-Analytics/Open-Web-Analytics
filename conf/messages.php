@@ -45,7 +45,6 @@ $_owa_messages = array(
 2502 => array("The module was deactivated successfully.",0),
 2503 => array("Options reset to Default Values.",0),
 2504 => array("Entity %s Schema Created.",1),
-2504 => array("Goal Saved.",0),
 
 
 //User managment

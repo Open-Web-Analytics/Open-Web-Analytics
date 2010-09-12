@@ -161,10 +161,7 @@ class owa_entity {
 	
 	function get($name) {
 		if (!empty($this->properties)) {
-			if (array_key_exists($name, $this->properties)) {
-				return $this->properties[$name]->getValue();
-			}
-			
+			return $this->properties[$name]->getValue();
 		} else {
 			// old style entities
 			return $this->$name->getValue();
@@ -531,7 +528,7 @@ class owa_entity {
 	
 		$def = $this->getColumnDefinition($column_name);		
 		$db = owa_coreAPI::dbSingleton();
-		$status = $db->modifyColumn($this->getTableName(), $column_name, $def);
+		$status = $db->modifyColumn($this->getTableName(), $column_name, $defs);
 		
 		if ($status == true):
 			return true;
@@ -542,16 +539,10 @@ class owa_entity {
 	
 	}
 	
-	function renameColumn($old_column_name, $column_name, $use_old_column_for_defs = false) {
+	function renameColumn($old_column_name, $column_name) {
 	
-		if ($use_old_column_for_defs) {
-			$def = $this->getColumnDefinition($old_column_name);
-		} else {
-			$def = $this->getColumnDefinition($column_name);
-		}
-		
 		$db = owa_coreAPI::dbSingleton();
-		$status = $db->renameColumn($this->getTableName(), $old_column_name, $column_name, $def);
+		$status = $db->renameColumn($this->getTableName(), $old_column_name, $column_name);
 		
 		if ($status == true):
 			return true;

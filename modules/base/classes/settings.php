@@ -361,8 +361,6 @@
 			$status = $config->update();
 		endif;
 		
-		$this->is_dirty = false;
-		
  		return $status;
  		
  	}
@@ -434,19 +432,6 @@
 	 	$this->db_settings[$module][$key] = $value;
 	 	$this->is_dirty = true;
  	}
- 	
- 	function defaultSetting($module, $key) {
- 		$defaults = $this->getDefaultSettingsArray();
- 		
- 		if ( array_key_exists($module, $defaults) && array_key_exists($key, $defaults[$module]) ) {
- 			$this->set($module, $key, $defaults[$module][$key]);
- 			
- 			if ( array_key_exists($module, $this->db_settings) && array_key_exists($key, $this->db_settings[$module]) ) {
- 				unset($this->db_settings[$module][$key]);
-			 	$this->is_dirty = true;
- 			}
- 		}
- 	}
 
  	
  	
@@ -505,211 +490,162 @@
  	
  	function getDefaultConfig() {
  		
- 			$config = $this->getDefaultSettingsArray();
+ 		$config =  array('base' => array(
+	
+			'ns'								=> 'owa_',
+			'visitor_param'						=> 'v',
+			'session_param'						=> 's',
+			'site_session_param'				=> 'ss',
+			'last_request_param'				=> 'last_req',
+			'first_hit_param'					=> 'first_hit',
+			'feed_subscription_param'			=> 'sid',
+			'source_param'						=> 'source',
+			'graph_param'						=> 'graph',
+			'period_param'						=> 'period',
+			'document_param'					=> 'document',
+			'referer_param'						=> 'referer',
+			'site_id'							=> '',
+			'configuration_id'					=> '1',
+			'session_length'					=> 1800,
+			'requests_table'					=> 'request',
+			'sessions_table'					=> 'session',
+			'referers_table'					=> 'referer',
+			'ua_table'							=> 'ua',
+			'os_table'							=> 'os',
+			'documents_table'					=> 'document',
+			'sites_table'						=> 'site',
+			'hosts_table'						=> 'host',
+			'config_table'						=> 'configuration',
+			'version_table'						=> 'version',
+			'feed_requests_table'				=> 'feed_request',
+			'visitors_table'					=> 'visitor',
+			'impressions_table'					=> 'impression',
+			'clicks_table'						=> 'click',
+			'exits_table'						=> 'exit',
+			'users_table'						=> 'user',
+			'db_type'							=> '',
+			'db_name'							=> '',
+			'db_host'							=> '',
+			'db_user'							=> '',
+			'db_password'						=> '',
+			'db_force_new_connections'			=> true,
+			'db_make_persistant_connections'	=> false,
+			'resolve_hosts'						=> true,
+			'log_feedreaders'					=> true,
+			'log_robots'						=> false,
+			'log_sessions'						=> true,
+			'log_dom_clicks'					=> true,
+			'delay_first_hit'					=> true,
+			'async_db'							=> false,
+			'clean_query_string'				=> true,
+			'fetch_refering_page_info'			=> true,
+			'query_string_filters'				=> '',
+			'async_log_dir'						=> OWA_DATA_DIR . 'logs/',
+			'async_log_file'					=> 'events.txt',
+			'async_lock_file'					=> 'owa.lock',
+			'async_error_log_file'				=> 'events_error.txt',
+			'notice_email'						=> '',
+			'log_php_errors'					=> false,
+			'error_handler'						=> 'production',
+			'error_log_level'					=> 0,
+			'error_log_file'					=> OWA_DATA_DIR . 'logs/errors.txt',
+			'browscap.ini'						=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
+			'search_engines.ini'				=> OWA_BASE_DIR . '/conf/search_engines.ini',
+			'query_strings.ini'					=> OWA_BASE_DIR . '/conf/query_strings.ini',
+			'db_class_dir'						=> OWA_BASE_DIR . '/plugins/db/',
+			'templates_dir'						=> OWA_BASE_DIR . '/templates/',
+			'plugin_dir'						=> OWA_BASE_DIR . '/plugins/',
+			'module_dir'						=> OWA_BASE_DIR . '/modules',
+			'public_path'						=> '',
+			'geolocation_lookup'            	=> true,
+			'geolocation_service'				=> 'hostip',
+			'report_wrapper'					=> 'wrapper_default.tpl',
+			'do_not_fetch_config_from_db'		=> false,
+			'announce_visitors'					=> false,
+			'public_url'						=> '',
+			'base_url'							=> '',
+			'action_url'						=> '',
+			'images_url'						=> '',
+			'reporting_url'						=> '',
+			'p3p_policy'						=> 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
+			'graph_link_template'				=> '%s?owa_action=graph&name=%s&%s', //action_url?...
+			'link_template'						=> '%s?%s', // main_url?key=value....
+			'owa_user_agent'					=> 'Open Web Analytics Bot '.OWA_VERSION,
+			'fetch_owa_news'					=> true,
+			'owa_rss_url'						=> 'http://www.openwebanalytics.com/?feed=rss2',
+			'use_summary_tables'				=> false,
+			'summary_framework'					=> '',
+			'click_drawing_mode'				=> 'center_on_page',
+			'log_clicks'						=> true,
+			'log_dom_streams'					=> true,
+			'timezone'							=> 'America/Los_Angeles',
+			'log_dom_stream_percentage'			=> 50,
+			'owa_wiki_link_template'			=> 'http://wiki.openwebanalytics.com/index.php?title=%s',
+			'password_length'					=> 4,
+			'modules'							=> array('base'),
+			'mailer-from'						=> '',
+			'mailer-fromName'					=> 'OWA Mailer',
+			'mailer-host'						=> '',
+			'mailer-port'						=> '',
+			'mailer-smtpAuth'					=> '',
+			'mailer-username'					=> '',
+			'mailer-password'					=> '',
+			'queue_events'						=> false,
+			'event_queue_type'					=> '',
+			'use_remote_event_queue'			=> true,
+			'remote_event_queue_type'			=> 'http',
+			'remote_event_queue_endpoint'		=> '',
+			'cookie_domain'						=> false,
+			'ws_timeout'						=> 10,
+			'is_active'							=> true,
+			'per_site_visitors'					=> false,
+			'cache_objects'						=> true,
+			'log_named_users'					=> true,
+			'log_visitor_pii'					=> true,
+			'do_not_log_ips'					=> '',
+			'track_feed_links'					=> true,
+			'theme'								=> '',
+			'reserved_words'					=> array('do' => 'action'),
+			'login_view'						=> 'base.login',
+			'not_capable_view'					=> 'base.error',
+			'start_page'						=> 'base.reportDashboard',
+			'default_action'					=> 'base.loginForm',
+			'default_page'						=> '',
+			'default_cache_expiration_period'	=> 604800,
+			//'nonce_expiration_period'			=> 84600,
+			'nonce_expiration_period'			=> 43200,
+			'capabilities'						=> array(
+					'admin' => array(
+							'view_reports', 
+							'edit_settings', 
+							'edit_sites', 
+							'edit_users', 
+							'edit_modules'),
+					'analyst' => array('view_reports'), 
+					'viewer' => array('view_reports'), 
+					'everyone' => array())
+			
+			));
+			
 			// set default values
 			$this->config->set('settings', $config); 		
- 	}
- 	
- 	function getDefaultSettingsArray() {
- 	
- 		return array(
- 			'base' => array(
-				'ns'								=> 'owa_',
-				'visitor_param'						=> 'v',
-				'session_param'						=> 's',
-				'site_session_param'				=> 'ss',
-				'last_request_param'				=> 'last_req',
-				'first_hit_param'					=> 'first_hit',
-				'feed_subscription_param'			=> 'sid',
-				'source_param'						=> 'source',
-				'graph_param'						=> 'graph',
-				'period_param'						=> 'period',
-				'document_param'					=> 'document',
-				'referer_param'						=> 'referer',
-				'site_id'							=> '',
-				'configuration_id'					=> '1',
-				'session_length'					=> 1800,
-				'requests_table'					=> 'request',
-				'sessions_table'					=> 'session',
-				'referers_table'					=> 'referer',
-				'ua_table'							=> 'ua',
-				'os_table'							=> 'os',
-				'documents_table'					=> 'document',
-				'sites_table'						=> 'site',
-				'hosts_table'						=> 'host',
-				'config_table'						=> 'configuration',
-				'version_table'						=> 'version',
-				'feed_requests_table'				=> 'feed_request',
-				'visitors_table'					=> 'visitor',
-				'impressions_table'					=> 'impression',
-				'clicks_table'						=> 'click',
-				'exits_table'						=> 'exit',
-				'users_table'						=> 'user',
-				'db_type'							=> '',
-				'db_name'							=> '',
-				'db_host'							=> '',
-				'db_user'							=> '',
-				'db_password'						=> '',
-				'db_force_new_connections'			=> true,
-				'db_make_persistant_connections'	=> false,
-				'resolve_hosts'						=> true,
-				'log_feedreaders'					=> true,
-				'log_robots'						=> false,
-				'log_sessions'						=> true,
-				'log_dom_clicks'					=> true,
-				'delay_first_hit'					=> true,
-				'async_db'							=> false,
-				'clean_query_string'				=> true,
-				'fetch_refering_page_info'			=> true,
-				'query_string_filters'				=> '',
-				'async_log_dir'						=> OWA_DATA_DIR . 'logs/',
-				'async_log_file'					=> 'events.txt',
-				'async_lock_file'					=> 'owa.lock',
-				'async_error_log_file'				=> 'events_error.txt',
-				'notice_email'						=> '',
-				'log_php_errors'					=> false,
-				'error_handler'						=> 'production',
-				'error_log_level'					=> 0,
-				'error_log_file'					=> OWA_DATA_DIR . 'logs/errors.txt',
-				'browscap.ini'						=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
-				'search_engines.ini'				=> OWA_BASE_DIR . '/conf/search_engines.ini',
-				'query_strings.ini'					=> OWA_BASE_DIR . '/conf/query_strings.ini',
-				'db_class_dir'						=> OWA_BASE_DIR . '/plugins/db/',
-				'templates_dir'						=> OWA_BASE_DIR . '/templates/',
-				'plugin_dir'						=> OWA_BASE_DIR . '/plugins/',
-				'module_dir'						=> OWA_BASE_DIR . '/modules',
-				'public_path'						=> '',
-				'geolocation_lookup'            	=> true,
-				'geolocation_service'				=> 'hostip',
-				'report_wrapper'					=> 'wrapper_default.tpl',
-				'do_not_fetch_config_from_db'		=> false,
-				'announce_visitors'					=> false,
-				'public_url'						=> '',
-				'base_url'							=> '',
-				'action_url'						=> '',
-				'images_url'						=> '',
-				'reporting_url'						=> '',
-				'p3p_policy'						=> 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
-				'graph_link_template'				=> '%s?owa_action=graph&name=%s&%s', //action_url?...
-				'link_template'						=> '%s?%s', // main_url?key=value....
-				'owa_user_agent'					=> 'Open Web Analytics Bot '.OWA_VERSION,
-				'fetch_owa_news'					=> true,
-				'owa_rss_url'						=> 'http://www.openwebanalytics.com/?feed=rss2',
-				'use_summary_tables'				=> false,
-				'summary_framework'					=> '',
-				'click_drawing_mode'				=> 'center_on_page',
-				'log_clicks'						=> true,
-				'log_dom_streams'					=> true,
-				'timezone'							=> 'America/Los_Angeles',
-				'log_dom_stream_percentage'			=> 50,
-				'owa_wiki_link_template'			=> 'http://wiki.openwebanalytics.com/index.php?title=%s',
-				'password_length'					=> 4,
-				'modules'							=> array('base'),
-				'mailer-from'						=> '',
-				'mailer-fromName'					=> 'OWA Mailer',
-				'mailer-host'						=> '',
-				'mailer-port'						=> '',
-				'mailer-smtpAuth'					=> '',
-				'mailer-username'					=> '',
-				'mailer-password'					=> '',
-				'queue_events'						=> false,
-				'event_queue_type'					=> '',
-				'use_remote_event_queue'			=> true,
-				'remote_event_queue_type'			=> 'http',
-				'remote_event_queue_endpoint'		=> '',
-				'cookie_domain'						=> false,
-				'ws_timeout'						=> 10,
-				'is_active'							=> true,
-				'per_site_visitors'					=> false,
-				'cache_objects'						=> true,
-				'log_named_users'					=> true,
-				'log_visitor_pii'					=> true,
-				'do_not_log_ips'					=> '',
-				'track_feed_links'					=> true,
-				'theme'								=> '',
-				'reserved_words'					=> array('do' => 'action'),
-				'login_view'						=> 'base.login',
-				'not_capable_view'					=> 'base.error',
-				'start_page'						=> 'base.reportDashboard',
-				'default_action'					=> 'base.loginForm',
-				'default_page'						=> '',
-				'default_cache_expiration_period'	=> 604800,
-				//'nonce_expiration_period'			=> 84600,
-				'nonce_expiration_period'			=> 43200,
-				'max_prior_campaigns'				=> 5,
-				'campaign_params'					=> array(
-						'cn'	=> 'campaign',
-						'md'	=> 'medium',
-						'sr'	=> 'source',
-						'tr'	=> 'search_terms',
-						'ad'	=> 'ad',
-						'at'	=> 'ad_type'),
-				'trafficAttributionMode'			=> 'direct',
-				'campaignAttributionWindow'			=> 60,
-				'capabilities'						=> array(
-						'admin' => array(
-								'view_reports', 
-								'edit_settings', 
-								'edit_sites', 
-								'edit_users', 
-								'edit_modules'
-						),
-						'analyst' => array('view_reports'), 
-						'viewer' => array('view_reports'), 
-						'everyone' => array()
-				),
-				'goals'								=> array(
-						1	=> array(),
-						2	=> array(),
-						3	=> array(),
-						4	=> array(),
-						5	=> array(),
-						6	=> array(),
-						7	=> array(),
-						8	=> array(),
-						9	=> array(),
-						10	=> array(),
-						11	=> array(),
-						12	=> array(),
-						13	=> array(),
-						14	=> array(),
-						15	=> array()
-				),
-				'goal_groups' 						=> array(
-						1	=> 'Goal Group 1',
-						2	=> 'Goal Group 2',
-						3	=> 'Goal Group 3',
-						4	=> 'Goal Group 4',
-						5	=> 'Goal group 5'
-				),
-				'enableCommerceReporting'			=> true,
-				'currencyLocal'						=> 'en_US',
-				'memcachedServers'					=> array(),
-				'cacheType'							=> 'file'
-				
-			)
-		);
- 	
  	}
  	
  	function setupPaths() {
  		
  		//build base url
- 		$base_url = '';
- 		$proto  = "http";
+ 		$base_url  = "http";
 		
 		if(isset($_SERVER['HTTPS'])) {
-			$proto .= 's';
+			$base_url .= 's';
 		}
-		if(isset($_SERVER['SERVER_NAME'])) {			
-			$base_url .= $proto.'://'.$_SERVER['SERVER_NAME'];
+					
+		$base_url .= '://'.$_SERVER['SERVER_NAME'];
+			
+		if($_SERVER['SERVER_PORT'] != 80) {
+			$base_url .= ':'.$_SERVER['SERVER_PORT'];
 		}
 		
-		if(isset($_SERVER['SERVER_PORT'])) {
-			if($_SERVER['SERVER_PORT'] != 80) {
-				$base_url .= ':'.$_SERVER['SERVER_PORT'];
-			}
-		}
 		// there is some plugin use case where this is needed i think. if not get rid of it.
 		if (!defined('OWA_PUBLIC_URL')) {
 			define('OWA_PUBLIC_URL', '');
@@ -812,32 +748,13 @@
 	
 	function setCookieDomain ($domain) {
 		
-		//check for local host
-		if ( $domain === 'localhost' ) {
-		 	$cookie_domain = false;
-		// check for local domain 	
-		} elseif ( ! strpos($domain, '.') ) {
-			$cookie_domain = false;
-		} else {
-		 
-			// Remove port information.
-     		$port = strpos( $domain, ':' );
-			if ( $port ) {
-				$cookie_domain = substr( $domain, 0, $port );
-			} else {
-				$cookie_domain = $domain;
-			}
-		}
-		
-		$this->set('base','cookie_domain', $cookie_domain); 
+		 if ($_SERVER['HTTP_HOST'] != 'localhost') {
+		 	
+		 	$pattern = '/(.*):.*/';
+		 	$replacement='$1';
+		 	$this->set('base','cookie_domain', preg_replace($pattern, $replacement, $domain));		 	
+		 }
 	}	
-	
-	function __destruct() {
-		
-		if ($this->is_dirty) {
-			$this->save();
-		}
-	}
 }
 
 ?>

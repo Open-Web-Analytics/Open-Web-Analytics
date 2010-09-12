@@ -77,8 +77,6 @@ OWA.event.prototype = {
 
 OWA.tracker = function(caller_params, options) {
 	
-	this.urlParams = [];
-	
 	// check to see if overlay sesson is active
 	var p = OWA.util.readCookie('owa_overlay');
 
@@ -87,6 +85,8 @@ OWA.tracker = function(caller_params, options) {
 		this.pause();
 		// start overlay session
 		OWA.startOverlaySession(p);
+		//return
+		//return;
 	}
 		
 	this.setEndpoint(OWA.config.baseUrl + 'log.php');
@@ -95,8 +95,19 @@ OWA.tracker = function(caller_params, options) {
     this.page.set('page_url', document.URL);
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
-	this.page.set('timestamp', this.startTime);
 	
+	
+	/*
+if (options.length > 0) {
+		for(param in options) {
+			
+			if (options.hasOwnProperty(param)) {
+	       
+				this.options[param] = options[param];
+			}
+	    }
+	}
+*/
 	if (typeof owa_params != 'undefined') {
 		// merge page params from the global object if it exists
 		if (owa_params.length > 0) {
@@ -107,10 +118,7 @@ OWA.tracker = function(caller_params, options) {
 	// merge page params from map passed into the constructor
 	if (typeof caller_params != 'undefined') {
 		this.page.merge(caller_params);
-	}
-	
-	// attribute traffic
-	this.attributeTraffic();
+	}	
 }
 
 OWA.tracker.prototype = {
@@ -131,9 +139,6 @@ OWA.tracker.prototype = {
 	 * Endpoint URl of logger service
 	 */
 	endpoint : '',
-	campaignState : [],
-	isNewCampaign: false,
-	isTrafficAttributed: false,
 	/**
 	 * Configuration options
 	 */
@@ -144,10 +149,7 @@ OWA.tracker.prototype = {
 		encodeProperties: true, 
 		movementInterval: 100,
 		logDomStreamPercentage: 50,
-		domstreamEventThreshold: 5,
-		maxPriorCampaigns: 5,
-		campaignAttributionWindow: 60,
-		trafficAttributionMode: 'direct'
+		domstreamEventThreshold: 5
 	},
 	/**
 	 * DOM stream Event Binding Methods
@@ -889,233 +891,7 @@ OWA.tracker.prototype = {
 	addStreamEventBinding : function(name) {
 		
 		this.streamBindings.push(name);
-	},
+	}	
 	
-	attributeTraffic : function() {
 		
-		// load existing campaign cookie.
-		OWA.util.loadStateJson('c');
-		
-		if (OWA.state.c) {
-			this.campaignState = OWA.state.c;
-		}		
-		// load GET params from URL
-		if (!this.urlParams.length > 0)	{	
-			this.urlParams = OWA.util.parseUrlParams(document.URL);
-			OWA.debug('GET: '+ JSON.stringify(this.urlParams));
-		}
-		
-		// look for attributes in the url of the page
-		var campaignKeys = [
-				{ public: 'owa_medium', private: 'md', full: 'medium' },
-				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
-				{ public: 'owa_source', private: 'sr', full: 'source' },
-				{ public: 'owa_search_terms', private: 'tr', full: 'search_terms' }, 
-				{ public: 'owa_ad', private: 'ad', full: 'ad' },
-				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ];
-		
-		// pull campaign params from _GET
-		var campaign_params = {};
-		for (var i = 0, n = campaignKeys.length; i < n; i++) {
-			
-			if (this.urlParams[campaignKeys[i].public]) {
-				campaign_params[campaignKeys[i].private] = this.urlParams[campaignKeys[i].public];
-				OWA.debug('campaign params obj: ' + JSON.stringify(campaign_params));
-				this.isNewCampaign = true;
-			}	
-		}
-		
-		// check for incomplete combos and backfill values if needed
-		if (campaign_params['at'] && !campaign_params['ad']) {
-			campaign_params['ad'] = '(not set)';
-		}
-		
-		if (campaign_params['ad'] && !campaign_params['at']) {
-			campaign_params['at'] = '(not set)';
-		}
-		
-		// attribution object
-		var attribution = {
-			medium: '',
-			source: '',
-			campaign: '',
-			ad_type: '',
-			ad: '',
-			search_terms: ''
-		};
-		
-		// if traffic attribution mode is direct, then add the touch to the
-		// campaign cookie.
-		if (this.options.trafficAttributionMode === 'direct') {
-			// check to see if this request is from a new campaign.
-			if ( this.isNewCampaign ) {
-				// set campaign timestamp
-				campaign_params['ts'] = this.page.get('timestamp');
-				OWA.debug( 'campaign state length: %s', this.campaignState.length );
-				// add the new campaing params to the prior touches array
-				this.campaignState.push( campaign_params );
-				// if there is prior campaign touches, check to see if there is room for one more touch
-				if ( this.campaignState.length > this.options.maxPriorCampaigns ) {
-					OWA.debug( 'existing campaign touches' );
-					// splice array to make room for the new one
-					var removed = this.campaignState.splice( 0, 1 );
-					OWA.debug('campaign state array post slice: ' + JSON.stringify( this.campaignState ) );
-				}
-				
-				// set/reset the campaign cookie.
-				this.setCampaignCookie( this.campaignState );
-				
-				// set flag
-				this.isTrafficAttributed = true;
-			}
-		} 
-		
-		// if attribution mode is 'original' then only add the touch if
-		// there is no prior touch in the cookie
-		if ( this.options.trafficAttributionMode === 'original' ) {
-			
-			// orignal touch was set previously. jus use that.
-			if ( this.campaignState.length > 0 ) {
-				// do nothing
-				OWA.debug( 'Original attribution detected.' );
-				// set the attributes from the first campaign touch
-				campaign_params = this.campaignState[0];
-				// set flag
-				this.isTrafficAttributed = true;
-		
-			// no orginal touch, set one if its a new campaign touch
-			} else {
-				OWA.debug( 'Setting Original Campaign touch.' );
-				if (this.isNewCampaign) {
-					// set campaign timestamp
-					campaign_params['ts'] = this.page.get('timestamp');
-					this.campaignState.push( campaign_params );
-					// set cookie
-					this.setCampaignCookie( this.campaignState );
-					// set flag
-					this.isTrafficAttributed = true;
-				}
-			}
-		}
-		
-		// set the attributes
-		var count = OWA.util.countObjectProperties(campaign_params);
-		if (count > 0) {
-			
-			for (prop in campaign_params) {
-									
-				if (prop === 'md') {
-					attribution.medium = campaign_params[prop];
-				}
-				if (prop === 'sr') {
-					attribution.source = campaign_params[prop];
-				}
-				if (prop === 'cn') {
-					attribution.campaign = campaign_params[prop];
-				} 
-				if (prop === 'at') {
-					attribution.ad_type = campaign_params[prop];
-				}
-				if (prop === 'ad') {
-					attribution.ad = campaign_params[prop];
-				}
-				if (prop === 'tr') {
-					attribution.search_terms = campaign_params[prop];
-				}
-				
-				if (prop === 'ts') {
-					attribution.timestamp = campaign_params[prop];
-				}
-			}
-		}
-
-		// if there is no campaign attribution then look for the standard medium/sources:
-		// search, referal, or direct.
-		if ( !this.isTrafficAttributed ) {
-			var referer = this.page.get('referer');
-			
-			if (referer) {
-				
-				var from_se = this.checkRefererForSearchEngine(referer); // make this
-				
-				if (from_se) {
-					attribution.medium =  'organic-search';
-					attribution.source = OWA.util.getDomainFromUrl( referer, true );
-				} else {
-					attribution.medium = 'referral';
-					attribution.source = OWA.util.getDomainFromUrl( referer, true );
-				}
-			} else {
-				attribution.medium = 'direct';
-				attribution.source = '(none)';
-			}
-		}
-		
-		// set attribution properties on page view object
-		
-		// set medium
-		this.page.set('medium', attribution.medium);
-		// set source
-		this.page.set('source', attribution.source);
-		
-		// set campaign
-		if (attribution.campaign.length > 0) {
-			this.page.set('campaign', attribution.campaign);
-		}
-		
-		//set ad
-		if (attribution.ad.length > 0) {
-			this.page.set('ad', attribution.ad);
-		}
-		
-		//set ad type
-		if (attribution.ad_type.length > 0) {
-			this.page.set('ad_type', attribution.ad_type);
-		}
-		
-		//set search_terms
-		if (attribution.search_terms.length > 0) {
-			this.page.set('search_terms', attribution.search_terms);
-		}
-		
-		// set campaign touches
-		if (this.campaignState.length > 0) {
-			this.page.set('attribs', JSON.stringify(this.campaignState));
-		}
-		
-		// set campaign timestamp
-		if (this.campaignState.length > 0) {
-			this.page.set('campaign_timestamp', attribution.timestamp);
-		}
-		
-		// tells upstream processing to skip attribution
-		this.page.set('is_attributed', true);
-	
-	},
-	
-	setCampaignCookie : function(values) {
-		
-		// set or reset the campaign cookie
-		OWA.debug('new campaign cookie value: ' + JSON.stringify(values));
-		var domain = OWA.getSetting('cookie_domain') || document.domain;
-		OWA.util.setCookie('owa_c',JSON.stringify(values),this.options.campaignAttributionWindow,'/',domain);
-	},
-	
-	checkRefererForSearchEngine : function (referer) {
-		
-		var _get = OWA.util.parseUrlParams(referer);
-		
-		var query_params = [
-				'q', 'p','search', 'Keywords','ask','keyword','keywords','kw','pattern', 				'pgm','qr','qry','qs','qt','qu','query','queryterm','question',
-				'sTerm','searchfor','searchText','srch','su','what'
-		];
-		
-		for (var i = 0, n = query_params.length; i < n; i++) {
-			if ( _get[query_params[i]] ) {
-				OWA.debug( 'Found search engine query param: ' + query_params[i] );
-				return true;
-			}
-		}
-	}
-	
 }

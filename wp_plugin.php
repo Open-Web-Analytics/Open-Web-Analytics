@@ -35,7 +35,6 @@ add_action('init', 'owa_handleSpecialActionRequest');
 add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', 'owa_logComment');
-add_action('transition_comment_status', 'owa_logCommentEdit');
 add_action('admin_menu', 'owa_options_menu');
 add_action('user_register', 'owa_userRegistrationActionTracker');
 add_action('wp_login', 'owa_userLoginActionTracker');
@@ -302,26 +301,16 @@ function owa_handleSpecialActionRequest() {
 
 function owa_logComment($id, $comment_data = '') {
 
-	if ( $comment_data === 'approved' || $comment_data === 1 ) {
-
-		$owa = owa_getInstance();
+	if (isset($comment_data['user_ID'])) {
+		$label = $comment_data['user_ID']; 
+	} else {
 		$label = '';
-		$owa->trackAction('wordpress', 'comment', $label);
 	}
-}
-
-function owa_logCommentEdit($new_status, $old_status, $comment) {
 	
-	if ($new_status === 'approved') {
-		if (isset($comment->comment_author)) {
-			$label = $comment->comment_author; 
-		} else {
-			$label = '';
-		}
-		
-		$owa = owa_getInstance();
-		$owa->trackAction('wordpress', 'comment', $label);
-	}
+	$owa = owa_getInstance();
+	$owa->trackAction('wordpress', 'comment', $label);
+	
+	return true;
 }
 
 /**

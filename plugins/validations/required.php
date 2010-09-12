@@ -30,6 +30,11 @@
  
  class owa_requiredValidation extends owa_validation {
  	
+ 	function owa_requiredValidation() {
+ 			
+ 		return owa_requiredValidation::__construct();
+ 	}
+ 	
  	function __construct() {
  		
  		return parent::__construct();

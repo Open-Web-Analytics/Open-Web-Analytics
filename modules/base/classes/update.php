@@ -77,18 +77,10 @@ class owa_update extends owa_base {
 	function apply() {
 		
 		// check for schema version. abort if not present or else updates will get out of sync.
-		if (empty($this->schema_version)) {
+		if (empty($this->schema_version)):
 			$this->e->notice(sprintf("Aborting %s Update (%s): Schema Version Number is not set.", get_class(), $this->module_name));
 			return false;
-		}
-		
-		$current_version = $this->c->get($this->module_name, 'schema_version');
-		
-		// check to see that you are applying an update that was successfully applied
-		if ($current_version === $this->schema_version) { 
-			$this->e->notice(sprintf("Aborting %s Update (%s): Update has already ben applied.", get_class(), $this->module_name));
-			return false;
-		}
+		endif; 
 		
 		// execute pre update proceadure
 		$ret = $this->pre();
@@ -147,11 +139,9 @@ class owa_update extends owa_base {
 				if ($current_version === $this->schema_version) {
 					$this->c->persistSetting($this->module_name, 'schema_version', $prior_version);
 					$this->c->save();
-					$this->e->notice("Rollback succeeded to version: $prior_version.");
-				} else {
-					$this->e->notice("Rollback succeeded to version: $current_version.");
 				}
 				
+				$this->e->notice("Rollback succeeded to version: $prior_version.");
 			} else {
 				$this->e->notice("Rollback failed.");
 			}			

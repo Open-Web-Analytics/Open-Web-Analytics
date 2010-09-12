@@ -25,7 +25,7 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @since		owa 1.0.0
  */
 
 class owa_action_fact extends owa_entity {

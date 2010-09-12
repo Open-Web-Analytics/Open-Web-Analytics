@@ -314,9 +314,7 @@ class owa_error {
 	 * @return object
 	 */
 	function make_console_logger() {
-		if (!defined('STDOUT')) {
-			define('STDOUT', fopen("php://stdout", "r"));
-		}
+		define('STDOUT', fopen("php://stdout", "r"));
 		$conf = array('stream' => STDOUT, 'buffering' => false);
 		$logger = &Log::singleton('console', '', getmypid(), $conf);
 		return $logger;

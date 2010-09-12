@@ -149,15 +149,6 @@ class owa_request extends owa_entity {
 		$this->properties['is_robot']->setDataType(OWA_DTD_TINYINT);
 		$this->properties['is_feedreader'] = new owa_dbColumn;
 		$this->properties['is_feedreader']->setDataType(OWA_DTD_TINYINT);
-		
-		//location
-		$location_id = new owa_dbColumn('location_id', OWA_DTD_BIGINT);
-		$location_id->setForeignKey('base.location_dim');
-		$this->setProperty($location_id);
-		
-		//language
-		$language = new owa_dbColumn('language', OWA_DTD_VARCHAR255);
-		$this->setProperty($language);
 	}
 	
 	

@@ -656,10 +656,9 @@ class owa_module extends owa_base {
 		return;
 	}
 	
-	function registerMetric($metric_name, $class_name, $params = array()) {
+	function registerMetric($metric_name, $class_name) {
 		
-		$map = array('class' => $class_name, 'params' => $params);
-		$this->metrics[$metric_name][] = $map;
+		$this->metrics[$metric_name][] = $class_name;
 	}
 	
 	/**
@@ -698,7 +697,14 @@ class owa_module extends owa_base {
 		
 		$this->cli_commands[$command] = $class;
 	}
+	/*
 
+	function registerApiMethod($method_name, $class) {
+		
+		$this->api_methods[$method_name] = $class;
+	}
+	
+	*/
 	function registerApiMethod($api_method_name, $user_function, $argument_names, $file = '', $required_capability = '') {
 			
 		$map = array('callback' => $user_function, 'args' => $argument_names, 'file' => $file);
@@ -708,13 +714,6 @@ class owa_module extends owa_base {
 		}
 		
 		$this->api_methods[$api_method_name] = $map;
-	}
-	
-	function registerImplementation($type, $name, $class_name, $file) {
-		
-		$s = owa_coreAPI::serviceSingleton();
-		$class_info = array($class_name, $file);
-		$s->setMapValue($type, $name, $class_info);
 	}
 }
 

@@ -1,1 +1,0 @@
-<?php print_r($trans_detail);?>

@@ -1,6 +1,6 @@
 <div class="section">
 
-<table id="layout_panels" class="layout_panels" cellpadding="0" cellspacing="0">
+<table id="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>
 		<TD colspan="2" class="headline">
 			<?php echo $headline;?>
@@ -33,3 +33,11 @@
 
 </table>
 </div>
+
+<script>
+// Bind event handlers
+jQuery(document).ready(function(){   
+	jQuery.tablesorter.defaults.widgets = ['zebra'];
+	jQuery('.tablesorter').tablesorter();
+});
+</script>

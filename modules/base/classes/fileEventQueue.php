@@ -19,10 +19,11 @@
 require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
 require_once(OWA_BASE_CLASS_DIR.'event.php');
 require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
-require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log/file.php');
+require_once(OWA_PLUGIN_DIR . 'log/queue.php');
+require_once(OWA_PLUGIN_DIR . 'log/async_queue.php');
 
 /**
- * File based Event Queue Implementation
+ * http Event Queue
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -55,8 +56,7 @@ class owa_fileEventQueue extends owa_eventQueue {
 		
 		//make file queue
 		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-		//$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
-		$this->queue = &Log::singleton('file', $this->event_file, 'async_event_queue', $conf);
+		$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
 		$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
 		// not sure why this is needed but it is.
 		$this->queue->_filename	= $this->event_file;
@@ -68,7 +68,7 @@ class owa_fileEventQueue extends owa_eventQueue {
 			$this->makeQueue();
 		}
 		
-		$this->queue->log(urlencode(serialize($event)));
+		$this->queue->log(urlencode(serialize($event)), $event->getEventType());
 	
 	}
 	
@@ -178,16 +178,13 @@ class owa_fileEventQueue extends owa_eventQueue {
 					
 				// Parse the row
 				$event = $this->parse_log_row($buffer);
-				
+				print_r($event);
+				// debug
+				owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
 				// Log event to the event queue
 				if (!empty($event)) {
-					print_r($event);
-					// debug
-					owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
 					// send event object to event queue
 					$dispatch->notify($event);	
-				} else {
-					owa_coreAPI::debug("No event found in log row. Must be end of file.");
 				}						
 			}
 			//Close file
@@ -229,16 +226,17 @@ class owa_fileEventQueue extends owa_eventQueue {
 	 * @return array
 	 */
 	function parse_log_row($row) {
-		if ($row) {
-			$raw_event = explode("|*|", $row);
-			//print_r($raw_event);
-			//$row_array = array( 'timestamp' 		=> $raw_event[0], 'event_type'	=> $raw_event[3], 'event_obj'		=> $raw_event[4]); 
-			$row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]); 
-			//print_r($row_array);			
-			$event = unserialize(urldecode($row_array['event_obj']));
-			//print_r($event);
-			return $event;
-		}
+	
+		$raw_event = explode("|*|", $row);
+		//print_r($raw_event);
+		$row_array = array( 'timestamp' 		=> $raw_event[0],
+						'event_type'	=> $raw_event[3],
+						'event_obj'		=> $raw_event[4]
+					); 
+		//print_r($row_array);			
+		$event = unserialize(urldecode($row_array['event_obj']));
+		//print_r($event);
+		return $event;
 	}
 	
 	function create_lock_file() {

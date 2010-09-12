@@ -122,8 +122,6 @@ class owa_state {
 			
 			if (isset($this->stores_meta[$store]['is_perminent']) && $this->stores_meta[$store]['is_perminent'] === true) {
 				$time = $this->getPermExpiration();
-			} elseif (isset($this->stores_meta[$store]['is_perminent']) && $this->stores_meta[$store]['is_perminent'] > 0) {
-				$time = $this->stores_meta[$store]['is_perminent'] * 3600 * 24;
 			}
 			
 			owa_coreAPI::createCookie($store, $this->stores[$store], $time, "/", owa_coreAPI::getSetting('base', 'cookie_domain'));

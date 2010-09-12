@@ -30,6 +30,12 @@
  
  class owa_entityExistsValidation extends owa_validation {
  	
+ 	
+ 	function owa_entityExistsValidation() {
+ 		
+ 		return owa_EntityExistsValidation::__construct();
+ 	}
+ 	
  	function __construct() {
  		
  		return parent::__construct();
