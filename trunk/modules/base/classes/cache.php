@@ -109,6 +109,9 @@ class owa_cache {
 				$this->cache[$collection][$id] = $item;
 				$this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
 				$this->statistics['cold']++;
+			} else {
+				$this->debug( sprintf( 'CACHE MISS - object not found for Collection: %s, id: %s', $collection, $id ) );
+				$this->statistics['miss']++;
 			}
 		}
 		
@@ -117,6 +120,15 @@ class owa_cache {
 		} else {
 			return false;
 		}
+		
+	}
+	
+	function remove($collection, $key) {
+	
+		$id = $this->hash($key);
+		unset($this->cache[$collection][$id]);
+		
+		return $this->removeItemFromCacheStore($collection, $id);
 		
 	}
 	
@@ -156,17 +168,23 @@ class owa_cache {
 		return false;
 	}
 	
+	/**
+	 * Store specific implementation of removing an object to the cold cache store
+	 */
+	function removeItemFromCacheStore($collection, $id) {
+		return false;
+	}
+	
+	/**
+	 * Store specific implementation of flushing the cold cache store
+	 */
 	function flush() {
 	
 		return false;	
 	}
 	
-	function remove($collection, $key) {
-	
-		return false;
-	}
-	
 	function getStats() {
+	
 		return sprintf("Cache Statistics: 
 						  Total Hits: %s (Warm/Cold: %s/%s)
 						  Total Miss: %s
@@ -183,11 +201,6 @@ class owa_cache {
 						  $this->statistics['dirty'],
 						  $this->statistics['removed']);
 	}
-
-	function connect() {
-		return false;
-	}
-	
 	
 	function prepare($obj) {
 	

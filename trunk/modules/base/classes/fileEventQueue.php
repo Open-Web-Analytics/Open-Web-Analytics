@@ -56,8 +56,8 @@ class owa_fileEventQueue extends owa_eventQueue {
 		//make file queue
 		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
 		//$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
-		$this->queue = &Log::singleton('file', $this->event_file, 'async_event_queue', $conf);
-		$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s|*|%5$s';
+		$this->queue = Log::singleton('file', $this->event_file, 'async_event_queue', $conf);
+		$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s';
 		// not sure why this is needed but it is.
 		$this->queue->_filename	= $this->event_file;
 	}
@@ -145,20 +145,11 @@ class owa_fileEventQueue extends owa_eventQueue {
 			return false;
 		}
 			
-		if (!$this->db) {
-			$this->db = &owa_coreAPI::dbSingleton();
-		}
-			
-		if(!$this->db->connect()) {
-			owa_coreAPI::error('Aborting event processing run. Database Connection is down.');
-			return false;
-		}
-		
 		//create lock file
 		$this->create_lock_file();
 		
 		// get event dispatcher
-		$dispatch = &owa_coreAPI::getEventDispatch();
+		$dispatch = owa_coreAPI::getEventDispatch();
 		
 		// Create a new log file name	
 		$new_file_name = $this->queue_dir.time().".".getmypid();
@@ -181,7 +172,7 @@ class owa_fileEventQueue extends owa_eventQueue {
 				
 				// Log event to the event queue
 				if (!empty($event)) {
-					print_r($event);
+					//print_r($event);
 					// debug
 					owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
 					// send event object to event queue

@@ -685,6 +685,7 @@
 				'enableCommerceReporting'			=> true,
 				'currencyLocal'						=> 'en_US',
 				'memcachedServers'					=> array(),
+				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file'
 				
 			)

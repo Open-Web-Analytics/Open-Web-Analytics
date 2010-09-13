@@ -65,8 +65,7 @@ class owa_fileCache extends owa_cache {
 
 		// if no cache file then return false
 		if (!file_exists($cache_file)) {
-			$this->debug(sprintf('CACHE MISS - Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
-			$this->statistics['miss']++;
+			$this->debug(sprintf('Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
 			return false;
 		
 		// cache object has expired
@@ -76,110 +75,14 @@ class owa_fileCache extends owa_cache {
 			$this->debug("diff: ".(time() - filectime($cache_file)));
 			$this->debug("exp period: ".$this->getCollectionExpirationPeriod($collection));
 			$this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
-			$this->debug(sprintf('CACHE EXPIRED - Object has expired - Collection: %s, id: %s', $collection, $id));
-			$this->statistics['miss']++;
+			$this->debug(sprintf('Cache Object has expired for Collection: %s, id: %s', $collection, $id));
 			return false;
+			
 		// load from cache file	
 		} else {
-	
 			return unserialize(base64_decode(substr(@ file_get_contents($cache_file), strlen($this->cache_file_header), -strlen($this->cache_file_footer))));
 		}
 	
-	}
-	
-	function flush() {
-	
-		$tld = $this->readDir($this->cache_dir);
-		$this->debug("Reading cache file list from: ". $this->cache_dir);
-		$this->deleteFiles($tld['files']);
-		
-		foreach ($tld['dirs'] as $k => $dir) {
-			
-			$sld = $this->readDir($dir);
-			$this->debug("Reading cache file list from: ". $dir);	
-			$this->deleteFiles($sld['files']);
-		
-			foreach ($sld['dirs'] as $sk => $sdir) {
-				$ssld = $this->readDir($sdir);
-				$this->debug("Reading cache file list from: ". $sdir);	
-				$this->deleteFiles($ssld['files']);	
-				
-				rmdir($sdir);
-			}
-	
-			rmdir($dir);		
-		}			
-	}
-	
-	function remove($collection, $key) {
-	
-		$id = $this->hash($key);
-		unset($this->cache[$collection][$id]);
-		
-		return $this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
-		
-	}
-	
-	function getStats() {
-		return sprintf("Cache Statistics: 
-						  Total Hits: %s (Warm/Cold: %s/%s)
-						  Total Miss: %s
-						  Total Added to Cache: %s
-						  Total Replaced: %s
-						  Total Persisted: %s
-						  Total Removed: %s",
-						  $this->statistics['warm'] + $this->statistics['cold'],
-						  $this->statistics['warm'],
-						  $this->statistics['cold'],
-						  $this->statistics['miss'],
-						  $this->statistics['added'],
-						  $this->statistics['replaced'],
-						  $this->statistics['dirty'],
-						  $this->statistics['removed']);
-	}
-
-	function connect() {
-		return false;
-	}
-	
-	function makeCollectionDirPath($collection) {
-	
-		if (!in_array($collection, $this->global_collections)) {
-			return $this->cache_dir.$this->cache_id.DIRECTORY_SEPARATOR.$collection.DIRECTORY_SEPARATOR;
-		} else {
-			return $this->cache_dir.$collection.DIRECTORY_SEPARATOR;	
-		}
-	}
-	
-	function makeCacheCollectionDir($collection) {
-		
-		// check to see if the caches directory is writable, return if not.
-		if (!is_writable($this->cache_dir)) {
-			return;
-		}
-		
-		
-		// localize the cache directory based on some id passed from caller
-		
-		if (!file_exists($this->cache_dir.$this->cache_id)) {
-			
-			mkdir($this->cache_dir.$this->cache_id);                 
-	        chmod($this->cache_dir.$this->cache_id, $this->dir_perms);
-	    }
-		
-		$collection_dir = $this->makeCollectionDirPath($collection);
-		
-		if (!file_exists($collection_dir)) {
-			
-			mkdir($collection_dir);
-	        chmod($collection_dir, $this->dir_perms);
-	    }
-	
-	    if (!file_exists($collection_dir."index.php")) {
-	    
-	        touch($collection_dir."index.php");    
-	        chmod($collection_dir."index.php", $this->file_perms);
-	    }
 	}
 	
 	function putItemToCacheStore($collection, $id) {
@@ -228,8 +131,50 @@ class owa_fileCache extends owa_cache {
 		} else {
 			$this->debug("could not persist item to cache due to failure acquiring lock.");
 		}
+	}
 		
+	function removeItemFromCacheStore($collection, $id) {
 		
+		return $this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
+	}
+	
+	function makeCollectionDirPath($collection) {
+	
+		if (!in_array($collection, $this->global_collections)) {
+			return $this->cache_dir.$this->cache_id.DIRECTORY_SEPARATOR.$collection.DIRECTORY_SEPARATOR;
+		} else {
+			return $this->cache_dir.$collection.DIRECTORY_SEPARATOR;	
+		}
+	}
+	
+	function makeCacheCollectionDir($collection) {
+		
+		// check to see if the caches directory is writable, return if not.
+		if (!is_writable($this->cache_dir)) {
+			return;
+		}
+		
+		// localize the cache directory based on some id passed from caller
+		
+		if (!file_exists($this->cache_dir.$this->cache_id)) {
+			
+			mkdir($this->cache_dir.$this->cache_id);                 
+	        chmod($this->cache_dir.$this->cache_id, $this->dir_perms);
+	    }
+		
+		$collection_dir = $this->makeCollectionDirPath($collection);
+		
+		if (!file_exists($collection_dir)) {
+			
+			mkdir($collection_dir);
+	        chmod($collection_dir, $this->dir_perms);
+	    }
+	
+	    if (!file_exists($collection_dir."index.php")) {
+	    
+	        touch($collection_dir."index.php");    
+	        chmod($collection_dir."index.php", $this->file_perms);
+	    }
 	}
 	
 	function removeCacheFile($cache_file) {
@@ -245,31 +190,33 @@ class owa_fileCache extends owa_cache {
 		}
 	}
 	
-	function persistStats() {
+	function flush() {
 	
-		return;
-	
-	}
-	
-	function hash($id) {
-	
-		return md5($id);
-	}
-	
-	function debug($msg) {
+		$tld = $this->readDir($this->cache_dir);
+		$this->debug("Reading cache file list from: ". $this->cache_dir);
+		$this->deleteFiles($tld['files']);
 		
-		return owa_coreAPI::debug($msg);
+		foreach ($tld['dirs'] as $k => $dir) {
+			
+			$sld = $this->readDir($dir);
+			$this->debug("Reading cache file list from: ". $dir);	
+			$this->deleteFiles($sld['files']);
+		
+			foreach ($sld['dirs'] as $sk => $sdir) {
+				$ssld = $this->readDir($sdir);
+				$this->debug("Reading cache file list from: ". $sdir);	
+				$this->deleteFiles($ssld['files']);	
+				
+				rmdir($sdir);
+			}
+	
+			rmdir($dir);		
+		}			
 	}
-	
-	function error($msg) {
-	
-		return false;
-	}
-	
+			
 	function setCacheDir($dir) {
 		
 		$this->cache_dir = $dir;
-		return ;
 	}
 	
 	function acquire_lock() {
@@ -332,21 +279,7 @@ class owa_fileCache extends owa_cache {
 		
 		return true;
 	}
-	
-	function setCollectionExpirationPeriod($collection_name, $seconds) {
-	
-		$this->collection_expiration_periods[$collection_name] = $seconds;
-	}
-	
-	function getCollectionExpirationPeriod($collection_name) {
-		
-		// for some reason an 'array_key_exists' check does not work here. using isset instead.
-		if (isset($this->collection_expiration_periods[$collection_name])) {
-			return $this->collection_expiration_periods[$collection_name];
-		} else {
-			return false;
-		}
-	}
+
 }
 
 ?>
