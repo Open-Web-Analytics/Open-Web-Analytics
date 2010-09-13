@@ -223,7 +223,7 @@ class Log_file extends Log
                 chmod($this->_filename, $this->_mode);
             }
         }
-	
+
         return $this->_opened;
     }
 
@@ -298,8 +298,7 @@ class Log_file extends Log
         if ($this->_locking) {
             flock($this->_fp, LOCK_EX);
         }
-		//$bt = array_reverse(debug_backtrace());
-		//print_r($line);
+
         /* Write the log line to the log file. */
         $success = (fwrite($this->_fp, $line) !== false);
 
