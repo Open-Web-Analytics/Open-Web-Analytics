@@ -25,26 +25,28 @@ require_once('owa_env.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_mw.php');
 require_once "$IP/includes/SpecialPage.php";
 
-/* MEDIAWIKI GLOBALS */
-global $wgCachePages, $wgUser, $wgServer, $wgScriptPath, $wgScript;
+/* GLOBALS */
+global	$wgServer, 				// mediawiki server name
+		$wgScriptPath, 			// mediawiki script path
+		$wgScript, 				// mediawiki script name
+		$wgMainCacheType, 		// mediawiki cache type
+		$wgMemCachedServers, 	// mediawiki's memcached server array
+		$wgOwaEnableSpecialPage	// owa switch to enable the mw special page
+		$wgOwaMemCachedServers, // owa memcached servers override
+		$wgOwaSiteId;			// owa site id override
 
-/* OWA's CONFIGURATION OVERRIDES */
-$owa_config = array();
-$wiki_url = $wgScriptPath;
-$owa_config['report_wrapper'] = 'wrapper_mediawiki.tpl';
-$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';
-$owa_config['images_absolute_url'] = $owa_config['images_url'];
-$owa_config['main_url'] = $wgScriptPath.'/index.php?title=Special:Owa';
-$owa_config['main_absolute_url'] = $wgServer.$owa_config['main_url'];
-$owa_config['action_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction';
-$owa_config['api_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_apiAction';
-$owa_config['log_url'] = $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1';
-$owa_config['link_template'] = '%s&%s';
-$owa_config['site_id'] = md5($wgServer.$wiki_url);
-$owa_config['is_embedded'] = true;
-$owa_config['delay_first_hit'] = false;
-$owa_config['error_handler'] = 'development';
-$owa_config['query_string_filters'] = 'returnto';
+if ( ! isset( $wgOwaMemCachedServers ) ) {
+	$wgOwaMemCachedServers = array();
+}
+
+if ( ! isset ( $wgOwaSiteId ) ) {
+	$wgOwaSiteId = md5($wgServer.$wgScriptPath);
+}
+
+if ( ! isset ( $wgOwaEnableSpecialPage ) ) {
+	$wgOwaEnableSpecialPage = true;
+}
+
 
 // Register Extension with MediaWiki
 $wgExtensionFunctions[] = 'owa_main';
@@ -60,12 +62,14 @@ $wgExtensionCredits['specialpage'][] = array(
   		'description' 	=> 'Open Web Analytics for MedaWiki'
 );
 
-//Load Special Page
-$wgAutoloadClasses['SpecialOwa'] = __FILE__;
-
-// Adds OWA's admin interface to special page list
-$wgSpecialPages['Owa'] = 'SpecialOwa';
-$wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
+// Enable Special Page
+if ( $wgOwaEnableSpecialPage ) {
+	//Load Special Page
+	$wgAutoloadClasses['SpecialOwa'] = __FILE__;
+	// Adds OWA's admin interface to special page list
+	$wgSpecialPages['Owa'] = 'SpecialOwa';
+	$wgHooks['LoadAllMessages'][] = 'SpecialOwa::loadMessages';
+}
 
 /**
  * Main Mediawiki Extension method
@@ -125,12 +129,43 @@ function owa_actions($action) {
 	}
 }
 
+/**
+ * OWA Singelton
+ *
+ * Needed to avoid OWA loading for every mediawiki request
+ */
 function owa_singleton() {
 
-	global $wgUser, $owa_config;
+	global 	$wgUser, 
+			$wgServer, 
+			$wgScriptPath, 
+			$wgScript, 
+			$wgMainCacheType, 
+			$wgMemCachedServers,
+			$wgOwaSiteId,
+			$wgOwaMemCachedServers;
+	
 	$wgUser->load();
-	$owa = &owa_mw::singleton($owa_config);
-	$owa->setSiteId($owa_config['site_id']);
+	/* OWA CONFIGURATION OVERRIDES */
+	$owa_config = array();
+	// check for memcache. these need to be passed into OWA to avoid race condition.
+	if ( $wgMainCacheType === CACHE_MEMCACHED ) {
+		$owa_config['cacheType'] = 'memcached';
+		$owa_config['memcachedServers'] = $wgOwaMemCachedServers || $wgMemCachedServers;
+	}
+	$owa = &owa_mw::singleton( $owa_config );
+	$owa->setSetting( 'base', 'report_wrapper', 'wrapper_mediawiki.tpl' );
+	$owa->setSetting( 'base', 'main_url', $wgScriptPath.'/index.php?title=Special:Owa' );
+	$owa->setSetting( 'base', 'main_absolute_url', $wgServer.$owa->getSetting( 'base', 'main_url' ) );
+	$owa->setSetting( 'base', 'action_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction' );
+	$owa->setSetting( 'base', 'api_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_apiAction' );
+	$owa->setSetting( 'base', 'log_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1' );
+	$owa->setSetting( 'base', 'link_template', '%s&%s' );
+	$owa->setSetting( 'base', 'is_embedded', true );
+	$owa->setSetting( 'base', 'delay_first_hit', false );
+	$owa->setSetting( 'base', 'query_string_filters', 'returnto' );
+	
+	$owa->setSiteId( $wgOwaSiteId );
 	$cu = &owa_coreAPI::getCurrentUser();
 	$cu->setUserData('user_id', $wgUser->mName);
 	$cu->setUserData('email_address', $wgUser->mEmail);
