@@ -342,8 +342,7 @@ class owa_service extends owa_base {
 	}
 	
 	function getCliCommandClass($command) {
-		print_r($this->maps['cli_commands']);
-		print_r($command);
+		
 		return $this->getMapValue('cli_commands', $command);
 	}
 	

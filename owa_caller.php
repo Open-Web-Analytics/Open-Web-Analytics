@@ -350,6 +350,11 @@ class owa_caller extends owa_base {
 	
 	function trackPageView($event) {
 		
+		return $this->trackPageview($event);
+	}
+	
+	function trackPageview($event) {
+	
 		$event->setEventType('base.page_request');
 		$this->pageview_event = $event;
 		return $this->trackEvent($event);
