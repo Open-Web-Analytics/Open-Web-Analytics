@@ -348,11 +348,6 @@ class owa_caller extends owa_base {
 		return owa_coreAPI::supportClassFactory('base', 'event');
 	}
 	
-	function trackPageView($event) {
-		
-		return $this->trackPageview($event);
-	}
-	
 	function trackPageview($event) {
 	
 		$event->setEventType('base.page_request');
