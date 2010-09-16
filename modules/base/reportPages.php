@@ -46,7 +46,7 @@ class owa_reportPagesController extends owa_reportController {
 				'template' 		=> array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
 				'valueColumns' 	=> 'pageUrl'));
 		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <%= this.d.resultSet.aggregates.uniquePageViews.value %> unique pages.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.');
 		$this->set('gridTitle', 'Top Pages');		
 	}
 }

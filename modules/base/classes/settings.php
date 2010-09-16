@@ -814,7 +814,7 @@
 	function setCookieDomain ($domain) {
 		
 		//check for local host
-		if ( $domain === 'localhost' ) {
+		if ( strpos( $domain, 'localhost' ) ) {
 		 	$cookie_domain = false;
 		// check for local domain 	
 		} elseif ( ! strpos($domain, '.') ) {
