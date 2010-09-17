@@ -43,21 +43,33 @@ class owa_domstreamHandlers extends owa_observer {
     function notify($event) {
 		
     	$ds = owa_coreAPI::entityFactory('base.domstream');
-		$ds->set('id', $ds->generateRandomUid());
-		//$ds->set('id', $event->get('guid'));
-		$ds->set('visitor_id', $event->get('inbound_visitor_id'));
-		$ds->set('session_id', $event->get('inbound_session_id'));
-		$ds->set('site_id', $event->get('site_id'));
-		$ds->set('document_id', $ds->generateId($event->get('page_url')));
-		
-		$ds->set('page_url', $event->get('page_url'));
-		$ds->set('events', $event->get('stream_events'));
-		$ds->set('duration', $event->get('duration'));
-		$ds->set('timestamp', $event->get('timestamp'));
-		//require_once(OWA_DIR.'owa_lib.php');
-		$ds->set('yyyymmdd', owa_lib::timestampToYyyymmdd($event->get('timestamp')));
-		owa_coreAPI::debug("yyyymmdd: ".owa_lib::timestampToYyyymmdd($event->get('timestamp')));
-		$ds->create();
+    	$ds->load( $event->get('guid') );
+    	
+    	if ( ! $ds->wasPeristed() ) {
+	    	
+			$ds->set('id', $event->get('guid') );
+			//$ds->set('id', $event->get('guid'));
+			$ds->set('visitor_id', $event->get('inbound_visitor_id'));
+			$ds->set('session_id', $event->get('inbound_session_id'));
+			$ds->set('site_id', $event->get('site_id'));
+			$ds->set('document_id', $ds->generateId($event->get('page_url')));	
+			$ds->set('page_url', $event->get('page_url'));
+			$ds->set('events', $event->get('stream_events'));
+			$ds->set('duration', $event->get('duration'));
+			$ds->set('timestamp', $event->get('timestamp'));
+			$ds->set('yyyymmdd', owa_lib::timestampToYyyymmdd($event->get('timestamp')));
+			$ret = $ds->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
+		} else {
+			owa_coreAPI::debug('No persisting. Domsteam  already exists.');
+			return OWA_EHS_EVENT_HANDLED;
+		}
     }
     
 }

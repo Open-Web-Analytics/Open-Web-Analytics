@@ -42,26 +42,27 @@ class owa_documentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-
 		$d = owa_coreAPI::entityFactory('base.document');
-		
 		$id = owa_lib::setStringGuid($event->get('page_url'));
-		
 		$d->load($id);
 		
-		if (!$d->get('id')) {
+		if ( ! $d->get('id') ) {
 			
 			$d->setProperties($event->getProperties());
-	
 			$d->set('url', $event->get('page_url'));
-			
 			$d->set('uri', $event->get('page_uri'));
-		
 			$d->set('id', $id); 
-		
-			$d->create();
+			$ret = $d->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
 		} else {
 			owa_coreAPI::debug('Not logging Document, already exists');
+			return OWA_EHS_EVENT_HANDLED;
 		}   	
     }
     

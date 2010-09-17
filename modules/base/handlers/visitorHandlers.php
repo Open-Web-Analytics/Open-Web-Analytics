@@ -46,10 +46,10 @@ class owa_visitorHandlers extends owa_observer {
     	switch ($event->get('is_new_visitor')) {
     		
     		case true:
-    			$this->logVisitor($event);
-    			break;
+    			return $this->logVisitor($event);
+    		
     		case false:
-    			$this->logVisitorUpdate($event);
+    			return $this->logVisitorUpdate($event);
     			break;
     	}
     }
@@ -57,59 +57,70 @@ class owa_visitorHandlers extends owa_observer {
     function logVisitor($event) {
     	
     	$v = owa_coreAPI::entityFactory('base.visitor');
-	
-		$v->setProperties($event->getProperties());
-	
-		// Set Primary Key
-		$v->set('id', $event->get('visitor_id'));
+    	
+    	$v->load( $event->get( 'visitor_id' ) );
+    	
+    	if ( ! $v->wasPersisted() ) {
+    		
+			$v->setProperties($event->getProperties());
 		
-		$v->set('user_name', $event->get('user_name'));
-		$v->set('user_email', $event->get('user_email'));
-		$v->set('first_session_id', $event->get('session_id'));
-		$v->set('first_session_year', $event->get('year'));
-		$v->set('first_session_month', $event->get('month'));
-		$v->set('first_session_day', $event->get('day'));
-		$v->set('first_session_dayofyear', $event->get('dayofyear'));
-		$v->set('first_session_timestamp', $event->get('timestamp'));
-		$v->set('num_prior_sessions', $event->get('num_prior_sessions'));
-		$v->create();
+			// Set Primary Key
+			$v->set( 'id', $event->get('visitor_id') );
+			
+			$v->set('user_name', $event->get('user_name'));
+			$v->set('user_email', $event->get('user_email'));
+			$v->set('first_session_id', $event->get('session_id'));
+			$v->set('first_session_year', $event->get('year'));
+			$v->set('first_session_month', $event->get('month'));
+			$v->set('first_session_day', $event->get('day'));
+			$v->set('first_session_dayofyear', $event->get('dayofyear'));
+			$v->set('first_session_timestamp', $event->get('timestamp'));
+			$v->set('num_prior_sessions', $event->get('num_prior_sessions'));
+			$ret = $v->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
+		} else {
+			owa_coreAPI::debug("Not persisting. Visitor already exists.");
+			return OWA_EHS_EVENT_HANDLED;
+		}
     }
     
     function logVisitorUpdate($event) {
     	
     	$v = owa_coreAPI::entityFactory('base.visitor');
 
-		$v->getByPk('id', $event->get('visitor_id'));
+		$v->load( $event->get('visitor_id' ) );
 		
-		if ($event->get('user_name')) {
-			$v->set('user_name', $event->get('user_name'));
-		}
-		
-		if ($event->get('user_email')) {
-			$v->set('user_email', $event->get('user_email'));
-		}
-		$v->set('last_session_id', $event->get('session_id'));
-		$v->set('last_session_year', $event->get('year'));
-		$v->set('last_session_month', $event->get('month'));
-		$v->set('last_session_day', $event->get('day'));
-		$v->set('last_session_dayofyear', $event->get('dayofyear'));
-		$v->set('num_prior_sessions', $event->get('num_prior_sessions'));	
-		
-		$id = $v->get('id');
-		
-		if (!empty($id)) {
-			$v->update();
+		if ( $v->wasPersisted() ) {
+			if ( $event->get( 'user_name' ) ) {
+				$v->set( 'user_name', $event->get( 'user_name' ) );
+			}
 			
-		// insert the visitor object just in case it's not found in the db	
+			if ($event->get('user_email')) {
+				$v->set('user_email', $event->get('user_email'));
+			}
+			$v->set('last_session_id', $event->get('session_id'));
+			$v->set('last_session_year', $event->get('year'));
+			$v->set('last_session_month', $event->get('month'));
+			$v->set('last_session_day', $event->get('day'));
+			$v->set('last_session_dayofyear', $event->get('dayofyear'));
+			$v->set('num_prior_sessions', $event->get('num_prior_sessions'));	
+			$ret = $v->update();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
 		} else {
-			$v->set('id', $event->get('visitor_id'));
-			$v->set('first_session_id', $event->get('session_id'));
-			$v->set('first_session_year', $event->get('year'));
-			$v->set('first_session_month', $event->get('month'));
-			$v->set('first_session_day', $event->get('day'));
-			$v->set('first_session_dayofyear', $event->get('dayofyear'));	
-			$v->set('first_session_timestamp', $event->get('timestamp'));		
-			$v->create();
+			owa_coreAPI::debug("Not updating visitor. Visitor does not exists.");
+			return OWA_EHS_EVENT_FAILED;
 		}
     }
 }

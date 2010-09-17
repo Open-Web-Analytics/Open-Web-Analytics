@@ -21,7 +21,12 @@ if (!class_exists('owa_observer')) {
 	require_once(OWA_BASE_CLASSES_DIR. 'owa_observer.php');
 }
 
-require_once(OWA_BASE_CLASS_DIR.'event.php');
+if (!class_exists('owa_event') ) {
+	require_once(OWA_BASE_CLASS_DIR.'event.php');
+}
+
+define('OWA_EHS_EVENT_HANDLED', 2);
+define('OWA_EHS_EVENT_FAILED', 3);
 
 /**
  * Event Dispatcher
@@ -40,19 +45,19 @@ class eventQueue {
 	 * Stores listeners
 	 *
 	 */
-	var $listeners;
+	var $listeners = array();
 	
 	/**
 	 * Stores listener IDs by event type
 	 *
 	 */
-	var $listenersByEventType;
+	var $listenersByEventType = array();
 	
 	/**
 	 * Stores listener IDs by event type
 	 *
 	 */
-	var $listenersByFilterType;
+	var $listenersByFilterType = array();
 	
 	/**
 	 * Constructor
@@ -127,6 +132,7 @@ class eventQueue {
 	 */
 	function notify($event) {
 		
+		$responses = array();
 		owa_coreAPI::debug("Notifying listeners of ".$event->getEventType());
 		//print_r($this->listenersByEventType[$event_type] );
 		//print $event->getEventType();
@@ -136,14 +142,25 @@ class eventQueue {
 			if (!empty($list)) {
 				foreach ($this->listenersByEventType[$event->getEventType()] as $k => $observer_id) {
 					//print_r($list);
-					call_user_func_array($this->listeners[$observer_id], array($event));
+					$class = get_class( $this->listeners[$observer_id][0] );
+					$responses[ $class ] = call_user_func_array($this->listeners[$observer_id], array($event));
 					//owa_coreAPI::debug(print_r($event, true));
 					owa_coreAPI::debug(sprintf("%s event handled by %s.",$event->getEventType(), get_class($this->listeners[$observer_id][0])));
 				}
 			}
 		} else {
 			owa_coreAPI::debug("no listeners registered for this event type.");
-		}		
+		}	
+		
+		owa_coreAPI::debug('EHS: Responses - '.print_r($responses, true));
+		
+		if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
+			owa_coreAPI::debug("EHS: Event was not handled successfully by some handlers.");
+			return OWA_EHS_EVENT_FAILED;
+		} else {
+			owa_coreAPI::debug("EHS: Event was handled successfully by all handlers.");
+			return OWA_EHS_EVENT_HANDLED;
+		}
 		
 	}
 	

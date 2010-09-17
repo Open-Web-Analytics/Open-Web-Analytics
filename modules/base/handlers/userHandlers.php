@@ -56,7 +56,7 @@ class owa_userHandlers extends owa_observer {
     			break;	
     	}
 		
-		return;
+		return OWA_EHS_EVENT_HANDLED;
     }
     
 }

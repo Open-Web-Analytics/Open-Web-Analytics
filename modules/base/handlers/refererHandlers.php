@@ -55,73 +55,85 @@ class owa_refererHandlers extends owa_observer {
     	// Make entity
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
-		// set referer url
-		$r->set('url', $event->get('HTTP_REFERER'));
+		$r->load( $r->generateId( $event->get( 'HTTP_REFERER' ) ) );
 		
-		// check for search engine
-		$se_info = $this->lookupSearchEngine($event->get('HTTP_REFERER'));
-		if (!empty($se_info)):
-			$r->set('is_searchengine', true);
-			$r->set('site_name', $se_info->name);
-		endif;
+		if ( ! $r->wasPersisted() ) {
 		
-		// Set site
-		$url = parse_url($event->get('HTTP_REFERER'));
-		$r->set('site', $url['host']);
-				
-		if ($event->get('source') === 'organic-search') {
-			$r->set('is_searchengine', true);
-		}
+			// set referer url
+			$r->set('url', $event->get('HTTP_REFERER'));
 			
-		// set title. this will be updated later by the crawler.
-		$r->set('page_title', $event->get('HTTP_REFERER'));
-		// Set id
-		$r->set('id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
-		// Persist to database
-		$r->create();
-		
-		// Crawl and analyze refering page
-		if (owa_coreAPI::getSetting('base', 'fetch_refering_page_info')) {
-			//owa_coreAPI::debug('hello from logReferer');
-			$crawler = new owa_http;
-			//$crawler->fetch($this->params['HTTP_REFERER']);
-			$res = $crawler->getRequest($event->get('HTTP_REFERER'), $response);
-			owa_coreAPI::debug(print_r($res, true));
-			//Extract Title
+			// check for search engine
+			$se_info = $this->lookupSearchEngine($event->get('HTTP_REFERER'));
+			if (!empty($se_info)) {
+				$r->set('is_searchengine', true);
+				$r->set('site_name', $se_info->name);
+			}
 			
-			$title = trim($crawler->extract_title());
-			
-			if ($title) {
-				
-				$r->set('page_title', owa_lib::utf8Encode( $title ) );	
-			} else {
-				$r->set('page_title', $r->get('url'));
-			}		
-			
-			$se = $r->get('is_searchengine');
-			//Extract anchortext and page snippet but not if it's a search engine...
-			if ($se != true) {
-			
-				$snippet = $crawler->extract_anchor_snippet($event->get('inbound_page_url'));
-				
-				if ($snippet) {
-					if (function_exists('iconv')) {
-						$snippet = iconv('UTF-8','UTF-8//TRANSLIT',$snippet);
-					}
-					$r->set('snippet', $snippet);
-				}
-				
-				$anchortext = $crawler->anchor_info['anchor_text'];
-				
-				if ($anchortext) {
-			
-					$r->set('refering_anchortext', owa_lib::utf8Encode( $anchortext ) );
-				}
+			// Set site
+			$url = parse_url($event->get('HTTP_REFERER'));
+			$r->set('site', $url['host']);
+					
+			if ($event->get('source') === 'organic-search') {
+				$r->set('is_searchengine', true);
 			}
 				
-			//write to DB
-			$r->update();
+			// set title. this will be updated later by the crawler.
+			$r->set('page_title', $event->get('HTTP_REFERER'));
+			// Set id
+			$r->set('id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 			
+			// Crawl and analyze refering page
+			if (owa_coreAPI::getSetting('base', 'fetch_refering_page_info')) {
+				//owa_coreAPI::debug('hello from logReferer');
+				$crawler = new owa_http;
+				//$crawler->fetch($this->params['HTTP_REFERER']);
+				$res = $crawler->getRequest($event->get('HTTP_REFERER'), $response);
+				owa_coreAPI::debug(print_r($res, true));
+				//Extract Title
+				
+				$title = trim($crawler->extract_title());
+				
+				if ($title) {
+					
+					$r->set('page_title', owa_lib::utf8Encode( $title ) );	
+				} else {
+					$r->set('page_title', $r->get('url'));
+				}		
+				
+				$se = $r->get('is_searchengine');
+				//Extract anchortext and page snippet but not if it's a search engine...
+				if ($se != true) {
+				
+					$snippet = $crawler->extract_anchor_snippet($event->get('inbound_page_url'));
+					
+					if ($snippet) {
+						if (function_exists('iconv')) {
+							$snippet = iconv('UTF-8','UTF-8//TRANSLIT',$snippet);
+						}
+						$r->set('snippet', $snippet);
+					}
+					
+					$anchortext = $crawler->anchor_info['anchor_text'];
+					
+					if ($anchortext) {
+				
+						$r->set('refering_anchortext', owa_lib::utf8Encode( $anchortext ) );
+					}
+				}	
+			}
+			
+			// Persist to database
+			$ret = $r->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
+		} else {
+			owa_coreAPI::debug('Not Persisting. Referrer already exists.');
+			return OWA_EHS_EVENT_HANDLED;
 		}
     }
     

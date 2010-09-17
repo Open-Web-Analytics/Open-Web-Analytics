@@ -225,6 +225,10 @@ class owa_db extends owa_base {
 		return;
 	}
 	
+	function select($name, $as = '') {
+		return $this->selectColumn($name, $as = '');
+	}
+	
 	function where($name, $value, $operator = '') {
 		
 		if (empty($operator)):
@@ -348,6 +352,10 @@ class owa_db extends owa_base {
 		
 		$this->_sqlParams['query_type'] = 'select';
 		$this->_sqlParams['from'][$name] = array('name' => $name, 'as' => $as);
+	}
+	
+	function from($name, $as = '') {
+		return $this->selectFrom($name, $as = '');
 	}
 	
 	function insertInto($table) {

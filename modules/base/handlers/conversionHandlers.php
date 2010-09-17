@@ -64,7 +64,7 @@ class owa_conversionHandlers extends owa_observer {
 						owa_coreAPI::debug( "$goal_column was achieved." );
 					} else {
 						owa_coreAPI::debug( 'Not updating session. Goal was already achieved in same session.' );
-						return true;
+						return OWA_EHS_EVENT_HANDLED;
 					}
 					
 					// set goal value
@@ -122,21 +122,23 @@ class owa_conversionHandlers extends owa_observer {
 						$ce = $dispatch->makeEvent( 'new_conversion' );
 						$ce->set( 'session_id', $event->get( 'session_id' ) );
 						$dispatch->asyncNotify( $ce );
+						return OWA_EHS_EVENT_HANDLED;
+					} else {
+						return OWA_EHS_EVENT_FAILED;
 					}
 											
-					return $ret;
 				} else {
-					return true;
+					return OWA_EHS_EVENT_HANDLED;
 				}
 				
 			} else {
 				owa_coreAPI::debug("Conversion processing aborted. No session could be found.");
-				return false;
+				return OWA_EHS_EVENT_FAILED;
 			}
 				
 		} else {
 			owa_coreAPI::debug('No goal start or conversion detected.');
-			return true;
+			return OWA_EHS_EVENT_HANDLED;
 		}
     }
         

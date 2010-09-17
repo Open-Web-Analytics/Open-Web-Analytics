@@ -399,21 +399,22 @@ class memcached
    function get ($key)
    {
       $fname = 'memcached::get';
-      wfProfileIn( $fname );
+      
+      if (defined('MEDIAWIKI')) wfProfileIn( $fname );
 
       if ( $this->_debug ) {
          $this->_debugprint( "get($key)\n" );
       }
 
       if (!$this->_active) {
-	 wfProfileOut( $fname );
+	     if (defined('MEDIAWIKI')) wfProfileOut( $fname );
          return false;
       }
 
       $sock = $this->get_sock($key);
 
       if (!is_resource($sock)) {
-	 wfProfileOut( $fname );
+	     if (defined('MEDIAWIKI')) wfProfileOut( $fname );
          return false;
       }
 
@@ -423,7 +424,7 @@ class memcached
       if (!$this->_safe_fwrite($sock, $cmd, strlen($cmd)))
       {
          $this->_dead_sock($sock);
-	 wfProfileOut( $fname );
+	     if (defined('MEDIAWIKI')) wfProfileOut( $fname );
          return false;
       }
 
@@ -434,7 +435,7 @@ class memcached
          foreach ($val as $k => $v)
             $this->_debugprint(sprintf("MemCache: sock %s got %s\n", serialize($sock), $k));
 
-      wfProfileOut( $fname );
+      if (defined('MEDIAWIKI')) wfProfileOut( $fname );
       return @$val[$key];
    }
 

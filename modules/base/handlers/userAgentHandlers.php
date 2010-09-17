@@ -51,15 +51,20 @@ class owa_userAgentHandlers extends owa_observer {
 			$ua->setProperties($event->getProperties());
 			$ua->set('ua', $event->get('HTTP_USER_AGENT'));
 			$ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT'))); 
-			$ua->create();
+			$ret = $ua->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
 			
 		} else {
 		
 			owa_coreAPI::debug('not logging, user agent already exists.');
+			return OWA_EHS_EVENT_HANDLED;
 		}
-	
     }
-    
 }
 
 ?>

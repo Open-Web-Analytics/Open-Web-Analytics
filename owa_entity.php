@@ -37,6 +37,7 @@ class owa_entity {
 	var $name;
 	var $properties = array();
 	var $_tableProperties = array();
+	var $wasPersisted;
 	var $cache;
 	
 	function __construct($cache = '', $db = '') {
@@ -217,6 +218,15 @@ class owa_entity {
 		return $status;
 	}
 	
+	function save() {
+		
+		if ( $this->wasPersisted ) {
+			$this->update();
+		} else {
+			$this->create();
+		}
+	}
+	
 	function addToCache() {
 		
 		if($this->isCachable()) {
@@ -371,6 +381,7 @@ class owa_entity {
 			if (!empty($properties)) {
 					
 				$this->setProperties($properties);
+				$this->wasPersisted = true;
 				// add to cache			
 				$this->addToCache();		
 			}
@@ -658,6 +669,10 @@ class owa_entity {
 	function setCharacterEncoding($encoding) {
 		
 		$this->_tableProperties['character_encoding'] = $encoding;
+	}
+	
+	function wasPersisted() {
+		return $this->wasPersisted;
 	}
 }
 
