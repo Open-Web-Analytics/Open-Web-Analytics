@@ -557,7 +557,7 @@
 				'log_robots'						=> false,
 				'log_sessions'						=> true,
 				'log_dom_clicks'					=> true,
-				'delay_first_hit'					=> true,
+				'delay_first_hit'					=> false,
 				'async_db'							=> false,
 				'clean_query_string'				=> true,
 				'fetch_refering_page_info'			=> true,
