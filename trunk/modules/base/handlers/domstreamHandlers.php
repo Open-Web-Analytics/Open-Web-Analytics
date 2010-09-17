@@ -45,7 +45,7 @@ class owa_domstreamHandlers extends owa_observer {
     	$ds = owa_coreAPI::entityFactory('base.domstream');
     	$ds->load( $event->get('guid') );
     	
-    	if ( ! $ds->wasPeristed() ) {
+    	if ( ! $ds->wasPersisted() ) {
 	    	
 			$ds->set('id', $event->get('guid') );
 			//$ds->set('id', $event->get('guid'));
