@@ -119,8 +119,6 @@ function owa_actions($action) {
 
 	if ($_GET['action'] === 'owa') {
 		$owa = owa_singleton();
-		//print_r($wgUser);
-		//owa_set_priviledges();
 		$owa->handleSpecialActionRequest();
 		return false;
 	} else {
@@ -162,8 +160,12 @@ function owa_singleton() {
 	$owa->setSetting( 'base', 'link_template', '%s&%s' );
 	$owa->setSetting( 'base', 'is_embedded', true );
 	$owa->setSetting( 'base', 'query_string_filters', 'returnto' );
-	
 	$owa->setSiteId( $wgOwaSiteId );
+	/**
+ 	 * Populates OWA's current user object with info about the current mediawiki user.
+ 	 * This info is needed by OWA authentication system as well as to add dimensions
+ 	 * requests that are logged.
+ 	 */
 	$cu = &owa_coreAPI::getCurrentUser();
 	$cu->setUserData('user_id', $wgUser->mName);
 	$cu->setUserData('email_address', $wgUser->mEmail);
@@ -172,33 +174,6 @@ function owa_singleton() {
 	$cu->setAuthStatus(true);
 	
 	return $owa;
-	
-}
-
-/**
- * OWA Priviledges
- *
- * Populates OWA requestion container with info about the current mediawiki user.
- * This info is needed by OWA authentication system as well as to add dimensions
- * requests that are logged.
- */
-function owa_set_priviledges() {
-	
-	global $wgUser;	
-	
-	$owa = owa_singleton();
-	//print_r($wgUser);
-	// preemptively set the current user info and mark as authenticated so that
-	// downstream controllers don't have to authenticate
-	$cu = &owa_coreAPI::getCurrentUser();
-	$cu->setUserData('user_id', $wgUser->mName);
-	$cu->setUserData('email_address', $wgUser->mEmail);
-	$cu->setUserData('real_name', $wgUser->mRealName);
-	$cu->setRole(owa_translate_role($wgUser->mGroups));
-	
-	$cu->setAuthStatus(true);
-		
-	return true;
 }
 
 function owa_translate_role($level = array()) {
@@ -344,7 +319,7 @@ function owa_logArticle(&$article) {
 function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision) {
 	
 	$owa = owa_singleton();
-    //owa_set_priviledges();
+   
     if ($owa->getSetting('base', 'install_complete')) {
     	$label = $article->mTitle->mTextform;
 		$owa->trackAction('mediawiki', 'Article Created', $label);
@@ -354,7 +329,9 @@ function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$
 	return true;
 }
 
-function owa_editArticleAction($article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision, &$status, $baseRevId, &$redirect) {
+function owa_editArticleAction($article, &$user, $text, $summary, 
+		$minoredit, &$watchthis, $sectionanchor, &$flags, $revision, 
+		&$status, $baseRevId, &$redirect) {
 	
 	if ( $flags & EDIT_UPDATE ) {
 		
@@ -432,7 +409,7 @@ function editTalkPageAction( $article ) {
 }
 
 /**
- * Adds helper page tags to Article Pages if they are needed
+ * Adds javascript tracker to pages
  *
  * @param object $article
  * @return boolean
