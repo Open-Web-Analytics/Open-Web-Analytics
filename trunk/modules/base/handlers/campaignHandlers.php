@@ -53,11 +53,18 @@ class owa_campaignHandlers extends owa_observer {
 				
 				$d->set('id', $new_id);
 				$d->set('name', $event->get('campaign'));
-				$d->create();
+				$ret = $d->create();
+				
+				if ( $ret ) {
+					return OWA_EHS_EVENT_HANDLED;
+				} else {
+					return OWA_EHS_EVENT_FAILED;
+				}
 				
 			} else {
 			
 				owa_coreAPI::debug('Not Persisting. Campaign already exists.');
+				return OWA_EHS_EVENT_HANDLED;
 			}	
 		}
     }

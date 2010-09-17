@@ -50,15 +50,20 @@ class owa_osHandlers extends owa_observer {
 			
 			$os->set('name', $event->get('os'));
 			$os->set('id', owa_lib::setStringGuid($event->get('os'))); 
-			$os->create();
+			$ret = $os->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
 			
 		} else {
 		
-			owa_coreAPI::debug('not logging, operating system already exists.');
+			owa_coreAPI::debug('Not persistig. Operating system already exists.');
+			return OWA_EHS_EVENT_HANDLED;
 		}
-	
     }
-    
 }
 
 ?>

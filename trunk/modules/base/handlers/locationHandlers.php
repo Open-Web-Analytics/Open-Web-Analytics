@@ -90,12 +90,18 @@ class owa_locationHandlers extends owa_observer {
 			$h->set('country_code', $event->get('country_code'));
 			$h->set('state', $event->get('state'));
 			$h->set('id', $location_id); 
-			$h->create();
+			$ret = $h->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
 			
 		} else {
 		
 			owa_coreAPI::debug('Not Logging. Location already exists');
-			
+			return OWA_EHS_EVENT_HANDLED;
 		}	
     }
     

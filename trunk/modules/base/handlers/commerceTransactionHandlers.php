@@ -81,7 +81,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
 				if ( $items ) {
 					
 					foreach ($items as $item) {
-						$this->persistLineItem($item, $event);
+						$ret = $this->persistLineItem($item, $event);
 					}
 				}
 			}
@@ -93,9 +93,16 @@ class owa_commerceTransactionHandlers extends owa_observer {
 				$dispatch->asyncNotify( $sce );
 			}
 			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
 		} else {
 		
 			owa_coreAPI::debug('Not Persisting. Transaction already exists');
+			return OWA_EHS_EVENT_HANDLED;
 		}	
     }
     

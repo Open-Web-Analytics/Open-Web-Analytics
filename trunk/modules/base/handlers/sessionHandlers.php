@@ -43,9 +43,9 @@ class owa_sessionHandlers extends owa_observer {
     function notify($event) {
 		
     	if ($event->get('is_new_session')) {
-    		$this->logSession($event);
+    		return $this->logSession($event);
     	} else {
-    		$this->logSessionUpdate($event);
+    		return $this->logSessionUpdate($event);
     	}
     }
     
@@ -54,102 +54,116 @@ class owa_sessionHandlers extends owa_observer {
     	// Control logic
 		
 		$s = owa_coreAPI::entityFactory('base.session');
+		
+		$s->load( $event->get('session_id') );
+		
+		if ( ! $s->wasPersisted() ) {
+		
+			$s->setProperties($event->getProperties());
+		
+			// Set Primary Key
+			$s->set( 'id', $event->get('session_id') );
+			 
+			// set initial number of page views
+			$s->set('num_pageviews', 1);
+			$s->set('is_bounce', true);
 	
-		$s->setProperties($event->getProperties());
-	
-		// Set Primary Key
-		$s->set('id', $event->get('session_id'));
-		 
-		// set initial number of page views
-		$s->set('num_pageviews', 1);
-		$s->set('is_bounce', true);
-
-		// set prior session time properties		
-		$s->set('prior_session_lastreq', $event->get('last_req'));
-				
-		$s->set('prior_session_id', $event->get('inbound_session_id'));
-		
-		if ($s->get('prior_session_lastreq') > 0) {
-			$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
-			$s->set('prior_session_year', date("Y", $event->get('last_req')));
-			$s->set('prior_session_month', date("M", $event->get('last_req')));
-			$s->set('prior_session_day', date("d", $event->get('last_req')));
-			$s->set('prior_session_hour', date("G", $event->get('last_req')));
-			$s->set('prior_session_minute', date("i", $event->get('last_req')));
-			$s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
-		}
-		
-		// set last_req to be the timestamp of the event that triggered this session.
-		$s->set('last_req', $event->get('timestamp'));
-		$s->set('days_since_first_session', $event->get('days_since_first_session'));
-		$s->set('days_since_prior_session', $event->get('days_since_prior_session'));
-		$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
-				
-		// set medium
-		$s->set('medium', $event->get('medium'));
-		
-		// set source
-		if ($event->get('source')) {
-			$s->set('source_id', $s->generateId( 
-				trim( strtolower( $event->get('source') ) ) ) );		
-		}
+			// set prior session time properties		
+			$s->set('prior_session_lastreq', $event->get('last_req'));
+					
+			$s->set('prior_session_id', $event->get('inbound_session_id'));
 			
-		// set search terms
-		if ($event->get('search_terms')) {
-			$s->set('referring_search_term_id', $s->generateId( 
-				trim( strtolower( $event->get('search_terms') ) ) ) );		
-		}
-		
-		// set campaign
-		if ($event->get('campaign')) {
-			$s->set('campaign_id', $s->generateId( 
-				trim( strtolower( $event->get('campaign') ) ) ) );		
-		}
-		
-		// set ad
-		if ($event->get('ad')) {
-			$s->set('ad_id', $s->generateId( 
-				trim( strtolower( $event->get('ad') ) ) ) );		
-		}
-		
-		// set campaign touches
-		$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
-		
-		// Make ua id
-		$s->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
-		
-		// Make OS id
-		$s->set('os_id', owa_lib::setStringGuid($event->get('os')));
-	
-		// Make document ids	
-		$s->set('first_page_id', owa_lib::setStringGuid($event->get('page_url')));
+			if ($s->get('prior_session_lastreq') > 0) {
+				$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));
+				$s->set('prior_session_year', date("Y", $event->get('last_req')));
+				$s->set('prior_session_month', date("M", $event->get('last_req')));
+				$s->set('prior_session_day', date("d", $event->get('last_req')));
+				$s->set('prior_session_hour', date("G", $event->get('last_req')));
+				$s->set('prior_session_minute', date("i", $event->get('last_req')));
+				$s->set('prior_session_dayofweek', date("w", $event->get('last_req')));
+			}
 			
-		$s->set('last_page_id', $s->get('first_page_id'));
-	
-		// Generate Referer id
-		
-		if ($event->get('external_referer')) {
-			$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
-		}	
-		// Generate Host id
-		$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
-		
-		// this should already be set by the request handler.
-		$s->set( 'location_id', $event->get( 'location_id' ) );
+			// set last_req to be the timestamp of the event that triggered this session.
+			$s->set('last_req', $event->get('timestamp'));
+			$s->set('days_since_first_session', $event->get('days_since_first_session'));
+			$s->set('days_since_prior_session', $event->get('days_since_prior_session'));
+			$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
+					
+			// set medium
+			$s->set('medium', $event->get('medium'));
+			
+			// set source
+			if ($event->get('source')) {
+				$s->set('source_id', $s->generateId( 
+					trim( strtolower( $event->get('source') ) ) ) );		
+			}
 				
-		$s->create();
-
-		// create event message
-		$session = $s->_getProperties();
-		$properties = array_merge($event->getProperties(), $session);
-		$properties['request_id'] = $event->get('guid');
-		$ne = owa_coreAPI::supportClassFactory('base', 'event');
-		$ne->setProperties($properties);
-		$ne->setEventType('base.new_session');
+			// set search terms
+			if ($event->get('search_terms')) {
+				$s->set('referring_search_term_id', $s->generateId( 
+					trim( strtolower( $event->get('search_terms') ) ) ) );		
+			}
+			
+			// set campaign
+			if ($event->get('campaign')) {
+				$s->set('campaign_id', $s->generateId( 
+					trim( strtolower( $event->get('campaign') ) ) ) );		
+			}
+			
+			// set ad
+			if ($event->get('ad')) {
+				$s->set('ad_id', $s->generateId( 
+					trim( strtolower( $event->get('ad') ) ) ) );		
+			}
+			
+			// set campaign touches
+			$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
+			
+			// Make ua id
+			$s->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+			
+			// Make OS id
+			$s->set('os_id', owa_lib::setStringGuid($event->get('os')));
 		
-		// log the new session event to the event queue
-		$eq = owa_coreAPI::getEventDispatch();
-		$eq->notify($ne);
+			// Make document ids	
+			$s->set('first_page_id', owa_lib::setStringGuid($event->get('page_url')));
+				
+			$s->set('last_page_id', $s->get('first_page_id'));
+		
+			// Generate Referer id
+			
+			if ($event->get('external_referer')) {
+				$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
+			}	
+			// Generate Host id
+			$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
+			
+			// this should already be set by the request handler.
+			$s->set( 'location_id', $event->get( 'location_id' ) );
+					
+			$ret = $s->create();
+	
+			// create event message
+			$session = $s->_getProperties();
+			$properties = array_merge($event->getProperties(), $session);
+			$properties['request_id'] = $event->get('guid');
+			$ne = owa_coreAPI::supportClassFactory('base', 'event');
+			$ne->setProperties($properties);
+			$ne->setEventType('base.new_session');
+			
+			// log the new session event to the event queue
+			$eq = owa_coreAPI::getEventDispatch();
+			$eq->notify($ne);
+			
+			if ($ret) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+		} else {
+			owa_coreAPI::debug('Not persisting new session. Session already exists.');
+			return OWA_EHS_EVENT_HANDLED;
+		}
     }
     
     function logSessionUpdate($event) {
@@ -165,7 +179,7 @@ class owa_sessionHandlers extends owa_observer {
 		if (empty($id)) {
 			
 			owa_coreAPI::error("Aborting session update as no existing session was found");
-			return false;
+			return OWA_EHS_EVENT_FAILED;
 		}
 
 		// idempotent check needed in case updates are processed out of order.
@@ -187,7 +201,7 @@ class owa_sessionHandlers extends owa_observer {
 			$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
 			
 			// Persist to database
-			$s->update();
+			$ret = $s->update();
 		}
 				
 		// setup event message
@@ -199,7 +213,13 @@ class owa_sessionHandlers extends owa_observer {
 		$ne->setEventType('base.session_update');
 		// Log session update event to event queue
 		$eq = owa_coreAPI::getEventDispatch();
-		$eq->notify($ne);
+		$eq->notify( $ne );
+		
+		if ( $ret ) {	
+			return OWA_EHS_EVENT_HANDLED;
+		} else {
+			return OWA_EHS_EVENT_FAILED;
+		}
     }
     
     function summarizePageviews($id) {

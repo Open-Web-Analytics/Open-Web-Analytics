@@ -94,8 +94,7 @@ function owa_main() {
 	$wgHooks['UploadComplete'][] = 'owa_addUploadAction';
 	$wgHooks['UserLoginComplete'][] = 'owa_userLoginAction';
 	$wgHooks['ArticleEditUpdateNewTalk'][] ='owa_editTalkPageAction';
-				
-    return;
+	
 }
 
 /**
@@ -252,12 +251,13 @@ function owa_logSpecialPage(&$specialPage) {
 		$event->set( 'user_email', $wgUser->mEmail );
 		$event->set( 'page_title', $wgOut->mPagetitle );
 		$event->set( 'page_type', 'Special Page' );
+		$event->set( 'language', owa_getLanguage());
 		$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
 		$tag = sprintf(
-				'<script>
-				// owa tracking page params
-				var owa_params = %s
-				</script>'
+				'<!-- OWA Page View Tracking Params -->
+				<script>
+					var owa_params = %s;
+				</script>', 
 				, json_encode( $event->getProperties() )
 		);
 		
@@ -280,17 +280,21 @@ function owa_logCategoryPage(&$categoryPage) {
 	$owa = owa_singleton();
     if ($owa->getSetting('base', 'install_complete')) {
 		$event = $owa->makeEvent();
-		$event->setEventType('base.page_request');
-		$event->set('user_name', $wgUser->mName);
-		$event->set('user_email', $wgUser->mEmail);
-		$event->set('page_title', $wgOut->mPagetitle);
-		$event->set('page_type', 'Category');
-		$event->setSiteId(md5($wgServer.$wgScriptPath));
-		$tag = sprintf('<script>
-						// owa tracking page params
-						var owa_params = %s
-						</script>', json_encode($event->getProperties())
+		$event->setEventType( 'base.page_request' );
+		$event->set( 'user_name', $wgUser->mName );
+		$event->set( 'user_email', $wgUser->mEmail );
+		$event->set( 'page_title', $wgOut->mPagetitle );
+		$event->set( 'page_type', 'Category' );
+		$event->set( 'language', owa_getLanguage() );
+		$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
+		$tag = sprintf(
+				'<!-- OWA Page View Tracking Params -->
+				<script>
+					var owa_params = %s;
+				</script>', 
+				json_encode( $event->getProperties() )
 		);
+		
 		$wgOut->addHTML($tag);
 	}
 	return true;
@@ -317,13 +321,14 @@ function owa_logArticle(&$article) {
 		$event->set( 'user_email', $wgUser->mEmail );
 		$event->set( 'page_title', $article->mTitle->mTextform );
 		$event->set( 'page_type', 'Article' );
+		$event->set( 'language', owa_getLanguage() );
 		$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
 		$tag = sprintf(
-				'<script>
-				// owa tracking page params
-				var owa_params = %s
-				</script>'
-				, json_encode( $event->getProperties() ) );
+				'<!-- OWA Page View Tracking Params -->
+				<script>
+					var owa_params = %s;
+				</script>', 
+				json_encode( $event->getProperties() ) );
 		
 		$wgOut->addHTML( $tag );
 	}
@@ -452,6 +457,20 @@ function owa_footer(&$wgOut, $sk) {
 }
 
 /**
+ * Gets mediawiki Language variable
+ */
+function owa_getLanguage() {
+    	
+    	global $wgUserLanguage, $wgContentLanguage;
+    	
+    	if ( ! empty( $wgUserLanguage ) ) {
+    		return $wgUserLanguage;
+    	} else {
+    		return $wgContentLanguage
+    	}
+    }  
+
+/**
  * OWA Special Page Class
  *
  * Enables OWA to be accessed through a Mediawiki special page. 
@@ -534,7 +553,7 @@ class SpecialOwa extends SpecialPage {
 		}
 		
 		return true;
-    }      
+    }    
 }
 
 ?>

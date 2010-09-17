@@ -103,7 +103,8 @@ class owa_base_006_update extends owa_update {
 				'base.campaign_dim',
 				'base.location_dim',
 				'base.commerce_transaction_fact',
-				'base.commerce_line_item_fact');
+				'base.commerce_line_item_fact',
+				'base.queue_item');
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);
 			$ret = $entity->createTable();
@@ -174,7 +175,8 @@ class owa_base_006_update extends owa_update {
 				'base.campaign_dim',
 				'base.location_dim',
 				'base.commerce_transaction_fact',
-				'base.commerce_line_item_fact');
+				'base.commerce_line_item_fact',
+				'base.queue_item');
 		
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);

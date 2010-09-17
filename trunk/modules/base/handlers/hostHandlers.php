@@ -51,15 +51,19 @@ class owa_hostHandlers extends owa_observer {
 		if (!$id) {
 			
 			$h->setProperties($event->getProperties());
-			
 			$h->set('id', owa_lib::setStringGuid($event->get('full_host'))); 
+			$ret = $h->create();
 			
-			$h->create();
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
 			
 		} else {
 		
-			owa_coreAPI::debug('Not Logging. Host already exists');
-			
+			owa_coreAPI::debug('Not Persisting. Host already exists.');
+			return OWA_EHS_EVENT_HANDLED;
 		}	
     }
 }

@@ -88,15 +88,15 @@ class owa_sessionCommerceSummaryHandlers extends owa_observer {
 			$ret = $s->update();
 			
 			if ($ret) {
-				return true;	
+				return OWA_EHS_EVENT_HANDLED;	
 			} else {
-				return false;
+				return OWA_EHS_EVENT_FAILED;
 			}
 			
 		} else {
 		
 			owa_coreAPI::debug('Not Updating session commerce transaction properties. Session does not exist yet.');
-			return false;
+			return OWA_EHS_EVENT_FAILED;
 		}	
     }
 }

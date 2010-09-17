@@ -54,11 +54,18 @@ class owa_adHandlers extends owa_observer {
 				$d->set('id', $new_id);
 				$d->set('name', trim( strtolower( $event->get('ad') ) ) );
 				$d->set('type', trim( strtolower( $event->get('ad_type') ) ) );
-				$d->create();
+				$ret = $d->create();
+				
+				if ( $ret ) {
+					return OWA_EHS_EVENT_HANDLED;
+				} else {
+					return OWA_EHS_EVENT_FAILED;
+				}
 				
 			} else {
-			
+				
 				owa_coreAPI::debug('Not Persisting. Ad already exists.');
+				return OWA_EHS_EVENT_HANDLED;
 			}	
 		}
     }

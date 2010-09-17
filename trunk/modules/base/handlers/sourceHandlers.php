@@ -53,11 +53,18 @@ class owa_sourceHandlers extends owa_observer {
 				
 				$s->set('id', $new_id);
 				$s->set('source_domain', $event->get('source'));
-				$s->create();
+				$ret = $s->create();
+				
+				if ( $ret ) {
+					return OWA_EHS_EVENT_HANDLED;
+				} else {
+					return OWA_EHS_EVENT_FAILED;
+				}
 				
 			} else {
 			
 				owa_coreAPI::debug('Not Persisting. Source already exists.');
+				return OWA_EHS_EVENT_HANDLED;
 			}
 		}	
     }

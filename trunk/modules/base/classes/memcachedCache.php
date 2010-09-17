@@ -47,13 +47,13 @@ class owa_memcachedCache extends owa_cache {
 	 */
 	function __construct() {
 		
-		$servers = owa_coreAPI::getSettings( 'base', 'memcachedServers' );
+		$servers = owa_coreAPI::getSetting( 'base', 'memcachedServers' );
 		if ( ! $servers ) {
 			owa_coreAPI::notice('No memcached servers found in configuration settings.');
 			return;
 		}
-		$persistant = owa_coreAPI::getSettings( 'base', 'memcachedPersisantConnections' ); 
-		$error_mode = owa_coreAPI::getSettings( 'base', 'error_handler' );
+		$persistant = owa_coreAPI::getSetting( 'base', 'memcachedPersisantConnections' ); 
+		$error_mode = owa_coreAPI::getSetting( 'base', 'error_handler' );
 		if ( $error_mode === 'development' ) {
 			$debug = true;
 		} else {

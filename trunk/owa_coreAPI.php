@@ -219,7 +219,7 @@ class owa_coreAPI {
 			switch ($cache_type) {
 				
 				case "memcached":
-					$implementation = array('owa_memcacheCache', OWA_BASE_CLASS_DIR.'memcacheCache.php');
+					$implementation = array('owa_memcachedCache', OWA_BASE_CLASS_DIR.'memcachedCache.php');
 					break;
 				default:
 					$implementation = array('owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php');
