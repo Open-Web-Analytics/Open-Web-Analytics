@@ -161,7 +161,6 @@ function owa_singleton() {
 	$owa->setSetting( 'base', 'log_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1' );
 	$owa->setSetting( 'base', 'link_template', '%s&%s' );
 	$owa->setSetting( 'base', 'is_embedded', true );
-	$owa->setSetting( 'base', 'delay_first_hit', false );
 	$owa->setSetting( 'base', 'query_string_filters', 'returnto' );
 	
 	$owa->setSiteId( $wgOwaSiteId );
