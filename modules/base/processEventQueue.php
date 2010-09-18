@@ -34,14 +34,32 @@ class owa_processEventQueueController extends owa_cliController {
 	
 	function __construct($params) {
 	
-		$this->setRequiredCapability('edit_modules');
-		return parent::__construct($params);
+		$this->setRequiredCapability( 'edit_modules' );
+		return parent::__construct( $params );
 	}
 
 	function action() {
 		
+		if ( $this->getParam( 'source' ) ) {
+			$input_queue_type = $this->getParam( 'source' );
+		} else {
+			$input_queue_type = owa_coreAPI::getSetting( 'base', 'event_queue_type' );
+		}
+		
+		// switch event queue setting in case a new events should be sent to a different type of queue.
+		// this is handy for when processing from a file queue to a database queue
+		if ( $this->getParam( 'destination' ) ) {
+			$processing_queue_type = $this->getParam( 'destination' );
+			owa_coreAPI::setSetting( 'base', 'event_queue_type', $processing_queue_type );
+			owa_coreAPI::debug( "Setting event queue type to $processing_queue_type for processing." );
+		}
+		
 		$d = owa_coreAPI::getEventDispatch();
-		$q = $d->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
+		owa_coreAPI::debug( "Loading $input_queue_type event queue." );
+		$q = $d->getAsyncEventQueue( $input_queue_type );
+		
+		
+		
 		$q->processQueue();
 	}
 }

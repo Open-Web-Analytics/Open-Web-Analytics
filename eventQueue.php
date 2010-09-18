@@ -284,26 +284,30 @@ class eventQueue {
 	
 	function getAsyncEventQueue($type) {
 	
-		static $q;
+		static $q = array();
 		
-		if (!$q) {
+		if ( ! array_key_exists( $type, $q ) ) {
 			
-			switch($type) {
+			switch( $type ) {
 				
 				case 'http':
-					$q = owa_coreAPI::supportClassFactory('base', 'httpEventQueue');
+					$q['http'] = owa_coreAPI::supportClassFactory( 'base', 'httpEventQueue' );
 					break;
 				case 'database':
-					$q = owa_coreAPI::supportClassFactory('base', 'dbEventQueue');
+					$q['database'] = owa_coreAPI::supportClassFactory( 'base', 'dbEventQueue' );
 					break;
 				case 'file':
-					$q = owa_coreAPI::supportClassFactory('base', 'fileEventQueue');
+					$q['file'] = owa_coreAPI::supportClassFactory( 'base', 'fileEventQueue' );
 					break;
-				default:
-					$q = false;
 			}
 		}		
-		return $q;
+		
+		if ( array_key_exists( $type, $q ) ) {
+			return $q[$type];
+		} else {
+			owa_coreAPI::debug('No event queue of that type exists.'); 
+			return false;
+		}
 	}
 	
 	function eventFactory() {
@@ -321,6 +325,21 @@ class eventQueue {
 		
 		return $event;
 	}
+	
+/*
+	function processEventQueue($processing_queue_type = '') {
+		
+		// get the primary async queue
+		
+		// get an item from the queue
+		
+		// send to the notify method
+		
+		// check return status
+		
+		// mark item accordingly
+	}
+*/
 
 	/**
 	 * Singleton
