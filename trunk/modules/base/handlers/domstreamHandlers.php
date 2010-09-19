@@ -49,8 +49,8 @@ class owa_domstreamHandlers extends owa_observer {
 	    	
 			$ds->set('id', $event->get('guid') );
 			//$ds->set('id', $event->get('guid'));
-			$ds->set('visitor_id', $event->get('inbound_visitor_id'));
-			$ds->set('session_id', $event->get('inbound_session_id'));
+			$ds->set('visitor_id', $event->get('visitor_id'));
+			$ds->set('session_id', $event->get('session_id'));
 			$ds->set('site_id', $event->get('site_id'));
 			$ds->set('document_id', $ds->generateId($event->get('page_url')));	
 			$ds->set('page_url', $event->get('page_url'));

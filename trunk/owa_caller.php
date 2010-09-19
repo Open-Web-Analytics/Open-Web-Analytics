@@ -51,11 +51,7 @@ class owa_caller extends owa_base {
 	var $service;
 	
 	var $site_id;
-	
-	var $commerce_event;
-	
-	var $pageview_event;
-		
+			
 	/**
 	 * Constructor
 	 *
@@ -165,88 +161,7 @@ class owa_caller extends owa_base {
 		return $this->handleRequest();
 		
 	}
-	
-	/**
-	 * Logs a Page Request
-	 *
-	 * @param array $app_params	This is an array of application specific request params
-	 * @depricated
-	 */
-	function log($caller_params = '') {
 		
-		return owa_coreAPI::logEvent('base.page_request', $caller_params);
-		
-	}
-	
-	/**
-	 * Logs an event to the event queue
-	 * 
-	 * This function sets the action to be perfromed, santizes, 
-	 * and adds all of PHP's $_SERVER vars to the $caller_params.
-	 * $_REQUEST vars are already added to $this->params in the constructor.
-	 *
-	 * @param array $caller_params
-	 * @param string $event_type
-	 * @return boolean
-	 * @depricated
-	 */
-	function logEvent($event_type, $caller_params = '') {
-		
-		return owa_coreAPI::logEvent($event_type, $caller_params);
-		
-	}
-	
-	/**
-	 * Fires a tracking event
-	 * 
-	 * This function fires a tracking event that will be processed and then dispatched
-	 *
-	 * @param object $event
-	 * @return boolean
-	 */
-	function trackEvent($event) {
-	
-		// needed by helperpage tags function so it can append to first hit tag url
-		//if (!owa_coreAPI::getRequestParam('site_id')) {	
-		//	owa_coreAPI::setRequestParam('site_id', $event->get('site_id'));					
-		//}
-		
-		if (!$this->getSiteId()) {
-			$this->setSiteId($event->get('site_id'));
-		}
-		
-		if (!$this->getSiteId()) {
-			$this->setSiteId(owa_coreAPI::getRequestParam('site_id'));
-		}
-		
-		if ( ! $event->get('site_id') ) {
-			$event->set( 'site_id', $this->getSiteId() );
-		}
-		
-		return owa_coreAPI::logEvent($event->getEventType(), $event);
-	}
-	
-	/**
-	 * Logs event params taken from request scope (url, cookies, etc.).
-	 * Takes event type from url.
-	 *
-	 * @return unknown
-	 */
-	function logEventFromUrl() {
-		
-		// keeps php executing even if the client closes the connection
-		ignore_user_abort(true);
-		$service = &owa_coreAPI::serviceSingleton();
-		$service->request->decodeRequestParams();
-		
-		$event = owa_coreAPI::supportClassFactory('base', 'event');
-		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
-		$event->setProperties($service->request->getAllOwaParams());
-		//owa_coreAPI::debug("logeventfromurl event".print_r($event, true));
-		return $this->trackEvent($event);
-		
-	}
-	
 	function placeHelperPageTags($echo = true, $options = array()) {
 		
 		if(!owa_coreAPI::getRequestParam('is_robot')) {
@@ -321,12 +236,7 @@ class owa_caller extends owa_base {
 		
 		return;
 	}
-	
-	function createSiteId($value) {
-	
-		return md5($value);
-	}
-	
+		
 	function setSetting($module, $name, $value) {
 		
 		return owa_coreAPI::setSetting($module, $name, $value);
@@ -346,82 +256,6 @@ class owa_caller extends owa_base {
 	function makeEvent() {
 	
 		return owa_coreAPI::supportClassFactory('base', 'event');
-	}
-	
-	function trackPageview($event) {
-	
-		$event->setEventType('base.page_request');
-		$this->pageview_event = $event;
-		return $this->trackEvent($event);
-	}
-	
-	function trackAction($action_group = '', $action_name, $action_label = '', $numeric_value = 0) {
-		
-		$event = $this->makeEvent();
-		$event->setEventType('track.action');
-		$event->set('action_group', $action_group);
-		$event->set('action_name', $action_name);
-		$event->set('action_label', $action_label);
-		$event->set('numeric_value', $numeric_value);
-		$event->set('site_id', $this->getSiteId());
-		return $this->trackEvent($event);
-	}
-	
-	/** 
-	 * Creates a commerce Transaction event
-	 *
-	 * Creates a parent commerce.transaction event
-	 */
-	function addTransaction( $order_id, $order_source = '', $total = 0, $tax = 0, $shipping = 0, $gateway = '', $page_url = '' ) {
-		
-		$this->commerce_event = $this->makeEvent();
-		$this->commerce_event->setEventType( 'commerce.transaction' );
-		$this->commerce_event->set( 'ct_order_id', $order_id );
-		$this->commerce_event->set( 'ct_order_source', $order_source );
-		$this->commerce_event->set( 'ct_total', $total );
-		$this->commerce_event->set( 'ct_tax', $tax );
-		$this->commerce_event->set( 'ct_shipping', $shipping );
-		$this->commerce_event->set( 'ct_gateway', $gateway );
-		$this->commerce_event->set( 'page_url', $page_url );
-		$this->commerce_event->set( 'ct_line_items', array() );
-	}
-	
-	/** 
-	 * Adds a line item to a commerce transaction
-	 *
-	 * Creates and a commerce.line_item event and adds it to the parent transaction event
-	 */
-	function addTransactionLineItem($order_id, $sku = '', $product_name = '', $category = '', $unit_price = 0, $quantity = 0) {
-		
-		if ( empty( $this->commerce_event ) ) {
-			$this->addTransaction('none set');
-		}
-		
-		$event = $this->makeEvent();
-		$event->setEventType( 'commerce.line_item' );
-		$event->set( 'li_order_id', $order_id );
-		$event->set( 'li_sku', $sku );
-		$event->set( 'li_product_name', $product_name );
-		$event->set( 'li_category', $category );
-		$event->set( 'li_unit_price', $unit_price );
-		$event->set( 'li_quantity', $quantity );
-		
-		$items = $this->commerce_event->get( 'ct_line_items' );
-		$items[] = $event;
-		$this->commerce_event->set( 'ct_line_items', $items );
-	}
-	
-	/** 
-	 * tracks a commerce events
-	 *
-	 * Tracks a parent transaction event by sending it to the event queue
-	 */
-	function trackTransaction() {
-		
-		if ( ! empty( $this->commerce_event ) ) {
-			$this->trackEvent( $this->commerce_event );
-			$this->commerce_event = '';
-		}
 	}
 	
 	function setSiteId($site_id) {

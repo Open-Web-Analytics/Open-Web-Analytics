@@ -485,7 +485,8 @@ class owa_baseModule extends owa_module {
 				'campaign_dim',
 				'location_dim',
 				'commerce_transaction_fact',
-				'commerce_line_item_fact')
+				'commerce_line_item_fact',
+				'queue_item')
 			);
 		
 	}

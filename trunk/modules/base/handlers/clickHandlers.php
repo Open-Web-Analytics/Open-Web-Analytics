@@ -44,8 +44,8 @@ class owa_clickHandlers extends owa_observer {
 		if (! $c->wasPersisted() ) {
 			$c->set('id', $event->get('guid') );
 			$c->setProperties($event->getProperties());
-			$c->set('visitor_id', $event->get('inbound_visitor_id'));
-			$c->set('session_id', $event->get('inbound_session_id'));
+			$c->set('visitor_id', $event->get('visitor_id'));
+			$c->set('session_id', $event->get('session_id'));
 			$c->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 			
 			// Make document id	

@@ -71,7 +71,7 @@ class owa_sessionHandlers extends owa_observer {
 			// set prior session time properties		
 			$s->set('prior_session_lastreq', $event->get('last_req'));
 					
-			$s->set('prior_session_id', $event->get('inbound_session_id'));
+			$s->set('prior_session_id', $event->get('prior_session_id'));
 			
 			if ($s->get('prior_session_lastreq') > 0) {
 				$s->set('time_sinse_priorsession', $s->get('timestamp') - $event->get('last_req'));

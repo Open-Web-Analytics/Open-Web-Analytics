@@ -31,14 +31,10 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-$config = array();
-$config['delay_first_hit'] = false;
-
-$owa = new owa_php($config);
-
+ignore_user_abort(true);
+$owa = new owa_php();
 $owa->e->debug('Logging Event from Url...');
-
-// run controller or view and echo page content
+// log event
 echo $owa->logEventFromUrl();
 
 ?>

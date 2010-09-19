@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
+require_once(OWA_BASE_CLASS_DIR.'client.php');
 
 /**
  * Wordpress Caller class
@@ -29,7 +29,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_wp extends owa_caller {
+class owa_wp extends owa_client {
 	
 	/**
 	 * Constructor

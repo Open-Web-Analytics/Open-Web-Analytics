@@ -56,64 +56,12 @@ class owa_processRequestController extends owa_processEventController {
 			return;
 		}
 		
-		//mark even state as first_page_request.
-		//$this->state = 'first_page_request';
-		if (!$this->event->get('inbound_visitor_id')) {
-			$this->event->setEventType('base.first_page_request');
-		}
-		
-		// assign visitor cookie
-		// TODO: Move this logic to the controller
-		if ($this->event->get('inbound_visitor_id')) {
-			$this->set('visitor_id', $this->event->get('inbound_visitor_id'));
-		} else {
-			$this->setNewVisitor();
-		}	
-		
-		// sessionize
-		// TODO: Move this logic to the controller
-		$this->event->sessionize($this->event->get('inbound_session_id'));	
-		
-		// set variety of 
+		// set variety of new session properties.
 		if ($this->event->get('is_new_session')) {
 			
-			// if this is not the first sessio nthen calc days sisne last session
-			if ($this->event->get('last_req')) {
-				$this->event->set('days_since_prior_session', round(($this->event->get('timestamp') - $this->event->get('last_req'))/(3600*24)));
-			}
-			
-			// if check for first session timestamp (fsts) value in vistor cookie. set it if mising
-			if ( ! owa_coreAPI::getStateParam('v', 'fsts')) {
-				owa_coreAPI::setState('v', 'fsts', $this->event->get('timestamp'), 'cookie', true);
-			}
-			
-			// increment visit count in cookie //
-			owa_coreAPI::setState('v', 'nps', $this->event->get('num_prior_sessions') + 1, 'cookie', true);
 			
 		}
-		
-		// atributes traffic
-		if (!$this->event->get('is_attributed')) {
-			$this->attributeTraffic();
-		}
-		
-		if ( $this->event->get( 'source' ) ) {
-			$this->event->set( 'source_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'source' ) ) ) ) );
-		}
-		
-		if ( $this->event->get( 'campaign' ) ) {
-			$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
-		}
-		
-		if ( $this->event->get( 'ad' ) ) {
-			$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
-		}
-		
-		
-			
-		// set last request time state
-		$this->setSiteSessionState($this->event->get('site_id'), owa_coreAPI::getSetting('base', 'last_request_param'), $this->event->get('timestamp'));
-			
+				
 	}
 	
 	function post() {

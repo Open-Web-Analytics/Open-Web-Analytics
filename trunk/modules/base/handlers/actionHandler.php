@@ -49,10 +49,7 @@ class owa_actionHandler extends owa_observer {
 		if ( ! $a->wasPersisted() ) {
 			
 			$a->set('id', $event->get( 'guid' ) );
-			$a->set('visitor_id', $event->get('inbound_visitor_id'));
-			// todo: make session_id assignment irrelevent by fixing session_id assignment upstream
-			$state = owa_coreAPI::getStateParam('ss_'.$event->get('site_id'), 's');
-			$event->set('session_id', $state);
+			$a->set('visitor_id', $event->get('visitor_id'));
 			$a->set( 'session_id', $event->get( 'session_id' ) );
 			$a->set('site_id', $event->get('site_id'));
 			$a->set('document_id', $a->generateId($event->get('page_url')));

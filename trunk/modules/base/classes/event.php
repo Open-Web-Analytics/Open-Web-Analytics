@@ -81,6 +81,8 @@ class owa_event {
 		$this->guid = $this->set_guid();
 		//needed?
 		$this->set('guid', $this->guid);
+		$this->set('timestamp', time() );
+		
 	}
 	
 	function set($name, $value) {
@@ -104,13 +106,14 @@ class owa_event {
 	 *
 	 * @param integer $timestamp
 	 */
-	function setTime($timestamp = '') {
+	function setTime($timestamp = null) {
 	
-		if (empty($timestamp)) {
-			$timestamp = time();
+		if ( $timestamp ) {
+			$this->set('timestamp', $timestamp);	
+		} else {
+			$timestamp = $this->get('timestamp');
 		}
 		
-		$this->set('timestamp', $timestamp);
 		$this->set('year', date("Y", $timestamp));
 		$this->set('month', date("n", $timestamp));
 		$this->set('day', date("d", $timestamp));
@@ -182,13 +185,7 @@ class owa_event {
 		return crc32(getmypid().time().rand());
 	
 	}
-	
-	function getSiteSpecificGuid() {
 		
-		return crc32(getmypid().time().rand().$this->get('site_id'));
-		
-	}
-	
 	/**
 	 * Create guid from string
 	 *
@@ -226,68 +223,6 @@ class owa_event {
 		return owa_coreAPI::clearState($store_name);
 	}	
 	
-	
-	
-	/**
-	 * Make Session IDs
-	 *
-	 */
-	function sessionize($inbound_session_id) {
-					
-		// check for inbound session id
-		if (!empty($inbound_session_id)):
-			 
-			 if ($this->get('last_req')):
-			 
-			 	// Calc time sinse the last request
-			 	// NEEDED???
-				$time_since_lastreq = $this->timeSinceLastRequest();
-				$this->set('time_sinse_lastreq', $time_since_lastreq);
-				$len = owa_coreAPI::getSetting('base', 'session_length');
-				if ($time_since_lastreq < $len):
-					owa_coreAPI::debug("Sessionize: last hit less than session length.");
-					$this->set('session_id', $inbound_session_id);		
-				else:
-				//prev session expired, because no hits in half hour.
-					owa_coreAPI::debug("Sessionize: prev session expired, because no hits in half hour.");
-					$this->create_new_session($this->get('visitor_id'));
-				endif;
-			else:
-			//session_id, but no last_req value. whats up with that?  who cares. just make new session.
-				owa_coreAPI::debug("Sessionize: session_id, but no last_req value. whats up with that?  who cares. just make new session.");
-				$this->create_new_session($this->get('visitor_id'));
-			endif;
-		else:
-		//no session yet. make one.
-			owa_coreAPI::debug("Sessionize: no session yet. make one.");
-			$this->create_new_session($this->get('visitor_id'));
-		endif;						
-	}
-	
-	/**
-	 * Creates new session id 
-	 *
-	 * @param 	integer $visitor_id
-	 * @access 	public
-	 */
-	function create_new_session($visitor_id) {
-	
-		//generate new session ID 
-	    $this->set('session_id', $this->getSiteSpecificGuid());
-	
-		//mark entry page flag on current request
-		$this->set('is_entry_page', true);
-		
-		//mark new session flag on current request
-		$this->set('is_new_session', true);
-				
-		//Set the session cookie
-		$this->setSiteSessionState($this->get('site_id'), owa_coreAPI::getSetting('base', 'session_param'), $this->get('session_id'));
-		
-		return;
-	
-	}
-
 	function getProperties() {
 		
 		return $this->properties;
@@ -332,6 +267,11 @@ class owa_event {
 	function getGuid() {
 		
 		return $this->guid;
+	}
+	
+	function getSiteSpecificGuid($site_id) {
+		
+		return crc32(getmypid().time().rand().$site_id);
 	}
 	
 		
