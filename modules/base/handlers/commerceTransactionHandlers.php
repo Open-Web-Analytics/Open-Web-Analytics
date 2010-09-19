@@ -49,6 +49,19 @@ class owa_commerceTransactionHandlers extends owa_observer {
 		$id = $ct->get('id'); 
 		
 		if (!$id) {
+		
+			// set missing properties from associated session
+			// this is needed becuase the ecommerce transaction PHP API allows for 
+			// events to be fired into OWA from a non-web request by passing
+			// the session_id.
+			if ( $event->get( 'session_id' ) && ! $event->get( 'lookup_state_from_session' ) ) {
+				$s = owa_coreAPI::entityFactory( 'base.session' );
+				$s->load( $event->get( 'session_id' ) );
+				
+				if ( $s->get( 'id' ) ) {
+					$ct->setProperties( $s->_getProperties() );
+				}
+			}
 			
 			$ct->setProperties($event->getProperties());
 			
@@ -68,6 +81,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			$ct->set( 'shipping_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_shipping' ), 2 ) ) );
 			$ct->set( 'days_since_first_session', $event->get('days_since_first_session') );
 			$ct->set( 'num_prior_sessions', $event->get('num_prior_sessions') );
+			
 			$ret = $ct->create();
 			
 			// persist line items
