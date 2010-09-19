@@ -16,7 +16,7 @@
 // $Id$
 //
 require_once('owa_env.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
+require_once(OWA_BASE_CLASS_DIR.'client.php');
 
 /**
  * MediaWiki Caller Class
@@ -31,7 +31,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
  * @since		owa 1.0.0
  */
 
-class owa_mw extends owa_caller {
+class owa_mw extends owa_client {
 
 	function __construct($config = null) {
 		

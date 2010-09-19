@@ -141,13 +141,15 @@ class owa_state {
 		
 	function clear($store) {
 		
-		unset($this->stores[$store]);
-		
-		if ($this->stores_meta[$store]['type'] === 'cookie') {
-		
-			return owa_coreAPI::deleteCookie($store);	
-		}	
-		
+		if (array_key_exists($store, $this->stores)) {
+			
+			unset($this->stores[$store]);
+			
+			if ($this->stores_meta[$store]['type'] === 'cookie') {
+			
+				return owa_coreAPI::deleteCookie($store);	
+			}	
+		}		
 	}
 	
 	function getPermExpiration() {

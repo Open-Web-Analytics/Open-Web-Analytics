@@ -337,7 +337,7 @@ class owa_error {
 		
 		if ($handle != false):
 			fclose($handle);
-			$conf = array('mode' => 0600, 'timeFormat' => '%X %x', 'lineFormat' => '%1$s %2$s [%3$s] %4$s %5$s %6$s %7$s %8$s');
+			$conf = array('mode' => 0600, 'timeFormat' => '%X %x', 'lineFormat' => '%1$s %2$s [%3$s] %4$s');
 			$logger = &Log::singleton('file', owa_coreAPI::getSetting('base', 'error_log_file'), getmypid(), $conf);
 			return $logger;
 		else:
