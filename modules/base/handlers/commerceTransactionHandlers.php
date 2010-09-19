@@ -50,11 +50,6 @@ class owa_commerceTransactionHandlers extends owa_observer {
 		
 		if (!$id) {
 			
-			// todo: make inbound_session_id irrelevent by fixing session_id assignment upstream
-			// extract site specific state from session store
-			$state = owa_coreAPI::getStateParam('ss_'.$event->get('site_id'), 's');
-			$event->set('session_id', $state);
-			
 			$ct->setProperties($event->getProperties());
 			
 			$ct->set( 'id', $pk ); 
