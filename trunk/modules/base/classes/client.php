@@ -230,7 +230,7 @@ class owa_client extends owa_caller {
 		}
 		
 		// flag used to identify is state was managed by an upstream client
-		if ( ! $event->get('stateManaged') ) {
+		if ( ! $event->get('is_state_set') ) {
 			$this->manageState( $event );
 		}
 		
@@ -261,7 +261,9 @@ class owa_client extends owa_caller {
 	 *
 	 * Creates a parent commerce.transaction event
 	 */
-	public function addTransaction( $order_id, $order_source = '', $total = 0, $tax = 0, $shipping = 0, $gateway = '', $page_url = '' ) {
+	public function addTransaction( $order_id, $order_source = '', 
+			$total = 0, $tax = 0, $shipping = 0, $gateway = '', 
+			$page_url = '', $session_id = '') {
 		
 		$this->commerce_event = $this->makeEvent();
 		$this->commerce_event->setEventType( 'commerce.transaction' );
@@ -273,6 +275,14 @@ class owa_client extends owa_caller {
 		$this->commerce_event->set( 'ct_gateway', $gateway );
 		$this->commerce_event->set( 'page_url', $page_url );
 		$this->commerce_event->set( 'ct_line_items', array() );
+		
+		if ( $session_id ) {
+			$this->commerce_event->set( 'session_id', $session_id );
+			// tells the client to NOT manage state properties as we are
+			// going to look them up from the session later.
+			$this->commerce_event->set( 'is_state_set', true );
+			$this->commerce_event->set( 'lookup_state_from_session', true );
+		}
 	}
 	
 	/** 
