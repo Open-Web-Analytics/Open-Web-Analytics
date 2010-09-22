@@ -1073,10 +1073,17 @@ class memcached
       if (!is_resource($f)) {
          return;
       }
-      $n = stream_select($r=array($f), $w = NULL, $e = NULL, 0, 0);
+      
+      $r = array( $f ); 
+      $w = NULL; 
+      $e = NULL;
+      $n = stream_select( $r, $w, $e, 0, 0 );
       while ($n == 1 && !feof($f)) {
          fread($f, 1024);
-         $n = stream_select($r=array($f), $w = NULL, $e = NULL, 0, 0);
+         $r= array( $f ); 
+         $w = NULL; 
+         $e = NULL;
+         $n = stream_select( $r, $w, $e, 0, 0 );
       }
    }
 
