@@ -31,7 +31,7 @@ global	$wgServer, 				// mediawiki server name
 		$wgScript, 				// mediawiki script name
 		$wgMainCacheType, 		// mediawiki cache type
 		$wgMemCachedServers, 	// mediawiki's memcached server array
-		$wgOwaEnableSpecialPage	// owa switch to enable the mw special page
+		$wgOwaEnableSpecialPage,	// owa switch to enable the mw special page
 		$wgOwaMemCachedServers, // owa memcached servers override
 		$wgOwaSiteId;			// owa site id override
 
@@ -232,7 +232,7 @@ function owa_logSpecialPage(&$specialPage) {
 				<script>
 					var owa_params = %s;
 				</script>', 
-				, json_encode( $event->getProperties() )
+				 json_encode( $event->getProperties() )
 		);
 		
 		$wgOut->addHTML( $tag );
@@ -442,7 +442,7 @@ function owa_getLanguage() {
     	if ( ! empty( $wgUserLanguage ) ) {
     		return $wgUserLanguage;
     	} else {
-    		return $wgContentLanguage
+    		return $wgContentLanguage;
     	}
     }  
 
