@@ -19,7 +19,7 @@
 require_once( OWA_BASE_CLASSES_DIR . 'owa_caller.php' );
 
 /**
- * OWA Client
+ * OWA Client Class
  * 
  * Abstract Client Class for use in php based applications
  * 
