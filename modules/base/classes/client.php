@@ -296,17 +296,16 @@ class owa_client extends owa_caller {
 			$this->addTransaction('none set');
 		}
 		
-		$event = $this->makeEvent();
-		$event->setEventType( 'commerce.line_item' );
-		$event->set( 'li_order_id', $order_id );
-		$event->set( 'li_sku', $sku );
-		$event->set( 'li_product_name', $product_name );
-		$event->set( 'li_category', $category );
-		$event->set( 'li_unit_price', $unit_price );
-		$event->set( 'li_quantity', $quantity );
+		$li = array();
+		$li['li_order_id'] = $order_id ;
+		$li['li_sku'] = $sku ;
+		$li['li_product_name'] = $product_name ;
+		$li['li_category'] = $category ;
+		$li['li_unit_price'] = $unit_price ;
+		$li['li_quantity'] = $quantity ;
 		
 		$items = $this->commerce_event->get( 'ct_line_items' );
-		$items[] = $event;
+		$items[] = $li;
 		$this->commerce_event->set( 'ct_line_items', $items );
 	}
 	

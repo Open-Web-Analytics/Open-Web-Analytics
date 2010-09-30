@@ -115,10 +115,11 @@ class owa_commerceTransactionHandlers extends owa_observer {
 		}	
     }
     
-    function persistLineItem($event, $parent) {
+    function persistLineItem($item, $parent) {
     	
     	$ct = owa_coreAPI::entityFactory('base.commerce_line_item_fact');
-		$pk = $ct->generateId( $event->get( 'li_order_id' ) . $event->get( 'li_sku' ) );
+    	$guid = $item['li_order_id'] . $item['li_sku'];
+		$pk = $ct->generateId( $guid );
 		$ct->getByPk( 'id', $pk );
 		$id = $ct->get( 'id' ); 
 		
@@ -129,13 +130,13 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			$ct->set( 'id', $pk ); 
 			
 			// Generate Location Id. Location data is comming from user input
-			$ct->set( 'order_id', trim( $event->get( 'li_order_id' ) ) );
-			$ct->set( 'sku', trim( $event->get( 'li_sku' ) ) );
-			$ct->set( 'product_name', trim( strtolower( $event->get( 'li_product_name' ) ) ) );
-			$ct->set( 'category', $event->get( 'li_category' ) );
-			$ct->set( 'unit_price', owa_lib::prepareCurrencyValue( round($event->get( 'li_unit_price' ), 2 ) ) );
-			$ct->set( 'quantity', round( $event->get( 'li_quantity' ) ) );
-			$revenue = round( $event->get( 'li_quantity' ) * $event->get( 'li_unit_price' ), 2 );
+			$ct->set( 'order_id', trim( $item['li_order_id'] ) );
+			$ct->set( 'sku', trim( $item['li_sku'] ) );
+			$ct->set( 'product_name', trim( strtolower( $item['li_product_name'] ) ) );
+			$ct->set( 'category', $item['li_category'] );
+			$ct->set( 'unit_price', owa_lib::prepareCurrencyValue( round($item['li_unit_price'], 2 ) ) );
+			$ct->set( 'quantity', round( $item['li_quantity'] ) );
+			$revenue = round( $item['li_quantity'] * $item['li_unit_price'] , 2 );
 			$ct->set( 'item_revenue', owa_lib::prepareCurrencyValue( $revenue ) );
 			$ret = $ct->create();
 			
