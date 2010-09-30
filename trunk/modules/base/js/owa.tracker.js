@@ -646,7 +646,7 @@ OWA.tracker.prototype = {
 		
 		//if all that works then log
 		if (this.getOption('logClicksAsTheyHappen')) {
-			this.logEventAjax(click);
+			this.logEvent(click.getProperties());
 		}
 		// add to event queue is logging dom stream
 		if (this.getOption('trackDomStream')) {
@@ -998,98 +998,52 @@ OWA.tracker.prototype = {
 			}
 		}
 		
-		// set the attributes
-		var count = OWA.util.countObjectProperties(campaign_params);
-		if (count > 0) {
-			
-			for (prop in campaign_params) {
-									
-				if (prop === 'md') {
-					attribution.medium = campaign_params[prop];
-				}
-				if (prop === 'sr') {
-					attribution.source = campaign_params[prop];
-				}
-				if (prop === 'cn') {
-					attribution.campaign = campaign_params[prop];
-				} 
-				if (prop === 'at') {
-					attribution.ad_type = campaign_params[prop];
-				}
-				if (prop === 'ad') {
-					attribution.ad = campaign_params[prop];
-				}
-				if (prop === 'tr') {
-					attribution.search_terms = campaign_params[prop];
-				}
-				
-				if (prop === 'ts') {
-					attribution.timestamp = campaign_params[prop];
-				}
+		// set attribution properties on page view object	
+		if ( this.isTrafficAttributed ) {
+	
+			// set medium
+			if (campaign_params.md.length > 0) {
+				this.page.set('medium', attribution.medium);
 			}
-		}
-
-		// if there is no campaign attribution then look for the standard medium/sources:
-		// search, referal, or direct.
-		if ( !this.isTrafficAttributed ) {
-			var referer = this.page.get('referer');
 			
-			if (referer) {
-				
-				var from_se = this.checkRefererForSearchEngine(referer); // make this
-				
-				if (from_se) {
-					attribution.medium =  'organic-search';
-					attribution.source = OWA.util.getDomainFromUrl( referer, true );
-				} else {
-					attribution.medium = 'referral';
-					attribution.source = OWA.util.getDomainFromUrl( referer, true );
-				}
-			} else {
-				attribution.medium = 'direct';
-				attribution.source = '(none)';
+			// set source
+			if (campaign_params.sr.length > 0) {
+				this.page.set('source', attribution.source);
 			}
+			
+			// set campaign
+			if (campaign_params.cn.length > 0) {
+				this.page.set('campaign', attribution.campaign);
+			}
+			
+			//set ad
+			if (campaign_params.ad.length > 0) {
+				this.page.set('ad', attribution.ad);
+			}
+			
+			//set ad type
+			if (campaign_params.at.length > 0) {
+				this.page.set('ad_type', attribution.ad_type);
+			}
+			
+			//set search_terms
+			if (campaign_params.tr.length > 0) {
+				this.page.set('search_terms', attribution.search_terms);
+			}
+			
+			// set campaign touches
+			if (this.campaignState.length > 0) {
+				this.page.set('attribs', JSON.stringify(this.campaignState));
+			}
+			
+			// set campaign timestamp
+			if (this.campaignState.length > 0) {
+				this.page.set('campaign_timestamp', campaign_params.ts);
+			}
+			
+			// tells upstream processing to skip attribution
+			this.page.set('is_attributed', true);
 		}
-		
-		// set attribution properties on page view object
-		
-		// set medium
-		this.page.set('medium', attribution.medium);
-		// set source
-		this.page.set('source', attribution.source);
-		
-		// set campaign
-		if (attribution.campaign.length > 0) {
-			this.page.set('campaign', attribution.campaign);
-		}
-		
-		//set ad
-		if (attribution.ad.length > 0) {
-			this.page.set('ad', attribution.ad);
-		}
-		
-		//set ad type
-		if (attribution.ad_type.length > 0) {
-			this.page.set('ad_type', attribution.ad_type);
-		}
-		
-		//set search_terms
-		if (attribution.search_terms.length > 0) {
-			this.page.set('search_terms', attribution.search_terms);
-		}
-		
-		// set campaign touches
-		if (this.campaignState.length > 0) {
-			this.page.set('attribs', JSON.stringify(this.campaignState));
-		}
-		
-		// set campaign timestamp
-		if (this.campaignState.length > 0) {
-			this.page.set('campaign_timestamp', attribution.timestamp);
-		}
-		
-		// tells upstream processing to skip attribution
-		this.page.set('is_attributed', true);
 	
 	},
 	
