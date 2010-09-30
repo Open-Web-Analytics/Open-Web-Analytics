@@ -257,7 +257,7 @@ class owa_client extends owa_caller {
 	}
 	
 	/** 
-	 * Creates a commerce Transaction event
+	 * Creates a ecommerce Transaction event
 	 *
 	 * Creates a parent commerce.transaction event
 	 */
@@ -266,7 +266,7 @@ class owa_client extends owa_caller {
 			$page_url = '', $session_id = '') {
 		
 		$this->commerce_event = $this->makeEvent();
-		$this->commerce_event->setEventType( 'commerce.transaction' );
+		$this->commerce_event->setEventType( 'ecommerce.transaction' );
 		$this->commerce_event->set( 'ct_order_id', $order_id );
 		$this->commerce_event->set( 'ct_order_source', $order_source );
 		$this->commerce_event->set( 'ct_total', $total );

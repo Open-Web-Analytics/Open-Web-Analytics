@@ -418,7 +418,7 @@ class owa_baseModule extends owa_module {
 		// Search Terms
 		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
 		// Location
-		$this->registerEventHandler( array( 'base.new_session', 'commerce.transaction' ), 'locationHandlers' );
+		$this->registerEventHandler( array( 'base.new_session', 'ecommerce.transaction' ), 'locationHandlers' );
 		// operating systems
 		$this->registerEventHandler('base.new_session', 'osHandlers');
 		// source dimension
@@ -449,8 +449,8 @@ class owa_baseModule extends owa_module {
 		// actions
 		$this->registerEventHandler('track.action', 'actionHandler');
 		// Commerce
-		$this->registerEventHandler('commerce.transaction', 'commerceTransactionHandlers');
-		$this->registerEventHandler('commerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
+		$this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
+		$this->registerEventHandler('ecommerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
 	}
 	
 	function _registerEventProcessors() {

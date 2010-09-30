@@ -97,7 +97,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			
 			if ($ret) {
 				$dispatch = owa_coreAPI::getEventDispatch();
-				$sce = $dispatch->makeEvent( 'commerce.transaction_persisted' );
+				$sce = $dispatch->makeEvent( 'ecommerce.transaction_persisted' );
 				$sce->setProperties( $event->getProperties() );
 				$dispatch->asyncNotify( $sce );
 			}
