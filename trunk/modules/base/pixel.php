@@ -18,7 +18,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 /**
  * Pixel View
@@ -35,11 +34,6 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  */
 
 class owa_pixelView extends owa_view {
-	
-	function __construct() {
-
-		return parent::__construct();
-	}
 	
 	function render($data) {
 		

@@ -35,6 +35,7 @@ ignore_user_abort(true);
 $owa = new owa_php();
 $owa->e->debug('Logging Event from Url...');
 // log event
-echo $owa->logEventFromUrl();
+$ret = $owa->logEventFromUrl();
 
+echo owa_coreAPI::displayView(array(), 'base.pixel');
 ?>

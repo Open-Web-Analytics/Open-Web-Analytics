@@ -313,7 +313,8 @@ OWA.util =  {
 	},
 	
 	getState : function(store_name, key) {
-	
+		this.loadState(store_name);
+		return OWA.state[store_name][key];
 	},
 	
 	loadState : function(store_name) {
