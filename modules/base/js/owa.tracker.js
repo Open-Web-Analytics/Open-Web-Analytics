@@ -143,7 +143,7 @@ OWA.tracker.prototype = {
 		logMovement: false, 
 		encodeProperties: true, 
 		movementInterval: 100,
-		logDomStreamPercentage: 50,
+		logDomStreamPercentage: 100,
 		domstreamEventThreshold: 5,
 		maxPriorCampaigns: 5,
 		campaignAttributionWindow: 60,
@@ -182,6 +182,7 @@ OWA.tracker.prototype = {
 	event_queue : new Array(),
 	player: '',
 	overlay: '',
+	ecommerce_transaction: '',
 	
 	/**
 	 * Convienence method for seting page title
@@ -245,7 +246,7 @@ OWA.tracker.prototype = {
 		event.set('action_name', action_name);
 		event.set('action_label', action_label);
 		event.set('numeric_value', numeric_value);
-		this.logEventAjax(event, 'POST');
+		this.trackEvent(event);
 		OWA.debug("Action logged");
 	},
 	
@@ -260,8 +261,9 @@ OWA.tracker.prototype = {
 			event.set('timestamp', this.startTime);
 			event.set('duration', this.getElapsedTime());
 			event.set('stream_events', JSON.stringify(this.event_queue));
-			//console.log('Stream: %s', JSON.stringify(this.event_queue));
+			
 			this.logEventAjax(event, 'POST');
+			//this.trackEvent(event, true);
 			OWA.debug("Domstream logged");
 			
 		} else {
@@ -359,6 +361,14 @@ OWA.tracker.prototype = {
     	
     },
     
+    ajaxJsonp : function (url) {                
+	   
+	    var script = document.createElement("script");        
+	    script.setAttribute("src",url);
+	    script.setAttribute("type","text/javascript");                
+	    document.body.appendChild(script);
+	},
+    
     prepareRequestParams : function(properties) {
     
   		var get = '';
@@ -395,11 +405,27 @@ OWA.tracker.prototype = {
 		return get;
     },
     
+    
+    /** 
+     * Sends an OWA event to the server for processing using GET
+     * inserts 1x1 pixel IMG tag into DOM
+     */
+    trackEvent : function(event, block) {
+    
+    	if ( ! block ) {
+    		block_flag = false;
+    	} else {
+    		block_flag = true;
+    	}
+    	
+    	return this.logEvent( event.getProperties(), block_flag );
+    },
+    
 
     /** 
      * Logs event by inserting 1x1 pixel IMG tag into DOM
      */
-    logEvent : function (properties) {
+    logEvent : function (properties, block) {
     	
     	if (this.active) {
     	
@@ -407,11 +433,47 @@ OWA.tracker.prototype = {
 	    	var url
 	    
 	    	url = this._assembleRequestUrl(properties);
+	    	
+	    	
 	
 		   	bug = "<img src=\"" + url + "\" height=\"1\" width=\"1\">";
-		    
-		   	document.write(bug);
+		 	OWA.debug('writing bug for %s', properties['event_type']);
+		 	
+		   	//document.createElement('img').src = url;
+		   	image = new Image(1, 1);
+		   	//expireDateTime = now.getTime() + delay;
+		   	image.onLoad = function () { };
+			image.src = url;
+			that = this;
+			if (block) {
+				//OWA.debug(' blocking...');
+			}
+			
+
 		}
+    },
+    
+    isImageLoaded : function(img, url) {
+    	
+    	OWA.debug('checking if image is loaded.');
+	    // During the onload event, IE correctly identifies any images that
+	    // werenÕt downloaded as not complete. Gecko-based
+	    // browsers act like NS4 in that they report this incorrectly.
+	    if (! img.complete) {
+	       
+	        return false;
+	    }
+	
+	    // However, Gecko browsers do have two very useful properties: naturalWidth and
+	    // naturalHeight. These give the true size of the image. If it failed
+	    // to load, either of these should be zero.
+	
+	    if (typeof img.naturalWidth != "undefined" && img.naturalWidth == 0) {
+	   
+	        return false;
+	    }
+	    
+	    return true;
     },
     
     /**
@@ -646,16 +708,15 @@ OWA.tracker.prototype = {
 		
 		//if all that works then log
 		if (this.getOption('logClicksAsTheyHappen')) {
-			this.logEvent(click.getProperties());
+			this.trackEvent(click);
 		}
+		
 		// add to event queue is logging dom stream
 		if (this.getOption('trackDomStream')) {
 			this.addToEventQueue(click)
 		}
 		
 		this.click = click;
-		
-		return;	
 	},
 	
 	// stub for a filter that will strip certain properties or abort the logging
@@ -709,7 +770,7 @@ OWA.tracker.prototype = {
 			
 			this.registerBeforeNavigateEvent();
 		} else {
-			OWA.debug("not tracking dom stream for this user %d.", 50);
+			OWA.debug("not tracking dom stream for this user.");
 		}
 			
 		
@@ -1000,49 +1061,46 @@ OWA.tracker.prototype = {
 		
 		// set attribution properties on page view object	
 		if ( this.isTrafficAttributed ) {
-	
-			// set medium
-			if (campaign_params.md.length > 0) {
-				this.page.set('medium', attribution.medium);
-			}
-			
-			// set source
-			if (campaign_params.sr.length > 0) {
-				this.page.set('source', attribution.source);
-			}
-			
-			// set campaign
-			if (campaign_params.cn.length > 0) {
-				this.page.set('campaign', attribution.campaign);
-			}
-			
-			//set ad
-			if (campaign_params.ad.length > 0) {
-				this.page.set('ad', attribution.ad);
-			}
-			
-			//set ad type
-			if (campaign_params.at.length > 0) {
-				this.page.set('ad_type', attribution.ad_type);
-			}
-			
-			//set search_terms
-			if (campaign_params.tr.length > 0) {
-				this.page.set('search_terms', attribution.search_terms);
+		
+			for ( param in campaign_params ) {
+				if ( campaign_params.hasOwnProperty( param ) ) {
+					// set medium
+					switch ( param ) {
+						
+						case "md":
+							this.page.set( 'medium', campaign_params.md );
+							break;
+						case "sr":
+							this.page.set( 'source', campaign_params.sr );
+							break;
+						case "cn":
+							this.page.set( 'campaign', campaign_params.cn );
+							break;
+						case "ad":
+							this.page.set( 'ad', campaign_params.ad );
+							break;
+						case "at":
+							this.page.set( 'ad_type', campaign_params.at );
+							break;
+						case "tr":
+							this.page.set( 'search_terms', campaign_params.tr );
+							break;
+					}
+				}
 			}
 			
 			// set campaign touches
 			if (this.campaignState.length > 0) {
-				this.page.set('attribs', JSON.stringify(this.campaignState));
+				this.page.set( 'attribs', JSON.stringify( this.campaignState ) );
 			}
 			
 			// set campaign timestamp
 			if (this.campaignState.length > 0) {
-				this.page.set('campaign_timestamp', campaign_params.ts);
+				this.page.set( 'campaign_timestamp', campaign_params.ts );
 			}
 			
 			// tells upstream processing to skip attribution
-			this.page.set('is_attributed', true);
+			this.page.set( 'is_attributed', true );
 		}
 	
 	},
@@ -1069,6 +1127,47 @@ OWA.tracker.prototype = {
 				OWA.debug( 'Found search engine query param: ' + query_params[i] );
 				return true;
 			}
+		}
+	},
+	
+	addTransaction : function ( order_id, order_source, total, tax, shipping, gateway ) {
+	
+		this.ecommerce_transaction = new OWA.event();
+		this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
+		this.ecommerce_transaction.set( 'ct_order_id', order_id );
+		this.ecommerce_transaction.set( 'ct_order_source', order_source );
+		this.ecommerce_transaction.set( 'ct_total', total );
+		this.ecommerce_transaction.set( 'ct_tax', tax );
+		this.ecommerce_transaction.set( 'ct_shipping', shipping );
+		this.ecommerce_transaction.set( 'ct_gateway', gateway );
+		this.ecommerce_transaction.set( 'page_url', page_url );
+		this.ecommerce_transaction.set( 'ct_line_items', [] );
+
+	},
+	
+	addTransactionLineItem : function ( order_id, sku, product_name, category, unit_price, quantity ) {
+	
+		if ( ! this.ecommerce_transaction.length > 0 ) {
+			this.addTransaction('none set');
+		}
+		
+		var li = {};
+		li.li_order_id = order_id ;
+		li.li_sku = sku ;
+		li.li_product_name = product_name ;
+		li.li_category = category ;
+		li.li_unit_price = unit_price ;
+		li.li_quantity = quantity ;
+		var items = this.ecommerce_transaction.get( 'ct_line_items' );
+		items.push( li );
+		this.ecommerce_transaction.set( 'ct_line_items', items );
+	},
+	
+	trackTransaction: function () {
+		
+		if (  this.ecommerce_transaction.length > 0 ) {
+			this.trackEvent( this.ecommerce_transaction );
+			this.ecommerce_transaction = '';
 		}
 	}
 	
