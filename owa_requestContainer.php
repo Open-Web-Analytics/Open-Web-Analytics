@@ -247,7 +247,7 @@ class owa_requestContainer {
 		// Apply caller specific params
 		foreach ($this->owa_params as $k => $v) {
 				
-			$params[$k] = base64_decode(urldecode($v));
+			$params[$k] = urldecode($v);
 				
 		}
 		
