@@ -17,13 +17,12 @@
 //
 
 // ensures that mediawiki is the only entry point.
-if (!defined('MEDIAWIKI')) {
+if ( ! defined( 'MEDIAWIKI' ) ) {
 	exit;
 }
 
-require_once('owa_env.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_mw.php');
-require_once "$IP/includes/SpecialPage.php";
+require_once( dirname( __FILE__ ) . 'owa_env.php' );
+require_once( OWA_BASE_CLASSES_DIR . 'owa_mw.php' );
 
 /* GLOBALS */
 global	$wgServer, 				// mediawiki server name

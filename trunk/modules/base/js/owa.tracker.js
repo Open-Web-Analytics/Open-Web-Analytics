@@ -141,7 +141,7 @@ OWA.tracker.prototype = {
 		logClicks: true, 
 		logPage: true, 
 		logMovement: false, 
-		encodeProperties: true, 
+		encodeProperties: false, 
 		movementInterval: 100,
 		logDomStreamPercentage: 100,
 		domstreamEventThreshold: 5,
