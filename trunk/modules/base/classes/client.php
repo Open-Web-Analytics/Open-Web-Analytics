@@ -155,7 +155,7 @@ class owa_client extends owa_caller {
 		// suppport for old style cookie
 		if ( ! $last_req ) {
 			$state_store_name = sprintf( '%s_%s', owa_coreAPI::getSetting( 'base', 'site_session_param' ), $this->site_id );		
-			$last_req = owa_coreAPI::getStateParam( $state_store_name, 's' );	
+			$last_req = owa_coreAPI::getStateParam( $state_store_name, 'last_req' );	
 		}
 		// set property on event object
 		$event->set( 'last_req', $last_req );

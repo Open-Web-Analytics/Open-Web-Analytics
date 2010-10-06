@@ -137,7 +137,9 @@ class owa_view extends owa_base {
 		$this->e->debug('Assembling view: '.get_class($this));
 		
 		// set view name in template class. used for navigation.
-		$this->body->caller_params['view'] = $this->data['view'];
+		if (array_key_exists('view', $this->data)) {
+			$this->body->caller_params['view'] = $this->data['view'];
+		}
 		
 		if (array_key_exists('params', $this->data)):
 			$this->body->set('params', $this->data['params']);
