@@ -271,7 +271,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->set( 'is_entry_page', true );
 			
 			// mark event type as first_page_request. Necessary?????
-			$this->event->setEventType('base.first_page_request');
+			//$this->event->setEventType('base.first_page_request');
 	
 			// if this is not the first sessio nthen calc days sisne last session
 			if ($this->event->get('last_req')) {
