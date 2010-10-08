@@ -227,7 +227,9 @@ class owa_client extends owa_caller {
 		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
 		$event->setProperties($service->request->getAllOwaParams());
 		
-		if ( $manage_state ) {
+		// check for third party cookie mode.
+		$mode = owa_coreAPI::getRequestParam('thirdParty');
+		if ( $mode ) {
 			return $this->trackEvent($event);
 		} else {
 			return owa_coreAPI::logEvent($event->getEventType(), $event);

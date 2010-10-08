@@ -106,6 +106,18 @@ OWA.tracker = function(caller_params, options) {
 			this.page.merge(owa_params);
 		}
 	}
+	
+	if (typeof owa_cmds != 'undefined') {
+		
+		if ( owa_cmds.length > 0 ) {
+			
+			for(var i=0;i< owa_cmds.length;i++) {
+					
+				this.dynamicFunc(owa_cmds[i]);
+			}
+		}
+	}
+	
 		
 	// merge page params from map passed into the constructor
 	if (typeof caller_params != 'undefined') {
@@ -197,6 +209,13 @@ OWA.tracker.prototype = {
 	player: '',
 	overlay: '',
 	ecommerce_transaction: '',
+	
+	dynamicFunc : function (func){
+		//alert(func[0]);
+		var args = Array.prototype.slice.call(func, 1);
+		//alert(args);
+		this[func[0]].apply(this, args);
+	},
 	
 	/**
 	 * Convienence method for seting page title
