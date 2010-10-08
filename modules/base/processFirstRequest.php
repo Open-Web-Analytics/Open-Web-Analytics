@@ -56,7 +56,6 @@ class owa_processFirstRequestController extends owa_processEventController {
 			
 			$this->event->replaceProperties($fh);
 			$this->event->setEventType('base.first_page_request');
-			$this->event->first_hit = true;
 			//owa_coreAPI::debug(print_r($this->event, true));	
 			// Delete first_hit Cookie
 			owa_coreAPI::clearState($fh_state_name);

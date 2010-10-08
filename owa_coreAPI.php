@@ -730,22 +730,13 @@ class owa_coreAPI {
 	 */
 	public static function logEvent($event_type, $message = '') {
 		
-		if (owa_coreAPI::getStateParam('overlay')) {
-			return false;
-		}
-		
 		// debug
 		owa_coreAPI::debug("logging event $event_type");
 		
 		if (owa_coreAPI::getSetting('base', 'error_log_level') > 9) {
 			owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
-			//owa_coreAPI::debug(print_r($this->e->backtrace(), true));
 		}
-		
-		// do not log if the request is from a reserved IP
-		// ips = owa_coreAPI::getSetting('base', 'log_not_log_ips');
-		//	...
-		
+			
 		// Check to see if named users should be logged		
 		if (owa_coreAPI::getSetting('base', 'log_named_users') != true) {
 			$cu = owa_coreAPI::getCurrentUser();	
@@ -782,11 +773,10 @@ class owa_coreAPI {
 			$event = $message;
 		}
 								
-				
 		// Filter XSS exploits from event properties
 		$event->cleanProperties();
 		
-		// do not log if the do not log param is set by caller.
+		// do not log if the do not log property is set on the event.
 		if ($event->get('do_not_log')) {
 			return false;
 		}
@@ -1064,6 +1054,7 @@ class owa_coreAPI {
 		}
 		
 		// backwards compatability with old style view/controler scheme
+		// still needed??
 		if (array_key_exists('view', $params)) {
 			// its a view request so the only data is in whats in the params
 			$init = true;
