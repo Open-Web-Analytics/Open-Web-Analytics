@@ -120,17 +120,20 @@ class owa_state {
 			
 			$time = 0;
 			
+			// needed? i dont think so.
 			if (isset($this->stores_meta[$store]['is_perminent']) && $this->stores_meta[$store]['is_perminent'] === true) {
 				$time = $this->getPermExpiration();
 			} elseif (isset($this->stores_meta[$store]['is_perminent']) && $this->stores_meta[$store]['is_perminent'] > 0) {
 				$time = $this->stores_meta[$store]['is_perminent'] * 3600 * 24;
 			}
 			
+			if ($is_perminent === true) {
+				$time = $this->getPermExpiration();
+			}
+			
+			//owa_coreAPI::debug('perm: '.$this->stores_meta[$store]['is_perminent']);	
 			owa_coreAPI::createCookie($store, $this->stores[$store], $time, "/", owa_coreAPI::getSetting('base', 'cookie_domain'));
-		}
-		
-		return;
-		
+		}	
 	}
 	
 	function loadState($store, $name = '', $value, $store_type) {

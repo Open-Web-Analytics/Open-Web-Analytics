@@ -132,6 +132,7 @@ class owa_caller extends owa_base {
 		
 		/* SET SITE ID */
 		// needed in standalone installs where site_id is not set in config file.
+		// still needed??????
 		if (!empty($this->params['site_id'])) {
 			$this->c->set('base', 'site_id', $this->params['site_id']);
 		}
@@ -141,18 +142,8 @@ class owa_caller extends owa_base {
 		$this->config = $this->c->fetch('base');
 		
 		/* SETUP REQUEST Params */
-		//$this->params = &owa_requestContainer::getInstance();
+		// still needed?????
 		$this->params = $this->service->request->getAllOwaParams();
-		//print_r($this->params);
-		
-		// check for required schema updates and sets update flag
-		// this is needed if the calling application or plugin needs to check for updates
-		//if (!empty($this->api->modules_needing_updates)):
-		//	$this->service->setUpdateRequired();
-		//endif;
-		
-		return;
-	
 	}
 	
 	function handleRequestFromUrl()  {

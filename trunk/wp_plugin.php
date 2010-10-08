@@ -212,7 +212,7 @@ function &owa_getInstance($params = array()) {
 		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
 		$owa_config['api_url'] = get_bloginfo('url').'/index.php?owa_apiAction';
 		// needed?
-		$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
+		//$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
 		$owa_config['site_id'] = md5(get_settings('siteurl'));
 		// needed for some reason
 		$owa_config['is_embedded'] = true;
@@ -228,7 +228,7 @@ function &owa_getInstance($params = array()) {
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();
-      	     //print_r($current_user);
+      	//print_r($current_user);
 		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
 		$cu =&owa_coreAPI::getCurrentUser();
@@ -518,7 +518,7 @@ function owa_install() {
 	$owa = owa_getInstance($params);
 	$owa->setSetting('base', 'cache_objects', false);
 		
-	$public_url =  get_bloginfo('url').'/wp-content/plugins/owa/';
+	$public_url =  get_bloginfo('wpurl').'/wp-content/plugins/owa/';
 	
 	$install_params = array('site_id' => md5(get_settings('siteurl')), 
 							'name' => get_bloginfo('name'),

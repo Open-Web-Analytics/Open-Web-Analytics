@@ -29,16 +29,7 @@
  */
 
 class owa_event {
-	
-	/**
-	 * First hit flag
-	 * 
-	 * Used to tell if this request was loaded from the first hit cookie. 
-	 *
-	 * @var boolean
-	 */
-	var $first_hit = false;
-	
+		
 	/**
 	 * Event Properties
 	 *
