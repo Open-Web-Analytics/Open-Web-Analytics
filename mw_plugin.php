@@ -35,6 +35,7 @@ $wgOwaMemCachedServers = array();
 // move this to inside hook function
 $wgOwaSiteId = md5($wgServer.$wgScriptPath);
 $wgOwaEnableSpecialPage = true;
+$wgOwaThirdPartyCookies = false;
 
 // Register Extension with MediaWiki
 //$wgExtensionFunctions[] = 'owa_main';
@@ -337,14 +338,23 @@ function editTalkPageAction( $article ) {
  */
 function owa_footer(&$wgOut, $sk) {
 	
-	global $wgRequest;
+	global $wgRequest, $wgOwaThirdPartyCookies;
 	
 	if ($wgRequest->getVal('action') != 'edit' && $wgRequest->getVal('title') != 'Special:Owa') {
 		
 		$owa = owa_singleton();
 		if ($owa->getSetting('base', 'install_complete')) {
 			
-			$tags = $owa->placeHelperPageTags(false, array('trackPageview' => true));		
+			$cmds  = "var owa_cmds = owa_cmds || [] ;";
+			if ( $wgOwaThirdPartyCookies ) {
+				$cmds .= "owa_cmds.push( ['setOption', 'thirdParty', true] );";
+			}
+			
+			$wgOut->addInlineScript( $cmds );
+			
+			$params = array('trackPageview' => true);
+			
+			$tags = $owa->placeHelperPageTags(false, $params);		
 			$wgOut->addHTML($tags);
 			
 		}
