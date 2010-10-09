@@ -225,7 +225,7 @@ function owa_translate_role($level = array()) {
  */
 function owa_trackPageView( $params = array() ) {
 	
-	global $wgUser, $wgOut, $wgServer, $wgScriptPath;
+	global $wgUser, $wgOut, $wgOwaSiteId;
 	
 	$owa = owa_singleton();
 	
@@ -238,7 +238,7 @@ function owa_trackPageView( $params = array() ) {
 		
 		$event->set( 'page_type', '(not set)' );
 		$event->set( 'language', owa_getLanguage());
-		//$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
+		$event->setSiteId( $wgOwaSiteId ) );
 		
 		foreach ( $params as $k => $v ) {
 			$event->set( $k, $v );
@@ -260,7 +260,6 @@ function owa_trackPageView( $params = array() ) {
 	}
 		
 	return true;
-	
 }
 
 /**
