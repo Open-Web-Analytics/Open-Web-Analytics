@@ -24,22 +24,29 @@ if ( ! defined( 'MEDIAWIKI' ) ) {
 require_once( dirname( __FILE__ )  . '/' . 'owa_env.php' );
 require_once( OWA_BASE_CLASSES_DIR . 'owa_mw.php' );
 
-/* GLOBALS */
-//$wgServer;				// mediawiki server name
-//$wgScriptPath; 			// mediawiki script path
-//$wgScript;				// mediawiki script name
-//$wgMainCacheType; 		// mediawiki cache type
-//$wgMemCachedServers; 	// mediawiki's memcached server array
+/** 
+ * OWA MW EXTENSION SPECIFIC CONFIGURATION VARIABLES
+ * To alter these, set them in your localsettings.php file AFTER you
+ * include/require the extension.
+ */
+ 
+// $wgOwaSiteId is used to overide the default site_id that OWA
+// will append to all tracking requests.This is handy if you want
+// to aggregate stats for more than one wiki under the same site_id
+$wgOwaSiteId = false;
 
-$wgOwaMemCachedServers = array();
-// move this to inside hook function
-$wgOwaSiteId = md5($wgServer.$wgScriptPath);
+// $wgOwaEnableSpecialPage enables/disables OWA's special page.
+// Use this to deactivate and hide the special page 
 $wgOwaEnableSpecialPage = true;
+
+// $wgOwaThirdPartyCookies enables third party cookie mode for 
+// OWA's javascript tracker. This is rarely a good idea and will
+// have data quality ramifications.
 $wgOwaThirdPartyCookies = false;
 
-// Register Extension with MediaWiki
-//$wgExtensionFunctions[] = 'owa_main';
-										
+/**
+ * Register Extension and Hooks
+ */
 $wgExtensionCredits['specialpage'][] = array(
 		'name' 			=> 'Open Web Analytics for MediaWiki', 
   		'author' 		=> 'Peter Adams', 
@@ -47,28 +54,50 @@ $wgExtensionCredits['specialpage'][] = array(
   		'description' 	=> 'Open Web Analytics for MedaWiki'
 );
 
-// Enable Special Page
-if ( $wgOwaEnableSpecialPage ) {
-	//Load Special Page
-	$wgAutoloadClasses['SpecialOwa'] = __FILE__;
-	// Adds OWA's admin interface to special page list
-	$wgSpecialPages['Owa'] = 'SpecialOwa';
-}
-	
+// used to sniff out admin requests	
 $wgHooks['UnknownAction'][] = 'owa_actions';
-// Hook for logging Article Page Views	
+// used to set proper params for logging Article Page Views	
 $wgHooks['ArticlePageDataAfter'][] = 'owa_logArticle';
+// used to set proper params for logging Special Page Views	
 $wgHooks['SpecialPageExecuteAfterPage'][] = 'owa_logSpecialPage';
+// used to set proper params for logging Category Page Views	
 $wgHooks['CategoryPageView'][] = 'owa_logCategoryPage';
-// Hook for adding helper page tracking tags 	
+// used to add OWA's javascript tracking tag to all pages 	
 $wgHooks['BeforePageDisplay'][] = 'owa_footer';
+// used to fire Action events when articles are created
 $wgHooks['ArticleInsertComplete'][] = 'owa_newArticleAction';
+// used to fire Action events when articles are edited
 $wgHooks['ArticleSaveComplete'][] = 'owa_editArticleAction';
+// used to fire Action events when new articles are deleted
 $wgHooks['ArticleDeleteComplete'][] = 'owa_deleteArticleAction';
+// used to fire Action events when new user accounts are created
 $wgHooks['AddNewAccount'][] = 'owa_addUserAction';
+// used to fire Action events when new uploads occur
 $wgHooks['UploadComplete'][] = 'owa_addUploadAction';
+// used to fire Action events when users login
 $wgHooks['UserLoginComplete'][] = 'owa_userLoginAction';
+// used to fire Action events when talk pages are edited
 $wgHooks['ArticleEditUpdateNewTalk'][] ='owa_editTalkPageAction';
+// used to register OWA's special page
+$wgHooks['SpecialPage_initList'][] = 'owa_registerSpecialPage';
+
+/**
+ * Hook Function for Registering OWA's Special Page
+ */
+function owa_registerSpecialPage( &$aSpecialPages ) {
+	
+	global $wgOwaEnableSpecialPage;
+	
+	// Enable Special Page
+	if ( $wgOwaEnableSpecialPage === true ) {
+		//Load Special Page
+		$wgAutoloadClasses['SpecialOwa'] = __FILE__;
+		// Adds OWA's admin interface to special page list
+		$aSpecialPages['Owa'] = 'SpecialOwa';
+	}
+	// must return true for hook to continue processing.
+	return true;
+}
 
 /**
  * Hook for OWA special actions
@@ -104,7 +133,7 @@ function owa_actions($action) {
  * Needed to avoid OWA loading for every mediawiki request
  */
 function owa_singleton() {
-	
+
 	static $owa;
 		
 	if ( empty( $owa ) ) {
@@ -135,6 +164,11 @@ function owa_singleton() {
 		$owa->setSetting( 'base', 'link_template', '%s&%s' );
 		$owa->setSetting( 'base', 'is_embedded', true );
 		$owa->setSetting( 'base', 'query_string_filters', 'returnto' );
+		
+		if ( ! $wgOwaSiteId ) {
+			$wgOwaSiteId = md5($wgServer.$wgScriptPath);
+		}
+		
 		$owa->setSiteId( $wgOwaSiteId );
 		/**
 	 	 * Populates OWA's current user object with info about the current mediawiki user.
@@ -152,6 +186,11 @@ function owa_singleton() {
 	return $owa;
 }
 
+/**
+ * Transalates MW Roles into OWA Roles
+ *
+ * @todo make this configurable with a global property
+ */
 function owa_translate_role($level = array()) {
 	
 	if ( ! empty( $level ) ) {
@@ -179,9 +218,11 @@ function owa_translate_role($level = array()) {
 	}
 	
 	return $owa_role;
-
 }
 
+/**
+ * Helper function for tracking page views of various types
+ */
 function owa_trackPageView( $params = array() ) {
 	
 	global $wgUser, $wgOut, $wgServer, $wgScriptPath;
@@ -197,7 +238,7 @@ function owa_trackPageView( $params = array() ) {
 		
 		$event->set( 'page_type', '(not set)' );
 		$event->set( 'language', owa_getLanguage());
-		$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
+		//$event->setSiteId( md5( $wgServer.$wgScriptPath ) );
 		
 		foreach ( $params as $k => $v ) {
 			$event->set( $k, $v );
@@ -261,6 +302,15 @@ function owa_logArticle( &$article ) {
 	return owa_trackPageView( array('page_title' => $title ,'page_type' => 'Article') );
 }
 
+/**
+ * Helper Function for tracking Action Events
+ * 
+ * This function is a wrapper for the Action Event API in owa_client.
+ *
+ * @param	$action_name	string	The name of the action being tracked
+ * @param	$label			string	The label associated with the action being tracked
+ * @return boolean	true
+ */
 function owa_trackAction( $action_name, $label ) {
 
 	$owa = owa_singleton();
