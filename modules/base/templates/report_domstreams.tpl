@@ -28,7 +28,7 @@
 				<?php echo date("H:i:s", mktime(0,0,$ds['duration']));?>
 			</TD>
 			<TD class="data_cell">
-				<a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' => $ds['document_id'], 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadPlayer', 'domstream_id' => $ds['id']), true, 'cookie'))));?>" target="_blank">Play</a>
+				<a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' => $ds['document_id'], 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadPlayer', 'domstream_guid' => $ds['domstream_guid']), true, 'cookie'))));?>" target="_blank">Play</a>
 			</TD>
 		</TR>		
 		<?php endforeach; ?>

@@ -48,7 +48,7 @@ class owa_domstreamHandlers extends owa_observer {
     	if ( ! $ds->wasPersisted() ) {
 	    	
 			$ds->set('id', $event->get('guid') );
-			//$ds->set('id', $event->get('guid'));
+			$ds->set('domstream_guid', $event->get('domstream_guid'));
 			$ds->set('visitor_id', $event->get('visitor_id'));
 			$ds->set('session_id', $event->get('session_id'));
 			$ds->set('site_id', $event->get('site_id'));

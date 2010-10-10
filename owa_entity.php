@@ -221,9 +221,9 @@ class owa_entity {
 	function save() {
 		
 		if ( $this->wasPersisted ) {
-			$this->update();
+			return $this->update();
 		} else {
-			$this->create();
+			return $this->create();
 		}
 	}
 	

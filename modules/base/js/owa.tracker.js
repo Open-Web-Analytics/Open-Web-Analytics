@@ -15,7 +15,7 @@
 //
 
 /**
- * Javascript Tracker Library
+ * OWA Generic Event Object
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,8 +25,6 @@
  * @version		$Revision$	      
  * @since		owa 1.2.1
  */
- 
-
 OWA.event = function() {
 	this.properties = new Object();
 	this.set('timestamp', OWA.util.getCurrentUnixTimestamp() );
@@ -72,12 +70,20 @@ OWA.event.prototype = {
 				this.set(param, properties[param]);
 			}
 	    }
-
 	}
-
 }
 
-
+/**
+ * Javascript Tracker Object
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.2.1
+ */
 OWA.tracker = function(caller_params, options) {
 	
 	this.urlParams = [];
@@ -117,43 +123,43 @@ OWA.tracker = function(caller_params, options) {
 			}
 		}
 	}
-	
-		
+
 	// merge page params from map passed into the constructor
 	if (typeof caller_params != 'undefined') {
 		this.page.merge(caller_params);
 	}
-	
 }
 
 OWA.tracker.prototype = {
 
 	id : '',
+	// site id
 	siteId : '',
+	// ???
 	init: 0,
+	// flag to tell if client state has been set
 	stateInit: false,
+	// properties that should be added to all events
 	globalEventProperties: {},
-	
-	/**
-	 * Time When logger is loaded
-	 */
+	// state sores that can be shared across sites
+	sharableStateStores: ['v', 's', 'c'],
+	// Time When tracker is loaded
 	startTime: null,
+	// time when tracker is unloaded
 	endTime: null,
-	/**
-	 * Active status of logger
-	 */
+	// Active status of tracker
 	active: true,
-	/**
-	 * Endpoint URl of logger service
-	 */
+	// Endpoint URL of log service
 	endpoint : '',
+	// campaign state holder
 	campaignState : [],
+	// flag for new campaign status
 	isNewCampaign: false,
+	// flag for new session status
 	isNewSessionFlag: false,
+	// flag for whether or not traffic has been attributed
 	isTrafficAttributed: false,
-	/**
-	 * Configuration options
-	 */
+	// Configuration options
 	options : {
 		logClicks: true, 
 		logPage: true, 
@@ -161,7 +167,8 @@ OWA.tracker.prototype = {
 		encodeProperties: false, 
 		movementInterval: 100,
 		logDomStreamPercentage: 100,
-		domstreamEventThreshold: 5,
+		domstreamLoggingInterval: 3000,
+		domstreamEventThreshold: 10,
 		maxPriorCampaigns: 5,
 		campaignAttributionWindow: 60,
 		trafficAttributionMode: 'direct',
@@ -188,6 +195,10 @@ OWA.tracker.prototype = {
 	 */
 	click : '',
 	/**
+	 * Domstream event
+	 */
+	domstream : '',
+	/**
 	 * Latest Movement Event
 	 */
 	movement : '',
@@ -205,7 +216,7 @@ OWA.tracker.prototype = {
 	/**
 	 * DOM Stream Event Queue
 	 */
-	event_queue : new Array(),
+	event_queue : [],
 	player: '',
 	overlay: '',
 	ecommerce_transaction: '',
@@ -284,25 +295,72 @@ OWA.tracker.prototype = {
 		OWA.debug("Action logged");
 	},
 	
+	trackClicks : function(handler) {
+		// flag to tell handler to log clicks as they happen
+		this.setOption('logClicksAsTheyHappen', true);
+		this.bindClickEvents();
+	},
+	
+	trackDomStream : function() {
+		
+		if (this.active) {
+		
+			// check random number against logging percentage
+			var rand = Math.floor(Math.random() * 100 + 1 );
+			
+			if (rand <= this.getOption('logDomStreamPercentage')) {
+				
+				// needed by click handler 
+				this.setOption('trackDomStream', true);	
+				// loop through stream event bindings
+				var len = this.streamBindings.length;
+				for ( var i = 0; i < len; i++ ) {	
+				//for (method in this.streamBindings) {
+					this.callMethod(this.streamBindings[i]);
+				}
+				this.startDomstreamTimer();
+				//this.registerBeforeNavigateEvent();
+			} else {
+				OWA.debug("not tracking domstream for this user.");
+			}
+		}
+	},
+	
 	logDomStream : function() {
     	
-    	if (this.event_queue.length > this.options.domstreamEventThreshold) {
+    	this.domstream = this.domstream || new OWA.event;
     	
-			var event = new OWA.event;
-			event.setEventType('dom.stream');
-			event.set('site_id', this.getSiteId());
-			event.set('page_url', this.page.get('page_url'));
-			event.set('timestamp', this.startTime);
-			event.set('duration', this.getElapsedTime());
-			event.set('stream_events', JSON.stringify(this.event_queue));
+    	if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
+    		
+			// make an domstream_id if one does not exist. needed for upstream processing
+			if ( ! this.domstream.get('domstream_guid') ) {
+				var salt = 'domstream' + this.page.get('page_url') + this.getSiteId();
+				this.domstream.set( 'domstream_guid', OWA.util.generateRandomGuid( salt ) );
+			}
 			
-			this.logEventAjax(event, 'POST');
-			//this.trackEvent(event, true);
-			OWA.debug("Domstream logged");
-			
+			this.domstream.setEventType( 'dom.stream' );
+			this.domstream.set( 'site_id', this.getSiteId());
+			this.domstream.set( 'page_url', this.page.get('page_url') );
+			this.domstream.set( 'timestamp', this.startTime);
+			this.domstream.set( 'duration', this.getElapsedTime());
+			this.domstream.set( 'stream_events', JSON.stringify(this.event_queue));
+			this.domstream.set( 'stream_length', this.event_queue.length );
+			this.trackEvent( this.domstream );
+			this.event_queue = [];
+	
 		} else {
-			OWA.debug("Domstream had too few events to log");
+			OWA.debug("Domstream had too few events to log.");
 		}
+	},
+	
+	startDomstreamTimer : function() {
+		
+		var interval = this.getOption('domstreamLoggingInterval')
+		var that = this;
+		var domstreamTimer = setInterval(
+			function(){ that.logDomStream() }, 
+			interval
+		);
 	},
 	
 	/**
@@ -796,38 +854,7 @@ OWA.tracker.prototype = {
 	addDomStreamEventBinding : function(method_name) {
 		this.streamBindings.push(method_name);
 	},
-	
-	trackClicks : function(handler) {
-		// flag to tell handler to log clicks as they happen
-		this.setOption('logClicksAsTheyHappen', true);
-		this.bindClickEvents();
-	},
-	
-	trackDomStream : function() {
 		
-		// check random number against logging percentage
-		var rand = Math.floor(Math.random() * 100 + 1 );
-		
-		if (rand <= this.getOption('logDomStreamPercentage')) {
-			
-			// needed by click handler 
-			this.setOption('trackDomStream', true);	
-			// loop through stream event bindings
-			var len=this.streamBindings.length;
-			for(var i=0; i<len; i++) {	
-			//for (method in this.streamBindings) {
-				this.callMethod(this.streamBindings[i]);
-			}
-			
-			this.registerBeforeNavigateEvent();
-		} else {
-			OWA.debug("not tracking dom stream for this user.");
-		}
-			
-		
-		
-	},
-	
 	bindMovementEvents : function() {
 		
 		var that = this;

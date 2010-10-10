@@ -45,10 +45,41 @@ class owa_getDomstreamController extends owa_reportController {
 		$d->load($this->getParam('domstream_id'));
 		$json = new Services_JSON();
 		$d->set('events', $json->decode($d->get('events')));
-		$this->set('json', $d->_getProperties());
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->select('*');
+		$db->from( $d->getTableName() );
+		$db->where( 'domstream_guid', $this->getParam('domstream_guid') );
+		$db->order('timestamp', 'ASC');
+		$ret = $db->getAllRows();
+		
+		$combined = array();
+		foreach ($ret as $row) {
+			$combined = $this->mergeStreamEvents( $row['events'], $combined );
+		}
+		
+		$row['events'] = json_decode($combined);
+		$this->set('json', $row);
 		// set view stuff
 		$this->setView('base.json');	
 	}
+	
+	function mergeStreamEvents($new, $old = '') {
+    	
+    	if ( $old ) {
+    		$old = json_decode($old);
+    		owa_coreAPI::debug('old: '.print_r($old, true));
+    		$new = json_decode($new);
+    		owa_coreAPI::debug('new: '.print_r($new, true));
+    		$combined = array_merge($old, $new);
+    		owa_coreAPI::debug('combined: '.print_r($combined, true));
+    		owa_coreAPI::debug('combined count: '.count($combined));
+    		$combined = json_encode($combined);
+    		return $combined;
+    	} else {
+    		return $new;
+    	}
+    }   
 }
 
 ?>
