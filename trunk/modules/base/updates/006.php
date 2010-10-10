@@ -96,6 +96,19 @@ class owa_base_006_update extends owa_update {
 			}
 		}
 		
+		$domstream = owa_coreAPI::entityFactory('base.domstream');
+		$ret = $domstream->addColumn('domstream_guid');
+		
+		if ( $ret === true ) {
+			$this->e->notice( "domstream_guid added to owa_domstream" );
+		} else {
+			$this->e->notice( "Adding domstream_guid to owa_domstream failed." );
+			return false;
+		}
+		
+		$db = owa_coreAPI::dbSingleton();
+		$ret = $db->query("update owa_domstream set domstream_guid = id");
+		
 		//create new entitiy tables
 		$new_entities = array(
 				'base.ad_dim', 
@@ -105,6 +118,7 @@ class owa_base_006_update extends owa_update {
 				'base.commerce_transaction_fact',
 				'base.commerce_line_item_fact',
 				'base.queue_item');
+				
 		foreach ($new_entities as $entity_name) {
 			$entity = owa_coreAPI::entityFactory($entity_name);
 			$ret = $entity->createTable();
@@ -167,6 +181,10 @@ class owa_base_006_update extends owa_update {
 		foreach ( $request_columns as $request_col_name ) {
 			$ret = $request->dropColumn( $request_col_name );
 		}
+		
+		$domstream = owa_coreAPI::entityFactory('base.domstream');
+		$domstream->dropColumn('domstream_guid');
+
 		
 		//drop tables
 		$new_entities = array(

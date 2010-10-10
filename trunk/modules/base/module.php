@@ -824,13 +824,11 @@ class owa_baseModule extends owa_module {
 		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 		$db = owa_coreAPI::dbSingleton();
 		$db->selectFrom('owa_domstream');
-		$db->selectColumn("id, timestamp, page_url, duration");
-		$db->selectColumn('id');
-		$db->selectColumn('page_url');
-		$db->selectColumn('duration');
-		$db->selectColumn('timestamp');
+		$db->selectColumn("domstream_guid, max(timestamp) as timestamp, page_url, duration");
+		//$db->selectColumn('id');
 		$db->selectColumn('document_id');
-		$db->selectColumn('events');
+		$db->groupby('domstream_guid');
+		//$db->selectColumn('events');
 		$db->where('yyyymmdd', array('start' => $start_date, 'end' => $end_date), 'BETWEEN');
 		if ($document_id) {
 			$db->where('document_id', $document_id);
