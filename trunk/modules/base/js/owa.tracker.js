@@ -86,47 +86,43 @@ OWA.event.prototype = {
  */
 OWA.tracker = function(caller_params, options) {
 	
-	this.urlParams = [];
-	
-	// check to see if overlay sesson is active
-	var p = OWA.util.readCookie('owa_overlay');
-
-	if (p) {
-		// pause tracker so we dont log anything during an overlay session
-		this.pause();
-		// start overlay session
-		OWA.startOverlaySession(p);
-	}
-		
-	this.setEndpoint(OWA.config.baseUrl + 'log.php');
-	this.page = new OWA.event();
+	// set start time
 	this.startTime = this.getTimestamp();
+	// set logger endpoint
+	this.setEndpoint(OWA.config.baseUrl + 'log.php');
+	// set default cookie domain
+	this.setCookieDomain(document.domain);
+	// check to se if an overlay session is active
+	this.checkForOverlaySession();
+	//check for linked state send from another domain
+	this.checkForLinkedState();
+	// execute commands global owa_cmds command queue
+	if (typeof owa_cmds != 'undefined') {
+		if ( owa_cmds.length > 0 ) {
+			for(var i=0;i< owa_cmds.length;i++) {
+				this.dynamicFunc(owa_cmds[i]);
+			}
+		}
+	}
+	
+	// set default page properties
+	this.page = new OWA.event();
     this.page.set('page_url', document.URL);
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
 	this.page.set('timestamp', this.startTime);
 	
+	// merge page properties passed to constructor
+	if (typeof caller_params != 'undefined') {
+		this.page.merge(caller_params);
+	}
+	
+	// merge page properties from global owa_params object
 	if (typeof owa_params != 'undefined') {
 		// merge page params from the global object if it exists
 		if (owa_params.length > 0) {
 			this.page.merge(owa_params);
 		}
-	}
-	
-	if (typeof owa_cmds != 'undefined') {
-		
-		if ( owa_cmds.length > 0 ) {
-			
-			for(var i=0;i< owa_cmds.length;i++) {
-					
-				this.dynamicFunc(owa_cmds[i]);
-			}
-		}
-	}
-
-	// merge page params from map passed into the constructor
-	if (typeof caller_params != 'undefined') {
-		this.page.merge(caller_params);
 	}
 }
 
@@ -174,6 +170,7 @@ OWA.tracker.prototype = {
 		trafficAttributionMode: 'direct',
 		sessionLength: 1800,
 		thirdParty: false,
+		cookie_domain: false,
 		campaignKeys: [
 				{ public: 'owa_medium', private: 'md', full: 'medium' },
 				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
@@ -182,6 +179,10 @@ OWA.tracker.prototype = {
 				{ public: 'owa_ad', private: 'ad', full: 'ad' },
 				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ]
 	},
+	/**
+	 * GET params parsed from URL
+	 */ 
+	urlParams: {},
 	/**
 	 * DOM stream Event Binding Methods
 	 */ 
@@ -220,6 +221,182 @@ OWA.tracker.prototype = {
 	player: '',
 	overlay: '',
 	ecommerce_transaction: '',
+	
+	checkForLinkedState : function() {
+		
+		var ls = this.getUrlParam('owa_state');
+		
+		if ( ! ls ) {
+			ls = this.getAnchorParam('owa_state');
+		}
+		
+		if ( ls ) {
+			OWA.debug('Shared OWA state detected...');
+			ls = OWA.util.base64_decode(ls);
+			var state = ls.split('.');
+			OWA.debug('linked state: %s', JSON.stringify(state));
+			if ( state ) {
+			
+				for (var i=0; state.length > i; i++) {
+					
+					var pair = state[i].split('=');
+					
+					OWA.util.replaceState( pair[0], unescape(pair[1]), true );	
+				}
+			}
+		}
+	},
+	/*
+
+	shareStateAcrossDomains : function(domains) {
+		OWA.debug('sharing state across domains');
+		// register onclick handler.
+		var that = this;
+		// Registers the handler for the before navigate event so that the dom stream can be logged
+		if (window.addEventListener) {
+			window.addEventListener('click', function (e) {that.bindSharedState(e); return false;}, false);
+		} else if(window.attachEvent) {
+			window.attachEvent('click', function (e) {that.bindSharedState(e); return false;});
+		}
+	},
+	
+	*/
+	
+	// gets cookies and strings them together using:
+	// name1=encoded_value1.name2=encoded_value2
+	// then base64 encodes the entire string and appends it
+	// to an href
+	shareStateByLink : function(url) {
+	
+		OWA.debug( 'href of link: '+ url );		
+		if ( url ) {
+			
+			var state = '';
+
+			for (var i=0; this.sharableStateStores.length > i;i++) {
+				var value = OWA.util.getRawState( this.sharableStateStores[i] );
+				
+				if (value) {
+					state += OWA.util.sprintf( '%s=%s', this.sharableStateStores[i], OWA.util.urlEncode(value) );					
+					if ( this.sharableStateStores.length != ( i + 1) ) {
+						state += '.';
+					}
+				}
+			}
+			
+			// base64 for transport
+			if ( state ) {
+				state = OWA.util.base64_encode(state);
+			}
+			//check to see if we can just stick this on the anchor
+			var anchor = this.getUrlAnchorValue();
+			if ( ! anchor ) {
+
+				OWA.debug('shared state: %s', state);
+				document.location.href = url + '#owa_state=' + state ;
+			
+			// if not then we need ot insert it into GET params
+			} else {
+				
+			}
+		}	
+	},
+
+	getCookieDomain : function() {
+	
+		return this.getOption('cookie_domain') || OWA.getSetting('cookie_domain') || document.domain;
+
+	},
+	
+	setCookieDomain : function(domain) {
+		
+		// remove the leading period
+		var period = domain.substr(0,1);
+		if (period === '.') {
+			domain = domain.substr(1);
+		}
+		
+		// check for www
+		var www = domain.substr(0,4);
+		if (www === 'www.') {
+			domain = domain.substr(4);
+		} else {
+			domain = document.domain;
+		}
+		
+		domain =  '.' + domain;
+		this.setOption('cookie_domain', domain);
+		OWA.setSetting('cookie_domain', domain);
+		
+	},
+	
+	checkForOverlaySession: function() {
+		
+		// check to see if overlay sesson should be created
+		var a = this.getAnchorParam('owa_overlay');
+		
+		if ( a ) {
+			a = OWA.util.base64_decode(a);
+			OWA.debug('overlay anchor value: ' + a);
+			OWA.util.setCookie('owa_overlay',a, '','', '.' + document.domain);
+		}
+		
+		
+		// check to see if overlay session is active
+		var p = OWA.util.getState('overlay');
+		if ( p ) {
+			// pause tracker so we dont log anything during an overlay session
+			this.pause();
+			// start overlay session
+			OWA.startOverlaySession(p);
+		}			
+	},
+	
+	getUrlAnchorValue : function() {
+	
+		var anchor = self.document.location.hash.substring(1);
+		OWA.debug('anchor value: ' + anchor);
+		return anchor;	
+	},
+	
+	getAnchorParam : function(name) {
+	
+		var anchor = this.getUrlAnchorValue();
+		
+		if ( anchor ) {
+			OWA.debug('anchor is: %s', anchor);
+			var pairs = anchor.split('.');
+			OWA.debug('anchor pairs: %s', JSON.stringify(pairs));
+			if ( pairs.length > 0 ) {
+			
+				var values = {};
+				for( var i=0; pairs.length > i;i++ ) {
+					
+					var pieces = pairs[i].split('=');
+					OWA.debug('anchor pieces: %s', JSON.stringify(pieces));	
+					values[pieces[0]] = pieces[1];
+				}
+				
+				OWA.debug('anchor values: %s', JSON.stringify(values));
+				
+				if ( values.hasOwnProperty( name ) ) {
+					return values[name];
+				}
+			}
+			
+		}
+	},
+	
+	getUrlParam : function(name) {
+		
+		this.urlParams = this.urlParams || OWA.util.parseUrlParams();
+		
+		if ( this.urlParams.hasOwnProperty( name ) ) {
+			return this.urlParams[name];
+		} else {
+			return false;
+		}
+	},
 	
 	dynamicFunc : function (func){
 		//alert(func[0]);
@@ -298,7 +475,14 @@ OWA.tracker.prototype = {
 	trackClicks : function(handler) {
 		// flag to tell handler to log clicks as they happen
 		this.setOption('logClicksAsTheyHappen', true);
-		this.bindClickEvents();
+				
+		var that = this;
+		// Registers the handler for the before navigate event so that the dom stream can be logged
+		if (window.addEventListener) {
+			window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
+		} else if(window.attachEvent) {
+			window.attachEvent('click', function (e) {that.clickEventHandler(e);});
+		}
 	},
 	
 	trackDomStream : function() {
@@ -512,26 +696,29 @@ OWA.tracker.prototype = {
      */
     trackEvent : function(event, block) {
     	//OWA.debug('pre global event: %s', JSON.stringify(event));
-    	if ( ! block ) {
-    		block_flag = false;
-    	} else {
-    		block_flag = true;
-    	}
     	
-    	// check for third party mode.
-    	if ( this.getOption( 'thirdParty' ) ) {
-    		// tell upstream client to manage state
-    		this.globalEventProperties.thirdParty = true;
-    		// add in campaign related properties for upstream evaluation
-    		this.setCampaignRelatedProperties(event);
-    	} else {
-    		// else we are in first party mode, so manage state on the client.
-    		this.manageState(event);
-    	}
-    	
-    	this.addGlobalPropertiesToEvent( event );
-    	//OWA.debug('post global event: %s', JSON.stringify(event));
-    	return this.logEvent( event.getProperties(), block_flag );
+    	if ( this.active ) {
+	    	if ( ! block ) {
+	    		block_flag = false;
+	    	} else {
+	    		block_flag = true;
+	    	}
+	    	
+	    	// check for third party mode.
+	    	if ( this.getOption( 'thirdParty' ) ) {
+	    		// tell upstream client to manage state
+	    		this.globalEventProperties.thirdParty = true;
+	    		// add in campaign related properties for upstream evaluation
+	    		this.setCampaignRelatedProperties(event);
+	    	} else {
+	    		// else we are in first party mode, so manage state on the client.
+	    		this.manageState(event);
+	    	}
+	    	
+	    	this.addGlobalPropertiesToEvent( event );
+	    	//OWA.debug('post global event: %s', JSON.stringify(event));
+	    	return this.logEvent( event.getProperties(), block_flag );
+	    }
     },
     
     addGlobalPropertiesToEvent : function ( event ) {
@@ -561,30 +748,7 @@ OWA.tracker.prototype = {
 			OWA.debug('Inserted web bug for %s', properties['event_type']);
 		}
     },
-    
-    isImageLoaded : function(img, url) {
-    	
-    	OWA.debug('checking if image is loaded.');
-	    // During the onload event, IE correctly identifies any images that
-	    // werenÕt downloaded as not complete. Gecko-based
-	    // browsers act like NS4 in that they report this incorrectly.
-	    if (! img.complete) {
-	       
-	        return false;
-	    }
-	
-	    // However, Gecko browsers do have two very useful properties: naturalWidth and
-	    // naturalHeight. These give the true size of the image. If it failed
-	    // to load, either of these should be zero.
-	
-	    if (typeof img.naturalWidth != "undefined" && img.naturalWidth == 0) {
-	   
-	        return false;
-	    }
-	    
-	    return true;
-    },
-    
+        
     /**
      * Private method for helping assemble request params
      */
@@ -604,42 +768,7 @@ OWA.tracker.prototype = {
     	    	
 		// add some radomness for cache busting
 		return log_url + get;
-    },
-    
-    _base64_encode : function(decStr) {
-    
-		  var base64s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-		  var bits;
-		  var dual;
-		  var i = 0;
-		  var encOut = '';
-		
-		  while(decStr.length >= i + 3) {
-		    bits = (decStr.charCodeAt(i++) & 0xff) <<16 |
-		           (decStr.charCodeAt(i++) & 0xff) <<8 |
-		            decStr.charCodeAt(i++) & 0xff;
-		
-		    encOut += base64s.charAt((bits & 0x00fc0000) >>18) +
-		              base64s.charAt((bits & 0x0003f000) >>12) +
-		              base64s.charAt((bits & 0x00000fc0) >> 6) +
-		              base64s.charAt((bits & 0x0000003f));
-		  }
-		
-		  if(decStr.length -i > 0 && decStr.length -i < 3) {
-		    dual = Boolean(decStr.length -i -1);
-		
-		    bits = ((decStr.charCodeAt(i++) & 0xff) <<16) |
-		           (dual ? (decStr.charCodeAt(i) & 0xff) <<8 : 0);
-		
-		    encOut += base64s.charAt((bits & 0x00fc0000) >>18) +
-		              base64s.charAt((bits & 0x0003f000) >>12) +
-		              (dual ? base64s.charAt((bits & 0x00000fc0) >>6) : '=') +
-		              '=';
-		  }
-		
-		  return(encOut);
-	},
-		
+    },	
 	
 	getViewportDimensions : function() {
 	
@@ -696,14 +825,7 @@ OWA.tracker.prototype = {
 	_getTarget : function(e) {
 	
 	    // Determine the actual html element that generated the event
-		//if (this.e.target) {
-		//   this.targ = this.e.target;
-		   
-	    //} else if (this.e.srcElement) {
-	    //     this.targ = this.e.srcElement;
-	    // }
-	   
-	    targ = e.target || e.srcElement;
+	    var targ = e.target || e.srcElement;
 	    
 		if (targ.nodeType == 3) {
 		    // defeat Safari bug
@@ -779,12 +901,7 @@ OWA.tracker.prototype = {
 	
 	    return properties;
 	},
-	
-	bindClickEvents : function() {
-		var that = this;
-		document.onclick = function (e) {that.clickEventHandler(e);}
-	},
-	
+		
 	clickEventHandler : function(e) {
 		
 		// hack for IE7
@@ -834,18 +951,7 @@ OWA.tracker.prototype = {
 		return properties;
 		
 	},
-			
-	registerBeforeNavigateEvent : function() {
-		var that = this;
-		// Registers the handler for the before navigate event so that the dom stream can be logged
-		if (window.addEventListener) {
-			window.addEventListener('beforeunload', function (e) {that.logDomStream(e);}, false);
-		} else if(window.attachEvent) {
-			window.attachEvent('beforeunload', function (e) {that.logDomStream(e);});
-		}
-	
-	},
-	
+		
 	callMethod : function(string, data) {
 		
 		return this[string](data);
@@ -1420,7 +1526,5 @@ OWA.tracker.prototype = {
 		
 		this.globalEventProperties[name] = value;
 	}
-	
-	
 	
 }

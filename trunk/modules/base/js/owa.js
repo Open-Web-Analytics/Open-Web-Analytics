@@ -37,7 +37,7 @@ var OWA = {
 	
 	loadHeatmap: function(p) {
 		var that = this;
-		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
+		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.4.2.min.js', function(){});
 		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.heatmap.js', function(){
 			that.overlay = new OWA.heatmap();
@@ -51,7 +51,7 @@ var OWA = {
 	loadPlayer: function() {
 		var that = this;
 		OWA.debug("Loading Domstream Player");
-		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.3.2.min.js', function(){});
+		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.4.2.min.js', function(){});
 		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.player.js', function(){
 			that.overlay = new OWA.player();	
@@ -64,7 +64,8 @@ var OWA = {
 		OWA.overlayActive = true;
 		
 	    // get param from cookie	
-		var params = OWA.util.parseCookieStringToJson(p);
+		//var params = OWA.util.parseCookieStringToJson(p);
+		var params = p;
 		// evaluate the action param
 		if (params.action === 'loadHeatmap') {
 			this.loadHeatmap(p);
@@ -78,7 +79,6 @@ var OWA = {
 				
 		OWA.util.eraseCookie('owa_overlay');
 		OWA.overlayActive = false;
-		window.location.href = document.location;
 	}
 
 
@@ -120,7 +120,7 @@ OWA.util =  {
 		return url;
 	},
 	
-	createCookie: function (name,value,days) {
+	createCookie: function (name,value,days,domain) {
 		if (days) {
 			var date = new Date();
 			date.setTime(date.getTime()+(days*24*60*60*1000));
@@ -166,13 +166,13 @@ OWA.util =  {
 		
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
 		OWA.debug("erasing " + name + " in domain: " +domain);
-		this.setCookie(name,"",-1,"/",domain);
+		this.setCookie(name,"",-10000,"/",domain);
 		var test = this.readCookie(name);
 		
 		if (test) {
 			domain = "."+domain;
 			OWA.debug("erasing " + name + " in domain: " +domain);
-			this.setCookie(name,"",-1,"/",domain);	
+			this.setCookie(name,"",-10000,"/",domain);	
 		}
 		
 	},
@@ -237,6 +237,37 @@ OWA.util =  {
     	// Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
     	// PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
     	return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+').replace(/~/g, '%7E');
+	},
+	
+	urldecode : function (str) {
+	    // Decodes URL-encoded string  
+	    // 
+	    // version: 1008.1718
+	    // discuss at: http://phpjs.org/functions/urldecode
+	    // +   original by: Philip Peterson
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +      input by: AJ
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Brett Zamir (http://brett-zamir.me)
+	    // +      input by: travc
+	    // +      input by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Lars Fischer
+	    // +      input by: Ratheous
+	    // +   improved by: Orlando
+	    // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
+	    // +      bugfixed by: Rob
+	    // %        note 1: info on what encoding functions to use from: http://xkr.us/articles/javascript/encode-compare/
+	    // %        note 2: Please be aware that this function expects to decode from UTF-8 encoded strings, as found on
+	    // %        note 2: pages served as UTF-8
+	    // *     example 1: urldecode('Kevin+van+Zonneveld%21');
+	    // *     returns 1: 'Kevin van Zonneveld!'
+	    // *     example 2: urldecode('http%3A%2F%2Fkevin.vanzonneveld.net%2F');
+	    // *     returns 2: 'http://kevin.vanzonneveld.net/'
+	    // *     example 3: urldecode('http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a');
+	    // *     returns 3: 'http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a'
+	    
+	    return decodeURIComponent(str.replace(/\+/g, '%20'));
 	},
 	
 	parseUrlParams : function(url) {
@@ -344,8 +375,6 @@ OWA.util =  {
 			state_value = OWA.util.assocStringFromJson(OWA.state[store_name]);
 		}
 		
-		
-		
 		if ( ! expiration_days ) {
 			
 			if ( is_perminant ) {
@@ -357,6 +386,31 @@ OWA.util =  {
 		OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
 		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
+	},
+	
+	replaceState : function (store_name, value, is_perminant, format, expiration_days) {
+		
+		if ( store_name ) {
+			var domain = OWA.getSetting('cookie_domain') || document.domain;
+			
+			if ( ! expiration_days ) {
+				
+				if ( is_perminant ) {
+					expiration_days =  3600;
+				}
+			}
+			OWA.debug('About to replace state store (%s) with: %s', store_name, value);
+			OWA.util.setCookie( 'owa_'+ store_name, value, expiration_days, '/', domain );
+			OWA.util.loadState(store_name);
+		}
+	},
+	
+	getRawState : function(store_name) {
+		
+		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
+		if ( store ) {
+			return store;
+		}
 	},
 	
 	getState : function(store_name, key) {
@@ -606,6 +660,45 @@ OWA.util =  {
 	    return utftext;
 	},
 	
+	utf8_decode : function( str_data ) {
+	    // Converts a UTF-8 encoded string to ISO-8859-1  
+	    // 
+	    // version: 1008.1718
+	    // discuss at: http://phpjs.org/functions/utf8_decode
+	    // +   original by: Webtoolkit.info (http://www.webtoolkit.info/)
+	    // +      input by: Aman Gupta
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Norman "zEh" Fuchs
+	    // +   bugfixed by: hitwork
+	    // +   bugfixed by: Onno Marsman
+	    // +      input by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // *     example 1: utf8_decode('Kevin van Zonneveld');
+	    // *     returns 1: 'Kevin van Zonneveld'
+	    var tmp_arr = [], i = 0, ac = 0, c1 = 0, c2 = 0, c3 = 0;
+	    
+	    str_data += '';
+	    
+	    while ( i < str_data.length ) {
+	        c1 = str_data.charCodeAt(i);
+	        if (c1 < 128) {
+	            tmp_arr[ac++] = String.fromCharCode(c1);
+	            i++;
+	        } else if ((c1 > 191) && (c1 < 224)) {
+	            c2 = str_data.charCodeAt(i+1);
+	            tmp_arr[ac++] = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
+	            i += 2;
+	        } else {
+	            c2 = str_data.charCodeAt(i+1);
+	            c3 = str_data.charCodeAt(i+2);
+	            tmp_arr[ac++] = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+	            i += 3;
+	        }
+	    }
+	 
+	    return tmp_arr.join('');
+	},
+	
 	rand : function(min, max) {
 	    // Returns a random number  
 	    // 
@@ -624,6 +717,124 @@ OWA.util =  {
 	        throw new Error('Warning: rand() expects exactly 2 parameters, 1 given');
 	    }
 	    return Math.floor(Math.random() * (max - min + 1)) + min;
+	},
+	
+	base64_encode: function (data) {
+	    // Encodes string using MIME base64 algorithm  
+	    // 
+	    // version: 1008.1718
+	    // discuss at: http://phpjs.org/functions/base64_encode
+	    // +   original by: Tyler Akins (http://rumkin.com)
+	    // +   improved by: Bayron Guevara
+	    // +   improved by: Thunder.m
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   bugfixed by: Pellentesque Malesuada
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // -    depends on: utf8_encode
+	    // *     example 1: base64_encode('Kevin van Zonneveld');
+	    // *     returns 1: 'S2V2aW4gdmFuIFpvbm5ldmVsZA=='
+	    // mozilla has this native
+	    // - but breaks in 2.0.0.12!
+	    //if (typeof this.window['atob'] == 'function') {
+	    //    return atob(data);
+	    //}
+	        
+	    var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+	    var o1, o2, o3, h1, h2, h3, h4, bits, i = 0, ac = 0, enc="", tmp_arr = [];
+	 
+	    if (!data) {
+	        return data;
+	    }
+	 
+	    data = this.utf8_encode(data+'');
+	    
+	    do { // pack three octets into four hexets
+	        o1 = data.charCodeAt(i++);
+	        o2 = data.charCodeAt(i++);
+	        o3 = data.charCodeAt(i++);
+	 
+	        bits = o1<<16 | o2<<8 | o3;
+	 
+	        h1 = bits>>18 & 0x3f;
+	        h2 = bits>>12 & 0x3f;
+	        h3 = bits>>6 & 0x3f;
+	        h4 = bits & 0x3f;
+	 
+	        // use hexets to index into b64, and append result to encoded string
+	        tmp_arr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
+	    } while (i < data.length);
+	    
+	    enc = tmp_arr.join('');
+	    
+	    switch (data.length % 3) {
+	        case 1:
+	            enc = enc.slice(0, -2) + '==';
+	        break;
+	        case 2:
+	            enc = enc.slice(0, -1) + '=';
+	        break;
+	    }
+	 
+	    return enc;
+	},
+	
+	base64_decode: function (data) {
+	    // Decodes string using MIME base64 algorithm  
+	    // 
+	    // version: 1008.1718
+	    // discuss at: http://phpjs.org/functions/base64_decode
+	    // +   original by: Tyler Akins (http://rumkin.com)
+	    // +   improved by: Thunder.m
+	    // +      input by: Aman Gupta
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   bugfixed by: Onno Marsman
+	    // +   bugfixed by: Pellentesque Malesuada
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +      input by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // -    depends on: utf8_decode
+	    // *     example 1: base64_decode('S2V2aW4gdmFuIFpvbm5ldmVsZA==');
+	    // *     returns 1: 'Kevin van Zonneveld'
+	    // mozilla has this native
+	    // - but breaks in 2.0.0.12!
+	    //if (typeof this.window['btoa'] == 'function') {
+	    //    return btoa(data);
+	    //}
+	 
+	    var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+	    var o1, o2, o3, h1, h2, h3, h4, bits, i = 0, ac = 0, dec = "", tmp_arr = [];
+	 
+	    if (!data) {
+	        return data;
+	    }
+	 
+	    data += '';
+	 
+	    do {  // unpack four hexets into three octets using index points in b64
+	        h1 = b64.indexOf(data.charAt(i++));
+	        h2 = b64.indexOf(data.charAt(i++));
+	        h3 = b64.indexOf(data.charAt(i++));
+	        h4 = b64.indexOf(data.charAt(i++));
+	 
+	        bits = h1<<18 | h2<<12 | h3<<6 | h4;
+	 
+	        o1 = bits>>16 & 0xff;
+	        o2 = bits>>8 & 0xff;
+	        o3 = bits & 0xff;
+	 
+	        if (h3 == 64) {
+	            tmp_arr[ac++] = String.fromCharCode(o1);
+	        } else if (h4 == 64) {
+	            tmp_arr[ac++] = String.fromCharCode(o1, o2);
+	        } else {
+	            tmp_arr[ac++] = String.fromCharCode(o1, o2, o3);
+	        }
+	    } while (i < data.length);
+	 
+	    dec = tmp_arr.join('');
+	    dec = this.utf8_decode(dec);
+	 
+	    return dec;
 	},
 	
 	sprintf : function( ) {

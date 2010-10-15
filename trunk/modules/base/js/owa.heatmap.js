@@ -122,7 +122,7 @@ OWA.heatmap.prototype = {
 	endSession: function() {
 		
 		OWA.util.eraseCookie('owa_overlay');
-		window.location.href = document.location;
+		window.close();
 	},
 	
 	startTimer: function() {
@@ -221,10 +221,15 @@ OWA.heatmap.prototype = {
 		//closure
 		var that = this;
 		
-		jQuery.get(OWA.getApiEndpoint(), OWA.util.nsParams(params), function(data) { that.plotClickData(data); }, 'json');
-		
-		//OWA.debug(data.page);
-		return;
+		jQuery.ajax({
+			url: OWA.getApiEndpoint(), 
+			data: OWA.util.nsParams(params), 
+			dataFormat: 'jsonp',
+			jsonp: 'owa_jsonpCallback',
+			success: function(data) { 
+				that.plotClickData(data); 
+			}
+		});
 	},
 	
 	plotClickData: function(data) {
@@ -435,7 +440,7 @@ OWA.heatmap.prototype = {
 				}
 				//add region to inner map
 				this.regionsMap[x][y] = count;
-				OWA.debug("adding to map: %s %s %s",x,y,count); 
+				//OWA.debug("adding to map: %s %s %s",x,y,count); 
 				
 				if (this.options.strokeRegions === true) {
 					this.strokeRegion(count);	

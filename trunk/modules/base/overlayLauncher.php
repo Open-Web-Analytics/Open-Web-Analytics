@@ -35,14 +35,25 @@ class owa_overlayLauncherController extends owa_reportController {
 	function action() {
 		
 		// setup overlay cookiestate
-		owa_coreAPI::setState('overlay', '', urldecode($this->getParam('overlay_params')), 'cookie');
+		//owa_coreAPI::setState('overlay', '', urldecode($this->getParam('overlay_params')), 'cookie');
+		
+		
 				
 		// load entity for document id to get URL
 		$d = owa_coreAPI::entityFactory('base.document');
 		$d->load($this->getParam('document_id'));
 		
+		$url = trim( $d->get( 'url' ) );
+		
+		if ( strpos( $url, '#' ) ) {
+			$parts = explode( '#', $url );
+			$url = $parts[0];
+		}
+		
+		$url = $url.'#owa_overlay='.base64_encode( trim($this->getParam('overlay_params')) );
+	
 		// redirect browser
-		$this->redirectBrowserToUrl($d->get('url'));	
+		$this->redirectBrowserToUrl($url);	
 	}
 }
 

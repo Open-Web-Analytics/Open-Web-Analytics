@@ -29,12 +29,7 @@
  */
 
 class owa_topClicks extends owa_metric {
-	
-	function owa_topClicks($params = null) {
 		
-		return owa_topClicks::__construct($params);
-	}
-	
 	function __construct($params= null) {
 		
 		return parent::__construct($params);
@@ -54,8 +49,6 @@ class owa_topClicks extends owa_metric {
 		
 		$this->db->orderBy('click_y', 'ASC');
 	}
-	
-	
 }
 
 

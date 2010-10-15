@@ -72,13 +72,21 @@ OWA.player.prototype = {
 		var params = OWA.util.parseCookieStringToJson(p);
 		params.action = 'base.getDomstream';
 		
+		
 		//closure
 		var that = this;
 		
-		jQuery.get(OWA.getApiEndpoint(), OWA.util.nsParams(params), function(data) { that.load(data); }, 'json');
+		jQuery.ajax({
+			url:  OWA.getApiEndpoint(), 
+			data: OWA.util.nsParams(params),
+			dataType: 'jsonp',
+			jsonp: 'owa_jsonpCallback',
+			success: function(data) { 
+				that.load(data); 
+			}
+		});
 		
 		//OWA.debug(data.page);
-		return;
 	},
 
 	
