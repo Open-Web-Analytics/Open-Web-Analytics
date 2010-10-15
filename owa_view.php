@@ -766,7 +766,21 @@ class owa_jsonView extends owa_view {
 		
 		$json = new Services_JSON();
 		// set
-		$this->body->set('json', $json->encode($this->get('json')));
+		
+		// look for jsonp callback
+		$callback = $this->get('jsonpCallback');
+		
+		// if not found look on the request scope.
+		if ( ! $callback ) {
+			$callback = owa_coreAPI::getRequestParam('jsonpCallback');
+		}
+		
+		if ( $callback ) {
+			$body = sprintf("%s(%s);", $callback, $json->encode( $this->get( 'json' ) ) );
+		} else {
+			$body = $json->encode( $this->get( 'json' ) );
+		}
+		$this->body->set('json', $body);
 	}
 }
 

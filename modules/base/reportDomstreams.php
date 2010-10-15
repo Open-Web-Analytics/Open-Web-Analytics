@@ -55,6 +55,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 			
 			$this->setTitle('Domstream Recordings: ', $doc->get('url'));
 			$this->set('document', $doc->_getProperties());
+			$this->set('item_properties', $doc);
 		} else {
 			// latest domstream report
 			$this->setTitle('Latest Domstreams');
@@ -103,6 +104,7 @@ class owa_reportDomstreamsView extends owa_view {
 		$this->body->set_template('report_domstreams.tpl');
 		$doc = $this->get('document');
 		$this->body->set('document', $doc);
+		$this->body->set('properties', $this->get('item_properties'));
 	}
 
 }

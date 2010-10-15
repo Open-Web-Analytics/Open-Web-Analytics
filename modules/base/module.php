@@ -637,7 +637,7 @@ class owa_baseModule extends owa_module {
 	function makeUrlCanonical($url) {
 		
 		//remove anchors
-		$pos = strpos('#', $url);
+		$pos = strpos($url, '#');
 		if($pos) {
 			
 			$url = substr($url, 0, $pos - 1);
@@ -656,6 +656,8 @@ class owa_baseModule extends owa_module {
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'campaign');
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad');
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad_type');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'overlay');
+		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'state');
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 		
 		//print_r($filters);
