@@ -52,8 +52,8 @@ OWA.event.prototype = {
 	},
 	
 	setEventType : function(event_type) {
+	
 		this.set("event_type", event_type);
-		return;
 	},
 	
 	getProperties : function() {
@@ -88,6 +88,9 @@ OWA.tracker = function(caller_params, options) {
 	
 	// set start time
 	this.startTime = this.getTimestamp();
+	// private vars
+	this.ecommerce_transaction = '',
+	this.isClickTrackingEnabled = false;
 	// set logger endpoint
 	this.setEndpoint(OWA.config.baseUrl + 'log.php');
 	// set default cookie domain
@@ -220,7 +223,6 @@ OWA.tracker.prototype = {
 	event_queue : [],
 	player: '',
 	overlay: '',
-	ecommerce_transaction: '',
 	
 	checkForLinkedState : function() {
 		
@@ -262,10 +264,16 @@ OWA.tracker.prototype = {
 	
 	*/
 	
-	// gets cookies and strings them together using:
-	// name1=encoded_value1.name2=encoded_value2
-	// then base64 encodes the entire string and appends it
-	// to an href
+	/**
+	 * Shares User State cross domains using GET string
+ 	 *
+	 * gets cookies and concatenates them together using:
+	 * name1=encoded_value1.name2=encoded_value2
+	 * then base64 encodes the entire string and appends it
+	 * to an href
+	 * 
+	 * @param	url	string
+	 */
 	shareStateByLink : function(url) {
 	
 		OWA.debug( 'href of link: '+ url );		
@@ -316,14 +324,16 @@ OWA.tracker.prototype = {
 			domain = domain.substr(1);
 		}
 		
-		// check for www
+		// check for www and eliminate it
 		var www = domain.substr(0,4);
 		if (www === 'www.') {
 			domain = domain.substr(4);
 		} else {
+		// else just use the document.domain value
 			domain = document.domain;
 		}
 		
+		// add the leading period back
 		domain =  '.' + domain;
 		this.setOption('cookie_domain', domain);
 		OWA.setSetting('cookie_domain', domain);
@@ -475,14 +485,24 @@ OWA.tracker.prototype = {
 	trackClicks : function(handler) {
 		// flag to tell handler to log clicks as they happen
 		this.setOption('logClicksAsTheyHappen', true);
-				
-		var that = this;
-		// Registers the handler for the before navigate event so that the dom stream can be logged
-		if (window.addEventListener) {
-			window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
-		} else if(window.attachEvent) {
-			window.attachEvent('click', function (e) {that.clickEventHandler(e);});
+		this.bindClickEvents();		
+		
+	},
+	
+	bindClickEvents : function() {
+	
+		if ( ! this.isClickTrackingEnabled ) {
+			var that = this;
+			// Registers the handler for the before navigate event so that the dom stream can be logged
+			if (window.addEventListener) {
+				window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
+			} else if(window.attachEvent) {
+				window.attachEvent('click', function (e) {that.clickEventHandler(e);});
+			}
+			
+			this.isClickTrackingEnabled = true;
 		}
+	
 	},
 	
 	trackDomStream : function() {
@@ -491,7 +511,7 @@ OWA.tracker.prototype = {
 		
 			// check random number against logging percentage
 			var rand = Math.floor(Math.random() * 100 + 1 );
-			
+
 			if (rand <= this.getOption('logDomStreamPercentage')) {
 				
 				// needed by click handler 
@@ -500,10 +520,11 @@ OWA.tracker.prototype = {
 				var len = this.streamBindings.length;
 				for ( var i = 0; i < len; i++ ) {	
 				//for (method in this.streamBindings) {
+				
 					this.callMethod(this.streamBindings[i]);
 				}
-				this.startDomstreamTimer();
-				//this.registerBeforeNavigateEvent();
+				
+				this.startDomstreamTimer();			
 			} else {
 				OWA.debug("not tracking domstream for this user.");
 			}
@@ -666,15 +687,18 @@ OWA.tracker.prototype = {
 						if ( OWA.util.is_object( properties[param][i] ) ) {
 							for ( o_param in properties[param][i] ) {
 								kvp = OWA.util.sprintf('owa_%s[%s][%s]=%s&', param, i, o_param, OWA.util.urlEncode( properties[param][i][o_param] ) );
+								get += kvp;
 							}
 						} else {
 							// what the heck is it then. assum string
 							kvp = OWA.util.sprintf('owa_%s[%s]=%s&', param, i, OWA.util.urlEncode( properties[param][i] ) );
+							get += kvp;
 						}
 					}
 				// assume it's a string
 				} else {
 					kvp = OWA.util.sprintf('owa_%s=%s&', param, OWA.util.urlEncode( properties[param] ) );
+					
 				}
 			
 				
@@ -1321,7 +1345,6 @@ OWA.tracker.prototype = {
 	},
 	
 	addTransaction : function ( order_id, order_source, total, tax, shipping, gateway ) {
-	
 		this.ecommerce_transaction = new OWA.event();
 		this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
 		this.ecommerce_transaction.set( 'ct_order_id', order_id );
@@ -1330,13 +1353,16 @@ OWA.tracker.prototype = {
 		this.ecommerce_transaction.set( 'ct_tax', tax );
 		this.ecommerce_transaction.set( 'ct_shipping', shipping );
 		this.ecommerce_transaction.set( 'ct_gateway', gateway );
-		this.ecommerce_transaction.set( 'page_url', page_url );
+		this.ecommerce_transaction.set( 'page_url', this.page.get('page_url') );
+		OWA.debug('setting up ecommerce transaction');
+
 		this.ecommerce_transaction.set( 'ct_line_items', [] );
+		OWA.debug('completed setting up ecommerce transaction');
 	},
 	
 	addTransactionLineItem : function ( order_id, sku, product_name, category, unit_price, quantity ) {
 	
-		if ( ! this.ecommerce_transaction.length > 0 ) {
+		if ( ! this.ecommerce_transaction ) {
 			this.addTransaction('none set');
 		}
 		
@@ -1354,7 +1380,7 @@ OWA.tracker.prototype = {
 	
 	trackTransaction : function () {
 		
-		if ( this.ecommerce_transaction.length > 0 ) {
+		if ( this.ecommerce_transaction ) {
 			this.trackEvent( this.ecommerce_transaction );
 			this.ecommerce_transaction = '';
 		}

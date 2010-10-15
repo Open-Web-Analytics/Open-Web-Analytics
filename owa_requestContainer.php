@@ -246,9 +246,12 @@ class owa_requestContainer {
 		$params = array();
 		// Apply caller specific params
 		foreach ($this->owa_params as $k => $v) {
-				
-			$params[$k] = urldecode($v);
-				
+			if (is_array($v)) {
+				array_walk_recursive(&$v, array($this, 'arrayUrlDecode'));
+				$params[$k] = $v;
+			} else { 
+				$params[$k] = urldecode($v);
+			}
 		}
 		
 		// clean params after decode
@@ -259,6 +262,10 @@ class owa_requestContainer {
 		owa_coreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
 		return;
 	
+	}
+	
+	function arrayUrlDecode(&$val, $index) {
+		urldecode($val);
 	}
 	
 	function getOwaCookie($name) {
