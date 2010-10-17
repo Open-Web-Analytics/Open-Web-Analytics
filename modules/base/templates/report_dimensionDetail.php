@@ -8,28 +8,8 @@
 	
 	<div id="trend-chart" style="height:125px;width:auto;"></div>
 
-	
 	<div id="trend-title" class="owa_reportHeadline"></div>	
-	<div id="trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
-	<?php if($pie): ?>	
-	<div id="pie" style="min-width:300px;"></div>
-	<script>
-	
-		var hpurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-														'metrics' => 'pageViews,visits,bounceRate', 
-														'dimensions' => 'hostName', 
-														'sort' => 'visits-',
-														'format' => 'json',
-														'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
-														  
-		hp = new OWA.resultSetExplorer('pie');
-		hp.options.pieChart.dimension = '<?php echo $dimensions;?>';
-		hp.options.pieChart.metric = 'visits';
-		hp.setView('pie');
-		hp.load(hpurl);
-	
-	</script>
-	<?php endif; ?>	
+	<div id="trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>	
 	<div style="clear:both;"></div>
 	<script>
 		

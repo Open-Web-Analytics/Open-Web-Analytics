@@ -1,23 +1,37 @@
-OWA.report = function() {
-
-	this.config = OWA.config;
+OWA.report = function(dom_id) {
 	
-	return;	
+	this.dom_id = dom_id;
+	this.config = OWA.config;
+	this.properties = {};
+	this.tabs = {};	
 }
 
 OWA.report.prototype = {
 
-	properties: new Object,
+	options: {},
 	
 	config: '',
 	
-	dom_id: '',
+	showSiteFilter : function(dom_id) {
+		
+		// create dom elements
+		// ...
+		
+		// bind event handlers
+		that = this;
+		jQuery('#owa_reportSiteFilterSelect').change( function() { that.reload(); } );
+		jQuery("#owa_reportPeriodFilterSubmit").click( function() { that.reload(); } );
+	},
 	
 	reload: function() {
-		
+	
+		// add new site_id to properties
+		var siteId = jQuery("#owa_reportSiteFilterSelect option:selected").val(); 
+		OWA.debug(this.properties['action']);
+		this.properties['siteId'] = siteId;
+		// reload report	
 		var url = OWA.util.makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);
 		window.location.href = url;
-		return; 
 	},
 		
 	_parseDate: function (date) {
@@ -32,24 +46,86 @@ OWA.report.prototype = {
 		if (this.properties.startDate != null && this.properties.endDate != null) {
 			this.setPeriod('date_range');
 		}
-		
-		return;
-		
 	},
 	
 	setPeriod: function(period) {
 	
 		this.properties.period = period;
 		return;
-	}
+	},
 	
+	addTab : function(obj) {
+	
+		if (obj.dom_id.length > 0 ) {
+			this.tabs[obj.dom_id] = obj;
+		} else {
+			OWA.debug('tab cannot be added with no dom_id set.');
+		}
+	},
+	
+	createTabs : function() {
+		
+		var that = this;
+		
+		jQuery("#report-tabs").prepend('<ul class="report-tabs-nav-list"></ul>');
+		for (tab in this.tabs) {
+	
+			if ( this.tabs.hasOwnProperty(tab) ) {
+				
+				jQuery("#report-tabs > .report-tabs-nav-list").append(OWA.util.sprintf( '<li><a href="#%s">%s</li>', tab, that.tabs[tab].label ) );
+				
+			}
+		}
+				
+		jQuery("#report-tabs").tabs({
+			show: function(event, ui) {
+				OWA.debug('tab selected is: %s', ui.panel.id);
+				that.tabs[ui.panel.id].load();
+			}
+		});
+	}
+}
 
+OWA.report.tab = function(dom_id) {
+	this.dom_id = dom_id;
+	this.resultSetExplorers = {};
+	this.label = 'Default label';
+	this.isLoaded = false;
+	this.load = function() {
+		if ( ! this.isLoaded ) {
+			for (rse in this.resultSetExplorers) {
+				
+				if (this.resultSetExplorers.hasOwnProperty(rse)) {
+			
+					this.resultSetExplorers[rse].load();
+				}
+				
+			}
+			
+			this.isLoaded = true;
+		}
+	}
+}
+
+OWA.report.tab.prototype = {
+	
+	addRse : function (name, rse) {
+		
+		this.resultSetExplorers[name] = rse;
+	},
+	
+	setLabel : function (label) {
+		this.label = label;
+	},
+	
+	setDomId : function (dom_id) {
+		this.dom_id = dom_id;
+	}
 }
 
 // Bind event handlers
 jQuery(document).ready(function(){   
-	jQuery('#owa_reportSiteFilterSelect').change(owa_report_reload);
-	jQuery("#owa_reportPeriodFilterSubmit").click(owa_report_reload);
+	
 	jQuery('#owa_reportPeriodFilter').change(owa_reportSetPeriod);
 	jQuery("#owa_reportPeriodLabelContainer").click(function() { 
 		jQuery("#owa_reportPeriodFiltersContainer").toggle();
@@ -87,11 +163,8 @@ function owa_reportSetDateRange(date) {
 		OWA.items[reportname].setDateRange();
 		OWA.items[reportname].setPeriod('date_range');
 		// toggle the drop down to custom data range label
-		jQuery("#owa_reportPeriodFilter option:contains('Custom Date Range')").attr("selected", true);
-		
+		jQuery("#owa_reportPeriodFilter option:contains('Custom Date Range')").attr("selected", true);	
 	}
-	
-	return;
 }
 
 function owa_reportSetPeriod() {
@@ -100,23 +173,4 @@ function owa_reportSetPeriod() {
 	var reportname = jQuery(this).parents(".owa_reportContainer").get(0).id;
 	OWA.items[reportname].setPeriod(period);
 	OWA.items[reportname].reload();
-	
-	return;
-
-}
-
-function owa_report_reload() {
-
-	// add new site_id to properties
-	var siteId = jQuery("#owa_reportSiteFilterSelect option:selected").val(); 
-	//alert(site_id);
-	
-	// reload the report
-	var reportname = jQuery(this).parents(".owa_reportContainer").get(0).id;
-	//alert(reportname);
-	OWA.items[reportname].properties.siteId = siteId;
-	OWA.items[reportname].reload();
-	
-	return;
-
 }

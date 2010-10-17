@@ -247,7 +247,7 @@ class owa_requestContainer {
 		// Apply caller specific params
 		foreach ($this->owa_params as $k => $v) {
 			if (is_array($v)) {
-				array_walk_recursive(&$v, array($this, 'arrayUrlDecode'));
+				array_walk_recursive($v, array($this, 'arrayUrlDecode'));
 				$params[$k] = $v;
 			} else { 
 				$params[$k] = urldecode($v);

@@ -89,6 +89,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 	};
 	
 	this.viewObjects = {};
+	this.loadUrl = '';
 };
 
 OWA.resultSetExplorer.prototype = {
@@ -100,6 +101,11 @@ OWA.resultSetExplorer.prototype = {
 		pie: 'makePieChart',
 		sparkline: 'makeSparkline',
 		template: 'renderTemplate'
+	},
+	
+	setDataLoadUrl : function(url) {
+		
+		this.loadUrl = url;
 	},
 	
 	getOption : function(name) {
@@ -154,7 +160,8 @@ OWA.resultSetExplorer.prototype = {
 	},
 	
 	load : function(url) {
-	
+		
+		url = url || this.loadUrl;
 		this.getResultSet(url);
 	},
 	
@@ -993,6 +1000,7 @@ OWA.resultSetExplorer.prototype = {
 		dom_id = dom_id || this.dom_id;
 		template = template || '#metricInfobox';
 		
+		jQuery('#' + dom_id).append('<div class="metricInfoboxesContainer" style="width:auto;">');	
 		for(var i in this.resultSet.aggregates) {
 		
 			if (this.resultSet.aggregates.hasOwnProperty(i)) {
@@ -1009,13 +1017,14 @@ OWA.resultSetExplorer.prototype = {
 				
 				// set alt tag for jqote. needed to avoid problem with php's asp_tags ini directive
 				jQuery.jqotetag('*');
-				jQuery('#' + dom_id).jqoteapp(template, item);
-			
+				jQuery('#' + dom_id).jqoteapp(template, item);		
 				
 				this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);
 				
 			}	
 		}
+		jQuery('#' + dom_id).append('</div>');	
+		jQuery('#' + dom_id).append('<div style="clear:both;"></div>');	
     },
     
 	renderResultsRows : function(dom_id, template) {

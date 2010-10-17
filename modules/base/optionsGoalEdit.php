@@ -121,7 +121,9 @@ class owa_optionsGoalEditController extends owa_adminController {
 		$goal_groups = owa_coreAPI::getSetting('base', 'goal_groups'); 
 		if (array_key_exists($goal['goal_number'], $all_goals)) {
 			$all_goals[$goal['goal_number']] = $goal;
-			$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
+			if ( $this->get( 'new_goal_group_name' ) ) {
+				$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
+			}
 			owa_coreAPI::debug('New goals: '.print_r($all_goals,true));
 			owa_coreAPI::persistSetting('base', 'goals', $all_goals);
 			owa_coreAPI::persistSetting('base', 'goal_groups', $goal_groups);

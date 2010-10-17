@@ -1,6 +1,4 @@
 <SCRIPT>
-
-
 OWA.items['<?php echo $dom_id;?>'] = new OWA.report();
 OWA.items['<?php echo $dom_id;?>'].dom_id = "<?php echo $dom_id;?>";
 OWA.items['<?php echo $dom_id;?>'].page_num = "<?php echo $pagination['page_num'];?>1";
@@ -11,7 +9,6 @@ OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php echo $pagination['more_
 <?php //endforeach;?>
 OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($params);?>;
 </SCRIPT>
-
 <div id="<?php echo $dom_id;?>" class="owa_reportContainer">
 
 	<table width="100%" cellpadding="0" cellspacing="0">
@@ -41,5 +38,8 @@ OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($para
 			</TD>
 		</TR>
 	</table>	
-	
 </div>
+<script>
+OWA.items['<?php echo $dom_id;?>'].showSiteFilter();
+</script>
+

@@ -63,9 +63,16 @@ class owa_reportDashboardController extends owa_reportController {
 	
 		// set view stuff
 		$this->setSubview('base.reportDashboard');
-		$this->setTitle('Analytics Dashboard');		
+		$this->setTitle('Analytics Dashboard');
+		
+		$metrics = 'visits,pageViews,bounceRate,pagesPerVisit,visitDuration';
+		
+		if ( owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
+			$metrics .= ',transactions,transactionRevenue';	
+		}
+		
+		$this->set('metrics', $metrics);	
 	}
-	
 }
 		
 require_once(OWA_BASE_DIR.'/owa_view.php');
@@ -91,6 +98,7 @@ class owa_reportDashboardView extends owa_view {
 		$this->body->set('site_trend', $this->get('site_trend'));
 		$this->body->set('visits', $this->get('latest_visits'));
 		$this->body->set('actions', $this->get('actions'));
+		$this->body->set('metrics', $this->get('metrics'));
 	}
 }
 

@@ -56,6 +56,7 @@ ul {margin-left:10px;}
 	margin: 0 10px 0 10px;
 	padding:0px 7px 7px 0px; 
 	background-color: #ffffff;
+	width:auto;
 }
 
 #owa_reportHeader {
@@ -451,4 +452,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	font-size:10px;
 	color: #9f9f9f;
 	
+}
+
+.owa .ui-widget {
+	font-size: 12px;
+}
+
+.owa .ui-tabs-nav {
+	font-size:14px;
 }

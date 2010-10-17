@@ -422,11 +422,11 @@ class owa_baseModule extends owa_module {
 		// operating systems
 		$this->registerEventHandler('base.new_session', 'osHandlers');
 		// source dimension
-		$this->registerEventHandler('base.new_session', 'sourceHandlers');
+		$this->registerEventHandler('base.page_request', 'sourceHandlers');
 		// campaign dimension
-		$this->registerEventHandler('base.new_session', 'campaignHandlers');
+		$this->registerEventHandler('base.page_request', 'campaignHandlers');
 		// ad dimension
-		$this->registerEventHandler('base.new_session', 'adHandlers');
+		$this->registerEventHandler('base.page_request', 'adHandlers');
 		// conversions
 		$this->registerEventHandler(array(
 				'base.new_session', 

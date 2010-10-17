@@ -4,7 +4,7 @@
 <div class="owa_reportSectionContent">
 	<div id="visits-headline" class="owa_reportSectionHeader"></div> 
 
-	<table style="width:auto;margin-top:-15px;">
+	<table style="width:100%;margin-top:-15px;">
 		<TR>
 			<TD valign="top" style="width:50%;">
 				<div id="traffic-sources" style="width:250px;"></div>

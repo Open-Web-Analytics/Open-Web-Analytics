@@ -36,7 +36,12 @@ class owa_reportCampaignsController extends owa_reportController {
 		
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Campaigns');
-		$this->set('metrics', 'visits,pageViews,bounces');
+		$metrics = 'visits,pageViews,bounces';
+		if ( owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
+			$metrics .= ',transactions,transactionRevenue';
+		}
+		
+		$this->set('metrics', $metrics);
 		$this->set('dimensions', 'campaign');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
