@@ -196,8 +196,9 @@ class owa_reportView extends owa_view {
 class owa_reportDimensionView extends owa_view {
 	
 	function render($data) {
-		
+			
 		// Assign Data to templates
+		$this->body->set('tabs', $this->get('tabs') );
 		$this->body->set('metrics', $this->get('metrics'));
 		$this->body->set('dimensions', $this->get('dimensions'));
 		$this->body->set('sort', $this->get('sort'));
@@ -210,7 +211,6 @@ class owa_reportDimensionView extends owa_view {
 		$this->body->set('excludeColumns', $this->get('excludeColumns'));
 		$this->body->set_template('report_dimensionalTrend.php');
 	}
-	
 }
 
 /**
@@ -230,6 +230,7 @@ class owa_reportDimensionDetailView extends owa_view {
 	function render($data) {
 		
 		// Assign Data to templates
+		$this->body->set('tabs', $this->get('tabs') );
 		$this->body->set('metrics', $this->get('metrics'));
 		$this->body->set('dimension', $this->get('dimension'));
 		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
@@ -239,7 +240,6 @@ class owa_reportDimensionDetailView extends owa_view {
 		$this->body->set('dimension_template', $this->get('dimension_template'));
 		$this->body->set_template('report_dimensionDetail.php');
 	}
-	
 }
 
 ?>

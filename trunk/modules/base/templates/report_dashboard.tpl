@@ -26,7 +26,6 @@
 			
 			<div class="owa_reportSectionContent">
 				<div class="section_header">Latest Visits</div>
-				<?php //echo $this->getWidget('base.widgetLatestVisits', array('height' => '', 'width' => '100%', 'period' => $params['period']), false);?>
 				<?php include('report_latest_visits.tpl')?>
 			</div>
 			
@@ -88,15 +87,12 @@
 </table>
 
 <script>
-//OWA.setSetting('debug', true);
-
-
 
 	var aurl = '<?php 
 					
 					echo $this->makeApiLink(array(
 						'do'			=> 'getResultSet', 
-						'metrics'		=> 'visits,pageViews,bounceRate,pagesPerVisit,visitDuration', 
+						'metrics'		=> $metrics, 
 						'dimensions' 	=> 'date', 
 						'sort' 			=> 'date',
 						'format' 		=> 'json'	
@@ -110,11 +106,6 @@
 	rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
 	
 	rsh.load(aurl);
-
-
-
-
-
 
 (function() {
 	var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 

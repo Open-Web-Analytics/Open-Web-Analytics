@@ -242,6 +242,22 @@
 		</div>
 	</fieldset>
 	
+	<fieldset name="owa-ecommerce-options" class="options">
+		
+		<legend>e-commerce</legend>
+		
+		<div class="setting" id="ecommerce_reporting">	
+			<div class="title">e-commerce Reporting</div>
+			<div class="description">Adds e-commerce metrics/statistics to reports.</div>
+			<div class="field">
+				<select name="<?php echo $this->getNs();?>config[base.enableEcommerceReporting]">
+					<option value="0" <?php if ($config['enableEcommerceReporting'] == false):?>SELECTED<?php endif;?>>Off</option>
+					<option value="1" <?php if ($config['enableEcommerceReporting'] == true):?>SELECTED<?php endif;?>>On</option>
+				</select>
+			</div>
+		</div>
+	</fieldset>
+	
 	<BR>
 	
 	<?php echo $this->createNonceFormField('base.optionsUpdate');?>

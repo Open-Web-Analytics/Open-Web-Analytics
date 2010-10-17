@@ -1,104 +1,104 @@
 <div class="owa_reportSectionContent">
 	
 	<div id="trend-chart"></div>
-
-	
-	<div id="trend-title" class="owa_reportHeadline"></div>	
-	<div id="trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
-	<?php if($pie): ?>	
-	<div id="pie" style="min-width:300px;"></div>
-	<script>
-	var hpurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-														'metrics' => 'pageViews,visits,bounceRate', 
-														'dimensions' => 'hostName', 
-														'sort' => 'visits-',
-														'format' => 'json',
-														'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
-														  
-	hp = new OWA.resultSetExplorer('pie');
-	hp.options.pieChart.dimension = '<?php echo $dimensions;?>';
-	hp.options.pieChart.metric = 'visits';
-	hp.setView('pie');
-	hp.load(hpurl);
-				
-	</script>
-	<?php endif; ?>	
-		
-
-	
-	<div style="clear:both;"></div>
-	<script>
-		
-		var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-																	'metrics' => $metrics, 
-																	'dimensions' => 'date', 
-																	'sort' => 'date',
-																	'format' => 'json',
-																	'constraints' => $constraints
-																	),true);?>';
-																	  
-		var trend = new OWA.resultSetExplorer('trend-chart');
-		trend.options.sparkline.metric = 'visits';
-		<?php if ($trendTitle):?>
-		trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
-		<?php endif;?>
-		trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
-		trend.options.metricBoxes.width = '150px';
-		trend.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
-		trend.load(trendurl);
-		
-	</script>
-
+	<div id="trend-title" class="owa_reportHeadline"></div>
+	<?php //if ( count($tabs) > 1 ): ?>
+	<div id="report-tabs">
+		<!-- <ul>
+		<?php foreach ($tabs as $k => $tab): ?>
+			<li><a href="#tab_<?php $this->out($k); ?>"><?php $this->out($tab['tab_label']); ?></a></li>
+		<?php endforeach; ?>
+		</ul> -->
+		<?php foreach ($tabs as $k => $tab): ?>
+		<div id="tab_<?php $this->out($k); ?>">
+			
+				<div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
+				<?php if($pie): ?>	
+				<div id="pie" style="min-width:300px;"></div>
+				<?php endif;?>
+				<div class="spacer" style="clear:both; height:20px;"></div>
+				<?php if (!$this->get('hideGrid')):?>
+				<div id="<?php $this->out($k); ?>_dimension-grid"></div>
+				<?php endif;?>
+			
+		</div>
+		<?php endforeach; ?>
+	</div>
+	<?php //endif; ?>
 </div>
 
-<?php if (!$this->get('hideGrid')):?>
-<div class="owa_reportSectionContent">
-	
-	
-	
-	<div id="dimension-grid"></div>
-	
-	<script>
-		var dimurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-																	'metrics' => $metrics, 
-																	'dimensions' => $dimensions, 
-																	'sort' => $sort,
-																	'resultsPerPage' => $resultsPerPage,
-																	'format' => 'json',
-																	'constraints' => $constraints
-																	),true);?>';
-																	  
-		var dim = new OWA.resultSetExplorer('dimension-grid');
+<script type="text/javascript">
 		
-		<?php if (!empty($dimensionLink)):?>
-		var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
-		var values = <?php if (is_array($dimensionLink['valueColumns'])) { 
-						$values = "[";
-						$i = 0;
-						$count = count($dimensionLink['valueColumns']);
-						foreach ($dimensionLink['valueColumns'] as $v) {
-							$values .= "'$v'";
-							if ($i < $count) {
-								$values .= ', ';
-							}
-							$i++;
+	// add tabs	
+	<?php foreach ($tabs as $k => $tab): ?>
+	// adding tab for <?php $this->out($k, false);?>
+	
+	var tab = new OWA.report.tab('tab_<?php $this->out($k, false);?>');
+	tab.setLabel('<?php $this->out($tab['tab_label']);?>');	
+	// create trend and aggregate data resultSetExplorer objects
+	var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+																'metrics' => $tab['metrics'], 
+																'dimensions' => 'date', 
+																'sort' => 'date',
+																'format' => 'json',
+																'constraints' => $constraints
+																),true);?>';
+																  
+	var trend = new OWA.resultSetExplorer('trend-chart');
+	trend.setDataLoadUrl(trendurl);
+	trend.options.sparkline.metric = 'visits';
+	<?php if ($trendTitle):?>
+	trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
+	<?php endif;?>
+	trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
+	trend.options.metricBoxes.width = '150px';
+	trend.asyncQueue.push(['makeMetricBoxes' , '<?php $this->out($k, false);?>_trend-metrics']);
+	// add rse to tab
+	tab.addRse('trend', trend);
+	// dimensonal data object
+	var dimurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+																'metrics' => $tab['metrics'], 
+																'dimensions' => $dimensions, 
+																'sort' => $sort,
+																'resultsPerPage' => $resultsPerPage,
+																'format' => 'json',
+																'constraints' => $constraints
+																),true);?>';
+																  
+	var dim = new OWA.resultSetExplorer('<?php $this->out($k, false);?>_dimension-grid');
+	dim.setDataLoadUrl(dimurl);
+	<?php if (!empty($dimensionLink)):?>
+	var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
+	var values = <?php if (is_array($dimensionLink['valueColumns'])) { 
+					$values = "[";
+					$i = 0;
+					$count = count($dimensionLink['valueColumns']);
+					foreach ($dimensionLink['valueColumns'] as $v) {
+						$values .= "'$v'";
+						if ($i < $count) {
+							$values .= ', ';
 						}
-						$values .= "]";
-						echo $values; 
-					} else {
-						echo "['".$dimensionLink['valueColumns']."']";
+						$i++;
 					}
-					?>;
-		dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
-		<?php endif; ?>
-		<?php if (!empty($excludeColumns)):?>
-		dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
-		<?php endif; ?>
-		dim.asyncQueue.push(['refreshGrid']);
-		dim.load(dimurl);
-	</script>
-
-</div>
-<?php endif;?>
+					$values .= "]";
+					echo $values; 
+				} else {
+					echo "['".$dimensionLink['valueColumns']."']";
+				}
+				?>;
+	dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
+	<?php endif; ?>
+	<?php if (!empty($excludeColumns)):?>
+	dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
+	<?php endif; ?>
+	dim.asyncQueue.push(['refreshGrid']);
+	// add dim object to tab
+	tab.addRse('dim', dim);
+	// add tab
+	OWA.items['<?php echo $dom_id;?>'].addTab( tab );
+	<?php endforeach;?>
+	// create report tabs
+	OWA.items['<?php echo $dom_id;?>'].createTabs();
+</script>
 
 <?php require_once('js_report_templates.php');?>

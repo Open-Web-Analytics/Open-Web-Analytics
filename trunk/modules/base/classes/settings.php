@@ -682,7 +682,7 @@
 						4	=> 'Goal Group 4',
 						5	=> 'Goal group 5'
 				),
-				'enableCommerceReporting'			=> true,
+				'enableEcommerceReporting'			=> false,
 				'currencyLocal'						=> 'en_US',
 				'memcachedServers'					=> array(),
 				'memcachedPersisantConnections'		=> true,

@@ -554,6 +554,10 @@ class owa_controller extends owa_base {
 		$this->is_nonce_required = true;
 	}
 	
+	function getSetting($module, $name) {
+		return owa_coreAPI::getSetting($module, $name);
+	}
+	
 }
 
 ?>

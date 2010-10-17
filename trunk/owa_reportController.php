@@ -71,7 +71,50 @@ class owa_reportController extends owa_adminController {
 		$this->data['dom_id'] = $this->dom_id;
 		$this->data['do'] = $this->params['do'];
 		
-		return;
+		// setup tabs
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager');
+		
+		$tabs = array();
+		$site_usage = array(
+				'tab_label'		=> 'Site Usage',
+				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate'
+		);
+		
+		$tabs['site_usage'] = $site_usage;
+		
+		$ecommerce = array(
+				'tab_label'		=> 'e-commerce',
+				'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate'
+		);
+		
+		$tabs['ecommerce'] = $ecommerce;
+		
+		$goal_groups = $gm->getActiveGoalGroups();
+		
+		if ( $goal_groups ) {
+			foreach ($goal_groups as $group) {
+				$goal_metrics = 'visits';
+				$active_goals = $gm->getActiveGoalsByGroup($group);
+					
+				if ( $active_goals ) {
+				
+					foreach ($active_goals as $goal) {
+						$goal_metrics .= sprintf(',goal%sCompletions', $goal);
+					}
+				}
+				
+				$goal_metrics .= ',goalValueAll';
+				$goal_group = array(
+						'tab_label'		=>	$gm->getGoalGroupLabel($group),
+						'metrics'		=>	$goal_metrics
+				);
+				$name = 'goal_group_'.$group;
+				$tabs[$name] = $goal_group;
+			}
+		}
+				
+		$this->set('tabs', $tabs);
+		$this->set('tabs_json', json_encode($tabs));
 		
 	}
 	

@@ -200,6 +200,36 @@ class owa_sessionHandlers extends owa_observer {
 			// update last page id
 			$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
 			
+				// set medium
+			$s->set('medium', $event->get('medium'));
+			
+			// set source
+			if ($event->get('source')) {
+				$s->set('source_id', $s->generateId( 
+					trim( strtolower( $event->get('source') ) ) ) );		
+			}
+				
+			// set search terms
+			if ($event->get('search_terms')) {
+				$s->set('referring_search_term_id', $s->generateId( 
+					trim( strtolower( $event->get('search_terms') ) ) ) );		
+			}
+			
+			// set campaign
+			if ($event->get('campaign')) {
+				$s->set('campaign_id', $s->generateId( 
+					trim( strtolower( $event->get('campaign') ) ) ) );		
+			}
+			
+			// set ad
+			if ($event->get('ad')) {
+				$s->set('ad_id', $s->generateId( 
+					trim( strtolower( $event->get('ad') ) ) ) );		
+			}
+			
+			// set campaign touches
+			$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
+			
 			// Persist to database
 			$ret = $s->update();
 		}

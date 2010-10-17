@@ -35,14 +35,14 @@ class owa_goalNCompletions extends owa_metric {
 
 	function __construct( $params ) {
 		
-		if ( array_key_exists( 'goal_number' ), $params ) {
+		if ( array_key_exists( 'goal_number' , $params ) ) {
 			$goal_number = $params['goal_number'];
 		}
 		$goals = owa_coreAPI::getSetting( 'base', 'goals' );
 		$goal = $goals[$goal_number];
 		$name = 'goal'.$goal_number.'Completions';
 		$this->setName( $name );
-		$this->setLabel( $goal['name'] );
+		$this->setLabel( $goal['goal_name'] );
 		$this->setEntity( 'base.session' );
 		$column = 'goal_'.$goal_number;
 		$this->setColumn( $column );
