@@ -279,23 +279,8 @@ OWA.tracker.prototype = {
 		OWA.debug( 'href of link: '+ url );		
 		if ( url ) {
 			
-			var state = '';
+			var state = this.createSharedStateValue();
 
-			for (var i=0; this.sharableStateStores.length > i;i++) {
-				var value = OWA.util.getRawState( this.sharableStateStores[i] );
-				
-				if (value) {
-					state += OWA.util.sprintf( '%s=%s', this.sharableStateStores[i], OWA.util.urlEncode(value) );					
-					if ( this.sharableStateStores.length != ( i + 1) ) {
-						state += '.';
-					}
-				}
-			}
-			
-			// base64 for transport
-			if ( state ) {
-				state = OWA.util.base64_encode(state);
-			}
 			//check to see if we can just stick this on the anchor
 			var anchor = this.getUrlAnchorValue();
 			if ( ! anchor ) {
@@ -308,6 +293,34 @@ OWA.tracker.prototype = {
 				
 			}
 		}	
+	},
+	
+	createSharedStateValue : function() {
+		
+		var state = '';
+
+		for (var i=0; this.sharableStateStores.length > i;i++) {
+			var value = OWA.util.getRawState( this.sharableStateStores[i] );
+			
+			if (value) {
+				state += OWA.util.sprintf( '%s=%s', this.sharableStateStores[i], OWA.util.urlEncode(value) );					
+				if ( this.sharableStateStores.length != ( i + 1) ) {
+					state += '.';
+				}
+			}
+		}
+		
+		// base64 for transport
+		if ( state ) {
+			return OWA.util.base64_encode(state);
+		}
+	},
+	
+	shareShareByPost : function (form) {
+
+		var state = this.createSharedStateValue();
+		form.action += '#owa_state=' + state;
+		form.submit();
 	},
 
 	getCookieDomain : function() {
