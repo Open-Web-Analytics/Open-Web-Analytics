@@ -67,13 +67,6 @@ class owa_entity {
 		if (!empty($this->properties)) {
 			$all_cols = array_keys($this->properties);
 			$all_cols = array_flip($all_cols);
-		} else {
-			//support for old style entities
-			$all_cols = get_object_vars($this);
-			
-			unset($all_cols['_tableProperties']);
-			unset($all_cols['properties']);
-			unset($all_cols['cache']);
 		}
 		
 		//print_r($all_cols);
@@ -144,13 +137,15 @@ class owa_entity {
 		
 	}
 	
-	function set($name, $value) {
+	function set($name, $value, $filter = true) {
 		
-		if (!empty($this->properties)) {
-			$this->properties[$name]->setValue($value);
-		} else {
-			// old style entities
-			$this->$name->setValue($value);
+		if ( array_key_exists( $name, $this->properties ) ) {
+			$method = $name.'SetFilter';
+			if ( $filter && method_exists( $this, $method ) ) {
+				$this->properties[$name]->setValue( $this->$method( $value ) );
+			} else {
+				$this->properties[$name]->setValue( $value );
+			}
 		}
 	}
 	
@@ -160,15 +155,15 @@ class owa_entity {
 		return $this->setProperties($values);
 	}
 	
-	function get($name) {
-		if (!empty($this->properties)) {
-			if (array_key_exists($name, $this->properties)) {
+	function get($name, $filter = true) {
+		
+		if (array_key_exists($name, $this->properties)) {
+			$method = $name.'GetFilter';
+			if ( $filter && method_exists($this, $method) ) {
+				return $this->$method( $this->properties[$name]->getValue() );
+			} else {
 				return $this->properties[$name]->getValue();
 			}
-			
-		} else {
-			// old style entities
-			return $this->$name->getValue();
 		}
 	}
 	
@@ -227,12 +222,12 @@ class owa_entity {
 		}
 	}
 	
-	function addToCache() {
+	function addToCache($col = 'id') {
 		
 		if($this->isCachable()) {
 			$cache = &owa_coreAPI::cacheSingleton();
 			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
-			$cache->set($this->getTableName(), 'id'.$this->get('id'), $this, $this->getCacheExpirationPeriod());
+			$cache->set($this->getTableName(), $col.$this->get('id'), $this, $this->getCacheExpirationPeriod());
 		}
 	}
 	
@@ -248,15 +243,15 @@ class owa_entity {
 		// get column list
 		$all_cols = $this->getColumns();
 		
+		
 		// Control loop
 		foreach ($all_cols as $k => $v){
 		
 			// drop column is it is marked as auto-incement as DB will take care of that.
 			
-			if ($this->get($v)):
-				$db->set($v, $this->get($v));
-			endif;
-				
+			if ($this->get($v, false)) {
+				$db->set($v, $this->get($v, false));
+			}	
 		}
 		
 		if(empty($where)):
@@ -369,6 +364,7 @@ class owa_entity {
 		
 			$cache_obj_properties = $cache_obj->_getProperties();
 			$this->setProperties($cache_obj_properties);
+			$this->wasPersisted = true;
 					
 		} else {
 		
@@ -379,11 +375,12 @@ class owa_entity {
 			$properties = $db->getOneRow();
 			
 			if (!empty($properties)) {
-					
+				
 				$this->setProperties($properties);
 				$this->wasPersisted = true;
 				// add to cache			
-				$this->addToCache();		
+				$this->addToCache($col);
+				owa_coreAPI::debug('entity loaded from db');		
 			}
 		} 
 	}

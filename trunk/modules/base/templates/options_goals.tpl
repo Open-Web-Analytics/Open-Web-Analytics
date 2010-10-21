@@ -17,7 +17,7 @@
 			
 			<?php foreach ($goals as $k => $goal): ?>
 			<tr>
-				<td>Goal <?php $this->out($k);?> <a class="" href="<?php echo $this->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $k));?>">Edit</a></p></td>
+				<td>Goal <?php $this->out($k);?> <a class="" href="<?php echo $this->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $k, 'siteId' => $siteId));?>">Edit</a></p></td>
 				<td><?php $this->out($goal['goal_name']);?></td>
 				<td>
 				<?php 

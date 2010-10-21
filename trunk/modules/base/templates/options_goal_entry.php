@@ -153,6 +153,7 @@
 	</div>
 	
 	<input type="hidden" name="<?php echo $this->getNs();?>goal[goal_number]" value="<?php $this->out($goal_number, false);?>">
+	<input type="hidden" name="<?php echo $this->getNs();?>siteId" value="<?php $this->out($siteId, false);?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>action" value="base.optionsGoalEdit">
 	<?php echo $this->createNonceFormField('base.optionsGoalEdit');?>
 	<BR>

@@ -31,7 +31,8 @@ if it is to be tracked/reported separately.</P>
 		<TD>
 			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'site_id' => $value['site_id'], 'edit' => true ) );?>">Edit</a> |
 			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'site_id' => $value['site_id'] ), false, false, false, true );?>">Delete</a> |
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'site_id' => $value['site_id'] ) );?>">Get Tags</a>
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'site_id' => $value['site_id'] ) );?>">Get Tags</a> | 
+			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $value['site_id'] ) );?>">Edit Goals</a>
 		</TD>
 	
 	</TR>

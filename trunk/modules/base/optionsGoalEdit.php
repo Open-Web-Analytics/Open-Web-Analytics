@@ -116,20 +116,22 @@ class owa_optionsGoalEditController extends owa_adminController {
 	
 	function action() {
 		
+		// setup goal manager
+		$siteId = $this->get('siteId');
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
 		$goal = $this->getParam('goal');
-		$all_goals = owa_coreAPI::getSetting('base', 'goals');
-		$goal_groups = owa_coreAPI::getSetting('base', 'goal_groups'); 
-		if (array_key_exists($goal['goal_number'], $all_goals)) {
-			$all_goals[$goal['goal_number']] = $goal;
-			if ( $this->get( 'new_goal_group_name' ) ) {
-				$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
-			}
-			owa_coreAPI::debug('New goals: '.print_r($all_goals,true));
-			owa_coreAPI::persistSetting('base', 'goals', $all_goals);
-			owa_coreAPI::persistSetting('base', 'goal_groups', $goal_groups);
-			$this->setStatusCode(2504);
+		//$all_goals = owa_coreAPI::getSiteSetting($site_id, 'goals');
+		//$goal_groups = owa_coreAPI::getSiteSetting($site_id, 'goal_groups');
+		$gm->saveGoal($goal['goal_number'], $goal); 
+		
+		if ( $this->get( 'new_goal_group_name' ) ) {
+			$gm->saveGoalGroupLabel($goal['goal_group'], $this->get( 'new_goal_group_name' ) );
+			//$goal_groups[$goal['goal_group']] = $this->get( 'new_goal_group_name' );
 		}
 		
+		owa_coreAPI::debug('New goals: '.print_r($gm->goals,true));
+		$this->setStatusCode(2504);
+		$this->set('siteId', $siteId);
 		$this->setRedirectAction('base.optionsGoals');
 	}
 	
@@ -140,6 +142,9 @@ class owa_optionsGoalEditController extends owa_adminController {
 		$this->set('error_code', 3311);
 		$this->set('goal', $goal);
 		$this->set('goal_number', $goal['goal_number']);
+		$siteId = $this->get('siteId');
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+		$this->set('goal_groups', $gm->getAllGoalGroupLabels() );
 	}
 }
 

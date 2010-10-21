@@ -159,6 +159,36 @@ class owa_coreAPI {
 		
 	}
 	
+	public static function getSiteSetting($site_id, $name) {
+		
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->load( $site->generateId( $site_id ) );
+		if ( $site->wasPersisted() ) {
+		
+			$settings = $site->get('settings');
+			
+			if ( $settings && array_key_exists($name, $settings) ) {
+				return $settings[$name];
+			}
+		}
+	}
+	
+	public static function persistSiteSetting($site, $name, $value) {
+	
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->load( $site->generateId( $site_id ) );
+		if ( $site->wasPersisted() ) {
+			$settings = $site->get('settings');
+			if ( ! $settings ) {
+				$settings = array();
+			}
+			$settings[$name] = $value;
+			$site->set('settings', $settings);
+			//print_r($site->properties);	
+			$site->update();
+			
+		}
+	}
 	
 	public static function getAllRoles() {
 		

@@ -56,12 +56,12 @@ class owa_base_006_update extends owa_update {
 				'commerce_tax_revenue');
 				
 		// create goal related columns
-		$goals = owa_coreAPI::getSetting('base', 'goals');
+		$goals = owa_coreAPI::getSetting('base', 'numGoals');
 		
-		foreach ( $goals as $num => $g ) {
-			$session_columns[] = 'goal_'.$num;
-			$session_columns[] = 'goal_'.$num.'_start';
-			$session_columns[] = 'goal_'.$num.'_value';
+		for ($i=1; $i <= $goals; $i++ ) {
+			$session_columns[] = 'goal_'.$i;
+			$session_columns[] = 'goal_'.$i.'_start';
+			$session_columns[] = 'goal_'.$i.'_value';
 		}
 		// add columns to owa_session
 		foreach ( $session_columns as $session_col_name ) {
@@ -109,6 +109,48 @@ class owa_base_006_update extends owa_update {
 		$db = owa_coreAPI::dbSingleton();
 		$ret = $db->query("update owa_domstream set domstream_guid = id");
 		
+		$site = owa_coreAPI::entityFactory('base.site');
+		$ret = $site->addColumn('settings');
+		
+		if ( $ret === true ) {
+			$this->e->notice( "settings added to owa_site" );
+		} else {
+			$this->e->notice( "Adding settings to owa_site failed." );
+			return false;
+		}
+		//$db->query("alter table owa_site DROP PRIMARY KEY");
+		$db->query("ALTER TABLE owa_site ADD id_1_3 INT");
+		if ( $ret === true ) {
+			$this->e->notice( "id_1_3 column added to owa_site" );
+		} else {
+			$this->e->notice( "adding id_1_3 column to owa_site failed." );
+			return false;
+		}
+		
+		$ret = $db->query("update owa_site set id_1_3 = id");
+		if ( $ret === true ) {
+			$this->e->notice( "populating id_1_3 in owa_site." );
+		} else {
+			$this->e->notice( "population of id_1_3 column in owa_site failed." );
+			return false;
+		}
+		
+		$ret = $db->query('ALTER TABLE owa_site MODIFY id BIGINT');
+		if ( $ret === true ) {
+			$this->e->notice( "id column modified in owa_site" );
+		} else {
+			$this->e->notice( "modify of id column in owa_site failed." );
+			return false;
+		}
+		
+		$ret = $db->query("update owa_site set id = CRC32(site_id)");
+		if ( $ret === true ) {
+			$this->e->notice( "populating id column in owa_site was successful." );
+		} else {
+			$this->e->notice( "populating id column in owa_site failed." );
+			return false;
+		}
+	
 		//create new entitiy tables
 		$new_entities = array(
 				'base.ad_dim', 
@@ -158,11 +200,11 @@ class owa_base_006_update extends owa_update {
 				'commerce_tax_revenue');
 				
 		// add in goal related columns
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-		foreach ($goals as $num => $g) {
-			$session_columns[] = 'goal_'.$num;
-			$session_columns[] = 'goal_'.$num.'_start';
-			$session_columns[] = 'goal_'.$num.'_value';
+		$goals = owa_coreAPI::getSetting('base', 'numGoals');
+		for ($i=1; $i <= $goals; $i++ ) {
+			$session_columns[] = 'goal_'.$i;
+			$session_columns[] = 'goal_'.$i.'_start';
+			$session_columns[] = 'goal_'.$i.'_value';
 		}
 		//drop columns from owa_session
 		foreach ($session_columns as $session_col_name) {
@@ -185,6 +227,13 @@ class owa_base_006_update extends owa_update {
 		$domstream = owa_coreAPI::entityFactory('base.domstream');
 		$domstream->dropColumn('domstream_guid');
 
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->dropColumn('settings');
+		$site->modifyColumn('id');
+		$db = owa_coreAPI::dbSingleton();
+		$db->query('UPDATE owa_site SET id = id_1_3');
+		$ret = $db->query('ALTER TABLE owa_site MODIFY id INT');
+		$db->query('ALTER TABLE owa_site DROP id_1_3');
 		
 		//drop tables
 		$new_entities = array(

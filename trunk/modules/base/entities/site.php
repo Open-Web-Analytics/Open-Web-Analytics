@@ -38,9 +38,8 @@ class owa_site extends owa_entity {
 		$this->setCachable();
 		// properties
 		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_SERIAL);
-		//$this->properties['id']->setPrimaryKey();
-		$this->properties['id']->setAutoIncrement();
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
 		$this->properties['site_id'] = new owa_dbColumn;
 		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['domain'] = new owa_dbColumn;
@@ -51,6 +50,8 @@ class owa_site extends owa_entity {
 		$this->properties['description']->setDataType(OWA_DTD_TEXT);
 		$this->properties['site_family'] = new owa_dbColumn;
 		$this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['settings'] = new owa_dbColumn;
+		$this->properties['settings']->setDataType(OWA_DTD_TEXT);
 	}
 	
 	function generateSiteId($domain) {
@@ -58,10 +59,20 @@ class owa_site extends owa_entity {
 		return md5($domain);
 	}
 	
+	function settingsGetFilter($value) {
+		if ($value) {
+			return unserialize($value);
+		}
+	}
 	
+	function settingsSetFilter($value) {
+		owa_coreAPI::debug('hello rom setFilter');
+		$value = serialize($value);
+		owa_coreAPI::debug($value);
+		return $value;
+	}
+
 	
 }
-
-
 
 ?>

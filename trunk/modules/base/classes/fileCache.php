@@ -86,7 +86,7 @@ class owa_fileCache extends owa_cache {
 	}
 	
 	function putItemToCacheStore($collection, $id) {
-		
+		owa_coreAPI::debug('put id: '.$id);
 		if ( $this->acquire_lock() ) {
 			$this->makeCacheCollectionDir($collection);
 			$this->debug(' writing file for: '.$collection.$id);

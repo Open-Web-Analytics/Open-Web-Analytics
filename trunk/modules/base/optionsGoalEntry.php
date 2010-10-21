@@ -43,23 +43,14 @@ class owa_optionsGoalEntryController extends owa_adminController {
 	function action() {
 		
 		$number = $this->getParam( 'goal_number' );
-		
-		$goals = owa_coreAPI::getSetting( 'base', 'goals' );
-		$goal_groups = owa_coreAPI::getSetting( 'base', 'goal_groups' );
+		$siteId = $this->get('siteId');
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+		$goal = $gm->getGoal( $number );
+		$goal_groups = $gm->getAllGoalGroupLabels();
 		$this->set( 'goal_groups', $goal_groups );
-		$goal = $goals[$number];
 		$this->set( 'goal', $goal );
-		print_r($goal);
-		
-		if (array_key_exists('goal_number', $goal)) {
-			$this->set('goal_number', $goal['goal_number']);
-			
-		} else {
-			// needed for first time edit
-			$this->set('goal_number', $number);
-			
-		}
-				
+		$this->set('goal_number', $number);
+		$this->set('siteId', $this->getParam( 'siteId' ) );
 		$this->setView('base.options');
 		$this->setSubView('base.optionsGoalEntry');
 		
@@ -87,6 +78,7 @@ class owa_optionsGoalEntryView extends owa_view {
 		$this->body->set( 'goal', $this->get( 'goal' ) );
 		$this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
 		$this->body->set( 'goal_number', $this->get( 'goal_number' ) );
+		$this->body->set( 'siteId', $this->get( 'siteId' ) );
 		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js');
 		$this->setJs('jqote', 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 	}

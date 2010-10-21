@@ -36,6 +36,11 @@ class owa_goalManager extends owa_base {
 	var $goal_group_labels;
 	var $activeGoalGroups;
 	var $activeGoalsByGroup;
+	var $site_id;
+	var $numGoals;
+	var $numGoalGroups;
+	var $isDirtyGoals;
+	var $isDirtyGoalGroups;
 	
 	/**
 	 * Constructor
@@ -44,35 +49,91 @@ class owa_goalManager extends owa_base {
 	 *
 	 * @param $cache_dir string
 	 */
-	function __construct() {
-	
-		$this->loadGoals();
+	function __construct( $site_id ) {
+		
+		$this->site_id = $site_id;
+		$this->numGoals = owa_coreAPI::getSetting('base', 'numGoals');
+		$this->numGoalGroups = owa_coreAPI::getSetting('base', 'numGoalGroups');
+		$this->loadGoals( $site_id );
+		$this->loadGoalGroupLabels ( $site_id );
 	}
 	
-	function loadGoals() {
+	function setSiteId( $site_id ) {
 		
-		$this->goals = owa_coreAPI::getSetting('base', 'goals');
-		$this->goal_group_labels = owa_coreAPI::getSetting('base', 'goal_groups');
+		$this->site_id = $site_id;
+	}
+	
+	function loadGoalGroupLabels( $site_id ) {
 		
-		foreach ($this->goals as $goal) {
-			
-			// set active goal lists
-			if (array_key_exists('goal_status', $goal) && $goal['goal_status'] === 'active') {
-				// set active goals
-				$this->activeGoals[] = $goal['goal_number'];
-				// set active goal groups
-				if (array_key_exists('goal_group', $goal)) {
-					$this->activeGoalGroups[$goal['goal_group']] = $goal['goal_group'];
-					// set active goals by group
-					$this->activeGoalsByGroup[$goal['goal_group']][] = $goal['goal_number'];
-				}			
+		$this->goal_group_labels = array();
+		for ( $i = 1; $i <= $this->numGoalGroups; $i++ ) {
+			$this->goal_group_labels[$i] = "Goal Group $i";	
+		}
+		
+		$from_db = owa_coreAPI::getSiteSetting( $site_id , 'goal_groups' );
+		
+		if ($from_db) {
+		
+			foreach($from_db as $k => $goalGroup) {
+				if (array_key_exists($k, $this->goal_group_labels)) {
+					$this->goal_group_labels[$k] = $goalGroup;
+				}
+			}
+		}
+	}
+	
+	function loadGoals( $site_id ) {
+		
+		$this->goals = array();
+		
+		for ( $i = 1; $i <= $this->numGoals; $i++ ) {
+			$this->goals[$i] = array(
+					'goal_number'	=> '',
+					'goal_name'		=> '',
+					'goal_group'	=> '',
+					'goal_status'	=> '',
+					'goal_type'		=> ''
+			);	
+		}
+		
+		$from_db = owa_coreAPI::getSiteSetting( $site_id, 'goals' );
+		
+		if ($from_db) {
+				
+			foreach ($from_db as $k => $goal) {
+				
+				if (array_key_exists($k, $this->goals)) {
+					// add to goal array
+					$this->goals[$k] = $goal;
+					// set active goal lists
+					if (array_key_exists('goal_status', $goal) && $goal['goal_status'] === 'active') {
+						// set active goals
+						$this->activeGoals[] = $goal['goal_number'];
+						// set active goal groups
+						if (array_key_exists('goal_group', $goal)) {
+							$this->activeGoalGroups[$goal['goal_group']] = $goal['goal_group'];
+							// set active goals by group
+							$this->activeGoalsByGroup[$goal['goal_group']][] = $goal['goal_number'];
+						}			
+					}
+				}
 			}
 		}
 	}
 	
 	function getActiveGoals() {
+		if (!empty($this->activeGoals)) {
+			$goals = array();
+			foreach ($this->activeGoals as $goal_number) {
+				$goals[$goal_number] = $this->getGoal($goal_number);
+			}
+			return $goals;
+		}
+	}
 	
-		return $this->activeGoals;
+	function getAllGoals() {
+		
+		return $this->goals;
 	}
 	
 	function getActiveGoalGroups() {
@@ -81,7 +142,7 @@ class owa_goalManager extends owa_base {
 	}
 	
 	function getActiveGoalsByGroup($group_number) {
-		print_r($this->activeGoalsByGroup);
+		
 		return $this->activeGoalsByGroup[$group_number];
 	}
 	
@@ -98,6 +159,40 @@ class owa_goalManager extends owa_base {
 		if ( array_key_exists( $number, $this->goal_group_labels ) ) {
 		
 			return $this->goal_group_labels[$number];
+		}
+	}
+	
+	function getAllGoalGroupLabels() {
+		
+		return $this->goal_group_labels;
+	}
+	
+	function saveGoal($number, $goal) {
+		
+		if ( $number <= $this->numGoals ) {
+		
+			$goal['goal_number'] = $number;
+			$this->goals[$goal['goal_number']] = $goal;
+			$this->isDirtyGoals = true;
+		}
+	}
+	
+	function saveGoalGroupLabel($number, $goal_group) {
+		
+		$this->goal_group_labels[$number] = $goal_group;
+		$this->isDirtyGoalGroups = true;
+	}
+	
+	function __destruct() {
+		
+		if ( $this->isDirtyGoals ) {
+			
+			owa_coreAPI::persistSiteSetting( $this->site_id, 'goals', $this->goals );
+		}
+		
+		if ( $this->isDirtyGoalGroups ) {
+
+			owa_coreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
 		}
 	}
 }

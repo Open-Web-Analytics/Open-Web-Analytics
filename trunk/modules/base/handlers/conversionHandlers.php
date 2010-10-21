@@ -145,8 +145,15 @@ class owa_conversionHandlers extends owa_observer {
     function checkForConversion($event) {
     
     	$goal_info = array('conversion' => '', 'value' => '', 'start' => '');
-    	$goals = owa_coreAPI::getSetting('base', 'goals');
+    	$siteId = $event->get('siteId');
     	
+    	if ( ! $siteId ) {
+    		$siteId = $event->get('site_id'); 
+    	}
+    	
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+    	$goals = $gm->getActiveGoals();
+    	owa_coreAPI::debug('active goals: '.print_r($goals, true));
     	if (empty($goals)) {
     		return;
     	}
