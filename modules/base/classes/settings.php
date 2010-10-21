@@ -658,6 +658,8 @@
 						'viewer' => array('view_reports'), 
 						'everyone' => array()
 				),
+				'numGoals'							=> 15,
+				'numGoalGroups'						=> 5,
 				'goals'								=> array(
 						1	=> array(),
 						2	=> array(),

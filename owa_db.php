@@ -966,17 +966,24 @@ class owa_db extends owa_base {
 	function modifyColumn($table_name, $column_name, $column_definition) {
 	
 		return $this->query(sprintf(OWA_SQL_MODIFY_COLUMN, $table_name, $column_name, $column_definition));
-
 	}
 	
 	/**
-	 * Changes the definition of a column
+	 * Adds index to a column
 	 *
 	 */
 	function addIndex($table_name, $column_name, $index_definition = '') {
 	
 		return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $index_definition));
-
+	}
+	
+	/**
+	 * Adds index to a column
+	 *
+	 */
+	function dropIndex($table_name, $column_name) {
+	
+		return $this->query(sprintf(OWA_SQL_DROP_INDEX, $column_name, $table_name));
 	}
 	
 	/**

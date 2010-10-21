@@ -72,7 +72,8 @@ class owa_reportController extends owa_adminController {
 		$this->data['do'] = $this->params['do'];
 		
 		// setup tabs
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager');
+		$siteId = $this->get('siteId');
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
 		
 		$tabs = array();
 		$site_usage = array(

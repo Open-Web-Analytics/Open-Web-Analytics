@@ -41,16 +41,16 @@ class owa_optionsGoalsController extends owa_adminController {
 	}
 	
 	function action() {
-		//$c = owa_coreAPI::configSingleton();
-		//$c->defaultSetting('base', 'goal_groups');
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-		$goal_groups = owa_coreAPI::getSetting('base', 'goal_groups');
+		
+		$siteId = $this->get('siteId');
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+		$goals = $gm->getAllGoals();
+		$goal_groups = $gm->getAllGoalGroupLabels();
 		$this->set('goals', $goals);
 		$this->set('goal_groups', $goal_groups);
-		print_r($goals);
-		print_r($goal_groups);
 		$this->setView('base.options');
 		$this->setSubView('base.optionsGoals');
+		$this->set('siteId', $siteId);
 	}
 }
 
@@ -76,6 +76,7 @@ class owa_optionsGoalsView extends owa_view {
 		$this->body->set( 'headline', 'Conversion Goals');
 		$this->body->set( 'goals', $this->get( 'goals' ) );
 		$this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
+		$this->body->set( 'siteId', $this->get( 'siteId' ) );
 	}
 }
 

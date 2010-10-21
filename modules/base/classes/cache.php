@@ -56,10 +56,12 @@ class owa_cache {
 	function set($collection, $key, $value, $expires = '') {
 	
 		$hkey = $this->hash($key);
+		owa_coreAPI::debug('set key: '.$key);
+		owa_coreAPI::debug('set hkey: '.$hkey);
 		$this->cache[$collection][$hkey] = $value;
 		$this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
 		$this->statistics['added']++;		
-		$this->dirty_objs[$collection][] = $hkey;
+		$this->dirty_objs[$collection][$hkey] = $hkey;
 		//$this->debug(print_r($this->dirty_objs, true));
 		$this->dirty_collections[$collection] = true; 
 		$this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
@@ -94,13 +96,13 @@ class owa_cache {
 	
 	function get($collection, $key) {
 		
-		$this->debug("getting: ".$collection.$key);
+		$this->debug("get key: ".$collection. ' '. $key);
 		$id = $this->hash($key);
-		
+		$this->debug("get id: $id");
 		// check warm cache and return
 		if (isset($this->cache[$collection][$id])) {
 			$this->debug(sprintf('CACHE HIT (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));	
-		$this->statistics['warm']++;
+			$this->statistics['warm']++;
 		//load from cache file	
 		} else {
 		
