@@ -121,7 +121,7 @@ class owa_installController extends owa_controller {
 	
 		if(empty($id)) {
 	    	// Create default site
-	    	
+	    	$site->set('id', $site->generateId($site_id));
 			$site->set('site_id', $site_id);
 			$site->set('name', $name);
 			$site->set('description', $description);
