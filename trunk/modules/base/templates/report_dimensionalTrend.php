@@ -2,13 +2,8 @@
 	
 	<div id="trend-chart"></div>
 	<div id="trend-title" class="owa_reportHeadline"></div>
-	<?php //if ( count($tabs) > 1 ): ?>
 	<div id="report-tabs">
-		<!-- <ul>
-		<?php foreach ($tabs as $k => $tab): ?>
-			<li><a href="#tab_<?php $this->out($k); ?>"><?php $this->out($tab['tab_label']); ?></a></li>
-		<?php endforeach; ?>
-		</ul> -->
+		
 		<?php foreach ($tabs as $k => $tab): ?>
 		<div id="tab_<?php $this->out($k); ?>">
 			
@@ -24,7 +19,6 @@
 		</div>
 		<?php endforeach; ?>
 	</div>
-	<?php //endif; ?>
 </div>
 
 <script type="text/javascript">
