@@ -1082,6 +1082,13 @@ class owa_lib {
 		    return true; 
 		}
 	}
+	
+	public static function formatCurrency($value, $local) {
+		
+		setlocale( LC_MONETARY, $local );
+		$value = $value /100;
+		return money_format( '%.2n',$value );
+	}
 }
 
 ?>

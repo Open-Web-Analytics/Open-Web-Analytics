@@ -678,9 +678,7 @@ class owa_resultSetManager extends owa_base {
 	
 	function formatCurrency($value) {
 	
-		setlocale( LC_MONETARY, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
-		$value = $value /100;
-		return money_format( '%.2n',$value );
+		return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
 	}
 	
 	/**
