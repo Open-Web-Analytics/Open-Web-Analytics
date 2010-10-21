@@ -391,6 +391,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
+		$this->addNavigationLink('Reports', '', 'base.reportTransactions', 'Ecommerce', 1);
 		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 1);		
 	}
 	
