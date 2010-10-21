@@ -95,7 +95,9 @@ class owa_sitesAddController extends owa_adminController {
 		$this->params['domain'] = $this->params['protocol'].$this->params['domain'];
 						
 		$site = owa_coreAPI::entityFactory('base.site');
-		$site->set('site_id', md5($this->params['domain']));
+		$site_id = md5($this->params['domain']);
+		$site->set('id', $site->generateId($site_id));
+		$site->set('site_id', $site_id);
 		$site->set('name', $this->params['name']);
 		$site->set('domain', $this->params['domain']);
 		$site->set('description', $this->params['description']);
