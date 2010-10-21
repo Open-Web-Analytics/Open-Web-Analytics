@@ -980,6 +980,10 @@ class owa_template extends Template {
 			echo $output;
 		}
 	}
+	
+	function formatCurrency($value) {
+		return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
+	}
 }
 
 
