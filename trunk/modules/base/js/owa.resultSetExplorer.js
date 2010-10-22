@@ -775,7 +775,7 @@ OWA.resultSetExplorer.prototype = {
 			
 
 		} else {
-			jQuery('#'+ dom_id).append("No data is available for this time period");
+			jQuery('#'+ dom_id).html("No data is available for this time period");
 			jQuery('#'+ dom_id).css('height', '50px');
 
 		}

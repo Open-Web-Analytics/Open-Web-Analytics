@@ -173,8 +173,8 @@ class owa_coreAPI {
 		}
 	}
 	
-	public static function persistSiteSetting($site, $name, $value) {
-	
+	public static function persistSiteSetting($site_id, $name, $value) {
+		
 		$site = owa_coreAPI::entityFactory('base.site');
 		$site->load( $site->generateId( $site_id ) );
 		if ( $site->wasPersisted() ) {
@@ -183,11 +183,26 @@ class owa_coreAPI {
 				$settings = array();
 			}
 			$settings[$name] = $value;
-			$site->set('settings', $settings);
-			//print_r($site->properties);	
+			$site->set('settings', $settings);	
 			$site->update();
-			
 		}
+	}
+	
+	public static function getSiteSettings($site_id) {
+		
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->load( $site->generateId( $site_id ) );
+		if ( $site->wasPersisted() ) {
+		
+			$settings = $site->get('settings');
+			
+			if ( $settings ) {
+				return $settings;
+			} else {
+				return array();
+			}
+		}
+		
 	}
 	
 	public static function getAllRoles() {

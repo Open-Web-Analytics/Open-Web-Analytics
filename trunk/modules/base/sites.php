@@ -32,12 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_sitesController extends owa_adminController {
-
-
-	function owa_sitesController($params) {
-		
-		return owa_sitesController::__construct($params); 
-	}
 	
 	function __construct($params) {
 		
@@ -49,11 +43,9 @@ class owa_sitesController extends owa_adminController {
 	
 		$s = owa_coreAPI::entityFactory('base.site');
 		$sites = owa_coreAPI::getSitesList();
-		//print_r($sites);
 		$this->set('tracked_sites', $sites);
 		$this->setSubview('base.sites');
 		$this->setView('base.options');
-		return;
 	}
 }
 
@@ -71,17 +63,11 @@ class owa_sitesController extends owa_adminController {
  */
 
 class owa_sitesView extends owa_view {
-	
-	function __construct() {
 		
-		return parent::__construct();
-	}
-	
 	function render() {
 		
 		//page title
 		$this->t->set('page_title', 'Sites Roster');
-		// load body template
 		$this->body->set_template('sites.tpl');
 		$this->body->set('headline', 'Web Sites Roster');
 		$this->body->set('tracked_sites', $this->get('tracked_sites'));

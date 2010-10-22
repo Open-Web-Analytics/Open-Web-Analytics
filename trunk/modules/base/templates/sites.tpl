@@ -7,11 +7,11 @@ if it is to be tracked/reported separately.</P>
 	<legend>Tracked Web Sites <span class="legend_link">(<a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a Site</a>)<span></legend>
 
 
-<TABLE size="100%" border="0" class="management">
+<TABLE width="100%" border="0" class="management">
 	<thead>
 	<TR>
 		<TH>Name & Description</TH>
-		<TH>Site Family</TH>
+		
 		<TH>Options</TH>
 	</TR>
 	</thead>
@@ -19,20 +19,20 @@ if it is to be tracked/reported separately.</P>
 	<?php foreach ($tracked_sites as $site => $value):?>
 	<TR>
 		<TD>
-			<?php $this->out( $value['name'] );?><BR>
+			<span style="font-size:14px; font-weight:bold;">
+				<a href="<?php $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $value['site_id'] ) );?>"><?php $this->out( $value['name'] );?></a>
+			</span><BR>
 			<?php if (!empty($value['description'])):?>
 			<span class="info_text"><?php $this->out( $value['description'] );?></span><BR>
 			<?php endif;?>
 			<span class="info_text"><?php $this->out( $value['domain'] );?></span><BR>
 		</TD>
-		<TD>
-			<?php $this->out($value['site_family']);?>
-		</TD>
+		
 		<TD>
 			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'site_id' => $value['site_id'], 'edit' => true ) );?>">Edit</a> |
 			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'site_id' => $value['site_id'] ), false, false, false, true );?>">Delete</a> |
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'site_id' => $value['site_id'] ) );?>">Get Tags</a> | 
-			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $value['site_id'] ) );?>">Edit Goals</a>
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'site_id' => $value['site_id'] ) );?>">Get Tracking Code</a> | 
+			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $value['site_id'] ) );?>">Goals</a>
 		</TD>
 	
 	</TR>

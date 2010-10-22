@@ -3,7 +3,7 @@
 <table id="layout_panels" class="layout_panels" cellpadding="0" cellspacing="0">
 	<TR>
 		<TD colspan="2" class="headline">
-			<?php echo $headline;?>
+			<?php $this->out( $headline );?>
 		</TD>
 	</TR>
 	<TR>
@@ -19,11 +19,7 @@
 				<H4><?php echo $group;?></H4>
 					<UL>
 					<?php foreach ($items as $k => $v):?>
-						<?php if ($v['view']):?>
-						<LI><a href="<?php echo $this->makeLink(array('view' => 'base.options', 'subview' => $v['view']));?>"><?php echo $v['anchortext'];?></a></LI>
-						<?php else: ?>
 						<LI><a href="<?php echo $this->makeLink(array('do' => $v['do']));?>"><?php echo $v['anchortext'];?></a></LI>
-						<?php endif; ?>
 					<?php endforeach;?>
 					</UL>
 			<?php endforeach;?>

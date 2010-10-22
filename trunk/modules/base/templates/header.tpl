@@ -6,7 +6,7 @@
 				<LI><a href="<?php echo $this->makeLink(array('do' => 'base.optionsGeneral'));?>">Settings</a></LI>
 				<LI><a href="http://wiki.openwebanalytics.com">Help</a></LI>
 				<LI><a href="http://trac.openwebanalytics.com">Report a Bug</a></LI>
-				<?php if ($this->config['is_embedded'] == false):?>
+				<?php if ( ! owa_coreAPI::getSetting( 'base', 'is_embedded' ) ):?>
 				<LI>
 					<?php if (owa_coreAPI::isCurrentUserAuthenticated()):?>
 					<a href="<?php echo $this->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
