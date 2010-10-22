@@ -124,7 +124,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('page_url', owa_lib::get_current_url());
 		}
 		
-		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ) ) );
+		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ), $this->event->get( 'site_id' ) ) );
 		// set document/page id
 		$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
 		// needed?
@@ -157,7 +157,7 @@ class owa_processEventController extends owa_controller {
 			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
 
 			if ($referer_parse['host'] === $page_parse['host']) {
-				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER')));	
+				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER'), $this->event->get( 'site_id' ) ) );	
 			} else {
 				
 				$this->event->set('external_referer', true);
@@ -181,7 +181,7 @@ class owa_processEventController extends owa_controller {
 				
 		// Filter the target url of clicks
 		if ($this->event->get('target_url')) {
-			$this->event->set('target_url', $this->eq->filter('target_url', $this->event->get('target_url')));
+			$this->event->set('target_url', $this->eq->filter('target_url', $this->event->get('target_url'), $this->event->get( 'site_id' ) ) );
 		}
 		
 		// Set Ip Address

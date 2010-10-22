@@ -635,8 +635,9 @@ class owa_baseModule extends owa_module {
 	 *
 	 * @return string
 	 */
-	function makeUrlCanonical($url) {
+	function makeUrlCanonical($url, $site_id = '') {
 		
+		owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
 		//remove anchors
 		$pos = strpos($url, '#');
 		if($pos) {
@@ -644,13 +645,15 @@ class owa_baseModule extends owa_module {
 			$url = substr($url, 0, $pos - 1);
 		}
 		
-		if (owa_coreAPI::getSetting('base', 'query_string_filters')) {
-			$filters = str_replace(' ', '', owa_coreAPI::getSetting('base', 'query_string_filters'));
-			$filters = explode(',', $filters);
+		$filter_string = owa_coreAPI::getSiteSetting($site_id, 'query_string_filters');
+		
+		if ($filter_string) {
+			$filters = str_replace(' ', '', $filter_string);
+			$filters = explode(',', $filter_string);
 		} else {
 			$filters = array();
 		}
-			
+		
 		// OWA specific params to filter
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'source');
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'medium');
@@ -691,7 +694,7 @@ class owa_baseModule extends owa_module {
 		}
 		
 		//check and remove default page
-		$default_page = owa_coreAPI::getSetting('base', 'default_page');
+		$default_page = owa_coreAPI::getSiteSetting($site_id, 'default_page');
 		
 		if ($default_page) {
 		
