@@ -5,7 +5,6 @@
 	<?php foreach ($sites as $site => $value):?>
 		<OPTION VALUE="<?php $this->out($value['site_id'], false);?>" <?php if ($params['siteId'] === $value['site_id']):?>selected="selected" selected <?php endif; ?>><?php $this->out( $value['name'] );?></OPTION>
 	<?php endforeach;?>
-		<OPTION VALUE="" <?php if (empty($params['siteId'])):?>selected="selected" selected <?php endif; ?>>All Sites</OPTION>
 	</SELECT>
 
 </div>

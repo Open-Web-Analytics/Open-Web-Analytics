@@ -79,7 +79,7 @@ class owa_reportView extends owa_view {
 		$this->_setLinkState();
 		
 		// set site filter list
-		$this->body->set('sites', $this->getSitesList());
+		$this->body->set('sites', $this->get('sites') );
 	
 		$this->body->set('dom_id', $this->data['dom_id']);
 		// add if here
@@ -94,11 +94,9 @@ class owa_reportView extends owa_view {
 		$this->body->set_template('report.tpl');
 			
 		// set Js libs to be loaded
-		
 		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
 		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
 		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
-		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array('jquery'));
 		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
 		$this->setJs('excanvas','base/js/includes/excanvas.compiled.js', '', '', true);
@@ -107,19 +105,15 @@ class owa_reportView extends owa_view {
 		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
-		//$this->setJs("owa.widget", "base/js/owa.widgets.js", '', array('owa', 'jquery'));
 		//$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
-		//$this->setJs("swfobject", "base/js/includes/swfobject.js");
 		$this->setJs("json2", "base/js/includes/json2.js");
-		//$this->setJs("owa.chart", "base/js/owa.chart.js", '', array('owa', 'json2', 'swfobject', 'jquery'));
 		$this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
 		
 		// css libs to be loaded
 		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
 		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		$this->setCss("base/css/owa.report.css");
-		//$this->setCss("base/css/owa.widgets.css");
 		$this->setCss('base/css/ui.jqgrid.css');
 	}
 	
@@ -137,14 +131,10 @@ class owa_reportView extends owa_view {
 		$this->body->set('period_obj', $period);
 		$this->subview->body->set('period_obj', $period);
 		$this->subview->body->set('period', $period->get());
-		
-		//$this->body->set('timePeriod', $period);
-		//$this->subview->body->set('timePeriod', $period);
 		// set period label
 		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
 		$this->subview->body->set('period_label', $period_label);
-		return;
 	}
 	
 	/**
@@ -155,30 +145,19 @@ class owa_reportView extends owa_view {
 	 */
 	function _setParams($params = null) {
 	
-		if(!empty($params)):
+		if(!empty($params)) {
 			foreach ($params as $key => $value) {
-				if(!empty($value)):
+				if(!empty($value)) {
 					$this->params[$key] = $value;
-				endif;
+				}
 			}
-		endif;
-		
-		return;	
+		}
 	}
-	
-	function getSitesList() {
-		
-		return owa_coreAPI::getSitesList();
-		
-	}
-	
+
 	function post() {
 		
 		$this->setCss("base/css/owa.admin.css");
-		return;
-	}
-	
-	
+	}	
 }
 
 /**

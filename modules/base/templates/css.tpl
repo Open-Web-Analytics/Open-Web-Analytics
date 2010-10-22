@@ -129,7 +129,7 @@ div {margin:0;}
 #layout_panels {border:1px solid #999999;border-collapse: collapse; width:100%; vertical-align:top;}
 .layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
-#panel td {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
+td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
@@ -261,30 +261,6 @@ div {margin:0;}
   border-right:1px solid #767272}
 .spiffyfg{
   background:#494444;}
-  
-/* management table */
-.owa table.management {
-	border:1px solid #9f9f9f;
-	border-spacing: 0px;
-	
-}
-
-.owa table.management th{
-	background-color: #efefef;
-	width: 200px;
-	border-bottom:1px solid #cecece;
-	border-right:1px solid #cecece;
-}
-
-.owa table.management td{
-	background-color: #ffffff;
-	font-size: 12px;
-}
-
-.owa table.management td{
-	padding: 7px;
-	border:0px;
-}
 
 .owa div.goal-detail {
 	display: none;

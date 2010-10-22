@@ -561,7 +561,7 @@
 				'async_db'							=> false,
 				'clean_query_string'				=> true,
 				'fetch_refering_page_info'			=> true,
-				'query_string_filters'				=> '',
+				'query_string_filters'				=> '', // move to site settings
 				'async_log_dir'						=> OWA_DATA_DIR . 'logs/',
 				'async_log_file'					=> 'events.txt',
 				'async_lock_file'					=> 'owa.lock',
@@ -597,7 +597,7 @@
 				'owa_rss_url'						=> 'http://www.openwebanalytics.com/?feed=rss2',
 				'use_summary_tables'				=> false,
 				'summary_framework'					=> '',
-				'click_drawing_mode'				=> 'center_on_page',
+				'click_drawing_mode'				=> 'center_on_page', // remove
 				'log_clicks'						=> true,
 				'log_dom_streams'					=> true,
 				'timezone'							=> 'America/Los_Angeles',
@@ -620,11 +620,11 @@
 				'cookie_domain'						=> false,
 				'ws_timeout'						=> 10,
 				'is_active'							=> true,
-				'per_site_visitors'					=> false,
+				'per_site_visitors'					=> false, // remove
 				'cache_objects'						=> true,
 				'log_named_users'					=> true,
 				'log_visitor_pii'					=> true,
-				'do_not_log_ips'					=> '',
+				'do_not_log_ips'					=> '', // move to site settings
 				'track_feed_links'					=> true,
 				'theme'								=> '',
 				'reserved_words'					=> array('do' => 'action'),
@@ -632,7 +632,7 @@
 				'not_capable_view'					=> 'base.error',
 				'start_page'						=> 'base.reportDashboard',
 				'default_action'					=> 'base.loginForm',
-				'default_page'						=> '',
+				'default_page'						=> '', // move to site settings
 				'default_cache_expiration_period'	=> 604800,
 				//'nonce_expiration_period'			=> 84600,
 				'nonce_expiration_period'			=> 43200,
@@ -660,32 +660,8 @@
 				),
 				'numGoals'							=> 15,
 				'numGoalGroups'						=> 5,
-				'goals'								=> array(
-						1	=> array(),
-						2	=> array(),
-						3	=> array(),
-						4	=> array(),
-						5	=> array(),
-						6	=> array(),
-						7	=> array(),
-						8	=> array(),
-						9	=> array(),
-						10	=> array(),
-						11	=> array(),
-						12	=> array(),
-						13	=> array(),
-						14	=> array(),
-						15	=> array()
-				),
-				'goal_groups' 						=> array(
-						1	=> 'Goal Group 1',
-						2	=> 'Goal Group 2',
-						3	=> 'Goal Group 3',
-						4	=> 'Goal Group 4',
-						5	=> 'Goal group 5'
-				),
-				'enableEcommerceReporting'			=> false,
-				'currencyLocal'						=> 'en_US',
+				'enableEcommerceReporting'			=> false, // move to site settings
+				'currencyLocal'						=> 'en_US', // move to site settings
 				'memcachedServers'					=> array(),
 				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file'

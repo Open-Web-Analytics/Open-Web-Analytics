@@ -33,11 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 class owa_sitesProfileController extends owa_adminController {
 	
-	function owa_sitesProfileController($params) {
-		
-		return owa_adminController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		$this->setRequiredCapability('edit_sites');
@@ -58,9 +53,9 @@ class owa_sitesProfileController extends owa_adminController {
 		
 		$this->set('site', $site_data);
 		$this->set('edit', $this->getParam('edit'));
+		$this->set('config', $site->get('settings') );
 		$this->setView('base.options');
 		$this->setSubview('base.sitesProfile');
-		return;
 	}
 	
 }
@@ -79,24 +74,13 @@ class owa_sitesProfileController extends owa_adminController {
  */
 
 class owa_sitesProfileView extends owa_view {
-	
-	function owa_sitesProfileView() {
-		
-		return owa_sitesProfileView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
+			
 	function render() {
-		//print $this->get('edit'); 
-		//page title
-		
+	
+		$site = $this->get('site');
 		if ($this->get('edit')) {
 			$this->body->set('action', 'base.sitesEdit');
-			$this->body->set('headline', 'Edit Tracked Site Profile');
+			$this->body->set('headline', 'Edit Site Profile for: '. $site['domain'] );
 
 		} else {
 			$this->body->set('action', 'base.sitesAdd');
@@ -104,15 +88,12 @@ class owa_sitesProfileView extends owa_view {
 		
 		}
 		
-		
-		$this->t->set('page_title', 'Tracked Site Profile');
-		//$this->body->set('headline', $this->get('headline'));
-		// load body template
-		$this->body->set_template('sites_addoredit.tpl');
-		//$this->body->set('action', $this->get('form_action'));		
-		$this->body->set('site', $this->get('site'));
-		$this->body->set('edit', $this->get('edit'));
-		return;
+		$this->t->set( 'page_title', 'Site Profile for: '.  $site['domain'] );
+		$this->body->set( 'site', $site );
+		$this->body->set( 'edit', $this->get('edit') );
+		$this->body->set( 'config', $this->get('config') );
+		//print_r($this->get('config'));
+		$this->body->set_template( 'sites_addoredit.tpl' );	
 	}
 	
 	

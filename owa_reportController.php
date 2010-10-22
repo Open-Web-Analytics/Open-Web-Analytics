@@ -53,6 +53,19 @@ class owa_reportController extends owa_adminController {
 	 */
 	function pre() {
 		
+		// site lists
+		$sites = owa_coreAPI::getSitesList();
+		$this->set('sites', $sites);
+		// set default siteId if none exists on request
+		$site_id = $this->getParam('siteId');
+		if ( ! $site_id ) {
+			$site_id = $this->getParam('site_id'); 
+		}
+		if ( ! $site_id ) {
+			$site_id = $sites[0]['site_id']; 
+		}
+		$this->setParam('siteId', $site_id);
+		
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
 				
@@ -83,13 +96,16 @@ class owa_reportController extends owa_adminController {
 		
 		$tabs['site_usage'] = $site_usage;
 		
-		$ecommerce = array(
-				'tab_label'		=> 'e-commerce',
-				'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate'
-		);
+		// ecommerce tab
+		if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
 		
-		$tabs['ecommerce'] = $ecommerce;
+			$ecommerce = array(
+					'tab_label'		=> 'e-commerce',
+					'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate'
+			);
 		
+			$tabs['ecommerce'] = $ecommerce;
+		}		
 		$goal_groups = $gm->getActiveGoalGroups();
 		
 		if ( $goal_groups ) {
@@ -116,7 +132,6 @@ class owa_reportController extends owa_adminController {
 				
 		$this->set('tabs', $tabs);
 		$this->set('tabs_json', json_encode($tabs));
-		
 	}
 	
 	function post() {

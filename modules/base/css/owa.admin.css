@@ -1,1 +1,23 @@
 .owa {background-color: #fffff;}
+
+/* management table */
+.owa table.management {
+	border:1px solid #9f9f9f;
+	border-spacing: 0px;
+	width: 100%;
+	
+}
+
+.owa table.management th{
+	background-color: #efefef;
+	min-width: 200px;
+	border-bottom:1px solid #cecece;
+	border-right:1px solid #cecece;
+}
+
+.owa table.management td{
+	background-color: #ffffff;
+	font-size: 12px;
+	padding: 7px 7px 7px 7px;
+	border:0px;
+}

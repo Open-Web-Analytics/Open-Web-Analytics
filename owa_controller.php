@@ -363,6 +363,11 @@ class owa_controller extends owa_base {
 		}
 	}
 	
+	function setParam($name, $value) {
+	
+		$this->params[$name] = $value;
+	}
+	
 	function isParam($name) {
 	
 		if (array_key_exists($name, $this->params)) {
@@ -445,9 +450,8 @@ class owa_controller extends owa_base {
 			unset($this->data['params']);
 		}
 		if (array_key_exists('site_id', $this->data)) {
-			unset($this->data['site_id']);
+		//	unset($this->data['site_id']);
 		}
-		return;
 	}
 	
 	function setPagination($pagination, $name = 'pagination') {

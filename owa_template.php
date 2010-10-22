@@ -789,6 +789,15 @@ class owa_template extends Template {
 		
 	}
 	
+	function getValue( $key, $var) {
+		
+		if ( isset( $var ) && is_array( $var ) ) {
+			if ( array_key_exists( $key, $var) ) {
+				return $var[$key];
+			}
+		}
+	}
+	
 	function substituteValue($string, $var_name) {
 		
 		$value = $this->get($var_name);
