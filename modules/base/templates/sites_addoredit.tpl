@@ -70,6 +70,12 @@
 			<div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>
 			<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[query_string_filters]" value="<?php $this->out( $config['query_string_filters'] );?>"></div>
 		</div>
+		
+		<div class="setting" id="default_page">	
+			<div class="title">Default Page</div>
+			<div class="description">This is the page that your web server defaults to when there is no page specified in your URL (e.g. index.html). Use this setting to combine page views for www.domain.com and www.domain.com/index.html.</div>
+			<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[default_page]" value="<?php $this->out( $config['default_page'] );?>"></div>
+		</div>
 	
 		<div class="setting" id="google_maps_api_key">
 			<div class="title">Google Maps API Key</div>

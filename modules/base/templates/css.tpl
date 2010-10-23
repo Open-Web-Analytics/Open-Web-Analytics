@@ -37,10 +37,10 @@ div {margin:0;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
-#owa_header {border-bottom: 3px solid orange;}
-.owa_logo {float:left;padding-right:30px;}
-.owa_navigation {float:; overflow:; vertical-align: baseline;}
-.owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:30px;}
+#owa_header {border-bottom: 3px solid orange; background-color:#FFFFFF; padding:4px; font-weight:bold; line-height:55px;}
+.owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
+.owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
+.owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
 .owa_navigation li {text-decoration: none; float:left; margin: 2px;}
 .owa_navigation li a {
 	background: url() #fff bottom left repeat-x;
@@ -215,7 +215,6 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 /* LAYOUT */
 #admin_nav{font-size:12px;}	
 #keywords{width:400px;}
-#owa_header {background-color:#FFFFFF; padding:4px; font-weight:bold; clear: both;}
 #side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
 #login_box {
 	-moz-border-radius:10px 10px 10px 10px;
