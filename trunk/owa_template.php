@@ -993,6 +993,11 @@ class owa_template extends Template {
 	function formatCurrency($value) {
 		return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
 	}
+	
+	function getCurrentUser() {
+		
+		return owa_coreAPI::getCurrentUser();
+	}
 }
 
 
