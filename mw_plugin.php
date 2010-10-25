@@ -44,6 +44,10 @@ $wgOwaEnableSpecialPage = true;
 // have data quality ramifications.
 $wgOwaThirdPartyCookies = false;
 
+// $wgOwaCookieDomain contain the domain that OWA's javascript tracker 
+// will use to write it's cookies.
+$wgOwaCookieDomain = false;
+
 /**
  * Register Extension and Hooks
  */
@@ -397,6 +401,10 @@ function owa_footer(&$wgOut, $sk) {
 			$cmds  = "var owa_cmds = owa_cmds || [] ;";
 			if ( $wgOwaThirdPartyCookies ) {
 				$cmds .= "owa_cmds.push( ['setOption', 'thirdParty', true] );";
+			}
+			
+			if ( $wgOwaCookieDomain ) {
+				$cmds .= "owa_cmds.push( ['setCookieDomain', '$wgOwaCookieDomain'] );";
 			}
 			
 			$wgOut->addInlineScript( $cmds );

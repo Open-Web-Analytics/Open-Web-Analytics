@@ -73,6 +73,41 @@ OWA.event.prototype = {
 	}
 }
 
+OWA.commandQueue = function() {
+
+	OWA.debug('Command Queue object created');
+}
+
+OWA.commandQueue.prototype = {
+	
+	push : function (cmd) {
+		
+		//alert(func[0]);
+		var args = Array.prototype.slice.call(cmd, 1);
+		//alert(args);
+		
+		var obj_name = '';
+		var method = ''
+		var check = OWA.util.strpos( '.', cmd[0] );
+		
+		if ( ! check ) {
+			obj_name = 'OWATracker';
+			method = cmd[0];
+		else {
+			var parts = cmd[0].split('.');
+			obj_name = parts[0];
+			method = parts[1];
+		}
+		
+		// is OWATracker created?
+		if ( window[obj_name] === 'undefined' ) {
+			window[obj_name] = new OWA.tracker();
+		}
+		
+		window[obj][method].apply(this, args);
+	}
+};
+
 /**
  * Javascript Tracker Object
  * 
