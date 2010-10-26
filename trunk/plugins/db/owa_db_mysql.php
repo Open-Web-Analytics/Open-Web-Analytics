@@ -22,7 +22,6 @@ define('OWA_DTD_INT', 'INT');
 define('OWA_DTD_TINYINT', 'TINYINT(1)');
 define('OWA_DTD_TINYINT2', 'TINYINT(2)');
 define('OWA_DTD_TINYINT4', 'TINYINT(4)');
-define('OWA_DTD_BOOLEAN', 'BOOLEAN');
 define('OWA_DTD_SERIAL', 'SERIAL');
 define('OWA_DTD_PRIMARY_KEY', 'PRIMARY KEY');
 define('OWA_DTD_VARCHAR10', 'VARCHAR(10)');

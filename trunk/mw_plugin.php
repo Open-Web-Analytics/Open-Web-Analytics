@@ -242,7 +242,7 @@ function owa_trackPageView( $params = array() ) {
 		
 		$event->set( 'page_type', '(not set)' );
 		$event->set( 'language', owa_getLanguage());
-		$event->setSiteId( $wgOwaSiteId ) );
+		$event->setSiteId( $wgOwaSiteId  );
 		
 		foreach ( $params as $k => $v ) {
 			$event->set( $k, $v );

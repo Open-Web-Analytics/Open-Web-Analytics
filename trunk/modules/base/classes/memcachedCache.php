@@ -82,7 +82,7 @@ class owa_memcachedCache extends owa_cache {
 		$item = $this->mc->get( $key );
 		
 		if ($item) {
-			$this->debug("$key retrieved from memcache.")
+			$this->debug("$key retrieved from memcache.");
 			return $item;
 		} else {
 			$this->debug("$key was not found in memcache.");
