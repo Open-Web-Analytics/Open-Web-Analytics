@@ -112,7 +112,6 @@ class owa_reportView extends owa_view {
 		
 		// css libs to be loaded
 		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
-		$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		$this->setCss("base/css/owa.report.css");
 		$this->setCss('base/css/ui.jqgrid.css');
 	}

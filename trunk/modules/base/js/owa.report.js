@@ -140,8 +140,8 @@ jQuery(document).ready(function(){
 		//buttonImageOnly: true
 	});	
 	// make tables sortable
-	jQuery.tablesorter.defaults.widgets = ['zebra'];
-	jQuery('.tablesorter').tablesorter();
+	//jQuery.tablesorter.defaults.widgets = ['zebra'];
+	//jQuery('.tablesorter').tablesorter();
 	// report side navigaion panels - toggle
 	jQuery('.owa_admin_nav_topmenu_toggle').click(function () { 
       jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
