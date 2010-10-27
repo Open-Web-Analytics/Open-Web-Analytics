@@ -79,7 +79,7 @@ OWA.commandQueue = function() {
 }
 
 OWA.commandQueue.prototype = {
-	
+	asyncCmds: '',
 	push : function (cmd) {
 		
 		//alert(func[0]);
@@ -87,24 +87,40 @@ OWA.commandQueue.prototype = {
 		//alert(args);
 		
 		var obj_name = '';
-		var method = ''
-		var check = OWA.util.strpos( '.', cmd[0] );
+		var method = '';
+		var check = OWA.util.strpos( cmd[0], '.' );
 		
 		if ( ! check ) {
 			obj_name = 'OWATracker';
 			method = cmd[0];
-		else {
-			var parts = cmd[0].split('.');
+		} else {
+			var parts = cmd[0].split( '.' );
 			obj_name = parts[0];
 			method = parts[1];
 		}
 		
+		OWA.debug('cmd queue object name %s', obj_name);
+		OWA.debug('cmd queue object method name %s', method);
+		
 		// is OWATracker created?
-		if ( window[obj_name] === 'undefined' ) {
-			window[obj_name] = new OWA.tracker();
+		if ( typeof window[obj_name] == "undefined" ) {
+			OWA.debug('making global object named: %s', obj_name);
+			window[obj_name] = new OWA.tracker( { globalObjectName: obj_name } );
 		}
 		
-		window[obj][method].apply(this, args);
+		window[obj_name][method].apply(window[obj_name], args);
+	},
+	
+	loadCmds: function(cmds) {
+		
+		this.asyncCmds = cmds;
+	},
+	
+	process: function() {
+		
+		for (var i=0; i < this.asyncCmds.length;i++) {
+			this.push(this.asyncCmds[i]);
+		}
 	}
 };
 
@@ -119,29 +135,61 @@ OWA.commandQueue.prototype = {
  * @version		$Revision$	      
  * @since		owa 1.2.1
  */
-OWA.tracker = function(caller_params, options) {
+OWA.tracker = function( options ) {
 	
 	// set start time
 	this.startTime = this.getTimestamp();
+	
+	// Configuration options
+	this.options = {
+		logClicks: true, 
+		logPage: true, 
+		logMovement: false, 
+		encodeProperties: false, 
+		movementInterval: 100,
+		logDomStreamPercentage: 100,
+		domstreamLoggingInterval: 3000,
+		domstreamEventThreshold: 10,
+		maxPriorCampaigns: 5,
+		campaignAttributionWindow: 60,
+		trafficAttributionMode: 'direct',
+		sessionLength: 1800,
+		thirdParty: false,
+		cookie_domain: false,
+		campaignKeys: [
+				{ public: 'owa_medium', private: 'md', full: 'medium' },
+				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
+				{ public: 'owa_source', private: 'sr', full: 'source' },
+				{ public: 'owa_search_terms', private: 'tr', full: 'search_terms' }, 
+				{ public: 'owa_ad', private: 'ad', full: 'ad' },
+				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ]
+		
+	};
+	
+	// Endpoint URL of log service
+	this.endpoint = '';
+	// Active status of tracker
+	this.active = true;
+	
+	if ( options ) {
+		
+		for (opt in options) {
+			
+			this.options[opt] = options[opt];
+		}
+	}
+	
 	// private vars
 	this.ecommerce_transaction = '',
 	this.isClickTrackingEnabled = false;
 	// set logger endpoint
-	this.setEndpoint(OWA.config.baseUrl + 'log.php');
+	this.setEndpoint(OWA.config.baseUrl);
 	// set default cookie domain
 	this.setCookieDomain(document.domain);
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
 	//check for linked state send from another domain
 	this.checkForLinkedState();
-	// execute commands global owa_cmds command queue
-	if (typeof owa_cmds != 'undefined') {
-		if ( owa_cmds.length > 0 ) {
-			for(var i=0;i< owa_cmds.length;i++) {
-				this.dynamicFunc(owa_cmds[i]);
-			}
-		}
-	}
 	
 	// set default page properties
 	this.page = new OWA.event();
@@ -149,11 +197,6 @@ OWA.tracker = function(caller_params, options) {
 	this.setPageTitle(document.title);
 	this.page.set("referer", document.referrer);
 	this.page.set('timestamp', this.startTime);
-	
-	// merge page properties passed to constructor
-	if (typeof caller_params != 'undefined') {
-		this.page.merge(caller_params);
-	}
 	
 	// merge page properties from global owa_params object
 	if (typeof owa_params != 'undefined') {
@@ -181,10 +224,6 @@ OWA.tracker.prototype = {
 	startTime: null,
 	// time when tracker is unloaded
 	endTime: null,
-	// Active status of tracker
-	active: true,
-	// Endpoint URL of log service
-	endpoint : '',
 	// campaign state holder
 	campaignState : [],
 	// flag for new campaign status
@@ -193,30 +232,6 @@ OWA.tracker.prototype = {
 	isNewSessionFlag: false,
 	// flag for whether or not traffic has been attributed
 	isTrafficAttributed: false,
-	// Configuration options
-	options : {
-		logClicks: true, 
-		logPage: true, 
-		logMovement: false, 
-		encodeProperties: false, 
-		movementInterval: 100,
-		logDomStreamPercentage: 100,
-		domstreamLoggingInterval: 3000,
-		domstreamEventThreshold: 10,
-		maxPriorCampaigns: 5,
-		campaignAttributionWindow: 60,
-		trafficAttributionMode: 'direct',
-		sessionLength: 1800,
-		thirdParty: false,
-		cookie_domain: false,
-		campaignKeys: [
-				{ public: 'owa_medium', private: 'md', full: 'medium' },
-				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
-				{ public: 'owa_source', private: 'sr', full: 'source' },
-				{ public: 'owa_search_terms', private: 'tr', full: 'search_terms' }, 
-				{ public: 'owa_ad', private: 'ad', full: 'ad' },
-				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ]
-	},
 	/**
 	 * GET params parsed from URL
 	 */ 
@@ -283,21 +298,6 @@ OWA.tracker.prototype = {
 			}
 		}
 	},
-	/*
-
-	shareStateAcrossDomains : function(domains) {
-		OWA.debug('sharing state across domains');
-		// register onclick handler.
-		var that = this;
-		// Registers the handler for the before navigate event so that the dom stream can be logged
-		if (window.addEventListener) {
-			window.addEventListener('click', function (e) {that.bindSharedState(e); return false;}, false);
-		} else if(window.attachEvent) {
-			window.attachEvent('click', function (e) {that.bindSharedState(e); return false;});
-		}
-	},
-	
-	*/
 	
 	/**
 	 * Shares User State cross domains using GET string
@@ -830,7 +830,7 @@ OWA.tracker.prototype = {
     	properties.site_id = this.getSiteId();
     	var get = this.prepareRequestParams(properties);
     	
-    	var log_url = this.getEndpoint();
+    	var log_url = this.getEndpoint() + 'log.php';
     	
     	if (log_url.indexOf('?') === -1) {
     		log_url += '?';
@@ -1601,4 +1601,20 @@ OWA.tracker.prototype = {
 		this.globalEventProperties[name] = value;
 	}
 	
-}
+};
+OWA.setSetting('debug', true);
+(function() {
+
+	// execute commands global owa_cmds command queue
+	if ( typeof owa_cmds == "undefined" ) {
+		var q = new OWA.commandQueue();	
+	} else {
+		if ( OWA.util.is_array(owa_cmds) ) {
+			var q = new OWA.commandQueue();
+			q.loadCmds( owa_cmds );
+		}
+	}
+	
+	window['owa_cmds'] = q;
+	window['owa_cmds'].process();
+})();
