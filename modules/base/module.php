@@ -97,9 +97,8 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
 		
 		// goals
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-		
-		foreach ($goals as $num => $goal) {
+		$gcount = owa_coreAPI::getSetting('base', 'numGoals');
+		for ($num = 1; $num <= $gcount;$num++) {
 			$params = array('goal_number' => $num);
 			
 			$metric_name = 'goal'.$num.'Completions';
