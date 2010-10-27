@@ -201,8 +201,8 @@ class owa_session extends owa_entity {
 		$this->properties['latest_attributions']->setDataType(OWA_DTD_TEXT);
 		
 		// create goal related columns
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-		foreach ($goals as $num => $g) {
+		$gcount = owa_coreAPI::getSetting('base', 'numGoals');
+		for ($num = 1; $num <= $gcount;$num++) {
 			$col_name = 'goal_'.$num;
 			$goal_col = new owa_dbColumn($col_name, OWA_DTD_TINYINT);
 			$this->setProperty($goal_col);
