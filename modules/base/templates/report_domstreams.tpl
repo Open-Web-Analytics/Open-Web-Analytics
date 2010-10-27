@@ -2,7 +2,7 @@
 
 
 <?php if (!empty($domstreams)):?>
-<table class="tablesorter">
+<table class="simpleTable">
 	<thead>
 		<tr>
 			<th><?php echo $domstreams->getLabel('timestamp');?></th>
