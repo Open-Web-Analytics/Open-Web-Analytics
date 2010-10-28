@@ -188,43 +188,24 @@ function owa_trackbackActionTracker($comment_id) {
  *
  * @return $owa object
  */
-
-function &owa_getInstance($params = array()) {
+function &owa_getInstance() {
 	
 	static $owa;
 	
-	if(!empty($owa)):
+	if( empty( $owa ) ) {
 		
-		return $owa;
-	else:
-	
 		require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
 		
-		// Build the OWA wordpress specific config overrides array
-		$owa_config = array();
-		
-		// report and link templates	
-		$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-		$owa_config['link_template'] = '%s&%s';
-		// embedded urls
-		$owa_config['main_url'] = '../wp-admin/index.php?page=owa';
-		$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa';
-		$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
-		$owa_config['api_url'] = get_bloginfo('url').'/index.php?owa_apiAction';
-		// needed?
-		//$owa_config['log_url'] = get_bloginfo('url').'/wp-content/plugins/owa/log.php';
-		$owa_config['site_id'] = md5(get_settings('siteurl'));
-		// needed for some reason
-		$owa_config['is_embedded'] = true;
-		// this should be overridable by a user config value.
-		$owa_config['delay_first_hit'] = true;
-		
-		// merge in passed params
-		$config = array_merge($owa_config, $params);
-		
 		// create owa instance w/ config
-		$owa = new owa_wp($config);
-		$owa->setSiteId(md5(get_settings('siteurl')));
+		$owa = new owa_wp();
+		$owa->setSiteId( md5( get_settings( 'siteurl' ) ) );
+		$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
+		$owa->setSetting( 'base', 'link_template', '%s&%s' );
+		$owa->setSetting( 'base', 'main_url', '../wp-admin/index.php?page=owa' );
+		$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/index.php?page=owa' );
+		$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/index.php?owa_specialAction' );
+		$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/index.php?owa_apiAction' );
+		$owa->setSetting( 'base', 'is_embedded', true );
 		
 		// Access WP current user object to check permissions
 		$current_user = owa_getCurrentWpUser();
@@ -249,11 +230,9 @@ function &owa_getInstance($params = array()) {
 		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
 		$cu->setAuthStatus(true);
-		//owa_coreAPI::debug("Wordpress  User Object: ".print_r($current_user, true));		
-		return $owa;
-		
-	endif;
+	}
 	
+	return $owa;
 }
 
 function owa_getCurrentWpUser() {
@@ -330,8 +309,28 @@ function owa_logCommentEdit($new_status, $old_status, $comment) {
  */
 function owa_footer() {
 	
+	// Don't log if the page request is a preview - Wordpress 2.x or greater
+	if (function_exists('is_preview')) {
+		if (is_preview()) {
+			return;
+		}
+	}
+	
 	$owa = owa_getInstance();
-	$owa->placeHelperPageTags();	
+	
+	$page_properties = $owa->getAllEventProperties($owa->pageview_event);
+	$cmds = '';
+	if ( $page_properties ) {
+		$page_properties_json = json_encode( $page_properties );
+		$cmds .= "owa_cmds.push( ['setPageProperties', $page_properties_json] );";
+	}
+	
+	//$wgOut->addInlineScript( $cmds );
+	
+	$options = array( 'cmds' => $cmds );
+	
+	
+	$owa->placeHelperPageTags(true, $options);	
 }	
 
 /**
@@ -343,49 +342,22 @@ function owa_main() {
 	//global $user_level;
 	
 	$owa = owa_getInstance();
-	
 	owa_coreAPI::debug('wp main request method');
-	$event = $owa->makeEvent();
-	
-	// Don't log if the page request is a preview - Wordpress 2.x or greater
-	if (function_exists('is_preview')) {
-		if (is_preview()) {
-			$event->set('do_not_log',true);
-		}
-	}
-
-	$event->setEventType('base.page_request');
-	// Set the type of page
-	$event->set('page_type', owa_get_page_type());
 	
 	//Check to see if this is a Feed Reeder
-	if(is_feed()) {
+	if( $owa->getSetting('base', 'log_feedreaders') && is_feed() ) {
+		$event = $this->makeEvent();
 		$event->setEventType('base.feed_request');
 		$event->set('feed_format', $_GET['feed']);
-		
+		// Process the request by calling owa
+		return $owa->trackEvent($event);
 	}
 	
-	//eliminate use of _GET by using OWA's request param method.
-	if (array_key_exists($owa->getSetting('base', 'ns').$owa->getSetting('base', 'source_param'), $_GET)) {
-		$event->set($owa->getSetting('base', 'source_param'), $_GET[$owa->getSetting('base', 'ns').$owa->getSetting('base', 'source_param')]);
-	}
-	
-	$cu = &owa_coreAPI::getCurrentUser();
-	
-	// Track users by the email address of that they used when posting a comment
-	//$app_params['user_email'] = $cu->getUserData('email_address'); 
-	
-	// Track users who have a named account
-	//$app_params['user_name'] = $cu->getUserData('user_id');
-	
+	// Set the type and title of the page
+	$page_type = owa_get_page_type();
+	$owa->setPageType( $page_type );
 	// Get Title of Page
-	$event->set('page_title', owa_get_title($event->get('page_type')));
-	
-	// Create Site ID
-	$event->set('site_id', $owa->createSiteId(get_settings('siteurl')));
-	
-	// Process the request by calling owa
-	$owa->trackEvent($event);
+	$owa->setPageTitle( owa_get_title( $page_type ) );
 }
 
 /**
