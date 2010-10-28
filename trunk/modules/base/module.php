@@ -653,6 +653,14 @@ class owa_baseModule extends owa_module {
 			$filters = array();
 		}
 		
+		// merge global filters
+		$global_filters = owa_coreAPI::getSetting('base', 'query_string_filters');
+		if ($global_filters) {
+			$global_filters = str_replace(' ', '', $global_filters);
+			$global_filters = explode(',', $global_filters);
+			$filters = array_merge($global_filters, $filters);
+		}
+			
 		// OWA specific params to filter
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'source');
 		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'medium');

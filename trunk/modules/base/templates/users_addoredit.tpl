@@ -27,7 +27,7 @@
 			<TD>
 			<select name="<?php echo $this->getNs();?>role">
 				<?php foreach ($roles as $role):?>
-				<option <? if($user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?>
+				<option <?php if($user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
 				<?php endforeach;?>
 			</select>
 			</TD>
