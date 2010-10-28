@@ -65,6 +65,11 @@ class owa_helperPageTagsController extends owa_controller {
 			$this->set('site_id', owa_coreAPI::getSetting('base', 'site_id'));
 		}
 		
+		$cmds = $this->getParam('cmds');
+		if ( $cmds ) {
+			$this->set( 'cmds', $cmds );
+		}
+		
 		$this->set('options', $this->getParam('options'));
 		$this->setView('base.helperPageTags');
 	
@@ -137,6 +142,11 @@ class owa_helperPageTagsView extends owa_view {
 			
 			// needed to override the endpoint used by the js tracker
 			$this->body->set('apiEndpoint', owa_coreAPI::getSetting('base', 'action_url'));
+		}
+		
+		$cmds = $this->get('cmds');
+		if ( $cmds ) {
+			$this->body->set( 'cmds', $cmds );
 		}
 		
 		// load body template

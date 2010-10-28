@@ -164,7 +164,6 @@ function owa_singleton() {
 		$owa->setSetting( 'base', 'main_absolute_url', $wgServer.$owa->getSetting( 'base', 'main_url' ) );
 		$owa->setSetting( 'base', 'action_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_specialAction' );
 		$owa->setSetting( 'base', 'api_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_apiAction' );
-		$owa->setSetting( 'base', 'log_url', $wgServer.$wgScriptPath.'/index.php?action=owa&owa_logAction=1' );
 		$owa->setSetting( 'base', 'link_template', '%s&%s' );
 		$owa->setSetting( 'base', 'is_embedded', true );
 		$owa->setSetting( 'base', 'query_string_filters', 'returnto' );
@@ -235,32 +234,35 @@ function owa_trackPageView( $params = array() ) {
 	
 	if ( $owa->getSetting( 'base', 'install_complete' ) ) {
 	
-		$event = $owa->makeEvent();
-		$event->setEventType( 'base.page_request' );
-		$event->set( 'user_name', $wgUser->mName );
-		$event->set( 'user_email', $wgUser->mEmail );
-		
-		$event->set( 'page_type', '(not set)' );
-		$event->set( 'language', owa_getLanguage());
-		$event->setSiteId( $wgOwaSiteId  );
-		
-		foreach ( $params as $k => $v ) {
-			$event->set( $k, $v );
+		//$event = $owa->makeEvent();
+		//$event->setEventType( 'base.page_request' );
+		$owa->setSiteId( $wgOwaSiteId );
+		$owa->setProperty( 'user_name', $wgUser->mName );
+		$owa->setProperty( 'user_email', $wgUser->mEmail );
+		$owa->setProperty( 'language', owa_getLanguage() );
+		if ( ! $owa->pageview_event->get( 'page_type') ) {
+			$owa->setPageType( '(not set)' );
 		}
 		
-		// if he page title is not set for some reasons, set it
+		//foreach ( $params as $k => $v ) {
+		//	$event->set( $k, $v );
+		//}
+		
+		// if the page title is not set for some reasons, set it
 		// using $wgOut.
-		if ( ! $event->get( 'page_title') ) {
-			$event->set( 'page_title', $wgOut->getPageTitle() );
+		if ( ! $owa->pageview_event->get( 'page_title') ) {
+			$owa->setPageTitle( 'page_title', $wgOut->getPageTitle() );
 		}
 		
+		/*
 		$tag = sprintf(
-				'<!-- OWA Page View Tracking Params -->
-				var owa_params = %s;', 
-				 json_encode( $event->getProperties() )
-		);
-		
-		$wgOut->addInlineScript( $tag );
+						'<!-- OWA Page View Tracking Params -->
+						var owa_params = %s;', 
+						 json_encode( $event->getProperties() )
+				);
+				
+				$wgOut->addInlineScript( $tag );
+		*/
 	}
 		
 	return true;
@@ -276,7 +278,10 @@ function owa_logSpecialPage(&$specialPage) {
 	
 	$title_obj = $specialPage->getTitle();
 	$title = $title_obj->getText();
-	return owa_trackPageView( array('page_title' => $title, 'page_type' => 'Special Page') );
+	$owa = owa_singleton();
+	$owa->setPageTitle( $title );
+	$owa->setPageType( 'Special Page' );
+	return true;
 }
 
 /**
@@ -289,7 +294,10 @@ function owa_logCategoryPage( &$categoryPage ) {
 	
 	$title_obj = $categoryPage->getTitle();
 	$title = $title_obj->getText();
-	return owa_trackPageView( array('page_title' => $title, 'page_type' => 'Category') );
+	$owa = owa_singleton();
+	$owa->setPageTitle( $title );
+	$owa->setPageType( 'Category' );
+	return true;
 }
 
 /**
@@ -302,7 +310,10 @@ function owa_logArticle( &$article ) {
 	
 	$title_obj = $article->getTitle();
 	$title = $title_obj->getText();
-	return owa_trackPageView( array('page_title' => $title ,'page_type' => 'Article') );
+	$owa = owa_singleton();
+	$owa->setPageTitle( $title );
+	$owa->setPageType( 'Article' );
+	return true;
 }
 
 /**
@@ -398,7 +409,7 @@ function owa_footer(&$wgOut, $sk) {
 		$owa = owa_singleton();
 		if ($owa->getSetting('base', 'install_complete')) {
 			
-			$cmds  = "var owa_cmds = owa_cmds || [] ;";
+			$cmds  = "";
 			if ( $wgOwaThirdPartyCookies ) {
 				$cmds .= "owa_cmds.push( ['setOption', 'thirdParty', true] );";
 			}
@@ -407,9 +418,15 @@ function owa_footer(&$wgOut, $sk) {
 				$cmds .= "owa_cmds.push( ['setCookieDomain', '$wgOwaCookieDomain'] );";
 			}
 			
-			$wgOut->addInlineScript( $cmds );
+			$page_properties = $owa->getAllEventProperties($owa->pageview_event);
+			if ( $page_properties ) {
+				$page_properties_json = json_encode( $page_properties );
+				$cmds .= "owa_cmds.push( ['setPageProperties', $page_properties_json] );";
+			}
 			
-			$params = array('trackPageview' => true);
+			//$wgOut->addInlineScript( $cmds );
+			
+			$params = array('trackPageview' => true, 'cmds' => $cmds);
 			
 			$tags = $owa->placeHelperPageTags(false, $params);		
 			$wgOut->addHTML($tags);

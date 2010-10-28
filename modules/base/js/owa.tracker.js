@@ -514,7 +514,7 @@ OWA.tracker.prototype = {
 	setApiEndpoint : function(url) {
 		
 		this.setOption('api_endpoint', url);
-		OWA.setAPIEndpoint(url);
+		OWA.setApiEndpoint(url);
 	},
 	
 	getApiEndpoint : function() {
@@ -1627,10 +1627,20 @@ OWA.tracker.prototype = {
 	setGlobalEventProperty : function (name, value) {
 		
 		this.globalEventProperties[name] = value;
+	},
+	
+	setPageProperties : function(properties) {
+		
+		for (prop in properties) {
+			
+			if ( properties.hasOwnProperty( prop ) ) {
+				this.page.set( prop, properties[prop] );
+			}
+		}
 	}
 	
 };
-OWA.setSetting('debug', true);
+
 (function() {
 
 	// execute commands global owa_cmds command queue

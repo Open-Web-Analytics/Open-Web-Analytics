@@ -167,7 +167,6 @@ class owa_caller extends owa_base {
 				return $this->handleRequest($params);
 			} else {
 				echo $this->handleRequest($params);
-				return;
 			}
 		}
 	}
@@ -237,7 +236,7 @@ class owa_caller extends owa_base {
 		
 		return owa_coreAPI::getSetting($module, $name);
 	}
-	
+		
 	function setCurrentUser($role, $login_name = '') {
 		$cu =&owa_coreAPI::getCurrentUser();
 		$cu->setRole($role);

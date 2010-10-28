@@ -275,20 +275,35 @@ class owa_client extends owa_caller {
 			$this->setSiteId(owa_coreAPI::getRequestParam('site_id'));
 		}
 		
+		// set various state properties.
+		$this->manageState( $event );
+		
+		
+		$event = $this->setAllGlobalEventProperties( $event );
+		
+		// send event to log API for processing.
+		return owa_coreAPI::logEvent($event->getEventType(), $event);
+	}
+	
+	public function setAllGlobalEventProperties( $event ) {
+		
 		if ( ! $event->get('site_id') ) {
 			$event->set( 'site_id', $this->getSiteId() );
 		}
-		
-		// set various state properties.
-		$this->manageState( $event );
 		
 		// merge global event properties
 		foreach ($this->global_event_properties as $k => $v) {
 			$event->set($k, $v);
 		}
 		
-		// send event to log API for processing.
-		return owa_coreAPI::logEvent($event->getEventType(), $event);
+		return $event;
+		
+	}
+	
+	public function getAllEventProperties( $event ) {
+		
+		$event = $this->setAllGlobalEventProperties( $event );
+		return $event->getProperties();
 	}
 		
 	public function trackPageview($event = '') {
