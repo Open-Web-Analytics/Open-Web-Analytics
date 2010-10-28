@@ -127,19 +127,16 @@ class owa_helperPageTagsView extends owa_view {
 			$this->body->set('do_not_log_domstream', false);
 		}
 		
-		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
+		// needed to override the endpoint used by the js tracker
+			$this->body->set('endpoint', owa_coreAPI::getSetting('base', 'public_url'));
 		
+		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
+			
 			// needed to override the endpoint used by the js tracker
-			$this->body->set('endpoint', owa_coreAPI::getSetting('base', 'log_url'));
+			$this->body->set('logger_endpoint', owa_coreAPI::getSetting('base', 'log_url'));
 			
 			// needed to override the endpoint used by the js tracker
 			$this->body->set('apiEndpoint', owa_coreAPI::getSetting('base', 'action_url'));
-		} else {
-			// needed to override the endpoint used by the js tracker
-			$this->body->set('endpoint', '');
-			
-			// needed to override the endpoint used by the js tracker
-			$this->body->set('apiEndpoint', '');
 		}
 		
 		// load body template
@@ -148,7 +145,6 @@ class owa_helperPageTagsView extends owa_view {
 		// load body template
 		$this->body->set_template('js_helper_tags.tpl');
 		
-		return;
 	}
 	
 	

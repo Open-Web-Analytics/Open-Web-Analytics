@@ -1,23 +1,20 @@
 <?php if (owa_coreAPI::getSetting('base', 'error_handler') === 'development'): ?>
-//OWA.setSetting('debug', true);
+owa_cmds.push(['setOption','debug', true];
 <?php endif;?>
-// Set base URL
-OWA.setSetting('baseUrl', '<?php echo owa_coreAPI::getSetting('base', 'public_url');?>');
-<?php if ($apiEndpoint): ?>
-OWA.setApiEndpoint('<?php echo $apiEndpoint;?>');
+owa_cmds.push(['setEndpoint', owa_baseUrl]);
+<?php if ($this->get('logger_endpoint')): ?>
+owa_cmds.push(['setLoggerEndpoint', '<?php echo $logger_endpoint;?>']);
 <?php endif;?>
-// Create a tracker
-OWATracker = new OWA.tracker(<?php if (isset($owa_params) && $owa_params == true): echo 'owa_params'; endif;?>);
-<?php if ($endpoint): ?>
-OWATracker.setEndpoint('<?php echo $endpoint;?>');
+<?php if ($this->get('apiEndpoint')): ?>
+owa_cmds.push(['setApiEndpoint', '<?php echo $apiEndpoint;?>']);
 <?php endif;?>
-OWATracker.setSiteId(<?php if (strpos($site_id, 'owa_') === false){ echo sprintf("'%s'", $site_id); } else { echo $site_id; } ?>);
+owa_cmds.push(['setSiteId', <?php if (strpos($site_id, 'owa_') === false){ echo sprintf("'%s'", $site_id); } else { echo $site_id; } ?>]);
 <?php if (!$do_not_log_pageview): ?>
-OWATracker.trackPageView();
+owa_cmds.push(['trackPageView']);
 <?php endif;?>
 <?php if (!$do_not_log_clicks): ?>
-OWATracker.trackClicks();
+owa_cmds.push(['trackClicks']);
 <?php endif;?>
 <?php if (!$do_not_log_domstream): ?>
-OWATracker.trackDomStream();
+owa_cmds.push(['trackDomStream']);
 <?php endif;?>
