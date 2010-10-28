@@ -46,8 +46,23 @@ class owa_client extends owa_caller {
 	var $isTrafficAttributed;
 
 	public function __construct($config = null) {
+	
+		$this->pageview_event = $this->makeEvent();
+		$this->pageview_event->setEventType('base.page_request');
 		
 		return parent::__construct($config);
+	}
+	
+	public function setPageTitle($value) {
+		$this->pageview_event->set('page_title', $value);
+	}
+	
+	public function setPageType($value) {
+		$this->pageview_event->set('page_type', $value);
+	}
+	
+	public function setProperty($name, $value) {
+		$this->setGlobalEventProperty($name, $value);
 	}
 	
 	private function setGlobalEventProperty($name, $value) {
@@ -276,11 +291,13 @@ class owa_client extends owa_caller {
 		return owa_coreAPI::logEvent($event->getEventType(), $event);
 	}
 		
-	public function trackPageview($event) {
-	
-		$event->setEventType('base.page_request');
-		$this->pageview_event = $event;
-		return $this->trackEvent($event);
+	public function trackPageview($event = '') {
+		
+		if ($event) {
+			$event->setEventType('base.page_request');
+			$this->pageview_event = $event;
+		}
+		return $this->trackEvent($this.pageview_event);
 	}
 	
 	public function trackAction($action_group = '', $action_name, $action_label = '', $numeric_value = 0) {

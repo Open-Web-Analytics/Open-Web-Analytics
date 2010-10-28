@@ -162,12 +162,14 @@ OWA.tracker = function( options ) {
 				{ public: 'owa_source', private: 'sr', full: 'source' },
 				{ public: 'owa_search_terms', private: 'tr', full: 'search_terms' }, 
 				{ public: 'owa_ad', private: 'ad', full: 'ad' },
-				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ]
+				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ],
+		logger_endpoint: '',
+		api_endpoint: ''
 		
 	};
 	
 	// Endpoint URL of log service
-	this.endpoint = '';
+	this.endpoint = OWA.config.baseUrl;
 	// Active status of tracker
 	this.active = true;
 	
@@ -182,8 +184,6 @@ OWA.tracker = function( options ) {
 	// private vars
 	this.ecommerce_transaction = '',
 	this.isClickTrackingEnabled = false;
-	// set logger endpoint
-	this.setEndpoint(OWA.config.baseUrl);
 	// set default cookie domain
 	this.setCookieDomain(document.domain);
 	// check to se if an overlay session is active
@@ -494,11 +494,37 @@ OWA.tracker.prototype = {
 	},
 	
 	setEndpoint : function (endpoint) {
-		this.endpoint = endpoint;
+		
+		this.setOption('baseUrl', endpoint);
+		OWA.config.baseUrl = endpoint;
+		//this.setLoggerEndpoint( endpoint + 'log.php' );
+		//this.setApiEndpoint( endpoint + 'api.php' );
 	},
 	
+	setLoggerEndpoint : function(url) {
+		
+		this.setOption('logger_endpoint', url);
+	},
+	
+	getLoggerEndpoint : function() {
+	
+		return this.getOption('logger_endpoint') || this.getEndpoint() + 'log.php';
+	},
+	
+	setApiEndpoint : function(url) {
+		
+		this.setOption('api_endpoint', url);
+		OWA.setAPIEndpoint(url);
+	},
+	
+	getApiEndpoint : function() {
+	
+		return this.getOption('api_endpoint') || this.getEndpoint() + 'api.php';
+	},
+
+	
 	getEndpoint : function() {
-		return this.endpoint;
+		return this.getOption('baseUrl');
 	},
 	
 	/**
@@ -690,7 +716,7 @@ OWA.tracker.prototype = {
     	var ajax = this.getAjaxObj();
 	    var params = this.prepareRequestParams(properties);
 	    
-		ajax.open("POST", this.getEndpoint(), false); 
+		ajax.open("POST", this.getLoggerEndpoint(), false); 
 		//Send the proper header information along with the request
 		ajax.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 		ajax.setRequestHeader("Content-length", params.length);
@@ -830,7 +856,7 @@ OWA.tracker.prototype = {
     	properties.site_id = this.getSiteId();
     	var get = this.prepareRequestParams(properties);
     	
-    	var log_url = this.getEndpoint() + 'log.php';
+    	var log_url = this.getLoggerEndpoint();
     	
     	if (log_url.indexOf('?') === -1) {
     		log_url += '?';
@@ -1150,7 +1176,9 @@ OWA.tracker.prototype = {
 	
 	getOption : function(name) {
 		
-		return this.options[name];
+		if ( this.options.hasOwnProperty(name) ) {
+			return this.options[name];
+		}
 	},
 	
 	setOption : function(name, value) {

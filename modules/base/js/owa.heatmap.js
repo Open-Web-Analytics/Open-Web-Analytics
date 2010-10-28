@@ -43,16 +43,18 @@ OWA.heatmap = function(w, h) {
 OWA.heatmap.prototype = {
 	
 	options: {
-		'dotSize': 12, 
-		'numRegions': 40, 
-		'alphaIncrement':50, 
-		'demoMode': false, 
-		'liveMode': false, 
-		'mapInterval': 1000,
-		'randomDataCount': 200,
-		'rowsPerFetch': 100,
-		'strokeRegions': false,
-		'svgUrl': OWA.getSetting('baseUrl')+'/modules/base/i/test.svg#f1'
+		dotSize: 12, 
+		numRegions: 40, 
+		alphaIncrement:50, 
+		demoMode: false, 
+		liveMode: false, 
+		mapInterval: 1000,
+		randomDataCount: 200,
+		rowsPerFetch: 100,
+		strokeRegions: false,
+		svgUrl: OWA.getSetting('baseUrl')+'/modules/base/i/test.svg#f1',
+		baseUrl: '',
+		apiUrl: ''
 	},
 	canvas: null,
 	context: null,

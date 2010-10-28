@@ -59,12 +59,10 @@ class owa_optionsView extends owa_view {
 		
 		// Assign config data
 		$this->body->set('config', $this->config);
-		$this->setJs("jquery", "base/js/includes/jquery/jquery-1.2.6.min.js", '1.2.6');
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
 		$this->setJs("sprinf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
-		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-personalized-1.5.2.min.js", '1.5.2', array('jquery'));
-		$this->setJs("tablesorter", "base/js/includes/jquery/tablesorter/jquery.tablesorter.js", '', array("jquery"));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
 		$this->setJs("owa", "base/js/owa.js");
-		//$this->setCss('base/js/includes/jquery/tablesorter/themes/blue/style.css');
 		$this->setCss('base/css/owa.admin.css');
 	}
 }
