@@ -426,9 +426,9 @@ function owa_footer(&$wgOut, $sk) {
 			
 			//$wgOut->addInlineScript( $cmds );
 			
-			$params = array('trackPageview' => true, 'cmds' => $cmds);
+			$options = array( 'cmds' => $cmds );
 			
-			$tags = $owa->placeHelperPageTags(false, $params);		
+			$tags = $owa->placeHelperPageTags(false, $options);		
 			$wgOut->addHTML($tags);
 			
 		}

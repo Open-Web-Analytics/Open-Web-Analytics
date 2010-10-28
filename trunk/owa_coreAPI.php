@@ -1251,6 +1251,48 @@ class owa_coreAPI {
 		return $ret;
 	}
 	
+	public function getJsTrackerTag( $site_id, $options = array() ) {
+		
+		if ( ! class_exists( 'owa_template' ) ) {
+			require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
+		}
+		
+		$t = new owa_template();
+		
+		// check to see if first hit tag is needed
+		if (owa_coreAPI::getSetting('base', 'delay_first_hit')) {
+		
+			$service = &owa_coreAPI::serviceSingleton();
+			//check for persistant cookie
+			$v = $service->request->getOwaCookie('v');
+			
+			if (empty($v)) {
+				
+				$options['first_hit_tag'] = true;
+			}		
+		}
+		
+		//check to see if we shuld log clicks.
+		if ( ! owa_coreAPI::getSetting( 'base', 'log_dom_clicks' ) ) {
+			$options['do_not_log_clicks'] = true;
+		}
+
+		if ( ! owa_coreAPI::getSetting( 'base', 'log_dom_streams' ) ) {
+			$options['do_not_log_domstream'] = true;
+		}
+		
+		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
+			
+			// needed to override the endpoint used by the js tracker
+			$options['apiEndpoint'] = owa_coreAPI::getSetting('base', 'action_url');
+		}
+				
+		$t->set( 'site_id', $this->getSiteId() );
+		$t->set( 'options', $options);
+		
+		$t->set_template('js_helper_tags.tpl');
+		return $t->fetch();
+	}
 }
 
 ?>
