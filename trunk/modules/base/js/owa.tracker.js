@@ -360,14 +360,7 @@ OWA.tracker.prototype = {
 
 	getCookieDomain : function() {
 	
-		var domain = this.getOption('cookie_domain') || OWA.getSetting('cookie_domain');
-		
-		if ( ! domain ) {
-			this.setCookieDomain(document.domain);
-			domain = this.getCookieDomain();
-		}
-		
-		return domain;
+		return this.getOption('cookie_domain') || OWA.getSetting('cookie_domain') || document.domain;
 
 	},
 	
@@ -1649,7 +1642,7 @@ OWA.tracker.prototype = {
 };
 
 (function() {
-	if ( ! typeof owa_baseUrl == "undefined" ) {
+	if ( typeof owa_baseUrl != "undefined" ) {
 		OWA.config.baseUrl = owa_baseUrl;
 	}
 	// execute commands global owa_cmds command queue
