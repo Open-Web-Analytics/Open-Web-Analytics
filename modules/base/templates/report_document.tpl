@@ -1,4 +1,4 @@
-<?php require('report_dimensionDetail.php');?>
+<?php require('report_trend_section.php');?>
 	
 <div class="owa_reportSectionContent">
 	<table>
@@ -19,3 +19,5 @@
 		</TR>
 	</table>	
 </div>
+
+<?php require_once('js_report_templates.php');?>

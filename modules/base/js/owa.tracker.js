@@ -508,7 +508,7 @@ OWA.tracker.prototype = {
 	
 	getLoggerEndpoint : function() {
 	
-		return this.getOption('logger_endpoint') || this.getEndpoint() + 'log.php';
+		return this.getOption('logger_endpoint') || this.getEndpoint() || OWA.getSetting('baseUrl') + 'log.php';
 	},
 	
 	setApiEndpoint : function(url) {

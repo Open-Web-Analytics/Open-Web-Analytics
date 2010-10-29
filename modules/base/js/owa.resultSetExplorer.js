@@ -644,6 +644,9 @@ OWA.resultSetExplorer.prototype = {
 				value = Date.parse(date);
 
 				break;
+				
+			case 'currency':
+				value = value/100;
 		}
 		
 		return value;

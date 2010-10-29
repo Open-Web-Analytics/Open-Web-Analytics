@@ -281,6 +281,8 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', "Visits To Purchase', 'ecommerce', 'The number of visits before the transaction occurred.", '', true);
 		$this->registerDimension('date', 'base.commerce_line_item_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('date', 'base.commerce_transaction_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('siteId', 'base.commerce_line_item_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true, 'site_id');
+		$this->registerDimension('siteId', 'base.commerce_transaction_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true, 'site_id');
 		/**
 		 * Register CLI Commands
 		 *
@@ -390,8 +392,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-		$this->addNavigationLink('Reports', '', 'base.reportTransactions', 'Ecommerce', 1);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 1);		
+		$this->addNavigationLink('Reports', '', 'base.reportEcommerce', 'Ecommerce', 1);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 2);		
 	}
 	
 	/**
