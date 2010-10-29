@@ -1642,7 +1642,9 @@ OWA.tracker.prototype = {
 };
 
 (function() {
-
+	if ( ! typeof owa_baseUrl == "undefined" ) {
+		OWA.config.baseUrl = owa_baseUrl;
+	}
 	// execute commands global owa_cmds command queue
 	if ( typeof owa_cmds == "undefined" ) {
 		var q = new OWA.commandQueue();	
