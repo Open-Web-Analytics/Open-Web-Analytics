@@ -4,7 +4,7 @@ var OWA = {
 	overlay: '',
 	config: {
 		ns: 'owa_',
-		baseUrl: owa_baseUrl
+		baseUrl: ''
 	},
 	state: [],
 	overlayActive: false,
