@@ -136,7 +136,7 @@ OWA.commandQueue.prototype = {
  * @since		owa 1.2.1
  */
 OWA.tracker = function( options ) {
-	
+	OWA.setSetting('debug', true);
 	// set start time
 	this.startTime = this.getTimestamp();
 	
@@ -1182,8 +1182,8 @@ OWA.tracker.prototype = {
 	},
 	
 	setOption : function(name, value) {
+		
 		this.options[name] = value;
-		return;
 	},
 	
 	setLastEvent : function(event) {
