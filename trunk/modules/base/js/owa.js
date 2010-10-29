@@ -3,7 +3,8 @@ var OWA = {
 	items: new Object,
 	overlay: '',
 	config: {
-		ns: 'owa_'
+		ns: 'owa_',
+		baseUrl: owa_baseUrl
 	},
 	state: [],
 	overlayActive: false,
