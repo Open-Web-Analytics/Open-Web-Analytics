@@ -220,4 +220,34 @@ class owa_reportDimensionDetailView extends owa_view {
 	}
 }
 
+/**
+ * Simple Dimensional Report View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.4.0
+ */
+
+class owa_reportSimpleDimensionalView extends owa_view {
+		
+	function render() {
+		
+		// Assign Data to templates
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set_template('report_dimensionDetailNoTabs.php');
+	}
+}
+
 ?>

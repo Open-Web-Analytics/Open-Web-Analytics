@@ -900,6 +900,11 @@ class owa_resultSetManager extends owa_base {
 		
 	}
 	
+	function getCalculatedMetricByName($name) {
+		
+		return $this->calculatedMetrics[$name];
+	}
+	
 	function addSelect($select_array) {
 	
 		$this->params['selects'][] = $select_array; 
@@ -923,6 +928,8 @@ class owa_resultSetManager extends owa_base {
 				$select = $m->getSelect();
 				//print_r ($select);
 				$this->db->selectColumn($select[0], $select[1]);
+			} else {
+				$m = $this->getCalculatedMetricByName($metric_name);
 			}
 			
 			$this->addLabel($m->getName(), $m->getLabel());
