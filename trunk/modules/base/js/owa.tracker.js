@@ -360,7 +360,14 @@ OWA.tracker.prototype = {
 
 	getCookieDomain : function() {
 	
-		return this.getOption('cookie_domain') || OWA.getSetting('cookie_domain') || document.domain;
+		var domain = this.getOption('cookie_domain') || OWA.getSetting('cookie_domain');
+		
+		if ( ! domain ) {
+			this.setCookieDomain(document.domain);
+			domain = this.getCookieDomain();
+		}
+		
+		return domain;
 
 	},
 	
@@ -396,7 +403,7 @@ OWA.tracker.prototype = {
 		if ( a ) {
 			a = OWA.util.base64_decode(a);
 			OWA.debug('overlay anchor value: ' + a);
-			OWA.util.setCookie('owa_overlay',a, '','', '.' + document.domain);
+			OWA.util.setCookie('owa_overlay',a, '','', '.' + this.getCookieDomain() );
 		}
 		
 		
