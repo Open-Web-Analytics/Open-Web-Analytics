@@ -366,10 +366,14 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportDashboard', 'Dashboard', 1);
 		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
 		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
-		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);
-		if (owa_coreAPI::getSetting('base', 'enableCommerceReporting')) {
-			$this->addNavigationLink('Reports', '', 'base.reportCommerce', 'Ecommerce', 5);
-		}
+		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);		
+		
+		$this->addNavigationLink('Reports', '', 'base.reportEcommerce', 'Ecommerce', 1);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportRevenue', 'Revenue', 2);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 3);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.visitsToPurchase', 'Visits To Purchase', 4);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.daysToPurchase', 'Days To Purchase', 5);
+
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 7);
@@ -392,8 +396,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-		$this->addNavigationLink('Reports', '', 'base.reportEcommerce', 'Ecommerce', 1);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 2);		
+				
 	}
 	
 	/**
