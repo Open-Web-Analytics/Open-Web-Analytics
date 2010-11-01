@@ -129,7 +129,7 @@ class owa_request extends owa_entity {
 		
 		//prior page
 		$prior_document_id = new owa_dbColumn('prior_document_id', OWA_DTD_BIGINT);
-		$document_id->setForeignKey('base.document');
+		$prior_document_id->setForeignKey('base.document');
 		$this->setProperty($prior_document_id);
 		
 		$nps = new owa_dbColumn('num_prior_sessions', OWA_DTD_INT);

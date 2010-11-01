@@ -81,6 +81,8 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('uniqueVisitors', 'base.uniqueVisitors');
 		$this->registerMetric('visits', 'base.visits');
 		$this->registerMetric('visits', 'base.visitsFromRequestFact');
+		$this->registerMetric('visitors', 'base.visitors');
+		$this->registerMetric('visitors', 'base.visitorsFromRequestFact');
 		$this->registerMetric('newVisitors', 'base.newVisitors');
 		$this->registerMetric('repeatVisitors', 'base.repeatVisitors');
 		$this->registerMetric('bounces', 'base.bounces');
@@ -208,6 +210,10 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('exitPagePath', 'base.document', 'uri', 'Exit Page Path', 'visit', 'The URI of the exit page.', 'last_page_id');
 		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Exit Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
 		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Exit Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
+		$this->registerDimension('priorPageUrl', 'base.document', 'url', 'Prior Page URL', 'visit', 'The URL of the prior page.', 'prior_document_id');
+		$this->registerDimension('priorPagePath', 'base.document', 'uri', 'Prior Page Path', 'visit', 'The URI of the prior page.', 'prior_document_id');
+		$this->registerDimension('priorPageTitle', 'base.document', 'page_title', 'Prior Page Title', 'visit', 'The title of the prior page.', 'prior_document_id');
+		$this->registerDimension('priorPageType', 'base.document', 'page_type', 'Prior Page Type', 'visit', 'The page type of the prior page.', 'prior_document_id');
 		
 		// traffic sources
 		$this->registerDimension('referralPageUrl', 'base.referer', 'url', 'Referral Page URL', 'traffic sources', 'The url of the referring web page.');

@@ -45,11 +45,6 @@ class owa_optionsGoalEditController extends owa_adminController {
 		$v1->setValues($goal['goal_number']);
 		$this->setValidation('goal_number', $v1);
 		
-		// check that goal name is present
-		$v1 = owa_coreAPI::validationFactory('required');
-		$v1->setValues($goal['goal_value']);
-		$this->setValidation('goal_name', $v1);
-		
 		// check that goal status is present
 		$v1 = owa_coreAPI::validationFactory('required');
 		$v1->setValues($goal['goal_status']);
