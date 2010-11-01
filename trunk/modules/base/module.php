@@ -371,7 +371,7 @@ class owa_baseModule extends owa_module {
 		
 		$this->addNavigationLink('Reports', '', 'base.reportDashboard', 'Dashboard', 1);
 		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
-		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
+		
 		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);		
 		
 		$this->addNavigationLink('Reports', '', 'base.reportEcommerce', 'Ecommerce', 1);
@@ -395,6 +395,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsAge', 'Visitor Age', 5);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportBrowsers', 'Browser Types', 6);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportOs', 'Operating Systems', 7);
+		
+		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Search Terms', 1);								
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
@@ -402,6 +404,9 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
+		
+		$this->addNavigationLink('Reports', '', 'base.reportGoals', 'Goals', 5);
+		$this->addNavigationLink('Reports', 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);	
 				
 	}
 	

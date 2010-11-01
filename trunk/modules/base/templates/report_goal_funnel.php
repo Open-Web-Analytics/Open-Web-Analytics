@@ -1,15 +1,15 @@
 
 <div>
 	
-	<select id="goalChooser">
+	Choose a goal: <select id="goalChooser">
 		<?php for ($i = 1; $i <= $numGoals; $i++):?>
 		<option <?php if ($i == $goal_number): echo 'SELECTED'; endif;?> value="<?php $this->out($i, false); ?>">Goal <?php $this->out($i, false); ?></option>
 		<?php endfor; ?>
 	</select>
 </div>
 
-<?php if ($this->get('funnel')):?>
-<table class="funnel" border="1" style="min-width:100%;">
+<?php if ( $this->get('funnel') ):?>
+<table class="funnel" border="0" style="min-width:100%;">
 	<tr>
 		<td class="funnelLeft"></td>
 		<td class="funnelMiddle"><h3><?php $this->out($goal_conversion_rate);?> conversion rate</h3></td>

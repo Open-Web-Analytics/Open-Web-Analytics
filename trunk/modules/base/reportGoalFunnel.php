@@ -37,6 +37,11 @@ class owa_reportGoalFunnelController extends owa_reportController {
 		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
 		
 		$goal_number = $this->getParam('goalNumber');
+		
+		if ( ! $goal_number ) {
+			$goal_number = 1;
+		}
+		
 		$goal = $gm->getGoal($goal_number);
 		$funnel = $gm->getGoalFunnel($goal_number);
 		
@@ -64,7 +69,7 @@ class owa_reportGoalFunnelController extends owa_reportController {
 					'metrics' 	  => 'visitors',
 					'do'		  => 'getResultSet'		
 			));
-			print_r($total_visitors_rs);
+			//print_r($total_visitors_rs);
 			$total_visitors = $total_visitors_rs->getAggregateMetric( 'visitors' );
 			//print "Total visits: $total_visits";
 			
@@ -89,7 +94,7 @@ class owa_reportGoalFunnelController extends owa_reportController {
 				$funnel[$k]['visitor_percentage'] = round($funnel[$k]['visitors'] / $total_visitors, 2) * 100 . '%';
 			}
 			
-			print_r($funnel);
+			//print_r($funnel);
 			
 		}			
 		// set view stuff
