@@ -56,7 +56,7 @@ class owa_dbEventQueue extends eventQueue {
 		$qi->save();
 	}
 	
-	function markAsFailed($item_id, $error_msg) {
+	function markAsFailed($item_id, $error_msg = '') {
 		
 		$qi = owa_coreAPI::entityFactory('base.queue_item');
 		$qi->load($item_id);
