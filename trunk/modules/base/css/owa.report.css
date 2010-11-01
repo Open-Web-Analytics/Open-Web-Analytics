@@ -461,3 +461,52 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa .ui-tabs-nav {
 	font-size:14px;
 }
+
+.owa .funnel td {
+	
+	padding: 10px;
+}
+
+.owa .funnel .funnelMiddle {
+	
+	text-align: center;
+}
+
+.owa .funnel .funnelLargeNumber {
+	
+	font-size:20px;
+	font-weight: bold;
+	padding-bottom:10px;
+}
+
+.owa .funnel .funnelStepName {
+	
+	font-size:18px;
+	font-weight: bold;
+	color:;
+	padding-bottom:5px;
+}
+
+.owa .funnel .funnelStepUrl {
+	
+	font-size:12px;
+	font-weight: bold;
+	color: #707070;
+	padding-bottom:5px;
+}
+
+.owa .funnel .funnelStepCount {
+	
+	font-size:22px;
+	font-weight: bold;
+	color:;
+	padding:10px 0px 10px 0px;
+}
+
+.owa .funnel span.visitorCountLabel {
+	
+	vertical-align:middle;
+	font-size:12px;
+	font-weight:normal;
+	color: #9f9f9f;
+}

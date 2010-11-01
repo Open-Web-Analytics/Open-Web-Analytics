@@ -33,6 +33,11 @@ OWA.report.prototype = {
 		var url = OWA.util.makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);
 		window.location.href = url;
 	},
+	
+	setRequestProperty : function(name, value) {
+		
+		this.properties[name] = value;
+	},
 		
 	_parseDate: function (date) {
 		
@@ -83,6 +88,39 @@ OWA.report.prototype = {
 				that.tabs[ui.panel.id].load();
 			}
 		});
+	},
+	
+	getSiteId : function() {
+		
+		if (this.properties.hasOwnProperty('siteId')) {
+			
+			return this.properties.siteId;
+		}
+	},
+	
+	getPeriod : function() {
+		
+		if (this.properties.hasOwnProperty('period')) {
+			
+			return this.properties.period;
+		}
+	},
+	
+	getStartDate : function() {
+	
+		if (this.properties.hasOwnProperty('startDate')) {
+			
+			return this.properties.startDate;
+		}
+	
+	},
+	
+	getEndDate : function() {
+	
+		if (this.properties.hasOwnProperty('endDate')) {
+			
+			return this.properties.endDate;
+		}
 	}
 }
 

@@ -195,6 +195,14 @@ class owa_goalManager extends owa_base {
 			owa_coreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
 		}
 	}
+	
+	function getGoalFunnel($goal_number) {
+		
+		$goal = $this->getGoal($goal_number);
+		if ( array_key_exists( 'details', $goal ) && array_key_exists( 'funnel_steps', $goal['details'] ) ) {
+			return $goal['details']['funnel_steps'];
+		}
+	}
 }
 
 ?>

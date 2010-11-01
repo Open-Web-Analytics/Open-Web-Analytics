@@ -1071,6 +1071,32 @@ OWA.resultSetExplorer.prototype = {
 		} else {
 			jQuery('#'+dom_id).html("No results to display.");
 		}
+    },
+    
+    getApiEndpoint : function() {
+    	
+    	return this.getOption('api_endpoint') || OWA.getSetting('api_endpoint');
+    },
+    
+    makeApiRequestUrl : function(method, options, url) {
+    	
+    	var url = url || this.getApiEndpoint();
+    	url += '?';
+    	url += 'owa_do=' + method;
+    	var count = OWA.util.countObjectProperties(options);
+    	var i = 1;
+    	for (option in options) {
+    		
+    		if (options.hasOwnProperty(option)) {
+    			
+    			if (typeof options[option] != 'undefined') {
+    				url += '&owa_' +option + '=' + OWA.util.urlEncode(options[option]);
+    			}
+    			i++;
+    		}
+    	}
+    	
+    	return url;
     }
     
 };
