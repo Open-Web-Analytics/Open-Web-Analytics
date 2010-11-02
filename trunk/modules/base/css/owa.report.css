@@ -462,6 +462,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	font-size:14px;
 }
 
+.owa .funnel {
+	padding: 0px;
+	margin: 0px;
+}
+
 .owa .funnel td {
 	
 	padding: 10px;
@@ -490,14 +495,14 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa .funnel .funnelStepUrl {
 	
 	font-size:12px;
-	font-weight: bold;
+	font-weight:;
 	color: #707070;
 	padding-bottom:5px;
 }
 
 .owa .funnel .funnelStepCount {
 	
-	font-size:22px;
+	font-size:26px;
 	font-weight: bold;
 	color:;
 	padding:10px 0px 10px 0px;
@@ -508,5 +513,54 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	vertical-align:middle;
 	font-size:12px;
 	font-weight:normal;
+	color: #9f9f9f;
+}
+
+.owa .funnel .funnelStep {
+	
+	background-color: #D6F5FF;
+	padding: 15px;
+}
+
+.owa .funnel .funnelFlow {
+	background-image: url('../i/funnel_flow.png');
+	height: 150px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.owa .funnel .funnelFlow {
+	background-image: url('../i/funnel_flow.png');
+	height: 150px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.owa .funnel .entranceCount {
+	
+	padding: 0px 30px 0px 0px;
+	margin-bottom: 10px;
+	background-image: url('../i/funnel_entrance_arrow.png');
+	height: 27px;
+	font-size: 26px;
+	background-repeat: no-repeat;
+	background-position: right;
+	
+}
+
+.owa .funnel .exitCount {
+	
+	padding: 0px 0px 0px 30px;
+	margin-bottom: 10px;
+	background-image: url('../i/funnel_exit_arrow.png');
+	height: 27px;
+	font-size: 26px;
+	background-repeat: no-repeat;
+	background-position: left;	
+}
+
+.owa .secondaryText {
+	
+	font-size:14px;
 	color: #9f9f9f;
 }
