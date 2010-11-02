@@ -252,7 +252,8 @@ OWA.heatmap.prototype = {
 			}
 			
 			//plot dots
-			this.plotDots(this.getClicks());
+			//this.plotDots(this.getClicks());
+			this.plotDotsRound(this.getClicks());
 			this.lock = false;
 			return true;
 		} else {
@@ -546,6 +547,92 @@ OWA.heatmap.prototype = {
 		this.processDirtyRegions();
 	},
 	
+		/**
+	 * Plots dots on a the canvas
+	 *
+	 */
+	plotDotsRound: function(data) {
+	
+		for( var i = 0; i < data.length; i++) {	
+			
+			if ((data[i].x + this.options.dotSize) > this.docDimensions.w) {
+				 data[i].x = data[i].x - this.options.dotSize;
+			}
+			
+			if ((data[i].y + this.options.dotSize) > this.docDimensions.h) {
+				 data[i].y = data[i].y - this.options.dotSize;
+			}
+			
+			
+			if ((data[i].x <= this.docDimensions.w) && (data[i].y <= this.docDimensions.h)) {
+				OWA.debug("plotting %s %s", data[i].x, data[i].y);				
+			} else {
+				OWA.debug("not getting image data. coordinates %s %s are outside the canvas", data[i].x, data[i].y);
+				continue;
+			}
+			
+			if ((data[i].x >= 0) && (data[i].y >= 0)) {
+				OWA.debug("plotting %s %s", data[i].x, data[i].y);				
+			} else {
+				OWA.debug("not getting image data. coordinates %s %s less than zero.", data[i].x, data[i].y);
+				continue;
+			}
+			
+			// create a radial gradient with the defined parameters. we want to draw an alphamap  
+	        var rgr = this.context.createRadialGradient(data[i].x,data[i].y,7,data[i].x,data[i].y,this.options.dotSize);  
+	        // the center of the radial gradient has .1 alpha value  
+	        rgr.addColorStop(0, 'rgba(0,0,0,0.1)');    
+	        // and it fades out to 0  
+	        rgr.addColorStop(1, 'rgba(0,0,0,0)');  
+	        // drawing the gradient  
+	        this.context.fillStyle = rgr;    
+	        this.context.fillRect(data[i].x-this.options.dotSize,data[i].y-this.options.dotSize,2*this.options.dotSize,2*this.options.dotSize); 
+			
+			/*
+// get current alpha channel
+			OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
+			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);
+			OWA.debug("canvas data retrieved.");
+			var pix = canvasData.data;
+			
+*/
+			// Loop over each pixel and invert the color.
+			/*
+			var imgd = this.context.createImageData(this.options.dotSize, this.options.dotSize);
+			
+for (var ii = 0, n = pix.length; ii < n; ii += 4) {
+				//check current alpha
+		    	alpha = pix[ii+3];
+		    	//OWA.debug("current alpha: %s", alpha);
+		    	if (alpha < 255) {
+		    		
+		    		if ((255 - alpha) > this.options.alphaIncrement) {
+		    			// increment alpha
+		    			imgd.data[ii+3] = alpha+this.options.alphaIncrement;
+		    			//imgd.data[ii+3] = alpha;
+		    			//OWA.debug("setting alpha to %s", imgd.data[ii+3]);
+		    		} else {
+		    			// set to opaque
+		    			imgd.data[ii+3] = 255;
+		    		}
+		    		
+		    	}
+		 	   	
+		    	//imgd.data[ii  ] = 255; // red
+		   		//OWA.debug("alpha %s", alpha);
+			}
+		
+			// Draw the ImageData object at the given (x,y) coordinates.
+			this.context.putImageData(imgd,data[i].x,data[i].y);
+			
+*/
+			// mark region dirty
+			this.markRegionDirty(this.findRegion(data[i].x,data[i].y));
+		}
+		// color dirty Regions
+		this.processDirtyRegions();
+	},
+	
 	processDirtyRegions: function() {
 	
 		for (i in this.dirtyRegions) {
@@ -589,8 +676,8 @@ OWA.heatmap.prototype = {
     
     createCanvas: function(w, h) {
     	var that = this;
-    	jQuery("body").append('<style>.owa_blur{filter: url('+that.options.svgUrl+');}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
-    	
+    	//jQuery("body").append('<style>.owa_blur{filter: url('+that.options.svgUrl+');}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
+    	jQuery("body").append('<canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
     },
     
     getDataPoints: function() {

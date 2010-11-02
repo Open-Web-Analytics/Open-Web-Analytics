@@ -12,29 +12,31 @@
 <table class="funnel" border="0" style="min-width:100%;">
 	<tr>
 		<td class="funnelLeft"></td>
-		<td class="funnelMiddle"><h3><?php $this->out($goal_conversion_rate);?> conversion rate</h3></td>
+		<td class="funnelMiddle"><h2><?php $this->out($goal_conversion_rate);?> conversion rate</h2></td>
 		<td class="funnelRight"></td>
 	</tr>
 	<?php foreach ($funnel as $k => $step):?>
 	<tr>
 		<td width="33%" valign="top" class="funnelLeft" id="entrances_step_<?php $this->out($step['step_number']);?>">
-			<div class="funnelLargeNumber" style="text-align: right;" id="prior_page_count_step_<?php $this->out($step['step_number']);?>"></div>
+			<div class="funnelLargeNumber entranceCount" style="text-align: right;" id="prior_page_count_step_<?php $this->out($step['step_number']);?>">
+				
+			</div>
 		</td>
-		<td width="33%" valign="top" class="funnelMiddle" id="step_<?php $this->out($step['step_number']);?>">
+		<td width="33%" valign="top" class="funnelMiddle funnelStep" id="step_<?php $this->out($step['step_number']);?>">
 			<div class="funnelStepName">Step <?php $this->out($step['step_number']);?>: <?php $this->out($step['name']);?></div>
 			<div class="funnelStepCount"><?php $this->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
 			<div class="funnelStepUrl"><?php $this->out($step['url']);?></div>
 		</td>
 		<td width="33%" valign="top" class="funnelRight" id="exits_step_<?php $this->out($step['step_number']);?>">
-			<div class="funnelLargeNumber" id="next_page_count_step_<?php $this->out($step['step_number']);?>"></div>
+			<div class="funnelLargeNumber exitCount" id="next_page_count_step_<?php $this->out($step['step_number']);?>"></div>
 		</td>
 	</tr>
 	<?php if (array_key_exists($k+1, $funnel)):?>
 	<tr>
 		<td class="funnelLeft"></td>
-		<td class="funnelMiddle funnelLargeNumber">
-			<?php $this->out($funnel[$k+1]['visitor_percentage']);?>
-			
+		<td class="funnelMiddle funnelLargeNumber funnelFlow">
+			<?php $this->out($funnel[$k+1]['visitor_percentage']);?><BR>
+			<span class="secondaryText">Proceeded to step: <?php $this->out($funnel[$k+1]['name']); ?></span>
 		</td>
 		<td class="funnelRight"></td>
 	</tr>
