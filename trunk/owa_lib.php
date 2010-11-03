@@ -997,6 +997,7 @@ class owa_lib {
 		$content_types = array('html' => 'text/html', 
 							   'xml' => 'text/xml', 
 							   'json' => 'application/json', 
+							   'jsonp' => 'application/json', 
 							   'csv' => 'text/csv');
 		
 		if (array_key_exists($type, $content_types)) {

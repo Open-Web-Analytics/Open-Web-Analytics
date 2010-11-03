@@ -42,7 +42,7 @@ class owa_reportOverlayController extends owa_reportController {
 			$document_id = $this->getParam('document_id');
 		} else {
 			$eq = owa_coreAPI::getEventDispatch();
-			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $this->getParam('document_url'), $this->event->get( 'site_id' ) ) ) );
+			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $this->getParam('document_url') ), $this->getParam( 'siteId' ) ) );
 		}
 			
 		$d->getByColumn('id', $document_id);

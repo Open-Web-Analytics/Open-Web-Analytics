@@ -208,11 +208,14 @@ OWA.heatmap.prototype = {
 		var p = OWA.util.readCookie('owa_overlay');
 		//alert(unescape(p));
 		var params = OWA.util.parseCookieStringToJson(p);
-		params.action = 'base.reportOverlay';
-		params.document_url = OWA.util.urlEncode(document.location);
+		//params.action = 'base.reportOverlay';
+		//params.document_url = OWA.util.urlEncode(document.location);
+		params.action = 'getDomClicks';
+		params.pageUrl = OWA.util.urlEncode(document.location);
 		//params.document_url = document.location;
 		//OWA.debug('encoded url: '+OWA.util.urlEncode(document.location));
-		params.limit = this.options.rowsPerFetch;
+		params.resultsPerPage = this.options.rowsPerFetch;
+		params.format = 'jsonp';
 		
 		// add page number if one was passed in
 		if (page) {
@@ -226,7 +229,7 @@ OWA.heatmap.prototype = {
 		jQuery.ajax({
 			url: OWA.getApiEndpoint(), 
 			data: OWA.util.nsParams(params), 
-			dataFormat: 'jsonp',
+			dataType: 'jsonp',
 			jsonp: 'owa_jsonpCallback',
 			success: function(data) { 
 				that.plotClickData(data); 
@@ -300,43 +303,29 @@ OWA.heatmap.prototype = {
 		this.context.putImageData(canvasData,dims.x,dims.y);
 	},
 	
-	/**
-	 * RGB to Alpha map
-	 */
-	getRgbFromAlpha: function(a) {
-		rgb = {'r': null, 'g': null, 'b': null}
+	getRgbFromAlpha : function(alpha) {
 		
-		if (a > 0 && a <= 50) {
-			rgb.b = (a/50)*255;
-			rgb.g = 0;
-			rgb.r = 0;
-
-		} else if (a>50 && a <= 100) {
-			//lightblue
-			rgb.b = (a/100)*255;
-			rgb.g = 0;
-			rgb.r = 0;
-		} else if (a >100 && a <= 150) {
-			//green
-			rgb.g = (a/150)*255;
-			rgb.b = 0;
-		} else if (a >150 && a <= 200) {
-			//yellow
-			rgb.r = (a/200)*255;
-			rgb.g = (a/200)*255;
-		} else if (a >200 && a <= 255) {
-			// red
-			rgb.r = (a/255)*255;
-		} else if (a = 0 ) {
-			// need to set this to a grey! conditional is not working.
-			rgb.r = 0;
-			rgb.g = 0;
-			rgb.b = 127;
-		} else if (a > 255) {
-			rgb.r = 255;
-		} else if (a < 0 ) {
-			// can this happen?
-			//rgb.r = 255;
+		var rgb = {'r': null, 'g': null, 'b': null};
+		
+		// set colors based on current alpha value
+		if( alpha <= 255 && alpha >= 235 ){
+			tmp = 255 - alpha;
+			rgb.r = 255 - tmp;
+			rgb.g = tmp * 12;
+		} else if ( alpha <= 234 && alpha >= 200 ){
+			tmp = 234 - alpha;
+			rgb.r = 255 - ( tmp * 8 );
+			rgb.g = 255;
+		} else if ( alpha <= 199 && alpha >= 150 ){
+			tmp = 199 - alpha;
+			rgb.g = 255;
+			rgb.b = tmp * 5;
+		} else if ( alpha <= 149 && alpha >= 100 ){
+			tmp = 149 - alpha;
+			rgb.g = 255 - ( tmp * 5 );
+			rgb.b = 255;
+		} else {
+			rgb.b = 255;
 		}
 		
 		return rgb;
@@ -480,77 +469,6 @@ OWA.heatmap.prototype = {
 	 * Plots dots on a the canvas
 	 *
 	 */
-	plotDots: function(data) {
-	
-		for( var i = 0; i < data.length; i++) {	
-			
-			if ((data[i].x + this.options.dotSize) > this.docDimensions.w) {
-				 data[i].x = data[i].x - this.options.dotSize;
-			}
-			
-			if ((data[i].y + this.options.dotSize) > this.docDimensions.h) {
-				 data[i].y = data[i].y - this.options.dotSize;
-			}
-			
-			
-			if ((data[i].x <= this.docDimensions.w) && (data[i].y <= this.docDimensions.h)) {
-				OWA.debug("plotting %s %s", data[i].x, data[i].y);				
-			} else {
-				OWA.debug("not getting image data. coordinates %s %s are outside the canvas", data[i].x, data[i].y);
-				continue;
-			}
-			
-			if ((data[i].x >= 0) && (data[i].y >= 0)) {
-				OWA.debug("plotting %s %s", data[i].x, data[i].y);				
-			} else {
-				OWA.debug("not getting image data. coordinates %s %s less than zero.", data[i].x, data[i].y);
-				continue;
-			}
-			
-			// get current alpha channel
-			OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
-			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);
-			OWA.debug("canvas data retrieved.");
-			var pix = canvasData.data;
-			
-			// Loop over each pixel and invert the color.
-			var imgd = this.context.createImageData(this.options.dotSize, this.options.dotSize);
-			for (var ii = 0, n = pix.length; ii < n; ii += 4) {
-				//check current alpha
-		    	alpha = pix[ii+3];
-		    	//OWA.debug("current alpha: %s", alpha);
-		    	if (alpha < 255) {
-		    		
-		    		if ((255 - alpha) > this.options.alphaIncrement) {
-		    			// increment alpha
-		    			imgd.data[ii+3] = alpha+this.options.alphaIncrement;
-		    			//imgd.data[ii+3] = alpha;
-		    			//OWA.debug("setting alpha to %s", imgd.data[ii+3]);
-		    		} else {
-		    			// set to opaque
-		    			imgd.data[ii+3] = 255;
-		    		}
-		    		
-		    	}
-		 	   	
-		    	//imgd.data[ii  ] = 255; // red
-		   		//OWA.debug("alpha %s", alpha);
-			}
-		
-			// Draw the ImageData object at the given (x,y) coordinates.
-			this.context.putImageData(imgd,data[i].x,data[i].y);
-			
-			// mark region dirty
-			this.markRegionDirty(this.findRegion(data[i].x,data[i].y));
-		}
-		// color dirty Regions
-		this.processDirtyRegions();
-	},
-	
-		/**
-	 * Plots dots on a the canvas
-	 *
-	 */
 	plotDotsRound: function(data) {
 	
 		for( var i = 0; i < data.length; i++) {	
@@ -588,44 +506,6 @@ OWA.heatmap.prototype = {
 	        this.context.fillStyle = rgr;    
 	        this.context.fillRect(data[i].x-this.options.dotSize,data[i].y-this.options.dotSize,2*this.options.dotSize,2*this.options.dotSize); 
 			
-			/*
-// get current alpha channel
-			OWA.debug("getting image data for %s %s", data[i].x, data[i].y);
-			var canvasData = this.context.getImageData(data[i].x, data[i].y, this.options.dotSize, this.options.dotSize);
-			OWA.debug("canvas data retrieved.");
-			var pix = canvasData.data;
-			
-*/
-			// Loop over each pixel and invert the color.
-			/*
-			var imgd = this.context.createImageData(this.options.dotSize, this.options.dotSize);
-			
-for (var ii = 0, n = pix.length; ii < n; ii += 4) {
-				//check current alpha
-		    	alpha = pix[ii+3];
-		    	//OWA.debug("current alpha: %s", alpha);
-		    	if (alpha < 255) {
-		    		
-		    		if ((255 - alpha) > this.options.alphaIncrement) {
-		    			// increment alpha
-		    			imgd.data[ii+3] = alpha+this.options.alphaIncrement;
-		    			//imgd.data[ii+3] = alpha;
-		    			//OWA.debug("setting alpha to %s", imgd.data[ii+3]);
-		    		} else {
-		    			// set to opaque
-		    			imgd.data[ii+3] = 255;
-		    		}
-		    		
-		    	}
-		 	   	
-		    	//imgd.data[ii  ] = 255; // red
-		   		//OWA.debug("alpha %s", alpha);
-			}
-		
-			// Draw the ImageData object at the given (x,y) coordinates.
-			this.context.putImageData(imgd,data[i].x,data[i].y);
-			
-*/
 			// mark region dirty
 			this.markRegionDirty(this.findRegion(data[i].x,data[i].y));
 		}
@@ -675,8 +555,8 @@ for (var ii = 0, n = pix.length; ii < n; ii += 4) {
     },
     
     createCanvas: function(w, h) {
+    	
     	var that = this;
-    	//jQuery("body").append('<style>.owa_blur{filter: url('+that.options.svgUrl+');}</style><canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
     	jQuery("body").append('<canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:99;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
     },
     

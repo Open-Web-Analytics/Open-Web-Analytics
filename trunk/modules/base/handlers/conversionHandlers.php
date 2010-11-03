@@ -318,8 +318,7 @@ class owa_conversionHandlers extends owa_observer {
     
     function countGoalConversions($session) {
     	
-    	$goals = owa_coreAPI::getSetting('base', 'goals');
-    	$num = count($goals);
+    	$num = owa_coreAPI::getSetting('base', 'numGoals');
     	$count = 0;
     	for ($i = 0;$i < $num;$i++) {
     		$col_name = 'goal_'.$i;
@@ -332,8 +331,7 @@ class owa_conversionHandlers extends owa_observer {
 	
 	function countGoalStarts($session) {
 	
-		$goals = owa_coreAPI::getSetting('base', 'goals');
-    	$num = count($goals);
+    	$num = owa_coreAPI::getSetting('base', 'numGoals');
     	$count = 0;
     	for ($i = 0;$i < $num;$i++) {
     		$col_name = 'goal_'.$i.'_start';
@@ -345,8 +343,7 @@ class owa_conversionHandlers extends owa_observer {
     
     function sumGoalValues($session) {
     	
-    	$goals = owa_coreAPI::getSetting('base', 'goals');
-    	$num = count($goals);
+    	$num = owa_coreAPI::getSetting('base', 'numGoals');
     	$sum = 0;
     	for ($i = 0;$i < $num;$i++) {
     		$col_name = 'goal_'.$i.'_value';

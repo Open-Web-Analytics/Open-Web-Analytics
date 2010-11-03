@@ -33,7 +33,7 @@ var OWA = {
 	},
 	
 	getApiEndpoint : function() {
-		return this.config['api_endpoint'] || this.getSetting('baseUrl') + 'action.php';
+		return this.config['api_endpoint'] || this.getSetting('baseUrl') + 'api.php';
 	},
 	
 	loadHeatmap: function(p) {
@@ -987,6 +987,18 @@ OWA.util =  {
 	    };
 	 
 	    return format.replace(regex, doFormat);
-	}		
+	},
 	
+	clone : function (mixed) {
+		
+		var newObj = (mixed instanceof Array) ? [] : {};
+		for (i in mixed) {
+			if (mixed[i] && (typeof mixed[i] == "object") ) {
+				newObj[i] = OWA.util.clone(mixed[i]);
+			} else {
+				newObj[i] = mixed[i];
+			}
+		}
+		return newObj;
+	}
 }

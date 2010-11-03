@@ -116,6 +116,8 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('goalCompletionsAll', 'base.goalCompletionsAll');
 		$this->registerMetric('goalStartsAll', 'base.goalStartsAll');
 		$this->registerMetric('goalValueAll', 'base.goalValueAll');
+		$this->registerMetric('goalConversionRateAll', 'base.goalConversionRateAll');
+		$this->registerMetric('goalAbandonRateAll', 'base.goalAbandonRateAll');
 		
 		// ecommerce metrics
 		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantity');
@@ -314,6 +316,20 @@ class owa_baseModule extends owa_module {
 		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
 		
 		$this->registerApiMethod('getTransactionDetail', array($this, 'getTransactionDetail'), array( 'transactionId', 'format'));
+		
+		$this->registerApiMethod('getDomClicks', array($this, 'getDomClicks'), array(
+				'pageUrl', 
+				'siteId', 
+				'startDate', 
+				'endDate', 
+				'document_id', 
+				'period',
+				'resultsPerPage', 
+				'page',
+				'format'
+		));
+		
+		$this->registerApiMethod('getDomstream', array($this, 'getDomstream'), array('domstream_guid') );
 		
 		return parent::__construct();
 	}
@@ -1073,6 +1089,122 @@ class owa_baseModule extends owa_module {
 			return $campaigns[0];
 		}
 	}
+	
+	function getDomClicks($pageUrl, $siteId, $startDate, $endDate, $document_id = '', $period = '', $resultsPerPage = 100, $page = 1, $format = 'jsonp') {
+		
+		// Fetch document object
+		$d = owa_coreAPI::entityFactory('base.document');
+		
+		if ( ! $document_id ) {
+	
+			$eq = owa_coreAPI::getEventDispatch();
+			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $this->getParam('pageUrl') ), $siteId ) ) ;
+		}
+			
+		$d->getByColumn('id', $document_id);
+		
+		
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom('owa_click');
+		$db->selectColumn("click_x as x,
+							click_y as y,
+							page_width,
+							page_height,
+							dom_element_x,
+							dom_element_y,
+							position");
+		
+		
+		$db->orderBy('click_y', 'ASC');
+		$db->where('document_id', $document_id);
+		$db->where('site_id', $siteId);
+		
+		
+		if ( $period ) {
+			
+			$p = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+			$p->set($period);
+			$startDate = $p->startDate->get('yyyymmdd');
+			$endDate = $p->endDate->get('yyyymmdd');
+		}
+		
+		if ($startDate && $endDate) {
+			$db->where('yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
+		}
+		
+		// pass limit to rs object if one exists
+		$rs->setLimit($resultsPerPage);
+			
+		// pass page to rs object if one exists
+		$rs->setPage($page);
+		
+		$results = $rs->generate($db);
+		//$rs->resultsRows = $results;
+		
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
+	}
+	
+	function getDomstream( $domstream_guid ) {
+		
+		// Fetch document object
+		$d = owa_coreAPI::entityFactory('base.domstream');
+		//$d->load($this->getParam('domstream_id'));
+		//$json = new Services_JSON();
+		//$d->set('events', $json->decode($d->get('events')));
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->select('*');
+		$db->from( $d->getTableName() );
+		$db->where( 'domstream_guid', $domstream_guid );
+		$db->order('timestamp', 'ASC');
+		$ret = $db->getAllRows();
+		
+		$combined = array();
+		foreach ($ret as $row) {
+			$combined = $this->mergeStreamEvents( $row['events'], $combined );
+		}
+		
+		$row['events'] = json_decode($combined);
+		
+		$t = new owa_template;
+		$t->set_template('json.php');
+		//$json = new Services_JSON();
+		// set
+		
+		// if not found look on the request scope.
+		$callback = owa_coreAPI::getRequestParam('jsonpCallback');
+		if ( ! $callback ) {
+			
+			$t->set('json', json_encode( $row ) );
+		} else {
+			$body = sprintf("%s(%s);", $callback, json_encode( $row ) );
+			$t->set('json', $body);
+		}
+		return $t->fetch();	
+	}
+	
+	function mergeStreamEvents($new, $old = '') {
+    	
+    	if ( $old ) {
+    		$old = json_decode($old);
+    		owa_coreAPI::debug('old: '.print_r($old, true));
+    		$new = json_decode($new);
+    		owa_coreAPI::debug('new: '.print_r($new, true));
+    		$combined = array_merge($old, $new);
+    		owa_coreAPI::debug('combined: '.print_r($combined, true));
+    		owa_coreAPI::debug('combined count: '.count($combined));
+    		$combined = json_encode($combined);
+    		return $combined;
+    	} else {
+    		return $new;
+    	}
+    }   
 }
 
 
