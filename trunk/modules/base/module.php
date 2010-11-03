@@ -161,6 +161,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('language', 'base.request', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
 		// campaign related
 		$this->registerDimension('medium', 'base.session', 'medium', 'Medium', 'visit', 'The medium of channel of visit.', '', true);
+		$this->registerDimension('latestAttributions', 'base.session', 'latest_attributions', 'Latest Attributions', 'visit', 'The latest campaign attributions.', '', true);
 		$this->registerDimension('source', 'base.source_dim', 'source_domain', 'Source', 'visit', 'The traffic source of the visit.');
 		$this->registerDimension('campaign', 'base.campaign_dim', 'name', 'Campaign', 'visit', 'The campaign that originated the visit.');
 		$this->registerDimension('ad', 'base.ad_dim', 'name', 'Ad', 'visit', 'The name of the ad that originated the visit.');
@@ -205,7 +206,7 @@ class owa_baseModule extends owa_module {
 		
 		// visit
 		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
-		$this->registerDimension('entryPagePath', 'base.document', 'uri', 'Entry Page URI', 'visit', 'The URI of the entry page.', 'first_page_id');
+		$this->registerDimension('entryPagePath', 'base.document', 'uri', 'Entry Page Path', 'visit', 'The URI of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the entry page.', 'first_page_id');
 		$this->registerDimension('entryPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the entry page.', 'first_page_id');
 		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Exit Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
@@ -420,7 +421,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
 		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-		
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCreativePerformance', 'Creative Performance', 8);
+		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAttributionHistory', 'Attribution History', 8);
 		$this->addNavigationLink('Reports', '', 'base.reportGoals', 'Goals', 5);
 		$this->addNavigationLink('Reports', 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);	
 				
