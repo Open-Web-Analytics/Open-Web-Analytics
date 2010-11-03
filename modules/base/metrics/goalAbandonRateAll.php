@@ -16,8 +16,12 @@
 // $Id$
 //
 
+if (!class_exists("owa_calculatedMetric")) {
+	require_once(OWA_BASE_CLASS_DIR.'calculatedMetric.php');
+}
+
 /**
- * Top Clicks Metric
+ * Goal Abandon Rate Metric
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,31 +29,21 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.4.0
  */
 
-class owa_topClicks extends owa_metric {
-		
-	function __construct($params= null) {
-		
-		return parent::__construct($params);
-	}
+class owa_goalAbandonRateAll extends owa_calculatedMetric {
+
+	function __construct() {
 	
-	function calculate() {
-		
-		$this->db->selectFrom('owa_click');
-		$this->db->selectColumn("	click_x as x,
-									click_y as y,
-									page_width,
-									page_height,
-									dom_element_x,
-									dom_element_y,
-									position");
-		
-		
-		$this->db->orderBy('click_y', 'ASC');
+		$this->setName('goalAbandonRateAll');
+		$this->setLabel('Goal Abandonment Rate');
+		$this->setChildMetric('goalCompletionsAll');
+		$this->setChildMetric('goalStartsAll');
+		$this->setFormula('goalStartsAll / goalCompletionsAll');
+		$this->setDataType('percentage');
+		return parent::__construct();
 	}
 }
-
 
 ?>

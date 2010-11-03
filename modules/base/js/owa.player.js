@@ -70,8 +70,7 @@ OWA.player.prototype = {
 		var p = OWA.util.readCookie('owa_overlay');
 		//alert(unescape(p));
 		var params = OWA.util.parseCookieStringToJson(p);
-		params.action = 'base.getDomstream';
-		
+		params.action = 'getDomstream';
 		
 		//closure
 		var that = this;

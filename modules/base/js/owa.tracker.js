@@ -508,7 +508,9 @@ OWA.tracker.prototype = {
 	
 	getLoggerEndpoint : function() {
 	
-		return this.getOption('logger_endpoint') || this.getEndpoint() + 'log.php' || OWA.getSetting('baseUrl') + 'log.php';
+		var url = this.getOption('logger_endpoint') || this.getEndpoint() || OWA.getSetting('baseUrl') ;
+		
+		return url + 'log.php';
 	},
 	
 	setApiEndpoint : function(url) {
@@ -1030,17 +1032,18 @@ OWA.tracker.prototype = {
 		click.set('click_x', coords.x);
 		click.set('click_y', coords.y);
 		
-		//if all that works then log
-		if (this.getOption('logClicksAsTheyHappen')) {
-			this.trackEvent(click);
-		}
-		
 		// add to event queue is logging dom stream
 		if (this.getOption('trackDomStream')) {
 			this.addToEventQueue(click)
 		}
+		var full_click = OWA.util.clone(click);
+		//if all that works then log
+		if (this.getOption('logClicksAsTheyHappen')) {
+			this.trackEvent(full_click);
+		}
 		
-		this.click = click;
+				
+		this.click = full_click;
 	},
 	
 	// stub for a filter that will strip certain properties or abort the logging

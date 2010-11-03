@@ -206,6 +206,7 @@ class owa_paginatedResultSet {
 		
 		$formats = array('html' => 'resultSetToHtml',
 						 'json'	=>	'resultSetToJson',
+						 'jsonp' => 'resultSetToJsonp',
 						 'xml'	=>	'resultSetToXml',
 						 'php'	=>	'resultSetToSerializedPhp',
 						 'csv'	=>	'resultSetToCsv',
@@ -233,6 +234,28 @@ class owa_paginatedResultSet {
 	
 	function resultSetToJson() {
 		return json_encode($this);
+	}
+	
+	function resultSetToJsonp($callback = '') {
+		
+		// if not found look on the request scope.
+		if ( ! $callback ) {
+			$callback = owa_coreAPI::getRequestParam('jsonpCallback');
+		}
+		
+		if ( ! $callback ) {
+			
+			return $this->resultSetToJson();
+		}
+		
+		$t = new owa_template;
+		$t->set_template('json.php');
+		
+		// set
+		$body = sprintf("%s(%s);", $callback, json_encode( $this ) );
+		
+		$t->set('json', $body);
+		return $t->fetch();
 	}
 	
 	function resultSetToDebug() {
