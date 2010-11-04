@@ -33,8 +33,14 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 ignore_user_abort(true);
 $owa = new owa_php();
-$owa->e->debug('Logging Event from Url...');
-// log event
-$ret = $owa->logEventFromUrl();
-echo owa_coreAPI::displayView(array(), 'base.pixel');
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+	$owa->e->debug('Logging Event from Url...');
+	// log event
+	$ret = $owa->logEventFromUrl();
+	echo owa_coreAPI::displayView(array(), 'base.pixel');
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
+
 ?>

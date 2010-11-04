@@ -58,27 +58,35 @@ if (!empty($_POST)) {
 
 // Initialize owa
 $owa = &new owa_php;
-// setting CLI mode to true
-$owa->setSetting('base', 'cli_mode', true);
-// setting user auth
-$owa->setCurrentUser('admin', 'cli-user');
-// run controller or view and echo page content
-$s = owa_coreAPI::serviceSingleton();
-$s->loadCliCommands();
 
-if (array_key_exists('cmd', $params)) {
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+
+	// setting CLI mode to true
+	$owa->setSetting('base', 'cli_mode', true);
+	// setting user auth
+	$owa->setCurrentUser('admin', 'cli-user');
+	// run controller or view and echo page content
+	$s = owa_coreAPI::serviceSingleton();
+	$s->loadCliCommands();
 	
-	$cmd = $s->getCliCommandClass($params['cmd']);
-	
-	if ($cmd) {
-		$params['do'] = $cmd;
-		echo $owa->handleRequest($params);
+	if (array_key_exists('cmd', $params)) {
+		
+		$cmd = $s->getCliCommandClass($params['cmd']);
+		
+		if ($cmd) {
+			$params['do'] = $cmd;
+			echo $owa->handleRequest($params);
+		} else {
+			echo "Invalid command name.";
+		}
+		
 	} else {
-		echo "Invalid command name.";
+		echo "Missing a command argument.";
 	}
-	
+
 } else {
-	echo "Missing a command argument.";
+	// unload owa
+	$owa->restInPeace();
 }
 
 ?>

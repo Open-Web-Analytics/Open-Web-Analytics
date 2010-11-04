@@ -664,7 +664,9 @@
 				'currencyLocal'						=> 'en_US', // move to site settings
 				'memcachedServers'					=> array(),
 				'memcachedPersisantConnections'		=> true,
-				'cacheType'							=> 'file'
+				'cacheType'							=> 'file',
+				'disabledEndpoints'					=> array(),
+				'disableAllEndpoints'				=> false
 				
 			)
 		);

@@ -39,9 +39,12 @@ if (!$owa->isOwaInstalled()) {
 	owa_lib::redirectBrowser(owa_coreAPI::getSetting('base','public_url').'install.php');
 }
 
-// run controller or view and echo page content
-echo $owa->handleRequestFromURL();
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-// unload owa
-
+	// run controller or view and echo page content
+	echo $owa->handleRequestFromURL();
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
 ?>

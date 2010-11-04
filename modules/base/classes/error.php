@@ -137,8 +137,6 @@ class owa_error {
 		if (defined('OWA_CLI')) {
 			$this->addLogger('console', $mask);	
 		}
-		
-		return;
 	}
 	
 	function createCliDevelopmentHandler() {
@@ -146,19 +144,13 @@ class owa_error {
 		$mask = PEAR_LOG_ALL;
 		$this->addLogger('file', $mask);
 		$this->addLogger('console', $mask);
-	
-		return;
 	}
 	
 	function createCliProductionHandler() {
 		
-		$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG) ^ Log::MASK(PEAR_LOG_INFO);
-		$this->addLogger('file', $file_mask);
 		$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 		$this->addLogger('mail', $mail_mask);
 		$this->addLogger('console', $file_mask);
-		
-		return;
 	}
 	
 	function createProductionHandler() {
@@ -171,8 +163,6 @@ class owa_error {
 		if (defined('OWA_CLI')) {
 			$this->addLogger('console', $file_mask);	
 		}
-		
-		return;
 	}
 	
 	

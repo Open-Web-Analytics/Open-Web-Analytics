@@ -34,15 +34,21 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since		owa 1.0.0
  */
 
-
 $owa = new owa_php();
-$owa->setSetting('base', 'is_remote_event_queue', true);
-$owa->e->debug($_POST);
-$req = owa_coreAPI::getRequest();
-$ev = $owa->makeEvent();
-$event = unserialize(base64_decode(owa_coreAPI::getRequestParam('event')));
-$owa->e->debug(print_r($event,true));
-$dispatch = owa_coreAPI::getEventDispatch();
-$dispatch->asyncNotify($event);
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+
+	$owa->setSetting('base', 'is_remote_event_queue', true);
+	$owa->e->debug($_POST);
+	$req = owa_coreAPI::getRequest();
+	$ev = $owa->makeEvent();
+	$event = unserialize(base64_decode(owa_coreAPI::getRequestParam('event')));
+	$owa->e->debug(print_r($event,true));
+	$dispatch = owa_coreAPI::getEventDispatch();
+	$dispatch->asyncNotify($event);
+	
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
 
 ?>
