@@ -33,9 +33,15 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 $owa = new owa_php;
 
-$owa->e->debug('Special action request received...');
+$owa->e->debug('Special action request received by action.php...');
 
-// run controller or view and echo page content
-echo $owa->handleRequestFromUrl();
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+
+	// run controller or view and echo page content
+	echo $owa->handleRequestFromURL();
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
 
 ?>

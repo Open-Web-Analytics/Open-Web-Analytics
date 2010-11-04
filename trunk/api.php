@@ -36,6 +36,14 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 define('OWA_API', true);
 // invoke OWA
 $owa = new owa_php;
-echo $owa->handleRequest('', 'base.apiRequest');
+
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+
+	// run api command and echo page content
+	echo $owa->handleRequest('', 'base.apiRequest');
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
 
 ?>

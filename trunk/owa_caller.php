@@ -269,6 +269,22 @@ class owa_caller extends owa_base {
 		}
 	}
 	
+	function isEndpointEnabled($file_name) {
+		
+		if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
+			$disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
+			
+			if ( ! in_array( $file_name, $disabled_endpoints ) ) {
+				return true;
+			}
+		}
+	}
+	
+	function restInPeace() {
+	
+		echo '...';
+	}
+	
 }
 
 ?>
