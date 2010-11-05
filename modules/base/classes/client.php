@@ -427,7 +427,7 @@ class owa_client extends owa_caller {
 		}
 		
 		if (!empty($campaign_properties)) {
-			$campaign_properties['ts'] = $event->get('timestamp');
+			//$campaign_properties['ts'] = $event->get('timestamp');
 		}
 		
 		owa_coreAPI::debug('campaign properties: '. print_r($campaign_properties, true));
