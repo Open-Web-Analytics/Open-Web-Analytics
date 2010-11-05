@@ -60,7 +60,7 @@ class owa_dbEventQueue extends eventQueue {
 		
 		$qi = owa_coreAPI::entityFactory('base.queue_item');
 		$qi->load($item_id);
-		$inserted_timestamp = $qi->get('inserted_date');
+		$inserted_timestamp = $qi->get('insertion_timestamp');
 		if ($inserted_timestamp) {
 			$qi->set( 'failed_attempt_count' , $qi->get( 'failed_atempt_count' ) + 1 );
 			$qi->set( 'last_attempt_timestamp', $this->makeTimestamp() );
