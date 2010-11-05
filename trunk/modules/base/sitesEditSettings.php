@@ -62,7 +62,7 @@ class owa_sitesEditSettingsController extends owa_adminController {
 		$site->load( $site->generateId( $site_id ) );
 		$settings = $site->get( 'settings' );
 		
-		if ( ! $settings ) {
+		if ( ! is_array($settings) ) {
 			
 			$settings = array();
 		}
