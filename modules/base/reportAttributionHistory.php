@@ -48,7 +48,35 @@ $this->set('dimensionLink', array(
 			
 */	
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.');		
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.');
+		$this->set('gridFormatters', array('latestAttributions' =>
+				"function(value) {
+					var new_value = '';
+					if (value) {
+						value = JSON.parse(value);
+					}
+					for (var i=0; i < value.length; i++) {
+						for (prop in value[i]) {
+							if (prop === 'ts') {
+								value[i][prop] = new Date(value[i][prop]*1000);
+							}
+							new_value += OWA.util.sprintf('<B>%s</B>: %s ',prop,value[i][prop]);
+						}
+						new_value += '<BR>';
+					}			
+					return new_value;
+				}
+				"
+		));	
+		$this->set('gridFormatters', array('latestAttributions' =>
+				"function(value) {
+					if (value) {
+						table = jQuery('#attributionCell').jqote(JSON.parse(value), '*');
+						return table;
+					}
+				}
+				"
+		));	
 	}
 }
 

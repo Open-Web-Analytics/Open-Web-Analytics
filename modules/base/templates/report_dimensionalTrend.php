@@ -82,6 +82,13 @@
 				?>;
 	dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
 	<?php endif; ?>
+	
+	<?php if (isset($gridFormatters)):?>
+	<?php foreach ($gridFormatters as $col => $formatter): ?>
+	dim.options.grid.columnFormatters['<?php $this->out($col); ?>'] = <?php $this->out($formatter, false);?>;
+	<?php endforeach;?>
+	<?php endif;?>
+	
 	<?php if (!empty($excludeColumns)):?>
 	dim.options.grid.excludeColumns = [<?php echo $excludeColumns;?>];
 	<?php endif; ?>
