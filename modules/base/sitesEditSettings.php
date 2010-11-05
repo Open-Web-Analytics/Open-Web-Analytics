@@ -35,7 +35,7 @@ class owa_sitesEditSettingsController extends owa_adminController {
 	function __construct($params) {
 	
 		parent::__construct($params);
-		
+		print_r($this->params);
 		$this->setRequiredCapability('edit_sites');
 		$this->setNonceRequired();
 		
@@ -61,15 +61,26 @@ class owa_sitesEditSettingsController extends owa_adminController {
 		$site = owa_coreAPI::entityFactory( 'base.site' );
 		$site->load( $site->generateId( $site_id ) );
 		$settings = $site->get( 'settings' );
-		$new_settings = $this->getParam( 'config' );
-		$site->set('settings', array_merge( $settings, $new_settings ) );
-		$ret = $site->update();
 		
-		if ($ret) {
+		if ( ! $settings ) {
+			
+			$settings = array();
+		}
+		
+		$new_settings = $this->getParam( 'config' );
+		
+		if ($new_settings) {
+			$site->set('settings', array_merge( $settings, $new_settings ) );
+			
+			$ret = $site->update();
+			
+			if ($ret) {
+				$this->setStatusCode( 3201 );	
+			}
+			
 			$this->set('site_id', $site_id);
 			$this->set('edit', true);
-			$this->setStatusCode( 3201 );	
-			$this->setRedirectAction( 'base.sitesProfile' );	
+			$this->setRedirectAction( 'base.sitesProfile' );
 		}
 	}
 	
