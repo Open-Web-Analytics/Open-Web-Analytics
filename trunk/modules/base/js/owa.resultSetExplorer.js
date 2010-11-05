@@ -70,7 +70,8 @@ OWA.resultSetExplorer = function(dom_id, options) {
 		},
 		grid: {
 			showRowNumbers: true,
-			excludeColumns: []
+			excludeColumns: [],
+			columnFormatters: {}
 		},
 		template: {
 			template: '',
@@ -404,6 +405,11 @@ OWA.resultSetExplorer.prototype = {
 			_format = 'urlFormatter';
 		} else {
 			_format = 'useServerFormatter';
+		}
+		
+		// set custom formatter if one exists.
+		if (this.options.grid.columnFormatters.hasOwnProperty(column.name)) {
+			_format = this.options.grid.columnFormatters[column.name];
 		}
 				
 		var columnDef = {

@@ -153,7 +153,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
 		$this->registerDimension('countryCode', 'base.location_dim', 'country_code', 'Country Code', 'visitor', 'The ISO country code of the visitor.');
 		$this->registerDimension('stateRegion', 'base.location_dim', 'state', 'State/Region', 'visitor', 'The state or region of the visitor.');
-		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
+		
 		$this->registerDimension('timeSinceLastVisit', 'base.session', 'time_sinse_priorsession', 'Time Since Last Visit', 'visitor', 'The time since the last visit.', '', true);
 		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
 		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
@@ -292,6 +292,15 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('date', 'base.commerce_transaction_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('siteId', 'base.commerce_line_item_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true, 'site_id');
 		$this->registerDimension('siteId', 'base.commerce_transaction_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true, 'site_id');
+		// dom clicks
+		$this->registerDimension('siteId', 'base.click', 'site_id', 'Site Id', 'site', 'The site ID.', '', true, 'site_id');
+		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'date', 'The date.', '', true, 'yyyymmdd');
+		$this->registerDimension('domElementId', 'base.click', 'dom_element_id', 'Dom ID', 'dom', 'The id of the dom element.', '', true);
+		$this->registerDimension('domElementName', 'base.click', 'dom_element_name', 'Dom Name', 'dom', 'The name of the dom element.', '', true);
+		$this->registerDimension('domElementText', 'base.click', 'dom_element_text', 'Dom Text', 'dom', 'The text associated the dom element.', '', true);
+		$this->registerDimension('domElementValue', 'base.click', 'dom_element_value', 'Dom Value', 'dom', 'The value of the dom element.', '', true);
+		$this->registerDimension('domElementTag', 'base.click', 'dom_element_tag', 'Dom Tag', 'dom', 'The html tag of the dom element.', '', true);
+		
 		/**
 		 * Register CLI Commands
 		 *
@@ -405,7 +414,7 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 5);
 		$this->addNavigationLink('Reports', '', 'base.reportActionTracking', 'Action Tracking', 1);
 		$this->addNavigationLink('Reports', 'Action Tracking', 'base.reportActionGroups', 'Action Groups', 2);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitsGeolocation', 'Geo-location', 1);
+		$this->addNavigationLink('Reports', 'Visitors', 'base.reportGeolocation', 'Geo-location', 1);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
 		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsRecency', 'Visitor Recency', 4);

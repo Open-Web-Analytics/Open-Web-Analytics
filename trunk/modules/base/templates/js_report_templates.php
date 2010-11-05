@@ -42,3 +42,17 @@
 <th class="<*= this.result_type *>"><*= this.label *></th>
 ]]>
 </script>
+
+<script type="text/x-jqote-template" id="attributionCell">
+<![CDATA[
+<b><*= new Date(this.ts*1000) *></b><BR>
+<* if (this.md) { *> <i>Medium:</i> <*= this.md *> -> <* } *>
+<* if (this.sr) { *> <i>Source:</i> <*= this.sr *> -> <* } *>
+<* if (this.cn) { *> <i>Campaign:</i> <*= this.cn *> -> <* } *>
+<* if (this.ad) { *> <i>Ad:</i> <*= this.ad *> -> <* } *>
+<* if (this.at) { *> <i>Ad Type:</i> <*= this.at *> -> <* } *>
+<* if (this.st) { *> <i>Search Terms:</i> <*= this.st *><* } *>
+<br>
+]]>
+</script>
+

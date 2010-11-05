@@ -86,15 +86,38 @@ class owa_hostip extends owa_location {
 			}
 			
 			if (!empty($result['City'])) {
+				
 				list ($city, $state) = explode(',', $result['City']);
+			} 
+			
+			if (empty($city) || $city === 'Private Address') {
+				
+				$city = '(unknown)';
+			}
+			
+			if (empty($state) || $state === 'Private Address') {
+		
+				$state = '(unknown)';
 			}
 			
 			if (!empty($result['Country'])) {
-				list($country, $country_code) = explode('(', $result['Country']);	
+				list($country, $country_code) = explode('(', trim($result['Country']) );	
 				$country_code = substr($country_code,0,-1);
-				//owa_coreAPI::debug($result['Country'].' c: '. $country.' cc: '.$country_code);
+				owa_coreAPI::debug($result['Country'].' c: '. $country.' cc: '.$country_code);
+			} else {
+				$country = '(unknown)';
+				$country_code = '(not set)';
 			}
 			
+			if (empty($country) || strpos($country, 'UNKNOWN COUNTRY') ) {
+		
+				$country = '(unknown)';
+			}
+			
+			if ($country_code === 'XX') {
+				$country_code = '(not set)';
+			}
+				
 	       	$location_map['city'] = strtolower(trim($city));
 	       	$location_map['state'] =  strtolower(trim($state));
 			$location_map['country'] =  strtolower(trim($country));

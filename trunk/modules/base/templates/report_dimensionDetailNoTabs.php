@@ -37,6 +37,8 @@
 																	  
 		var trend = new OWA.resultSetExplorer('trend-chart');
 		trend.options.sparkline.metric = 'visits';
+		
+		
 		<?php if ($trendTitle):?>
 		trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
 		<?php endif;?>
