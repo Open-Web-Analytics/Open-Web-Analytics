@@ -60,8 +60,8 @@ class owa_dbEventQueue extends eventQueue {
 		
 		$qi = owa_coreAPI::entityFactory('base.queue_item');
 		$qi->load($item_id);
-		$inserted_date = $qi->get('inserted_date');
-		if ($inserted_date) {
+		$inserted_timestamp = $qi->get('inserted_date');
+		if ($inserted_timestamp) {
 			$qi->set( 'failed_attempt_count' , $qi->get( 'failed_atempt_count' ) + 1 );
 			$qi->set( 'last_attempt_timestamp', $this->makeTimestamp() );
 			$qi->set( 'not_before_timestamp', $this->determineNextAttempt($qi->get('event_type'), $qi->get('failed_attempt_count') ) );
@@ -164,7 +164,7 @@ class owa_dbEventQueue extends eventQueue {
 						$this->markAsHandled( $id );
 						owa_coreAPI::debug("EHS: marked item ($id) as handled.");
 					} else {
-						$this->markAsFailed( $item->get( 'id' ) );
+						$this->markAsFailed( $id );
 						owa_coreAPI::debug("EHS: marked item ($id) as failed.");
 					}	
 					
