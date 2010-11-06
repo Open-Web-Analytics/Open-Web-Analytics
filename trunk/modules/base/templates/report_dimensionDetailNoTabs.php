@@ -42,7 +42,7 @@
 		<?php if ($trendTitle):?>
 		trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
 		<?php endif;?>
-		<?php if ($trendChartMetric): ?>
+		<?php if (isset($trendChartMetric)): ?>
 		trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
 		<?php endif; ?>
 		trend.options.metricBoxes.width = '150px';

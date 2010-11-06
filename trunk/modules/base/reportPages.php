@@ -34,17 +34,18 @@ class owa_reportPagesController extends owa_reportController {
 	
 	function action() {
 			
-		$this->setSubview('base.reportDimension');
+		$this->setSubview('base.reportSimpleDimensional');
 		$this->setTitle('Web Pages');
-		$this->set('metrics', 'pageViews');
-		$this->set('dimensions', 'pageTitle,pageUrl');
-		$this->set('excludeColumns', "'pageUrl'");
+		$this->set('metrics', 'pageViews,visits,uniquePageViews');
+		// add ametrics override setting
+		$this->set('dimensions', 'pagePath,pageTitle,pageType');
+		//$this->set('excludeColumns', "'pageUrl'");
 		$this->set('sort', 'pageViews-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'pageTitle', 
-				'template' 		=> array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
-				'valueColumns' 	=> 'pageUrl'));
+				'linkColumn' 	=> 'pagePath', 
+				'template' 		=> array('do' => 'base.reportDocument', 'pagePath' => '%s'), 
+				'valueColumns' 	=> 'pagePath'));
 		$this->set('trendChartMetric', 'pageViews');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.');
 		$this->set('gridTitle', 'Top Pages');		
