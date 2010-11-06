@@ -488,14 +488,12 @@ class owa_view extends owa_base {
 		if (array_key_exists('site_id', $link_params) && !array_key_exists('siteId', $link_params)) {
 			$link_params['siteId'] = $link_params['site_id']; 
 		}
-						
+		$this->t->caller_params['link_state'] =  $link_params;				
 		$this->body->caller_params['link_state'] =  $link_params;
 		
-		if(!empty($this->subview)):
+		if(!empty($this->subview)) {
 			$this->subview->body->caller_params['link_state'] =  $link_params;
-		endif;
-		
-		return;
+		}
 	}
 	
 	function get($name) {
