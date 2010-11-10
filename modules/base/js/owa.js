@@ -1000,5 +1000,10 @@ OWA.util =  {
 			}
 		}
 		return newObj;
+	},
+	
+	strtolower : function( str ) {
+		
+		return (str+'').toLowerCase();
 	}
 }

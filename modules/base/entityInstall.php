@@ -38,17 +38,10 @@ class owa_entityInstallController extends owa_cliController {
 		return parent::__construct($params);
 	}
 	
-	function owa_entityInstallController($params) {
-	
-		return owa_entityInstallController::__construct($params);
-	}
-
 	function action() {
 		
 		$e = owa_coreAPI::entityFactory($this->getParam('entity'));
 		$e->createTable();
-
-		return;
 	}
 }
 

@@ -693,8 +693,13 @@ class owa_resultSetManager extends owa_base {
 	}
 	
 	function getLabel($key = '') {
-				
-		return $this->labels[$key];
+		
+		if (array_key_exists($key, $this->labels)) {
+			return $this->labels[$key];
+		} else {
+			owa_coreAPI::debug("No label found for $key.");
+		}
+		
 	}
 	
 	/**
@@ -1102,19 +1107,25 @@ class owa_resultSetManager extends owa_base {
 			
 			// add aggregate metric
 			$formula = $cm->getFormula();
+			$div_by_zero = false;
 			
 			foreach ($cm->getChildMetrics() as $metric_name) {
 				
 				$ag_value = $rs->getAggregateMetric($metric_name);
 				
-				if (empty($ag_value)) {
+				if (empty($ag_value) || $ag_value == 0) {
 					$ag_value = 0;
+					$div_by_zero = true;
 				}
 				
 				$formula = str_replace($metric_name, $ag_value, $formula);
 			}
 			
-			$value = $this->evalFormula($formula);
+			if ( ! $div_by_zero ) {
+				$value = $this->evalFormula($formula);
+			} else {
+				$value = 0;
+			}
 			
 			$rs->setAggregateMetric($cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
 			
@@ -1126,21 +1137,26 @@ class owa_resultSetManager extends owa_base {
 					
 					// add aggregate metric
 					$formula = $cm->getFormula();
-						
+					$row_div_by_zero = false;
 					foreach ($cm->getChildMetrics() as $metric_name) {
 						
 						$row_value = $row[$metric_name]['value'];
 						
-						if (empty($row_value)) {
+						if (empty($row_value) || $row_value == 0) {
 							$row_value = 0;
+							$row_div_by_zero = true;
 						}
 					
 						$formula = str_replace($metric_name, $row_value, $formula);	
 					
 					}
 					
-					$value = $this->evalFormula($formula);
-				
+					if ( ! $row_div_by_zero ) {
+						$value = $this->evalFormula($formula);
+					} else {
+						$value = 0;
+					}
+					
 					$rs->appendRow($k, 'metric', $cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
 				}
 			}

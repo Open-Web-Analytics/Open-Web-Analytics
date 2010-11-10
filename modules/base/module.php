@@ -137,6 +137,7 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('revenuePerTransaction', 'base.revenuePerTransaction');
 		$this->registerMetric('revenuePerVisit', 'base.revenuePerVisit');
 		$this->registerMetric('ecommerceConversionRate', 'base.ecommerceConversionRate');
+		$this->registerMetric('domClicks', 'base.domClicks');
 		/**
 		 * Register Dimensions
 		 *
@@ -249,21 +250,9 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
 		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');
 		
-		// commerce dimensions
-		$this->registerDimension(
-				'daysToTransaction', 
-				'base.session', 
-				'days_since_first_session', 
-				'Days To Purchase', 
-				'ecommerce', 
-				'The number of days between the first visit and a e-commerce transaction.',
-				'', 
-				true
-		);
-		
 		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', 'Days To Purchase', 'ecommerce', 'The number of days since the first visit and an e-commerce transaction.', '', true);
 		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transaction.', '', true);
-		$this->registerDimension('vistsToTransaction', 'base.session', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transactions', '', true);
+		
 		// productName
 		$this->registerDimension(
 				'productName', 
@@ -300,6 +289,7 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('domElementText', 'base.click', 'dom_element_text', 'Dom Text', 'dom', 'The text associated the dom element.', '', true);
 		$this->registerDimension('domElementValue', 'base.click', 'dom_element_value', 'Dom Value', 'dom', 'The value of the dom element.', '', true);
 		$this->registerDimension('domElementTag', 'base.click', 'dom_element_tag', 'Dom Tag', 'dom', 'The html tag of the dom element.', '', true);
+		$this->registerDimension('domElementClass', 'base.click', 'dom_element_class', 'Dom Class', 'dom', 'The class of the dom element.', '', true);
 		
 		/**
 		 * Register CLI Commands
@@ -403,8 +393,8 @@ class owa_baseModule extends owa_module {
 		$this->addNavigationLink('Reports', '', 'base.reportEcommerce', 'Ecommerce', 1);
 		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportRevenue', 'Revenue', 2);
 		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 3);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.visitsToPurchase', 'Visits To Purchase', 4);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.daysToPurchase', 'Days To Purchase', 5);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportVisitsToPurchase', 'Visits To Purchase', 4);
+		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportDaysToPurchase', 'Days To Purchase', 5);
 
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
 		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);

@@ -150,6 +150,26 @@ class owa_base_006_update extends owa_update {
 			$this->e->notice( "populating id column in owa_site failed." );
 			return false;
 		}
+		
+		$click = owa_coreAPI::entityFactory('base.click');
+		$ret = $click->addColumn('dom_element_class');
+		
+		if ( $ret === true ) {
+			$this->e->notice( "dom_element_class added to owa_click" );
+		} else {
+			$this->e->notice( "Adding dom_element_class to owa_click failed." );
+			return false;
+		}
+		
+		$ret = $click->addColumn('dom_element_parent_id');
+		
+		if ( $ret === true ) {
+			$this->e->notice( "dom_element_parent_id added to owa_click" );
+		} else {
+			$this->e->notice( "Adding dom_element_parent_id to owa_click failed." );
+			return false;
+		}
+		
 	
 		//create new entitiy tables
 		$new_entities = array(
@@ -229,11 +249,16 @@ class owa_base_006_update extends owa_update {
 
 		$site = owa_coreAPI::entityFactory('base.site');
 		$site->dropColumn('settings');
-		$site->modifyColumn('id');
+		//$site->modifyColumn('id');
 		$db = owa_coreAPI::dbSingleton();
+		$db->query('ALTER TABLE owa_site MODIFY id SERIAL');
 		$db->query('UPDATE owa_site SET id = id_1_3');
 		$ret = $db->query('ALTER TABLE owa_site MODIFY id INT');
 		$db->query('ALTER TABLE owa_site DROP id_1_3');
+		
+		$click = owa_coreAPI::entityFactory('base.click');
+		$click->dropColumn('dom_element_class');
+		$click->dropColumn('dom_element_parent_id');
 		
 		//drop tables
 		$new_entities = array(

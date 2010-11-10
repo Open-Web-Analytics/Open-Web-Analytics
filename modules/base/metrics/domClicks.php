@@ -16,11 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_reportController.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
-
 /**
- * Days To Purchase Report Controller
+ * Clicks metric
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,19 +28,17 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.4.0
  */
 
-class owa_reportDaysToPurchaseController extends owa_reportController {
+class owa_domClicks extends owa_metric {
+
+	function __construct() {
 	
-	function action() {
-		
-		$this->setSubview('base.reportSimpleDimensional');
-		$this->setTitle('Days To Purchase');
-		$this->set('metrics', 'transactions');
-		$this->set('dimensions', 'daysToTransaction');
-		$this->set('sort', 'daysToTransaction');
-		$this->set('resultsPerPage', 30);
-		$this->set('trendChartMetric', 'transactions');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.');
-				
+		$this->setName('domClicks');
+		$this->setLabel('Dom Clicks');
+		$this->setEntity('base.click');
+		$this->setColumn('id');
+		$this->setSelect(sprintf("count(%s)", $this->getColumn()));
+		$this->setDataType('integer');
+		return parent::__construct();
 	}
 }
 

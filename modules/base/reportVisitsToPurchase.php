@@ -41,7 +41,7 @@ class owa_reportVisitsToPurchaseController extends owa_reportController {
 		$this->set('dimensions', 'visitsToTransaction');
 		$this->set('sort', 'visitsToTransaction');
 		$this->set('resultsPerPage', 30);
-		
+		$this->set('trendChartMetric', 'transactions');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.');
 				
 	}
