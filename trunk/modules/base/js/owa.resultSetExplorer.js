@@ -872,7 +872,7 @@ OWA.resultSetExplorer.prototype = {
 				
 				// if there are extra slices then lump into other bucket.
 				if (this.resultSet.resultsRows.length > iterations) {
-					var other = this.resultSet.aggregates[metric] - count;
+					var others = this.resultSet.aggregates[metric] - count;
 					data.push({label: 'others', data: others});
 				}
 				

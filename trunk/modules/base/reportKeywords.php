@@ -37,7 +37,7 @@ class owa_reportKeywordsController extends owa_reportController {
 		$this->setView('base.report');
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Referring Search Terms');
-		$this->set('metrics', 'visits,pageViews,bounces');
+		//$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'referralSearchTerms');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
@@ -47,7 +47,7 @@ class owa_reportKeywordsController extends owa_reportController {
 				'valueColumns' 	=> 'referralSearchTerms'));
 		$this->set('constraints', 'source==organic-search');
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formated_value *> visits from search engines.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.');
 	}
 }
 

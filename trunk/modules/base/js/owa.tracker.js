@@ -1013,10 +1013,27 @@ OWA.tracker.prototype = {
 		
 		//clicked DOM element properties
 	    var targ = this._getTarget(e);
+	    
+	    if ( ! targ.hasOwnProperty( 'name' ) ) {
+	    	targ.name = '(not set)';
+	    }  
+	    
+	    if ( ! targ.hasOwnProperty( 'value' ) ) { 
+	    	targ.value = '(not set)';
+	    }
+	    
+	    if ( ! targ.hasOwnProperty( 'id' ) ) {
+	    	targ.id = '(not set)';
+	    }
+	    
+	     if ( ! targ.hasOwnProperty( 'className' ) ) {
+	    	targ.className = '(not set)';
+	    }
+	    
 	    click.set("dom_element_name", targ.name);
 	    click.set("dom_element_value", targ.value);
 	    click.set("dom_element_id", targ.id);
-	    click.set("dom_element_tag", targ.tagName);
+	    click.set("dom_element_tag", OWA.util.strtolower(targ.tagName));
 	    click.set("dom_element_class", targ.className);
 	    click.set("page_url", window.location.href);
 	    // view port dimensions - needed for calculating relative position

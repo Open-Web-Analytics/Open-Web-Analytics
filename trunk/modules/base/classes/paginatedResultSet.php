@@ -318,7 +318,11 @@ class owa_paginatedResultSet {
 	
 	function getAggregateMetric($name) {
 		
-		return $this->aggregates[$name]['value'];
+		if (array_key_exists($name, $this->aggregates)) {
+			return $this->aggregates[$name]['value'];
+		} else {
+			owa_coreAPI::debug("No aggregate metric called $name found.");
+		}
 	}
 	
 	function setAggregateMetric($name, $value, $label, $data_type, $formatted_value = '') {

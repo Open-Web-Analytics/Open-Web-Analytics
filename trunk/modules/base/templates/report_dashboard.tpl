@@ -119,7 +119,7 @@
 													  
 	OWA.items.tc = new OWA.resultSetExplorer('top-pages');
 	OWA.items.tc.options.grid.showRowNumbers = false;
-	OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'));?>', ['pageUrl']);
+	OWA.items.tc.addLinkToColumn('pageTitle', '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => '%s'), true);?>', ['pageUrl']);
 	OWA.items.tc.options.grid.excludeColumns = ['pageUrl'];
 	OWA.items.tc.asyncQueue.push(['refreshGrid']);
 	OWA.items.tc.load(tcurl);

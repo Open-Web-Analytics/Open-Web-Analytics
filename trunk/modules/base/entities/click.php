@@ -102,6 +102,10 @@ class owa_click extends owa_entity {
 		$this->properties['dom_element_tag']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['dom_element_text'] = new owa_dbColumn;
 		$this->properties['dom_element_text']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['dom_element_class'] = new owa_dbColumn;
+		$this->properties['dom_element_class']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['dom_element_parent_id'] = new owa_dbColumn;
+		$this->properties['dom_element_parent_id']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['tag_id'] = new owa_dbColumn;
 		$this->properties['tag_id']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['placement_id'] = new owa_dbColumn;
