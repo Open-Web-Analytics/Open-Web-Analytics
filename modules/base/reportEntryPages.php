@@ -36,7 +36,7 @@ class owa_reportEntryPagesController extends owa_reportController {
 			
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Entry Pages');
-		$this->set('metrics', 'visits,pageViews,bounces');
+		//$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'entryPageTitle,entryPagePath,entryPageUrl');
 		$this->set('sort', 'pageViews-');
 		$this->set('resultsPerPage', 30);
@@ -45,7 +45,7 @@ class owa_reportEntryPagesController extends owa_reportController {
 				'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
 				'valueColumns' => 'entryPageUrl'));
 				
-		$this->set('trendChartMetric', 'pageViews');
+		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits to the site through all entry pages.');
 		$this->set('gridTitle', 'Top Entry Pages');	
 		$this->set('excludeColumns', "'entryPageUrl'");	
