@@ -114,7 +114,7 @@ class owa_processEventController extends owa_controller {
 		
 		// set page type to unknown if not already set by caller
 		if (!$this->event->get('page_type')) {
-			$this->event->set('page_type', $this->getMsg(3600));
+			$this->event->set('page_type', '(not set)');
 		} 
 		
 		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
