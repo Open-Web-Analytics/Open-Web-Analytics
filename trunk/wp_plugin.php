@@ -346,7 +346,7 @@ function owa_main() {
 	
 	//Check to see if this is a Feed Reeder
 	if( $owa->getSetting('base', 'log_feedreaders') && is_feed() ) {
-		$event = $this->makeEvent();
+		$event = $owa->makeEvent();
 		$event->setEventType('base.feed_request');
 		$event->set('feed_format', $_GET['feed']);
 		// Process the request by calling owa
