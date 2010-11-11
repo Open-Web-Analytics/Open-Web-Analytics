@@ -90,40 +90,10 @@ class owa_sessionHandlers extends owa_observer {
 			$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
 					
 			// set medium
-			$s->set('medium', $event->get('medium'));
-			
-			// set source
-			if ($event->get('source')) {
-				$s->set('source_id', $s->generateId( 
-					trim( strtolower( $event->get('source') ) ) ) );		
-			}
-				
-			// set search terms
-			if ($event->get('search_terms')) {
-				$s->set('referring_search_term_id', $s->generateId( 
-					trim( strtolower( $event->get('search_terms') ) ) ) );		
-			}
-			
-			// set campaign
-			if ($event->get('campaign')) {
-				$s->set('campaign_id', $s->generateId( 
-					trim( strtolower( $event->get('campaign') ) ) ) );		
-			}
-			
-			// set ad
-			if ($event->get('ad')) {
-				$s->set('ad_id', $s->generateId( 
-					trim( strtolower( $event->get('ad') ) ) ) );		
-			}
+			//$s->set('medium', $event->get('medium'));
 			
 			// set campaign touches
 			$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
-			
-			// Make ua id
-			$s->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
-			
-			// Make OS id
-			$s->set('os_id', owa_lib::setStringGuid($event->get('os')));
 		
 			// Make document ids	
 			$s->set('first_page_id', owa_lib::setStringGuid($event->get('page_url')));
@@ -135,8 +105,6 @@ class owa_sessionHandlers extends owa_observer {
 			if ($event->get('external_referer')) {
 				$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 			}	
-			// Generate Host id
-			$s->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
 			
 			// this should already be set by the request handler.
 			$s->set( 'location_id', $event->get( 'location_id' ) );
@@ -200,31 +168,27 @@ class owa_sessionHandlers extends owa_observer {
 			// update last page id
 			$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
 			
-				// set medium
+			// set medium
 			$s->set('medium', $event->get('medium'));
 			
 			// set source
-			if ($event->get('source')) {
-				$s->set('source_id', $s->generateId( 
-					trim( strtolower( $event->get('source') ) ) ) );		
+			if ($event->get('source_id')) {
+				$s->set('source_id', $event->get('source_id') );		
 			}
 				
 			// set search terms
-			if ($event->get('search_terms')) {
-				$s->set('referring_search_term_id', $s->generateId( 
-					trim( strtolower( $event->get('search_terms') ) ) ) );		
+			if ($event->get('referring_search_term_id')) {
+				$s->set('referring_search_term_id',  $event->get('referring_search_term_id') );		
 			}
 			
 			// set campaign
-			if ($event->get('campaign')) {
-				$s->set('campaign_id', $s->generateId( 
-					trim( strtolower( $event->get('campaign') ) ) ) );		
+			if ($event->get('campaign_id')) {
+				$s->set('campaign_id', $event->get('campaign_id') );		
 			}
 			
 			// set ad
-			if ($event->get('ad')) {
-				$s->set('ad_id', $s->generateId( 
-					trim( strtolower( $event->get('ad') ) ) ) );		
+			if ($event->get('ad_id')) {
+				$s->set('ad_id', $event->get('ad_id') );		
 			}
 			
 			// set campaign touches

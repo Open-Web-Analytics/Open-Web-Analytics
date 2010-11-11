@@ -274,6 +274,11 @@ OWA.tracker.prototype = {
 	player: '',
 	overlay: '',
 	
+	setDebug : function(bool) {
+		
+		OWA.setSetting('debug', bool);
+	},
+	
 	checkForLinkedState : function() {
 		
 		var ls = this.getUrlParam('owa_state');
@@ -973,20 +978,16 @@ OWA.tracker.prototype = {
 	        
 	        properties.target_url =  targ.href;
 	        
-	    }
-	    
-	    else if (targ.tagName == "INPUT") {
+	    } else if (targ.tagName == "INPUT") {
 	    
 	        properties.dom_element_text = targ.value;
-	    }
 	    
-	    else if (targ.tagName == "IMG") {
+	    } else if (targ.tagName == "IMG") {
 	    
 	        properties.target_url = targ.parentNode.href;
 	        properties.dom_element_text = targ.alt;
-	    }
 	    
-	    else {
+	    } else {
 	    
 	    	//properties.target_url = targ.parentNode.href || null;
 	    	
@@ -1014,27 +1015,31 @@ OWA.tracker.prototype = {
 		//clicked DOM element properties
 	    var targ = this._getTarget(e);
 	    
-	    if ( ! targ.hasOwnProperty( 'name' ) ) {
-	    	targ.name = '(not set)';
-	    }  
-	    
-	    if ( ! targ.hasOwnProperty( 'value' ) ) { 
-	    	targ.value = '(not set)';
+	    var dom_name = '(not set)';
+	    if ( targ.hasOwnProperty( 'name' ) && targ.name.length > 0 ) {
+	    	dom_name = targ.name;
 	    }
+	    click.set("dom_element_name", dom_name);
 	    
-	    if ( ! targ.hasOwnProperty( 'id' ) ) {
-	    	targ.id = '(not set)';
+	    var dom_value = '(not set)';
+	    if ( targ.hasOwnProperty( 'value' ) && targ.value.length > 0 ) { 
+	    	dom_value = targ.value;
 	    }
+	    click.set("dom_element_value", dom_value);
 	    
-	     if ( ! targ.hasOwnProperty( 'className' ) ) {
-	    	targ.className = '(not set)';
+	    var dom_id = '(not set)';
+	    if ( ! targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
+	    	dom_id = targ.id;
 	    }
+	    click.set("dom_element_id", dom_id);
 	    
-	    click.set("dom_element_name", targ.name);
-	    click.set("dom_element_value", targ.value);
-	    click.set("dom_element_id", targ.id);
-	    click.set("dom_element_tag", OWA.util.strtolower(targ.tagName));
-	    click.set("dom_element_class", targ.className);
+	    var dom_class = '(not set)';
+	    if ( targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
+	    	dom_class = targ.className;
+	    }
+	    click.set("dom_element_class", dom_class);
+	    
+	    click.set("dom_element_tag", OWA.util.strtolower(targ.tagName)); 
 	    click.set("page_url", window.location.href);
 	    // view port dimensions - needed for calculating relative position
 	    var viewport = this.getViewportDimensions();
@@ -1164,18 +1169,23 @@ OWA.tracker.prototype = {
 	},
 	
 	keypressEventHandler : function(e) {
+		var targ = this._getTarget(e);
+		
+		if (targ.tagName === 'INPUT' && targ.type === 'password') {
+			return;
+		}
+		
 		var key_code = e.keyCode? e.keyCode : e.charCode
 		var key_value = String.fromCharCode(key_code); 
 		var event = new OWA.event();
 		event.setEventType('dom.keypress');
 		event.set('key_value', key_value);
 		event.set('key_code', key_code);
-		var targ = this._getTarget(e);
 		event.set("dom_element_name", targ.name);
 	    event.set("dom_element_value", targ.value);
 	    event.set("dom_element_id", targ.id);
 	    event.set("dom_element_tag", targ.tagName);
-	    //console.log("Keypress: %s %d", key_value, key_code);
+    	//console.log("Keypress: %s %d", key_value, key_code);
 		this.addToEventQueue(event);
 		
 	},

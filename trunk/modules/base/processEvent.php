@@ -261,6 +261,9 @@ class owa_processEventController extends owa_controller {
 			}
 			
 			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
+		} else {
+			// remove ip address from event
+			$this->event->set('ip_address', '(not set)');
 		}
 		
 		// calc days since first session
@@ -286,18 +289,19 @@ class owa_processEventController extends owa_controller {
 				$this->setSource();
 			}
 			
-			if ( $this->event->get( 'source' ) ) {
+		}
+		
+		if ( $this->event->get( 'source' ) ) {
 				$this->event->set( 'source_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'source' ) ) ) ) );
 			}
 			
-			if ( $this->event->get( 'campaign' ) ) {
-				$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
-			}
-			
-			if ( $this->event->get( 'ad' ) ) {
-				$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
-			}
-		}			
+		if ( $this->event->get( 'campaign' ) ) {
+			$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
+		}
+		
+		if ( $this->event->get( 'ad' ) ) {
+			$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
+		}		
 	}
 	
 	function post() {
