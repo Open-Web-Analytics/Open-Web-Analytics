@@ -39,7 +39,7 @@ class owa_reportSourceDetailController extends owa_reportController {
 		$dim_value = $this->getParam('source');
 		
 		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Host Detail: ', $dim_value);
+		$this->setTitle('Source Detail: ', $dim_value);
 		//$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimension', $dim_name);
 		$this->set('trendChartMetric', 'visits');
