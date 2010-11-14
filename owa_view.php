@@ -471,8 +471,7 @@ class owa_view extends owa_base {
 		// control array - will check for these params. If they exist it will return.
 		$sp = array('period' => null, 
 					'startDate' => null, 
-					'endDate' => null, 
-					'site_id' => null,
+					'endDate' => null,
 					'siteId' => null,  
 					'startTime' => null, 
 					'endTime' => null);

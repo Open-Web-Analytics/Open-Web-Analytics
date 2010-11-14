@@ -132,6 +132,17 @@ class owa_reportController extends owa_adminController {
 				
 		$this->set('tabs', $tabs);
 		$this->set('tabs_json', json_encode($tabs));
+		
+		
+		//$this->body->set('sub_nav', owa_coreAPI::getNavigation($this->get('nav_tab'), 'sub_nav'));
+		$nav = owa_coreAPI::getGroupNavigation('Reports');
+		
+		if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'ecommerce_reporting' ) ) {
+			unset($nav['Ecommerce']);
+		}
+		
+		$this->set('top_level_report_nav', $nav);
+		
 	}
 	
 	function post() {
