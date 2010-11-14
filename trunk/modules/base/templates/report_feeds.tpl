@@ -1,1 +1,1 @@
-<?php require('report_dimensionalTrend.php');?>
+<?php require('report_dimensionDetailNoTabs.php');?>
