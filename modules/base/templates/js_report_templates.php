@@ -45,7 +45,7 @@
 
 <script type="text/x-jqote-template" id="attributionCell">
 <![CDATA[
-<b><*= new Date(this.ts*1000) *></b><BR>
+<b>Atribution <*=(j+1) *>:</b><BR>
 <* if (this.md) { *> <i>Medium:</i> <*= this.md *> -> <* } *>
 <* if (this.sr) { *> <i>Source:</i> <*= this.sr *> -> <* } *>
 <* if (this.cn) { *> <i>Campaign:</i> <*= this.cn *> -> <* } *>
