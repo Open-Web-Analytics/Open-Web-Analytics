@@ -249,6 +249,7 @@ class owa_template extends Template {
 				$name = 'Unknown Browser';
 				break; 
 			default:
+				$name = 'Unknown Browser';
 				$file = 'default_browser.png';
 			
 		}

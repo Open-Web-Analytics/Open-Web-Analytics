@@ -20,7 +20,7 @@ if it is to be tracked/reported separately.</P>
 	<TR>
 		<TD>
 			<span style="font-size:14px; font-weight:bold;">
-				<a href="<?php $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $value['site_id'] ) );?>"><?php $this->out( $value['name'] );?></a>
+				<a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $value['site_id'] ), false );?>"><?php $this->out( $value['name'] );?></a>
 			</span><BR>
 			<?php if (!empty($value['description'])):?>
 			<span class="info_text"><?php $this->out( $value['description'] );?></span><BR>
@@ -29,9 +29,9 @@ if it is to be tracked/reported separately.</P>
 		</TD>
 		
 		<TD>
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'site_id' => $value['site_id'], 'edit' => true ) );?>">Edit</a> |
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'site_id' => $value['site_id'] ), false, false, false, true );?>">Delete</a> |
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'site_id' => $value['site_id'] ) );?>">Get Tracking Code</a> | 
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $value['site_id'], 'edit' => true ) );?>">Edit</a> |
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $value['site_id'] ), false, false, false, true );?>">Delete</a> |
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $value['site_id'] ) );?>">Get Tracking Code</a> | 
 			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $value['site_id'] ) );?>">Goals</a>
 		</TD>
 	

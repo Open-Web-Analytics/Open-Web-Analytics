@@ -7,8 +7,8 @@
 		<?php foreach ($tabs as $k => $tab): ?>
 		<div id="tab_<?php $this->out($k); ?>">
 			
-				<div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
-				<?php if($pie): ?>	
+				<div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if( $this->get( 'pie' ) ) {echo 'float:right';}?>"></div>
+				<?php if ( $this->get('pie' ) ): ?>	
 				<div id="pie" style="min-width:300px;"></div>
 				<?php endif;?>
 				<div class="spacer" style="clear:both; height:20px;"></div>
@@ -83,7 +83,7 @@
 	dim.addLinkToColumn('<?php echo $dimensionLink['linkColumn'];?>', link, values);
 	<?php endif; ?>
 	
-	<?php if (isset($gridFormatters)):?>
+	<?php if (isset($gridFormatters) && ! empty($gridFormatters) ):?>
 	<?php foreach ($gridFormatters as $col => $formatter): ?>
 	dim.options.grid.columnFormatters['<?php $this->out($col); ?>'] = <?php $this->out($formatter, false);?>;
 	<?php endforeach;?>
