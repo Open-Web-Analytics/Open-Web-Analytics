@@ -37,7 +37,7 @@ class owa_reportActionDetailController extends owa_reportController {
 		$actionName = $this->getParam('actionName');
 		$actionGroup = $this->getParam('actionGroup');
 		
-		$this->setSubview('base.reportDimension');
+		$this->setSubview('base.reportSimpleDimensional');
 		$this->setTitle('Action Detail: ', $actionGroup.': '.$actionName);
 		$this->set('metrics', 'actions,actionsValue');
 		$this->set('dimension', 'actionLabel');
