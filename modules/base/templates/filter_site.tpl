@@ -12,7 +12,7 @@
 	<span class="genericHorizontalList" style="font-size:12px;float:left;vertical-align:middle;">
 	<ul>
 		<LI>
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'site_id' => $params['siteId'], 'edit' => true ) );?>">Settings</a>	
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $params['siteId'], 'edit' => true ) );?>">Settings</a>	
 		</LI>
 		<LI>
 			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $params['siteId'] ) );?>">Goals</a>	

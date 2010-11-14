@@ -367,7 +367,7 @@ class owa_resultSetManager extends owa_base {
 		if ($dimension) {
 			//$entity = ;
 			$dim = $dimension;
-			
+			$fk = array();
 			// check for foreign key column by name if dimension specifies one
 			if (array_key_exists('foreign_key_name', $dim) && !empty($dim['foreign_key_name'])) {
 				// get foreign key col by 
@@ -697,7 +697,7 @@ class owa_resultSetManager extends owa_base {
 		if (array_key_exists($key, $this->labels)) {
 			return $this->labels[$key];
 		} else {
-			owa_coreAPI::debug("No label found for $key.");
+			//owa_coreAPI::debug("No label found for $key.");
 		}
 		
 	}
@@ -1080,6 +1080,10 @@ class owa_resultSetManager extends owa_base {
 			
 			$rs = $this->computeCalculatedMetrics($rs);
 			
+			if ($dim) {
+			
+			}
+			
 			// add urls
 			$urls = $this->makeResultSetUrls();
 			$rs->self = $urls['self'];
@@ -1140,8 +1144,11 @@ class owa_resultSetManager extends owa_base {
 					$row_div_by_zero = false;
 					foreach ($cm->getChildMetrics() as $metric_name) {
 						
-						$row_value = $row[$metric_name]['value'];
-						
+						if (array_key_exists($metric_name, $row)) {
+							$row_value = $row[$metric_name]['value'];
+						} else {
+							$row_value = '';
+						}
 						if (empty($row_value) || $row_value == 0) {
 							$row_value = 0;
 							$row_div_by_zero = true;

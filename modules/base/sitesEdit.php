@@ -43,16 +43,16 @@ class owa_sitesEditController extends owa_adminController {
 		
 		// check that user_id is present
 		$v1 = owa_coreAPI::validationFactory('required');
-		$v1->setValues($this->getParam('site_id'));
-		$this->setValidation('site_id', $v1);
+		$v1->setValues($this->getParam('siteId'));
+		$this->setValidation('siteId', $v1);
 		
 		// Check user name exists
 		$v2 = owa_coreAPI::validationFactory('entityExists');
 		$v2->setConfig('entity', 'base.site');
 		$v2->setConfig('column', 'site_id');
-		$v2->setValues($this->getParam('site_id'));
+		$v2->setValues($this->getParam('siteId'));
 		$v2->setErrorMessage($this->getMsg(3208));
-		$this->setValidation('site_id', $v2);
+		$this->setValidation('siteId', $v2);
 	}
 	
 	function action() {
@@ -60,7 +60,7 @@ class owa_sitesEditController extends owa_adminController {
 		// This needs form validation in a bad way.
 		
 		$site = owa_coreAPI::entityFactory('base.site');
-		$site->set('site_id', $this->params['site_id']);
+		$site->set('site_id', $this->params['siteId']);
 		$site->set('name', $this->params['name']);
 		$site->set('domain', $this->params['domain']);
 		$site->set('description', $this->params['description']);

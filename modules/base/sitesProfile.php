@@ -42,10 +42,10 @@ class owa_sitesProfileController extends owa_adminController {
 	function action() {
 		
 		// needed as this controller is 
-		$site_id = $this->getParam('site_id');
+		$site_id = $this->getParam('siteId');
 		if (!empty($site_id)) {
 			$site = owa_coreAPI::entityFactory('base.site');
-			$site->getByColumn('site_id', $this->getParam('site_id'));
+			$site->getByColumn('site_id', $site_id);
 			$site_data = $site->_getProperties();
 			$this->set('config', $site->get('settings') );
 			$this->set('edit', $this->getParam('edit'));
@@ -54,7 +54,7 @@ class owa_sitesProfileController extends owa_adminController {
 		}
 		
 		$this->set('site', $site_data);
-		$this->set('site_id', $site_id);
+		$this->set('siteId', $site_id);
 		$this->setView('base.options');
 		$this->setSubview('base.sitesProfile');
 	}
@@ -92,7 +92,7 @@ class owa_sitesProfileView extends owa_view {
 		$this->t->set( 'page_title', 'Site Profile for: '.  $site['domain'] );
 		$this->body->set( 'site', $site );
 		$this->body->set( 'edit', $this->get('edit') );
-		$this->body->set( 'site_id', $this->get('site_id') );
+		$this->body->set( 'site_id', $this->get('siteId') );
 		$this->body->set( 'config', $this->get('config') );
 		//print_r($this->get('config'));
 		$this->body->set_template( 'sites_addoredit.tpl' );	

@@ -11,7 +11,7 @@
 		<TR>
 			<TH>Site ID:</TH>
 			<TD><?php $this->out( $site['site_id'] );?></TD>
-			<input type="hidden" name="<?php echo $this->getNs();?>site_id" value="<?php $this->out( $site['site_id'] );?>">
+			<input type="hidden" name="<?php echo $this->getNs();?>siteId" value="<?php $this->out( $site['site_id'] );?>">
 
 		</TR>
 		<?php endif;?>
@@ -97,7 +97,7 @@
 		<BR>
 		
 		<?php echo $this->createNonceFormField('base.sitesEditSettings');?>
-		<input type="hidden" name="<?php echo $this->getNs();?>site_id" value="<?php $this->out( $site['site_id'] );?>">
+		<input type="hidden" name="<?php echo $this->getNs();?>siteId" value="<?php $this->out( $site['site_id'] );?>">
 		<input type="hidden" name="<?php echo $this->getNs();?>module" value="base">
 		<input type="hidden" name="<?php echo $this->getNs();?>action" value="base.sitesEditSettings">
 		<input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Settings">

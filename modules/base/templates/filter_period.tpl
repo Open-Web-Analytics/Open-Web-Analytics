@@ -3,7 +3,7 @@
 	<table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0">
 		<TR>
 			<TD class="owa_reportPeriodLabelText">
-				<span><?php echo $period_label;?><?php echo $date_label;?></span>						
+				<span><?php $this->out( $this->get( 'period_label' ) );?><?php $this->out( $this->get( 'date_label' ) );?></span>						
 			</TD>
 			<TD class="owa_reportRevealControl"></TD>	
 		</TR>

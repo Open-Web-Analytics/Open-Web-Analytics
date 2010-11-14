@@ -35,7 +35,6 @@ class owa_sitesEditSettingsController extends owa_adminController {
 	function __construct($params) {
 	
 		parent::__construct($params);
-		print_r($this->params);
 		$this->setRequiredCapability('edit_sites');
 		$this->setNonceRequired();
 		
@@ -43,21 +42,21 @@ class owa_sitesEditSettingsController extends owa_adminController {
 		
 		// check that user_id is present
 		$v1 = owa_coreAPI::validationFactory('required');
-		$v1->setValues($this->getParam('site_id'));
-		$this->setValidation('site_id', $v1);
+		$v1->setValues($this->getParam('siteId'));
+		$this->setValidation('siteId', $v1);
 		
 		// Check site exists
 		$v2 = owa_coreAPI::validationFactory('entityExists');
 		$v2->setConfig('entity', 'base.site');
 		$v2->setConfig('column', 'site_id');
-		$v2->setValues($this->getParam('site_id'));
+		$v2->setValues($this->getParam('siteId'));
 		$v2->setErrorMessage($this->getMsg(3208));
-		$this->setValidation('site_id', $v2);
+		$this->setValidation('siteId', $v2);
 	}
 	
 	function action() {
 	
-		$site_id = $this->getParam( 'site_id' );
+		$site_id = $this->getParam( 'siteId' );
 		$site = owa_coreAPI::entityFactory( 'base.site' );
 		$site->load( $site->generateId( $site_id ) );
 		$settings = $site->get( 'settings' );
@@ -78,7 +77,7 @@ class owa_sitesEditSettingsController extends owa_adminController {
 				$this->setStatusCode( 3201 );	
 			}
 			
-			$this->set('site_id', $site_id);
+			$this->set('siteId', $site_id);
 			$this->set('edit', true);
 			$this->setRedirectAction( 'base.sitesProfile' );
 		}
@@ -89,7 +88,7 @@ class owa_sitesEditSettingsController extends owa_adminController {
 		$this->setView('base.options');
 		$this->setSubview('base.sitesProfile');
 		$this->set('error_code', 3311);
-		$site_id = $this->getParam( 'site_id' );
+		$site_id = $this->getParam( 'siteId' );
 		$site = owa_coreAPI::entityFactory( 'base.site' );
 		$site->load( $site->generateId( $site_id ) );
 		$this->set('site', $site);
