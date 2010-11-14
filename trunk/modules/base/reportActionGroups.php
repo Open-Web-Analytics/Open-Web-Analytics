@@ -35,7 +35,7 @@ class owa_reportActionGroupsController extends owa_reportController {
 	
 	function action() {
 			
-		$this->setSubview('base.reportDimension');
+		$this->setSubview('base.reportSimpleDimensional');
 		$this->setTitle('Action Groups');
 		$this->set('metrics', 'actions,uniqueActions,actionsValue');
 		$this->set('dimensions', 'actionGroup');
