@@ -1251,7 +1251,7 @@ class owa_coreAPI {
 		return $ret;
 	}
 	
-	public function getJsTrackerTag( $site_id, $options = array() ) {
+	public static function getJsTrackerTag( $site_id, $options = array() ) {
 		
 		if ( ! class_exists( 'owa_template' ) ) {
 			require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
@@ -1284,10 +1284,10 @@ class owa_coreAPI {
 		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
 			
 			// needed to override the endpoint used by the js tracker
-			$options['apiEndpoint'] = owa_coreAPI::getSetting('base', 'action_url');
+			$options['apiEndpoint'] = owa_coreAPI::getSetting('base', 'api_url');
 		}
 				
-		$t->set( 'site_id', $this->getSiteId() );
+		$t->set( 'site_id', $site_id );
 		$t->set( 'options', $options);
 		
 		$t->set_template('js_helper_tags.tpl');

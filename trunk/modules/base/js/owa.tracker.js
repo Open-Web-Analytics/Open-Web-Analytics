@@ -627,7 +627,8 @@ OWA.tracker.prototype = {
 			this.domstream.setEventType( 'dom.stream' );
 			this.domstream.set( 'site_id', this.getSiteId());
 			this.domstream.set( 'page_url', this.page.get('page_url') );
-			this.domstream.set( 'timestamp', this.startTime);
+			//this.domstream.set( 'timestamp', this.startTime);
+			this.domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
 			this.domstream.set( 'duration', this.getElapsedTime());
 			this.domstream.set( 'stream_events', JSON.stringify(this.event_queue));
 			this.domstream.set( 'stream_length', this.event_queue.length );

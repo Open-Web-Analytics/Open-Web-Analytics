@@ -287,14 +287,14 @@ OWA.player.prototype = {
 	
 		var accessor = '';
 		
-		if (event.dom_element_id != "" || undefined) { 
+		if (event.dom_element_id != "" && event.dom_element_id != "(not set)" ) { 
 			accessor = '#'+event.dom_element_id;
 			var accessor_msg = accessor;
-		} else if (event.dom_element_name) {
+		} else if (event.dom_element_name != "" && event.dom_element_name != "(not set)" ) {
 			accessor = event.dom_element_tag+"[name="+event.dom_element_name+"]";
 			var accessor_msg = accessor;
 			//console.log("accessor: %s", accessor); 
-		} else if(event.dom_element_class) {
+		} else if(event.dom_element_class != "" && event.dom_element_class != "(not set)") {
 			var accessor_msg = event.dom_element_tag+"."+event.dom_element_class;
 		} else {
 			var accessor_msg = event.dom_element_tag;
