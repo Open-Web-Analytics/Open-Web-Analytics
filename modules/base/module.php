@@ -1163,10 +1163,10 @@ class owa_baseModule extends owa_module {
 		$db->select('*');
 		$db->from( $d->getTableName() );
 		$db->where( 'domstream_guid', $domstream_guid );
-		$db->order('timestamp', 'ASC');
+		$db->orderBy('timestamp', 'ASC');
 		$ret = $db->getAllRows();
-		
-		$combined = array();
+		//print_r($ret);
+		$combined = '';
 		foreach ($ret as $row) {
 			$combined = $this->mergeStreamEvents( $row['events'], $combined );
 		}
@@ -1192,19 +1192,26 @@ class owa_baseModule extends owa_module {
 	
 	function mergeStreamEvents($new, $old = '') {
     	
-    	if ( $old ) {
-    		$old = json_decode($old);
+    		if ( $old) {
+    			$old = json_decode($old);
+    		} else {
+    			$old = array();
+    		}
     		owa_coreAPI::debug('old: '.print_r($old, true));
     		$new = json_decode($new);
     		owa_coreAPI::debug('new: '.print_r($new, true));
-    		$combined = array_merge($old, $new);
+    		//$combined = array_merge($old, $new);
+    		//array_splice($old, count($old), 0, $new);
+    		
+    		foreach ($new as $v) {
+    			$old[] = $v;
+    		}
+    		$combined = $old;
     		owa_coreAPI::debug('combined: '.print_r($combined, true));
     		owa_coreAPI::debug('combined count: '.count($combined));
     		$combined = json_encode($combined);
     		return $combined;
-    	} else {
-    		return $new;
-    	}
+    	
     }   
 }
 
