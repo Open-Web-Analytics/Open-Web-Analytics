@@ -351,8 +351,27 @@ OWA.resultSetExplorer.prototype = {
 			rowNum: that.resultSet.resultsReturned,
 			height: '100%',
 			autowidth: true,
-			hoverrows: false
+			hoverrows: false,
+			sortname: that.resultSet.sortColumn + '.value',
+			sortorder: that.resultSet.sortOrder
 		});
+		
+		// set header css
+		for (var y=0;y < columns.length;y++) {
+			var css = {};
+			//if dimension column then left align
+			if ( columns[y].classes == 'owa_dimensionGridCell' ) {
+				css['text-align'] = 'left';
+			} else {
+				css['text-align'] = 'right';
+			}
+			// if sort column then bold.
+			if (this.resultSet.sortColumn +'.value' === columns[y].name) {
+				//css.fontWeight = 'bold';
+			}
+			// set the css. no way to just set a class...
+			jQuery('#' + that.dom_id + '_grid').jqGrid('setLabel', columns[y].name, '',css);
+		}
 		
 		/*
 		// custom formattter functions.
@@ -383,6 +402,7 @@ OWA.resultSetExplorer.prototype = {
 		var _width = '';
 		var _resizable = true;
 		var _fixed = false;
+		var _datefmt = '';
 		
 		if (column.result_type === 'dimension') {
 			_align = 'left';
@@ -423,7 +443,8 @@ OWA.resultSetExplorer.prototype = {
 			width: _width, 
 			resizable: _resizable,
 			fixed: _fixed,
-			realColName: column.name
+			realColName: column.name,
+			datefmt: _datefmt
 		};
 		
 		return columnDef;

@@ -1059,8 +1059,11 @@ class owa_resultSetManager extends owa_base {
 				if ($sorts) {
 					foreach ($sorts as $sort) {
 						$this->db->orderBy($sort[0], $sort[1]);
+						$rs->sortColumn = $sort[0];
+						$rs->sortOrder = strtolower($sort[1]);
 					}
 				}
+				
 				
 				// add labels
 				$rs->setLabels($this->getLabels());	

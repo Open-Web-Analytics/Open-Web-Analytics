@@ -38,7 +38,7 @@ class owa_reportHostsController extends owa_reportController {
 		$this->setTitle('Host Names');
 		$this->set('metrics', 'visits,pageViews,bounces');
 		$this->set('dimensions', 'hostName');
-		$this->set('sort', 'visits');
+		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array(
 				'linkColumn' 	=> 'hostName', 
