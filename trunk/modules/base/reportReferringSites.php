@@ -44,7 +44,7 @@ class owa_reportReferringSitesController extends owa_reportController {
 				'linkColumn' 	=> 'referralPageTitle', 
 				'template' 		=> array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'), 
 				'valueColumns' 	=> 'referralPageUrl'));
-		$this->set('constraints', 'source==referral');
+		$this->set('constraints', 'medium==referral');
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
 		$this->set('gridTitle', 'Top Referrals');		
