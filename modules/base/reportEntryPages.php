@@ -37,8 +37,8 @@ class owa_reportEntryPagesController extends owa_reportController {
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Entry Pages');
 		//$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'entryPageTitle,entryPagePath,entryPageUrl');
-		$this->set('sort', 'pageViews-');
+		$this->set('dimensions', 'entryPagePath,entryPageUrl,entryPageTitle');
+		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array(
 				'linkColumn' => 'entryPageTitle', 
