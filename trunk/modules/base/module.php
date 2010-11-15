@@ -674,7 +674,7 @@ class owa_baseModule extends owa_module {
 		$pos = strpos($url, '#');
 		if($pos) {
 			
-			$url = substr($url, 0, $pos - 1);
+			$url = substr($url, 0, $pos);
 		}
 		
 		$filter_string = owa_coreAPI::getSiteSetting($site_id, 'query_string_filters');

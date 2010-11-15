@@ -432,6 +432,8 @@ function owa_get_page_type() {
 	// general archive catch, should be after specific archive types	
 	elseif (is_archive()):
 		$type = "Archive";
+	else:
+		$type = '(not set)';
 	endif;
 	
 	return $type;
@@ -543,9 +545,9 @@ function owa_pageController() {
 	$owa = owa_getInstance();
 	
 	$do = owa_coreAPI::getRequestParam('do');
-	
+	$params = array();
 	if (empty($do)) {
-		$params = array();
+		
 		$params['do'] = 'base.reportDashboard';	
 	}
 	
