@@ -67,6 +67,10 @@ ul {margin-left:10px;}
 	font-size:10px;
 }
 
+.ui-jqgrid .ui-jqgrid-htable th.ui-th-column {
+	font-size:10px;
+}
+
 .clear {
 	float:none;
 	clear:both;

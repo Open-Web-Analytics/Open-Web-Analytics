@@ -40,6 +40,8 @@ class owa_paginatedResultSet {
 	var $resultsTotal;
 	var $resultsReturned;
 	var $resultsRows = array();
+	var $sortColumn;
+	var $sortOrder;
 		
 	/**
 	 * Aggregate values for metrics
