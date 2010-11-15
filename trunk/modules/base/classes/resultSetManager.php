@@ -1060,7 +1060,11 @@ class owa_resultSetManager extends owa_base {
 					foreach ($sorts as $sort) {
 						$this->db->orderBy($sort[0], $sort[1]);
 						$rs->sortColumn = $sort[0];
-						$rs->sortOrder = strtolower($sort[1]);
+						if (isset($sort[1])){
+							$rs->sortOrder = strtolower($sort[1]);
+						} else {
+							$rs->sortOrder = 'asc';
+						}
 					}
 				}
 				

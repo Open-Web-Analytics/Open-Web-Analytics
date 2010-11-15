@@ -216,27 +216,29 @@ class owa_conversionHandlers extends owa_observer {
     function checkPagesPerVisitGoal($event, $goal) {
     	
     	$num = $event->get('npvs');
-	    $operator = $goal['details']['operator'];
-	    $req = $goal['details']['num_pageviews'];
-	    
-	    switch ($operator) {
-	    	
-	    	case '=':
-	    		 if ($num === $req) {
-	    		 	return $goal['goal_number'];
-	    		 }
-	    		 		
-	    	case '<':
-	    		if ($num < $req) {
-	    		 	return $goal['goal_number'];
-	    		 }
-	    		
-	    	case '>':
-	    		if ($num > $req) {
-	    		 	return $goal['goal_number'];
-	    		 }
-	    }
-	    
+    	
+    	if ($num) {
+		    $operator = $goal['details']['operator'];
+		    $req = $goal['details']['num_pageviews'];
+		    
+		    switch ($operator) {
+		    	
+		    	case '=':
+		    		 if ($num === $req) {
+		    		 	return $goal['goal_number'];
+		    		 }
+		    		 		
+		    	case '<':
+		    		if ($num < $req) {
+		    		 	return $goal['goal_number'];
+		    		 }
+		    		
+		    	case '>':
+		    		if ($num > $req) {
+		    		 	return $goal['goal_number'];
+		    		 }
+		    }
+		}	    
 	    return false;
     }
     
