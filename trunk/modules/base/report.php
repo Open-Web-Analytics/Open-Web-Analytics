@@ -216,6 +216,7 @@ class owa_reportDimensionDetailView extends owa_view {
 		$this->body->set('constraints', $this->get('constraints'));
 		$this->body->set('dimension_properties', $this->get('dimension_properties'));
 		$this->body->set('dimension_template', $this->get('dimension_template'));
+		$this->body->set('excludeColumns', $this->get('excludeColumns'));
 		$this->body->set_template('report_dimensionDetail.php');
 	}
 }
@@ -247,6 +248,7 @@ class owa_reportSimpleDimensionalView extends owa_view {
 		$this->body->set('gridFormatters', $this->get('gridFormatters'));
 		$this->body->set('constraints', $this->get('constraints'));
 		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set('excludeColumns', $this->get('excludeColumns'));
 		$this->body->set_template('report_dimensionDetailNoTabs.php');
 	}
 }
