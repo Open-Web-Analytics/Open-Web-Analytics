@@ -74,9 +74,12 @@ class owa_processEventController extends owa_controller {
 		// Set all time related properties
 		$this->event->setTime();
 			
-		// set visitor type flag if inbound visitor ID is found.		
+		// set repeat visitor type flag visitor is not new.		
 		if ( ! $this->event->get( 'is_new_visitor' ) ) {
 			$this->event->set( 'is_repeat_visitor', true );
+		} else {
+			// properly cast this to a bool.
+			$this->event->set( 'is_new_visitor', true );
 		}
 		
 		//set user agent
