@@ -65,7 +65,7 @@ class owa_reportDashboardController extends owa_reportController {
 		$this->setSubview('base.reportDashboard');
 		$this->setTitle('Dashboard');
 		
-		$metrics = 'visits,pageViews,bounceRate,pagesPerVisit,visitDuration';
+		$metrics = 'visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration';
 		
 		if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
 			$metrics .= ',transactions,transactionRevenue';	
