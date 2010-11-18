@@ -1451,7 +1451,7 @@ OWA.tracker.prototype = {
 		}
 	},
 	
-	addTransaction : function ( order_id, order_source, total, tax, shipping, gateway ) {
+	addTransaction : function ( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {
 		this.ecommerce_transaction = new OWA.event();
 		this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
 		this.ecommerce_transaction.set( 'ct_order_id', order_id );
@@ -1461,6 +1461,10 @@ OWA.tracker.prototype = {
 		this.ecommerce_transaction.set( 'ct_shipping', shipping );
 		this.ecommerce_transaction.set( 'ct_gateway', gateway );
 		this.ecommerce_transaction.set( 'page_url', this.page.get('page_url') );
+		this.ecommerce_transaction.set( 'city', city );
+		this.ecommerce_transaction.set( 'state', state );
+		this.ecommerce_transaction.set( 'country', country );
+		
 		OWA.debug('setting up ecommerce transaction');
 
 		this.ecommerce_transaction.set( 'ct_line_items', [] );

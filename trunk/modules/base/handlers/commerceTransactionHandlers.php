@@ -54,24 +54,28 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			// this is needed becuase the ecommerce transaction PHP API allows for 
 			// events to be fired into OWA from a non-web request by passing
 			// the session_id.
-			if ( $event->get( 'session_id' ) && ! $event->get( 'lookup_state_from_session' ) ) {
+			$original_session_id = $event->get( 'original_session_id' );
+			if ( $original_session_id ) {
 				$s = owa_coreAPI::entityFactory( 'base.session' );
-				$s->load( $event->get( 'session_id' ) );
+				$s->load( $original_session_id );
 				
 				if ( $s->get( 'id' ) ) {
 					$ct->setProperties( $s->_getProperties() );
+					$ct->set( 'session_id', $original_session_id );
 				}
+				
 			}
 			
 			$ct->setProperties($event->getProperties());
 			
 			$ct->set( 'id', $pk ); 
 			
-			// Generate Location Id. Location data is comming from user input
-			$location_id_string  = trim( strtolower( $event->get( 'country' ) ) );
-			$location_id_string .= trim( strtolower ( $event->get( 'state' ) ) );
-			$location_id_string .= trim( strtolower( $event->get( 'city' ) ) ); 
-			$ct->set( 'location_id', $ct->generateId( $location_id_string ) );
+			// Generate Location Id. Location data is comming from user input NOT ip address
+			if ( $event->get( 'country' ) ) {
+				$s = owa_coreAPI::serviceSingleton();
+				$location_id = $s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
+				$ct->set( 'location_id', $location_id );
+			}
 			// set entity properties
 			$ct->set( 'order_id', trim( $event->get( 'ct_order_id' ) ) );
 			$ct->set( 'order_source', trim( strtolower( $event->get( 'ct_order_source' ) ) ) );

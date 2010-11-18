@@ -112,6 +112,27 @@ class owa_geolocation {
 			return $this->properties['longitude'];
 		}
 	}
+	
+	function generateId($country = '', $state = '', $city = '') {
+		
+		if ( ! $country ) {
+		
+			$country = $this->getCountry();
+		}
+		
+		if ( ! $state ) {
+			
+			$state = $this->getState();
+		}
+		
+		if ( ! $city ) {
+		
+			$city = $this->getCity();
+		}
+		$id_string = trim( strtolower($country)) . trim( strtolower($state)) . trim( strtolower($city));
+		return owa_lib::setStringGuid( $id_string );
+		
+	}
 }
 
 ?>
