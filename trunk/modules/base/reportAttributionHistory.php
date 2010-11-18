@@ -42,7 +42,7 @@ class owa_reportAttributionHistoryController extends owa_reportController {
 		$this->set('resultsPerPage', 25);
 	
 		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all mediums/source.');
 
 		$this->set('gridFormatters', array('latestAttributions' =>
 				"function(value) {
