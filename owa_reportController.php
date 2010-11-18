@@ -91,7 +91,7 @@ class owa_reportController extends owa_adminController {
 		$tabs = array();
 		$site_usage = array(
 				'tab_label'		=> 'Site Usage',
-				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate'
+				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors'
 		);
 		
 		$tabs['site_usage'] = $site_usage;

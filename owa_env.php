@@ -49,7 +49,7 @@ define('OWA_PLUGINS_DIR', OWA_DIR.'plugins'); //depricated
 define('OWA_METRICS_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR.'metrics'.DIRECTORY_SEPARATOR); //depricated
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR);
 define('OWA_CONF_DIR', OWA_DIR.'conf'.DIRECTORY_SEPARATOR);
-if(!defined('OWA_DATA_DIR'){
+if(!defined('OWA_DATA_DIR')){
 	define('OWA_DATA_DIR', OWA_DIR.'owa-data'.DIRECTORY_SEPARATOR);
 }
 define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches'.DIRECTORY_SEPARATOR);
