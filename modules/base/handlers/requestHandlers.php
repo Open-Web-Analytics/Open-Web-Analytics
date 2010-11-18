@@ -87,6 +87,13 @@ class owa_requestHandlers extends owa_observer {
 				$event->set( 'country_code', $location->getCountryCode() );
 				$event->set( 'state', $location->getState() );
 				$location_id = $location->generateId();
+				
+			} else {
+				$s = owa_coreAPI::serviceSingleton();
+				$location_id$s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
+			}
+			
+			if ($location_id) {
 				$event->set( 'location_id', $location_id );
 				$r->set( 'location_id',  $event->get( 'location_id' ) );
 			}
