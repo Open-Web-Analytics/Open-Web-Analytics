@@ -90,7 +90,7 @@ class owa_requestHandlers extends owa_observer {
 				
 			} else {
 				$s = owa_coreAPI::serviceSingleton();
-				$location_id$s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
+				$location_id = $s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
 			}
 			
 			if ($location_id) {
