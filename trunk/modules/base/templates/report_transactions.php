@@ -43,8 +43,8 @@ OWA.items.rsh.load(aurl);
 var transactionsurl = '<?php echo $this->makeApiLink(array(
 												'do' => 'getResultSet', 
 												'metrics' => 'transactionRevenue,shippingRevenue,taxRevenue', 
-												'dimensions' => 'transactionId', 
-												'sort' => 'transactionRevenue-',
+												'dimensions' => 'timestamp,transactionId', 
+												'sort' => 'timestamp-',
 												'format' => 'json',
 												'resultsPerPage' => 25,
 												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
@@ -54,6 +54,7 @@ OWA.items.transactions.addLinkToColumn('transactionId', '<?php echo $this->makeL
 																		'do' => 'base.reportTransactionDetail', 
 																		'transactionId' => '%s'
 																	),true);?>', ['transactionId']);
+OWA.items.transactions.options.grid.excludeColumns = ['timestamp'];
 OWA.items.transactions.asyncQueue.push(['refreshGrid']);
 OWA.items.transactions.load(transactionsurl);
 
