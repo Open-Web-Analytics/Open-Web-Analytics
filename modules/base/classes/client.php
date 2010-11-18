@@ -332,9 +332,19 @@ class owa_client extends owa_caller {
 	 *
 	 * Creates a parent commerce.transaction event
 	 */
-	public function addTransaction( $order_id, $order_source = '', 
-			$total = 0, $tax = 0, $shipping = 0, $gateway = '', 
-			$page_url = '', $session_id = '') {
+	public function addTransaction( 
+			$order_id, 
+			$order_source = '', 
+			$total = 0, 
+			$tax = 0, 
+			$shipping = 0, 
+			$gateway = '', 
+			$country = '', 
+			$state = '', 
+			$city = '',
+			$page_url = '', 
+			$session_id = ''
+		) {
 		
 		$this->commerce_event = $this->makeEvent();
 		$this->commerce_event->setEventType( 'ecommerce.transaction' );
@@ -346,13 +356,14 @@ class owa_client extends owa_caller {
 		$this->commerce_event->set( 'ct_gateway', $gateway );
 		$this->commerce_event->set( 'page_url', $page_url );
 		$this->commerce_event->set( 'ct_line_items', array() );
-		
+		$this->commerce_event->set( 'country', $page_url );
+		$this->commerce_event->set( 'state', $page_url );
+		$this->commerce_event->set( 'city', $page_url );
 		if ( $session_id ) {
-			$this->commerce_event->set( 'session_id', $session_id );
+			$this->commerce_event->set( 'original_session_id', $session_id );
 			// tells the client to NOT manage state properties as we are
 			// going to look them up from the session later.
 			$this->commerce_event->set( 'is_state_set', true );
-			$this->commerce_event->set( 'lookup_state_from_session', true );
 		}
 	}
 	
