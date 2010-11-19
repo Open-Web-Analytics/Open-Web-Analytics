@@ -603,6 +603,7 @@
 				'timezone'							=> 'America/Los_Angeles',
 				'log_dom_stream_percentage'			=> 50,
 				'owa_wiki_link_template'			=> 'http://wiki.openwebanalytics.com/index.php?title=%s',
+				'wiki_url'							=> 'http://wiki.openwebanalytics.com',
 				'password_length'					=> 4,
 				'modules'							=> array('base'),
 				'mailer-from'						=> '',
@@ -634,7 +635,6 @@
 				'default_action'					=> 'base.loginForm',
 				'default_page'						=> '', // move to site settings
 				'default_cache_expiration_period'	=> 604800,
-				//'nonce_expiration_period'			=> 84600,
 				'nonce_expiration_period'			=> 43200,
 				'max_prior_campaigns'				=> 5,
 				'campaign_params'					=> array(

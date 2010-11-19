@@ -301,6 +301,8 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('build', 'base.build');
 		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
 		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
+		$this->registerCliCommand('install', 'base.installCli');
+		
 		/**
 		 * Register API methods
 		 *
@@ -325,6 +327,17 @@ class owa_baseModule extends owa_module {
 				'endDate', 
 				'document_id', 
 				'period',
+				'resultsPerPage', 
+				'page',
+				'format'
+		));
+		
+		$this->registerApiMethod('getTransactions', array($this, 'getTransactions'), array( 
+				'siteId', 
+				'startDate', 
+				'endDate', 
+				'period',
+				'sort',
 				'resultsPerPage', 
 				'page',
 				'format'
@@ -1090,6 +1103,44 @@ class owa_baseModule extends owa_module {
 			//$tracking_event->set( 'attributed_campaign', $campaigns[0] );
 			return $campaigns[0];
 		}
+	}
+	
+	function getTransactions($siteId, $startDate, $endDate, $period, $sort = 'desc', $resultsPerPage = 25, $page = 1, $format = 'json') {
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom('owa_commerce_transaction_fact');
+		$db->selectColumn("*");
+		$db->orderBy('timestamp', $sort);
+		$db->where('site_id', $siteId);
+
+		if ( $period ) {
+			
+			$p = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+			$p->set($period);
+			$startDate = $p->startDate->get('yyyymmdd');
+			$endDate = $p->endDate->get('yyyymmdd');
+		}
+		
+		if ($startDate && $endDate) {
+			$db->where('yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
+		}
+		
+		// pass limit to rs object if one exists
+		$rs->setLimit($resultsPerPage);
+			
+		// pass page to rs object if one exists
+		$rs->setPage($page);
+		
+		$results = $rs->generate($db);
+		//$rs->resultsRows = $results;
+		
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
+		
 	}
 	
 	function getDomClicks($pageUrl, $siteId, $startDate, $endDate, $document_id = '', $period = '', $resultsPerPage = 100, $page = 1, $format = 'jsonp') {

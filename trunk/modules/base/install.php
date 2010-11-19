@@ -31,12 +31,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_installView extends owa_view {
-	
-	function owa_installView() {
 		
-		return owa_installView::__construct();
-	}
-	
 	function __construct() {
 		
 		$this->default_subview = 'base.installStart';
@@ -58,14 +53,7 @@ class owa_installView extends owa_view {
 		
 		$this->body->set('headline', 'Welcome to the Open Web Analytics Installation Wizard');
 		$this->body->set('step', $data['subview']);
-		
-		//$this->body->set('', '');
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>
