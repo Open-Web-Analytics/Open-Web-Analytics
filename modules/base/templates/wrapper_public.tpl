@@ -23,7 +23,7 @@
 			<BR>
 			<?php include($this->setTemplate('msgs.tpl'));?>
 			<BR>
-			<?php echo $content;?>
+			<?php if (isset($content)) { echo $content; }?>
 			<?php echo $body;?>
 			
 			<BR><BR><BR><BR>

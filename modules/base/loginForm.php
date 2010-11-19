@@ -31,29 +31,20 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 class owa_loginFormController extends owa_controller {
-	
-	function owa_loginFormController($params) {
 		
-	
-		return owa_loginFormController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		return parent::__construct($params);
 	}
 	
 	function action() {
+	
 		$cu = owa_coreAPI::getCurrentUser();
 		
 		$this->set('go', $this->getParam('go'));
 		$this->set('user_id', $cu->getUserData('user_id'));
 		$this->setView('base.loginForm');
-				
-		return;
 	}
-	
-	
 }
 
 /**
@@ -69,30 +60,21 @@ class owa_loginFormController extends owa_controller {
  */
 
 class owa_loginFormView extends owa_view {
-	
-	function owa_loginFormView() {
-				
-		return owa_loginFormView::__construct();
-	}
-	
+		
 	function __construct() {
 	
 		return parent::__construct();
 	}
 	
 	function construct($data) {
+	
 		$this->setTitle("Login");
 		$this->t->set_template('wrapper_public.tpl');
-		$this->body->set_template('login_form.tpl');// This is the inner template
+		$this->body->set_template('login_form.tpl');
 		$this->body->set('headline', 'Please login using the from below');
 		$this->body->set('user_id', $this->get('user_id'));
 		$this->body->set('go', $this->get('go'));
-		
-		return;
-	
 	}
 }
-
-
 
 ?>

@@ -78,12 +78,7 @@ class owa_user extends owa_entity {
 		$this->set('api_key', $this->generateTempPasskey($user_id));
 		$ret = $this->create();
 		
-		if ($ret === true):
-			return $temp_passkey;
-		else:
-			return false;
-		endif;
-	
+		return $ret;
 	}
 	
 	function generateTempPasskey($seed) {
@@ -97,7 +92,5 @@ class owa_user extends owa_entity {
 	}
 	
 }
-
-
 
 ?>
