@@ -78,7 +78,7 @@ class owa_browscap extends owa_base {
 	
 	function robotCheck() {
 		// must use == due to wacky type issues with phpBrowsecap ini file
-		if ($this->browser->Crawler == true) {
+		if ($this->browser->Crawler == "true" || $this->browser->Crawler == "1") {
 			return true;
 		} elseif ($this->browser->Browser === "Default Browser") {
 			return $this->robotRegexCheck();

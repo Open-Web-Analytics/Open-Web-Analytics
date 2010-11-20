@@ -33,12 +33,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_sitesInvocationController extends owa_adminController {
-
-
-	function owa_sitesInvocationController($params) {
-		
-		return owa_sitesInvocationController::__construct($params); 
-	}
 	
 	function __construct($params) {
 		
@@ -47,15 +41,13 @@ class owa_sitesInvocationController extends owa_adminController {
 	}
 	
 	function action() {
-	
-		$this->set('site_id', $this->getParam('site_id'));
-		
+		$site_id = $this->getParam('siteId');
+		$this->set('site_id', $site_id);
 		$s = owa_coreAPI::entityFactory('base.site');
-		$s->getByColumn('site_id', $this->getParam('site_id'));
+		$s->getByColumn('site_id', $site_id);
 		$this->set('site', $s);
 		$this->setSubview('base.sitesInvocation');
 		$this->setView('base.options');
-		return;
 	}
 }
 
@@ -75,17 +67,7 @@ class owa_sitesInvocationController extends owa_adminController {
 
 
 class owa_sitesInvocationView extends owa_view {
-	
-	function owa_sitesInvocationView() {
-		
-		return owa_sitesInvocationView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
+			
 	function render($data) {
 		
 		$site = $this->get('site');
@@ -105,11 +87,8 @@ class owa_sitesInvocationView extends owa_view {
 		$this->body->set_template('sites_invocation.tpl');
 		
 		$this->body->set('site_id', $this->get('site_id'));
-		
-		return;
+	
 	}
-	
-	
 }
 
 ?>

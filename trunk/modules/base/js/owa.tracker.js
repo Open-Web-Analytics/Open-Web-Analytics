@@ -185,7 +185,7 @@ OWA.tracker = function( options ) {
 	this.ecommerce_transaction = '',
 	this.isClickTrackingEnabled = false;
 	// set default cookie domain
-	this.setCookieDomain(document.domain);
+	this.setCookieDomain();
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
 	//check for linked state send from another domain
@@ -371,26 +371,30 @@ OWA.tracker.prototype = {
 	
 	setCookieDomain : function(domain) {
 		
+		var not_passed = false;
+		
+		if ( ! domain ) {
+			domain = document.domain;
+			not_passed = true;
+		}
+		
 		// remove the leading period
 		var period = domain.substr(0,1);
 		if (period === '.') {
 			domain = domain.substr(1);
 		}
 		
-		// check for www and eliminate it
-		var www = domain.substr(0,4);
-		if (www === 'www.') {
-			domain = domain.substr(4);
-		} else {
-		// else just use the document.domain value
-			domain = document.domain;
-		}
-		
+		// check for www and eliminate it if no domain was passed.
+		if ( not_passed ) {
+			var www = domain.substr(0,4);
+			if (www === 'www.') {
+				domain = domain.substr(4);
+			}
+		}		
 		// add the leading period back
 		domain =  '.' + domain;
 		this.setOption('cookie_domain', domain);
 		OWA.setSetting('cookie_domain', domain);
-		
 	},
 	
 	checkForOverlaySession: function() {
@@ -1681,7 +1685,7 @@ OWA.tracker.prototype = {
 		OWA.config.baseUrl = owa_baseUrl;
 	}
 	// execute commands global owa_cmds command queue
-	if ( typeof owa_cmds == "undefined" ) {
+	if ( typeof owa_cmds === 'undefined' ) {
 		var q = new OWA.commandQueue();	
 	} else {
 		if ( OWA.util.is_array(owa_cmds) ) {
