@@ -64,6 +64,8 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
+		// event procesing daemon jobs
+		$this->registerFilter('daemon_jobs', $this, 'eventProcessingDaemonJobs', 10);
 		
 		/**
 		 * Register Service Implementations
@@ -1264,7 +1266,42 @@ class owa_baseModule extends owa_module {
     		$combined = json_encode($combined);
     		return $combined;
     	
-    }   
+    }
+    
+    function eventProcessingDaemonJobs($jobs) {
+    	
+    	$source = owa_coreAPI::getSetting( 'base', 'event_queue_type' );
+    	$dest = owa_coreAPI::getSetting( 'base', 'event_secondary_queue_type' );
+    	
+    	// check event file
+    	$event_log_file = owa_coreAPI::getSetting( 'base', 'async_log_dir' ) . owa_coreAPI::getSetting( 'base', 'async_log_file' );
+    	$event_log_rotate_size = owa_coreAPI::getSetting( 'base', 'async_log_rotate_size' );
+    	if ( file_exists( $event_log_file ) && filesize( $event_log_file ) > $event_log_rotate_size ) {
+    		$file_cmd = array('cmd=processEventQueue');
+    		$file_cmd[] = 'source=file';
+    		
+    		if ( $dest ) {
+    			$file_cmd[] = 'destination='.$dest;
+    		}
+    		$jobs[] = $file_cmd;
+    	}
+			    	
+    	// check the database queue
+    	$db = owa_coreAPI::dbSingleton();
+    	$result = $db->query("SELECT count(*) from owa_queue_item where status = 'unhandled'");
+    	
+    	if ( $result > 0 ) {
+    		$db_cmd = array('cmd=processEventQueue');
+    		$db_cmd[] = 'source=database';
+    		
+    		if ( $dest ) {
+    			$db_cmd[] = 'destination='.$dest;
+    		}
+    		$jobs[] = $db_cmd;
+    	}
+    	
+    	return $jobs;
+    }
 }
 
 

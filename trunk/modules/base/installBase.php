@@ -51,7 +51,7 @@ class owa_installBaseController extends owa_installController {
 		$v2->setErrorMessage($this->getMsg(3310));
 		$this->setValidation('email_address', $v2);
 		
-		// Check user name exists
+		// Check entity exists
 		$v3 = owa_coreAPI::validationFactory('entityDoesNotExist');
 		$v3->setConfig('entity', 'base.site');
 		$v3->setConfig('column', 'domain');
@@ -78,7 +78,7 @@ class owa_installBaseController extends owa_installController {
 			
 			$password = $this->createAdminUser($this->getParam('email_address'));
 			
-			$site_id = $this->createDefaultSite($this->getParam('domain'));	
+			$site_id = $this->createDefaultSite($this->getParam('protocol').$this->getParam('domain'));	
 			
 			// Set install complete flag. 
 			$this->c->persistSetting('base', 'install_complete', true);

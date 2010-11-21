@@ -189,6 +189,10 @@
 			$this->set('base', 'event_queue_type', OWA_EVENT_QUEUE_TYPE);
 		}
 		
+		if (defined('OWA_EVENT_SECONDARY_QUEUE_TYPE')) {
+			$this->set('base', 'event_secondary_queue_type', OWA_EVENT_SECONDARY_QUEUE_TYPE);
+		}
+		
 		if (defined('OWA_USE_REMOTE_EVENT_QUEUE')) {
 			$this->set('base', 'use_remote_event_queue', OWA_USE_REMOTE_EVENT_QUEUE);
 		}
