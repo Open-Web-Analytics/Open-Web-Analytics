@@ -47,6 +47,8 @@
  	
  	var $config_id;
  	
+ 	var $config_from_db;
+ 	
  	/**
  	 * Constructor
  	 * 

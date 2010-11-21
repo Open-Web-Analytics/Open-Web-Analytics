@@ -71,7 +71,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * Log all php errors to OWA's error log file. Only do this to debug.
  */
 
-//define('OWA_LOG_PHP_ERRORS', false);
+//define('OWA_LOG_PHP_ERRORS', true);
  
 /** 
  * OBJECT CACHING
