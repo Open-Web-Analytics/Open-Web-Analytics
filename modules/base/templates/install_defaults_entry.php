@@ -5,6 +5,10 @@
 		<p class="form-row">
 			<span class="form-label">Site Domain</span>
 			<span class="form-field">
+				<select name="<?php echo $this->getNs();?>protocol">
+					<option value="http://">http://</option>
+				    <option value="https://">https://</option>
+				</select> 
 				<input type="text"size="30" name="<?php echo $this->getNs();?>domain" value="<?php echo $defaults['domain'];?>">
 			</span>
 			<span class="form-instructions">This is the domain of the site to track.</span>
