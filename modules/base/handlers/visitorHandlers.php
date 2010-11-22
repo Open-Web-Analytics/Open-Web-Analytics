@@ -119,8 +119,9 @@ class owa_visitorHandlers extends owa_observer {
 			}
 			
 		} else {
-			owa_coreAPI::debug("Not updating visitor. Visitor does not exists.");
-			return OWA_EHS_EVENT_FAILED;
+			owa_coreAPI::debug("Not updating visitor. Visitor does not exists, adding it now.");
+			return $this->logVisitor($event);
+			//return OWA_EHS_EVENT_FAILED;
 		}
     }
 }
