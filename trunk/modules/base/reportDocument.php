@@ -51,7 +51,7 @@ class owa_reportDocumentController extends owa_reportController {
 			$title_slug = $pagePath;
 		}
 		
-		$this->setTitle('Page Detail: ', $title_slug);
+		$this->setTitle('Page Detail: ');
 		$this->set('document', $d);
 		$this->set('metrics', 'visits,pageViews');
 		$this->set('resultsPerPage', 30);

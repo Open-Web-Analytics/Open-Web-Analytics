@@ -1,3 +1,9 @@
+<?php if ($dimension_properties): ?>
+<div class="owa_reportSectionContent">
+	<?php echo $this->renderDimension($dimension_template, $dimension_properties);?>
+</div>
+<?php endif;?>
+
 <?php require('report_trend_section.php');?>
 	
 <div class="owa_reportSectionContent">
@@ -5,7 +11,7 @@
 		<TR>
 			
 			<TD width="" valign="top">
-				<div class="owa_reportSectionHeader">More reports for this document:</div>
+				<div class="owa_reportSectionHeader">Related Reports:</div>
 				
 				<P>
 					<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document->get('id'), 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadHeatmap', 'document_id' =>$document->get('id')), true, 'cookie'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
