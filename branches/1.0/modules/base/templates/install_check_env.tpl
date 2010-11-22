@@ -1,53 +1,22 @@
-<div class="panel_headline"><?=$headline;?></div>
+<!-- <div class="panel_headline"><?php //echo $headline;?></div> -->
 
-    <fieldset name="" class="">
-  	    
-		<legend>Server Environment</legend>
-	    
-		<TABLE>
-	    	<TR>
-	    		<TH scope="row">PHP Version</TH>
-	    		<TD class="<? if ($errors['php_version']):?>red<?elseif ($warnings['php_version']):?>yellow<?else:?>green<?endif;?>">
-	    		<?=$env['php_version'];?></TD>
-	    		<TD><?=$errors['php_version'];?></TD>
-	    	</TR>
-	    		<TH scope="row">Database Connection</TH>
-	    		<TD class="<? if ($errors['db_status']):?>red
-							<?elseif ($warnings['db_status']):?>yellow
-							<?else:?>green<?endif;?>">
-	    			<?=$env['db_status'];?>
-	    		</TD>
-	    		
-	    		<TD><?=$errors['db_status'];?></TD>
-	    	<TR>
-	    		<TH scope="row">Socket Connections</TH>
-	    		<TD class="<? if ($errors['socket_connection']):?>red
-							<?elseif ($warnings['socket_connection']):?>yellow
-							<?else:?>green<?endif;?>">
-	    			<?=$env['socket_connection'];?>
-	    		</TD>
-	    		<TD><?=$errors['socket_connection'];?></TD>
-	    	</TR>
-	    	<TR>	
-	    		<TH scope="row">File System Permissions</TH>
-	    		<TD class="<? if ($errors['log_dir_permission']):?>red
-							<?elseif ($warnings['log_dir_permission']):?>yellow
-							<?else:?>green<?endif;?>">
-	    			<?=$env['log_dir_permissions'];?></TD>
-	    		<TD><?=$errors['log_dir_permissions'];?></TD>
-	    	</TR>
-	    </TABLE>
-    
-	 	<BR><BR>
-    
-    <? if ($errors['count'] == 0):?>
-    	<DIV class="centered_buttons">	
-			<a href="<?=$this->makeLink(array('action' => 'base.installBase'));?>">Next >> Next Step: Default Site Setup</a>
-		</DIV>
-	<? else:?>
-	
-	<span class="error">Please resolve these environment issues and then try this installation again.</span>
-		
-	<?endif;?>
-    
-	</fieldset>
+<h2>Uh-oh. We found a few issues.</h2>
+
+<p>We found a few problems with your server environment. Please resolve these issues and start the installation again.</p>
+
+<style>
+.form-row {border-bottom:1px solid #efefef;padding:10px;}
+.form-label {position: inherit;}
+.form-field {position: absolute; left: 420px;}
+.form-error {background-color: red; border:1px solid red; color:#ffffff; padding:3px;}
+.form-instructions {position: absolute; left: 650px; font-size:12px; color: #9f9f9f;}
+</style>    
+
+<h3>Problems</h3>
+<?php foreach ($errors as $error): ?>
+<p class="form-row">
+	<span class="form-label"><?php echo $error['name'];?></span>
+    <span class="form-field form-error"><?php echo $error['value'];?></span>
+    <span class="form-instructions"><?php echo $error['msg'];?></span>
+</p>
+<?php endforeach; ?>

@@ -16,87 +16,45 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
-/**
- * Login View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_loginView extends owa_view {
-	
-	function owa_loginView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		$this->body->set_template('login_form.tpl');// This is the inner template
-		$this->body->set('headline', 'Please login using the from below');
-		$this->body->set('user_id', $data['user_id']);
-		$this->body->set('go', $data['go']);
-	
-	}
-}
-
 class owa_loginController extends owa_controller {
-	
-	function owa_loginController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
-	
-		return;
-	}
-	
+		
 	function action() {
 		
 		$auth = &owa_auth::get_instance();
-		$status = $auth->authenticateNewBrowser($this->params['user_id'], $this->params['password']);
-		$data = array();
-		
+		$status = $auth->authenticateUser();
+		$go = $this->getParam('go');
 		// if authentication is successfull
-		if ($status['auth_status'] == true):
+		if ($status['auth_status'] == true) {
 			
-			// redirect to url if present
-			if (!empty($this->params['go'])):
-				$url = urldecode($this->params['go']);
-				
+			if (!empty($go)) {
+				// redirect to url if present
+				$url = urldecode($go);
 				$this->e->debug("redirecting browser to...:". $url);
 				owa_lib::redirectBrowser($url);
-			//else redirect to home page
-			else:
-				$data['view_method'] = 'redirect';
-				$data['do'] = 'base.reportDashboard';
-			endif;
-		// return error view		
-		else:
+			
+			} else {
+				//else redirect to home page
+				
+				// these need to be unset as they were set previously by the doAction method.
+				// need to refactor this out.
+				$this->set('auth_status', '');
+				$this->set('params', '');
+				$this->set('site_id', '');
+				$this->setRedirectAction($this->config['start_page']);
+			}
+				
+		} else {
+			// return login form with error msg
+			$this->setView('base.loginForm');
+			$this->set('go', $go);		
+			$this->set('error_code', 2002);
+			$this->set('user_id', $this->getParam('user_id'));
 		
-			$data['view_method'] = 'delegate';
-			$data['view'] = 'base.login';
-			$data['go'] = urldecode($this->params['go']);
-			$data['go'] = urlencode($this->params['go']);
-			$data['error_msg'] = $this->getMsg(2002);
-			$data['user_id'] = $this->params['user_id'];
-		
-		endif;
-		
-		return $data;
+		}
 	}
-	
-	
 }
 
 ?>

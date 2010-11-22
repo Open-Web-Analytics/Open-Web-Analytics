@@ -1,4 +1,4 @@
-<h2><?=$headline?></h2>
+<h2><?php echo $headline?></h2>
 
 <form method="post">
     
@@ -7,12 +7,12 @@
 			
 	<DIV class="setting">	
 		Resolve Host Names: 
-		<SELECT NAME="<?=$this->getNs();?>config[resolve_hosts]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[resolve_hosts]">
 	
-		<OPTION VALUE="0" <? if ($config['resolve_hosts'] == false):?>SELECTED<?endif;?>>
+		<OPTION VALUE="0" <?php if ($config['resolve_hosts'] == false):?>SELECTED<?php endif; ?>>
 		Off</OPTION>
 		
-		<OPTION VALUE="1" <? if ($config['resolve_hosts'] == true):?>SELECTED<?endif;?>>
+		<OPTION VALUE="1" <?php if ($config['resolve_hosts'] == true):?>SELECTED<?php endif; ?>>
 		On</OPTION>
 			
 		</SELECT>
@@ -20,12 +20,12 @@
 	
 	<DIV class="setting">	
 		Log Requests from Feed Readers: 
-		<SELECT NAME="<?=$this->getNs();?>config[log_feedreaders]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[log_feedreaders]">
 	
-		<OPTION VALUE="0" <? if ($config['log_feedreaders'] == false):?>SELECTED<?endif;?>>
+		<OPTION VALUE="0" <?php if ($config['log_feedreaders'] == false):?>SELECTED<?php endif; ?>>
 		Off</OPTION>
 		
-		<OPTION VALUE="1" <? if ($config['log_feedreaders'] == true):?>SELECTED<?endif;?>>
+		<OPTION VALUE="1" <?php if ($config['log_feedreaders'] == true):?>SELECTED<?php endif; ?>>
 		On</OPTION>
 			
 		</SELECT>
@@ -33,12 +33,12 @@
 	
 	<DIV class="setting">	
 		Log Requests from Known Robots: 
-		<SELECT NAME="<?=$this->getNs();?>config[log_robots]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[log_robots]">
 	
-		<OPTION VALUE="0" <? if ($config['log_robots'] == false):?>SELECTED<?endif;?>>
+		<OPTION VALUE="0" <?php if ($config['log_robots'] == false):?>SELECTED<?php endif; ?>>
 		Off</OPTION>
 		
-		<OPTION VALUE="1" <? if ($config['log_robots'] == true):?>SELECTED<?endif;?>>
+		<OPTION VALUE="1" <?php if ($config['log_robots'] == true):?>SELECTED<?php endif; ?>>
 		On</OPTION>
 			
 		</SELECT>
@@ -46,12 +46,12 @@
 	
 	<DIV class="setting">	
 		Announce New Visitors via E-mail: 
-		<SELECT NAME="<?=$this->getNs();?>config[announce_visitors]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[announce_visitors]">
 	
-		<OPTION VALUE="0" <? if ($config['announce_visitors'] == false):?>SELECTED<?endif;?>>
+		<OPTION VALUE="0" <?php if ($config['announce_visitors'] == false):?>SELECTED<?php endif; ?>>
 		Off</OPTION>
 		
-		<OPTION VALUE="1" <? if ($config['announce_visitors'] == true):?>SELECTED<?endif;?>>
+		<OPTION VALUE="1" <?php if ($config['announce_visitors'] == true):?>SELECTED<?php endif; ?>>
 		On</OPTION>
 			
 		</SELECT>
@@ -59,7 +59,7 @@
 	
 	<DIV class="setting">	
 
-	Notice Email Address: <input type="text" name="<?=$this->getNs();?>config[notice_email]" value="<?=$config['notice_email']?>"><BR>
+	Notice Email Address: <input type="text" name="<?php echo $this->getNs();?>config[notice_email]" value="<?php echo $config['notice_email']?>"><BR>
 	
 	</DIV>
 	
@@ -71,21 +71,21 @@
 	<DIV class="setting">	
 	
 		Perform Geo-location Lookup: 
-		<SELECT NAME="<?=$this->getNs();?>config[geolocation_lookup]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[geolocation_lookup]">
 	
-		<OPTION VALUE="0" <? if ($config['geolocation_lookup'] == false):?>SELECTED<?endif;?>>
+		<OPTION VALUE="0" <?php if ($config['geolocation_lookup'] == false):?>SELECTED<?php endif; ?>>
 		Off</OPTION>
 		
-		<OPTION VALUE="1" <? if ($config['geolocation_lookup'] == true):?>SELECTED<?endif;?>>
+		<OPTION VALUE="1" <?php if ($config['geolocation_lookup'] == true):?>SELECTED<?php endif; ?>>
 		On</OPTION>
 			
 		</SELECT>
 	</DIV>
 	<DIV class="setting">	
 		Geolocation Service: 
-		<SELECT NAME="<?=$this->getNs();?>config[geolocation_service]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[geolocation_service]">
 	
-		<OPTION VALUE="hostip" <? if ($config['geolocation_service'] == 'hostip'):?>SELECTED<?endif;?>>
+		<OPTION VALUE="hostip" <?php if ($config['geolocation_service'] == 'hostip'):?>SELECTED<?php endif; ?>>
 		Hostip.info Web Service (free)</OPTION>
 			
 		</SELECT>
@@ -94,6 +94,6 @@
     
 	</fieldset>
 	
-	<BUTTON type="submit" name="<?=$this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
-	<BUTTON type="submit" name="<?=$this->getNs();?>action" value="base.optionsReset">Reset to Default Values</BUTTON>
+	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
+	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsReset">Reset to Default Values</BUTTON>
 </form>

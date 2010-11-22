@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * Click Event Handler
  * 
@@ -29,23 +33,6 @@
  */
 class owa_notifyHandlers extends owa_observer {
 
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * @access 	public
-	 * @return 	Log_observer_request_logger
-	 */
-    function owa_notifyHandlers() {
-	
-        // Call the base class constructor.
-        
-        $this->owa_observer();
-		
-		return;
-    }
-
     /**
      * Notify Handler
      *
@@ -54,17 +41,15 @@ class owa_notifyHandlers extends owa_observer {
      */
     function notify($event) {
     
-    	$this->m = $event['message'];
+    	$this->m = $event;
     	
-    	switch ($event['event_type']) {
+    	switch ($event->getEventType()) {
 	   
 	    	case "base.new_session":
-	    		if ($this->config['announce_visitors'] == true):
+	    		if (owa_coreAPI::getSetting('base', 'announce_visitors')) {
 			   		$this->handleEvent('base.notifyNewSession');
-				endif;
+				}
 		    	break;
-	    	
-    	
     	}
     
 		return;

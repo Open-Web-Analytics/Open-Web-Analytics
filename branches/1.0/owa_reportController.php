@@ -16,10 +16,10 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
- * Report Controller Class
+ * Abstract Report Controller Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,44 +31,130 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
  */
 
 
-class owa_reportController extends owa_controller {
+class owa_reportController extends owa_adminController {
 	
 	/**
 	 * Constructor
 	 *
 	 * @param array $params
-	 * @return owa_controller
+	 * @return
 	 */
-	function owa_reportController($params) {
-		
-		$this->owa_controller($params);
-		
-		return;
-		
+	function __construct($params) {
+	
+		$this->setControllerType('report');
+		$this->_setCapability('view_reports');
+		return parent::__construct($params);
+	
 	}
 	
 	/**
-	 * Handles request from caller
+	 * pre action
 	 *
 	 */
-	function doAction() {
+	function pre() {
 		
-		$this->e->debug('Performing Action: '.get_class($this));
+		// site lists
+		$sites = owa_coreAPI::getSitesList();
+		$this->set('sites', $sites);
+		// set default siteId if none exists on request
+		$site_id = $this->getParam('siteId');
+		if ( ! $site_id ) {
+			$site_id = $this->getParam('site_id'); 
+		}
+		if ( ! $site_id ) {
+			$site_id = $sites[0]['site_id']; 
+		}
+		$this->setParam('siteId', $site_id);
 		
-		//if (!isset($this->params['site_id'])):
-		//	$this->params['site_id'] = $this->config['site_id'];
-		//endif;
-		
+		// pass full set of params to view
+		$this->data['params'] = $this->params;
+				
 		// set default period if necessary
-		if (empty($this->params['period'])):
-			$this->params['period'] = 'today';
-		endif;
+		if (empty($this->params['period'])) {
+			$this->params['period'] = 'last_seven_days';
+			$this->set('is_default_period', true);
+		}
+		
+		$this->setPeriod($this->getParam('period'));
+		
+		$this->setView('base.report');
+		$this->setViewMethod('delegate');
+		
+		$this->dom_id = str_replace('.', '-', $this->params['do']);
+		$this->data['dom_id'] = $this->dom_id;
+		$this->data['do'] = $this->params['do'];
+		
+		// setup tabs
+		$siteId = $this->get('siteId');
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+		
+		$tabs = array();
+		$site_usage = array(
+				'tab_label'		=> 'Site Usage',
+				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors'
+		);
+		
+		$tabs['site_usage'] = $site_usage;
+		
+		// ecommerce tab
+		if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+		
+			$ecommerce = array(
+					'tab_label'		=> 'e-commerce',
+					'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate'
+			);
+		
+			$tabs['ecommerce'] = $ecommerce;
+		}		
+		$goal_groups = $gm->getActiveGoalGroups();
+		
+		if ( $goal_groups ) {
+			foreach ($goal_groups as $group) {
+				$goal_metrics = 'visits';
+				$active_goals = $gm->getActiveGoalsByGroup($group);
+					
+				if ( $active_goals ) {
+				
+					foreach ($active_goals as $goal) {
+						$goal_metrics .= sprintf(',goal%sCompletions', $goal);
+					}
+				}
+				
+				$goal_metrics .= ',goalValueAll';
+				$goal_group = array(
+						'tab_label'		=>	$gm->getGoalGroupLabel($group),
+						'metrics'		=>	$goal_metrics
+				);
+				$name = 'goal_group_'.$group;
+				$tabs[$name] = $goal_group;
+			}
+		}
+				
+		$this->set('tabs', $tabs);
+		$this->set('tabs_json', json_encode($tabs));
 		
 		
-		return $this->action();
+		//$this->body->set('sub_nav', owa_coreAPI::getNavigation($this->get('nav_tab'), 'sub_nav'));
+		$nav = owa_coreAPI::getGroupNavigation('Reports');
+		
+		if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
+			unset($nav['Ecommerce']);
+		}
+		
+		$this->set('top_level_report_nav', $nav);
 		
 	}
 	
+	function post() {
+		
+		return;
+	}
+	
+	function setTitle($title, $suffix = '') {
+		
+		$this->set('title', $title);
+		$this->set('titleSuffix', $suffix);
+	}
 }
 
 ?>

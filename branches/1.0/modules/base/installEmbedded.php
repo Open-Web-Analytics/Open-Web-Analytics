@@ -17,11 +17,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
-
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * Embedded Install Controller
@@ -35,71 +31,57 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
  * @since		owa 1.0.0
  */
 
-class owa_installEmbeddedController extends owa_controller {
+class owa_installEmbeddedController extends owa_installController {
 	
-	function owa_installEmbeddedController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+	function __construct($params) {
+		
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
+		
 	}
-	
+
 	function action() {
 		
-	    $api = &owa_coreAPI::singleton();
+	    $service = &owa_coreAPI::serviceSingleton();
 	    
 	    $this->e->notice('starting Embedded install');
+	    
+	    //create config file
+	    
+	    $this->c->createConfigFile($this->params);
+	    $this->c->applyConfigConstants();
 		// install schema
-		$status = $api->modules['base']->install();
+		$base = $service->getModule('base');
+		$status = $base->install();
 		
 		// schema was installed successfully
-		if ($status == true):
+		if ($status === true) {
 		    
-			// Check to see if default site already exists
-			$this->e->notice('Embedded install: checking for existance of default site.');
-			$site = owa_coreAPI::entityFactory('base.site');
-			$site->getByColumn('site_id', $this->params['site_id']);
-			$id = $site->get('id');
-		
-			if(empty($id)):
-		    	// Create default site
-				$site->set('site_id', $this->params['site_id']);
-				$site->set('name', $this->params['name']);
-				$site->set('description', $this->params['description']);
-				$site->set('domain', $this->params['domain']);
-				$site->set('site_family', $this->params['site_family']);
-				$site_status = $site->create();
-			
-				if ($site_status == true):
-					$this->e->notice('Embedded install: created default site.');
-				else:
-					$this->e->notice('Embedded install: creation of default site failed.');
-				endif;
-			else:
-				$this->e->notice(sprintf("Embedded install:  default site already exists (id = %s). nothing to do here.", $id));
-			endif;
+		    //create admin user
+		    $cu = owa_coreAPI::getCurrentUser();
+		    $this->createAdminUser($cu->getUserData('email_address'), $cu->getUserData('real_name'));
+		    
+		    // create default site
+			$this->createDefaultSite($this->getParam('domain'), $this->getParam('name'), $this->getParam('description'), $this->getParam('site_family'), $this->getParam('site_id'));
 			
 			// Persist install complete flag. 
-			$this->c->setSetting('base', 'install_complete', true);
+			$this->c->persistSetting('base', 'install_complete', true);
 			$save_status = $this->c->save();
 			
-			if ($save_status == true):
+			if ($save_status === true) {
 				$this->e->notice('Install Complete Flag added to configuration');
-			else:
+			} else {
 				$this->e->notice('Could not persist Install Complete Flag to the Database');
-			endif;
+			}
 
-			$data = array();
-			$data['view'] = 'base.installFinishEmbedded';
+			$this->setView('base.installFinishEmbedded');
 			
-			return $data;
-		
 		// schema was not installed successfully
-		else:
+		} else {
+			$this->e->notice('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');
 			return false;
-		endif;		
-			
+		}		
 	}
-	
-	
 }
 
 ?>

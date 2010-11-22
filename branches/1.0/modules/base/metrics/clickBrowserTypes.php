@@ -31,35 +31,29 @@
 class owa_clickBrowserTypes extends owa_metric {
 	
 	function owa_clickBrowserTypes($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+				
+		return owa_clickBrowserTypes::__construct($params);
 		
 	}
 	
-	function generate() {
+	function __construct($params = null) {
+	
+		return parent::__construct($params);
+	}
+	
+	function calculate() {
+
+		$this->db->selectFrom('owa_click', 'click');
 		
-		$c = owa_coreAPI::entityFactory('base.click');
-		
-		$ua = owa_coreAPI::entityFactory('base.ua');
-		
-		$this->params['related_objs'] = array('ua_id' => $ua);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(distinct click.id) as count,
+		$this->db->selectColumn("count(distinct click.id) as count,
 									ua.id,
 									ua.ua as ua,
-									ua.browser_type";
-								
-		$this->params['groupby'] = array('ua.browser_type');
+									ua.browser_type");
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER,'owa_ua', 'ua', 'ua_id', 'ua.id');	
+		$this->db->groupBy('ua.browser_type');
+		$this->db->orderBy('count');
 		
-		$this->params['orderby'] = array('count');
-	
-		return $c->query($this->params);
+		return $this->db->getAllRows();
 		
 	}
 	

@@ -1,14 +1,15 @@
 <div id="panel">
 
-	<h2><?=$headline;?></h2>
+	<h2>Welcome to the Installer!</h2>
 	
-	The next few screens will guide you through installing and configuraing the Open Web Analytics framework. If at any time you
-	need help, please consult the <a href=<?=$this->config['wiki_url'];?>>OWA Wiki</a>.
-	<BR><BR>
+	<P>The next few screens will guide you through installing the Open Web Analytics framework. If at any time you
+	need help, please consult the <a href=<?php echo $this->config['wiki_url'];?>>OWA Wiki</a>.</P>
+	<BR>
+	<p>
+		<a href="<?php echo $this->makeLink(array('action' => 'base.installCheckEnv'));?>"><span class="owa-button">Let's Get Started...</span></a>
+	</p>
 	
-	<DIV class="centered_buttons">	
-		<a href="<?=$this->makeLink(array('action' => 'base.installCheckEnv'));?>">Next >> Next Step: Environment Check</a>
-	</DIV>
-
+	
+	
 </div>
     

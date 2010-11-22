@@ -51,19 +51,9 @@
  	 */
  	var $validations;
  	
- 	/**
- 	 * Validation objects
- 	 * 
- 	 * @var array
- 	 */
- 	var $validators;
+ 	function __construct() {
  	
- 	function owa_validator() {
- 		
- 		$this->owa_base;
- 		
- 		return;
- 		
+ 		return parent::__construct();
  	}
  	
  	/**
@@ -75,11 +65,22 @@
  	 * @param array 	$conf 		configuration array for the object being created
  	 */
  	function addValidation($name, $value, $validation, $conf) {
+				
+		// Construct validatation obj
+		$obj = $this->validationFactory($validation);
+		$obj->setValues($value);
+		$obj->setConfigArray($conf);
 		
-		$this->validations[$name] = array('value' => $value, 'validation' => $validation, 'conf' => $conf);
-		
+		$this->validations[] = array('name' => $name, 'obj' => $obj);
+
 		return;
 		
+	}
+	
+	function setValidation($name, $obj) {
+		
+		$this->validations[] = array('name' => $name, 'obj' => $obj);
+		return;
 	}
 	
 	/**
@@ -87,14 +88,9 @@
 	 * 
 	 * @return Object
 	 */
-	function validationFactory($class_file, $conf) {
+	function validationFactory($class_file) {
 		
-		if (!class_exists('owa_validation')):
-			require_once(OWA_BASE_CLASS_DIR.'validation.php');
-		endif;
-		
-		return owa_lib::factory(OWA_PLUGINS_DIR.'/validations', 'owa_', $class_file, $conf, 'Validation');
-		
+		return owa_coreAPI::validationFactory($class_file, $conf);		
 	}
 	
 	/**
@@ -103,23 +99,20 @@
 	 */
 	function doValidations() {
 		
-		foreach ($this->validations as $k => $v) {
+		foreach ($this->validations as $k) {
 			
-			// Construct validatation obj
-			$this->validators[$k] = $this->validationFactory($v['validation'], $v['conf']);
+			$k['obj']->validate();
 			
-			$this->validators[$k]->validate($v['value']);
-			
-			if ($this->validators[$k]->hasError == true):
-			
+			if ($k['obj']->hasError === true) {
+					
 				$this->hasErrors = true;
-				$this->errorMsgs[$k] = $this->validators[$k]->errorMsg;
+				$this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
 				
-				if ($this->validators[$k]->conf['stopOnError'] == true):
+				if ($k['obj']->conf['stopOnError'] === true) {
 					break;
-				endif;
+				}
 				
-			endif;
+			}
 		}
 	}
 	

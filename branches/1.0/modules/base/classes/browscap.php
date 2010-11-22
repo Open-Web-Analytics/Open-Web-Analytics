@@ -58,64 +58,49 @@ class owa_browscap extends owa_base {
 	 */
 	var $ua;
 	var $cache;
+	var $cacheExpiration;
 	
-	function owa_browscap($ua = '') {
+	function __construct($ua = '') {
 		
-		$this->owa_base();
-		
+		parent::__construct();
 		// set user agent
 		$this->ua = $ua;
 		
 		// init cache
 		$this->cache = &owa_coreAPI::cacheSingleton(); 
-		$this->cache->setCacheDir(OWA_CACHE_DIR);
-
+		$this->cacheExpiration = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
+		$this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 		//lookup robot in main browscap db
 		$this->browser = $this->lookup($this->ua);
 		$this->e->debug('Browser Name : '. $this->browser->Browser);
 		
-		return;
 	}
 	
 	function robotCheck() {
-		
-		if ($this->browser->Crawler == true):
+		// must use == due to wacky type issues with phpBrowsecap ini file
+		if ($this->browser->Crawler == "true" || $this->browser->Crawler == "1") {
 			return true;
-		else:
-			if($this->robotRegexCheck() == true):
-				return true;
-			else:
-				return false;
-			endif;
-		endif;
+		} elseif ($this->browser->Browser === "Default Browser") {
+			return $this->robotRegexCheck();
+		}
+		
+		return false;
 	}
 	
 	function lookup($user_agent) {
 		
-		if ($this->config['cache_objects'] == true):
+		if (owa_coreAPI::getSetting('base','cache_objects') === true) {
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 			$cache_obj = $this->cache->get('browscap', $this->ua);
-		endif;
-			
-		if (!empty($cache_obj)):
+		}
 		
+		if (!empty($cache_obj)):
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 			return $cache_obj;
 					
 		else:
-		
-			// lookup from DB
-			
-			//$ua = owa_coreAPI::entityFactory('base.ua');
-			//$ua->getByColumn('ua', $user_agent);
-			
-			//$browser = $ua->get('browser');
-			
-			//if (!empty($browser)):
-				
-			//	return $ua->_getProperties();
-			//else:
-			// ;
-			//endif;
-				
+			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+						
 			// Load main browscap
 			$this->browscap_db = $this->load($this->config['browscap.ini']);
 	
@@ -141,33 +126,35 @@ class owa_browscap extends owa_base {
 				
 				if ($this->config['cache_objects'] == true):
 					if ($cap['Browser'] != 'Default Browser'): 
-						$this->cache->set('browscap', $this->ua, (object)$cap);
+						$this->cache->set('browscap', $this->ua, (object)$cap, $this->cacheExpiration);
 					endif;
 				endif;
 			endif;
 
-			 
 			 return ((object)$cap);
 		 
 		endif;
 	
 	}
 	
-	
-	
 	function load($file) {
 	
-		return parse_ini_file($file, true);
-		
+		if(defined('INI_SCANNER_RAW')) {
+        	return parse_ini_file($file, true, INI_SCANNER_RAW);
+    	} else {
+        	return parse_ini_file($file, true);
+     	}
+
 	}
 	
 	function robotRegexCheck() {
 		
 		$db = new ini_db(OWA_CONF_DIR.'robots.ini');
-		$match = $db->match($this->ua);
+		owa_coreAPI::debug('Checking for robot strings...');
+		$match = $db->contains($this->ua);
 		
 		if (!empty($match)):
-			$this->e->debug(sprintf('Last chance robot detect string: %s', $match[0]));
+			owa_coreAPI::debug('Robot detect string found.');
 			$this->browser->Crawler = true;
 			return true;
 		else:
@@ -176,6 +163,10 @@ class owa_browscap extends owa_base {
 	
 	}
 	
+	function get($name) {
+	
+		return $this->browser->$name;
+	}
 	
 }
 

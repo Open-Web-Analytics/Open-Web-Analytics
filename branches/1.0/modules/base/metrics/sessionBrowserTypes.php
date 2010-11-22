@@ -32,34 +32,25 @@ class owa_sessionBrowserTypes extends owa_metric {
 	
 	function owa_sessionBrowserTypes($params = null) {
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+		return owa_sessionBrowserTypes::__construct($params);
 		
 	}
 	
-	function generate() {
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$ua = owa_coreAPI::entityFactory('base.ua');
-		
-		$this->params['related_objs'] = array('ua_id' => $ua);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(distinct session.id) as count,
-									ua.ua as ua,
-									ua.browser_type";
-								
-		$this->params['groupby'] = array('ua.browser_type');
-		
-		$this->params['orderby'] = array('count');
+	function __construct($params = null) {
 	
-		return $s->query($this->params);
+		parent::__construct($params);
+	}
+	
+	function calculate() {
+					
+		$this->db->selectFrom('owa_session', 'session');
+		$this->db->selectColumn("count(distinct session.id) as count, ua.ua as ua, ua.browser_type");
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id', 'ua.id');
+		$this->db->groupBy('ua.browser_type');
+		$this->db->orderBy('count', $this->getOrder());
 		
+		return $this->db->getAllRows();
+
 	}
 	
 	

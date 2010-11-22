@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * base Schema Installation Controller
@@ -30,39 +30,98 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_installBaseController extends owa_controller {
-	
-	function owa_installBaseController($params) {
+class owa_installBaseController extends owa_installController {
 		
-		$this->owa_controller($params);
-		$this->priviledge_level = 'guest';
+	function __construct($params) {
 		
-		return;
+		parent::__construct($params);
+		
+		// require nonce
+		$this->setNonceRequired();
+		
+		// validations
+		$v1 = owa_coreAPI::validationFactory('required');
+		$v1->setValues($this->getParam('domain'));
+		$v1->setErrorMessage($this->getMsg(3309));
+		$this->setValidation('domain', $v1);
+		
+		// validations
+		$v2 = owa_coreAPI::validationFactory('required');
+		$v2->setValues($this->getParam('email_address'));
+		$v2->setErrorMessage($this->getMsg(3310));
+		$this->setValidation('email_address', $v2);
+		
+		// Check entity exists
+		$v3 = owa_coreAPI::validationFactory('entityDoesNotExist');
+		$v3->setConfig('entity', 'base.site');
+		$v3->setConfig('column', 'domain');
+		$v3->setValues($this->getParam('protocol').$this->getParam('domain'));
+		$v3->setErrorMessage($this->getMsg(3206));
+		$this->setValidation('domain', $v3);
+		
+		// Config for the domain validation
+		$v4 = owa_coreAPI::validationFactory('subStringPosition');
+		$v4->setConfig('subString', 'http');
+		$v4->setValues($this->getParam('domain'));
+		$v4->setConfig('position', 0);
+		$v4->setConfig('operator', '!=');
+		$v4->setErrorMessage($this->getMsg(3208));
+		$this->setValidation('domain', $v4);
 	}
 	
 	function action() {
 		
-		$api = &owa_coreAPI::singleton();
-		
-		$status = $api->modules['base']->install();
-		
-		if ($status == true):
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installDefaultSiteProfile';
-			$data['status_code'] = 3305;
-		else:
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.install';
-			$data['subview'] = 'base.installCheckEnv';
-			$data['error_code'] = 3302;
-		endif;
-		
-		return $data;
+		$status = $this->installSchema();
+				
+		if ($status == true) {
+			$this->set('status_code', 3305);
+			
+			$password = $this->createAdminUser($this->getParam('email_address'));
+			
+			$site_id = $this->createDefaultSite($this->getParam('protocol').$this->getParam('domain'));	
+			
+			// Set install complete flag. 
+			$this->c->persistSetting('base', 'install_complete', true);
+			$save_status = $this->c->save();
+			
+			if ($save_status == true) {
+				$this->e->notice('Install Complete Flag added to configuration');
+			} else {
+				$this->e->notice('Could not add Install Complete Flag to configuration.');
+			}
+			
+			// fire install complete event.
+			$eq = &eventQueue::get_instance();
+			$event = $eq->eventFactory();
+			$event->set('u', 'admin');
+			$event->set('p', $password);
+			$event->set('site_id', $site_id);
+			$event->setEventType('install_complete');
+			$eq->notify($event);
+			
+			// set view
+			$this->set('u', 'admin');
+			$this->set('p', $password);
+			$this->set('site_id', $site_id);
+			$this->setView('base.install');
+			$this->setSubview('base.installFinish');
+			//$this->set('status_code', 3304);
+			
+		} else {
+	
+			$this->set('error_msg', $this->getMsg(3302));
+			$this->errorAction();
+		}
+				
+		return;
 	}
 	
-
+	function errorAction() {
+	
+		$this->set('defaults', $this->params);
+		$this->setView('base.install');
+		$this->setSubView('base.installDefaultsEntry');
+	}
 }
-
 
 ?>

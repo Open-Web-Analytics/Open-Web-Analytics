@@ -18,8 +18,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_news.php');
 
 /**
  * View
@@ -35,38 +33,23 @@ require_once(OWA_BASE_DIR.'/owa_news.php');
 
 class owa_reportView extends owa_view {
 	
-	function owa_reportView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		
-		return;
-	}
-	
-	function construct($data) {
+	function render($data) {
 		
 		// Set Page title
-		$this->t->set('page_title', 'Report');
+		$this->t->set('page_title', $this->get('title'));
 		
 		// Set Page headline
-		$this->body->set('headline', '');
+		$this->body->set('title', $this->get('title'));
+		$this->body->set('titleSuffix', $this->get('titleSuffix'));
 		
 		// Report Period Filters
-		$this->body->set('reporting_periods', owa_lib::reporting_periods());
-		$this->body->set('date_reporting_periods', owa_lib::date_reporting_periods());
-		$this->body->set('months', owa_lib::months());
-		$this->body->set('days', owa_lib::days());
-		$this->body->set('years', owa_lib::years());
+		$pl = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+		$this->body->set('reporting_periods', $pl->getPeriodLabels());
 		
 		// Set reporting period
-		$this->setPeriod($data['params']['period']);
-		
-		// Set date labels
-		$date_label = $this->setDateLabel($data['params']);
-		$this->body->set('date_label', $date_label);
-		$this->subview->body->set('date_label', $date_label);
-		
+		$this->setPeriod($this->data['period']);
+		$this->subview->body->set('is_default_period', $this->get('is_default_period'));
+	
 		//create the report control params array
 		$this->report_params = $this->data['params'];
 		unset($this->report_params['p']);
@@ -92,45 +75,44 @@ class owa_reportView extends owa_view {
 		unset($this->report_params['caller']);
 		
 		$this->body->set('params', $this->report_params);
-		
-		// create state params for all links
-		$link_params = array(
-								'period'	=> $this->data['params']['period'], // could be set by setPeriod
-								'day'		=> $data['params']['day'],
-								'month'		=> $data['params']['month'],
-								'year'		=> $data['params']['year'],
-								'day2'		=> $data['params']['day2'],
-								'month2'	=> $data['params']['month2'],
-								'year2'		=> $data['params']['year2'],
-								'site_id'	=> $this->data['params']['site_id']								
-							);		
-							
-		$this->body->caller_params['link_state'] =  $link_params;
-		$this->subview->body->caller_params['link_state'] =  $link_params;
+		$this->subview->body->set('params', $this->report_params);
+		$this->_setLinkState();
 		
 		// set site filter list
-		$this->body->set('sites', $this->getSitesList());
-		
-		
-		//Fetch latest OWA news
-		if ($this->config['fetch_owa_news'] == true):
-			$rss = new owa_news;
-			$news = $rss->Get($rss->config['owa_rss_url']);
-		endif;
-
-		$this->body->set('news', $news);
+		$this->body->set('sites', $this->get('sites') );
+	
+		$this->body->set('dom_id', $this->data['dom_id']);
+		// add if here
+		$this->subview->body->set('dom_id', $this->data['dom_id']);
+		$this->body->set('do', $this->data['do']);
 		
 		// Set navigation
-		$api = &owa_coreAPI::singleton();
-	
-		$this->body->set('sub_nav', $api->getNavigation($this->data['nav_tab'], 'sub_nav'));
-		$this->body->set('top_level_report_nav', $api->getNavigation('base.report', 'top_level_report_nav'));
+		$this->body->set('top_level_report_nav', $this->get('top_level_report_nav'));
 		
 		// load body template
-		
 		$this->body->set_template('report.tpl');
+			
+		// set Js libs to be loaded
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
+		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
+		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
+		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
+		$this->setJs('excanvas','base/js/includes/excanvas.compiled.js', '', '', true);
+		$this->setJs('flot','base/js/includes/jquery/flot/jquery.flot.min.js');
+		$this->setJs('flot-pie','base/js/includes/jquery/flot/jquery.flot.pie.js');
+		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
+		$this->setJs("owa", "base/js/owa.js");
+		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
+		//$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
+		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
+		$this->setJs("json2", "base/js/includes/json2.js");
+		$this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
 		
-		return;
+		// css libs to be loaded
+		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
+		$this->setCss("base/css/owa.report.css");
+		$this->setCss('base/css/ui.jqgrid.css');
 	}
 	
 	/**
@@ -142,35 +124,15 @@ class owa_reportView extends owa_view {
 	function setPeriod($period) {
 			
 		// set in various templates and params
-		$this->data['params']['period'] = $period;
-		$this->body->set('period', $period);
-		$this->subview->body->set('period', $period);
-		
+		$this->data['params']['period'] = $period->get();
+		$this->body->set('period', $period->get());
+		$this->body->set('period_obj', $period);
+		$this->subview->body->set('period_obj', $period);
+		$this->subview->body->set('period', $period->get());
 		// set period label
-		$period_label = $this->get_period_label($period);
+		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
 		$this->subview->body->set('period_label', $period_label);
-		return;
-	}
-
-	/**
-	 * Lookup report period label
-	 *
-	 * @param string $period
-	 * @access private
-	 * @return string $label
-	 */
-	function get_period_label($period) {
-	
-		return owa_lib::get_period_label($period);
-	}
-	
-	
-	
-	function setDateLabel($params) {
-
-		return owa_lib::getDateLabel($params);
-		
 	}
 	
 	/**
@@ -181,26 +143,114 @@ class owa_reportView extends owa_view {
 	 */
 	function _setParams($params = null) {
 	
-		if(!empty($params)):
+		if(!empty($params)) {
 			foreach ($params as $key => $value) {
-				if(!empty($value)):
+				if(!empty($value)) {
 					$this->params[$key] = $value;
-				endif;
+				}
 			}
-		endif;
-		
-		return;	
+		}
 	}
+
+	function post() {
+		
+		$this->setCss("base/css/owa.admin.css");
+	}	
+}
+
+/**
+ *  Dimension Report View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_reportDimensionView extends owa_view {
 	
-	function getSitesList() {
-		
-		$s = owa_coreAPI::entityFactory('base.site');
-		
-		return $s->find();
-		
+	function render($data) {
+			
+		// Assign Data to templates
+		$this->body->set('tabs', $this->get('tabs') );
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set('gridFormatters', $this->get('gridFormatters'));
+		$this->body->set('excludeColumns', $this->get('excludeColumns'));
+		$this->body->set_template('report_dimensionalTrend.php');
 	}
-	
-	
+}
+
+/**
+ *  Dimension Detail Report View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.0.0
+ */
+
+class owa_reportDimensionDetailView extends owa_view {
+		
+	function render($data) {
+		
+		// Assign Data to templates
+		$this->body->set('tabs', $this->get('tabs') );
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimension', $this->get('dimension'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('dimension_properties', $this->get('dimension_properties'));
+		$this->body->set('dimension_template', $this->get('dimension_template'));
+		$this->body->set('excludeColumns', $this->get('excludeColumns'));
+		$this->body->set_template('report_dimensionDetail.php');
+	}
+}
+
+/**
+ * Simple Dimensional Report View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.4.0
+ */
+
+class owa_reportSimpleDimensionalView extends owa_view {
+		
+	function render() {
+		
+		// Assign Data to templates
+		$this->body->set('metrics', $this->get('metrics'));
+		$this->body->set('dimensions', $this->get('dimensions'));
+		$this->body->set('sort', $this->get('sort'));
+		$this->body->set('resultsPerPage', $this->get('resultsPerPage'));
+		$this->body->set('dimensionLink', $this->get('dimensionLink'));
+		$this->body->set('trendChartMetric', $this->get('trendChartMetric'));
+		$this->body->set('trendTitle', $this->get('trendTitle'));
+		$this->body->set('gridFormatters', $this->get('gridFormatters'));
+		$this->body->set('constraints', $this->get('constraints'));
+		$this->body->set('gridTitle', $this->get('gridTitle'));
+		$this->body->set('excludeColumns', $this->get('excludeColumns'));
+		$this->body->set_template('report_dimensionDetailNoTabs.php');
+	}
 }
 
 ?>

@@ -1,7 +1,9 @@
-<?php $this->includeTemplate('css.tpl');?>	
+<?php include($this->setTemplate('css.tpl'));?>	
 	
-<?php $this->includeTemplate('header.tpl');?>
+<?php include($this->setTemplate('header.tpl'));?>
 
-<?php $this->includeTemplate('msgs.tpl');?>
+<?php include($this->setTemplate('msgs.tpl'));?>
 
-<?=$body;?>
+<?php include($this->setTemplate('head.tpl'));?>
+
+<?php echo $body;?>

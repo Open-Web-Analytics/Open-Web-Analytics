@@ -16,8 +16,62 @@
 // $Id$
 //
 
+
+define('OWA_DTD_BIGINT', 'BIGINT'); 
+define('OWA_DTD_INT', 'INT');
+define('OWA_DTD_TINYINT', 'TINYINT(1)');
+define('OWA_DTD_TINYINT2', 'TINYINT(2)');
+define('OWA_DTD_TINYINT4', 'TINYINT(4)');
+define('OWA_DTD_SERIAL', 'SERIAL');
+define('OWA_DTD_PRIMARY_KEY', 'PRIMARY KEY');
+define('OWA_DTD_VARCHAR10', 'VARCHAR(10)');
+define('OWA_DTD_VARCHAR255', 'VARCHAR(255)');
+define('OWA_DTD_VARCHAR', 'VARCHAR(%s)');
+define('OWA_DTD_TEXT', 'MEDIUMTEXT');
+define('OWA_DTD_BOOLEAN', 'TINYINT(1)');
+define('OWA_DTD_TIMESTAMP', 'TIMESTAMP');
+define('OWA_DTD_INDEX', 'KEY');
+define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT');
+define('OWA_DTD_NOT_NULL', 'NOT NULL');
+//define('OWA_DTD_UNIQUE', 'UNIQUE'); 
+define('OWA_DTD_UNIQUE', 'PRIMARY KEY(%s)');
+define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');   
+define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s');
+define('OWA_SQL_RENAME_COLUMN', 'ALTER TABLE %s CHANGE %s %s %s'); 
+define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s'); 
+define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s'); 
+define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE IF NOT EXISTS %s (%s) %s'); 
+define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');  
+define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)');
+define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s %s');
+define('OWA_SQL_DELETE_ROW', "DELETE from %s %s");
+define('OWA_SQL_CREATE_INDEX', 'CREATE INDEX %s ON %s (%s)');
+define('OWA_SQL_DROP_INDEX', 'DROP INDEX %s ON %s');
+define('OWA_SQL_INDEX', 'INDEX (%s)');
+define('OWA_SQL_BEGIN_TRANSACTION', 'BEGIN');
+define('OWA_SQL_END_TRANSACTION', 'COMMIT');
+define('OWA_DTD_TABLE_TYPE', 'ENGINE = %s');
+define('OWA_DTD_TABLE_TYPE_DEFAULT', 'INNODB');
+define('OWA_DTD_TABLE_TYPE_DISK', 'INNODB');
+define('OWA_DTD_TABLE_TYPE_MEMORY', 'MEMORY');
+define('OWA_SQL_ALTER_TABLE_TYPE', 'ALTER TABLE %s ENGINE = %s');
+define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN');
+define('OWA_SQL_JOIN_LEFT_INNER', 'LEFT INNER JOIN');
+define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN');
+define('OWA_SQL_JOIN_RIGHT_INNER', 'RIGHT INNER JOIN');
+define('OWA_SQL_JOIN', 'JOIN');
+define('OWA_SQL_DESCENDING', 'DESC');
+define('OWA_SQL_ASCENDING', 'ASC');
+define('OWA_SQL_REGEXP', 'REGEXP');
+define('OWA_SQL_NOTREGEXP', 'NOT REGEXP');
+define('OWA_SQL_LIKE', 'LIKE');
+define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s');
+define('OWA_DTD_CHARACTER_ENCODING_UTF8', 'utf8');
+define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
+
+
 /**
- * MySQL Connection class
+ * MySQL Data Access Class
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -29,58 +83,48 @@
  */
 class owa_db_mysql extends owa_db {
 
-	/**
-	 * Constructor
-	 *
-	 * @return owa_db_mysql
-	 * @access public
-	 */
-	function owa_db_mysql() {
-	
-		$this->owa_db();
-		
-		//$connectionString = sprintf('%s', OWA_DB_HOST);	
-		
-		/*$this->connection = mysql_connect(
-			OWA_DB_HOST,
-			OWA_DB_USER,
-			OWA_DB_PASSWORD,
-			true
-    	);
-		
-		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
-		
-		if (!$this->connection || !$this->database_selection):
-			$this->e->alert('Could not connect to database. ');
-			$this->connection_status = false;
-		else:
-			$this->connection_status = true;
-		endif;
-	*/
-		return;
-	}
-	
 	function connect() {
 	
-		$this->connection = mysql_connect(
-				OWA_DB_HOST,
-				OWA_DB_USER,
-				OWA_DB_PASSWORD,
-				true
-    	);
+		if (!$this->connection) {
 		
-		$this->database_selection = mysql_select_db(OWA_DB_NAME, $this->connection);
+			if ($this->getConnectionParam('persistant')) {
+				
+				$this->connection = mysql_pconnect(
+					$this->getConnectionParam('host'),
+					$this->getConnectionParam('user'),
+					$this->getConnectionParam('password'),
+					$this->getConnectionParam('open_new_connection')
+	    		);
+	    		
+			} else {
+				
+				$this->connection = mysql_connect(
+					$this->getConnectionParam('host'),
+					$this->getConnectionParam('user'),
+					$this->getConnectionParam('password'),
+					$this->getConnectionParam('open_new_connection')
+	    		);
+			}
 			
-		if (!$this->connection || !$this->database_selection):
-				$this->e->alert('Could not connect to database. ');
-				$this->connection_status = false;
-				return false;
-		else:
-				$this->connection_status = true;
-		endif;
-		
-		return;
-	
+			$this->database_selection = mysql_select_db($this->getConnectionParam('name'), $this->connection);
+			
+			if (function_exists('mysql_set_charset')) {
+				mysql_set_charset('utf8',$this->connection);
+			} else {
+				$this->query("SET NAMES 'utf8'");
+			}
+			
+		}
+			
+			
+		if (!$this->connection || !$this->database_selection) {
+			$this->e->alert('Could not connect to database.');
+			$this->connection_status = false;
+			return false;
+		} else {
+			$this->connection_status = true;
+			return true;
+		}
 	}
 	
 	
@@ -94,10 +138,12 @@ class owa_db_mysql extends owa_db {
 	function query($sql) {
   
   		if ($this->connection_status == false):
+  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
   			$this->connect();
+  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
   		endif;
   
-  
+  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->e->debug(sprintf('Query: %s', $sql));
 		
 		$this->result = '';
@@ -106,9 +152,9 @@ class owa_db_mysql extends owa_db {
 		if (!empty($this->new_result)):
 			mysql_free_result($this->new_result);
 		endif;
-		
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 		$result = @mysql_unbuffered_query($sql, $this->connection);
-					
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);			
 		// Log Errors
 		if (mysql_errno($this->connection)):
 			$this->e->debug(sprintf('A MySQL error occured. Error: (%s) %s. Query: %s',
@@ -116,14 +162,8 @@ class owa_db_mysql extends owa_db {
 			htmlspecialchars(mysql_error($this->connection)),
 			$sql));
 		endif;			
-		
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->new_result = $result;
-		
-		// hack for when calling applications catch all mysql errors and you nee to flush the error
-		// this only is an issue with respect to inserts that fail.
-		if ($result == false):
-			;//mysql_ping($this->connection);
-		endif;
 		
 		return $this->new_result;
 		
@@ -151,23 +191,14 @@ class owa_db_mysql extends owa_db {
 	
 		$num_rows = 0;
 		
-		while ( $row = @mysql_fetch_object($this->new_result) ) {
+		while ( $row = @mysql_fetch_assoc($this->new_result) ) {
 			$this->result[$num_rows] = $row;
 			$num_rows++;
 		}
 		
 		if ($this->result):
-			$i = 0;
-			foreach($this->result as $row ) {
-				
-				// Hook for caching goes here
-				
-				$new_array[$i] = (array) $row;
-				$i++;
-			}
-			
-			
-			return $new_array;
+					
+			return $this->result;
 			
 		else:
 			return null;
@@ -205,359 +236,6 @@ class owa_db_mysql extends owa_db {
 		return mysql_real_escape_string($string, $this->connection); 
 		
 	}
-	
-	/**
-	 * Save Request to database
-	 *
-	 */
-	function save($properties, $table) {	
-		
-		$count = count($properties);
-		
-		$i = 0;
-		
-		$sql_cols = '';
-		$sql_values = '';
-					
-			foreach ($properties as $key => $value) {
-			
-				$sql_cols = $sql_cols.$key;
-				$sql_values = $sql_values."'".$this->prepare($value)."'";
-				
-				$i++;
-				
-				// Add commas
-				if ($i < $count):
-				
-					$sql_cols = $sql_cols.", ";
-					$sql_values = $sql_values.", ";
-					
-				endif;	
-			}
-						
-		return $this->query(sprintf(
-					"INSERT into %s (%s) VALUES (%s)",
-					$table,
-					$sql_cols,
-					$sql_values)
-				);	
-		
-	}
-	
-	function update($properties, $constraints, $table) {
-		
-		$count = count($properties);
-		
-		$i = 0;
-		
-		$sql_cols = '';
-		$sql_values = '';
-		$set = '';
-					
-		foreach ($properties as $key => $value) {
-			
-			//$sql_cols = $sql_cols.$key;
-			//$sql_values = $sql_values."'".$this->prepare($value)."'";
-				
-			// Add commas
-			if ($i != 0):
-				
-				$set .= ', ';
-					
-			endif;	
-			
-			$set .= $key .' = \'' . $this->prepare($value) . '\'';
-			
-			$i++;
-		}
-		
-		$where = owa_lib::addConstraints($constraints);
-		
-		return $this->query(sprintf("UPDATE %s SET %s WHERE %s", $table, $set, $where));
-		
-	}
-	
-	function delete($id, $col, $table) {
-		
-		return $this->query(sprintf("DELETE from %s WHERE %s = '%s'", $table, $col, $id));
-		
-	}
-	
-	function select($values, $constraints, $table) {
-		
-		$cols = '';
-		$i = 0;
-		$count = count($values);
-		
-		foreach ($values as $k => $v) {
-			
-			$cols .= $k;
-			
-			// Add commas
-			if ($i < $count - 1):
-				
-				$cols .= ', ';
-					
-			endif;	
-			
-			$i++;
-			
-		}
-		
-		$where = owa_lib::addConstraints($constraints);
-		
-		return $this->get_row(sprintf("SELECT %s FROM %s WHERE %s", $cols, $table, $where));
-		
-	}
-	
-	/**
-	 * Fetches primary and related objects from DB
-	 *
-	 * @param array $params caller params
-	 * @return array
-	 */
-	function getObjs($params) {
-		
-		// Adds caller params to class var
-		$this->params = $params;
-		
-		// construct COLUMNS
-		
-		$cols = $this->makeColumnList($this->params['primary_obj']);
-		
-		// add related objects
-		if(!empty($this->params['related_objs'])):
-		
-			foreach ($this->params['related_objs'] as $k => $v) {
-			
-				$cols .= ', '.$this->makeColumnList($v->entity);
-			
-			}
-		
-		endif;
-		
-		
-		return $this->buildSelectStm($cols);
-	}
-	
-	function selectQuery($params) {
-		
-		// Adds caller params to class var
-		$this->params = $params;
-		
-		return $this->buildSelectStm($this->params['select']);
-		
-		
-	}
-	
-	function buildSelectStm($cols) {
-		
-		$orderby_stm = '';
-		$limit_stm = '';
-		$offset_stm = '';
-		// construct FROM
-		
-		$from = $this->makeFromStm();
-		
-		// construct WHERE
-		if(!empty($this->params['constraints'])):
-			$where = 'WHERE '.owa_lib::addConstraints($this->params['constraints']);
-		endif;
-		
-		// construct GROUP BY
-		
-		if(!empty($this->params['groupby'])):
-	
-			$groupby_stm = $this->makeGroupByStm();
-		
-		endif;
-		
-		// construct ORDER
-		
-		if(!empty($this->params['orderby'])):
-		
-			$orderby_stm = $this->makeOrderByStm();
-			
-		endif;
-		
-		// construct LIMIT
-		
-		if(!empty($this->params['limit'])):
-		
-			$limit_stm = $this->makeLimitStm();
-			
-		endif;
-		
-		// construct OFFSET
-		
-		if(!empty($this->params['offset'])):
-		
-			$offset_stm = $this->makeOffsetStm();
-			
-		endif;
-		
-		// Issue query
-	
-		$ret = $this->get_results(sprintf("SELECT %s FROM %s %s %s %s %s %s", $cols, $from, $where, $groupby_stm, $orderby_stm, $limit_stm, $offset_stm));
-		
-		// format results
-		if(!empty($ret)):
-		
-			$ret = $this->formatResults($ret);
-			
-		endif;
-		
-		// clear out params.
-		$this->params = '';
-		
-		return $ret;
-		
-		
-	}
-	
-	function formatResults($results) {
-		
-		switch ($this->params['result_format']) {
-				
-				case "single_array":
-					return $results[0];
-					break;
-				case "single_row":
-					return $results[0];
-					break;	
-				case "inverted_array":
-					return owa_lib::deconstruct_assoc($results);
-					break;
-				default:
-					return $results;
-					break;
-		}	
-	
-	}
-	
-	function makeFromStm() {
-		
-		// construct FROM
-		
-		$primary_obj_ns = $this->removeNs(get_class($this->params['primary_obj']));
-		
-		$from = get_class($this->params['primary_obj']) . ' as ' . $primary_obj_ns;
-		
-		// add related objects
-		if(!empty($this->params['related_objs'])):
-		
-			foreach ($this->params['related_objs'] as $k => $v) {
-				$joinTableNs = $this->removeNs(get_class($v->entity));
-				
-				$from .= ' LEFT OUTER JOIN ' . get_class($v->entity) . ' as ' . $joinTableNs . ' ON ' . $primary_obj_ns . '.' . $k . ' = ' . $joinTableNs . '.id';
-			}
-		
-		endif;
-		
-		return $from;
-		
-	}
-	
-	function makeGroupByStm() {
-		
-		return 'GROUP BY ' . $this->makeDelimitedList($this->params['groupby']);
-		
-	}
-	
-	function makeOrderByStm() {
-		
-		if (empty($this->params['order'])):
-			$this->params['order'] = 'DESC';	
-		endif;
-		
-		return 'ORDER BY ' . $this->makeDelimitedList($this->params['orderby']). ' '. $this->params['order'];
-		
-	}
-	
-	function makeLimitStm() {
-		
-		return 'LIMIT ' . $this->params['limit'];
-		
-	}
-	
-	function makeOffsetStm() {
-		
-		return 'OFFSET ' . $this->params['offset'];
-		
-	}
-	
-	function makeColumnList($obj) {
-		
-		$values = $obj->getColumns();
-		
-		$ns = $this->removeNs(get_class($obj));
-		$cols = '';
-		$i = 0;
-		$count = count($values);
-		
-		foreach ($values as $k => $v) {
-			
-			if (empty($this->params['related_objs'])):
-				$cols .= $v;
-			else:
-				$cols .= $ns.'.'.$v.' as '.$ns.'_'.$v;
-			endif;
-			
-			// Add commas
-			if ($i < $count - 1):
-				
-				$cols .= ', ';
-					
-			endif;	
-			
-			$i++;
-			
-		}
-		
-		return $cols;
-		
-	}
-	
-	function removeNs($string) {
-		
-		$ns_len = strlen($this->config['ns']);
-		return substr($string, $ns_len);
-		
-	}
-	
-	function makeDelimitedList($values, $delimiter = ', ') {
-		
-		$items = '';
-		$i = 0;
-		$count = count($values);
-		
-		if (is_array($values)):
-		
-			foreach ($values as $k) {
-				
-				$items .= $k;
-				
-				// Add commas
-				if ($i < $count - 1):
-					
-					$items .= $delimiter;
-						
-				endif;	
-				
-				$i++;
-				
-			}
-			
-		else:
-		
-			$items = $values;
-		
-		endif;
-		
-		return $items;
-		
-	}
-
 }
 
 ?>

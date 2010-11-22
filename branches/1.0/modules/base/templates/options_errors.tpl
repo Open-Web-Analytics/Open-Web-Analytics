@@ -1,4 +1,4 @@
-<h2><?=$headline;?></h2>
+<h2><?php echo $headline;?></h2>
 
 <form method="post">	
 
@@ -7,11 +7,11 @@
 	
 	<DIV class="setting">	
 		Logging Mode: 
-		<SELECT NAME="<?=$this->getNs();?>config[error_handler]">
+		<SELECT NAME="<?php echo $this->getNs();?>config[error_handler]">
 	
-		<OPTION VALUE="production" <? if ($config['error_handler'] == 'production'):?>SELECTED<?endif;?>>
+		<OPTION VALUE="production" <?php if ($config['error_handler'] == 'production'):?>SELECTED<?php endif;?>>
 		Production (Errors logged to file)</OPTION>
-		<OPTION VALUE="development" <? if ($config['error_handler'] == 'development'):?>SELECTED<?endif;?>>
+		<OPTION VALUE="development" <?php if ($config['error_handler'] == 'development'):?>SELECTED<?php endif;?>>
 		Development (Debug and Error messages logged to file)</OPTION>
 		</SELECT>
 	
@@ -19,6 +19,6 @@
 	
 	</fieldset>
 	
-	<BUTTON type="submit" name="<?=$this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
-	<BUTTON type="submit" name="<?=$this->getNs();?>action" value="base.optionsReset">Reset to Default Values</BUTTON>
+	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
+	<BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsReset">Reset to Default Values</BUTTON>
 </form>

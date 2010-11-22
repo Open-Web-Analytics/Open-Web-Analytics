@@ -31,32 +31,38 @@
 class owa_topVisitors extends owa_metric {
 	
 	function owa_topVisitors($params = null) {
-		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+				
+		return owa_topVisitors::__construct($params = null);
 		
 	}
 	
-	function generate() {
-		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(visitor_id) as count,
-									visitor_id as vis_id,
-									user_name,
-									user_email";
-								
-		$this->params['groupby'] = array('vis_id');
-		
-		$this->params['orderby'] = array('count');
+	function __construct($params = null) {
 	
-		return $s->query($this->params);
+		parent::__construct($params);
+	}
+	
+	function calculate() {
 		
+		$this->db->selectColumn("count(visitor_id) as count, visitor_id as vis_id, user_name, user_email");					
+		$this->db->selectFrom('owa_session');
+		$this->db->groupBy('vis_id');
+		$this->db->orderBy('count', $this->getOrder());
+		
+		$ret = $this->db->getAllRows();
+
+		return $ret;
+				
+	}
+	
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(distinct visitor_id) as count");					
+		$this->db->selectFrom('owa_session');
+		
+		$ret = $this->db->getOneRow();
+
+		return $ret['count'];
+	
 	}
 	
 	

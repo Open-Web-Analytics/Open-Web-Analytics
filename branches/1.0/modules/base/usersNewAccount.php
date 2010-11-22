@@ -18,7 +18,6 @@
 
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 /**
  * New user Account Controller
@@ -34,17 +33,19 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_usersNewAccountController extends owa_controller {
 	
-	function owa_usersNewAccountController($params) {
-		$this->owa_controller($params);
+	function __construct($params) {
+		return parent::__construct($params);
 		
 	}
 	
 	function action() {
 		
+		$event = $this->getParam('event');
+		
 		// return email view
-		$data['user_id']= $this->params['user_id'];
-		$data['email_address']= $this->params['email_address'];
-		$data['temp_passkey'] = $this->params['temp_passkey'];
+		$data['user_id']= $event->get('user_id');
+		$data['email_address']= $event->get('email_address');
+		$data['temp_passkey'] = $event->get('temp_passkey');
 		$data['subject'] = 'OWA User Account Setup';
 		$data['view'] = 'base.usersNewAccount';
 		$data['view_method'] = 'email';
@@ -53,6 +54,7 @@ class owa_usersNewAccountController extends owa_controller {
 	}
 	
 }
+
 
 /**
  * New Account Notification View
@@ -66,27 +68,30 @@ class owa_usersNewAccountController extends owa_controller {
  * @since		owa 1.0.0
  */
 
-class owa_usersNewAccountView extends owa_view {
+class owa_usersNewAccountView extends owa_mailView {
 	
 	function owa_usersNewAccountView() {
 		
-		$this->owa_view();
-		return;
+		return owa_usersNewAccountView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('users_new_account_email.tpl');
 		$this->body->set('user_id', $data['user_id']);
 		$this->body->set('key', $data['temp_passkey']);
 			
-		return;
-		
+		// mailer specific
+		$this->setMailSubject($data['subject']);
+		$this->addMailToAddress($data['email_address'], $data['name']);
+			
 	}
-	
-	
 }
-
 
 ?>

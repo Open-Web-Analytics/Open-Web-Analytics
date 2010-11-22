@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -33,39 +32,23 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitorController extends owa_reportController {
-	
-	function owa_reportVisitorController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
+		$visitorId = $this->getParam('visitorId');
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		if (!$visitorId) {
+			$visitorId = $this->getParam('visitor_id');
+		}
 		
-		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
-		
-			'constraints'				=> array(
-				'site_id'				=> $this->params['site_id'],
-				'session.visitor_id' 	=> $this->params['visitor_id']),
-			'period'				=> 'all_time',
-			'limit' => 20
-			
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitor';
-		$data['nav_tab'] = 'base.reportVisitors';
-		
-		return $data;
-		
+		$v = owa_coreAPI::entityFactory('base.visitor');
+		$v->load($visitorId);
+				
+		$this->set('visitor_id', $visitorId);
+		$this->set('visitor', $v);
+		$this->setView('base.report');
+		$this->setSubview('base.reportVisitor');
+		$this->setTitle('Visitor History:', $v->getVisitorName());	
 	}
 	
 }
@@ -84,35 +67,13 @@ class owa_reportVisitorController extends owa_reportController {
 
 class owa_reportVisitorView extends owa_view {
 	
-	function owa_reportVisitorView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
+	function render($data) {
 	
-	function construct($data) {
-		
-		// Assign data to templates
-		
-		$this->body->set_template('report_visitor.tpl');
-	
-		$this->body->set('headline', 'Visitor Report');
-		
-		//$this->body->set('config', $this->config);
-		
-		//$this->body->set('params', $data);
-		
-		$this->body->set('visitor_id', $data['params']['visitor_id']);
-			
-		$this->body->set('visits', $data['latest_visits']);
-
-		return;
-	}
-	
-	
+		$this->body->set_template('report_visitor.tpl');	
+		$this->body->set('visitor_id', $this->get('visitor_id'));
+		$this->body->set('visits', $this->get('visits'));
+		$this->body->set('visitor', $this->get('visitor'));
+	}	
 }
-
 
 ?>

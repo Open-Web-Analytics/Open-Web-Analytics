@@ -16,10 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_news.php');
-require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 /**
  * Options View
@@ -35,18 +32,14 @@ require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
 
 class owa_optionsView extends owa_view {
 	
-	function owa_OptionsView() {
+	function __construct() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'admin';
 		$this->default_subview = 'base.optionsGeneral';
 		
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
-		
-		
+	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'OWA Options');
@@ -56,13 +49,7 @@ class owa_optionsView extends owa_view {
 		
 		// fetch admin links from all modules
 		// need api call here.
-		$this->body->set('headline', 'OWA Configuration Options');
-		
-		//Fetch latest OWA news
-		$rss = new owa_news;
-		//print_r($this->config);
-		$news = $rss->Get($this->config['owa_rss_url']);
-		$this->body->set('news', $news);
+		$this->body->set('headline', 'OWA Settings');
 		
 		// get admin panels
 		$api = &owa_coreAPI::singleton();
@@ -72,12 +59,12 @@ class owa_optionsView extends owa_view {
 		
 		// Assign config data
 		$this->body->set('config', $this->config);
-		
-		return;
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
+		$this->setJs("sprinf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
+		$this->setJs("owa", "base/js/owa.js");
+		$this->setCss('base/css/owa.admin.css');
 	}
-	
-	
 }
-
 
 ?>

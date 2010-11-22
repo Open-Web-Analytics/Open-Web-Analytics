@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * OWA User Agent Event handlers
  * 
@@ -29,21 +33,7 @@
  */
 
 class owa_userAgentHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_userAgentHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
-    }
-	
+    	
     /**
      * Notify Event Handler
      *
@@ -52,12 +42,29 @@ class owa_userAgentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
-
-		return $this->handleEvent('base.logUserAgent');
-    	
+		$ua = owa_coreAPI::entityFactory('base.ua');
+		
+		$ua->getByColumn('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+		
+		if (!$ua->get('id')) {
+			
+			$ua->setProperties($event->getProperties());
+			$ua->set('ua', $event->get('HTTP_USER_AGENT'));
+			$ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT'))); 
+			$ret = $ua->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
+		} else {
+		
+			owa_coreAPI::debug('not logging, user agent already exists.');
+			return OWA_EHS_EVENT_HANDLED;
+		}
     }
-    
 }
 
 ?>

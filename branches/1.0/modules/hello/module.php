@@ -33,7 +33,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 class owa_helloModule extends owa_module {
 	
 	
-	function owa_helloModule() {
+	function __construct() {
 		
 		$this->name = 'hello';
 		$this->display_name = 'Hello World';
@@ -42,10 +42,9 @@ class owa_helloModule extends owa_module {
 		$this->version = '1.0';
 		$this->description = 'Hello world sample module.';
 		$this->config_required = false;
+		$this->required_schema_version = 1;
 		
-		$this->owa_module();
-		
-		return;
+		return parent::__construct();
 	}
 	
 	/**
@@ -54,7 +53,7 @@ class owa_helloModule extends owa_module {
 	 */
 	function registerAdminPanels() {
 		
-		$this->addAdminPanel(array( 'do' 			=> 'hello.admin', 
+		$this->addAdminPanel(array( 'do' 			=> 'hello.exampleSettings', 
 									'priviledge' 	=> 'admin', 
 									'anchortext' 	=> 'Hello World!',
 									'group'			=> 'Test',

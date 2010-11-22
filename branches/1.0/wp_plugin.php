@@ -2,10 +2,10 @@
 
 /*
 Plugin Name: Open Web Analytics
-Plugin URI: http://www.openwebanalytics
+Plugin URI: http://www.openwebanalytics.com
 Description: This plugin enables Wordpress blog owners to use the Open Web Analytics Framework.
 Author: Peter Adams
-Version: v1.0
+Version: v1.4.0
 Author URI: http://www.openwebanalytics.com
 */
 
@@ -26,78 +26,284 @@ Author URI: http://www.openwebanalytics.com
 //
 
 require_once('owa_env.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
+
+// Filter and Action hook assignments
+add_action('template_redirect', 'owa_main');
+add_action('wp_footer', 'owa_footer');
+add_filter('the_permalink_rss', 'owa_post_link');
+add_action('init', 'owa_handleSpecialActionRequest');
+add_filter('bloginfo_url', 'add_feed_sid');
+add_action('admin_menu', 'owa_dashboard_menu');
+add_action('comment_post', 'owa_logComment');
+add_action('transition_comment_status', 'owa_logCommentEdit');
+add_action('admin_menu', 'owa_options_menu');
+add_action('user_register', 'owa_userRegistrationActionTracker');
+add_action('wp_login', 'owa_userLoginActionTracker');
+add_action('profile_update', 'owa_userProfileUpdateActionTracker', 10,2);
+add_action('password_reset', 'owa_userPasswordResetActionTracker');
+add_action('trackback_post', 'owa_trackbackActionTracker');
+add_action('add_attachment', 'owa_newAttachmentActionTracker');
+add_action('edit_attachment', 'owa_editAttachmentActionTracker');
+add_action('transition_post_status', 'owa_postActionTracker', 10, 3);
+add_action('wpmu_new_blog', 'owa_newBlogActionTracker', 10, 5);
+// Installation hook
+register_activation_hook(__FILE__, 'owa_install');
+
+/////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * New Blog Action Tracker
+ */
+function owa_newBlogActionTracker($blog_id, $user_id, $domain, $path, $site_id) {
+
+	$owa = owa_getInstance();
+	$owa->trackAction('wordpress', 'Blog Created', $domain);
+}
+
+/**
+ * Edit Post Action Tracker
+ */
+function owa_editPostActionTracker($post_id, $post) {
+
+	$owa = owa_getInstance();
+	$label = $post->post_title;
+	$owa->trackAction('wordpress', $post->post_type.' edited', $label);
+}
+
+/**
+ * Post Action Tracker
+ */
+function owa_postActionTracker($new_status, $old_status, $post) {
+	
+	// we don't want to track autosaves...
+	if(wp_is_post_autosave($post)) {
+		return;
+	}
+	
+	if ($new_status === 'publish' && $old_status != 'publish') {
+		$action_name = $post->post_type.' publish';
+	} elseif ($new_status === $old_status) {
+		$action_name = $post->post_type.' edit';
+	}
+	
+	if ($action_name) {	
+		$owa = owa_getInstance();
+		owa_coreAPI::debug(sprintf("new: %s, old: %s, post: %s", $new_status, $old_status, print_r($post, true)));
+		$label = $post->post_title;
+		$owa->trackAction('wordpress', $action_name, $label);
+	}
+}
+
+/**
+ * New Attachment Action Tracker
+ */
+function owa_editAttachmentActionTracker($post_id) {
+
+	$owa = owa_getInstance();
+	$post = get_post($post_id);
+	$label = $post->post_title;
+	$owa->trackAction('wordpress', 'Attachment Edit', $label);
+}
+
+/**
+ * New Attachment Action Tracker
+ */
+function owa_newAttachmentActionTracker($post_id) {
+
+	$owa = owa_getInstance();
+	$post = get_post($post_id);
+	$label = $post->post_title;
+	$owa->trackAction('wordpress', 'Attachment Created', $label);
+}
+
+/**
+ * User Registration Action Tracker
+ */
+function owa_userRegistrationActionTracker($user_id) {
+	
+	$owa = owa_getInstance();
+	$user = get_userdata($user_id);
+	if (!empty($user->first_name) && !empty($user->last_name)) {
+		$label = $user->first_name.' '.$user->last_name;	
+	} else {
+		$label = $user->display_name;
+	}
+	
+	$owa->trackAction('wordpress', 'User Registration', $label);
+}
+
+/**
+ * User Login Action Tracker
+ */
+function owa_userLoginActionTracker($user_id) {
+
+	$owa = owa_getInstance();
+	$label = $user_id;
+	$owa->trackAction('wordpress', 'User Login', $label);
+}
+
+/**
+ * Profile Update Action Tracker
+ */
+function owa_userProfileUpdateActionTracker($user_id, $old_user_data = '') {
+
+	$owa = owa_getInstance();
+	$user = get_userdata($user_id);
+	if (!empty($user->first_name) && !empty($user->last_name)) {
+		$label = $user->first_name.' '.$user->last_name;	
+	} else {
+		$label = $user->display_name;
+	}
+	
+	$owa->trackAction('wordpress', 'User Profile Update', $label);
+}
+
+/**
+ * Password Reset Action Tracker
+ */
+function owa_userPasswordResetActionTracker($user) {
+	
+	$owa = owa_getInstance();
+	$label = $user->display_name;
+	$owa->trackAction('wordpress', 'User Password Reset', $label);
+}
+
+/**
+ * Trackback Action Tracker
+ */
+function owa_trackbackActionTracker($comment_id) {
+	
+	$owa = owa_getInstance();
+	$label = $comment_id;
+	$owa->trackAction('wordpress', 'Trackback', $label);
+}
+
 
 
 
 /**
- * WORDPRESS Constants
- * You should not need to change these.
+ * Singleton Method
+ *
+ * Returns an instance of OWA
+ *
+ * @return $owa object
  */
+function &owa_getInstance() {
+	
+	static $owa;
+	
+	if( empty( $owa ) ) {
+		
+		require_once(OWA_BASE_CLASSES_DIR.'owa_wp.php');
+		
+		// create owa instance w/ config
+		$owa = new owa_wp();
+		$owa->setSiteId( md5( get_settings( 'siteurl' ) ) );
+		$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
+		$owa->setSetting( 'base', 'link_template', '%s&%s' );
+		$owa->setSetting( 'base', 'main_url', '../wp-admin/index.php?page=owa' );
+		$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/index.php?page=owa' );
+		$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/index.php?owa_specialAction' );
+		$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/index.php?owa_apiAction' );
+		$owa->setSetting( 'base', 'is_embedded', true );
+		// needed as old installs might have this turned on by default...
+		$owa->setSetting( 'base', 'delay_first_hit', false );
+		
+		// Access WP current user object to check permissions
+		$current_user = owa_getCurrentWpUser();
+      	//print_r($current_user);
+		// Set OWA's current user info and mark as authenticated so that
+		// downstream controllers don't have to authenticate
+		$cu =&owa_coreAPI::getCurrentUser();
+		
+		if (isset($current_user->user_login)) {
+			$cu->setUserData('user_id', $current_user->user_login);
+			owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
+		}
+		
+		if (isset($current_user->user_email)) {	
+			$cu->setUserData('email_address', $current_user->user_email);
+		}
+		
+		if (isset($current_user->first_name)) {
+			$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
+			$cu->setRole(owa_translate_role($current_user->roles));
+		}
+		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
+		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
+		$cu->setAuthStatus(true);
+	}
+	
+	return $owa;
+}
 
-// Check to see what version of wordpress is running
-$owa_wp_version = owa_parse_version($wp_version);
+function owa_getCurrentWpUser() {
 
-// hack for eliminating WP from printing db errors prior to WP v2.1 
-// this won't be needed once OWA's blind inserts are eliminated
-if ($owa_wp_version[0] == '2'):
-	if ($owa_wp_version[1] == '0'):
-		$wpdb->hide_errors();
-	endif;
-endif;
+	// Access WP current user object to check permissions
+	global $current_user;
+    get_currentuserinfo();
+    return $current_user;
 
-// check to see if OWA is installed
-$current_plugins = get_option('active_plugins');
+}
 
-// Public folder URI
-define('OWA_PUBLIC_URL', '../wp-content/plugins/owa/public/');
+// translates wordpress roles to owa roles
+function owa_translate_role($roles) {
+	
+	if (!empty($roles)) {
+	
+		if (in_array('administrator', $roles)) {
+			$owa_role = 'admin';
+		} elseif (in_array('editor', $roles)) {
+			$owa_role = 'viewer';
+		} elseif (in_array('author', $roles)) {
+			$owa_role = 'viewer';
+		} elseif (in_array('contributor', $roles)) {
+			$owa_role = 'viewer';
+		} elseif (in_array('subscriber', $roles)) {
+			$owa_role = 'everyone';
+		} else {
+			$owa_role = 'everyone';
+		}
+		
+	} else {
+		$owa_role = 'everyone';
+	}
+	
+	return $owa_role;
+}
 
-// Build the OWA wordpress specific config overrides array
-$owa_config = array();
 
-// OWA DATABASE CONFIGURATION 
-// Will use Wordpress config unless there is a config file present.
-// OWA uses this to setup it's own DB connection seperate from the one
-// that Wordpress uses.
-$owa_config['db_type'] = 'mysql';
-$owa_config['db_name'] = DB_NAME;
-$owa_config['db_host'] = DB_HOST;
-$owa_config['db_user'] = DB_USER;
-$owa_config['db_password'] = DB_PASSWORD;
+function owa_handleSpecialActionRequest() {
 
-$owa_config['report_wrapper'] = 'wrapper_wordpress.tpl';
-$owa_config['images_url'] = OWA_PUBLIC_URL.'i/';//'../wp-content/plugins/owa/public/i/';
-$owa_config['images_absolute_url'] = get_bloginfo('url').'/wp-content/plugins/owa/public/i/';//'../wp-content/plugins/owa/public/i/';
-$owa_config['main_url'] = '../wp-admin/index.php?page=owa/public/wp.php';
-$owa_config['main_absolute_url'] = get_bloginfo('url').'/wp-admin/index.php?page=owa/public/wp.php';
-$owa_config['action_url'] = get_bloginfo('url').'/index.php?owa_specialAction';
-$owa_config['log_url'] = get_bloginfo('url').'/index.php?owa_logAction=1';
-$owa_config['link_template'] = '%s&%s';
-$owa_config['authentication'] = 'wordpress';
-$owa_config['site_id'] = md5(get_settings('siteurl'));
-$owa_config['is_embedded'] = 'true';
+	$owa = owa_getInstance();
+	owa_coreAPI::debug("hello from WP special action handler");
+	return $owa->handleSpecialActionRequest();
+	
+}
 
-// Needed to avoid a fetch of configuration from db during installation
-if (($_GET['action'] == 'activate') && ($_GET['plugin'] == 'owa/wp_plugin.php')):
-	$owa_config['do_not_fetch_config_from_db'] = true;
-endif;
+function owa_logComment($id, $comment_data = '') {
 
-// Create new instance of OWA passing in the Wordpres specific config overrides
-$owa_wp = &new owa_wp($owa_config);
+	if ( $comment_data === 'approved' || $comment_data === 1 ) {
 
-// Filter and Action hook assignments
-add_action('init', 'owa_set_user_level');
-add_action('template_redirect', 'owa_main');
-add_action('wp_footer', 'owa_footer');
-add_filter('the_permalink_rss', 'owa_post_link');
-add_action('init', array(&$owa_wp, 'handleSpecialActionRequest'));
-add_filter('bloginfo_url', 'add_feed_sid');
-add_action('admin_menu', 'owa_dashboard_menu');
-add_action('comment_post', array(&$owa_wp, 'logComment'));
-add_action('admin_menu', 'owa_options_menu');
-add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
+		$owa = owa_getInstance();
+		$label = '';
+		$owa->trackAction('wordpress', 'comment', $label);
+	}
+}
 
-/////////////////////////////////////////////////////////////////////////////////
+function owa_logCommentEdit($new_status, $old_status, $comment) {
+	
+	if ($new_status === 'approved') {
+		if (isset($comment->comment_author)) {
+			$label = $comment->comment_author; 
+		} else {
+			$label = '';
+		}
+		
+		$owa = owa_getInstance();
+		$owa->trackAction('wordpress', 'comment', $label);
+	}
+}
 
 /**
  * Prints helper page tags to the footers of templates.
@@ -105,39 +311,29 @@ add_action('activate_owa/wp_plugin.php', 'owa_install'); // Installation hook
  */
 function owa_footer() {
 	
-	global $owa_wp;
+	// Don't log if the page request is a preview - Wordpress 2.x or greater
+	if (function_exists('is_preview')) {
+		if (is_preview()) {
+			return;
+		}
+	}
 	
-	$owa_wp->placeHelperPageTags();
+	$owa = owa_getInstance();
+	
+	$page_properties = $owa->getAllEventProperties($owa->pageview_event);
+	$cmds = '';
+	if ( $page_properties ) {
+		$page_properties_json = json_encode( $page_properties );
+		$cmds .= "owa_cmds.push( ['setPageProperties', $page_properties_json] );";
+	}
+	
+	//$wgOut->addInlineScript( $cmds );
+	
+	$options = array( 'cmds' => $cmds );
 	
 	
-	return;
-	
-}
-
-
-/**
- * Sets the user level in caller params for use in OWA's auth module.
- *
- */
-function owa_set_user_level() {
-	
-	global $owa_wp, $user_level, $user_login, $user_ID, $user_email, $user_identity, $user_pass_md5;
-	
-	$owa_wp->params['caller']['wordpress']['user_data'] = array(
-	
-	'user_level' 	=> $user_level, 
-	'user_ID'		=> $user_ID,
-	'user_login'	=> $user_login,
-	'user_email'	=> $user_email,
-	'user_identity'	=> $user_identity,
-	'user_password'	=> 'xxxxxxxxx');
-	
-	$owa_wp->params['u'] = $user_login;
-	$owa_wp->params['p'] = 'xxxxxxxxx';
-	
-	return;	
-}
-	
+	$owa->placeHelperPageTags(true, $options);	
+}	
 
 /**
  * This is the main logging controller that is called on each request.
@@ -145,63 +341,25 @@ function owa_set_user_level() {
  */
 function owa_main() {
 	
-	global $user_level, $owa_wp;
+	//global $user_level;
 	
-	// Don't log if the page request is a preview - Wordpress 2.x or greater
-	if (function_exists(is_preview)):
-		if (is_preview()):
-			$owa_wp->params['do_not_log'] = true;
-		endif;
-	endif;
-	
-	// Don't Log if user is an admin
-	if($user_level == '10'):
-		if ($owa_wp->config['do_not_log_admins'] == true):
-			$owa_wp->params['do_not_log'] = true;
-		endif;
-	endif;
-	
-	owa_log();
-	
-	return;
-	
-}
-
-/**
- * This is the main logger function that calls owa on each normal web request.
- * Application specific request data should be set here as part of the $app_params array.
- * 
- */
-function owa_log() {
-
-	global $owa_wp;
-	
-	// WORDPRESS SPECIFIC DATA //
-	
-	// Get the type of page
-	$app_params['page_type'] = owa_get_page_type();
+	$owa = owa_getInstance();
+	owa_coreAPI::debug('wp main request method');
 	
 	//Check to see if this is a Feed Reeder
-	if(is_feed()):
-		$app_params['is_feedreader'] = true;
-		$app_params['feed_format'] = $_GET['feed'];
-	endif;
+	if( $owa->getSetting('base', 'log_feedreaders') && is_feed() ) {
+		$event = $owa->makeEvent();
+		$event->setEventType('base.feed_request');
+		$event->set('feed_format', $_GET['feed']);
+		// Process the request by calling owa
+		return $owa->trackEvent($event);
+	}
 	
-	$app_params[$owa_wp->config['source_param']] = $_GET[$owa_wp->config['ns'].$owa_wp->config['source_param']];
-	
-	// Track users by the email address of that they used when posting a comment
-	$app_params['user_email'] = $_COOKIE['comment_author_email_'.COOKIEHASH]; 
-	
-	// Track users who have a named account
-	$app_params['user_name'] = $_COOKIE['wordpressuser_'.COOKIEHASH];
-	
+	// Set the type and title of the page
+	$page_type = owa_get_page_type();
+	$owa->setPageType( $page_type );
 	// Get Title of Page
-	$app_params['page_title'] = owa_get_title($app_params['page_type']);
-	
-	// Process the request by calling owa
-	$owa_wp->log($app_params);
-	
-	return;
+	$owa->setPageTitle( owa_get_title( $page_type ) );
 }
 
 /**
@@ -246,10 +404,15 @@ function owa_get_page_type() {
 	
 	if (is_home()):
 		$type = "Home";
-	elseif (is_single()):
-		$type = "Post";
+	elseif (is_attachment()):
+		$type = "Attachment";
 	elseif (is_page()):
 		$type = "Page";
+	// general page catch, should be after more specific post types	
+	elseif (is_single()):
+		$type = "Post";
+	elseif (is_feed()):
+		$type = "Feed";
 	elseif (is_author()):
 		$type = "Author";
 	elseif (is_category()):
@@ -264,10 +427,15 @@ function owa_get_page_type() {
 		$type = "Year";
 	elseif (is_time()):
 		$type = "Time";
+	elseif (is_tag()):
+		$type = "Tag";
+	elseif (is_tax()):
+		$type = "Taxonomy";
+	// general archive catch, should be after specific archive types	
 	elseif (is_archive()):
 		$type = "Archive";
-	elseif (is_feed()):
-		$type = "Feed";
+	else:
+		$type = '(not set)';
 	endif;
 	
 	return $type;
@@ -281,12 +449,12 @@ function owa_get_page_type() {
  */
 function add_feed_sid($binfo) {
 	
-	global $owa_wp;
+	$owa = owa_getInstance();
 	
 	$test = strpos($binfo, "feed=");
 	
 	if ($test == true):
-		$newbinfo = $owa_wp->add_feed_tracking($binfo);
+		$newbinfo = $owa->add_feed_tracking($binfo);
 	
 	else: 
 		
@@ -306,9 +474,9 @@ function add_feed_sid($binfo) {
  */
 function owa_post_link($link) {
 
-	global $owa_wp;
+	$owa = owa_getInstance();
 
-	return $owa_wp->add_link_tracking($link);
+	return $owa->add_link_tracking($link);
 		
 }
 
@@ -318,29 +486,30 @@ function owa_post_link($link) {
  */
 function owa_install() {
 
-	global $user_level;
-	global $owa_wp;
+	define('OWA_INSTALLING', true);
 	
-	//check to see if the user has permissions to install or not...
-	get_currentuserinfo();
-	
-	if ($user_level < 8):
-    	return;
-    else:
-    	$owa_wp->config['fetch_config_from_db'] = false;
-    	
-    	$owa_wp->config['db_type'] = 'mysql';
-    	
-    	$install_params = array('site_id' => md5(get_settings('siteurl')), 
-    							'name' => get_bloginfo('name'),
-    							'domain' => get_settings('siteurl'), 
-    							'description' => get_bloginfo('description'),
-    							'action' => 'base.installEmbedded');
-    							
-    	$owa_wp->handleRequest($install_params);
-	endif;
+	$params = array();
+	//$params['do_not_fetch_config_from_db'] = true;
 
-	return;
+	$owa = owa_getInstance($params);
+	$owa->setSetting('base', 'cache_objects', false);
+		
+	$public_url =  get_bloginfo('wpurl').'/wp-content/plugins/owa/';
+	
+	$install_params = array('site_id' => md5(get_settings('siteurl')), 
+							'name' => get_bloginfo('name'),
+							'domain' => get_settings('siteurl'), 
+							'description' => get_bloginfo('description'),
+							'action' => 'base.installEmbedded',
+							'db_type' => 'mysql',
+							'db_name' => DB_NAME,
+							'db_host' => DB_HOST,
+							'db_user' => DB_USER,
+							'db_password' => DB_PASSWORD,
+							'public_url' =>  $public_url
+							);
+	
+	$owa->handleRequest($install_params);
 }
 
 /**
@@ -350,7 +519,7 @@ function owa_install() {
 function owa_dashboard_menu() {
 
 	if (function_exists('add_submenu_page')):
-		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__), 'owa_dashboard_report');
+		add_submenu_page('index.php', 'OWA Dashboard', 'Analytics', 1, dirname(__FILE__), 'owa_pageController');
     endif;
     
     return;
@@ -363,14 +532,29 @@ function owa_dashboard_menu() {
  */
 function owa_dashboard_report() {
 	
-	global $owa_wp;
+	$owa = owa_getInstance();
 	
 	$params = array();
 	$params['do'] = 'base.reportDashboard';
-	echo $owa_wp->handleRequest($params);
+	echo $owa->handleRequest($params);
 	
 	return;
 	
+}
+
+function owa_pageController() {
+
+	$owa = owa_getInstance();
+	
+	$do = owa_coreAPI::getRequestParam('do');
+	$params = array();
+	if (empty($do)) {
+		
+		$params['do'] = 'base.reportDashboard';	
+	}
+	
+	echo $owa->handleRequest($params);
+
 }
 
 /**
@@ -392,12 +576,12 @@ function owa_options_menu() {
  */
 function owa_options_page() {
 	
-	global $owa_wp;
+	$owa = owa_getInstance();
 	
 	$params = array();
 	$params['view'] = 'base.options';
 	$params['subview'] = 'base.optionsGeneral';
-	echo $owa_wp->handleRequest($params);
+	echo $owa->handleRequest($params);
 	
 	return;
 }

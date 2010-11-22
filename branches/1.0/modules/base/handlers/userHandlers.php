@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * OWA user management Event handlers
  * 
@@ -29,21 +33,7 @@
  */
 
 class owa_userHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_userHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
-    }
-	
+    	
     /**
      * Notify Event Handler
      *
@@ -52,9 +42,9 @@ class owa_userHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
+    	$this->m = $event;
 
-    	switch ($event['event_type']) {
+    	switch ($event->getEventType()) {
     		case "base.reset_password":
     			$this->handleEvent('base.usersResetPassword');
     			break;
@@ -66,7 +56,7 @@ class owa_userHandlers extends owa_observer {
     			break;	
     	}
 		
-		return;
+		return OWA_EHS_EVENT_HANDLED;
     }
     
 }

@@ -17,6 +17,9 @@
 //
 
 require_once (OWA_PEARLOG_DIR . '/Log.php');
+require_once (OWA_PEARLOG_DIR . '/Log/file.php');
+require_once (OWA_PEARLOG_DIR . '/Log/composite.php');
+require_once (OWA_PEARLOG_DIR . '/Log/mail.php');
 
 /**
  * Error handler
@@ -49,17 +52,7 @@ class owa_error {
 	
 	var $init = false;
 	
-	
-	/**
-	 * PHP4 Constructor
-	 *
-	 */
-	function owa_error() {
-	 
-		return $this->__construct();
-	 
-	}
-	
+	var $c;
 	
 	/**
 	 * Constructor
@@ -67,18 +60,18 @@ class owa_error {
 	 */ 
 	function __construct() {
 				
-		// setup composit logger
-		
+		// setup composite logger
 		$this->logger = &Log::singleton('composite');
-		$this->addLogger('null');
-		
-		return; 
-	 
+		$this->addLogger('null');	 
 	}
 	
 	function __destruct() {
 	
 		return;
+	}
+	
+	function setConfig($c) {
+		$this->c = $c;
 	}
 	
 	function setErrorLevel() {
@@ -122,12 +115,6 @@ class owa_error {
 			case "development":
 				$this->createDevelopmentHandler();
 				break;
-			case "cli_development":
-				$this->createCliDevelopmentHandler();
-				break;
-			case "cli_production":
-				$this->createCliProductionHandler();
-				break;
 			case "production":
 				$this->createProductionHandler();
 				break;
@@ -147,7 +134,9 @@ class owa_error {
 		$mask = PEAR_LOG_ALL;
 		$this->addLogger('file', $mask);
 		
-		return;
+		if (defined('OWA_CLI')) {
+			$this->addLogger('console', $mask);	
+		}
 	}
 	
 	function createCliDevelopmentHandler() {
@@ -155,19 +144,13 @@ class owa_error {
 		$mask = PEAR_LOG_ALL;
 		$this->addLogger('file', $mask);
 		$this->addLogger('console', $mask);
-	
-		return;
 	}
 	
 	function createCliProductionHandler() {
 		
-		$file_mask = PEAR_LOG_ALL ^ Log::MASK(PEAR_LOG_DEBUG) ^ Log::MASK(PEAR_LOG_INFO);
-		$this->addLogger('file', $file_mask);
 		$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 		$this->addLogger('mail', $mail_mask);
 		$this->addLogger('console', $file_mask);
-		
-		return;
 	}
 	
 	function createProductionHandler() {
@@ -177,7 +160,9 @@ class owa_error {
 		$mail_mask = Log::MASK(PEAR_LOG_EMERG) | Log::MASK(PEAR_LOG_CRIT) | Log::MASK(PEAR_LOG_ALERT);
 		$this->addLogger('mail', $mail_mask);
 		
-		return;
+		if (defined('OWA_CLI')) {
+			$this->addLogger('console', $file_mask);	
+		}
 	}
 	
 	
@@ -319,7 +304,9 @@ class owa_error {
 	 * @return object
 	 */
 	function make_console_logger() {
-		define('STDOUT', fopen("php://stdout", "r"));
+		if (!defined('STDOUT')) {
+			define('STDOUT', fopen("php://stdout", "r"));
+		}
 		$conf = array('stream' => STDOUT, 'buffering' => false);
 		$logger = &Log::singleton('console', '', getmypid(), $conf);
 		return $logger;
@@ -333,15 +320,15 @@ class owa_error {
 	function make_file_logger() {
 		
 		// fetch config object
-		$c = &owa_coreAPI::configSingleton();
+		//$c = &owa_coreAPI::configSingleton();
 
 		// test to see if file is writable
-		$handle = @fopen($c->get('base', 'error_log_file'), "a");
+		$handle = @fopen(owa_coreAPI::getSetting('base', 'error_log_file'), "a");
 		
 		if ($handle != false):
 			fclose($handle);
 			$conf = array('mode' => 0600, 'timeFormat' => '%X %x', 'lineFormat' => '%1$s %2$s [%3$s] %4$s');
-			$logger = &Log::singleton('file', $c->get('base', 'error_log_file'), getmypid(), $conf);
+			$logger = &Log::singleton('file', owa_coreAPI::getSetting('base', 'error_log_file'), getmypid(), $conf);
 			return $logger;
 		else:
 			return;
@@ -359,13 +346,14 @@ class owa_error {
 		$c = &owa_coreAPI::configSingleton();
 
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
-		$logger = &Log::singleton('mail', $c->get('base', 'notice_email'), getmypid(), $conf);
+		$logger = &Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
 		
 		return $logger;
 	}
 	
 	function logPhpErrors() {
-	
+		error_reporting(E_ALL);
+		ini_set('display_errors', E_ALL);
 		return set_error_handler(array("owa_error", "handlePhpError"));
 	
 	}
@@ -395,15 +383,30 @@ class owa_error {
 		$err .= "\t<scriptlinenum>" . $linenum . "</scriptlinenum>\n";
 	
 		if (in_array($errno, $user_errors)) {
-			$err .= "\t<vartrace>" . wddx_serialize_value($vars, "Variables") . "</vartrace>\n";
+		//	$err .= "\t<vartrace>" . wddx_serialize_value($vars, "Variables") . "</vartrace>\n";
 		}
 		
 		$err .= "</errorentry>\n\n";
 	   
-	    $e = owa_coreAPI::errorSingleton();
-	    $e->debug($err);
+	    owa_coreAPI::debug($err);
 		
 		return;
+	}
+	
+	function backtrace() {
+		
+		$dbgTrace = debug_backtrace();
+		$bt = array();
+		foreach($dbgTrace as $dbgIndex => $dbgInfo) {
+			
+			$bt[$dbgIndex] = array('file' => $dbgInfo['file'], 
+									'line' => $dbgInfo['line'], 
+									'function' => $dbgInfo['function'],
+									'args' => $dbgInfo['args']);
+		}
+		
+		return $bt;
+
 	}
 
 }

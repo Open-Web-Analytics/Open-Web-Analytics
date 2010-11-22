@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Options Update Controller
@@ -30,15 +30,14 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_optionsFlushCacheController extends owa_controller {
+class owa_optionsFlushCacheController extends owa_adminController {
 	
-	function owa_optionsFlushCacheController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
-		
-		return;
+	function __construct($params) {
+	
+		$this->setRequiredCapability('edit_settings');
+		return parent::__construct($params);
 	}
-
+	
 	function action() {
 	
 		$cache = &owa_coreAPI::cacheSingleton(); 
@@ -47,8 +46,7 @@ class owa_optionsFlushCacheController extends owa_controller {
 		$this->e->notice("Cache Flushed");
 	
 		$data = array();
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.optionsGeneral';
+		$data['do'] = 'base.optionsGeneral';
 		$data['view_method'] = 'redirect';
 		//$data['configuration'] = $nbsettings;
 		$data['status_code'] = 2500;
@@ -58,6 +56,5 @@ class owa_optionsFlushCacheController extends owa_controller {
 	}
 	
 }
-
 
 ?>

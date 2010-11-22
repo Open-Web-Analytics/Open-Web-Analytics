@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_PEARLOG_DIR . '/Log/observer.php');
-require_once(OWA_BASE_DIR . '/owa_coreAPI.php');
-
 /**
  * Abstract observer class, wraps PEAR Log's observer to add event type.
  * 
@@ -31,7 +28,7 @@ require_once(OWA_BASE_DIR . '/owa_coreAPI.php');
  * @since		owa 1.0.0
  */
 
-class owa_observer extends Log_observer {
+class owa_observer extends owa_base {
 
 	 /**
      * The type of event that an observer would want to hear about.
@@ -41,12 +38,7 @@ class owa_observer extends Log_observer {
      */
     var $_event_type = array();
     
-    /**
-     * Error handler
-     *
-     * @var object
-     */
-    var $e;
+	var $id;
     
     /**
      * Event Message
@@ -54,16 +46,7 @@ class owa_observer extends Log_observer {
      * @var array
      */
 	var $m;
-    
-    /**
-     * Configuration
-     *
-     * @var array
-     */
-    var $config;
-    
-    var $api;
-
+   
     /**
      * Creates a new basic Log_observer instance.
      *
@@ -71,74 +54,22 @@ class owa_observer extends Log_observer {
      *                              log event notifications.
      *
      * @access public
-     */
-    function owa_observer($priority = PEAR_LOG_INFO)
-    {
-        $this->Log_observer($priority);
-     
-        $c = &owa_coreAPI::configSingleton();
-		$this->config = $c->fetch('base');
-        $this->e = &owa_coreAPI::errorSingleton();
-        $this->api = &owa_coreAPI::singleton();
-        return;
+     */  
+    function __construct() {
+    	$this->id = md5(microtime());
     }
     
     function handleEvent($action) {
-    	
-    	// Create controller, passing event message as params
-    	$controller = $this->api->moduleFactory($action, 'Controller', $this->m);
-    	
-    	// Run controller
-    	$data = $controller->doAction();
-    	$this->e->debug(sprintf("Handled Event with Controller: %s", $action.'Controller'));
-    	
-    	// Create View if called for
-    	if ($data['view']):
-    		
-    		// Determine what to do with view
-    		switch ($data['view_method']) {
-    			case 'email-html':
-    				
-    				require_once(OWA_BASE_CLASS_DIR.'mailer.php');
-    				
-    				$mailer = new owa_mailer;
-    				
-    				$mailer->Subject = $data['subject'];
-    				$mailer->Body = $this->api->displayView($data);
-    				
-    				$mailer->AltBody = $this->api->displayView($data, $data['plainTextView']);
-    				$mailer->AddAddress($data['email_address'], $data['name']);
-    				
-    				$mailer->sendMail();
-    				break;	
-    			
-    			case 'email':
-    				
-    				require_once(OWA_BASE_CLASS_DIR.'mailer.php');
-    				
-    				$mailer = new owa_mailer;
-    				
-    				$mailer->Subject = $data['subject'];
-    				$mailer->Body = $this->api->displayView($data);
-    				
-    				$mailer->AddAddress($data['email_address'], $data['name']);
-    				
-    				$mailer->sendMail();
-    				break;	
-    		}
-
-    		$this->e->debug(sprintf("Handled Event. Assembled View: %s", $data['view'].'View'));
-    		 	
-    	endif;
-    	
-    	return;
+    
+    	$data = owa_coreAPI::performAction($action, array('event' => $this->m));	
+    	return owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
     	
     }
     
     function sendMail($email_address, $subject, $msg) {
     	
     	mail($email_address, $subject, $msg);			
-		$this->e->debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
+		owa_coreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
 		return;
     }
 

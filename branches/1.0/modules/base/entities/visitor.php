@@ -30,31 +30,58 @@
 
 class owa_visitor extends owa_entity {
 	
-	var $id; // BIGINT,
-	var $user_name; // VARCHAR(255),
-	var $user_email; //  varchar(255),
-	var $first_session_id; // BIGINT,
-	var $first_session_year; // INT,
-	var $first_session_month; // varchar(255),
-	var $first_session_day; // INT,
-	var $first_session_dayofyear; // INT,
-	var $first_session_timestamp; // BIGINT,
-	var $last_session_id; // BIGINT,
-	var $last_session_year; // INT,
-	var $last_session_month; // varchar(255),
-	var $last_session_day; // INT,
-	var $last_session_dayofyear; // INT,
+	function __construct() {
 	
-	function owa_session() {
-		
-			$this->owa_entity();
-			
-		return;
-			
+		$this->setTableName('visitor');
+		//$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['user_name'] = new owa_dbColumn;
+		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['user_email'] = new owa_dbColumn;
+		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['first_session_id'] = new owa_dbColumn;
+		$this->properties['first_session_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['first_session_year'] = new owa_dbColumn;
+		$this->properties['first_session_year']->setDataType(OWA_DTD_INT);
+		$this->properties['first_session_month'] = new owa_dbColumn;
+		$this->properties['first_session_month']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['first_session_day'] = new owa_dbColumn;
+		$this->properties['first_session_day']->setDataType(OWA_DTD_INT);
+		$this->properties['first_session_dayofyear'] = new owa_dbColumn;
+		$this->properties['first_session_dayofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['first_session_timestamp'] = new owa_dbColumn;
+		$this->properties['first_session_timestamp']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['first_session_yyyymmdd'] = new owa_dbColumn;
+		$this->properties['first_session_yyyymmdd']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_session_id'] = new owa_dbColumn;
+		$this->properties['last_session_id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_session_year'] = new owa_dbColumn;
+		$this->properties['last_session_year']->setDataType(OWA_DTD_INT);
+		$this->properties['last_session_month'] = new owa_dbColumn;
+		$this->properties['last_session_month']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['last_session_day'] = new owa_dbColumn;
+		$this->properties['last_session_day']->setDataType(OWA_DTD_INT);
+		$this->properties['last_session_dayofyear'] = new owa_dbColumn;
+		$this->properties['last_session_dayofyear']->setDataType(OWA_DTD_INT);
+		$num_prior_sessions =  new owa_dbColumn;
+		$num_prior_sessions->setName('num_prior_sessions');
+		$num_prior_sessions->setDataType(OWA_DTD_INT);
+		$this->setProperty($num_prior_sessions);
 	}
 	
-	
-	
+	function getVisitorName() {
+		
+		if ($this->get('user_name')) {
+			return $this->get('user_name');
+		} elseif ($this->get('user_email')) {
+			return $this->get('user_email');		
+		} else {
+			return $this->get('id');
+		}
+	}
 }
 
 

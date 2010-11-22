@@ -28,7 +28,13 @@
  * @since		owa 1.0.0
  */
  
- class owa_validation extends owa_base {
+ class owa_validation {
+ 	
+ 	// hold config
+ 	var $conf;
+ 	
+ 	// hold values to validate
+ 	var $values;
  	
  	var $hasError;
  	
@@ -36,18 +42,15 @@
  	
  	var $errorMsgTemplate;
  	
- 	function owa_validation($conf) {
- 		
- 		$this->owa_base();
- 		
- 		if (!empty($conf['errorMsgTemplate'])):
+ 	function __construct($conf = array()) {
+ 	
+ 		if (array_key_exists('errorMsgTemplate', $conf)):
  			$this->errorMsgTemplate = $conf['errorMsgTemplate'];
  		endif;
- 		
- 		return;
+ 	
  	}
  	
- 	function validate($value) {
+ 	function validate() {
  		
  		return false;
  	}
@@ -64,6 +67,7 @@
  		return;
  	}
  	
+ 	// depricated
  	function setErrorMsg($msg) {
  		
  		$this->errorMsg = $msg;
@@ -71,6 +75,10 @@
  		
  		return;
  		
+ 	}
+ 	
+ 	function setErrorMessage($msg) {
+ 		$this->errorMsg = $msg;	
  	}
  	
  	function isValid() {
@@ -82,10 +90,42 @@
  		endif;
  	}
  	
+ 	function setConfig($name, $value) {
+ 		
+ 		$this->conf[$name] = $value;
+ 		return;
+ 	}
  	
+ 	function setConfigArray($array) {
+ 		
+ 		$this->conf = $array;
+ 		return;
+ 	}
+ 	
+ 	function getConfig($name) {
+ 		
+ 		return $this->conf[$name];
+ 	}
+ 	
+ 	function setValues($values) {
+ 		
+ 		$this->values = $values;
+ 		return;
+ 	}
+ 	
+ 	function getValues() {
+ 	
+ 		return $this->values;
+ 		
+ 	}
+ 	
+ 	function hasError() {
+ 		
+ 		$this->hasError = true;
+ 		return;
+ 	}
  	
  	
  }
  
 ?>
- 

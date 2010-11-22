@@ -1,8 +1,5 @@
 <?php
 
-
-
-
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -19,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -36,95 +31,54 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportDashboardController extends owa_reportController {
-
-	function owa_reportDashboardController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-	
-		return;
-	}
 	
 	function action() {
-
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+				
+		// action counts	
+		$params = array('period' 	  => $this->get('period'),
+						'startDate'	  => $this->get('startDate'),
+						'endDate'	  => $this->get('endDate'),
+						'metrics' 	  => 'actions',
+						'dimensions'  => 'actionName',
+						'constraints' => 'site_id='.$this->getParam('site_id'),
+						'do'		  => 'getResultSet'
+						);
+						
+		$rs = owa_coreAPI::executeApiCommand($params);	
+		//print_r($rs);			
+		$this->set('actions', $rs);
 		
-		//if (empty($this->params['period'])):
-		//	$this->params['period'] = 'today';
-		//endif;
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'resultsPerPage'	=> 10
+		));
 		
-		$data = array();
-		$data['params'] = $this->params;
-				
-		switch ($this->params['period']) {
-
-			case "this_year":
-				$data['core_metrics_data'] = $api->getMetric('base.dashCoreByMonth', array(
-				
-					'constraints'		=> array('site_id'	=> $this->params['site_id'])
-				
-				));
-				
-			break;
-			
-			default:
-				$data['core_metrics_data'] = $api->getMetric('base.dashCoreByDay', array(
-			
-					'constraints'		=> array('site_id'	=> $this->params['site_id']),
-					'order'				=> ASC
-				
-				));
-			break;
+		$this->set('latest_visits', $rs);
+	
+		// set view stuff
+		$this->setSubview('base.reportDashboard');
+		$this->setTitle('Dashboard');
+		
+		$metrics = 'visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration';
+		
+		if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+			$metrics .= ',transactions,transactionRevenue';	
 		}
 		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-
-		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
-		
-			'constraints'	=> array('site_id'	=> $this->params['site_id']),
-			'limit'			=> 15,
-			'orderby'		=> array('session.timestamp'),
-			'order'			=> 'DESC'
-		
-		));
-		
-		$data['top_pages_data'] = $api->getMetric('base.topPages', array(
-			
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'			=> '10'
-		));
-		
-		$data['top_referers_data'] = $api->getMetric('base.topReferers', array(
-			
-			'limit'				=> '10',
-			'constraints'		=> array(
-				'site_id'	=> $this->params['site_id'],
-				'referers.is_searchengine' => '0'),
-			'order'				=>	'DESC'
-		));
-		
-		
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportDashboard';
-		$data['nav_tab'] = 'base.reportDashboard';	
-		
-		return $data;	
-		
+		$this->set('metrics', $metrics);	
 	}
-	
 }
 		
-
+require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
- * View
+ * Dashboard Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -137,49 +91,15 @@ class owa_reportDashboardController extends owa_reportController {
 
 class owa_reportDashboardView extends owa_view {
 	
-	function owa_reportDashboardView() {
+	function render() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Set Page title
-		$this->t->set('page_title', '');
-		
-		// Set Page headline
-		$this->body->set('headline', 'Dashboard');
-		
-		// load body template
 		$this->body->set_template('report_dashboard.tpl');
-	
-		$this->body->set('headline', 'Analytics Dashboard');
-		
-		
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		
-		$this->body->set('config', $this->config);
-		
-		$this->body->set('params', $data['params']);
-		
-		$this->body->set('core_metrics', $data['core_metrics_data']);
-		
-		
-		
-		$this->body->set('visits', $data['latest_visits']);
-		
-		$this->body->set('top_pages', $data['top_pages_data']);
-		
-		$this->body->set('top_referers', $data['top_referers_data']);
-
-		return;
+		$this->body->set('summary', $this->get('summary'));			
+		$this->body->set('site_trend', $this->get('site_trend'));
+		$this->body->set('visits', $this->get('latest_visits'));
+		$this->body->set('actions', $this->get('actions'));
+		$this->body->set('metrics', $this->get('metrics'));
 	}
-	
-	
 }
-
 
 ?>

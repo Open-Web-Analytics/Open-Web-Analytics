@@ -69,17 +69,17 @@ class ini_db extends owa_base {
 	 * @access public
 	 * @return ini_db
 	 */
-	function ini_db($ini_file, $sections = null, $return_format = 'object') {
-		$this->owa_base();
+	function __construct($ini_file, $sections = null, $return_format = 'object') {
+		
+		parent::__construct();
 		$this->ini_file = $ini_file;		
 		$this->return_format = $return_format;
 		
-		if (!empty($sections)):
+		if (!empty($sections)){
 			$this->db = $this->readINIfile($this->ini_file, ';');	
-		else:
+		} else {
 			$this->db = file($this->ini_file);	
-		endif;
-		return;
+		}
 	}
 
 	/**
@@ -130,6 +130,8 @@ class ini_db extends owa_base {
 	 */
 	function match($haystack) {
 		
+		$needle = '';
+		
 		if (!empty($haystack)):
 		
 			$tmp = '';
@@ -151,6 +153,26 @@ class ini_db extends owa_base {
 		else:
 			return;
 		endif;
+	}
+	
+	function contains($haystack = '') {
+		
+		$pos = false;
+		
+		if ($haystack) {
+		
+			foreach ($this->db as $k => $needle) {
+				$needle = substr(strtolower(trim($needle)),1,-1);
+				$pos = strpos(strtolower($haystack), $needle);
+				
+				if ($pos) {
+					owa_coreAPI::debug(sprintf('Haystack contains "%s" at position %d', $needle, $pos));
+					return true;
+				}
+			}
+			
+			return false;	
+		}
 	}
 	
 	/**
@@ -178,37 +200,37 @@ class ini_db extends owa_base {
 	 * @return array
 	 */
 	function readINIfile ($filename, $commentchar) {
-		  $array1 = file($filename);
-		  $section = '';
-		  foreach ($array1 as $filedata) {
-		   $dataline = trim($filedata);
-		   $firstchar = substr($dataline, 0, 1);
-		   if ($firstchar!=$commentchar && $dataline!='') {
-			 //It's an entry (not a comment and not a blank line)
-			 if ($firstchar == '[' && substr($dataline, -1, 1) == ']') {
-			   //It's a section
-			   $section = strtolower(substr($dataline, 1, -1));
-			 }else{
-			   //It's a key...
-			   $delimiter = strpos($dataline, '=');
-			   if ($delimiter > 0) {
-				 //...with a value
-				 $key = strtolower(trim(substr($dataline, 0, $delimiter)));
-				 $value = trim(substr($dataline, $delimiter + 1));
-				 if (substr($value, 1, 1) == '"' && substr($value, -1, 1) == '"') { $value = substr($value, 1, -1); }
-				 $array2[$section][$key] = stripcslashes($value);
-			   }else{
-				 //...without a value
-				 $array2[$section][strtolower(trim($dataline))]='';
-			   }
-			 }
-		   }else{
+		$array1 = file($filename);
+		$section = '';
+		foreach ($array1 as $filedata) {
+		$dataline = trim($filedata);
+		$firstchar = substr($dataline, 0, 1);
+		if ($firstchar!=$commentchar && $dataline!='') {
+		//It's an entry (not a comment and not a blank line)
+			if ($firstchar == '[' && substr($dataline, -1, 1) == ']') {
+		    	//It's a section
+		   		$section = strtolower(substr($dataline, 1, -1));
+		 	} else {
+		   		//It's a key...
+		   		$delimiter = strpos($dataline, '=');
+		   		if ($delimiter > 0) {
+					//...with a value
+					$key = strtolower(trim(substr($dataline, 0, $delimiter)));
+					$value = trim(substr($dataline, $delimiter + 1));
+				 	if (substr($value, 1, 1) == '"' && substr($value, -1, 1) == '"') { $value = substr($value, 1, -1); }
+				 		$array2[$section][$key] = stripcslashes($value);
+			   		} else {
+				 		//...without a value
+				 		$array2[$section][strtolower(trim($dataline))]='';
+			   		}
+			 	}
+			} else {
 			 //It's a comment or blank line.  Ignore.
-		   }
-		  }
-		  return $array2;
+			}
+		}
+		
+		return $array2;
 	}
-	
 }
 
 ?>

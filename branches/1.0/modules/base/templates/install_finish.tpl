@@ -1,28 +1,20 @@
-<div class="panel_headline"><?=$headline;?></div>
-
 <div class="subview_content">
 	
-	<h1>Installation Complete.   (wasn't that easy?)</h1>
-	
-	<h2>Before you can start using OWA you must...</h2>
-	
-	<h3>1. Set Your Admin User Password</h3>
-	
-	You must set the admin password of your account. 
-	
-	<table>
-		<TR>
-			<TH>User Name:</TH>
-			<TD><?=$u;?></TD>
-		</TR>
-		<TR>
-			<TH>Password:</TH>
-			<TD><a href="<?=$this->makeAbsoluteLink(array('view' => 'base.usersChangePassword', 'k' => $key));?>"> Click here to set password</a></TD>
-		</TR>
-	</table>
-	
-	<h3>2. Place Javascript Tracking Tags or Use the PHP API</h3>
-	
-	<? include('invocation.tpl');?>
-
+	<h1>Success! That's It. Installation is Complete.</h1>
+	<p>Open Web Analytics has been successfully installed. Login using the user name and password below and generate a tracker.</p>
+	<p class="form-row">
+		<span class="form-label">User Name:</span>
+		<span class="form-field"><?php echo $u;?></span>
+	</p>
+	<p class="form-row">
+		<span class="form-label">Password:</span>
+		<span class="form-field"><?php echo $p;?></span>
+		<span class="form-instructions">Be sure to change this password.</span>
+	</p>
+	<BR>
+	<p>		
+		<a href="<?php echo $this->makeLink(array("action" => "base.sitesInvocation", "siteId" => $site_id), false, owa_coreAPI::getSetting('base','public_url'));?>" target="_blank">
+			<span class="owa-button">Login and generate a site tracker!</span>
+		</a>	
+	</p>	
 </div>

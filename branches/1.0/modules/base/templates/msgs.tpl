@@ -1,7 +1,7 @@
-<? if(!empty($status_msg)):?>
-<DIV class="status"><?=$status_msg;?></div>
-<? endif;?>
+<?php if(!empty($status_msg)):?>
+<DIV class="status"><?php echo $status_msg;?></div>
+<?php endif;?>
 
-<? if ($error_msg):?>
-<DIV class="error"><?=$error_msg;?></DIV>
-<?endif;?>
+<?php if (isset($error_msg)):?>
+<DIV class="error"><?php echo $error_msg;?></DIV>
+<?php endif;?>

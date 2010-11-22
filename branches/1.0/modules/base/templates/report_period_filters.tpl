@@ -1,3 +1,5 @@
+<!-- DEPRICATED -->
+
 <TABLE>
 
 	<TR>
@@ -11,7 +13,7 @@
 				<SELECT name="sites" onchange='OnChange(this.form.sites, "site_id");' <? if (count($sites) == 1):?>DISABLED<?endif;?>>
 				
 				<?foreach ($sites as $site => $value):?>
-					<OPTION VALUE="<?=$value['site_id'];?>" <?php if ($params['site_id'] == $value['site_id']): echo 'selected'; endif; ?>><?=$value['name'];?></OPTION>
+					<OPTION VALUE="<?php echo $value['site_id'];?>" <?php if ($params['site_id'] == $value['site_id']): echo 'selected'; endif; ?>><?php echo $value['name'];?></OPTION>
 				<?endforeach;?>
 					<OPTION VALUE="" <?php if (empty($params['site_id'])): echo 'selected'; endif; ?>>All Sites</OPTION>
 				
@@ -29,7 +31,7 @@
 					<TD valign="top"><form action="" method="GET" name="set_periods_form">
 							<SELECT name="period" onchange='OnChange(this.form.period, "period");' <? if (!array_key_exists($params['period'], $reporting_periods)):?>DISABLED<?endif;?>>
 							<? foreach ($reporting_periods as $reporting_period => $value):?>
-								<OPTION VALUE="<?=$reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
+								<OPTION VALUE="<?php echo $reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
 							<?endforeach;?>
 							</SELECT>
 						</FORM>		
@@ -43,10 +45,10 @@
 					<TH valign="top">Date Period:</TH>
 					<TD valign="top">
 						<form action="" method="GET" name="date_periods_form" >
-							<SELECT name="period" onchange='dateFormReveal(this.form.period);' <? if (!array_key_exists($params['period'], $date_reporting_periods)):?>DISABLED<?endif;?>>
-							<? foreach ($date_reporting_periods as $date_reporting_period => $value):?>
-								<OPTION VALUE="<?=$date_reporting_period;?>" <?php if ($params['period'] == $date_reporting_period): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
-							<?endforeach;?>
+							<SELECT name="period" onchange='dateFormReveal(this.form.period);' <?php if (!array_key_exists($params['period'], $date_reporting_periods)):?>DISABLED<?php endif;?>>
+							<?php foreach ($date_reporting_periods as $date_reporting_period => $value):?>
+								<OPTION VALUE="<?php echo $date_reporting_period;?>" <?php if ($params['period'] == $date_reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</FORM>	
 					</TD>
@@ -68,24 +70,24 @@
 					<TR>
 						<TD>
 						<SELECT name="month">
-							<? foreach ($months as $month => $value):?>
-								<OPTION VALUE="<?=$month;?>" <?php if ($params['month'] == $month): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($months as $month => $value):?>
+								<OPTION VALUE="<?php echo $month;?>" <?php if ($params['month'] == $month): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
+							<?php endforeach;?>
 						</SELECT>
 						</TD>
 						<TD>
 							<SELECT name="day">
-							<? foreach ($days as $day):?>
-								<OPTION VALUE="<?=$day;?>" <?php if ($params['day'] == $day): echo 'selected'; endif; ?>><?=$day;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($days as $day):?>
+								<OPTION VALUE="<?php echo $day;?>" <?php if ($params['day'] == $day): echo 'selected'; endif; ?>><?php echo $day;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						
 						</TD>
 						<TD>
 							<SELECT name="year">
-							<? foreach ($years as $year):?>
-								<OPTION VALUE="<?=$year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?=$year;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($years as $year):?>
+								<OPTION VALUE="<?php echo $year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?php echo $year;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 						<TD><input type="hidden" name="period" value="day"><input type="button" name="date_submit" value="Go" onclick='changeDate("day");'></TD>
@@ -104,16 +106,16 @@
 					<TR>
 						<TD>
 							<SELECT name="month">
-							<? foreach ($months as $month => $value):?>
-								<OPTION VALUE="<?=$month;?>" <?php if ($params['month'] == $month): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($months as $month => $value):?>
+								<OPTION VALUE="<?php echo $month;?>" <?php if ($params['month'] == $month): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 						<TD>
 							<SELECT name="year">
-							<? foreach ($years as $year):?>
-								<OPTION VALUE="<?=$year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?=$year;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($years as $year):?>
+								<OPTION VALUE="<?php echo $year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?php echo $year;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 						<TD><input type="hidden" name="period" value="month"><input type="button" name="date_submit" value="Go" onclick='changeDate("month");'></TD>
@@ -131,9 +133,9 @@
 					<TR>
 						<TD>
 							<SELECT name="year">
-							<? foreach ($years as $year):?>
-								<OPTION VALUE="<?=$year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?=$year;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($years as $year):?>
+								<OPTION VALUE="<?php echo $year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?php echo $year;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 						<TD><input type="hidden" name="period" value="year"><input type="button" name="date_submit" value="Go" onclick='changeDate("year");'></TD>
@@ -158,24 +160,24 @@
 					<TR>
 						<TD>
 						<SELECT name="month">
-							<? foreach ($months as $month => $value):?>
-								<OPTION VALUE="<?=$month;?>" <?php if ($params['month'] == $month): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($months as $month => $value):?>
+								<OPTION VALUE="<?php echo $month;?>" <?php if ($params['month'] == $month): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
+							<?php endforeach;?>
 						</SELECT>
 						</TD>
 						<TD>
 							<SELECT name="day">
-							<? foreach ($days as $day):?>
-								<OPTION VALUE="<?=$day;?>" <?php if ($params['day'] == $day): echo 'selected'; endif; ?>><?=$day;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($days as $day):?>
+								<OPTION VALUE="<?php echo $day;?>" <?php if ($params['day'] == $day): echo 'selected'; endif; ?>><?php echo $day;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						
 						</TD>
 						<TD>
 							<SELECT name="year">
-							<? foreach ($years as $year):?>
-								<OPTION VALUE="<?=$year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?=$year;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($years as $year):?>
+								<OPTION VALUE="<?php echo $year;?>" <?php if ($params['year'] == $year): echo 'selected'; endif; ?>><?php echo $year;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 					
@@ -183,24 +185,24 @@
 
 						<TD>
 							<SELECT name="month2">
-							<? foreach ($months as $month => $value):?>
-								<OPTION VALUE="<?=$month;?>" <?php if ($params['month2'] == $month): echo 'selected'; endif; ?>><?=$value['label'];?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($months as $month => $value):?>
+								<OPTION VALUE="<?php echo $month;?>" <?php if ($params['month2'] == $month): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 						<TD>
 							<SELECT name="day2">
-							<? foreach ($days as $day):?>
-								<OPTION VALUE="<?=$day;?>" <?php if ($params['day2'] == $day): echo 'selected'; endif; ?>><?=$day;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($days as $day):?>
+								<OPTION VALUE="<?php echo $day;?>" <?php if ($params['day2'] == $day): echo 'selected'; endif; ?>><?php echo $day;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						
 						</TD>
 						<TD>
 							<SELECT name="year2">
-							<? foreach ($years as $year):?>
-								<OPTION VALUE="<?=$year;?>" <?php if ($params['year2'] == $year): echo 'selected'; endif; ?>><?=$year;?></OPTION>
-							<?endforeach;?>
+							<?php foreach ($years as $year):?>
+								<OPTION VALUE="<?php echo $year;?>" <?php if ($params['year2'] == $year): echo 'selected'; endif; ?>><?php echo $year;?></OPTION>
+							<?php endforeach;?>
 							</SELECT>
 						</TD>
 						
@@ -223,11 +225,11 @@
 
 var params = new Object()
 
-<? foreach ($params as $k => $v):?>
-	params["<?=$k;?>"] = "<?=$v;?>";
-<? endforeach;?>
+<?php foreach ($params as $k => $v):?>
+	params["<?php echo $k;?>"] = "<?php echo $v;?>";
+<?php endforeach;?>
 
-var baseURL  =  '<?=$this->makeLink();?>'
+var baseURL  =  '<?php echo $this->makeLink();?>'
 
 function OnChange(dropdown, change_param) {
 

@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Delete User Controller
@@ -30,27 +30,25 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_usersDeleteController extends owa_controller {
+class owa_usersDeleteController extends owa_adminController {
 	
-	function owa_usersDeleteController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+	function __construct($params) {
+	
+		$this->setRequiredCapability('edit_users');
+		$this->setNonceRequired();
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
 		$userManager = owa_coreApi::supportClassFactory('base', 'userManager');	
-		$userManager->deleteUser($this->params['user_id']);
-				
-		$data['view_method'] = 'redirect';
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.users';
-		$data['status_code'] = 3004;
 		
-		return $data;
+		// add check here to ensure that this is not the default user....
+		$userManager->deleteUser($this->getParam('user_id'));
+				
+		$this->setRedirectAction('base.users');
+		$this->set('status_code', 3004);
 	}
-	
 }
-
 
 ?>

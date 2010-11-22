@@ -39,55 +39,50 @@ class owa_kmlVisitsGeolocationController extends owa_reportController {
 
 	function owa_kmlVisitsGeolocationController($params) {
 		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
+		return owa_kmlVisitsGeolocationController::__construct($params);
 	
-		return;
+	}
+	
+	function __construct($params) {
+		
+		return parent::__construct($params);
 	}
 	
 	function action() {
 
 		// Load the core API
 		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data = array();
-		
-		$data['params'] = $this->params;
 			
 		if ($this->params['site_id']):
 			//get site labels
 			$s = owa_coreAPI::entityFactory('base.site');
-			$s->getByColumn('site_id', $this->params['site_id']);
-			$data['site_name'] = $s->get('name');
-			$data['site_description'] = $s->get('description');
+			$s->getByColumn('site_id', $this->getParam('site_id'));
+			$this->set('site_name', $s->get('name'));
+			$this->set('site_description', $s->get('description'));
 		else:
-			$data['site_name'] = 'All Sites';
-			$data['site_description'] = 'All Sites Tracked by OWA';
+			$this->set('site_name', 'All Sites');
+			$this->set('site_description', 'All Sites Tracked by OWA');
 		endif;
 		
-		$data['latest_visits'] = $api->getMetric('base.latestVisits', array(
-		
-			'constraints'	=> array('site_id'	=> $this->params['site_id']),
-			'limit'			=> 15,
-			//'period'		=> 'last_thirty_days',
-			'orderby'		=> array('session.timestamp'),
-			'order'			=> 'DESC'
-		
-		));
-		
+		//setup Metrics
+		$m = owa_coreApi::metricFactory('base.latestVisits');
+		$m->setConstraint('site_id', $this->getParam('site_id'));
+		$m->setPeriod($this->getPeriod());
+		$m->setOrder(OWA_SQL_DESCENDING); 
+		$m->setLimit(15);
+		$results = $m->generate();
 
 		
-		$data['view'] = 'base.kmlVisitsGeolocation';
-			
+		$this->set('latest_visits', $results);
 		
-		return $data;	
+		$this->setView('base.kmlVisitsGeolocation');
+			
+		return;
 		
 	}
 	
 }
 		
-
-
 /**
  * Visits Geolocation KML View
  * 
@@ -104,24 +99,26 @@ class owa_kmlVisitsGeolocationView extends owa_view {
 	
 	function owa_kmlVisitsGeolocationView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+		return owa_kmlVisitsGeolocationView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+	
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		$this->t->set_template('wrapper_blank.tpl');
 		
 		// load body template
 		$this->body->set_template('kml_visits_geolocation.tpl');
-		$this->body->set('visits', $data['latest_visits']);
-		$this->body->set('site_name', $data['site_name']);
-		$this->body->set('site_domain', $data['site_domain']);
-		$this->body->set('site_description', $data['site_description']);
+		$this->body->set('visits', $this->get('latest_visits'));
+		$this->body->set('site_name', $this->get('site_name'));
+		$this->body->set('site_domain', $this->get('site_domain'));
+		$this->body->set('site_description', $this->get('site_description'));
 	
-		$this->_setLinkState();
+		//$this->_setLinkState();
 		
 		$this->body->set('xml', '<?xml version="1.0" encoding="UTF-8"?>');
 				

@@ -30,7 +30,7 @@
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_location extends owa_base {
+class owa_location {
 	
 	/**
 	 * City 
@@ -72,37 +72,9 @@ class owa_location extends owa_base {
 	 *
 	 * @return owa_location
 	 */
-	function owa_location() {
-		
-		$this->owa_base();
-		
-		return;
+	function __construct() {
+	
 	}
-	
-	function &factory($class_path, $plugin, $name = '', $ident = '', $conf = array()) {
-		
-        $classfile = $class_path . $plugin . '.php';
-
-        $class = 'owa_'.$plugin;
-        
-        /*
-         * Attempt to include our version of the named class, but don't treat
-         * a failure as fatal.  The caller may have already included their own
-         * version of the named class.
-         */
-        if (!class_exists($class)) {
-            include_once $classfile;
-        }
-
-        /* If the class exists, return a new instance of it. */
-        if (class_exists($class)) {
-            $obj = new $class;
-            return $obj;
-        }
-
-        return null;
-    }
-	
 }
 
 ?>

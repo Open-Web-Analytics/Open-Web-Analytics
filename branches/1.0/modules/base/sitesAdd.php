@@ -18,8 +18,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.'/owa_controller.php');
-
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Add Sites View
@@ -34,16 +33,8 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  */
 
 class owa_sitesAddView extends owa_view {
-	
-	function owa_sitesAddView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'admin';
-		
-		return;
-	}
-	
-	function construct($data) {
+	function render($data) {
 		
 		//page title
 		$this->t->set('page_title', 'Add Web Site');
@@ -54,14 +45,10 @@ class owa_sitesAddView extends owa_view {
 		$this->body->set('action', 'base.sitesAdd');
 		
 		//Check to see if user is passed by constructor or else fetch the object.
-		if ($data['site']):
+		if ($data['site']) {
 			$this->body->set('site', $data['site']);
-		endif;
-		
-		return;
+		}
 	}
-	
-	
 }
 
 /**
@@ -76,13 +63,13 @@ class owa_sitesAddView extends owa_view {
  * @since		owa 1.0.0
  */
 
-class owa_sitesAddController extends owa_controller {
+class owa_sitesAddController extends owa_adminController {
 	
-	function owa_sitesAddController($params) {
+	function __construct($params) {
 		
-		$this->owa_controller($params);
+		parent::__construct($params);
 		
-		$this->priviledge_level = 'admin';
+		$this->setRequiredCapability('edit_sites');
 		
 		// Config for the domain validation
 		$domain_conf = array('substring' => 'http', 'position' => 0, 'operator' => '!=', 'errorMsgTemplate' => 'Please remove the "http://" from your begining of your domain.');
@@ -91,55 +78,42 @@ class owa_sitesAddController extends owa_controller {
 		$this->addValidation('domain', $this->params['domain'], 'subStringPosition', $domain_conf);
 		$this->addValidation('domain', $this->params['domain'], 'required');
 		
-		return;
+		// Check user name exists
+		$v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
+		$v2->setConfig('entity', 'base.site');
+		$v2->setConfig('column', 'domain');
+		$v2->setValues($this->getParam('protocol').$this->getParam('domain'));
+		$v2->setErrorMessage($this->getMsg(3206));
+		$this->setValidation('domain', $v2);
+		
+		// require nonce for this action
+		$this->setNonceRequired();
 	}
 	
 	function action() {
-			
+				
 		$this->params['domain'] = $this->params['protocol'].$this->params['domain'];
-		
-		$s = owa_coreAPI::entityFactory('base.site');
-		$s->getByColumn('domain', $this->params['domain']);
-		$id = $s->get('id');
-		
-		if(empty($id)):
-			
-			$site = owa_coreAPI::entityFactory('base.site');
-			$site->set('site_id', md5($this->params['domain']));
-			$site->set('name', $this->params['name']);
-			$site->set('domain', $this->params['domain']);
-			$site->set('description', $this->params['description']);
-			$site->set('site_family', $this->params['site_family']);
-			$site->create();
-				
-			$data['view_method'] = 'redirect';
-			$data['view'] = 'base.options';
-			$data['subview'] = 'base.sites';
-			$data['status_code'] = 3202;
-				
-		else:
-				
-			$data['view_method'] = 'delegate';
-			$data['view'] = 'base.options';
-			$data['subview'] = 'base.sitesAdd';
-			$data['error_msg'] = $this->getMsg(3206);
-			$data['site'] = $this->params;	
 						
-		endif;
-			
-		return $data;
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site_id = md5($this->params['domain']);
+		$site->set('id', $site->generateId($site_id));
+		$site->set('site_id', $site_id);
+		$site->set('name', $this->params['name']);
+		$site->set('domain', $this->params['domain']);
+		$site->set('description', $this->params['description']);
+		$site->set('site_family', $this->params['site_family']);
+		$site->create();
+		
+		$this->setRedirectAction('base.sites');
+		$this->set('status_code', 3202);
 	}
 	
 	function errorAction() {
 		
-		$data['view_method'] = 'delegate'; 
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.sitesAdd';
-		$data['error_msg'] = $this->getMsg(3307);
-		$data['site'] = $this->params;	
-		$data['validation_errors'] = $this->getValidationErrorMsgs();
-	
-		return $data;
+		$this->setView('base.options');
+		$this->setSubview('base.sitesProfile');
+		$this->set('error_code', 3311);
+		$this->set('site', $this->params);
 	}
 	
 }

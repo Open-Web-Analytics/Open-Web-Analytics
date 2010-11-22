@@ -30,54 +30,231 @@
 
 class owa_session extends owa_entity {
 	
-	var $id; // BIGINT,
-	var $visitor_id; // BIGINT,
-	var $timestamp; // bigint,
-	var $year; // INT,
-	var $month; // INT,
-	var $day; // TINYINT(2),
-	var $dayofweek; // varchar(10),
-	var $dayofyear; // INT,
-	var $weekofyear; // INT,
-	var $hour; // TINYINT(2),
-	var $minute; // TINYINT(2),
-	var $last_req; // BIGINT,
-	var $num_pageviews; // INT,
-	var $num_comments; // INT,
-	var $is_repeat_visitor; // TINYINT(1),
-	var $is_new_visitor; // TINYINT(1),
-	var $prior_session_lastreq; //  BIGINT,
-	var $prior_session_id; //  BIGINT,
-	var $time_sinse_priorsession; //  INT,
-	var $prior_session_year; //  INT(4),
-	var $prior_session_month; //  varchar(255),
-	var $prior_session_day; //  TINYINT(2),
-	var $prior_session_dayofweek; //  int,
-	var $prior_session_hour; //  TINYINT(2),
-	var $prior_session_minute; //  TINYINT(2),
-	var $os_id; //  varchar(255),
-	var $ua_id; //  varchar(255),
-	var $first_page_id; //  BIGINT,
-	var $last_page_id; //  BIGINT,
-	var $referer_id; //  BIGINT,
-	var $host_id; //  varchar(255),
-	var $site_id; //  varchar(255),
-	var $is_robot; //  tinyint(1),
-	var $is_browser; //  tinyint(1),
-	var $is_feedreader; //  tinyint(1),
+	function __construct() {
 	
-	function owa_session() {
+		// table name
+		$this->setTableName('session');
+		$this->setSummaryLevel(1);
 		
-		$this->owa_entity();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
 		
-		return;
-			
+		$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
+		$visitor_id->setForeignKey('base.visitor');
+		$this->setProperty($visitor_id);
+		
+		$ts =  new owa_dbColumn;
+		$ts->setName('timestamp');
+		$ts->setDataType(OWA_DTD_BIGINT);
+		$ts->setIndex();
+		$this->setProperty($ts);
+		
+		$yyyymmdd =  new owa_dbColumn;
+		$yyyymmdd->setName('yyyymmdd');
+		$yyyymmdd->setDataType(OWA_DTD_INT);
+		$yyyymmdd->setIndex();
+		$this->setProperty($yyyymmdd);
+		
+		$this->properties['user_name'] = new owa_dbColumn;
+		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['user_email'] = new owa_dbColumn;
+		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['year'] = new owa_dbColumn;
+		$this->properties['year']->setDataType(OWA_DTD_INT);
+		$this->properties['month'] = new owa_dbColumn;
+		$this->properties['month']->setDataType(OWA_DTD_INT);
+		$this->properties['day'] = new owa_dbColumn;
+		$this->properties['day']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['dayofweek'] = new owa_dbColumn;
+		$this->properties['dayofweek']->setDataType(OWA_DTD_VARCHAR10);
+		$this->properties['dayofyear'] = new owa_dbColumn;
+		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['weekofyear'] = new owa_dbColumn;
+		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		$this->properties['hour'] = new owa_dbColumn;
+		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['minute'] = new owa_dbColumn;
+		$this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['last_req'] = new owa_dbColumn;
+		$this->properties['last_req']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['num_pageviews'] = new owa_dbColumn;
+		$this->properties['num_pageviews']->setDataType(OWA_DTD_INT);
+		$this->properties['num_comments'] = new owa_dbColumn;
+		$this->properties['num_comments']->setDataType(OWA_DTD_INT);
+		$this->properties['is_repeat_visitor'] = new owa_dbColumn;
+		$this->properties['is_repeat_visitor']->setDataType(OWA_DTD_TINYINT);
+		
+		$is_bounce =  new owa_dbColumn;
+		$is_bounce->setName('is_bounce');
+		$is_bounce->setDataType(OWA_DTD_TINYINT);
+		$this->setProperty($is_bounce);
+		
+		$this->properties['is_new_visitor'] = new owa_dbColumn;
+		$this->properties['is_new_visitor']->setDataType(OWA_DTD_TINYINT);
+		$this->properties['prior_session_lastreq'] = new owa_dbColumn;
+		$this->properties['prior_session_lastreq']->setDataType(OWA_DTD_BIGINT);
+		
+		$prior_session_id = new owa_dbColumn('prior_session_id', OWA_DTD_BIGINT);
+		$this->setProperty($prior_session_id);
+		
+		$this->properties['time_sinse_priorsession'] = new owa_dbColumn;
+		$this->properties['time_sinse_priorsession']->setDataType(OWA_DTD_INT);
+		$this->properties['prior_session_year'] = new owa_dbColumn;
+		$this->properties['prior_session_year']->setDataType(OWA_DTD_TINYINT4);
+		$this->properties['prior_session_month'] = new owa_dbColumn;
+		$this->properties['prior_session_month']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['prior_session_day'] = new owa_dbColumn;
+		$this->properties['prior_session_day']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['prior_session_dayofweek'] = new owa_dbColumn;
+		$this->properties['prior_session_dayofweek']->setDataType(OWA_DTD_INT);
+		$this->properties['prior_session_hour'] = new owa_dbColumn;
+		$this->properties['prior_session_hour']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['prior_session_minute'] = new owa_dbColumn;
+		$this->properties['prior_session_minute']->setDataType(OWA_DTD_TINYINT2);
+		$this->properties['days_since_prior_session'] = new owa_dbColumn;
+		$this->properties['days_since_prior_session']->setDataType(OWA_DTD_INT);
+		$this->properties['days_since_first_session'] = new owa_dbColumn;
+		$this->properties['days_since_first_session']->setDataType(OWA_DTD_INT);
+		$this->properties['os'] = new owa_dbColumn;
+		$this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
+		
+		// wrong data type
+		$os_id = new owa_dbColumn('os_id', OWA_DTD_VARCHAR255);
+		$os_id->setForeignKey('base.os');
+		$this->setProperty($os_id);
+		
+		// wrong data type
+		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_VARCHAR255);
+		$ua_id->setForeignKey('base.ua');
+		$this->setProperty($ua_id);
+		
+		$first_page_id = new owa_dbColumn('first_page_id', OWA_DTD_BIGINT);
+		$first_page_id->setForeignKey('base.document');
+		$this->setProperty($first_page_id);
+		
+		$last_page_id = new owa_dbColumn('last_page_id', OWA_DTD_BIGINT);
+		$last_page_id->setForeignKey('base.document');
+		$this->setProperty($last_page_id);
+		
+		$referer_id = new owa_dbColumn('referer_id', OWA_DTD_BIGINT);
+		$referer_id->setForeignKey('base.referer');
+		$this->setProperty($referer_id);
+		
+		$referring_search_term_id = new owa_dbColumn('referring_search_term_id', OWA_DTD_BIGINT);
+		$referring_search_term_id->setForeignKey('base.search_term_dim');
+		$this->setProperty($referring_search_term_id);
+		
+		$ip_address = new owa_dbColumn('ip_address', OWA_DTD_VARCHAR255);
+		$this->setProperty($ip_address);
+		
+		$this->properties['host'] = new owa_dbColumn;
+		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
+		
+		// wrong data type
+		$host_id = new owa_dbColumn('host_id', OWA_DTD_VARCHAR255);
+		$host_id->setForeignKey('base.host');
+		$this->setProperty($host_id);
+		
+		$this->properties['city'] = new owa_dbColumn;
+		$this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['country'] = new owa_dbColumn;
+		$this->properties['country']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['site'] = new owa_dbColumn;
+		$this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
+		
+		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
+		$site_id->setForeignKey('base.site', 'site_id');
+		$this->setProperty($site_id);
+		
+		$nps = new owa_dbColumn('num_prior_sessions', OWA_DTD_INT);
+		$this->setProperty($nps);
+		
+		$this->properties['is_robot'] = new owa_dbColumn;
+		$this->properties['is_robot']->setDataType(OWA_DTD_TINYINT);
+		$this->properties['is_browser'] = new owa_dbColumn;
+		$this->properties['is_browser']->setDataType(OWA_DTD_TINYINT);
+		$this->properties['is_feedreader'] = new owa_dbColumn;
+		$this->properties['is_feedreader']->setDataType(OWA_DTD_TINYINT);
+		
+		//$this->properties['source'] = new owa_dbColumn;
+		//$this->properties['source']->setDataType(OWA_DTD_VARCHAR255);
+		
+
+		$medium = new owa_dbColumn('medium',OWA_DTD_VARCHAR255);
+		$this->setProperty($medium);
+		
+		$source_id = new owa_dbColumn('source_id', OWA_DTD_BIGINT);
+		$source_id->setForeignKey('base.source_dim');
+		$this->setProperty($source_id);
+		
+		$ad_id = new owa_dbColumn('ad_id', OWA_DTD_BIGINT);
+		$ad_id->setForeignKey('base.ad_dim');
+		$this->setProperty($ad_id);
+		
+		$campaign_id = new owa_dbColumn('campaign_id', OWA_DTD_BIGINT);
+		$campaign_id->setForeignKey('base.campaign_dim');
+		$this->setProperty($campaign_id);
+		
+		$this->properties['latest_attributions'] = new owa_dbColumn;
+		$this->properties['latest_attributions']->setDataType(OWA_DTD_TEXT);
+		
+		// create goal related columns
+		$gcount = owa_coreAPI::getSetting('base', 'numGoals');
+		for ($num = 1; $num <= $gcount;$num++) {
+			$col_name = 'goal_'.$num;
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_TINYINT);
+			$this->setProperty($goal_col);
+			$col_name = 'goal_'.$num.'_start';
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_TINYINT);
+			$this->setProperty($goal_col);
+			$col_name = 'goal_'.$num.'_value';
+			$goal_col = new owa_dbColumn($col_name, OWA_DTD_BIGINT);
+			$this->setProperty($goal_col);
+		}
+	
+		$num_goals = new owa_dbColumn('num_goals', OWA_DTD_TINYINT);
+		$this->setProperty($num_goals);
+		
+		$num_goal_starts = new owa_dbColumn('num_goal_starts', OWA_DTD_TINYINT);
+		$this->setProperty($num_goal_starts);
+	
+		$goals_value = new owa_dbColumn('goals_value', OWA_DTD_BIGINT);
+		$this->setProperty($goals_value);	
+		
+		//location
+		$location_id = new owa_dbColumn('location_id', OWA_DTD_BIGINT);
+		$location_id->setForeignKey('base.location_dim');
+		$this->setProperty($location_id);
+		
+		// language
+		$language = new owa_dbColumn('language', OWA_DTD_VARCHAR255);
+		$this->setProperty($language);
+		
+		// transaction count
+		$commerce_trans_count = new owa_dbColumn('commerce_trans_count', OWA_DTD_INT);
+		$this->setProperty($commerce_trans_count);
+		// revenue including tax and shipping
+		$commerce_trans_revenue = new owa_dbColumn('commerce_trans_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_trans_revenue);
+		// revenue excluding tax and shipping
+		$commerce_items_revenue = new owa_dbColumn('commerce_items_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_items_revenue);
+		// distinct number of items
+		$commerce_items_count = new owa_dbColumn('commerce_items_count', OWA_DTD_INT);
+		$this->setProperty($commerce_items_count);
+		// total quantity of all items
+		$commerce_items_quantity = new owa_dbColumn('commerce_items_quantity', OWA_DTD_INT);
+		$this->setProperty($commerce_items_quantity);
+		// shipping revenue
+		$commerce_shipping_revenue = new owa_dbColumn('commerce_shipping_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_shipping_revenue);
+		// tax revenue
+		$commerce_tax_revenue = new owa_dbColumn('commerce_tax_revenue', OWA_DTD_BIGINT);
+		$this->setProperty($commerce_tax_revenue);
+		
 	}
-	
-	
-	
 }
-
-
 
 ?>

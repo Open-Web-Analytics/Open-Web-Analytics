@@ -32,25 +32,47 @@
 
 class owa_site extends owa_entity {
 	
-	var $id;
-	var $site_id; // VARCHAR(255),
-	var $domain; // VARCHAR(255),
-	var $name; // VARCHAR(255),
-	var $description; // TEXT,
-	var $site_family; // VARCHAR(255)
-	
-	function owa_site() {
+	function __construct() {
 		
-		$this->owa_entity();
-		
-		return;
-			
+		$this->setTableName('site');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['site_id'] = new owa_dbColumn;
+		$this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['domain'] = new owa_dbColumn;
+		$this->properties['domain']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['name'] = new owa_dbColumn;
+		$this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['description'] = new owa_dbColumn;
+		$this->properties['description']->setDataType(OWA_DTD_TEXT);
+		$this->properties['site_family'] = new owa_dbColumn;
+		$this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['settings'] = new owa_dbColumn;
+		$this->properties['settings']->setDataType(OWA_DTD_TEXT);
 	}
 	
+	function generateSiteId($domain) {
+		
+		return md5($domain);
+	}
 	
+	function settingsGetFilter($value) {
+		if ($value) {
+			return unserialize($value);
+		}
+	}
+	
+	function settingsSetFilter($value) {
+		owa_coreAPI::debug('hello rom setFilter');
+		$value = serialize($value);
+		owa_coreAPI::debug($value);
+		return $value;
+	}
+
 	
 }
-
-
 
 ?>

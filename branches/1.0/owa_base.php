@@ -74,12 +74,15 @@ class owa_base {
 	 */
 	function owa_base() {
 		
+		return owa_base::__construct();
+
+	}
+	
+	function __construct() {
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->e = &owa_coreAPI::errorSingleton();
 		$this->c = &owa_coreAPI::configSingleton();
-		$this->config = &$this->c->fetch('base');
-		
-		return;
-
+		$this->config = $this->c->fetch('base');
 	}
 	
 	/**
@@ -94,7 +97,12 @@ class owa_base {
 	 */
 	function getMsg($code, $s1 = null, $s2 = null, $s3 = null, $s4 = null) {
 		
-		include_once(OWA_BASE_DIR.'/conf/messages.php');
+		static $_owa_messages;
+		
+		if (empty($_owa_messages)) {
+			
+			require_once(OWA_DIR.'conf/messages.php');
+		}
 		
 		switch ($_owa_messages[$code][1]) {
 			
@@ -149,6 +157,10 @@ class owa_base {
 			}
 		
 		return;
+	}
+	
+	function __destruct() {
+		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 	}
 	
 }

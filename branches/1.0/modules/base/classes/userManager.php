@@ -42,6 +42,11 @@ class owa_userManager extends owa_base {
 		return;
 	}
 	
+	function owa_userManager() {
+	
+		return $this->__construct();
+	}
+	
 	function createNewUser($user_params) {
 	
 		// save new user to db

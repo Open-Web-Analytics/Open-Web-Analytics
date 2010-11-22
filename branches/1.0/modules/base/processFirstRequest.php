@@ -35,43 +35,36 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
 
 class owa_processFirstRequestController extends owa_processEventController {
 	
-	function owa_processFirstRequestController($params) {
-		$this->owa_processEventController($params);
-		$this->priviledge_level = 'guest';
+	function __construct($params) {
+		
+		return parent::__construct($params);
+	}
+	
+	function pre() {
+		
+		return false;
 	}
 	
 	function action() {
-		
-		if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']])):
-		
-			// Create a new request object
-			$this->event = owa_coreAPI::supportClassFactory('base', 'requestEvent');
+	
+		$fh_state_name = owa_coreAPI::getSetting('base', 'first_hit_param');
+		//print_r($fh_state_name);
+		$fh = owa_coreAPI::getStateParam($fh_state_name);
+		owa_coreAPI::debug('cookiename: '.$fh_state_name);
+		//owa_coreAPI::debug(print_r($_COOKIE, true));
+		if (!empty($fh)) {
 			
-			$this->event->state = 'first_page_request';
-		
-			//Load request properties from first_hit cookie if it exists
-			if (!empty($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']])):
-				$this->event->load_first_hit_properties($this->params[$this->config['first_hit_param'].'_'.$this->config['site_id']]);
-			endif;
-			
-			$this->e->debug(sprintf('First hit Request %s logged to event queue',
-									$this->event->properties['guid']));
-			
-			// Log the request
-			$this->event->log();
-		
-		endif;	
-			
-		$data = array();
-		
-		$data['view'] = 'base.pixel';
-		$data['view_method'] = 'image';
-		
-		return $data;
-		
+			$this->event->replaceProperties($fh);
+			$this->event->setEventType('base.first_page_request');
+			//owa_coreAPI::debug(print_r($this->event, true));	
+			// Delete first_hit Cookie
+			owa_coreAPI::clearState($fh_state_name);
+
+		}
+				
+		$this->setView('base.pixel');
+		$this->setViewMethod('image');
 	}
-	
-	
 }
 
 ?>

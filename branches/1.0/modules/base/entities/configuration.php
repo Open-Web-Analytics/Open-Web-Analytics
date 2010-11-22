@@ -30,19 +30,16 @@
 
 class owa_configuration extends owa_entity {
 	
-	var $id; // BIGINT,
-	var $settings; // varchar(255)
-	
-	function owa_configuration() {
+	function __construct() {
 		
-		$this->owa_entity();
-		
-		return;
-			
-	}
-	
+		$this->setTableName('configuration');
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['id']->setPrimaryKey();
+		$this->properties['settings'] = new owa_dbColumn;
+		$this->properties['settings']->setDataType(OWA_DTD_TEXT);
+		$this->setCachable();
+	}	
 }
-
-
 
 ?>

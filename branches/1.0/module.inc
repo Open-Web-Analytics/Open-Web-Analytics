@@ -29,7 +29,7 @@ function owa_factory($params = array()) {
 	
 	static $owa;
 
-	if( isset($owa)):
+	if(!empty($owa)):
 		return $owa;
 	else:
 	
@@ -43,28 +43,10 @@ function owa_factory($params = array()) {
 		// Will use Gallery config unless there is a config file present.
 		// OWA uses this to setup it's own DB connection seperate from the one
 		// that Gallery uses.
-		
-		// Get Gallery's DB configuration
-		$db_config = $gallery->getConfig('storage.config');
-			$gallery->debug($db_config['type']);
-		// set OWA's database configuration values
-		if ($db_config['type'] === 'mysqli'):
-			$owa_config['db_type'] = 'mysql';
-		else:
-			$owa_config['db_type'] = $db_config['type'];
-		endif;
-		$gallery->debug($owa_config['db_type']);
-		$owa_config['db_name'] = $db_config['database'];
-		$owa_config['db_host'] = $db_config['hostname']; 
-		$owa_config['db_user'] = $db_config['username'];
-		$owa_config['db_password'] = $db_config['password'];
 			
 		//$gallery_base_url = $gallery->getConfig('galleryBaseUrl');
 		$urlgenerator = $gallery->getUrlGenerator();
 		$gallery_base_url = $urlgenerator->getCurrentUrlDir();
-		
-		// Public folder URL
-		define('OWA_PUBLIC_URL', $gallery_base_url.'modules/owa/public/');
 		
 		// Gallery specific config overrides array
 		
@@ -76,12 +58,12 @@ function owa_factory($params = array()) {
 		$owa_config['action_url'] = $gallery_base_url.'main.php?g2_view=owa.owaAction&owa_specialAction';
 		$owa_config['log_url'] = $gallery_base_url.'main.php?g2_view=owa.owaAction&owa_logAction=1';
 		$owa_config['link_template'] = '%s&%s';
-		$owa_config['authentication'] = 'gallery';
+		//$owa_config['authentication'] = 'gallery';
 		$owa_config['site_id'] = md5($gallery_base_url);
 		$owa_config['query_string_filters'] = 'g2_fromNavId';
 		$owa_config['is_embedded'] = 'true';
 		
-		$gallery->debug('hello from owa');
+		$gallery->debug('hello from gallery owa plugin');
 
 		// create owa instance
 		$owa = new owa_php($owa_config);
@@ -113,7 +95,7 @@ function owa_set_priviledges() {
 	
 	if ($user == true):
 	
-		$level = 0;
+		$level = 'everyone';
 		
 	else:
 		// check to see if the user is a site admin. important becasue we might not want
@@ -121,30 +103,29 @@ function owa_set_priviledges() {
 		list ($ret, $admin) = GalleryCoreApi::isUserInSiteAdminGroup();
 	
 		if ($admin = true):
-			$level = 10;
+			$level = 'admin';
 		else:
-			$level = 1; 
+			$level = 'viewer'; 
 		endif;
 		
 	endif;		
-				
-	$owa->params['caller']['gallery']['user_data'] = array(
+
+	// preemptively set the current user info and mark as authenticated so that
+	// downstream controllers don't have to authenticate
+	$cu =&owa_coreAPI::getCurrentUser();
 	
-					'user_level' 	=> $level,
-					'user_ID'		=> $u->id,
-					'user_login'	=> $u->userName,
-					'user_email'	=> $u->email,
-					'user_identity'	=> $u->fullname,
-					);
-					
-					$owa->params['u'] = $u->userName;
-					$owa->params['p'] = 'xxxxxxx';
-
-
+	// gallery gives all users a username of guest if there are not named users...
+	if ($u->userName != 'guest'):
+		$cu->setUserData('user_id', $u->userName);
+		$cu->setUserData('email_address', $u->email);
+		$cu->setUserData('real_name', $u->fullName);
+	endif;
+	
+	$cu->setRole($level);
+	$cu->setAuthStatus(true);
+		
 	return;
 }
-
-
 
 /**
  * OWA Gallery Module
@@ -165,7 +146,6 @@ class owaModule extends GalleryModule {
         $this->setDescription($gallery->i18n('Adds web analytics capabilities to Gallery.'));
         $this->setVersion('1.0.0');
         $this->setGroup('OWA', $gallery->i18n('Open Web Analytics'));
-        $this->setCallbacks('');
         $this->setRequiredCoreApi(array(7, 18));
         $this->setRequiredModuleApi(array(3, 4));
         $this->setCallbacks('getSiteAdminViews|getSystemLinks');
@@ -201,11 +181,7 @@ class owaModule extends GalleryModule {
 		
 				// Setup OWA request params
 				$params = array();
-				
-				// get user gallery's object to set request variables
-				//$params['user_name']= $u->userName;
-				//$params['user_email'] = $u->email;	
-    			
+					
 				// get information on current view	
 				list ($ret, $view) = GalleryView::loadView($viewName);
 				list ($ret, $page_type) = $view->getViewDescription();
@@ -309,8 +285,30 @@ class owaModule extends GalleryModule {
     	
 		return null;
     }
+    
+    /*
 
+    // register event handlers
+	function performFactoryRegistrations() {
+    	
+    	owa_coreAPI::debug("g2 factory regs");
+    	$ret = GalleryCoreApi::registerFactoryImplementation('GalleryEventListener', 'owaLoginEventHandler ', 'owa', __FILE__, 'owa', array('Gallery::Login'), null);
+    	
+    	$ret = GalleryCoreApi::registerFactoryImplementation('GalleryEventListener', 'owaLoginEventHandler ', 'owa', __FILE__, 'owa', array('Gallery::Logout'), null);
+    	
+		//$listener = new owaLoginEventHandler();
+		//$ret = GalleryCoreApi::registerEventListener('Gallery::Login', $listener, true);
+    	//$ret = GalleryCoreApi::registerEventListener('Gallery::Logout', $listener, true);
+	
+    	if ($ret) {
+	    	return $ret;
+		}
+	
+		return null;
+		
+ 	}
 
+*/
 }
 
 /**
@@ -331,10 +329,8 @@ class owaOptionsView extends GalleryView {
 		
 		$params = array();
 		
-		 if (empty($owa->params['do'])):
-         	if (empty($owa->params['view'])):		
-				$params['view'] = 'base.options';
-			endif;
+		 if (empty($owa->params['do'])):	
+				$params['do'] = 'base.optionsGeneral';
 		endif;
 		       
 		$page = $owa->handleRequest($params);
@@ -506,5 +502,22 @@ class owaCallbacks {
 	}
 }
 
+class owaLoginEventHandler {
+	
+	function owaLoginEventHandler() {
+		return;
+	}
+	
+	function __construct() {
+		return;
+	}
+	
+	function handleEvent($event) {
+		global $gallery;
+		owa_coreAPI::debug("hello from login event handler ".print_r($event));
+		return array(null, null);
+	}
+
+}
 
 ?>

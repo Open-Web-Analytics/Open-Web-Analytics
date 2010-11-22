@@ -52,6 +52,13 @@ class owa_module extends owa_base {
 	var $version;
 	
 	/**
+	 * Schema Version of Module
+	 *
+	 * @var string
+	 */
+	//var $schema_version = 1;
+	
+	/**
 	 * Name of author of module
 	 *
 	 * @var string
@@ -130,26 +137,88 @@ class owa_module extends owa_base {
 	 * 
 	 * @var array 
 	 */
-	var $entities;
+	var $entities = array();
+	
+	/**
+	 * Required Schema Version
+	 * 
+	 * @var array 
+	 */
+	var $required_schema_version;
+	
+	/**
+	 * Available Updates
+	 * 
+	 * @var array 
+	 */
+	var $updates = array();
+	
+	/**
+	 * Event Processors Map
+	 * 
+	 * @var array 
+	 */
+	var $event_processors = array();
+	
+	/**
+	 * Dimensions
+	 * 
+	 * @var array 
+	 */
+	var $dimensions = array();
+	
+	/**
+	 * Dimensions
+	 * 
+	 * @var array 
+	 */
+	var $denormalizedDimensions = array();
+	
+	/**
+	 * cli_commands
+	 * 
+	 * @var array 
+	 */
+	var $cli_commands = array();
+	
+	/**
+	 * API Methods
+	 * 
+	 * @var array 
+	 */
+	var $api_methods = array();
+	
+	/**
+	 * Update from CLI Required flag
+	 *
+	 * Used by controllers to see if an update error was becuase it needs
+	 * to be applied from the command line instead of via the browser.
+	 * 
+	 * @var boolean 
+	 */
+	var $update_from_cli_required;
 	
 	/**
 	 * Constructor
-	 *
-	 * @return owa_module
+	 * 
+	 *  
 	 */
-	function owa_module() {
+	function __construct() {
 		
-		$this->owa_base();
+		parent::__construct();
 		
-		// register event handlers unless OWA is operating in async handling mode
-		if ($this->config['async_db'] == false):
-			$this->_registerEventHandlers();
-		endif;
-		
+		$this->_registerEventHandlers();
+		$this->_registerEventProcessors();
 		$this->_registerEntities();
+	}
+	
+	/**
+	 * Method for registering event processors
+	 *
+	 */
+	function _registerEventProcessors() {
 		
-		return;
-		
+		return false;
 	}
 	
 	/**
@@ -174,25 +243,16 @@ class owa_module extends owa_base {
 		
 		return $this->nav_links;
 	}
-	
+		
 	/**
 	 * Abstract method for registering event handlers
+	 *
+	 * Must be defined by a concrete module class for any event handlers to be registered
 	 * 
 	 * @access public
 	 * @return array
 	 */
 	function _registerEventHandlers() {
-		
-		return;
-	}
-	
-	/**
-	 * Abstract method for registering administration panels
-	 * 
-	 * @access public
-	 * @return array
-	 */
-	function _registerAdminPanels() {
 		
 		return;
 	}
@@ -204,134 +264,280 @@ class owa_module extends owa_base {
 	 * @param string $handler_name
 	 * @return boolean
 	 */
+	function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
+		
+		if (!is_object($handler_name)) {
+			
+			//$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
+			$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');	
+		}
+				
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->attach($event_name, array($handler_name, $method));
+	}
+	
+	/**
+	 * Attaches an event handler to the event queue
+	 *
+	 * @param array $event_name
+	 * @param string $handler_name
+	 * @return boolean
+	 */
+	function registerFilter($filter_name, $handler_name, $method, $priority = 10, $dir = 'filters') {
+		
+		if (!is_object($handler_name)) {
+			
+			//$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
+			$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');	
+		}
+		
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->attachFilter($filter_name, array($handler_name, $method), $priority);
+	}
+
+	/**
+	 * Attaches an event handler to the event queue
+	 *
+	 * @param array $event_name
+	 * @param string $handler_name
+	 * @return boolean
+	 * @depricated
+	 */
 	function _addHandler($event_name, $handler_name) {
 		
-		$handler_dir = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'handlers';
+		return $this->registerEventHandler($event_name, $handler_name); 
+				
+	}
+	
+	/**
+	 * Abstract method for registering administration/settings page
+	 * 
+	 * @access public
+	 * @return array
+	 */
+	function _registerAdminPanels() {
 		
-		$class = 'owa_'.$handler_name;
-		
-		// Require class file if class does not already exist
-		if(!class_exists('owa_'.$handler_name)):	
-			require_once($handler_dir.DIRECTORY_SEPARATOR.$handler_name.'.php');
-		endif;
-		
-		$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-		$handler->_priority = PEAR_LOG_INFO;
-		
-		$eq = &eventQueue::get_instance();
-			
-		// Register event names for this handler
-		if(is_array($event_name)):
-			
-			foreach ($event_name as $k => $name) {	
-				$handler->_event_type[] = $name;	
-			}
-			
-		else:
-			$handler->_event_type[] = $event_name;
-			
-		endif;
-			
-		$eq->attach($handler);
-		
-		return ;
-		
+		return;
 	}
 	
 	/**
 	 * Registers an admin panel with this module 
-	 *
+	 * 
 	 */
-	function addAdminPanel($panel) {
-		
+	function registerSettingsPanel($panel) {
+	
 		$this->admin_panels[] = $panel;
 		
 		return true;
 	}
 	
 	/**
-	 * Registers Navigation Link with a particular View
+	 * Registers an admin panel with this module 
+	 * @depricated
+	 */
+	function addAdminPanel($panel) {
+		
+		return $this->registerSettingsPanel($panel);
+	}
+		
+	/**
+	 * Registers Group Link with a particular View
 	 * 
 	 */
-	function addNavigationLink($link) {
+	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'viewer') {
 		
-		$this->nav_links[] = $link;
-		
+		$link = array('ref' => $ref, 
+					'anchortext' => $anchortext, 
+					'order' => $order, 
+					'priviledge' => $priviledge);
+					
+		if (!empty($subgroup)):
+			$this->nav_links[$group][$subgroup]['subgroup'][] = $link;
+		else:
+			$this->nav_links[$group][$anchortext] = $link;			
+		endif;
+
 		return;
 	}
 	
 	/**
-	 * Installation method for this module
-	 * 
-	 * Concrete classes must be placed in the install sub directory and 
-	 * use the following naming convention: owa_install_{module name}_{database type}.
+	 * Abstract method for registering a module's entities
 	 *
+	 * This method must be defined in concrete module classes in order for entities to be registered.
 	 */
-	function install() {
+	function _registerEntities() {
 		
-		$obj = $this->installerFactory();
-		//$this->e->notice(print_r($obj, true));
-
-		$this->e->notice('starting install');
-		$tables_to_install = $obj->checkForSchema();
-		
-		$table_errors = '';
-		
-		if (!empty($tables_to_install)):
-		
-			foreach ($tables_to_install as $table) {
-			
-				$status = $obj->create($table);
-				
-				if ($status == true):
-					$this->e->notice(sprintf("Created %s table.", $table));
-				else:
-					$this->e->err(sprintf("Creation of %s table failed.", $table));
-					$table_errors = 'error';
-				endif;
-				
-			}
-			
-		endif;
-		
-		if ($table_errors != 'error'):
-			
-			// save schema version to configuration
-			$this->c->setSetting($this->name, 'schema_version', $obj->version);
-			// activate module and persist configuration changes 
-			$this->activate();
-	
-			$this->e->notice(sprintf("Schema version %s installation complete.", $obj->version));
-			return true;
-		else:
-			return false;
-		endif;
-				
+		return false;
 	}
 	
 	
 	/**
-	 * Install Class Factory 
-	 * 
-	 * @return object Concrete install class for this module
+	 * Registers an Entity
+	 *
+	 * Can take an array of entities or just a single entity as a string.
+	 * Will add an enetiy to the module's entity array. Required for entity installation, etc.
+	 *
+	 * @param $entity_name array or string 
 	 */
-	function installerFactory($params = array()) {
-		
-		$obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$this->name.'/install/', 'owa_', 'install_'.$this->name.'_'.OWA_DB_TYPE, $params);
-		
-		$obj->module = $this->name;
-		
-		return $obj;
-		
+	function registerEntity($entity_name) {
+	
+		if (is_array($entity_name)) {
+			$this->entities = array_merge($this->entities, $entity_name);
+		} else {
+			$this->entities[] = $entity_name;
+		}
 	}
 	
+	/**
+	 * Registers Entity
+	 *
+	 * Depreicated see registerEntity
+	 *
+	 * @depricated 
+	 */ 
+	function _addEntity($entity_name) {
+		
+		return $this->registerEntity($entity_name);
+	}
+	
+	
+	function getEntities() {
+		
+		return $this->entities;
+	}
+	
+	/**
+	 * Installation method
+	 * 
+	 * Creates database tables and sets schema version
+	 * 
+	 */
+	function install() {
+		
+		$this->e->notice('Starting installation of module: '.$this->name);
+
+		$errors = '';
+
+		// Install schema
+		if (!empty($this->entities)):
+		
+			foreach ($this->entities as $k => $v) {
+			
+				$entity = owa_coreAPI::entityFactory($this->name.'.'.$v);
+				//$this->e->debug("about to  execute createtable");
+				$status = $entity->createTable();
+				
+				if ($status != true):
+					$this->e->notice("Entity Installation Failed.");
+					$errors = true;
+					//return false;
+				endif;
+				
+			}
+		
+		endif;
+		
+		// activate module and persist configuration changes 
+		if ($errors != true):
+			
+			// run post install hook
+			$ret = $this->postInstall();
+			
+			if ($ret == true):
+				$this->e->notice("Post install proceadure was a success.");;
+			else:
+				$this->e->notice("Post install proceadure failed.");
+			endif;
+			
+			// save schema version to configuration
+			$this->c->persistSetting($this->name, 'schema_version', $this->getRequiredSchemaVersion());
+			//activate the module and save the configuration
+			$this->activate();
+			$this->e->notice("Installation complete.");
+			return true;
+			
+		else:
+			$this->e->notice("Installation failed.");
+			return false;
+		endif;
+
+	}
+	
+	/**
+	 * Post installation hook
+	 *
+	 */
+	function postInstall() {
+	
+		return true;
+	}
+	
+	function isCliUpdateModeRequired() {
+	
+		return $this->update_from_cli_required;
+	}
+		
 	/**
 	 * Checks for and applies schema upgrades for the module
 	 *
 	 */
-	function upgrade() {
+	function update() {
 		
-		return;
+		// list files in a directory
+		$files = owa_lib::listDir(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'updates', false);
+		//print_r($files);
+		
+		$current_schema_version = $this->c->get($this->name, 'schema_version');
+		
+		// extract sequence
+		foreach ($files as $k => $v) {
+			// the use of %d casts the sequence number as an int which is critical for maintaining the 
+			// order of the keys in the array that we are going ot create that holds the update objs
+			//$n = sscanf($v['name'], '%d_%s', $seq, $classname);
+			$seq = substr($v['name'], 0, -4);
+			
+			settype($seq, "integer");
+			
+			if ($seq > $current_schema_version):
+			
+				if ($seq <= $this->required_schema_version):
+					$this->updates[$seq] = owa_coreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
+					// if the cli update mode is required and we are not running via cli then return an error.
+					owa_coreAPI::debug('cli update mode required: '.$this->updates[$seq]->isCliModeRequired());
+					if ($this->updates[$seq]->isCliModeRequired() === true && !defined('OWA_CLI')) {
+						//set flag in module
+						$this->update_from_cli_required = true;
+						owa_coreAPI::notice("Aborting update $seq. This update must be applied using the command line interface.");
+						return false;
+					}
+					// set schema version from sequence number in file name. This ensures that only one update
+					// class can ever be in use for a particular schema version
+					$this->updates[$seq]->schema_version = $seq;
+				endif;
+			endif;	
+			
+		}
+		
+		// sort the array
+		ksort($this->updates, SORT_NUMERIC);
+		
+		//print_r(array_keys($this->updates));
+		
+		foreach ($this->updates as $k => $obj) {
+			
+			$this->e->notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
+			
+			$ret = $obj->apply();
+			
+			if ($ret == true):
+				$this->e->notice("Update Suceeded");
+			else:
+				$this->e->notice("Update Failed");
+				return false;
+			endif;
+		}
+		
+		return true;
 	}
 	
 	/**
@@ -349,12 +555,13 @@ class owa_module extends owa_base {
 	 */
 	function activate() {
 		
-		if ($this->name != 'base'):
+		//if ($this->name != 'base'):
 		
-			$this->c->setSetting($this->name, 'is_active', true);
+			$this->c->persistSetting($this->name, 'is_active', true);
 			$this->c->save();
+			$this->e->notice("Module $this->name activated");
 			
-		endif;
+		//endif;
 		
 		return;
 	}
@@ -368,24 +575,147 @@ class owa_module extends owa_base {
 		
 		if ($this->name != 'base'):
 			
-			$this->c->setSetting($this->name, 'is_active', false);
+			$this->c->persistSetting($this->name, 'is_active', false);
 			$this->c->save();
 			
 		endif;
 		
 		return;
 	}
+		
+	/**
+	 * Checks to se if the schema is up to date
+	 *
+	 */
+	function isSchemaCurrent() {
+		
+		$current_schema = $this->getSchemaVersion();
+		$required_schema = $this->getRequiredSchemaVersion(); 
+		
+		owa_coreAPI::debug("$this->name Schema version is $current_schema");
+		owa_coreAPI::debug("$this->name Required Schema version is $required_schema");
+		
+		if ($current_schema >= $required_schema):
+			return true;
+		else:
+			return false;
+		endif;
+	}
+	
+	function getSchemaVersion() {
+		
+		$current_schema = owa_coreAPI::getSetting($this->name, 'schema_version');
+		
+		if (empty($current_schema)) {
+			$current_schema = 1;
+			
+			// if this is the base module then we need to let filters know to install the base schema
+			if ($this->name === 'base') {
+			//	$s = owa_coreAPI::serviceSingleton();
+			//	$s->setInstallRequired();
+			}
+		}
+		
+		return $current_schema;
+	}
+	
+	function getRequiredSchemaVersion() {
+		
+		return $this->required_schema_version;
+	}
 	
 	/**
-	 * Registers a set of entities for the module
-	 * 
+	 * Registers updates
+	 *
 	 */
-	function _registerEntities() {
+	function _registerUpdates() {
 		
+		return;
+	
+	}
+	
+	/**
+	 * Adds an update class into the update array.
+	 * This should be used to within the _registerUpdates method or else
+	 * it will not get called.
+	 *
+	 */
+	function _addUpdate($sequence, $class) {
+		
+		$this->updates[$sequence] = $class;
+		
+		return true;
+	}
+	
+	/**
+	 * Adds an event processor class to the processor array. This is used to determin
+	 * which class to use to process a particular event
+	 */
+	function addEventProcessor($event_type, $processor) {
+		$this->event_processors[$event_type] = $processor;
 		return;
 	}
 	
+	function registerMetric($metric_name, $class_name, $params = array()) {
+		
+		$map = array('class' => $class_name, 'params' => $params);
+		$this->metrics[$metric_name][] = $map;
+	}
 	
+	/**
+	 * Register a dimension
+	 *
+	 * registers a dimension for use by metrics in producing results sets.
+	 * 
+	 * @param	$dim_name string
+	 * @param	$entity	string the entiy housing the dimension. uses module.name format
+	 * @param	$column	string the name of the column that represents the dimension
+	 * @param 	$family	string the name of the group or family that this dimension belongs to. optional.
+	 * @param	$description	string	a short description of this metric, used in various interfaces.
+	 * @param	$label	string the lable of the dimension
+	 * @param 	$foreign_key_name the name of the foreign key column that should 
+	 *          be used to relate the metric entity to the dimension's entity. 
+	 *          If one is not specfied, metrics will use any valid foreign key column they can find.
+	 *          Specifying this is important when the same column in a table is used by
+	 *          two different dimensions but the meaning of the column differs based on the value of the foreign key.
+	 *          a good example is the page_title column in the documents table. It is used by three dimensions:
+	 *          pageTitle, entryPageTitle, and existPageTitle. 
+	 * @param	$denormalized	boolean	flag marks the dimension as being denormalized into a fact table
+	 *          as opposed to being housed in a related table.
+	 */
+	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false, $data_type = 'string') {
+	
+		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type, 'denormalized' => $denormalized);
+	
+		if ($denormalized) {
+			$this->denormalizedDimensions[$dim_name][$entity] = $dim;
+		} else {
+			$this->dimensions[$dim_name] = $dim;
+		}
+	}
+	
+	function registerCliCommand($command, $class) {
+		
+		$this->cli_commands[$command] = $class;
+	}
+
+	function registerApiMethod($api_method_name, $user_function, $argument_names, $file = '', $required_capability = '') {
+			
+		$map = array('callback' => $user_function, 'args' => $argument_names, 'file' => $file);
+		
+		if ($required_capability) {
+			$map['required_capability'] = $required_capability;
+		}
+		
+		$this->api_methods[$api_method_name] = $map;
+	}
+	
+	function registerImplementation($type, $name, $class_name, $file) {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$class_info = array($class_name, $file);
+		$s->setMapValue($type, $name, $class_info);
+	}
 }
 
 ?>

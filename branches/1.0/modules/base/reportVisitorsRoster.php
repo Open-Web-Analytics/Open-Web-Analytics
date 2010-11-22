@@ -30,43 +30,44 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @package     owa
  * @version		$Revision$	      
  * @since		owa 1.0.0
+ * @depricated
+ * @todo		remove
  */
 
 class owa_reportVisitorsRosterController extends owa_reportController {
+		
+	function __construct($params) {
 	
-	function owa_reportVisitorsRosterController($params) {
-		
-		$this->owa_reportController($params);
 		$this->priviledge_level = 'viewer';
-		
-		return;
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-		$data = array();
-		$data['params'] = $this->params;
 		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+		$db = owa_coreAPI::dbSingleton();
 		
-		$data['visitors'] = $api->getMetric('base.visitorsList',array(
-			
-			
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'visitor.first_session_year' => $this->params['year2'],
-										'visitor.first_session_month' => $this->params['month2'],
-										'visitor.first_session_day' => $this->params['day2']
-										),
-			'limit' 			=> $this->params['limit']
-		));
+		$db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
+		$db->selectFrom('owa_session', 'session');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
+	
+		$db->where('site_id', $this->getParam('site_id'));
 		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitorsRoster';
+		// make new timeperiod of a day
+		$period = owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
+		$start = $period->getStartDate();
+		$end = $period->getEndDate();
+		//print_r($period);
+		// set new period so lables show up right.
+		$db->where('first_session_timestamp', 
+				   array('start' => $start->getTimestamp(), 'end' => $end->getTimestamp()), 
+				   'BETWEEN');
 		
-		return $data;
-		
+		$ret = $db->getAllRows();
+	
+		$this->set('visitors', $ret);	
+		$this->setSubview('base.reportVisitorsRoster');
+		$this->setTitle('New Visitors from', $period->getStartDate()->label);		
 	}
 	
 }
@@ -84,33 +85,13 @@ class owa_reportVisitorsRosterController extends owa_reportController {
  */
 
 class owa_reportVisitorsRosterView extends owa_view {
-	
-	function owa_reportVisitorsRosterView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
+	function render($data) {
 		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Assign data to templates
-		
-		//print_r($data['visitors']);
-		
-		$this->body->set_template('report_visitors_roster.tpl');
-	
+		$this->body->set_template('report_visitors_roster.tpl');	
 		$this->body->set('headline', 'Visitors');
-			
 		$this->body->set('visitors', $data['visitors']);
-		
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>

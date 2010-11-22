@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}
+
 /**
  * OWA Document Event handlers
  * 
@@ -29,21 +33,7 @@
  */
 
 class owa_documentHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_documentHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
-    }
-	
+    	
     /**
      * Notify Event Handler
      *
@@ -52,10 +42,28 @@ class owa_documentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
-
-    	return $this->handleEvent('base.logDocument');
-    	
+		$d = owa_coreAPI::entityFactory('base.document');
+		$id = owa_lib::setStringGuid($event->get('page_url'));
+		$d->load($id);
+		
+		if ( ! $d->get('id') ) {
+			
+			$d->setProperties($event->getProperties());
+			$d->set('url', $event->get('page_url'));
+			$d->set('uri', $event->get('page_uri'));
+			$d->set('id', $id); 
+			$ret = $d->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
+		} else {
+			owa_coreAPI::debug('Not logging Document, already exists');
+			return OWA_EHS_EVENT_HANDLED;
+		}   	
     }
     
 }

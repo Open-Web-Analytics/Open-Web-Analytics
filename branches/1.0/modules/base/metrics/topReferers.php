@@ -32,25 +32,18 @@ class owa_topReferers extends owa_metric {
 	
 	function owa_topReferers($params = null) {
 		
-		$this->params = $params;
-		
-		$this->owa_metric();
-		
-		return;
+		return owa_topReferers::__construct($params);
 		
 	}
 	
-	function generate() {
+	function __construct($params = '') {
+	
+		return parent::__construct($params);
+	}
+	
+	function calculate() {
 		
-		$s = owa_coreAPI::entityFactory('base.session');
-		
-		$r = owa_coreAPI::entityFactory('base.referer');
-		
-		$this->params['related_objs'] = array('referer_id' => $r);
-		
-		$this->setTimePeriod($this->params['period']);
-		
-		$this->params['select'] = "count(referer.id) as count,
+		$this->db->selectColumn("count(referer.id) as count,
 									sum(session.num_pageviews) as page_views,
 									url,
 									page_title,
@@ -58,15 +51,33 @@ class owa_topReferers extends owa_metric {
 									query_terms,
 									snippet,
 									refering_anchortext,
-									is_searchengine";
-								
-		$this->params['constraints']['is_searchengine'] = array('operator' => '!=', 'value' => '1');
-		$this->params['groupby'] = array('referer.url');
+									is_searchengine");
+									
+		$this->db->selectFrom('owa_session', 'session');	
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');		
+		$this->db->groupBy('referer.url');		
+		$this->db->orderBy('count', $this->getOrder());	
+		$this->db->where('is_searchengine', 1, '!=');
 		
-		$this->params['orderby'] = array('count');
+		$ret = $this->db->getAllRows();
+
+		return $ret;
+
+	}
 	
-		return $s->query($this->params);
+	function paginationCount() {
+	
+		$this->db->selectColumn("count(distinct referer.id) as count");
+									
+		$this->db->selectFrom('owa_session', 'session');	
+		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');			
+		$this->db->where('is_searchengine', 1, '!=');
 		
+		$ret = $this->db->getOneRow();
+
+		return $ret['count'];
+
+	
 	}
 	
 	

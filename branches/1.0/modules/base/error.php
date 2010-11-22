@@ -17,7 +17,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
@@ -37,30 +36,25 @@ class owa_errorView extends owa_view {
 	
 	function owa_errorView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
+		return owa_errorView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		// Set Page title
 		$this->t->set('page_title', 'Error');
-		
-		// Set Page headline
-		$this->body->set('error_msg', $data['error_msg']);
-		
-		if($this->is_subview == true):
 			
+		if($this->is_subview === true):
 			$this->t->set_template('wrapper_blank.tpl');
 		endif;
 		
-		
 		// load body template
 		$this->body->set_template('generic_error.tpl');
-		
-		
 		
 		return;
 	}

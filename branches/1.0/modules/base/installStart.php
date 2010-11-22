@@ -16,8 +16,18 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
+require_once(OWA_BASE_CLASS_DIR.'installController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
+
+
+class owa_installStartController extends owa_installController {
+	
+	function action() {
+	
+		$this->setView('base.install');
+		$this->setSubview('base.installStart');
+	}
+}
 
 /**
  * Installation View
@@ -30,51 +40,16 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
 class owa_installStartView extends owa_view {
 	
-	function owa_installStartView() {
+	function render() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
-	
-	function construct() {
-		
-		
-		// check for schema
-		$api = &owa_coreAPI::singleton();
-		$installer = $api->modules['base']->installerFactory();
-		
-		if ($installer->checkForSchema() == false):
-			// load body template
-			$this->body->set_template('install_schema_detected.tpl');
-		else:
-			// load body template
-			$this->body->set_template('install_start.tpl');
-		endif;
-		
+		$this->body->set_template('install_start.tpl');
 		//page title
-		$this->t->set('page_title', 'Installation');
-		
-		// load wrapper template
-		
-		
-		
+		$this->t->set('page_title', 'OWA Installation Start');
 		// fetch admin links from all modules
-		//
-		
 		$this->body->set('headline', 'Get Started...');
-		
-		//$this->body->set('', '');
-		
-		return;
 	}
-	
-	
 }
-
 
 ?>

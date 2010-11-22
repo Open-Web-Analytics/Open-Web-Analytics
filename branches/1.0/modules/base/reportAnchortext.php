@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -34,91 +32,26 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportAnchortextController extends owa_reportController {
 	
-	function owa_reportAnchortextController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
 	function action() {
 		
-		$data = array();
-		
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['top_anchors'] = $api->getMetric('base.topReferingAnchors', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCountsTraffic', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'referer.is_searchengine' => array('operator' => '!=', 'value' => true),
-										'session.source' => array('operator' => '=', 'value' => ''),
-										'session.referer_id' => array('operator' => '!=', 'value' => '0'))
-										
-		
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportAnchortext';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
-		
+		$this->setView('base.report');
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Referral Link Text');
+		$this->set('metrics', 'visits,pageViews,bounces');
+		$this->set('dimensions', 'referralLinkText');
+		$this->set('sort', 'visits-');
+		$this->set('resultsPerPage', 30);
+		$this->set('constraints', 'medium==referral');
+		$this->set('dimensionLink', array(
+				'linkColumn' => 'referralLinkText', 
+				'template' => array(
+						'do' => 'base.reportReferralLinkTextDetail', 
+						'referralLinkText' => '%s'), 
+				'valueColumns' => 'referralLinkText'));
+				
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
 	}
 }
-
-
-/**
- *  Anchortext Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportAnchortextView extends owa_view {
-	
-	function owa_reportAnchortextView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'view';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Assign Data to templates
-		
-		$this->body->set('headline', 'Inbound Link Text');
-		
-		$this->body->set('anchors', $data['top_anchors']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-	
-		
-		$this->body->set_template('report_anchortext.tpl');
-		
-		return;
-	}
-	
-	
-}
-
 
 ?>

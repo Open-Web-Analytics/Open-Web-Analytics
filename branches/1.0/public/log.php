@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -39,6 +39,6 @@ $owa = new owa_php($config);
 $owa->e->debug('Logging Event from Url...');
 
 // run controller or view and echo page content
-echo $owa->logEventFromUrl($_GET);
+echo $owa->logEventFromUrl();
 
 ?>

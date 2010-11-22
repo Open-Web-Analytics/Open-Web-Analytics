@@ -16,6 +16,11 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}
+
+
 /**
  * Request Event Handler
  * 
@@ -29,23 +34,6 @@
  */
 class owa_requestHandlers extends owa_observer {
 
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * @access 	public
-	 * @return 	Log_observer_request_logger
-	 */
-    function owa_requestHandlers() {
-	
-        // Call the base class constructor.
-        
-        $this->owa_observer();
-		
-		return;
-    }
-
     /**
      * Notify Handler
      *
@@ -54,22 +42,79 @@ class owa_requestHandlers extends owa_observer {
      */
     function notify($event) {
     
-    	$this->m = $event['message'];
-    	$this->handleEvent('base.logPageRequest');
+    	$r = owa_coreAPI::entityFactory('base.request');
     	
-    	/*switch ($event['event_type']) {
-	    	case "base.page_request":
-	    		$this->handleEvent('base.logPageRequest');
-	    	break;
-	    	case "base.first_page_request":
-	    		$this->handleEvent('base.logPageRequest');
-	    	break;
+    	$r->load( $event->get('guid') );
     	
-    	}*/
-    
-		return;
+    	if ( ! $r->wasPersisted() ) {
+    	
+			$r->setProperties($event->getProperties());
+		
+			// Set Primary Key
+			$r->set('id', $event->get('guid'));
+			
+			// Make ua id
+			$r->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+		
+			// Make OS id
+			$r->set('os_id', owa_lib::setStringGuid($event->get('os')));
+		
+			// Make document id	
+			$r->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
+			
+			// Make prior document id	
+			$r->set('prior_document_id', owa_lib::setStringGuid($event->get('prior_page')));
+			
+			// Generate Referer id
+			$r->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
+			
+			// Generate Host id
+			$r->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
+			
+			// Generate Host id
+			$r->set('num_prior_sessions', $event->get('num_prior_sessions'));
+			
+			$r->set('language', $event->get('language'));
+			
+			if ( ! $event->get( 'country' ) ) {
+			
+				$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+				owa_coreAPI::debug( 'geolocation: ' .print_r( $location, true ) );
+				$event->set( 'country', $location->getCountry() );
+				$event->set( 'city', $location->getCity() );
+				$event->set( 'latitude', $location->getLatitude() );
+				$event->set( 'longitude', $location->getLongitude() );
+				$event->set( 'country_code', $location->getCountryCode() );
+				$event->set( 'state', $location->getState() );
+				$location_id = $location->generateId();
+				
+			} else {
+				$s = owa_coreAPI::serviceSingleton();
+				$location_id = $s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
+			}
+			
+			if ($location_id) {
+				$event->set( 'location_id', $location_id );
+				$r->set( 'location_id',  $event->get( 'location_id' ) );
+			}
+			
+			$result = $r->create();
+			
+			if ($result == true) {
+			
+				$eq = owa_coreAPI::getEventDispatch();
+				$nevent = $eq->makeEvent($event->getEventType().'_logged');
+				$nevent->setProperties($event->getProperties());
+				$eq->notify($nevent);
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+		} else {
+			owa_coreAPI::debug('Not persisting. Request already exists.');
+			return OWA_EHS_EVENT_HANDLED;
+		}
 	}
-	
 }
 
 ?>

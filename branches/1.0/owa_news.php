@@ -56,7 +56,7 @@ class owa_news extends lastRSS {
 		$this->config = &$c->fetch('base');
 		$this->e = &owa_coreAPI::errorSingleton();
 		$this->crawler = new owa_http;
-		$this->crawler->read_timeout = 10;
+		$this->crawler->read_timeout = 20;
 		$this->cache_dir = '';
 		$this->date_format = "F j, Y";
 		$this->CDATA = 'content';
@@ -74,8 +74,8 @@ class owa_news extends lastRSS {
 	function Parse ($rss_url) {
 		// Open and load RSS file
 		
-		$this->crawler->fetch($rss_url);
-		$rss_content = $this->crawler->results;
+		$this->crawler->getRequest($rss_url);
+		$rss_content = $this->crawler->response;
 		
 		if (!empty($rss_content)) {
 			

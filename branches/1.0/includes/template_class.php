@@ -41,7 +41,7 @@ class Template {
 	 *
 	 * @var array
 	 */
-    var $vars;
+    var $vars = array();
     
     /**
      * Template file
@@ -78,7 +78,15 @@ class Template {
 	 * @access public
 	 */
     function set($name, $value) {
-        $this->vars[$name] = is_object($value) ? $value->fetch() : $value;
+    
+    	if (is_object($value)) {
+    		$class  = 'Template';
+    		if ($value instanceof $this) {
+    			$value = $value->fetch();
+    		}
+    	} 
+    
+        $this->vars[$name] =  $value;
         return;
     }
 
@@ -96,7 +104,7 @@ class Template {
 			$file = $this->template_dir.$file;
 		endif;
 
-        @extract($this->vars);          // Extract the vars to local namespace
+        extract($this->vars);          // Extract the vars to local namespace
         ob_start();                    // Start output buffering
         include($file);                // Include the file
         $contents = ob_get_contents(); // Get the contents of the buffer

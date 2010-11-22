@@ -1,4 +1,4 @@
-<?
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -15,8 +15,6 @@
 //
 // $Id$
 //
-require_once(OWA_BASE_DIR.'/owa_base.php');
-require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 /**
  * User Authentication Object
@@ -44,14 +42,7 @@ class owa_auth extends owa_base {
 	 * @var array
 	 */
 	var $roles;
-	
-	/**
-	 * Database Access Object
-	 *
-	 * @var unknown_type
-	 */
-	var $db;
-	
+		
 	var $status_msg;
 	
 	/**
@@ -59,7 +50,7 @@ class owa_auth extends owa_base {
 	 *
 	 * @var array
 	 */
-	var $credentials;
+	var $credentials = array();
 	
 	/**
 	 * Status of Authentication
@@ -79,143 +70,124 @@ class owa_auth extends owa_base {
 	var $check_for_credentials = false;
 	
 	/**
-	 * Abstract class Constructor
+	 * Auth class Singleton
+	 *
+	 * @return object
+	 */
+	public static function &get_instance($plugin = '') {
+		
+		static $auth;
+		
+		if (!$auth) {
+			
+			$auth = new owa_auth();
+			
+		}
+		
+		return $auth;
+	}
+	
+	
+	/**
+	 * Class Constructor
 	 *
 	 * @return owa_auth
 	 */
-	function owa_auth() {
+	function __construct() {
 		
-		$this->owa_base();
-		$this->setRoles();
-		$this->eq = &eventQueue::get_instance();
-		$this->params = &owa_requestContainer::getInstance();
-		
-		//sets credentials based on whatever is passed in on params
-		$this->_setCredentials($this->params['u'], $this->params['p'], $this->params['pk']);
-		
-		return;
-		
+		parent::__construct();
+		$this->eq = owa_coreAPI::getEventDispatch();	
 	}
-	
-	/**
-	 * Sets the permission levels of each role.
-	 *
-	 */
-	function setRoles() {
 		
-		$this->roles = array('admin' 	=> array('level' => 10, 'label' => 'Administrator'),
-							 'viewer' 	=> array('level' => 2, 'label' => 'Report Viewer'),
-							 'guest' 	=> array('level' => 1, 'label' => 'Guest')
-		
-						);
-						
-		return;
-		
-	}
-	
-	/**
-	 * Looks up the priviledge level for a particular role
-	 *
-	 * @param unknown_type $role
-	 * @return unknown
-	 */
-	function getLevel($role) {
-		
-		return $this->roles[$role]['level'];
-	}
-	
 	/**
 	 * Used by controllers to check if the user exists and if they are priviledged.
 	 *
 	 * @param string $necessary_role
 	 */
-	function authenticateUser($necessary_role = '') {
+	function authenticateUser() {
 		
-		$data = array();
+		// check existing auth status first in case someone else took care of this already.
+		if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
+			$ret = true;
+		} elseif (owa_coreAPI::getRequestParam('apiKey')) {
+			// auth user by api key
+			$ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
+		} elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
+			// auth user by temporary passkey. used in forgot password situations
+			$ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
+		} elseif (owa_coreAPI::getRequestParam('user_id') && owa_coreAPI::getRequestParam('password')) {
+			// auth user by login form input
+			$ret = $this->authByInput(owa_coreAPI::getRequestParam('user_id'), owa_coreAPI::getRequestParam('password'));
+		} elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
+			// auth user by cookies
+			$ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
+		} else {
+			$ret = false;
+			owa_coreAPI::debug("Could not find any credentials to authenticate with.");
+		}
 		
-		// If the view or controller did not specific a priviledge level then assume 
-		// that none was required.
-		if (empty($necessary_role)):	
-			$data['auth_status'] = true;	
-			return $data;
-		endif;
+		// filter results for modules can add their own auth logic.
+		$ret = $this->eq->filter('auth_status', $ret);
 		
-		// If auth level is guest then return true, no need to check user.
-		if ($necessary_role == 'guest'):
-			$data['auth_status'] = true;
-			return $data;
-		endif;
-		
-		// carve out for url passkey authentication
-		if(!empty($this->credentials['passkey'])):
-			$status = $this->authenticateUserByUrlPasskey($this->credentials['user_name'], $this->credentials['passkey']);
+		return array('auth_status' => $ret);		
 			
-			if ($status == true):
-				$data['auth_status'] = true;
-				return $data;
-			else:
-				$data = $this->_setNotAuthenticatedView();
-				$data['auth_status'] = false;
-				return $data;	
-			endif;
-		endif;
-			
-		// if the user has no credentials then redirect them to the login page.
-		//if($this->check_for_credentails == true):
-			if ((empty($this->credentials['user_id'])) || (empty($this->credentials['password']))):
-				// show login page
-				$data = $this->_setNotAuthenticatedView();
-				$data['auth_status'] = false;
-				return $data;	
-			endif;
-		//endif;
+	}
 	
-		// lookup user if not already done.	
-		if ($this->_is_user == false):
-			// check to see if they are a user.
-			$this->isUser();
-		endif;
-				
-		if ($this->_is_user == true):
-			// check to see if their account is priviledged enough.
-			$priviledged = $this->isPriviledged($necessary_role);
-				if ($priviledged == true):
-					$data['auth_status'] = true;
-				else:
-					// show not priviledged error page
-					$data = $this->_setNotPriviledgedView();
-					$data['auth_status'] = false;
-				endif;
-			// if they are not a user then redirect to login error page		
-		else:
-			// Show not a user page
-			$data = $this->_setNotUserView();
-			$data['auth_status'] = false;
-		endif;
+	function authByApiKey($key) {
 		
-		$this->e->debug('Auth Status: '.$data['auth_status']);
+		// fetch user object from the db
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->load($key, 'api_key');
 		
-		return $data;
+		if ($this->u->get('user_id')) {
+			// get current user
+			$cu = &owa_coreAPI::getCurrentUser();				
+			// set as new current user in service layer
+			$cu->loadNewUserByObject($this->u);
+			$cu->setAuthStatus(true);
+			$this->_is_user = true;	
+			return true;
+		} else {
+			return false;
+		}
+		
 		
 	}
 	
-	/**
-	 * Creates the concrete auth class
-	 *
-	 * @return object
-	 */
-	function &get_instance() {
-
-		$c = &owa_coreAPI::configSingleton();
-		$config = $c->fetch('base');
+	function authByCookies($user_id, $password) {
 	
-		$auth = &owa_lib::singleton($config['plugin_dir'].'/auth/', 
-									'owa_auth_',
-									$config['authentication']);
+		// set credentials
+		$this->credentials['user_id'] = $user_id;
+		$this->credentials['password'] = $password;
 		
+		// lookup user if not already done.	
+		if ($this->_is_user == false) {
 		
+			// check to see if the current user has already been authenticated by something upstream
+			$cu = &owa_coreAPI::getCurrentUser();
+			if (!$cu->isAuthenticated()) {
+				// check to see if they are a user.
+				return $this->isUser();
+			}	
+		} else {
+			return true;
+		}
+	}
 	
-		return $auth;
+	function authByInput($user_id, $password) {
+		
+		// set credentials
+		$this->credentials['user_id'] = $user_id;
+		// must encrypt password to see if it matches whats in the db
+		$this->credentials['password'] = $this->encryptPassword($password);
+		//owa_coreAPI::debug(print_r($this->credentials, true));
+		$ret = $this->isUser();
+	
+		if ($ret === true) {
+			$this->saveCredentials();
+		}
+		
+		return $ret;
 	}
 	
 	/**
@@ -233,7 +205,7 @@ class owa_auth extends owa_base {
 		if (!empty($id)):
 			return true;
 		else:
-			$this->showResetPasswordErrorPage;
+			return false;
 		endif;
 		
 	}
@@ -244,45 +216,23 @@ class owa_auth extends owa_base {
 	 * @param unknown_type $key
 	 * @return unknown
 	 */
-	function authenticateUserByUrlPasskey($user_name, $passkey) {
+	function authenticateUserByUrlPasskey($user_id, $passkey) {
+	
+		// set credentials
+		$this->credentials['user_id'] = $user_id;
+		$this->credentials['passkey'] = $passkey;
 		
+		// fetch user obj
 		$this->getUser();
 		
-		$key =$this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
+		// generate a new passkey from its components in the db
+		$key = $this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
 		
+		// see if it matches the key on the url
 		if ($key == $passkey):
 			return true;
 		else:
 			return false;
-		endif;
-		
-	}
-	
-	/**
-	 * abstract method for Checking to see if the user credentials match a real user object in the DB
-	 *
-	 * @return boolean
-	 */
-	function isUser() {
-		
-		return false;
-	}
-	
-	/**
-	 * Checks to see if the user has appropriate priviledges
-	 *
-	 * @param string $necessary_role
-	 * @return boolean
-	 */
-	function isPriviledged($necessary_role) {
-		
-		// compare priviledge levels
-		if ($this->_priviledge_level >= $this->getLevel($necessary_role)):
-			// authenticated
-			return true;;
-		else:
-			// not high enough priviledge level
-			return false;	
 		endif;
 		
 	}
@@ -333,66 +283,25 @@ class owa_auth extends owa_base {
 		return $this->eq->log(array('user_id' => $user_id), 'user.set_initial_passkey');
 		
 	}
-	
-	function _setCredentials($user_id = '', $password = '', $passkey = '') {
-		
-		$this->credentials['user_id'] = $user_id;
-		$this->credentials['password'] = $password;
-		$this->credentials['passkey'] = $passkey;
-		
-		return;
-	}
-	
-	/**
-	 * Used to auth a new browser that has no credentials set
-	 *
-	 * @param string $user_id
-	 * @param string $password
-	 * @return boolean
-	 */
-	function authenticateNewBrowser($user_id, $password) {
-		
-		$this->e->debug("Login attempt from ". $user_id);
-		
-		$this->_setCredentials($user_id, $this->encryptPassword($password));
-		
-		$is_user = $this->isUser();
-		
-		$data = array();
-		
-		if ($is_user == true):
-			$this->e->debug('setting user credential cookies');
-			$this->saveCredentials();
-			$data['auth_status'] = true;
-			
-		else:
-			$data['auth_status'] = false;
-		endif;
-		
-		return $data;
-	}
-	
+
 	/**
 	 * Saves login credentails to persistant browser cookies
-	 *
+	 * TODO: refactor to use state facility
 	 */
 	function saveCredentials() {
 		
-		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*30, '/', $this->config['cookie_domain']);
-		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*365*30, '/', $this->config['cookie_domain']);
-		
-		return;
+		$this->e->debug('saving user credentials to cookies');
+		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*10, '/', $this->config['cookie_domain']);
+		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*30, '/', $this->config['cookie_domain']);
 	}
 	
 	/**
 	 * Removes credentials
-	 *
 	 * @return boolean
 	 */
 	function deleteCredentials() {
 		
-		return setcookie($this->config['ns'].'p', '', time()-3600*24*365*30, '/', $this->config['cookie_domain']);
-
+		return owa_coreAPI::clearState('p');
 	}
 	
 	/**
@@ -403,7 +312,46 @@ class owa_auth extends owa_base {
 	 */
 	function encryptPassword($password) {
 		
-		return md5(strtolower($password).strlen($password));
+		return owa_lib::encryptPassword($password);
+	}
+	
+	function getUser() {
+		
+		// fetch user object from the db
+		$this->u = owa_coreAPI::entityFactory('base.user');
+		$this->u->getByColumn('user_id', $this->credentials['user_id']);
+	}
+		
+	/**
+	 * Checks to see if the user credentials match a real user object in the DB
+	 *
+	 * @return boolean
+	 */
+	function isUser() {
+		
+		// get current user
+		$cu = &owa_coreAPI::getCurrentUser();
+				
+		// fetches user object from DB
+		$this->getUser();
+		if ($this->credentials['user_id'] === $this->u->get('user_id')):
+			
+			if ($this->credentials['password'] === $this->u->get('password')):
+				$this->_is_user = true;	
+				
+				// set as new current user in service layer
+				$cu->loadNewUserByObject($this->u);
+				$cu->setAuthStatus(true);
+				return true;
+			else:
+				$this->_is_user = false;
+				return false;
+			endif;
+		else:
+			$this->_is_user = false;
+			return false;
+		endif;
+		
 	}
 	
 }

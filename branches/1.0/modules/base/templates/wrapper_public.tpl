@@ -3,39 +3,34 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-		<title>Open Web Analytics - <?=$page_title;?></title>
+		<title><?php echo $page_title;?> - Open Web Analytics</title>
 	</head>
 	
 	<body>
 	
-	<?php $this->includeTemplate('css.tpl');?>
-	
-	<DIV id="header">
-		<table width="100%">
-			<TR>
-				<TD class="owa_logo"><img src="<?=$this->makeImageLink('owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"></TD>
-				<TD>
-					<span class="inline_h1">Version: <?=OWA_VERSION;?></span>		
-				</TD>
+		<?php include($this->setTemplate('css.tpl'));?>
+		
+		<div class="owa">
+			<DIV id="header" style="text-align:center;">
+				<table width="100%">
+					<TR>
+						<TD class="">
+							<img src="<?php echo $this->makeImageLink('base/i/owa_logo_150w.jpg'); ?>" alt="Open Web Analytics"><BR>	
+						</TD>
+					</TR>
+				</table>
+			</div>
+			<BR>
+			<?php include($this->setTemplate('msgs.tpl'));?>
+			<BR>
+			<?php if (isset($content)) { echo $content; }?>
+			<?php echo $body;?>
 			
-				<TD align="right">
-					 <i>Open Source Web Analytics Framework.</i> 	
-				</TD>
-			</TR>
-		</table>
-	</div>
-	
-	
-	
-	<div class="wrap">
+			<BR><BR><BR><BR>
+			<div style="text-align:center">	
+				<span class="inline_h4"><a href="http://www.openwebanalytics.com">Web Analytics</a> powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a> - v: <?php echo OWA_VERSION;?></span>
+			</div>
 		
-		
-		<?php $this->includeTemplate('msgs.tpl');?>
-	<BR>
-		<?=$content;?>
-		<?=$body;?>
-
-	</div>
-	
+		</div>
 	</body>
 </html>

@@ -38,100 +38,60 @@ require_once(OWA_BASE_DIR.'/eventQueue.php');
 class owa_usersChangePasswordController extends owa_controller {
 	
 	function owa_usersChangePasswordController($params) {
-		$this->owa_controller($params);
-		return;
 		
+		return owa_usersChangePasswordController::__construct($params);
+		
+	}
+	
+	function __construct($params) {
+		
+		parent::__construct($params);
+		
+		// Add validations to the run
+		$v1 = owa_coreAPI::validationFactory('stringMatch');
+		$v1->setValues(array($this->getParam('password'), $this->getParam('password2')));
+		$v1->setErrorMessage("Your passwords must match.");
+		$this->setValidation('password_match', $v1);
+		
+		$v2 = owa_coreAPI::validationFactory('stringLength');
+		$v2->setValues($this->getParam('password'));
+		$v2->setConfig('operator', '>=');
+		$v2->setConfig('length', 6);
+		$v2->setErrorMessage("Your password must be at least 6 characters in length.");
+		$this->setValidation('password_length', $v2);
+
+		return;
 	}
 	
 	function action() {
 		
-	
-		//check that password and password 2 match
-		$validation_error = $this->validatePassword();
-		
-		if (empty($validation_error)):
-				$auth = &owa_auth::get_instance();
-				$status = $auth->authenticateUserTempPasskey($this->params['k']);
-					
-				// log to event queue
-				if ($status == true):
-					$eq = & eventQueue::get_instance();
-					$new_password = array('key' => $this->params['k'], 'password' => $auth->encryptPassword($this->params['password']), 'ip' => $_SERVER['REMOTE_ADDR']);
-					$eq->log($new_password, 'base.set_password');
-					$auth->deleteCredentials();	
-					$data['view'] = 'base.login';
-					$data['view_method'] = 'delegate';
-					$data['status_msg'] = $this->getMsg(3006);
-					
-				else:
-					print 'could not find this users temp passkey in the db';
-				endif;
-		else:
-			$data['error_msg'] = $validation_error;
-			$data['view'] = 'base.usersChangePassword';
-			$data['view_method'] = 'delegate';
-
-		endif;	
+		$auth = &owa_auth::get_instance();
+		$status = $auth->authenticateUserTempPasskey($this->params['k']);
+			
+		// log to event queue
+		if ($status === true) {
+			$eq = & eventQueue::get_instance();
+			$new_password = array('key' => $this->params['k'], 'password' => $auth->encryptPassword($this->params['password']), 'ip' => $_SERVER['REMOTE_ADDR']);
+			$eq->log($new_password, 'base.set_password');
+			$auth->deleteCredentials();	
+			$this->setRedirectAction('base.loginForm');
+			$this->set('status_code', 3006);
+		} else {
+			$this->setRedirectAction('base.loginForm');
+			$this->set('error_code', 2011); // can't find key in the db
+		}
 				
-		return $data;
-	}
-	
-	function validatePassword() {
-	
-		//check that passwords match
-		if ($this->params['password'] != $this->params['password2']):
-			$error_msg = $this->getMsg(3007);
-			
-		// check that passwords are a min length
-		elseif (strlen($this->params['password']) < $this->config['password_length']):
-			$error_msg = $this->getMsg(3008, $this->config['password_length']);
-			
-		endif;
-		
-		if (!empty($error_msg)):
-			return $error_msg;
-		else:
-			return;
-		endif;
-	}
-	
-	
-}
-
-/**
- * Change Password View
- * 
- * Presents a simple form to the user asking them to enter a new password.
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_usersChangePasswordView extends owa_view {
-	
-	function owa_usersChangePasswordView() {
-		
-		$this->owa_view();
 		return;
 	}
 	
-	function construct($data) {
-		
-		$this->body->set_template('users_change_password.tpl');
-		$this->body->set('headline', $this->getMsg(3005));
-		$this->body->set('key', $data['k']);
-		
+	function errorAction() {
+		//print 'error action';
+		$this->setView('base.usersPasswordEntry');
+		$this->set('k', $this->getParam('k'));
+		//$this->set('password',  $this->getParam('password'));
+		//$this->set('password2',  $this->getParam('password2'));
 		return;
-		
 	}
-	
-	
 }
-
 
 ?>

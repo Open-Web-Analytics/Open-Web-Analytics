@@ -34,24 +34,26 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_usersSetPasswordController extends owa_controller {
 	
-	function owa_usersSetPasswordController($params) {
-		$this->owa_controller($params);
-		
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
+		$event = $this->getParam('event');
+		
 		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('temp_passkey', $this->params['key']);
+		$u->getByColumn('temp_passkey', $event->get('key'));
 		$u->set('temp_passkey', '');
-		$u->set('password', $this->params['password']);
+		$u->set('password', $event->get('password'));
 		$status = $u->update();
 		
 		if ($status == true):
 	
 			$data['view'] = 'base.usersSetPassword';
 			$data['view_method'] = 'email';
-			$data['ip'] = $this->params['ip'];
+			$data['ip'] = $event->get('ip');
 			$data['subject'] = 'Password Change Complete';
 			$data['email_address'] = $u->get('email_address');
 			
@@ -76,24 +78,17 @@ class owa_usersSetPasswordController extends owa_controller {
 
 class owa_usersSetPasswordView extends owa_view {
 	
-	function owa_usersSetPasswordView() {
+	function __construct() {
 		
-		$this->owa_view();
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('users_set_password_email.tpl');
 		$this->body->set('ip', $data['ip']);
-			
-		return;
-		
 	}
-	
-	
 }
-
 
 ?>

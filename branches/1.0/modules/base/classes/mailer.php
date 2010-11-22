@@ -30,60 +30,46 @@ require_once(OWA_PHPMAILER_DIR.'class.phpmailer.php');
  * @since		owa 1.0.0
  */
 
-class owa_mailer extends PHPMailer {
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
-	 * Error Logger
-	 *
-	 * @var Object
-	 */
-	var $e;
+class owa_mailer extends owa_base {
+		
+	var $mailer;
 	
 	/**
 	 * Constructor
 	 *
 	 * @return owa_mailer
 	 */
-	function owa_mailer() {
-		
-		$c = &owa_coreAPI::configSingleton();
-		$this->config = $c->fetch('base');
-		
-		$this->e = &owa_coreApi::errorSingleton();
+	function __construct() {
+	
+		parent::__construct();
+		$this->mailer = new PHPMailer();
 		
 		if (!empty($this->config['mailer-from'])):
-			$this->From = $this->config['mailer-from'];
+			$this->mailer->From = $this->config['mailer-from'];
 		endif;
 		
 		if (!empty($this->config['mailer-fromName'])):
-			$this->FromName = $this->config['mailer-fromName'];
+			$this->mailer->FromName = $this->config['mailer-fromName'];
 		endif;
 		
 		if (!empty($this->config['mailer-host'])):
-			$this->Host = $this->config['mailer-host'];
+			$this->mailer->Host = $this->config['mailer-host'];
 		endif;
 		
 		if (!empty($this->config['mailer-port'])):
-			$this->Port = $this->config['mailer-port'];
+			$this->mailer->Port = $this->config['mailer-port'];
 		endif;
 		
 		if (!empty($this->config['mailer-smtpAuth'])):
-			$this->SMTPAuth = $this->config['mailer-smtpAuth'];
+			$this->mailer->SMTPAuth = $this->config['mailer-smtpAuth'];
 		endif;
 		
 		if (!empty($this->config['mailer-username'])):
-			$this->Username = $this->config['mailer-username'];
+			$this->mailer->Username = $this->config['mailer-username'];
 		endif;
 		
 		if (!empty($this->config['mailer-password'])):
-			$this->Password = $this->config['mailer-password'];
+			$this->mailer->Password = $this->config['mailer-password'];
 		endif;
 		
 		return;
@@ -92,12 +78,12 @@ class owa_mailer extends PHPMailer {
 	
 	function sendMail() {
 	
-		if(!$this->Send()):
+		if(!$this->mailer->Send()):
 			
-			return $this->e->debug(sprintf("Mailer Failure. Was not able to send to %s with subject of '%s'. Error Msgs: '%s'", $this->to, $this->Subject, $this->ErrorInfo));
+			return $this->e->debug(sprintf("Mailer Failure. Was not able to send to %s with subject of '%s'. Error Msgs: '%s'", $this->mailer->to, $this->mailer->Subject, $this->mailer->ErrorInfo));
 			
 		else:
-			return $this->e->debug(sprintf("Mail sent to %s with the subject of '%s'.", $this->to, $this->Subject));
+			return $this->e->debug(sprintf("Mail sent to %s with the subject of '%s'.", $this->mailer->to[0], $this->mailer->Subject));
 		endif;
 		
 		

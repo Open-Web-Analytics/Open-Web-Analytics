@@ -3,19 +3,26 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-		<title>Open Web Analytics - <?=$page_title;?></title>
-		<?php $this->includeTemplate('css.tpl');?>
+		<title>Open Web Analytics - <?php echo $page_title;?></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<?php include($this->getTemplatePath('base','head.tpl'));?>
+		<?php include($this->getTemplatePath('base','css.tpl'));?>
 	</head>
 	
 	<body>
-	
-		<?php $this->includeTemplate('header.tpl');?>
+		<style>
+			html {background-color: #F2F2F2;}
+		</style>
 		
-		<?php $this->includeTemplate('msgs.tpl');?>
+		<div class="owa">
+		<?php include($this->getTemplatePath('base', 'header.tpl'));?>
+		
+		<?php include($this->getTemplatePath('base', 'msgs.tpl'));?>
 			
-		<?=$body;?>
-	
+		<?php echo $body;?>
+		
+		<?php include($this->getTemplatePath('base', 'footer.php'));?>
+		</div>
 	</body>
 	
 </html>

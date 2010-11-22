@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -33,52 +32,26 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  */
 
 class owa_reportVisitorsController extends owa_reportController {
-	
-	function owa_reportVisitorsController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		//print_r($this->config);
-		
-		return;
-	}
-	
+
 	function action() {
-		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['top_visitors_data'] = $api->getMetric('base.topVisitors', array(
+
+		$rs = owa_coreAPI::executeApiCommand(array(
 			
-			'limit'				=> '10',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		));
-	
-		$data['browser_types'] = $api->getMetric('base.sessionBrowserTypes', array(
-				
-			'constraints'	=> array('site_id'		=> $this->params['site_id'])
-			
-		));
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'resultsPerPage'	=> 10 ) );
 		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
+		$this->set('latest_visits', $rs);
 		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitors';
-		
-		return $data;
-		
+		// view stuff
+		$this->setView('base.report');
+		$this->setSubview('base.reportVisitors');
+		$this->setTitle('Visitors');
 	}
-	
 }
 
 /**
@@ -94,32 +67,12 @@ class owa_reportVisitorsController extends owa_reportController {
  */
 
 class owa_reportVisitorsView extends owa_view {
-	
-	function owa_reportVisitorsView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Assign data to templates
-		
+			
+	function render($data) {
+			
 		$this->body->set_template('report_visitors.tpl');
-	
-		$this->body->set('headline', 'Visitors');
-			$this->body->set('top_visitors', $data['top_visitors_data']);
-		$this->body->set('browser_types', $data['browser_types']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		//$this->body->set('sub_nav', $data['sub_nav']);
-		
-		return;
+		$this->body->set('visits', $this->get('latest_visits'));		
 	}
-	
-	
 }
-
 
 ?>

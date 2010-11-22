@@ -1,13 +1,21 @@
-<markers>
-<? if ($visits):?>    
-<? foreach ($visits as $visit):?>  
-	<? if (!empty($visit['host_latitude']) && !empty($visit['host_longitude'])):?>
-	<marker lat="<?=$visit['host_latitude'];?>" lng="<?=$visit['host_longitude'];?>" label="<?=$visit['session_month'];?>/<?=$visit['session_day'];?> at <?=$visit['session_hour'];?>:<?=$visit['session_minute'];?> - <?=$visit['host_host'];?>">
-		<infowindow>
-			<![CDATA[<? include('report_visit_summary_balloon.tpl');?>]]>
-		</infowindow>
-	</marker>
-	<?endif;?>
-<? endforeach;?>
-<? endif; ?>
-</markers> 
+<kml xmlns="http://earth.google.com/kml/2.1">
+    <Document>
+        <name>OWA: Visits to <?php echo $site_name;?></name>
+            <description>Site visits for <?php echo $period_label;?><?php echo $date_label;?></description>  
+<?php if ($visits):?>
+<?php foreach ($visits as $visit):?>
+<?php if (!empty($visit['host_longitude'])):?>
+            <Placemark id="<?php echo $visit['session_id'];?>">
+            <name><?php echo $visit['host_host'];?> - <?php echo $visit['session_month'];?>/<?php echo $visit['session_day'];?> at <?php echo $visit['session_hour'];?>:<?php echo $visit['session_minute'];?></name>
+            <description><![CDATA[<? include('report_visit_summary_balloon.tpl');?>]]></description>
+            <Point>
+                <coordinates><?php echo trim($visit['host_longitude']);?>,<?php echo trim($visit['host_latitude']);?>,5000</coordinates>
+            </Point>
+            <styleUrl>#defaultStyle</styleUrl>
+        </Placemark>
+    <?php endif; ?>
+        <?php endforeach;?>
+    <?php endif; ?>
+
+    </Document>
+</kml>

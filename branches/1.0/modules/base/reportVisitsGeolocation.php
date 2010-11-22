@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
@@ -34,37 +33,33 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportVisitsGeolocationController extends owa_reportController {
 	
-	function owa_reportVisitsGeolocationController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
 	function action() {
-
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
+	
+		$site_id = $this->getParam('siteId');
 		
-		$data = array();
-		$data['params'] = $this->params;
+		if ($site_id) {
+			//get site labels
+			$s = owa_coreAPI::entityFactory('base.site');
+			$s->getByColumn('site_id', $site_id);
+			$this->set('site_name', $s->get('name'));
+			$this->set('site_description', $s->get('description'));
+		}
+	
+		$rs = owa_coreAPI::executeApiCommand(array(
+				'do'				=> 'getLatestVisits',
+				'siteId'			=> $this->getParam('siteId'),
+				'page'				=> $this->getParam('page'),
+				'startDate'			=> $this->getParam('startDate'),
+				'endDate'			=> $this->getParam('endDate'),
+				'period'			=> $this->getParam('period'),
+				'resultsPerPage'	=> 200 ) );
 		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitsGeolocation';
-		$data['user_name'] = $this->params['u'];
-		
-		//perfrom authentication
-		$auth = &owa_auth::get_instance();
-		
-		$data['passkey'] = $auth->generateUrlPasskey($this->params['u'], $this->params['p']);
-		
-		return $data;
-
-		
+		$this->set('latest_visits', $rs);
+		$this->set('site_id', $site_id);
+		$this->setTitle('Visitor Geo-location');
+		$this->setView('base.report');
+		$this->setSubview('base.reportVisitsGeolocation');
 	}
-
 }
 
 
@@ -81,29 +76,16 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
  */
 
 class owa_reportVisitsGeolocationView extends owa_view {
-	
-	function owa_reportVisitsGeolocationView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
-	
-	function construct($data) {
+	function render($data) {
 		
 		// Assign data to templates
-		
 		$this->body->set_template('report_geolocation.tpl');
-		$this->body->set('headline', 'Visitor Geolocation Report');
-		$this->body->set('user_name', $data['user_name']);
-		$this->body->set('passkey', $data['passkey']);
-		
-		return;
+		$this->body->set('latest_visits', $this->get('latest_visits'));
+		$this->body->set('site_id', $this->get('site_id') );
+		$this->setjs('jmaps', 'base/js/includes/jquery/jquery.jmap-r72.js');
+		$this->setjs('owa.map', 'base/js/owa.map.js');
 	}
-	
-	
 }
-
 
 ?>

@@ -17,11 +17,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
-
 
 /**
  * Notify New Session Controller
@@ -37,9 +34,10 @@ require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_coreAPI.php');
 
 class owa_notifyNewSessionController extends owa_controller {
 	
-	function owa_notifyNewSesionController($params) {
-		$this->owa_controller($params);
+	function __construct($params) {
+		
 		$this->priviledge_level = 'guest';
+		return parent::__construct($params);
 	}
 	
 	function action() {
@@ -81,25 +79,18 @@ class owa_notifyNewSessionController extends owa_controller {
 
 class owa_notifyNewSessionView extends owa_view {
 	
-	function owa_notifyNewSessionView() {
-		
-		$this->owa_view();
-		return;
+	function __construct() {
+	
+		return parent::__construct();
 	}
 	
-	function construct($data) {
+	function render($data) {
 		
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('new_session_email.tpl');
 		$this->body->set('site', $data['site']);
 		$this->body->set('session', $data['session']);
-			
-		return;
-		
 	}
-	
-	
 }
-
 
 ?>

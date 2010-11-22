@@ -1,28 +1,37 @@
 <fieldset>
 	<legend>Javascript</legend>
+	<div style="padding:10px;">	
+		<P>To track page views using Javascript, cut and paste this tracking tag into the HTML of your web pages. Learn more about how to use OWA's  <a href="<?php echo $this->makeWikiLink('Javascript_Invocation');?>">Javascript tracking API</a> to track your web site and pages.</P>
+	
+		<textarea cols="110" rows="18">
 				
-		<P>Cut and paste this tracking tag into the HTML of your web pages. For more information on to invoke OWA from within your PHP script, visit the <a href="<?=$this->makeWikiLink('Javascript_Invocation');?>">this page on the OWA Wiki</a>.</P>
 
-<textarea cols="75" rows="10">
-		
-<? include('js_log_tag.tpl');?>
-		
-</textarea>
-			
+<?php include('js_log_tag.tpl');?>
+				
+		</textarea>
+	</div>		
 </fieldset>
 			
 <fieldset>
 	<legend>PHP</legend>
-	<P>Invoke OWA from within your PHP script, add the following code to your script/application. For more information on to invoke OWA from within your PHP, visit the <a href="<?=$this->makeWikiLink('PHP_Invocation');?>">this page on the OWA Wiki</a>.</P>
+	<div style="padding:10px;">
+	
+		<P>To track page views using PHP, cut and paste the following code to your PHP script/application. Learn more about how to use OWA's <a href="<?php echo $this->makeWikiLink('PHP_Invocation');?>">PHP Tracking API</a> to track your web site and pages.</P>
 			
-	<div class="code">
-		<pre><code>
-		require_once('<?=OWA_BASE_CLASSES_DIR;?>owa_php.php');
+		<textarea cols="75" rows="12">
 		
-		$config['site_id'] = '<?=$site_id;?>';
-		$owa = new owa_php($config);
-		$owa->log();
-		</code></pre>
+require_once('<?php echo OWA_BASE_CLASSES_DIR;?>owa_php.php');
+		
+$owa = new owa_php();
+// Set the site id you want to track
+$owa->setSiteId('<?php echo $site_id;?>');
+// Uncomment the next line to set your page title
+//$owa->setPageTitle('somepagetitle');
+// Set other page properties
+//$owa->setProperty('foo', 'bar');
+$owa->trackPageView();
+		</textarea>
+	
 	</div>
 </fieldset>
 			

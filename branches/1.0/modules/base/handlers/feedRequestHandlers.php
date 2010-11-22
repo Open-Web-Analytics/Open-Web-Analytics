@@ -16,6 +16,10 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_BASE_DIR.'owa_observer.php');
+}	
+
 /**
  * Feed Request handlers
  * 
@@ -29,21 +33,7 @@
  */
 
 class owa_feedRequestHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_feedRequestHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
-    }
-	
+    	
     /**
      * Notify Event Handler
      *
@@ -52,12 +42,48 @@ class owa_feedRequestHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
-
-		return $this->handleEvent('base.logFeedRequest');
-    	
+    	// Make entity
+		$f = owa_coreAPI::entityFactory('base.feed_request');
+		
+		$f->load( $event->get('guid') );
+		
+		if ( ! $f->wasPersisted() ) {
+			$f->setProperties($event->getProperties());
+			
+			// Set Primary Key
+			$f->set( 'id', $event->get('guid') );
+			
+			// Make ua id
+			$f->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+			
+			// Make OS id
+			$f->set('os_id', owa_lib::setStringGuid($event->get('os')));
+		
+			// Make document id	
+			$f->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
+			
+			// Generate Host id
+			$f->set('host_id', owa_lib::setStringGuid($event->get('host')));
+			
+			$f->set('subscription_id', $event->get( 'feed_subscription_id' ) );
+			// Persist to database
+			$ret = $f->create();
+			
+			if ( $ret ) {
+				
+				$eq = owa_coreAPI::getEventDispatch();
+				$nevent = $eq->makeEvent($event->getEventType().'_persisted');
+				$nevent->setProperties($event->getProperties());
+				$eq->notify($nevent);
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+		} else {
+			owa_coreAPI::debug('Not persisting. Feed request already exists.');
+			return OWA_EHS_EVENT_HANDLED;	
+		}    	
     }
-    
 }
 
 ?>

@@ -16,9 +16,8 @@
 // $Id$
 //
 
-require_once 'owa_env.php';
-require_once(OWA_PEARLOG_DIR . '/Log.php');
-require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
+//require_once 'owa_env.php';
+
 //require_once(OWA_BASE_CLASS_DIR.'settings.php');
 
 /**
@@ -42,7 +41,7 @@ class owa_lib {
 	 * @param array $array
 	 * @return string 
 	 */
-	function implode_assoc($inner_glue, $outer_glue, $array) {
+	public static function implode_assoc($inner_glue, $outer_glue, $array) {
 	   $output = array();
 	   foreach( $array as $key => $item ) {
 			  $output[] = $key . $inner_glue . $item;
@@ -61,30 +60,34 @@ class owa_lib {
 	 * @return array $data_arrays
 	 * @access public
 	 */
-	function deconstruct_assoc($a_array) {
+	public static function deconstruct_assoc($a_array) {
+		if (!empty($a_array)):
 		
-		$data_arrays = array();
-	
-		if(!empty($a_array[1])) :
+			$data_arrays = array();
 		
-			foreach ($a_array as $key => $value) {
-				foreach ($value as $k => $v) {
-					$data_arrays[$k][] = $v;
+			if(!empty($a_array[1])) :
 			
+				foreach ($a_array as $key => $value) {
+					foreach ($value as $k => $v) {
+						$data_arrays[$k][] = $v;
+				
+					}
 				}
-			}
+			else:
+				//print_r($a_array[0]);
+				foreach ($a_array[0] as $key => $value) {
+					$data_arrays[$key][] = $value;
+				}
+			endif;
+			
+			return $data_arrays;
 		else:
-			//print_r($a_array[0]);
-			foreach ($a_array[0] as $key => $value) {
-				$data_arrays[$key][] = $value;
-			}
+			return array();
 		endif;
-		
-		return $data_arrays;
 	}
 	
 	
-	function decon_assoc($a_array) {
+	public static function decon_assoc($a_array) {
 		
 		$data_arrays = array();
 	
@@ -98,13 +101,74 @@ class owa_lib {
 		return $data_arrays;
 	}
 
+	// php 4 compatible function
+	public static function array_intersect_key() {
+	
+        $arrs = func_get_args();
+        $result = array_shift($arrs);
+        foreach ($arrs as $array) {
+            foreach ($result as $key => $v) {
+                if (!array_key_exists($key, $array)) {
+                    unset($result[$key]);
+                }
+            }
+        }
+        return $result;
+     }
+	
+	// php4 compatible function
+	public static function array_walk_recursive(&$input, $funcname, $userdata = "")
+    {
+        if (!is_callable($funcname))
+        {
+            return false;
+        }
+        
+        if (!is_array($input))
+        {
+            return false;
+        }
+        
+        if (is_array($funcname))
+        {
+            $funcname = $funcname[0].'::'.$funcname[1];
+        }
+        
+        
+        foreach ($input AS $key => $value)
+        {
+            if (is_array($input[$key]))
+            {
+                array_walk_recursive($input[$key], $funcname, $userdata);
+            }
+            else
+            {
+                $saved_value = $value;
+                if (!empty($userdata))
+                {
+                    $funcname($value, $key, $userdata);
+                }
+                else
+                {
+                    $funcname($value, $key);
+                }
+                
+                if ($value != $saved_value)
+                {
+                    $input[$key] = $value;
+                }
+            }
+        }
+        return true;
+    }
+
 	/**
 	 * Array of Current Time
 	 *
 	 * @return array
 	 * @access public
 	 */
-	function time_now() {
+	public static function time_now() {
 		
 		$timestamp = time();
 		
@@ -128,9 +192,10 @@ class owa_lib {
 	 *
 	 * @param string $msg
 	 * @access public
+	 * @depricated
 	 */
 	function errorHandler($msg) {
-		
+		require_once(OWA_PEARLOG_DIR . '/Log.php');
 		$conf = array('mode' => 0755, 'timeFormat' => '%X %x');
 		$error_logger = &Log::singleton('file', $this->config['error_log_file'], 'ident', $conf);
 		$this->error_logger->_lineFormat = '[%3$s]';
@@ -143,7 +208,7 @@ class owa_lib {
 	 *
 	 * @return array
 	 */
-	function months() {
+	public static function months() {
 		
 		return array(
 					
@@ -163,13 +228,13 @@ class owa_lib {
 		
 	}
 	
-	function days() {
+	public static function days() {
 		
 		return array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
 					15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
 	}
 	
-	function years() {
+	public static function years() {
 		
 		static $years;
 		
@@ -200,7 +265,7 @@ class owa_lib {
 	 * @param int $month
 	 * @return string
 	 */
-	function get_month_label($month) {
+	public static function get_month_label($month) {
 		
 		static $months;
 		
@@ -217,11 +282,11 @@ class owa_lib {
 	
 	/**
 	 * Sets the suffix for Days used in Date labels
-	 *
+	 * @depricated
 	 * @param string $day
 	 * @return string
 	 */
-	function setDaySuffix($day) {
+	public static function setDaySuffix($day) {
 		
 		switch ($day) {
 			
@@ -244,11 +309,11 @@ class owa_lib {
 	
 	/**
 	 * Generates the label for a date
-	 *
+	 * @depricated
 	 * @param array $params
 	 * @return string
 	 */
-	function getDatelabel($params) {
+	public static function getDatelabel($params) {
 		
 		switch ($params['period']) {
 		
@@ -293,10 +358,10 @@ class owa_lib {
 	
 	/**
 	 * Array of Reporting Periods
-	 *
+	 * @depricated
 	 * @return array
 	 */
-	function reporting_periods() {
+	public static function reporting_periods() {
 		
 		return array(
 					
@@ -316,20 +381,17 @@ class owa_lib {
 					'same_day_last_week' => array('label' => 'Same Day last Week'),
 					'same_week_last_year' => array('label' => 'Same Week Last Year'),
 					'same_month_last_year' => array('label' => 'Same Month Last Year'),
-					//'day' => array('label' => 'Day'),
-					//'month' => array('label' => 'Month'),
-					//'year' => array('label' => 'Year'),
-					//'date_range' => array('label' => 'Date Range')
+					'date_range' => array('label' => 'Date Range')
 		);
 		
 	}
 	
 	/**
 	 * Array of Date specific Reporting Periods
-	 *
+	 * @depricated
 	 * @return array
 	 */
-	function date_reporting_periods() {
+	public static function date_reporting_periods() {
 		
 		return array(
 					
@@ -347,7 +409,7 @@ class owa_lib {
 	 * @param unknown_type $period
 	 * @return unknown
 	 */
-	function get_period_label($period) {
+	public static function get_period_label($period) {
 	
 		$periods = owa_lib::reporting_periods();
 		
@@ -359,11 +421,11 @@ class owa_lib {
 	 *
 	 * @return string
 	 */
-	function get_current_url() {
+	public static function get_current_url() {
 		
 		$url = 'http';	
 		
-		if($_SERVER['HTTPS']=='on'):
+		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'):
 			$url.= 's';
 		endif;
 		
@@ -378,12 +440,38 @@ class owa_lib {
 		return $url;
 	}
 	
-	function inputFilter($array) {
+	public static function inputFilter($array) {
 		
-		$f = new InputFilter;
+		static $f;
+		
+		if (empty($f)) {
+			require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
+			$f = new InputFilter;
+		}
 		
 		return $f->process($array);
 		
+	}
+	
+	public static function fileInclusionFilter($str) {
+		
+		$str = str_replace("http://", "", $str);
+		$str = str_replace("/", "", $str);
+		$str = str_replace("\\", "", $str);
+		$str = str_replace("../", "", $str);
+		$str = str_replace("..", "", $str);
+		$str = str_replace("?", "", $str);
+		$str = str_replace("%00", "", $str);
+		
+		if (strpos($str, '%00')) {
+			$str = '';
+		}
+		
+		if (strpos($str, null)) {
+			$str = '';
+		}
+		
+		return $str;
 	}
 	
 	/**
@@ -395,7 +483,7 @@ class owa_lib {
 	 * @param array $conf
 	 * @return object
 	 */
-	function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
+	public static function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
 		
         //$class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
         $class_dir = $class_dir.DIRECTORY_SEPARATOR;
@@ -407,15 +495,19 @@ class owa_lib {
          * a failure as fatal.  The caller may have already included their own
          * version of the named class.
          */
-        if (!class_exists($class)):
-            include_once $classfile;
-        endif;
+        if (!class_exists($class)) {
+        	
+        	if (file_exists($classfile)) {
+        		require_once ($classfile);
+        	}
+            
+        }
 
         /* If the class exists, return a new instance of it. */
-        if (class_exists($class)):
+        if (class_exists($class)) {
             $obj = &new $class($conf);
             return $obj;
-        endif;
+        }
 
         $null = null;
         return $null;
@@ -430,14 +522,14 @@ class owa_lib {
      * @param array $conf
      * @return object
      */
-    function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
+    public static function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
     	
         static $instance;
         
-        if (!isset($instance)):
+        if (!isset($instance)) {
         	// below missing a reference becasue the static vriable can not handle a reference 
-        	$instance = owa_lib::factory($class_dir, $class_prefix, $class_name, $conf = array());
-        endif;
+        	$instance = owa_lib::factory($class_dir, $class_prefix, $class_name, $conf);
+        }
         
         return $instance;
     }
@@ -447,7 +539,7 @@ class owa_lib {
      *
      * @param string $url
      */
-    function redirectBrowser($url) {
+    public static function redirectBrowser($url) {
     	
     	//ob_clean();
 	    // 302 redirect to URL 
@@ -456,7 +548,7 @@ class owa_lib {
 		return;
     }
 	
-	function makeLinkQueryString($query_params) {
+	public static function makeLinkQueryString($query_params) {
 		
 		$new_query_params = array();
 		
@@ -491,40 +583,71 @@ class owa_lib {
 		
 	}
 	
-	function getRequestParams() {
+	public static function getRequestParams() {
 		
-		// Clean Input arrays
-		$params = owa_lib::inputFilter($_REQUEST);
+		$params = array();
 		
-		return owa_lib::stripParams($params);
+		if (!empty($_POST)) {
+			$params = $_POST;
+		} else {
+			$params = $_GET;
+		}
+		
+		if (!empty($_COOKIE)) {
+			
+			$params = array_merge($params, $_COOKIE);
+		}
+				
+		return $params;
 	}
 	
-	function stripParams($params) {
+	public static function rekeyArray($array, $new_keys) {
+	
+		$new_keys = $new_keys;
+		$new_array = array();
+		foreach ($array as $k => $v) {
 		
+			if (array_key_exists($k, $new_keys)) {
+				$k = $new_keys[$k];
+			}
+			
+			$new_array[$k] = $v;
+		}
 		
-		$c = &owa_coreAPI::configSingleton();
-		$config = $c->fetch('base');
+		return $new_array;
+	}
+	
+	
+	public static function stripParams($params, $ns = '') {
 		
 		$striped_params = array();
 		
-		$len = strlen($config['ns']);
+		if (!empty($ns)) {
 		
-		foreach ($params as $n => $v) {
+			$len = strlen($ns);
 			
-			// if namespace is present in param
-			if (strstr($n, $config['ns'])):
-				// strip the namespace value
-				$striped_n = substr($n, $len);  
-				//add to striped array
-				$striped_params[$striped_n] = $v;
+			foreach ($params as $n => $v) {
+				
+				// if namespace is present in param
+				if (strstr($n, $ns)) {
+					// strip the namespace value
+					$striped_n = substr($n, $len);  
+					//add to striped array
+					$striped_params[$striped_n] = $v;
+					
+				}
+				
+			}
 			
-			endif;
-			
+			return $striped_params;
+
+		} else {
+		
+			return $params;
 		}
-		
-		return $striped_params;
-		
+			
 	}
+	
 	/**
 	 * module specific require method
 	 *
@@ -533,7 +656,7 @@ class owa_lib {
 	 * @return unknown
 	 * @deprecated 
 	 */
-	function moduleRequireOnce($module, $file) {
+	public static function moduleRequireOnce($module, $file) {
 		
 		return require_once(OWA_BASE_DIR.'/modules/'.$module.'/'.$file.'.php');
 	}
@@ -547,9 +670,9 @@ class owa_lib {
 	 * @return unknown
 	 * @deprecated 
 	 */
-	function moduleFactory($modulefile, $class_suffix = null, $params = '') {
+	public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
 		
-		list($module, $file) = split("\.", $modulefile);
+		list($module, $file) = explode(".", $modulefile);
 		$class = 'owa_'.$file.$class_suffix;
 		
 		// Require class file if class does not already exist
@@ -568,8 +691,8 @@ class owa_lib {
 	 *
 	 * @param unknown_type $data
 	 */
-	function redirectToView($data) {
-		
+	public static function redirectToView($data) {
+		//print_r($data);
 		$c = &owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
 		
@@ -587,6 +710,7 @@ class owa_lib {
 			endif;
 		}
 		$new_url = sprintf($config['link_template'], $config['main_url'], $get);
+		
 		owa_lib::redirectBrowser($new_url);
 		
 		return;
@@ -598,24 +722,12 @@ class owa_lib {
 	 * @param array $data
 	 * @deprecated 
 	 */
-	function displayView($data, $params = array()) {
+	public static function displayView($data, $params = array()) {
 		
 		$view =  owa_lib::moduleFactory($data['view'], 'View', $params);
 		
 		return $view->assembleView($data);
 		
-	}
-	
-	function &coreAPISingleton() {
-		
-		static $api;
-		
-		if(!isset($api)):
-			require_once('owa_coreAPI.php');
-			$api = new owa_coreAPI;
-		endif;
-		
-		return $api;
 	}
 	
 	/**
@@ -625,7 +737,7 @@ class owa_lib {
 	 * @return 	integer
 	 * @access 	private
 	 */
-	function setStringGuid($string) {
+	public static function setStringGuid($string) {
 		if (!empty($string)):
 			return crc32(strtolower($string));
 		else:
@@ -639,6 +751,8 @@ class owa_lib {
 	 * @param 	array $constraints
 	 * @return 	string $where
 	 * @access 	public
+	 * @depricated
+	 * @todo remove
 	 */
 	function addConstraints($constraints) {
 	
@@ -700,7 +814,7 @@ class owa_lib {
 		
 	}
 	
-	function assocFromString($string_state, $inner = '=>', $outer = '|||') {
+	public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 	
 		if (!empty($string_state)):
 		
@@ -716,7 +830,7 @@ class owa_lib {
 				
 				foreach ($array as $key => $value) {
 		
-					list($realkey, $realvalue) = split($inner, $value);
+					list($realkey, $realvalue) = explode($inner, $value);
 					$state[$realkey] = $realvalue;
 		
 				}
@@ -734,12 +848,248 @@ class owa_lib {
  	 * Simple function to replicate PHP 5 behaviour
  	 */
 	
-	function microtime_float() {
+	public static function microtime_float() {
 	    list($usec, $sec) = explode(" ", microtime());
     	return ((float)$usec + (float)$sec);
 	}
 	
+	/**
+	 * Lists all files in a Directory
+	 *
+	 */
+	public static function listDir($start_dir='.', $recursive = true) {
+
+		$files = array();
+		
+		if (is_dir($start_dir)):
+		
+			$fh = opendir($start_dir);
+			
+			while (($file = readdir($fh)) !== false) {
+			
+				// loop through the files, skipping . and .., and recursing if necessary
+				if (strcmp($file, '.')==0 || strcmp($file, '..')==0) continue;
+				$filepath = $start_dir . DIRECTORY_SEPARATOR . $file;
+				
+				
+				if (is_dir($filepath)):
+					if ($recursive === true):
+						$files = array_merge($files, owa_lib::listDir($filepath));
+					endif;
+				else:
+					array_push($files, array('name' => $file, 'path' => $filepath));
+				endif;
+			}
+			
+			closedir($fh);
+	  
+		else:
+			// false if the function was called with an invalid non-directory argument
+			$files = false;
+		endif;
 	
+	  return $files;
+	
+	}
+
+	public static function makeDateArray($result, $format) {
+		
+		if (!empty($result)) {
+		
+			$timestamps = array();
+			
+			foreach ($result as $row) {
+				
+				$timestamps[]= mktime(0,0,0,$row['month'],$row['day'],$row['year']);
+			}
+		
+			return owa_lib::makeDates($timestamps, $format);
+		
+		} else {
+		
+			return array();
+		}
+		
+	}
+	
+	public static function makeDates($timestamps, $format) { 
+		
+		sort($timestamps);
+			
+			$new_dates = array();
+			
+			foreach ($timestamps as $timestamp) {
+				
+				$new_dates[] = date($format, $timestamp);
+				
+			}
+			
+		return $new_dates;
+		
+	}
+	
+	public static function html2txt($document){
+		$search = array('@<script[^>]*?>.*?</script>@si',  // Strip out javascript
+		               '@<style[^>]*?>.*?</style>@siU',    // Strip style tags properly
+		               '@<[\/\!]*?[^<>]*?>@si',            // Strip out HTML tags
+		               '@<![\s\S]*?--[ \t\n\r]*>@'         // Strip multi-line comments including CDATA
+		);
+		$text = preg_replace($search, '', $document);
+		return $text;	
+	}
+	
+	public static function escapeNonAsciiChars($string) {
+	
+		return preg_replace('/[^(\x20-\x7F)]*/','', $string);
+	}
+
+	/**
+	 * Truncate string
+	 *
+	 * @param string $str
+	 * @param integer $length
+	 * @param string $trailing
+	 * @return string
+	 */
+	public static function truncate ($str, $length=10, $trailing='...')  {
+	 
+    	// take off chars for the trailing 
+    	$length-=strlen($trailing); 
+    	if (strlen($str) > $length):
+        	// string exceeded length, truncate and add trailing dots 
+         	return substr($str,0,$length).$trailing; 
+		else:  
+        	// string was already short enough, return the string 
+        	$res = $str;  
+      	endif;
+   
+      return $res; 
+	}
+	
+	/**
+	 * Simple Password Encryption
+	 *
+	 * @param string $password
+	 * @return string
+	 */
+	public static function encryptPassword($password) {
+		
+		return md5(strtolower($password).strlen($password));
+	}
+	
+	public static function timestampToYyyymmdd($timestamp = '') {
+		
+		if(empty($timestamp)) {
+			$timestamp = time();
+		}
+		//print "before date";
+		$yyyymmdd = date("Ymd", $timestamp);
+		///print "after date";
+		return $yyyymmdd;
+	}
+	
+	public static function setContentTypeHeader($type = 'html') {
+		
+		if (!$type) {	
+			$type = 'html';
+		}
+		
+		$content_types = array('html' => 'text/html', 
+							   'xml' => 'text/xml', 
+							   'json' => 'application/json', 
+							   'jsonp' => 'application/json', 
+							   'csv' => 'text/csv');
+		
+		if (array_key_exists($type, $content_types)) {
+			$mime = $content_types[$type];
+			header('Content-type: '.$mime);
+		}
+	}
+	
+	public static function array_values_assoc($assoc) {
+		
+		$values = array();
+		
+		foreach ($assoc as $k => $v) {
+			
+			if (!empty($v)) {
+				$values[] = $v;
+			}
+		}
+		
+		return $values;
+	}
+	
+	public static function prepareCurrencyValue($string) {
+		
+		return $string * 100;
+	}
+	
+	public static function utf8Encode($string) {
+		
+		if ( owa_lib::checkForUtf8( $string ) ) {
+			return $string; 
+		} else { 
+    		if (function_exists('iconv')) {
+				return iconv('UTF-8','UTF-8//TRANSLIT', $string);
+			} else {
+				// at least worth a try
+				return utf8_encode($string);
+			}
+		}
+	}
+	
+	public static function checkForUtf8($str) {
+	
+		if ( function_exists( 'mb_detect_encoding' ) ) {
+			$cur_encoding = mb_detect_encoding( $str ) ; 
+			if ( $cur_encoding == "UTF-8" && mb_check_encoding( $str,"UTF-8" ) ) {
+				return true;
+			}
+		} else {
+		 
+		    $len = strlen( $str ); 
+		    for( $i = 0; $i < $len; $i++ ) { 
+		        
+		        $c = ord( $str[$i] ); 
+		        if ($c > 128) { 
+		            
+		            if ( ( $c > 247 ) ) {
+		            	return false; 
+		            } elseif ( $c > 239 ) {
+		            	$bytes = 4; 
+		            } elseif ( $c > 223 ) {
+		            	$bytes = 3; 
+		            } elseif ( $c > 191 ) {
+		            	$bytes = 2; 
+		            } else {
+		            	return false; 
+		            }
+		            
+		            if ( ( $i + $bytes ) > $len ) {
+		            	return false; 
+		            }
+		            
+		            while ( $bytes > 1 ) { 
+		                $i++; 
+		                $b = ord( $str[$i] ); 
+		                if ( $b < 128 || $b > 191 ) {
+		                	return false;
+		                }
+		                $bytes--; 
+		            } 
+		        } 
+		    } 
+		    return true; 
+		}
+	}
+	
+	public static function formatCurrency($value, $local) {
+		
+		setlocale( LC_MONETARY, $local );
+		$value = $value /100;
+		return money_format( '%.2n',$value );
+	}
 }
 
 ?>

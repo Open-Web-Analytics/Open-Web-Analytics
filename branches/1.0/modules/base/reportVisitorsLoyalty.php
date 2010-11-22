@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -34,84 +32,17 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportVisitorsLoyaltyController extends owa_reportController {
 	
-	function owa_reportVisitorsLoyaltyController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-				
-		return;
-	}
-	
 	function action() {
-		
-		$data = array();
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['visitors_age'] = $api->getMetric('base.visitorsAge',array(
-			
-			'period'			=> $this->params['period'],
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit' 			=> $this->params['limit']
-		));
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCounts', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'])
-		
-		));
-		
-		$data['nav_tab'] = 'base.reportVisitors';
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportVisitorsLoyalty';
-		
-		return $data;
-		
+						
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Visitor Loyalty');
+		$this->set('metrics', 'visits');
+		$this->set('dimensions', 'priorVisitCount');
+		$this->set('sort', 'priorVisitCount');
+		$this->set('resultsPerPage', 25);
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.');	
 	}
-	
 }
-
-/**
- * Visitors Loyalty Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportVisitorsLoyaltyView extends owa_view {
-	
-	function owa_reportVisitorsLoyaltyView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Assign data to templates
-		
-		$this->body->set_template('report_visitors_loyalty.tpl');
-	
-		$this->body->set('headline', 'Visitor Loyalty');
-			
-		$this->body->set('visitors_age', $data['visitors_age']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		
-		return;
-	}
-	
-	
-}
-
 
 ?>

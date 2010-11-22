@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -34,97 +32,23 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportReferringSitesController extends owa_reportController {
 	
-	function owa_reportReferringSitesController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
 	function action() {
 		
-		$data = array();
-		
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-	
-	
-		$data['top_referers'] = $api->getMetric('base.topReferers', array(
-	
-			'constraints'		=> array(
-				'site_id'		=> $this->params['site_id'],
-				'is_searchengine' => 0
-				),
-			'limit'				=> 30
-		
-		));
-		
-		
-		$data['summary_stats_data'] = $api->getMetric('base.dashCountsTraffic', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'referer.is_searchengine' => array('operator' => '!=', 'value' => true),
-										'session.source' => array('operator' => '=', 'value' => ''),
-										'session.referer_id' => array('operator' => '!=', 'value' => '0'))
-										
-		
-		));
-		
-		//print_r($data['summary_stats_data']);
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportReferringSites';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
-		
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Referrals');
+		$this->set('metrics', 'visits,pageViews,bounces');
+		$this->set('dimensions', 'referralPageTitle,referralPageUrl');
+		$this->set('sort', 'visits-');
+		$this->set('resultsPerPage', 30);
+		$this->set('dimensionLink', array(
+				'linkColumn' 	=> 'referralPageTitle', 
+				'template' 		=> array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'), 
+				'valueColumns' 	=> 'referralPageUrl'));
+		$this->set('constraints', 'medium==referral');
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
+		$this->set('gridTitle', 'Top Referrals');		
 	}
 }
-
-
-/**
- * Traffic Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportReferringSitesView extends owa_view {
-	
-	function owa_reportReferringSitesView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Assign Data to templates
-		
-		$this->body->set('referers', $data['top_referers']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		
-		$this->body->set_template('report_referring_sites.tpl');
-
-		$this->body->set('headline', 'Referring Web Sites');
-		
-		return;
-	}
-	
-	
-}
-
 
 ?>

@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 /**
  * Options Reset Controller
@@ -30,60 +30,28 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_optionsResetController extends owa_controller {
+class owa_optionsResetController extends owa_adminController {
 	
-	function owa_optionsResetController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+	function __construct($params) {
 		
-		return;
+		$this->setRequiredCapability('edit_settings');
+		return parent::__construct($params);	
 	}
 
 	function action() {
-	
-		/*$api = &owa_coreAPI::singleton();
 		
-		$caller_config = $api->caller_config_overrides;
+		$config = owa_coreAPI::configSingleton();
 		
-		$default_config = $this->c->getDefaultConfig();
+		$ret = $config->reset($this->get('module'));
 		
-		// merge the settings with those comming in as params
-		$nbsettings = array_merge($default_config['base'], $caller_config);
+		if ($ret) {
 		
-		// place the merge config array back to the global object
-		$this->c->replace('base', $nbsettings);
+			$this->e->notice($this->getMsg(2503));
+			$this->setStatusCode(2503);
+		} 
 		
-		// persist the global config
-		$this->c->update();
-		*/
-		
-		$config = owa_coreAPI::entityFactory('base.configuration');
-		
-		$config->getByPk('id', $this->c->get('base', 'configuration_id'));
-		
-		$settings = unserialize($config->get('settings'));
-		
-		if (!empty($settings)):
-		
-			$settings['base'] = array();
-			$config->set('settings', serialize($settings));
-			$config->update();
-		endif;
-		
-		$this->e->notice($this->getMsg(2503));
-	
-		$data = array();
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.optionsGeneral';
-		$data['view_method'] = 'redirect';
-		//$data['configuration'] = $nbsettings;
-		$data['status_code'] = 2503;
-		
-		return $data;
-	
+		$this->setRedirectAction('base.optionsGeneral');
 	}
-	
 }
-
 
 ?>

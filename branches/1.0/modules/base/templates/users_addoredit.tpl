@@ -1,4 +1,4 @@
-<div class="panel_headline"><?=$headline;?></div>
+<div class="panel_headline"><?php echo $headline;?></div>
 <div id="panel">
 <fieldset class="options">
 
@@ -9,43 +9,41 @@
 		<form method="POST">
 		<TR>
 			<TH>User Name</TH>
-			<TD><input type="text"<? if ($action == 'base.usersEdit'):?>disabled<? endif;?> size="30" name="<?=$this->getNs();?>user_id" value="<?=$user['user_id']?>"></TD>
-		</TR>
-		<TR>
-			<TH>Real Name</TH>
-			<TD><input type="text" size="30" name="<?=$this->getNs();?>real_name" value="<?=$user['real_name']?>"></TD>
-		</TR>
-		<TR>	
-			<TH>Role</TH>
 			<TD>
-			<select name="<?=$this->getNs();?>role">
-				<? foreach ($roles as $role => $value):?>
-				<option <? if($user['role'] == $role): echo "SELECTED"; endif;?> value="<?=$role;?>"><?=$value['label'];?>
-				<? endforeach;?>
-			</select>
-			
-			
+			<?php if ($edit === true):?>
+			<input type="hidden" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user['user_id']?>"><?php echo $user['user_id']?>
+			<?php else:?>
+			<input type="text" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user['user_id']?>">
+			<?php endif;?>
 			</TD>
 		</TR>
 		<TR>
-			<TH>E-mail Address</TH>
-			<TD><input type="text"size="30" name="<?=$this->getNs();?>email_address" value="<?=$user['email_address'];?>"></TD>
+			<TH>Real Name</TH>
+			<TD><input type="text" size="30" name="<?php echo $this->getNs();?>real_name" value="<?php echo $user['real_name']?>"></TD>
 		</TR>
+		<?php if ($user['id'] != 1):?>
+		<TR>	
+			<TH>Role</TH>
+			<TD>
+			<select name="<?php echo $this->getNs();?>role">
+				<?php foreach ($roles as $role):?>
+				<option <?php if($user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
+				<?php endforeach;?>
+			</select>
+			</TD>
+		</TR>
+		<?php endif;?>
 		<TR>
-			<? if ($action == 'base.usersEdit'): ?>
-			<TH>Options</TH>
-			<td><a href="<?=$this->makeLink(array('action' => 'base.usersDelete', 'user_id' => $user['user_id']));?>">Delete User</a></td>
-		
-			<? else:?>
-			<TD></TD>
-			<? endif;?>
-			
+			<TH>E-mail Address</TH>
+			<TD><input type="text"size="30" name="<?php echo $this->getNs();?>email_address" value="<?php echo $user['email_address'];?>"></TD>
 		</TR>
 		
 		<TR>
 			<TD>
-				<input type="hidden" name="<?=$this->getNs();?>action" value="<?=$action;?>">
-				<input type="submit" value="Save" name="<?=$this->getNs();?>save_button">
+				<input type="hidden" name="<?php echo $this->getNs();?>id" value="<?php echo $user['id'];?>">
+				<?php echo $this->createNonceFormField($action);?>
+				<input type="hidden" name="<?php echo $this->getNs();?>action" value="<?php echo $action;?>">
+				<input type="submit" value="Save" name="<?php echo $this->getNs();?>save_button">
 			</TD>
 		</TR>
 		</form>
@@ -53,4 +51,14 @@
 	</TABLE>
 
 </fieldset>
+<?php if ($edit === true):?>
+<P>
+<fieldset class="options">
+
+	<legend>Change Password</legend>
+	<div style="padding:10px">
+	<a href="<?php echo $this->makeLink(array('do' => 'base.passwordResetForm'))?>">Change password for this user</a>
+	</div>
+</fieldset>
+<?php endif;?>
 </div>

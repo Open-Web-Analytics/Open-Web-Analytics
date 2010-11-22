@@ -30,31 +30,67 @@
 
 class owa_user extends owa_entity {
 	
-	var $id; // SERIAL,
-	var $user_id; // varchar(255),
-	var $password; // VARCHAR(255),
-	var $role; // VARCHAR(255),
-	var $real_name; // VARCHAR(255),
-	var $email_address; // VARCHAR(255),
-	var $temp_passkey; // VARCHAR(255),
-	var $creation_date; // BIGINT,
-	var $last_update_date; // BIGINT,
+	function __construct() {
 	
-	
-	function owa_user() {
-		
-		$this->owa_entity();
-		
-		$this->id->auto_incement = true;
-		
-		return;
-			
+		$this->setTableName('user');
+		$this->setCachable();
+		// properties
+		$this->properties['id'] = new owa_dbColumn;
+		$this->properties['id']->setDataType(OWA_DTD_SERIAL);
+		$this->properties['id']->setAutoIncrement();
+		$this->properties['user_id'] = new owa_dbColumn;
+		$this->properties['user_id']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['user_id']->setPrimaryKey();
+		$this->properties['password'] = new owa_dbColumn;
+		$this->properties['password']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['role'] = new owa_dbColumn;
+		$this->properties['role']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['real_name'] = new owa_dbColumn;
+		$this->properties['real_name']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['email_address'] = new owa_dbColumn;
+		$this->properties['email_address']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['temp_passkey'] = new owa_dbColumn;
+		$this->properties['temp_passkey']->setDataType(OWA_DTD_VARCHAR255);
+		$this->properties['creation_date'] = new owa_dbColumn;
+		$this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['last_update_date'] = new owa_dbColumn;
+		$this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
+		$apiKey = new owa_dbColumn;
+		$apiKey->setName('api_key');
+		$apiKey->setDataType(OWA_DTD_VARCHAR255);
+		$this->setProperty($apiKey);
 	}
 	
+	function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
 	
+		if (!$password) {
+			$password = $this->generateRandomPassword();
+		}
+		
+		$this->set('user_id', $user_id);
+		$this->set('role', $role);
+		$this->set('real_name', $real_name);
+		$this->set('email_address', $email_address);
+		$this->set('temp_passkey', $this->generateTempPasskey($user_id));
+		$this->set('password', owa_lib::encryptPassword($password));
+		$this->set('creation_date', time());
+		$this->set('last_update_date', time());
+		$this->set('api_key', $this->generateTempPasskey($user_id));
+		$ret = $this->create();
+		
+		return $ret;
+	}
+	
+	function generateTempPasskey($seed) {
+		
+		return md5($seed.time().rand());
+	}
+	
+	function generateRandomPassword() {
+	
+		return substr(owa_lib::encryptPassword(microtime()),0,6);
+	}
 	
 }
-
-
 
 ?>

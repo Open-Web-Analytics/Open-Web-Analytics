@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
+require_once(OWA_BASE_CLASS_DIR.'client.php');
 
 /**
  * Wordpress Caller class
@@ -29,26 +29,18 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class owa_wp extends owa_caller {
+class owa_wp extends owa_client {
 	
 	/**
 	 * Constructor
 	 *
 	 * @return owa_wp
 	 */
-	function owa_wp($config = null) {
-		
-		// needed because some of worpresses templates output prior to plugins being called
-		// which breaks OWA redirects.
-		ob_start();
-		
-		$this->owa_caller($config);
-		
-		return;
-	}
 	
 	function __construct($config = null) {
+		
 		ob_start();
+		
 		return parent::__construct($config);
 	
 	}
@@ -95,23 +87,6 @@ class owa_wp extends owa_caller {
 			return;
 		endif;
 	}
-	
-	/**
-	 * Convienence function for logging comments.
-	 * 
-	 * @return boolean 
-	 */
-	function logComment() {
-		
-		return $this->logEvent('base.processEvent',array('event' => 'base.new_comment'));
-		
-	}
-	
-	
-	
-
-	
-
 }
 
 ?>

@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 
@@ -36,36 +35,29 @@ class owa_installStartEmbeddedController extends owa_controller {
 
 
 	function __construct($params) {
-	
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
 
-		return;
-	}
-
-	
-	function owa_installEmbeddedController($params) {
-	
-		return $this->__construct($params);
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
 	}
 	
 	function action() {
 		
-	    $api = &owa_coreAPI::singleton();
-	
-		$data['site_id'] = $this->params['site_id'];
-		$data['name'] = $this->params['name'];
-		$data['domain'] = $this->params['domain'];
-		$data['description'] = $this->params['description'];
-		$data['view'] = 'base.installStartEmbedded';
+		$this->set('site_id', $this->getParam('site_id'));
+		$this->set('name', $this->getParam('name'));
+		$this->set('domain', $this->getParam('domain'));
+		$this->set('description', $this->getParam('description'));
 		
-		return $data;
+		$this->set('db_type', $this->getParam('db_type'));
+		$this->set('db_user', $this->getParam('db_user'));
+		$this->set('db_password', $this->getParam('db_password'));
+		$this->set('db_host', $this->getParam('db_host'));
+		$this->set('db_name', $this->getParam('db_name'));
+		$this->set('public_url', $this->getParam('public_url'));
+		
+		$this->setView('base.installStartEmbedded');
 	}
-
-
-
-
 }
+
 /**
  * Installation Start View for Embedded Configurations
  * 
@@ -77,50 +69,30 @@ class owa_installStartEmbeddedController extends owa_controller {
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-
 class owa_installStartEmbeddedView extends owa_view {
-	
-	function owa_installStartEmbeddedView() {
 		
-		$this->owa_view();
-		$this->priviledge_level = 'admin';
+	function render() {
 		
-		return;
-	}
-	
-	function construct() {
-		
-		
-		// check for schema
-		//$api = &owa_coreAPI::singleton();
-		//$installer = $api->modules['base']->installerFactory();
-		
-		$this->t->set_template('wrapper_blank.tpl');
-		
-		
-		if (!empty($this->config['install_complete'])):
-			// load body template
-			$this->body->set_template('install_schema_detected.tpl');
-		else:
-			// load body template
-			$this->body->set_template('install_start_embedded.tpl');
-		endif;
+		$this->body->set_template('install_start_embedded.tpl');
 		
 		//page title
+		$this->t->set_template('wrapper_public.tpl');
 		$this->t->set('page_title', 'Open Web Analytics Installation');
 		
 		// assign data		
 		$this->body->set('headline', 'Shall we install Open Web Analytics?');
-		$this->body->set('site_id', $data['site_id']);
-		$this->body->set('domain', $data['domain']);
-		$this->body->set('name', $data['name']);
-		$this->body->set('description', $data['description']);
+		$this->body->set('site_id', $this->get('site_id'));
+		$this->body->set('domain', $this->get('domain'));
+		$this->body->set('name', $this->get('name'));
+		$this->body->set('description', $this->get('description'));
 		
-		return;
+		$this->body->set('db_type', $this->get('db_type'));
+		$this->body->set('db_user', $this->get('db_user'));
+		$this->body->set('db_password', $this->get('db_password'));
+		$this->body->set('db_host', $this->get('db_host'));
+		$this->body->set('db_name', $this->get('db_name'));
+		$this->body->set('public_url', $this->get('public_url'));
 	}
-	
-	
 }
-
 
 ?>

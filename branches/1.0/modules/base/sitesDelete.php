@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_controller.php');
+require_once(OWA_BASE_DIR.'/owa_adminController.php');
 
 /**
  * Delete Site Controller
@@ -30,21 +30,21 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @since		owa 1.0.0
  */
 
-class owa_sitesDeleteController extends owa_controller {
+class owa_sitesDeleteController extends owa_adminController {
 	
-	function owa_siteDeleteController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+	function __construct($params) {
+		parent::__construct($params);
+		$this->setRequiredCapability('edit_sites');
+		$this->setNonceRequired();
 	}
 	
 	function action() {
 		
 		$site = owa_coreAPI::entityFactory('base.site');
-		$site->delete($this->params['site_id'], 'site_id');
+		$site->delete($this->params['siteId'], 'site_id');
 		
 		$data['view_method'] = 'redirect';
-		$data['view'] = 'base.options';
-		$data['subview'] = 'base.sites';
+		$data['do'] = 'base.sites';
 		$data['status_code'] = 3204;
 		
 		return $data;

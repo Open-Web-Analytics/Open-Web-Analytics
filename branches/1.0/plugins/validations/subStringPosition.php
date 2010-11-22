@@ -30,53 +30,49 @@
  
  class owa_subStringPositionValidation extends owa_validation {
  	
- 	var $position;
- 	
- 	var $subString;
- 	
- 	var $operator;
- 	
- 	function owa_subStringPositionValidation($conf) {
+ 	function __construct() {
  		
- 		$this->subString = $conf['substring'];
- 		$this->position = $conf['position'];
- 		$this->operator = $conf['operator'];
- 		$this->setErrorMsgTemplate('The string "%s" was found within the value at position %d');
- 		$this->owa_validation($conf);
- 		return;
+ 		return parent::__construct();
  	}
  	
- 	function validate($value) {
+ 	function validate() {
  		
- 		$pos = strpos($value, $this->subString);
+ 		$value = $this->getValues();
  		
- 		//print $pos;
- 		//print_r($this);
- 		switch ($this->operator) {
+ 		$substring = $this->getConfig('subString');
+ 		$pos = strpos($value, $substring);
+ 		
+ 		$operator = $this->getConfig('operator');
+ 		$position = $this->getConfig('position');
+ 		
+ 		switch ($operator) {
  			
  			case "=":
  				
- 				if ($pos === $this->position):
- 					$valid = true;
- 				endif;
- 				
+ 				if ($pos === $position) {
+ 					;
+ 				} else {
+ 					$this->hasError();
+ 				}
+ 					
+ 						
  			break;
  			
  			case "!=":
  				
- 				if ($pos === $this->position):
- 					$valid = false;
- 				endif;
+ 				if ($pos === $position) {
+ 					$this->hasError();
+ 				}
  			
  			break;
  		}
- 		
- 		if ($valid === false):
- 			$this->setErrorMsg(sprintf($this->errorMsgTemplate, $this->subString, $pos));
- 			return false;
- 		else:
- 			return true;
- 		endif;
+		
+		$error = $this->getErrorMsg();
+		
+		if (empty($error)) {
+			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $subString, $pos));
+		} 		
+		
  		
  		
  	}
@@ -85,4 +81,3 @@
  
  
 ?>
- 

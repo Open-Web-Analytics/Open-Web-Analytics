@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 /**
@@ -34,90 +32,23 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
 
 class owa_reportKeywordsController extends owa_reportController {
 	
-	function owa_reportKeywordsController($params) {
-		
-		$this->owa_reportController($params);
-		$this->priviledge_level = 'viewer';
-		
-		return;
-	}
-	
 	function action() {
 		
-		$data = array();
-		
-		$data['params'] = $this->params;
-		
-		// Load the core API
-		$api = &owa_coreAPI::singleton($this->params);
-		
-		$data['top_keywords'] = $api->getMetric('base.topReferingKeywords', array(
-	
-			'constraints'		=> array('site_id'	=> $this->params['site_id']),
-			'limit'				=> 30
-		
-		));
-		
-			
-		$data['summary_stats_data'] = $api->getMetric('base.dashCountsTraffic', array(
-		
-			'result_format'		=> 'single_row',
-			'constraints'		=> array('site_id'	=> $this->params['site_id'],
-										'referer.is_searchengine' =>  true)
-										
-										
-		
-		));
-		
-		$data['view'] = 'base.report';
-		$data['subview'] = 'base.reportKeywords';
-		$data['view_method'] = 'delegate';
-		$data['nav_tab'] = 'base.reportTraffic';
-		
-		return $data;
-		
+		$this->setView('base.report');
+		$this->setSubview('base.reportDimension');
+		$this->setTitle('Referring Search Terms');
+		//$this->set('metrics', 'visits,pageViews,bounces');
+		$this->set('dimensions', 'referralSearchTerms');
+		$this->set('sort', 'visits-');
+		$this->set('resultsPerPage', 30);
+		$this->set('dimensionLink', array(
+				'linkColumn' 	=> 'referralSearchTerms', 
+				'template' 		=> array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), 
+				'valueColumns' 	=> 'referralSearchTerms'));
+		$this->set('constraints', 'medium==organic-search');
+		$this->set('trendChartMetric', 'visits');
+		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.');
 	}
 }
-
-
-/**
- * Keywords Report View
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
- */
-
-class owa_reportKeywordsView extends owa_view {
-	
-	function owa_reportKeywordsView() {
-		
-		$this->owa_view();
-		$this->priviledge_level = 'guest';
-		
-		return;
-	}
-	
-	function construct($data) {
-		
-		// Assign Data to templates
-		
-		$this->body->set('headline', 'Keywords');
-		$this->body->set('keywords', $data['top_keywords']);
-		$this->body->set('summary_stats', $data['summary_stats_data']);
-		
-		
-		$this->body->set_template('report_keywords.tpl');
-
-		return;
-	}
-	
-	
-}
-
 
 ?>

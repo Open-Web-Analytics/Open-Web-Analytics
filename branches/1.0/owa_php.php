@@ -16,17 +16,14 @@
 // $Id$
 //
 require_once('owa_env.php');
-require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
+require_once(OWA_BASE_CLASS_DIR.'client.php');
 
 /**
- * Generic Caller Class
+ * OWA PHP Client
  * 
- * Implements a PHP API for logging requests to OWA
+ * Implements a PHP client for logging requests to OWA
  * Typical usage is:
  * 
- * 	$app_params['page_title'] = "This is the title of this page view"
- * 	$l = new owa_php;
- * 	$l->log($app_params);
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -37,14 +34,28 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_caller.php');
  * @since		owa 1.0.0
  */
 
-class owa_php extends owa_caller {
-	
-	function owa_php($config = null) {
-		
-		return $this->owa_caller($config);
-		
-	}
+class owa_php extends owa_client {
 
+	function __construct($config = null) {
+		
+		return parent::__construct($config);
+	}
+		
+	/**
+	 * OWA Singleton Method
+	 *
+	 * Makes a singleton instance of OWA using the config array
+	 */
+	function singleton($config = null) {
+		
+		static $owa;
+		
+		if(!empty($owa)) {
+			return $owa;
+		} else {
+			return new owa_php($config);	
+		}
+	}
 }
 
 ?>

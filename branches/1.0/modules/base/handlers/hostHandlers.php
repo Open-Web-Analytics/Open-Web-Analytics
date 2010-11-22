@@ -16,6 +16,11 @@
 // $Id$
 //
 
+if(!class_exists('owa_observer')) {
+	require_once(OWA_DIR.'owa_observer.php');
+}	
+require_once(OWA_DIR.'owa_lib.php');
+
 /**
  * Host Event handlers
  * 
@@ -29,21 +34,7 @@
  */
 
 class owa_hostHandlers extends owa_observer {
-    
-	/**
-	 * Constructor
-	 *
-	 * @param 	string $priority
-	 * @param 	array $conf
-	 * 
-	 */
-    function owa_hostHandlers() {
-        
-    	// Call the base class constructor.
-        $this->owa_observer();
-		return;
-    }
-	
+    	
     /**
      * Notify Event Handler
      *
@@ -52,12 +43,29 @@ class owa_hostHandlers extends owa_observer {
      */
     function notify($event) {
 		
-    	$this->m = $event['message'];
-
-		return $this->handleEvent('base.logHost');
-    	
+    	$h = owa_coreAPI::entityFactory('base.host');
+		
+		$h->getByPk('id', owa_lib::setStringGuid($event->get('full_host')));
+		$id = $h->get('id'); 
+		
+		if (!$id) {
+			
+			$h->setProperties($event->getProperties());
+			$h->set('id', owa_lib::setStringGuid($event->get('full_host'))); 
+			$ret = $h->create();
+			
+			if ( $ret ) {
+				return OWA_EHS_EVENT_HANDLED;
+			} else {
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
+		} else {
+		
+			owa_coreAPI::debug('Not Persisting. Host already exists.');
+			return OWA_EHS_EVENT_HANDLED;
+		}	
     }
-    
 }
 
 ?>

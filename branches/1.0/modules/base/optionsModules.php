@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
+require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
 
 /**
@@ -31,13 +31,12 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_optionsModulesController extends owa_controller {
-	
-	function owa_optionsModulesController($params) {
-		$this->owa_controller($params);
-		$this->priviledge_level = 'admin';
+class owa_optionsModulesController extends owa_adminController {
 		
-		return;
+	function __construct($params) {
+		
+		$this->setRequiredCapability('edit_modules');
+		return parent::__construct($params);
 	}
 
 	function action() {
@@ -62,6 +61,9 @@ class owa_optionsModulesController extends owa_controller {
 		 				$dirs[$file]['version'] = $mod->version;
 		 				$dirs[$file]['description'] = $mod->description;
 		 				$dirs[$file]['config_required'] = $mod->config_required;
+		 				$dirs[$file]['current_schema_version'] = $mod->getSchemaVersion();
+		 				$dirs[$file]['required_schema_version'] = $mod->getRequiredSchemaVersion();
+		 				$dirs[$file]['schema_uptodate'] = $mod->isSchemaCurrent();
 		 				//$dirs['stats'] = lstat($path.$file);
 		 				
  					endif;
@@ -75,7 +77,7 @@ class owa_optionsModulesController extends owa_controller {
 		ksort($dirs);
 		
 		// remove base module so it can't be deactivated
-		unset($dirs['base']);
+		// unset($dirs['base']);
 		
 		$active_modules = owa_coreAPI::getActiveModules();
 		
@@ -87,12 +89,11 @@ class owa_optionsModulesController extends owa_controller {
 		}
 		
 		// add data to container
-		$this->data['view'] = 'base.options';
-		$this->data['subview'] = 'base.optionsModules';
-		$this->data['view_method'] = 'delegate';
-		$this->data['modules'] = $dirs;
+		$this->setView('base.options');
+		$this->setSubview('base.optionsModules');
+		$this->set('modules', $dirs);
 		
-		return $this->data;
+		return;
 	
 	}
 	
@@ -112,19 +113,17 @@ class owa_optionsModulesController extends owa_controller {
 
 class owa_optionsModulesView extends owa_view {
 	
-	function owa_optionsModulesView($params) {
+	function __construct($params) {
 		
-		$this->owa_view($params);
 		//set priviledge level
 		$this->_setPriviledgeLevel('admin');
 		//set page type
 		$this->_setPageType('Administration Page');
 		
-		return;
+		return parent::__construct();
 	}
 	
-	function construct($data) {
-		
+	function render($data) {
 		
 		//$this->c->get('base', 'modules'));
 		
@@ -135,13 +134,8 @@ class owa_optionsModulesView extends owa_view {
 		$this->body->set('headline', 'Modules Administration');
 	
 		// Assign module data
-		$this->body->set('modules', $data['modules']);
-		
-		return;
+		$this->body->set('modules', $this->get('modules'));
 	}
-	
-	
 }
-
 
 ?>

@@ -35,28 +35,36 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 class owa_usersResetPasswordController extends owa_controller {
 	
 	function owa_usersResetPasswordController($params) {
-		$this->owa_controller($params);
 		
+		return owa_usersResetPasswordController::__construct($params);
+	}
+	
+	function __construct($params) {
+	
+		return parent::__construct($params);
 	}
 	
 	function action() {
+	
+		$event = $this->getParam('event');
+		
 		$auth = &owa_auth::get_instance();
 		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('user_id', $this->params['user_id']);
-		$u->set('temp_passkey', $auth->generateTempPasskey($this->params['user_id']));
+		$u->getByColumn('email_address', $event->get('email_address'));
+		$u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
 		$status = $u->update();
-
-		if ($status == true):
+		$this->e->debug('status: '.$status);
+		if ($status === true):
 	
-			$data['view'] = 'base.usersResetPassword';
-			$data['view_method'] = 'email';
-			$data['subject'] = 'Password Reset Request';
-			$data['key'] = $u->get('temp_passkey');
-			$data['email_address'] = $u->get('email_address');
+			$this->setView('base.usersResetPassword');
+			$this->set('key', $u->get('temp_passkey'));
+			$this->set('email_address', $u->get('email_address'));
 			
+		else:
+			$this->e->debug("could not update password in db.");	
 		endif;
 		
-		return $data;
+		return;
 	}
 	
 }
@@ -73,24 +81,29 @@ class owa_usersResetPasswordController extends owa_controller {
  * @since		owa 1.0.0
  */
 
-class owa_usersResetPasswordView extends owa_view {
+class owa_usersResetPasswordView extends owa_mailView {
 	
-	function owa_usersSetPasswordView() {
+	function owa_usersResetPasswordView() {
 		
-		$this->owa_view();
-		return;
+		return owa_usersResetPasswordView::__construct();
 	}
 	
-	function construct($data) {
+	function __construct() {
+		
+		return parent::__construct();
+	}
+	
+	function render($data) {
 		
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('users_reset_password_email.tpl');
-		$this->body->set('key', $data['key']);
-			
+		$this->body->set('key', $this->get('key'));
+		$this->setMailSubject('Your New OWA Password');	
+		$this->addMailToAddress($this->get('email_address')); 
+		
 		return;
 		
 	}
-	
 	
 }
 
