@@ -1029,7 +1029,6 @@ class owa_baseModule extends owa_module {
 		
 		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 		$db = owa_coreAPI::dbSingleton();
-		
 		$db->selectFrom('owa_request', 'request');
 		$db->selectColumn("*");
 		// pass constraints into where clause
@@ -1049,11 +1048,12 @@ class owa_baseModule extends owa_module {
 		
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
-		
+		//print_r($rs);
 		if ($format) {
 			owa_lib::setContentTypeHeader($format);
 			return $rs->formatResults($format);		
 		} else {
+			
 			return $rs;
 		}
 	}

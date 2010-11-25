@@ -46,7 +46,7 @@ class owa_reportVisitController extends owa_reportController {
 		$rs = owa_coreAPI::executeApiCommand(array(
 				'do'		=> 'getClickstream',
 				'sessionId'	=> $this->getParam('session_id') ) );
-		
+
 		$this->set('clickstream', $rs);
 		$this->set('visit', $visit);
 		$this->set('session_id', $this->getParam('session_id'));

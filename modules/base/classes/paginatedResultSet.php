@@ -36,7 +36,7 @@ class owa_paginatedResultSet {
 	var $guid;
 	
 	var $timePeriod;
-	var $resultsPerPage;
+	var $resultsPerPage = 25;
 	var $resultsTotal;
 	var $resultsReturned;
 	var $resultsRows = array();
@@ -147,10 +147,15 @@ class owa_paginatedResultSet {
 		}
 		
 		$results = $dao->$method();
-		
 		if (!empty($results)) {
-			$this->countResults($results);	
-			$this->rows = array_slice($results, 0, $this->limit);
+			$this->countResults($results);
+			
+			if ($this->resultsPerPage) {
+				$this->rows = array_slice($results, 0, $this->limit);
+			} else {
+				$this->rows = $results;
+			}
+			
 			$this->resultsReturned = count($this->rows);
 		} else {
 			$this->rows = array();
