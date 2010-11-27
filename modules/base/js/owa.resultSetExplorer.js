@@ -298,6 +298,7 @@ OWA.resultSetExplorer.prototype = {
 		
 		p += '<table id="'+ this.dom_id + '_grid"></table>';
 		p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
+		p += '<div style="clear:both;"></div>';
 		
 		var that = this;
 		jQuery('#'+that.dom_id).append(p);
