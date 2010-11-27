@@ -405,8 +405,12 @@ OWA.tracker.prototype = {
 		if ( a ) {
 			a = OWA.util.base64_decode(a);
 			a = OWA.util.trim(a, '\u0000');
+			
 			OWA.debug('overlay anchor value: ' + a);
-			OWA.util.setCookie('owa_overlay',a, '','', '.' + this.getCookieDomain() );
+			var domain = this.getCookieDomain();
+			OWA.util.setCookie('owa_overlay',a, '','/', domain );
+			//OWA.util.setState('overlay','', a);
+			////alert(OWA.util.readCookie('owa_overlay') );
 		}
 		
 		
