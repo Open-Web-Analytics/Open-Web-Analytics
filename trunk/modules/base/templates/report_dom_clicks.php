@@ -12,7 +12,8 @@
 					<script>
 					var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																  'metrics' => 'domClicks', 
-																  'dimensions' => 'domElementId', 
+																  'dimensions' => 'domElementId',
+																  'constraints' => $constraints,
 																  'sort' => 'domClicks-', 
 																  'resultsPerPage' => 5,
 																  'format' => 'json'), true);?>';
@@ -29,7 +30,8 @@
 					<script>
 					var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																  'metrics' => 'domClicks', 
-																  'dimensions' => 'domElementName', 
+																  'dimensions' => 'domElementName',
+																  'constraints' => $constraints,
 																  'sort' => 'domClicks-', 
 																  'resultsPerPage' => 5,
 																  'format' => 'json'), true);?>';
@@ -50,7 +52,8 @@
 					<script>
 					var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																  'metrics' => 'domClicks', 
-																  'dimensions' => 'domElementTag', 
+																  'dimensions' => 'domElementTag',
+																  'constraints' => $constraints, 
 																  'sort' => 'domClicks-', 
 																  'resultsPerPage' => 5,
 																  'format' => 'json'), true);?>';
@@ -67,7 +70,8 @@
 					<script>
 					var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																  'metrics' => 'domClicks', 
-																  'dimensions' => 'domElementClass', 
+																  'dimensions' => 'domElementClass',
+																  'constraints' => $constraints,
 																  'sort' => 'domClicks-', 
 																  'resultsPerPage' => 5,
 																  'format' => 'json'), true);?>';

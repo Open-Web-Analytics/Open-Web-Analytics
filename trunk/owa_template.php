@@ -729,9 +729,7 @@ class owa_template extends Template {
 			}
 			
 			$pages .= '</UL></div>';
-					
-			
-		
+			$pages .= '<div style="clear:both;"></div>';
 		}
 		
 		return $pages;
