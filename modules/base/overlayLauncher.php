@@ -50,7 +50,7 @@ class owa_overlayLauncherController extends owa_reportController {
 			$url = $parts[0];
 		}
 		
-		$url = $url.'#owa_overlay='.base64_encode( trim($this->getParam('overlay_params')) );
+		$url = $url.'#owa_overlay=' . trim( base64_encode( $this->getParam( 'overlay_params' ) ), '\u0000' );
 	
 		// redirect browser
 		$this->redirectBrowserToUrl($url);	
