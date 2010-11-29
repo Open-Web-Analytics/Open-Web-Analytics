@@ -312,7 +312,7 @@ class owa_client extends owa_caller {
 			$event->setEventType('base.page_request');
 			$this->pageview_event = $event;
 		}
-		return $this->trackEvent($this.pageview_event);
+		return $this->trackEvent($this->pageview_event);
 	}
 	
 	public function trackAction($action_group = '', $action_name, $action_label = '', $numeric_value = 0) {

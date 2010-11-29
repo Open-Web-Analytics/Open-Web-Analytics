@@ -54,5 +54,5 @@ if(!defined('OWA_DATA_DIR')){
 }
 define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches'.DIRECTORY_SEPARATOR);
 define('OWA_THEMES_DIR', OWA_DIR.'themes'.DIRECTORY_SEPARATOR);
-define('OWA_VERSION', '1.4.0rc1');
+define('OWA_VERSION', '1.4.0rc2');
 ?>
