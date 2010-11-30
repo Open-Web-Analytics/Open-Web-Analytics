@@ -155,7 +155,7 @@ class owa_event {
 			if (empty($this->properties)) {
 				$this->properties = $properties;
 			} else {	
-				$this->properties = array_merge($properties, $this->properties);
+				$this->properties = array_merge($this->properties, $properties);
 			}
 		}
 	}
