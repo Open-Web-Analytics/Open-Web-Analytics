@@ -40,8 +40,11 @@ class owa_moduleActivateController extends owa_adminController {
 
 	function action() {
 		
-		$m = owa_coreAPI::moduleClassFactory($this->params['module']);
-		$m->activate();
+		$module = $this->getParam('module');
+		
+		if ( $module ) {
+			$ret = owa_coreAPI::installModule($module);
+		}
 		
 		$data = array();
 		
