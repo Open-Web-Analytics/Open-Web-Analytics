@@ -16,10 +16,10 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
+require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
- * Module Activation Controller
+ * Module Install Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -30,7 +30,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @since		owa 1.0.0
  */
 
-class owa_moduleActivateController extends owa_adminController {
+class owa_moduleInstallCliController extends owa_cliController {
 	
 	function __construct($params) {
 	
@@ -40,17 +40,15 @@ class owa_moduleActivateController extends owa_adminController {
 
 	function action() {
 		
-		$m = owa_coreAPI::moduleClassFactory($this->params['module']);
-		$m->activate();
+		$module = $this->getParam('module');
 		
-		$data = array();
-		
-		$data['do'] = 'base.optionsModules';
-		$data['view_method'] = 'redirect';
-		$data['status_code'] = 2501;
-		
-		return $data;
+		if ( $module ) {
 	
+			$ret = owa_coreAPI::installModule($module);
+			
+		} else {
+			owa_coreAPI::notice('No module argument was specified. Use module=xxx');
+		}	
 	}
 	
 }

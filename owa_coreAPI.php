@@ -1293,6 +1293,35 @@ class owa_coreAPI {
 		$t->set_template('js_helper_tags.tpl');
 		return $t->fetch();
 	}
+	
+	public static function activateModule( $module_name ) {
+		
+		if ( $module_name ) {
+		
+			$m = owa_coreAPI::moduleClassFactory($module_name);
+			return $m->activate();
+		}
+	}
+	
+	public static function deactivateModule( $module_name ) {
+		
+		if ( $module_name ) {
+		
+			$s = owa_coreAPI::serviceSingleton();
+			$m = $s->getModule($module_name);
+			return $m->deactivate();
+		}
+	}
+	
+	public static function installModule( $module_name ) {
+		
+		if ($module_name) {
+		
+			$m = owa_coreAPI::moduleClassFactory($module_name);
+			$status = $m->install();
+			return $status;
+		}
+	}
 }
 
 ?>
