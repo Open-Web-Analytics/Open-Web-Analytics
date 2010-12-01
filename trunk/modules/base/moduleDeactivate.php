@@ -39,11 +39,6 @@ class owa_moduleDeactivateController extends owa_adminController {
 		return parent::__construct($params);
 	
 	}
-	
-	function owa_moduleDeactivateController($params) {
-		
-		return owa_moduleDeactivateController::__construct($params);
-	}
 
 	function action() {
 		

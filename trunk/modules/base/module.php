@@ -304,6 +304,9 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
 		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
 		$this->registerCliCommand('install', 'base.installCli');
+		$this->registerCliCommand('activate', 'base.moduleActivateCli');
+		$this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
+		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
 		
 		/**
 		 * Register API methods
