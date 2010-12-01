@@ -95,7 +95,7 @@ class owa_helloModule extends owa_module {
 	
 	function _registerEntities() {
 		
-		$this->entities[] = 'request';
+		//$this->entities[] = 'myentity';
 	}
 	
 	

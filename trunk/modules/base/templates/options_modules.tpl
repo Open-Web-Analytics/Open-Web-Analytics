@@ -7,11 +7,9 @@
 	<thead>
 	<TR>
 		<TH>Module</TH>
-		<TH>Version</TH>
-		<TH>Description</TH>
-		<th>Current Schema Version</th>
-		<th>Required Schema Version</th>
-		<th>Is Schema Up to Date?</th>
+		<th>Current Schema</th>
+		<th>Required Schema</th>
+		<th>Schema Up to Date?</th>
 		<TH></TH>
 	</TR>
 	</thead>
@@ -19,9 +17,10 @@
 	<?php foreach ($modules as $k => $v): ?>
 	
 	<TR>
-		<TD><?php echo $v['display_name'];?></TD>
-		<TD><?php echo $v['version'];?></TD>
-		<TD><?php echo $v['description'];?></TD>
+		<TD>
+		<B><?php echo $v['display_name'];?></B><BR>
+		<?php echo $v['description'];?>
+		</TD>
 		<TD><?php echo $v['current_schema_version'];?></TD>
 		<TD><?php echo $v['required_schema_version'];?></TD>
 		<TD><?php echo $v['schema_uptodate'];?></TD>
