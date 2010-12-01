@@ -240,9 +240,15 @@ class owa_caller extends owa_base {
 		$cu->setAuthStatus(true);
 	}
 	
-	function makeEvent() {
+	function makeEvent($type = '') {
 	
-		return owa_coreAPI::supportClassFactory('base', 'event');
+		$event = owa_coreAPI::supportClassFactory('base', 'event');
+		
+		if ($type) {
+			$event->setEventType($type);
+		}
+		
+		return $event;
 	}
 	
 	function setSiteId($site_id) {
