@@ -16,10 +16,18 @@
 // $Id$
 //
 
-require_once (OWA_PEARLOG_DIR . '/Log.php');
-require_once (OWA_PEARLOG_DIR . '/Log/file.php');
-require_once (OWA_PEARLOG_DIR . '/Log/composite.php');
-require_once (OWA_PEARLOG_DIR . '/Log/mail.php');
+if ( ! class_exists( 'Log' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log.php');
+}
+if ( ! class_exists( 'Log_file' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log/file.php');
+}
+if ( ! class_exists( 'Log_composite' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log/composite.php');
+}
+if ( ! class_exists( 'Log_mail' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log/mail.php');
+}
 
 /**
  * Error handler
