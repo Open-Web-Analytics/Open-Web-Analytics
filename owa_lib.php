@@ -1090,6 +1090,11 @@ class owa_lib {
 		$value = $value /100;
 		return money_format( '%.2n',$value );
 	}
+	
+	public static function crc32AsHex($string) {
+		
+		return dechex(crc32($str));
+	}
 }
 
 ?>
