@@ -315,17 +315,6 @@ class owa_module extends owa_base {
 	 * @access public
 	 * @return array
 	 */
-	function _registerAdminPanels() {
-		
-		return;
-	}
-	
-	/**
-	 * Abstract method for registering administration/settings page
-	 * 
-	 * @access public
-	 * @return array
-	 */
 	function registerAdminPanels() {
 		
 		return;
