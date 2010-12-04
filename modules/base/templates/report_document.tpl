@@ -7,10 +7,20 @@
 <?php require('report_trend_section.php');?>
 	
 <div class="owa_reportSectionContent">
-	<table>
+	<table style="width:100%;">
 		<TR>
-			
-			<TD width="" valign="top">
+		
+			<TD width="50%" valign="top">
+			<div class="owa_reportSectionContent">
+				<div class="owa_reportSectionHeader">Next Pages Viewed</div>
+				<div id="nextpages"></div>
+			</div>
+			<div class="owa_reportSectionContent">
+				<div class="owa_reportSectionHeader">Prior Pages Viewed</div>
+				<div id="priorpages"></div>
+			</div>
+			</TD>
+			<TD width="50%" valign="top">
 				<div class="owa_reportSectionHeader">Related Reports:</div>
 				
 				<P>
@@ -30,5 +40,37 @@
 		</TR>
 	</table>	
 </div>
+
+
+
+<script>
+		var trurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+													  'metrics' => 'visits', 
+													  'dimensions' => 'pagePath,pageTitle', 
+													  'sort' => 'visits-', 
+													  'resultsPerPage' => 15,
+													  'constraints'			=> 'priorPageUrl=='.urlencode($dimension_properties->get('url')),
+													  'format' => 'json'), true);?>';
+													  
+		var trshre = new OWA.resultSetExplorer('nextpages');
+		var link = '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
+		trshre.addLinkToColumn('pagePath', link, ['pagePath']);
+		trshre.asyncQueue.push(['refreshGrid']);
+		trshre.load(trurl);
+		
+		var prurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+													  'metrics' => 'visits', 
+													  'dimensions' => 'priorPagePath,priorPageTitle', 
+													  'sort' => 'visits-', 
+													  'resultsPerPage' => 15,
+													  'constraints'			=> 'pageUrl=='.urlencode($dimension_properties->get('url')),
+													  'format' => 'json'), true);?>';
+													  
+		var prshre = new OWA.resultSetExplorer('priorpages');
+		var link = '<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pagePath' => '%s'), true);?>';
+		prshre.addLinkToColumn('priorPagePath', link, ['priorPagePath']);
+		prshre.asyncQueue.push(['refreshGrid']);
+		prshre.load(prurl);
+</script>
 
 <?php require_once('js_report_templates.php');?>
