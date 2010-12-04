@@ -418,7 +418,11 @@ class owa_resultSetManager extends owa_base {
 				
 				if ($dim) {
 					$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
-				$dim['column'] = $dimEntity->getTableAlias().'.'.$dim['column'];
+					// alias needs to use fk name in case there are two joins on the
+					// same table. This is also used in addRelation method
+					$alias = $dimEntity->getTableAlias().'_via_'.$dim['foreign_key_name'];
+					//$dim['column'] = $dimEntity->getTableAlias().'.'.$dim['column'];
+					$dim['column'] = $alias.'.'.$dim['column'];
 				} else {
 					$msg = "$name is not a registered dimension.";
 					owa_coreAPI::debug($msg);
@@ -830,10 +834,16 @@ class owa_resultSetManager extends owa_base {
 				//print_r($fk['col']);
 				$fpk = $fpk_col->getForeignKey();
 				// add join
-				//print_r($fpk);	
-				$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $fk['entity']->getTableAlias().'.'.$fk['col'], $dimEntity->getTableAlias().'.'.$fpk[1]);
-				//$this->related_entities[] = $dim['entity'];
-				$this->addColumn($dim['name'], $dimEntity->getTableAlias().'.'.$dim['column']);
+				//print_r($fpk);
+				// needed to make joins unique in cases where there are 
+				// two joins onthe same table using different foreign keys.
+				$alias = $dimEntity->getTableAlias().'_via_'.$dim['foreign_key_name'];	
+				//$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $fk['entity']->getTableAlias().'.'.$fk['col'], $dimEntity->getTableAlias().'.'.$fpk[1]);
+				$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $alias, $fk['entity']->getTableAlias().'.'.$fk['col'], $alias.'.'.$fpk[1]);
+				
+				//$this->addColumn($dim['name'], $dimEntity->getTableAlias().'.'.$dim['column']);
+				$this->addColumn($dim['name'], $alias.'.'.$dim['column']);
+
 			} else {
 				// add error result set
 				owa_coreAPI::debug(sprintf('%s metric does not have relation to dimension %s', $fk['entity']->getName(), $dim['name'])); 
