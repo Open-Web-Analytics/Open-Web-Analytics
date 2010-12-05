@@ -171,7 +171,7 @@ class owa_service extends owa_base {
 		
 		foreach ($this->modules as $k => $module) {
 		
-			if (is_array($module->cli_commands)) {
+			if (is_array($module->api_methods)) {
 				$method_map = array_merge($module->api_methods, $method_map);
 			}
 		}

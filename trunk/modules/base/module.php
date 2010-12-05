@@ -313,42 +313,91 @@ class owa_baseModule extends owa_module {
 		 *
 		 * The following lines register various API methods. 
 		 */
-		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'resultsPerPage', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
+		$this->registerApiMethod('getResultSet', 
+				array($this, 'getResultSet'), 
+				array(
+					'metrics', 
+					'dimensions', 
+					'siteId', 
+					'constraints', 
+					'sort', 
+					'resultsPerPage', 
+					'page', 
+					'offset', 
+					'period', 
+					'startDate', 
+					'endDate', 
+					'startTime', 
+					'endTime', 
+					'format'), 
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'));
+		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
 		
-		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'));
+		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
 		
-		$this->registerApiMethod('getClickstream', array($this, 'getClickstream'), array( 'sessionId', 'resultsPerPage', 'page','format'));
+		$this->registerApiMethod('getClickstream', 
+				array($this, 'getClickstream'), 
+				array( 'sessionId', 'resultsPerPage', 'page','format'),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
+		$this->registerApiMethod('getVisitDetail', 
+				array($this, 'getVisitDetail'), 
+				array( 'sessionId', 'format'),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getTransactionDetail', array($this, 'getTransactionDetail'), array( 'transactionId', 'format'));
+		$this->registerApiMethod('getTransactionDetail', 
+				array($this, 'getTransactionDetail'), 
+				array( 'transactionId', 'format'),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getDomClicks', array($this, 'getDomClicks'), array(
-				'pageUrl', 
-				'siteId', 
-				'startDate', 
-				'endDate', 
-				'document_id', 
-				'period',
-				'resultsPerPage', 
-				'page',
-				'format'
-		));
+		$this->registerApiMethod('getDomClicks', 
+				array($this, 'getDomClicks'), 
+				array(
+					'pageUrl', 
+					'siteId', 
+					'startDate', 
+					'endDate', 
+					'document_id', 
+					'period',
+					'resultsPerPage', 
+					'page',
+					'format'
+				),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getTransactions', array($this, 'getTransactions'), array( 
-				'siteId', 
-				'startDate', 
-				'endDate', 
-				'period',
-				'sort',
-				'resultsPerPage', 
-				'page',
-				'format'
-		));
+		$this->registerApiMethod('getTransactions', 
+				array($this, 'getTransactions'), 
+				array( 
+					'siteId', 
+					'startDate', 
+					'endDate', 
+					'period',
+					'sort',
+					'resultsPerPage', 
+					'page',
+					'format'
+				),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getDomstream', array($this, 'getDomstream'), array('domstream_guid') );
+		$this->registerApiMethod('getDomstream', 
+				array($this, 'getDomstream'), 
+				array('domstream_guid'),
+				'', 
+				'view_reports' 
+		);
 		
 		return parent::__construct();
 	}

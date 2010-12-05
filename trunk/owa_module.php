@@ -370,6 +370,11 @@ class owa_module extends owa_base {
 		return false;
 	}
 	
+	function registerNavigation() {
+		
+		return false;
+	}
+	
 	
 	/**
 	 * Registers an Entity
