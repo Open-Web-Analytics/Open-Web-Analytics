@@ -96,23 +96,24 @@ class owa_timePeriod {
 		
 		return array(
 					
-					'today' => array('label' => 'Today'),
-					'yesterday' => array('label' => 'Yesterday'),
-					'this_week' => array('label' => 'This Week'),
-					'this_month' => array('label' => 'This Month'),
-					'this_year' => array('label' => 'This Year'),
-					'last_week'  => array('label' => 'Last Week'),
-					'last_month' => array('label' => 'Last Month'),
-					'last_year' => array('label' => 'Last Year'),
-					//'last_half_hour' => array('label' => 'The Last 30 Minutes'),				
-					//'last_hour' => array('label' => 'Last Hour'),
-					//'last_24_hours' => array('label' => 'Last 24 Hours'),
-					'last_seven_days' => array('label' => 'Last Seven Days'),
-					'last_thirty_days' => array('label' => 'Last Thirty Days'),
-					'same_day_last_week' => array('label' => 'Same Day last Week'),
-					'same_week_last_year' => array('label' => 'Same Week Last Year'),
-					'same_month_last_year' => array('label' => 'Same Month Last Year'),
-					'date_range' => array('label' => 'Date Range')
+					'today' 				=> array('label' => 'Today'),
+					'yesterday' 			=> array('label' => 'Yesterday'),
+					'this_week' 			=> array('label' => 'This Week'),
+					'this_month' 			=> array('label' => 'This Month'),
+					'this_year' 			=> array('label' => 'This Year'),
+					'last_week'  			=> array('label' => 'Last Week'),
+					'last_month' 			=> array('label' => 'Last Month'),
+					'last_year' 			=> array('label' => 'Last Year'),
+					//'last_half_hour' 		=> array('label' => 'The Last 30 Minutes'),				
+					//'last_hour' 			=> array('label' => 'Last Hour'),
+					//'last_24_hours' 		=> array('label' => 'Last 24 Hours'),
+					'last_seven_days' 		=> array('label' => 'Last Seven Days'),
+					'last_thirty_days' 		=> array('label' => 'Last Thirty Days'),
+					'same_day_last_week' 	=> array('label' => 'Same Day last Week'),
+					'same_week_last_year' 	=> array('label' => 'Same Week Last Year'),
+					'same_month_last_year' 	=> array('label' => 'Same Month Last Year'),
+					'date_range' 			=> array('label' => 'Date Range'),
+					'time_range'			=> array('label' => 'Time Range')
 		);
 		
 	}
