@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 // $Id$
-//
+// 
 
 require_once('owa_env.php');
 require_once(OWA_DIR.'owa_php.php');
