@@ -24,7 +24,7 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * OWA Comand Line Interface (CLI)
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2009 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2010 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
