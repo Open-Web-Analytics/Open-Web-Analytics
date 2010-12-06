@@ -23,7 +23,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * REST API
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2010 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
