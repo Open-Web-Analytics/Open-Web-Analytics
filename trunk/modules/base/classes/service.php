@@ -189,7 +189,7 @@ class owa_service extends owa_base {
 			
 			if (is_array($module->denormalizedDimensions)) {
 			
-				$this->denormalizedDimensions = array_merge($this->denormalizedDimensions, $module->denormalizedDimensions);
+				$this->denormalizedDimensions = array_merge_recursive($this->denormalizedDimensions, $module->denormalizedDimensions);
 			}
 			
 			//print_r($this->denormalizedDimensions);
