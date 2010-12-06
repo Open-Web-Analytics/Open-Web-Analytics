@@ -64,7 +64,12 @@ function owa_newBlogActionTracker($blog_id, $user_id, $domain, $path, $site_id) 
  * Edit Post Action Tracker
  */
 function owa_editPostActionTracker($post_id, $post) {
-
+	
+	// we don't want to track autosaves...
+	if(wp_is_post_autosave($post)) {
+		return;
+	}
+	
 	$owa = owa_getInstance();
 	$label = $post->post_title;
 	$owa->trackAction('wordpress', $post->post_type.' edited', $label);
