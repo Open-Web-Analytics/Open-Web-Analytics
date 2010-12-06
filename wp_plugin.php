@@ -85,7 +85,9 @@ function owa_postActionTracker($new_status, $old_status, $post) {
 		return;
 	}
 	
-	if ($new_status === 'publish' && $old_status != 'publish') {
+	if ($new_status === 'draft' && $old_status === 'draft') {
+		return;
+	} elseif ($new_status === 'publish' && $old_status != 'publish') {
 		$action_name = $post->post_type.' publish';
 	} elseif ($new_status === $old_status) {
 		$action_name = $post->post_type.' edit';
