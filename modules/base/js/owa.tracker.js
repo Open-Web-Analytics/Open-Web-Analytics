@@ -168,7 +168,14 @@ OWA.tracker = function( options ) {
 		
 	};
 	
-	// Endpoint URL of log service
+	// Endpoint URL of log service. needed for backwards compatability with old tags
+	var endpoint = window.owa_baseUrl || OWA.config.baseUrl ;
+	if (endpoint) {
+		this.setEndpoint(endpoint); 
+	} else {
+		OWA.debug('no global endpoint url found.');
+	}
+	
 	this.endpoint = OWA.config.baseUrl;
 	// Active status of tracker
 	this.active = true;
@@ -509,33 +516,38 @@ OWA.tracker.prototype = {
 	
 	setEndpoint : function (endpoint) {
 		
+		endpoint = ('https:' == document.location.protocol ? window.owa_baseSecUrl || endpoint.replace(/http:/, 'https:') : endpoint );
 		this.setOption('baseUrl', endpoint);
 		OWA.config.baseUrl = endpoint;
-		//this.setLoggerEndpoint( endpoint + 'log.php' );
-		//this.setApiEndpoint( endpoint + 'api.php' );
 	},
 	
 	setLoggerEndpoint : function(url) {
 		
-		this.setOption('logger_endpoint', url);
+		this.setOption( 'logger_endpoint', this.forceUrlProtocol( url ) );
 	},
 	
 	getLoggerEndpoint : function() {
 	
-		var url = this.getOption('logger_endpoint') || this.getEndpoint() || OWA.getSetting('baseUrl') ;
+		var url = this.getOption( 'logger_endpoint') || this.getEndpoint() || OWA.getSetting('baseUrl') ;
 		
 		return url + 'log.php';
 	},
 	
 	setApiEndpoint : function(url) {
-		
-		this.setOption('api_endpoint', url);
+			
+		this.setOption( 'api_endpoint', this.forceUrlProtocol( url ) );
 		OWA.setApiEndpoint(url);
 	},
 	
 	getApiEndpoint : function() {
 	
 		return this.getOption('api_endpoint') || this.getEndpoint() + 'api.php';
+	},
+	
+	forceUrlProtocol : function (url) {
+		
+		url = ('https:' == document.location.protocol ? url.replace(/http:/, 'https:') : url );
+		return url;
 	},
 
 	
@@ -1686,9 +1698,9 @@ OWA.tracker.prototype = {
 };
 
 (function() {
-	if ( typeof owa_baseUrl != "undefined" ) {
-		OWA.config.baseUrl = owa_baseUrl;
-	}
+	//if ( typeof owa_baseUrl != "undefined" ) {
+	//	OWA.config.baseUrl = owa_baseUrl;
+	//}
 	// execute commands global owa_cmds command queue
 	if ( typeof owa_cmds === 'undefined' ) {
 		var q = new OWA.commandQueue();	
