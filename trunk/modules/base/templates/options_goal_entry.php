@@ -37,7 +37,7 @@
 							$this->out($k);
 						}
 						?></option>
-						<? endforeach;?>
+						<?php endforeach;?>
 					</select>
 					<BR><BR>Edit the group label:
 					

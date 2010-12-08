@@ -57,7 +57,7 @@
  	function __construct() {
  	
  		// create configuration object
- 		$this->config = owa_coreAPI::rawEntityFactory('base.configuration');
+ 		$this->config = owa_coreAPI::entityFactory('base.configuration');
  		// load the default settings
  		$this->getDefaultConfig();
  		// include/load config file
@@ -119,6 +119,23 @@
  	}
  	
  	function applyConfigConstants() {
+ 		
+ 		if(!defined('OWA_DATA_DIR')){
+			define('OWA_DATA_DIR', OWA_DIR.'owa-data'.DIRECTORY_SEPARATOR);
+			
+		}
+		
+		if (defined('OWA_DATA_DIR')) {
+			$this->set('base', 'data_dir', OWA_DATA_DIR);
+		}
+		
+		if(!defined('OWA_CACHE_DIR')){
+			define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches'.DIRECTORY_SEPARATOR);
+ 		}
+ 		
+ 		if (defined('OWA_CACHE_DIR')) {
+			$this->set('base', 'cache_dir', OWA_CACHE_DIR);
+		}
  		
  		// Looks for log level constant
 		if (defined('OWA_ERROR_LOG_LEVEL')) {
@@ -568,7 +585,7 @@
 				'clean_query_string'				=> true,
 				'fetch_refering_page_info'			=> true,
 				'query_string_filters'				=> '', // move to site settings
-				'async_log_dir'						=> OWA_DATA_DIR . 'logs/',
+				'async_log_dir'						=> '', //OWA_DATA_DIR . 'logs/',
 				'async_log_file'					=> 'events.txt',
 				'async_lock_file'					=> 'owa.lock',
 				'async_error_log_file'				=> 'events_error.txt',
@@ -576,7 +593,7 @@
 				'log_php_errors'					=> false,
 				'error_handler'						=> 'production',
 				'error_log_level'					=> 0,
-				'error_log_file'					=> OWA_DATA_DIR . 'logs/errors.txt',
+				'error_log_file'					=> '', //OWA_DATA_DIR . 'logs/errors.txt',
 				'browscap.ini'						=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
 				'search_engines.ini'				=> OWA_BASE_DIR . '/conf/search_engines.ini',
 				'query_strings.ini'					=> OWA_BASE_DIR . '/conf/query_strings.ini',
@@ -725,6 +742,9 @@
 		$this->set('base','images_absolute_url',$modules_url);
 		$this->set('base','log_url',$public_url.'log.php');
 		$this->set('base','api_url',$public_url.'api.php');
+		
+		$this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors.txt');
+		$this->set('base', 'async_log_dir', OWA_DATA_DIR . 'logs/');
 		
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
