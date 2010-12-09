@@ -60,6 +60,7 @@ class owa_maxmind extends owa_location {
 	var $db_file_dir;
 	var $db_file_name = 'GeoLiteCity.dat';
 	var $db_file_path;
+	var $db_File_present = false;
 	
 	/**
 	 * Constructor
@@ -73,8 +74,20 @@ class owa_maxmind extends owa_location {
 		}
 		
 		$this->db_file_path = OWA_MAXMIND_DATA_DIR.$this->db_file_name;
+		
+		if ( file_exists( $this->db_file_path ) ) {
+			
+			$this->db_file_present = true;
+		}
+		
+		
 		owa_coreAPI::debug('hello from maxmind');
 		return parent::__construct();
+	}
+	
+	function isDbReady() {
+		
+		return $this->db_file_present;
 	}
 	
 	/**
@@ -83,6 +96,10 @@ class owa_maxmind extends owa_location {
 	 * @param string $ip
 	 */
 	function getLocation($location_map) {
+		
+		if ( ! $this->isDbReady() ) {
+			return $location_map;
+		}
 		
 		// check for shared memory capability
 		if ( function_exists( 'shmop_open' ) ) {
@@ -100,8 +117,12 @@ class owa_maxmind extends owa_location {
 	       	$location_map['state'] =  strtolower(trim($location->__get('region')));
 			$location_map['country'] =  strtolower(trim($location->__get('countryName')));
 			$location_map['country_code'] =  strtoupper(trim($location->__get('countryCode')));
+			$location_map['country_code3'] =  strtoupper(trim($location->__get('countryCode3')));
 			$location_map['latitude'] = trim($location->__get('latitude'));
-			$location_map['longitude'] = trim($location->__get('longitude'));	
+			$location_map['longitude'] = trim($location->__get('longitude'));
+			$location_map['dma_code'] = trim($location->__get('dmaCode'));
+			$location_map['area_code'] = trim($location->__get('areaCode'));
+			$location_map['postal_code'] = trim($location->__get('postalCode'));
 	 	}
 		
 		return $location_map;
