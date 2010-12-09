@@ -41,6 +41,8 @@ class owa_installCheckEnvController extends owa_installController {
 	function action() {
 		
 		$errors = array();
+		$bad_environment = false;
+		$config_file_present = false;
 		
 		// check PHP version
 		$version = split('\.',phpversion());

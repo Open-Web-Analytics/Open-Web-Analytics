@@ -42,7 +42,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	$owa->setSetting('base','main_url', 'install.php');
 	// run controller, echo page content
 	$do = owa_coreAPI::getRequestParam('do'); 
-	
+	$params = array();
 	if (empty($do)) {
 		
 		$params['do'] = 'base.installStart';
