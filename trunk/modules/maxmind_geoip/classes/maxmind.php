@@ -36,6 +36,12 @@ set_include_path(
 	OWA_MODULES_DIR.'maxmind_geoip/includes/Net_GeoIP-1.0.0RC3/'
 );
 
+require_once(OWA_MODULES_DIR.
+		'maxmind_geoip'.DIRECTORY_SEPARATOR.
+		'includes'.DIRECTORY_SEPARATOR.
+		'maxmind-ws/GeoCityLocateIspOrg.class.php');
+
+
 /**
  * Maxmind Geolocation Wrapper
  * 
@@ -56,7 +62,7 @@ class owa_maxmind extends owa_location {
 	 *
 	 * @var unknown_type
 	 */
-	var $ws_url;
+	var $ws_url = '';
 	var $db_file_dir;
 	var $db_file_name = 'GeoLiteCity.dat';
 	var $db_file_path;
@@ -76,12 +82,11 @@ class owa_maxmind extends owa_location {
 		$this->db_file_path = OWA_MAXMIND_DATA_DIR.$this->db_file_name;
 		
 		if ( file_exists( $this->db_file_path ) ) {
-			
 			$this->db_file_present = true;
+		} else {
+			owa_coreAPI::notice('Maxmind DB file could is not present at: ' . OWA_MAXMIND_DATA_DIR);
 		}
 		
-		
-		owa_coreAPI::debug('hello from maxmind');
 		return parent::__construct();
 	}
 	
@@ -98,6 +103,10 @@ class owa_maxmind extends owa_location {
 	function getLocation($location_map) {
 		
 		if ( ! $this->isDbReady() ) {
+			return $location_map;
+		}
+		
+		if ( ! array_key_exists( 'ip_address', $location_map ) ) {
 			return $location_map;
 		}
 		
@@ -128,37 +137,41 @@ class owa_maxmind extends owa_location {
 		return $location_map;
 	}
 	
-	/*
+	
 	function getLocationFromWebService($location_map) {
+				
+		$license_key = 'B2BsVTphu74X';
 		
-		if (array_key_exists('ip_address',$location_map) && !empty($location_map['ip_address']) && empty($location_map['country'])) {
-				
-			$crawler = new owa_http;
-			$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
-			
-			$crawler->fetch(sprintf($this->ws_url, $location_map['ip_address']));
-			owa_coreAPI::debug(sprintf("Maxmind web service response code: %s", $crawler->crawler->response_code));
-			$location = $crawler->crawler->results;
-				
-			if ($location) {
- 			
-	 			$location_map['city'] = strtolower(trim($location['city']));
-		       	$location_map['state'] =  strtolower(trim($location['region']));
-				$location_map['country'] =  strtolower(trim($location['countryName']));
-				$location_map['country_code'] =  strtoupper(trim($location['countryCode']));
-				$location_map['latitude'] = trim($location['latitude']);
-				$location_map['longitude'] = trim($location['longitude']);	
-	 		}
-	       	
-			// log headers if status is not a 200 
-			if (!strpos($crawler->response_code, '200')) {
-				owa_coreAPI::debug(sprintf("Maxmind web service response headers: %s", print_r($crawler->crawler->headers, true)));
-			}
+		if ( ! array_key_exists( 'ip_address', $location_map ) ) {
+			return $location_map;
 		}
+		
+		$geoloc = GeoCityLocateIspOrg::getInstance();
+		$geoloc->setLicenceKey( $license_key );
+		$geoloc->setIP( $location_map['ip_address'] );
+		
+		if ( $geoloc->isError() ) {
+			owa_coreAPI::debug( $geoloc->isError().": " . $geoloc->getError() );
+			return $location_map;				
+		}
+		
+		$location_map['city'] = strtolower( trim( $geoloc->getCity() ) );
+       	$location_map['state'] =  strtolower( trim($geoloc->getState() ) );
+		$location_map['country'] =  strtolower( trim( $geoloc->lookupCountryCode( $geoloc->getCountryCode() ) ) );
+		$location_map['country_code'] =  strtoupper( trim($geoloc->getCountryCode() ) );
+		$location_map['latitude'] = trim( $geoloc->getLat() );
+		$location_map['longitude'] = trim( $geoloc->getLong() );
+		$location_map['dma_code'] = trim( $geoloc->getMetroCode() );
+		$location_map['dma'] = trim( $geoloc->lookupMetroCode( $geoloc->getMetroCode() ) );
+		$location_map['area_code'] = trim( $geoloc->getAreaCode() );
+		$location_map['postal_code'] = trim( $geoloc->getZip() );
+		$location_map['isp'] = trim( $geoloc->getIsp() );
+		$location_map['organization'] = trim( $geoloc->getOrganization() );
+		$location_map['subcountry_code'] = trim( $geoloc->lookupSubCountryCode( $geoloc->getState(), $geoloc->getCountryCode() ) );
 		
 		return $location_map;
 	}
-*/
+
 }
 
 ?>

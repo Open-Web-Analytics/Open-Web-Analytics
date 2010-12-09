@@ -43,7 +43,24 @@ class owa_maxmind_geoipModule extends owa_module {
 		$this->config_required = false;
 		$this->required_schema_version = 1;
 		
-		$this->registerFilter('geolocation', 'maxmind', 'getLocation', 0, 'classes');
+		$mode = owa_coreAPI::getSetting('maxmind_geoip', 'lookup_method');
+		
+		switch ( $mode ) {
+			
+			case "city_isp_org_web_service":
+				$method = 'getLocationFromWebService';
+				break;
+				
+			case "city_lite_db":
+				$method = 'getLocation';
+				break;
+				
+			default:
+				$method = 'getLocation';
+		}
+		
+		
+		$this->registerFilter('geolocation', 'maxmind', $method, 0, 'classes');
 		
 		return parent::__construct();
 	}
