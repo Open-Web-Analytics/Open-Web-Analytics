@@ -110,7 +110,7 @@ class owa_entity {
 	 *
 	 * @param unknown_type $array
 	 */
-	function setProperties($array) {
+	function setProperties($array, $apply_filters = false) {
 		
 		$properties = $this->getColumns();
 		
@@ -118,7 +118,7 @@ class owa_entity {
 				
 			if ( ! empty( $array[$v] ) ) {
 				if ( ! empty( $this->properties ) ) {
-					$this->set($v, $array[$v]);
+					$this->set($v, $array[$v], $apply_filters);
 				}
 			}
 		}
