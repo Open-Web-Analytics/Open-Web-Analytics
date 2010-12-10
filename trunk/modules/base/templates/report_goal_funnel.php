@@ -26,6 +26,19 @@
 			<div class="funnelStepName">Step <?php $this->out($step['step_number']);?>: <?php $this->out($step['name']);?></div>
 			<div class="funnelStepCount"><?php $this->out($step['visitors']);?> <span class="visitorCountLabel">visitors</span></div>
 			<div class="funnelStepUrl"><?php $this->out($step['url']);?></div>
+			<div class="genericHorizontalList" style="padding-top:10px;font-size:12px;">
+				<ul class="">
+					
+				
+					<li>
+						<span class="inline_h4"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams', 'pagePath' => $step['url']), true);?>">Watch Domstreams</a></span>
+					</li>
+				
+					<li>
+						<span class="inline_h4"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomClicks', 'pagePath' => $step['url']), true);?>">Analyze Dom Clicks</a></span>
+					</li>
+				</ul>
+			</div>
 		</td>
 		<td width="33%" valign="top" class="funnelRight" id="exits_step_<?php $this->out($step['step_number']);?>">
 			<div class="funnelLargeNumber exitCount" id="next_page_count_step_<?php $this->out($step['step_number']);?>"></div>
@@ -46,8 +59,24 @@
 
 <script>
 var funnel_json = <?php $this->out($funnel_json, false);?>;
+var i = 1;
 for (step in funnel_json) {
+	step = parseInt(step);
+	
+	var total_steps = OWA.util.countObjectProperties(funnel_json);
 	var operator = '==';
+	if (i < total_steps ) {
+		next_step = step + 1;
+	} else {
+		next_step = step;
+	}
+	
+	if (i == 1) {
+		prior_step = step;
+	} else {
+		prior_step = step - 1 ;
+	}
+	
 	// prior pages
 	var name = 'entrances_step_' + funnel_json[step]['step_number'] ;															  
 	OWA.items[name] = new OWA.resultSetExplorer(name);
@@ -57,7 +86,7 @@ for (step in funnel_json) {
 			dimensions: 'priorPagePath',
 			sort: 'visitors-',
 			format: 'json',
-			constraints: 'pagePath' + operator + funnel_json[step]['url'],
+			constraints: 'pagePath' + operator + funnel_json[step]['url'] + ',priorPagePath!=' + funnel_json[prior_step]['url'],
 			resultsPerPage: 5,
 			siteId: OWA.items['base-reportGoalFunnel'].getSiteId(),
 			period: OWA.items['base-reportGoalFunnel'].getPeriod(),
@@ -82,7 +111,7 @@ for (step in funnel_json) {
 			dimensions: 'pagePath',
 			sort: 'visitors-',
 			format: 'json',
-			constraints: 'priorPagePath' + operator + funnel_json[step]['url'],
+			constraints: 'priorPagePath' + operator + funnel_json[step]['url'] + ',pagePath!=' + funnel_json[next_step]['url'],
 			resultsPerPage: 5,
 			siteId: OWA.items['base-reportGoalFunnel'].getSiteId(),
 			period: OWA.items['base-reportGoalFunnel'].getPeriod(),
@@ -98,7 +127,7 @@ for (step in funnel_json) {
 	]);
 	OWA.items[name].asyncQueue.push(['refreshGrid']);
 	OWA.items[name].load();
-	
+	i++;
 	// jquery binding for select list
 	// Bind event handlers
 	jQuery(document).ready(function(){   
@@ -110,6 +139,7 @@ for (step in funnel_json) {
 				OWA.items['base-reportGoalFunnel'].reload();
 		});
 	});
+	
 	
 }
 </script>
