@@ -1336,6 +1336,8 @@ class owa_baseModule extends owa_module {
     			$file_cmd[] = 'destination='.$dest;
     		}
     		$jobs[] = $file_cmd;
+    		
+    		$queue_file_exists = true;
     	}
 			    	
     	// check the database queue
