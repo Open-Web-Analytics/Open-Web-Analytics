@@ -1339,20 +1339,6 @@ class owa_baseModule extends owa_module {
     		
     		$queue_file_exists = true;
     	}
-			    	
-    	// check the database queue
-    	$db = owa_coreAPI::dbSingleton();
-    	$result = $db->query("SELECT count(*) from owa_queue_item where status = 'unhandled'");
-    	
-    	if ( $result > 0 ) {
-    		$db_cmd = array('cmd=processEventQueue');
-    		$db_cmd[] = 'source=database';
-    		
-    		if ( $dest ) {
-    			$db_cmd[] = 'destination='.$dest;
-    		}
-    		$jobs[] = $db_cmd;
-    	}
     	
     	return $jobs;
     }
