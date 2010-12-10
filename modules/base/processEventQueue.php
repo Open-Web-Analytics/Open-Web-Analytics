@@ -57,10 +57,15 @@ class owa_processEventQueueController extends owa_cliController {
 		$d = owa_coreAPI::getEventDispatch();
 		owa_coreAPI::debug( "Loading $input_queue_type event queue." );
 		$q = $d->getAsyncEventQueue( $input_queue_type );
-		
-		
-		
+	
 		$q->processQueue();
+		
+		$destination =  $this->getParam( 'destination' );
+		
+		if ( $processing_queue_type ) {
+			$destq = $d->getAsyncEventQueue( $processing_queue_type );
+			$destq->processQueue();
+		}
 	}
 }
 
