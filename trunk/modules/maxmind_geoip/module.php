@@ -47,7 +47,7 @@ class owa_maxmind_geoipModule extends owa_module {
 		
 		switch ( $mode ) {
 			
-			case "city_isp_org_web_service":
+			case "geoip_city_isp_org_web_service":
 				$method = 'getLocationFromWebService';
 				break;
 				
