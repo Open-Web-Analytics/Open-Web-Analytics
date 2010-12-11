@@ -140,7 +140,7 @@ class owa_maxmind extends owa_location {
 	
 	function getLocationFromWebService($location_map) {
 				
-		$license_key = 'B2BsVTphu74X';
+		$license_key = owa_coreAPI::getSetting('maxmind_geoip', 'ws_license_key');
 		
 		if ( ! array_key_exists( 'ip_address', $location_map ) ) {
 			return $location_map;
