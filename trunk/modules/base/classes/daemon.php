@@ -9,15 +9,23 @@ class owa_daemon extends Daemon {
 	var $pids = array();
 	var $params = array();
 	var $max_workers = 5;
-	var $event_file_size_limit = 1000;
 	var $job_scheduling_interval = 30;
 	var $eq;
 	
 	function __construct() {
 		
 		$this->params = $this->getArgs();
+		
+		if (isset($this->params['interval'])) {
+			$this->job_scheduling_interval = $this->params['interval'];
+		}
+		
+		if (isset($this->params['max_workers'])) {
+			$this->max_workers = $this->params['max_workers'];
+		}
+		
 		$this->eq = owa_coreAPI::getEventDispatch();
-		//$this->event_file_size_limit = owa_coreAPI::getSetting('base', 'event_file_size_limit');
+		
 		return parent::__construct();
 	}
 	
