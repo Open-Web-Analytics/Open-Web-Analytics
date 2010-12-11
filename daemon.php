@@ -39,7 +39,15 @@ if (!empty($_POST)) {
 }
 
 $owa = new owa_php();
-$daemon = new owa_daemon();
-$daemon->start();
+
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+	// start daemon
+	$daemon = new owa_daemon();
+	$daemon->start();
+	
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
 
 ?>
