@@ -1335,7 +1335,7 @@ class owa_baseModule extends owa_module {
     		if ( $dest ) {
     			$file_cmd[] = 'destination='.$dest;
     		}
-    		$jobs[] = $file_cmd;
+    		$jobs['processEventQueue'] = array('cmd' => $file_cmd, 'max_workers' => 3, 'interval' => 100);
     		
     		$queue_file_exists = true;
     	}
