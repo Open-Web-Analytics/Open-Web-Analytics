@@ -285,7 +285,7 @@
 				
 				foreach ($db_settings as $k => $v) {
 					
-					if (is_array($default[$k])):
+					if (isset($default[$k]) && is_array($default[$k])):
 						$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
 					else:
 						$new_config[$k] = $db_settings[$k];
@@ -746,8 +746,10 @@
 		$this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors.txt');
 		$this->set('base', 'async_log_dir', OWA_DATA_DIR . 'logs/');
 		
+		owa_coreAPI::debug('check for http host');
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
+			
 			$this->setCookieDomain($_SERVER['HTTP_HOST']);
 		}
  	}
@@ -819,21 +821,33 @@
 	
 	function setCookieDomain ($domain) {
 		
+		$pos = strpos($domain, '.');
 		//check for local host
 		if ( strpos( $domain, 'localhost' ) ) {
 		 	$cookie_domain = false;
 		// check for local domain 	
-		} elseif ( ! strpos($domain, '.') ) {
+		} elseif ( $pos === false) {
+			
 			$cookie_domain = false;
 		} else {
-		 
+		 	
 			// Remove port information.
      		$port = strpos( $domain, ':' );
 			if ( $port ) {
-				$cookie_domain = substr( $domain, 0, $port );
-			} else {
-				$cookie_domain = $domain;
+				$domain = substr( $domain, 0, $port );
 			}
+			
+			$period = substr( $domain, 0, 1);
+			if ( $period === '.' ) {
+				$domain = substr( $domain, 1 );
+			}
+			
+			$part = substr( $domain, 0, 3 );
+			if ($part === 'www') {
+				$domain = substr( $domain, 3);
+			}
+			
+			$cookie_domain = '.'.$domain;
 		}
 		
 		$this->set('base','cookie_domain', $cookie_domain); 
