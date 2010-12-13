@@ -59,7 +59,7 @@ class owa_caller extends owa_base {
 	 * @return owa_caller
 	 */
 	function __construct($config = array()) {
-		error_reporting(E_ALL);
+		
 		if (empty($config)) {
 			$config = array();
 		}
