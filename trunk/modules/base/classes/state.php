@@ -77,6 +77,7 @@ class owa_state {
 	function setState($store, $name = '', $value, $store_type = '', $is_perminent = false) {
 	
 		owa_coreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
+		
 		// first call to set for a store sets the meta
 		if (!array_key_exists($store, $this->stores)) {
 		
@@ -131,7 +132,7 @@ class owa_state {
 				$time = $this->getPermExpiration();
 			}
 			
-			//owa_coreAPI::debug('perm: '.$this->stores_meta[$store]['is_perminent']);	
+			
 			owa_coreAPI::createCookie($store, $this->stores[$store], $time, "/", owa_coreAPI::getSetting('base', 'cookie_domain'));
 		}	
 	}

@@ -1008,15 +1008,15 @@ class owa_coreAPI {
 	}
 	
 	public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
-	
+		
 		if (!empty($domain)) {
-			$c = owa_coreAPI::configSingleton();
+			$c = &owa_coreAPI::configSingleton();
 			// sanitizes the domain
 			$c->setCookieDomain($domain);
 		}
 		
 		$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
-		
+				
 		if (is_array($cookie_value)) {
 			
 			$cookie_value = owa_lib::implode_assoc('=>', '|||', $cookie_value);
@@ -1026,7 +1026,7 @@ class owa_coreAPI {
 		$cookie_name = sprintf('%s%s', owa_coreAPI::getSetting('base', 'ns'), $cookie_name);
 		
 		// debug
-		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s', $cookie_name, $cookie_value));
+		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
 		
 		// set compact privacy header
 		header(sprintf('P3P: CP="%s"', owa_coreAPI::getSetting('base', 'p3p_policy')));

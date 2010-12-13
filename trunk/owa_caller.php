@@ -59,7 +59,7 @@ class owa_caller extends owa_base {
 	 * @return owa_caller
 	 */
 	function __construct($config = array()) {
-		
+		error_reporting(E_ALL);
 		if (empty($config)) {
 			$config = array();
 		}
@@ -82,6 +82,10 @@ class owa_caller extends owa_base {
 			owa_coreAPI::debug( 'User Agent: '.$_SERVER['HTTP_USER_AGENT'] );
 		}
 		
+		if ( array_key_exists('HTTP_HOST', $_SERVER ) ) {
+			owa_coreAPI::debug( 'Host: '.$_SERVER['HTTP_HOST'] );
+		}
+		owa_coreAPI::debug('cookie domain in caller: '. owa_coreAPI::getSetting('base', 'cookie_domain'));
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 		
