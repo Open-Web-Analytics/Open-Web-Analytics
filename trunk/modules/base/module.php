@@ -442,13 +442,15 @@ class owa_baseModule extends owa_module {
 				'order'			=> 3)
 		);		
 		
+		/*
 		$this->addAdminPanel(array(
 				'do' 			=> 'base.optionsGoals', 
 				'priviledge' 	=> 'admin', 
 				'anchortext' 	=> 'Goal Settings',
 				'group'			=> 'General',
 				'order'			=> 3)
-		);		
+		);	
+		*/	
 	}
 	
 	function registerNavigation() {
