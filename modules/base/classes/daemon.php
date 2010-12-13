@@ -14,6 +14,7 @@ class owa_daemon extends Daemon {
 	var $workerCountByJob = array();
 	var $lastExecutionTimeByJob = array();
 	var $jobsByPid = array();
+	var $defaultMaxWorkersPerJob = 3;
 	
 	function __construct() {
 		
@@ -38,7 +39,6 @@ class owa_daemon extends Daemon {
 		if (isset($this->params['gid'])) {
 			$this->groupID = $this->params['gid'];
 		}
-
 
 		if (isset($this->params['pid_file_location'])) {
 			$this->pidFileLocation = $this->params['pid_file_location'];
@@ -72,14 +72,56 @@ class owa_daemon extends Daemon {
 		owa_coreAPI::notice("Daemon: $msg");
 	}
 	
+	function isWorkerAvailable() {
+		
+		$active_workers = count( $this->pids );
+		$available_workers = $this->max_workers - $active_workers;
+		if ( $available_workers >= 1 ) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	function isAnotherWorkerAllowed($job_name, $job_max_workers = '') {
+		
+		if ( ! $job_max_workers ) {
+			$job_max_workers = $this->defaultMaxWorkersPerJob;
+		}
+		
+		if ( array_key_exists($job_name, $this->workerCountByJob ) ) {
+			if ( $this->workerCountByJob[$job_name]	< $job_max_workers) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}	
+	}
+	
+	function isTimeForJob($job_name, $interval = 0) {
+		
+		$now = time();
+		if (isset($this->lastExecutionTimeByJob[$job_name])) {
+			$last_exec = $this->lastExecutionTimeByJob[$job_name];
+		} else {
+			$last_exec = 0;
+		}
+		
+		if ($last_exec + $interval > $now) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 	/**
 	 * This function is happening in a while loop
 	 */
 	function _doTask() {
-		$active_workers = count( $this->pids );
-		$available_workers = $this->max_workers - $active_workers;
-		
-		if ( $available_workers >= 1 ) {
+				
+		if ( $this->isWorkerAvailable() ) {
 			
 			$jobs = $this->eq->filter('daemon_jobs', $job_list);
 			
@@ -87,28 +129,31 @@ class owa_daemon extends Daemon {
 				$i = 0;
 				//for ($i = 0; $i < $available_workers; $i++) {
 				foreach ($jobs as $k => $job) {
-					$pid = pcntl_fork();
- 						
-					if ( ! $pid ) {
-						// this part is executed in the child
-		 				owa_coreAPI::debug( 'New child process executing command ' . print_r( $job[$i], true ) );
-		 				pcntl_exec( OWA_DIR.'cli.php', $job['cmd'] ); // takes an array of arguments
-		 				exit();
-		 			} elseif ($pid == -1) {
-		 				// happens when something goes wrong and fork fails (handle errors here)
-		 			} else {
-		 				// this part is executed in the parent
-						// We add pids to a global array, so that when we get a kill signal
-						// we tell the kids to flush and exit.
-						if ( array_key_exists( $k, $this->workerCountByJob ) ) {
-							$this->workerCountByJob[$k]++
-						} else {
-							$this->workerCountByJob[$k] = 1;
-							$this->lastExecutionTimeByJob[$k] = time();
-							$this->jobsByPid[$pid] = $k;
+					
+					if ( $this->isAnotherWorkerAllowed( $k, $job['max_workers'] ) && $this->isTimeForJob($k, $job['interval']) ) {
+						// fork a new child
+						$pid = pcntl_fork();
+						if ( ! $pid ) {
+							// this part is executed in the child
+			 				owa_coreAPI::debug( 'New child process executing command ' . print_r( $job[$i], true ) );
+			 				pcntl_exec( OWA_DIR.'cli.php', $job['cmd'] ); // takes an array of arguments
+			 				exit();
+			 			} elseif ($pid == -1) {
+			 				// happens when something goes wrong and fork fails (handle errors here)
+			 			} else {
+			 				// this part is executed in the parent
+							// We add pids to a global array, so that when we get a kill signal
+							// we tell the kids to flush and exit.
+							if ( array_key_exists( $k, $this->workerCountByJob ) ) {
+								$this->workerCountByJob[$k]++
+							} else {
+								$this->workerCountByJob[$k] = 1;
+								$this->lastExecutionTimeByJob[$k] = time();
+								$this->jobsByPid[$pid] = $k;
+							}
+							
+							$this->pids[] = $pid;	
 						}
-						
-						$this->pids[] = $pid;	
 					}									
 				}
 			}
