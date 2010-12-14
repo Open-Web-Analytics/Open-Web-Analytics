@@ -96,6 +96,13 @@ class owa_requestContainer {
 		if (!empty($_COOKIE)) {
 			$this->cookies = $_COOKIE;
 			$this->owa_cookies = owa_lib::stripParams($_COOKIE, owa_coreAPI::getSetting('base', 'ns'));
+			// hack against other frameworks sanitizing cookie data and blowing away our '>' delimiter
+			// this should be removed once all cookies are using json format.
+			foreach ($this->owa_cookies as $k => $cookie) {
+				if (strpos($cookie, '&gt;')) {
+					$this->owa_cookies[$k] = str_replace("&gt;", ">", $cookie);
+				}
+			}
 		}
 		
 		// cookies
