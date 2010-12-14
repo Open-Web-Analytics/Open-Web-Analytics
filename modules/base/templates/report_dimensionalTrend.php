@@ -24,8 +24,11 @@
 <script type="text/javascript">
 		
 	// add tabs	
+	
 	<?php foreach ($tabs as $k => $tab): ?>
+	
 	// adding tab for <?php $this->out($k, false);?>
+	
 	
 	var tab = new OWA.report.tab('tab_<?php $this->out($k, false);?>');
 	tab.setLabel('<?php $this->out($tab['tab_label']);?>');	
@@ -100,6 +103,7 @@
 	<?php endforeach;?>
 	// create report tabs
 	OWA.items['<?php echo $dom_id;?>'].createTabs();
+	
 </script>
 
 <?php require_once('js_report_templates.php');?>

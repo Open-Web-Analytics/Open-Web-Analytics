@@ -75,19 +75,19 @@ OWA.report.prototype = {
 		jQuery("#report-tabs").prepend('<ul class="report-tabs-nav-list"></ul>');
 		for (tab in this.tabs) {
 	
-			if ( this.tabs.hasOwnProperty(tab) ) {
-				
-				jQuery("#report-tabs > .report-tabs-nav-list").append(OWA.util.sprintf( '<li><a href="#%s">%s</li>', tab, that.tabs[tab].label ) );
+			if ( this.tabs.hasOwnProperty(tab) ) {	
+				jQuery("#report-tabs > .report-tabs-nav-list").append(OWA.util.sprintf( '<li><a href="#%s">%s</a></li>', tab, that.tabs[tab].label ) );
 				
 			}
 		}
-				
+		
 		jQuery("#report-tabs").tabs({
 			show: function(event, ui) {
 				OWA.debug('tab selected is: %s', ui.panel.id);
 				that.tabs[ui.panel.id].load();
 			}
 		});
+
 	},
 	
 	getSiteId : function() {
