@@ -105,7 +105,7 @@ class owa_requestHandlers extends owa_observer {
 				$eq = owa_coreAPI::getEventDispatch();
 				$nevent = $eq->makeEvent($event->getEventType().'_logged');
 				$nevent->setProperties($event->getProperties());
-				$eq->notify($nevent);
+				$eq->asyncNotify($nevent);
 				return OWA_EHS_EVENT_HANDLED;
 			} else {
 				return OWA_EHS_EVENT_FAILED;
