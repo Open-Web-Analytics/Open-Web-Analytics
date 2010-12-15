@@ -417,7 +417,10 @@ OWA.util =  {
 	},
 	
 	getState : function(store_name, key) {
-		this.loadState(store_name);
+		
+		if ( ! OWA.state.hasOwnProperty( store_name ) ) {
+			this.loadState(store_name);
+		}
 		
 		if ( OWA.state.hasOwnProperty( store_name ) ) {
 			if ( key ) {
