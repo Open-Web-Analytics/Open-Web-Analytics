@@ -6,7 +6,7 @@
 var owa_baseUrl = '<?php $this->out( owa_coreAPI::getSetting( 'base', 'public_url' ) ); ?>';
 var owa_cmds = owa_cmds || [];
 <?php if (owa_coreAPI::getSetting('base', 'error_handler') === 'development'): ?>
-owa_cmds.push(['setOption','debug', true]);
+owa_cmds.push(['setDebug', true]);
 <?php endif;?>
 <?php if ($this->getValue('apiEndpoint', $options)): ?>
 owa_cmds.push(['setApiEndpoint', '<?php echo $options['apiEndpoint'];?>']);
