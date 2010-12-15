@@ -24,6 +24,8 @@ var OWA = {
 			
 			if(window.console && window.console.firebug) { 
 		 		console.log.apply(this, arguments);
+			} else {
+				console.log.apply(console, arguments);
 			}
 		}
 	},
