@@ -126,9 +126,6 @@ class owa_conversionHandlers extends owa_observer {
 											
 				} else {
 					
-					// create a new_conversion event so that the total conversion 
-					// metrics can be resummarized
-					$this->dispatchNewConversionEvent($event);
 					return OWA_EHS_EVENT_HANDLED;
 				}
 				
