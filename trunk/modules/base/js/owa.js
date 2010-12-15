@@ -164,10 +164,11 @@ OWA.util =  {
 	},
 	
 	
-	eraseCookie: function (name) {
+	eraseCookie: function (name, domain) {
 		//OWA.debug(this.readCookie('owa_overlay'));
-		
-		var domain = OWA.getSetting('cookie_domain') || document.domain;
+		if ( ! domain ) {
+			var domain = OWA.getSetting('cookie_domain') || document.domain;
+		}
 		OWA.debug("erasing " + name + " in domain: " +domain);
 		this.setCookie(name,"",-10000,"/",domain);
 		var test = this.readCookie(name);
