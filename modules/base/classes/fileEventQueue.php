@@ -176,7 +176,13 @@ class owa_fileEventQueue extends owa_eventQueue {
 					// debug
 					owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
 					// send event object to event queue
-					$dispatch->notify($event);	
+					$ret = $dispatch->notify($event);
+					
+					// is the dispatch was not successful then add the event back into the queue.
+					if ( $ret != OWA_EHS_EVENT_HANDLED ) {
+						$dispatch->asyncNotify($event);
+					}
+					
 				} else {
 					owa_coreAPI::debug("No event found in log row. Must be end of file.");
 				}						
