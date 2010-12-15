@@ -43,6 +43,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
      */
     function notify($event) {
 		
+		$dispatch = owa_coreAPI::getEventDispatch();
     	$ct = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
 		$pk = $ct->generateId( $event->get( 'ct_order_id' ) );
 		$ct->getByPk( 'id', $pk );
@@ -100,7 +101,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			}
 			
 			if ($ret) {
-				$dispatch = owa_coreAPI::getEventDispatch();
+				
 				$sce = $dispatch->makeEvent( 'ecommerce.transaction_persisted' );
 				$sce->setProperties( $event->getProperties() );
 				$dispatch->asyncNotify( $sce );
@@ -113,11 +114,17 @@ class owa_commerceTransactionHandlers extends owa_observer {
 			}
 			
 		} else {
-		
+			
+			// dispatch event just incase downstream handlers need to be triggered.
+			$sce = $dispatch->makeEvent( 'ecommerce.transaction_persisted' );
+			$sce->setProperties( $event->getProperties() );
+			$dispatch->asyncNotify( $sce );
 			owa_coreAPI::debug('Not Persisting. Transaction already exists');
 			return OWA_EHS_EVENT_HANDLED;
 		}	
     }
+    
+    
     
     function persistLineItem($item, $parent) {
     	
