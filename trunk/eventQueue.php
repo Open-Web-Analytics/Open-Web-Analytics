@@ -156,6 +156,8 @@ class eventQueue {
 		
 		if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
 			owa_coreAPI::debug("EHS: Event was not handled successfully by some handlers.");
+			//$q = $this->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
+			//$q->addToQueue($event);
 			return OWA_EHS_EVENT_FAILED;
 		} else {
 			owa_coreAPI::debug("EHS: Event was handled successfully by all handlers.");
