@@ -50,7 +50,7 @@ class owa_processEventQueueController extends owa_cliController {
 		
 		// switch event queue setting in case a new events should be sent to a different type of queue.
 		// this is handy for when processing from a file queue to a database queue
-		if ( $processing_queue_type ) ) {
+		if ( $processing_queue_type ) {
 			owa_coreAPI::setSetting( 'base', 'event_queue_type', $processing_queue_type );
 			owa_coreAPI::debug( "Setting event queue type to $processing_queue_type for processing." );
 		}
