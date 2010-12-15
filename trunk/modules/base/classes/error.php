@@ -236,8 +236,6 @@ class owa_error {
 	}
 	
 	function logBufferedMsgs() {
-		
-		$this->logger->log('buffered msgs: '.print_r($this->bmsgs, true), PEAR_LOG_DEBUG);
 				
 		if (!empty($this->bmsgs)):
 			foreach($this->bmsgs as $msg) {
