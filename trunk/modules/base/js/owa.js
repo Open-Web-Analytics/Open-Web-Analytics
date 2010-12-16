@@ -170,7 +170,7 @@ OWA.util =  {
 			domain = OWA.getSetting('cookie_domain') || document.domain;
 		}
 		OWA.debug("erasing cookie: " + name + " in domain: " +domain);
-		this.setCookie(name,"",-1000,"/");
+		this.setCookie(name,"",-1,"/",domain);
 		// attempt to read the cookie again to see if its there under another valid domain
 		var test = this.readCookie(name);
 		// if so then try the alternate domain				
