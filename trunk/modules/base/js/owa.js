@@ -178,15 +178,16 @@ OWA.util =  {
 			
 			var period = domain.substr(0,1);
 			
-			//if (period === '.') {
-				//domain = document.domain;
-			//} else {
-			//	domain = '.'+ domain;
-			//}
-
-			OWA.debug("erasing " + name + " in domain: " + domain);
+			if (period != '.') {
+				var domain2 = '.' + domain;
+				OWA.debug("erasing " + name + " in domain: " + domain2);
+				this.setCookie(name,"",-2,"/", domain2);	
+			} else {
+			//	domain = '.'+ domain
+				OWA.debug("erasing " + name + " in domain3: " + domain);
+				this.setCookie(name,"",-2,"/",domain);	
+			}
 			OWA.debug("erasing " + name + " in domain: ");
-			this.setCookie(name,"",-2,"/",domain);	
 			this.setCookie(name,"",-2,"/");	
 		}
 		
