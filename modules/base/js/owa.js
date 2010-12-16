@@ -185,7 +185,9 @@ OWA.util =  {
 			//}
 
 			OWA.debug("erasing " + name + " in domain: " + domain);
+			OWA.debug("erasing " + name + " in domain: ");
 			this.setCookie(name,"",-2,"/",domain);	
+			this.setCookie(name,"",-2,"/");	
 		}
 		
 	},
