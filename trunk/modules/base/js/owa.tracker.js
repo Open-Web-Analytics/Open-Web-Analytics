@@ -415,17 +415,17 @@ OWA.tracker.prototype = {
 				OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');
 				//erase the no www domain cookie (ie. .openwebanalytics.com)
 				var top_domain =  document.domain.substr(4);
-				OWA.util.eraseCookie( 'owa_' + v, top_domain );
-				OWA.util.eraseCookie( 'owa_' + s, top_domain );
-				OWA.util.eraseCookie( 'owa_' + c, top_domain );
+				OWA.util.eraseCookie( 'owa_' + 'v', top_domain );
+				OWA.util.eraseCookie( 'owa_' + 's', top_domain );
+				OWA.util.eraseCookie( 'owa_' + 'c', top_domain );
 			}
 			
 		} else {
 			// erase the document.domain version of all cookies (ie. www.openwebanalytics.com)
 			OWA.debug('document domain does not match cookie domain but includes www. cleaning up cookies.');
-			OWA.util.eraseCookie( 'owa_' + v, document.domain );
-			OWA.util.eraseCookie( 'owa_' + s, document.domain );
-			OWA.util.eraseCookie( 'owa_' + c, document.domain );
+			OWA.util.eraseCookie( 'owa_' + 'v', document.domain );
+			OWA.util.eraseCookie( 'owa_' + 's', document.domain );
+			OWA.util.eraseCookie( 'owa_' + 'c', document.domain );
 		}
 		
 		// add the leading period back
