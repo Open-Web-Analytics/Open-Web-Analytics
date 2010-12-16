@@ -1,4 +1,4 @@
-// OWA Tracker Min file created 1292460408 
+// OWA Tracker Min file created 1292461626 
 
 //// Start of json2 //// 
 
@@ -41,7 +41,8 @@ else var expires="";document.cookie=name+"="+value+expires+"; path=/";},dt_setco
 ((domain)?"; domain="+domain:"")+
 ((secure)?"; secure":"");},readCookie:function(name){var nameEQ=name+"=";var ca=document.cookie.split(';');for(var i=0;i<ca.length;i++){var c=ca[i];while(c.charAt(0)==' ')c=c.substring(1,c.length);if(c.indexOf(nameEQ)==0)return c.substring(nameEQ.length,c.length);}
 return'';},eraseCookie:function(name,domain){if(!domain){domain=OWA.getSetting('cookie_domain')||document.domain;}
-OWA.debug("erasing "+name+" in domain: "+domain);this.setCookie(name,"",-10000,"/",domain);var test=this.readCookie(name);if(test){domain="."+domain;OWA.debug("erasing "+name+" in domain: "+domain);this.setCookie(name,"",-10000,"/",domain);}},loadScript:function(url,callback){return LazyLoad.js(url,callback);},loadCss:function(url,callback){return LazyLoad.css(url,callback);},parseCookieString:function parseQuery(v){var queryAsAssoc=new Array();var queryString=unescape(v);var keyValues=queryString.split("|||");for(var i in keyValues){if(keyValues.hasOwnProperty(i)){var key=keyValues[i].split("=>");queryAsAssoc[key[0]]=key[1];}}
+OWA.debug("erasing cookie: "+name+" in domain: "+domain);this.setCookie(name,"",-10000,"/",domain);var test=this.readCookie(name);if(test){var period=domain.substr(0,1);if(period==='.'){domain=domain.substr(1);}else{domain='.'+domain;}
+OWA.debug("erasing "+name+" in domain: "+domain);this.setCookie(name,"",-10000,"/",domain);}},loadScript:function(url,callback){return LazyLoad.js(url,callback);},loadCss:function(url,callback){return LazyLoad.css(url,callback);},parseCookieString:function parseQuery(v){var queryAsAssoc=new Array();var queryString=unescape(v);var keyValues=queryString.split("|||");for(var i in keyValues){if(keyValues.hasOwnProperty(i)){var key=keyValues[i].split("=>");queryAsAssoc[key[0]]=key[1];}}
 return queryAsAssoc;},parseCookieStringToJson:function parseQuery(v){var queryAsObj=new Object;var queryString=unescape(v);var keyValues=queryString.split("|||");for(var i in keyValues){if(keyValues.hasOwnProperty(i)){var key=keyValues[i].split("=>");queryAsObj[key[0]]=key[1];}}
 return queryAsObj;},nsParams:function(obj){var new_obj=new Object;for(param in obj){if(obj.hasOwnProperty(param)){new_obj['owa_'+param]=obj[param];}}
 return new_obj;},urlEncode:function(str){str=(str+'').toString();return encodeURIComponent(str).replace(/!/g,'%21').replace(/'/g,'%27').replace(/\(/g,'%28').replace(/\)/g,'%29').replace(/\*/g,'%2A').replace(/%20/g,'+').replace(/~/g,'%7E');},urldecode:function(str){return decodeURIComponent(str.replace(/\+/g,'%20'));},parseUrlParams:function(url){var _GET={};for(var i,a,m,n,o,v,p=location.href.split(/[?&]/),l=p.length,k=1;k<l;k++)
@@ -62,7 +63,7 @@ OWA.debug('Populating state store (%s) with value: %s',store_name,state_value);v
 var match=false;if(document.domain===np_domain){match=true;}
 var www=false
 var www_check=np_domain.substr(0,4);if(www_check==='www.'){www=true;}
-if(www&&match){var erase_domain=np_domain.substr(4);OWA.util.eraseCookie('owa_'+store_name,erase_domain);}else{var erase_domain='www.'+np_domain;OWA.util.eraseCookie('owa_'+store_name,erase_domain);}
+if(www&&match){OWA.debug('document domain matches cookie domain and included www. cleaning up cookies.');var erase_domain=np_domain.substr(4);OWA.util.eraseCookie('owa_'+store_name,erase_domain);}else{OWA.debug('document domain does not match cookie domain and included www. cleaning up cookies.');var erase_domain='www.'+np_domain;OWA.util.eraseCookie('owa_'+store_name,erase_domain);}
 OWA.util.eraseCookie('owa_'+store_name,domain);OWA.util.setCookie('owa_'+store_name,state_value,expiration_days,'/',domain);},replaceState:function(store_name,value,is_perminant,format,expiration_days){if(store_name){var domain=OWA.getSetting('cookie_domain')||document.domain;if(!expiration_days){if(is_perminant){expiration_days=3600;}}
 OWA.debug('About to replace state store (%s) with: %s',store_name,value);OWA.util.setCookie('owa_'+store_name,value,expiration_days,'/',domain);OWA.util.loadState(store_name);}},getRawState:function(store_name){var store=unescape(this.readCookie(OWA.getSetting('ns')+store_name));if(store){return store;}},getState:function(store_name,key){if(!OWA.state.hasOwnProperty(store_name)){this.loadState(store_name);}
 if(OWA.state.hasOwnProperty(store_name)){if(key){if(OWA.state[store_name].hasOwnProperty(key)){return OWA.state[store_name][key];}}else{return OWA.state[store_name];}}else{OWA.debug('No state store (%s) was found',store_name);return'';}},loadState:function(store_name){var store=unescape(this.readCookie(OWA.getSetting('ns')+store_name));if(store){var check=store.substr(0,2);var state='';if(check==='[{'){state=JSON.parse(store);}else{state=this.jsonFromAssocString(store);}
