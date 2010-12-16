@@ -209,7 +209,7 @@ class owa_sessionHandlers extends owa_observer {
 		$ne->setEventType('base.session_update');
 		// Log session update event to event queue
 		$eq = owa_coreAPI::getEventDispatch();
-		$eq->notify( $ne );
+		$ret = $eq->notify( $ne );
 		
 		if ( $ret ) {	
 			return OWA_EHS_EVENT_HANDLED;

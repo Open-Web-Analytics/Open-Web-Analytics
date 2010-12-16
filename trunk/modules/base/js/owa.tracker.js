@@ -383,6 +383,8 @@ OWA.tracker.prototype = {
 		if ( ! domain ) {
 			domain = document.domain;
 			not_passed = true;
+			this.setOption('cookie_domain_mode', 'auto');
+			OWA.setSetting('cookie_domain_mode', 'auto');
 		}
 		
 		// remove the leading period
