@@ -180,7 +180,7 @@ OWA.util =  {
 			
 			if (period != '.') {
 				var domain2 = '.' + domain;
-				OWA.debug("erasing " + name + " in domain: " + domain2);
+				OWA.debug("erasing " + name + " in domain2: " + domain2);
 				this.setCookie(name,"",-2,"/", domain2);	
 			} else {
 			//	domain = '.'+ domain
