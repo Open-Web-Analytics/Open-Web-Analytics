@@ -416,13 +416,13 @@ OWA.tracker.prototype = {
 				OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');
 				//erase the no www domain cookie (ie. .openwebanalytics.com)
 				var top_domain =  document.domain.substr(4);
-				OWA.eraseMultipleCookies(this.cookie_names, top_domain);
+				OWA.util.eraseMultipleCookies(this.cookie_names, top_domain);
 			}
 			
 		} else {
 			// erase the document.domain version of all cookies (ie. www.openwebanalytics.com)
 			OWA.debug('document domain does not match cookie domain. cleaning up by erasing cookies under document.domain .');
-			OWA.eraseMultipleCookies(this.cookie_names, document.domain);
+			OWA.util.eraseMultipleCookies(this.cookie_names, document.domain);
 		}
 		
 		// add the leading period back
