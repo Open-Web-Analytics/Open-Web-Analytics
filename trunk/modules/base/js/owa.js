@@ -177,7 +177,7 @@ OWA.util =  {
 		//if (test) {
 			
 			var period = domain.substr(0,1);
-			
+			OWA.debug('period: '+period);
 			//if (period != '.') {
 				var domain2 = '.' + domain;
 				OWA.debug("erasing " + name + " in domain2: " + domain2);
