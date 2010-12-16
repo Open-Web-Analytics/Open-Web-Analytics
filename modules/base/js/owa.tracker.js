@@ -423,7 +423,10 @@ OWA.tracker.prototype = {
 			// erase the document.domain version of all cookies (ie. www.openwebanalytics.com)
 			OWA.debug('document domain does not match cookie domain. cleaning up by erasing cookies under document.domain .');
 			OWA.util.eraseMultipleCookies(this.cookie_names, document.domain);
-			OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+			
+			if ( contains_www === true) {
+				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+			}
 		}
 		
 		// add the leading period back
