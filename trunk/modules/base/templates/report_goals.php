@@ -36,6 +36,7 @@
 			<div class="owa_reportSectionContent">
 				<div class="section_header">Goal Performance</div>
 				<div style="min-width:250px;" id="goalMetrics"></div>
+				<?php if ($goal_metrics): ?>
 				<script>
 				
 				var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -46,6 +47,7 @@
 				rsh.asyncQueue.push(['makeMetricBoxes' , 'goalMetrics']);
 				rsh.load(aurl, 'grid');
 				</script>
+				<?php endif;?>
 			</div>
 	
 		</TD>
