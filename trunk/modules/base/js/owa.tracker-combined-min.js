@@ -1,4 +1,4 @@
-// OWA Tracker Min file created 1292462743 
+// OWA Tracker Min file created 1292463186 
 
 //// Start of json2 //// 
 
@@ -63,7 +63,7 @@ OWA.debug('Populating state store (%s) with value: %s',store_name,state_value);v
 var match=false;if(document.domain===np_domain){match=true;}
 var www=false
 var www_check=np_domain.substr(0,4);if(www_check==='www.'){www=true;}
-if(www&&match){OWA.debug('document domain matches cookie domain and included www. cleaning up cookies.');var erase_domain=np_domain.substr(4);OWA.util.eraseCookie('owa_'+store_name,erase_domain);}else{OWA.debug('document domain does not match cookie domain and included www. cleaning up cookies.');var erase_domain='www.'+np_domain;OWA.util.eraseCookie('owa_'+store_name,erase_domain);}
+if(www===true){if(match===true){OWA.debug('document domain matches cookie domain and included www. cleaning up cookies.');var erase_domain=np_domain.substr(4);OWA.util.eraseCookie('owa_'+store_name,erase_domain);}else{OWA.debug('document domain does not match cookie domain and does not include www. cleaning up cookies.');var erase_domain='www.'+np_domain;OWA.util.eraseCookie('owa_'+store_name,erase_domain);}}
 OWA.util.eraseCookie('owa_'+store_name,domain);OWA.util.setCookie('owa_'+store_name,state_value,expiration_days,'/',domain);},replaceState:function(store_name,value,is_perminant,format,expiration_days){if(store_name){var domain=OWA.getSetting('cookie_domain')||document.domain;if(!expiration_days){if(is_perminant){expiration_days=3600;}}
 OWA.debug('About to replace state store (%s) with: %s',store_name,value);OWA.util.setCookie('owa_'+store_name,value,expiration_days,'/',domain);OWA.util.loadState(store_name);}},getRawState:function(store_name){var store=unescape(this.readCookie(OWA.getSetting('ns')+store_name));if(store){return store;}},getState:function(store_name,key){if(!OWA.state.hasOwnProperty(store_name)){this.loadState(store_name);}
 if(OWA.state.hasOwnProperty(store_name)){if(key){if(OWA.state[store_name].hasOwnProperty(key)){return OWA.state[store_name][key];}}else{return OWA.state[store_name];}}else{OWA.debug('No state store (%s) was found',store_name);return'';}},loadState:function(store_name){var store=unescape(this.readCookie(OWA.getSetting('ns')+store_name));if(store){var check=store.substr(0,2);var state='';if(check==='[{'){state=JSON.parse(store);}else{state=this.jsonFromAssocString(store);}
