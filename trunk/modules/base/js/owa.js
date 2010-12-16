@@ -190,6 +190,13 @@ OWA.util =  {
 		
 	},
 	
+	eraseMultipleCookies: function(names, domain) {
+		
+		for (var i=0; i < names.length; i++) {
+			OWA.eraseCookie(names[i], domain);
+		}
+	},
+	
 	loadScript: function (url, callback){
 
 	       return LazyLoad.js(url, callback);
