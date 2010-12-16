@@ -416,6 +416,10 @@ OWA.util =  {
 		if (www_check === 'www.') {
 			www = true;
 		}
+		var www_check = document.domain.substr(0,4);	
+		if (www_check === 'www.') {
+			www = true;
+		}
 		
 		//clean up stale www cookies.	
 		if (www === true) {
