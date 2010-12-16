@@ -80,7 +80,7 @@ var OWA = {
 	
 	endOverlaySession : function() {
 				
-		OWA.util.eraseCookie('owa_overlay');
+		OWA.util.eraseCookie('owa_overlay', document.domain);
 		OWA.overlayActive = false;
 	}
 
