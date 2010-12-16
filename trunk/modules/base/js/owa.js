@@ -165,7 +165,7 @@ OWA.util =  {
 	
 	
 	eraseCookie: function (name, domain) {
-		//OWA.debug(this.readCookie('owa_overlay'));
+		OWA.debug(document.cookie);
 		if ( ! domain ) {
 			domain = OWA.getSetting('cookie_domain') || document.domain;
 		}
@@ -425,13 +425,13 @@ OWA.util =  {
 		if (www === true) {
 		
 			if (match === true) {
-				OWA.debug('document domain matches cookie domain and included www. cleaning up cookies.');
+				OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');
 				//erase the no www domain cookie (ie. .openwebanalytics.com)
 				var erase_domain =  np_domain.substr(4);
 				OWA.util.eraseCookie( 'owa_'+store_name, erase_domain );
 			} else {
 				// erase the www version of the domain (ie. www.openwebanalytics.com)
-				OWA.debug('document domain does not match cookie domain and does not include www. cleaning up cookies.');
+				OWA.debug('document domain does not match cookie domain but includes www. cleaning up cookies.');
 				var erase_domain = 'www.'+np_domain;
 				OWA.util.eraseCookie( 'owa_'+store_name, erase_domain );
 			}
