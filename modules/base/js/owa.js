@@ -497,6 +497,7 @@ OWA.util =  {
 			OWA.state[store_name] = state;
 			OWA.debug('Loaded state store (%s) with: %s', store_name, JSON.stringify(state));
 		} else {
+			
 			OWA.debug('State store (%s) is empty. Nothing to Load.', store_name);
 		}
 	},
