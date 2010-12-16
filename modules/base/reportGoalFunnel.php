@@ -105,15 +105,15 @@ class owa_reportGoalFunnelController extends owa_reportController {
 			
 			//print_r($funnel);
 			
+			$goal_step = end($funnel);
+			$goal_conversion_rate = round($goal_step['visitors'] / $total_visitors, 2) * 100 . '%';
+			$this->set('goal_conversion_rate', $goal_conversion_rate);
+			$this->set('funnel', $funnel);	
+			
 		}			
 		// set view stuff
 		$this->setSubview('base.reportGoalFunnel');
 		$this->setTitle('Funnel Visualization:', 'Goal ' . $goal_number);
-		
-		$goal_step = end($funnel);
-		$goal_conversion_rate = round($goal_step['visitors'] / $total_visitors, 2) * 100 . '%';
-		$this->set('goal_conversion_rate', $goal_conversion_rate);
-		$this->set('funnel', $funnel);	
 		$this->set('goal_number', $goal_number);
 	}
 }
