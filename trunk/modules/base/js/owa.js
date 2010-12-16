@@ -169,12 +169,21 @@ OWA.util =  {
 		if ( ! domain ) {
 			domain = OWA.getSetting('cookie_domain') || document.domain;
 		}
-		OWA.debug("erasing " + name + " in domain: " +domain);
+		OWA.debug("erasing cookie: " + name + " in domain: " +domain);
 		this.setCookie(name,"",-10000,"/",domain);
+		// attempt to read the cookie again to see if its there under another valid domain
 		var test = this.readCookie(name);
-		
+		// if so then try the alternate domain				
 		if (test) {
-			domain = "."+domain;
+			
+			var period = domain.substr(0,1);
+			
+			if (period === '.') {
+				domain = domain.substr(1);
+			} else {
+				domain = '.'+ domain;
+			}
+
 			OWA.debug("erasing " + name + " in domain: " +domain);
 			this.setCookie(name,"",-10000,"/",domain);	
 		}
