@@ -136,7 +136,7 @@ OWA.commandQueue.prototype = {
  * @since		owa 1.2.1
  */
 OWA.tracker = function( options ) {
-	//OWA.setSetting('debug', true);
+	OWA.setSetting('debug', true);
 	// set start time
 	this.startTime = this.getTimestamp();
 	
