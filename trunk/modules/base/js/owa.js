@@ -174,7 +174,7 @@ OWA.util =  {
 		// attempt to read the cookie again to see if its there under another valid domain
 		var test = this.readCookie(name);
 		// if so then try the alternate domain				
-		//if (test) {
+		if (test) {
 			
 			var period = domain.substr(0,1);
 			OWA.debug('period: '+period);
@@ -189,9 +189,9 @@ OWA.util =  {
 				OWA.debug("erasing " + name + " in domain3: " + domain);
 				this.setCookie(name,"",-2,"/",domain);	
 			}
-			OWA.debug("erasing " + name + " in domain: ");
-			this.setCookie(name,"",-2,"/");	
-		//}
+			//OWA.debug("erasing " + name + " in domain: ");
+			//this.setCookie(name,"",-2,"/");	
+		}
 		
 	},
 	
@@ -411,7 +411,7 @@ OWA.util =  {
 		OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
 		// erase cookie
-		OWA.util.eraseCookie( 'owa_'+store_name, domain );
+		//OWA.util.eraseCookie( 'owa_'+store_name, domain );
 		// set cookie
 		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
 	},
