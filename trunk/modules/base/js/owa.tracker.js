@@ -426,6 +426,7 @@ OWA.tracker.prototype = {
 			
 			if ( contains_www === true) {
 				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
 			}
 		}
 		
