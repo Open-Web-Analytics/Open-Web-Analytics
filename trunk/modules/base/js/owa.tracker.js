@@ -194,8 +194,6 @@ OWA.tracker = function( options ) {
 	
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
-	//check for linked state send from another domain
-	this.checkForLinkedState();
 	
 	// set default page properties
 	this.page = new OWA.event();
@@ -239,6 +237,7 @@ OWA.tracker.prototype = {
 	// flag for whether or not traffic has been attributed
 	isTrafficAttributed: false,
 	cookie_names: ['owa_s', 'owa_v', 'owa_c'],
+	linkedStateSet: false,
 	/**
 	 * GET params parsed from URL
 	 */ 
@@ -309,6 +308,8 @@ OWA.tracker.prototype = {
 				}
 			}
 		}
+		
+		this.linkedStateSet = true;
 	},
 	
 	/**
@@ -449,8 +450,8 @@ OWA.tracker.prototype = {
 			a = OWA.util.trim(a, '\u0000');
 			
 			OWA.debug('overlay anchor value: ' + a);
-			var domain = this.getCookieDomain();
-			OWA.util.setCookie('owa_overlay',a, '','/', domain );
+			//var domain = this.getCookieDomain();
+			OWA.util.setCookie('owa_overlay',a, '','/', document.domain );
 			//OWA.util.setState('overlay','', a);
 			////alert(OWA.util.readCookie('owa_overlay') );
 		}
@@ -862,6 +863,11 @@ OWA.tracker.prototype = {
     	if ( this.getOption('cookie_domain_set') != true ) {
     		// set default cookie domain
 			this.setCookieDomain();
+    	}
+    	
+    	if ( this.linkedStateSet != true ) {
+    		//check for linked state send from another domain
+			this.checkForLinkedState();
     	}
     	
     	if ( this.active ) {
