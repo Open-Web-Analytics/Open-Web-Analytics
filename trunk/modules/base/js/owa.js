@@ -170,7 +170,7 @@ OWA.util =  {
 			domain = OWA.getSetting('cookie_domain') || document.domain;
 		}
 		OWA.debug("erasing cookie: " + name + " in domain: " +domain);
-		this.setCookie(name,"",-10000,"/",domain);
+		this.setCookie(name,"",-1000,"/",domain);
 		// attempt to read the cookie again to see if its there under another valid domain
 		var test = this.readCookie(name);
 		// if so then try the alternate domain				
@@ -185,7 +185,7 @@ OWA.util =  {
 			}
 
 			OWA.debug("erasing " + name + " in domain: " +domain);
-			this.setCookie(name,"",-10000,"/",domain);	
+			this.setCookie(name,"",-1000,"/",domain);	
 		}
 		
 	},
@@ -193,7 +193,7 @@ OWA.util =  {
 	eraseMultipleCookies: function(names, domain) {
 		
 		for (var i=0; i < names.length; i++) {
-			OWA.util.eraseCookie(names[i], domain);
+			this.eraseCookie(names[i], domain);
 		}
 	},
 	
