@@ -392,11 +392,6 @@ OWA.tracker.prototype = {
 			domain = domain.substr(1);
 		}
 		
-		var match = false;
-		if (document.domain === domain) {
-			 match = true;
-		}
-		
 		var contains_www = false;
 		var www = domain.substr(0,4);
 		// check for www and eliminate it if no domain was passed.
@@ -406,6 +401,11 @@ OWA.tracker.prototype = {
 			}
 			
 			contains_www = true;
+		}
+		
+		var match = false;
+		if (document.domain === domain) {
+			 match = true;
 		}
 		
 		if (match === true) {
