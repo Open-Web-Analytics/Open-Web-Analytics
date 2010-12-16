@@ -179,7 +179,7 @@ OWA.util =  {
 			var period = domain.substr(0,1);
 			
 			//if (period === '.') {
-				domain = '';
+				domain = document.domain;
 			//} else {
 			//	domain = '.'+ domain;
 			//}
