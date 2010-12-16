@@ -155,8 +155,7 @@ OWA.tracker = function( options ) {
 		trafficAttributionMode: 'direct',
 		sessionLength: 1800,
 		thirdParty: false,
-		cookie_domain: false,
-		cookie_names: ['owa_s', 'owa_v', 'owa_c'], 
+		cookie_domain: false, 
 		campaignKeys: [
 				{ public: 'owa_medium', private: 'md', full: 'medium' },
 				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
@@ -239,6 +238,7 @@ OWA.tracker.prototype = {
 	isNewSessionFlag: false,
 	// flag for whether or not traffic has been attributed
 	isTrafficAttributed: false,
+	cookie_names: ['owa_s', 'owa_v', 'owa_c'],
 	/**
 	 * GET params parsed from URL
 	 */ 
