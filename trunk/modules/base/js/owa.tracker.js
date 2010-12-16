@@ -191,8 +191,7 @@ OWA.tracker = function( options ) {
 	// private vars
 	this.ecommerce_transaction = '',
 	this.isClickTrackingEnabled = false;
-	// set default cookie domain
-	this.setCookieDomain();
+	
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
 	//check for linked state send from another domain
@@ -383,8 +382,8 @@ OWA.tracker.prototype = {
 		if ( ! domain ) {
 			domain = document.domain;
 			not_passed = true;
-			this.setOption('cookie_domain_mode', 'auto');
-			OWA.setSetting('cookie_domain_mode', 'auto');
+			//this.setOption('cookie_domain_mode', 'auto');
+			//OWA.setSetting('cookie_domain_mode', 'auto');
 		}
 		
 		// remove the leading period
@@ -393,16 +392,46 @@ OWA.tracker.prototype = {
 			domain = domain.substr(1);
 		}
 		
+		var match = false;
+		if (document.domain === domain) {
+			 match = true;
+		}
+		
+		var contains_www = false;
+		var www = domain.substr(0,4);
 		// check for www and eliminate it if no domain was passed.
-		if ( not_passed ) {
-			var www = domain.substr(0,4);
-			if (www === 'www.') {
+		if (www === 'www.') {
+			if ( not_passed ) {
 				domain = domain.substr(4);
 			}
-		}		
+			
+			contains_www = true;
+		}
+		
+		if (match === true) {
+			// check to see if the domain is www 
+			if ( contains_www === true ) {
+				// eliminate any top level domain cookies
+				OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');
+				//erase the no www domain cookie (ie. .openwebanalytics.com)
+				var top_domain =  document.domain.substr(4);
+				OWA.util.eraseCookie( 'owa_' + v, top_domain );
+				OWA.util.eraseCookie( 'owa_' + s, top_domain );
+				OWA.util.eraseCookie( 'owa_' + c, top_domain );
+			}
+			
+		} else {
+			// erase the document.domain version of all cookies (ie. www.openwebanalytics.com)
+			OWA.debug('document domain does not match cookie domain but includes www. cleaning up cookies.');
+			OWA.util.eraseCookie( 'owa_' + v, document.domain );
+			OWA.util.eraseCookie( 'owa_' + s, document.domain );
+			OWA.util.eraseCookie( 'owa_' + c, document.domain );
+		}
+		
 		// add the leading period back
 		domain =  '.' + domain;
 		this.setOption('cookie_domain', domain);
+		this.setOption('cookie_domain_set', true);
 		OWA.setSetting('cookie_domain', domain);
 	},
 	
@@ -825,6 +854,11 @@ OWA.tracker.prototype = {
      */
     trackEvent : function(event, block) {
     	//OWA.debug('pre global event: %s', JSON.stringify(event));
+    	
+    	if ( this.getOption('cookie_domain_set') != true ) {
+    		// set default cookie domain
+			this.setCookieDomain();
+    	}
     	
     	if ( this.active ) {
 	    	if ( ! block ) {
