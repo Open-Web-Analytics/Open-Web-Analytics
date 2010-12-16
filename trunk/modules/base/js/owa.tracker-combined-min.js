@@ -1,4 +1,4 @@
-// OWA Tracker Min file created 1292472304 
+// OWA Tracker Min file created 1292473839 
 
 //// Start of json2 //// 
 
@@ -106,9 +106,9 @@ OWA.tracker.prototype={id:'',siteId:'',init:0,stateInit:false,globalEventPropert
 if(ls){OWA.debug('Shared OWA state detected...');ls=OWA.util.base64_decode(ls);var state=ls.split('.');OWA.debug('linked state: %s',JSON.stringify(state));if(state){for(var i=0;state.length>i;i++){var pair=state[i].split('=');OWA.util.replaceState(pair[0],unescape(pair[1]),true);}}}},shareStateByLink:function(url){OWA.debug('href of link: '+url);if(url){var state=this.createSharedStateValue();var anchor=this.getUrlAnchorValue();if(!anchor){OWA.debug('shared state: %s',state);document.location.href=url+'#owa_state='+state;}else{}}},createSharedStateValue:function(){var state='';for(var i=0;this.sharableStateStores.length>i;i++){var value=OWA.util.getRawState(this.sharableStateStores[i]);if(value){state+=OWA.util.sprintf('%s=%s',this.sharableStateStores[i],OWA.util.urlEncode(value));if(this.sharableStateStores.length!=(i+1)){state+='.';}}}
 if(state){return OWA.util.base64_encode(state);}},shareShareByPost:function(form){var state=this.createSharedStateValue();form.action+='#owa_state='+state;form.submit();},getCookieDomain:function(){return this.getOption('cookie_domain')||OWA.getSetting('cookie_domain')||document.domain;},setCookieDomain:function(domain){var not_passed=false;if(!domain){domain=document.domain;not_passed=true;}
 var period=domain.substr(0,1);if(period==='.'){domain=domain.substr(1);}
-var match=false;if(document.domain===domain){match=true;}
 var contains_www=false;var www=domain.substr(0,4);if(www==='www.'){if(not_passed){domain=domain.substr(4);}
 contains_www=true;}
+var match=false;if(document.domain===domain){match=true;}
 if(match===true){if(contains_www===true){OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');var top_domain=document.domain.substr(4);OWA.util.eraseCookie('owa_'+'v',top_domain);OWA.util.eraseCookie('owa_'+'s',top_domain);OWA.util.eraseCookie('owa_'+'c',top_domain);}}else{OWA.debug('document domain does not match cookie domain but includes www. cleaning up cookies.');OWA.util.eraseCookie('owa_'+'v',document.domain);OWA.util.eraseCookie('owa_'+'s',document.domain);OWA.util.eraseCookie('owa_'+'c',document.domain);}
 domain='.'+domain;this.setOption('cookie_domain',domain);this.setOption('cookie_domain_set',true);OWA.setSetting('cookie_domain',domain);},checkForOverlaySession:function(){var a=this.getAnchorParam('owa_overlay');if(a){a=OWA.util.base64_decode(a);a=OWA.util.trim(a,'\u0000');OWA.debug('overlay anchor value: '+a);var domain=this.getCookieDomain();OWA.util.setCookie('owa_overlay',a,'','/',domain);}
 var p=OWA.util.getState('overlay');if(p){this.pause();OWA.startOverlaySession(p);}},getUrlAnchorValue:function(){var anchor=self.document.location.hash.substring(1);OWA.debug('anchor value: '+anchor);return anchor;},getAnchorParam:function(name){var anchor=this.getUrlAnchorValue();if(anchor){OWA.debug('anchor is: %s',anchor);var pairs=anchor.split('.');OWA.debug('anchor pairs: %s',JSON.stringify(pairs));if(pairs.length>0){var values={};for(var i=0;pairs.length>i;i++){var pieces=pairs[i].split('=');OWA.debug('anchor pieces: %s',JSON.stringify(pieces));values[pieces[0]]=pieces[1];}
