@@ -398,46 +398,9 @@ OWA.util =  {
 		// set or reset the campaign cookie
 		OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
-		
-		// remove the leading period
-		var period = domain.substr(0,1);
-		if (period === '.') {
-			np_domain = domain.substr(1);
-		}
-		
-		var match = false;
-		if (document.domain === np_domain) {
-			 match = true;
-		}
-		
-		// check for www and eliminate it if no domain was passed.
-		var www = false
-		var www_check = np_domain.substr(0,4);
-		if (www_check === 'www.') {
-			www = true;
-		}
-		var www_check = document.domain.substr(0,4);	
-		if (www_check === 'www.') {
-			www = true;
-		}
-		
-		//clean up stale www cookies.	
-		if (www === true) {
-		
-			if (match === true) {
-				OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');
-				//erase the no www domain cookie (ie. .openwebanalytics.com)
-				var erase_domain =  np_domain.substr(4);
-				OWA.util.eraseCookie( 'owa_'+store_name, erase_domain );
-			} else {
-				// erase the www version of the domain (ie. www.openwebanalytics.com)
-				OWA.debug('document domain does not match cookie domain but includes www. cleaning up cookies.');
-				var erase_domain = 'www.'+np_domain;
-				OWA.util.eraseCookie( 'owa_'+store_name, erase_domain );
-			}
-		}
-		
+		// erase cookie
 		OWA.util.eraseCookie( 'owa_'+store_name, domain );
+		// set cookie
 		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
 	},
 	
