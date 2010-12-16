@@ -123,7 +123,7 @@ OWA.heatmap.prototype = {
 	
 	endSession: function() {
 		
-		OWA.util.eraseCookie('owa_overlay');
+		OWA.util.eraseCookie('owa_overlay', document.domain);
 		window.close();
 	},
 	
