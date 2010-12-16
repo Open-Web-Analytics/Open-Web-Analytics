@@ -174,7 +174,7 @@ OWA.util =  {
 		// attempt to read the cookie again to see if its there under another valid domain
 		var test = this.readCookie(name);
 		// if so then try the alternate domain				
-		if (test) {
+		//if (test) {
 			
 			var period = domain.substr(0,1);
 			
@@ -189,7 +189,7 @@ OWA.util =  {
 			}
 			OWA.debug("erasing " + name + " in domain: ");
 			this.setCookie(name,"",-2,"/");	
-		}
+		//}
 		
 	},
 	
