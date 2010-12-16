@@ -178,11 +178,11 @@ OWA.util =  {
 			
 			var period = domain.substr(0,1);
 			
-			if (period === '.') {
+			//if (period === '.') {
 				domain = '';
-			} else {
-				domain = '.'+ domain;
-			}
+			//} else {
+			//	domain = '.'+ domain;
+			//}
 
 			OWA.debug("erasing " + name + " in domain: " + domain);
 			this.setCookie(name,"",-2,"/",domain);	
