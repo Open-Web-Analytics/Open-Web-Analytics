@@ -90,7 +90,7 @@
  	function isConfigFilePresent() {
  		
 		$file = OWA_DIR.'owa-config.php';
-		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.'/conf/owa-config.php';
 		
 		if (file_exists($file)) {
 			return true;
@@ -105,7 +105,7 @@
  	
  		/* LOAD CONFIG FILE */
 		$file = OWA_DIR.'owa-config.php';
-		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.'/conf/owa-config.php';
 		
 		if (file_exists($file)) {
 			include_once($file);
@@ -121,7 +121,7 @@
  	function applyConfigConstants() {
  		
  		if(!defined('OWA_DATA_DIR')){
-			define('OWA_DATA_DIR', OWA_DIR.'owa-data'.DIRECTORY_SEPARATOR);
+			define('OWA_DATA_DIR', OWA_DIR.'owa-data/');
 			
 		}
 		
@@ -130,7 +130,7 @@
 		}
 		
 		if(!defined('OWA_CACHE_DIR')){
-			define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches'.DIRECTORY_SEPARATOR);
+			define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches/');
  		}
  		
  		if (defined('OWA_CACHE_DIR')) {
@@ -726,7 +726,7 @@
 		$public_path = $this->get('base', 'public_path');
 		
 		if (empty($public_path)) {
-			$public_path = OWA_PATH.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR;
+			$public_path = OWA_PATH.'/public/';
 			$this->set('base','public_path', $public_path); 
 		}
 		
@@ -735,7 +735,7 @@
 		$main_url = $public_url.'index.php';
 		$this->set('base','main_url', $main_url);
 		$this->set('base','main_absolute_url', $main_url);
-		$modules_url = $public_url.'modules'.DIRECTORY_SEPARATOR;
+		$modules_url = $public_url.'modules/';
 		$this->set('base','modules_url', $modules_url);
 		$this->set('base','action_url',$public_url.'action.php');
 		$this->set('base','images_url', $modules_url);

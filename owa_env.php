@@ -30,20 +30,19 @@
 if (!defined('OWA_PATH')) {
 	define('OWA_PATH', dirname(__FILE__));
 }
-define('OWA_DIR', OWA_PATH. DIRECTORY_SEPARATOR);
-define('OWA_MODULES_DIR', OWA_DIR.'modules'.DIRECTORY_SEPARATOR);
+define('OWA_DIR', OWA_PATH . '/');
+define('OWA_MODULES_DIR', OWA_DIR.'modules/');
 define('OWA_BASE_DIR', OWA_PATH); // depricated
 define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
-define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules'.DIRECTORY_SEPARATOR.'base'.DIRECTORY_SEPARATOR);
-define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'classes'.DIRECTORY_SEPARATOR);
-define('OWA_INCLUDE_DIR', OWA_DIR.'includes'.DIRECTORY_SEPARATOR);
+define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules/base/');
+define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'classes/');
+define('OWA_INCLUDE_DIR', OWA_DIR.'includes/');
 define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.12.2');
-define('OWA_PHPMAILER_DIR', OWA_INCLUDE_DIR.'PHPMailer_v2.0.3'.DIRECTORY_SEPARATOR);
-define('OWA_HTTPCLIENT_DIR', OWA_INCLUDE_DIR.'httpclient-2009-09-02'.DIRECTORY_SEPARATOR);
+define('OWA_PHPMAILER_DIR', OWA_INCLUDE_DIR.'PHPMailer_v2.0.3/');
+define('OWA_HTTPCLIENT_DIR', OWA_INCLUDE_DIR.'httpclient-2009-09-02/');
 define('OWA_PLUGINS_DIR', OWA_DIR.'plugins'); //depricated
-define('OWA_METRICS_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR.'metrics'.DIRECTORY_SEPARATOR); //depricated
-define('OWA_PLUGIN_DIR', OWA_DIR.'plugins'.DIRECTORY_SEPARATOR);
-define('OWA_CONF_DIR', OWA_DIR.'conf'.DIRECTORY_SEPARATOR);
-define('OWA_THEMES_DIR', OWA_DIR.'themes'.DIRECTORY_SEPARATOR);
+define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
+define('OWA_CONF_DIR', OWA_DIR.'conf/');
+define('OWA_THEMES_DIR', OWA_DIR.'themes/');
 define('OWA_VERSION', 'SVN-TRUNK');
 ?>
