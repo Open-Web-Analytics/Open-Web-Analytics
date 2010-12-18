@@ -87,8 +87,8 @@ class owa_refererHandlers extends owa_observer {
 				//owa_coreAPI::debug('hello from logReferer');
 				$crawler = new owa_http;
 				//$crawler->fetch($this->params['HTTP_REFERER']);
-				$res = $crawler->getRequest($event->get('HTTP_REFERER'), $response);
-				owa_coreAPI::debug(print_r($res, true));
+				$res = $crawler->getRequest($event->get('HTTP_REFERER'));
+				owa_coreAPI::debug('http request response: '.print_r($res, true));
 				//Extract Title
 				
 				$title = trim($crawler->extract_title());

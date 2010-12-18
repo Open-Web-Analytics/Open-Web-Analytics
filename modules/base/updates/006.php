@@ -191,7 +191,7 @@ class owa_base_006_update extends owa_update {
 				$this->e->notice("$entity_name table failed.");
 				return false;
 			}
-		}
+		}	
 		
 		// must return true
 		return true;

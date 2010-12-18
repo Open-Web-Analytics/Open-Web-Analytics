@@ -90,7 +90,6 @@ class owa_dbEventQueue extends eventQueue {
 		$this->db->from( 'owa_queue_item' );
 		$this->db->where( 'status', 'unhandled' );
 		$this->db->where( 'not_before_timestamp', time(), '<' );
-		$this->db->where( 'status', 'handled', '!=' );
 		$this->db->orderBy( 'insertion_timestamp' , 'ASC' );
 		$this->db->limit( $limit );
 		
@@ -153,7 +152,7 @@ class owa_dbEventQueue extends eventQueue {
 			if ( $items ) {
 			
 				foreach ( $items as $item ) {
-									
+					owa_coreAPI::debug('About to dispatch queue item id: ' . $item->get( 'id' ) );			
 					$event = unserialize( $item->get('event') );
 					$dispatch = owa_coreAPI::getEventDispatch();
 					$ret = $dispatch->notify( $event );
