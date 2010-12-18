@@ -156,7 +156,21 @@ class owa_caller extends owa_base {
 		return $this->handleRequest();
 		
 	}
-		
+	
+	
+	/**
+	 * Returns a configured javascript tracker for inclusion in your web page.
+	 * You can pass an options array to control what the tracker will log.
+	 * The options array is a key/value pair format like:
+	 *
+	 * $options = array('do_not_log_pageview' => true);
+	 *
+	 * Option keys include: 'do_not_log_pageviews', 'do_not_log_clicks', 'do_not_log_domstream'
+	 *
+	 * @param 	$echo		bool 	if true the function will echo. if false the tracker is returned asa string.
+	 * @param	$options	array	an key value pair option array 
+	 * @return 	$tag 		string	the tracker javascript.
+	 */
 	function placeHelperPageTags($echo = true, $options = array()) {
 		
 		if(!owa_coreAPI::getRequestParam('is_robot')) {
