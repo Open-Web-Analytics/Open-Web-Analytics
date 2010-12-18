@@ -150,25 +150,23 @@ class owa_http {
 		//$this->e->debug('link: '.$link);
 		
 		
-		if (empty($matches)):
-			if (substr($link, -1) === '/'):
+		if (empty($matches)) {
+			if (substr($link, -1) === '/') {
 				$link = substr($link, 0, -1);
 				$pattern = trim(sprintf($regex, preg_quote($link, '/')));
 				$search = preg_match($pattern, $this->response, $matches);
 				//$this->e->debug('pattern: '.$pattern);
 				//$this->e->debug('link: '.$link);
-			endif;
-		endif;
+			}
+		}
 		
 		$this->e->debug('ref search: '.$search);
 		//$this->e->debug('ref matches: '.print_r($this->results, true));
 		//$this->e->debug('ref matches: '.print_r($matches, true));
-				
-		$this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => owa_lib::inputFilter($matches[0]));
-		
-		$this->e->debug('Anchor info: '.print_r($this->anchor_info, true));
-		
-		return;
+		if (isset($matches[0])) {
+			$this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => owa_lib::inputFilter($matches[0]));
+			$this->e->debug('Anchor info: '.print_r($this->anchor_info, true));
+		}
 	}
 	
 	/**
@@ -185,10 +183,20 @@ class owa_http {
 		// Search the page for a specific anchor
 		$this->extract_anchor($link);
 	
-		if(!empty($this->anchor_info['anchor_tag'])):
+		if(!empty($this->anchor_info['anchor_tag'])) {
 			
 			// drop certain HTML entitities and their content
-			$nohtml = $this->strip_selected_tags($this->response, array('title', 'head', 'script', 'object', 'style', 'meta', 'link', 'rdf:'), true);
+			$nohtml = $this->strip_selected_tags(
+					$this->response, 
+					array('title', 
+						  'head', 
+						  'script', 
+						  'object', 
+						  'style', 
+						  'meta', 
+						  'link', 
+						  'rdf:'), 
+					true);
 			
 			//$this->e->debug('Refering page content after certain html entities were dropped: '.$this->results);
 		
@@ -198,13 +206,13 @@ class owa_http {
 			// find position within document of the anchor text
 			$start = strpos($nohtml, $this->anchor_info['anchor_tag']);
 			
-			if ($start < $this->snip_len):
+			if ($start < $this->snip_len) {
 				$part1_start_pos = 0;
 				$part1_snip_len = $start;
-			else:
+			} else {
 				$part1_start_pos = $start;
 				$part1_snip_len = $this->snip_len;
-			endif;
+			}
 			
 			$replace_items = array("\r\n", "\n\n", "\t", "\r", "\n");
 			// Create first segment of snippet
@@ -224,11 +232,11 @@ class owa_http {
 			// Put humpty dumpy back together again and create actual snippet
 			$snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.owa_lib::inputFilter($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
 		
-		else:
+		} else {
 		
 			$snippet = '';
 			
-		endif;
+		}
 		
 		return $snippet;
 		
@@ -320,7 +328,7 @@ class owa_http {
 				return(0);
 		}
 		$this->response = $this->GetRequestResponse($response);
-		return($this->GetRequestResponse($response));
+		return($this->response);
 	}
 	
 }
