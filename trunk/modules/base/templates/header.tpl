@@ -13,7 +13,7 @@
 	</span>
 	<?php $cu = $this->getCurrentUser(); ?>
 	<span class="user-greating" style="">
-		Hi, <?php $this->out( $cu->getUserData('user_id') );?> ! &bull
+		Hi, <?php $this->out( $cu->getUserData('user_id') );?> ! &bull;
 		<?php if ( ! owa_coreAPI::getSetting( 'base', 'is_embedded' ) ):?>
 			
 				<?php if (owa_coreAPI::isCurrentUserAuthenticated()):?>
