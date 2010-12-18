@@ -32,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  * @since		owa 1.0.0
  */
 
-
+// needed??
 class owa_installFinishController extends owa_installController {
 	
 	function action() {
