@@ -571,12 +571,12 @@ class owa_coreAPI {
 		foreach ($service->modules as $k => $v) {
 			$v->registerAdminPanels();
 			$module_panels = $v->getAdminPanels();
-			
-			foreach ($module_panels as $key => $value) {
-				
-				$panels[$value['group']][] = $value;
-			}
-			
+			if ($module_panels) {
+				foreach ($module_panels as $key => $value) {
+					
+					$panels[$value['group']][] = $value;
+				}
+			}			
 		}
 		
 		return $panels;
