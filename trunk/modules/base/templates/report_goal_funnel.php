@@ -11,9 +11,9 @@
 <?php if ( $this->get('funnel') ):?>
 <table class="funnel" border="0" style="min-width:100%;">
 	<tr>
-		<td class="funnelLeft"></td>
+		<td class="funnelLeft">Prior Page Viewed</td>
 		<td class="funnelMiddle"><h2><?php $this->out($goal_conversion_rate);?> conversion rate</h2></td>
-		<td class="funnelRight"></td>
+		<td class="funnelRight" style="text-align:right;">Next Page Viewed</td>
 	</tr>
 	<?php foreach ($funnel as $k => $step):?>
 	<tr>
