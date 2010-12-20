@@ -1,0 +1,13 @@
+/* OWA Widget CSS Declarations */
+ 
+.owa_widget-container {border:1px solid #cccccc; width:auto; margin:0px;}
+.owa_widget-header {color: white;background-color:orange; padding:2px;text-align:left; width:;}
+.owa_widget-title {font-size:16px;text-align:right;font-weight:bold;}
+.owa_widget-title a {color: white;}
+.owa_widget-title-controls {font-size:14px;text-align:right;}
+.owa_widget-controls {text-align:right;padding:0 10px 5px 10px}
+.owa_widget-content {padding:5px; width:auto;} 
+.owa_widget-pagination {padding:0 10px 0 10px; visibility: ;}
+.owa_widget-innercontainer {width:100%;margin:0px;}
+.owa_ofcChart {width:100%; margin:0px;padding:0px;}
+#flashcontent {margin: 0; width:;}
