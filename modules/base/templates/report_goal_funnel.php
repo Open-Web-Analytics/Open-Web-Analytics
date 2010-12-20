@@ -128,21 +128,21 @@ for (step in funnel_json) {
 	OWA.items[name].asyncQueue.push(['refreshGrid']);
 	OWA.items[name].load();
 	i++;
-	// jquery binding for select list
-	// Bind event handlers
-	jQuery(document).ready(function(){   
-	
-		jQuery('#goalChooser').change(function() {
-				var num = jQuery("#goalChooser option:selected").val();
-				alert(num);
-				OWA.items['base-reportGoalFunnel'].setRequestProperty('goalNumber', num);
-				OWA.items['base-reportGoalFunnel'].reload();
-		});
-	});
-	
-	
 }
 </script>
 <?php else: ?>
 No Funnel has been configured for this goal. <a href="<?php echo $this->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $goal_number, 'siteId' => $params['site_id']));?>">Add a funnel</a>
 <?php endif;?>
+
+<script>
+// jquery binding for select list
+// Bind event handlers
+jQuery(document).ready(function(){   
+
+	jQuery('#goalChooser').change(function() {
+			var num = jQuery("#goalChooser option:selected").val();
+			OWA.items['base-reportGoalFunnel'].setRequestProperty('goalNumber', num);
+			OWA.items['base-reportGoalFunnel'].reload();
+	});
+});
+</script>
