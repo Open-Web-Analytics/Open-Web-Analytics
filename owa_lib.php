@@ -429,7 +429,13 @@ class owa_lib {
 			$url.= 's';
 		endif;
 		
-		$url .= '://'.$_SERVER['SERVER_NAME'];
+		if ( isset($_SERVER['HTTP_HOST'] ) ) {
+			$domain = $_SERVER['HTTP_HOST'];
+		} else {
+			$domain = $_SERVER['SERVER_NAME'];
+		}
+		
+		$url .= '://'.$domain;
 		
 		if($_SERVER['SERVER_PORT'] != 80):
 			$url .= ':'.$_SERVER['SERVER_PORT'];
