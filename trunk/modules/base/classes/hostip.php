@@ -61,60 +61,109 @@ class owa_hostip extends owa_location {
 	 */
 	function get_location($location_map) {
 		
-		if (array_key_exists('ip_address',$location_map) && !empty($location_map['ip_address']) && empty($location_map['country'])) {
-				
-			$crawler = new owa_http;
-			$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
+		$city = '';
+		$state = '';
+		$country = '';
+		$country_code = '';
+		$latitude = '';
+		$longiude = '';
+		
+		// check to see if ip is in map
+		if ( array_key_exists('ip_address',$location_map) 
+			&& ! empty( $location_map['ip_address'] ) 
+			&& empty( $location_map['country'] ) ) {
 			
-			$crawler->fetch(sprintf($this->ws_url, $location_map['ip_address']));
-			owa_coreAPI::debug(sprintf("HostIp web service response code: %s", $crawler->crawler->response_code));
-			$location = $crawler->crawler->results;
-			//owa_coreAPI::debug(print_r($location,true));
-			$location =	str_replace("\n", "|", $location);
-				
-			$loc_array = explode("|", $location);
-			//print_r($loc_array);
+			// check to see if ip is valid and not a private address
+			if ( filter_var( $location_map['ip_address'], 
+							FILTER_VALIDATE_IP, 
+							FILTER_FLAG_IPV4 | 
+							FILTER_FLAG_NO_PRIV_RANGE ) ) {
 			
-			$result = array();
+				// create crawler 
+				$crawler = new owa_http;
+				$crawler->read_timeout = owa_coreAPI::getSetting('base','ws_timeout');
+				// hit web service
+				$crawler->fetch(sprintf($this->ws_url, $location_map['ip_address']));
+				owa_coreAPI::debug(sprintf("HostIp web service response code: %s", $crawler->crawler->response_code));
+				$location = $crawler->crawler->results;
+				// replace delimiter
+				$location =	str_replace("\n", "|", $location);
+				// convert string to array
+				$loc_array = explode("|", $location);
+				$result = array();
+				// convert array to multi dimensional array		
+				foreach ($loc_array as $k => $v) {
 					
-			foreach ($loc_array as $k => $v) {
+					if (!empty($v)) {
+						list($name, $value) = explode(":", $v, 2);	
+						$result[$name] = $value;
+					}
+				}
 				
-				if (!empty($v)) {
-					list($name, $value) = explode(":", $v, 2);	
-					$result[$name] = $value;
+				// parse the city line of response
+				if ( isset( $result['City'] ) && ! empty( $result['City'] ) ) {
+					// lowercase
+					$result['City'] = strtolower($result['City']);
+					// explode into array
+					$city_array = explode(',', $result['City']);
+					// city name is always first
+					$city = $city_array[0];
+					// if there is a second element then it's a state
+					if (isset($city_array[1])) {
+						$state = $city_array[1];
+					}
+				} 
+				
+				// parse country line of response
+				if ( isset( $result['Country'] ) && ! empty( $result['Country'] ) ) {
+					//lowercase
+					$result['Country'] = strtolower( $result['Country'] );
+					// set country	
+					$country_parts = explode('(', trim( $result['Country'] ) );
+					$country = $country_parts[0];
+					// if there is a second element then it's a country code.
+					if ( isset($country_parts[1] ) ) {	
+						$country_code = substr($country_code,0,-1);
+					}
+					// debug
+					owa_coreAPI::debug('Parse of Hostip country string: '.$result['Country'].' c: '. $country.' cc: '.$country_code);
+					
+				}
+				
+				// set latitude
+				if ( isset( $result['Latitude'] ) && ! empty( $result['Latitude'] ) ) {
+					$latitude = $result['Latitude'];
+				}
+				// set longitude
+				if ( isset( $result['Longitude'] ) && ! empty( $result['Longitude'] ) ) {
+					$longitude = $result['Longitude'];
 				}
 			}
-			
-			if (!empty($result['City'])) {
+						
+			// fail safe checks for empty, unknown or private adddress labels
+			// check to make sure values are not "private address" contain "unknown" or "xx"
+			if ( empty($city) || strpos( $city, 'private' ) || strpos( $city, 'unknown') ) {
 				
-				list ($city, $state) = explode(',', $result['City']);
-			} 
-			
-			if (empty($city) || $city === 'Private Address') {
-				
-				$city = '(unknown)';
+				$city = '(not set)';
 			}
-			
-			if (empty($state) || $state === 'Private Address') {
+			// check state
+			if ( empty($state) || strpos( $state, 'private' ) || strpos( $state, 'unknown') ) {
 		
-				$state = '(unknown)';
+				$state = '(not set)';
 			}
-			
-			if (!empty($result['Country'])) {
-				list($country, $country_code) = explode('(', trim($result['Country']) );	
-				$country_code = substr($country_code,0,-1);
-				owa_coreAPI::debug($result['Country'].' c: '. $country.' cc: '.$country_code);
-			} else {
-				$country = '(unknown)';
-				$country_code = '(not set)';
+			// check country		
+			if ( empty( $country ) 
+				|| strpos( $country, 'unknown' ) 
+				|| strpos( $country, 'private' ) 
+			) {
+				$country = '(not set)';
 			}
-			
-			if (empty($country) || strpos($country, 'UNKNOWN COUNTRY') ) {
-		
-				$country = '(unknown)';
-			}
-			
-			if ($country_code === 'XX') {
+			// check country code
+			if ( empty( $country_code ) 
+				|| strpos( $country_code, 'xx' ) 
+				|| strpos( $country_code, 'unknown' ) 
+				|| strpos( $country_code, 'private' ) 
+			) {
 				$country_code = '(not set)';
 			}
 				
@@ -122,8 +171,8 @@ class owa_hostip extends owa_location {
 	       	$location_map['state'] =  strtolower(trim($state));
 			$location_map['country'] =  strtolower(trim($country));
 			$location_map['country_code'] =  strtoupper(trim($country_code));
-			$location_map['latitude'] = trim($result['Latitude']);
-			$location_map['longitude'] = trim($result['Longitude']);
+			$location_map['latitude'] = trim($latitude);
+			$location_map['longitude'] = trim($longitude);
 			
 			// log headers if status is not a 200 
 			if (!strpos($crawler->response_code, '200')) {
