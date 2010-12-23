@@ -425,22 +425,23 @@ class owa_lib {
 		
 		$url = 'http';	
 		
-		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'):
+		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
 			$url.= 's';
-		endif;
+		}
 		
-		if ( isset($_SERVER['HTTP_HOST'] ) ) {
+		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+			// contains port number
 			$domain = $_SERVER['HTTP_HOST'];
 		} else {
+			// does not contain port number.
 			$domain = $_SERVER['SERVER_NAME'];
+			if( $_SERVER['SERVER_PORT'] != 80 ) {
+				$domain .= ':' . $_SERVER['SERVER_PORT'];
+			}
 		}
 		
 		$url .= '://'.$domain;
-		
-		if($_SERVER['SERVER_PORT'] != 80):
-			$url .= ':'.$_SERVER['SERVER_PORT'];
-		endif;
-		
+	
 		$url .= $_SERVER['REQUEST_URI'];
 		
 		return $url;
