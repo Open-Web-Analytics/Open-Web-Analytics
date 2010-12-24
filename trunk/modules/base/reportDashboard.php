@@ -40,7 +40,7 @@ class owa_reportDashboardController extends owa_reportController {
 						'endDate'	  => $this->get('endDate'),
 						'metrics' 	  => 'actions',
 						'dimensions'  => 'actionName',
-						'constraints' => 'siteId='.$this->getParam('siteId'),
+						'siteId' 	  => $this->getParam('siteId'),
 						'do'		  => 'getResultSet'
 						);
 						
