@@ -29,7 +29,7 @@ require_once('owa_env.php');
 
 // Filter and Action hook assignments
 add_action('template_redirect', 'owa_main');
-add_action('wp_footer', 'owa_footer');
+add_action('wp_head', 'owa_insertPageTags',100);
 add_filter('the_permalink_rss', 'owa_post_link');
 add_action('init', 'owa_handleSpecialActionRequest');
 add_filter('bloginfo_url', 'add_feed_sid');
@@ -313,10 +313,10 @@ function owa_logCommentEdit($new_status, $old_status, $comment) {
 }
 
 /**
- * Prints helper page tags to the footers of templates.
+ * Prints helper page tags to the <head> of pages.
  * 
  */
-function owa_footer() {
+function owa_insertPageTags() {
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
 	if (function_exists('is_preview')) {
