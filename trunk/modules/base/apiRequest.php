@@ -49,16 +49,22 @@ class owa_apiRequestController extends owa_controller {
 		// check credentials
 		/* PERFORM AUTHENTICATION */
 			if (array_key_exists('required_capability', $do)) {
-				
-				$auth = &owa_auth::get_instance();
-				$status = $auth->authenticateUser();
-				// if auth was not successful then return login view.
-				if ($status['auth_status'] != true) {
-					return 'This method requires authentication.';
-				} else {
-					//check for needed capability again now that they are authenticated
-					if (!owa_coreAPI::isCurrentUserCapable($do['required_capability'])) {
-						return 'Your user does not have privileges to access this method.';	
+			
+				/* CHECK USER FOR CAPABILITIES */
+				if ( ! owa_coreAPI::isCurrentUserCapable( $do['required_capability'] ) ) {
+					// doesn't look like the currentuser has the necessary priviledges
+					owa_coreAPI::debug('User does not have capability required by this controller.');
+					// auth user
+					$auth = &owa_auth::get_instance();
+					$status = $auth->authenticateUser();
+					// if auth was not successful then return login view.
+					if ($status['auth_status'] != true) {
+						return 'This method requires authentication.';
+					} else {
+						//check for needed capability again now that they are authenticated
+						if (!owa_coreAPI::isCurrentUserCapable($do['required_capability'])) {
+							return 'Your user does not have privileges to access this method.';	
+						}
 					}
 				}
 			}
