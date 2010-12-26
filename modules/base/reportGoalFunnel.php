@@ -96,8 +96,11 @@ class owa_reportGoalFunnelController extends owa_reportController {
 				
 				// backfill check in case there are more visitors to this step than were at prior step.
 				if ($funnel[$k]['visitors'] <= $funnel[$k-1]['visitors']) {
-				
-					$funnel[$k]['visitor_percentage'] = round($funnel[$k]['visitors'] / $funnel[$k-1]['visitors'], 4) * 100 . '%';
+					if ($funnel[$k-1]['visitors'] > 0 ) {
+						$funnel[$k]['visitor_percentage'] = round($funnel[$k]['visitors'] / $funnel[$k-1]['visitors'], 4) * 100 . '%';
+					} else {
+						$funnel[$k]['visitor_percentage'] = '0.00%';
+					}
 				} else {
 					$funnel[$k]['visitor_percentage'] = '100%';
 				}
