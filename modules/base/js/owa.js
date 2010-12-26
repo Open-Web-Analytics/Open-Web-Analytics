@@ -20,12 +20,15 @@ var OWA = {
 		
 		var debugging = OWA.getSetting('debug') || false; // or true
 		
-		if (debugging) {
+		if ( debugging ) {
+		
+			if(window.console) {
 			
-			if(window.console && window.console.firebug) { 
-		 		console.log.apply(this, arguments);
-			} else {
-				console.log.apply(console, arguments);
+				if (window.console.firebug) { 
+			 		console.log.apply(this, arguments);
+				} else {
+					console.log.apply(console, arguments);
+				}
 			}
 		}
 	},
