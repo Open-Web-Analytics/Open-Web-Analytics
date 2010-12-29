@@ -43,7 +43,7 @@ class owa_reportReferralDetailController extends owa_reportController {
 		$r->getByColumn('url', $referral);
 		
 		$this->set('dimension_properties', array(
-				'title' 	=> $r->get('page_title'),
+				'page_title' 	=> $r->get('page_title'),
 				'url'		=> $r->get('url'),
 				'snippet'	=> $r->get('snippet') ) );
 				
