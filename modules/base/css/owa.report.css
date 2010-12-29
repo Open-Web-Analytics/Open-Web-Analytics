@@ -217,12 +217,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa_admin_nav_topmenu_container {background-color: #efefef;}
 .owa_admin_nav_topmenu_item {border-bottom: 1px solid #cccccc;background-color: #efefef;padding:0px;height:20px; vertical-align: middle; font-weight: bold; font-size:12px;	}
 .owa_admin_nav_topmenu_toggle {border-left:1px solid #cfcfcf;width:25px;height:20px;float:right;background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
-
+/*
 .owa_document {
 	border: 1px solid #efefef;
-	background-image: url(../i/document_icon_64.png);
-	background-repeat: no-repeat;
-	background-position: left center;
 	padding: 13px 10px 10px 63px;
 }
 
@@ -243,7 +240,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa_document .pagetype {
 	font-size:12px;
 }
-
+*/
 .owa_visitInfobox {
 	color:#9f9f9f; 
 	background-color: #505050;
@@ -436,8 +433,15 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 
 .owa_dimensionDetail .title {
 	
-	font-size:18px;
-	padding-bottom: 10px;
+	font-size:22px;
+	padding-bottom: 7px;
+}
+
+.owa_dimensionDetail .url {
+	
+	font-size:14px;
+	color: #0E774A;
+	padding-bottom:5px;
 }
 
 .owa_dimensionDetail .icon {
