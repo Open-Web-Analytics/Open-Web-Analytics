@@ -6,7 +6,7 @@
 		<div class="title">
 		<?php 
 			if ($properties['page_title']) { 
-				$this->out($properties['page_title']); 
+				$this->out($properties['page_title'], true, true); 
 			} else { 
 				$this->out('No Title', false);
 			}
