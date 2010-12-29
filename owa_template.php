@@ -980,13 +980,18 @@ class owa_template extends Template {
 	 * @param	string	$output		The String to be output into the template
 	 * @param	bool	$sanitize	Flag that will sanitize the output for display
 	 */
-	function out($output, $sanitize = true) {
+	function out($output, $sanitize = true, $decode_special_entities = false) {
 		
-		if ($sanitize) {
-			echo owa_sanitize::escapeForDisplay($output);
-		} else {
-			echo $output;
-		}
+		if ( $sanitize ) {
+			$output = owa_sanitize::escapeForDisplay($output);
+			
+			if ( $decode_special_entities ) {
+				$output = strtr($output, array('&amp;'  => '&'));
+			}
+			
+		} 
+		
+		echo $output;
 	}
 	
 	function formatCurrency($value) {
