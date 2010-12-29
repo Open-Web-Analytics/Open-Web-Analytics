@@ -334,9 +334,26 @@ class owa_baseModule extends owa_module {
 				'view_reports'
 		);
 		
-		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
+		$this->registerApiMethod('getDomstreams', 
+				array( $this, 'getDomstreams' ), 
+				array( 
+					'startDate', 
+					'endDate', 
+					'document_id', 
+					'siteId', 
+					'resultsPerPage', 
+					'page', 
+					'format' ), 
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
+		$this->registerApiMethod('getLatestVisits', 
+				array($this, 'getLatestVisits'), 
+				array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), 
+				'', 
+				'view_reports'
+		);
 		
 		$this->registerApiMethod('getClickstream', 
 				array($this, 'getClickstream'), 

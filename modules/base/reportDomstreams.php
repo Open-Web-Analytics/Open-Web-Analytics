@@ -68,7 +68,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 			'startDate' 		=> $p->getStartDate()->getYyyymmdd(),
 			'endDate'			=> $p->getEndDate()->getYyyymmdd(),
 			'document_id'		=> $document_id,
-			'site_id'			=> $this->getParam('siteId'),
+			'siteId'			=> $this->getParam('siteId'),
 			'page'				=> $this->getParam('page'),
 			'resultsPerPage'	=> 50,
 			'format'			=> $this->getParam('format')
