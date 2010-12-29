@@ -234,9 +234,10 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	font-size:22px;
 }
 
-.owa_document .url {
-	font-size:12px;
-	color: #9f9f9f;
+.owa_document .url, .owa .refererDetailPanel .url {
+	font-size:14px;
+	color: #0E774A;
+	padding-bottom:5px;
 }
 
 .owa_document .pagetype {
@@ -429,13 +430,14 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa_dimensionDetail {
 	border: 1px solid #cccccc;
 	width:inherit;
-	height:128px;
+	height:auto;
 	padding:10px;
 }
 
-.owa_dimensionDetail .title, .owa .refererDetailPanel .url{
+.owa_dimensionDetail .title {
 	
 	font-size:18px;
+	padding-bottom: 10px;
 }
 
 .owa_dimensionDetail .icon {
@@ -446,10 +448,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa .refererDetailPanel  {
 
 	height:auto;
-}
-
-.owa .refererDetailPanel .url  {
-	
 }
 
 .owa .refererDetailPanel .snippet {
