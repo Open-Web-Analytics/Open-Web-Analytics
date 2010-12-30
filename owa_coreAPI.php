@@ -1322,6 +1322,17 @@ class owa_coreAPI {
 			return $status;
 		}
 	}
+	
+	public static function generateInstanceSpecificHash() {
+		
+		if ( defined('OWA_SECRET')) {
+			$salt = OWA_SECRET;
+		} else {
+			$salt = '';
+		}
+		
+		return md5( $salt . OWA_DB_USER . OWA_DB_PASSWORD );
+	}
 }
 
 ?>
