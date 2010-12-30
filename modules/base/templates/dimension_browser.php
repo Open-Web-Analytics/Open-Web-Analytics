@@ -1,5 +1,14 @@
-<div class="owa_dimensionDetail" style="padding: 0px 0px 0px 135px; background-image: url(<?php echo $this->getBrowserIcon($properties['browser_family']);?>); background-repeat:no-repeat;" id="">
-	
-	<div class="titleSuffix" style="padding-top:60px;"><?php echo $properties['browser_family'];?></div>
+<div class="owa_dimensionDetail" id="">
+
+	<div class="icon" style="float:left;">
+		<img src="<?php echo $this->getBrowserIcon($properties['browser_family']);?>">
+	</div>
+	<div>
+		<div class="title">
+		<?php $this->out($properties['browser_family'], true, true); ?>
+		</div>
+		
+	</div>
+	<div style="clear:both;"></div>
 	
 </div>
