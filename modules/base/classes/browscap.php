@@ -94,17 +94,23 @@ class owa_browscap extends owa_base {
 			$cache_obj = $this->cache->get('browscap', $this->ua);
 		}
 		
-		if (!empty($cache_obj)):
+		if (!empty($cache_obj)) {
 			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 			return $cache_obj;
 					
-		else:
+		} else {
 			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 						
-			// Load main browscap
-			$this->browscap_db = $this->load($this->config['browscap.ini']);
-	
-			$cap=null;
+			// Load browscap file into memory
+			$user_browscap_file = OWA_DATA_DIR.'browscap/php_browscap.ini';
+			// check to see if a user downloaded version of the file exists
+			if ( file_exists( $user_browscap_file ) ) {
+				$this->browscap_db = $this->load( $user_browscap_file );	
+			} else {
+				$this->browscap_db = $this->load( $this->config['browscap.ini'] );
+			}
+		
+			$cap = null;
 			
 			foreach ($this->browscap_db as $key=>$value) {
 				  if (($key!='*')&&(!array_key_exists('Parent',$value))) continue;
@@ -122,19 +128,17 @@ class owa_browscap extends owa_base {
 				  }
 			 }
 			 
-			if (!empty($cap)):
+			if ( ! empty( $cap ) ) {
 				
-				if ($this->config['cache_objects'] == true):
-					if ($cap['Browser'] != 'Default Browser'): 
-						$this->cache->set('browscap', $this->ua, (object)$cap, $this->cacheExpiration);
-					endif;
-				endif;
-			endif;
+				if ( $this->config['cache_objects'] == true ) {
+					if ( $cap['Browser'] != 'Default Browser' ) {
+						$this->cache->set( 'browscap', $this->ua, (object)$cap, $this->cacheExpiration );
+					}
+				}
+			}
 
-			 return ((object)$cap);
-		 
-		endif;
-	
+			return ( (object)$cap );
+		}
 	}
 	
 	function load($file) {
