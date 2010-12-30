@@ -842,9 +842,9 @@
 				$domain = substr( $domain, 1 );
 			}
 			
-			$part = substr( $domain, 0, 3 );
-			if ($part === 'www') {
-				$domain = substr( $domain, 3);
+			$part = substr( $domain, 0, 4 );
+			if ($part === 'www.') {
+				$domain = substr( $domain, 4);
 			}
 			
 			$cookie_domain = '.'.$domain;
