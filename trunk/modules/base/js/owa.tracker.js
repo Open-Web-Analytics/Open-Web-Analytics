@@ -408,8 +408,8 @@ OWA.tracker.prototype = {
 		if (www === 'www.') {
 			if ( not_passed ) {
 				domain = domain.substr(4);
-			}
-			
+			} 
+
 			contains_www = true;
 		}
 		
@@ -418,6 +418,7 @@ OWA.tracker.prototype = {
 			 match = true;
 		}
 		
+		/*
 		if (match === true) {
 			// check to see if the domain is www 
 			if ( contains_www === true ) {
@@ -433,19 +434,21 @@ OWA.tracker.prototype = {
 			OWA.debug('document domain does not match cookie domain. cleaning up by erasing cookies under document.domain .');
 			OWA.util.eraseMultipleCookies(this.cookie_names, document.domain);
 			
-			/*
-			if ( contains_www === true) {
-				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
-				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
-			}
-			*/
+			
+			//if ( contains_www === true) {
+			//	OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+			//	OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+			//}
+			
 		}
+		*/
 		
 		// add the leading period back
 		domain =  '.' + domain;
 		this.setOption('cookie_domain', domain);
 		this.setOption('cookie_domain_set', true);
 		OWA.setSetting('cookie_domain', domain);
+		OWA.debug('Cookie domain is: %s', domain);
 	},
 	
 	getCookieDomainHash: function(domain) {
