@@ -136,6 +136,7 @@ OWA.commandQueue.prototype = {
  * @since		owa 1.2.1
  */
 OWA.tracker = function( options ) {
+	
 	//this.setDebug(true);
 	// set start time
 	this.startTime = this.getTimestamp();
@@ -238,6 +239,7 @@ OWA.tracker.prototype = {
 	isTrafficAttributed: false,
 	cookie_names: ['owa_s', 'owa_v', 'owa_c'],
 	linkedStateSet: false,
+	hashCookiesToDomain: true,
 	/**
 	 * GET params parsed from URL
 	 */ 
@@ -304,7 +306,13 @@ OWA.tracker.prototype = {
 					
 					var pair = state[i].split('=');
 					
-					OWA.util.replaceState( pair[0], unescape(pair[1]), true );	
+					// add cookie domain hash for current cookie domain
+					var value = unescape(pair[1]);
+					decodedvalue = OWA.util.decodeCookieValue(value);
+					var format = OWA.util.getCookieValueFormat(value);
+					decodedvalue.cdh = OWA.util.getCookieDomainHash( this.getCookieDomain() );
+					
+					OWA.util.replaceState( pair[0], decodedvalue, true, format );	
 				}
 			}
 		}
@@ -348,7 +356,7 @@ OWA.tracker.prototype = {
 		var state = '';
 
 		for (var i=0; this.sharableStateStores.length > i;i++) {
-			var value = OWA.util.getRawState( this.sharableStateStores[i] );
+			var value = OWA.getStateFromCookie( this.sharableStateStores[i] );
 			
 			if (value) {
 				state += OWA.util.sprintf( '%s=%s', this.sharableStateStores[i], OWA.util.urlEncode(value) );					
@@ -440,6 +448,16 @@ OWA.tracker.prototype = {
 		OWA.setSetting('cookie_domain', domain);
 	},
 	
+	getCookieDomainHash: function(domain) {
+		
+		return OWA.util.crc32(domain);
+	},
+	
+	setCookieDomainHashing: function(value) {
+		this.hashCookiesToDomain = value;
+		OWA.setSetting('hashCookiesToDomain', value);
+	},
+	
 	checkForOverlaySession: function() {
 		//OWA.setSetting('debug', true);
 		// check to see if overlay sesson should be created
@@ -451,19 +469,14 @@ OWA.tracker.prototype = {
 			
 			OWA.debug('overlay anchor value: ' + a);
 			//var domain = this.getCookieDomain();
+			
+			// set the overlay cookie
 			OWA.util.setCookie('owa_overlay',a, '','/', document.domain );
-			//OWA.util.setState('overlay','', a);
 			////alert(OWA.util.readCookie('owa_overlay') );
-		}
-		
-		
-		// check to see if overlay session is active
-		var p = OWA.util.getState('overlay');
-		if ( p ) {
 			// pause tracker so we dont log anything during an overlay session
 			this.pause();
 			// start overlay session
-			OWA.startOverlaySession(p);
+			OWA.startOverlaySession( OWA.util.decodeCookieValue( a ) );
 		}			
 	},
 	
@@ -1449,7 +1462,7 @@ OWA.tracker.prototype = {
 	
 	setTrafficAttribution : function( event ) {
 		
-		var campaignState = OWA.util.getState( 'c' );
+		var campaignState = OWA.getState( 'c', 'attribs' );
 		
 		if (campaignState) {
 			this.campaignState = campaignState;
@@ -1498,7 +1511,7 @@ OWA.tracker.prototype = {
 	},
 	
 	setCampaignCookie : function( values ) {
-		OWA.util.setState( 'c', '', values, '', 'json', this.options.campaignAttributionWindow );
+		OWA.setState( 'c', 'attribs', values, '', 'json', this.options.campaignAttributionWindow );
 	},
 	
 	checkRefererForSearchEngine : function ( referer ) {
@@ -1580,17 +1593,17 @@ OWA.tracker.prototype = {
 	setNumberPriorSessions : function ( event ) {
 		OWA.debug('setting number of prior sessions');
 		// if check for nps value in vistor cookie.
-		var nps = OWA.util.getState( 'v', 'nps' );
+		var nps = OWA.getState( 'v', 'nps' );
 		// set value to 1 if not found as it means its he first session.
 		if ( ! nps ) {
-			nps = 0;
+			nps = '0';
 		}
 		
 		if ( this.isNewSessionFlag === true ) {
 			// increment visit count and persist to state store
 			nps = nps * 1;
 			nps++;
-			OWA.util.setState( 'v', 'nps', nps, true );
+			OWA.setState( 'v', 'nps', nps, true );
 		}
 
 		this.globalEventProperties.num_prior_sessions =  nps;
@@ -1599,14 +1612,14 @@ OWA.tracker.prototype = {
 	
 	setVisitorId : function( event ) {
 		
-		var visitor_id =  OWA.util.getState( 'v', 'vid' );
+		var visitor_id =  OWA.getState( 'v', 'vid' );
 
 		if ( ! visitor_id ) {
-			visitor_id =  OWA.util.getState( 'v' );
+			visitor_id =  OWA.getState( 'v' );
 			
 			if (visitor_id) {
-				OWA.util.clearState( 'v' );
-				OWA.util.setState( 'v', 'vid', visitor_id, true );
+				OWA.clearState( 'v' );
+				OWA.setState( 'v', 'vid', visitor_id, true );
 			}
 		}
 				
@@ -1614,7 +1627,7 @@ OWA.tracker.prototype = {
 			visitor_id = OWA.util.generateRandomGuid( this.siteId );
 			
 			this.globalEventProperties.is_new_visitor = true;
-			OWA.util.setState( 'v', 'vid', visitor_id, true );
+			OWA.setState( 'v', 'vid', visitor_id, true );
 			OWA.debug('Creating new visitor id');
 		}
 		// set property on event object
@@ -1622,12 +1635,12 @@ OWA.tracker.prototype = {
 	},
 	
 	setFirstSessionTimestamp : function( event ) {
-		var fsts = OWA.util.getState( 'v', 'fsts' );
+		var fsts = OWA.getState( 'v', 'fsts' );
 		
 		if ( ! fsts ) {
 			fsts = event.get('timestamp');
 			OWA.debug('setting fsts value: %s', fsts);
-			OWA.util.setState('v', 'fsts', fsts , true);	
+			OWA.setState('v', 'fsts', fsts , true);	
 		}
 		
 		this.globalEventProperties.fsts = fsts;
@@ -1635,17 +1648,17 @@ OWA.tracker.prototype = {
 	
 	setLastRequestTime : function( event ) {
 		
-		var last_req = OWA.util.getState('s', 'last_req');
+		var last_req = OWA.getState('s', 'last_req');
 		
 		// suppport for old style cookie
 		if ( ! last_req ) {
 			var state_store_name = OWA.util.sprintf( '%s_%s', 'ss', this.siteId );		
-			last_req = OWA.util.getState( state_store_name, 'last_req' );	
+			last_req = OWA.getState( state_store_name, 'last_req' );	
 		}
 		// set property on event object
 		this.globalEventProperties.last_req = last_req;
 		// store new state value
-		OWA.util.setState( 's', 'last_req', event.get( 'timestamp' ), true );
+		OWA.setState( 's', 'last_req', event.get( 'timestamp' ), true );
 	},
 	
 	setSessionId : function ( event ) {
@@ -1654,10 +1667,10 @@ OWA.tracker.prototype = {
 		var is_new_session = this.isNewSession( event.get( 'timestamp' ),  this.getGlobalEventProperty( 'last_req' ) ); 
 		if ( is_new_session ) {
 			//set prior_session_id
-			var prior_session_id = OWA.util.getState('s', 'sid');
+			var prior_session_id = OWA.getState('s', 'sid');
 			if ( ! prior_session_id ) {
 				state_store_name = OWA.util.sprintf('%s_%s', 'ss', this.getSiteId() );		
-				prior_session_id = OWA.util.getState(state_store_name, 's');
+				prior_session_id = OWA.getState(state_store_name, 's');
 			}
 			if ( prior_session_id ) {
 				this.globalEventProperties.prior_session_id = prior_session_id;
@@ -1668,15 +1681,15 @@ OWA.tracker.prototype = {
 	   		//mark new session flag on current request
 			this.globalEventProperties.is_new_session = true;
 			this.isNewSessionFlag = true;
-			OWA.util.setState( 's', 'sid', session_id, true );
+			OWA.setState( 's', 'sid', session_id, true );
 		} else {
 			// Must be an active session so just pull the session id from the state store
-			session_id = OWA.util.getState('s', 'sid');
+			session_id = OWA.getState('s', 'sid');
 			// support for old style cookie
 			if ( ! session_id ) {
 				state_store_name = OWA.util.sprintf( '%s_%s', 'ss', this.getSiteId() );		
-				session_id = OWA.util.getState(state_store_name, 's');
-				OWA.util.setState( 's', 'sid', session_id, true );	
+				session_id = OWA.getState(state_store_name, 's');
+				OWA.setState( 's', 'sid', session_id, true );	
 			}
 		
 			this.globalEventProperties.session_id = session_id;
@@ -1689,7 +1702,7 @@ OWA.tracker.prototype = {
 			//mark new session flag on current request
 			this.globalEventProperties.is_new_session = true;
 			this.isNewSessionFlag = true;
-			OWA.util.setState( 's', 'sid', session_id, true );
+			OWA.setState( 's', 'sid', session_id, true );
 		}
 
 	},
