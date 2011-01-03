@@ -250,7 +250,7 @@ OWA.stateManager.prototype = {
 		
 	getStateFromCookie : function(store_name) {
 		
-		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
+		var store = unescape( OWA.util.readCookie( OWA.getSetting('ns') + store_name ) );
 		if ( store ) {
 			return store;
 		}
@@ -460,7 +460,7 @@ OWA.util =  {
 		OWA.debug("erasing cookie: " + name + " in domain: " +domain);
 		this.setCookie(name,"",-1,"/",domain);
 		// attempt to read the cookie again to see if its there under another valid domain
-		var test = this.readCookie(name);
+		var test = OWA.util.readCookie(name);
 		// if so then try the alternate domain				
 		if (test) {
 			
@@ -714,7 +714,7 @@ OWA.util =  {
 	},
 	
 	loadStateJson : function(store_name) {
-		var store = unescape(this.readCookie( OWA.getSetting('ns') + store_name ) );
+		var store = unescape(OWA.util.readCookie( OWA.getSetting('ns') + store_name ) );
 		if (store) {
 			state = JSON.parse(store);
 		}
