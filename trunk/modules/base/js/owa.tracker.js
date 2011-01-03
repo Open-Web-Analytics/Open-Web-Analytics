@@ -297,22 +297,32 @@ OWA.tracker.prototype = {
 		
 		if ( ls ) {
 			OWA.debug('Shared OWA state detected...');
-			ls = OWA.util.base64_decode(ls);
+			
+			ls = OWA.util.base64_decode(OWA.util.urldecode(ls));
+			//ls = OWA.util.trim(ls, '\u0000');
+			//ls = OWA.util.trim(ls, '\u0000');	
+			OWA.debug('linked state: %s', ls);
+			
 			var state = ls.split('.');
+			//var state = OWA.util.explode('.', ls);
 			OWA.debug('linked state: %s', JSON.stringify(state));
 			if ( state ) {
 			
 				for (var i=0; state.length > i; i++) {
 					
 					var pair = state[i].split('=');
-					
+					OWA.debug('pair: %s', pair);
 					// add cookie domain hash for current cookie domain
-					var value = unescape(pair[1]);
+					var value = OWA.util.urldecode(pair[1]);
+					OWA.debug('pair: %s', value);
+					//OWA.debug('about to decode shared link state value: %s', value);
 					decodedvalue = OWA.util.decodeCookieValue(value);
+					//OWA.debug('decoded shared link state value: %s', JSON.stringify(decodedvalue));
 					var format = OWA.util.getCookieValueFormat(value);
+					//OWA.debug('format of decoded shared state value: %s', format);
 					decodedvalue.cdh = OWA.util.getCookieDomainHash( this.getCookieDomain() );
 					
-					OWA.util.replaceState( pair[0], decodedvalue, true, format );	
+					OWA.replaceState( pair[0], decodedvalue, true, format );	
 				}
 			}
 		}
@@ -336,13 +346,13 @@ OWA.tracker.prototype = {
 		if ( url ) {
 			
 			var state = this.createSharedStateValue();
-
+			
 			//check to see if we can just stick this on the anchor
 			var anchor = this.getUrlAnchorValue();
 			if ( ! anchor ) {
 
 				OWA.debug('shared state: %s', state);
-				document.location.href = url + '#owa_state=' + state ;
+				document.location.href = url + '#owa_state.' + state ;
 			
 			// if not then we need ot insert it into GET params
 			} else {
@@ -356,7 +366,8 @@ OWA.tracker.prototype = {
 		var state = '';
 
 		for (var i=0; this.sharableStateStores.length > i;i++) {
-			var value = OWA.getStateFromCookie( this.sharableStateStores[i] );
+			var value = OWA.getState( this.sharableStateStores[i] );
+			value = OWA.util.encodeJsonForCookie(value, OWA.getStateStoreFormat(this.sharableStateStores[i]));
 			
 			if (value) {
 				state += OWA.util.sprintf( '%s=%s', this.sharableStateStores[i], OWA.util.urlEncode(value) );					
@@ -368,14 +379,18 @@ OWA.tracker.prototype = {
 		
 		// base64 for transport
 		if ( state ) {
-			return OWA.util.base64_encode(state);
+			OWA.debug('linked state to send: %s', state);
+			
+			state = OWA.util.base64_encode(state);
+			state = OWA.util.urlEncode(state);
+			return state;
 		}
 	},
 	
 	shareShareByPost : function (form) {
 
 		var state = this.createSharedStateValue();
-		form.action += '#owa_state=' + state;
+		form.action += '#owa_state.' + state;
 		form.submit();
 	},
 
@@ -467,7 +482,7 @@ OWA.tracker.prototype = {
 		var a = this.getAnchorParam('owa_overlay');
 		
 		if ( a ) {
-			a = OWA.util.base64_decode(a);
+			a = OWA.util.base64_decode(OWA.util.urldecode(a));
 			a = OWA.util.trim(a, '\u0000');
 			
 			OWA.debug('overlay anchor value: ' + a);
@@ -496,14 +511,14 @@ OWA.tracker.prototype = {
 		
 		if ( anchor ) {
 			OWA.debug('anchor is: %s', anchor);
-			var pairs = anchor.split('.');
+			var pairs = anchor.split(',');
 			OWA.debug('anchor pairs: %s', JSON.stringify(pairs));
 			if ( pairs.length > 0 ) {
 			
 				var values = {};
 				for( var i=0; pairs.length > i;i++ ) {
 					
-					var pieces = pairs[i].split('=');
+					var pieces = pairs[i].split('.');
 					OWA.debug('anchor pieces: %s', JSON.stringify(pieces));	
 					values[pieces[0]] = pieces[1];
 				}
