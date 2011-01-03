@@ -72,6 +72,18 @@ var OWA = {
 		return this.state.clear(store_name);
 	},
 	
+	getStateStoreFormat: function(store_name) {
+	
+		this.initializeStateManager();
+		return this.state.getStoreFormat(store_name);
+	},
+	
+	setStateStoreFormat: function(store_name, format) {
+	
+		this.initializeStateManager();
+		return this.state.setStoreFormat(store_name, format);
+	},
+	
 	debug: function() {
 		
 		var debugging = OWA.getSetting('debug') || false; // or true
@@ -219,13 +231,13 @@ OWA.stateManager.prototype = {
 	
 	replaceStore : function (store_name, value, is_perminant, format, expiration_days) {
 		
-		
+		OWA.debug('replace state format: %s, value: %s',format, JSON.stringify(value));
 		if ( store_name ) {
 		
 			if (value) {
 				
 				this.stores[store_name] = value;
-				this.storeFormats[store_name] = value;
+				this.storeFormats[store_name] = format;
 				
 				if (format === 'json') {
 					cookie_value = JSON.stringify(value);
@@ -341,6 +353,16 @@ OWA.stateManager.prototype = {
 		// delete cookie
 		this.stores[store_name] = '';
 		OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
+	},
+	
+	getStoreFormat: function(store_name) {
+		
+		return this.storeFormats[store_name];
+	},
+	
+	setStoreFormat: function(store_name, format) {
+		
+		this.storeFormats[store_name] = format;
 	}
 };
 
@@ -545,11 +567,39 @@ OWA.util =  {
 	},
 	
 	urlEncode : function(str) {
-		 str = (str+'').toString();
-    
-    	// Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
-    	// PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
-    	return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+').replace(/~/g, '%7E');
+		// URL-encodes string  
+	    // 
+	    // version: 1009.2513
+	    // discuss at: http://phpjs.org/functions/urlencode
+	    // +   original by: Philip Peterson
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +      input by: AJ
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +      input by: travc
+	    // +      input by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Lars Fischer
+	    // +      input by: Ratheous
+	    // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Joris
+	    // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
+	    // %          note 1: This reflects PHP 5.3/6.0+ behavior
+	    // %        note 2: Please be aware that this function expects to encode into UTF-8 encoded strings, as found on
+	    // %        note 2: pages served as UTF-8
+	    // *     example 1: urlencode('Kevin van Zonneveld!');
+	    // *     returns 1: 'Kevin+van+Zonneveld%21'
+	    // *     example 2: urlencode('http://kevin.vanzonneveld.net/');
+	    // *     returns 2: 'http%3A%2F%2Fkevin.vanzonneveld.net%2F'
+	    // *     example 3: urlencode('http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a');
+	    // *     returns 3: 'http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a'
+	    str = (str+'').toString();
+	    
+	    // Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
+	    // PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
+	    return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+');
+	
 	},
 	
 	urldecode : function (str) {
@@ -698,19 +748,31 @@ OWA.util =  {
 		
 		var format = OWA.util.getCookieValueFormat(string);
 		var value = '';
-		
+		//OWA.debug('decodeCookieValue - string: %s, format: %s', string, format);		
 		if (format === 'json') {
 			value = JSON.parse(string);
-		} else {
-			value = this.jsonFromAssocString(string);
-		}
 		
+		} else {
+			value = OWA.util.jsonFromAssocString(string);
+		}
+		OWA.debug('decodeCookieValue - string: %s, format: %s, value: %s', string, format, JSON.stringify(value));		
 		return value;
 	},
 	
-	getCookieDomainHash: function(domain) {
+	encodeJsonForCookie : function(json_obj, format) {
 		
-		return OWA.util.crc32(domain);
+		format = format || 'assoc';
+		
+		if (format === 'json') {
+			return JSON.stringify(json_obj);
+		} else {
+			return OWA.util.assocStringFromJson(json_obj);
+		}
+	},
+	
+	getCookieDomainHash: function(domain) {
+		// must be string
+		return OWA.util.dechex(OWA.util.crc32(domain));
 	},
 	
 	loadStateJson : function(store_name) {
@@ -868,7 +930,7 @@ OWA.util =  {
 	utf8_encode : function ( argString ) {
 	    // Encodes an ISO-8859-1 string to UTF-8  
 	    // 
-	    // version: 1008.1718
+	    // version: 1009.2513
 	    // discuss at: http://phpjs.org/functions/utf8_encode
 	    // +   original by: Webtoolkit.info (http://www.webtoolkit.info/)
 	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -1024,11 +1086,102 @@ OWA.util =  {
 	    }
 	    return Math.floor(Math.random() * (max - min + 1)) + min;
 	},
+	/*
+base64_encode: function(input) {
+		var keyStr = "ABCDEFGHIJKLMNOP" +
+               			"QRSTUVWXYZabcdef" +
+               			"ghijklmnopqrstuv" +
+               			"wxyz0123456789+/" +
+               			"=";	 
+     input = escape(input);
+     var output = "";
+     var chr1, chr2, chr3 = "";
+     var enc1, enc2, enc3, enc4 = "";
+     var i = 0;
+
+     do {
+        chr1 = input.charCodeAt(i++);
+        chr2 = input.charCodeAt(i++);
+        chr3 = input.charCodeAt(i++);
+
+        enc1 = chr1 >> 2;
+        enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+        enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+        enc4 = chr3 & 63;
+
+        if (isNaN(chr2)) {
+           enc3 = enc4 = 64;
+        } else if (isNaN(chr3)) {
+           enc4 = 64;
+        }
+
+        output = output +
+           keyStr.charAt(enc1) +
+           keyStr.charAt(enc2) +
+           keyStr.charAt(enc3) +
+           keyStr.charAt(enc4);
+        chr1 = chr2 = chr3 = "";
+        enc1 = enc2 = enc3 = enc4 = "";
+     } while (i < input.length);
+
+		return output;
+  
+	},
+	
+	base64_decode: function(input) {
+		
+		var keyStr = "ABCDEFGHIJKLMNOP" +
+               			"QRSTUVWXYZabcdef" +
+               			"ghijklmnopqrstuv" +
+               			"wxyz0123456789+/" +
+               			"=";	 
+		var output = "";
+     var chr1, chr2, chr3 = "";
+     var enc1, enc2, enc3, enc4 = "";
+     var i = 0;
+
+     // remove all characters that are not A-Z, a-z, 0-9, +, /, or =
+     var base64test = /[^A-Za-z0-9\+\/\=]/g;
+     if (base64test.exec(input)) {
+        alert("There were invalid base64 characters in the input text.\n" +
+              "Valid base64 characters are A-Z, a-z, 0-9, '+', '/',and '='\n" +
+              "Expect errors in decoding.");
+     }
+     input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+
+     do {
+        enc1 = keyStr.indexOf(input.charAt(i++));
+        enc2 = keyStr.indexOf(input.charAt(i++));
+        enc3 = keyStr.indexOf(input.charAt(i++));
+        enc4 = keyStr.indexOf(input.charAt(i++));
+
+        chr1 = (enc1 << 2) | (enc2 >> 4);
+        chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+        chr3 = ((enc3 & 3) << 6) | enc4;
+
+        output = output + String.fromCharCode(chr1);
+
+        if (enc3 != 64) {
+           output = output + String.fromCharCode(chr2);
+        }
+        if (enc4 != 64) {
+           output = output + String.fromCharCode(chr3);
+        }
+
+        chr1 = chr2 = chr3 = "";
+        enc1 = enc2 = enc3 = enc4 = "";
+
+     } while (i < input.length);
+
+     return unescape(output);
+		
+	},
+*/
 	
 	base64_encode: function (data) {
 	    // Encodes string using MIME base64 algorithm  
 	    // 
-	    // version: 1008.1718
+	    // version: 1009.2513
 	    // discuss at: http://phpjs.org/functions/base64_encode
 	    // +   original by: Tyler Akins (http://rumkin.com)
 	    // +   improved by: Bayron Guevara
@@ -1146,7 +1299,7 @@ OWA.util =  {
 	sprintf : function( ) {
 	    // Return a formatted string  
 	    // 
-	    // version: 1008.1718
+	    // version: 1009.2513
 	    // discuss at: http://phpjs.org/functions/sprintf
 	    // +   original by: Ash Searle (http://hexmen.com/blog/)
 	    // + namespaced by: Michael White (http://getsprink.com)
@@ -1348,5 +1501,81 @@ OWA.util =  {
 	    }
 	 
 	    return false;
+	},
+	
+	dechex: function (number) {
+	    // Returns a string containing a hexadecimal representation of the given number  
+	    // 
+	    // version: 1009.2513
+	    // discuss at: http://phpjs.org/functions/dechex
+	    // +   original by: Philippe Baumann
+	    // +   bugfixed by: Onno Marsman
+	    // +   improved by: http://stackoverflow.com/questions/57803/how-to-convert-decimal-to-hex-in-javascript
+	    // +   input by: pilus
+	    // *     example 1: dechex(10);
+	    // *     returns 1: 'a'
+	    // *     example 2: dechex(47);
+	    // *     returns 2: '2f'
+	    // *     example 3: dechex(-1415723993);
+	    // *     returns 3: 'ab9dc427'
+	    if (number < 0) {
+	        number = 0xFFFFFFFF + number + 1;
+	    }
+	    return parseInt(number, 10).toString(16);
+	},
+	
+	explode: function (delimiter, string, limit) {
+	    // Splits a string on string separator and return array of components. 
+	    // If limit is positive only limit number of components is returned. 
+	    // If limit is negative all components except the last abs(limit) are returned.  
+	    // 
+	    // version: 1009.2513
+	    // discuss at: http://phpjs.org/functions/explode
+	    // +     original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +     improved by: kenneth
+	    // +     improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +     improved by: d3x
+	    // +     bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // *     example 1: explode(' ', 'Kevin van Zonneveld');
+	    // *     returns 1: {0: 'Kevin', 1: 'van', 2: 'Zonneveld'}
+	    // *     example 2: explode('=', 'a=bc=d', 2);
+	    // *     returns 2: ['a', 'bc=d']
+	 
+	    var emptyArray = { 0: '' };
+	    
+	    // third argument is not required
+	    if ( arguments.length < 2 ||
+	        typeof arguments[0] == 'undefined' ||
+	        typeof arguments[1] == 'undefined' ) {
+	        return null;
+	    }
+	 
+	    if ( delimiter === '' ||
+	        delimiter === false ||
+	        delimiter === null ) {
+	        return false;
+	    }
+	 
+	    if ( typeof delimiter == 'function' ||
+	        typeof delimiter == 'object' ||
+	        typeof string == 'function' ||
+	        typeof string == 'object' ) {
+	        return emptyArray;
+	    }
+	 
+	    if ( delimiter === true ) {
+	        delimiter = '1';
+	    }
+	    
+	    if (!limit) {
+	        return string.toString().split(delimiter.toString());
+	    } else {
+	        // support for limit argument
+	        var splitted = string.toString().split(delimiter.toString());
+	        var partA = splitted.splice(0, limit - 1);
+	        var partB = splitted.join(delimiter.toString());
+	        partA.push(partB);
+	        return partA;
+	    }
 	}
 }
