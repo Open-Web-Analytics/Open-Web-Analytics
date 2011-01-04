@@ -92,7 +92,9 @@ class owa_widgetController extends owa_controller {
 			// we dont want to keep passing this.
 			unset($this->data['params']['initial_view']);
 		endif;
-		$this->data['wrapper'] = $this->params['wrapper'];
+		
+		
+		$this->data['wrapper'] = $this->getParam('wrapper');
 		$this->data['widget'] = $this->params['do'];
 		$this->data['do'] = $this->params['do'];
 		
