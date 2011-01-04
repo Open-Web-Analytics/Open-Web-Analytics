@@ -86,7 +86,8 @@ class owa_widgetController extends owa_controller {
 		$this->doFormatAction($this->params['format']);
 	
 		// used to add outer wrapper to widget if it's the first view.
-		if ($this->params['initial_view'] == true):
+		$iv = $this->getParam('initial_view');
+		if ($iv == true):
 			$this->data['subview'] = $this->data['view'];
 			$this->data['view'] = 'base.widget';
 			// we dont want to keep passing this.
