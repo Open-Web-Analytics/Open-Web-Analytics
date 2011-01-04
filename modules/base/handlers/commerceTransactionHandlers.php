@@ -60,9 +60,16 @@ class owa_commerceTransactionHandlers extends owa_observer {
 				$s = owa_coreAPI::entityFactory( 'base.session' );
 				$s->load( $original_session_id );
 				
+				// override the session id with original session id
+				// this is needed for downstream events
+				$event->set('session_id', $original_session_id);
+								
 				if ( $s->get( 'id' ) ) {
 					$ct->setProperties( $s->_getProperties() );
 					$ct->set( 'session_id', $original_session_id );
+				} else {
+					owa_coreAPI::debug('Cannot find original session with id: '.$original_session_id);
+					return OWA_EHS_EVENT_FAILED;
 				}
 				
 			}
