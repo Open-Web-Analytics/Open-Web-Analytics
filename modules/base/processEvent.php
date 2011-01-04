@@ -402,7 +402,7 @@ class owa_processEventController extends owa_controller {
 	
 	function getDomainFromUrl($url, $strip_www = true) {
 		
-		$split_url = preg_split('/\/+/g', $url);
+		$split_url = preg_split('/\/+/', $url);
 		$domain = $split_url[1];
 		if ($strip_www === true) {
 			$domain_parts = explode('.', $domain);
