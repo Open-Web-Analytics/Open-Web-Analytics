@@ -1097,10 +1097,6 @@ class owa_resultSetManager extends owa_base {
 			
 			$rs = $this->computeCalculatedMetrics($rs);
 			
-			if ($dim) {
-			
-			}
-			
 			// add urls
 			$urls = $this->makeResultSetUrls();
 			$rs->self = $urls['self'];
