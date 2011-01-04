@@ -49,6 +49,16 @@ class owa_sessionCommerceSummaryHandlers extends owa_observer {
 				
     	$s = owa_coreAPI::entityFactory( 'base.session' );
 		$pk = $event->get( 'session_id' );
+		
+		// just in case events slip thorugh that have no session_id
+		// look for the original session id param
+		if ( ! $pk ) {
+			$pk = $event->get( 'original_session_id' );
+			if ($pk) {
+				$event->set('session_id', $pk);
+			}
+		}
+		
 		$s->getByPk( 'id', $pk );
 		$id = $s->get('id'); 
 		
