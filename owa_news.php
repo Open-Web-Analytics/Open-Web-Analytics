@@ -53,7 +53,7 @@ class owa_news extends lastRSS {
 	function owa_news() {
 	
 		$c = &owa_coreAPI::configSingleton();
-		$this->config = &$c->fetch('base');
+		$this->config = $c->fetch('base');
 		$this->e = &owa_coreAPI::errorSingleton();
 		$this->crawler = new owa_http;
 		$this->crawler->read_timeout = 20;
