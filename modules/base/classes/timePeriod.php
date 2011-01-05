@@ -122,7 +122,7 @@ class owa_timePeriod {
 		
 		$time_now = owa_lib::time_now();
 		$nowDate = owa_coreAPI::supportClassFactory('base', 'date');
-		$nowDate->set(time(), 'timestamp');
+		$nowDate->set(owa_lib::getLocalTimestamp(), 'timestamp');
 		
 		switch ($this->period) {
 			

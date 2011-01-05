@@ -1103,6 +1103,17 @@ class owa_lib {
 		$crc += 0x100000000;
 		return dechex($crc);
 	}
+	
+	public static function getLocalTimestamp($utc = '') {
+		
+		if ( ! $utc ) {
+			$utc = time();
+		}
+		$local_timezone_offset = date('Z');
+		$daylight_savings = date('I') * 3600;
+		$local_time = $utc - $local_timezone_offset + $daylight_savings;
+		return $local_time;
+	}
 }
 
 ?>
