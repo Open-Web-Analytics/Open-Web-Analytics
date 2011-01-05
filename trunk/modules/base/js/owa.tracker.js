@@ -26,6 +26,7 @@
  * @since		owa 1.2.1
  */
 OWA.event = function() {
+
 	this.properties = new Object();
 	this.set('timestamp', OWA.util.getCurrentUnixTimestamp() );
 }
@@ -1288,13 +1289,16 @@ OWA.tracker.prototype = {
 		this.addToEventQueue(event);
 		
 	},
-		
-	getTimestamp : function() {
 	
-		return Math.round(new Date().getTime()/1000);
+	// utc epoch in seconds
+	getTimestamp : function() {
+		
+		return OWA.util.getCurrentUnixTimestamp();
 	},
 	
+	// utc epoch in milliseconds
 	getTime : function() {
+	
 		return Math.round(new Date().getTime());
 	},
 	
