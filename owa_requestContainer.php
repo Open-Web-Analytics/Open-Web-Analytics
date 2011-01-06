@@ -122,10 +122,6 @@ class owa_requestContainer {
 		// merges cookies
 		foreach ($this->owa_cookies as $k => $cookie) {
 			
-			if (strpos($cookie, "|||")) {
-				$cookie = owa_lib::assocFromString($cookie);
-			}
-			
 			$this->state->loadState($k, '', $cookie, 'cookie');
 		}
 		
