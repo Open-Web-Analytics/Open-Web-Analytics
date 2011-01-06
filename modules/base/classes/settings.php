@@ -750,7 +750,7 @@
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
 			
-			$this->setCookieDomain($_SERVER['HTTP_HOST']);
+			$this->setCookieDomain();
 		}
  	}
  	
@@ -819,39 +819,36 @@
 		}			
 	}
 	
-	function setCookieDomain ($domain) {
+	function setCookieDomain ($domain = '') {
 		
-		$pos = strpos($domain, '.');
-		//check for local host
-		if ( strpos( $domain, 'localhost' ) ) {
-		 	$cookie_domain = false;
-		// check for local domain 	
-		} elseif ( $pos === false) {
+		$explicit = false;
+		
+		if ( ! $domain ) {
+			$domain = $_SERVER['HTTP_HOST'];
+			$explicit = true;
+		}
+		
+		$domain = owa_lib::sanitizeCookieDomain($domain);
 			
-			$cookie_domain = false;
-		} else {
-		 	
-			// Remove port information.
-     		$port = strpos( $domain, ':' );
-			if ( $port ) {
-				$domain = substr( $domain, 0, $port );
-			}
-			
-			$period = substr( $domain, 0, 1);
-			if ( $period === '.' ) {
-				$domain = substr( $domain, 1 );
-			}
-			
+		$period = substr( $domain, 0, 1);
+		if ( $period === '.' ) {
+			$domain = substr( $domain, 1 );
+		}
+		
+		// unless www.domain.com is passed explicitly
+		// strip the www from the domain.
+		if ( ! $explicit ) {
 			$part = substr( $domain, 0, 4 );
 			if ($part === 'www.') {
 				$domain = substr( $domain, 4);
 			}
-			
-			$cookie_domain = '.'.$domain;
 		}
-		
-		$this->set('base','cookie_domain', $cookie_domain); 
-	}	
+				
+		$cookie_domain = '.'.$domain;
+				
+		$this->set('base','cookie_domain', $cookie_domain);
+		owa_coreAPI::debug("Set cookie domain to $cookie_domain");
+	}
 	
 	function __destruct() {
 		

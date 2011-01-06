@@ -38,6 +38,7 @@ class owa_state {
 	var $default_store_type = 'cookie';
 	var $stores_with_cdh = array('c','v','s');
 	var $store_formats = array ('v' => 'assoc', 's' => 'assoc');
+	var $initial_state = array();
 	
 	function __construct() {
 	
@@ -56,6 +57,11 @@ class owa_state {
 	
 	function get($store, $name = '') {
 		owa_coreAPI::debug("Getting state - store: ".$store.' key: '.$name);
+		
+		if ( ! isset($this->stores[$store] ) ) {
+			$this->loadState($store);
+		}
+		
 		if (array_key_exists($store, $this->stores)) {
 		
 			if (!empty($name)) {
@@ -116,7 +122,7 @@ class owa_state {
 				} else {
 					$this->stores[$store][$name] = $value;	
 				}
-			// if the store does not exist then	maybe aad a cdh and the value
+			// if the store does not exist then	maybe add a cdh and the value
 			} else {
 			
 				if ( $this->isCdhRequired($store) ) {
@@ -138,6 +144,10 @@ class owa_state {
 	}
 
 	function set($store, $name = '', $value, $store_type = '', $is_perminent = false) {
+	
+		if ( ! isset($this->stores[$store] ) ) {
+			$this->loadState($store);
+		}
 		
 		$this->setState($store, $name, $value, $store_type, $is_perminent);
 		
@@ -173,7 +183,20 @@ class owa_state {
 		}	
 	}
 	
-	function loadState($store, $name = '', $value, $store_type) {
+	function setInitialState($store, $value, $store_type) {
+		
+		if ($value) {
+			$this->initial_state[$store] = $value;
+		}
+	}
+	
+	function loadState($store, $name = '', $value = '', $store_type = 'cookie') {
+	
+		if ( ! $value && isset( $this->initial_state[$store] ) ) {
+			$value = $this->initial_state[$store];
+		} else {
+			return;
+		}
 	
 		// check format of value
 		if (strpos($value, "|||")) {
@@ -193,7 +216,14 @@ class owa_state {
 				
 				// return as the cdh's do not match
 				if ( $cdh_from_state != $runtime_cdh ) {
+					// cookie domains do not match so we need to delete the cookie in the offending domain
+					// which is always likely to be a sub.domain.com and thus HTTP_HOST.
+					// if ccokie is not deleted then new cookies set on .domain.com will never be seen by PHP
+					// as only the sub domain cookies are available.
 					owa_coreAPI::debug("Not loading state store: $store. Domain hashes do not match - runtime: $runtime_cdh, cookie: $cdh_from_state");
+					owa_coreAPI::debug("deleting cookie: owa_$store");
+					owa_coreAPI::deleteCookie($store,'/', $_SERVER['HTTP_HOST']);
+					unset($this->initial_state[$store]);
 					return;
 				}
 			} else {
@@ -209,6 +239,10 @@ class owa_state {
 	}
 		
 	function clear($store) {
+	
+		if ( ! isset($this->stores[$store] ) ) {
+			$this->loadState($store);
+		}
 		
 		if (array_key_exists($store, $this->stores)) {
 			

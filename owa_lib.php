@@ -1101,7 +1101,9 @@ class owa_lib {
 	public static function crc32AsHex($string) {
 		$crc = crc32($string);
 		//$crc += 0x100000000;
-		$crc += 0xFFFFFFFF + 1;
+		if ($crc < 0) {
+			$crc = 0xFFFFFFFF + $crc + 1;
+		}
 		return dechex($crc);
 	}
 	
@@ -1114,6 +1116,37 @@ class owa_lib {
 		$daylight_savings = date('I') * 3600;
 		$local_time = $utc - $local_timezone_offset + $daylight_savings;
 		return $local_time;
+	}
+	
+	public static function sanitizeCookieDomain($domain) {
+		
+		$pos = strpos($domain, '.');
+		
+		//check for local host
+		if ( strpos( $domain, 'localhost' ) ) {
+		 	return false;
+		
+		// check for local domain 	
+		} elseif ( $pos === false) {
+			
+			return false;
+			
+		// ah-ha a real domain
+		} else {
+			// Remove port information.
+     		$port = strpos( $domain, ':' );
+			if ( $port ) {
+				$domain = substr( $domain, 0, $port );
+			}
+			
+			// check for leading period, add if missing
+			$period = substr( $domain, 0, 1);
+			if ( $period != '.' ) {
+				$domain = '.'.$domain;
+			}
+			
+			return $domain;
+		}
 	}
 }
 
