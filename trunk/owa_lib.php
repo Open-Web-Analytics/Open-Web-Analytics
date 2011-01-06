@@ -1100,7 +1100,8 @@ class owa_lib {
 	
 	public static function crc32AsHex($string) {
 		$crc = crc32($string);
-		$crc += 0x100000000;
+		//$crc += 0x100000000;
+		$crc += 0xFFFFFFFF + 1;
 		return dechex($crc);
 	}
 	

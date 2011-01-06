@@ -663,7 +663,7 @@ OWA.resultSetExplorer.prototype = {
 	},
 	
 	formatValue : function(type, value) {
-		OWA.setOption('debug', true);
+		
 		switch(type) {
 			// convery yyyymmdd to javascript timestamp as  flot requires that
 			case 'yyyymmdd':
