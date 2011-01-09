@@ -50,6 +50,7 @@ class owa_date {
 	var $microsecond;
 	var $meridiem;
 	var $num_days_in_month;
+	var $utc_offset;
 	
 	function __construct() {
 	
@@ -75,6 +76,7 @@ class owa_date {
 		
 		}
 		
+		$this->utc_offset = date('Z', $this->timestamp);
 		$this->hour = date('H', $this->timestamp);
 		$this->minute = date('i', $this->timestamp);
 		$this->second = date('s', $this->timestamp);
@@ -128,6 +130,11 @@ class owa_date {
 	function getTimestamp() {
 	
 		return $this->timestamp;
+	}
+	
+	function getLocalTimestamp() {
+		
+		return $this->getTimestamp() + $this->utc_offset;
 	}
 }
 

@@ -51,12 +51,7 @@ class owa_widgetController extends owa_controller {
 		//print_r($params);
 		return parent::__construct($params);
 	}
-	
-	function owa_widgetController($params) {
-	
-		return owa_widgetController::__construct($params);
-	}
-	
+
 	function pre() {
 	
 	

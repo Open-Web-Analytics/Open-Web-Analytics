@@ -38,11 +38,6 @@ class owa_widgetOwaNewsController extends owa_widgetController {
 		return parent::__construct($params);
 	}
 	
-	function owa_widgetOwaNewsController($params) {
-			
-		return owa_widgetOwaNewsController::__construct($params);
-	}
-	
 	function action() {
 		
 		$this->set('title', 'OWA News');
@@ -55,33 +50,17 @@ class owa_widgetOwaNewsController extends owa_widgetController {
 		$news = $rss->Get($this->config['owa_rss_url']);
 		$this->set('news', $news);
 		$this->setView('base.widgetOwaNews');
-			
-		return;	
-		
 	}
 	
 }
 
 class owa_widgetOwaNewsView extends owa_view {
 
-	function __construct() {
-		
-		return parent::__construct();
-		
-	}
-	
-	function owa_widgetOwaNewsView() {
-	
-		return owa_widgetOwaNewsView::__construct(); 
-	}
-	
-	function construct($data) {
+	function render($data) {
 
 		$this->t->set_template('wrapper_blank.tpl');		
 		$this->body->set_template('news.tpl');
 		$this->body->set('news', $data['news']);
-		
-		return;
 	}
 
 }
