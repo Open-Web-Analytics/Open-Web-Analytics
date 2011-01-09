@@ -34,11 +34,6 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_usersResetPasswordController extends owa_controller {
 	
-	function owa_usersResetPasswordController($params) {
-		
-		return owa_usersResetPasswordController::__construct($params);
-	}
-	
 	function __construct($params) {
 	
 		return parent::__construct($params);
@@ -83,28 +78,14 @@ class owa_usersResetPasswordController extends owa_controller {
 
 class owa_usersResetPasswordView extends owa_mailView {
 	
-	function owa_usersResetPasswordView() {
-		
-		return owa_usersResetPasswordView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
 	function render($data) {
 		
 		$this->t->set_template('wrapper_email.tpl');
 		$this->body->set_template('users_reset_password_email.tpl');
 		$this->body->set('key', $this->get('key'));
 		$this->setMailSubject('Your New OWA Password');	
-		$this->addMailToAddress($this->get('email_address')); 
-		
-		return;
-		
+		$this->addMailToAddress($this->get('email_address')); 	
 	}
-	
 }
 
 
