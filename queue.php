@@ -23,7 +23,7 @@ include_once('owa_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 
 /**
- * Remote Event Queue Front Controller
+ * Remote Event Queue Endpoint
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,7 +31,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.3.0
  */
 
 $owa = new owa_php();
@@ -39,13 +39,16 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
 	$owa->setSetting('base', 'is_remote_event_queue', true);
 	$owa->e->debug($_POST);
-	$req = owa_coreAPI::getRequest();
-	$ev = $owa->makeEvent();
-	$event = unserialize(base64_decode(owa_coreAPI::getRequestParam('event')));
-	$owa->e->debug(print_r($event,true));
-	$dispatch = owa_coreAPI::getEventDispatch();
-	$dispatch->asyncNotify($event);
+	$raw_event = owa_coreAPI::getRequestParam('event');
 	
+	if ( $raw_event ) { 
+	
+		$dispatch = owa_coreAPI::getEventDispatch();
+		$event = unserialize( base64_decode( $raw_event ) );
+		$owa->e->debug(print_r($event,true));
+		$dispatch->asyncNotify($event);
+	}
+		
 } else {
 	// unload owa
 	$owa->restInPeace();
