@@ -136,7 +136,7 @@ OWA.commandQueue.prototype = {
  * @since		owa 1.2.1
  */
 OWA.tracker = function( options ) {
-	//OWA.setSetting('debug', true);
+	//this.setDebug(true);
 	// set start time
 	this.startTime = this.getTimestamp();
 	
@@ -155,7 +155,7 @@ OWA.tracker = function( options ) {
 		trafficAttributionMode: 'direct',
 		sessionLength: 1800,
 		thirdParty: false,
-		cookie_domain: false,
+		cookie_domain: false, 
 		campaignKeys: [
 				{ public: 'owa_medium', private: 'md', full: 'medium' },
 				{ public: 'owa_campaign', private: 'cn', full: 'campaign' },
@@ -168,7 +168,14 @@ OWA.tracker = function( options ) {
 		
 	};
 	
-	// Endpoint URL of log service
+	// Endpoint URL of log service. needed for backwards compatability with old tags
+	var endpoint = window.owa_baseUrl || OWA.config.baseUrl ;
+	if (endpoint) {
+		this.setEndpoint(endpoint); 
+	} else {
+		OWA.debug('no global endpoint url found.');
+	}
+	
 	this.endpoint = OWA.config.baseUrl;
 	// Active status of tracker
 	this.active = true;
@@ -184,12 +191,9 @@ OWA.tracker = function( options ) {
 	// private vars
 	this.ecommerce_transaction = '',
 	this.isClickTrackingEnabled = false;
-	// set default cookie domain
-	this.setCookieDomain();
+	
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
-	//check for linked state send from another domain
-	this.checkForLinkedState();
 	
 	// set default page properties
 	this.page = new OWA.event();
@@ -232,6 +236,8 @@ OWA.tracker.prototype = {
 	isNewSessionFlag: false,
 	// flag for whether or not traffic has been attributed
 	isTrafficAttributed: false,
+	cookie_names: ['owa_s', 'owa_v', 'owa_c'],
+	linkedStateSet: false,
 	/**
 	 * GET params parsed from URL
 	 */ 
@@ -302,6 +308,8 @@ OWA.tracker.prototype = {
 				}
 			}
 		}
+		
+		this.linkedStateSet = true;
 	},
 	
 	/**
@@ -376,6 +384,8 @@ OWA.tracker.prototype = {
 		if ( ! domain ) {
 			domain = document.domain;
 			not_passed = true;
+			//this.setOption('cookie_domain_mode', 'auto');
+			//OWA.setSetting('cookie_domain_mode', 'auto');
 		}
 		
 		// remove the leading period
@@ -384,16 +394,49 @@ OWA.tracker.prototype = {
 			domain = domain.substr(1);
 		}
 		
+		var contains_www = false;
+		var www = domain.substr(0,4);
 		// check for www and eliminate it if no domain was passed.
-		if ( not_passed ) {
-			var www = domain.substr(0,4);
-			if (www === 'www.') {
+		if (www === 'www.') {
+			if ( not_passed ) {
 				domain = domain.substr(4);
 			}
-		}		
+			
+			contains_www = true;
+		}
+		
+		var match = false;
+		if (document.domain === domain) {
+			 match = true;
+		}
+		
+		if (match === true) {
+			// check to see if the domain is www 
+			if ( contains_www === true ) {
+				// eliminate any top level domain cookies
+				OWA.debug('document domain matches cookie domain and includes www. cleaning up cookies.');
+				//erase the no www domain cookie (ie. .openwebanalytics.com)
+				var top_domain =  document.domain.substr(4);
+				OWA.util.eraseMultipleCookies(this.cookie_names, top_domain);
+			}
+			
+		} else {
+			// erase the document.domain version of all cookies (ie. www.openwebanalytics.com)
+			OWA.debug('document domain does not match cookie domain. cleaning up by erasing cookies under document.domain .');
+			OWA.util.eraseMultipleCookies(this.cookie_names, document.domain);
+			
+			/*
+			if ( contains_www === true) {
+				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+				OWA.util.eraseMultipleCookies(this.cookie_names, document.domain.substr(4));
+			}
+			*/
+		}
+		
 		// add the leading period back
 		domain =  '.' + domain;
 		this.setOption('cookie_domain', domain);
+		this.setOption('cookie_domain_set', true);
 		OWA.setSetting('cookie_domain', domain);
 	},
 	
@@ -407,8 +450,8 @@ OWA.tracker.prototype = {
 			a = OWA.util.trim(a, '\u0000');
 			
 			OWA.debug('overlay anchor value: ' + a);
-			var domain = this.getCookieDomain();
-			OWA.util.setCookie('owa_overlay',a, '','/', domain );
+			//var domain = this.getCookieDomain();
+			OWA.util.setCookie('owa_overlay',a, '','/', document.domain );
 			//OWA.util.setState('overlay','', a);
 			////alert(OWA.util.readCookie('owa_overlay') );
 		}
@@ -509,33 +552,38 @@ OWA.tracker.prototype = {
 	
 	setEndpoint : function (endpoint) {
 		
+		endpoint = ('https:' == document.location.protocol ? window.owa_baseSecUrl || endpoint.replace(/http:/, 'https:') : endpoint );
 		this.setOption('baseUrl', endpoint);
 		OWA.config.baseUrl = endpoint;
-		//this.setLoggerEndpoint( endpoint + 'log.php' );
-		//this.setApiEndpoint( endpoint + 'api.php' );
 	},
 	
 	setLoggerEndpoint : function(url) {
 		
-		this.setOption('logger_endpoint', url);
+		this.setOption( 'logger_endpoint', this.forceUrlProtocol( url ) );
 	},
 	
 	getLoggerEndpoint : function() {
 	
-		var url = this.getOption('logger_endpoint') || this.getEndpoint() || OWA.getSetting('baseUrl') ;
+		var url = this.getOption( 'logger_endpoint') || this.getEndpoint() || OWA.getSetting('baseUrl') ;
 		
 		return url + 'log.php';
 	},
 	
 	setApiEndpoint : function(url) {
-		
-		this.setOption('api_endpoint', url);
+			
+		this.setOption( 'api_endpoint', this.forceUrlProtocol( url ) );
 		OWA.setApiEndpoint(url);
 	},
 	
 	getApiEndpoint : function() {
 	
 		return this.getOption('api_endpoint') || this.getEndpoint() + 'api.php';
+	},
+	
+	forceUrlProtocol : function (url) {
+		
+		url = ('https:' == document.location.protocol ? url.replace(/http:/, 'https:') : url );
+		return url;
 	},
 
 	
@@ -811,6 +859,16 @@ OWA.tracker.prototype = {
      */
     trackEvent : function(event, block) {
     	//OWA.debug('pre global event: %s', JSON.stringify(event));
+    	
+    	if ( this.getOption('cookie_domain_set') != true ) {
+    		// set default cookie domain
+			this.setCookieDomain();
+    	}
+    	
+    	if ( this.linkedStateSet != true ) {
+    		//check for linked state send from another domain
+			this.checkForLinkedState();
+    	}
     	
     	if ( this.active ) {
 	    	if ( ! block ) {
@@ -1686,9 +1744,9 @@ OWA.tracker.prototype = {
 };
 
 (function() {
-	if ( typeof owa_baseUrl != "undefined" ) {
-		OWA.config.baseUrl = owa_baseUrl;
-	}
+	//if ( typeof owa_baseUrl != "undefined" ) {
+	//	OWA.config.baseUrl = owa_baseUrl;
+	//}
 	// execute commands global owa_cmds command queue
 	if ( typeof owa_cmds === 'undefined' ) {
 		var q = new OWA.commandQueue();	

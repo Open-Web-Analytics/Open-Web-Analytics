@@ -1051,7 +1051,7 @@ class owa_db extends owa_base {
 	
 		$table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
 	
-		return $this->query(sprintf(OWA_SQL_CREATE_TABLE, get_class($entity), $columns, $table_options));
+		return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));
 	}
 	
 

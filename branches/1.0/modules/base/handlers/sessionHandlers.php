@@ -156,6 +156,8 @@ class owa_sessionHandlers extends owa_observer {
 		$last_req_time = $s->get('last_req');
 		$event_req_time = $event->get('timestamp');
 
+		$ret = false;
+
 		if ($event_req_time > $last_req_time) {
 		
 			// increment number of page views
@@ -207,7 +209,7 @@ class owa_sessionHandlers extends owa_observer {
 		$ne->setEventType('base.session_update');
 		// Log session update event to event queue
 		$eq = owa_coreAPI::getEventDispatch();
-		$eq->notify( $ne );
+		$ret = $eq->notify( $ne );
 		
 		if ( $ret ) {	
 			return OWA_EHS_EVENT_HANDLED;

@@ -37,17 +37,14 @@ class owa_moduleActivateController extends owa_adminController {
 		$this->setRequiredCapability('edit_modules');
 		return parent::__construct($params);
 	}
-	
-	function owa_moduleActivateController($params) {
-	
-		return owa_moduleActivateController::__construct($params);
-		
-	}
 
 	function action() {
 		
-		$m = owa_coreAPI::moduleClassFactory($this->params['module']);
-		$m->activate();
+		$module = $this->getParam('module');
+		
+		if ( $module ) {
+			$ret = owa_coreAPI::installModule($module);
+		}
 		
 		$data = array();
 		

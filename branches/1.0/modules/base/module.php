@@ -304,48 +304,100 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
 		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
 		$this->registerCliCommand('install', 'base.installCli');
+		$this->registerCliCommand('activate', 'base.moduleActivateCli');
+		$this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
+		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
 		
 		/**
 		 * Register API methods
 		 *
 		 * The following lines register various API methods. 
 		 */
-		$this->registerApiMethod('getResultSet', array($this, 'getResultSet'), array('metrics', 'dimensions', 'siteId', 'constraints', 'sort', 'resultsPerPage', 'page', 'offset', 'period', 'startDate', 'endDate', 'startTime', 'endTime', 'format'));
+		$this->registerApiMethod('getResultSet', 
+				array($this, 'getResultSet'), 
+				array(
+					'metrics', 
+					'dimensions', 
+					'siteId', 
+					'constraints', 
+					'sort', 
+					'resultsPerPage', 
+					'page', 
+					'offset', 
+					'period', 
+					'startDate', 
+					'endDate', 
+					'startTime', 
+					'endTime', 
+					'format'), 
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'));
+		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
 		
-		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'));
+		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
 		
-		$this->registerApiMethod('getClickstream', array($this, 'getClickstream'), array( 'sessionId', 'resultsPerPage', 'page','format'));
+		$this->registerApiMethod('getClickstream', 
+				array($this, 'getClickstream'), 
+				array( 'sessionId', 'resultsPerPage', 'page','format'),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getVisitDetail', array($this, 'getVisitDetail'), array( 'sessionId', 'format'));
+		$this->registerApiMethod('getVisitDetail', 
+				array($this, 'getVisitDetail'), 
+				array( 'sessionId', 'format'),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getTransactionDetail', array($this, 'getTransactionDetail'), array( 'transactionId', 'format'));
+		$this->registerApiMethod('getTransactionDetail', 
+				array($this, 'getTransactionDetail'), 
+				array( 'transactionId', 'format'),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getDomClicks', array($this, 'getDomClicks'), array(
-				'pageUrl', 
-				'siteId', 
-				'startDate', 
-				'endDate', 
-				'document_id', 
-				'period',
-				'resultsPerPage', 
-				'page',
-				'format'
-		));
+		$this->registerApiMethod('getDomClicks', 
+				array($this, 'getDomClicks'), 
+				array(
+					'pageUrl', 
+					'siteId', 
+					'startDate', 
+					'endDate', 
+					'document_id', 
+					'period',
+					'resultsPerPage', 
+					'page',
+					'format'
+				),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getTransactions', array($this, 'getTransactions'), array( 
-				'siteId', 
-				'startDate', 
-				'endDate', 
-				'period',
-				'sort',
-				'resultsPerPage', 
-				'page',
-				'format'
-		));
+		$this->registerApiMethod('getTransactions', 
+				array($this, 'getTransactions'), 
+				array( 
+					'siteId', 
+					'startDate', 
+					'endDate', 
+					'period',
+					'sort',
+					'resultsPerPage', 
+					'page',
+					'format'
+				),
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getDomstream', array($this, 'getDomstream'), array('domstream_guid') );
+		$this->registerApiMethod('getDomstream', 
+				array($this, 'getDomstream'), 
+				array('domstream_guid'),
+				'', 
+				'view_reports' 
+		);
 		
 		return parent::__construct();
 	}
@@ -390,13 +442,15 @@ class owa_baseModule extends owa_module {
 				'order'			=> 3)
 		);		
 		
+		/*
 		$this->addAdminPanel(array(
 				'do' 			=> 'base.optionsGoals', 
 				'priviledge' 	=> 'admin', 
 				'anchortext' 	=> 'Goal Settings',
 				'group'			=> 'General',
 				'order'			=> 3)
-		);		
+		);	
+		*/	
 	}
 	
 	function registerNavigation() {
@@ -1283,21 +1337,9 @@ class owa_baseModule extends owa_module {
     		if ( $dest ) {
     			$file_cmd[] = 'destination='.$dest;
     		}
-    		$jobs[] = $file_cmd;
-    	}
-			    	
-    	// check the database queue
-    	$db = owa_coreAPI::dbSingleton();
-    	$result = $db->query("SELECT count(*) from owa_queue_item where status = 'unhandled'");
-    	
-    	if ( $result > 0 ) {
-    		$db_cmd = array('cmd=processEventQueue');
-    		$db_cmd[] = 'source=database';
+    		$jobs['processEventQueue'] = array('cmd' => $file_cmd, 'max_workers' => 3, 'interval' => 100);
     		
-    		if ( $dest ) {
-    			$db_cmd[] = 'destination='.$dest;
-    		}
-    		$jobs[] = $db_cmd;
+    		$queue_file_exists = true;
     	}
     	
     	return $jobs;

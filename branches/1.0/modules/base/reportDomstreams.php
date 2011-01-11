@@ -41,12 +41,13 @@ class owa_reportDomstreamsController extends owa_reportController {
 		$p = $this->getPeriod();
 				
 		// check for limits
-		if ($this->getParam('document_id') || $this->getParam('pageUrl')) {
+		if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
 			$doc = owa_coreAPI::entityFactory('base.document');
 			
 			if ($this->getParam('pageUrl')) {
-				$doc->getByColumn($this->getParam('pageUrl'));
-				
+				$doc->getByColumn('url', $this->getParam('pageUrl'));
+			} elseif ($this->getParam('pagePath')) {
+				$doc->getByColumn('uri', $this->getParam('pagePath'));	
 			} else {
 				$doc->load($this->getParam('document_id'));
 			}

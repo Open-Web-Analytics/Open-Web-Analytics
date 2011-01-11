@@ -46,10 +46,11 @@ class owa_processEventQueueController extends owa_cliController {
 			$input_queue_type = owa_coreAPI::getSetting( 'base', 'event_queue_type' );
 		}
 		
+		$processing_queue_type = $this->getParam( 'destination' );
+		
 		// switch event queue setting in case a new events should be sent to a different type of queue.
 		// this is handy for when processing from a file queue to a database queue
-		if ( $this->getParam( 'destination' ) ) {
-			$processing_queue_type = $this->getParam( 'destination' );
+		if ( $processing_queue_type ) {
 			owa_coreAPI::setSetting( 'base', 'event_queue_type', $processing_queue_type );
 			owa_coreAPI::debug( "Setting event queue type to $processing_queue_type for processing." );
 		}
@@ -57,10 +58,15 @@ class owa_processEventQueueController extends owa_cliController {
 		$d = owa_coreAPI::getEventDispatch();
 		owa_coreAPI::debug( "Loading $input_queue_type event queue." );
 		$q = $d->getAsyncEventQueue( $input_queue_type );
-		
-		
-		
+	
 		$q->processQueue();
+		
+		$destination =  $this->getParam( 'destination' );
+		// go ahead and process the secondary event queue
+		if ( $processing_queue_type ) {
+			$destq = $d->getAsyncEventQueue( $processing_queue_type );
+			$destq->processQueue();
+		}
 	}
 }
 

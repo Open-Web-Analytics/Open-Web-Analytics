@@ -146,7 +146,7 @@ class owa_service extends owa_base {
 		
 			if (is_array($module->metrics)) {
 				
-				$this->metrics = array_merge_recursive($module->metrics, $this->metrics);
+				$this->metrics = array_merge_recursive( $this->metrics, $module->metrics);
 			}	
 		}
 	}
@@ -158,7 +158,7 @@ class owa_service extends owa_base {
 		foreach ($this->modules as $k => $module) {
 		
 			if (is_array($module->cli_commands)) {
-				$command_map = array_merge($module->cli_commands, $command_map);
+				$command_map = array_merge($command_map, $module->cli_commands);
 			}
 		}
 		
@@ -171,8 +171,8 @@ class owa_service extends owa_base {
 		
 		foreach ($this->modules as $k => $module) {
 		
-			if (is_array($module->cli_commands)) {
-				$method_map = array_merge($module->api_methods, $method_map);
+			if (is_array($module->api_methods)) {
+				$method_map = array_merge($method_map, $module->api_methods);
 			}
 		}
 		
@@ -184,12 +184,12 @@ class owa_service extends owa_base {
 		foreach ($this->modules as $k => $module) {
 		
 			if (is_array($module->dimensions)) {
-				$this->dimensions = array_merge($module->dimensions, $this->dimensions);
+				$this->dimensions = array_merge($this->dimensions, $module->dimensions);
 			}
 			
 			if (is_array($module->denormalizedDimensions)) {
 			
-				$this->denormalizedDimensions = array_merge($module->denormalizedDimensions, $this->denormalizedDimensions);
+				$this->denormalizedDimensions = array_merge_recursive($this->denormalizedDimensions, $module->denormalizedDimensions);
 			}
 			
 			//print_r($this->denormalizedDimensions);

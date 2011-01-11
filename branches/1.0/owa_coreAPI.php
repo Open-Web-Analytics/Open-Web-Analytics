@@ -1008,15 +1008,15 @@ class owa_coreAPI {
 	}
 	
 	public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
-	
+		
 		if (!empty($domain)) {
-			$c = owa_coreAPI::configSingleton();
+			$c = &owa_coreAPI::configSingleton();
 			// sanitizes the domain
 			$c->setCookieDomain($domain);
 		}
 		
 		$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
-		
+				
 		if (is_array($cookie_value)) {
 			
 			$cookie_value = owa_lib::implode_assoc('=>', '|||', $cookie_value);
@@ -1026,7 +1026,7 @@ class owa_coreAPI {
 		$cookie_name = sprintf('%s%s', owa_coreAPI::getSetting('base', 'ns'), $cookie_name);
 		
 		// debug
-		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s', $cookie_name, $cookie_value));
+		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
 		
 		// set compact privacy header
 		header(sprintf('P3P: CP="%s"', owa_coreAPI::getSetting('base', 'p3p_policy')));
@@ -1292,6 +1292,35 @@ class owa_coreAPI {
 		
 		$t->set_template('js_helper_tags.tpl');
 		return $t->fetch();
+	}
+	
+	public static function activateModule( $module_name ) {
+		
+		if ( $module_name ) {
+		
+			$m = owa_coreAPI::moduleClassFactory($module_name);
+			return $m->activate();
+		}
+	}
+	
+	public static function deactivateModule( $module_name ) {
+		
+		if ( $module_name ) {
+		
+			$s = owa_coreAPI::serviceSingleton();
+			$m = $s->getModule($module_name);
+			return $m->deactivate();
+		}
+	}
+	
+	public static function installModule( $module_name ) {
+		
+		if ($module_name) {
+		
+			$m = owa_coreAPI::moduleClassFactory($module_name);
+			$status = $m->install();
+			return $status;
+		}
 	}
 }
 

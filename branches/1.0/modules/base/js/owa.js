@@ -24,6 +24,8 @@ var OWA = {
 			
 			if(window.console && window.console.firebug) { 
 		 		console.log.apply(this, arguments);
+			} else {
+				console.log.apply(console, arguments);
 			}
 		}
 	},
@@ -78,7 +80,7 @@ var OWA = {
 	
 	endOverlaySession : function() {
 				
-		OWA.util.eraseCookie('owa_overlay');
+		OWA.util.eraseCookie('owa_overlay', document.domain);
 		OWA.overlayActive = false;
 	}
 
@@ -162,20 +164,42 @@ OWA.util =  {
 	},
 	
 	
-	eraseCookie: function (name) {
-		//OWA.debug(this.readCookie('owa_overlay'));
-		
-		var domain = OWA.getSetting('cookie_domain') || document.domain;
-		OWA.debug("erasing " + name + " in domain: " +domain);
-		this.setCookie(name,"",-10000,"/",domain);
+	eraseCookie: function (name, domain) {
+		OWA.debug(document.cookie);
+		if ( ! domain ) {
+			domain = OWA.getSetting('cookie_domain') || document.domain;
+		}
+		OWA.debug("erasing cookie: " + name + " in domain: " +domain);
+		this.setCookie(name,"",-1,"/",domain);
+		// attempt to read the cookie again to see if its there under another valid domain
 		var test = this.readCookie(name);
-		
+		// if so then try the alternate domain				
 		if (test) {
-			domain = "."+domain;
-			OWA.debug("erasing " + name + " in domain: " +domain);
-			this.setCookie(name,"",-10000,"/",domain);	
+			
+			var period = domain.substr(0,1);
+			OWA.debug('period: '+period);
+			if (period === '.') {
+				var domain2 = domain.substr(1);
+				OWA.debug("erasing " + name + " in domain2: " + domain2);
+				this.setCookie(name,"",-2,"/", domain2);
+				
+					
+			} else {
+				//	domain = '.'+ domain
+				OWA.debug("erasing " + name + " in domain3: " + domain);
+				this.setCookie(name,"",-2,"/",domain);	
+			}
+			//OWA.debug("erasing " + name + " in domain: ");
+			//this.setCookie(name,"",-2,"/");	
 		}
 		
+	},
+	
+	eraseMultipleCookies: function(names, domain) {
+		
+		for (var i=0; i < names.length; i++) {
+			this.eraseCookie(names[i], domain);
+		}
 	},
 	
 	loadScript: function (url, callback){
@@ -386,6 +410,9 @@ OWA.util =  {
 		// set or reset the campaign cookie
 		OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
 		var domain = OWA.getSetting('cookie_domain') || document.domain;
+		// erase cookie
+		//OWA.util.eraseCookie( 'owa_'+store_name, domain );
+		// set cookie
 		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
 	},
 	
@@ -415,7 +442,10 @@ OWA.util =  {
 	},
 	
 	getState : function(store_name, key) {
-		this.loadState(store_name);
+		
+		if ( ! OWA.state.hasOwnProperty( store_name ) ) {
+			this.loadState(store_name);
+		}
 		
 		if ( OWA.state.hasOwnProperty( store_name ) ) {
 			if ( key ) {
@@ -448,6 +478,7 @@ OWA.util =  {
 			OWA.state[store_name] = state;
 			OWA.debug('Loaded state store (%s) with: %s', store_name, JSON.stringify(state));
 		} else {
+			
 			OWA.debug('State store (%s) is empty. Nothing to Load.', store_name);
 		}
 	},

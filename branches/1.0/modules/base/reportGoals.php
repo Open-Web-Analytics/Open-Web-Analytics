@@ -43,16 +43,19 @@ class owa_reportGoalsController extends owa_reportController {
 		
 		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
     	$goals = $gm->getActiveGoals();
-    	$goal_metrics = '';
-    	$goal_count = count($goals);
-    	$i = 1;
-    	foreach ($goals as $goal) {
-    		$goal_metrics .= 'goal'.$goal['goal_number'].'Completions';
-    		
-    		if ($i < $goal_count) {
-	  	  		$goal_metrics .= ',';
-    		}
-    		$i++;
+    	
+    	if ($goals) {
+	    	$goal_metrics = '';
+	    	$goal_count = count($goals);
+	    	$i = 1;
+	    	foreach ($goals as $goal) {
+	    		$goal_metrics .= 'goal'.$goal['goal_number'].'Completions';
+	    		
+	    		if ($i < $goal_count) {
+		  	  		$goal_metrics .= ',';
+	    		}
+	    		$i++;
+	    	}
     	}
     	$this->set('goal_metrics', $goal_metrics);	
 	}

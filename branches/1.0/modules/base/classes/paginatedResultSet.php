@@ -117,7 +117,7 @@ class owa_paginatedResultSet {
 		if ($this->limit) {
 			$this->total_pages = ceil(($this->results_count + $this->offset) / $this->limit);
 			
-			if ($this->results_count < $this->limit) {
+			if ($this->results_count <= $this->limit) {
 			// no more pages
 			} else {
 				// more pages

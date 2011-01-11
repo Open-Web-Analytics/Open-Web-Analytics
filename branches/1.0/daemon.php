@@ -2,7 +2,7 @@
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
-// Copyright 2006 Peter Adams. All rights reserved.
+// Copyright 2006-2011 Peter Adams. All rights reserved.
 //
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
@@ -19,7 +19,7 @@
  * OWA Daemon
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006-2011 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
@@ -30,8 +30,24 @@ require_once('owa_env.php');
 require_once(OWA_DIR.'owa_php.php');
 require_once(OWA_BASE_CLASS_DIR.'daemon.php');
 
+define('OWA_DAEMON', true);
+
+if (!empty($_POST)) {
+	exit();
+} elseif (!empty($_GET)) {
+	exit();
+}
+
 $owa = new owa_php();
-$daemon = new owa_daemon();
-$daemon->start();
+
+if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+	// start daemon
+	$daemon = new owa_daemon();
+	$daemon->start();
+	
+} else {
+	// unload owa
+	$owa->restInPeace();
+}
 
 ?>

@@ -62,7 +62,7 @@ class owa_wp extends owa_client {
 				
 			return sprintf($link_template,
 						   $link,
-						   $this->config['ns'].$this->config['source_param'],
+						   $this->config['ns'].'medium',
 						   'feed',
 						   $this->config['ns'].$this->config['feed_subscription_param'],
 						   $_GET[$this->config['ns'].$this->config['feed_subscription_param']]);

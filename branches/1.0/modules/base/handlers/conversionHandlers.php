@@ -41,7 +41,7 @@ class owa_conversionHandlers extends owa_observer {
      * @access 	public
      */
     function notify($event) {
-		
+    
 		$update = false;
 		$conversion_info = $this->checkForConversion($event);
 		
@@ -118,16 +118,14 @@ class owa_conversionHandlers extends owa_observer {
 					if ( $ret ) {
 						// create a new_conversion event so that the total conversion 
 						// metrics can be resummarized
-						$dispatch = owa_coreAPI::getEventDispatch();
-						$ce = $dispatch->makeEvent( 'new_conversion' );
-						$ce->set( 'session_id', $event->get( 'session_id' ) );
-						$dispatch->asyncNotify( $ce );
+						$this->dispatchNewConversionEvent($event);
 						return OWA_EHS_EVENT_HANDLED;
 					} else {
 						return OWA_EHS_EVENT_FAILED;
 					}
 											
 				} else {
+					
 					return OWA_EHS_EVENT_HANDLED;
 				}
 				
@@ -140,6 +138,16 @@ class owa_conversionHandlers extends owa_observer {
 			owa_coreAPI::debug('No goal start or conversion detected.');
 			return OWA_EHS_EVENT_HANDLED;
 		}
+    }
+    
+    // create a new_conversion event so that the total conversion 
+	// metrics can be resummarized
+    function dispatchNewConversionEvent($event) {
+    
+    	$dispatch = owa_coreAPI::getEventDispatch();
+    	$ce = $dispatch->makeEvent( 'new_conversion' );
+		$ce->set( 'session_id', $event->get( 'session_id' ) );
+		$dispatch->asyncNotify( $ce );
     }
         
     function checkForConversion($event) {

@@ -57,7 +57,7 @@
  	function __construct() {
  	
  		// create configuration object
- 		$this->config = owa_coreAPI::rawEntityFactory('base.configuration');
+ 		$this->config = owa_coreAPI::entityFactory('base.configuration');
  		// load the default settings
  		$this->getDefaultConfig();
  		// include/load config file
@@ -90,7 +90,7 @@
  	function isConfigFilePresent() {
  		
 		$file = OWA_DIR.'owa-config.php';
-		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.'/conf/owa-config.php';
 		
 		if (file_exists($file)) {
 			return true;
@@ -105,7 +105,7 @@
  	
  		/* LOAD CONFIG FILE */
 		$file = OWA_DIR.'owa-config.php';
-		$oldfile = OWA_BASE_DIR.DIRECTORY_SEPARATOR.'conf'.DIRECTORY_SEPARATOR.'owa-config.php';
+		$oldfile = OWA_BASE_DIR.'/conf/owa-config.php';
 		
 		if (file_exists($file)) {
 			include_once($file);
@@ -119,6 +119,23 @@
  	}
  	
  	function applyConfigConstants() {
+ 		
+ 		if(!defined('OWA_DATA_DIR')){
+			define('OWA_DATA_DIR', OWA_DIR.'owa-data/');
+			
+		}
+		
+		if (defined('OWA_DATA_DIR')) {
+			$this->set('base', 'data_dir', OWA_DATA_DIR);
+		}
+		
+		if(!defined('OWA_CACHE_DIR')){
+			define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches/');
+ 		}
+ 		
+ 		if (defined('OWA_CACHE_DIR')) {
+			$this->set('base', 'cache_dir', OWA_CACHE_DIR);
+		}
  		
  		// Looks for log level constant
 		if (defined('OWA_ERROR_LOG_LEVEL')) {
@@ -268,7 +285,7 @@
 				
 				foreach ($db_settings as $k => $v) {
 					
-					if (is_array($default[$k])):
+					if (isset($default[$k]) && is_array($default[$k])):
 						$new_config[$k] = array_merge($default[$k], $db_settings[$k]);
 					else:
 						$new_config[$k] = $db_settings[$k];
@@ -568,7 +585,7 @@
 				'clean_query_string'				=> true,
 				'fetch_refering_page_info'			=> true,
 				'query_string_filters'				=> '', // move to site settings
-				'async_log_dir'						=> OWA_DATA_DIR . 'logs/',
+				'async_log_dir'						=> '', //OWA_DATA_DIR . 'logs/',
 				'async_log_file'					=> 'events.txt',
 				'async_lock_file'					=> 'owa.lock',
 				'async_error_log_file'				=> 'events_error.txt',
@@ -576,7 +593,7 @@
 				'log_php_errors'					=> false,
 				'error_handler'						=> 'production',
 				'error_log_level'					=> 0,
-				'error_log_file'					=> OWA_DATA_DIR . 'logs/errors.txt',
+				'error_log_file'					=> '', //OWA_DATA_DIR . 'logs/errors.txt',
 				'browscap.ini'						=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
 				'search_engines.ini'				=> OWA_BASE_DIR . '/conf/search_engines.ini',
 				'query_strings.ini'					=> OWA_BASE_DIR . '/conf/query_strings.ini',
@@ -709,7 +726,7 @@
 		$public_path = $this->get('base', 'public_path');
 		
 		if (empty($public_path)) {
-			$public_path = OWA_PATH.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR;
+			$public_path = OWA_PATH.'/public/';
 			$this->set('base','public_path', $public_path); 
 		}
 		
@@ -718,7 +735,7 @@
 		$main_url = $public_url.'index.php';
 		$this->set('base','main_url', $main_url);
 		$this->set('base','main_absolute_url', $main_url);
-		$modules_url = $public_url.'modules'.DIRECTORY_SEPARATOR;
+		$modules_url = $public_url.'modules/';
 		$this->set('base','modules_url', $modules_url);
 		$this->set('base','action_url',$public_url.'action.php');
 		$this->set('base','images_url', $modules_url);
@@ -726,8 +743,13 @@
 		$this->set('base','log_url',$public_url.'log.php');
 		$this->set('base','api_url',$public_url.'api.php');
 		
+		$this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors.txt');
+		$this->set('base', 'async_log_dir', OWA_DATA_DIR . 'logs/');
+		
+		owa_coreAPI::debug('check for http host');
 		// Set cookie domain
 		if (!empty($_SERVER['HTTP_HOST'])) {
+			
 			$this->setCookieDomain($_SERVER['HTTP_HOST']);
 		}
  	}
@@ -799,21 +821,33 @@
 	
 	function setCookieDomain ($domain) {
 		
+		$pos = strpos($domain, '.');
 		//check for local host
 		if ( strpos( $domain, 'localhost' ) ) {
 		 	$cookie_domain = false;
 		// check for local domain 	
-		} elseif ( ! strpos($domain, '.') ) {
+		} elseif ( $pos === false) {
+			
 			$cookie_domain = false;
 		} else {
-		 
+		 	
 			// Remove port information.
      		$port = strpos( $domain, ':' );
 			if ( $port ) {
-				$cookie_domain = substr( $domain, 0, $port );
-			} else {
-				$cookie_domain = $domain;
+				$domain = substr( $domain, 0, $port );
 			}
+			
+			$period = substr( $domain, 0, 1);
+			if ( $period === '.' ) {
+				$domain = substr( $domain, 1 );
+			}
+			
+			$part = substr( $domain, 0, 3 );
+			if ($part === 'www') {
+				$domain = substr( $domain, 3);
+			}
+			
+			$cookie_domain = '.'.$domain;
 		}
 		
 		$this->set('base','cookie_domain', $cookie_domain); 

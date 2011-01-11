@@ -50,9 +50,9 @@ class owa_reportGoalFunnelController extends owa_reportController {
 			// find required steps. build a constraint string.
 			$required_step_constraints = '';
 			$steps_count = count($funnel);
-			for ($i=0; $i <= $steps_count ;$i++ ) {
+			for ($i=1; $i <= $steps_count ;$i++ ) {
 			
-				if (array_key_exists('is_required', $funnel[$i]) && $funnel[$i]['is_required'] == true) {
+				if (array_key_exists('is_required', $funnel[$i]) && $funnel[$i]['is_required'] === true) {
 				
 					$required_step_constraints .= 'pagePath=='.$funnel[$i]['url'].',';
 				}
@@ -67,11 +67,12 @@ class owa_reportGoalFunnelController extends owa_reportController {
 					'endDate'	  => $this->get('endDate'),
 					'constraints' => $required_step_constraints,
 					'metrics' 	  => 'visitors',
-					'do'		  => 'getResultSet'		
+					'do'		  => 'getResultSet',
+					'siteId'	  => $this->getParam( 'siteId' )	
 			));
 			//print_r($total_visitors_rs);
 			$total_visitors = $total_visitors_rs->getAggregateMetric( 'visitors' );
-			//print "Total visits: $total_visits";
+			//print "Total visits: $total_visitors";
 			
 			$this->set( 'total_visitors',  $total_visitors);
 			// get visits for each step
@@ -86,25 +87,33 @@ class owa_reportGoalFunnelController extends owa_reportController {
 						'endDate'	  => $this->get('endDate'),
 						'metrics' 	  => 'visitors',
 						'constraints' => 'pagePath'.$operator.$step['url'],
-						'do'		  => 'getResultSet'		
+						'do'		  => 'getResultSet',
+						'siteId'	  => $this->getParam( 'siteId' )		
 				));
 				
 				$visitors = $rs->getAggregateMetric('visitors') ? $rs->getAggregateMetric('visitors'): 0;
 				$funnel[$k]['visitors'] = $visitors;
-				$funnel[$k]['visitor_percentage'] = round($funnel[$k]['visitors'] / $total_visitors, 2) * 100 . '%';
+				
+				// backfill check in case there are more visitors to this step than were at prior step.
+				if ($funnel[$k]['visitors'] <= $funnel[$k-1]['visitors']) {
+				
+					$funnel[$k]['visitor_percentage'] = round($funnel[$k]['visitors'] / $funnel[$k-1]['visitors'], 4) * 100 . '%';
+				} else {
+					$funnel[$k]['visitor_percentage'] = '100%';
+				}
 			}
 			
 			//print_r($funnel);
+			
+			$goal_step = end($funnel);
+			$goal_conversion_rate = round($goal_step['visitors'] / $total_visitors, 2) * 100 . '%';
+			$this->set('goal_conversion_rate', $goal_conversion_rate);
+			$this->set('funnel', $funnel);	
 			
 		}			
 		// set view stuff
 		$this->setSubview('base.reportGoalFunnel');
 		$this->setTitle('Funnel Visualization:', 'Goal ' . $goal_number);
-		
-		$goal_step = end($funnel);
-		$goal_conversion_rate = round($goal_step['visitors'] / $total_visitors, 2) * 100 . '%';
-		$this->set('goal_conversion_rate', $goal_conversion_rate);
-		$this->set('funnel', $funnel);	
 		$this->set('goal_number', $goal_number);
 	}
 }

@@ -45,7 +45,7 @@ class owa_queue_item extends owa_entity {
 		$this->setProperty($priority);
 		$status = new owa_dbColumn( 'status', OWA_DTD_VARCHAR255 );
 		$this->setProperty($status);
-		$event = new owa_dbColumn( 'event', OWA_DTD_TEXT );
+		$event = new owa_dbColumn( 'event', OWA_DTD_BLOB );
 		$this->setProperty($event);
 		$insertion_datestamp = new owa_dbColumn( 'insertion_datestamp', OWA_DTD_TIMESTAMP );
 		$this->setProperty($insertion_datestamp);

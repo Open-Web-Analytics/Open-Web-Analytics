@@ -182,6 +182,7 @@ class owa_client extends owa_caller {
 			$this->setGlobalEventProperty( 'session_id', $session_id );
 			//mark new session flag on current request
 			$this->setGlobalEventProperty( 'is_new_session', true );
+			owa_coreAPI::debug('hello from failsafe');
 			owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
 		}
 	}
@@ -596,6 +597,15 @@ class owa_client extends owa_caller {
 				owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' ) );
 	}
 	
+	// sets cookies domain
+	function setCookieDomain($domain) {
+		
+		if (!empty($domain)) {
+			$c = &owa_coreAPI::configSingleton();
+			// sanitizes the domain
+			$c->setCookieDomain($domain);
+		}
+	}
 }
 
 ?>

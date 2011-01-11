@@ -110,25 +110,18 @@ class owa_entity {
 	 *
 	 * @param unknown_type $array
 	 */
-	function setProperties($array) {
+	function setProperties($array, $apply_filters = false) {
 		
 		$properties = $this->getColumns();
 		
 		foreach ($properties as $k => $v) {
 				
-				if (!empty($array[$v])) {
-					if (!empty($this->properties)) {
-						$this->properties[$v]->setValue($array[$v]);
-					} else {
-						// old style entities
-						$this->$v->setValue($array[$v]);
-					}
-						
+			if ( ! empty( $array[$v] ) ) {
+				if ( ! empty( $this->properties ) ) {
+					$this->set($v, $array[$v], $apply_filters);
 				}
-				
 			}
-		
-		return;
+		}
 	}
 	
 	function setGuid($string) {
@@ -197,7 +190,7 @@ class owa_entity {
 			if ($this->properties[$v]->auto_increment === true):
 				;
 			else:
-				$db->set($v, $this->get($v));
+				$db->set($v, $this->get($v, false));
 			endif;
 				
 		}

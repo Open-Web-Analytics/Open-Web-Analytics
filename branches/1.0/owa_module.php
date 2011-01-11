@@ -315,7 +315,7 @@ class owa_module extends owa_base {
 	 * @access public
 	 * @return array
 	 */
-	function _registerAdminPanels() {
+	function registerAdminPanels() {
 		
 		return;
 	}
@@ -366,6 +366,11 @@ class owa_module extends owa_base {
 	 * This method must be defined in concrete module classes in order for entities to be registered.
 	 */
 	function _registerEntities() {
+		
+		return false;
+	}
+	
+	function registerNavigation() {
 		
 		return false;
 	}

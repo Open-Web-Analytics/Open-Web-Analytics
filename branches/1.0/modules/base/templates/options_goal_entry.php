@@ -37,7 +37,7 @@
 							$this->out($k);
 						}
 						?></option>
-						<? endforeach;?>
+						<?php endforeach;?>
 					</select>
 					<BR><BR>Edit the group label:
 					
@@ -118,7 +118,12 @@
 				</td>
 			</tr>
 			<tr>
-				<th>Goal URL:</th>
+				<th>
+				Goal URL:
+				<p class="formInstructions">
+					Example: /register.html
+				</p>
+				</th>
 				<td>
 					<input name="<?php echo $this->getNs();?>goal[details][goal_url]" value="<?php $this->out($goal['details']['goal_url']);?>" type="text" size="60" value="<?php $this->out($goal['url']);?>">
 				</td>

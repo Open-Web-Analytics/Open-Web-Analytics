@@ -82,6 +82,10 @@ class owa_caller extends owa_base {
 			owa_coreAPI::debug( 'User Agent: '.$_SERVER['HTTP_USER_AGENT'] );
 		}
 		
+		if ( array_key_exists('HTTP_HOST', $_SERVER ) ) {
+			owa_coreAPI::debug( 'Host: '.$_SERVER['HTTP_HOST'] );
+		}
+		owa_coreAPI::debug('cookie domain in caller: '. owa_coreAPI::getSetting('base', 'cookie_domain'));
 		// Backtrace. handy for debugging who called OWA	
 		//$bt = debug_backtrace();
 		//$this->e->debug($bt[4]); 		
@@ -152,7 +156,21 @@ class owa_caller extends owa_base {
 		return $this->handleRequest();
 		
 	}
-		
+	
+	
+	/**
+	 * Returns a configured javascript tracker for inclusion in your web page.
+	 * You can pass an options array to control what the tracker will log.
+	 * The options array is a key/value pair format like:
+	 *
+	 * $options = array('do_not_log_pageview' => true);
+	 *
+	 * Option keys include: 'do_not_log_pageviews', 'do_not_log_clicks', 'do_not_log_domstream'
+	 *
+	 * @param 	$echo		bool 	if true the function will echo. if false the tracker is returned asa string.
+	 * @param	$options	array	an key value pair option array 
+	 * @return 	$tag 		string	the tracker javascript.
+	 */
 	function placeHelperPageTags($echo = true, $options = array()) {
 		
 		if(!owa_coreAPI::getRequestParam('is_robot')) {
@@ -240,9 +258,15 @@ class owa_caller extends owa_base {
 		$cu->setAuthStatus(true);
 	}
 	
-	function makeEvent() {
+	function makeEvent($type = '') {
 	
-		return owa_coreAPI::supportClassFactory('base', 'event');
+		$event = owa_coreAPI::supportClassFactory('base', 'event');
+		
+		if ($type) {
+			$event->setEventType($type);
+		}
+		
+		return $event;
 	}
 	
 	function setSiteId($site_id) {

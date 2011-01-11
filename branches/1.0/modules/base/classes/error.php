@@ -16,10 +16,18 @@
 // $Id$
 //
 
-require_once (OWA_PEARLOG_DIR . '/Log.php');
-require_once (OWA_PEARLOG_DIR . '/Log/file.php');
-require_once (OWA_PEARLOG_DIR . '/Log/composite.php');
-require_once (OWA_PEARLOG_DIR . '/Log/mail.php');
+if ( ! class_exists( 'Log' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log.php');
+}
+if ( ! class_exists( 'Log_file' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log/file.php');
+}
+if ( ! class_exists( 'Log_composite' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log/composite.php');
+}
+if ( ! class_exists( 'Log_mail' ) ) {
+	require_once (OWA_PEARLOG_DIR . '/Log/mail.php');
+}
 
 /**
  * Error handler
@@ -214,13 +222,11 @@ class owa_error {
 	function log($err, $priority) {
 		
 		// log to normal logger
-		if ($this->init == true):
+		if ($this->init) {
 			return $this->logger->log($err, $priority);
-		else:
+		} else {
 			return $this->bufferMsg($err, $priority);
-		endif;
-		
-		return;
+		}
 	}
 	
 	function bufferMsg($err, $priority) {
@@ -230,7 +236,6 @@ class owa_error {
 	}
 	
 	function logBufferedMsgs() {
-	
 				
 		if (!empty($this->bmsgs)):
 			foreach($this->bmsgs as $msg) {
@@ -373,7 +378,7 @@ class owa_error {
 	    $dt = date("Y-m-d H:i:s (T)");
 	    
 	    // set of errors for which a var trace will be saved
-		$user_errors = array(E_USER_ERROR, E_USER_WARNING, E_USER_NOTICE);
+		$user_errors = array(E_USER_ERROR, E_USER_WARNING, E_USER_NOTICE, E_STRICT);
 	   
 		$err = "<errorentry>\n";
 		$err .= "\t<datetime>" . $dt . "</datetime>\n";

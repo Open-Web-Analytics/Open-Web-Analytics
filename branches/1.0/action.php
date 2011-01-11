@@ -29,6 +29,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @package     owa
  * @version		$Revision$	      
  * @since		owa 1.0.0
+ * @depricated
  */
 
 $owa = new owa_php;
