@@ -1064,20 +1064,21 @@ class owa_resultSetManager extends owa_base {
 				
 				$this->applyConstraints();
 				
-				$sorts = $this->params['orderby'];
-				// apply sort by
-				if ($sorts) {
-					foreach ($sorts as $sort) {
-						$this->db->orderBy($sort[0], $sort[1]);
-						$rs->sortColumn = $sort[0];
-						if (isset($sort[1])){
-							$rs->sortOrder = strtolower($sort[1]);
-						} else {
-							$rs->sortOrder = 'asc';
+				if (array_key_exists('orderby', $this->params)) {
+					$sorts = $this->params['orderby'];
+					// apply sort by
+					if ($sorts) {
+						foreach ($sorts as $sort) {
+							$this->db->orderBy($sort[0], $sort[1]);
+							$rs->sortColumn = $sort[0];
+							if (isset($sort[1])){
+								$rs->sortOrder = strtolower($sort[1]);
+							} else {
+								$rs->sortOrder = 'asc';
+							}
 						}
 					}
-				}
-				
+				}				
 				
 				// add labels
 				$rs->setLabels($this->getLabels());	
@@ -1096,10 +1097,6 @@ class owa_resultSetManager extends owa_base {
 			$rs->setPeriodInfo($this->params['period']->getAllInfo());
 			
 			$rs = $this->computeCalculatedMetrics($rs);
-			
-			if ($dim) {
-			
-			}
 			
 			// add urls
 			$urls = $this->makeResultSetUrls();

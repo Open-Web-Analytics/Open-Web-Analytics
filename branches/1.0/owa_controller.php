@@ -145,7 +145,8 @@ class owa_controller extends owa_base {
 		// not sure this should go here...
 		if ($this->is_admin === true) {
 			// do not intercept if its the updatesApply action or a re-install else updates will never apply
-			if ($this->params['do'] != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
+			$do = $this->getParam('do');
+			if ($do != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 				
 				if (owa_coreAPI::isUpdateRequired()) {
 					$this->e->debug('Updates Required. Redirecting action.');

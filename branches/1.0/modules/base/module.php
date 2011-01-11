@@ -334,9 +334,26 @@ class owa_baseModule extends owa_module {
 				'view_reports'
 		);
 		
-		$this->registerApiMethod('getDomstreams', array($this, 'getDomstreams'), array( 'startDate', 'endDate', 'document_id', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
+		$this->registerApiMethod('getDomstreams', 
+				array( $this, 'getDomstreams' ), 
+				array( 
+					'startDate', 
+					'endDate', 
+					'document_id', 
+					'siteId', 
+					'resultsPerPage', 
+					'page', 
+					'format' ), 
+				'', 
+				'view_reports'
+		);
 		
-		$this->registerApiMethod('getLatestVisits', array($this, 'getLatestVisits'), array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), '', 'view_reports');
+		$this->registerApiMethod('getLatestVisits', 
+				array($this, 'getLatestVisits'), 
+				array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), 
+				'', 
+				'view_reports'
+		);
 		
 		$this->registerApiMethod('getClickstream', 
 				array($this, 'getClickstream'), 
@@ -704,7 +721,11 @@ class owa_baseModule extends owa_module {
 		if (!empty($fullhost)) {
 		
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-			if ($fullhost != $ip_address) {
+			if ($fullhost === 'localhost') {
+				$host = 'localhost';
+			} elseif ($fullhost === 'unknown') {
+				$host = $ip_address;
+			} elseif ($fullhost != $ip_address) {
 		
 				$host_array = explode('.', $fullhost);
 				
@@ -712,7 +733,7 @@ class owa_baseModule extends owa_module {
 				$host_array = array_reverse($host_array);
 				
 				// array of tlds. this should probably be in the config array not here.
-				$tlds = array('com', 'net', 'org', 'gov', 'mil');
+				$tlds = array('com', 'net', 'org', 'gov', 'mil', 'edu');
 				
 				if (in_array($host_array[0], $tlds)) {
 					$host = $host_array[1].".".$host_array[0];
@@ -720,8 +741,6 @@ class owa_baseModule extends owa_module {
 					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
 				}
 					
-			} elseif ($fullhost === 'unknown') {
-				$host = $ip_address;
 			}
 				
 		} else {
@@ -729,7 +748,6 @@ class owa_baseModule extends owa_module {
 		}
 		
 		return $host;
-	
 	}
 	
 	/**

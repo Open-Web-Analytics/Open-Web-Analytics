@@ -78,7 +78,7 @@ class owa_refererHandlers extends owa_observer {
 			}
 				
 			// set title. this will be updated later by the crawler.
-			$r->set('page_title', $event->get('HTTP_REFERER'));
+			$r->set('page_title', '(not set)');
 			// Set id
 			$r->set('id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 			
@@ -96,9 +96,7 @@ class owa_refererHandlers extends owa_observer {
 				if ($title) {
 					
 					$r->set('page_title', owa_lib::utf8Encode( $title ) );	
-				} else {
-					$r->set('page_title', $r->get('url'));
-				}		
+				}	
 				
 				$se = $r->get('is_searchengine');
 				//Extract anchortext and page snippet but not if it's a search engine...

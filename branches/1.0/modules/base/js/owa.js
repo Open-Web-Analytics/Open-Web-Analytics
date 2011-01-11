@@ -1,31 +1,102 @@
 var OWA = {
 
-	items: new Object,
+	items: {},
 	overlay: '',
 	config: {
 		ns: 'owa_',
-		baseUrl: ''
+		baseUrl: '',
+		hashCookiesToDomain: true
 	},
-	state: [],
+	state: {},
 	overlayActive: false,
+	
+	// depricated
 	setSetting: function(name, value) {
+		return this.setOption(name, value);
+	},
+	// depricated
+	getSetting: function(name) {
+		return this.getOption(name);
+	},
+	
+	setOption: function(name, value) {
 		this.config[name] = value;
 	},
 	
-	getSetting: function(name) {
+	getOption: function(name) {
 		return this.config[name];
+	},
+	
+	initializeStateManager: function() {
+		
+		if ( ! this.state.hasOwnProperty('init') ) {
+			
+			OWA.debug('initializing state manager...');
+			this.state = new OWA.stateManager();
+		}
+	},
+	
+	checkForState: function( store_name ) {
+	
+		this.initializeStateManager();
+		return this.state.isPresent( store_name );
+	},
+	
+	setState : function(store_name, key, value, is_perminant,format, expiration_days) {
+	
+		this.initializeStateManager();
+		return this.state.set(store_name, key, value, is_perminant,format, expiration_days);	
+	},
+	
+	replaceState : function (store_name, value, is_perminant, format, expiration_days) {
+	
+		this.initializeStateManager();
+		return this.state.replaceStore(store_name, value, is_perminant, format, expiration_days);
+	},
+	
+	getStateFromCookie : function(store_name) {
+	
+		this.initializeStateManager();
+		return this.state.getStateFromCookie(store_name);
+	},
+	
+	getState : function(store_name, key) {
+		
+		this.initializeStateManager();
+		return this.state.get(store_name, key);
+	},
+	
+	clearState : function(store_name) {
+	
+		this.initializeStateManager();
+		return this.state.clear(store_name);
+	},
+	
+	getStateStoreFormat: function(store_name) {
+	
+		this.initializeStateManager();
+		return this.state.getStoreFormat(store_name);
+	},
+	
+	setStateStoreFormat: function(store_name, format) {
+	
+		this.initializeStateManager();
+		return this.state.setStoreFormat(store_name, format);
 	},
 	
 	debug: function() {
 		
 		var debugging = OWA.getSetting('debug') || false; // or true
 		
-		if (debugging) {
+		if ( debugging ) {
+		
+			if(window.console) {
 			
-			if(window.console && window.console.firebug) { 
-		 		console.log.apply(this, arguments);
-			} else {
-				console.log.apply(console, arguments);
+				if (window.console.firebug) { 
+			 		console.log.apply(this, arguments);
+				} else {
+					console.log.apply(console, arguments);
+				}
 			}
 		}
 	},
@@ -87,6 +158,214 @@ var OWA = {
 
 }
 
+OWA.stateManager = function() {
+	
+	this.cookies = OWA.util.readAllCookies();
+	this.init = true;
+};
+
+OWA.stateManager.prototype = {
+	
+	init: false,
+	cookies: '',
+	stores: {},
+	storeFormats: {},
+	
+	isPresent: function( store_name ) {
+		
+		if ( this.stores.hasOwnProperty( store_name ) ) {
+			return true;
+		}
+	},
+	
+	set: function(store_name, key, value, is_perminant,format, expiration_days) {
+		
+		if ( ! this.isPresent( store_name ) ) {
+			this.load(store_name);
+		}
+		
+		if ( ! this.isPresent( store_name ) ) {
+			OWA.debug('Creating state store (%s)', store_name);
+			this.stores[store_name] = {};
+			// add cookie domain hash
+			if (OWA.getSetting('hashCookiesToDomain')) {
+				this.stores[store_name].cdh = OWA.util.getCookieDomainHash(OWA.getSetting('cookie_domain'));
+			}
+		}
+		
+		if ( key ) {
+			this.stores[store_name][key] = value;
+		} else {
+			this.stores[store_name] = value;
+		}
+		
+		if ( ! format ) {
+			
+			// check the orginal format that the state store was loaded from.
+			if (this.storeFormats.hasOwnProperty(store_name)) {
+				format = this.storeFormats[store_name];
+			}
+		}
+		
+		if (format === 'json') {
+			state_value = JSON.stringify(this.stores[store_name]);
+		} else {
+			state_value = OWA.util.assocStringFromJson(this.stores[store_name]);
+		}
+		
+		if ( ! expiration_days ) {
+			
+			if ( is_perminant ) {
+				expiration_days =  3600;
+			}
+		}
+		
+		// set or reset the campaign cookie
+		OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
+		var domain = OWA.getSetting('cookie_domain') || document.domain;
+		// erase cookie
+		//OWA.util.eraseCookie( 'owa_'+store_name, domain );
+		// set cookie
+		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
+	},
+	
+	replaceStore : function (store_name, value, is_perminant, format, expiration_days) {
+		
+		OWA.debug('replace state format: %s, value: %s',format, JSON.stringify(value));
+		if ( store_name ) {
+		
+			if (value) {
+				
+				this.stores[store_name] = value;
+				this.storeFormats[store_name] = format;
+				
+				if (format === 'json') {
+					cookie_value = JSON.stringify(value);
+				} else {
+					cookie_value = OWA.util.assocStringFromJson(value);
+				}
+			}
+		
+			var domain = OWA.getSetting('cookie_domain') || document.domain;
+			
+			if ( ! expiration_days ) {
+				
+				if ( is_perminant ) {
+					expiration_days =  3600;
+				}
+			}
+			OWA.debug('About to replace state store (%s) with: %s', store_name, cookie_value);
+			OWA.util.setCookie( 'owa_'+ store_name, cookie_value, expiration_days, '/', domain );
+			
+		}
+	},
+		
+	getStateFromCookie : function(store_name) {
+		
+		var store = unescape( OWA.util.readCookie( OWA.getSetting('ns') + store_name ) );
+		if ( store ) {
+			return store;
+		}
+	},
+	
+	get : function(store_name, key) {
+		
+		if ( ! this.isPresent( store_name ) ) {
+			this.load(store_name);
+		}
+		
+		if ( this.isPresent( store_name ) ) {
+			if ( key ) {
+				if ( this.stores[store_name].hasOwnProperty( key ) ) {		
+					return this.stores[store_name][key];
+				}		
+			} else {
+				return this.stores[store_name];
+			}
+		} else {
+			OWA.debug('No state store (%s) was found', store_name);
+			return '';
+		}
+		
+	},
+	
+	getCookieValues: function(cookie_name) {
+		
+		if (this.cookies.hasOwnProperty(cookie_name)) {
+			return this.cookies[cookie_name];
+		}
+	},
+	
+	load: function(store_name) {
+		
+		var state = '';
+		var cookie_values = this.getCookieValues( OWA.getSetting('ns') + store_name );
+		
+		if (cookie_values) {
+			 
+			for (var i=0;i < cookie_values.length;i++) {
+				
+				
+				var raw_cookie_value = unescape( cookie_values[i] );
+				var cookie_value = OWA.util.decodeCookieValue( raw_cookie_value );
+				//OWA.debug(raw_cookie_value);
+				var format = OWA.util.getCookieValueFormat( raw_cookie_value );
+			
+				if ( OWA.getSetting('hashCookiesToDomain') ) {
+					var domain = OWA.getSetting('cookie_domain');
+					var dhash = OWA.util.getCookieDomainHash(domain);
+				
+					if ( cookie_value.hasOwnProperty( 'cdh' ) ) {
+						OWA.debug( 'Cookie value cdh: %s, domain hash: %s', cookie_value.cdh, dhash );
+						if ( cookie_value.cdh == dhash ) {
+							OWA.debug('Cookie: %s, index: %s domain hash matches current cookie domain. Loading...', store_name, i);
+							state = cookie_value;
+							break;
+						} else {
+							OWA.debug('Cookie: %s, index: %s domain hash does not match current cookie domain. Not loading.', store_name, i);
+						}
+					} else {
+						//OWA.debug(cookie_value);
+						OWA.debug('Cookie: %s, index: %s has no domain hash. Not going to Load it.', store_name, i);
+					}
+				
+				} else {
+					// just get the last cookie set by that name
+					var lastIndex = cookie_values.length -1 ;
+					if (i === lastIndex) {
+						state = cookie_value;
+					}
+				}
+			}
+		}	
+			
+		if ( state ) {			
+			this.stores[store_name] = state;
+			this.storeFormats[store_name] = format;
+			OWA.debug('Loaded state store: %s with: %s', store_name, JSON.stringify(state));
+		} else {
+			
+			OWA.debug('No state for store: %s was found. Nothing to Load.', store_name);
+		}
+	},
+	
+	clear: function(store_name) {
+		// delete cookie
+		this.stores[store_name] = '';
+		OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
+	},
+	
+	getStoreFormat: function(store_name) {
+		
+		return this.storeFormats[store_name];
+	},
+	
+	setStoreFormat: function(store_name, format) {
+		
+		this.storeFormats[store_name] = format;
+	}
+};
+
 
 OWA.util =  {
 
@@ -132,15 +411,7 @@ OWA.util =  {
 		else var expires = "";
 		document.cookie = name+"="+value+expires+"; path=/";
 	},
-	
-	dt_setcookie: function (name, value, expirydays) {
-	    var expiry = new Date();
-	    expiry.setDate(expiry.getDate() + expirydays);
-	    document.cookie = name+"="+escape(value)+";expires="+expiry.toGMTString();
-	    console.log(document.cookie);
-	    return document.cookie;
-	},
-	
+
 	setCookie: function (name,value,days,path,domain,secure) {
 		var date = new Date();
 		date.setTime(date.getTime()+(days*24*60*60*1000));
@@ -151,18 +422,57 @@ OWA.util =  {
 	    ((domain) ? "; domain=" + domain : "") +
 	    ((secure) ? "; secure" : "");
 	},
-
-	readCookie: function (name) {
-		var nameEQ = name + "=";
+	
+	readAllCookies: function() {
+	
+		OWA.debug('Reading all cookies...');
+		//var dhash = '';
+		var jar = {};
+		//var nameEQ = name + "=";
 		var ca = document.cookie.split(';');
-		for(var i=0;i < ca.length;i++) {
-			var c = ca[i];
-			while (c.charAt(0)==' ') c = c.substring(1,c.length);
-			if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+		
+		if (ca) {
+			OWA.debug(document.cookie);
+			for(var i=0;i < ca.length;i++) {
+				
+				cat = OWA.util.trim(ca[i]);
+				var pos = OWA.util.strpos(cat, '=');
+				var key = cat.substring(0,pos);
+				var value = cat.substring(pos+1, cat.length);
+				//OWA.debug('key %s, value %s', key, value);
+				// create cookie jar array for that key
+				// this is needed because you can have multiple cookies with the same name
+				if ( ! jar.hasOwnProperty(key) ) {
+					jar[key] = [];
+				}
+				// add the value to the array
+				jar[key].push(value);
+			}
+			
+			OWA.debug(JSON.stringify(jar));
+			return jar;
 		}
-		return '';
 	},
 	
+	/**
+	 * Reads and returns values from cookies.
+	 *
+	 * NOTE: this function returns an array of values as there can be
+	 * more than one cookie with the same name.
+	 *
+	 * @return	array
+	 */
+	readCookie: function (name) {
+		OWA.debug('Attempting to read cookie: %s', name);
+		var jar = OWA.util.readAllCookies();
+		if ( jar ) {
+			if ( jar.hasOwnProperty(name) ) {
+				return jar[name];
+			} else {
+				return '';
+			}
+		}
+	},
 	
 	eraseCookie: function (name, domain) {
 		OWA.debug(document.cookie);
@@ -172,7 +482,7 @@ OWA.util =  {
 		OWA.debug("erasing cookie: " + name + " in domain: " +domain);
 		this.setCookie(name,"",-1,"/",domain);
 		// attempt to read the cookie again to see if its there under another valid domain
-		var test = this.readCookie(name);
+		var test = OWA.util.readCookie(name);
 		// if so then try the alternate domain				
 		if (test) {
 			
@@ -257,11 +567,39 @@ OWA.util =  {
 	},
 	
 	urlEncode : function(str) {
-		 str = (str+'').toString();
-    
-    	// Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
-    	// PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
-    	return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+').replace(/~/g, '%7E');
+		// URL-encodes string  
+	    // 
+	    // version: 1009.2513
+	    // discuss at: http://phpjs.org/functions/urlencode
+	    // +   original by: Philip Peterson
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +      input by: AJ
+	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +      input by: travc
+	    // +      input by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +   improved by: Lars Fischer
+	    // +      input by: Ratheous
+	    // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
+	    // +   bugfixed by: Joris
+	    // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
+	    // %          note 1: This reflects PHP 5.3/6.0+ behavior
+	    // %        note 2: Please be aware that this function expects to encode into UTF-8 encoded strings, as found on
+	    // %        note 2: pages served as UTF-8
+	    // *     example 1: urlencode('Kevin van Zonneveld!');
+	    // *     returns 1: 'Kevin+van+Zonneveld%21'
+	    // *     example 2: urlencode('http://kevin.vanzonneveld.net/');
+	    // *     returns 2: 'http%3A%2F%2Fkevin.vanzonneveld.net%2F'
+	    // *     example 3: urlencode('http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a');
+	    // *     returns 3: 'http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a'
+	    str = (str+'').toString();
+	    
+	    // Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
+	    // PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
+	    return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+');
+	
 	},
 	
 	urldecode : function (str) {
@@ -364,141 +702,88 @@ OWA.util =  {
 	    }
 	},
 	
+	checkForState: function( store_name ) {
+	
+		return OWA.checkForState( store_name );
+	},
+	
 	setState : function(store_name, key, value, is_perminant,format, expiration_days) {
 		
-		if ( ! OWA.state.hasOwnProperty( store_name ) ) {
-			OWA.util.loadState(store_name);
-		}
-		
-		if ( ! OWA.state.hasOwnProperty( store_name ) ) {
-			OWA.debug('Creating state store (%s)', store_name);
-			OWA.state[store_name] = {};
-		}
-		
-		if ( key ) {
-			OWA.state[store_name][key] = value;
-		} else {
-			OWA.state[store_name] = value;
-		}
-		
-		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
-		
-		var check = '';
-		if (store) {
-			check = store.substr(0,2);
-			
-			if (check === '[{') {
-				format = 'json';
-			} else {
-				format = 'assoc';
-			}
-		}
-		
-		if (format === 'json') {
-			state_value = JSON.stringify(OWA.state[store_name]);
-		} else {
-			state_value = OWA.util.assocStringFromJson(OWA.state[store_name]);
-		}
-		
-		if ( ! expiration_days ) {
-			
-			if ( is_perminant ) {
-				expiration_days =  3600;
-			}
-		}
-		
-		// set or reset the campaign cookie
-		OWA.debug('Populating state store (%s) with value: %s', store_name, state_value);
-		var domain = OWA.getSetting('cookie_domain') || document.domain;
-		// erase cookie
-		//OWA.util.eraseCookie( 'owa_'+store_name, domain );
-		// set cookie
-		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
+		return OWA.setState(store_name, key, value, is_perminant,format, expiration_days);
 	},
 	
 	replaceState : function (store_name, value, is_perminant, format, expiration_days) {
-		
-		if ( store_name ) {
-			var domain = OWA.getSetting('cookie_domain') || document.domain;
-			
-			if ( ! expiration_days ) {
-				
-				if ( is_perminant ) {
-					expiration_days =  3600;
-				}
-			}
-			OWA.debug('About to replace state store (%s) with: %s', store_name, value);
-			OWA.util.setCookie( 'owa_'+ store_name, value, expiration_days, '/', domain );
-			OWA.util.loadState(store_name);
-		}
+
+		return OWA.replaceState(store_name, value, is_perminant, format, expiration_days);
 	},
 	
 	getRawState : function(store_name) {
 		
-		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
-		if ( store ) {
-			return store;
-		}
+		return OWA.getStateFromCookie(store_name);
 	},
 	
 	getState : function(store_name, key) {
 		
-		if ( ! OWA.state.hasOwnProperty( store_name ) ) {
-			this.loadState(store_name);
-		}
-		
-		if ( OWA.state.hasOwnProperty( store_name ) ) {
-			if ( key ) {
-				if ( OWA.state[store_name].hasOwnProperty( key ) ) {		
-					return OWA.state[store_name][key];
-				}		
-			} else {
-				return OWA.state[store_name];
-			}
-		} else {
-			OWA.debug('No state store (%s) was found', store_name);
-			return '';
-		}
-		
+		return OWA.getState(store_name, key);
 	},
 	
-	loadState : function(store_name) {
+	clearState : function(store_name) {
+		
+		return OWA.clearState(store_name);
+	},
 	
-		var store = unescape( this.readCookie( OWA.getSetting('ns') + store_name ) );
-		if ( store ) {
-			var check = store.substr(0,2);
-			//OWA.debug('check: %s', check);
-			var state = '';
-			if (check === '[{') {
-				state = JSON.parse(store);
-			} else {
-				state = this.jsonFromAssocString(store);
-			}
-			
-			OWA.state[store_name] = state;
-			OWA.debug('Loaded state store (%s) with: %s', store_name, JSON.stringify(state));
+	getCookieValueFormat : function(cstring) {
+		var format = '';
+		var check = cstring.substr(0,1);			
+		if (check === '{') {
+			format = 'json';
 		} else {
-			
-			OWA.debug('State store (%s) is empty. Nothing to Load.', store_name);
+			format = 'assoc';
 		}
+		
+		return format;
+	},
+	
+	decodeCookieValue : function(string) {
+		
+		var format = OWA.util.getCookieValueFormat(string);
+		var value = '';
+		//OWA.debug('decodeCookieValue - string: %s, format: %s', string, format);		
+		if (format === 'json') {
+			value = JSON.parse(string);
+		
+		} else {
+			value = OWA.util.jsonFromAssocString(string);
+		}
+		OWA.debug('decodeCookieValue - string: %s, format: %s, value: %s', string, format, JSON.stringify(value));		
+		return value;
+	},
+	
+	encodeJsonForCookie : function(json_obj, format) {
+		
+		format = format || 'assoc';
+		
+		if (format === 'json') {
+			return JSON.stringify(json_obj);
+		} else {
+			return OWA.util.assocStringFromJson(json_obj);
+		}
+	},
+	
+	getCookieDomainHash: function(domain) {
+		// must be string
+		return OWA.util.dechex(OWA.util.crc32(domain));
 	},
 	
 	loadStateJson : function(store_name) {
-		var store = unescape(this.readCookie( OWA.getSetting('ns') + store_name ) );
+		var store = unescape(OWA.util.readCookie( OWA.getSetting('ns') + store_name ) );
 		if (store) {
 			state = JSON.parse(store);
 		}
 		OWA.state[store_name] = state;
 		OWA.debug('state store %s: %s', store_name, JSON.stringify(state));
 	},
-	
-	clearState : function(store_name) {
-	
-		// delete cookie
-		OWA.state[store_name] = '';
-		this.eraseCookie(OWA.getSetting('ns') + store_name);
-	},
-	
+
 	is_array : function (input) {
   		return typeof(input)=='object'&&(input instanceof Array);	
   	},
@@ -645,7 +930,7 @@ OWA.util =  {
 	utf8_encode : function ( argString ) {
 	    // Encodes an ISO-8859-1 string to UTF-8  
 	    // 
-	    // version: 1008.1718
+	    // version: 1009.2513
 	    // discuss at: http://phpjs.org/functions/utf8_encode
 	    // +   original by: Webtoolkit.info (http://www.webtoolkit.info/)
 	    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -805,7 +1090,7 @@ OWA.util =  {
 	base64_encode: function (data) {
 	    // Encodes string using MIME base64 algorithm  
 	    // 
-	    // version: 1008.1718
+	    // version: 1009.2513
 	    // discuss at: http://phpjs.org/functions/base64_encode
 	    // +   original by: Tyler Akins (http://rumkin.com)
 	    // +   improved by: Bayron Guevara
@@ -923,7 +1208,7 @@ OWA.util =  {
 	sprintf : function( ) {
 	    // Return a formatted string  
 	    // 
-	    // version: 1008.1718
+	    // version: 1009.2513
 	    // discuss at: http://phpjs.org/functions/sprintf
 	    // +   original by: Ash Searle (http://hexmen.com/blog/)
 	    // + namespaced by: Michael White (http://getsprink.com)
@@ -1125,5 +1410,81 @@ OWA.util =  {
 	    }
 	 
 	    return false;
-	}
+	},
+	
+	dechex: function (number) {
+	    // Returns a string containing a hexadecimal representation of the given number  
+	    // 
+	    // version: 1009.2513
+	    // discuss at: http://phpjs.org/functions/dechex
+	    // +   original by: Philippe Baumann
+	    // +   bugfixed by: Onno Marsman
+	    // +   improved by: http://stackoverflow.com/questions/57803/how-to-convert-decimal-to-hex-in-javascript
+	    // +   input by: pilus
+	    // *     example 1: dechex(10);
+	    // *     returns 1: 'a'
+	    // *     example 2: dechex(47);
+	    // *     returns 2: '2f'
+	    // *     example 3: dechex(-1415723993);
+	    // *     returns 3: 'ab9dc427'
+	    if (number < 0) {
+	        number = 0xFFFFFFFF + number + 1;
+	    }
+	    return parseInt(number, 10).toString(16);
+	},
+	
+	explode: function (delimiter, string, limit) {
+	    // Splits a string on string separator and return array of components. 
+	    // If limit is positive only limit number of components is returned. 
+	    // If limit is negative all components except the last abs(limit) are returned.  
+	    // 
+	    // version: 1009.2513
+	    // discuss at: http://phpjs.org/functions/explode
+	    // +     original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +     improved by: kenneth
+	    // +     improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // +     improved by: d3x
+	    // +     bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	    // *     example 1: explode(' ', 'Kevin van Zonneveld');
+	    // *     returns 1: {0: 'Kevin', 1: 'van', 2: 'Zonneveld'}
+	    // *     example 2: explode('=', 'a=bc=d', 2);
+	    // *     returns 2: ['a', 'bc=d']
+	 
+	    var emptyArray = { 0: '' };
+	    
+	    // third argument is not required
+	    if ( arguments.length < 2 ||
+	        typeof arguments[0] == 'undefined' ||
+	        typeof arguments[1] == 'undefined' ) {
+	        return null;
+	    }
+	 
+	    if ( delimiter === '' ||
+	        delimiter === false ||
+	        delimiter === null ) {
+	        return false;
+	    }
+	 
+	    if ( typeof delimiter == 'function' ||
+	        typeof delimiter == 'object' ||
+	        typeof string == 'function' ||
+	        typeof string == 'object' ) {
+	        return emptyArray;
+	    }
+	 
+	    if ( delimiter === true ) {
+	        delimiter = '1';
+	    }
+	    
+	    if (!limit) {
+	        return string.toString().split(delimiter.toString());
+	    } else {
+	        // support for limit argument
+	        var splitted = string.toString().split(delimiter.toString());
+	        var partA = splitted.splice(0, limit - 1);
+	        var partB = splitted.join(delimiter.toString());
+	        partA.push(partB);
+	        return partA;
+	    }
+	}	
 }

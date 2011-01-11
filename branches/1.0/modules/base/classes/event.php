@@ -105,6 +105,10 @@ class owa_event {
 			$timestamp = $this->get('timestamp');
 		}
 		
+		// convert to local time and reset timestamp
+		//$timestamp = owa_lib::utcToLocalTimestamp($timestamp);
+		//$this->set('timestamp', $timestamp);
+		
 		$this->set('year', date("Y", $timestamp));
 		$this->set('month', date("n", $timestamp));
 		$this->set('day', date("d", $timestamp));
@@ -125,10 +129,7 @@ class owa_event {
 	
 	function setCookieDomain($domain) {
 		
-		$this->properties['cookie_domain'] = $domain;
-		
-		return;
-		
+		$this->properties['cookie_domain'] = $domain;	
 	}
 	
 	/**

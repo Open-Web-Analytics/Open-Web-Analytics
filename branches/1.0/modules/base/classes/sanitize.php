@@ -196,6 +196,20 @@ class owa_sanitize {
 		return str_replace( "\\\$", "$", $input );
 	}
 	
+	public static function escapeOctets ( $input = '' ) {
+		
+		$match = array();
+		$found = false;
+		while ( preg_match('/%[a-f0-9]{2}/i', $input, $match) ) {
+			$input = str_replace($match[0], '', $input);
+			$found = true;
+		}
+
+		if ( $found ) {
+			// Strip out the whitespace that may now exist after removing the octets.
+			$filtered_input = trim( preg_replace( '/ +/', ' ', $input ) );
+		}
+	}
 	
 	/**
 	 * Sanitizes for safe input. Takes an array of options:

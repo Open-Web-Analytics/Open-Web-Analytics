@@ -51,12 +51,7 @@ class owa_widgetController extends owa_controller {
 		//print_r($params);
 		return parent::__construct($params);
 	}
-	
-	function owa_widgetController($params) {
-	
-		return owa_widgetController::__construct($params);
-	}
-	
+
 	function pre() {
 	
 	
@@ -86,13 +81,16 @@ class owa_widgetController extends owa_controller {
 		$this->doFormatAction($this->params['format']);
 	
 		// used to add outer wrapper to widget if it's the first view.
-		if ($this->params['initial_view'] == true):
+		$iv = $this->getParam('initial_view');
+		if ($iv == true):
 			$this->data['subview'] = $this->data['view'];
 			$this->data['view'] = 'base.widget';
 			// we dont want to keep passing this.
 			unset($this->data['params']['initial_view']);
 		endif;
-		$this->data['wrapper'] = $this->params['wrapper'];
+		
+		
+		$this->data['wrapper'] = $this->getParam('wrapper');
 		$this->data['widget'] = $this->params['do'];
 		$this->data['do'] = $this->params['do'];
 		

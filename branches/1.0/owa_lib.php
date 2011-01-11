@@ -425,16 +425,23 @@ class owa_lib {
 		
 		$url = 'http';	
 		
-		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'):
+		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
 			$url.= 's';
-		endif;
+		}
 		
-		$url .= '://'.$_SERVER['SERVER_NAME'];
+		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+			// contains port number
+			$domain = $_SERVER['HTTP_HOST'];
+		} else {
+			// does not contain port number.
+			$domain = $_SERVER['SERVER_NAME'];
+			if( $_SERVER['SERVER_PORT'] != 80 ) {
+				$domain .= ':' . $_SERVER['SERVER_PORT'];
+			}
+		}
 		
-		if($_SERVER['SERVER_PORT'] != 80):
-			$url .= ':'.$_SERVER['SERVER_PORT'];
-		endif;
-		
+		$url .= '://'.$domain;
+	
 		$url .= $_SERVER['REQUEST_URI'];
 		
 		return $url;
@@ -1093,8 +1100,53 @@ class owa_lib {
 	
 	public static function crc32AsHex($string) {
 		$crc = crc32($string);
-		$crc += 0x100000000;
+		//$crc += 0x100000000;
+		if ($crc < 0) {
+			$crc = 0xFFFFFFFF + $crc + 1;
+		}
 		return dechex($crc);
+	}
+	
+	public static function getLocalTimestamp($utc = '') {
+		
+		if ( ! $utc ) {
+			$utc = time();
+		}
+		$local_timezone_offset = date('Z');
+		$daylight_savings = date('I') * 3600;
+		$local_time = $utc - $local_timezone_offset + $daylight_savings;
+		return $local_time;
+	}
+	
+	public static function sanitizeCookieDomain($domain) {
+		
+		$pos = strpos($domain, '.');
+		
+		//check for local host
+		if ( strpos( $domain, 'localhost' ) ) {
+		 	return false;
+		
+		// check for local domain 	
+		} elseif ( $pos === false) {
+			
+			return false;
+			
+		// ah-ha a real domain
+		} else {
+			// Remove port information.
+     		$port = strpos( $domain, ':' );
+			if ( $port ) {
+				$domain = substr( $domain, 0, $port );
+			}
+			
+			// check for leading period, add if missing
+			$period = substr( $domain, 0, 1);
+			if ( $period != '.' ) {
+				$domain = '.'.$domain;
+			}
+			
+			return $domain;
+		}
 	}
 }
 

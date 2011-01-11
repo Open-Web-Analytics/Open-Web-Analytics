@@ -663,14 +663,19 @@ OWA.resultSetExplorer.prototype = {
 	},
 	
 	formatValue : function(type, value) {
-	
+		
 		switch(type) {
 			// convery yyyymmdd to javascript timestamp as  flot requires that
 			case 'yyyymmdd':
 				
-				date = jQuery.datepicker.parseDate('yymmdd', value);
-				value = Date.parse(date);
-
+				//date = jQuery.datepicker.parseDate('yymmdd', value);
+				//value = Date.parse(date);
+				var year = value.substring(0,4) * 1;
+				var month = (value.substring(4,6) * 1) -1;
+				var day = value.substring(6,8) * 1; 
+				var d = Date.UTC(year,month,day,0,0,0,0);
+				value = d;
+				OWA.debug('year: %s, month: %s, day: %s, timestamp: %s',year,month,day,d);
 				break;
 				
 			case 'currency':

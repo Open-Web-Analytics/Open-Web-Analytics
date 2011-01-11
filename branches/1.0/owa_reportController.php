@@ -80,9 +80,9 @@ class owa_reportController extends owa_adminController {
 		$this->setView('base.report');
 		$this->setViewMethod('delegate');
 		
-		$this->dom_id = str_replace('.', '-', $this->params['do']);
+		$this->dom_id = str_replace('.', '-', $this->getParam('do'));
 		$this->data['dom_id'] = $this->dom_id;
-		$this->data['do'] = $this->params['do'];
+		$this->data['do'] = $this->getParam('do');
 		
 		// setup tabs
 		$siteId = $this->get('siteId');

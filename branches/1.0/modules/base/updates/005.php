@@ -197,7 +197,7 @@ class owa_base_005_update extends owa_update {
 		
 		// migrate search terms to new table
 		$ret = $db->query(
-			"INSERT 
+			"INSERT INTO
 				owa_search_term_dim (id, terms, term_count) 
 			SELECT 
 				distinct(CRC32(LOWER(query_terms))) as id, 

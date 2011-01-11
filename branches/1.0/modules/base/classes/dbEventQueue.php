@@ -62,7 +62,7 @@ class owa_dbEventQueue extends eventQueue {
 		$qi->load($item_id);
 		$inserted_timestamp = $qi->get('insertion_timestamp');
 		if ($inserted_timestamp) {
-			$qi->set( 'failed_attempt_count' , $qi->get( 'failed_atempt_count' ) + 1 );
+			$qi->set( 'failed_attempt_count' , $qi->get( 'failed_attempt_count' ) + 1 );
 			$qi->set( 'last_attempt_timestamp', $this->makeTimestamp() );
 			$qi->set( 'not_before_timestamp', $this->determineNextAttempt($qi->get('event_type'), $qi->get('failed_attempt_count') ) );
 			$qi->set( 'last_error_msg', $error_msg);

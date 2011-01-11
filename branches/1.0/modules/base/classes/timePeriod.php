@@ -112,13 +112,13 @@ class owa_timePeriod {
 					'same_day_last_week' 	=> array('label' => 'Same Day last Week'),
 					'same_week_last_year' 	=> array('label' => 'Same Week Last Year'),
 					'same_month_last_year' 	=> array('label' => 'Same Month Last Year'),
-					'date_range' 			=> array('label' => 'Date Range'),
-					'time_range'			=> array('label' => 'Time Range')
+					'date_range' 			=> array('label' => 'Date Range')
+					//'time_range'			=> array('label' => 'Time Range')
 		);
 		
 	}
 	
-	function _setDates($map = array()) {
+	function _setDates($map = array()) {	
 		
 		$time_now = owa_lib::time_now();
 		$nowDate = owa_coreAPI::supportClassFactory('base', 'date');
@@ -127,8 +127,9 @@ class owa_timePeriod {
 		switch ($this->period) {
 			
 			case "today":
-				$end = mktime(0, 0, 0, $time_now['month'], $time_now['day'] + 1, $time_now['year']); 
-				$start = $end - 3600*24;			
+				
+				$start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']); 
+				$end = $start + 3600 * 24 -1; 			
 				break;
 				
 			case "last_24_hours":
@@ -147,31 +148,32 @@ class owa_timePeriod {
 				break;
 				
 			case "last_seven_days":
-				$end = mktime(0, 0, 0, $time_now['month'], $time_now['day']+1, $time_now['year']);
+				//$end = mktime(0, 0, 0, $time_now['month'], $time_now['day']+1, $time_now['year']);
+				$end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']);
 				$start = $end - 3600*24*7;
 				break;
 			
 			case "this_week":
-				$end = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']) + 
-				((7 - $nowDate->get('day_of_week')) * 3600 * 24);
+				$end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']) + 
+				((6 - $nowDate->get('day_of_week')) * 3600 * 24);
 				$start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']) - 
 				($nowDate->get('day_of_week') * 3600 * 24);
 				break;
 				
 			case "this_month":
 				$start = mktime(0, 0, 0, $time_now['month'], 1 , $time_now['year']);
-				$end = mktime(0, 0, 0, $time_now['month'], $nowDate->get('num_days_in_month'), $time_now['year']);
+				$end = mktime(23, 59, 59, $time_now['month'], $nowDate->get('num_days_in_month'), $time_now['year']);
 				break;
 				
-			
 			case "this_year":
 				$start = mktime(0, 0, 0, 1, 1, $time_now['year']);
-				$end = mktime(0, 0, 0, 12, 31, $time_now['year']);
+				$end = mktime(23, 59, 59, 12, 31, $time_now['year']);
 				break;
 				
 			case "yesterday":
 				$end = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']); 
 				$start = $end - 3600*24;
+				$end = $end - 1;
 				break;
 				
 			case "last_week":
@@ -185,27 +187,27 @@ class owa_timePeriod {
 				$start = mktime(0, 0, 0, $month, 1, $time_now['year']);
 				$last = owa_coreAPI::supportClassFactory('base', 'date');
 				$last->set($start, 'timestamp');
-				$end = mktime(0, 0, 0, $last->get('month'), $last->get('num_days_in_month'), $last->get('year'));
+				$end = mktime(23, 59, 59, $last->get('month'), $last->get('num_days_in_month'), $last->get('year'));
 				break;
 				
 			case "last_year":
 				$year = $time_now['year'] - 1;
 				$start = mktime(0, 0, 0, 1, 1, $year);
-				$end = mktime(0, 0, 0, 12, 31, $year);
+				$end = mktime(23, 59, 59, 12, 31, $year);
 				break;
 				
 			case "same_day_last_week":
 				$start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']) - 3600*24*7;
-				$end = $start + (3600*24);
+				$end = $start + (3600*24) - 1;
 				break;
-				
+			///	
 			case "same_month_last_year":
 				$year = $time_now['year'] - 1;
-				$month = $time_now['month'] - 1;
+				$month = $time_now['month'];
 				$start = mktime(0, 0, 0, $month, 1, $year);
 				$last = owa_coreAPI::supportClassFactory('base', 'date');
 				$last->set($start, 'timestamp');
-				$end = mktime(0, 0, 0, $month, $last->get('num_days_in_month'), $year);
+				$end = mktime(23, 59, 59, $month, $last->get('num_days_in_month'), $year);
 				break;
 				
 			case "all_time":
@@ -214,15 +216,15 @@ class owa_timePeriod {
 				break;
 				
 			case "last_thirty_days":
-				$end = mktime(0, 0, 0, $time_now['month'], $time_now['day']+1, $time_now['year']);
-				$start = mktime(0, 0, 0, $time_now['month'], $time_now['day']-29, $time_now['year']);
+				$end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']);
+				$start = ($end + 1) - (30 * 3600 * 24);
 				break;	
 					
 			case "date_range":
 				list($year, $month, $day) = sscanf($map['startDate'], "%4d%2d%2d");
 				$start = mktime(0, 0, 0, $month, $day, $year);		
 				list($year, $month, $day) = sscanf($map['endDate'], "%4d%2d%2d");
-				$end = mktime(0, 0, 0, $month, $day, $year);
+				$end = mktime(23, 59, 59, $month, $day, $year);
 								
 				break;
 				

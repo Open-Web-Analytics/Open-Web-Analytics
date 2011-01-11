@@ -228,7 +228,7 @@ class owa_coreAPI {
 		owa_coreAPI::debug("Current User Role: ".$cu->getRole());
 		owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
 		$ret = $cu->isCapable($capability);
-		owa_coreAPI::debug("cap-api ".$ret);
+		owa_coreAPI::debug("Is current User capable: ".$ret);
 		return $ret;
 	}
 	
@@ -571,12 +571,12 @@ class owa_coreAPI {
 		foreach ($service->modules as $k => $v) {
 			$v->registerAdminPanels();
 			$module_panels = $v->getAdminPanels();
-			
-			foreach ($module_panels as $key => $value) {
-				
-				$panels[$value['group']][] = $value;
-			}
-			
+			if ($module_panels) {
+				foreach ($module_panels as $key => $value) {
+					
+					$panels[$value['group']][] = $value;
+				}
+			}			
 		}
 		
 		return $panels;
@@ -1009,14 +1009,12 @@ class owa_coreAPI {
 	
 	public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
 		
-		if (!empty($domain)) {
-			$c = &owa_coreAPI::configSingleton();
+		if ( $domain ) {
 			// sanitizes the domain
-			$c->setCookieDomain($domain);
-		}
-		
-		$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
-				
+			$domain = owa_lib::sanitizeCookieDomain( $domain );
+		} else {
+			$domain = owa_coreAPI::getSetting('base', 'cookie_domain');
+		}	
 		if (is_array($cookie_value)) {
 			
 			$cookie_value = owa_lib::implode_assoc('=>', '|||', $cookie_value);
@@ -1321,6 +1319,17 @@ class owa_coreAPI {
 			$status = $m->install();
 			return $status;
 		}
+	}
+	
+	public static function generateInstanceSpecificHash() {
+		
+		if ( defined('OWA_SECRET')) {
+			$salt = OWA_SECRET;
+		} else {
+			$salt = '';
+		}
+		
+		return md5( $salt . OWA_DB_USER . OWA_DB_PASSWORD );
 	}
 }
 
