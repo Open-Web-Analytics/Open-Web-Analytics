@@ -56,7 +56,14 @@ OWA.report.prototype = {
 	setPeriod: function(period) {
 	
 		this.properties.period = period;
-		return;
+		
+		if ( this.properties.hasOwnProperty( 'startDate' ) ) {
+			delete this.properties[ 'startDate' ];
+		}
+		
+		if ( this.properties.hasOwnProperty( 'endDate' ) ) {
+			delete this.properties[ 'endDate' ];
+		}
 	},
 	
 	addTab : function(obj) {
