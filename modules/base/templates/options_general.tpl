@@ -145,23 +145,7 @@
 				</select>
 			</div>
 		</div>
-	
-		<div class="setting" id="geolocation_service">	
-			<div class="title">Geo-location Service</div> 
-			<div class="description">Select the geo-location service to use.</div>
-			<div class="field">
-				<select name="<?php echo $this->getNs();?>config[base.geolocation_service]">
-					<option value="hostip" <?php if ($config['geolocation_service'] == 'hostip'):?>SELECTED<?php endif;?>>Hostip.info Web Service (free)</OPTION>
-				</select>
-			</div>
-		</div>
-	
-		<div class="setting" id="google_maps_api_key">
-			<div class="title">Google Maps API Key</div>
-			<div class="description">Google maps API key is needed to produce Google maps of visitor geo-locations. You may obtain an API key from <a href="http://www.google.com/apis/maps/signup.html">this Google web site</a> for free.</div>
-			<div class="field"><input type="text" size="90" name="<?php echo $this->getNs();?>config[base.google_maps_api_key]" value="<?php echo $config['google_maps_api_key']?>"></div>
-		</div>
-    
+		
 	</fieldset>
 		
 	<BR>
