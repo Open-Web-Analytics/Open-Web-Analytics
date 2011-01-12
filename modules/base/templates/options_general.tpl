@@ -207,24 +207,6 @@
 	</fieldset>
 	
 	<BR>
-
-	
-	
-	<fieldset name="owa-reports-options" class="options">
-		
-		<legend>Presentation</legend>
-		
-		<div class="setting" id="click_drawing_mode">	
-			<div class="title">Click Drawing Mode</div>
-			<div class="description">Controls the layout mode that will be used to plot clicks when producing scatter-plots and heatmaps.</div>
-			<div class="field">
-				<select name="<?php echo $this->getNs();?>config[base.click_drawing_mode]">
-					<option value="center_on_page" <?php if ($config['click_drawing_mode'] == 'center_on_page'):?>SELECTED<?php endif;?>>Content centered</option>
-					<option value="expandable" <?php if ($config['click_drawing_mode'] == 'expandable'):?>SELECTED<?php endif;?>>Content resizable</option>
-				</select>
-			</div>
-		</div>
-	</fieldset>
 	
 	<fieldset name="owa-ecommerce-options" class="options">
 		
