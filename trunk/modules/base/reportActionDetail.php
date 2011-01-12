@@ -40,7 +40,7 @@ class owa_reportActionDetailController extends owa_reportController {
 		$this->setSubview('base.reportSimpleDimensional');
 		$this->setTitle('Action Detail: ', $actionGroup.': '.$actionName);
 		$this->set('metrics', 'actions,actionsValue');
-		$this->set('dimension', 'actionLabel');
+		$this->set('dimensions', 'actionLabel');
 		$this->set('trendChartMetric', 'actions');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.');
 		$this->set('constraints', 'actionName=='.urlencode($actionName).',actionGroup=='.urlencode($actionGroup));	
