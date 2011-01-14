@@ -1225,7 +1225,7 @@ class owa_baseModule extends owa_module {
 		if ( ! $document_id ) {
 	
 			$eq = owa_coreAPI::getEventDispatch();
-			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $this->getParam('pageUrl') ), $siteId ) ) ;
+			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $pageUrl ), $siteId ) ) ;
 		}
 			
 		$d->getByColumn('id', $document_id);
