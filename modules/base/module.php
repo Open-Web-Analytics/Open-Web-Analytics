@@ -65,7 +65,7 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
 		// event procesing daemon jobs
-		$this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', '', 10);
+		$this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', '10 * * * *', 10);
 		
 		/**
 		 * Register Service Implementations
