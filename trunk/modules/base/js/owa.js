@@ -136,10 +136,10 @@ var OWA = {
 		
 		// set global is overlay actve flag
 		OWA.overlayActive = true;
-		
+		//alert(JSON.stringify(p));
 		
 		if (p.hasOwnProperty('api_url')) {
-			//alert(JSON.stringify(p));	
+				
 			OWA.setApiEndpoint(p.api_url);
 		}
 		

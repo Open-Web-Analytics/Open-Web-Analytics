@@ -30,7 +30,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @since		owa 1.0.0
  */
 
-class owa_overlayLauncherController extends owa_reportController {
+class owa_overlayLauncherController extends owa_controller {
 	
 	function action() {
 		
@@ -50,7 +50,7 @@ class owa_overlayLauncherController extends owa_reportController {
 			$url = $parts[0];
 		}
 		
-		$url = $url.'#owa_overlay.' . trim( base64_encode( $this->getParam( 'overlay_params' ) ), '\u0000' );
+		$url = $url.'#owa_overlay.' . trim( base64_encode( urlencode($this->getParam( 'overlay_params' ) ) ), '\u0000' );
 	
 		// redirect browser
 		$this->redirectBrowserToUrl($url);	

@@ -1279,6 +1279,9 @@ class owa_baseModule extends owa_module {
 	
 	function getDomstream( $domstream_guid ) {
 		
+		if ( ! $domstream_guid ) {
+			return;
+		}
 		// Fetch document object
 		$d = owa_coreAPI::entityFactory('base.domstream');
 		//$d->load($this->getParam('domstream_id'));
