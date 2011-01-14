@@ -75,18 +75,35 @@ class owa_fileEventQueue extends owa_eventQueue {
 	function processQueue($event_file = '') {
 	
 		if ($event_file) {
+		
 			$this->event_file = $this->queue_dir.$event_file;
 		}
 		
-		if (file_exists($this->event_file)) {
-			owa_coreAPI::notice(sprintf('Starting Async Event Processing Run for: %s', $this->event_file));
-			//check for lock file
-			if (!$this->isLocked()) {
-				$this->process_event_log($this->event_file);
+		if ( file_exists( $this->event_file ) ) {
+			
+			$event_log_rotate_size = owa_coreAPI::getSetting( 'base', 'async_log_rotate_size' );
+			
+			if ( filesize( $this->event_file ) > $event_log_rotate_size ) {
+				
+				owa_coreAPI::notice(sprintf('Starting Async Event Processing Run for: %s', $this->event_file));
+				
+				//check for lock file
+				if (!$this->isLocked()) {
+					
+					return $this->process_event_log($this->event_file);
+					
+				} else {
+					
+					owa_coreAPI::notice(sprintf('Previous Process (%d) still active. Terminating Run.', $former_pid));
+				}
+							
 			} else {
-				owa_coreAPI::notice(sprintf('Previous Process (%d) still active. Terminating Run.', $former_pid));
+				
+				owa_coreAPI::debug("Event file is not large enough to process yet. Size is only: ".filesize($this->event_file));
 			}
+			
 		} else {
+			
 			owa_coreAPI::debug("No event file found at: ".$this->event_file);
 		}
 				
@@ -200,7 +217,9 @@ class owa_fileEventQueue extends owa_eventQueue {
 			owa_coreAPI::debug(sprintf('Deleting File %s', $processed_file_name));
 			
 			//Delete Lock file
-			unlink($this->lock_file);		
+			unlink($this->lock_file);
+			
+			return true;	
 		} else {
 			//could not open file for processing
 			owa_coreAPI::error(sprintf('Could not open file %s. Terminating Run.', $new_file));

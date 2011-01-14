@@ -189,6 +189,13 @@ class owa_module extends owa_base {
 	var $api_methods = array();
 	
 	/**
+	 * Background Jobs
+	 * 
+	 * @var array 
+	 */
+	var $background_jobs = array();
+	
+	/**
 	 * Update from CLI Required flag
 	 *
 	 * Used by controllers to see if an update error was becuase it needs
@@ -720,6 +727,17 @@ class owa_module extends owa_base {
 		$s = owa_coreAPI::serviceSingleton();
 		$class_info = array($class_name, $file);
 		$s->setMapValue($type, $name, $class_info);
+	}
+	
+	function registerBackgroundJob($name, $command, $cron_tab, $max_processes = 1) {
+		
+		$job = array('name'				=>	$name,
+					 'cron_tab'			=>	$cron_tab,
+					 'command'			=>	$command,
+					 'max_processes'	=>	$max_processes);
+					 
+		$s = owa_coreAPI::serviceSingleton();
+		$s->setMapValue('background_jobs', $name, $job);
 	}
 }
 
