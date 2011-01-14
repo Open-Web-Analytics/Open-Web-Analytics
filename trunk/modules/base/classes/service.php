@@ -241,6 +241,15 @@ class owa_service extends owa_base {
 		}
 	}
 	
+	function getMap($name) {
+		
+		if (array_key_exists($name, $this->maps)) {
+			
+			return $this->maps[$name];
+		}
+		
+	}
+	
 	function setMap($name, $map) {
 		
 		$this->maps[$name] = $map;

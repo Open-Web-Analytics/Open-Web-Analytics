@@ -174,7 +174,7 @@
 	
 		<div class="setting" id="async_log_dir">	
 			<div class="title">Event Log File Directory</div>
-			<div class="description">This is the location of log file that OWA will store events in untill they are processed (e.g. /path/to/owa/log/file/)</div>
+			<div class="description">This is the file system path of the file that OWA will write queued events to when Event Queuing mode is turned on. (e.g. /path/to/owa/log/file.txt)</div>
 			<div class="field"><input type="text" size="80" name="<?php echo $this->getNs();?>config[base.async_log_dir]" value="<?php echo $config['async_log_dir']?>"></div>
 		</div>
 	

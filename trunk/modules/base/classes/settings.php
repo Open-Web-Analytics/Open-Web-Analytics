@@ -638,6 +638,7 @@
 				'mailer-password'					=> '',
 				'queue_events'						=> false,
 				'event_queue_type'					=> '',
+				'event_secondary_queue_type'		=> '',
 				'use_remote_event_queue'			=> true,
 				'remote_event_queue_type'			=> 'http',
 				'remote_event_queue_endpoint'		=> '',
