@@ -1188,7 +1188,7 @@ class owa_coreAPI {
 	
 	public static function getGeolocationFromIpAddress($ip_address) {
 		
-		$s = owa_coreAPI::serviceSingleton();
+		$s = &owa_coreAPI::serviceSingleton();
 		$s->geolocation->getGeolocationFromIp($ip_address);
 		return $s->geolocation;
 	}
