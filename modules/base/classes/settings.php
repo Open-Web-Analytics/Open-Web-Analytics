@@ -410,7 +410,7 @@
  	}
  	
  	/**
- 	 * Sets configuration value. will not be persisted. NEEDED?
+ 	 * Sets configuration value. will not be persisted.
  	 * 
  	 * @param string $module the name of the module
  	 * @param string $key the configuration key
@@ -424,8 +424,6 @@
  		$values[$module][$key] = $value;
  		
  		$this->config->set('settings', $values);
- 		
- 		return;
  	}
  	
  	

@@ -478,7 +478,7 @@ OWA.tracker.prototype = {
 	},
 	
 	checkForOverlaySession: function() {
-		OWA.setSetting('debug', true);
+		
 		// check to see if overlay sesson should be created
 		var a = this.getAnchorParam('owa_overlay');
 		

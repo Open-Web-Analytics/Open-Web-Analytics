@@ -58,8 +58,19 @@ class owa_geolocation {
 						 'latitude'		=>	'',
 						 'longitude'	=>	'');
 			
-			$eq = owa_coreAPI::getEventDispatch();
-			$geo = $eq->filter('geolocation', $geo);
+			if ( owa_coreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
+			
+				$eq = owa_coreAPI::getEventDispatch();
+				$geo = $eq->filter('geolocation', $geo);
+			
+			}
+			
+			foreach ($geo as $k => $v) {
+				if ( ! $v ) {
+					$geo[$k] = '(not set)';
+				}
+			}
+			
 			$this->properties = $geo;
 		}
 	}
