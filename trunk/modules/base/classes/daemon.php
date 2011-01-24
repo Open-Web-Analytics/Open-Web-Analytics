@@ -175,7 +175,7 @@ class owa_daemon extends Daemon {
 							// We add pids to a global array, so that when we get a kill signal
 							// we tell the kids to flush and exit.
 							if ( array_key_exists( $k, $this->workerCountByJob ) ) {
-								$this->workerCountByJob[$k]++
+								$this->workerCountByJob[$k]++;
 							} else {
 								$this->workerCountByJob[$k] = 1;
 								$this->lastExecutionTimeByJob[$k] = time();
