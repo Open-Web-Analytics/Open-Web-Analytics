@@ -62,6 +62,7 @@ class owa_daemon extends Daemon {
 		$params = array();
 		// get params from the command line args
 		// $argv is a php super global variable
+		global $argv;
 		for ( $i=1; $i < count( $argv ); $i++ ) {
 			$it = split("=",$argv[$i]);
 			$params[$it[0]] = $it[1];
