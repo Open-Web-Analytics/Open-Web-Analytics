@@ -688,7 +688,8 @@
 				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file',
 				'disabledEndpoints'					=> array(),
-				'disableAllEndpoints'				=> false
+				'disableAllEndpoints'				=> false,
+				'processQueuesJobSchedule'				=> '10 * * * *'
 				
 			)
 		);
