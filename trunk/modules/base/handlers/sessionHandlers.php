@@ -21,7 +21,7 @@ if(!class_exists('owa_observer')) {
 }	
 
 /**
- * OWA user management Event handlers
+ * OWA Session Event handlers
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
@@ -146,7 +146,7 @@ class owa_sessionHandlers extends owa_observer {
 		// fail safe for when there is no existing session in DB
 		if (empty($id)) {
 			
-			owa_coreAPI::error("Aborting session update as no existing session was found");
+			owa_coreAPI::debug("Aborting session update as no existing session was found");
 			return OWA_EHS_EVENT_FAILED;
 		}
 
