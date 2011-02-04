@@ -44,7 +44,7 @@ class owa_reportAdTypesController extends owa_reportController {
 				'linkColumn' 	=> 'adType', 
 				'template' 		=> array('do' => 'base.reportAdTypeDetail', 'adType' => '%s'), 
 				'valueColumns' 	=> 'adType'));
-		$this->set('constraints', 'ad==banner2');
+	
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from ads.');
 		$this->set('gridTitle', 'Top Ad Types');		
