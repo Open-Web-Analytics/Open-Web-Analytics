@@ -58,30 +58,30 @@ class owa_conversionHandlers extends owa_observer {
 				if ( !empty( $conversion_info['conversion'] ) ) {
 					$goal_column = 'goal_'.$conversion_info['conversion'];
 					$already = $s->get( $goal_column );
+					// see if an existing value has been set goal value
+					$goal_value_column = 'goal_'.$conversion_info['conversion'].'_value';
+					$existing_value = $s->get( $goal_value_column );
+					$value = $conversion_info['value'];
+					
+					// determin is we have a conversion event worth updating
 					if ( $already != true )	{
 						// there is a goal conversion					
 						$s->set( $goal_column , true );
+						$update = true;
 						owa_coreAPI::debug( "$goal_column was achieved." );
 					} else {
-						owa_coreAPI::debug( 'Not updating session. Goal was already achieved in same session.' );
-						return OWA_EHS_EVENT_HANDLED;
+						// goal already happened but check to see if we need to add a value to it. 
+						// happens in the case of ecommerce transaction where the value
+						// can come in a secondary request. if no value then return.
+						if ( ! $value ) {
+							owa_coreAPI::debug( 'Not updating session. Goal was already achieved and in same session.' );
+							return OWA_EHS_EVENT_HANDLED;
+						}
 					}
 					
-					// set goal value
-					$goal_value_column = 'goal_'.$conversion_info['conversion'].'_value';
-					$value = '';
-					
-					// pull dynamic value from commerce transaction total if set otherwise
-					// use static value 
-					if ( $event->get('ct_total' ) ) {
-						$value = $event->get( 'ct_total' );
-					} else {
-						$value = $conversion_info['value'];
-					}
-					$existing_value = $s->get( $goal_value_column );
 					// Allow a value to be set if one has not be set already.
 					// this is needed to support dynamic values passed by commerce transaction events
-					if ( ! empty( $value ) && empty( $existing_value ) ) {
+					if ( $value  && ! $existing_value )  {
 						$s->set( $goal_value_column, owa_lib::prepareCurrencyValue( $value ) );
 						$update = true;
 					}	
@@ -125,7 +125,7 @@ class owa_conversionHandlers extends owa_observer {
 					}
 											
 				} else {
-					
+					owa_coreAPI::debug( "nothing about this conversion is worth updating." );
 					return OWA_EHS_EVENT_HANDLED;
 				}
 				
@@ -201,9 +201,9 @@ class owa_conversionHandlers extends owa_observer {
 		    		}
 		    		
 		    		//check for dynamic value from commerce transaction
-		    		$commerce = $event->get( 'commerce_transaction' );
-		    		if ($commerce) {
-		    			$goal_value =  $commerce['total_amount'];
+		    		
+		    		if ($event->get('ct_total')) {
+		    			$goal_value =  $event->get('ct_total');
 		    		} else {
 		    			// else just use the static value if one is set.
 		    			if ( array_key_exists('goal_value', $goal) ) {
