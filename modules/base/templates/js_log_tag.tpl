@@ -1,4 +1,4 @@
-<?php if ( ! $this->getValue( 'no_script_wrapper', $options ) ): ?>
+<?php if ( isset($options) && ! $this->getValue( 'no_script_wrapper', $options ) ): ?>
 <!-- Start Open Web Analytics Tracker -->
 <script type="text/javascript">
 //<![CDATA[
@@ -8,20 +8,20 @@ var owa_cmds = owa_cmds || [];
 <?php if (owa_coreAPI::getSetting('base', 'error_handler') === 'development'): ?>
 owa_cmds.push(['setDebug', true]);
 <?php endif;?>
-<?php if ($this->getValue('apiEndpoint', $options)): ?>
+<?php if ( isset($options) && $this->getValue('apiEndpoint', $options ) ): ?>
 owa_cmds.push(['setApiEndpoint', '<?php echo $options['apiEndpoint'];?>']);
 <?php endif;?>
 owa_cmds.push(['setSiteId', '<?php echo $site_id; ?>']);
-<?php if ( $this->getValue( 'cmds', $options ) ): ?>
+<?php if ( isset($options) && $this->getValue( 'cmds', $options ) ): ?>
 <?php $this->out($this->getValue( 'cmds', $options ), false ); ?>
 <?php endif;?>
-<?php if (!$this->getValue('do_not_log_pageview', $options ) ): ?>
+<?php if (isset($options) && ! $this->getValue('do_not_log_pageview', $options ) ): ?>
 owa_cmds.push(['trackPageView']);
 <?php endif;?>
-<?php if (!$this->getValue('do_not_log_clicks', $options ) ): ?>
+<?php if (isset($options) && ! $this->getValue('do_not_log_clicks', $options ) ): ?>
 owa_cmds.push(['trackClicks']);
 <?php endif;?>
-<?php if (!$this->getValue('do_not_log_domstream', $options ) ): ?>
+<?php if (isset($options) && ! $this->getValue('do_not_log_domstream', $options ) ): ?>
 owa_cmds.push(['trackDomStream']);
 <?php endif;?>
 
@@ -31,7 +31,7 @@ owa_cmds.push(['trackDomStream']);
 	_owa.src = owa_baseUrl + 'modules/base/js/owa.tracker-combined-min.js';
 	var _owa_s = document.getElementsByTagName('script')[0]; _owa_s.parentNode.insertBefore(_owa, _owa_s);
 }());
-<?php if ( ! $this->getValue( 'no_script_wrapper', $options ) ): ?>
+<?php if ( isset($options) && ! $this->getValue( 'no_script_wrapper', $options ) ): ?>
 //]]>
 </script>
 <!-- End Open Web Analytics Code -->
