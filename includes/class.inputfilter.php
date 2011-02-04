@@ -10,7 +10,7 @@
   * @email: dan@rootcube.com
   * @license: GNU General Public License (GPL)
   */
-class InputFilter {
+class owa_InputFilter {
 	var $tagsArray;			// default = empty array
 	var $attrArray;			// default = empty array
 

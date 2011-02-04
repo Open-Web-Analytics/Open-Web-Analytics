@@ -449,11 +449,11 @@ class owa_lib {
 	
 	public static function inputFilter($array) {
 		
-		if ( ! class_exists( 'InputFilter' ) ) {
+		if ( ! class_exists( 'owa_InputFilter' ) ) {
 			require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
 		}
 		
-		$f = new InputFilter;		
+		$f = new owa_InputFilter;		
 		return $f->process($array);
 		
 	}
