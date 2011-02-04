@@ -11,7 +11,7 @@
 	
 	<body>
 		<!-- <div class="host_app_nav"><img src="<?php echo $this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div> -->
-		<div id="header"><? include($this->setTemplate('header.tpl'));?></div>
+		<div id="header"><?php include($this->setTemplate('header.tpl'));?></div>
 		<?php include($this->setTemplate('msgs.tpl'));?>
 		<?php echo $body;?>
 		<!-- <div class="host_app_nav"><img src="<?php echo $this->makeImageLink('mediawiki_icon_50h.jpg');?>" align="absmiddle"> <a href="index.php?title=Special:SpecialPages">Return to your MediaWiki >></a></div> -->
