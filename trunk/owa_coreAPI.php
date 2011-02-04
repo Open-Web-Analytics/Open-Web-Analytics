@@ -1323,13 +1323,21 @@ class owa_coreAPI {
 	
 	public static function generateInstanceSpecificHash() {
 		
-		if ( defined('OWA_SECRET')) {
+		if ( defined( 'OWA_SECRET' ) ) {
 			$salt = OWA_SECRET;
 		} else {
 			$salt = '';
 		}
 		
-		return md5( $salt . OWA_DB_USER . OWA_DB_PASSWORD );
+		if ( defined( 'OWA_DB_USER' ) ) { 
+			$salt .= OWA_DB_USER; 
+		} 
+		
+		if ( defined( 'OWA_DB_PASSWORD' ) ) { 
+			$salt .= OWA_DB_PASSWORD; 
+		}	                 
+		
+		return md5( $salt ); 
 	}
 }
 

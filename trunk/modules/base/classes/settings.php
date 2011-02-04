@@ -401,7 +401,7 @@
  		
  		$values = $this->config->get('settings');
  		
- 		if ($values[$module] && array_key_exists($key, $values[$module])) {
+ 		if ( isset( $values[$module] ) && array_key_exists($key, $values[$module])) {
  			return $values[$module][$key];
  		} else {
  			return false;

@@ -26,7 +26,7 @@
 		<TD><?php echo $v['schema_uptodate'];?></TD>
 		<TD class="">
 		<?php if ($v['name'] != 'base'): ?>
-		<?php if ($v['status'] == 'active'): ?>
+		<?php if (isset($v['status']) && $v['status'] == 'active'): ?>
 			<a href="<?php echo $this->makeLink(array('do' => 'base.moduleDeactivate', 'module' => $v['name']));?>">Deactivate</a>
 		<?php else: ?>
 			<a href="<?php echo $this->makeLink(array('do' => 'base.moduleActivate', 'module' => $v['name']));?>">Activate</a>
