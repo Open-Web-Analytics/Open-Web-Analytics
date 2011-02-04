@@ -33,7 +33,7 @@ class owa_goalValueAll extends owa_metric {
 	function __construct() {
 	
 		$this->setName('goalValueAll');
-		$this->setLabel('Goal Value');
+		$this->setLabel('All Goals Value');
 		$this->setEntity('base.session');
 		$this->setColumn('goals_value');
 		$this->setSelect(sprintf("SUM(%s)", $this->getColumn()));

@@ -43,7 +43,7 @@ class owa_goalNValue extends owa_metric {
 		$goal = $gm->getGoal($goal_number);
 		$name = 'goal'.$goal_number.'Value';
 		$this->setName( $name );
-		$this->setLabel( $goal['name'] . ' Value');
+		$this->setLabel( "G$goal_number Value");
 		$this->setEntity( 'base.session' );
 		$column = 'goal_'.$goal_number.'_value';
 		$this->setColumn( $column );
