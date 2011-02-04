@@ -66,6 +66,9 @@ class owa_campaignHandlers extends owa_observer {
 				owa_coreAPI::debug('Not Persisting. Campaign already exists.');
 				return OWA_EHS_EVENT_HANDLED;
 			}	
+		} else {
+			owa_coreAPI::debug('Noting to handle. No Campaign properties found on event.');
+			return OWA_EHS_EVENT_HANDLED;
 		}
     }
 }

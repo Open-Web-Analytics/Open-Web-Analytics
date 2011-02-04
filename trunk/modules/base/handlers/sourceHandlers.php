@@ -66,6 +66,9 @@ class owa_sourceHandlers extends owa_observer {
 				owa_coreAPI::debug('Not Persisting. Source already exists.');
 				return OWA_EHS_EVENT_HANDLED;
 			}
+		} else {
+			owa_coreAPI::debug('Noting to handle. No source properties found on event.');
+			return OWA_EHS_EVENT_HANDLED;
 		}	
     }
 }

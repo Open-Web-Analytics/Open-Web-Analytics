@@ -551,7 +551,7 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler(array(
 				'base.new_session', 
 				'base.session_update', 
-				'commerce.transaction_persisted' ), 'conversionHandlers');
+				'ecommerce.transaction_persisted' ), 'conversionHandlers');
 		// User Agent dimension
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
