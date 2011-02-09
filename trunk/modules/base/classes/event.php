@@ -199,7 +199,7 @@ class owa_event {
 	 */
 	function setEnvGUID() {
 		
-		return crc32($this->properties['ua'].$this->properties['ip_address']);
+		return crc32( $this->get('ua') . $this->get('ip_address') );
 		
 	}
 	
