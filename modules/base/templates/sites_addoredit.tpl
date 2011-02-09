@@ -76,12 +76,6 @@
 			<div class="description">This is the page that your web server defaults to when there is no page specified in your URL (e.g. index.html). Use this setting to combine page views for www.domain.com and www.domain.com/index.html.</div>
 			<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[default_page]" value="<?php $this->out( $config['default_page'] );?>"></div>
 		</div>
-	
-		<div class="setting" id="google_maps_api_key">
-			<div class="title">Google Maps API Key</div>
-			<div class="description">Google maps API key is needed to produce Google maps of visitor geo-locations. You may obtain an API key from <a href="http://www.google.com/apis/maps/signup.html">this Google web site</a> for free.</div>
-			<div class="field"><input type="text" size="90" name="<?php echo $this->getNs();?>config[google_maps_api_key]" value="<?php $this->out( $config['google_maps_api_key'] );?>"></div>
-		</div>
     			
 		<div class="setting" id="ecommerce_reporting">	
 			<div class="title">e-commerce Reporting</div>
