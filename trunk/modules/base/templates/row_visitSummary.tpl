@@ -13,7 +13,7 @@
 						<TD class="owa_userLabel" style="width:auto;">
 							
 							<span class="owa_userNameLabel">
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')));?>">
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">
 							<?php
 							if (!empty($row['visitor_user_name'])) {
 								echo $row['visitor_user_name'];
