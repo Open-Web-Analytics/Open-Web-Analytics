@@ -346,17 +346,17 @@ function owa_trackAction( $action_name, $label ) {
  */
 function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision) {
 	
-	$label = $article->mTitle->mTextform;
+	$label = $article->getTitle()->getText();
 	return owa_trackAction( 'Article Created', $label );
 }
 
 function owa_editArticleAction($article, &$user, $text, $summary, 
 		$minoredit, &$watchthis, $sectionanchor, &$flags, $revision, 
-		&$status, $baseRevId, &$redirect) {
+		&$status, $baseRevId, &$redirect = '') {
 	
 	if ( $flags & EDIT_UPDATE ) {
 		
-		$label = $article->mTitle->mTextform;
+		$label = $article->getTitle()->getText();
 		return owa_trackAction( 'Article Edit', $label );
 		
 	} else {
@@ -367,7 +367,7 @@ function owa_editArticleAction($article, &$user, $text, $summary,
 
 function owa_deleteArticleAction( &$article, &$user, $reason, $id ) {
 	
-	$label = $article->mTitle->mTextform;
+	$label = $article->getTitle()->getText();
 	return owa_trackAction( 'Article Deleted', $label );
 }
 
@@ -379,7 +379,7 @@ function owa_addUserAction( $user, $byEmail ) {
 
 function owa_addUploadAction( &$image ) {
 	
-	$label = $image->mLocalFile->mime;
+	$label = $image->getLocalFile()->getMimeType();
 	return owa_trackAction( 'File Upload', $label );
 }
 
@@ -391,7 +391,7 @@ function owa_userLoginAction( &$user, &$inject_html ) {
 
 function editTalkPageAction( $article ) {
 
-	$label = $article->mTitle->mTextform;
+	$label = $article->getTitle()->getText();
 	return owa_trackAction( 'Talk Page Edit', $label );
 }
 

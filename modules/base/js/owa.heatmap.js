@@ -544,7 +544,7 @@ OWA.heatmap.prototype = {
 	getDim: function(d) {
 		
         var w=200, h=200, scr_h, off_h;
-        OWA.setSetting('debug', true);
+        //OWA.setSetting('debug', true);
         if( d.height ) { 
         	//OWA.debug("doc dims %s %s", d.width, d.height);
         	//return {'w':d.width,'h':d.height}; 
