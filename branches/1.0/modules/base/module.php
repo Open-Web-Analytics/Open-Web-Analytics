@@ -65,7 +65,7 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
 		// event procesing daemon jobs
-		$this->registerFilter('daemon_jobs', $this, 'eventProcessingDaemonJobs', 10);
+		$this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
 		
 		/**
 		 * Register Service Implementations
@@ -551,7 +551,7 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler(array(
 				'base.new_session', 
 				'base.session_update', 
-				'commerce.transaction_persisted' ), 'conversionHandlers');
+				'ecommerce.transaction_persisted' ), 'conversionHandlers');
 		// User Agent dimension
 		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
 		// Hosts
@@ -1225,7 +1225,7 @@ class owa_baseModule extends owa_module {
 		if ( ! $document_id ) {
 	
 			$eq = owa_coreAPI::getEventDispatch();
-			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $this->getParam('pageUrl') ), $siteId ) ) ;
+			$document_id = $d->generateId( $eq->filter('page_url',  urldecode( $pageUrl ), $siteId ) ) ;
 		}
 			
 		$d->getByColumn('id', $document_id);
@@ -1279,6 +1279,9 @@ class owa_baseModule extends owa_module {
 	
 	function getDomstream( $domstream_guid ) {
 		
+		if ( ! $domstream_guid ) {
+			return;
+		}
 		// Fetch document object
 		$d = owa_coreAPI::entityFactory('base.domstream');
 		//$d->load($this->getParam('domstream_id'));
@@ -1340,6 +1343,7 @@ class owa_baseModule extends owa_module {
     	
     }
     
+    /*
     function eventProcessingDaemonJobs($jobs) {
     	
     	$source = owa_coreAPI::getSetting( 'base', 'event_queue_type' );
@@ -1362,6 +1366,7 @@ class owa_baseModule extends owa_module {
     	
     	return $jobs;
     }
+	*/
 }
 
 

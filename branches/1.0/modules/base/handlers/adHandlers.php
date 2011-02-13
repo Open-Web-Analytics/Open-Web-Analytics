@@ -67,7 +67,11 @@ class owa_adHandlers extends owa_observer {
 				owa_coreAPI::debug('Not Persisting. Ad already exists.');
 				return OWA_EHS_EVENT_HANDLED;
 			}	
+		} else {
+			owa_coreAPI::debug('Noting to handle. No Ad properties found on event.');
+			return OWA_EHS_EVENT_HANDLED;
 		}
+		
     }
 }
 

@@ -66,7 +66,7 @@ class owa_hostip extends owa_location {
 		$country = '';
 		$country_code = '';
 		$latitude = '';
-		$longiude = '';
+		$longitude = '';
 		
 		// check to see if ip is in map
 		if ( array_key_exists('ip_address',$location_map) 
@@ -175,7 +175,7 @@ class owa_hostip extends owa_location {
 			$location_map['longitude'] = trim($longitude);
 			
 			// log headers if status is not a 200 
-			if (!strpos($crawler->response_code, '200')) {
+			if ( isset( $crawler->response_code ) && ! strpos( $crawler->response_code, '200' ) ) {
 				owa_coreAPI::debug(sprintf("HostIp web service response headers: %s", print_r($crawler->crawler->headers, true)));
 			}
 		}

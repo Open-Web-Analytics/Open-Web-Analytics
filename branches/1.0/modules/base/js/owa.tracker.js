@@ -478,14 +478,14 @@ OWA.tracker.prototype = {
 	},
 	
 	checkForOverlaySession: function() {
-		//OWA.setSetting('debug', true);
+		
 		// check to see if overlay sesson should be created
 		var a = this.getAnchorParam('owa_overlay');
 		
 		if ( a ) {
 			a = OWA.util.base64_decode(OWA.util.urldecode(a));
-			a = OWA.util.trim(a, '\u0000');
-			
+			//a = OWA.util.trim(a, '\u0000');
+			a = OWA.util.urldecode( a );
 			OWA.debug('overlay anchor value: ' + a);
 			//var domain = this.getCookieDomain();
 			

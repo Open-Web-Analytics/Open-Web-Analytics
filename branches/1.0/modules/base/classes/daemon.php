@@ -1,7 +1,11 @@
 <?php
 
-if ( ! class_exists('Daemon' ) ) {
+if ( ! class_exists( 'Daemon' ) ) {
 	require_once( OWA_INCLUDE_DIR.'Daemon.class.php' );
+}
+
+if ( ! class_exists( 'CronParser.php' ) ) {
+	require_once(OWA_INCLUDE_DIR.'CronParser.php');
 }
 
 class owa_daemon extends Daemon {
@@ -15,6 +19,7 @@ class owa_daemon extends Daemon {
 	var $lastExecutionTimeByJob = array();
 	var $jobsByPid = array();
 	var $defaultMaxWorkersPerJob = 3;
+	var $jobs;
 	
 	function __construct() {
 		
@@ -43,7 +48,9 @@ class owa_daemon extends Daemon {
 		if (isset($this->params['pid_file_location'])) {
 			$this->pidFileLocation = $this->params['pid_file_location'];
 		}
-
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$this->jobs = $s->getMap('backgound_jobs');
 		
 		$this->eq = owa_coreAPI::getEventDispatch();
 		
@@ -55,6 +62,7 @@ class owa_daemon extends Daemon {
 		$params = array();
 		// get params from the command line args
 		// $argv is a php super global variable
+		global $argv;
 		for ( $i=1; $i < count( $argv ); $i++ ) {
 			$it = split("=",$argv[$i]);
 			$params[$it[0]] = $it[1];
@@ -91,28 +99,49 @@ class owa_daemon extends Daemon {
 		
 		if ( array_key_exists($job_name, $this->workerCountByJob ) ) {
 			if ( $this->workerCountByJob[$job_name]	< $job_max_workers) {
+				owa_coreAPI::debug(sprintf(
+						"New worker processes is allowed for job: %s. %d of %d processes are active.", 
+						$job_name, 
+						$this->workerCountByJob[$job_name], $job_max_workers 
+				));
 				return true;
 			} else {
+				owa_coreAPI::debug(sprintf(
+						"New worker processes not allowed for job: %s. %d of %d processes are active.", 
+						$job_name, 
+						$this->workerCountByJob[$job_name], $job_max_workers 
+				));
 				return false;
 			}
 		} else {
+			owa_coreAPI::debug(sprintf(
+					"New worker processes is allowed for job: %s. %d of %d processes are active.", 
+					$job_name, 
+					$this->workerCountByJob[$job_name], $job_max_workers 
+			));
 			return true;
 		}	
 	}
 	
-	function isTimeForJob($job_name, $interval = 0) {
+	function isTimeForJob($cron_tab, $last_execution_time) {
 		
-		$now = time();
-		if (isset($this->lastExecutionTimeByJob[$job_name])) {
-			$last_exec = $this->lastExecutionTimeByJob[$job_name];
-		} else {
-			$last_exec = 0;
-		}
+		$cron = new CronParser();
+		$cron->calcLastRan($cron_tab);
+		$last_due = $cron->getLastRanUnix();
 		
-		if ($last_exec + $interval > $now) {
+		if ($last_due > $last_execution_time) {
 			return true;
 		} else {
 			return false;
+		}
+	}
+	
+	function getLastExecutionTime($job_name) {
+		
+		if ( array_key_exists( $job_name, $this->lastExecutionTimeByJob ) ) {
+			return $this->lastExecutionTimeByJob[$job_name];
+		} else {
+			return 0;
 		}
 	}
 	
@@ -123,29 +152,31 @@ class owa_daemon extends Daemon {
 				
 		if ( $this->isWorkerAvailable() ) {
 			
-			$jobs = $this->eq->filter('daemon_jobs', $job_list);
+			$jobs = $this->jobs;
 			
 			if ( $jobs ) {
 				$i = 0;
 				//for ($i = 0; $i < $available_workers; $i++) {
 				foreach ($jobs as $k => $job) {
 					
-					if ( $this->isAnotherWorkerAllowed( $k, $job['max_workers'] ) && $this->isTimeForJob($k, $job['interval']) ) {
+					if ( $this->isAnotherWorkerAllowed( $job['name'], $job['max_processes'] ) && 
+						 $this->isTimeForJob( $job['cron_tab'], $this->getLastExecutionTime( $job['name'] ) ) ) {
 						// fork a new child
 						$pid = pcntl_fork();
 						if ( ! $pid ) {
 							// this part is executed in the child
-			 				owa_coreAPI::debug( 'New child process executing command ' . print_r( $job[$i], true ) );
+			 				owa_coreAPI::debug( 'New child process executing job ' . print_r( $job, true ) );
 			 				pcntl_exec( OWA_DIR.'cli.php', $job['cmd'] ); // takes an array of arguments
 			 				exit();
 			 			} elseif ($pid == -1) {
 			 				// happens when something goes wrong and fork fails (handle errors here)
+			 				owa_coreAPI::debug( 'Could not fork new child' );
 			 			} else {
 			 				// this part is executed in the parent
 							// We add pids to a global array, so that when we get a kill signal
 							// we tell the kids to flush and exit.
 							if ( array_key_exists( $k, $this->workerCountByJob ) ) {
-								$this->workerCountByJob[$k]++
+								$this->workerCountByJob[$k]++;
 							} else {
 								$this->workerCountByJob[$k] = 1;
 								$this->lastExecutionTimeByJob[$k] = time();

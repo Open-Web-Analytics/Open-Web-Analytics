@@ -532,14 +532,22 @@ OWA.heatmap.prototype = {
 		this.canvas.className = 'owa_blur';
 	},
 	
+	getDocHeight : function() {
+	    var D = document;
+	    return Math.max(
+	        Math.max(D.body.scrollHeight, D.documentElement.scrollHeight),
+	        Math.max(D.body.offsetHeight, D.documentElement.offsetHeight),
+	        Math.max(D.body.clientHeight, D.documentElement.clientHeight)
+	    );
+	},
 
 	getDim: function(d) {
 		
         var w=200, h=200, scr_h, off_h;
-        
+        //OWA.setSetting('debug', true);
         if( d.height ) { 
         	//OWA.debug("doc dims %s %s", d.width, d.height);
-        	return {'w':d.width,'h':d.height}; 
+        	//return {'w':d.width,'h':d.height}; 
         }
         
         if( d.body ) {
@@ -549,7 +557,8 @@ OWA.heatmap.prototype = {
             if( scr_h && off_h ) h=Math.max(scr_h, off_h);
         }
         
-        //OWA.debug("doc dims %s %s", w, h);
+        h = this.getDocHeight();
+        OWA.debug("doc dims %s %s", w, h);
         
         return {'w': w,'h':h};
     },

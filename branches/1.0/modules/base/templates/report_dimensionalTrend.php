@@ -56,7 +56,7 @@
 	var dimurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 																'metrics' => $tab['metrics'], 
 																'dimensions' => $dimensions, 
-																'sort' => $sort,
+																'sort' => $tab['sort'],
 																'resultsPerPage' => $resultsPerPage,
 																'format' => 'json',
 																'constraints' => $constraints

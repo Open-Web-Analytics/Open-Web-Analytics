@@ -38,10 +38,11 @@ class owa_reportBrowserDetailController extends owa_reportController {
 		
 		$this->set('dimension_properties', array('browser_family' => $browser));
 		$this->set('dimension_template', 'dimension_browser.php');
-		$this->setSubview('base.reportDimensionDetail');
+		$this->setSubview('base.reportDimension');
 		$this->setTitle('Browser Detail:');
 		$this->set('metrics', 'visits,pageViews,bounces');
-		//$this->set('dimension', 'referralSearchTerms');
+		$this->set('dimensions', 'browserVersion');
+		$this->set('sort', 'visits-');
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this browser type.');
 		$this->set('constraints', 'browserType=='.urlencode($browser));	

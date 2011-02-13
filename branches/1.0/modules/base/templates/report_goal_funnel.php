@@ -131,7 +131,7 @@ for (step in funnel_json) {
 }
 </script>
 <?php else: ?>
-No Funnel has been configured for this goal. <a href="<?php echo $this->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $goal_number, 'siteId' => $params['site_id']));?>">Add a funnel</a>
+No Funnel has been configured for this goal. <a href="<?php echo $this->makeLink(array('do' => 'base.optionsGoalEntry', 'goal_number' => $goal_number, 'siteId' => $params['siteId']));?>">Add a funnel</a>
 <?php endif;?>
 
 <script>

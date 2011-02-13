@@ -401,7 +401,7 @@
  		
  		$values = $this->config->get('settings');
  		
- 		if ($values[$module] && array_key_exists($key, $values[$module])) {
+ 		if ( isset( $values[$module] ) && array_key_exists($key, $values[$module])) {
  			return $values[$module][$key];
  		} else {
  			return false;
@@ -410,7 +410,7 @@
  	}
  	
  	/**
- 	 * Sets configuration value. will not be persisted. NEEDED?
+ 	 * Sets configuration value. will not be persisted.
  	 * 
  	 * @param string $module the name of the module
  	 * @param string $key the configuration key
@@ -424,8 +424,6 @@
  		$values[$module][$key] = $value;
  		
  		$this->config->set('settings', $values);
- 		
- 		return;
  	}
  	
  	
@@ -638,6 +636,7 @@
 				'mailer-password'					=> '',
 				'queue_events'						=> false,
 				'event_queue_type'					=> '',
+				'event_secondary_queue_type'		=> '',
 				'use_remote_event_queue'			=> true,
 				'remote_event_queue_type'			=> 'http',
 				'remote_event_queue_endpoint'		=> '',
@@ -689,7 +688,8 @@
 				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file',
 				'disabledEndpoints'					=> array(),
-				'disableAllEndpoints'				=> false
+				'disableAllEndpoints'				=> false,
+				'processQueuesJobSchedule'				=> '10 * * * *'
 				
 			)
 		);

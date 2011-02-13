@@ -136,6 +136,12 @@ var OWA = {
 		
 		// set global is overlay actve flag
 		OWA.overlayActive = true;
+		//alert(JSON.stringify(p));
+		
+		if (p.hasOwnProperty('api_url')) {
+				
+			OWA.setApiEndpoint(p.api_url);
+		}
 		
 	    // get param from cookie	
 		//var params = OWA.util.parseCookieStringToJson(p);

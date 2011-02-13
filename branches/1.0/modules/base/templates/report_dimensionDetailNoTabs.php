@@ -1,4 +1,4 @@
-<?php if ($dimension_properties): ?>
+<?php if (isset($dimension_properties) && $dimension_properties): ?>
 <div class="owa_reportSectionContent">
 	<?php echo $this->renderDimension($dimension_template, $dimension_properties);?>
 </div>
@@ -10,7 +10,7 @@
 	<div id="trend-title" class="owa_reportHeadline"></div>	
 	<div id="trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
 	
-	<?php if($pie): ?>	
+	<?php if(isset($pie) && $pie): ?>	
 	<div id="pie" style="min-width:300px;"></div>
 	<script>
 	var hpurl = '<?php echo $this->makeApiLink(array(

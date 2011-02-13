@@ -145,23 +145,13 @@
 				</select>
 			</div>
 		</div>
-	
-		<div class="setting" id="geolocation_service">	
-			<div class="title">Geo-location Service</div> 
-			<div class="description">Select the geo-location service to use.</div>
-			<div class="field">
-				<select name="<?php echo $this->getNs();?>config[base.geolocation_service]">
-					<option value="hostip" <?php if ($config['geolocation_service'] == 'hostip'):?>SELECTED<?php endif;?>>Hostip.info Web Service (free)</OPTION>
-				</select>
-			</div>
-		</div>
-	
+		
 		<div class="setting" id="google_maps_api_key">
 			<div class="title">Google Maps API Key</div>
 			<div class="description">Google maps API key is needed to produce Google maps of visitor geo-locations. You may obtain an API key from <a href="http://www.google.com/apis/maps/signup.html">this Google web site</a> for free.</div>
 			<div class="field"><input type="text" size="90" name="<?php echo $this->getNs();?>config[base.google_maps_api_key]" value="<?php echo $config['google_maps_api_key']?>"></div>
 		</div>
-    
+		
 	</fieldset>
 		
 	<BR>
@@ -190,7 +180,7 @@
 	
 		<div class="setting" id="async_log_dir">	
 			<div class="title">Event Log File Directory</div>
-			<div class="description">This is the location of log file that OWA will store events in untill they are processed (e.g. /path/to/owa/log/file/)</div>
+			<div class="description">This is the file system path of the file that OWA will write queued events to when Event Queuing mode is turned on. (e.g. /path/to/owa/log/file.txt)</div>
 			<div class="field"><input type="text" size="80" name="<?php echo $this->getNs();?>config[base.async_log_dir]" value="<?php echo $config['async_log_dir']?>"></div>
 		</div>
 	
@@ -223,24 +213,6 @@
 	</fieldset>
 	
 	<BR>
-
-	
-	
-	<fieldset name="owa-reports-options" class="options">
-		
-		<legend>Presentation</legend>
-		
-		<div class="setting" id="click_drawing_mode">	
-			<div class="title">Click Drawing Mode</div>
-			<div class="description">Controls the layout mode that will be used to plot clicks when producing scatter-plots and heatmaps.</div>
-			<div class="field">
-				<select name="<?php echo $this->getNs();?>config[base.click_drawing_mode]">
-					<option value="center_on_page" <?php if ($config['click_drawing_mode'] == 'center_on_page'):?>SELECTED<?php endif;?>>Content centered</option>
-					<option value="expandable" <?php if ($config['click_drawing_mode'] == 'expandable'):?>SELECTED<?php endif;?>>Content resizable</option>
-				</select>
-			</div>
-		</div>
-	</fieldset>
 	
 	<fieldset name="owa-ecommerce-options" class="options">
 		
