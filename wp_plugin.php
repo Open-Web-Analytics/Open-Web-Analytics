@@ -35,7 +35,7 @@ add_action('init', 'owa_handleSpecialActionRequest');
 add_filter('bloginfo_url', 'add_feed_sid');
 add_action('admin_menu', 'owa_dashboard_menu');
 add_action('comment_post', 'owa_logComment');
-add_action('transition_comment_status', 'owa_logCommentEdit');
+add_action('transition_comment_status', 'owa_logCommentEdit',10,3);
 add_action('admin_menu', 'owa_options_menu');
 add_action('user_register', 'owa_userRegistrationActionTracker');
 add_action('wp_login', 'owa_userLoginActionTracker');
