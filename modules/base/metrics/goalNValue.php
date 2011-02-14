@@ -35,7 +35,7 @@ class owa_goalNValue extends owa_metric {
 
 	function __construct( $params ) {
 		
-		if ( array_key_exists( 'goal_number' ), $params ) {
+		if ( array_key_exists( 'goal_number', $params ) ) {
 			$goal_number = $params['goal_number'];
 		}
 		$siteId = owa_coreAPI::getRequestParam('siteId');
