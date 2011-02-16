@@ -1127,6 +1127,8 @@ class owa_resultSetManager extends owa_base {
 			$formula = $cm->getFormula();
 			$div_by_zero = false;
 			
+			//owa_coreAPI::debug( "checking calculated metrics..." );
+			//owa_coreAPI::debug( $rs->aggregates );
 			foreach ($cm->getChildMetrics() as $metric_name) {
 				
 				$ag_value = $rs->getAggregateMetric($metric_name);
@@ -1181,12 +1183,12 @@ class owa_resultSetManager extends owa_base {
 					$rs->appendRow($k, 'metric', $cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
 				}
 			}
-			
-			foreach ($this->childMetrics as $metric_name) {
+		}
+		
+		// clean up by removing child metrics before returning the result set.
+		foreach ($this->childMetrics as $metric_name) {
 				
-				$rs->removeMetric($metric_name);
-			}
-			
+			$rs->removeMetric($metric_name);
 		}
 		
 		return $rs;

@@ -324,11 +324,11 @@ class owa_paginatedResultSet {
 	}
 	
 	function getAggregateMetric($name) {
-		
-		if (array_key_exists($name, $this->aggregates)) {
+		 
+		if ( array_key_exists( $name, $this->aggregates ) ) {
 			return $this->aggregates[$name]['value'];
 		} else {
-			owa_coreAPI::debug("No aggregate metric called $name found.");
+			owa_coreAPI::debug( "No aggregate metric called $name found." );
 		}
 	}
 	
