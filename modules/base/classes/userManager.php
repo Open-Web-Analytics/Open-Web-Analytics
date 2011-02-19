@@ -33,37 +33,33 @@
 class owa_userManager extends owa_base {
 	
 	function __construct() {
-		
-		$this->owa_base();
-				
-		return;
-	}
-	
-	function owa_userManager() {
-	
-		return $this->__construct();
+						
+		return parent::__construct();
 	}
 	
 	function createNewUser($user_params) {
-	
-		// save new user to db
-		$auth = &owa_auth::get_instance();
-		$temp_passkey = $auth->generateTempPasskey($this->params['user_id']);
-		$u = owa_coreAPI::entityFactory('base.user');
-		$u->set('user_id', $user_params['user_id']);
-		$u->set('role', $user_params['role']);
-		$u->set('real_name', $user_params['real_name']);
-		$u->set('email_address', $user_params['email_address']);
-		$u->set('temp_passkey', $temp_passkey);
-		$u->set('creation_date', time());
-		$u->set('last_update_date', time());
-		$ret = $u->create();
+
+		if ( isset( $user_params['password'] ) ) {
+			$password = $user_params['password'];
+		} else {
+			$password = '';
+		}
 		
-		if ($ret == true):
-			return $temp_passkey;
-		else:
+		// save new user to db		
+		$u = owa_coreAPI::entityFactory('base.user');
+		$ret = $u->createNewUser( 
+				$user_params['user_id'], 
+				$user_params['role'], 
+				$password, 
+				$user_params['email_address'], 
+				$user_params['real_name']
+		);
+		
+		if ( $ret ) {
+			return $u->get('temp_passkey');
+		} else {
 			return false;
-		endif;
+		}
 	
 	}
 	
@@ -73,14 +69,12 @@ class owa_userManager extends owa_base {
 
 		$ret = $u->delete($user_id, 'user_id');
 		
-		if ($ret == true):
+		if ( $ret ) {
 			return true;
-		else:
+		} else {
 			return false;
-		endif;
-	
+		}
 	}
-	
 }
 
 ?>
