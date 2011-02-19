@@ -16,9 +16,9 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
+
 
 /**
  * Add Sites View
@@ -72,7 +72,7 @@ class owa_sitesAddController extends owa_adminController {
 		$this->setRequiredCapability('edit_sites');
 		
 		// Config for the domain validation
-		$domain_conf = array('substring' => 'http', 'position' => 0, 'operator' => '!=', 'errorMsgTemplate' => 'Please remove the "http://" from your begining of your domain.');
+		$domain_conf = array('substring' => 'http', 'position' => 0, 'operator' => '!=', 'errorMsgTemplate' => 'Please remove the "http://" from your beginning of your domain.');
 	
 		// Add validations to the run
 		$this->addValidation('domain', $this->params['domain'], 'subStringPosition', $domain_conf);
@@ -93,17 +93,15 @@ class owa_sitesAddController extends owa_adminController {
 	function action() {
 				
 		$this->params['domain'] = $this->params['protocol'].$this->params['domain'];
-						
-		$site = owa_coreAPI::entityFactory('base.site');
-		$site_id = md5($this->params['domain']);
-		$site->set('id', $site->generateId($site_id));
-		$site->set('site_id', $site_id);
-		$site->set('name', $this->params['name']);
-		$site->set('domain', $this->params['domain']);
-		$site->set('description', $this->params['description']);
-		$site->set('site_family', $this->params['site_family']);
-		$site->create();
 		
+		$sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
+		
+		$ret = $sm->createNewSite( $this->getParam( 'domain' ), 
+							$this->getParam( 'name' ), 
+							$this->getParam( 'description' ), 
+							$this->getParam( 'site_family' )
+		);
+						
 		$this->setRedirectAction('base.sites');
 		$this->set('status_code', 3202);
 	}

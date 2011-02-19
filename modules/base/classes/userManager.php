@@ -30,9 +30,6 @@
  * @since		owa 1.0.0
  */
 
-
-
-
 class owa_userManager extends owa_base {
 	
 	function __construct() {
