@@ -1028,10 +1028,15 @@ OWA.tracker.prototype = {
 	 *
 	 */
 	_getTarget : function(e) {
-	
+		
 	    // Determine the actual html element that generated the event
 	    var targ = e.target || e.srcElement;
 	    
+	    if( typeof targ == 'undefined' || targ==null ) {
+	    
+	    	return null; //not all ie events provide srcElement
+	    } 
+		
 		if (targ.nodeType == 3) {
 		    // defeat Safari bug
 	        targ = target.parentNode;
@@ -1105,7 +1110,7 @@ OWA.tracker.prototype = {
 		
 	clickEventHandler : function(e) {
 		
-		// hack for IE7
+		// hack for IE
 		e = e || window.event;
 		
 		var click = new OWA.event();
@@ -1192,7 +1197,7 @@ OWA.tracker.prototype = {
 		
 	movementEventHandler : function(e) {
 		
-		// hack for IE7
+		// hack for IE
 		e = e || window.event;
 		var now = this.getTime();
 		if (now > this.last_movement + this.getOption('movementInterval')) {
@@ -1211,13 +1216,13 @@ OWA.tracker.prototype = {
 	bindScrollEvents : function() {
 		
 		var that = this;
-		window.onscroll = function (e) {that.scrollEventHandler(e);}
+		window.onscroll = function (e) { that.scrollEventHandler( e ); }
 	},
 	
 	scrollEventHandler : function(e) {
 				
-		// hack for IE7
-		e = e || window.event;
+		// hack for IE
+		var e = e || window.event;
 		
 		var now = this.getTimestamp();
 		
@@ -1226,10 +1231,6 @@ OWA.tracker.prototype = {
 		var coords = this.getScrollingPosition();
 		event.set('x', coords.x);
 		event.set('y', coords.y);
-		var targ = this._getTarget(e);
-		event.set("dom_element_name", targ.name);
-	    event.set("dom_element_value", targ.value);
-	    event.set("dom_element_id", targ.id);
 	    this.addToEventQueue(event);
 		this.last_scroll = now;
 
@@ -1269,6 +1270,9 @@ OWA.tracker.prototype = {
 	},
 	
 	keypressEventHandler : function(e) {
+	
+		e = e || window.event;
+		
 		var targ = this._getTarget(e);
 		
 		if (targ.tagName === 'INPUT' && targ.type === 'password') {
