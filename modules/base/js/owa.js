@@ -1,4 +1,4 @@
-var OWA = {
+	var OWA = {
 
 	items: {},
 	overlay: '',
@@ -90,12 +90,15 @@ var OWA = {
 		
 		if ( debugging ) {
 		
-			if(window.console) {
-			
-				if (window.console.firebug) { 
-			 		console.log.apply(this, arguments);
-				} else {
-					console.log.apply(console, arguments);
+			if( window.console ) {
+				
+				if (console.log.apply) {
+				
+					if (window.console.firebug) { 
+				 		console.log.apply(this, arguments);
+					} else {
+						console.log.apply(console, arguments);
+					}
 				}
 			}
 		}
