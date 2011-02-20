@@ -174,8 +174,30 @@ class owa_caller extends owa_base {
 	function placeHelperPageTags($echo = true, $options = array()) {
 		
 		if(!owa_coreAPI::getRequestParam('is_robot')) {
+		
+			// check to see if first hit tag is needed
+			if ( isset( $options['delay_first_hit'] ) || owa_coreAPI::getSetting('base', 'delay_first_hit')) {
+			
+				$service = &owa_coreAPI::serviceSingleton();
+				//check for persistant cookie
+				$v = $service->request->getOwaCookie('v');
 				
-			$tag = owa_coreAPI::getJsTrackerTag( $this->getSiteId(), $options );
+				if (empty($v)) {
+					
+					$options['first_hit_tag'] = true;
+				}		
+			}
+			
+			if ( ! class_exists( 'owa_template' ) ) {
+				require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
+			}
+		
+			$t = new owa_template();
+			$t->set_template('js_helper_tags.tpl');
+				
+			$tracking_code = owa_coreAPI::getJsTrackerTag( $this->getSiteId(), $options );
+			$t->set('tracking_code', $tracking_code);
+			$tag = $t->fetch();
 			
 			if ($echo == false) {
 				return $tag;
