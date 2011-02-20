@@ -1257,19 +1257,6 @@ class owa_coreAPI {
 		
 		$t = new owa_template();
 		
-		// check to see if first hit tag is needed
-		if (owa_coreAPI::getSetting('base', 'delay_first_hit')) {
-		
-			$service = &owa_coreAPI::serviceSingleton();
-			//check for persistant cookie
-			$v = $service->request->getOwaCookie('v');
-			
-			if (empty($v)) {
-				
-				$options['first_hit_tag'] = true;
-			}		
-		}
-		
 		//check to see if we shuld log clicks.
 		if ( ! owa_coreAPI::getSetting( 'base', 'log_dom_clicks' ) ) {
 			$options['do_not_log_clicks'] = true;
@@ -1288,7 +1275,7 @@ class owa_coreAPI {
 		$t->set( 'site_id', $site_id );
 		$t->set( 'options', $options);
 		
-		$t->set_template('js_helper_tags.tpl');
+		$t->set_template('js_log_tag.tpl');
 		return $t->fetch();
 	}
 	

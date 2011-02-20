@@ -7,4 +7,4 @@ document.write('<img src="<?php echo $this->makeAbsolutelink(array('action' => '
 </script>
 <?php endif;?>
 
-<?php include($this->getTemplatePath('base','js_log_tag.tpl')); ?>
+<?php echo $tracking_code; ?>

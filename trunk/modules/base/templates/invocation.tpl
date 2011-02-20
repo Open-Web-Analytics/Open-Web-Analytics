@@ -5,8 +5,7 @@
 	
 		<textarea cols="110" rows="18">
 				
-
-<?php include('js_log_tag.tpl');?>
+<?php echo $tracking_code; ?>
 				
 		</textarea>
 	</div>		
