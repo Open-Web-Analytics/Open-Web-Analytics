@@ -307,6 +307,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('activate', 'base.moduleActivateCli');
 		$this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
 		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
+		$this->registerCliCommand('add-site', 'base.sitesAddCli');
 		
 		/**
 		 * Register API methods

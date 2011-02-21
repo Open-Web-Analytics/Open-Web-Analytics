@@ -83,11 +83,13 @@ class owa_sitesInvocationView extends owa_view {
 		$this->t->set('page_title', 'Tracking Tags');
 		$this->body->set('site', $site);
 		$this->body->set('name', $name);
+		$this->body->set('options', array());
 		// load body template
 		$this->body->set_template('sites_invocation.tpl');
 		
 		$this->body->set('site_id', $this->get('site_id'));
-	
+		
+		$this->body->set('tracking_code', owa_coreAPI::getJsTrackerTag( $this->get('site_id') ) );
 	}
 }
 

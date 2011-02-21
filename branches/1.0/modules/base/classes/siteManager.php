@@ -17,9 +17,9 @@
 //
 
 /**
- * User Manager Class
+ * Site Manager Class
  * 
- * handels the common tasks associated with creating and manipulating user accounts
+ * handels the common tasks associated with creating and manipulating tracked sites
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -27,52 +27,44 @@
  * @category    owa
  * @package     owa
  * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @since		owa 1.4.1
  */
 
-class owa_userManager extends owa_base {
+class owa_siteManager extends owa_base {
 	
 	function __construct() {
-						
+		
 		return parent::__construct();
 	}
+		
+	function createNewSite( $domain, $name = '', $description = '', $site_family = '' ) {
 	
-	function createNewUser($user_params) {
-
-		if ( isset( $user_params['password'] ) ) {
-			$password = $user_params['password'];
-		} else {
-			$password = '';
+		$site_id = md5( $domain );
+		$site = owa_coreAPI::entityFactory( 'base.site' );
+		$id = $site->generateId( $site_id );
+		$site->load( $id );
+		
+		if ( ! $name ) {
+			$name = $domain;
 		}
 		
-		// save new user to db		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$ret = $u->createNewUser( 
-				$user_params['user_id'], 
-				$user_params['role'], 
-				$password, 
-				$user_params['email_address'], 
-				$user_params['real_name']
-		);
-		
-		if ( $ret ) {
-			return $u->get('temp_passkey');
+		if ( ! $site->wasPersisted() ) {
+	
+			$site->set('id', $id );
+			$site->set('site_id', $site_id );
+			$site->set('name', $name );
+			$site->set('domain', $domain );
+			$site->set('description', $description);
+			$site->set('site_family', $site_family);
+			$ret = $site->create();
+			
+			if ($ret) {
+				return $site_id;
+			}
+			
 		} else {
-			return false;
-		}
-	
-	}
-	
-	function deleteUser($user_id) {
-	
-		$u = owa_coreAPI::entityFactory('base.user');
-
-		$ret = $u->delete($user_id, 'user_id');
-		
-		if ( $ret ) {
-			return true;
-		} else {
-			return false;
+			
+			owa_coreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
 		}
 	}
 }
