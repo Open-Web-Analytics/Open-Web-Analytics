@@ -232,7 +232,7 @@ OWA.tracker.prototype = {
 	// properties that should be added to all events
 	globalEventProperties: {},
 	// state sores that can be shared across sites
-	sharableStateStores: ['v', 's', 'c'],
+	sharableStateStores: ['v', 's', 'c', 'b'],
 	// Time When tracker is loaded
 	startTime: null,
 	// time when tracker is unloaded

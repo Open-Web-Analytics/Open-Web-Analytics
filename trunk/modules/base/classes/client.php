@@ -48,11 +48,16 @@ class owa_client extends owa_caller {
 	var $isTrafficAttributed;
 
 	public function __construct($config = null) {
-	
+			
+		parent::__construct($config);
+		
 		$this->pageview_event = $this->makeEvent();
 		$this->pageview_event->setEventType('base.page_request');
-				
-		return parent::__construct($config);
+		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie');
+		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie');
+		owa_coreAPI::registerStateStore('b', '', '', 'json', 'cookie');
+		$cwindow = owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' );
+		owa_coreAPI::registerStateStore('c', time()+3600*24*$cwindow , '', 'json', 'cookie');
 	}
 	
 	public function setPageTitle($value) {
