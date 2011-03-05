@@ -36,7 +36,7 @@ class owa_state {
 	var $is_dirty;
 	var $dirty_stores;
 	var $default_store_type = 'cookie';
-	var $stores_with_cdh = array('c','v','s');
+	var $stores_with_cdh = array('c','v','s', 'b');
 	var $store_formats = array ('v' => 'assoc', 's' => 'assoc');
 	var $initial_state = array();
 	
@@ -55,7 +55,12 @@ class owa_state {
 	
 	}
 	
-	function get($store, $name = '') {
+	public function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie' ) {
+		
+		$this->stores_meta[$name] = array('expiration' => $expiration, 'length' => $length, 'format' => $format, 'type' => $type);
+	}
+	
+	public function get($store, $name = '') {
 		owa_coreAPI::debug("Getting state - store: ".$store.' key: '.$name);
 		
 		if ( ! isset($this->stores[$store] ) ) {

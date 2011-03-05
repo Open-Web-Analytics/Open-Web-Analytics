@@ -1118,33 +1118,26 @@ class owa_lib {
 	
 	public static function sanitizeCookieDomain($domain) {
 		
-		$pos = strpos($domain, '.');
+		//check for two dots in the domain.
+		$twodots = substr_count($domain, '.');
 		
-		//check for local host
-		if ( strpos( $domain, 'localhost' ) ) {
-		 	return false;
-		
-		// check for local domain 	
-		} elseif ( $pos === false) {
-			
+		if ( $twodots != 2 ) {
 			return false;
-			
-		// ah-ha a real domain
-		} else {
-			// Remove port information.
-     		$port = strpos( $domain, ':' );
-			if ( $port ) {
-				$domain = substr( $domain, 0, $port );
-			}
-			
-			// check for leading period, add if missing
-			$period = substr( $domain, 0, 1);
-			if ( $period != '.' ) {
-				$domain = '.'.$domain;
-			}
-			
-			return $domain;
 		}
+				
+		// Remove port information.
+ 		$port = strpos( $domain, ':' );
+		if ( $port ) {
+			$domain = substr( $domain, 0, $port );
+		}
+			
+		// check for leading period, add if missing
+		$period = substr( $domain, 0, 1);
+		if ( $period != '.' ) {
+			$domain = '.'.$domain;
+		}
+			
+		return $domain;
 	}
 }
 
