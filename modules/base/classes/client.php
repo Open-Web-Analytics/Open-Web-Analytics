@@ -42,6 +42,8 @@ class owa_client extends owa_caller {
 	
 	var $stateInit;
 	
+	var $organicSearchEngines;
+	
 	// set one traffic has been attributed.
 	var $isTrafficAttributed;
 
@@ -49,7 +51,7 @@ class owa_client extends owa_caller {
 	
 		$this->pageview_event = $this->makeEvent();
 		$this->pageview_event->setEventType('base.page_request');
-		
+				
 		return parent::__construct($config);
 	}
 	
@@ -85,6 +87,7 @@ class owa_client extends owa_caller {
 			$this->setLastRequestTime( $event );
 			$this->setSessionId( $event );
 			$this->setNumberPriorSessions( $event );
+			$this->setDaysSinceLastSession( $event );
 			$this->setTrafficAttribution( $event );
 			// clear old style session cookie
 			$session_store_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'site_session_param'), $this->site_id);
@@ -128,7 +131,7 @@ class owa_client extends owa_caller {
 		}
 		
 		// set property on the event object
-		$this->setGlobalEventProperty('num_prior_sessions', $nps);
+		$this->setGlobalEventProperty('nps', $nps);
 	}
 	
 	private function setFirstSessionTimestamp( &$event ) {
@@ -141,6 +144,37 @@ class owa_client extends owa_caller {
 		}
 		
 		$this->setGlobalEventProperty( 'fsts', $fsts );
+		
+		// calc days since first session
+		$dsfs = round( ( $fsts - $event->get( 'timestamp' ) ) / ( 3600 * 24 ) ) ;
+		owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'dsfs', $dsfs , 'cookie', true);
+		$this->setGlobalEventProperty( 'dsfs', $dsfs );
+	}
+	
+	private function setDaysSinceLastSession( &$event ) {
+		
+		owa_coreAPI::debug('setting days since last session.');
+		$dsps = '';
+		if ( $this->getGlobalEventProperty( 'is_new_session' ) ) {
+			owa_coreAPI::debug( 'timestamp: ' . $event->get( 'timestamp' ) );
+			$last_req = $this->getGlobalEventProperty( 'last_req' );
+			if ( ! $last_req ) {
+				$last_req = $event->get( 'timestamp' );
+			}
+			owa_coreAPI::debug( 'last_req: ' . $last_req );
+			$dsps = round( ( $event->get( 'timestamp' ) - $last_req ) / ( 3600*24 ) );
+			owa_coreAPI::setState('s', 'dsps', $dsps , 'cookie', true);
+		}
+		
+		if ( ! $dsps ) {
+			$dsps = owa_coreAPI::getState( 's', 'dsps' );
+			
+			if ( ! $dsps ) {
+				$dsps = 0;
+			}
+		}
+		
+		$this->setGlobalEventProperty( 'dsps', $dsps );
 	}
 	
 	private function setSessionId( &$event ) {
@@ -266,6 +300,8 @@ class owa_client extends owa_caller {
 		if (owa_coreAPI::getStateParam('overlay')) {
 			return false;
 		}
+		
+		$this->setGlobalEventProperty( 'referer', owa_coreAPI::getServerParam('HTTP_REFERER') );
 		
 		// needed by helper page tags function so it can append to first hit tag url	
 		if (!$this->getSiteId()) {

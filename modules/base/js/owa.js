@@ -36,6 +36,11 @@
 		}
 	},
 	
+	registerStateStore : function ( name, expiration, length, format ) {
+		this.initializeStateManager();
+		return this.state.registerStore(name, expiration, length, format);
+	},
+	
 	checkForState: function( store_name ) {
 	
 		this.initializeStateManager();
@@ -66,10 +71,10 @@
 		return this.state.get(store_name, key);
 	},
 	
-	clearState : function(store_name) {
+	clearState : function(store_name, key) {
 	
 		this.initializeStateManager();
-		return this.state.clear(store_name);
+		return this.state.clear(store_name, key);
 	},
 	
 	getStateStoreFormat: function(store_name) {
@@ -179,8 +184,29 @@ OWA.stateManager.prototype = {
 	cookies: '',
 	stores: {},
 	storeFormats: {},
+	storeMeta: {},
 	
-	isPresent: function( store_name ) {
+	registerStore : function ( name, expiration, length, format ) {
+		this.storeMeta[name] = {'expiration' : expiration, 'length': length, 'format' : format};
+	},
+	
+	getExpirationDays : function ( store_name ) {
+		
+		if ( this.storeMeta.hasOwnProperty( store_name ) ) {
+			
+			return this.storeMeta[store_name].expiration;
+		}
+	},
+	
+	getFormat : function ( store_name ) {
+		
+		if ( this.storeMeta.hasOwnProperty( store_name ) ) {
+			
+			return this.storeMeta[store_name].format;
+		}
+	},
+	
+	isPresent: function ( store_name ) {
 		
 		if ( this.stores.hasOwnProperty( store_name ) ) {
 			return true;
@@ -190,14 +216,14 @@ OWA.stateManager.prototype = {
 	set: function(store_name, key, value, is_perminant,format, expiration_days) {
 		
 		if ( ! this.isPresent( store_name ) ) {
-			this.load(store_name);
+			this.load( store_name );
 		}
 		
 		if ( ! this.isPresent( store_name ) ) {
-			OWA.debug('Creating state store (%s)', store_name);
+			OWA.debug( 'Creating state store (%s)', store_name );
 			this.stores[store_name] = {};
 			// add cookie domain hash
-			if (OWA.getSetting('hashCookiesToDomain')) {
+			if ( OWA.getSetting( 'hashCookiesToDomain' ) ) {
 				this.stores[store_name].cdh = OWA.util.getCookieDomainHash(OWA.getSetting('cookie_domain'));
 			}
 		}
@@ -207,6 +233,8 @@ OWA.stateManager.prototype = {
 		} else {
 			this.stores[store_name] = value;
 		}
+		
+		format = this.getFormat(store_name);
 		
 		if ( ! format ) {
 			
@@ -221,6 +249,8 @@ OWA.stateManager.prototype = {
 		} else {
 			state_value = OWA.util.assocStringFromJson(this.stores[store_name]);
 		}
+		
+		expiration_days = this.getExpirationDays( store_name );
 		
 		if ( ! expiration_days ) {
 			
@@ -245,8 +275,11 @@ OWA.stateManager.prototype = {
 		
 			if (value) {
 				
+				format = this.getFormat(store_name);
 				this.stores[store_name] = value;
 				this.storeFormats[store_name] = format;
+				
+				
 				
 				if (format === 'json') {
 					cookie_value = JSON.stringify(value);
@@ -257,12 +290,8 @@ OWA.stateManager.prototype = {
 		
 			var domain = OWA.getSetting('cookie_domain') || document.domain;
 			
-			if ( ! expiration_days ) {
-				
-				if ( is_perminant ) {
-					expiration_days =  3600;
-				}
-			}
+			expiration_days = this.getExpirationDays( store_name );
+			
 			OWA.debug('About to replace state store (%s) with: %s', store_name, cookie_value);
 			OWA.util.setCookie( 'owa_'+ store_name, cookie_value, expiration_days, '/', domain );
 			
@@ -358,23 +387,162 @@ OWA.stateManager.prototype = {
 		}
 	},
 	
-	clear: function(store_name) {
+	clear: function(store_name, key) {
 		// delete cookie
-		this.stores[store_name] = '';
-		OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
-	},
-	
-	getStoreFormat: function(store_name) {
 		
-		return this.storeFormats[store_name];
+		if ( ! key ) {
+			this.stores[store_name] = {};
+			OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
+		} else {
+			var state = this.get(store_name);
+			
+			if ( state && state.hasOwnProperty( key ) ) {
+				delete state['key'];
+				this.replaceStore(store_name, state, true, this.getFormat( store_name ),  this.getExpirationDays( store_name ) );
+			}
+		}
 	},
 	
-	setStoreFormat: function(store_name, format) {
+	getStoreFormat: function ( store_name ) {
+		
+		return this.getFormat(store_name);
+	},
+	
+	setStoreFormat: function( store_name, format ) {
 		
 		this.storeFormats[store_name] = format;
 	}
 };
 
+OWA.uri = function( str ) {
+	this.components = {};
+	this.options = {
+			strictMode: false,
+			key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
+			q:   {
+				name:   "queryKey",
+				parser: /(?:^|&)([^&=]*)=?([^&]*)/g
+			},
+			parser: {
+				strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
+				loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
+			}
+	};
+	
+	if ( str ) {
+		this.components = this.parseUri( str );
+	}
+};
+
+OWA.uri.prototype = {
+	
+	parseUri : function (str) {
+		// parseUri 1.2.2
+		// (c) Steven Levithan <stevenlevithan.com>
+		// MIT License
+		var o = this.options;
+		var m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str);
+		var uri = {};
+		var i   = 14;
+	
+		while (i--) uri[o.key[i]] = m[i] || "";
+	
+		uri[o.q.name] = {};
+		uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
+			if ($1) uri[o.q.name][$1] = $2;
+		});
+	
+		return uri;
+	},
+	
+	getHost : function() {
+		
+		if (this.components.hasOwnProperty('host')) {
+			return this.components.host;
+		}
+	},
+	
+	getQueryParam : function ( name ) {
+		if ( this.components.hasOwnProperty('queryKey') 
+			&& this.components.queryKey.hasOwnProperty(name) ) {
+			return this.components.queryKey[name];
+		}
+	},
+	
+	isQueryParam : function( name ) {
+		if ( this.components.hasOwnProperty('queryKey') 
+			&& this.components.queryKey.hasOwnProperty(name) ) {
+			return true;
+		}
+	},
+	
+	getProtocol : function() {
+		
+		if ( this.components.hadOwnProperty( 'protocol' ) ) {
+			return this.components.protocol;
+		}
+	},
+	
+	getAnchor : function() {
+	
+	},
+	
+	getQuery : function() {
+	
+	},
+	
+	getFile : function() {
+	
+	},
+	
+	getRelative : function() {
+	
+	},
+	
+	getDirectory : function() {
+	
+	},
+	
+	getPath : function() {
+	
+	},
+	
+	getPort : function() {
+	
+	},
+	
+	getPassword : function() {
+	
+	},
+	
+	getUser : function() {
+	
+	},
+	
+	getUserInfo : function() {
+	
+	},
+	
+	getQueryParams : function() {
+	
+	},
+	
+	getUri : function() {
+	
+	},
+	
+	setQueryParam : function (name, value) {
+		
+		// return new version of this object
+		var newUri = new OWA.uri();
+		return;
+	},
+	
+	setPath: function ( path ) {
+	
+	}
+	
+};
 
 OWA.util =  {
 
@@ -736,9 +904,9 @@ OWA.util =  {
 		return OWA.getState(store_name, key);
 	},
 	
-	clearState : function(store_name) {
+	clearState : function(store_name, key) {
 		
-		return OWA.clearState(store_name);
+		return OWA.clearState(store_name, key);
 	},
 	
 	getCookieValueFormat : function(cstring) {
@@ -1495,5 +1663,6 @@ OWA.util =  {
 	        partA.push(partB);
 	        return partA;
 	    }
-	}	
-}
+	}
+	
+};

@@ -42,10 +42,10 @@ class owa_baseModule extends owa_module {
 		$this->display_name = 'Open Web Analytics';
 		$this->group = 'Base';
 		$this->author = 'Peter Adams';
-		$this->version = 6;
+		$this->version = 7;
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 6;
+		$this->required_schema_version = 7;
 		
 		/**
 		 * Register Filters
@@ -282,10 +282,10 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('date', 'base.commerce_line_item_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('date', 'base.commerce_transaction_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('timestamp', 'base.commerce_transaction_fact', 'timestamp', 'Time', 'ecommerce', 'The timestamp of the transaction.', '', true);
-		$this->registerDimension('siteId', 'base.commerce_line_item_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true, 'site_id');
-		$this->registerDimension('siteId', 'base.commerce_transaction_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true, 'site_id');
+		$this->registerDimension('siteId', 'base.commerce_line_item_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true);
+		$this->registerDimension('siteId', 'base.commerce_transaction_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true);
 		// dom clicks
-		$this->registerDimension('siteId', 'base.click', 'site_id', 'Site Id', 'site', 'The site ID.', '', true, 'site_id');
+		$this->registerDimension('siteId', 'base.click', 'site_id', 'Site Id', 'site', 'The site ID.', '', true, '');
 		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'date', 'The date.', '', true, 'yyyymmdd');
 		$this->registerDimension('domElementId', 'base.click', 'dom_element_id', 'Dom ID', 'dom', 'The id of the dom element.', '', true);
 		$this->registerDimension('domElementName', 'base.click', 'dom_element_name', 'Dom Name', 'dom', 'The name of the dom element.', '', true);
@@ -293,6 +293,55 @@ class owa_baseModule extends owa_module {
 		$this->registerDimension('domElementValue', 'base.click', 'dom_element_value', 'Dom Value', 'dom', 'The value of the dom element.', '', true);
 		$this->registerDimension('domElementTag', 'base.click', 'dom_element_tag', 'Dom Tag', 'dom', 'The html tag of the dom element.', '', true);
 		$this->registerDimension('domElementClass', 'base.click', 'dom_element_class', 'Dom Class', 'dom', 'The class of the dom element.', '', true);
+		
+		// custom variable dimensions
+		$cv_max = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+		for ($i = 1; $i <= $cv_max;$i++) {
+			
+			$cvar_name_col = 'cv'.$i.'_name';
+			$cvar_name_label = "Custom Var $i Name";
+			$cvar_name_description = "The name of custom variable $i.";
+			$this->registerDimension(
+					'customVarName'.$i,
+					array(
+						'base.action_fact',
+						'base.request',
+						'base.session',
+						'base.domstream',
+						'base.click',
+						'base.commerce_transaction_fact',
+						'base.commerce_line_item_fact'
+					),
+					$cvar_name_col,
+					$cvar_name_label,
+					'Custom Variables',
+					$cvar_name_description,
+					true,
+					'string'
+			);	
+			
+			$cvar_value_col = 'cv'.$i.'_value';
+			$cvar_value_label = "Custom Var $i Value";
+			$cvar_value_description = "The value of custom variable $i.";
+			$this->registerDimension(
+					'customVarValue'.$i,
+					array(
+						'base.action_fact',
+						'base.request',
+						'base.session',
+						'base.domstream',
+						'base.click',
+						'base.commerce_transaction_fact',
+						'base.commerce_line_item_fact'
+					),
+					$cvar_value_col,
+					$cvar_value_label,
+					'Custom Variables',
+					$cvar_value_description,
+					true,
+					'string'
+			);	
+		}
 		
 		/**
 		 * Register CLI Commands
