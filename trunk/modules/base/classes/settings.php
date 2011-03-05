@@ -689,7 +689,8 @@
 				'cacheType'							=> 'file',
 				'disabledEndpoints'					=> array(),
 				'disableAllEndpoints'				=> false,
-				'processQueuesJobSchedule'				=> '10 * * * *'
+				'processQueuesJobSchedule'			=> '10 * * * *',
+				'maxCustomVars'						=> 5
 				
 			)
 		);

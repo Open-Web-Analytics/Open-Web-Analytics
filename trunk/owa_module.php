@@ -680,7 +680,7 @@ class owa_module extends owa_base {
 	 * registers a dimension for use by metrics in producing results sets.
 	 * 
 	 * @param	$dim_name string
-	 * @param	$entity	string the entiy housing the dimension. uses module.name format
+	 * @param	$entity_names	string||array the names of entity housing the dimension. uses module.name format
 	 * @param	$column	string the name of the column that represents the dimension
 	 * @param 	$family	string the name of the group or family that this dimension belongs to. optional.
 	 * @param	$description	string	a short description of this metric, used in various interfaces.
@@ -695,14 +695,24 @@ class owa_module extends owa_base {
 	 * @param	$denormalized	boolean	flag marks the dimension as being denormalized into a fact table
 	 *          as opposed to being housed in a related table.
 	 */
-	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false, $data_type = 'string') {
+	function registerDimension(
+			$dim_name, $entity_names, $column, $label = '', $family, 
+			$description = '', $foreign_key_name = '', 
+			$denormalized = false, $data_type = 'string') {
+		
+		if ( ! is_array( $entity_names ) ) {
+			$entity_names = array($entity_names);
+		}
+		
+		foreach ($entity_names as $entity) {
 	
-		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type, 'denormalized' => $denormalized);
-	
-		if ($denormalized) {
-			$this->denormalizedDimensions[$dim_name][$entity] = $dim;
-		} else {
-			$this->dimensions[$dim_name] = $dim;
+			$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type, 'denormalized' => $denormalized);
+		
+			if ($denormalized) {
+				$this->denormalizedDimensions[$dim_name][$entity] = $dim;
+			} else {
+				$this->dimensions[$dim_name] = $dim;
+			}
 		}
 	}
 	

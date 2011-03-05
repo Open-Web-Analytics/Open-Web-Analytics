@@ -93,15 +93,11 @@ class owa_processEventController extends owa_controller {
 		
 		// set referer
 		// needed in case javascript logger sets the referer variable but is blank
-		if ($this->event->get('referer')) {
-			//TODO: STANDARDIZE NAME to avoid doing this map
-			$referer = $this->event->get('referer');
-		} else {
-			owa_coreAPI::debug('ref: '.owa_coreAPI::getServerParam('HTTP_REFERER'));
-			$referer = owa_coreAPI::getServerParam('HTTP_REFERER');
+		if ( $this->event->get('referer') ) {
+			$this->event->set('referer', $this->eq->filter( 'referer', $this->event->get('referer') ) );
+			// forbackwards compatability
+			$this->event->set('HTTP_REFERER', $this->eq->filter( 'http_referer', $this->event->get('referer') ) );	
 		}
-		
-		$this->event->set('HTTP_REFERER', $this->eq->filter('http_referer', $referer));
 		
 		// set host
 		if (!$this->event->get('HTTP_HOST')) {
@@ -109,7 +105,7 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		// set language
-		if (!$this->event->get( 'language' ) ) {
+		if ( ! $this->event->get( 'language' ) ) {
 			$this->event->set( 'language', $this->eq->filter('language', substr(owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ),0,5 ) ) );
 		}
 		
@@ -158,18 +154,25 @@ class owa_processEventController extends owa_controller {
 			
 		}
 				
-		// set internal referer
-		if ($this->event->get('HTTP_REFERER')) {
+		// set internal and referer
+		
+		if ($this->event->get('referer')) {
 
-			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
+			$referer_parse = parse_url($this->event->get('referer'));
 
 			if ($referer_parse['host'] === $page_parse['host']) {
-				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER'), $this->event->get( 'site_id' ) ) );	
+				$this->event->set('prior_page', 
+						$this->eq->filter('prior_page', 
+								$this->event->get('referer'), 
+								$this->event->get( 'site_id' ) 
+						) 
+				);	
 			} else {
 				
 				$this->event->set('external_referer', true);
 				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );
 			
+				/*
 				if ( ! $this->event->get( 'search_terms' ) ) {
 					// set query terms
 					$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
@@ -177,13 +180,15 @@ class owa_processEventController extends owa_controller {
 					if ($qt) {
 						$this->event->set('search_terms', trim( strtolower( $qt ) ) );	
 					}
-				}				
+				}
+				*/				
 			}
 		}
 		
-		// set referring search term id		
-		if ($this->event->get( 'search_terms' ) ) {
-			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get('search_terms') ) ) ) );
+		// set  search terms and id		
+		if ( $this->event->get( 'search_terms' ) ) {
+			$this->event->set( 'search_terms', $this->eq->filter('search_terms', trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
+			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
 		}
 				
 		// Filter the target url of clicks
@@ -273,48 +278,38 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('ip_address', '(not set)');
 		}
 		
-		// calc days since first session
-		$this->setDaysSinceFirstSession();
+		$this->event->set( 'days_since_first_session', $this->event->get( 'dsfs' ) );
+		$this->event->set( 'days_since_prior_session', $this->event->get( 'dsps' ) );
+		$this->event->set( 'num_prior_sessions', $this->event->get( 'nps' ) );
 		
 		if ( $this->event->get('is_new_session') ) {
 			//mark entry page flag on current request
-			$this->event->set( 'is_entry_page', true );
-			
-			// mark event type as first_page_request. Necessary?????
-			//$this->event->setEventType('base.first_page_request');
-	
-			// if this is not the first sessio nthen calc days sisne last session
-			if ($this->event->get('last_req')) {
-				$this->event->set('days_since_prior_session', round(($this->event->get('timestamp') - $this->event->get('last_req'))/(3600*24)));
-			}
-			
-			if ( ! $this->event->get('medium') ) {
-				$this->setMedium();
-			}
-			
-			if ( ! $this->event->get('source') ) {
-				$this->setSource();
-			}
-			
+			$this->event->set( 'is_entry_page', true );			
+		}
+		
+		if ( $this->event->get( 'medium' ) ) {
+			$this->event->set( 'medium', $this->eq->filter( 'medium', trim( strtolower( $this->event->get( 'medium' ) ) ) ) );		
 		}
 		
 		if ( $this->event->get( 'source' ) ) {
-				$this->event->set( 'source_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'source' ) ) ) ) );
-			}
-			
+			$this->event->set( 'source', $this->eq->filter( 'source', trim( strtolower( $this->event->get( 'source' ) ) ) ) );
+			$this->event->set( 'source_id', owa_lib::setStringGuid( $this->event->get( 'source' ) ) );
+		}
+				
 		if ( $this->event->get( 'campaign' ) ) {
 			$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
 		}
 		
 		if ( $this->event->get( 'ad' ) ) {
 			$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
-		}		
+		}
+		
+		$this->setCustomVariables();
 	}
 	
 	function post() {
 			
 		return $this->addToEventQueue();
-	
 	}
 		
 	/**
@@ -427,6 +422,25 @@ class owa_processEventController extends owa_controller {
 			// this means that first session timestamp was not set in the cookie even though it's not a new user...so we set it. 
 			// This can happen with users prior to 1.3.0. when this value was introduced into the cookie.
 			$this->event->set('days_since_first_session', 0);
+		}
+	}
+	
+	function setCustomVariables() {
+		
+		$maxCustomVars = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+		
+		for ($i = 1; $i <= $maxCustomVars; $i++) {
+		
+			$cvar = $this->event->get( 'cv'.$i );
+			
+			if ( $cvar ) {
+				//split the string
+				$pieces = explode('=', trim( $cvar ) );
+				if ( isset( $pieces[1] ) ) {
+					$this->event->set( 'cv'.$i.'_name', $pieces[0] );
+					$this->event->set( 'cv'.$i.'_value', $pieces[1] );
+				}
+			}
 		}
 	}
 }
