@@ -41,6 +41,12 @@ class owa_session extends owa_factTable {
 		// set common fact table columns
 		$parent_columns = parent::__construct();
 		
+		// remove the session id from parent col list
+		// as it's a duplicate to the id column for this entity.
+		if (isset( $parent_columns['session_id'] ) ) {
+			unset( $parent_columns['session_id'] );
+		}
+		
 		foreach ($parent_columns as $pcolumn) {
 				
 			$this->setProperty($pcolumn);
