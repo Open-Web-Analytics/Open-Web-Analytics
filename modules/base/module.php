@@ -316,6 +316,7 @@ class owa_baseModule extends owa_module {
 					$cvar_name_label,
 					'Custom Variables',
 					$cvar_name_description,
+					'',
 					true,
 					'string'
 			);	
@@ -379,7 +380,8 @@ class owa_baseModule extends owa_module {
 					'endDate', 
 					'startTime', 
 					'endTime', 
-					'format'), 
+					'format',
+					'segment'), 
 				'', 
 				'view_reports'
 		);
@@ -922,7 +924,7 @@ class owa_baseModule extends owa_module {
 	 * @return paginatedResultSet obj
 	 * @link http://wiki.openwebanalytics.com/index.php?title=REST_API
 	 */
-	function getResultSet($metrics, $dimensions = '', $siteId = '', $constraints = '', $sort = '', $resultsPerPage = '', $page = '', $offset = '', $period = '', $startDate = '', $endDate = '', $startTime = '', $endTime = '', $format = '') {
+	function getResultSet($metrics, $dimensions = '', $siteId = '', $constraints = '', $sort = '', $resultsPerPage = '', $page = '', $offset = '', $period = '', $startDate = '', $endDate = '', $startTime = '', $endTime = '', $format = '', $segment = '') {
 		
 		//print_r(func_get_args());
 		// create the metric obj for the first metric
@@ -938,6 +940,10 @@ class owa_baseModule extends owa_module {
 		// set dimensions
 		if ($dimensions) {
 			$rsm->setDimensions($rsm->dimensionsStringToArray($dimensions));
+		}
+		
+		if ($segment) {
+			$rsm->setSegment($segment);
 		}
 			
 		// set period
