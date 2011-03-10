@@ -339,6 +339,7 @@ class owa_baseModule extends owa_module {
 					$cvar_value_label,
 					'Custom Variables',
 					$cvar_value_description,
+					'',
 					true,
 					'string'
 			);	
