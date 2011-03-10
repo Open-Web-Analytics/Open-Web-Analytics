@@ -128,9 +128,9 @@ class owa_request extends owa_factTable {
 		//$this->setProperty($referer_id);
 		
 		// wrong data type
-		//$document_id = new owa_dbColumn('document_id', OWA_DTD_VARCHAR255);
-		//$document_id->setForeignKey('base.document');
-		//$this->setProperty($document_id);
+		$document_id = new owa_dbColumn('document_id', OWA_DTD_VARCHAR255);
+		$document_id->setForeignKey('base.document');
+		$this->setProperty($document_id);
 		
 		// move to abstract
 		//$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
