@@ -5,14 +5,15 @@
   * @date: 10-05-2005
   * @version: 1.2.2_php4/php5
   * @author: Daniel Morris
-  * @contributors: Gianpaolo Racca, Ghislain Picard, Marco Wandschneider, Chris Tobin and Andrew Eddie.
+  * @contributors: Gianpaolo Racca, Ghislain Picard, Marco Wandschneider, Chris Tobin, Andrew Eddie, Peter Adams.
   * @copyright: Daniel Morris
   * @email: dan@rootcube.com
   * @license: GNU General Public License (GPL)
+  * @notes	adding OWA namespace as this class name now conflicts with lots of others.
   */
 class owa_InputFilter {
-	var $tagsArray;			// default = empty array
-	var $attrArray;			// default = empty array
+	var $tagsArray = array();			// default = empty array
+	var $attrArray = array();			// default = empty array
 
 	var $tagsMethod;		// default = 0
 	var $attrMethod;		// default = 0
@@ -30,13 +31,21 @@ class owa_InputFilter {
 	  * @param int $attrMethod - 0= allow just user-defined, 1= allow all but user-defined
 	  * @param int $xssAuto - 0= only auto clean essentials, 1= allow clean blacklisted tags/attr
 	  */
-	function inputFilter($tagsArray = array(), $attrArray = array(), $tagsMethod = 0, $attrMethod = 0, $xssAuto = 1) {		
+	function __construct($tagsArray = array(), $attrArray = array(), $tagsMethod = 0, $attrMethod = 0, $xssAuto = 1) {		
 		// make sure user defined arrays are in lowercase
 		for ($i = 0; $i < count($tagsArray); $i++) $tagsArray[$i] = strtolower($tagsArray[$i]);
 		for ($i = 0; $i < count($attrArray); $i++) $attrArray[$i] = strtolower($attrArray[$i]);
 		// assign to member vars
-		$this->tagsArray = (array) $tagsArray;
-		$this->attrArray = (array) $attrArray;
+		if ( ! is_array($tagsArray ) ) {
+			$tagsArray = (array) $tagsArray;
+		}
+		
+		if ( ! is_array($attrArray ) ) {
+			$attrArray = (array) $attrArray;
+		}
+		
+		$this->tagsArray = $tagsArray;
+		$this->attrArray = $attrArray;
 		$this->tagsMethod = $tagsMethod;
 		$this->attrMethod = $attrMethod;
 		$this->xssAuto = $xssAuto;
