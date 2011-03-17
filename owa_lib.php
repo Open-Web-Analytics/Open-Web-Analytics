@@ -1089,11 +1089,11 @@ class owa_lib {
 		}
 	}
 	
-	public static function formatCurrency($value, $local) {
+	public static function formatCurrency($value, $local, $decimalDigits = 2) {
 		
 		setlocale( LC_MONETARY, $local );
-		$value = $value /100;
-		return money_format( '%.2n',$value );
+		$value = $value / 100;
+		return money_format( '%.' . $decimalDigits . 'n',$value );
 	}
 	
 	public static function crc32AsHex($string) {

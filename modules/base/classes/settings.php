@@ -684,6 +684,7 @@
 				'numGoalGroups'						=> 5,
 				'enableEcommerceReporting'			=> false, // move to site settings
 				'currencyLocal'						=> 'en_US', // move to site settings
+				'currencyDecimalDigits'				=> 2,   // move to site settings
 				'memcachedServers'					=> array(),
 				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file',
