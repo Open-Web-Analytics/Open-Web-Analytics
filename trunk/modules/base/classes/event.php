@@ -63,6 +63,13 @@ class owa_event {
 	var $guid;
 	
 	/**
+	 * Creation Timestamp in UNIX EPOC UTC
+	 *
+	 * @var int
+	 */
+	var $timestamp;
+	
+	/**
 	 * Constructor
 	 * @access public
 	 */	
@@ -70,10 +77,15 @@ class owa_event {
 		
 		// Set GUID for event
 		$this->guid = $this->set_guid();
+		$this->timestamp = time();
 		//needed?
 		$this->set('guid', $this->guid);
-		$this->set('timestamp', time() );
+		$this->set('timestamp', $this->timestamp );
+	}
+	
+	function getTimestamp() {
 		
+		return $this->timestamp;
 	}
 	
 	function set($name, $value) {
@@ -102,13 +114,10 @@ class owa_event {
 		if ( $timestamp ) {
 			$this->set('timestamp', $timestamp);	
 		} else {
-			$timestamp = $this->get('timestamp');
+			$timestamp = $this->getTimestamp();
 		}
-		
-		// convert to local time and reset timestamp
-		//$timestamp = owa_lib::utcToLocalTimestamp($timestamp);
-		//$this->set('timestamp', $timestamp);
-		
+	
+		$this->set('timestamp', $timestamp);
 		$this->set('year', date("Y", $timestamp));
 		$this->set('month', date("n", $timestamp));
 		$this->set('day', date("d", $timestamp));
