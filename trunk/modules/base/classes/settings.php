@@ -829,27 +829,35 @@
 			$explicit = true;
 		}
 		
+		// strip port, add leading period etc.
 		$domain = owa_lib::sanitizeCookieDomain($domain);
-			
-		$period = substr( $domain, 0, 1);
-		if ( $period === '.' ) {
-			$domain = substr( $domain, 1 );
-		}
+					
+		// Set the cookie domain only if the domain name is a Fully qualified domain name (FQDN) 
+		// i.e. avoid attempts to set cookie domain for e.g. "localhost" as that is not valid 
 		
-		// unless www.domain.com is passed explicitly
-		// strip the www from the domain.
-		if ( ! $explicit ) {
-			$part = substr( $domain, 0, 4 );
-			if ($part === 'www.') {
-				$domain = substr( $domain, 4);
+		//check for two dots in the domain name
+		$twodots = substr_count($domain, '.');
+		
+		if ( $twodots >= 2 ) {
+		
+			// unless www.domain.com is passed explicitly
+			// strip the www from the domain.
+			if ( ! $explicit ) {
+				$part = substr( $domain, 0, 5 );
+				if ($part === '.www.') {
+					//strip .www.
+					$domain = substr( $domain, 5);
+					// add back the leading period
+					$domain = '.'.$domain;
+				}
 			}
-		}
-				
-		$cookie_domain = '.'.$domain;
-				
-		$this->set('base','cookie_domain', $cookie_domain);
-		owa_coreAPI::debug("Set cookie domain to $cookie_domain");
-	}
+
+			$this->set('base','cookie_domain', $domain); 
+			owa_coreAPI::debug("Setting cookie domain to $domain"); 
+ 		} else {
+ 			owa_coreAPI::debug("Not setting cookie domain as $domain is not a FQDN.");
+ 		}
+ 	}
 	
 	function __destruct() {
 		
