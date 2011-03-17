@@ -200,18 +200,16 @@ class owa_fileCache extends owa_cache {
 			
 			$sld = $this->readDir($dir);
 			$this->debug("Reading cache file list from: ". $dir);
-			if (array_key_exists('files', $sld)) {	
-				$this->deleteFiles($sld['files']);
+			
+			if ( array_key_exists( 'files', $sld ) ) {	
+				$this->deleteFiles( $sld['files'] );
 			}
-			foreach ($sld['dirs'] as $sk => $sdir) {
-				$ssld = $this->readDir($sdir);
-				$this->debug("Reading cache file list from: ". $sdir);	
-				$this->deleteFiles($ssld['files']);	
-				
-				rmdir($sdir);
+			
+			foreach ( $sld['dirs'] as $sk => $sdir ) {
+				$ssld = $this->readDir( $sdir );
+				$this->debug( "Reading cache file list from: ". $sdir );	
+				$this->deleteFiles( $ssld['files'] );	
 			}
-	
-			rmdir($dir);		
 		}			
 	}
 			
