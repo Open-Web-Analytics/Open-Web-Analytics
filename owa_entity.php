@@ -319,11 +319,12 @@ class owa_entity {
 
 		$status = $db->executeQuery();
 	
-		// Add to Cache
-		if ($status == true){
+		// Delete from Cache
+		if ( $status ){
 			if ($this->isCachable()) {
+				owa_coreAPI::debug('about to remove from cache');
 				$cache =  &owa_coreAPI::cacheSingleton();
-				$cache->remove($this->getTableName(), 'id'.$this->get('id'));
+				$cache->remove($this->getTableName(), $col.$value);
 			}			
 		}
 		

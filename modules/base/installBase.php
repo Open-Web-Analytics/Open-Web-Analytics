@@ -61,7 +61,7 @@ class owa_installBaseController extends owa_installController {
 		
 		// Config for the domain validation
 		$v4 = owa_coreAPI::validationFactory('subStringPosition');
-		$v4->setConfig('subString', 'http');
+		$v4->setConfig('substring', 'http');
 		$v4->setValues($this->getParam('domain'));
 		$v4->setConfig('position', 0);
 		$v4->setConfig('operator', '!=');

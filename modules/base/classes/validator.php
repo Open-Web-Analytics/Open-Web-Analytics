@@ -88,7 +88,7 @@
 	 * 
 	 * @return Object
 	 */
-	function validationFactory($class_file) {
+	function validationFactory($class_file, $conf = array()) {
 		
 		return owa_coreAPI::validationFactory($class_file, $conf);		
 	}

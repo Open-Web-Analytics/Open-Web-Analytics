@@ -104,7 +104,9 @@
  	
  	function getConfig($name) {
  		
- 		return $this->conf[$name];
+ 		if (isset( $this->conf[$name] ) ) {
+ 			return $this->conf[$name];
+ 		}
  	}
  	
  	function setValues($values) {
