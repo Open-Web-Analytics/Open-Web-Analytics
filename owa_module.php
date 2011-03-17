@@ -668,9 +668,17 @@ class owa_module extends owa_base {
 		return;
 	}
 	
-	function registerMetric($metric_name, $class_name, $params = array()) {
+	function registerMetric($metric_name, $class_name, $params = array(), $label = '', $description = '') {
 		
-		$map = array('class' => $class_name, 'params' => $params);
+		if ( ! $label ) {
+			$label = $metric_name;
+		}
+		
+		if ( ! $description ) {
+			$description = 'No description available.';
+		}
+		
+		$map = array('class' => $class_name, 'params' => $params, 'label' => $label, 'description' => $description);
 		$this->metrics[$metric_name][] = $map;
 	}
 	

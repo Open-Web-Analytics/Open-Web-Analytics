@@ -104,15 +104,14 @@ class owa_coreAPI {
 		
 		static $config;
 		
-		if(!isset($config)):
+		if( ! isset( $config ) ) {
 			
-			if (!class_exists('owa_settings')):
-				require_once(OWA_BASE_CLASS_DIR.'settings.php');
-			endif;
+			if ( ! class_exists( 'owa_settings' ) ) {
+				require_once( OWA_BASE_CLASS_DIR.'settings.php' );
+			}
 			
-			$config = owa_coreAPI::supportClassFactory('base', 'settings');
-			
-		endif;
+			$config = owa_coreAPI::supportClassFactory( 'base', 'settings' );
+		}
 		
 		return $config;
 	}
@@ -121,13 +120,13 @@ class owa_coreAPI {
 		
 		static $e;
 		
-		if(!$e) {
+		if( ! $e ) {
 			
-			if (!class_exists('owa_error')):
-				require_once(OWA_BASE_CLASS_DIR.'error.php');
-			endif;
+			if ( ! class_exists( 'owa_error' ) ) {
+				require_once( OWA_BASE_CLASS_DIR.'error.php' );
+			}
 			
-			$e = owa_coreAPI::supportClassFactory('base', 'error');
+			$e = owa_coreAPI::supportClassFactory( 'base', 'error' );
 			
 		}
 		
@@ -1332,6 +1331,28 @@ class owa_coreAPI {
 		
 		return md5( $salt ); 
 	}
+	
+	public static function getAllDimensions() {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		
+		$dims = $s->dimensions;
+		
+		foreach ( $s->denormalizedDimensions as $k => $entity_dims ) {
+			foreach ($entity_dims as $entity => $dedim) {
+				$dims[$k] = $dedim;
+			}
+		}
+		
+		return $dims;
+	}
+	
+	public static function getAllMetrics() {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		return $s->metrics;
+	}
+	
 }
 
 ?>

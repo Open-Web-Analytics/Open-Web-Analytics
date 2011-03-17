@@ -411,8 +411,8 @@ class owa_db extends owa_base {
 	
 	}
 	
-	function _selectQuery() {
-	
+	function generateSelectQuerySql() {
+		
 		$cols = '';
 		$i = 0;
 		$params = $this->_fetchSqlParams('select_values');
@@ -440,14 +440,21 @@ class owa_db extends owa_base {
 			
 		}
 		
-		$this->_setSql(sprintf("SELECT %s FROM %s %s %s %s %s", 
+		$sql = sprintf("SELECT %s FROM %s %s %s %s %s", 
 										$cols, 
 										$this->_makeFromClause(), 
 										$this->_makeWhereClause(),
 										$this->_makeGroupByClause(),
 										$this->_makeOrderByClause(),
 										$this->_makeLimitClause()
-										));
+										);
+		$this->_setSql($sql);
+		return $sql;
+	}
+	
+	function _selectQuery() {
+	
+		$this->generateSelectQuerySql();
 		return $this->_query();
 	
 	}

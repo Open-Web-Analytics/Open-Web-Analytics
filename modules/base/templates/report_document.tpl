@@ -63,7 +63,7 @@
 													  'dimensions' => 'priorPagePath,priorPageTitle', 
 													  'sort' => 'visits-', 
 													  'resultsPerPage' => 15,
-													  'constraints'			=> 'pageUrl=='.urlencode($dimension_properties->get('url')),
+													  'constraints'			=> urlencode('pageUrl=='.$dimension_properties->get('url')),
 													  'format' => 'json'), true);?>';
 													  
 		var prshre = new OWA.resultSetExplorer('priorpages');

@@ -381,7 +381,7 @@ class owa_view extends owa_base {
 		
 		$url = owa_coreAPI::getSetting('base', 'modules_url').$path;
 		$this->css[] = $url;
-		return;
+		return true;
 	}
 	
 	function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
@@ -402,7 +402,7 @@ class owa_view extends owa_base {
 		$this->js[$uid]['version'] = $version;
 		$this->js[$uid]['ie_only'] = $ie_only;
 		
-		return;
+		return true;
 	}
 	
 	function concatinateJs() {

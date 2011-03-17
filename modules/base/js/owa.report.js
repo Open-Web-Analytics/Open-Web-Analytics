@@ -18,7 +18,7 @@ OWA.report.prototype = {
 		// ...
 		
 		// bind event handlers
-		that = this;
+		var that = this;
 		jQuery('#owa_reportSiteFilterSelect').change( function() { that.reload(); } );
 		jQuery("#owa_reportPeriodFilterSubmit").click( function() { that.reload(); } );
 	},
