@@ -104,9 +104,9 @@ class owa_metric extends owa_base {
 			$this->params = $params;
 		}
 			
-		$this->db = owa_coreAPI::dbSingleton();
+		//$this->db = owa_coreAPI::dbSingleton();
 
-		$this->pagination = new owa_pagination;
+		//$this->pagination = new owa_pagination;
 		
 		return parent::__construct();
 	}
@@ -116,6 +116,8 @@ class owa_metric extends owa_base {
 	 * @depricated
 	 * @remove
 	 */
+	 /*
+
 	function applyOptions($params) {
 	
 		// apply constraints
@@ -325,9 +327,8 @@ class owa_metric extends owa_base {
 		endif;
 	}
 	
-	/**
-	 * @depricated
-	 */
+	
+	 //@depricated
 	function generate($method = 'calculate') {
 		
 		$this->makeTimePeriod();
@@ -365,9 +366,8 @@ class owa_metric extends owa_base {
 	
 	}
 	
-	/**
-	 * @depricated
-	 */
+	
+	//@depricated
 	function generateResults() {
 		
 		// set period specific constraints
@@ -400,9 +400,7 @@ class owa_metric extends owa_base {
 		return $rs; 
 	}
 	
-	/**
-	 * @depricated
-	 */
+	//@depricated
 	function calculatePaginationCount() {
 		
 		if (method_exists($this, 'paginationCount')):
@@ -416,6 +414,7 @@ class owa_metric extends owa_base {
 		endif;
 	}
 	
+*/
 	/**
 	 * Set the labels of the measures
 	 *
@@ -466,7 +465,8 @@ class owa_metric extends owa_base {
 		return $this->labels;
 	
 	}
-	
+	/*
+
 	function getPagination() {
 		
 		$count = $this->calculatePaginationCount();
@@ -475,6 +475,7 @@ class owa_metric extends owa_base {
 	
 	}
 	
+	*/
 	function zeroFill(&$array) {
 	
 		// PHP 5 only function used here
@@ -498,7 +499,8 @@ class owa_metric extends owa_base {
 		
 		return;
 	}
-	
+	/*
+
 	function getPeriod() {
 	
 		return $this->params['period'];
@@ -517,6 +519,7 @@ class owa_metric extends owa_base {
 		
 	}
 	
+	*/
 	function setEntity($name) {
 		
 		$this->entity = owa_coreAPI::entityFactory($name);
@@ -545,6 +548,11 @@ class owa_metric extends owa_base {
 	function getSelect() {
 		
 		return $this->select;
+	}
+	
+	function getSelectWithNoAlias() {
+		
+		return $this->select[0];
 	}
 	
 	function setName($name) {

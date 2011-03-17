@@ -97,8 +97,10 @@ class owa_resultSetManager extends owa_base {
 	var $query_params = array();
 	var $baseEntity;
 	var $metricObjectsByEntityMap = array();
+	var $metricObjectsCache = array();
 	var $errors = array();
 	var $formatters = array();
+	var $segment;
 	
 	function __construct($db = '') {
 		
@@ -184,34 +186,137 @@ class owa_resultSetManager extends owa_base {
 		
 		foreach ($this->getConstraints() as $k => $constraint) {
 			
-			$dim = $this->lookupDimension($constraint['name'], $this->baseEntity);
+			// refactor to support metrics in constraints
 			
-			//$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+			if ( $this->isDimension( $constraint['name'] ) ) {
 			
+				$dim = $this->lookupDimension($constraint['name'], $this->baseEntity);
+				
+				//$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+				
+				
+				$col = $dim['column'];
+				$constraint['name'] = $col;
+				$nconstraints[$col] = $constraint;
+				
+			}
 			
-			$col = $dim['column'];
-			$constraint['name'] = $col;
-			$nconstraints[$col] = $constraint;
-			$this->db->multiWhere($nconstraints);
+			if ( $this->isMetric( $constraint['name'] ) ) {
+				
+				// get metric object
+				//$m = $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$metric_name];
+				// if not calculated
+				if ( ! $m->isCalculated() ) {
+					$col = $m->getSelectWithNoAlias();
+					$constraint['name'] = $col;
+					$nconstraints[$col] = $constraint;
+				}	
+			}
+			
 			//print_r($nconstraints);
 		
 		}
 		
+		$this->db->multiWhere($nconstraints);
+		
 	}
 	
+	function setSegment($segment) {
+		
+		if ( ! strpos( $segment, 'dynamic' ) ) {
+			// look up segment from db
+			$segment = 'something from db';
+		}
+		
+		$parsed = $this->constraintsStringToArray( $segment );
+		$metrics = array();
+		$dimensions = array();
+		
+		foreach ( $parsed as $item ) {
+			
+			if ( $this->isMetric( $item['name'] ) ) {
+				$metrics[$item['name']] = $item;
+				
+				// add to all metrics or dimensions array - needed to determin base entity
+				if ( ! in_array($item['name'], $this->allMetrics) ) {
+					$this->allMetrics[] = $item['name'];
+				}
+				
+				if ( ! in_array($item['name'], $this->allDimensions) ) {
+					$this->allDimensions[] = $item['name'];
+				}
+				
+			} elseif ($this->isDimension( $item['name'] ) ) {
+				$dimensions[$item['name']] = $item;
+			}
+		}
+		
+		$this->segment = array('metrics' => $metrics, 'dimensions' => $dimensions);
+	}
+	
+	function getMetricNamesFromSegment() {
+		
+		if ( isset($this->segment['metrics'] ) ) {
+			
+			return array_keys($this->segment['metrics']);
+		} else {
+		
+			return array();
+		}
+	}
+	
+	function getDimensionNamesFromSegment() {
+		
+		if ( isset( $this->segment['dimensions'] ) ) {
+			
+			return array_keys( $this->segment['dimensions'] );
+		} else {
+			return array();
+		}
+	}
+	
+	function generateSegmentTable( $base_entity ) {
+		
+		$rsm = new owa_resultSetManager;
+		
+		$rsm->setBaseEntity($base_entity);
+		//set metrics
+		$rsm->metrics = $this->getMetricNamesFromSegment();
+		//set dimensions
+		$rsm->setDimensions( $this->getDimensionNamesFromSegment() );
+		
+		if ( $rsm->dimensions ) {
+			$rsm->applyJoins();
+			$rsm->applyDimensions();
+		}
+		
+		//get all columns. need to optimize to just the columns needed
+		$rsm->db->select( '*' );
+		$rsm->db->from( $base_entity->getTableName(), $base_entity->getTableAlias() );
+		return $rsm->db->generateSelectQuerySql();
+	}
 	
 	function chooseBaseEntity() {
 		
 		$metric_imps = array();
 		
 		// load metric implementations
-		foreach ($this->metrics as $metric_name) {
+		$all_metrics = $this->metrics;
+		
+		// add in metrics from segment if present
+		if ( isset($this->segment['metrics'] ) ) {
 			
-			$metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
-			
+			$all_metrics = array_unique( array_merge( $this->metrics, $this->getMetricNamesFromSegment() ) );
 			
 		}
-		//print_r($metric_imps);
+		
+		$all_metrics = array_unique( array_merge( $this->metrics, $this->getMetricNamesFromConstraints() ) );
+		
+		foreach ($all_metrics as $metric_name) {
+			
+			$metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
+		}
+		
 		owa_coreAPI::debug('pre-reduce set of entities to choose from: '.print_r($metric_imps, true));
 		
 		$entities = array();
@@ -251,7 +356,12 @@ class owa_resultSetManager extends owa_base {
 			$error = false;
 			
 			//cycle through each dimension frm dim list and those found in constraints.
-			$dims = array_unique(array_merge($this->dimensions, $this->getDimensionsFromConstraints()));
+			$dims = array_unique( array_merge( $this->dimensions, $this->getDimensionsFromConstraints() ) );
+			
+			if ( isset( $this->segment['dimensions'] ) ) {
+				
+				$dims = array_unique( array_merge( $this->dimensions, $this->getDimensionNamesFromSegment() ) );	
+			}
 			
 			owa_coreAPI::debug(sprintf('Dimensions: %s',print_r($this->dimensions, true)));
 			
@@ -302,6 +412,11 @@ class owa_resultSetManager extends owa_base {
 		
 		return $dims;
 	}
+	
+	function getMetricNamesFromConstraints() {
+		
+		return array();
+	}
 		
 	function isDimensionRelated($dimension_name, $entity_name) {
 		
@@ -328,6 +443,7 @@ class owa_resultSetManager extends owa_base {
 	}
 	
 	function getMetricEntities($metric_name) {
+		owa_coreAPI::debug("getting metric entities for $metric_name");
 		
 		//get the class implementations
 		$s = owa_coreAPI::serviceSingleton();
@@ -340,17 +456,17 @@ class owa_resultSetManager extends owa_base {
 			$m = owa_coreAPI::metricFactory($map['class'], $map['params']);
 			
 			// check to see if this is a calculated metric
-				if ($m->isCalculated()) {
-					
-					foreach ($m->getChildMetrics() as $cmetric_name) {
-						$this->addCalculatedMetric($m);
-						$entities = array_merge($this->getMetricEntities($cmetric_name), $entities);
-					}
-					
-				} else {
-					$this->metricObjectsByEntityMap[$m->getEntityName()][$metric_name] = $m;
-					$entities[$metric_name][] = $m->getEntityName();	
+			if ($m->isCalculated()) {
+				
+				foreach ($m->getChildMetrics() as $cmetric_name) {
+					$this->addCalculatedMetric($m);
+					$entities = array_merge($this->getMetricEntities($cmetric_name), $entities);
 				}
+				
+			} else {
+				$this->metricObjectsByEntityMap[$m->getEntityName()][$metric_name] = $m;
+				$entities[$metric_name][] = $m->getEntityName();	
+			}
 			
 		}
 		
@@ -390,6 +506,19 @@ class owa_resultSetManager extends owa_base {
 
 			return $fk;
 		}
+	}
+	
+	function isDimension( $name ) {
+	
+		$dims = owa_coreAPI::getAllDimensions();
+		//print_r($dims);
+		return in_array( $name, array_keys( $dims ) );
+	}
+	
+	function isMetric( $name ) {
+		
+		$metrics = owa_coreAPI::getAllMetrics();
+		return in_array( $name, array_keys( $metrics ) );
 	}
 		
 	function lookupDimension($name, $entity) {
@@ -1035,7 +1164,13 @@ class owa_resultSetManager extends owa_base {
 			$this->applyConstraints();
 			$this->applySelects();
 		
-			$this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+			// set from table
+			if ( $this->segment ) {
+				$this->db->selectFrom( $this->generateSegmentTable( $bm ), $bm->getTableAlias() );
+			} else {
+				$this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+			}
+		
 			// generate aggregate results
 			$results = $this->db->getOneRow();
 			// merge into result set
@@ -1045,13 +1180,19 @@ class owa_resultSetManager extends owa_base {
 			
 			// setup dimensional query
 			if (!empty($this->dimensions)) {
+				
 				$this->applyJoins();
 				// apply dimensional SQL
 				$this->applyDimensions();
 				
 				$this->applySelects();
-			
-				$this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+				
+				// set from table
+				if ( $this->segment ) {
+					$this->db->selectFrom( $this->generateSegmentTable( $bm ), $bm->getTableAlias() );
+				} else {
+					$this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+				}
 				
 				// pass limit to db object if one exists
 				if (!empty($this->limit)) {
@@ -1212,12 +1353,26 @@ class owa_resultSetManager extends owa_base {
 			return $value;
 	}
 	
+	/**
+	 * Return the approraite metric implementation for the baseEntity
+	 * Must be called after the base entity has been determined
+	 *
+	 * @param	string	$name	the name of the metric
+	 *
+	 */
 	function getMetric($name) {
 		
-		if (in_array($name, $this->metrics)) {
-			return $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$name];
-		} 
+		// check to see if the entity object map is loaded
+		if ( ! in_array( $name, $this->metrics ) ) {
+			// if not load it forthat metric
+			$this->getMetricEntities($name);
+		}
+		
+		return $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$name];
+		
 	}
+	
+	
 	
 	function setQueryStringParam($name, $string) {
 		

@@ -188,7 +188,7 @@ OWA.resultSetExplorer.prototype = {
 	},
 		
 	refreshGrid : function() {
-			
+		
 		var that = this;
 		
 		// custom formattter functions.
@@ -201,15 +201,25 @@ OWA.resultSetExplorer.prototype = {
 				//var name = 'actionName';
 				//alert(that.columnLinks[name].template);
 				OWA.debug(options.rowId-1+' '+name);
-				//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
-				var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
-				var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
-				return link;
+				//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value));
+				//alert(JSON.stringify(that.resultSet.resultsRows[options.rowId-1]));
+				//alert(options.rowId-1);
+				//alert(name);
+				//alert(JSON.stringify(cellvalue));
+				//alert(JSON.stringify(options.colModel.link_template));
+				//alert(JSON.stringify(rowdata));
+				if ( rowdata[name].link.length > 0 ) {
+					var new_url = rowdata[name].link;
+					//var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
+					var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
+					return link;
+				}
 			},
 			
 			useServerFormatter : function(cellvalue, options, rowdata) {
 				var name = options.colModel.realColName; 
-				return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
+				return rowdata[name].formatted_value;
+				//return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
 			}
 			
 		});
@@ -404,6 +414,7 @@ OWA.resultSetExplorer.prototype = {
 		var _resizable = true;
 		var _fixed = false;
 		var _datefmt = '';
+		var _link_template = '';
 		
 		if (column.result_type === 'dimension') {
 			_align = 'left';
@@ -432,6 +443,10 @@ OWA.resultSetExplorer.prototype = {
 		if (this.options.grid.columnFormatters.hasOwnProperty(column.name)) {
 			_format = this.options.grid.columnFormatters[column.name];
 		}
+		
+		if ( this.columnLinks.hasOwnProperty( column.name ) ) {
+			_link_template = this.columnLinks[column.name].template;
+		}
 				
 		var columnDef = {
 			name: column.name +'.value', 
@@ -445,7 +460,8 @@ OWA.resultSetExplorer.prototype = {
 			resizable: _resizable,
 			fixed: _fixed,
 			realColName: column.name,
-			datefmt: _datefmt
+			datefmt: _datefmt,
+			link_template: _link_template
 		};
 		
 		return columnDef;

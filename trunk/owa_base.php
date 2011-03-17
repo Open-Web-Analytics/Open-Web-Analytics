@@ -71,13 +71,7 @@ class owa_base {
 	 * Base Constructor
 	 *
 	 * @return owa_base
-	 */
-	function owa_base() {
-		
-		return owa_base::__construct();
-
-	}
-	
+	 */	
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 		$this->e = &owa_coreAPI::errorSingleton();

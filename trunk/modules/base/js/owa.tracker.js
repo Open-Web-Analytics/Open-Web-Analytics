@@ -1877,7 +1877,7 @@ OWA.tracker.prototype = {
 	
 	resetSessionState : function() {
 		
-		var last_req = OWA.setState( 's', 'last_req');
+		var last_req = OWA.getState( 's', 'last_req');
 		OWA.clearState('s');
 		OWA.setState('s', 'last_req', last_req);
 	},
