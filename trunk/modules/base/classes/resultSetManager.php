@@ -811,7 +811,11 @@ class owa_resultSetManager extends owa_base {
 	
 	function formatCurrency($value) {
 	
-		return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
+		return owa_lib::formatCurrency( 
+				$value, 
+				owa_coreAPI::getSetting( 'base', 'currencyLocal' ), 
+				owa_coreAPI::getSetting( 'base', 'currencyDecimalDigits' )
+		); 
 	}
 	
 	/**
