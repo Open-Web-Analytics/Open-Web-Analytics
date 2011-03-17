@@ -510,7 +510,7 @@ class owa_lib {
 
         /* If the class exists, return a new instance of it. */
         if (class_exists($class)) {
-            $obj = &new $class($conf);
+            $obj = new $class($conf);
             return $obj;
         }
 
