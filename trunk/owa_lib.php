@@ -1117,13 +1117,6 @@ class owa_lib {
 	}
 	
 	public static function sanitizeCookieDomain($domain) {
-		
-		//check for two dots in the domain.
-		$twodots = substr_count($domain, '.');
-		
-		if ( $twodots != 2 ) {
-			return false;
-		}
 				
 		// Remove port information.
  		$port = strpos( $domain, ':' );
