@@ -112,7 +112,7 @@ class owa_timePeriod {
 					'same_day_last_week' 	=> array('label' => 'Same Day last Week'),
 					'same_week_last_year' 	=> array('label' => 'Same Week Last Year'),
 					'same_month_last_year' 	=> array('label' => 'Same Month Last Year'),
-					'date_range' 			=> array('label' => 'Date Range')
+					//'date_range' 			=> array('label' => 'Date Range')
 					//'time_range'			=> array('label' => 'Time Range')
 		);
 		
