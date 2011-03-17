@@ -45,13 +45,13 @@ class owa_hostHandlers extends owa_observer {
 		
     	$h = owa_coreAPI::entityFactory('base.host');
 		
-		$h->getByPk('id', owa_lib::setStringGuid($event->get('full_host')));
+		$h->getByPk( 'id', $event->get( 'host_id' ) );
 		$id = $h->get('id'); 
 		
 		if (!$id) {
 			
 			$h->setProperties($event->getProperties());
-			$h->set('id', owa_lib::setStringGuid($event->get('full_host'))); 
+			$h->set('id', $event->get( 'host_id' ) ); 
 			$ret = $h->create();
 			
 			if ( $ret ) {
