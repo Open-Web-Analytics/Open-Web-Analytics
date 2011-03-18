@@ -94,6 +94,8 @@ class owa_metric extends owa_base {
 	
 	var $is_calculated = false;	
 	
+	var $is_aggregate;
+	
 	var $data_type;
 	
 	var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency');
@@ -611,6 +613,16 @@ class owa_metric extends owa_base {
 	
 	function getDataType() {
 		return $this->data_type;
+	}
+	
+	function setAggregate() {
+	
+		$this->is_aggregate = true;
+	}
+	
+	function isAggregate() {
+	
+		return $this->is_aggregate;
 	}
 }
 

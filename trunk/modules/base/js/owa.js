@@ -391,7 +391,7 @@ OWA.stateManager.prototype = {
 		// delete cookie
 		
 		if ( ! key ) {
-			this.stores[store_name] = {};
+			delete this.stores[store_name];
 			OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
 		} else {
 			var state = this.get(store_name);
