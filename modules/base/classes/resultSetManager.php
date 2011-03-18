@@ -204,13 +204,17 @@ class owa_resultSetManager extends owa_base {
 			if ( $this->isMetric( $constraint['name'] ) ) {
 				
 				// get metric object
-				//$m = $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$metric_name];
+				$m = $this->getMetricImplementation( $constraint['name'] );
 				// if not calculated
 				if ( ! $m->isCalculated() ) {
 					$col = $m->getSelectWithNoAlias();
-					$constraint['name'] = $col;
-					$nconstraints[$col] = $constraint;
-				}	
+					$this->db->having($col, $constraint['value'], $constraint['operator']);
+					//$constraint['name'] = $col;
+					//$nconstraints[$col] = $constraint;
+				} else {
+					
+					$this->addError( 'Cannot add a calculated metric to a constraint.' );
+				}
 			}
 			
 			//print_r($nconstraints);
@@ -307,11 +311,12 @@ class owa_resultSetManager extends owa_base {
 		if ( isset($this->segment['metrics'] ) ) {
 			
 			$all_metrics = array_unique( array_merge( $this->metrics, $this->getMetricNamesFromSegment() ) );
-			
 		}
 		
+		// add metrics from constraints
 		$all_metrics = array_unique( array_merge( $this->metrics, $this->getMetricNamesFromConstraints() ) );
 		
+		// get all metric implmentations so we can see what entities we have to choose from
 		foreach ($all_metrics as $metric_name) {
 			
 			$metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
@@ -320,7 +325,8 @@ class owa_resultSetManager extends owa_base {
 		owa_coreAPI::debug('pre-reduce set of entities to choose from: '.print_r($metric_imps, true));
 		
 		$entities = array();
-		// reduce entities	
+		
+		// reduce metric entities. this will give us the fact tables to choose from.	
 		foreach ($metric_imps as $mimp) {
 			
 			if (empty($entities)) {
@@ -343,7 +349,8 @@ class owa_resultSetManager extends owa_base {
 			
 			$niceness[$entity] = owa_coreAPI::entityFactory($entity)->getSummaryLevel();
 		}
-		//sort by summary level
+		
+		// sort the fact table list by summary level
 		arsort($niceness);
 		
 		owa_coreAPI::debug('Entities summary levels: '.print_r($niceness, true));
@@ -355,7 +362,7 @@ class owa_resultSetManager extends owa_base {
 			
 			$error = false;
 			
-			//cycle through each dimension frm dim list and those found in constraints.
+			//cycle through each dimension from dim list and those found in constraints.
 			$dims = array_unique( array_merge( $this->dimensions, $this->getDimensionsFromConstraints() ) );
 			
 			if ( isset( $this->segment['dimensions'] ) ) {
@@ -406,7 +413,9 @@ class owa_resultSetManager extends owa_base {
 				
 			foreach ($constraints as $carray) {
 				
-				$dims[] = $carray['name'];
+				if ($this->isDimension( $carray['name'] ) ) {
+					$dims[] = $carray['name'];
+				}
 			}
 		}
 		
@@ -415,7 +424,15 @@ class owa_resultSetManager extends owa_base {
 	
 	function getMetricNamesFromConstraints() {
 		
-		return array();
+		$metrics = array();
+		foreach ($this->getConstraints() as $k => $constraint) {
+			
+			if ( $this->isMetric( $constraint['name'] ) ) {
+				$metrics[] = $constraint['name'];
+			}
+		}
+		
+		return $metrics;
 	}
 		
 	function isDimensionRelated($dimension_name, $entity_name) {
@@ -1065,6 +1082,18 @@ class owa_resultSetManager extends owa_base {
 		}
 	}
 	
+	// can only be called after base entity is determined.
+	function getMetricImplementation($metric_name) {
+		
+		if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
+			
+			return $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$metric_name];
+		
+		} else {
+			return $this->getCalculatedMetricByName($metric_name);
+		} 
+	}
+	
 	function applySelects() {
 		//print_r($this->metrics);
 		foreach($this->metrics as $k => $metric_name) {
@@ -1165,7 +1194,9 @@ class owa_resultSetManager extends owa_base {
 	
 			// set constraints
 			$this->applyJoins();
+			owa_coreAPI::debug('about to apply constraints');
 			$this->applyConstraints();
+			owa_coreAPI::debug('about to apply selects');
 			$this->applySelects();
 		
 			// set from table

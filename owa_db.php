@@ -229,23 +229,30 @@ class owa_db extends owa_base {
 		return $this->selectColumn($name, $as = '');
 	}
 	
-	function where($name, $value, $operator = '') {
+	function where($name, $value, $operator = '=') {
 		
-		if (empty($operator)):
-			$operator = '=';
-		endif;
-		
-		if (!empty($value)):
+		if (!empty($value)){
 		
 			// hack for intentional empty value
-			if($value == ' '):
+			if($value == ' '){
 				$value = '';
-			endif;
+			}
 			
 			$this->_sqlParams['where'][$name] = array('name' => $name, 'value' => $value, 'operator' => $operator);
-		endif;
+		}
+	}
+	
+	function having($name, $value, $operator = '=') {
 		
-		return;
+		if (!empty($value)){
+		
+			// hack for intentional empty value
+			if($value == ' '){
+				$value = '';
+			}
+			
+			$this->_sqlParams['having'][$name] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+		}
 	}
 	
 	function multiWhere($where_array = array()) {
@@ -445,6 +452,7 @@ class owa_db extends owa_base {
 										$this->_makeFromClause(), 
 										$this->_makeWhereClause(),
 										$this->_makeGroupByClause(),
+										$this->_makeHavingClause(),
 										$this->_makeOrderByClause(),
 										$this->_makeLimitClause()
 										);
@@ -527,70 +535,75 @@ class owa_db extends owa_base {
 	function _makeWhereClause() {
 	
 		$params = $this->_fetchSqlParams('where');
-		//print_r($params);
-		if (!empty($params)):
 		
-			$count = count($params);
-			
+		if ( ! empty( $params ) ) {
+		
+			return $this->_makeConstraintClause('WHERE', $params);	
+		} 
+	}
+	
+	function _makeHavingClause() {
+	
+		$params = $this->_fetchSqlParams('having');
+		
+		if ( ! empty( $params ) ) {
+		
+			return $this->_makeConstraintClause('HAVING', $params);	
+		} 
+	}
+	
+	function _makeConstraintClause($type = 'WHERE', $params) {
+	
+		if ( ! empty( $params ) ) {
+		
+			$count = count( $params );
 			$i = 0;
 			
-			$where = 'WHERE ';
+			$constraint = $type.' ';
 			
 			foreach ($params as $k => $v) {
 				//print_r($v);	
 				switch (strtolower($v['operator'])) {
 					
 					case '==':
-						$where .= sprintf("%s = '%s'",$v['name'], $v['value']);
+						$constraint .= sprintf("%s = '%s'",$v['name'], $v['value']);
 						break;
 					
 					case 'between':
-					
-						$where .= sprintf("%s BETWEEN '%s' AND '%s'", $v['name'], $v['value']['start'], $v['value']['end']);
+						$constraint .= sprintf("%s BETWEEN '%s' AND '%s'", $v['name'], $v['value']['start'], $v['value']['end']);
 						break;
 						
 					case '=~':
-						$where .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $v['value']);
+						$constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $v['value']);
 						break;
 						
 					case '!~':
-						$where .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $v['value']);
+						$constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $v['value']);
 						break;
 						
 					case '=@':
-						$where .= sprintf("LOCATE('%s', %s) > 0",$v['value'], $v['name']);
+						$constraint .= sprintf("LOCATE('%s', %s) > 0",$v['value'], $v['name']);
 						break;
 						
 					case '!@':
-						$where .= sprintf("LOCATE('%s', %s) = 0",$v['value'], $v['name']);
+						$constraint .= sprintf("LOCATE('%s', %s) = 0",$v['value'], $v['name']);
 						break;
 							
 					default:
-						$where .= sprintf("%s %s '%s'",$v['name'], $v['operator'], $v['value']);		
+						$constraint .= sprintf("%s %s '%s'",$v['name'], $v['operator'], $v['value']);		
 						break;
 				}
 					
+				if ($i < $count - 1) {
 						
-					
-				if ($i < $count - 1):
-						
-					$where .= " AND ";
-						
-				endif;
+					$constraint .= " AND ";		
+				}
 	
-				$i++;	
-				
-					
+				$i++;
 			}
 			
-			return $where;
-				
-		else:
-			
-			return;
-					
-		endif;
-
+			return $constraint;		
+		} 
 	}
 	
 	function join($type, $table, $as, $foreign_key, $primary_key = '') {

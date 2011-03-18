@@ -1811,19 +1811,21 @@ OWA.tracker.prototype = {
 	
 	setLastRequestTime : function( event ) {
 		
-		var last_req = OWA.getState('s', 'last_req');
 		
+		var last_req = OWA.getState('s', 'last_req');
+		OWA.debug('last_req from cookie: %s', last_req);
 		// suppport for old style cookie
 		if ( ! last_req ) {
 			var state_store_name = OWA.util.sprintf( '%s_%s', 'ss', this.siteId );		
 			last_req = OWA.getState( state_store_name, 'last_req' );	
 		}
 		
+		// set property on for all events
+		OWA.debug('setting last_req global property of %s', last_req);
+		this.setGlobalEventProperty( 'last_req', last_req );
+		
 		// store new state value
 		OWA.setState( 's', 'last_req', event.get( 'timestamp' ), true );
-		
-		// set property on for all events
-		this.setGlobalEventProperty( 'last_req', OWA.getState( 's', 'last_req') );
 	},
 	
 	setSessionId : function ( event ) {
