@@ -161,7 +161,7 @@ class owa_resultSetManager extends owa_base {
 				foreach ($this->constraint_operators as $operator) {
 					
 					if (strpos($constraint, $operator)) {
-						list ($name, $value) = split($operator, $constraint);
+						list ($name, $value) = explode($operator, $constraint);
 						
 						$constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
 					
