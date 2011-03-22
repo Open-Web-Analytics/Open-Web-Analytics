@@ -135,7 +135,8 @@ class owa_paginatedResultSet {
 	function generate($dao, $method = 'getAllRows') {
 		
 		if (!empty($this->limit)) {
-			// query for more than we need	
+			// query for more than we need
+			owa_coreAPI::debug('applying limit of: '.$this->limit);	
 			$dao->limit($this->limit * 10);
 		}
 		

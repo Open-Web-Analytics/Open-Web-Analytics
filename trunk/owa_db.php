@@ -447,7 +447,7 @@ class owa_db extends owa_base {
 			
 		}
 		
-		$sql = sprintf("SELECT %s FROM %s %s %s %s %s", 
+		$sql = sprintf("SELECT %s FROM %s %s %s %s %s %s", 
 										$cols, 
 										$this->_makeFromClause(), 
 										$this->_makeWhereClause(),
