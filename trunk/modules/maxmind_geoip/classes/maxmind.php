@@ -118,7 +118,7 @@ class owa_maxmind extends owa_location {
 		}
 		
 		$geoip = Net_GeoIP::getInstance($this->db_file_path, $flag);
- 		$location = $geoip->lookupLocation($location_map['ip_address']);
+ 		$location = $geoip->lookupLocation(trim($location_map['ip_address']));
  		
  		if ($location) {
  			
@@ -148,7 +148,7 @@ class owa_maxmind extends owa_location {
 		
 		$geoloc = GeoCityLocateIspOrg::getInstance();
 		$geoloc->setLicenceKey( $license_key );
-		$geoloc->setIP( $location_map['ip_address'] );
+		$geoloc->setIP( trim($location_map['ip_address']) );
 		
 		if ( $geoloc->isError() ) {
 			owa_coreAPI::debug( $geoloc->isError().": " . $geoloc->getError() );
