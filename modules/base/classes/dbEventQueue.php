@@ -118,7 +118,7 @@ class owa_dbEventQueue extends eventQueue {
 	
 	function determineNextAttempt($event_type, $failed_count) {
 	
-		return $this->makeTimeStamp(time() + 30);
+		return $this->makeTimeStamp() +30;
 	}
 	
 	function makeTimestamp() {
