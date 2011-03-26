@@ -48,9 +48,6 @@ OWA.report.prototype = {
 		
 		this.properties.startDate = jQuery.datepicker.formatDate('yymmdd', jQuery("#owa_report-datepicker-start").datepicker("getDate"));
 		this.properties.endDate = jQuery.datepicker.formatDate('yymmdd', jQuery("#owa_report-datepicker-end").datepicker("getDate"));
-		if (this.properties.startDate != null && this.properties.endDate != null) {
-			this.setPeriod('date_range');
-		}
 	},
 	
 	setPeriod: function(period) {
@@ -205,10 +202,7 @@ function owa_reportSetDateRange(date) {
 
 	if (date != null) {
 		var reportname = jQuery('.owa_reportContainer').get(0).id;
-		OWA.items[reportname].setDateRange();
-		OWA.items[reportname].setPeriod('date_range');
-		// toggle the drop down to custom data range label
-		jQuery("#owa_reportPeriodFilter option:contains('Custom Date Range')").attr("selected", true);	
+		OWA.items[reportname].setDateRange();	
 	}
 }
 
