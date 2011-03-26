@@ -704,9 +704,9 @@ OWA.resultSetExplorer.prototype = {
 	timestampFormatter : function(timestamp) {
 		
 		var d = new Date(timestamp*1);
-		var curr_date = d.getDate();
-		var curr_month = d.getMonth() + 1;
-		var curr_year = d.getFullYear();
+		var curr_date = d.getUTCDate();
+		var curr_month = d.getUTCMonth() + 1;
+		var curr_year = d.getUTCFullYear();
 		//alert(d+' date: '+curr_month);
 		var date =  curr_month + "/" + curr_date + "/" + curr_year;
 		//var date =  curr_month + "/" + curr_date;
