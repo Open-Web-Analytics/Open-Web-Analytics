@@ -1612,7 +1612,7 @@ OWA.tracker.prototype = {
 		var ref = document.referrer;
 		var medium = 'direct';
 		var source = '(none)';
-		var search_term = '(none)';
+		var search_terms = '(none)';
 		
 		if ( ref ) {
 			var uri = new OWA.uri( ref );
