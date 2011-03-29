@@ -463,6 +463,7 @@ OWA.uri.prototype = {
 	},
 	
 	getQueryParam : function ( name ) {
+		
 		if ( this.components.hasOwnProperty('queryKey') 
 			&& this.components.queryKey.hasOwnProperty(name) ) {
 			return this.components.queryKey[name];
@@ -470,15 +471,18 @@ OWA.uri.prototype = {
 	},
 	
 	isQueryParam : function( name ) {
+	
 		if ( this.components.hasOwnProperty('queryKey') 
 			&& this.components.queryKey.hasOwnProperty(name) ) {
 			return true;
+		} else {
+			return false;
 		}
 	},
 	
 	getProtocol : function() {
 		
-		if ( this.components.hadOwnProperty( 'protocol' ) ) {
+		if ( this.components.hasOwnProperty( 'protocol' ) ) {
 			return this.components.protocol;
 		}
 	},
@@ -1049,14 +1053,23 @@ OWA.util =  {
 		var domain = url.split(/\/+/g)[1];
 		
 		if (strip_www === true) {
-			var fp = domain.split('.')[0];
 			
-			if (fp === 'www') {
-				return domain.substring(4);
-			} else {
-				return domain;
-			}
+			return OWA.util.stripWwwFromDomain( domain );
 			
+		} else {
+		
+			return domain;
+		}
+	},
+	
+	// strips www. from begining of domain if present
+	// otherwise returns the domain as is.
+	stripWwwFromDomain : function (domain) {
+		
+		var fp = domain.split('.')[0];
+			
+		if (fp === 'www') {
+			return domain.substring(4);
 		} else {
 			return domain;
 		}

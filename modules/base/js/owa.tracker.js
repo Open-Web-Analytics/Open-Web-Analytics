@@ -1615,25 +1615,25 @@ OWA.tracker.prototype = {
 		var search_term = '(none)';
 		
 		if ( ref ) {
-			var uri = new OWA.uri( referer );
+			var uri = new OWA.uri( ref );
 			
 			// check for external referer
 			
 			if ( document.domain != uri.getHost() ) {			
 						
 				medium = 'referal';
-				source = uri.getHost();
+				source = OWA.util.stripWwwFromDomain( uri.getHost() );
 				var engine = this.isRefererSearchEngine( uri );
 				if ( engine ) {
 					medium = 'organic-search';
-					search_term = engine.t;
+					search_terms = engine.t;
 				} 
 			}
 		}
 		
 		OWA.setState('s', 'medium', medium);
 		OWA.setState('s', 'source', source);
-		OWA.setState('s', 'search_term', search_term);
+		OWA.setState('s', 'search_terms', search_terms);
 	},
 
 	
@@ -1649,6 +1649,7 @@ OWA.tracker.prototype = {
 			var query_param = this.organicSearchEngines[i].q
 			var host = uri.getHost();
 			var term = uri.getQueryParam(query_param);
+			
 			if ( OWA.util.strpos(host, domain) && uri.isQueryParam( query_param ) ) {
 				OWA.debug( 'Found search engine: %s with query param %s:, query term: %s', domain, query_param, term);
 				
