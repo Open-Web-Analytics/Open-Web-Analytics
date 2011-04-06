@@ -20,7 +20,6 @@ if(!class_exists('owa_observer')) {
 	require_once(OWA_BASE_DIR.'owa_observer.php');
 }	
 
-
 /**
  * OWA Visitor Event handlers
  * 
@@ -49,7 +48,8 @@ class owa_visitorHandlers extends owa_observer {
     			return $this->logVisitor($event);
     		
     		case false:
-    			return $this->logVisitorUpdate($event);
+    			//return $this->logVisitorUpdate($event);
+    			return OWA_EHS_EVENT_HANDLED;
     			break;
     	}
     }
@@ -75,7 +75,7 @@ class owa_visitorHandlers extends owa_observer {
 			$v->set('first_session_day', $event->get('day'));
 			$v->set('first_session_dayofyear', $event->get('dayofyear'));
 			$v->set('first_session_timestamp', $event->get('timestamp'));
-			$v->set('num_prior_sessions', $event->get('num_prior_sessions'));
+			//$v->set('num_prior_sessions', $event->get('num_prior_sessions'));
 			$ret = $v->create();
 			
 			if ( $ret ) {
@@ -91,12 +91,13 @@ class owa_visitorHandlers extends owa_observer {
     }
     
     function logVisitorUpdate($event) {
-    	
+   		 	
     	$v = owa_coreAPI::entityFactory('base.visitor');
 
 		$v->load( $event->get('visitor_id' ) );
 		
 		if ( $v->wasPersisted() ) {
+		
 			if ( $event->get( 'user_name' ) ) {
 				$v->set( 'user_name', $event->get( 'user_name' ) );
 			}
@@ -119,9 +120,9 @@ class owa_visitorHandlers extends owa_observer {
 			}
 			
 		} else {
-			owa_coreAPI::debug("Not updating visitor. Visitor does not exists, adding it now.");
-			return $this->logVisitor($event);
-			//return OWA_EHS_EVENT_FAILED;
+			//owa_coreAPI::debug("Not updating visitor. Visitor does not exists, adding it now.");
+			//return $this->logVisitor($event);
+			return OWA_EHS_EVENT_FAILED;
 		}
     }
 }

@@ -305,6 +305,8 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		$this->setCustomVariables();
+		
+		$this->setGeolocation();
 	}
 	
 	function post() {
@@ -443,7 +445,30 @@ class owa_processEventController extends owa_controller {
 			}
 		}
 	}
+	
+	function setGeolocation() {
+		
+		if ( ! $this->event->get( 'country' ) ) {
+			
+			$location = owa_coreAPI::getGeolocationFromIpAddress( $this->event->get( 'ip_address' ) );
+			owa_coreAPI::debug( 'geolocation: ' .print_r( $location, true ) );
+			$this->event->set( 'country', $location->getCountry() );
+			$this->event->set( 'city', $location->getCity() );
+			$this->event->set( 'latitude', $location->getLatitude() );
+			$this->event->set( 'longitude', $location->getLongitude() );
+			$this->event->set( 'country_code', $location->getCountryCode() );
+			$this->event->set( 'state', $location->getState() );
+			$location_id = $location->generateId();
+			
+		} else {
+			$s = owa_coreAPI::serviceSingleton();
+			$location_id = $s->geolocation->generateId($this->event->get( 'country' ), $this->event->get( 'state' ), $this->event->get( 'city' ) );
+		}
+		
+		if ( $location_id ) {
+			$this->event->set( 'location_id', $location_id );
+		}
+	}
 }
-
 
 ?>

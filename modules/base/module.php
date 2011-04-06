@@ -573,50 +573,14 @@ class owa_baseModule extends owa_module {
 	 */
 	function _registerEventHandlers() {
 		
-		// User management
-		$this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
 		// Page Requests
 		$this->registerEventHandler(array('base.page_request', 'base.first_page_request'), 'requestHandlers');
 		// Sessions
 		$this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged'), 'sessionHandlers');
 		// Clicks
 		$this->registerEventHandler('dom.click', 'clickHandlers');
-		// Documents
-		$this->registerEventHandler(array(
-				'base.page_request_logged', 
-				'base.first_page_request_logged', 
-				'base.feed_request_logged') , 'documentHandlers');
-		// Referers
-		$this->registerEventHandler('base.new_session', 'refererHandlers');
-		// Search Terms
-		$this->registerEventHandler('base.new_session', 'searchTermHandlers');
-		// Location
-		$this->registerEventHandler( array( 'base.new_session', 'ecommerce.transaction' ), 'locationHandlers' );
-		// operating systems
-		$this->registerEventHandler('base.new_session', 'osHandlers');
-		// source dimension
-		$this->registerEventHandler('base.page_request', 'sourceHandlers');
-		// campaign dimension
-		$this->registerEventHandler('base.page_request', 'campaignHandlers');
-		// ad dimension
-		$this->registerEventHandler('base.page_request', 'adHandlers');
-		// conversions
-		$this->registerEventHandler(array(
-				'base.new_session', 
-				'base.session_update', 
-				'ecommerce.transaction_persisted' ), 'conversionHandlers');
-		// User Agent dimension
-		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'userAgentHandlers');
-		// Hosts
-		$this->registerEventHandler(array('base.feed_request', 'base.new_session'), 'hostHandlers');
-		// Hosts
+		// Feed requests
 		$this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
-		// User management
-		$this->registerEventHandler('base.new_session', 'visitorHandlers');
-		// Nofifcation handlers
-		$this->registerEventHandler('base.new_session', 'notifyHandlers');
-		// install complete handler
-		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
 		// domstreams
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 		// actions
@@ -624,6 +588,67 @@ class owa_baseModule extends owa_module {
 		// Commerce
 		$this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
 		$this->registerEventHandler('ecommerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
+		
+		// register standard dimension handlers to listen to events 
+		// that populate fact tables.
+		$fact_events = array(
+			'base.page_request_logged', 
+			'base.first_page_request_logged', 
+			'base.new_session',
+			'dom.stream',
+			'dom.click',
+			'track.action',
+			'ecommerce.transaction_persisted'
+		);
+		
+		$standard_dimension_handlers = array(
+			'refererHandlers',
+			'searchTermHandlers',
+			'osHandlers',
+			'sourceHandlers',
+			'campaignHandlers',
+			'adHandlers',
+			'userAgentHandlers',
+			'hostHandlers',
+			'visitorHandlers',
+			'locationHandlers'
+		);
+		
+		foreach ($standard_dimension_handlers as $handler) {
+			
+			$this->registerEventHandler($fact_events, $handler);
+		}
+		
+		// Documents
+		$this->registerEventHandler(
+			array(
+				'base.page_request_logged', 
+				'base.first_page_request_logged', 
+				'base.feed_request_logged',
+				'track.action',
+				'dom.stream',
+				'dom.click',
+				'ecommerce.transaction'
+			), 
+			'documentHandlers'
+		);
+		
+		// Goal Conversions
+		$this->registerEventHandler(
+			array(
+				'base.new_session', 
+				'base.session_update', 
+				'ecommerce.transaction_persisted'
+			), 
+			'conversionHandlers'
+		);
+		
+		// Nofifcation handlers
+		$this->registerEventHandler('base.new_session', 'notifyHandlers');
+		// install complete handler
+		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
+		// User management
+		$this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
 	}
 	
 	function _registerEventProcessors() {
