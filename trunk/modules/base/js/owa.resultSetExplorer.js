@@ -91,6 +91,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 	
 	this.viewObjects = {};
 	this.loadUrl = '';
+	this.dataExportApiParams = {};
 };
 
 OWA.resultSetExplorer.prototype = {
@@ -107,6 +108,19 @@ OWA.resultSetExplorer.prototype = {
 	setDataLoadUrl : function(url) {
 		
 		this.loadUrl = url;
+	},
+	
+	sortGrid : function(column, order) {
+		
+		var url = new OWA.uri( this.resultSet.self );
+		var sortorder = '';
+		if (order === 'desc') {
+			sortorder = '-';
+		}
+		
+		url.setQueryParam('owa_sort', column + sortorder);
+		this.getResultSet( url.getSource() );
+		
 	},
 	
 	getOption : function(name) {
@@ -195,6 +209,7 @@ OWA.resultSetExplorer.prototype = {
 		jQuery.extend(jQuery.fn.fmatter , {
 			// urlFormatter allows for a single param substitution.
 			urlFormatter : function(cellvalue, options, rowdata) {
+			//alert(JSON.stringify(cellvalue));
 				var sub_value = options.rowId;
 				//alert(options.rowId);
 				var name = options.colModel.realColName;
@@ -211,7 +226,7 @@ OWA.resultSetExplorer.prototype = {
 				if ( rowdata[name].link.length > 0 ) {
 					var new_url = rowdata[name].link;
 					//var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
-					var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
+					var link =  '<a href="' + new_url + '">' + cellvalue.formatted_value + '</a>';
 					return link;
 				}
 			},
@@ -363,8 +378,13 @@ OWA.resultSetExplorer.prototype = {
 			height: '100%',
 			autowidth: true,
 			hoverrows: false,
-			sortname: that.resultSet.sortColumn + '.value',
-			sortorder: that.resultSet.sortOrder
+			sortname: that.resultSet.sortColumn,
+			sortorder: that.resultSet.sortOrder,
+			onSortCol: function( index, iCol, sortorder ) {
+				
+				that.sortGrid( index, sortorder );
+				return 'stop';
+			}
 		});
 		
 		// set header css
@@ -377,7 +397,7 @@ OWA.resultSetExplorer.prototype = {
 				css['text-align'] = 'right';
 			}
 			// if sort column then bold.
-			if (this.resultSet.sortColumn +'.value' === columns[y].name) {
+			if (this.resultSet.sortColumn +'' === columns[y].name) {
 				//css.fontWeight = 'bold';
 			}
 			// set the css. no way to just set a class...
@@ -449,8 +469,10 @@ OWA.resultSetExplorer.prototype = {
 		}
 				
 		var columnDef = {
-			name: column.name +'.value', 
-			index: column.name +'.value', 
+			//name: column.name +'.value', 
+			name: column.name, 
+			//index: column.name +'.value',
+			index: column.name +'', 
 			label: column.label, 
 			sorttype: _sort_type, 
 			align: _align, 
@@ -587,7 +609,7 @@ OWA.resultSetExplorer.prototype = {
 						if (this.columnLinks.hasOwnProperty(y)) {
 							//alert(this.dom_id + ' : '+y);
 							var template = this.columnLinks[y].template;
-							
+														
 							if (this.resultSet.resultsRows[i][y].name.length > 0) {
 								//if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
 								

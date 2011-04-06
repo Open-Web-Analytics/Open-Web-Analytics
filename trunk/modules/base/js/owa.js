@@ -416,6 +416,7 @@ OWA.stateManager.prototype = {
 
 OWA.uri = function( str ) {
 	this.components = {};
+	this.dirty = false;
 	this.options = {
 			strictMode: false,
 			key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
@@ -464,7 +465,7 @@ OWA.uri.prototype = {
 	
 	getQueryParam : function ( name ) {
 		
-		if ( this.components.hasOwnProperty('queryKey') 
+		if ( this.components.hasOwnProperty('queryKey')
 			&& this.components.queryKey.hasOwnProperty(name) ) {
 			return this.components.queryKey[name];
 		}
@@ -480,70 +481,177 @@ OWA.uri.prototype = {
 		}
 	},
 	
-	getProtocol : function() {
-		
-		if ( this.components.hasOwnProperty( 'protocol' ) ) {
-			return this.components.protocol;
+	getComponent : function ( name ) {
+	
+		if ( this.components.hasOwnProperty( name ) ) {
+			return this.components[name];
 		}
 	},
 	
-	getAnchor : function() {
+	getProtocol : function() {
+		
+		return this.getComponent('protocol');
+	},
 	
+	getAnchor : function() {
+		
+		return this.getComponent('anchor');
 	},
 	
 	getQuery : function() {
-	
+		
+		return this.getComponent('query');
+		
 	},
 	
 	getFile : function() {
-	
+		
+		return this.getComponent('file');
 	},
 	
 	getRelative : function() {
 	
+		return this.getComponent('relative');
 	},
 	
 	getDirectory : function() {
-	
+		
+		return this.getComponent('directory');
 	},
 	
 	getPath : function() {
-	
+		
+		return this.getComponent('path');
 	},
 	
 	getPort : function() {
 	
+		return this.getComponent('port');
 	},
 	
 	getPassword : function() {
-	
+		
+		return this.getComponent('password');
 	},
 	
 	getUser : function() {
-	
+		
+		return this.getComponent('user');
 	},
 	
 	getUserInfo : function() {
 	
+		return this.getComponent('userInfo');
 	},
 	
 	getQueryParams : function() {
 	
+		return this.getComponent('queryKey');
 	},
 	
-	getUri : function() {
+	getSource : function() {
 	
+		return this.getComponent('source');
 	},
 	
 	setQueryParam : function (name, value) {
 		
-		// return new version of this object
-		var newUri = new OWA.uri();
-		return;
+		if ( ! this.components.hasOwnProperty('queryKey') ) {
+			
+			this.components.queryKey = {};
+		}
+		
+		this.components.queryKey[name] = value;
+		
+		this.resetQuery();
+		
+		this.resetSource();
+	},
+	
+	resetSource : function() {
+	
+		this.components.source = this.assembleUrl();
+	},
+	
+	resetQuery : function() {
+		
+		var qp = this.getQueryParams();
+		
+		if (qp) {
+			
+			var query = '';
+			var count = OWA.util.countObjectProperties(qp);
+			var i = 1;
+			
+			for (var name in qp) {
+				
+				query += name + '=' + qp[name];
+				
+				if (i < count) {
+					query += '&';
+				}	
+			}
+			
+			this.components.query = query;
+		}
+	},
+	
+	isDirty : function() {
+		
+		return this.dirty;
 	},
 	
 	setPath: function ( path ) {
 	
+	},
+	
+	assembleUrl : function() {
+		
+		var url = '';
+		
+		// protocol
+		url += this.getProtocol();
+		url += '://';
+		// user
+		if ( this.getUser() ) {
+			url += this.getUser();
+		}
+		
+		// password
+		if ( this.getUser() && this.getPassword() ) {
+			url += ':' + this.password();
+		}
+		// host
+		url += this.getHost();
+		
+		// port
+		if ( this.getPort() ) {
+			url += ':' + this.getPort();
+		}
+
+		// directory
+		url += this.getDirectory();
+
+		// file
+		url += this.getFile();
+		
+		// query params
+		var query = this.getQuery();
+		if (query) {
+			url += '?' + query;
+		}
+		
+		// query params
+		var anchor = this.getAnchor();
+		if (anchor) {
+			url += '#' + anchor;
+		}
+		
+		
+		// anchor
+		url += this.getAnchor();
+		
+		return url;
 	}
 	
 };
@@ -1064,7 +1172,7 @@ OWA.util =  {
 	
 	// strips www. from begining of domain if present
 	// otherwise returns the domain as is.
-	stripWwwFromDomain : function (domain) {
+	stripWwwFromDomain : function ( domain ) {
 		
 		var fp = domain.split('.')[0];
 			

@@ -53,51 +53,12 @@ class owa_requestHandlers extends owa_observer {
 			// Set Primary Key
 			$r->set('id', $event->get('guid'));
 			
-			// Make ua id
-			$r->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
-		
-			// Make OS id
-			$r->set('os_id', owa_lib::setStringGuid($event->get('os')));
-		
-			// Make document id	
-			$r->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
-			
 			// Make prior document id	
 			$r->set('prior_document_id', owa_lib::setStringGuid($event->get('prior_page')));
 			
-			// Generate Referer id
-			$r->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
-			
-			// Generate Host id
-			$r->set('host_id', owa_lib::setStringGuid($event->get('full_host')));
-			
 			// Generate Host id
 			$r->set('num_prior_sessions', $event->get('num_prior_sessions'));
-			
-			$r->set('language', $event->get('language'));
-			
-			if ( ! $event->get( 'country' ) ) {
-			
-				$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-				owa_coreAPI::debug( 'geolocation: ' .print_r( $location, true ) );
-				$event->set( 'country', $location->getCountry() );
-				$event->set( 'city', $location->getCity() );
-				$event->set( 'latitude', $location->getLatitude() );
-				$event->set( 'longitude', $location->getLongitude() );
-				$event->set( 'country_code', $location->getCountryCode() );
-				$event->set( 'state', $location->getState() );
-				$location_id = $location->generateId();
-				
-			} else {
-				$s = owa_coreAPI::serviceSingleton();
-				$location_id = $s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
-			}
-			
-			if ($location_id) {
-				$event->set( 'location_id', $location_id );
-				$r->set( 'location_id',  $event->get( 'location_id' ) );
-			}
-			
+							
 			$result = $r->create();
 			
 			if ($result == true) {

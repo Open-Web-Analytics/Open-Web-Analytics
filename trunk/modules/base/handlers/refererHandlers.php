@@ -48,8 +48,8 @@ class owa_refererHandlers extends owa_observer {
      */
     function notify($event) {
 		
-		if (!$event->get('external_referer')) {
-			return;
+		if (! $event->get('external_referer') ) {
+			return OWA_EHS_EVENT_HANDLED;
 		}
 		
     	// Make entity
