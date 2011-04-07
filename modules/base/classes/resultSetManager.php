@@ -145,6 +145,21 @@ class owa_resultSetManager extends owa_base {
 		}
 	}
 	
+	function setSiteId($siteId) {
+		
+		//used for urls
+		$this->query_params['siteId'] = $siteId;
+		$this->setConstraint('siteId', $siteId);
+	}
+	
+	function getSiteId() {
+		
+		if ( isset( $this->params['siteId'] ) ) {
+			
+			return $this->params['siteId'];
+		}
+	}
+	
 	function constraintsStringToArray($string) {
 		
 		if ($string) {

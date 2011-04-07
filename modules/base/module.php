@@ -991,7 +991,7 @@ class owa_baseModule extends owa_module {
 		
 		//site_id
 		if ($siteId) {
-			$rsm->setConstraints($rsm->constraintsStringToArray('siteId=='.$siteId));
+			$rsm->setSiteId($siteId);
 		}
 		
 		// set sort order
