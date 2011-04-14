@@ -564,13 +564,22 @@ OWA.uri.prototype = {
 		this.components.queryKey[name] = value;
 		
 		this.resetQuery();
-		
-		this.resetSource();
+	},
+	
+	removeQueryParam : function( name ) {
+	
+		if ( this.components.hasOwnProperty( 'queryKey' ) 
+			 && this.components.queryKey.hasOwnProperty( name )	
+		) {
+			delete this.components.queryKey[name];			
+			this.resetQuery();
+		}
 	},
 	
 	resetSource : function() {
 	
 		this.components.source = this.assembleUrl();
+		//alert (this.components.source);
 	},
 	
 	resetQuery : function() {
@@ -593,6 +602,8 @@ OWA.uri.prototype = {
 			}
 			
 			this.components.query = query;
+			
+			this.resetSource();
 		}
 	},
 	
