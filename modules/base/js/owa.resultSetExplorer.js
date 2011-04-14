@@ -118,7 +118,12 @@ OWA.resultSetExplorer.prototype = {
 			sortorder = '-';
 		}
 		
+		// set sort order
 		url.setQueryParam('owa_sort', column + sortorder);
+		// remove page param
+		url.removeQueryParam('owa_page');
+		// fetch new results
+		//alert( url.getSource() );
 		this.getResultSet( url.getSource() );
 		
 	},
@@ -307,7 +312,7 @@ OWA.resultSetExplorer.prototype = {
 	
 	// fetch the result set from the server
 	getResultSet : function(url) {
-		
+		//alert(url);
 		var that = this;
 		
 		// uses the built in jqgrid loading divs. just giveit a message and show it.

@@ -396,6 +396,11 @@ class owa_entity {
 		}
 	}
 	
+	function setTableAlias( $alias ) {
+	
+		$this->_tableProperties['alias'] = $alias;
+	}
+	
 	function setTableName($name, $namespace = 'owa_') {
 
 		$this->_tableProperties['alias'] = $name;

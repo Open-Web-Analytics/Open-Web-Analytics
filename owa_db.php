@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
+require_once(OWA_BASE_DIR.'/owa_base.php');
 
 /**
  * Database Connection Class
@@ -145,7 +145,10 @@ class owa_db extends owa_base {
 	
 	function __destruct() {
 		
-		$this->close();
+		if ( $this->isConnectionEstablished() ) {
+		
+			$this->close();
+		}
 	}
 	
 	function connect() {
@@ -162,6 +165,11 @@ class owa_db extends owa_base {
 	function close() {
 		
 		return false;
+	}
+	
+	function isConnectionEstablished() {
+		
+		return $this->connection_status;
 	}
 	
 	function getConnectionParam($name) {
@@ -361,8 +369,9 @@ class owa_db extends owa_base {
 		$this->_sqlParams['from'][$name] = array('name' => $name, 'as' => $as);
 	}
 	
-	function from($name, $as = '') {
-		return $this->selectFrom($name, $as = '');
+	function from( $name, $as = '' ) {
+	
+		return $this->selectFrom( $name, $as );
 	}
 	
 	function insertInto($table) {
@@ -500,9 +509,6 @@ class owa_db extends owa_base {
 		$this->_setSql(sprintf(OWA_SQL_UPDATE_ROW, $this->_sqlParams['table'], $set, $this->_makeWhereClause()));
 		
 		return $this->_query();
-		
-
-	
 	}
 	
 	function _deleteQuery() {
@@ -1093,7 +1099,31 @@ class owa_db extends owa_base {
 	
 		return $this->query(OWA_SQL_END_TRANSACTION);
 	}
-
+	
+	function count($column_name) {
+		
+		return sprintf(OWA_SQL_COUNT, $column_name);
+	}
+	
+	function distinct($column_name) {
+		
+		return sprintf(OWA_SQL_DISTINCT, $column_name);
+	}
+	
+	function division($numerator, $denominator) {
+		
+		return sprintf(OWA_SQL_DIVISION, $numerator, $denominator);
+	}
+	
+	function round($value) {
+	
+		return sprintf(OWA_SQL_ROUND, $value);
+	}
+	
+	function average($value) {
+	
+		return sprintf(OWA_SQL_AVERAGE, $value);
+	}
 }
 
 ?>
