@@ -81,9 +81,9 @@ class owa_reportView extends owa_view {
 		// set site filter list
 		$this->body->set('sites', $this->get('sites') );
 	
-		$this->body->set('dom_id', $this->data['dom_id']);
+		$this->body->set('dom_id', $this->get( 'dom_id' ) );
 		// add if here
-		$this->subview->body->set('dom_id', $this->data['dom_id']);
+		$this->subview->body->set('dom_id', $this->get( 'dom_id' ) );
 		$this->body->set('do', $this->data['do']);
 		
 		// Set navigation
@@ -93,6 +93,7 @@ class owa_reportView extends owa_view {
 		$this->body->set_template('report.tpl');
 			
 		// set Js libs to be loaded
+		$this->setJs('lazy-load', 'base/js/includes/lazyload-2.0.min.js', '2.0');
 		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
 		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
 		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));

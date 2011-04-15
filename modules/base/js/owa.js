@@ -1,6 +1,7 @@
 	var OWA = {
 
 	items: {},
+	loadedJsLibs: {},
 	overlay: '',
 	config: {
 		ns: 'owa_',
@@ -27,6 +28,22 @@
 		return this.config[name];
 	},
 	
+	requireJs : function (name, url, callback) {
+		
+		if ( ! this.isJsLoaded( name ) ) {
+			OWA.util.loadScript( url, callback );
+		}
+		
+		this.loadedJsLibs[name] = url;
+	},
+	
+	isJsLoaded : function( name ) {
+	
+		if ( this.loadedJsLibs.hasOwnProperty( name ) ) {
+			return true;
+		}
+	},
+
 	initializeStateManager: function() {
 		
 		if ( ! this.state.hasOwnProperty('init') ) {
