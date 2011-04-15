@@ -71,20 +71,9 @@ class owa_timePeriod {
 		return $this->period;
 	}
 	
-	function _setLabel($value) {
+	function _setLabel($value = '') {
 
-		if ($value === 'date_range') {
-			// Set date labels
-			$this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();
-		} elseif ($value === 'day') {
-		
-			$this->label = $this->startDate->getLabel() . ' - ' . $this->startDate->getLabel();
-		
-		} else {
-		
-			$periods = $this->getPeriodLabels();
-			$this->label = $periods[$value]['label'];
-		}
+		$this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();	
 	}
 	
 	/**

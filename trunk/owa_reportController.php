@@ -44,7 +44,6 @@ class owa_reportController extends owa_adminController {
 		$this->setControllerType('report');
 		$this->_setCapability('view_reports');
 		return parent::__construct($params);
-	
 	}
 	
 	/**
@@ -70,12 +69,18 @@ class owa_reportController extends owa_adminController {
 		$this->data['params'] = $this->params;
 				
 		// set default period if necessary
-		if (empty($this->params['period'])) {
-			$this->params['period'] = 'last_seven_days';
+		if ( ! $this->getParam( 'period' ) && ! $this->getParam( 'startDate' ) ) {
 			$this->set('is_default_period', true);
+			$period = 'last_seven_days';
+			$this->params['period'] = $period;
+		} elseif (  ! $this->getParam( 'period' ) &&  $this->getParam( 'startDate' ) ) {
+			$period = 'date_range';
+			$this->params['period'] = $period;
+		} else {
+			$period = $this->getParam('period');
 		}
 		
-		$this->setPeriod($this->getParam('period'));
+		$this->setPeriod($period);
 		
 		$this->setView('base.report');
 		$this->setViewMethod('delegate');

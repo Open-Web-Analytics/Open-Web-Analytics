@@ -1124,6 +1124,7 @@ class owa_coreAPI {
 				
 				if (empty($action)) {
 					$action = owa_coreAPI::getSetting('base', 'start_page');
+					$params['do'] = $action;
 				}	
 			}
 		}
