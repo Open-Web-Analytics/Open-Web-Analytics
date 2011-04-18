@@ -28,7 +28,7 @@
 		</TR>
 	</table>	
 </div>
-<SCRIPT>
+<script>
 OWA.items['<?php echo $dom_id;?>'] = new OWA.report();
 OWA.items['<?php echo $dom_id;?>'].dom_id = "<?php echo $dom_id;?>";
 OWA.items['<?php echo $dom_id;?>'].page_num = "<?php $this->out( $this->getValue( 'page_num', 'pagination' ),false );?>1";
@@ -36,8 +36,16 @@ OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php $this->out( $this->getV
 OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php $this->out( $this->getValue( 'more_pages', 'pagination' ), false );?>";
 OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($params);?>;
 OWA.items['<?php echo $dom_id;?>'].displayTimePeriodPicker();
-</SCRIPT>
-<script>
 OWA.items['<?php echo $dom_id;?>'].showSiteFilter();
+
+// Bind event handlers
+jQuery(document).ready(function(){   
+	
+	// report side navigaion panels - toggle
+	jQuery('.owa_admin_nav_topmenu_toggle').click(function () { 
+      jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
+    });
+});
+
 </script>
 
