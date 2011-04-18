@@ -71,6 +71,8 @@ class owa_reportView extends owa_view {
 			
 		}
 		
+		
+		
 		unset($this->report_params['guid']);
 		unset($this->report_params['caller']);
 		
@@ -133,7 +135,7 @@ class owa_reportView extends owa_view {
 		// set period label
 		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
-		$this->subview->body->set('period_label', $period_label);
+		$this->subview->body->set('period_label', $period_label);	
 	}
 	
 	/**

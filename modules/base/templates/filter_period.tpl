@@ -11,31 +11,34 @@
 	
 	<table id="owa_reportPeriodFiltersContainer" style="display:none;" cellpadding="0" cellspacing="0">
 		<TR>
-			<TH>
+			<TH colspan="3">
 				Enter a Date Range:
 			</TH>
 		</TR>
 		<TR>
-			<TD>
-				<input type="text" id="owa_report-datepicker-start" size="10"> to <input type="text" id="owa_report-datepicker-end"  size="10">
+			<TD class="picker">
+				<div>Start: <input type="text" id="owa_report-datepicker-start-display" size="10"></div>
+				<div id="owa_report-datepicker-start"></div>
+			<TD class="picker">
+				<div>End: <input type="text" id="owa_report-datepicker-end-display"  size="10"></div>
+				<div id="owa_report-datepicker-end"></div>
 			</TD>
-		</TR>	
-		<TR>
-			<TH colspan="2">
-				Or choose a predefined date range below:
-			</TH>
-		</TR>
-		<TR>
-			<TD colspan="2">
+			<TD>
+			
+			</TD>
+		
+			<TD valign="top">
+				Predefined Periods:<BR>
 				<SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
 	<?php foreach ($reporting_periods as $reporting_period => $value):?>
 					<OPTION VALUE="<?php echo $reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
 	<?php endforeach;?>
 				</SELECT>	
+				<P><INPUT class="submit-button" type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Range"></P>
 			</TD>
 		</TR>
 		<TR>
-			<TD colspan="2"><INPUT type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Period"></TD>
+			<TD colspan="3"></TD>
 		</TR>
 	</table>
 </div>
