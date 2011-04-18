@@ -411,7 +411,6 @@ class owa_controller extends owa_base {
 		$this->period = $period;
 		$this->set('period', $this->getPeriod());	
 		$this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
-		return;
 	}
 	
 	function makeTimePeriod($time_period, $params = array()) {

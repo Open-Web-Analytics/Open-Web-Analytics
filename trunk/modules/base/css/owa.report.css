@@ -141,14 +141,14 @@ ul {margin-left:10px;}
 .owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
 .owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
 .owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
-.owa_reportPeriod {text-align: right;}
+/*.owa_reportPeriod {text-align: right;}*/
 #owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
 
 
 #owa_reportPeriodFiltersContainer {background-color: #efefef; width:100%;}
-#owa_reportPeriodFiltersContainer table {width:100%;}
-#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}
 
+/*#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}*/
+#owa_reportPeriodFiltersContainer .picker { padding-left:15px;}
 #owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
 .owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
 
@@ -177,7 +177,7 @@ ul {margin-left:10px;}
 	
 }
 
-.owa_metricInfobox p,span {
+.owa_metricInfobox p, .owa_metricInfobox span {
 	padding:0px 7px 0px 7px;
 	margin:0px;
 	
@@ -570,4 +570,30 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	
 	font-size:14px;
 	color: #9f9f9f;
+}
+
+.owa .submit-button {
+	border-radius:4px; 
+	background-color:orange; 
+	padding:10px 10px 10px 10px; 
+	color:#ffffff; 
+	font-size:14px;
+	font-weight:bold;
+	border: 1px solid #efefef;
+	-moz-border-radius: 3px; 
+	-webkit-border-radius: 3px;	
+	margin-top: 20px;
+	text-decoration: none;
+	
+}
+.owa .submit-button:hover {
+	color: #000000;
+	border-color: #9f9f9f;
+	-moz-box-shadow:2px 2px 2px #999;
+    box-shadow:2px 2px 2px #999;
+    -webkit-box-shadow:2px 2px 2px #999;
+}
+
+.owa .submit-button a  {
+	text-decoration: none;
 }

@@ -236,7 +236,24 @@ OWA.report.timePeriodControl = function( dom_id, options ) {
 
 OWA.report.timePeriodControl.prototype = {
 	
-	formatYyyymmdd : function(yyyymmdd) {
+	fixedPeriods: {
+	
+		today:					'Today',
+		yesterday: 				'Yesterday',
+		this_week: 				'This Week',
+		this_month: 			'This Month',
+		this_year: 				'This Year',
+		last_week: 				'Last Week',
+		last_month:				'Last Month',
+		last_year:				'Last Year',
+		last_seven_days:		'Last Seven Days',
+		last_thirty_days:		'Last Thirty Days',
+		same_day_last_week:		'Same Day Last Week',
+		same_week_last_year: 	'Same Week Last Year',
+		same_month_last_year:	'Same Month Last Year'
+	},
+	
+	formatYyyymmdd : function( yyyymmdd ) {
 		
 		var year = yyyymmdd.substr(2,2);
 		var month = yyyymmdd.substr(4,2);
@@ -255,6 +272,16 @@ OWA.report.timePeriodControl.prototype = {
 		this.endDate = yyyymmdd;
 	},
 	
+	getStartDate : function() {
+		
+		return this.startDate;
+	},
+	
+	getEndDate : function() {
+		
+		return this.endDate;
+	},
+	
 	setupDomElements : function() {
 		
 		var that = this;
@@ -265,32 +292,112 @@ OWA.report.timePeriodControl.prototype = {
 			jQuery("#owa_reportPeriodFiltersContainer").toggle();
 		});
 		
+		/*
+var dates = jQuery("#owa_report-datepicker-start, #owa_report-datepicker-end").datepicker({
+		
+			dateFormat: 'mm-dd-yy',
+			onSelect: function( selectedDate ) {
+			
+				var option = this.id == "#owa_report-datepicker-end" ? "minDate" : "maxDate",
+					instance = jQuery( this ).data( "datepicker" ),
+					date = jQuery.datepicker.parseDate(
+						instance.settings.dateFormat ||
+						jQuery.datepicker._defaults.dateFormat,
+						selectedDate, instance.settings );
+						
+				if (this.id === "#owa_report-datepicker-end" ) {
+					//jQuery("#owa_report-datepicker-start").datepicker( "option", 'maxDate', jQuery("#owa_report-datepicker-end").datepicker( "getDate" ) );
+					jQuery("#owa_report-datepicker-start").datepicker( "option", 'minDate', '' );
+					
+				} else {
+					alert('hi');
+					var start_date = jQuery("#owa_report-datepicker-start").datepicker( "getDate" );
+					jQuery("#owa_report-datepicker-start").datepicker( "option", 'maxDate', date );
+					jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', start_date);
+					//jQuery("#owa_report-datepicker-start").datepicker( "option", 'minDate', 0 );
+				}
+				//jQuery("#owa_report-datepicker-end").datepicker( "option", option, date );
+				
+				jQuery.event.trigger('owa_reportPeriodChange');
+			}
+		});
+		
+		jQuery("#owa_report-datepicker-start").datepicker( "option", "altField", '#owa_report-datepicker-start-display');
+		jQuery("#owa_report-datepicker-end").datepicker( "option", "altField", '#owa_report-datepicker-end-display');
+		
+		jQuery("#owa_report-datepicker-start").datepicker( "setDate", that.formatYyyymmdd( that.getStartDate() ) );
+		jQuery("#owa_report-datepicker-end").datepicker( "setDate", that.formatYyyymmdd( that.getEndDate() ) );
+		
+*/
+		
 		jQuery("#owa_report-datepicker-start").datepicker({
 			
-			showOn: "both", 
-			maxDate: 0,
+			//showOn: "both", 
+			//maxDate: 0,
 			dateFormat: 'mm-dd-yy',
-			onSelect: function(date) { jQuery.event.trigger('owa_reportPeriodChange'); }
+			altField: "#owa_report-datepicker-start-display",
+			onSelect: function(selectedDate) { 
+				
+				// parse date
+				var instance = jQuery( this ).data( "datepicker" );
+				var date = jQuery.datepicker.parseDate(
+						instance.settings.dateFormat ||
+						jQuery.datepicker._defaults.dateFormat,
+						selectedDate, instance.settings );
+				
+				// constrain min date
+				jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', date);		
+				// constrain new max date using value from end date picker
+				jQuery("#owa_report-datepicker-start").datepicker( "option", 'maxDate',
+					jQuery("#owa_report-datepicker-end").datepicker( "getDate" )	
+				
+				);
+				// trigger change event
+				jQuery.event.trigger('owa_reportPeriodChange'); 
+				
+			},
+			defaultDate: that.formatYyyymmdd( that.getStartDate() )
 		});	
 		
 		jQuery("#owa_report-datepicker-end").datepicker({
 			
-			showOn: "both", 
-			maxDate: 0,
+			//showOn: "both", 
+			//maxDate: 0,
 			dateFormat: 'mm-dd-yy',
-			onSelect: function(date) { jQuery.event.trigger('owa_reportPeriodChange'); }
+			//minDate: min_date,
+			altField: "#owa_report-datepicker-end-display",
+			onSelect: function(selectedDate) { 
+			
+				// parse date
+				var instance = jQuery( this ).data( "datepicker" );
+				var date = jQuery.datepicker.parseDate(
+						instance.settings.dateFormat ||
+						jQuery.datepicker._defaults.dateFormat,
+						selectedDate, instance.settings );
+				
+				// constrain min date using value from start date picker
+				jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', 
+					jQuery("#owa_report-datepicker-start").datepicker( "getDate" )
+				
+				);		
+				// constrain new max date 
+				jQuery("#owa_report-datepicker-start").datepicker( "option", 'maxDate', date);
+				// trigger change event
+				jQuery.event.trigger('owa_reportPeriodChange'); 
+			},
+			defaultDate: that.formatYyyymmdd( that.getEndDate() )
 		});	
 		
-		// set default date values
-		jQuery( '#owa_report-datepicker-start' ).datepicker("setDate", that.formatYyyymmdd( that.startDate ) );
-		jQuery( '#owa_report-datepicker-end' ).datepicker("setDate", that.formatYyyymmdd( that.endDate ) );
-	
+		// set hilighting
+		//jQuery("#owa_report-datepicker-end").datepicker( "option", "onSelect", min_date);
+		
+
 	},
 	
 	customRange : function (input) {
 
-		return {minDate: (input.id == "owa_report-datepicker-end" ? jQuery("#owa_report-datepicker-start").datepicker("getDate") : null), 
-        	maxDate: (input.id == "owa_report-datepicker-start" ? jQuery("#owa_report-datepicker-end").datepicker("getDate") : null)}; 
+		return {minDate: (input.id == "owa_report-datepicker-end-display" ? jQuery("#owa_report-datepicker-start").datepicker("getDate") : null), 
+        	maxDate: (input.id == "owa_report-datepicker-start-display" ? jQuery("#owa_report-datepicker-end").datepicker("getDate") : null)}; 
 	
 	}
 };

@@ -508,13 +508,11 @@ class owa_view extends owa_base {
 	function set($name, $value) {
 		
 		$this->data[$name] = $value;
-		return;
 	}
 	
 	function setSubViewProperty($name, $value) {
 		
 		$this->subview->set($name, $value);
-		return;
 	}
 	
 	function getSubViewProperty($name) {
