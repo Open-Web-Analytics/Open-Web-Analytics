@@ -129,7 +129,7 @@ class owa_resultSetManager extends owa_base {
 		}
 		
 		if (!empty($value)) {
-			$this->params['constraints'][] = array('operator' => $operator, 'value' => $value, 'name' => $name);
+			$this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
 		}
 	}
 	
@@ -137,10 +137,12 @@ class owa_resultSetManager extends owa_base {
 		
 		if (is_array($array)) {
 			
-			if (is_array($this->params['constraints'])) {
-				$this->params['constraints'] = array_merge($array, $this->params['constraints']);
-			} else {
-				$this->params['constraints'] = $array;
+			if ( ! isset($this->params['constraints']) ) {
+				$this->params['constraints'] = array();
+			}
+			
+			foreach ($array as $constraint) {
+				$this->setConstraint($constraint['name'], $constraint['value'], $constraint['operator']);
 			}
 		}
 	}
@@ -197,7 +199,14 @@ class owa_resultSetManager extends owa_base {
 		return $this->params['constraints'];
 	}
 	
-	function applyConstraints( $constraints = '', $db = '') {
+	function getConstraint( $key ) {
+		
+		if ( isset( $this->params['constraints'][$key] ) ) {
+			return $this->params['constraints'][$key];
+		}
+	}
+	
+	function applyConstraints( $constraints = '', $db = '', $entity = '') {
 		
 		if ( !$db ) {
 			$db = $this->db;
@@ -207,50 +216,50 @@ class owa_resultSetManager extends owa_base {
 			$constraints = $this->getConstraints();
 		}
 		
-		$nconstraints = array();
-		
 		foreach ($constraints as $k => $constraint) {
 			
-			if ( $this->isDimension( $constraint['name'] ) ) {
+			$this->applyConstraint($constraint, $db, $entity);
+		}
+	}
+	
+	function applyConstraint( $constraint, $db = '', $entity= '') {
+		
+		if ( ! $entity ) {
+			$entity = $this->baseEntity;
+		}
+		
+		if ( $this->isDimension( $constraint['name'] ) ) {
+		
+			$dim = $this->lookupDimension($constraint['name'], $entity);
 			
-				$dim = $this->lookupDimension($constraint['name'], $this->baseEntity);
-				
-				//$dimEntity = owa_coreAPI::entityFactory($dim['entity']);
-				
-				
-				$col = $dim['column'];
-				$constraint['name'] = $col;
-				$nconstraints[$col] = $constraint;
-				
-			}
+			$col = $dim['column'];
+			$constraint['name'] = $col;
+		}
+		
+		if ( $this->isMetric( $constraint['name'] ) ) {
 			
-			if ( $this->isMetric( $constraint['name'] ) ) {
+			// get metric object
+			$m = $this->getMetricImplementation( $constraint['name'] );
+			// if not calculated
+			if ( ! $m->isCalculated() ) {
+				$col = $m->getSelectWithNoAlias();
+				$db->having($col, $constraint['value'], $constraint['operator']);
+			} else {
 				
-				// get metric object
-				$m = $this->getMetricImplementation( $constraint['name'] );
-				// if not calculated
-				if ( ! $m->isCalculated() ) {
-					$col = $m->getSelectWithNoAlias();
-					$db->having($col, $constraint['value'], $constraint['operator']);
-					//$constraint['name'] = $col;
-					//$nconstraints[$col] = $constraint;
-				} else {
-					
-					$this->addError( 'Cannot add a calculated metric to a constraint.' );
-				}
+				$this->addError( 'Cannot add a calculated metric to a constraint.' );
 			}
 		}
 		
-		$db->multiWhere($nconstraints);
+		$db->where($constraint['name'], $constraint['value'], $constraint['operator']);
 	}
 	
 	function setSegment($segment) {
 		
 		$this->query_params['segment'] = $segment;
 		
-		if ( substr($segment, 0, 8) === 'dynamic:') {
+		if ( substr($segment, 0, 9) === 'dynamic::') {
 			
-			$segment = substr($segment, 8);
+			$segment = substr($segment, 9);
 			
 		} elseif ( substr($segment, 0, 3) === 'id:') {
 			// look up segment from db
@@ -885,13 +894,17 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 			
 			$formatter = $this->formatters[$type];
 			
-			if (!empty($formatter)) {
-				
-				$value = call_user_func($formatter, $value);
-			}
+		} else {
+			$s = owa_coreAPI::serviceSingleton();
+			$formatter = $s->getFormatter($type);
 		}
-		 
 		
+		// If we found a formatter, use it
+		if (!empty($formatter)) {
+				
+			$value = call_user_func($formatter, $value);
+		}
+
 		return $value;
 	}
 	
@@ -1396,8 +1409,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 	}
 	
 	function generateSegmentQuery( $base_entity ) {
+	
 		$segment = $this->getSegment();
-		
 		$segment_entity = owa_coreAPI::entityFactory($base_entity->getName());
 		$segment_entity->setTableAlias( $segment_entity->getTableAlias() . '_segment'); 
 		
@@ -1425,9 +1438,24 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 						}
 					}
 				}
+				//print_r( $segment['dimensions'] );
+				$this->applyConstraints( $segment['dimensions'], $db, $segment_entity);
 				
+				// apply siteId, startDate, and endDate constraints
+				$constraint_names = array('siteId', 'date');
+				$constraints_apply = array();		
+				//print_r($this->params['constraints']);
+				foreach ( $constraint_names as $name ) {
 				
-				$this->applyConstraints( $segment['dimensions'], $db);		
+					$con = $this->getConstraint( $name );
+					if ( $con ) {
+						$constraints_apply[$name] = $con;
+					}			 
+				}
+				
+				if ( $constraints_apply ) {
+					$this->applyConstraints( $constraints_apply, $db, $segment_entity);
+				}
 			}
 		
 			return sprintf('(%s)', $db->generateSelectQuerySql() );
