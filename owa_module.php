@@ -175,6 +175,12 @@ class owa_module extends owa_base {
 	var $denormalizedDimensions = array();
 	
 	/**
+	 *
+	 * @var array
+	 */
+	var $formatters = array();
+
+	/**
 	 * cli_commands
 	 * 
 	 * @var array 
@@ -727,6 +733,11 @@ class owa_module extends owa_base {
 	function registerCliCommand($command, $class) {
 		
 		$this->cli_commands[$command] = $class;
+	}
+	
+	function registerFormatter($type, $formatter) {
+	
+		$this->formatters[$type] = $formatter;
 	}
 
 	function registerApiMethod($api_method_name, $user_function, $argument_names, $file = '', $required_capability = '') {
