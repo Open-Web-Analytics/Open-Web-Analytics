@@ -1,4 +1,7 @@
-.owa {background-color: #fffff;}
+.owa {
+	background-color: #fffff;
+	overflow:hidden;
+}
 
 /* management table */
 .owa table.management {
