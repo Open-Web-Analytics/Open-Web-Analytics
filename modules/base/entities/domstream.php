@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
+
 /**
  * DOM Stream Fact Entity
  * 

@@ -302,6 +302,8 @@ OWA.report.timePeriodControl.prototype = {
 		var that = this;
 		
 		//inject dom elements
+		// Todo: 1. move filter_period.tpl into this class
+		//		 2. refactor this class in order to abstract dom id strings into class config object
 		
 		// set period date label e.g. 4/1/11 - 5/3/11
 		
