@@ -140,161 +140,963 @@ class owa_baseModule extends owa_module {
 		$this->registerMetric('revenuePerVisit', 'base.revenuePerVisit');
 		$this->registerMetric('ecommerceConversionRate', 'base.ecommerceConversionRate');
 		$this->registerMetric('domClicks', 'base.domClicks');
+		
 		/**
 		 * Register Dimensions
 		 *
-		 * The following lines register various data dimensions. 
+		 * The following lines register various data dimensions.
+		 * To register a dimenison use the registerDimension method.
+		 * See owa_module class for documentation on this method.
 		 */
-		$this->registerDimension('browserVersion', 'base.ua', 'browser', 'Browser Version', 'visitor', 'The browser version of the visitor.');
-		$this->registerDimension('browserType', 'base.ua', 'browser_type', 'Browser Type', 'visitor', 'The browser type of the visitor.');
-		$this->registerDimension('osType', 'base.os', 'name', 'Operating System', 'visitor', 'The operating System of the visitor.');
-		$this->registerDimension('ipAddress', 'base.host', 'ip_address', 'IP Address', 'visitor', 'The IP address of the visitor.');
-		$this->registerDimension('hostName', 'base.host', 'full_host', 'Host Name', 'visitor', 'The host name used by the visitor.');
-		$this->registerDimension('city', 'base.location_dim', 'city', 'City', 'visitor', 'The city of the visitor.');
-		$this->registerDimension('country', 'base.location_dim', 'country', 'Country', 'visitor', 'The country of the visitor.');
-		$this->registerDimension('latitude', 'base.location_dim', 'latitude', 'Latitude', 'visitor', 'The latitude of the visitor.');
-		$this->registerDimension('longitude', 'base.location_dim', 'longitude', 'Longitude', 'visitor', 'The longitude of the visitor.');
-		$this->registerDimension('countryCode', 'base.location_dim', 'country_code', 'Country Code', 'visitor', 'The ISO country code of the visitor.');
-		$this->registerDimension('stateRegion', 'base.location_dim', 'state', 'State/Region', 'visitor', 'The state or region of the visitor.');
 		
-		$this->registerDimension('timeSinceLastVisit', 'base.session', 'time_sinse_priorsession', 'Time Since Last Visit', 'visitor', 'The time since the last visit.', '', true);
-		$this->registerDimension('isRepeatVisitor', 'base.session', 'is_repeat_visitor', 'Repeat Visitor', 'visitor', 'Repeat Site Visitor.', '', true);
-		$this->registerDimension('isNewVisitor', 'base.session', 'is_new_visitor', 'New Visitor', 'visitor', 'New Site Visitor.', '', true);
-		$this->registerDimension('language', 'base.session', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
-		$this->registerDimension('language', 'base.request', 'language', 'Language', 'visit', 'The language of the visit.', '', true);
-		// campaign related
-		$this->registerDimension('medium', 'base.session', 'medium', 'Medium', 'visit', 'The medium of channel of visit.', '', true);
-		$this->registerDimension('latestAttributions', 'base.session', 'latest_attributions', 'Latest Attributions', 'visit', 'The latest campaign attributions.', '', true);
-		$this->registerDimension('source', 'base.source_dim', 'source_domain', 'Source', 'visit', 'The traffic source of the visit.');
-		$this->registerDimension('campaign', 'base.campaign_dim', 'name', 'Campaign', 'visit', 'The campaign that originated the visit.');
-		$this->registerDimension('ad', 'base.ad_dim', 'name', 'Ad', 'visit', 'The name of the ad that originated the visit.');
-		$this->registerDimension('adType', 'base.ad_dim', 'type', 'Ad Type', 'visit', 'The type of ad that originated the visit.');
-		
-		$this->registerDimension('siteDomain', 'base.site', 'domain', 'Site Domain', 'visit', 'The domain of the site.');
-		$this->registerDimension('siteName', 'base.site', 'name', 'Site Name', 'visit', 'The name of the site.');
-		$this->registerDimension('siteId', 'base.site', 'site_id', 'Site ID', 'visit', 'The ID of the site.');
-		$this->registerDimension('userName', 'base.visitor', 'user_name', 'User Name', 'visitor', 'The name or ID of the user.');
-		$this->registerDimension('userEmail', 'base.visitor', 'user_email', 'Email Address', 'visitor', 'The email address of the user.');
-		
-		// Date and time oriented dimensions
-		$this->registerDimension('date', 'base.session', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('day', 'base.session', 'day', 'Day', 'visit', 'The day.', '', true);
-		$this->registerDimension('month', 'base.session', 'month', 'Month', 'visit', 'The month.', '', true);
-		$this->registerDimension('year', 'base.session', 'year', 'Year', 'visit', 'The year.', '', true);
-		$this->registerDimension('dayofweek', 'base.session', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
-		$this->registerDimension('dayofyear', 'base.session', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
-		$this->registerDimension('weekofyear', 'base.session', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
-		$this->registerDimension('siteId', 'base.session', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
-		$this->registerDimension('daysSinceLastVisit', 'base.session', 'days_since_prior_session', 'Days Since Last Visit', 'visit', 'The number of days since the last visit.', '', true);
-		$this->registerDimension('daysSinceFirstVisit', 'base.session', 'days_since_first_session', 'Days Since First Visit', 'visit', 'The number of days since the first visit of the user.', '', true);
-	
-		$this->registerDimension('priorVisitCount', 'base.session', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
-		
-		$this->registerDimension('priorVisitCount', 'base.request', 'num_prior_sessions', 'Prior Visits', 'visit', 'The number of prior visits, excluding the current one.', '', true);
-		
-		$this->registerDimension('date', 'base.request', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('day', 'base.request', 'day', 'Day', 'visit', 'The day.', '', true);
-		$this->registerDimension('month', 'base.request', 'month', 'Month', 'visit', 'The month.', '', true);
-		$this->registerDimension('year', 'base.request', 'year', 'Year', 'visit', 'The year.', '', true);
-		$this->registerDimension('dayofweek', 'base.request', 'dayofweek', 'Day of Week', 'visit', 'The day of the week.', '', true);
-		$this->registerDimension('dayofyear', 'base.request', 'dayofyear', 'Day of Year', 'visit', 'The day of the year.', '', true);
-		$this->registerDimension('weekofyear', 'base.request', 'weekofyear', 'Week of Year', 'visit', 'The week of the year.', '', true);
-		$this->registerDimension('siteId', 'base.request', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
-		
-		$this->registerDimension('actionName', 'base.action_fact', 'action_name', 'Action Name', 'actions', 'The name of the action.', '', true);
-		$this->registerDimension('actionGroup', 'base.action_fact', 'action_group', 'Action Group', 'actions', 'The group that an action belongs to.', '', true);
-		$this->registerDimension('actionLabel', 'base.action_fact', 'action_label', 'Action Label', 'actions', 'The label associated with an action.', '', true);
-		$this->registerDimension('date', 'base.action_fact', 'yyyymmdd', 'Date', 'action', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('siteId', 'base.acton_fact', 'site_id', 'Site ID', 'visit', 'The ID of the the web site.', '', true);
-		
-		// visit
-		$this->registerDimension('entryPageUrl', 'base.document', 'url', 'Entry Page URL', 'visit', 'The URL of the entry page.', 'first_page_id');
-		$this->registerDimension('entryPagePath', 'base.document', 'uri', 'Entry Page Path', 'visit', 'The URI of the entry page.', 'first_page_id');
-		$this->registerDimension('entryPageTitle', 'base.document', 'page_title', 'Entry Page Title', 'visit', 'The title of the entry page.', 'first_page_id');
-		$this->registerDimension('entryPageType', 'base.document', 'page_type', 'Entry Page Type', 'visit', 'The page type of the entry page.', 'first_page_id');
-		$this->registerDimension('exitPageUrl', 'base.document', 'url', 'Exit Page URL', 'visit', 'The URL of the exit page.', 'last_page_id');
-		$this->registerDimension('exitPagePath', 'base.document', 'uri', 'Exit Page Path', 'visit', 'The URI of the exit page.', 'last_page_id');
-		$this->registerDimension('exitPageTitle', 'base.document', 'page_title', 'Exit Page Title', 'visit', 'The title of the exit page.', 'last_page_id');
-		$this->registerDimension('exitPageType', 'base.document', 'page_type', 'Exit Page Type', 'visit', 'The page type of the exit page.', 'last_page_id');
-		$this->registerDimension('priorPageUrl', 'base.document', 'url', 'Prior Page URL', 'visit', 'The URL of the prior page.', 'prior_document_id');
-		$this->registerDimension('priorPagePath', 'base.document', 'uri', 'Prior Page Path', 'visit', 'The URI of the prior page.', 'prior_document_id');
-		$this->registerDimension('priorPageTitle', 'base.document', 'page_title', 'Prior Page Title', 'visit', 'The title of the prior page.', 'prior_document_id');
-		$this->registerDimension('priorPageType', 'base.document', 'page_type', 'Prior Page Type', 'visit', 'The page type of the prior page.', 'prior_document_id');
-		
-		// traffic sources
-		$this->registerDimension('referralPageUrl', 'base.referer', 'url', 'Referral Page URL', 'traffic sources', 'The url of the referring web page.');
-		$this->registerDimension('referralPageTitle', 'base.referer', 'page_title', 'Referral Page Title', 'traffic sources', 'The title of the referring web page.');
-		$this->registerDimension('referralSearchTerms', 'base.search_term_dim', 'terms', 'Search Terms', 'traffic sources', 'The referring search terms.', 'referring_search_term_id');
-		$this->registerDimension('referralLinkText', 'base.referer', 'refering_anchortext', 'Referral Link Text', 'traffic sources', 'The text of the referring link.');
-		$this->registerDimension('isSearchEngine', 'base.referer', 'is_searchengine', 'Search Engine', 'traffic sources', 'Is traffic source a search engine.');
-		$this->registerDimension('referralWebSite', 'base.referer', 'site', 'Referral Web Site', 'traffic sources', 'The full domain of the referring web site.');
-		
-		// content
-		$this->registerDimension('pageUrl', 'base.document', 'url', 'Page URL', 'content', 'The URL of the web page.', 'document_id');
-		$this->registerDimension('pagePath', 'base.document', 'uri', 'Page Path', 'content', 'The path of the web page.', 'document_id');
-		$this->registerDimension('pageTitle', 'base.document', 'page_title', 'Page Title', 'content', 'The title of the web page.', 'document_id');
-		$this->registerDimension('pageType', 'base.document', 'page_type', 'Page Type', 'content', 'The page type of the web page.', 'document_id');
-		
-		// feeds
-		$this->registerDimension('date', 'base.feed_request', 'yyyymmdd', 'Date', 'date', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('day', 'base.feed_request', 'day', 'Day', 'date', 'The day.', '', true);
-		$this->registerDimension('month', 'base.feed_request', 'month', 'Month', 'date', 'The month.', '', true);
-		$this->registerDimension('year', 'base.feed_request', 'year', 'Year', 'date', 'The year.', '', true);
-		$this->registerDimension('dayofweek', 'base.feed_request', 'dayofweek', 'Day of Week', 'date', 'The day of the week.', '', true);
-		$this->registerDimension('dayofyear', 'base.feed_request', 'dayofyear', 'Day of Year', 'date', 'The day of the year.', '', true);
-		$this->registerDimension('weekofyear', 'base.feed_request', 'weekofyear', 'Week of Year', 'date', 'The week of the year.', '', true);
-		$this->registerDimension('feedType', 'base.feed_request', 'feed_format', 'Feed Type', 'feed', 'The type or format of the feed.', '', true);
-		$this->registerDimension('siteId', 'base.feed_request', 'site_id', 'Site ID', 'request', 'The ID of the the web site.', '', true);
-		
-		//clicks
-		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'visit', 'The date.', '', true, 'yyyymmdd');
-		// IDs
-		$this->registerDimension('visitorId', 'base.visitor', 'id', 'Visitor ID', 'visitor', 'The ID of the visitor.');
-		$this->registerDimension('sessionId', 'base.session', 'id', 'Session ID', 'visit', 'The ID of the session/visit.');
-		
-		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', 'Days To Purchase', 'ecommerce', 'The number of days since the first visit and an e-commerce transaction.', '', true);
-		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', 'Visits To Purchase', 'ecommerce', 'The number of visits prior to an e-commerce transaction.', '', true);
-		
-		// productName
-		$this->registerDimension(
-				'productName', 
-				'base.commerce_line_item_fact', 
-				'product_name', 
-				'Product Name', 
-				'ecommerce', 
-				'The name of the product purchased.', 
-				'', 
-				true
+		// fact table entity names used by a number of dimensions.
+		$fact_table_entities = array(
+			'base.action_fact',
+			'base.request',
+			'base.session',
+			'base.domstream',
+			'base.click',
+			'base.commerce_transaction_fact',
+			'base.commerce_line_item_fact'
 		);
-		// productSku
-		$this->registerDimension('productSku', 'base.commerce_line_item_fact', 'sku', 'Product SKU', 'ecommerce', 'The SKU code of the product purchased.', '', true);
-		// productCategory
-		$this->registerDimension('productCategory', 'base.commerce_line_item_fact', 'category', 'Product Category', 'ecommerce', 'The category of product purchased.', '', true);
-		// transactionOriginator
-		$this->registerDimension('transactionOriginator', 'base.commerce_transaction_fact', 'order_source', 'Originator', 'ecommerce', 'The store or location that originated the transaction.', '', true);
-		// transactionId
-		$this->registerDimension('transactionId', 'base.commerce_transaction_fact', 'order_id', 'Transaction ID', 'ecommerce', 'The id of the e-commerce transaction.', '', true);
-		$this->registerDimension('transactionGateway', 'base.commerce_transaction_fact', 'gateway', 'Payment Gateway', 'ecommerce', 'The payment gateway or provider used in the e-commerce transaction.', '', true);
-		// daysToTransaction
-		$this->registerDimension('daysToTransaction', 'base.commerce_transaction_fact', 'days_since_first_session', "Days To Purchase', 'ecommerce', 'The number of days between the visitor's first visit and when transaction occurred.", '', true);
-		// visitsToTransaction
-		$this->registerDimension('visitsToTransaction', 'base.commerce_transaction_fact', 'num_prior_sessions', "Visits To Purchase', 'ecommerce', 'The number of visits before the transaction occurred.", '', true);
-		$this->registerDimension('date', 'base.commerce_line_item_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('date', 'base.commerce_transaction_fact', 'yyyymmdd', 'Date', 'ecommerce', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('timestamp', 'base.commerce_transaction_fact', 'timestamp', 'Time', 'ecommerce', 'The timestamp of the transaction.', '', true);
-		$this->registerDimension('siteId', 'base.commerce_line_item_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true);
-		$this->registerDimension('siteId', 'base.commerce_transaction_fact', 'site_id', 'Site Id', 'ecommerce', 'The site ID.', '', true);
-		// dom clicks
-		$this->registerDimension('siteId', 'base.click', 'site_id', 'Site Id', 'site', 'The site ID.', '', true, '');
-		$this->registerDimension('date', 'base.click', 'yyyymmdd', 'Date', 'date', 'The date.', '', true, 'yyyymmdd');
-		$this->registerDimension('domElementId', 'base.click', 'dom_element_id', 'Dom ID', 'dom', 'The id of the dom element.', '', true);
-		$this->registerDimension('domElementName', 'base.click', 'dom_element_name', 'Dom Name', 'dom', 'The name of the dom element.', '', true);
-		$this->registerDimension('domElementText', 'base.click', 'dom_element_text', 'Dom Text', 'dom', 'The text associated the dom element.', '', true);
-		$this->registerDimension('domElementValue', 'base.click', 'dom_element_value', 'Dom Value', 'dom', 'The value of the dom element.', '', true);
-		$this->registerDimension('domElementTag', 'base.click', 'dom_element_tag', 'Dom Tag', 'dom', 'The html tag of the dom element.', '', true);
-		$this->registerDimension('domElementClass', 'base.click', 'dom_element_class', 'Dom Class', 'dom', 'The class of the dom element.', '', true);
 		
-		// custom variable dimensions
+		
+		// Time Dimensions
+		$this->registerDimension(
+			'date', 
+			$fact_table_entities, 
+			'yyyymmdd', 
+			'Date', 
+			'time', 
+			'The full date.', 
+			'', 
+			true, 
+			'yyyymmdd'
+		);
+		
+		$this->registerDimension(
+			'day', 
+			$fact_table_entities, 
+			'day', 
+			'Day', 
+			'time', 
+			'The day of the month (1-31).', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'month', 
+			$fact_table_entities, 
+			'month', 
+			'Month', 
+			'rime', 
+			'The month of the year (1-12).', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'year', 
+			$fact_table_entities, 
+			'year', 
+			'Year', 
+			'time', 
+			'The year.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'dayofweek', 
+			$fact_table_entities, 
+			'dayofweek', 
+			'Day of Week', 
+			'time', 
+			'The day of the week (1-7).', 
+			'', 
+			true);
+			
+		$this->registerDimension(
+			'dayofyear', 
+			$fact_table_entities, 
+			'dayofyear', 
+			'Day of Year', 
+			'time', 
+			'The day of the year (1-365).', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'weekofyear', 
+			$fact_table_entities, 
+			'weekofyear', 
+			'Week of Year', 
+			'time', 
+			'The week of the year (1-52).', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'date', 
+			'base.feed_request', 
+			'yyyymmdd', 
+			'Date', 
+			'time', 
+			'The date.', 
+			'', 
+			true, 
+			'yyyymmdd'
+		);
+		
+		$this->registerDimension(
+			'day', 
+			'base.feed_request', 
+			'day', 
+			'Day', 
+			'time', 
+			'The day.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'month', 
+			'base.feed_request', 
+			'month', 
+			'Month', 
+			'time', 
+			'The month.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'year', 
+			'base.feed_request', 
+			'year', 
+			'Year', 
+			'time', 
+			'The year.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'dayofweek', 
+			'base.feed_request', 
+			'dayofweek', 
+			'Day of Week', 
+			'time', 
+			'The day of the week.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'dayofyear', 
+			'base.feed_request', 
+			'dayofyear', 
+			'Day of Year', 
+			'time', 
+			'The day of the year.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'weekofyear', 
+			'base.feed_request', 
+			'weekofyear', 
+			'Week of Year', 
+			'date', 
+			'The week of the year.', 
+			'', 
+			true
+		);
+		
+		// Site Dimensions
+		$this->registerDimension(
+			'siteId', 
+			$fact_table_entities, 
+			'site_id', 
+			'Site ID', 
+			'site', 
+			'The ID of the the web site.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'siteDomain', 
+			'base.site', 
+			'domain', 
+			'Site Domain', 
+			'aite', 
+			'The domain of the web site.'
+		);
+		
+		$this->registerDimension(
+			'siteName', 
+			'base.site', 
+			'name', 
+			'Site Name', 
+			'site', 
+			'The name of the site.'
+		);
+		
+		/*
+		$this->registerDimension(
+			'siteId', 
+			'base.site', 
+			'site_id', 
+			'Site ID', 
+			'site', 
+			'The ID of the site.'
+		);
+		*/
+		
+		$this->registerDimension(
+			'siteId', 
+			'base.feed_request', 
+			'site_id', 
+			'Site ID', 
+			'site', 
+			'The ID of the the web site.', 
+			'', 
+			true
+		);
+		
+		// Visitor Dimensions
+		$this->registerDimension(
+			'visitorId', 
+			'base.visitor', 
+			'id', 
+			'Visitor ID', 
+			'visitor', 
+			'The ID of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'userName', 
+			'base.visitor', 
+			'user_name', 
+			'User Name', 
+			'visitor', 
+			'The name or ID of the user.'
+		);
+		
+		$this->registerDimension(
+			'userEmail', 
+			'base.visitor', 
+			'user_email', 
+			'Email Address', 
+			'visitor', 
+			'The email address of the user.'
+		);
+		
+		$this->registerDimension(
+			'isRepeatVisitor', 
+			$fact_table_entities, 
+			'is_repeat_visitor', 
+			'Repeat Visitor', 
+			'visitor', 
+			'Repeat Site Visitor.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'isNewVisitor', 
+			$fact_table_entities, 
+			'is_new_visitor', 
+			'New Visitor', 
+			'visitor', 
+			'New Site Visitor.', 
+			'', 
+			true
+		);
+		
+		// Visit/Session Dimensions
+		$this->registerDimension(
+			'sessionId', 
+			'base.session', 
+			'id', 
+			'Session ID', 
+			'visit-special', 
+			'The ID of the session/visit.'
+		);
+		
+		$this->registerDimension(
+			'entryPageUrl', 
+			'base.document', 
+			'url', 
+			'Entry Page URL', 
+			'visit', 
+			'The URL of the entry page.', 
+			'first_page_id'
+		);
+		
+		$this->registerDimension(
+			'entryPagePath', 
+			'base.document', 
+			'uri', 
+			'Entry Page Path', 
+			'visit', 
+			'The URI of the entry page.', 
+			'first_page_id'
+		);
+		
+		$this->registerDimension(
+			'entryPageTitle', 
+			'base.document', 
+			'page_title', 
+			'Entry Page Title', 
+			'visit', 
+			'The title of the entry page.', 
+			'first_page_id'
+		);
+		
+		$this->registerDimension(
+			'entryPageType', 
+			'base.document', 
+			'page_type', 
+			'Entry Page Type', 
+			'visit', 
+			'The page type of the entry page.', 
+			'first_page_id'
+		);
+		
+		$this->registerDimension(
+			'exitPageUrl', 
+			'base.document', 
+			'url', 
+			'Exit Page URL', 
+			'visit', 
+			'The URL of the exit page.', 
+			'last_page_id'
+		);
+		
+		$this->registerDimension(
+			'exitPagePath', 
+			'base.document', 
+			'uri', 
+			'Exit Page Path', 
+			'visit', 
+			'The URI of the exit page.', 
+			'last_page_id'
+		);
+		
+		$this->registerDimension(
+			'exitPageTitle', 
+			'base.document', 
+			'page_title', 
+			'Exit Page Title', 
+			'visit', 
+			'The title of the exit page.', 
+			'last_page_id'
+		);
+		
+		$this->registerDimension(
+			'exitPageType', 
+			'base.document', 
+			'page_type', 
+			'Exit Page Type', 
+			'visit', 
+			'The page type of the exit page.', 
+			'last_page_id'
+		);
+		
+		$this->registerDimension(
+			'timeSinceLastVisit', 
+			'base.session', 
+			'time_sinse_priorsession', 
+			'Time Since Last Visit', 
+			'visit-special', 
+			'The time since the last visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'daysSinceLastVisit', 
+			$fact_table_entities, 
+			'days_since_prior_session', 
+			'Days Since Last Visit', 
+			'visit', 
+			'The number of days since the last visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'daysSinceFirstVisit', 
+			$fact_table_entities, 
+			'days_since_first_session', 
+			'Days Since First Visit', 
+			'visit', 
+			'The number of days since the first visit of the user.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'priorVisitCount', 
+			$fact_table_entities, 
+			'num_prior_sessions', 
+			'Prior Visits', 
+			'visit', 
+			'The number of prior visits, excluding the current one.', 
+			'', 
+			true
+		);
+		
+		// System/Technology Dimensions
+		$this->registerDimension(
+			'browserVersion', 
+			'base.ua', 
+			'browser', 
+			'Browser Version', 
+			'system', 
+			'The browser version of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'browserType', 
+			'base.ua', 
+			'browser_type', 
+			'Browser Type', 
+			'system', 
+			'The browser type of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'osType', 
+			'base.os', 
+			'name', 
+			'Operating System', 
+			'system', 
+			'The operating System of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'language', 
+			$fact_table_entities, 
+			'language', 
+			'Language', 
+			'system', 
+			'The language of the visit.', 
+			'', 
+			true
+		);
+		
+		// Geo Dimensions
+		$this->registerDimension(
+			'city', 
+			'base.location_dim', 
+			'city', 
+			'City', 
+			'geo', 
+			'The city of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'country', 
+			'base.location_dim', 
+			'country', 
+			'Country', 
+			'geo', 
+			'The country of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'latitude', 
+			'base.location_dim', 
+			'latitude', 
+			'Latitude', 
+			'geo', 
+			'The latitude of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'longitude', 
+			'base.location_dim', 
+			'longitude', 
+			'Longitude', 
+			'geo', 
+			'The longitude of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'countryCode', 
+			'base.location_dim', 
+			'country_code', 
+			'Country Code', 
+			'geo', 
+			'The ISO country code of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'stateRegion', 
+			'base.location_dim', 
+			'state', 
+			'State/Region', 
+			'geo', 
+			'The state or region of the visitor.'
+		);
+		
+		// Network Dimensions
+		$this->registerDimension(
+			'ipAddress', 
+			'base.host', 
+			'ip_address', 
+			'IP Address', 
+			'network', 
+			'The IP address of the visitor.'
+		);
+		
+		$this->registerDimension(
+			'hostName', 
+			'base.host', 
+			'full_host', 
+			'Host Name', 
+			'network', 
+			'The host name used by the visitor.'
+		);
+		
+		// Campaign Dimensions
+		$this->registerDimension(
+			'medium', 
+			$fact_table_entities,
+			'medium', 
+			'Medium', 
+			'campaign', 
+			'The medium where visit originated from.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'source', 
+			'base.source_dim', 
+			'source_domain', 
+			'Source', 
+			'campaign', 
+			'The traffic source of the visit.'
+		);
+		
+		$this->registerDimension(
+			'campaign', 
+			'base.campaign_dim', 
+			'name', 
+			'Campaign', 
+			'campaign', 
+			'The campaign that originated the visit.'
+		);
+		
+		$this->registerDimension(
+			'ad', 
+			'base.ad_dim', 
+			'name', 
+			'Ad', 
+			'campaign', 
+			'The name of the ad that originated the visit.'
+		);
+		
+		$this->registerDimension(
+			'adType', 
+			'base.ad_dim', 
+			'type', 
+			'Ad Type', 
+			'campaign', 
+			'The type of ad that originated the visit.'
+		);
+		
+		$this->registerDimension(
+			'referralPageUrl', 
+			'base.referer', 
+			'url', 
+			'Referral Page URL', 
+			'campaign', 
+			'The url of the referring web page.'
+		);
+		
+		$this->registerDimension(
+			'referralPageTitle', 
+			'base.referer', 
+			'page_title', 
+			'Referral Page Title', 
+			'campaign', 
+			'The title of the referring web page.'
+		);
+		
+		$this->registerDimension(
+			'referralSearchTerms', 
+			'base.search_term_dim', 
+			'terms', 
+			'Search Terms', 
+			'campaign', 
+			'The referring search terms.', 
+			'referring_search_term_id'
+		);
+		
+		$this->registerDimension(
+			'referralLinkText', 
+			'base.referer', 
+			'refering_anchortext', 
+			'Referral Link Text', 
+			'campaign', 
+			'The text of the referring link.'
+		);
+		
+		$this->registerDimension(
+			'isSearchEngine', 
+			'base.referer', 
+			'is_searchengine', 
+			'Search Engine', 
+			'campaign', 
+			'Is traffic source a search engine.'
+		);
+		
+		$this->registerDimension(
+			'referralWebSite', 
+			'base.referer', 
+			'site', 
+			'Referral Web Site', 
+			'campaign', 
+			'The full domain of the referring web site.'
+		);
+		
+		$this->registerDimension(
+			'latestAttributions', 
+			'base.session', 
+			'latest_attributions', 
+			'Latest Attributions', 
+			'campaign-special', 
+			'The latest campaign attributions.', 
+			'', 
+			true
+		);
+		
+		// Page Content
+		$this->registerDimension(
+			'priorPageUrl', 
+			'base.document', 
+			'url', 
+			'Prior Page URL', 
+			'content', 
+			'The URL of the prior page.', 
+			'prior_document_id'
+		);
+		
+		$this->registerDimension(
+			'priorPagePath', 
+			'base.document', 
+			'uri', 
+			'Prior Page Path', 
+			'content', 
+			'The URI of the prior page.', 
+			'prior_document_id'
+		);
+		
+		$this->registerDimension(
+			'priorPageTitle', 
+			'base.document', 
+			'page_title', 
+			'Prior Page Title', 
+			'content', 
+			'The title of the prior page.', 
+			'prior_document_id'
+		);
+		
+		$this->registerDimension(
+			'priorPageType', 
+			'base.document', 
+			'page_type', 
+			'Prior Page Type', 
+			'content', 
+			'The page type of the prior page.', 
+			'prior_document_id'
+		);
+		
+		$this->registerDimension(
+			'pageUrl', 
+			'base.document', 
+			'url', 
+			'Page URL', 
+			'content', 
+			'The URL of the web page.', 
+			'document_id'
+		);
+		
+		$this->registerDimension(
+			'pagePath', 
+			'base.document', 
+			'uri', 
+			'Page Path', 
+			'content', 
+			'The path of the web page.', 
+			'document_id'
+		);
+		
+		$this->registerDimension(
+			'pageTitle', 
+			'base.document', 
+			'page_title', 
+			'Page Title', 
+			'content', 
+			'The title of the web page.', 
+			'document_id'
+		);
+		
+		$this->registerDimension(
+			'pageType', 
+			'base.document', 
+			'page_type', 
+			'Page Type', 
+			'content', 
+			'The page type of the web page.', 
+			'document_id'
+		);
+		
+		// Action Event Dimensions
+		$this->registerDimension(
+			'actionName', 
+			'base.action_fact', 
+			'action_name', 
+			'Action Name', 
+			'actions', 
+			'The name of the action.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'actionGroup', 
+			'base.action_fact', 
+			'action_group', 
+			'Action Group', 
+			'actions', 
+			'The group that an action belongs to.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'actionLabel', 
+			'base.action_fact', 
+			'action_label', 
+			'Action Label', 
+			'actions', 
+			'The label associated with an action.', 
+			'', 
+			true
+		);	
+		
+		// Ecommerce Dimensions
+		$this->registerDimension(
+			'productName', 
+			'base.commerce_line_item_fact', 
+			'product_name', 
+			'Product Name', 
+			'ecommerce', 
+			'The name of the product purchased.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'productSku', 
+			'base.commerce_line_item_fact', 
+			'sku', 
+			'Product SKU', 
+			'ecommerce', 
+			'The SKU code of the product purchased.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'productCategory', 
+			'base.commerce_line_item_fact', 
+			'category', 
+			'Product Category', 
+			'ecommerce', 
+			'The category of product purchased.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'transactionOriginator', 
+			'base.commerce_transaction_fact', 
+			'order_source', 
+			'Originator', 
+			'ecommerce', 
+			'The store or location that originated the transaction.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'transactionId', 
+			'base.commerce_transaction_fact', 
+			'order_id', 
+			'Transaction ID', 
+			'ecommerce', 
+			'The id of the e-commerce transaction.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'transactionGateway', 
+			'base.commerce_transaction_fact', 
+			'gateway', 
+			'Payment Gateway', 
+			'ecommerce', 
+			'The payment gateway/provider used to clear the transaction.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'daysToTransaction', 
+			'base.commerce_transaction_fact', 
+			'days_since_first_session', 
+			'Days To Purchase', 
+			'ecommerce', 
+			'The number of days since the first visit and an e-commerce transaction.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'daysToTransaction', 
+			'base.commerce_transaction_fact', 
+			'days_since_first_session', 
+			'Days To Purchase', 
+			'ecommerce', 
+			'The number of days since the first visit and an e-commerce transaction.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'visitsToTransaction', 
+			'base.commerce_transaction_fact', 
+			'num_prior_sessions', 
+			'Visits To Purchase', 
+			'ecommerce', 
+			'The number of visits before the transaction occurred.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'visitsToTransaction', 
+			'base.commerce_transaction_fact', 
+			'num_prior_sessions', 
+			'Visits To Purchase', 
+			'ecommerce', 
+			'The number of visits prior to an e-commerce transaction.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'timestamp', 
+			'base.commerce_transaction_fact', 
+			'timestamp', 
+			'Time', 
+			'ecommerce-special', 
+			'The timestamp of the transaction.', 
+			'', 
+			true
+		);
+		
+		// Click Dimensions
+		$this->registerDimension(
+			'domElementId', 
+			'base.click', 
+			'dom_element_id', 
+			'Dom ID', 
+			'dom', 
+			'The id of the dom element.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'domElementName', 
+			'base.click', 
+			'dom_element_name', 
+			'Dom Name', 
+			'dom', 
+			'The name of the dom element.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'domElementText', 
+			'base.click', 
+			'dom_element_text', 
+			'Dom Text', 
+			'dom', 
+			'The text associated the dom element.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'domElementValue', 
+			'base.click', 
+			'dom_element_value', 
+			'Dom Value', 
+			'dom', 
+			'The value of the dom element.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'domElementTag', 
+			'base.click', 
+			'dom_element_tag', 
+			'Dom Tag', 
+			'dom', 
+			'The html tag of the dom element.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'domElementClass', 
+			'base.click', 
+			'dom_element_class', 
+			'Dom Class', 
+			'dom', 
+			'The class of the dom element.', 
+			'', 
+			true
+		);
+			
+		// Feed Dimensions
+		$this->registerDimension(
+			'feedType', 
+			'base.feed_request', 
+			'feed_format', 
+			'Feed Type', 
+			'feed', 
+			'The type or format of the feed.', 
+			'', 
+			true
+		);
+		
+		// Custom variable Dimensions
 		$cv_max = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
 		for ($i = 1; $i <= $cv_max;$i++) {
 			
@@ -314,7 +1116,7 @@ class owa_baseModule extends owa_module {
 					),
 					$cvar_name_col,
 					$cvar_name_label,
-					'Custom Variables',
+					'custom variables',
 					$cvar_name_description,
 					'',
 					true,
@@ -337,7 +1139,7 @@ class owa_baseModule extends owa_module {
 					),
 					$cvar_value_col,
 					$cvar_value_label,
-					'Custom Variables',
+					'custom variables',
 					$cvar_value_description,
 					'',
 					true,

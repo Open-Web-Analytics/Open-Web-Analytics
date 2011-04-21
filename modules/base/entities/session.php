@@ -85,6 +85,8 @@ class owa_session extends owa_factTable {
 		$this->properties['user_email'] = new owa_dbColumn;
 		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
 		
+		// move to abstract
+		/*
 		$this->properties['year'] = new owa_dbColumn;
 		$this->properties['year']->setDataType(OWA_DTD_INT);
 		$this->properties['month'] = new owa_dbColumn;
@@ -97,6 +99,8 @@ class owa_session extends owa_factTable {
 		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
 		$this->properties['weekofyear'] = new owa_dbColumn;
 		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		*/
+		// drop these soon
 		$this->properties['hour'] = new owa_dbColumn;
 		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['minute'] = new owa_dbColumn;

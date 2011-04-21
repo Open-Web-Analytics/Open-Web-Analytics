@@ -52,7 +52,13 @@ class owa_base_007_update extends owa_update {
 				'medium',
 				'source_id',
 				'ad_id',
-				'campaign_id'
+				'campaign_id',
+				'day',
+				'month',
+				'year',
+				'dayofweek',
+				'dayofyear',
+				'weekofyear'
 		);
 		
 		$this->entities['base.domstream']['addColumn'] = array(
@@ -73,7 +79,13 @@ class owa_base_007_update extends owa_update {
 				'campaign_id',
 				'ua_id',
 				'host_id',
-				'os_id'
+				'os_id',
+				'day',
+				'month',
+				'year',
+				'dayofweek',
+				'dayofyear',
+				'weekofyear'
 		);
 		
 		$this->entities['base.click']['addColumn'] = array(
@@ -113,7 +125,13 @@ class owa_base_007_update extends owa_update {
 				'language',
 				'ip_address',
 				'is_new_visitor',
-				'is_repeat_visitor'
+				'is_repeat_visitor',
+				'day',
+				'month',
+				'year',
+				'dayofweek',
+				'dayofyear',
+				'weekofyear'
 				
 		);
 		
@@ -127,7 +145,13 @@ class owa_base_007_update extends owa_update {
 				'ip_address',
 				'is_new_visitor',
 				'is_repeat_visitor',
-				'referer_id'
+				'referer_id',
+				'day',
+				'month',
+				'year',
+				'dayofweek',
+				'dayofyear',
+				'weekofyear'
 				
 		);
 		
@@ -157,7 +181,7 @@ class owa_base_007_update extends owa_update {
 		return parent::__construct();
 	}
 	
-	function up() {
+	function up($force = false) {
 		
 		foreach ( $this->entities as $entity => $operations) {
 			$e = owa_coreAPI::entityFactory($entity); 
@@ -167,8 +191,13 @@ class owa_base_007_update extends owa_update {
 					if ( $ret === true ) {
 						$this->e->notice( "Applied $operation on $entity for $item" );
 					} else {
-						$this->e->notice( "Applying $operation on $entity for $item failed." );
-						return false;
+					
+						if  ( ! $force ) {
+							$this->e->notice( "Applying $operation on $entity for $item failed." );
+							return false;
+						} else {
+							$this->e->notice( "Forced $operation on $entity for $item failed." );
+						}
 					}
 				}				
 			}

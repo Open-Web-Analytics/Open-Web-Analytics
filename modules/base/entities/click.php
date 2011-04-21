@@ -76,7 +76,7 @@ class owa_click extends owa_factTable {
 		// move to abstract
 		//$this->properties['timestamp'] = new owa_dbColumn;
 		//$this->properties['timestamp']->setDataType(OWA_DTD_INT);
-		
+		/*
 		$this->properties['year'] = new owa_dbColumn;
 		$this->properties['year']->setDataType(OWA_DTD_INT);
 		$this->properties['month'] = new owa_dbColumn;
@@ -87,6 +87,8 @@ class owa_click extends owa_factTable {
 		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
 		$this->properties['weekofyear'] = new owa_dbColumn;
 		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		*/
+		// drop these soon
 		$this->properties['hour'] = new owa_dbColumn;
 		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['minute'] = new owa_dbColumn;
@@ -95,6 +97,7 @@ class owa_click extends owa_factTable {
 		$this->properties['second']->setDataType(OWA_DTD_INT);
 		$this->properties['msec'] = new owa_dbColumn;
 		$this->properties['msec']->setDataType(OWA_DTD_VARCHAR255);
+		
 		$this->properties['click_x'] = new owa_dbColumn;
 		$this->properties['click_x']->setDataType(OWA_DTD_INT);
 		$this->properties['click_y'] = new owa_dbColumn;

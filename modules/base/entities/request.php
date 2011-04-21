@@ -100,6 +100,7 @@ class owa_request extends owa_factTable {
 		
 		//$this->properties['last_req'] = new owa_dbColumn;
 		//$this->properties['last_req']->setDataType(OWA_DTD_BIGINT);
+		/*
 		$this->properties['year'] = new owa_dbColumn;
 		$this->properties['year']->setDataType(OWA_DTD_INT);
 		$this->properties['month'] = new owa_dbColumn;
@@ -112,6 +113,8 @@ class owa_request extends owa_factTable {
 		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
 		$this->properties['weekofyear'] = new owa_dbColumn;
 		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		*/
+		// drop these at some point
 		$this->properties['hour'] = new owa_dbColumn;
 		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['minute'] = new owa_dbColumn;

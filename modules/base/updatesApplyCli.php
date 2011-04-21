@@ -103,7 +103,15 @@ class owa_updatesApplyCliController extends owa_cliController {
 	
 		list($module, $seq) = explode('.', $update);
 		$u = owa_coreAPI::updateFactory($module, $seq);
-		$ret = $u->apply();
+		
+		// check for force command param
+		$force = false;
+		if ($this->isParam('--force')) {
+			
+			$force = true;
+		}
+		
+		$ret = $u->apply($force);
 		
 		if ($ret) {
 			owa_coreAPI::notice("Updates applied successfully.");

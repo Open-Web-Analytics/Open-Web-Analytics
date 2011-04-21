@@ -74,7 +74,7 @@ class owa_update extends owa_base {
 	 *
 	 * @return boolean
 	 */
-	function apply() {
+	function apply($force = false) {
 		
 		// check for schema version. abort if not present or else updates will get out of sync.
 		if (empty($this->schema_version)) {
@@ -85,9 +85,12 @@ class owa_update extends owa_base {
 		$current_version = $this->c->get($this->module_name, 'schema_version');
 		
 		// check to see that you are applying an update that was successfully applied
-		if ($current_version === $this->schema_version) { 
-			$this->e->notice(sprintf("Aborting %s Update (%s): Update has already ben applied.", get_class(), $this->module_name));
-			return false;
+		
+		if ( ! $force ) {
+			if ($current_version === $this->schema_version) { 
+				$this->e->notice(sprintf("Aborting %s Update (%s): Update has already been applied.", get_class(), $this->module_name));
+				return false;
+			}
 		}
 		
 		// execute pre update proceadure
@@ -98,7 +101,7 @@ class owa_update extends owa_base {
 			$this->e->notice("Pre Update Proceadure Suceeded");
 			
 			// execute actual update proceadure
-			$ret = $this->up();
+			$ret = $this->up($force);
 	
 			if ($ret == true):
 			
