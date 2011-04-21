@@ -261,7 +261,7 @@ class owa_resultSetManager extends owa_base {
 			
 			$segment = substr($segment, 9);
 			
-		} elseif ( substr($segment, 0, 3) === 'id:') {
+		} elseif ( substr($segment, 0, 4) === 'id::') {
 			// look up segment from db
 		}
 		

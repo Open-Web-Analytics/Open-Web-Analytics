@@ -71,6 +71,13 @@ class owa_factTable extends owa_entity {
 		$columns['yyyymmdd'] = new owa_dbColumn('yyyymmdd', OWA_DTD_INT);
 		$columns['yyyymmdd']->setIndex();
 		
+		$columns['year'] = new owa_dbColumn('year', OWA_DTD_INT);
+		$columns['month'] = new owa_dbColumn('month', OWA_DTD_INT);
+		$columns['day'] = new owa_dbColumn('day', OWA_DTD_TINYINT2);
+		$columns['dayofweek'] = new owa_dbColumn('dayofweek', OWA_DTD_VARCHAR10);
+		$columns['dayofyear'] = new owa_dbColumn('dayofyear', OWA_DTD_INT);
+		$columns['weekofyear'] = new owa_dbColumn('weekofyear', OWA_DTD_INT);
+		
 		$columns['last_req'] = new owa_dbColumn( 'last_req', OWA_DTD_BIGINT );
 		
 		$columns['ip_address'] = new owa_dbColumn('ip_address', OWA_DTD_VARCHAR255);
