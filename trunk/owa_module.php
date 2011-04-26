@@ -720,7 +720,17 @@ class owa_module extends owa_base {
 		
 		foreach ($entity_names as $entity) {
 	
-			$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type, 'denormalized' => $denormalized);
+			$dim = array(
+				'family' 			=> $family, 
+				'name' 				=> $dim_name, 
+				'entity' 			=> $entity, 
+				'column' 			=> $column, 
+				'label' 			=> $label, 
+				'description' 		=> $description, 
+				'foreign_key_name' 	=> $foreign_key_name, 
+				'data_type' 		=> $data_type, 
+				'denormalized' 		=> $denormalized
+			);
 		
 			if ($denormalized) {
 				$this->denormalizedDimensions[$dim_name][$entity] = $dim;

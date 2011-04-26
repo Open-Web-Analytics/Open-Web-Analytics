@@ -597,3 +597,70 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa .submit-button a  {
 	text-decoration: none;
 }
+
+.owa .dimensionPicker {
+	
+	width:175px;
+	font-size: 10px;
+}
+
+.owa .dimensionPicker .dim-list {
+	
+	height: 220px;
+	overflow-y: scroll;
+	visibility:;
+	padding: 20px;
+	background-color: #efefef;
+	border: 1px solid #9f9f9f;
+	width: 180px;
+}
+
+.owa .dimensionPicker .dimensionListItem {
+	
+	color: white;
+	background-color: green;
+	border: 1px solid #efefef;
+	padding:7px;
+}
+
+.owa .dimensionPicker .select-button {
+	
+	font-size: 10px;
+	height:;
+	
+}
+
+.owa .dimensionPicker .dimensionListItem:hover {
+	
+	font-weight: bold;
+	background-color: orange;
+}
+
+.owa .dimensionPicker h4 {
+	font-size:  14px;
+	font-weight: bold;
+	margin-bottom: 5px;
+	margin-top: 10px;
+}
+
+.owa .explorerTopControls {
+	
+	font-size: 12px;
+	width:auto;
+	border: 1px solid #B0B0B0;
+	padding: 0px;
+	margin-bottom:5px;
+	background-color: #fafafa;
+}
+
+.owa .explorerTopControls li, .owa .explorerTopControls ul {
+	
+	float: none;
+}
+
+.owa .explorerTopControls li {
+	
+	list-style: none;
+	text-decoration: none;
+	width:;
+}

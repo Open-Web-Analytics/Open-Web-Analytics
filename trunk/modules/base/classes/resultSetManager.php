@@ -1404,6 +1404,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		}
 		
 		$rs->errors = $this->errors;
+		
+		$rs->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
 				
 		return $rs;
 	}
@@ -1651,6 +1653,45 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		}
 		
 		return http_build_query($new,'', $seperator);
+	}
+	
+	function getAllRelatedDimensions($entity) {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$dims = array();
+		$denormalized_dims = $s->denormalizedDimensions; 
+			
+		foreach ( $denormalized_dims as $ddim_imp) {
+		
+			foreach ( $ddim_imp as $k => $ddim) {
+				
+				if ($k === $entity->getName()) {
+					$dims[ $ddim['family'] ][] = array( 'name' => $ddim['name'], 'label' => $ddim['label'] );
+				}
+			}
+		}
+			
+		$normalized_dims = $s->dimensions;
+		
+		foreach ( $normalized_dims as $k => $ndim ) {
+			
+			// check to see if realation exists with dim's speficied foreign key
+			$fk = $ndim['foreign_key_name'];
+			if ( $fk ) {
+				
+				$col_exists = $entity->getProperty($fk);
+				
+			} else {
+				// check to see if there is any foreign key to the dim's entity
+				$col_exists = $entity->getForeignKeyColumn( $ndim['entity'] );
+			}
+			
+			if ( $col_exists ) {
+				$dims[ $ndim['family'] ][] = array( 'name' => $ndim['name'], 'label' => $ndim['label'] );
+			}		
+		}
+		
+		return $dims;
 	}
 
 }

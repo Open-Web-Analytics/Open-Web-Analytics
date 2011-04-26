@@ -28,6 +28,12 @@
 		return this.config[name];
 	},
 	
+	// localize wrapper
+	l: function (string) {
+		
+		return string;
+	},
+	
 	requireJs : function (name, url, callback) {
 		
 		if ( ! this.isJsLoaded( name ) ) {
