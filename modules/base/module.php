@@ -190,7 +190,7 @@ class owa_baseModule extends owa_module {
 			$fact_table_entities, 
 			'month', 
 			'Month', 
-			'rime', 
+			'time', 
 			'The month of the year (1-12).', 
 			'', 
 			true
@@ -334,7 +334,7 @@ class owa_baseModule extends owa_module {
 			'base.site', 
 			'domain', 
 			'Site Domain', 
-			'aite', 
+			'site', 
 			'The domain of the web site.'
 		);
 		

@@ -128,6 +128,22 @@ OWA.resultSetExplorer.prototype = {
 		
 	},
 	
+	changeSecondaryDimension : function(oldname, newname) {
+	
+		// get current list of dimensions from url
+		var url = new OWA.uri( this.resultSet.self );
+		var dims = OWA.util.urldecode(url.getQueryParam('owa_dimensions'));
+		
+		if (dims) {
+			var dim_array = dims.split(',');
+			dim_array[1] = newname;
+			var new_dims = dim_array.join(',');
+			
+			url.setQueryParam('owa_dimensions', new_dims);
+			this.getResultSet( url.getSource() );
+		}
+	},
+	
 	getOption : function(name) {
 		
 		return this.options[name];
@@ -237,7 +253,7 @@ OWA.resultSetExplorer.prototype = {
 			},
 			
 			useServerFormatter : function(cellvalue, options, rowdata) {
-				var name = options.colModel.realColName; 
+				var name = options.colModel.realColName;
 				return rowdata[name].formatted_value;
 				//return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
 			}
@@ -251,6 +267,11 @@ OWA.resultSetExplorer.prototype = {
 			// happens with first results set when loading from URL.
 			if (this.gridInit !== true) {
 				this.displayGrid();
+			} else {
+				// unload current grid jut in case columns have changed
+				jQuery("#" + that.dom_id + '_grid').jqGrid('GridUnload', "#gbox_" + that.dom_id + '_grid');
+				// setup grid columns/options again
+				this.setGridOptions();
 			}
 			
 			jQuery("#"+that.dom_id + ' _grid').jqGrid('clearGridData',true);
@@ -325,13 +346,32 @@ OWA.resultSetExplorer.prototype = {
 	injectDomElements : function() {
 	
 		var p = '';
-		
+		p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul></div>';
+		p += '<div style="clear:both;"></div>';
 		p += '<table id="'+ this.dom_id + '_grid"></table>';
 		p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
 		p += '<div style="clear:both;"></div>';
 		
 		var that = this;
 		jQuery('#'+that.dom_id).append(p);
+		
+		// add top level controls
+		// secondard dimension picker
+		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
+			OWA.util.sprintf(
+				'<li>%s: <span id="%s" class="controlItem"></span></li>', 
+				OWA.l('Secondary Dimension'), 
+				this.dom_id + '_grid_secondDimensionChooser' 
+			)
+		);
+
+		var sdc = new OWA.dimensionPicker(this.resultSet.relatedDimensions);
+		sdc.display( this.dom_id + '_grid_secondDimensionChooser' );
+		
+		// listen for the change to secondary dimension
+		jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser').bind('owa_changeSecondaryDimension', function(event, oldname, newname) {
+			that.changeSecondaryDimension(oldname, newname);
+		});
 	},
 	
 	setGridOptions : function() {
@@ -1175,4 +1215,159 @@ OWA.resultSetExplorer.prototype = {
     	return url;
     }
     
+};
+
+OWA.dimensionPicker = function(dimensions) {
+	
+	this.dim_list = dimensions || {};
+	this.alternate_field_selector = '';
+	this.dom_id = '';
+};
+
+OWA.dimensionPicker.prototype = {
+
+	display: function( dom_id ) {
+	
+		this.dom_id = dom_id || this.dom_id;
+	
+		var container_selector = '#' + dom_id;
+		
+		var container_dom_elements =  '<span class="dimensionPicker">';
+		
+		container_dom_elements += OWA.util.sprintf(
+					'<span href="#" class="select-button">%s</span>', 
+					OWA.l('Select...') 
+				);
+			
+		container_dom_elements += '<div class="dim-list"></div>';		
+		container_dom_elements += '</span>';
+		// add container level dom elements
+		jQuery( container_selector ).html( container_dom_elements );
+		// hide the dim list
+		jQuery( container_selector + ' > .dimensionPicker > .dim-list').hide();
+		jQuery(container_selector + ' > .dimensionPicker > .select-button').button({ icons: {primary:'ui-icon-blank',secondary:'ui-icon-triangle-1-s'} });
+		// add list items
+		var list = '';
+		// if there are dimensions
+		if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
+			
+			this.generateDimList();
+			
+		} else {
+			
+			jQuery(container_selector + ' > .dimensionPicker > .dim-list').html(
+				OWA.l('There are no related dimensions.')
+			);
+		}
+		
+		var that = this;	
+		// bind the click on the select button.
+		jQuery( container_selector + ' > .dimensionPicker > .select-button').click( function() {
+			that.showToolTip(container_selector + ' > .dimensionPicker > .dim-list', jQuery(this).offset().left, jQuery(this).offset().top);
+			//jQuery( container_selector + ' > .dimensionPicker > .dim-list').toggle();	
+		});
+		
+		// bind the clicks on dimension list items
+		jQuery( container_selector + ' > .dimensionPicker > .dim-list > ul > .dimensionListItem' ).click( function() {
+			
+			
+			// get current dim name
+			var old_dim_name = jQuery( container_selector + ' .dimensionPicker > .select-button').data('name') || '';
+			
+			// change the button label
+			jQuery( container_selector + ' .dimensionPicker > .select-button').button(
+				'option', 'label',	jQuery(this).data('label')
+			);
+			
+			// bind a new name
+			jQuery( container_selector + ' .dimensionPicker > .select-button').data(
+				'name', jQuery(this).data('name')
+			);
+			
+			// trigger change event in case there is someone listening
+			// usually the resultsetExplorer that created this obj.
+			jQuery('#' + that.dom_id).trigger(
+				'owa_changeSecondaryDimension', [old_dim_name, jQuery(this).data('name')]
+			);
+			
+			// close the picker.
+			jQuery( container_selector + ' > .dimensionPicker > .dim-list').toggle();
+			
+		});
+		
+	},
+	
+	bindEventhandlers : function ( ) {
+	
+		// show hide.
+	
+	},
+	
+	showToolTip : function( selector, x, y ) {
+		
+		jQuery(selector).css( {
+            position: 'absolute',
+            display: 'none',
+            top: y - 240,
+            left: x + 5,
+            background: '#F3F2F7',
+            border: '1px solid #B0B0B0',
+            padding: '10px',
+            
+        });
+        
+        jQuery(selector).toggle();
+	},
+	
+	setDimensionlist : function ( dim_list ) {
+		
+		this.dim_list = dim_list;
+	},
+	
+	generateDimList : function(search_string) {
+		
+		var container_selector = '#' + this.dom_id;
+		
+		jQuery( container_selector + ' > .dimensionPicker > .dim-list' ).html('');
+
+		for (group in this.dim_list) {
+				
+			if ( this.dim_list.hasOwnProperty(group) ) {
+				
+				// add group headers
+				jQuery( container_selector + ' > .dimensionPicker > .dim-list' ).append(
+					
+					OWA.util.sprintf('<h4>%s</h4><ul></ul>', group)
+				); 
+				
+				// add list items
+				for( var i=0; i < this.dim_list[group].length; i++ ) {
+				
+					var dim_group_selector = container_selector + 
+											 ' > .dimensionPicker > .dim-list > ul:last';
+					
+					jQuery( dim_group_selector ).append(
+						OWA.util.sprintf(
+							'<li class="dimensionListItem">%s</li>', 
+							this.dim_list[group][i].label
+						)
+					);
+					// bind data to the dom element
+					jQuery( dim_group_selector + ' > li:last' ).data(
+						'label', this.dim_list[group][i].label
+					);
+
+					jQuery( dim_group_selector + ' > li:last' ).data(
+						'name', this.dim_list[group][i].name
+					);
+				}
+			}
+		}
+	},
+	
+	setAlternateField : function( selector ) {
+		
+		this.alternate_field_selector = selector;
+	}
+
 };
