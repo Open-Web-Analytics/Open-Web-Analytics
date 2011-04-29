@@ -45,6 +45,10 @@ OWA.resultSetExplorer = function(dom_id, options) {
 	this.currentWindowWidth = '';
 	this.view = '';
 	this.asyncQueue = [];
+	this.subscriber_dom_ids = [];
+	this.autoRefreshInterval = 10000;
+	this.autoRefresh = false;
+	this.autoRefreshTimerId = '';
 	
 	this.domSelectors = {
 		areaChart: '', 
@@ -110,7 +114,7 @@ OWA.resultSetExplorer.prototype = {
 		this.loadUrl = url;
 	},
 	
-	sortGrid : function(column, order) {
+	changeSort : function(column, order) {
 		
 		var url = new OWA.uri( this.resultSet.self );
 		var sortorder = '';
@@ -124,23 +128,49 @@ OWA.resultSetExplorer.prototype = {
 		url.removeQueryParam('owa_page');
 		// fetch new results
 		//alert( url.getSource() );
-		this.getResultSet( url.getSource() );
+		this.getNewResultSet( url.getSource() );
 		
 	},
 	
-	changeSecondaryDimension : function(oldname, newname) {
+	/**
+	 * Add/Changes a dimension
+	 * handler for secondary_dimension_change events
+	 */
+	changeDimension : function(oldname, newname) {
 	
 		// get current list of dimensions from url
 		var url = new OWA.uri( this.resultSet.self );
 		var dims = OWA.util.urldecode(url.getQueryParam('owa_dimensions'));
 		
+		var new_dims = [];
+				
 		if (dims) {
-			var dim_array = dims.split(',');
-			dim_array[1] = newname;
-			var new_dims = dim_array.join(',');
+			
+			dims = dims.split(',');			
+			
+			if ( OWA.util.in_array(oldname, dims) ) {
+			
+				// loop through dims looking for the current sec. dim	
+				for (var i=0; i < dims.length; i++) {
+					// if you find it replace with new one
+					if ( dims[i] === oldname ) {
+						new_dim = newname;
+					} else {
+						new_dim = dims[i]
+					}
+					
+					new_dims.push(new_dim);		
+				}
+			} else {
+				// just add to the existng dim set
+				new_dims = dims;
+				new_dims.push( newname );
+			}	
+			
+			new_dims = new_dims.join(',');
 			
 			url.setQueryParam('owa_dimensions', new_dims);
-			this.getResultSet( url.getSource() );
+			this.getNewResultSet( url.getSource() );
 		}
 	},
 	
@@ -149,21 +179,29 @@ OWA.resultSetExplorer.prototype = {
 		return this.options[name];
 	},
 	
-	setView : function(name) {
-		
-		this.view = name;
-	},
-	
 	getAggregates : function() {
 		
 		return this.resultSet.aggregates;
 	},
 	
+	// needed??
+	setView : function(name) {
+		
+		this.view = name;
+	},
+	
 	// called after data is rendered for a view
+	// needed???
 	setCurrentView : function(name) {
 		
 		jQuery(that.domSelectors[that.currentView]).toggle();
 		this.currentView = name;
+	},
+	
+	// makesa unqiue idfor each row
+	// needed?
+	makeRowGuid : function(row) {
+		
 	},
 	
 	getRowValues : function(old) {
@@ -178,11 +216,6 @@ OWA.resultSetExplorer.prototype = {
 		}
 	
 		return row;
-	},
-	
-	// makesa unqiue idfor each row
-	makeRowGuid : function(row) {
-		
 	},
 	
 	loadFromArray : function(json, view) {
@@ -201,111 +234,70 @@ OWA.resultSetExplorer.prototype = {
 		this.getResultSet(url);
 	},
 	
-	displayGrid : function () {
-		this.injectDomElements();
-		this.setGridOptions();
-		this.addAllRowsToGrid();
-		this.makeGridPagination();
-		this.gridInit = true;
-		this.currentView = 'grid';
+	/**
+	 * Creates a data grid from the result set
+	 *
+	 * @param	dom_id	string	the target dom ID for the grid
+	 * @param	options	obj		grid options
+	 */	
+	createGrid : function (dom_id, options) {
 		
-	},
-	
-	makeGrid : function(dom_id) {
-		
+		// set defaults for backwards compatability
 		dom_id = dom_id || this.dom_id;
+		options = options || this.options.grid;
 		
-		//if (typeof this.viewObjects[dom_id] != 'undefined') {
-			this.viewObjects[dom_id] = new OWA.dataGrid(dom_id);
-		//}
-	
-		this.viewObjects[dom_id].makeGrid(this.resultSet);
-	},
+		// make new grid object
+		var grid = new OWA.dataGrid( dom_id, options );
 		
-	refreshGrid : function() {
+		// show grid
+		grid.generate(this.resultSet);
 		
+		//register dom_id as a listener for data change events
+		this.registerDataChangeSubscriber( dom_id );
+		
+		// closure
 		var that = this;
 		
-		// custom formattter functions.
-		jQuery.extend(jQuery.fn.fmatter , {
-			// urlFormatter allows for a single param substitution.
-			urlFormatter : function(cellvalue, options, rowdata) {
-			//alert(JSON.stringify(cellvalue));
-				var sub_value = options.rowId;
-				//alert(options.rowId);
-				var name = options.colModel.realColName;
-				//var name = 'actionName';
-				//alert(that.columnLinks[name].template);
-				OWA.debug(options.rowId-1+' '+name);
-				//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value));
-				//alert(JSON.stringify(that.resultSet.resultsRows[options.rowId-1]));
-				//alert(options.rowId-1);
-				//alert(name);
-				//alert(JSON.stringify(cellvalue));
-				//alert(JSON.stringify(options.colModel.link_template));
-				//alert(JSON.stringify(rowdata));
-				if ( rowdata[name].link.length > 0 ) {
-					var new_url = rowdata[name].link;
-					//var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
-					var link =  '<a href="' + new_url + '">' + cellvalue.formatted_value + '</a>';
-					return link;
-				}
-			},
-			
-			useServerFormatter : function(cellvalue, options, rowdata) {
-				var name = options.colModel.realColName;
-				return rowdata[name].formatted_value;
-				//return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
-			}
-			
+		// subscribe to grid page events
+		jQuery( "#" + dom_id ).bind( 'page_forward', function(event) {
+			that.getNewResultSet(that.resultSet.next);
 		});
 		
+		jQuery( "#" + dom_id ).bind( 'page_back', function(event) {
+			that.getNewResultSet(that.resultSet.previous);
+		});
 		
+		// subscribe to grid secondary dimension change event
+		jQuery( "#" + dom_id ).bind( 'secondary_dimension_change', function(event, oldname, newname) {
+			that.changeDimension(oldname, newname);
+		});
 		
-		if (this.resultSet.resultsReturned > 0) {
+		// subscribe to grid sort column change event
+		jQuery( "#" + dom_id ).bind( 'sort_column_change', function(event, column, direction) {
+			that.changeSort(column, direction);
+		});
+
+	},
+	
+	/**
+	 * Registers a dom_id to publish new result sets to
+	 */
+	registerDataChangeSubscriber : function( dom_id ) {
 		
-			// happens with first results set when loading from URL.
-			if (this.gridInit !== true) {
-				this.displayGrid();
-			} else {
-				// unload current grid jut in case columns have changed
-				jQuery("#" + that.dom_id + '_grid').jqGrid('GridUnload', "#gbox_" + that.dom_id + '_grid');
-				// setup grid columns/options again
-				this.setGridOptions();
-			}
-			
-			jQuery("#"+that.dom_id + ' _grid').jqGrid('clearGridData',true);
-			this.addAllRowsToGrid();	
-			
-			// hide the built in jqgrid loading divs. 
-			jQuery("#load_"+that.dom_id+"_grid").hide(); 
-			jQuery("#load_"+that.dom_id+"_grid").css("z-index", 101);
-			
-			// check to see if we need ot hide the previous page control.
-			if (this.resultSet.page == 1) {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
-			} else if (this.resultSet.page == this.resultSet.total_pages) {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').hide();
-			} else {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
-			}
-			
-		} else {
-			jQuery("#"+that.dom_id).html("No data is available for this time period.");
-		}		
+		this.subscriber_dom_ids.push( dom_id );
+	},
+		
+	/**
+	 * Depricated
+	 */
+	refreshGrid : function() {
+		
+		return this.createGrid();
 	},
 	
 	loader : function(data) {
 		
 		if (data) {
-			// check to see if resultSet is new 
-			if (this.resultSet.length > 0) {
-				// if not new then return. nothing to do.
-				if (data.resultSet.guid === this.resultSet.guid) {
-					return;
-				}
-					
-			}
 			
 			this.setResultSet(data);
 				
@@ -320,8 +312,46 @@ OWA.resultSetExplorer.prototype = {
 					
 					this.dynamicFunc(this.asyncQueue[i]);
 				}
+			}
+			
+			if ( this.autoRefresh ) {
+				
+				this.startAutoRefresh();
 			}	
 		}	
+	},
+	
+	/**
+	 * Enables auto-refresh mode
+	 */
+	enableAutoRefresh : function() {
+		
+		this.autoRefresh = true;
+	},
+		
+	/**
+	 * Starts auto refresh timer
+	 *
+	 * @param	interval	int	interval duration in milliseconds
+	 */
+	startAutoRefresh : function(interval) {
+		
+		this.autoRefreshInterval = interval || this.autoRefreshInterval;
+		var that = this;
+		this.autoRefreshTimerId = setInterval(function() {
+				that.getNewResultSet();
+			}, 
+			this.autoRefreshInterval
+		);
+	},
+	
+	/**
+	 * Halts auto refresh of result set
+	 *
+	 */
+	stopAutoRefresh : function() {
+		clearInterval(this.autoRefreshTimerId);
+		this.this.autoRefreshTimerId = '';
 	},
 	
 	dynamicFunc : function (func){
@@ -333,293 +363,47 @@ OWA.resultSetExplorer.prototype = {
 	
 	// fetch the result set from the server
 	getResultSet : function(url) {
-		//alert(url);
-		var that = this;
 		
-		// uses the built in jqgrid loading divs. just giveit a message and show it.
-		jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
-		jQuery("#load_"+that.dom_id+"_grid").show(); 
-		jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
+		var that = this;
 		jQuery.getJSON(url, '', function (data) {that.loader(data);});
 	},
 	
-	injectDomElements : function() {
-	
-		var p = '';
-		p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul></div>';
-		p += '<div style="clear:both;"></div>';
-		p += '<table id="'+ this.dom_id + '_grid"></table>';
-		p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
-		p += '<div style="clear:both;"></div>';
+	getNewResultSet : function( url ) {
+		
+		url = url || this.resultSet.self;
 		
 		var that = this;
-		jQuery('#'+that.dom_id).append(p);
-		
-		// add top level controls
-		// secondard dimension picker
-		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
-			OWA.util.sprintf(
-				'<li>%s: <span id="%s" class="controlItem"></span></li>', 
-				OWA.l('Secondary Dimension'), 
-				this.dom_id + '_grid_secondDimensionChooser' 
-			)
-		);
-
-		var sdc = new OWA.dimensionPicker(this.resultSet.relatedDimensions);
-		sdc.display( this.dom_id + '_grid_secondDimensionChooser' );
-		
-		// listen for the change to secondary dimension
-		jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser').bind('owa_changeSecondaryDimension', function(event, oldname, newname) {
-			that.changeSecondaryDimension(oldname, newname);
-		});
+		jQuery.getJSON(url, '', function (data) {that.setResultSet(data);});
 	},
 	
-	setGridOptions : function() {
-	
+	setResultSet : function(rs) {
+		
+		// check to see if resultSet is new 
+		if (rs.length > 0) {
+			// if not new then return. nothing to do.
+			if (rs.resultSet.guid === this.resultSet.guid) {
+				return;
+			}
+			
+		}
+		
+		this.resultSet = rs;
+		this.applyLinks();
+		
+		// notify listeners of new data
 		var that = this;
-		
-		var columns = [];
-		
-		var columnDef = '';
-		
-		for (var column in this.resultSet.resultsRows[0]) {
+		for (var i = 0; i < that.subscriber_dom_ids.length; i++) {
 			
-			// check to see if we should exclude any columns
-			if (this.options.grid.excludeColumns.length > 0) {
-				
-				for (var i=0;i<=this.options.grid.excludeColumns.length -1;i++) {
-					// if column name is not on the exclude list then add it.
-					if (this.options.grid.excludeColumns[i] != column) {
-						// add column	
-						columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);
-						columns.push(columnDef);			
-					}
-				}
-				
-			} else {
-				// add column
-				columnDef = this.makeGridColumnDef(this.resultSet.resultsRows[0][column]);
-				columns.push(columnDef);
-			}
-			
-		}
-		
-		jQuery('#' + that.dom_id + '_grid').jqGrid({
-			jsonReader: {
-				repeatitems: false,
-				root: "resultsRows",
-				cell: '',
-				id: '',
-				page: 'page',
-				total: 'total_pages',
-				records: 'resultsReturned'
-			},
-			afterInsertRow: function(rowid, rowdata, rowelem) {return;},
-			datatype: 'local',
-			colModel: columns,
-			rownumbers: that.options.grid.showRowNumbers,
-			viewrecords: true,
-			rowNum: that.resultSet.resultsReturned,
-			height: '100%',
-			autowidth: true,
-			hoverrows: false,
-			sortname: that.resultSet.sortColumn,
-			sortorder: that.resultSet.sortOrder,
-			onSortCol: function( index, iCol, sortorder ) {
-				
-				that.sortGrid( index, sortorder );
-				return 'stop';
-			}
-		});
-		
-		// set header css
-		for (var y=0;y < columns.length;y++) {
-			var css = {};
-			//if dimension column then left align
-			if ( columns[y].classes == 'owa_dimensionGridCell' ) {
-				css['text-align'] = 'left';
-			} else {
-				css['text-align'] = 'right';
-			}
-			// if sort column then bold.
-			if (this.resultSet.sortColumn +'' === columns[y].name) {
-				//css.fontWeight = 'bold';
-			}
-			// set the css. no way to just set a class...
-			jQuery('#' + that.dom_id + '_grid').jqGrid('setLabel', columns[y].name, '',css);
-		}
-		
-		/*
-		// custom formattter functions.
-		jQuery.extend(jQuery.fn.fmatter , {
-			// urlFormatter allows for a single param substitution.
-			urlFormatter : function(cellvalue, options, rowdata) {
-				var sub_value = options.rowId;
-				//alert(options.rowId);
-				var name = options.colModel.realColName;
-				//var name = 'actionName';
-				//alert(that.columnLinks[name].template);
-				OWA.debug(options.rowId-1+' '+name);
-				//var new_url = that.columnLinks[name].template.replace('%s', escape(sub_value)); 
-				var new_url = that.resultSet.resultsRows[options.rowId-1][name].link;
-				var link =  '<a href="' + new_url + '">' + cellvalue + '</a>';
-				return link;
-			}
-		});
-		*/
-	},
-	
-	makeGridColumnDef : function(column) {
-		
-		var _sort_type = '';
-		var _align = '';
-		var _format = '';
-		var _class = '';
-		var _width = '';
-		var _resizable = true;
-		var _fixed = false;
-		var _datefmt = '';
-		var _link_template = '';
-		
-		if (column.result_type === 'dimension') {
-			_align = 'left';
-			_class = 'owa_dimensionGridCell';
-		} else {
-			_align = 'right';
-			_class = 'owa_metricGridCell';
-			_width = 100;
-			_resizable = false;
-			_fixed = true;
-		}
-		
-		if (column.data_type === 'string') {
-			_sort_type = 'text';
-		} else {
-			_sort_type = 'number';
-		}
-		
-		if (column.link) {
-			_format = 'urlFormatter';
-		} else {
-			_format = 'useServerFormatter';
-		}
-		
-		// set custom formatter if one exists.
-		if (this.options.grid.columnFormatters.hasOwnProperty(column.name)) {
-			_format = this.options.grid.columnFormatters[column.name];
-		}
-		
-		if ( this.columnLinks.hasOwnProperty( column.name ) ) {
-			_link_template = this.columnLinks[column.name].template;
-		}
-				
-		var columnDef = {
-			//name: column.name +'.value', 
-			name: column.name, 
-			//index: column.name +'.value',
-			index: column.name +'', 
-			label: column.label, 
-			sorttype: _sort_type, 
-			align: _align, 
-			formatter: _format, 
-			classes: _class, 
-			width: _width, 
-			resizable: _resizable,
-			fixed: _fixed,
-			realColName: column.name,
-			datefmt: _datefmt,
-			link_template: _link_template
-		};
-		
-		return columnDef;
-		
-	},
-	
-	makeColumnDefinitions : function() {
-	
-	},
-	
-		
-	addRowToGrid : function(row, id) {
-	
-		var that = this;
-		
-		rowid = id || that.makeRowGuid(row);
-		
-		jQuery("#"+that.dom_id + '_grid').jqGrid('addRowData',rowid,that.getRowValues(row));
-	},
-	
-	addAllRowsToGrid :function() {
-		
-		var that = this; 
-		jQuery("#"+that.dom_id + '_grid')[0].addJSONData(that.resultSet);
-		this.displayRowCount();
-	},
-	
-	displayRowCount : function() {
-		
-		if (this.resultSet.total_pages > 1) {
-
-			var start = '';
-			var end = '';
-			if (this.resultSet.page === 1) {
-				start = 1;
-				end = this.resultSet.resultsReturned;
-			} else {
-				start = ((this.resultSet.page -1)  * this.resultSet.resultsPerPage) + 1;
-				end = ((this.resultSet.page -1) * this.resultSet.resultsPerPage) + this.resultSet.resultsReturned;
-			}
-			
-			var p = '<li class="owa_rowCount">';
-			p += 'Results: '+ start + ' - ' + end;
-			p = p + '</li>';
-		
-			var that = this;
-			//alert ("#"+that.dom_id + '_grid' + ' > .owa_rowCount');
-			var check = jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html();
-			//alert(check);
-			if (check === null)	{
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
-			} else {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html(p);			
-			}
-		}
-	},
-		
-	makeGridPagination : function() {
-		
-		if (this.resultSet.more) {
-			
-			var that = this;
-			
-			var p = '';
-			p = p + '<LI class="owa_previousPageControl">';
-			p = p + '<span>Previous Page</span></LI>';
-			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
-			jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid(that.resultSet.previous);});	
-			
-			var pn = '';
-			pn = pn + '<LI class="owa_nextPageControl">';
-			pn = pn + '<span>Next Page</span></LI>';
-			
-			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(pn);
-			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid(that.resultSet.next);});
-			
-			if (this.resultSet.page == 1) {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
-			}
-			
+			jQuery('#' + that.subscriber_dom_ids[i]).trigger('new_result_set', [that.resultSet]);
 		}
 	},
 	
-	pageGrid : function (url) {
-	
-		this.getResultSet(url);
-		var that = this;
-			
-	},
-	
+	/**
+	 * Adds a link template to a column
+	 * @public
+	 */	
 	addLinkToColumn : function(col_name, link_template, sub_params) {
+		
 		this.columnLinks = {};
 		if (col_name) {
 			var item = {};
@@ -632,14 +416,12 @@ OWA.resultSetExplorer.prototype = {
 		}
 		
 		this._columnLinksCount++;
-		//alert(this.dom_id);
 	},
 	
-	setResultSet : function(rs) {
-		this.resultSet = rs;
-		this.applyLinks();
-	},
-	
+	/**
+	 * Applies links to result set dimensions where necessary
+	 * @private
+	 */
 	applyLinks : function() {
 		
 		var p = '';
@@ -661,7 +443,7 @@ OWA.resultSetExplorer.prototype = {
 								for (var z in this.columnLinks[y].params) {
 									
 									if (this.columnLinks[y].params.hasOwnProperty(z)) {
-									
+										//alert(this.columnLinks[y].params[z]);
 										template = template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
 									}
 								}
@@ -1217,19 +999,47 @@ OWA.resultSetExplorer.prototype = {
     
 };
 
-OWA.dimensionPicker = function(dimensions) {
+/**
+ * Dimension Picker UI control Class
+ *
+ * @param	target_dom_id	string	dom id where the control should be created.
+ * @param 	options			obj		config object
+ */
+OWA.dimensionPicker = function(target_dom_id, options) {
 	
-	this.dim_list = dimensions || {};
+	this.dim_list = {};
 	this.alternate_field_selector = '';
-	this.dom_id = '';
+	this.dom_id = target_dom_id;
+	this.exclusions = [];
+	
+	if ( options && options.hasOwnProperty('exclusions') ) {
+		
+		this.setExclusions(options.exclusions);
+	}
+	
 };
 
 OWA.dimensionPicker.prototype = {
-
-	display: function( dom_id ) {
 	
-		this.dom_id = dom_id || this.dom_id;
 	
+	setDimensions : function ( dims ) {
+				
+		this.dim_list = dims;
+	},
+	
+	reset: function(dim_list) {
+	
+		if ( dim_list ) {
+			this.setDimensions( dim_list );
+		}
+		
+		this.generateDimList();
+	},
+	
+	display: function() {
+	
+		var dom_id = this.dom_id;
+		
 		var container_selector = '#' + dom_id;
 		
 		var container_dom_elements =  '<span class="dimensionPicker">';
@@ -1273,7 +1083,7 @@ OWA.dimensionPicker.prototype = {
 			
 			// get current dim name
 			var old_dim_name = jQuery( container_selector + ' .dimensionPicker > .select-button').data('name') || '';
-			
+			var old_dim_name = '';
 			// change the button label
 			jQuery( container_selector + ' .dimensionPicker > .select-button').button(
 				'option', 'label',	jQuery(this).data('label')
@@ -1307,7 +1117,7 @@ OWA.dimensionPicker.prototype = {
 		
 		jQuery(selector).css( {
             position: 'absolute',
-            display: 'none',
+            //display: 'none',
             top: y - 240,
             left: x + 5,
             background: '#F3F2F7',
@@ -1339,27 +1149,42 @@ OWA.dimensionPicker.prototype = {
 					
 					OWA.util.sprintf('<h4>%s</h4><ul></ul>', group)
 				); 
-				
+				var num_dim_in_group = 0;
 				// add list items
 				for( var i=0; i < this.dim_list[group].length; i++ ) {
-				
-					var dim_group_selector = container_selector + 
-											 ' > .dimensionPicker > .dim-list > ul:last';
 					
-					jQuery( dim_group_selector ).append(
-						OWA.util.sprintf(
-							'<li class="dimensionListItem">%s</li>', 
-							this.dim_list[group][i].label
-						)
-					);
-					// bind data to the dom element
-					jQuery( dim_group_selector + ' > li:last' ).data(
-						'label', this.dim_list[group][i].label
-					);
-
-					jQuery( dim_group_selector + ' > li:last' ).data(
-						'name', this.dim_list[group][i].name
-					);
+					// check to see if the dim is on the exclusion list
+					if ( this.exclusions.length > 0 && 
+					     ! OWA.util.in_array( this.dim_list[group][i].name, this.exclusions )
+					) {		
+					
+						var dim_group_selector = container_selector + 
+												 ' > .dimensionPicker > .dim-list > ul:last';
+						
+						jQuery( dim_group_selector ).append(
+							OWA.util.sprintf(
+								'<li class="dimensionListItem">%s</li>', 
+								this.dim_list[group][i].label
+							)
+						);
+						// bind data to the dom element
+						jQuery( dim_group_selector + ' > li:last' ).data(
+							'label', this.dim_list[group][i].label
+						);
+	
+						jQuery( dim_group_selector + ' > li:last' ).data(
+							'name', this.dim_list[group][i].name
+						);
+						
+						num_dim_in_group++;
+					}
+				}
+				
+				// if there are no dims in a group due to 
+				// exclusions there remoe the header
+				
+				if ( num_dim_in_group < 1 ) {
+					jQuery( container_selector + ' > .dimensionPicker > .dim-list > h4:last' ).remove();
 				}
 			}
 		}
@@ -1368,6 +1193,414 @@ OWA.dimensionPicker.prototype = {
 	setAlternateField : function( selector ) {
 		
 		this.alternate_field_selector = selector;
+	},
+	
+	setExclusions : function ( ex_array ) {
+		
+		this.exclusions = ex_array;
 	}
 
+};
+
+/**
+ * Data Grid UI control Class
+ *
+ * @param	target_dom_id	string	dom id where the control should be created.
+ * @param 	options			obj		config object
+ *
+ */
+
+OWA.dataGrid = function(target_dom_id, options) {
+	
+	this.dom_id = target_dom_id;
+	this.options = options;
+	this.init = false;
+	this.gridColumnOrder = [];
+	this.columnLinks = '';
+};
+
+OWA.dataGrid.prototype = {
+
+	generate : function(resultSet) {
+		
+		var that = this;
+		
+		// custom formattter functions.
+		jQuery.extend(jQuery.fn.fmatter , {
+			// urlFormatter allows for a single param substitution.
+			urlFormatter : function(cellvalue, options, rowdata) {
+			//alert(JSON.stringify(cellvalue));
+				var sub_value = options.rowId;
+				//alert(options.rowId);
+				var name = options.colModel.realColName;
+				OWA.debug(options.rowId-1+' '+name);
+				
+				if ( rowdata[name].link.length > 0 ) {
+					var new_url = rowdata[name].link;
+					var link =  '<a href="' + new_url + '">' + cellvalue.formatted_value + '</a>';
+					return link;
+				}
+			},
+			
+			useServerFormatter : function(cellvalue, options, rowdata) {
+				var name = options.colModel.realColName;
+				return rowdata[name].formatted_value;
+				//return that.resultSet.resultsRows[options.rowId-1][name].formatted_value;
+			}
+			
+		});
+		
+		if (resultSet.resultsReturned > 0) {
+			
+			
+			// happens with first results set when loading from URL.
+			if (this.init !== true) {
+				this.display(resultSet);
+			} else {
+				this.refresh(resultSet);
+			}
+			
+			// hide the built in jqgrid loading divs. 
+			jQuery("#load_"+that.dom_id+"_grid").hide(); 
+			jQuery("#load_"+that.dom_id+"_grid").css("z-index", 101);
+			
+			// check to see if we need ot hide the previous page control.
+			if (resultSet.page == 1) {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').show();
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+			} else if (resultSet.page == resultSet.total_pages) {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').hide();
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
+			} else {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
+			}
+			//alert(resultSet.page + ' ' + resultSet.total_pages);
+		} else {
+			jQuery("#"+that.dom_id).html("No data is available for this time period.");
+		}		
+	},
+
+	
+	/**
+	 * creates the entire grid for the first time
+	 * @private
+	 */
+	display : function( resultSet ) {
+		
+		// listen for changes to result set
+		this.subscribeToDataUpdates();
+		this.injectDomElements(resultSet);
+		this.setGridOptions(resultSet);
+		this.addAllRowsToGrid(resultSet);
+		this.makeGridPagination(resultSet);
+		this.init = true;
+	},
+	
+	/**
+	 * refreshes the grid
+	 * @private
+	 */
+	refresh : function(resultSet) {
+		
+		var that = this;
+		// unload current grid jut in case columns have changed
+		jQuery("#" + that.dom_id + '_grid').jqGrid('GridUnload', "#gbox_" + that.dom_id + '_grid');
+		// setup grid columns/options again
+		this.setGridOptions(resultSet);
+		jQuery("#"+that.dom_id + ' _grid').jqGrid('clearGridData',true);
+		this.addAllRowsToGrid(resultSet);
+	},
+	
+	// listens for changes to parent resultSet object
+	subscribeToDataUpdates : function() {
+		
+		var that = this;
+		// listen for data changes
+		jQuery( '#' + that.dom_id ).bind('new_result_set', function(event, resultSet) {
+			that.generate(resultSet);
+		});
+	},
+	
+	makeGridPagination : function(resultSet) {
+		
+		if (resultSet.more) {
+			
+			var that = this;
+			
+			var p = '';
+			p = p + '<LI class="owa_previousPageControl">';
+			p = p + '<span>Previous Page</span></LI>';
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
+			jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid('back');});	
+			
+			var pn = '';
+			pn = pn + '<LI class="owa_nextPageControl">';
+			pn = pn + '<span>Next Page</span></LI>';
+			
+			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(pn);
+			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid('forward');});
+			
+			if (resultSet.page == 1) {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+			}
+			
+		}
+	},
+	
+	pageGrid : function (direction) {
+	
+		var that = this;
+		// valid event names are 'page_forward' and 'page_back'
+		jQuery('#' + that.dom_id).trigger('page_' + direction, []);	
+	},
+	
+	addAllRowsToGrid :function(resultSet) {
+		
+		var that = this; 
+		// uses the built in jqgrid loading divs. just giveit a message and show it.
+		jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
+		jQuery("#load_"+that.dom_id+"_grid").show(); 
+		jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
+		// add data to grid
+		jQuery("#"+that.dom_id + '_grid')[0].addJSONData(resultSet);
+		// dispay new count
+		this.displayRowCount(resultSet);
+	},
+	
+	displayRowCount : function(resultSet) {
+		
+		if (resultSet.total_pages > 1) {
+
+			var start = '';
+			var end = '';
+			if (resultSet.page === 1) {
+				start = 1;
+				end = resultSet.resultsReturned;
+			} else {
+				start = ((resultSet.page -1)  * resultSet.resultsPerPage) + 1;
+				end = ((resultSet.page -1) * resultSet.resultsPerPage) + resultSet.resultsReturned;
+			}
+			
+			var p = '<li class="owa_rowCount">';
+			p += 'Results: '+ start + ' - ' + end;
+			p = p + '</li>';
+		
+			var that = this;
+			//alert ("#"+that.dom_id + '_grid' + ' > .owa_rowCount');
+			var check = jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html();
+			//alert(check);
+			if (check === null)	{
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
+			} else {
+				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html(p);			
+			}
+		}
+	},
+	
+	injectDomElements : function(resultSet) {
+	
+		var p = '';
+		p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul></div>';
+		p += '<div style="clear:both;"></div>';
+		p += '<table id="'+ this.dom_id + '_grid"></table>';
+		p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
+		p += '<div style="clear:both;"></div>';
+		
+		var that = this;
+		jQuery('#'+that.dom_id).append(p);
+		
+		// add top level controls
+		// secondard dimension picker
+		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
+			OWA.util.sprintf(
+				'<li>%s: <span id="%s" class="controlItem"></span></li>', 
+				OWA.l('Secondary Dimension'), 
+				this.dom_id + '_grid_secondDimensionChooser' 
+			)
+		);
+		
+		// create secondary dimension picker
+		var sdc = new OWA.dimensionPicker(this.dom_id + '_grid_secondDimensionChooser');
+		sdc.setExclusions( this.getDimensions( resultSet ) );
+		sdc.setDimensions( resultSet.relatedDimensions );
+		sdc.display();
+		
+		// listen for the change to secondary dimension
+		jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser').bind('owa_changeSecondaryDimension', function(event, oldname, newname) {
+			
+			// lookup current secondary dimension as displayed in the grid
+			if ( that.gridColumnOrder.length >= 1 ) {
+				oldname = that.gridColumnOrder[1];
+			} else {
+				oldname = '';
+			}
+			
+			// propigate the event up one level where result set explorer is listening
+			jQuery( '#' + that.dom_id ).trigger('secondary_dimension_change', [oldname, newname]);
+		});
+	
+	},
+	
+	setGridOptions : function(resultSet) {
+		
+		var that = this;
+		
+		var columns = [];
+		
+		var columnDef = '';
+		
+		// reset grid column order
+		this.gridColumnOrder = [];
+		
+		for (var column in resultSet.resultsRows[0]) {
+			
+			// check to see if we should exclude any columns
+			if (this.options.excludeColumns.length > 0) {
+				
+				for (var i=0;i<=this.options.excludeColumns.length -1;i++) {
+					// if column name is not on the exclude list then add it.
+					if (this.options.excludeColumns[i] != column) {
+						// add column	
+						columnDef = this.makeGridColumnDef(resultSet.resultsRows[0][column]);
+						columns.push(columnDef);
+						// set grid column order
+						this.gridColumnOrder.push( resultSet.resultsRows[0][column].name );			
+					}
+				}
+				
+			} else {
+				// add column
+				columnDef = this.makeGridColumnDef(resultSet.resultsRows[0][column]);
+				columns.push(columnDef);
+				// set grid column order
+				this.gridColumnOrder.push( resultSet.resultsRows[0][column].name );
+			}
+		}
+		
+				
+		jQuery('#' + that.dom_id + '_grid').jqGrid({
+			jsonReader: {
+				repeatitems: false,
+				root: "resultsRows",
+				cell: '',
+				id: '',
+				page: 'page',
+				total: 'total_pages',
+				records: 'resultsReturned'
+			},
+			afterInsertRow: function(rowid, rowdata, rowelem) {return;},
+			datatype: 'local',
+			colModel: columns,
+			rownumbers: that.options.showRowNumbers,
+			viewrecords: true,
+			rowNum: resultSet.resultsReturned,
+			height: '100%',
+			autowidth: true,
+			hoverrows: false,
+			sortname: resultSet.sortColumn,
+			sortorder: resultSet.sortOrder,
+			onSortCol: function( index, iCol, sortorder ) {
+				
+				//that.sortGrid( index, sortorder );
+				jQuery('#' + that.dom_id).trigger('sort_column_change', [index, sortorder]);
+				return 'stop';
+			}
+		});
+		
+		// set header css
+		for (var y=0;y < columns.length;y++) {
+			var css = {};
+			//if dimension column then left align
+			if ( columns[y].classes == 'owa_dimensionGridCell' ) {
+				css['text-align'] = 'left';
+			} else {
+				css['text-align'] = 'right';
+			}
+			// if sort column then bold.
+			if (resultSet.sortColumn +'' === columns[y].name) {
+				//css.fontWeight = 'bold';
+			}
+			// set the css. no way to just set a class...
+			jQuery('#' + that.dom_id + '_grid').jqGrid('setLabel', columns[y].name, '',css);
+		}
+	
+	},
+		
+	// private
+	makeGridColumnDef : function(column) {
+		
+		var _sort_type = '';
+		var _align = '';
+		var _format = '';
+		var _class = '';
+		var _width = '';
+		var _resizable = true;
+		var _fixed = false;
+		var _datefmt = '';
+		var _link_template = '';
+		
+		if (column.result_type === 'dimension') {
+			_align = 'left';
+			_class = 'owa_dimensionGridCell';
+		} else {
+			_align = 'right';
+			_class = 'owa_metricGridCell';
+			_width = 100;
+			_resizable = false;
+			_fixed = true;
+		}
+		
+		if (column.data_type === 'string') {
+			_sort_type = 'text';
+		} else {
+			_sort_type = 'number';
+		}
+		
+		if (column.link) {
+			_format = 'urlFormatter';
+		} else {
+			_format = 'useServerFormatter';
+		}
+		
+		// set custom formatter if one exists.
+		if (this.options.columnFormatters.hasOwnProperty(column.name)) {
+			_format = this.options.columnFormatters[column.name];
+		}
+		
+		if ( this.columnLinks.hasOwnProperty( column.name ) ) {
+			_link_template = this.columnLinks[column.name].template;
+		}
+				
+		var columnDef = {
+			//name: column.name +'.value', 
+			name: column.name, 
+			//index: column.name +'.value',
+			index: column.name +'', 
+			label: column.label, 
+			sorttype: _sort_type, 
+			align: _align, 
+			formatter: _format, 
+			classes: _class, 
+			width: _width, 
+			resizable: _resizable,
+			fixed: _fixed,
+			realColName: column.name,
+			datefmt: _datefmt,
+			link_template: _link_template
+		};
+		
+		return columnDef;
+		
+	},
+	
+	getDimensions : function ( resultSet ) {
+    	
+    	var dims = '';
+    	var self = new OWA.uri(resultSet.self);
+    	dims = OWA.util.urldecode( self.getQueryParam('owa_dimensions') );
+    	dims = dims.split(',');
+    	
+    	return dims;
+    }
+	
 };
