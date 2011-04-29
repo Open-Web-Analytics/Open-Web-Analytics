@@ -76,6 +76,7 @@
 				<div class="owa_moreLinks">
 					<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
 				</div>
+				<div id="test"></div>
 			</div>
 		
 			<div class="owa_reportSectionContent">
@@ -141,6 +142,7 @@
 	OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
 	OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
 	OWA.items.topreferers.load(traurl);
+	
 })();
 	
 (function() {
@@ -188,7 +190,7 @@
 	OWA.items.vt.asyncQueue.push(['makePieChart']);
 	OWA.items.vt.load(aurl);
 })();				
-				
+		
 </script>
 
 <?php require_once('js_report_templates.php');?>

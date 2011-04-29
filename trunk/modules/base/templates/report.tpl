@@ -37,7 +37,7 @@ jQuery(document).ready(function(){
 				</div>
 				
 				<div class="reportSectionContainer">
-					<div class="owa_reportPeriod" style="float:right;"><?php include('filter_period.tpl');?></div>	
+					<div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>	
 					<div class="owa_reportTitle"><?php echo $title;?><span class="titleSuffix"><?php echo $this->get('titleSuffix');?></span></div>
 					
 					<div class="clear"></div>
@@ -49,6 +49,6 @@ jQuery(document).ready(function(){
 	</table>	
 </div>
 <script>
-OWA.items['<?php echo $dom_id;?>'].displayTimePeriodPicker();
+OWA.items['<?php echo $dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl');
 OWA.items['<?php echo $dom_id;?>'].showSiteFilter();
 </script>

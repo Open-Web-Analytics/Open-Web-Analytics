@@ -1,10 +1,14 @@
-<div id="owa_reportPeriodControl">
+<div class="timePeriodControlContainer">
 
 	<table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0">
 		<TR>
 			<TD class="owa_reportPeriodLabelText">
-				<span><?php $this->out( $this->get( 'period_label' ) );?><?php $this->out( $this->get( 'date_label' ) );?></span>						
+			
+				<span>
+					<*=this.datelabel *>
+				</span>						
 			</TD>
+			
 			<TD class="owa_reportRevealControl"></TD>	
 		</TR>
 	</table>
@@ -16,10 +20,10 @@
 			</TH>
 		</TR>
 		<TR>
-			<TD class="picker">
+			<TD class="picker" valign="top">
 				<div>Start: <input type="text" id="owa_report-datepicker-start-display" size="10"></div>
 				<div id="owa_report-datepicker-start"></div>
-			<TD class="picker">
+			<TD class="picker" valign="top">
 				<div>End: <input type="text" id="owa_report-datepicker-end-display"  size="10"></div>
 				<div id="owa_report-datepicker-end"></div>
 			</TD>
@@ -29,10 +33,14 @@
 		
 			<TD valign="top">
 				Predefined Periods:<BR>
+				
 				<SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
-	<?php foreach ($reporting_periods as $reporting_period => $value):?>
-					<OPTION VALUE="<?php echo $reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
-	<?php endforeach;?>
+					<OPTION>Select...</OPTION>
+					<* for (period in this.periods) { *>
+					<OPTION VALUE="<*= period *>" <* if ( period === this.selectedPeriod ) { *>selected<* } *> >
+						<*= this.periods[period] *>
+					</OPTION>
+					<* } *>
 				</SELECT>	
 				<P><INPUT class="submit-button" type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Range"></P>
 			</TD>
