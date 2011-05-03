@@ -78,20 +78,114 @@ class owa_baseModule extends owa_module {
 		 *
 		 * The following lines register various data metrics. 
 		 */
-		$this->registerMetric('pageViews', 'base.pageViews');
-		$this->registerMetric('pageViews', 'base.pageViewsFromSessionFact');
-		$this->registerMetric('uniqueVisitors', 'base.uniqueVisitors');
-		$this->registerMetric('visits', 'base.visits');
-		$this->registerMetric('visits', 'base.visitsFromRequestFact');
-		$this->registerMetric('visitors', 'base.visitors');
-		$this->registerMetric('visitors', 'base.visitorsFromRequestFact');
-		$this->registerMetric('newVisitors', 'base.newVisitors');
-		$this->registerMetric('repeatVisitors', 'base.repeatVisitors');
-		$this->registerMetric('bounces', 'base.bounces');
-		$this->registerMetric('visitDuration', 'base.visitDuration');
-		$this->registerMetric('uniquePageViews', 'base.uniquePageViews');
-		$this->registerMetric('bounceRate', 'base.bounceRate');
-		$this->registerMetric('pagesPerVisit', 'base.pagesPerVisit');
+		$this->registerMetric(
+			'pageViews', 
+			array( 
+				'base.pageViews',
+				'base.pageViewsFromSessionFact'
+			), 
+			'', 
+			'Page Views', 
+			'The total number of pages viewed.', 
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'uniqueVisitors', 
+			'base.uniqueVisitors', 
+			'',
+			'Unique Visitors', 
+			'The total number of unique visitors.', 
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'visits', 
+			array(
+				'base.visits',
+				'base.visitsFromRequestFact',
+			),
+			'',
+			'Visits',
+			'The total number of visits/sessions.',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'visitors', 
+			array(
+				'base.visitors',
+				'base.visitorsFromRequestFact'
+			),
+			'',
+			'Visitors',
+			'The total number of visitors',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'newVisitors', 
+			'base.newVisitors',
+			'',
+			'New Visitors',
+			'The total number of new visitors',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'repeatVisitors', 
+			'base.repeatVisitors',
+			'',
+			'Repeat Visitors',
+			'The total number of repeat visitors',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'bounces', 
+			'base.bounces',
+			'',
+			'Bounces',
+			'The total number of visits with a single page view',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'visitDuration', 
+			'base.visitDuration',
+			'',
+			'Visit Duration',
+			'The average duration of visits.',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'uniquePageViews', 
+			'base.uniquePageViews',
+			'',
+			'Unique Page Views',
+			'The total number of unique pages viewed.',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'bounceRate', 
+			'base.bounceRate',
+			'',
+			'Bounce Rate',
+			'The percentage of visits that were bounces.',
+			'Site Usage'
+		);
+		
+		$this->registerMetric(
+			'pagesPerVisit', 
+			'base.pagesPerVisit',
+			'',
+			'Pages Per Visit',
+			'The average pages viewed per visit.',
+			'Site Usage'
+		);
+		
 		$this->registerMetric('actions', 'base.actions');
 		$this->registerMetric('uniqueActions', 'base.uniqueActions');
 		$this->registerMetric('actionsValue', 'base.actionsValue');
@@ -106,20 +200,80 @@ class owa_baseModule extends owa_module {
 			$params = array('goal_number' => $num);
 			
 			$metric_name = 'goal'.$num.'Completions';
-			$this->registerMetric($metric_name, 'base.goalNCompletions', $params);
+			$this->registerMetric(
+				$metric_name, 
+				'base.goalNCompletions', 
+				$params,
+				"Goal $num Completions",
+				"The total number of goal $num completions.",
+				'Goals'
+			);
 			
 			$metric_name = 'goal'.$num.'Starts';
-			$this->registerMetric($metric_name, 'base.goalNStarts', $params);
+			$this->registerMetric(
+				$metric_name, 
+				'base.goalNStarts', 
+				$params,
+				"Goal $num Starts",
+				"The total number of goal $num starts.",
+				'Goals'
+			);
 			
 			$metric_name = 'goal'.$num.'Value';
-			$this->registerMetric($metric_name, 'base.goalNValue', $params);
+			$this->registerMetric(
+				$metric_name, 
+				'base.goalNValue', 
+				$params,
+				"Goal $num Value",
+				"The total value of goal $num achieved.",
+				'Goals'
+			);
 		}
 		
-		$this->registerMetric('goalCompletionsAll', 'base.goalCompletionsAll');
-		$this->registerMetric('goalStartsAll', 'base.goalStartsAll');
-		$this->registerMetric('goalValueAll', 'base.goalValueAll');
-		$this->registerMetric('goalConversionRateAll', 'base.goalConversionRateAll');
-		$this->registerMetric('goalAbandonRateAll', 'base.goalAbandonRateAll');
+		$this->registerMetric(
+			'goalCompletionsAll', 
+			'base.goalCompletionsAll',
+			'',
+			'Goal Completions',
+			'The total number of goal completions.',
+			'Goals'
+		);
+		
+		$this->registerMetric(
+			'goalStartsAll', 
+			'base.goalStartsAll',
+			'',
+			'Goal Starts',
+			'The total number of goal starts.',
+			'Goals'
+		);
+		
+		$this->registerMetric(
+			'goalValueAll', 
+			'base.goalValueAll',
+			'',
+			'Goal Value',
+			'The total value of all goals achieved.',
+			'Goals'
+		);
+		
+		$this->registerMetric(
+			'goalConversionRateAll', 
+			'base.goalConversionRateAll',
+			'',
+			'Goal Conversion Rate',
+			'The rate of goals achieved in all visits.',
+			'Goals'
+		);
+		
+		$this->registerMetric(
+			'goalAbandonRateAll', 
+			'base.goalAbandonRateAll',
+			'',
+			'Goal Abandon Rate',
+			'The rate of goal abandons in all visits.',
+			'Goals'
+		);
 		
 		// ecommerce metrics
 		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantity');

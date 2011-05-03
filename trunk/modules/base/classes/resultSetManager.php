@@ -234,6 +234,8 @@ class owa_resultSetManager extends owa_base {
 			
 			$col = $dim['column'];
 			$constraint['name'] = $col;
+			
+			$db->where($constraint['name'], $constraint['value'], $constraint['operator']);
 		}
 		
 		if ( $this->isMetric( $constraint['name'] ) ) {
@@ -249,8 +251,6 @@ class owa_resultSetManager extends owa_base {
 				$this->addError( 'Cannot add a calculated metric to a constraint.' );
 			}
 		}
-		
-		$db->where($constraint['name'], $constraint['value'], $constraint['operator']);
 	}
 	
 	function setSegment($segment) {
@@ -1406,6 +1406,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		$rs->errors = $this->errors;
 		
 		$rs->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
+		$rs->setRelatedMetrics( $this->getAllRelatedMetrics( $bm ) );
 				
 		return $rs;
 	}
@@ -1692,6 +1693,65 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		}
 		
 		return $dims;
+	}
+	
+	function getAllRelatedMetrics( $entity ) {
+		
+		$related_metrics = array();
+		$s = owa_coreAPI::serviceSingleton();
+		$all_metrics = $s->getAllMetrics();
+		$entity_name = $entity->getName();
+		$s = owa_coreAPI::serviceSingleton();
+		$metricsByEntity = $s->getMap('metricsByEntity');
+		foreach ($all_metrics as $metric_name => $implementations) {
+			
+			foreach ($implementations as $implementation) {
+				
+				$m = owa_coreAPI::metricFactory( $implementation['class'], $implementation['params'] );
+				
+				if ( $m->isCalculated() ) {
+					
+					$children = $m->getChildMetrics();
+					$error = false;
+					foreach( $children as $child ) {
+						
+						if ( ! isset($metricsByEntity[$entity_name][$child])) {
+				
+							$error = true;
+						}
+					}
+					
+					if ( ! $error ) {
+						
+						$related_metrics[$implementation['group']][] = array(
+							'name' 			=> $metric_name,
+							'label' 		=> $implementation['label'],
+							'description'	=> $implementation['description'],
+							'group'			=> $implementation['group']
+						);
+						
+						continue;
+					}
+					
+					
+				} else {
+				
+					if ( $entity_name === $m->getEntityName() ) {
+						
+						$related_metrics[$implementation['group']][] = array(
+							'name' 			=> $metric_name,
+							'label' 		=> $implementation['label'],
+							'description'	=> $implementation['description'],
+							'group'			=> $implementation['group']
+						);
+						
+						continue;
+					}
+				}
+			}
+		}
+		
+		return $related_metrics;
 	}
 
 }

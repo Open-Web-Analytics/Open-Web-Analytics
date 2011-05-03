@@ -63,6 +63,10 @@ class owa_service extends owa_base {
 	function initializeFramework() {
 	
 		if (!$this->isInit()) {
+			
+			// setup request container
+			$this->request = owa_coreAPI::requestContainerSingleton();
+			
 			$this->_loadModules();
 			$this->_loadEntities();
 			$this->_loadMetrics();
@@ -72,8 +76,6 @@ class owa_service extends owa_base {
 			$this->_loadEventProcessors();
 			$this->setInit();
 			
-			// setup request container
-			$this->request = owa_coreAPI::requestContainerSingleton();
 			// setup current user
 			$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
 			$this->current_user->setRole('everyone');
@@ -151,6 +153,27 @@ class owa_service extends owa_base {
 				$this->metrics = array_merge_recursive( $this->metrics, $module->metrics);
 			}	
 		}
+		
+		$metricsByEntityMap = array();
+		
+		foreach ( $this->metrics as $metric => $implementations ) {
+			
+			foreach ( $implementations as $implementation ) {
+				
+				$m = owa_coreAPI::metricFactory( $implementation['class'], $implementation['params']);
+				
+				if ( ! $m->isCalculated() ) {
+					$metricsByEntityMap[ $m->getEntityName() ][ $implementation['name'] ] = $implementation;
+				}			
+			}	
+		}
+
+		$this->setMap('metricsByEntity', $metricsByEntityMap);
+	}
+	
+	function getAllMetrics() {
+		
+		return $this->metrics;
 	}
 	
 	function loadCliCommands() {
@@ -265,7 +288,6 @@ class owa_service extends owa_base {
 	function setMap($name, $map) {
 		
 		$this->maps[$name] = $map;
-		return;
 	}
 	
 	function setMapValue($map_name, $name, $value) {

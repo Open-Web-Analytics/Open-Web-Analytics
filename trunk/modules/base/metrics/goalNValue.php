@@ -38,12 +38,20 @@ class owa_goalNValue extends owa_metric {
 		if ( array_key_exists( 'goal_number', $params ) ) {
 			$goal_number = $params['goal_number'];
 		}
+		
 		$siteId = owa_coreAPI::getRequestParam('siteId');
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
-		$goal = $gm->getGoal($goal_number);
+		
+		if ( $siteId ) {
+			$gm = owa_coreAPI::getGoalManager( $siteId );
+			$goal = $gm->getGoal($goal_number);
+			$this->setLabel( "G$goal_number Value");	
+		} else {
+			$this->setLabel( "G$goal_number Value");
+		}
+		
 		$name = 'goal'.$goal_number.'Value';
 		$this->setName( $name );
-		$this->setLabel( "G$goal_number Value");
+		
 		$this->setEntity( 'base.session' );
 		$column = 'goal_'.$goal_number.'_value';
 		$this->setColumn( $column );
