@@ -96,9 +96,12 @@ class owa_reportView extends owa_view {
 			
 		// set Js libs to be loaded
 		$this->setJs('lazy-load', 'base/js/includes/lazyload-2.0.min.js', '2.0');
-		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
+		//$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.5.1.min.js', '1.5.1');
 		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
-		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
+		//$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.7.custom.min.js", '1.8.7', array('jquery'));
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js", '1.8.12', array('jquery'));
+		$this->setJs("jquery-ui-selectmenu", "base/js/includes/jquery/jquery.ui.selectmenu.js", '1.8.1', array('jquery-ui'));
 		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
 		$this->setJs('excanvas','base/js/includes/excanvas.compiled.js', '', '', true);
@@ -113,9 +116,12 @@ class owa_reportView extends owa_view {
 		$this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
 		
 		// css libs to be loaded
-		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
+		//$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
+		$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
+		$this->setCss('base/css/jquery.ui.selectmenu.css');
 		$this->setCss("base/css/owa.report.css");
 		$this->setCss('base/css/ui.jqgrid.css');
+		
 	}
 	
 	/**

@@ -39,12 +39,19 @@ class owa_goalNCompletions extends owa_metric {
 			$goal_number = $params['goal_number'];
 		}
 		
-		$siteId = owa_coreAPI::getRequestParam('siteId');
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
-		$goal = $gm->getGoal($goal_number);
 		$name = 'goal'.$goal_number.'Completions';
 		$this->setName( $name );
-		$this->setLabel( sprintf('G%d: %s', $goal_number,$goal['goal_name'] ) );
+		
+		$siteId = owa_coreAPI::getRequestParam('siteId');
+		
+		if ( $siteId ) {
+			$gm = owa_coreAPI::getGoalManager( $siteId );
+			$goal = $gm->getGoal($goal_number);
+			$this->setLabel( sprintf('G%d: %s', $goal_number,$goal['goal_name'] ) );
+		} else {
+			$this->setLabel( sprintf('Goal %d Completions', $goal_number ) );
+		}
+		
 		$this->setEntity( 'base.session' );
 		$column = 'goal_'.$goal_number;
 		$this->setColumn( $column );

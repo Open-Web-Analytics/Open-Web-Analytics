@@ -38,12 +38,20 @@ class owa_goalNStarts extends owa_metric {
 		if ( array_key_exists( 'goal_number' , $params ) ) {
 			$goal_number = $params['goal_number'];
 		}
+		
 		$siteId = owa_coreAPI::getRequestParam('siteId');
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
-		$goal = $gm->getGoal($goal_number);
+		
+		if ( $siteId ) {
+			$gm = owa_coreAPI::getGoalManager( $siteId );
+			$goal = $gm->getGoal($goal_number);
+			$this->setLabel( $goal['goal_name'] . ' Starts');
+		} else {
+			$this->setLabel( 'Goal ' .$goal_number . ' Starts');
+		}	
+		
 		$name = 'goal'.$goal_number.'Starts';
 		$this->setName( $name );
-		$this->setLabel( $goal['name'] . ' Starts');
+		
 		$this->setEntity( 'base.session' );
 		$column = 'goal_'.$goal_number.'_start';
 		$this->setColumn( $column );

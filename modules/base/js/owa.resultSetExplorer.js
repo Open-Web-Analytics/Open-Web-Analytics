@@ -174,6 +174,18 @@ OWA.resultSetExplorer.prototype = {
 		}
 	},
 	
+	changeConstraints : function (constraints) {
+	
+		var url = new OWA.uri( this.resultSet.self );
+		
+		// set constraints
+		url.setQueryParam('owa_constraints', constraints);
+	
+		// fetch new results
+		this.getNewResultSet( url.getSource() );
+		
+	},
+	
 	getOption : function(name) {
 		
 		return this.options[name];
@@ -275,6 +287,11 @@ OWA.resultSetExplorer.prototype = {
 		// subscribe to grid sort column change event
 		jQuery( "#" + dom_id ).bind( 'sort_column_change', function(event, column, direction) {
 			that.changeSort(column, direction);
+		});
+		
+		// subscribe to constraint_change event
+		jQuery( "#" + dom_id ).bind( 'constraint_change', function(event, constraints) {
+			that.changeConstraints(constraints);
 		});
 
 	},
@@ -1005,11 +1022,11 @@ OWA.resultSetExplorer.prototype = {
  * @param	target_dom_id	string	dom id where the control should be created.
  * @param 	options			obj		config object
  */
-OWA.dimensionPicker = function(target_dom_id, options) {
+OWA.dimensionPicker = function(target_dom_selector, options) {
 	
 	this.dim_list = {};
 	this.alternate_field_selector = '';
-	this.dom_id = target_dom_id;
+	this.dom_id = target_dom_selector;
 	this.exclusions = [];
 	
 	if ( options && options.hasOwnProperty('exclusions') ) {
@@ -1036,158 +1053,99 @@ OWA.dimensionPicker.prototype = {
 		this.generateDimList();
 	},
 	
-	display: function() {
+	display: function(selected) {
 	
 		var dom_id = this.dom_id;
 		
-		var container_selector = '#' + dom_id;
+		var container_selector = dom_id;
 		
-		var container_dom_elements =  '<span class="dimensionPicker">';
-		
-		container_dom_elements += OWA.util.sprintf(
-					'<span href="#" class="select-button">%s</span>', 
-					OWA.l('Select...') 
-				);
-			
-		container_dom_elements += '<div class="dim-list"></div>';		
-		container_dom_elements += '</span>';
 		// add container level dom elements
+		var container_dom_elements =  '<span class="dimensionPicker">';		
+		container_dom_elements += '</span>';
 		jQuery( container_selector ).html( container_dom_elements );
+		
 		// hide the dim list
 		jQuery( container_selector + ' > .dimensionPicker > .dim-list').hide();
-		jQuery(container_selector + ' > .dimensionPicker > .select-button').button({ icons: {primary:'ui-icon-blank',secondary:'ui-icon-triangle-1-s'} });
-		// add list items
-		var list = '';
-		// if there are dimensions
-		if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
-			
-			this.generateDimList();
-			
-		} else {
-			
-			jQuery(container_selector + ' > .dimensionPicker > .dim-list').html(
-				OWA.l('There are no related dimensions.')
-			);
-		}
 		
-		var that = this;	
-		// bind the click on the select button.
-		jQuery( container_selector + ' > .dimensionPicker > .select-button').click( function() {
-			that.showToolTip(container_selector + ' > .dimensionPicker > .dim-list', jQuery(this).offset().left, jQuery(this).offset().top);
-			//jQuery( container_selector + ' > .dimensionPicker > .dim-list').toggle();	
-		});
-		
-		// bind the clicks on dimension list items
-		jQuery( container_selector + ' > .dimensionPicker > .dim-list > ul > .dimensionListItem' ).click( function() {
-			
-			
-			// get current dim name
-			var old_dim_name = jQuery( container_selector + ' .dimensionPicker > .select-button').data('name') || '';
-			var old_dim_name = '';
-			// change the button label
-			jQuery( container_selector + ' .dimensionPicker > .select-button').button(
-				'option', 'label',	jQuery(this).data('label')
-			);
-			
-			// bind a new name
-			jQuery( container_selector + ' .dimensionPicker > .select-button').data(
-				'name', jQuery(this).data('name')
-			);
-			
-			// trigger change event in case there is someone listening
-			// usually the resultsetExplorer that created this obj.
-			jQuery('#' + that.dom_id).trigger(
-				'owa_changeSecondaryDimension', [old_dim_name, jQuery(this).data('name')]
-			);
-			
-			// close the picker.
-			jQuery( container_selector + ' > .dimensionPicker > .dim-list').toggle();
-			
-		});
-		
+		this.generateDimList(container_selector + ' > .dimensionPicker', selected);
 	},
-	
-	bindEventhandlers : function ( ) {
-	
-		// show hide.
-	
-	},
-	
-	showToolTip : function( selector, x, y ) {
 		
-		jQuery(selector).css( {
-            position: 'absolute',
-            //display: 'none',
-            top: y - 240,
-            left: x + 5,
-            background: '#F3F2F7',
-            border: '1px solid #B0B0B0',
-            padding: '10px',
-            
-        });
-        
-        jQuery(selector).toggle();
-	},
-	
 	setDimensionlist : function ( dim_list ) {
 		
 		this.dim_list = dim_list;
 	},
 	
-	generateDimList : function(search_string) {
+	generateDimList : function(selector, selected) {
 		
-		var container_selector = '#' + this.dom_id;
+		var container_selector = selector;
+		var c = '<select name="dim-list" class="dim-list">';
+		var that = this;
 		
-		jQuery( container_selector + ' > .dimensionPicker > .dim-list' ).html('');
+		if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
 
-		for (group in this.dim_list) {
-				
-			if ( this.dim_list.hasOwnProperty(group) ) {
-				
-				// add group headers
-				jQuery( container_selector + ' > .dimensionPicker > .dim-list' ).append(
+			for (group in this.dim_list) {
 					
-					OWA.util.sprintf('<h4>%s</h4><ul></ul>', group)
-				); 
-				var num_dim_in_group = 0;
-				// add list items
-				for( var i=0; i < this.dim_list[group].length; i++ ) {
+				if ( this.dim_list.hasOwnProperty(group) ) {
 					
-					// check to see if the dim is on the exclusion list
-					if ( this.exclusions.length > 0 && 
-					     ! OWA.util.in_array( this.dim_list[group][i].name, this.exclusions )
-					) {		
+					c += OWA.util.sprintf('<optgroup label="%s">', group);
 					
-						var dim_group_selector = container_selector + 
-												 ' > .dimensionPicker > .dim-list > ul:last';
+					var num_dim_in_group = 0;
+					// add list items
+					for( var i=0; i < this.dim_list[group].length; i++ ) {
 						
-						jQuery( dim_group_selector ).append(
-							OWA.util.sprintf(
-								'<li class="dimensionListItem">%s</li>', 
-								this.dim_list[group][i].label
-							)
-						);
-						// bind data to the dom element
-						jQuery( dim_group_selector + ' > li:last' ).data(
-							'label', this.dim_list[group][i].label
-						);
+						// check to see if the dim is on the exclusion list
+						if ( this.exclusions.length > 0 && 
+						     OWA.util.in_array( this.dim_list[group][i].name, this.exclusions )
+						) { 
+							// skip if so
+							continue;
+						} else {		
+						
+							c += OWA.util.sprintf(
+									'<option value="%s">%s</option>',
+									this.dim_list[group][i].name,
+									this.dim_list[group][i].label
+							);
 	
-						jQuery( dim_group_selector + ' > li:last' ).data(
-							'name', this.dim_list[group][i].name
-						);
-						
-						num_dim_in_group++;
+							num_dim_in_group++;
+						}
+					}
+					
+					// if there are no dims in a group due to 
+					// exclusions there remoe the header
+					
+					if ( num_dim_in_group < 1 ) {
+						//jQuery( container_selector + ' > .dimensionPicker > .dim-list > h4:last' ).remove();
 					}
 				}
-				
-				// if there are no dims in a group due to 
-				// exclusions there remoe the header
-				
-				if ( num_dim_in_group < 1 ) {
-					jQuery( container_selector + ' > .dimensionPicker > .dim-list > h4:last' ).remove();
-				}
 			}
+		} else {
+			c += OWA.l('There are no related dimensions.');
 		}
+		// append container and list to dom
+		jQuery( container_selector ).append(c);
+		// transform into select menu
+		jQuery( container_selector + ' > .dim-list' ).selectmenu({
+			width:175,
+			change: function(e, obj) {
+				
+				jQuery( that.dom_id ).trigger(
+					'dimension_change', 
+					['', obj.value]	
+				);
+			}
+		});
+		
+		// set select value
+		if ( selected ) {
+			jQuery(selector + ' > .operator-list').selectmenu("value", selected);
+		} else {		
+		
+			// hack for setting label of select menu
+			jQuery(container_selector + ' > .ui-selectmenu > .ui-selectmenu-status').html(OWA.l('Select...'));
+		
+		}
+		
 	},
 	
 	setAlternateField : function( selector ) {
@@ -1217,6 +1175,7 @@ OWA.dataGrid = function(target_dom_id, options) {
 	this.init = false;
 	this.gridColumnOrder = [];
 	this.columnLinks = '';
+	this.constraintPicker = '';
 };
 
 OWA.dataGrid.prototype = {
@@ -1329,19 +1288,28 @@ OWA.dataGrid.prototype = {
 			
 			var p = '';
 			p = p + '<LI class="owa_previousPageControl">';
-			p = p + '<span>Previous Page</span></LI>';
+			p = p + '<span>&laquo</span></LI>';
 			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
+			//style button
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').button();
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl > .ui-button-text').css('line-height', '0.5');
+			// bind click
 			jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid('back');});	
 			
 			var pn = '';
 			pn = pn + '<LI class="owa_nextPageControl">';
-			pn = pn + '<span>Next Page</span></LI>';
+			pn = pn + '<span>&raquo</span></LI>';
 			
 			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(pn);
+			// style button
+			//style button
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').button();
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl > .ui-button-text').css('line-height', '0.5');
+			//bind click
 			jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid('forward');});
 			
 			if (resultSet.page == 1) {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+				jQuery("#" + that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
 			}
 			
 		}
@@ -1400,7 +1368,7 @@ OWA.dataGrid.prototype = {
 	injectDomElements : function(resultSet) {
 	
 		var p = '';
-		p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul></div>';
+		p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul><div style="clear:both;"></div></div>';
 		p += '<div style="clear:both;"></div>';
 		p += '<table id="'+ this.dom_id + '_grid"></table>';
 		p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
@@ -1413,20 +1381,21 @@ OWA.dataGrid.prototype = {
 		// secondard dimension picker
 		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
 			OWA.util.sprintf(
-				'<li>%s: <span id="%s" class="controlItem"></span></li>', 
+				'<li class="controlItem">%s: <span id="%s"></span></li>', 
 				OWA.l('Secondary Dimension'), 
 				this.dom_id + '_grid_secondDimensionChooser' 
 			)
 		);
 		
 		// create secondary dimension picker
-		var sdc = new OWA.dimensionPicker(this.dom_id + '_grid_secondDimensionChooser');
+		var sdc = new OWA.dimensionPicker('#' + this.dom_id + '_grid_secondDimensionChooser');
 		sdc.setExclusions( this.getDimensions( resultSet ) );
 		sdc.setDimensions( resultSet.relatedDimensions );
 		sdc.display();
 		
 		// listen for the change to secondary dimension
-		jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser').bind('owa_changeSecondaryDimension', function(event, oldname, newname) {
+		jQuery( '#' + that.dom_id + '_grid_secondDimensionChooser')
+			.bind('dimension_change', function(event, oldname, newname) {
 			
 			// lookup current secondary dimension as displayed in the grid
 			if ( that.gridColumnOrder.length >= 1 ) {
@@ -1438,7 +1407,31 @@ OWA.dataGrid.prototype = {
 			// propigate the event up one level where result set explorer is listening
 			jQuery( '#' + that.dom_id ).trigger('secondary_dimension_change', [oldname, newname]);
 		});
-	
+		
+		// inject constraint builder
+		// secondard dimension picker
+		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem">Filter: <span class="constraintPicker"></span></li>');
+		// constraint builder selector		
+		var cb_button_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPickerButton';
+		var cb_cont_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPicker';
+
+		// turn into button
+		jQuery(cb_button_selector).button();
+		
+		// make object
+		this.constraintPicker = new OWA.constraintBuilder(cb_cont_selector, {});
+		
+		this.constraintPicker.setRelatedDimensions( resultSet.relatedDimensions, [] );
+		this.constraintPicker.setRelatedMetrics( resultSet.relatedMetrics, [] );
+		// add current constraints to this method call
+		var cur_con = '';
+		this.constraintPicker.display(cur_con);
+		
+		// listen for the constraint change event
+		jQuery( cb_cont_selector).bind('constraint_change', function(event, constraints) {
+			// propigate the event up one level where result set explorer might be listening
+			jQuery( '#' + that.dom_id ).trigger('constraint_change', [constraints]);
+		});
 	},
 	
 	setGridOptions : function(resultSet) {
@@ -1602,5 +1595,292 @@ OWA.dataGrid.prototype = {
     	
     	return dims;
     }
+	
+};
+
+OWA.constraintBuilder = function( target_dom_selector, options ) {
+	
+	this.dom_selector = target_dom_selector;
+	this.options = {};
+	this.constraints = {};
+	this.relatedDimensions = {};
+	this.relatedMetrics = {};
+	
+};
+
+OWA.constraintBuilder.prototype = {
+	
+	operators: {
+		'==':	'Exactly Matching',
+		'!=':	'Not Matching',
+		'>':	'Greater than',
+		'<':	'Less than',
+		'@=':	'Contains'
+			
+	},
+	
+	parseConstraintString : function( str ) {
+		
+		con_obj = {
+			name: 		'',
+			value:		'',
+			operator: 	''
+		};
+		
+		return con_obj;
+	},
+	
+	constraintsStringToArray : function ( str ) {
+		
+		var c_array = [];
+		
+		if (str) {
+		
+			var a = str.split(',');
+			
+			for( var i=0; i < a.lenght; i++ ) {
+				
+				for ( operator in this.operators ) {
+					
+					if ( this.operators.hasOwnProperty(operator) ) {
+						
+						if ( OWA.util.strpos( a[i], operator ) ) {
+						
+							var b = a[i].split(operator);
+							
+							var c = {
+								'name': 	c[0], 
+								'operator': operator,
+								'value':	c[1]
+							};
+							
+							c_array.push(c);
+						}
+					}
+				}
+			}
+		
+		}
+		
+		return c_array;
+	},
+	
+	display : function ( constraints_str ) {
+		
+		var c_array = this.constraintsStringToArray(constraints_str);
+		this.createConstraintAssembler(c_array);
+	},
+	
+	createConstraintAssembler : function( constraints ) {
+	
+		var that = this;
+		// outer container
+		jQuery(that.dom_selector).append(
+			'<div class="constraintPickerContainer"></div>'
+		);
+		
+		var container_selector = that.dom_selector + ' > .constraintPickerContainer';
+		
+		jQuery(container_selector).append(
+			'<span class="toggle-button"></span><div class="builder"><ul></ul><div style="clear:both;"></div><div class="add-button"></div><div class="apply-button"></div>'
+		);
+		
+		var button_selector = container_selector + ' > .toggle-button';
+		var builder_selector = container_selector + ' > .builder';
+		jQuery(builder_selector).hide();
+		
+		// if there are existing constraints
+		if (constraints.length > 0) {
+		
+			for (var i=0; i < constraints.length; i++) {
+				
+				this.addNewConstraintRow( 
+					builder_selector + ' > ul', 
+					constraints[i].name,
+					constraints[i].operator,
+					constraints[i].value
+				);
+			}
+			
+		} else {
+			// just add an empty row
+			this.addNewConstraintRow(builder_selector + ' > ul');
+		}
+		
+		// setup the toggle button
+		jQuery( button_selector )
+			.button({ 
+				icons: {
+					primary:'ui-icon-blank',
+					secondary:'ui-icon-triangle-1-s'
+				},
+				label: OWA.l('Select...')
+			})
+			.click(function() {
+				jQuery(builder_selector).toggle();
+		});
+		
+		// setup add button
+		jQuery( builder_selector + ' > .add-button' )
+			.button({ 
+				
+				label: OWA.l('Add Metric/Dimension')
+			})
+			.click(function() {
+				that.addNewConstraintRow( builder_selector + ' > ul' );
+		});
+		
+		// setup apply button
+		jQuery( builder_selector + ' > .apply-button' )
+			.button({ 
+				
+				label: OWA.l('Apply')
+			})
+			.click(function() {
+				
+				var constraints = '';
+				
+				// iterate through constraint rows
+				jQuery(builder_selector + ' > ul > li').each(function(index) {
+    				
+    				var name = jQuery(this)
+    					.children('.constraintDimensionPicker')
+    						.children('.dimensionPicker')
+    							.children('.dim-list').selectmenu('value');
+    							
+    				var operator = jQuery(this)
+    					.children('.constraintOperatorPicker')
+    							.children('.operator-list').selectmenu('value');
+    				
+    				var value = jQuery(this)
+    					.children('.constraintValueField').val();
+    				
+    				if ( value ) {
+    				//constraints += OWA.util.sprintf('%s%s%s,' name, operator, value);
+						constraints += name + operator + value;
+						
+						if (index < jQuery(builder_selector + ' > ul > li').length - 1 ) {
+						//if (index < jQuery(this).siblings().length - 1 ) {	
+							constraints += ',';
+						}
+					}					
+					
+  				});
+				
+				var el = jQuery( that.dom_selector ).trigger('constraint_change', [constraints]);
+			});
+	},
+	
+	setRelatedDimensions: function ( dims, exclusions ) {
+		
+		if (exclusions) {
+			// filter the dim list
+		}
+		
+		this.relatedDimensions = dims;
+	},
+	
+	setRelatedMetrics : function ( metrics, exclusions ) {
+	
+		if (exclusions) {
+			// filter the dim list
+		}
+		
+		this.relatedMetrics = metrics;
+	},
+	
+	combineRelatedMetricsWithDimensions : function() {
+		
+		var metrics = false;
+		var dimensions = false;
+		
+		if ( OWA.util.countObjectProperties(this.relatedDimensions) > 0 ) {
+			
+			dimensions = true;
+		}
+		
+		if ( OWA.util.countObjectProperties(this.relatedMetrics) > 0 ) {
+			
+			metrics = true;
+		}
+				
+		if ( metrics && dimensions ) {
+			
+			var n = this.relatedDimensions;
+			
+			for ( metric in this.relatedMetrics ) {
+				
+				if ( this.relatedMetrics.hasOwnProperty( metric ) ) {
+					n[metric] = this.relatedMetrics[metric];
+				}
+			}
+			
+			return n;
+			
+		} else if ( metrics ) {
+		
+			return this.relatedMetrics;
+		
+		} else if ( dimensions ) {
+			
+			return this.relatedDimensions;
+		}
+	},
+	
+	addNewConstraintRow : function(selector, name, operator, value) {
+	
+		// generate container
+		
+		// generate the dim/metric chooser button
+		jQuery( selector ).append(
+			'<LI class="constraintRow"><span class="constraintDimensionPicker"></span> <span class="constraintOperatorPicker"></span><input class="constraintValueField" type="text" size="30"></LI>'
+		);
+		
+		// create constraint dimension picker
+		var dimpicker_selector = selector + ' > li:last > .constraintDimensionPicker';
+		var cdp = new OWA.dimensionPicker(dimpicker_selector);
+		cdp.setDimensions( this.combineRelatedMetricsWithDimensions() );
+		cdp.display(name); 
+		
+		// generate operatior picker
+		this.makeOperatorPicker(selector + ' > li:last > .constraintOperatorPicker', operator);
+		
+		if (value) {
+			jQuery(selector + ' > .constraintValueField').val(value);
+		}
+	},
+	
+	makeOperatorPicker : function( selector, selected ) {
+		
+		// append the container
+		var c = ''
+		//c += '<label for="operator-list">Select Operator:</label>';
+		c += '<select name="operator-list" class="operator-list">';
+		
+		// build the list of operators
+		for (operator in this.operators) {
+			
+			if ( this.operators.hasOwnProperty( operator ) ) {
+				
+				c += OWA.util.sprintf(
+						'<option value="%s">%s</option>', 
+						operator, 
+						this.operators[operator]
+				);				
+			}
+		}
+		
+		c += '</select>';
+		c += '';
+	
+		jQuery(selector).append(c);
+		jQuery(selector + ' > .operator-list').selectmenu({width:200});
+		
+		// set select value
+		if ( selected ) {
+			jQuery(selector + ' > .operator-list').selectmenu("value", selected);
+		}
+	
+	}
 	
 };

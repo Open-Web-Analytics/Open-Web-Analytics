@@ -83,6 +83,12 @@ class owa_paginatedResultSet {
 	 */
 	var $relatedDimensions = array();
 	
+	/**
+	 * The list of related metrics that can be added to the result set
+	 *
+	 */
+	var $relatedMetrics = array();
+	
 	var $results_count = 0;
 	var $offset = 0;
 	var $limit;
@@ -384,6 +390,13 @@ class owa_paginatedResultSet {
 		
 		if ( $dims ) {
 			$this->relatedDimensions = $dims;
+		}
+	}
+	
+	function setRelatedMetrics( $metrics = '' ) {
+		
+		if ( $metrics ) {
+			$this->relatedMetrics = $metrics;
 		}
 	}
 }

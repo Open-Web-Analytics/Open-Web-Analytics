@@ -334,10 +334,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa_genericHorizontalList li {text-decoration: none; float:left; margin: 2px; padding:3px;}
 .owa_genericHorizontalList li a {
 	
-	height:;
-	line-height:;
-	float: left;
-	width: ;
 	display: block;
 	text-decoration: none;
 	text-align: center;
@@ -349,7 +345,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 
 .owa_resultsExplorerBottomControls {
 	background-color: #9f9f9f;
-	
+	font-size:10px;
 }
 
 .owa_resultsExplorerBottomControls li a {
@@ -586,7 +582,8 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	text-decoration: none;
 	
 }
-.owa .submit-button:hover {
+
+.submit-button:hover {
 	color: #000000;
 	border-color: #9f9f9f;
 	-moz-box-shadow:2px 2px 2px #999;
@@ -594,56 +591,56 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     -webkit-box-shadow:2px 2px 2px #999;
 }
 
-.owa .submit-button a  {
+.submit-button a  {
 	text-decoration: none;
 }
 
-.owa .dimensionPicker {
+.dimensionPicker {
 	
 	width:175px;
 	font-size: 10px;
-}
-
-.owa .dimensionPicker .dim-list {
 	
-	height: 220px;
-	overflow-y: scroll;
-	visibility:;
-	padding: 20px;
-	background-color: #efefef;
-	border: 1px solid #9f9f9f;
-	width: 180px;
 }
 
-.owa .dimensionPicker .dimensionListItem {
+.dimensionPicker .dim-list {
+	
+}
+
+.dimensionPicker .dim-list ul {
+
+	padding-left: 7px;
+}
+
+.dimensionPicker .dimensionListItem {
 	
 	color: white;
 	background-color: green;
 	border: 1px solid #efefef;
 	padding:7px;
+	list-style: none;
 }
 
-.owa .dimensionPicker .select-button {
+.dimensionPicker .select-button {
 	
 	font-size: 10px;
 	height:;
 	
 }
 
-.owa .dimensionPicker .dimensionListItem:hover {
+.dimensionPicker .dimensionListItem:hover {
 	
 	font-weight: bold;
 	background-color: orange;
 }
 
-.owa .dimensionPicker h4 {
+.dimensionPicker h4 {
 	font-size:  14px;
 	font-weight: bold;
 	margin-bottom: 5px;
 	margin-top: 10px;
 }
 
-.owa .explorerTopControls {
+.explorerTopControls {
 	
 	font-size: 12px;
 	width:auto;
@@ -651,16 +648,41 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	padding: 0px;
 	margin-bottom:5px;
 	background-color: #fafafa;
-}
-
-.owa .explorerTopControls li, .owa .explorerTopControls ul {
 	
-	float: none;
 }
 
-.owa .explorerTopControls li {
+.dimensionPicker li, .dimensionPicker ul {
+	
+	float:none;
+}
+
+.explorerTopControls .controlItem span {
+	font-size: 10px;
+}
+
+.explorerTopControls li {
 	
 	list-style: none;
 	text-decoration: none;
 	width:;
 }
+
+.constraintPickerContainer .builder {
+	
+	margin:15px;
+	padding:10px;
+	background-color: #ffffff;
+	border: 1px solid #9f9f9f;	
+}
+
+li.constraintRow {
+	width:700px;
+	padding:20px;
+	border: 1px solid #9f9f9f;
+	background-color: #fafafa;
+}
+
+.constraintRow .constraintOperatorPicker, .constraintRow .constraintDimensionPicker {
+	float:left;
+	margin-right:10px;
+} 

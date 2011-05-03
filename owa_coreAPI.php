@@ -935,6 +935,7 @@ class owa_coreAPI {
 	public static function getRequestParam($name) {
 		
 		$service = &owa_coreAPI::serviceSingleton();
+		
 		return $service->request->getParam($name);
 		
 	}
@@ -1361,6 +1362,21 @@ class owa_coreAPI {
 		return $s->metrics;
 	}
 	
+	public static function getGoalManager( $siteId ) {
+		
+		static $gm;
+		
+		if ( ! $gm ) {
+		
+			$gm = array();
+		} 
+		
+		if ( ! isset( $gm[$siteId] ) )  {
+			$gm[ $siteId ] = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+		}
+		
+		return $gm[$siteId];
+	}
 }
 
 ?>

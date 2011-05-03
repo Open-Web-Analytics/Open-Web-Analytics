@@ -584,7 +584,7 @@ OWA.uri.prototype = {
 			this.components.queryKey = {};
 		}
 		
-		this.components.queryKey[name] = value;
+		this.components.queryKey[name] = OWA.util.urlEncode(value);
 		
 		this.resetQuery();
 	},
