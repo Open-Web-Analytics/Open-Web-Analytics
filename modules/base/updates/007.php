@@ -247,6 +247,31 @@ class owa_base_007_update extends owa_update {
 			return false;
 		}
 		
+		// migrate month column
+		$fact_table = array(
+			'owa_request',
+			'owa_session',
+			'owa_action_fact',
+			'owa_domstream',
+			'owa_commerce_line_item_fact',
+			'owa_commerce_transaction_fact',
+			'owa_click'
+		);
+		
+		foreach ($fact_table as $table) {
+		
+			$ret = $db->query(
+				"update $table set month = concat(cast(year as CHAR), lpad(CAST(month AS CHAR), 2, '0'))"
+			);
+				
+			if ($ret == true) {
+				$this->e->notice('Updated month column in '.$table);
+			} else {
+				$this->e->notice('Failed to update month column in '.$table);
+				return false;
+			}	
+		}
+				
 		// add indexes
 		$db->addIndex( 'owa_action_fact', 'yyyymmdd' );
 		

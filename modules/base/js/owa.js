@@ -490,7 +490,7 @@ OWA.uri.prototype = {
 		
 		if ( this.components.hasOwnProperty('queryKey')
 			&& this.components.queryKey.hasOwnProperty(name) ) {
-			return this.components.queryKey[name];
+			return OWA.util.urldecode( this.components.queryKey[name] );
 		}
 	},
 	

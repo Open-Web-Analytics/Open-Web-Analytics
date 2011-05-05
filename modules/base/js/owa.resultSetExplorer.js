@@ -96,6 +96,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 	this.viewObjects = {};
 	this.loadUrl = '';
 	this.dataExportApiParams = {};
+	this.isLoaded = false;
 };
 
 OWA.resultSetExplorer.prototype = {
@@ -317,6 +318,7 @@ OWA.resultSetExplorer.prototype = {
 		if (data) {
 			
 			this.setResultSet(data);
+			this.isLoaded = true;
 				
 			if (this.view) {
 				var method_name = this.viewMethods[this.view];
@@ -341,9 +343,16 @@ OWA.resultSetExplorer.prototype = {
 	/**
 	 * Enables auto-refresh mode
 	 */
-	enableAutoRefresh : function() {
+	enableAutoRefresh : function( interval ) {
 		
-		this.autoRefresh = true;
+		if ( ! this.isLoaded ) {
+		
+			this.autoRefreshInterval = interval || this.autoRefreshInterval;
+			this.autoRefresh = true;
+		} else {
+		
+			this.startAutoRefresh( interval );
+		}
 	},
 		
 	/**
@@ -354,12 +363,16 @@ OWA.resultSetExplorer.prototype = {
 	startAutoRefresh : function(interval) {
 		
 		this.autoRefreshInterval = interval || this.autoRefreshInterval;
-		var that = this;
-		this.autoRefreshTimerId = setInterval(function() {
-				that.getNewResultSet();
-			}, 
-			this.autoRefreshInterval
-		);
+		
+		if ( this.isLoaded && ! this.autoRefreshTimerId ) {
+		
+			var that = this;
+			this.autoRefreshTimerId = setInterval(function() {
+					that.getNewResultSet();
+				}, 
+				this.autoRefreshInterval
+			);
+		}
 	},
 	
 	/**
@@ -367,8 +380,9 @@ OWA.resultSetExplorer.prototype = {
 	 *
 	 */
 	stopAutoRefresh : function() {
+		
 		clearInterval(this.autoRefreshTimerId);
-		this.this.autoRefreshTimerId = '';
+		this.autoRefreshTimerId = '';
 	},
 	
 	dynamicFunc : function (func){
@@ -1138,7 +1152,8 @@ OWA.dimensionPicker.prototype = {
 		
 		// set select value
 		if ( selected ) {
-			jQuery(selector + ' > .operator-list').selectmenu("value", selected);
+			jQuery(selector + ' > .dim-list').selectmenu("value", selected);
+			
 		} else {		
 		
 			// hack for setting label of select menu
@@ -1424,7 +1439,8 @@ OWA.dataGrid.prototype = {
 		this.constraintPicker.setRelatedDimensions( resultSet.relatedDimensions, [] );
 		this.constraintPicker.setRelatedMetrics( resultSet.relatedMetrics, [] );
 		// add current constraints to this method call
-		var cur_con = '';
+		var resultSet_url = new OWA.uri( resultSet.self );
+		var cur_con = resultSet_url.getQueryParam('owa_constraints');
 		this.constraintPicker.display(cur_con);
 		
 		// listen for the constraint change event
@@ -1632,26 +1648,31 @@ OWA.constraintBuilder.prototype = {
 	
 	constraintsStringToArray : function ( str ) {
 		
+		var a = []
 		var c_array = [];
 		
 		if (str) {
-		
-			var a = str.split(',');
 			
-			for( var i=0; i < a.lenght; i++ ) {
+			if ( OWA.util.strpos(str, ',') ) {
+				a = str.split(',');
+			} else {
+				a.push(str);
+			}
+			
+			for( var i=0; i < a.length; i++ ) {
 				
 				for ( operator in this.operators ) {
 					
 					if ( this.operators.hasOwnProperty(operator) ) {
 						
 						if ( OWA.util.strpos( a[i], operator ) ) {
-						
+							
 							var b = a[i].split(operator);
 							
 							var c = {
-								'name': 	c[0], 
+								'name': 	b[0], 
 								'operator': operator,
-								'value':	c[1]
+								'value':	b[1]
 							};
 							
 							c_array.push(c);
@@ -1672,7 +1693,7 @@ OWA.constraintBuilder.prototype = {
 	},
 	
 	createConstraintAssembler : function( constraints ) {
-	
+		
 		var that = this;
 		// outer container
 		jQuery(that.dom_selector).append(
@@ -1691,7 +1712,7 @@ OWA.constraintBuilder.prototype = {
 		
 		// if there are existing constraints
 		if (constraints.length > 0) {
-		
+			
 			for (var i=0; i < constraints.length; i++) {
 				
 				this.addNewConstraintRow( 
@@ -1846,7 +1867,7 @@ OWA.constraintBuilder.prototype = {
 		this.makeOperatorPicker(selector + ' > li:last > .constraintOperatorPicker', operator);
 		
 		if (value) {
-			jQuery(selector + ' > .constraintValueField').val(value);
+			jQuery(selector + ' > li:last > .constraintValueField').val(value);
 		}
 	},
 	

@@ -1,15 +1,197 @@
-OWA.report = function(dom_id) {
+OWA.report = function(dom_id, options) {
+	
+	this.options = {
+		autoRefreshResultSets: 			false,
+		autoRefreshResultSetsInterval: 	6000
+	
+	};
+	
+	this.overrideOptions(options);
 	
 	this.dom_id = dom_id;
 	this.config = OWA.config;
 	this.properties = {};
 	this.tabs = {};
 	this.timePeriodControl = '';
-}
+	// container for resultSetExplorer objects
+	this.resultSetExplorers = {};
+	// is window active?
+	this.isActive = false;
+	// the dom id of the active tab
+	this.activeTab = '';
+	
+	var ar = this.getOption('autoRefreshResultSets');
+	// bind focus/blur handlers
+	
+};
 
 OWA.report.prototype = {
+	
+	display : function() {
+		
+		
+		
+	},
+	
+	showAutoRefreshControl : function( options ) {
+		
+		var selector = '';
+		
+		if (options.hasOwnProperty('target')) {
+			
+			selector = options.target;
+		} else {
+			selector = '#' + this.dom_id + ' > .liveViewSwitch';		
+		}
+		
+		if (options.hasOwnProperty('label')) {
+			
+			label= options.label;
+		} else {
+			selector = 'Live View: ';		
+		}
+		
+		
+		var c = [];
+		c.push('<div class="autoRefreshControl">');
+		c.push( OWA.util.sprintf( '<span class="label">%s</span>', label ) );
+		c.push('<span class="buttons">');
+		c.push('<input type="radio" name="autorefresh" id="autorefresh-on-button" /><label for="autorefresh-on-button">On</label>');
+		c.push('<input type="radio" name="autorefresh" checked="checked" id="autorefresh-off-button" /><label for="autorefresh-off-button">Off</label>');
+		c.push('</span>');
+		c.push('<div style="clear:both;"></div>');
+		c.push('</div>');
+		
+		jQuery( selector ).append( c.join(' ') );
+		jQuery( selector + ' > .autoRefreshControl > .buttons').buttonset();
+		
+		var that = this;
+		
+		
+		jQuery( selector + ' > .autoRefreshControl > .buttons > #autorefresh-on-button').click( function() {
+			
+			that.startAutoRefresh();			
+		});
+		
+		jQuery( selector + ' > .autoRefreshControl > .buttons > #autorefresh-off-button').click( function() {
+			
+			that.stopAutoRefresh();
+		});
+		
+		// bind window focus events to start auto refresh		
+		jQuery(window).focus(function() { 
+			
+			// set flag
+			that.isActive = true; 
+			
+			// enable auto-refesh if called for
+			if ( that.getOption( 'autoRefreshResultSets' ) ) {
+				
+				that.startAutoRefresh();
+			}
+				
+		});
+		
+		// bind window blur event to stop needless auto-refreshes
+	    jQuery(window).blur(function() { 
+	    
+	    	// set flag
+	    	that.isActive = false; 
+	    	//pause. stops but keeps the option set to true
+	    	if ( that.getOption( 'autoRefreshResultSets' ) ) {
+	   		
+	    		that.pauseAutoRefresh();
+	    	}
+	    });
+	
+	},
+	
+	startAutoRefresh : function() {
+		
+		var interval = this.getOption( 'autoRefreshResultSetsInterval' );
+		
+		if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
+			
+			for ( name in that.resultSetExplorers )	{
+				
+				if ( that.resultSetExplorers.hasOwnProperty( name ) ) {
+					
+					that.resultSetExplorers[name].enableAutoRefresh( interval );
+				}
+			}
+		}
+		
+		// if there are any tabs, start their resultSetExplorers too.
+		if ( this.activeTab ) {
+		
+			this.tabs[ this.activeTab ].startAutoRefresh();	
+		}
+		
+		this.options.autoRefreshResultSets = true;
+			
+	},
+	
+	stopAutoRefresh : function() {
+		
+		if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
+			
+			for ( name in this.resultSetExplorers )	{
+				
+				if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
+					
+					this.resultSetExplorers[name].stopAutoRefresh( interval );
+				}
+			}
+		}
+		
+		// if there are any tabs, stop their resultSetExplorers too.
+		// if there are any tabs, start their resultSetExplorers too.
+		if ( this.activeTab ) {
+		
+			this.tabs[ this.activeTab ].stopAutoRefresh();	
+		}
+		
+		
+		this.options.autoRefreshResultSets = false;		
+		
+	},
+	
+	pauseAutoRefresh : function() {
+		
+		this.stopAutoRefresh();
+		this.options.autoRefreshResultSets = true;	
+	},
+	
+	registerResultSetExplorer : function( name, rse ) {
+		
+		if ( this.getOption( 'autoRefreshResultSets' ) ) {
+			rse.enableAutoRefresh( this.getOption( 'autoRefreshResultSetsInterval' ) );
+		}
+		
+		this.resultSetExplorers[ name ] = rse;
+	},
 
-	options: {},
+	overrideOptions: function( options ) {
+		
+		options = options || {};
+		
+		// override default options
+		for ( option in options ) {
+			
+			if ( options.hasOwnProperty( option ) ) {
+				
+				this.options[option] = options[option];
+			}
+		}			
+	},
+	
+	getOption : function( name ) {
+		
+		if ( this.options.hasOwnProperty( name ) ) {
+			
+			return this.options[ name ];
+		}
+	},
 	
 	config: '',
 	
@@ -47,8 +229,7 @@ OWA.report.prototype = {
 					
 					that.reportSetTimePeriod(period);
 				} 
-			);
-					
+			);	
 		}
 	},
 	
@@ -132,6 +313,19 @@ OWA.report.prototype = {
 			show: function(event, ui) {
 				OWA.debug('tab selected is: %s', ui.panel.id);
 				that.tabs[ui.panel.id].load();
+				
+				// stop auto refresh of last selected tab
+				if ( that.activeTab && that.getOption('autoRefreshResultSets') ) {
+					that.tabs[ that.activeTab ].stopAutoRefresh();
+				}
+								
+				that.activeTab = ui.panel.id;
+				
+				// start auto refresh of  selected tab
+				if ( that.activeTab && that.getOption('autoRefreshResultSets') ) {
+					that.tabs[ that.activeTab ].startAutoRefresh();
+				}
+
 			}
 		});
 
@@ -206,6 +400,28 @@ OWA.report.tab = function(dom_id) {
 }
 
 OWA.report.tab.prototype = {
+
+	startAutoRefresh : function() {
+		
+		for (rse in this.resultSetExplorers) {
+				
+			if (this.resultSetExplorers.hasOwnProperty(rse)) {
+		
+				this.resultSetExplorers[rse].enableAutoRefresh();
+			}
+		}
+	},
+	
+	stopAutoRefresh : function() {
+		
+		for (rse in this.resultSetExplorers) {
+				
+			if (this.resultSetExplorers.hasOwnProperty(rse)) {
+				
+				this.resultSetExplorers[rse].stopAutoRefresh();
+			}
+		}
+	},
 	
 	addRse : function (name, rse) {
 		

@@ -68,12 +68,6 @@ class owa_baseModule extends owa_module {
 		$this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
 		
 		/**
-		 * Register Service Implementations
-		 *
-		 * The following lines register various service implementations. 
-		 */
-		
-		/**
 		 * Register Metrics
 		 *
 		 * The following lines register various data metrics. 
@@ -186,13 +180,59 @@ class owa_baseModule extends owa_module {
 			'Site Usage'
 		);
 		
-		$this->registerMetric('actions', 'base.actions');
-		$this->registerMetric('uniqueActions', 'base.uniqueActions');
-		$this->registerMetric('actionsValue', 'base.actionsValue');
-		//$this->registerMetric('actionsPerVisit', 'base.actionsPerVisit');
-		$this->registerMetric('feedRequests', 'base.feedRequests');
-		$this->registerMetric('feedReaders', 'base.feedReaders');
-		$this->registerMetric('feedSubscriptions', 'base.feedSubscriptions');
+		$this->registerMetric(
+			'actions', 
+			'base.actions',
+			'',
+			'Actions',
+			'The total number of action events.',
+			'Actions'
+		);
+		
+		$this->registerMetric(
+			'uniqueActions', 
+			'base.uniqueActions',
+			'',
+			'Unique Actions',
+			'Total number of unique action events.',
+			'Actions'
+		);
+		
+		$this->registerMetric(
+			'actionsValue', 
+			'base.actionsValue',
+			'',
+			'Action Value',
+			'Total value of all action events.',
+			'Actions'
+		);
+		
+		$this->registerMetric(
+			'feedRequests', 
+			'base.feedRequests',
+			'',
+			'Feed Requests',
+			'Total number of feed requests.',
+			'Feeds'
+		);
+		
+		$this->registerMetric(
+			'feedReaders', 
+			'base.feedReaders',
+			'',
+			'Feed Readers',
+			'Total number of feed readers.',
+			'Feeds'
+		);
+		
+		$this->registerMetric(
+			'feedSubscriptions', 
+			'base.feedSubscriptions',
+			'',
+			'Feed Subscriptions',
+			'Total number of feed subscribers.',
+			'Feeds'
+		);
 		
 		// goals
 		$gcount = owa_coreAPI::getSetting('base', 'numGoals');
@@ -276,24 +316,124 @@ class owa_baseModule extends owa_module {
 		);
 		
 		// ecommerce metrics
-		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantity');
-		$this->registerMetric('lineItemQuantity', 'base.lineItemQuantityFromSessionFact');
-		$this->registerMetric('lineItemRevenue', 'base.lineItemRevenue');
-		$this->registerMetric('lineItemRevenue', 'base.lineItemRevenueFromSessionFact');
-		$this->registerMetric('transactions', 'base.transactions');
-		$this->registerMetric('transactions', 'base.transactionsFromSessionFact');
-		$this->registerMetric('transactionRevenue', 'base.transactionRevenue');
-		$this->registerMetric('transactionRevenue', 'base.transactionRevenueFromSessionFact');
-		$this->registerMetric('taxRevenue', 'base.taxRevenue');
-		$this->registerMetric('taxRevenue', 'base.taxRevenueFromSessionFact');
-		$this->registerMetric('shippingRevenue', 'base.shippingRevenue');
-		$this->registerMetric('shippingRevenue', 'base.shippingRevenueFromSessionFact');
-		$this->registerMetric('uniqueLineItems', 'base.uniqueLineItems');
-		$this->registerMetric('uniqueLineItems', 'base.uniqueLineItemsFromSessionFact');
-		$this->registerMetric('revenuePerTransaction', 'base.revenuePerTransaction');
-		$this->registerMetric('revenuePerVisit', 'base.revenuePerVisit');
-		$this->registerMetric('ecommerceConversionRate', 'base.ecommerceConversionRate');
-		$this->registerMetric('domClicks', 'base.domClicks');
+		$this->registerMetric(
+			'lineItemQuantity', 
+			array(
+				'base.lineItemQuantity',
+				'base.lineItemQuantityFromSessionFact'
+			),
+			'',
+			'Item Quantity',
+			'The total umber of items purchased.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'lineItemRevenue', 
+			array(
+				'base.lineItemRevenue',
+				'base.lineItemRevenueFromSessionFact'
+			),
+			'',
+			'Item Revenue',
+			'Total revenue from items purchased.',
+			'E-commerce'
+		);
+				
+		$this->registerMetric(
+			'transactions', 
+			array(
+				'base.transactions',
+				'base.transactionsFromSessionFact'
+			),
+			'',
+			'Transactions',
+			'Total number of transactions.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'transactionRevenue', 
+			array(
+				'base.transactionRevenue',
+				'base.transactionRevenueFromSessionFact'
+			),
+			'',
+			'Revenue',
+			'Total revenue from all transactions.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'taxRevenue', 
+			array(
+				'base.taxRevenue',
+				'base.taxRevenueFromSessionFact'
+			),
+			'',
+			'Tax Revenue',
+			'Total revenue from taxes.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'shippingRevenue', 
+			array(
+				'base.shippingRevenue',
+				'base.shippingRevenueFromSessionFact'
+			),
+			'',
+			'Shipping Revenue',
+			'Total revenue from shipping.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'uniqueLineItems', 
+			array(
+				'base.uniqueLineItems',
+				'base.uniqueLineItemsFromSessionFact'
+			),
+			'',
+			'Unique Items',
+			'Total number of unique items purchased.',
+			'E-commerce'
+		);
+				
+		$this->registerMetric(
+			'revenuePerTransaction', 
+			'base.revenuePerTransaction',
+			'',
+			'Revenue Per Transaction',
+			'Average revenue per transaction.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'revenuePerVisit', 
+			'base.revenuePerVisit',
+			'',
+			'Revenue Per Visit',
+			'Average revenue generated per visit.',
+			'E-commerce'
+		);
+		
+		$this->registerMetric(
+			'ecommerceConversionRate', 
+			'base.ecommerceConversionRate',
+			'',
+			'E-commerce Conversion Rate',
+			'The rate of visits that resulted in an e-commerce transaction.',
+			'E-commerce');
+		
+		$this->registerMetric(
+			'domClicks', 
+			'base.domClicks',
+			'',
+			'Clicks',
+			'Total number of clicks on DOM elements.',
+			'Clicks'
+		);
 		
 		/**
 		 * Register Dimensions
@@ -347,7 +487,8 @@ class owa_baseModule extends owa_module {
 			'time', 
 			'The month of the year (1-12).', 
 			'', 
-			true
+			true,
+			'yyyymm'
 		);
 		
 		$this->registerDimension(
