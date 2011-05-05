@@ -691,7 +691,7 @@ class owa_module extends owa_base {
 		
 		foreach ($classes as $class_name) {
 		
-			$map = array('class' => $class_name, 'params' => $params, 'label' => $label, 'description' => $description, 'group' => $group);
+			$map = array('name' => $metric_name, 'class' => $class_name, 'params' => $params, 'label' => $label, 'description' => $description, 'group' => $group);
 			$this->metrics[$metric_name][] = $map;
 		}
 	}
