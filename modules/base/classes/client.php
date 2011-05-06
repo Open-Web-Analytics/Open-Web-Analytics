@@ -736,13 +736,15 @@ class owa_client extends owa_caller {
 	
 	public function deleteCustomVar( $slot ) {
 		
-		$cv_param_name = 'cv' + $slot;
+		$cv_param_name = 'cv' . $slot;
 		//clear session level
 		owa_coreAPI::clearState( 'b', $cv_param_name );
 		//clear visitor level
 		owa_coreAPI::clearState( 'v', $cv_param_name );
 		// clear page level
 		$this->deleteGlobalEventProperty( $cv_param_name );
+		
+		owa_coreAPI::debug("Deleting custom variable named $cv_param_name in slot $slot.");
 	}
 	
 	private function resetSessionState() {
