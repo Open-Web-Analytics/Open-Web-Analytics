@@ -95,6 +95,10 @@ class owa_auth extends owa_base {
 	 */
 	function __construct() {
 		
+		// register auth cookies
+		owa_coreAPI::registerStateStore('u', time()+3600*24*365*10, '', '', 'cookie');
+		owa_coreAPI::registerStateStore('p', time()+3600*2, '', '', 'cookie');
+		
 		parent::__construct();
 		$this->eq = owa_coreAPI::getEventDispatch();	
 	}
@@ -121,6 +125,8 @@ class owa_auth extends owa_base {
 		} elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
 			// auth user by cookies
 			$ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
+			// bump expiration time
+			//owa_coreAPI::setState('p', '', owa_coreAPI::getStateParam('p'));
 		} else {
 			$ret = false;
 			owa_coreAPI::debug("Could not find any credentials to authenticate with.");
