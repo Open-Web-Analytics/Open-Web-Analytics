@@ -183,9 +183,9 @@ class owa_state {
 	
 	function persistState( $store ) {
 		
-		//check to se that store exists.
+		//check to see that store exists.
 		if ( isset( $this->stores[ $store ] ) ) {
-			
+			owa_coreAPI::debug('Persisting state store: '. $store . ' with: '. print_r($this->stores[ $store ], true));	
 			// transform state array into a string using proper format
 			if ( is_array( $this->stores[$store] ) ) {
 				switch ( $this->stores_meta[$store]['type'] ) {
