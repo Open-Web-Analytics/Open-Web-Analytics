@@ -1057,10 +1057,16 @@ class owa_coreAPI {
 		return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
 	}
 	
-	public static function getStateParam($store, $name = '') {
+	public static function getState($store, $name = '') {
 		
 		$service = &owa_coreAPI::serviceSingleton();
 		return $service->request->state->get($store, $name);	
+	}
+	
+	// depricated
+	public static function getStateParam($store, $name = '') {
+		
+		return owa_coreAPI::getState($store, $name);
 	}
 	
 	public static function getServerParam($name = '') {
@@ -1069,10 +1075,10 @@ class owa_coreAPI {
 		return $service->request->getServerParam($name);	
 	}
 	
-	public static function clearState($store) {
+	public static function clearState($store, $name = '') {
 		
 		$service = &owa_coreAPI::serviceSingleton();
-		$service->request->state->clear($store); 
+		$service->request->state->clear($store, $name); 
 				
 	}
 	

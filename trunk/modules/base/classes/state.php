@@ -46,15 +46,9 @@ class owa_state {
 	
 	function __destruct() {
 	
-		$this->persistState();
+		return false;
 	}
 		
-	function persistState() {
-	
-		return false;
-	
-	}
-	
 	public function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie' ) {
 		
 		$this->stores_meta[$name] = array('expiration' => $expiration, 'length' => $length, 'format' => $format, 'type' => $type);
@@ -78,7 +72,7 @@ class owa_state {
 					return false;
 				}
 			} else {
-
+				
 				return $this->stores[$store];
 			}
 		} else {
@@ -183,12 +177,48 @@ class owa_state {
 				}
 			}
 			
-			
 			owa_coreAPI::createCookie($store, $this->stores[$store], $time, "/", owa_coreAPI::getSetting('base', 'cookie_domain'));
 		}	
 	}
 	
-	function setInitialState($store, $value, $store_type) {
+	function persistState( $store ) {
+		
+		//check to se that store exists.
+		if ( isset( $this->stores[ $store ] ) ) {
+			
+			// transform state array into a string using proper format
+			if ( is_array( $this->stores[$store] ) ) {
+				switch ( $this->stores_meta[$store]['type'] ) {
+				
+					case 'cookie':
+						
+						// check for old style assoc format
+						if ( $this->stores_meta[$store]['format'] === 'assoc' ) {
+							$cookie_value = owa_lib::implode_assoc('=>', '|||', $this->stores[ $store ] );
+						} else {				
+							$cookie_value = json_encode( $this->stores[ $store ] );
+						}
+						
+						break;
+					
+					default:
+						
+				}
+			} else {
+				$cookie_value = $this->stores[ $store ];	
+			}
+			// get expiration time
+			$time = $this->stores_meta[$store]['expiration'];
+			//set cookie
+			owa_coreAPI::createCookie( $store, $cookie_value, $time, "/", owa_coreAPI::getSetting( 'base', 'cookie_domain' ) );
+			
+		} else {
+			
+			owa_coreAPI::debug("Cannot persist state. No store registered with name $store");
+		}
+	}
+
+	function setInitialState($store, $value, $store_type = '') {
 		
 		if ($value) {
 			$this->initial_state[$store] = $value;
@@ -196,54 +226,67 @@ class owa_state {
 	}
 	
 	function loadState($store, $name = '', $value = '', $store_type = 'cookie') {
-	
+		
+		//owa_coreAPI::debug(print_r($this->initial_state, true));
+		
+		//get possible values
 		if ( ! $value && isset( $this->initial_state[$store] ) ) {
-			$value = $this->initial_state[$store];
+			$possible_values = $this->initial_state[$store];
 		} else {
 			return;
 		}
-	
-		// check format of value
-		if (strpos($value, "|||")) {
-			$value = owa_lib::assocFromString($value);
-		} else if (strpos($value, '{')) {
-			$value = json_decode($value);
-		} else {
-			$value = $value;
-		}
 		
-		if ( in_array( $store, $this->stores_with_cdh ) ) {
+		
+		//count values
+		$count = count($possible_values);
+		// loop throught values looking for a domain hash match or just using the last value.
+		foreach ($possible_values as $k => $value) {
+			// check format of value
+			if ( strpos( $value, "|||" ) ) {
+				$value = owa_lib::assocFromString($value);
+			} else if (strpos($value, '{')) {
+				$value = json_decode($value);
+			} else {
+				$value = $value;
+			}
 			
-			if ( is_array( $value ) && isset( $value['cdh'] ) ) {
+			if ( in_array( $store, $this->stores_with_cdh ) ) {
 				
-				$runtime_cdh = $this->getCookieDomainHash();
-				$cdh_from_state = $value['cdh'];
-				
-				// return as the cdh's do not match
-				if ( $cdh_from_state != $runtime_cdh ) {
-					// cookie domains do not match so we need to delete the cookie in the offending domain
-					// which is always likely to be a sub.domain.com and thus HTTP_HOST.
-					// if ccokie is not deleted then new cookies set on .domain.com will never be seen by PHP
-					// as only the sub domain cookies are available.
-					owa_coreAPI::debug("Not loading state store: $store. Domain hashes do not match - runtime: $runtime_cdh, cookie: $cdh_from_state");
-					owa_coreAPI::debug("deleting cookie: owa_$store");
-					owa_coreAPI::deleteCookie($store,'/', $_SERVER['HTTP_HOST']);
-					unset($this->initial_state[$store]);
+				if ( is_array( $value ) && isset( $value['cdh'] ) ) {
+					
+					$runtime_cdh = $this->getCookieDomainHash();
+					$cdh_from_state = $value['cdh'];
+					
+					// return as the cdh's do not match
+					if ( $cdh_from_state === $runtime_cdh ) {
+						return $this->setState($store, $name, $value, $store_type);
+					} else {
+						// cookie domains do not match so we need to delete the cookie in the offending domain
+						// which is always likely to be a sub.domain.com and thus HTTP_HOST.
+						// if cookie is not deleted then new cookies set on .domain.com will never be seen by PHP
+						// as only the sub domain cookies are available.
+						owa_coreAPI::debug("Not loading state store: $store. Domain hashes do not match - runtime: $runtime_cdh, cookie: $cdh_from_state");
+						//owa_coreAPI::debug("deleting cookie: owa_$store");
+						//owa_coreAPI::deleteCookie($store,'/', $_SERVER['HTTP_HOST']);
+						//unset($this->initial_state[$store]);
+						//return;
+					}
+				} else {
+					
+					owa_coreAPI::debug("Not loading state store: $store. No domain hash found.");
 					return;
 				}
+				
 			} else {
-				
-				owa_coreAPI::debug("Not loading state store: $store. No domain hash found.");
-				return;
-				
+				// just set the state with the last value
+				if ( $k === $count - 1 ) {
+					return $this->setState($store, $name, $value, $store_type);
+				}
 			}
 		}
-	
-		return $this->setState($store, $name, $value, $store_type);
-		
 	}
 		
-	function clear($store) {
+	function clear($store, $name = '') {
 	
 		if ( ! isset($this->stores[$store] ) ) {
 			$this->loadState($store);
@@ -251,11 +294,23 @@ class owa_state {
 		
 		if (array_key_exists($store, $this->stores)) {
 			
-			unset($this->stores[$store]);
+			if ( ! $name ) {
 			
-			if ($this->stores_meta[$store]['type'] === 'cookie') {
+				unset( $this->stores[ $store ] );
+				
+				if ($this->stores_meta[$store]['type'] === 'cookie') {
+				
+					return owa_coreAPI::deleteCookie($store);	
+				}
 			
-				return owa_coreAPI::deleteCookie($store);	
+			} else {
+				
+				unset( $this->stores[ $store ][ $name ] );
+				
+				if ($this->stores_meta[$store]['type'] === 'cookie') {
+				
+					return $this->persistState( $store );	
+				}
 			}	
 		}		
 	}
@@ -281,6 +336,5 @@ class owa_state {
 		return owa_lib::crc32AsHex($domain);
 	}
 }
-
 
 ?>

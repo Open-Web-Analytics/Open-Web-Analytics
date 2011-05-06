@@ -55,7 +55,7 @@ class owa_client extends owa_caller {
 		$this->pageview_event->setEventType('base.page_request');
 		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie');
 		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie');
-		owa_coreAPI::registerStateStore('b', '', '', 'json', 'cookie');
+		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie');
 		$cwindow = owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' );
 		owa_coreAPI::registerStateStore('c', time()+3600*24*$cwindow , '', 'json', 'cookie');
 	}
@@ -81,6 +81,13 @@ class owa_client extends owa_caller {
 		
 		if ( array_key_exists($name, $this->global_event_properties) ) {
 			return $this->global_event_properties[$name];
+		}
+	}
+	
+	private function deleteGlobalEventProperty( $name ) {
+		
+		if ( array_key_exists($name, $this->global_event_properties) ) {
+			unset($this->global_event_properties[$name]);
 		}
 	}
 				
@@ -195,12 +202,15 @@ class owa_client extends owa_caller {
 			if ($prior_session_id) {
 				$this->setGlobalEventProperty( 'prior_session_id', $prior_session_id );
 			}
+			
+			$this->resetSessionState();
+			
 			$session_id = $event->getSiteSpecificGuid( $this->site_id );
-			// it's a new session. generate new session ID 
-	   		$this->setGlobalEventProperty( 'session_id', $session_id );
+			
 	   		//mark new session flag on current request
 			$this->setGlobalEventProperty( 'is_new_session', true );
 			owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
+			
 		} else {
 			// Must be an active session so just pull the session id from the state store
 			$session_id = owa_coreAPI::getStateParam('s', 'sid');
@@ -209,21 +219,22 @@ class owa_client extends owa_caller {
 			if ( ! $session_id ) {
 				$state_store_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'site_session_param'), $this->site_id);		
 				$session_id = owa_coreAPI::getStateParam($state_store_name, 's');
-				owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
+				
 			}
-		
-			$this->setGlobalEventProperty('session_id', $session_id);
+			
+			// fail-safe just in case there is no session_id 
+			if ( ! $session_id ) {
+				$session_id = $event->getSiteSpecificGuid( $this->site_id );
+				//mark new session flag on current request
+				$this->setGlobalEventProperty( 'is_new_session', true );
+				owa_coreAPI::debug('setting failsafe session id');
+			}
 		}
 		
-		// fail-safe just in case there is no session_id 
-		if ( ! $this->getGlobalEventProperty( 'session_id' ) ) {
-			$session_id = $event->getSiteSpecificGuid( $this->site_id );
-			$this->setGlobalEventProperty( 'session_id', $session_id );
-			//mark new session flag on current request
-			$this->setGlobalEventProperty( 'is_new_session', true );
-			owa_coreAPI::debug('hello from failsafe');
-			owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
-		}
+		// set global event property 
+	   	$this->setGlobalEventProperty( 'session_id', $session_id );
+		// set sid state
+		owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
 	}
 	
 	private function setLastRequestTime( &$event ) {
@@ -237,6 +248,7 @@ class owa_client extends owa_caller {
 		}
 		// set property on event object
 		$this->setGlobalEventProperty( 'last_req', $last_req );
+		owa_coreAPI::debug("setting last_req value of $last_req as global event property.");
 		// store new state value
 		owa_coreAPI::setState( 's', 'last_req', $event->get( 'timestamp' ), 'cookie', true );
 	}
@@ -332,6 +344,22 @@ class owa_client extends owa_caller {
 		if ( ! $event->get('site_id') ) {
 			$event->set( 'site_id', $this->getSiteId() );
 		}
+		
+		// add custom variables to global properties if not there already
+    	for ( $i=1; $i <= owa_coreAPI::getSetting('base', 'maxCustomVars'); $i++ ) {
+    		$cv_param_name = 'cv' + $i;
+    		$cv_value = '';
+    		
+    		// if the custom var is not already a global property
+    		if ( ! $this->getGlobalEventProperty( $cv_param_name ) ) {
+    			// check to see if it exists
+    			$cv_value = $this->getCustomVar( $i );
+    			// if so add it
+    			if ( $cv_value ) {
+    				$this->setGlobalEventProperty( $cv_param_name, $cv_value );
+    			}
+    		}
+    	}
 		
 		// merge global event properties
 		foreach ($this->global_event_properties as $k => $v) {
@@ -581,7 +609,7 @@ class owa_client extends owa_caller {
 		// set attribution properties on the event object	
 		if ( $this->isTrafficAttributed ) {
 			
-			owa_coreAPI::debug( 'Attributing Traffic to: %s', print_r($campaign_pproperties, true ) );
+			owa_coreAPI::debug( 'Attributing Traffic to: %s', print_r($campaign_properties, true ) );
 		
 			$this->applyCampaignPropertiesToEvent( $event, $campaign_properties );
 			
@@ -646,6 +674,82 @@ class owa_client extends owa_caller {
 			// sanitizes the domain
 			$c->setCookieDomain($domain);
 		}
+	}
+	
+	/**
+	 * Set a custom variable
+	 *
+	 * @param	slot	int		the identifying number for the custom variable. 1-5.
+	 * @param	name	string	the key of the custom variable.
+	 * @param	value	string	the value of the varible
+	 * @param	scope	string	the scope of the variable. can be page, session, or visitor
+	 */
+	public function setCustomVar( $slot, $name, $value, $scope = '' ) {
+		
+		$cv_param_name = 'cv' . $slot;
+		$cv_param_value = $name . '=' . $value;
+		
+		if ( strlen( $cv_param_value ) > 65 ) {
+			owa_coreAPI::debug('Custom variable name + value is too large. Must be less than 64 characters.');
+			return;
+		}
+				
+		switch ( $scope ) {
+			
+			case 'session':
+				
+				// store in session cookie
+				owa_coreAPI::setState( 'b', $cv_param_name, $cv_param_value );
+				owa_coreAPI::debug( 'just set custom var on session.' );
+				break;
+				
+			case 'visitor':
+				
+				// store in visitor cookie
+				owa_coreAPI::setState( 'v', $cv_param_name, $cv_param_value );
+				// remove slot from session level cookie
+				owa_coreAPI::clearState( 'b', $cv_param_name );
+				break;
+		}
+		
+		$this->setGlobalEventProperty( $cv_param_name, $cv_param_value );	
+	}
+	
+	public function getCustomVar( $slot ) {
+		
+		$cv_param_name = 'cv' + $slot;
+		$cv = '';
+		// check request/page level
+		$cv = $this->getGlobalEventProperty( $cv_param_name );
+		//check session store
+		if ( ! $cv ) {
+			$cv = owa_coreAPI::getState( 'b', $cv_param_name );
+		}
+		// check visitor store
+		if ( ! $cv ) {
+			$cv = owa_coreAPI::getState( 'v', $cv_param_name );
+		}
+		
+		return $cv;
+		
+	}
+	
+	public function deleteCustomVar( $slot ) {
+		
+		$cv_param_name = 'cv' + $slot;
+		//clear session level
+		owa_coreAPI::clearState( 'b', $cv_param_name );
+		//clear visitor level
+		owa_coreAPI::clearState( 'v', $cv_param_name );
+		// clear page level
+		$this->deleteGlobalEventProperty( $cv_param_name );
+	}
+	
+	private function resetSessionState() {
+		
+		$last_req = owa_coreAPI::getState( 's', 'last_req' );
+		owa_coreAPI::clearState( 's' );
+		owa_coreAPI::setState( 's', 'last_req', $last_req);
 	}
 }
 
