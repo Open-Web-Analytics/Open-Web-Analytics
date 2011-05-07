@@ -1045,10 +1045,10 @@ class owa_coreAPI {
 		return owa_coreAPI::createCookie($cookie_name, false, time()-3600*25, $path, $domain);
 	}
 	
-	public static function registerStateStore($name, $expiration, $length = '', $format = '', $type = 'cookie') {
+	public static function registerStateStore($name, $expiration, $length = '', $format = '', $type = 'cookie', $cdh_required = '') {
 		
 		$service = &owa_coreAPI::serviceSingleton();
-		return $service->request->state->registerStore( $name, $expiration, $length, $format, $type );
+		return $service->request->state->registerStore( $name, $expiration, $length, $format, $type, $cdh_required );
 	}
 	
 	public static function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {

@@ -36,8 +36,7 @@ class owa_state {
 	var $is_dirty;
 	var $dirty_stores;
 	var $default_store_type = 'cookie';
-	var $stores_with_cdh = array('c','v','s', 'b');
-	var $store_formats = array ('v' => 'assoc', 's' => 'assoc');
+	var $stores_with_cdh = array();
 	var $initial_state = array();
 	
 	function __construct() {
@@ -49,14 +48,27 @@ class owa_state {
 		return false;
 	}
 		
-	public function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie' ) {
+	function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie', $cdh = null ) {
 		
-		$this->stores_meta[$name] = array('expiration' => $expiration, 'length' => $length, 'format' => $format, 'type' => $type);
+		$this->stores_meta[$name] = array(
+			'expiration' 	=> $expiration, 
+			'length' 		=> $length, 
+			'format' 		=> $format, 
+			'type' 			=> $type, 
+			'cdh_required' 	=> $cdh
+		);
+		
+		if ( $cdh ) {
+			$this->stores_with_cdh[] = $name;
+		}
 	}
 	
+	
+	
 	public function get($store, $name = '') {
+	
 		owa_coreAPI::debug("Getting state - store: ".$store.' key: '.$name);
-		
+		//owa_coreAPI::debug("existing stores: ".print_r($this->stores, true));
 		if ( ! isset($this->stores[$store] ) ) {
 			$this->loadState($store);
 		}
@@ -85,25 +97,10 @@ class owa_state {
 	
 		owa_coreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
 		
-		// first call to set for a store sets the meta
-		if (!array_key_exists($store, $this->stores)) {
-		
-			if (empty($store_type)) {
-				$store_type = $this->default_store_type;
-			}
-			
-			$this->stores_meta[$store]['type'] = $store_type;
-			
-			if ($is_perminent === true) {
-				$this->stores_meta[$store]['is_perminent'] = true;
-			}
-			
-		}
-		
 		// set values
 		if (empty($name)) {
 			$this->stores[$store] = $value;
-			//owa_coreAPI::debug(print_r($this->stores, true));
+			//owa_coreAPI::debug('setstate: '.print_r($this->stores, true));
 		} else {
 			//just in case the store was set first as a string instead of as an array.
 			if ( array_key_exists($store, $this->stores)) {
@@ -139,11 +136,13 @@ class owa_state {
 	
 	function isCdhRequired($store_name) {
 		
-		return in_array( $store_name, $this->stores_with_cdh );
+		if ( isset( $this->stores_meta[$store_name] ) ) {
+			return $this->stores_meta[$store_name]['cdh_required'];
+		}
 	}
 
 	function set($store, $name = '', $value, $store_type = '', $is_perminent = false) {
-	
+		
 		if ( ! isset($this->stores[$store] ) ) {
 			$this->loadState($store);
 		}
@@ -153,31 +152,7 @@ class owa_state {
 		// persist immeadiately if the store type is cookie
 		if ($this->stores_meta[$store]['type'] === 'cookie') {
 			
-			$time = 0;
-			
-			// needed? i dont think so.
-			if (isset($this->stores_meta[$store]['is_perminent']) && $this->stores_meta[$store]['is_perminent'] === true) {
-				$time = $this->getPermExpiration();
-			} elseif (isset($this->stores_meta[$store]['is_perminent']) && $this->stores_meta[$store]['is_perminent'] > 0) {
-				$time = $this->stores_meta[$store]['is_perminent'] * 3600 * 24;
-			}
-			
-			if ($is_perminent === true) {
-				$time = $this->getPermExpiration();
-			}
-			
-			// transform state array into a string using proper format
-			if ( is_array( $this->stores[$store] ) ) {
-				
-				// check for old style assoc format
-				if (isset($this->store_formats[$store]) && $this->store_formats[$store] === 'assoc') {
-					$cookie_value = owa_lib::implode_assoc('=>', '|||', $this->stores[$store] );
-				} else {
-					$cookie_value = json_encode( $this->stores[$store] );
-				}
-			}
-			
-			owa_coreAPI::createCookie($store, $this->stores[$store], $time, "/", owa_coreAPI::getSetting('base', 'cookie_domain'));
+			$this->persistState($store);
 		}	
 	}
 	
@@ -226,9 +201,7 @@ class owa_state {
 	}
 	
 	function loadState($store, $name = '', $value = '', $store_type = 'cookie') {
-		
-		//owa_coreAPI::debug(print_r($this->initial_state, true));
-		
+	
 		//get possible values
 		if ( ! $value && isset( $this->initial_state[$store] ) ) {
 			$possible_values = $this->initial_state[$store];
@@ -242,10 +215,12 @@ class owa_state {
 		// loop throught values looking for a domain hash match or just using the last value.
 		foreach ($possible_values as $k => $value) {
 			// check format of value
+			
 			if ( strpos( $value, "|||" ) ) {
 				$value = owa_lib::assocFromString($value);
-			} else if (strpos($value, '{')) {
+			} elseif ( strpos( $value, ":" ) ) {
 				$value = json_decode($value);
+				$value = (array) $value;
 			} else {
 				$value = $value;
 			}
@@ -259,6 +234,7 @@ class owa_state {
 					
 					// return as the cdh's do not match
 					if ( $cdh_from_state === $runtime_cdh ) {
+						owa_coreAPI::debug("cdh match:  $cdh_from_state and $runtime_cdh");
 						return $this->setState($store, $name, $value, $store_type);
 					} else {
 						// cookie domains do not match so we need to delete the cookie in the offending domain
@@ -280,6 +256,7 @@ class owa_state {
 			} else {
 				// just set the state with the last value
 				if ( $k === $count - 1 ) {
+					owa_coreAPI::debug("loading last value in initial state container for store: $store");
 					return $this->setState($store, $name, $value, $store_type);
 				}
 			}
@@ -292,7 +269,7 @@ class owa_state {
 			$this->loadState($store);
 		}
 		
-		if (array_key_exists($store, $this->stores)) {
+		if ( array_key_exists( $store, $this->stores ) ) {
 			
 			if ( ! $name ) {
 			
@@ -305,11 +282,13 @@ class owa_state {
 			
 			} else {
 				
-				unset( $this->stores[ $store ][ $name ] );
-				
-				if ($this->stores_meta[$store]['type'] === 'cookie') {
-				
-					return $this->persistState( $store );	
+				if ( array_key_exists( $name, $this->stores[ $store ] ) ) {
+					unset( $this->stores[ $store ][ $name ] );
+					
+					if ($this->stores_meta[$store]['type'] === 'cookie') {
+					
+						return $this->persistState( $store );	
+					}
 				}
 			}	
 		}		

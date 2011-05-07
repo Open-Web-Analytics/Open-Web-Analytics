@@ -53,11 +53,11 @@ class owa_client extends owa_caller {
 		
 		$this->pageview_event = $this->makeEvent();
 		$this->pageview_event->setEventType('base.page_request');
-		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie');
-		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie');
-		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie');
-		$cwindow = owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' );
-		owa_coreAPI::registerStateStore('c', time()+3600*24*$cwindow , '', 'json', 'cookie');
+		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
+		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
+		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie', true);
+		$cwindow = owa_coreAPI::getSetting( 'base', 'campaignAttributionWindow' );
+		owa_coreAPI::registerStateStore('c', time() + 3600 * 24 * $cwindow , '', 'json', 'cookie', true);
 	}
 	
 	public function setPageTitle($value) {
@@ -94,6 +94,7 @@ class owa_client extends owa_caller {
 	private function manageState( &$event ) {
 		
 		if ( ! $this->stateInit ) {
+		
 			$this->setVisitorId( $event );
 			$this->setFirstSessionTimestamp( $event );
 			$this->setLastRequestTime( $event );
@@ -101,10 +102,6 @@ class owa_client extends owa_caller {
 			$this->setNumberPriorSessions( $event );
 			$this->setDaysSinceLastSession( $event );
 			$this->setTrafficAttribution( $event );
-			// clear old style session cookie
-			$session_store_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'site_session_param'), $this->site_id);
-			owa_coreAPI::clearState( $session_store_name );
-			
 			$this->stateInit = true;
 		}
 	}
@@ -332,7 +329,6 @@ class owa_client extends owa_caller {
 		// set various state properties.
 		$this->manageState( $event );
 		
-		
 		$event = $this->setAllGlobalEventProperties( $event );
 		
 		// send event to log API for processing.
@@ -516,13 +512,26 @@ class owa_client extends owa_caller {
 		return $campaign_properties;
 	}
 	
+	private function setCampaignSessionState( $properties ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		foreach ($campaign_params as $k => $v) {
+			
+			if (array_key_exists( $k, $properties ) ) {
+			
+				owa_coreAPI::setState( 's', $v, $properties[$k] );
+			}
+		}
+	}
+	
 	function directAttributionModel( &$campaign_properties ) {
 	
 		// add new campaign info to existing campaign cookie.
-		if ( !empty( $campaign_properties ) ) {
+		if ( $campaign_properties ) {
+			
+			// get prior campaing touches from c cookie			
 			$campaign_state = $this->getCampaignState();
-			// add timestamp
-			//$campaign_properties['ts'] = $event->get('timestamp');
+			
 			// add new campaign into state array
 			$campaign_state[] = (object) $campaign_properties;
 			
@@ -538,6 +547,9 @@ class owa_client extends owa_caller {
 			
 			// set flag
 			$this->isTrafficAttributed = true;
+			
+			// persist state to session store
+			$this->setCampaignSessionState( $campaign_properties );
 		}
 
 	}
@@ -565,14 +577,16 @@ class owa_client extends owa_caller {
 				$this->isTrafficAttributed = true;
 			}
 		}
+		
+		// persist state to session store
+		$this->setCampaignSessionState( $campaign_properties );
 	}
 	
 	function getCampaignState() {
 		
-		$campaign_state = owa_coreAPI::getStateParam( 'c' );
-		if ( $campaign_state ) {
-			$campaign_state = json_decode( $campaign_state );
-		} else {
+		$campaign_state = owa_coreAPI::getState( 'c', 'attribs' );
+		if ( ! $campaign_state ) {
+
 			$campaign_state = array();
 		}
 		
@@ -610,60 +624,43 @@ class owa_client extends owa_caller {
 		if ( $this->isTrafficAttributed ) {
 			
 			owa_coreAPI::debug( 'Attributing Traffic to: %s', print_r($campaign_properties, true ) );
-		
-			$this->applyCampaignPropertiesToEvent( $event, $campaign_properties );
-			
-			// set campaign touches
-			$campaign_state = owa_coreAPI::getStateParam('c');
-			if ($campaign_state) {
-				$this->setGlobalEventProperty( 'attribs', json_encode( $campaign_state ) );
-			}
-			
-		} else {
-			owa_coreAPI::debug( 'No traffic attribution.' );
-		}
-	}
-	
-	function applyCampaignPropertiesToEvent( $event, $campaign_properties) {
-		
-		// set the attributes
-		if (!empty($campaign_properties)) {
-		
-			foreach ($campaign_properties as $k => $v) {
-									
-				if ($k === 'md') {
-					$this->setGlobalEventProperty( 'medium', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'sr') {
-					$this->setGlobalEventProperty( 'source', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'cn') {
-					$this->setGlobalEventProperty( 'campaign', $campaign_properties[$k] );
-				}
 					
-				if ($k === 'at') {
-					$this->setGlobalEventProperty( 'ad_type', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'ad') {
-					$this->setGlobalEventProperty( 'ad', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'tr') {
-					$this->setGlobalEventProperty( 'search_terms', $campaign_properties[$k] );
-				}
-			}		
+		} else {
+			// infer the attribution from the referer
+			// if the request is the start of a new session
+			if ( $this->getGlobalEventProperty( 'is_new_session' ) ) {
+				owa_coreAPI::debug( 'Infering traffic attribution.' );
+				$this->inferTrafficAttribution();
+			}
+		}
+		
+		// apply traffic attribution realted properties to events
+		// all properties should be set in the state store by this point.
+		$campaign_params = owa_coreAPI::getSetting('base', 'campaign_params');
+		foreach( $campaign_params as $k => $v ) {
+		
+			$value = owa_coreAPI::getState( 's', $v );
+			
+			if ( $value ) { 
+				$this->setGlobalEventProperty( $v, $value );
+			}
+		}
+			
+		// set campaign touches
+		$campaign_state = owa_coreAPI::getState('c', 'attribs');
+		if ( $campaign_state ) {
+			
+			$this->setGlobalEventProperty( 'attribs', json_encode( $campaign_state ));
 		}
 	}
 	
+	private function inferTrafficAttribution() {
+	
+	}
+		
 	function setCampaignCookie($values) {
 		// reset state
-		owa_coreAPI::setState('c', '', 
-				json_encode( $values ), 
-				'cookie', 
-				owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' ) );
+		owa_coreAPI::setState('c', 'attribs', $values);
 	}
 	
 	// sets cookies domain
