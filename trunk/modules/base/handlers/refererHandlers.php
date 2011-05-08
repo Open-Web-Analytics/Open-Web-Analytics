@@ -20,8 +20,6 @@ if(!class_exists('owa_observer')) {
 	require_once(OWA_BASE_DIR.'owa_observer.php');
 }	
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
-
 if (!class_exists('owa_http')) {
 	require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
 }
@@ -61,14 +59,7 @@ class owa_refererHandlers extends owa_observer {
 		
 			// set referer url
 			$r->set('url', $event->get('HTTP_REFERER'));
-			
-			// check for search engine
-			$se_info = $this->lookupSearchEngine($event->get('HTTP_REFERER'));
-			if (!empty($se_info)) {
-				$r->set('is_searchengine', true);
-				$r->set('site_name', $se_info->name);
-			}
-			
+				
 			// Set site
 			$url = parse_url($event->get('HTTP_REFERER'));
 			$r->set('site', $url['host']);
@@ -134,29 +125,6 @@ class owa_refererHandlers extends owa_observer {
 			return OWA_EHS_EVENT_HANDLED;
 		}
     }
-    
-    /**
-	 * Lookup info about referring domain 
-	 *
-	 * @param string $referer
-	 * @return object
-	 * @access private
-	 */
-	function lookupSearchEngine($referer) {
-	
-		/*	Look for match against Search engine groups */
-		$db = new ini_db(owa_coreAPI::getSetting('base', 'search_engines.ini'), $sections = true);
-		
-		$se_info = $db->fetch($referer);
-		
-		if (!empty($se_info->name)):
-			return $se_info;
-		else:
-			return false;
-		endif;
-			
-	}
-    
 }
 
 ?>
