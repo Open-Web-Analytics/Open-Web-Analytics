@@ -58,6 +58,53 @@ class owa_client extends owa_caller {
 		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie', true);
 		$cwindow = owa_coreAPI::getSetting( 'base', 'campaignAttributionWindow' );
 		owa_coreAPI::registerStateStore('c', time() + 3600 * 24 * $cwindow , '', 'json', 'cookie', true);
+		
+		$this->organicSearchEngines = array(
+		
+			array('d' => 'google', 'q' => 'q'),
+			array('d' => 'yahoo', 'q' => 'p'),
+			array('d' => 'msn', 'q' => 'q'),
+			array('d' => 'bing', 'q' => 'q'),
+			array('d' => 'images.google', 'q' => 'q'),
+			array('d' => 'aol', 'q' => 'query'),
+			array('d' => 'aol', 'q' => 'encquery'),
+			array('d' => 'aol', 'q' => 'q'),
+			array('d' => 'lycos', 'q' => 'query'),
+			array('d' => 'ask', 'q' => 'q'),
+			array('d' => 'altavista', 'q' => 'q'),
+			array('d' => 'netscape', 'q' => 'query'),
+			array('d' => 'cnn', 'q' => 'query'),
+			array('d' => 'about', 'q' => 'terms'),
+			array('d' => 'mamma', 'q' => 'q'),
+			array('d' => 'daum', 'q' => 'q'),
+			array('d' => 'eniro', 'q' => 'search_word'),
+			array('d' => 'naver', 'q' => 'query'),
+			array('d' => 'pchome', 'q' => 'q'),
+			array('d' => 'alltheweb', 'q' => 'q'),
+			array('d' => 'voila', 'q' => 'rdata'),
+			array('d' => 'virgilio', 'q' => 'qs'),
+			array('d' => 'live', 'q' => 'q'),
+			array('d' => 'baidu', 'q' => 'wd'),
+			array('d' => 'alice', 'q' => 'qs'),
+			array('d' => 'yandex', 'q' => 'text'),
+			array('d' => 'najdi', 'q' => 'q'),
+			array('d' => 'mama', 'q' => 'query'),
+			array('d' => 'seznam', 'q' => 'q'),
+			array('d' => 'search', 'q' => 'q'),
+			array('d' => 'wp', 'q' => 'szukaj'),
+			array('d' => 'onet', 'q' => 'qt'),
+			array('d' => 'szukacz', 'q' => 'q'),
+			array('d' => 'yam', 'q' => 'k'),
+			array('d' => 'kvasir', 'q' => 'q'),
+			array('d' => 'sesam', 'q' => 'q'),
+			array('d' => 'ozu', 'q' => 'q'),
+			array('d' => 'terra', 'q' => 'query'),
+			array('d' => 'mynet', 'q' => 'q'),
+			array('d' => 'ekolay', 'q' => 'q'),
+			array('d' => 'rambler', 'q' => 'query'),
+			array('d' => 'oncefuture.com', 'q' => 'q'),
+			array('d' => 'rambler', 'q' => 'words')
+		);
 	}
 	
 	public function setPageTitle($value) {
@@ -656,8 +703,59 @@ class owa_client extends owa_caller {
 	
 	private function inferTrafficAttribution() {
 	
-	}
+		$ref = owa_coreAPI::getServerParam('HTTP_REFERER');
+		$medium = 'direct';
+		$source = '(none)';
+		$search_terms = '(none)';
 		
+		if ( $ref ) {
+			$uri = owa_lib::parse_url( $ref );
+			
+			// check for external referer
+			$host = owa_coreAPI::getServerParam('HTTP_HOST');
+			if ( $host != $uri['host'] ) {			
+						
+				$medium = 'referal';
+				$source = owa_lib::stripWwwFromDomain( $uri['host'] );
+				$engine = $this->isRefererSearchEngine( $uri );
+				if ( $engine ) {
+					$medium = 'organic-search';
+					$search_terms = $engine['t'];
+				} 
+			}
+		}
+		
+		owa_coreAPI::setState('s', 'medium', $medium);
+		owa_coreAPI::setState('s', 'source', $source);
+		owa_coreAPI::setState('s', 'search_terms', $search_terms);
+	}
+	
+	private function isRefererSearchEngine( $uri ) {
+		
+		if ( isset( $uri['host'] ) ) {
+			$host = $uri['host'];
+		} else {
+			return;
+		}
+		
+		foreach ( $this->organicSearchEngines as $engine ) {
+			
+			$domain = $engine['d'];
+			$query_param = $engine['q'];
+			$term = '';
+			
+			if ( isset ($uri['query_params'][$query_param] ) ) {
+				$term = $uri['query_params'][$query_param];
+			}
+			
+			if ( strpos($host, $domain) && $term ) {
+				owa_coreAPI::debug( 'Found search engine: %s with query param %s:, query term: %s', $domain, $query_param, $term);
+				
+				return array('d' => $domain, 'q' => $query_param, 't' => $term );
+			}
+		}
+	}
+	
 	function setCampaignCookie($values) {
 		// reset state
 		owa_coreAPI::setState('c', 'attribs', $values);
@@ -749,6 +847,16 @@ class owa_client extends owa_caller {
 		$last_req = owa_coreAPI::getState( 's', 'last_req' );
 		owa_coreAPI::clearState( 's' );
 		owa_coreAPI::setState( 's', 'last_req', $last_req);
+	}
+	
+	public function addOrganicSearchEngine( $domain, $query_param, $prepend = '' ) {
+		
+		$engine = array('d' => $domain, 'q' => $query_param);
+		if ( $prepend) {
+			array_unshift($this->organicSearchEngines, $engine );
+		} else {
+				$this->organicSearchEngines[] = $engine;
+		}
 	}
 }
 

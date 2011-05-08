@@ -1132,6 +1132,58 @@ class owa_lib {
 			
 		return $domain;
 	}
+	
+	public static function stripWWWFromDomain($domain) {
+		
+		$part = substr( $domain, 0, 5 );
+		if ($part === '.www.') {
+			//strip .www.
+			$domain = substr( $domain, 5);
+			// add back the leading period
+			$domain = '.'.$domain;
+			$done = true;
+		}
+		
+		if ( ! $done ) {
+			$part = substr( $domain, 0, 4 );
+			if ($part === 'www.') {
+				//strip .www.
+				$domain = substr( $domain, 4);
+				$done = true;
+			}
+			
+		}
+		
+		return $domain;
+	}
+	
+    /**
+     *  Use this function to parse out the url and query array element from
+     *  a url.
+     */
+	public static function parse_url( $url ) {
+		
+		$url = parse_url($url);
+		
+		if ( isset( $url['query'] ) ) {
+			$var = $url['query'];
+			
+			$var  = html_entity_decode($var);
+			$var  = explode('&', $var);
+			$arr  = array();
+	
+	  		foreach( $var as $val ) {
+	    		$x = explode('=', $val);
+	    		$arr[$x[0]] = urldecode($x[1]);
+	   		}
+	  		unset($val, $x, $var);
+	  		
+	  		$url['query_params'] = $arr;
+		
+		}
+	
+  		return $url;
+	}
 }
 
 ?>
