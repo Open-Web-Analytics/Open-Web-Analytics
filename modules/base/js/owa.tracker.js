@@ -257,6 +257,7 @@ OWA.tracker.prototype = {
 		{d: 'msn', q: 'q'},
 		{d: 'bing', q: 'q'},
 		{d: 'images.google', q: 'q'},
+		{d: 'images.search.yahoo.com', q: 'p'},
 		{d: 'aol', q: 'query'},
 		{d: 'aol', q: 'encquery'},
 		{d: 'aol', q: 'q'},
