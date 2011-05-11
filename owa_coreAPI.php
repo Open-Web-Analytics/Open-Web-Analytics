@@ -708,9 +708,9 @@ class owa_coreAPI {
 		
 		foreach ($config as $k => $module) {
 			
-			if ($module['is_active'] == true):
+			if ( isset($module['is_active']) && $module['is_active'] == true) {
 				$active_modules[] = $k;
-			endif;
+			}
 		}
 
 		return $active_modules;
@@ -798,7 +798,7 @@ class owa_coreAPI {
 				return false;
 			}
 		}
-		
+			
 		// do not log if the request is robotic
 		$service = &owa_coreAPI::serviceSingleton();
 		$bcap = $service->getBrowscap();

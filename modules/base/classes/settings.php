@@ -647,7 +647,7 @@
 				'cache_objects'						=> true,
 				'log_named_users'					=> true,
 				'log_visitor_pii'					=> true,
-				'do_not_log_ips'					=> '', // move to site settings
+				'excluded_ips'						=> '',
 				'track_feed_links'					=> true,
 				'theme'								=> '',
 				'reserved_words'					=> array('do' => 'action'),
