@@ -1631,7 +1631,7 @@ OWA.tracker.prototype = {
 			
 			if ( document.domain != uri.getHost() ) {			
 						
-				medium = 'referal';
+				medium = 'referral';
 				session_referer = ref;
 				source = OWA.util.stripWwwFromDomain( uri.getHost() );
 				var engine = this.isRefererSearchEngine( uri );
