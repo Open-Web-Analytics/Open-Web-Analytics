@@ -209,7 +209,7 @@ class owa_processEventController extends owa_controller {
 				
 		$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
 		// Generate host_id
-		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'full_host' ) ) );
+		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'host' ) ) );
 		
 		// Browser related properties
 		$service = owa_coreAPI::serviceSingleton();
@@ -270,7 +270,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
 		} else {
 			// remove ip address from event
-			$this->event->set('ip_address', '(not set)');
+			//$this->event->set('ip_address', '(not set)');
 		}
 		
 		$this->event->set( 'days_since_first_session', $this->event->get( 'dsfs' ) );
@@ -302,6 +302,13 @@ class owa_processEventController extends owa_controller {
 		$this->setCustomVariables();
 		
 		$this->setGeolocation();
+		
+		// anonymize Ip address
+		if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+			$this->event->set('ip_address', $this->anonymizeIpAddress($this->event->get('ip_address')));
+			$this->event->set('full_host', '(not set)');
+		}
+		
 	}
 	
 	function post() {
@@ -413,6 +420,18 @@ class owa_processEventController extends owa_controller {
 					return true;
 				}
 			}
+		}
+	}
+	
+	private function anonymizeIpAddress( $ip_address ) {
+		
+		if ( $ip_address && strpos($ip_address, '.' ) ) {
+		
+			$ip = explode( '.', $ip_address );
+			array_pop($ip);
+			$ip = implode('.', $ip);
+			
+			return $ip;
 		}
 	}
 }

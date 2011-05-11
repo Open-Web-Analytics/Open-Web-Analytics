@@ -64,6 +64,7 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
+		
 		// event procesing daemon jobs
 		$this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
 		
@@ -2521,31 +2522,6 @@ class owa_baseModule extends owa_module {
     		return $combined;
     	
     }
-    
-    /*
-    function eventProcessingDaemonJobs($jobs) {
-    	
-    	$source = owa_coreAPI::getSetting( 'base', 'event_queue_type' );
-    	$dest = owa_coreAPI::getSetting( 'base', 'event_secondary_queue_type' );
-    	
-    	// check event file
-    	$event_log_file = owa_coreAPI::getSetting( 'base', 'async_log_dir' ) . owa_coreAPI::getSetting( 'base', 'async_log_file' );
-    	$event_log_rotate_size = owa_coreAPI::getSetting( 'base', 'async_log_rotate_size' );
-    	if ( file_exists( $event_log_file ) && filesize( $event_log_file ) > $event_log_rotate_size ) {
-    		$file_cmd = array('cmd=processEventQueue');
-    		$file_cmd[] = 'source=file';
-    		
-    		if ( $dest ) {
-    			$file_cmd[] = 'destination='.$dest;
-    		}
-    		$jobs['processEventQueue'] = array('cmd' => $file_cmd, 'max_workers' => 3, 'interval' => 100);
-    		
-    		$queue_file_exists = true;
-    	}
-    	
-    	return $jobs;
-    }
-	*/
 }
 
 
