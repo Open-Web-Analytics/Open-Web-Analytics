@@ -91,38 +91,38 @@ class owa_processEventController extends owa_controller {
 		//set user agent id
 		$this->event->set( 'ua_id', owa_lib::setStringGuid( $this->event->get( 'HTTP_USER_AGENT' ) ) );
 		
-		// set referer
-		// needed in case javascript logger sets the referer variable but is blank
-		if ( $this->event->get('referer') ) {
-			$this->event->set('referer', $this->eq->filter( 'referer', $this->event->get('referer') ) );
-			// forbackwards compatability
-			$this->event->set('HTTP_REFERER', $this->eq->filter( 'http_referer', $this->event->get('referer') ) );	
+		// filter http referer
+		if ( $this->event->get( 'HTTP_REFERER' ) ) {
+			$this->event->set( 'HTTP_REFERER', $this->eq->filter( 'HTTP_REFERER', $this->event->get( 'HTTP_REFERER' ) ) );
 		}
 		
-		// set host
-		if (!$this->event->get('HTTP_HOST')) {
-			$this->event->set('HTTP_HOST', owa_coreAPI::getServerParam('HTTP_HOST'));
+		// set http_host
+		if ( ! $this->event->get( 'HTTP_HOST' ) ) {
+			$this->event->set( 'HTTP_HOST', owa_coreAPI::getServerParam( 'HTTP_HOST' ) );
 		}
+		
+		//filter http_host
+		$this->event->set( 'HTTP_HOST', $this->eq->filter( 'HTTP_HOST', $this->event->get( 'HTTP_HOST' ) ) );
 		
 		// set language
 		if ( ! $this->event->get( 'language' ) ) {
-			$this->event->set( 'language', $this->eq->filter('language', substr(owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ),0,5 ) ) );
+			$this->event->set( 'language', substr( owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 ) );
 		}
-		
-		$this->event->set('HTTP_HOST', $this->eq->filter('http_host', $this->event->get('HTTP_HOST')));
+		// filter language
+		$this->event->set( 'language', $this->eq->filter( 'language', $this->event->get( 'language' ) ) );
 		
 		// set page type to unknown if not already set by caller
-		if (!$this->event->get('page_type')) {
-			$this->event->set('page_type', '(not set)');
+		if (!$this->event->get( 'page_type' ) ) {
+			$this->event->set( 'page_type', '(not set)' );
 		} 
-		
-		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
+		//filter page_type
+		$this->event->set( 'page_type', $this->eq->filter( 'page_type', $this->event->get( 'page_type' ) ) );
 		
 		// Set the page url or else construct it from environmental vars
 		if (!$this->event->get('page_url')) {
 			$this->event->set('page_url', owa_lib::get_current_url());
 		}
-		
+		// filter page_url
 		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ), $this->event->get( 'site_id' ) ) );
 		// set document/page id
 		$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
@@ -153,12 +153,19 @@ class owa_processEventController extends owa_controller {
 			}
 			
 		}
-				
-		// set internal and referer
 		
-		if ($this->event->get('referer')) {
+		// set session referer (the site that originally referer the visit)
+		if ( $this->event->get( 'session_referer' ) ) {
+			//filter session_referer
+			$this->event->set( 'session_referer', $this->eq->filter( 'session_referer', $this->event->get( 'session_referer' ) ) );
+			// generate referer_id for downstream handlers
+			$this->event->set( 'referer_id', $this->event->get('session_referer' ) );
+		}
+				
+		// set prior page properties
+		if ( $this->event->get( 'HTTP_REFERER' ) ) {
 
-			$referer_parse = parse_url($this->event->get('referer'));
+			$referer_parse = owa_lib::parse_url( $this->event->get('HTTP_REFERER') );
 
 			if ($referer_parse['host'] === $page_parse['host']) {
 				$this->event->set('prior_page', 
@@ -167,10 +174,6 @@ class owa_processEventController extends owa_controller {
 								$this->event->get( 'site_id' ) 
 						) 
 				);	
-			} else {
-				
-				$this->event->set('external_referer', true);
-				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );				
 			}
 		}
 		

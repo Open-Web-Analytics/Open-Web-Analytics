@@ -362,7 +362,7 @@ class owa_client extends owa_caller {
 			return false;
 		}
 		
-		$this->setGlobalEventProperty( 'referer', owa_coreAPI::getServerParam('HTTP_REFERER') );
+		$this->setGlobalEventProperty( 'HTTP_REFERER', owa_coreAPI::getServerParam('HTTP_REFERER') );
 		
 		// needed by helper page tags function so it can append to first hit tag url	
 		if (!$this->getSiteId()) {
@@ -692,7 +692,14 @@ class owa_client extends owa_caller {
 				$this->setGlobalEventProperty( $v, $value );
 			}
 		}
+		
+		// set sesion referer
+		$session_referer = owa_coreAPI::getState('s', 'referer'); 
+		if ( $campaign_state ) {
 			
+			$this->setGlobalEventProperty( 'session_referer', $session_referer );
+		}
+
 		// set campaign touches
 		$campaign_state = owa_coreAPI::getState('c', 'attribs');
 		if ( $campaign_state ) {
@@ -707,6 +714,7 @@ class owa_client extends owa_caller {
 		$medium = 'direct';
 		$source = '(none)';
 		$search_terms = '(none)';
+		$session_referer = '(none)';
 		
 		if ( $ref ) {
 			$uri = owa_lib::parse_url( $ref );
@@ -718,6 +726,7 @@ class owa_client extends owa_caller {
 				$medium = 'referal';
 				$source = owa_lib::stripWwwFromDomain( $uri['host'] );
 				$engine = $this->isRefererSearchEngine( $uri );
+				$session_referer = $ref;
 				if ( $engine ) {
 					$medium = 'organic-search';
 					$search_terms = $engine['t'];
@@ -725,6 +734,7 @@ class owa_client extends owa_caller {
 			}
 		}
 		
+		owa_coreAPI::setState('s', 'referer', $session_referer);
 		owa_coreAPI::setState('s', 'medium', $medium);
 		owa_coreAPI::setState('s', 'source', $source);
 		owa_coreAPI::setState('s', 'search_terms', $search_terms);

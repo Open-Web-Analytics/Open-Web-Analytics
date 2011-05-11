@@ -208,8 +208,10 @@ OWA.tracker = function( options ) {
 	this.page = new OWA.event();
     this.page.set('page_url', document.URL);
 	this.setPageTitle(document.title);
-	this.page.set("referer", document.referrer);
 	this.page.set('timestamp', this.startTime);
+	
+	// set referer
+	this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
 	
 	// merge page properties from global owa_params object
 	if (typeof owa_params != 'undefined') {
@@ -1597,7 +1599,14 @@ OWA.tracker.prototype = {
 				this.setGlobalEventProperty( campaignKeys[i].full, value );
 			}
 		}
+		
+		// set sesion referer
+		var session_referer = OWA.getState('s', 'referer'); 
+		if ( session_referer ) {
 			
+			this.setGlobalEventProperty( 'session_referer', session_referer );
+		}
+		
 		// add the attribs to event properties		
 		// set campaign touches
 		if ( this.campaignState.length > 0 ) {
@@ -1613,6 +1622,7 @@ OWA.tracker.prototype = {
 		var medium = 'direct';
 		var source = '(none)';
 		var search_terms = '(none)';
+		var session_referer = '(none)';
 		
 		if ( ref ) {
 			var uri = new OWA.uri( ref );
@@ -1622,6 +1632,7 @@ OWA.tracker.prototype = {
 			if ( document.domain != uri.getHost() ) {			
 						
 				medium = 'referal';
+				session_referer = ref;
 				source = OWA.util.stripWwwFromDomain( uri.getHost() );
 				var engine = this.isRefererSearchEngine( uri );
 				if ( engine ) {
@@ -1631,9 +1642,10 @@ OWA.tracker.prototype = {
 			}
 		}
 		
-		OWA.setState('s', 'medium', medium);
-		OWA.setState('s', 'source', source);
-		OWA.setState('s', 'search_terms', search_terms);
+		OWA.setState( 's', 'referer', session_referer );
+		OWA.setState( 's', 'medium', medium );
+		OWA.setState( 's', 'source', source );
+		OWA.setState( 's', 'search_terms', search_terms );
 	},
 
 	
