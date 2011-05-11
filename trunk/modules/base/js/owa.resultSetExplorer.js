@@ -1396,7 +1396,7 @@ OWA.dataGrid.prototype = {
 		// secondard dimension picker
 		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
 			OWA.util.sprintf(
-				'<li class="controlItem">%s: <span id="%s"></span></li>', 
+				'<li class="controlItem"><span class="label">%s:</span> <span id="%s"></span></li>', 
 				OWA.l('Secondary Dimension'), 
 				this.dom_id + '_grid_secondDimensionChooser' 
 			)
@@ -1405,6 +1405,7 @@ OWA.dataGrid.prototype = {
 		// create secondary dimension picker
 		var sdc = new OWA.dimensionPicker('#' + this.dom_id + '_grid_secondDimensionChooser');
 		sdc.setExclusions( this.getDimensions( resultSet ) );
+		//sdc.setExclusions( this.gridColumnOrder );
 		sdc.setDimensions( resultSet.relatedDimensions );
 		sdc.display();
 		
@@ -1425,7 +1426,7 @@ OWA.dataGrid.prototype = {
 		
 		// inject constraint builder
 		// secondard dimension picker
-		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem">Filter: <span class="constraintPicker"></span></li>');
+		jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem"><span class="label">Filter:</span> <span class="constraintPicker"></span></li>');
 		// constraint builder selector		
 		var cb_button_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPickerButton';
 		var cb_cont_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPicker';

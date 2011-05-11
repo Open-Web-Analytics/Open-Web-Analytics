@@ -646,7 +646,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	width:auto;
 	border: 1px solid #B0B0B0;
 	padding: 0px;
-	margin-bottom:5px;
+	margin-bottom:3px;
 	background-color: #fafafa;
 	
 }
@@ -685,4 +685,27 @@ li.constraintRow {
 .constraintRow .constraintOperatorPicker, .constraintRow .constraintDimensionPicker {
 	float:left;
 	margin-right:10px;
-} 
+}
+
+.controlItem .label {
+	font-size:10px;
+	padding-top:7px;
+	padding-right:5px
+}
+
+.controlItem span {
+	
+	float:left;
+	
+}
+
+.controlItem {
+
+	display: inline-block;
+    vertical-align: middle;
+}
+
+.ui-selectmenu {
+	
+	height: 1.75em;
+}
