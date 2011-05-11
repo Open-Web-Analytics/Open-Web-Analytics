@@ -723,7 +723,7 @@ class owa_client extends owa_caller {
 			$host = owa_coreAPI::getServerParam('HTTP_HOST');
 			if ( $host != $uri['host'] ) {			
 						
-				$medium = 'referal';
+				$medium = 'referral';
 				$source = owa_lib::stripWwwFromDomain( $uri['host'] );
 				$engine = $this->isRefererSearchEngine( $uri );
 				$session_referer = $ref;
