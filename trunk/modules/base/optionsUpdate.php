@@ -50,8 +50,11 @@ class owa_optionsUpdateController extends owa_adminController {
 			
 			foreach ($config_values as $k => $v) {
 			
-				list($module, $name) = split("\.", $k);
-				$c->persistSetting($module, $name, $v);	
+				list($module, $name) = explode('.', $k);
+				
+				if ( $module && $name ) {
+					$c->persistSetting($module, $name, $v);	
+				}
 			}
 			
 			$c->save();

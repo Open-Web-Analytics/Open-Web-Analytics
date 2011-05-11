@@ -49,7 +49,13 @@
 				<OPTION VALUE="1" <?php if ($config['log_named_users'] == true):?>SELECTED<?php endif;?>>On</OPTION>
 			</SELECT>
 		</div>
-	</div>	
+	</div>
+	
+	<div class="setting" id="excluded_ips">	
+		<div class="title">Excluded IP Addresses</div>
+		<div class="description">Enter a comma seperated list of the IP addresses that you wish to exclude from tracking.</div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.excluded_ips]" value="<?php $this->out( $config['excluded_ips'] );?>"></div>
+	</div>
 
 	
 	

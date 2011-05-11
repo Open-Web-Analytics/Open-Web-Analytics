@@ -170,18 +170,7 @@ class owa_processEventController extends owa_controller {
 			} else {
 				
 				$this->event->set('external_referer', true);
-				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );
-			
-				/*
-				if ( ! $this->event->get( 'search_terms' ) ) {
-					// set query terms
-					$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
-					
-					if ($qt) {
-						$this->event->set('search_terms', trim( strtolower( $qt ) ) );	
-					}
-				}
-				*/				
+				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );				
 			}
 		}
 		
@@ -202,6 +191,12 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		$this->event->set('ip_address', $this->eq->filter('ip_address', $this->event->get('ip_address')));
+		
+		// check to see if IP should be excluded
+		if ( $this->isIpAddressExcluded( $this->event->get('ip_address') ) ) {
+			$this->event->set('do_not_log', true);
+			return;
+		}
 		
 		// Set host related properties
 		if (!$this->event->get('REMOTE_HOST')) {
@@ -341,80 +336,6 @@ class owa_processEventController extends owa_controller {
 
 	}
 	
-	/**
-	 * Parses query terms from referer
-	 *
-	 * @param string $referer
-	 * @return string
-	 * @access private
-	 */
-	function extractSearchTerms($referer) {
-	
-		/*	Look for query_terms */
-		$db = new ini_db(owa_coreAPI::getSetting('base', 'query_strings.ini'));
-		
-		$match = $db->match($referer);
-		
-		if (!empty($match[1])) {
-		
-			return trim(strtolower(urldecode($match[1])));
-		
-		}
-	}
-	
-	// if no campaign attribution look for standard medium/source:
-	// organic-search, referral, direct
-	function setMedium() {
-				
-		// if there is an external referer
-		if ( $this->event->get( 'external_referer' ) ) {
-	
-			// see if its from a search engine
-			if ( $this->event->get( 'search_terms' ) ) {
-				$medium = 'organic-search';
-			} else {
-				// assume its a plain old referral
-				$medium = 'referral';
-			}
-		} else {
-			// set as direct
-			$medium = 'direct';
-		}
-		
-		$this->event->set( 'medium', $medium );
-	}
-	
-	function setSource() {
-		
-		$ref = $this->event->get( 'external_referer' );
-		
-		if ( $ref ) {
-			$source = $this->getDomainFromUrl( $ref );
-		} else {
-			$source = '(none)';
-		}
-		
-		$this->event->set( 'source', $source);
-	}
-	
-	function getDomainFromUrl($url, $strip_www = true) {
-		
-		$split_url = preg_split('/\/+/', $url);
-		$domain = $split_url[1];
-		if ($strip_www === true) {
-			$domain_parts = explode('.', $domain);
-			$fp = $domain_parts[0];
-			if ($fp === 'www') {
-				return substring($domain, 4);
-			} else {
-				return $domain;
-			}
-			
-		} else {
-			return $domain;
-		}
-	}	
-	
 	function setDaysSinceFirstSession() {
 		
 		$fsts = $this->event->get( 'fsts' );
@@ -467,6 +388,31 @@ class owa_processEventController extends owa_controller {
 		
 		if ( $location_id ) {
 			$this->event->set( 'location_id', $location_id );
+		}
+	}
+	
+	private function isIpAddressExcluded( $ip_address ) {
+		
+		// do not log if ip address is on the do not log list
+		$ips = owa_coreAPI::getSetting( 'base', 'excluded_ips' );
+		owa_coreAPI::debug('excluded ips: '.$ips);
+		if ( $ips ) {
+		
+			$ips = trim( $ips );
+			
+			if ( strpos( $ips, ',' ) ) {
+				$ips = explode( ',', $ips );
+			} else {
+				$ips = array( $ips );
+			}
+			
+			foreach( $ips as $ip ) {
+				$ip = trim( $ip );
+				if ( $ip_address === $ip ) {
+					owa_coreAPI::debug("Request is from excluded ip address: $ip.");
+					return true;
+				}
+			}
 		}
 	}
 }
