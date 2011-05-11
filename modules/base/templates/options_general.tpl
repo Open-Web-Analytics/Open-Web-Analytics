@@ -56,6 +56,17 @@
 		<div class="description">Enter a comma seperated list of the IP addresses that you wish to exclude from tracking.</div>
 		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.excluded_ips]" value="<?php $this->out( $config['excluded_ips'] );?>"></div>
 	</div>
+	
+	<div class="setting" id="anonymize_ips">	
+		<div class="title">Anonymize IP Addresses</div>
+		<div class="description">Anonymizes the IP addresses of visitors by removing the last octet from their IP address.</div>
+		<div class="field">
+			<SELECT NAME="<?php echo $this->getNs();?>config[base.anonymize_ips]">
+				<OPTION VALUE="0" <?php if ($config['anonymize_ips'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
+				<OPTION VALUE="1" <?php if ($config['anonymize_ips'] == true):?>SELECTED<?php endif;?>>On</OPTION>
+			</SELECT>
+		</div>
+	</div>
 
 	
 	

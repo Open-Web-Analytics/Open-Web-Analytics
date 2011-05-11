@@ -648,6 +648,7 @@
 				'log_named_users'					=> true,
 				'log_visitor_pii'					=> true,
 				'excluded_ips'						=> '',
+				'anonymize_ips'						=> false,
 				'track_feed_links'					=> true,
 				'theme'								=> '',
 				'reserved_words'					=> array('do' => 'action'),
