@@ -66,6 +66,7 @@ class owa_client extends owa_caller {
 			array('d' => 'msn', 'q' => 'q'),
 			array('d' => 'bing', 'q' => 'q'),
 			array('d' => 'images.google', 'q' => 'q'),
+			array('d' => 'images.search.yahoo.com', 'q' => 'p'),
 			array('d' => 'aol', 'q' => 'query'),
 			array('d' => 'aol', 'q' => 'encquery'),
 			array('d' => 'aol', 'q' => 'q'),
@@ -102,7 +103,6 @@ class owa_client extends owa_caller {
 			array('d' => 'mynet', 'q' => 'q'),
 			array('d' => 'ekolay', 'q' => 'q'),
 			array('d' => 'rambler', 'q' => 'query'),
-			array('d' => 'oncefuture.com', 'q' => 'q'),
 			array('d' => 'rambler', 'q' => 'words')
 		);
 	}
