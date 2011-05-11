@@ -132,7 +132,7 @@
 													'dimensions' => 'referralPageTitle,referralPageUrl', 
 													'sort' => 'visits-',
 													'format' => 'json',
-													'constraints' => 'medium==referal',
+													'constraints' => urlencode('medium==referal'),
 													'resultsPerPage' => 10
 													),true);?>';
 
