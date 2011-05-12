@@ -159,7 +159,7 @@ class owa_processEventController extends owa_controller {
 			//filter session_referer
 			$this->event->set( 'session_referer', $this->eq->filter( 'session_referer', $this->event->get( 'session_referer' ) ) );
 			// generate referer_id for downstream handlers
-			$this->event->set( 'referer_id', $this->event->get('session_referer' ) );
+			$this->event->set( 'referer_id',  owa_lib::setStringGuid( $this->event->get('session_referer' ) ) );
 		}
 				
 		// set prior page properties
@@ -170,7 +170,7 @@ class owa_processEventController extends owa_controller {
 			if ($referer_parse['host'] === $page_parse['host']) {
 				$this->event->set('prior_page', 
 						$this->eq->filter('prior_page', 
-								$this->event->get('referer'), 
+								$this->event->get('HTTP_REFERER'), 
 								$this->event->get( 'site_id' ) 
 						) 
 				);	
