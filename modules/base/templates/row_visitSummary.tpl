@@ -76,7 +76,7 @@
 				</TD>							
 			</tr>
 			
-			<?php if (!empty($row['referer_url'])):?>		
+			<?php if ( $row['referer_url'] != '(none)' && $row['referer_url'] != '(not set)' ):?>		
 			<TR>
 				<TD class="owa_icon16x16" rowspan="2" align="right" valign="top">
 				
@@ -84,9 +84,12 @@
 				</TD>
 
 				<TD valign="top" colspan="2">
+					
 					<span class="inline_h4">
 						<a href="<?php echo $row['referer_url'];?>">
-						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a></span>
+						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
+					</span>
+					
 				</TD>
 																
 			</TR>
