@@ -141,9 +141,9 @@ class owa_fileCache extends owa_cache {
 	function makeCollectionDirPath($collection) {
 	
 		if (!in_array($collection, $this->global_collections)) {
-			return $this->cache_dir.$this->cache_id.DIRECTORY_SEPARATOR.$collection.DIRECTORY_SEPARATOR;
+			return $this->cache_dir.$this->cache_id.'/'.$collection.'/';
 		} else {
-			return $this->cache_dir.$collection.DIRECTORY_SEPARATOR;	
+			return $this->cache_dir.$collection.'/';	
 		}
 	}
 	
@@ -245,7 +245,7 @@ class owa_fileCache extends owa_cache {
 				if (is_dir($dir.$file)) {
 				
 					if (strpos($file, '.') === false) {
-						$data['dirs'][] = $dir.$file.DIRECTORY_SEPARATOR;
+						$data['dirs'][] = $dir.$file.'/';
 					} 
 				} else {
 					if (strpos($file, '.php') == true) { 

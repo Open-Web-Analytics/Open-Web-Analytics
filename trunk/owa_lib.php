@@ -490,8 +490,8 @@ class owa_lib {
 	 */
 	public static function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
 		
-        //$class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
-        $class_dir = $class_dir.DIRECTORY_SEPARATOR;
+        //$class_dir = strtolower($class_dir).'/';
+        $class_dir = $class_dir.'/';
         $classfile = $class_dir . $class_name . '.php';
 		$class = $class_prefix . $class_name . $class_suffix;
 		
@@ -874,7 +874,7 @@ class owa_lib {
 			
 				// loop through the files, skipping . and .., and recursing if necessary
 				if (strcmp($file, '.')==0 || strcmp($file, '..')==0) continue;
-				$filepath = $start_dir . DIRECTORY_SEPARATOR . $file;
+				$filepath = $start_dir . '/' . $file;
 				
 				
 				if (is_dir($filepath)):

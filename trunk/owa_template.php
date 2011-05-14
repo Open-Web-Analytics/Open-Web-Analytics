@@ -90,13 +90,13 @@ class owa_template extends Template {
 	function _setTemplateDir($module) {
 	
 		// set module template dir
-		$this->module_template_dir = OWA_DIR.'modules'.DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR;
+		$this->module_template_dir = OWA_DIR.'modules'.'/' . $module . '/'.'templates'.'/';
 		
 		// set module local template override dir
-		$this->module_local_template_dir = $this->module_template_dir.'local'.DIRECTORY_SEPARATOR;
+		$this->module_local_template_dir = $this->module_template_dir.'local'.'/';
 		
 		// set theme template dir
-		$this->theme_template_dir = OWA_THEMES_DIR.$this->config['theme'].DIRECTORY_SEPARATOR;
+		$this->theme_template_dir = OWA_THEMES_DIR.$this->config['theme'].'/';
 		
 		return;
 	}

@@ -18,8 +18,8 @@
 
 require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
 require_once(OWA_BASE_CLASS_DIR.'event.php');
-require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
-require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log/file.php');
+require_once(OWA_PEARLOG_DIR . '/Log.php');
+require_once(OWA_PEARLOG_DIR . '/Log/file.php');
 
 /**
  * File based Event Queue Implementation

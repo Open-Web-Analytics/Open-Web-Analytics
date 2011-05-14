@@ -502,7 +502,7 @@ class owa_module extends owa_base {
 	function update() {
 		
 		// list files in a directory
-		$files = owa_lib::listDir(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'updates', false);
+		$files = owa_lib::listDir(OWA_DIR.'modules'.'/'.$this->name.'/'.'updates', false);
 		//print_r($files);
 		
 		$current_schema_version = $this->c->get($this->name, 'schema_version');

@@ -310,11 +310,11 @@ class owa_coreAPI {
 		
 		if (!empty($class_dir)) {
 		
-			$class_dir .= DIRECTORY_SEPARATOR;
+			$class_dir .= '/';
 			
 		}
 		
-		$full_file_path = OWA_BASE_DIR.'/modules/'.$module.DIRECTORY_SEPARATOR.$class_dir.$file.'.php';
+		$full_file_path = OWA_BASE_DIR.'/modules/'.$module.'/'.$class_dir.$file.'.php';
 		
 		if (file_exists($full_file_path)) {
 			return require_once($full_file_path);
@@ -352,7 +352,7 @@ class owa_coreAPI {
 			owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
 		endif;
 			
-		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.$sub_directory, '', $class, $params);
+		$obj = owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.$sub_directory, '', $class, $params);
 		
 		return $obj;
 	}
@@ -387,7 +387,7 @@ class owa_coreAPI {
 			owa_coreAPI::moduleRequireOnce($module, 'updates', $filename);
 		endif;
 			
-		$obj = owa_lib::factory(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'updates', '', $class);
+		$obj = owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.'updates', '', $class);
 
 		$obj->module_name = $module;
 		if (!$obj->schema_version) {
@@ -410,7 +410,7 @@ class owa_coreAPI {
 	
 	public static function &supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 		
-		$obj = &owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.'classes'.DIRECTORY_SEPARATOR, $class_ns, $class, $params);
+		$obj = &owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
 		$obj->module = $module;
 		
 		return $obj;
@@ -485,7 +485,7 @@ class owa_coreAPI {
 			owa_coreAPI::moduleRequireOnce($module, $class_dir, $file);
 		endif;
 			
-		$obj = owa_lib::factory(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.$class_dir.DIRECTORY_SEPARATOR.$module, '', $class, $params);
+		$obj = owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$class_dir.'/'.$module, '', $class, $params);
 		
 		if ($add_module_name == true):
 			$obj->module = $module;

@@ -19,7 +19,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
+require_once(OWA_BASE_DIR.'/ini_db.php'); // needed?
 
 /**
  * Generic Event Processor Controller

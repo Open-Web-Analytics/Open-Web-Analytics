@@ -21,7 +21,7 @@ if(!class_exists('owa_observer')) {
 }	
 
 if (!class_exists('owa_http')) {
-	require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
+	require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
 }
 
 /**
