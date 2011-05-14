@@ -22,10 +22,7 @@ if (!class_exists('PEAR_Exception')) {
 	set_include_path(get_include_path().PATH_SEPARATOR.OWA_MODULES_DIR.'maxmind_geoip/includes/PEAR-1.9.1/');
 }
 
-define('OWA_MAXMIND_DIR', OWA_MODULES_DIR.
-		'maxmind_geoip'.DIRECTORY_SEPARATOR.
-		'includes'.DIRECTORY_SEPARATOR.
-		'Net_GeoIP-1.0.0RC3'.DIRECTORY_SEPARATOR);
+define('OWA_MAXMIND_DIR', OWA_MODULES_DIR . 'maxmind_geoip/includes/Net_GeoIP-1.0.0RC3/');
 		
 if (!class_exists('Net_GeoIP')) {
 	require_once(OWA_MAXMIND_DIR.'Net/GeoIP.php');
@@ -36,10 +33,7 @@ set_include_path(
 	OWA_MODULES_DIR.'maxmind_geoip/includes/Net_GeoIP-1.0.0RC3/'
 );
 
-require_once(OWA_MODULES_DIR.
-		'maxmind_geoip'.DIRECTORY_SEPARATOR.
-		'includes'.DIRECTORY_SEPARATOR.
-		'maxmind-ws/GeoCityLocateIspOrg.class.php');
+require_once(OWA_MODULES_DIR . 'maxmind_geoip/includes/maxmind-ws/GeoCityLocateIspOrg.class.php');
 
 
 /**
@@ -76,7 +70,7 @@ class owa_maxmind extends owa_location {
 	function __construct() {
 		
 		if ( ! defined( 'OWA_MAXMIND_DATA_DIR' ) ) {
-			define('OWA_MAXMIND_DATA_DIR', OWA_DATA_DIR.'maxmind'.DIRECTORY_SEPARATOR);
+			define('OWA_MAXMIND_DATA_DIR', OWA_DATA_DIR.'maxmind/');
 		}
 		
 		$this->db_file_path = OWA_MAXMIND_DATA_DIR.$this->db_file_name;

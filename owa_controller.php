@@ -275,7 +275,7 @@ class owa_controller extends owa_base {
 	function logEvent($event_type, $properties) {
 		
 		if (!class_exists('eventQueue')):
-			require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'eventQueue.php');
+			require_once(OWA_BASE_DIR.'/eventQueue.php');
 		endif;
 		
 		$eq = &eventQueue::get_instance();

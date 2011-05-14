@@ -16,8 +16,7 @@
 // $Id$
 //
 
-//require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
+require_once(OWA_BASE_DIR.'/ini_db.php');
 
 /**
  * Browscap Class
