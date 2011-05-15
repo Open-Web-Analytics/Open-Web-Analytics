@@ -849,6 +849,17 @@ class owa_baseModule extends owa_module {
 			true
 		);
 		
+		$this->registerDimension(
+			'pagesViewsInVisit', 
+			'base.session', 
+			'num_pageviews', 
+			'Pages Viewed In Visit', 
+			'visit', 
+			'The number of pages viewed in a visit.', 
+			'', 
+			true
+		);
+		
 		// System/Technology Dimensions
 		$this->registerDimension(
 			'browserVersion', 
