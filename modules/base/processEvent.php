@@ -383,6 +383,9 @@ class owa_processEventController extends owa_controller {
 					$this->event->set( 'cv'.$i.'_name', $pieces[0] );
 					$this->event->set( 'cv'.$i.'_value', $pieces[1] );
 				}
+			} else {
+				$this->event->set( 'cv'.$i.'_name', '(not set)' );
+				$this->event->set( 'cv'.$i.'_value', '(not set)' );
 			}
 		}
 	}
