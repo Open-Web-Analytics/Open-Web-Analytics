@@ -178,7 +178,8 @@ class owa_processEventController extends owa_controller {
 		}
 		
 		// set  search terms and id		
-		if ( $this->event->get( 'search_terms' ) ) {
+		$search_terms = $this->event->get( 'search_terms' );
+		if ( $search_terms && $search_terms != '(not set)' ) {
 			$this->event->set( 'search_terms', $this->eq->filter('search_terms', trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
 			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
 		}
