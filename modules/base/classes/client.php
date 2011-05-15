@@ -695,7 +695,7 @@ class owa_client extends owa_caller {
 		
 		// set sesion referer
 		$session_referer = owa_coreAPI::getState('s', 'referer'); 
-		if ( $campaign_state ) {
+		if ( $session_referer ) {
 			
 			$this->setGlobalEventProperty( 'session_referer', $session_referer );
 		}

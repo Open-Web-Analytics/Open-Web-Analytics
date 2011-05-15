@@ -209,8 +209,17 @@ class owa_processEventController extends owa_controller {
 		$this->event->set( 'full_host', $this->eq->filter( 'full_host', 
 				$this->event->get( 'REMOTE_HOST' ), 
 				$this->event->get( 'ip_address' ) ) );
+		
+		if ( ! $this->event->get( 'full_host' ) ) {
+			$this->event->set('full_host', '(not set)');
+		}
 				
 		$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
+		
+		if ( ! $this->event->get( 'host' ) ) {
+			$this->event->set('host', '(not set)');
+		}
+		
 		// Generate host_id
 		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'host' ) ) );
 		
