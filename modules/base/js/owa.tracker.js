@@ -734,6 +734,11 @@ OWA.tracker.prototype = {
 		}
 	},
 	
+	setDomstreamSampleRate : function(value) {
+		
+		this.setOption('logDomStreamPercentage', value);
+	},
+	
 	logDomStream : function() {
     	
     	this.domstream = this.domstream || new OWA.event;
