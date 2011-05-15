@@ -214,6 +214,15 @@ class owa_base_007_update extends owa_update {
 			$this->e->notice( "modify of event column in owa_queue_item failed." );
 			return false;
 		}
+		
+		$ret = $db->query('ALTER TABLE owa_click MODIFY target_url VARCHAR(255)');
+		if ( $ret === true ) {
+			$this->e->notice( "target_url column modified in owa_click" );
+		} else {
+			$this->e->notice( "modify of target_url column in owa_click failed." );
+			return false;
+		}
+		
 
 		$ret = $db->query('ALTER TABLE owa_session MODIFY latest_attributions BLOB');
 		if ( $ret === true ) {
