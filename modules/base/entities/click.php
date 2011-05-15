@@ -71,7 +71,7 @@ class owa_click extends owa_factTable {
 		$this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
 		
 		$this->properties['target_url'] = new owa_dbColumn;
-		$this->properties['target_url']->setDataType(OWA_DTD_BIGINT);
+		$this->properties['target_url']->setDataType(OWA_DTD_VARCHAR255);
 		
 		// move to abstract
 		//$this->properties['timestamp'] = new owa_dbColumn;
