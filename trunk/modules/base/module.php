@@ -860,6 +860,118 @@ class owa_baseModule extends owa_module {
 			true
 		);
 		
+		$this->registerDimension(
+			'revenueInVisit', 
+			'base.session', 
+			'commerce_trans_revenue', 
+			'Revenue in Visit', 
+			'visit', 
+			'Revenue generate from e-commerce transactions in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'itemRevenueInVisit', 
+			'base.session', 
+			'commerce_item_revenue', 
+			'Item Revenue in Visit', 
+			'visit', 
+			'Revenue generate from e-commerce transaction items in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'shippingRevenueInVisit', 
+			'base.session', 
+			'commerce_shipping_revenue', 
+			'Shipping Revenue in Visit', 
+			'visit', 
+			'Revenue generate from e-commerce shipping in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'taxRevenueInVisit', 
+			'base.session', 
+			'commerce_tax_revenue', 
+			'Tax Revenue in Visit', 
+			'visit', 
+			'Revenue generate from e-commerce tax in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'transactionsInVisit', 
+			'base.session', 
+			'commerce_trans_count', 
+			'Transactions in Visit', 
+			'visit', 
+			'Number of e-commerce transactions completed in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'itemQuantityInVisit', 
+			'base.session', 
+			'commerce_items_quantity', 
+			'Item Quantity in Visit', 
+			'visit', 
+			'Number of e-commerce items purchased completed in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'distinctItemsInVisit', 
+			'base.session', 
+			'commerce_items_count', 
+			'Distinct Items in Visit', 
+			'visit', 
+			'Number of distinct items purchased in Visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'goalsInVisit', 
+			'base.session', 
+			'num_goals', 
+			'Goals in Visit', 
+			'visit', 
+			'Goals completed in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'goalStartsInVisit', 
+			'base.session', 
+			'num_goal_starts', 
+			'Goal Starts in Visit', 
+			'visit', 
+			'Goals started in a visit.', 
+			'', 
+			true
+		);
+		
+		$this->registerDimension(
+			'goalValueInVisit', 
+			'base.session', 
+			'goals_value', 
+			'Goal Value in Visit', 
+			'visit', 
+			'Total value from all goals in a visit.', 
+			'',
+			true
+		);
+		
+		
+		
 		// System/Technology Dimensions
 		$this->registerDimension(
 			'browserVersion', 
