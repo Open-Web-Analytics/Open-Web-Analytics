@@ -2,7 +2,7 @@ OWA.report = function(dom_id, options) {
 	
 	this.options = {
 		autoRefreshResultSets: 			false,
-		autoRefreshResultSetsInterval: 	6000
+		autoRefreshResultSetsInterval: 	15000
 	
 	};
 	
@@ -112,11 +112,11 @@ OWA.report.prototype = {
 		
 		if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
 			
-			for ( name in that.resultSetExplorers )	{
+			for ( name in this.resultSetExplorers )	{
 				
-				if ( that.resultSetExplorers.hasOwnProperty( name ) ) {
+				if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
 					
-					that.resultSetExplorers[name].enableAutoRefresh( interval );
+					this.resultSetExplorers[name].enableAutoRefresh( interval );
 				}
 			}
 		}
