@@ -1085,15 +1085,6 @@ class owa_baseModule extends owa_module {
 			'The host name of the network used by the visitor.'
 		);
 		
-		$this->registerDimension(
-			'fullHostName', 
-			'base.host', 
-			'full_host', 
-			'Full Host Name', 
-			'network', 
-			'The full host name of the network used by the visitor.'
-		);
-		
 		// Campaign Dimensions
 		$this->registerDimension(
 			'medium', 
