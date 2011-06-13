@@ -265,25 +265,27 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('is_browser', false);
 		}
 		
-		// record and filter visitor personally identifiable info (PII)		
-		if (owa_coreAPI::getSetting('base', 'log_visitor_pii')) {
+		// record and filter personally identifiable info (PII)		
+		if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 			
-			$cu = owa_coreAPI::getCurrentUser();
+			// set user name if one does not already exist on event
+			if ( ! $this->event->get( 'user_name' ) ) {
 			
-			// set user name
-			$this->event->set('user_name', $this->eq->filter('user_name', $cu->user->get('user_id')));
+				$cu = owa_coreAPI::getCurrentUser();
+				$this->event->set( 'user_name',  $cu->user->get( 'user_id' ) );
 			
-			// set email_address
-			if ($this->event->get('email_address')) {
-				$email_adress = $this->event->get('email_address');
-			} else {
-				$email_address = $cu->user->get('email_address');
 			}
 			
-			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
-		} else {
-			// remove ip address from event
-			//$this->event->set('ip_address', '(not set)');
+			$this->event->set( 'user_name', $this->eq->filter( 'user_name', $this->event->get( 'user_name' ) ) );
+			
+			// set email_address if one does not already exist on event
+			if ( ! $this->event->get( 'email_address' ) ) {
+				
+				$cu = owa_coreAPI::getCurrentUser();
+				$this->event->set( 'email_address', $cu->user->get( 'email_address' ) );
+			}
+			
+			$this->event->set( 'user_email', $this->eq->filter( 'user_email', $this->event->get( 'email_address' ) ) );
 		}
 		
 		$this->event->set( 'days_since_first_session', $this->event->get( 'dsfs' ) );
