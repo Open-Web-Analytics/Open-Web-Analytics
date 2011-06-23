@@ -1,4 +1,4 @@
-// OWA Tracker Min file created 1305422009 
+// OWA Tracker Min file created 1308811141 
 
 //// Start of json2 //// 
 
@@ -62,7 +62,7 @@ else var expires="";document.cookie=name+"="+value+expires+"; path=/";},setCooki
 ((days)?"; expires="+date.toGMTString():"")+
 ((path)?"; path="+path:"")+
 ((domain)?"; domain="+domain:"")+
-((secure)?"; secure":"");},readAllCookies:function(){OWA.debug('Reading all cookies...');var jar={};var ca=document.cookie.split(';');if(ca){OWA.debug(document.cookie);for(var i=0;i<ca.length;i++){cat=OWA.util.trim(ca[i]);var pos=OWA.util.strpos(cat,'=');var key=cat.substring(0,pos);var value=cat.substring(pos+1,cat.length);if(!jar.hasOwnProperty(key)){jar[key]=[];}
+((secure)?"; secure":"");},readAllCookies:function(){OWA.debug('Reading all cookies...');var jar={};var ca=document.cookie.split(';');if(ca){OWA.debug(document.cookie);for(var i=0;i<ca.length;i++){var cat=OWA.util.trim(ca[i]);var pos=OWA.util.strpos(cat,'=');var key=cat.substring(0,pos);var value=cat.substring(pos+1,cat.length);if(!jar.hasOwnProperty(key)){jar[key]=[];}
 jar[key].push(value);}
 OWA.debug(JSON.stringify(jar));return jar;}},readCookie:function(name){OWA.debug('Attempting to read cookie: %s',name);var jar=OWA.util.readAllCookies();if(jar){if(jar.hasOwnProperty(name)){return jar[name];}else{return'';}}},eraseCookie:function(name,domain){OWA.debug(document.cookie);if(!domain){domain=OWA.getSetting('cookie_domain')||document.domain;}
 OWA.debug("erasing cookie: "+name+" in domain: "+domain);this.setCookie(name,"",-1,"/",domain);var test=OWA.util.readCookie(name);if(test){var period=domain.substr(0,1);OWA.debug('period: '+period);if(period==='.'){var domain2=domain.substr(1);OWA.debug("erasing "+name+" in domain2: "+domain2);this.setCookie(name,"",-2,"/",domain2);}else{OWA.debug("erasing "+name+" in domain3: "+domain);this.setCookie(name,"",-2,"/",domain);}}},eraseMultipleCookies:function(names,domain){for(var i=0;i<names.length;i++){this.eraseCookie(names[i],domain);}},loadScript:function(url,callback){return LazyLoad.js(url,callback);},loadCss:function(url,callback){return LazyLoad.css(url,callback);},parseCookieString:function parseQuery(v){var queryAsAssoc=new Array();var queryString=unescape(v);var keyValues=queryString.split("|||");for(var i in keyValues){if(keyValues.hasOwnProperty(i)){var key=keyValues[i].split("=>");queryAsAssoc[key[0]]=key[1];}}

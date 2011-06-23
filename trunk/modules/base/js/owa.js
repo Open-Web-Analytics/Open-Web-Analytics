@@ -756,9 +756,9 @@ OWA.util =  {
 		
 		if (ca) {
 			OWA.debug(document.cookie);
-			for(var i=0;i < ca.length;i++) {
+			for( var i=0;i < ca.length;i++ ) {
 				
-				cat = OWA.util.trim(ca[i]);
+				var cat = OWA.util.trim(ca[i]);
 				var pos = OWA.util.strpos(cat, '=');
 				var key = cat.substring(0,pos);
 				var value = cat.substring(pos+1, cat.length);
