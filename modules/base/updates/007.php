@@ -278,7 +278,14 @@ class owa_base_007_update extends owa_update {
 			} else {
 				$this->e->notice('Failed to update month column in '.$table);
 				return false;
-			}	
+			}
+			
+			// add site_id index
+			$db->addIndex( $table, 'site_id' );
+			
+			if ( $table != 'owa_session' ) {
+				$db->addIndex( $table, 'session_id' );	
+			}
 		}
 				
 		// add indexes
@@ -293,6 +300,8 @@ class owa_base_007_update extends owa_update {
 		$db->addIndex( 'owa_domstream', 'yyyymmdd' );
 		$db->addIndex( 'owa_domstream', 'domstream_guid' );
 		$db->addIndex( 'owa_domstream', 'document_id' );
+		
+		
 		// must return true
 		return true;
 	}

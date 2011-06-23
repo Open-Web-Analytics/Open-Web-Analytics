@@ -44,9 +44,11 @@ class owa_factTable extends owa_entity {
 	
 		$columns['session_id'] = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
 		$columns['session_id']->setForeignKey('base.session');
+		$columns['session_id']->setIndex();
 		
 		$columns['site_id'] = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
 		$columns['site_id']->setForeignKey('base.site', 'site_id');
+		$columns['site_id']->setIndex();
 		
 		$columns['referer_id'] = new owa_dbColumn('referer_id', OWA_DTD_BIGINT);
 		$columns['referer_id']->setForeignKey('base.referer');
