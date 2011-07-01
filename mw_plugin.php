@@ -344,14 +344,14 @@ function owa_trackAction( $action_name, $label ) {
  * @param object $categoryPage
  * @return boolean
  */
-function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, &$watchthis, $sectionanchor, &$flags, $revision) {
+function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, $watchthis, $sectionanchor, &$flags, $revision) {
 	
 	$label = $article->getTitle()->getText();
 	return owa_trackAction( 'Article Created', $label );
 }
 
 function owa_editArticleAction($article, &$user, $text, $summary, 
-		$minoredit, &$watchthis, $sectionanchor, &$flags, $revision, 
+		$minoredit, $watchthis, $sectionanchor, &$flags, $revision, 
 		&$status, $baseRevId, &$redirect = '') {
 	
 	if ( $flags & EDIT_UPDATE ) {
@@ -403,7 +403,7 @@ function editTalkPageAction( $article ) {
  */
 function owa_footer(&$wgOut, $sk) {
 	
-	global $wgRequest, $wgOwaThirdPartyCookies;
+	global $wgRequest, $wgOwaThirdPartyCookies, $wgOwaCookieDomain;
 	
 	if ($wgRequest->getVal('action') != 'edit' && $wgRequest->getVal('title') != 'Special:Owa') {
 		
