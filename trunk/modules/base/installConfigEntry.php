@@ -38,7 +38,12 @@ class owa_installConfigEntryView extends owa_view {
 		$this->t->set('page_title', 'Configuration File Generator');
 		// load body template
 		$this->body->set('config', $this->get('config'));
-		$this->body->set_template('install_config_entry.php');	
+		$this->body->set_template('install_config_entry.php');
+		// prepopulate the public url based on the current url.
+		$public_url = owa_lib::get_current_url();
+		$pos = strpos($public_url, 'install.php');
+		$public_url = substr($public_url, 0, $pos);
+		$this->body->set('public_url', $public_url);
 	}
 }
 

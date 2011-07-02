@@ -40,6 +40,7 @@
  		$value = $this->getValues();
  		
  		$substring = $this->getConfig('substring');
+ 		
  		$pos = strpos($value, $substring);
  		
  		$operator = $this->getConfig('operator');
@@ -56,7 +57,7 @@
  				}
  					
  						
- 			break;
+ 				break;
  			
  			case "!=":
  				
@@ -64,7 +65,7 @@
  					$this->hasError();
  				}
  			
- 			break;
+ 				break;
  		}
 		
 		$error = $this->getErrorMsg();

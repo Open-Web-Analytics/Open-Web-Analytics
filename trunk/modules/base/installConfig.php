@@ -77,7 +77,7 @@ class owa_installConfigController extends owa_installController {
 		
 		// Config for the domain validation
 		$v6 = owa_coreAPI::validationFactory('subStringPosition');
-		$v6->setConfig('subString', 'http');
+		$v6->setConfig('substring', 'http');
 		$v6->setValues($this->getParam('public_url'));
 		$v6->setConfig('position', 0);
 		$v6->setConfig('operator', '=');
