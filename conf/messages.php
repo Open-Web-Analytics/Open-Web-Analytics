@@ -87,6 +87,7 @@ $_owa_messages = array(
 3308 => array("Success. Updates were applied.",0),
 3309 => array("Site Domain is required.",0),
 3310 => array("E-mail Address is required.",0),
+3310 => array("Password is required.",0),
 3311 => array("These updates must be applied using the command line interface (CLI). Run <code>'/path/to/php cli.php cmd=update'</code> from your server's command shell to apply these updates. For more information on updating see the install/update page on the wiki.",0),
 // Graph related
 3500 => array("There is no data for\nthis time period.",0),

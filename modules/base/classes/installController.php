@@ -67,7 +67,7 @@ class owa_installController extends owa_controller {
 
 	}
 	
-	function createAdminUser($email_address, $real_name = '') {
+	function createAdminUser($email_address, $real_name = '', $password = '') {
 		
 		//create user entity
 		$u = owa_coreAPI::entityFactory('base.user');
@@ -85,7 +85,10 @@ class owa_installController extends owa_controller {
 			// Set user object Params
 			if (empty($id)) {
 				
-				$password = $u->generateRandomPassword();
+				// create random passsword if none provided.
+				if ( ! $password ) {
+					$password = $u->generateRandomPassword();
+				}
 				$ret = $u->createNewUser('admin', 'admin', $password, $email_address, $real_name);
 				owa_coreAPI::debug("Admin user created successfully.");
 				return $password;
