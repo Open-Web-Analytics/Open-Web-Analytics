@@ -42,7 +42,7 @@ class owa_reportSearchEngineDetailController extends owa_reportController {
 		$this->set('dimensions', 'referralWebSite');
 		$this->set('sort', 'visits');
 		$this->set('resultsPerPage', 30);
-		$this->set('constraints', 'source==organic-search');
+		$this->set('constraints', 'medium==organic-search,referralWebSite=='.urlencode( $searchEngine ) );
 		$this->set('trendChartMetric', 'visits');
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.');	
 	}
