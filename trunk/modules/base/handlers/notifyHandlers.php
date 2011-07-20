@@ -41,20 +41,19 @@ class owa_notifyHandlers extends owa_observer {
      */
     function notify($event) {
     
-    	$this->m = $event;
-    	
-    	switch ($event->getEventType()) {
-	   
-	    	case "base.new_session":
-	    		if (owa_coreAPI::getSetting('base', 'announce_visitors')) {
-			   		$this->handleEvent('base.notifyNewSession');
-				}
-		    	break;
-    	}
-    
-		return;
+		$s = owa_coreAPI::entityFactory('base.site');
+		$s->getByPk('siteId', $event->get( 'siteId' ) );
+
+		if ( $s->wasPersisted() ) {
+		
+			$ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+   			return OWA_EHS_EVENT_HANDLED;
+   			
+		} else {
+			return OWA_EHS_EVENT_FAILED;
+
+   		}
 	}
-	
 }
 
 ?>

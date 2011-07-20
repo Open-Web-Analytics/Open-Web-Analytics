@@ -1864,8 +1864,13 @@ class owa_baseModule extends owa_module {
 			'conversionHandlers'
 		);
 		
-		// Nofifcation handlers
-		$this->registerEventHandler('base.new_session', 'notifyHandlers');
+		// Nofifcation handler
+		if ( owa_coreAPI::getSetting( 'base', 'announce_visitors' ) 
+			&& owa_coreAPI::getSetting( 'base', 'notice_email' ) ) {
+			
+			$this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
+		}
+		
 		// install complete handler
 		$this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
 		// User management
