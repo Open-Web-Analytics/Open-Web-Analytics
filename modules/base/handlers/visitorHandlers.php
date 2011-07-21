@@ -41,21 +41,7 @@ class owa_visitorHandlers extends owa_observer {
      * @access 	public
      */
     function notify($event) {
-		
-    	switch ($event->get('is_new_visitor')) {
-    		
-    		case true:
-    			return $this->logVisitor($event);
-    		
-    		case false:
-    			//return $this->logVisitorUpdate($event);
-    			return OWA_EHS_EVENT_HANDLED;
-    			break;
-    	}
-    }
-    
-    function logVisitor($event) {
-    	
+			
     	$v = owa_coreAPI::entityFactory('base.visitor');
     	
     	$v->load( $event->get( 'visitor_id' ) );
@@ -75,7 +61,7 @@ class owa_visitorHandlers extends owa_observer {
 			$v->set('first_session_day', $event->get('day'));
 			$v->set('first_session_dayofyear', $event->get('dayofyear'));
 			$v->set('first_session_timestamp', $event->get('timestamp'));
-			//$v->set('num_prior_sessions', $event->get('num_prior_sessions'));
+			
 			$ret = $v->create();
 			
 			if ( $ret ) {
@@ -85,44 +71,44 @@ class owa_visitorHandlers extends owa_observer {
 			}
 			
 		} else {
-			owa_coreAPI::debug("Not persisting. Visitor already exists.");
+			
+			if ( owa_coreAPI::getSetting('base', 'update_visitor_attributes') ) {
+			
+				$update = false;
+				
+				// check for different user_name
+				$user_name = $event->get( 'user_name' );
+				$old_user_name = $v->get( 'user_name' );
+				if ( $user_name && $user_name != $old_user_name ) {
+					$v->set( 'user_name', $event->get( 'user_name' ) );
+					$update = true;
+				}
+				
+				// check for different email_address
+				$user_email = $event->get( 'user_email' );
+				$old_user_email = $v->get( 'user_email' );
+				if ( $user_email && $user_email != $old_user_email ) {
+					$v->set( 'user_email', $event->get( 'user_email' ) );
+					$update = true;
+				}
+				
+				if ( $update ) {
+				
+					owa_coreAPI::debug("Persisting. Visitor requires updating.");
+				
+					$ret = $v->update();
+					
+					if ( $ret ) {
+						return OWA_EHS_EVENT_HANDLED;
+					} else {
+						return OWA_EHS_EVENT_FAILED;
+					}
+				}
+			}
+			
+			owa_coreAPI::debug("Not persisting. Visitor already exists and no updates are needed.");
 			return OWA_EHS_EVENT_HANDLED;
-		}
-    }
-    
-    function logVisitorUpdate($event) {
-   		 	
-    	$v = owa_coreAPI::entityFactory('base.visitor');
-
-		$v->load( $event->get('visitor_id' ) );
-		
-		if ( $v->wasPersisted() ) {
-		
-			if ( $event->get( 'user_name' ) ) {
-				$v->set( 'user_name', $event->get( 'user_name' ) );
-			}
-			
-			if ($event->get('user_email')) {
-				$v->set('user_email', $event->get('user_email'));
-			}
-			$v->set('last_session_id', $event->get('session_id'));
-			$v->set('last_session_year', $event->get('year'));
-			$v->set('last_session_month', $event->get('month'));
-			$v->set('last_session_day', $event->get('day'));
-			$v->set('last_session_dayofyear', $event->get('dayofyear'));
-			$v->set('num_prior_sessions', $event->get('num_prior_sessions'));	
-			$ret = $v->update();
-			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
-			} else {
-				return OWA_EHS_EVENT_FAILED;
-			}
-			
-		} else {
-			//owa_coreAPI::debug("Not updating visitor. Visitor does not exists, adding it now.");
-			//return $this->logVisitor($event);
-			return OWA_EHS_EVENT_FAILED;
+					
 		}
     }
 }
