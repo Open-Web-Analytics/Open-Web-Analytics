@@ -179,7 +179,7 @@ class owa_requestContainer {
 		}
 		
 		// Clean Input arrays
-		$this->request = owa_lib::inputFilter($params);	
+		$this->request = owa_lib::inputFilter($params);
 		if (array_key_exists('owa_action', $this->request)) {
 			
 			$this->request['owa_action'] = owa_lib::fileInclusionFilter($this->request['owa_action']);
