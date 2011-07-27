@@ -161,21 +161,25 @@ class owa_sessionHandlers extends owa_observer {
 		if ($event_req_time > $last_req_time) {
 		
 			// increment number of page views
-			$s->set('num_pageviews', $this->summarizePageviews($id));
-			$s->set('is_bounce', 'false');
+			$s->set( 'num_pageviews', $this->summarizePageviews( $id ) );
+			
+			// set bounce flag to false as there must have been 2 page views
+			$s->set( 'is_bounce', 'false' );
 			
 			// update timestamp of latest request that triggered the session update
-			$s->set('last_req', $event->get('timestamp'));
+			$s->set( 'last_req', $event->get( 'timestamp' ) );
 			
 			// update last page id
-			$s->set('last_page_id', owa_lib::setStringGuid($event->get('page_url')));
+			$s->set( 'last_page_id', $event->get( 'document_id' ) );
 			
 			// set medium
-			$s->set('medium', $event->get('medium'));
+			if ( $event->get( 'medium' ) ) {
+				$s->set( 'medium', $event->get( 'medium') );
+			}
 			
 			// set source
-			if ($event->get('source_id')) {
-				$s->set('source_id', $event->get('source_id') );		
+			if ( $event->get( 'source_id' ) ) {
+				$s->set( 'source_id', $event->get( 'source_id' ) );		
 			}
 				
 			// set search terms
@@ -190,12 +194,28 @@ class owa_sessionHandlers extends owa_observer {
 			
 			// set ad
 			if ($event->get('ad_id')) {
-				$s->set('ad_id', $event->get('ad_id') );		
+				$s->set( 'ad_id', $event->get( 'ad_id' ) );		
 			}
 			
 			// set campaign touches
-			$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
+			if ( $event->get( 'attribs' ) ) {
+				$s->set( 'latest_attributions' , $event->get( 'attribs' ) );
+			}
 			
+			// update user name if changed.
+			if ( $event->get( 'user_name' ) ) {
+				
+				if ( owa_coreAPI::getSetting( 'base', 'update_session_user_name' ) ) {
+				
+					// check for different user_name
+					$user_name = $event->get( 'user_name' );
+					$old_user_name = $s->get( 'user_name' );
+					if ( $user_name != $old_user_name ) {
+						$s->set( 'user_name', $user_name );
+					}
+				}
+			}
+		
 			// Persist to database
 			$ret = $s->update();
 		}

@@ -78,9 +78,10 @@ class owa_session extends owa_factTable {
 		//$yyyymmdd->setIndex();
 		//$this->setProperty($yyyymmdd);
 		
-		// drop
-		$this->properties['user_name'] = new owa_dbColumn;
-		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
+		// move to abstract
+		//$this->properties['user_name'] = new owa_dbColumn;
+		//$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
+		
 		// drop
 		$this->properties['user_email'] = new owa_dbColumn;
 		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);

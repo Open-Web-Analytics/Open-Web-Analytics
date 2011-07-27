@@ -677,7 +677,7 @@ class owa_baseModule extends owa_module {
 		
 		$this->registerDimension(
 			'userName', 
-			'base.visitor', 
+			$fact_table_entities, 
 			'user_name', 
 			'User Name', 
 			'visitor', 

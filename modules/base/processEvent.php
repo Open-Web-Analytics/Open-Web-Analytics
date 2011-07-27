@@ -269,7 +269,7 @@ class owa_processEventController extends owa_controller {
 		if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 			
 			// set user name if one does not already exist on event
-			if ( ! $this->event->get( 'user_name' ) ) {
+			if ( ! $this->event->get( 'user_name' ) && owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
 			
 				$cu = owa_coreAPI::getCurrentUser();
 				$this->event->set( 'user_name',  $cu->user->get( 'user_id' ) );

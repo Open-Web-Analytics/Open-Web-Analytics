@@ -225,12 +225,12 @@
 	
 	<BR>
 	
-	<fieldset name="owa-ecommerce-options" class="options">
+	<fieldset name="owa-reporting-options" class="options">
 		
-		<legend>e-commerce</legend>
+		<legend>Reporting</legend>
 		
 		<div class="setting" id="ecommerce_reporting">	
-			<div class="title">e-commerce Reporting</div>
+			<div class="title">E-commerce Reporting</div>
 			<div class="description">Adds e-commerce metrics/statistics to reports.</div>
 			<div class="field">
 				<select name="<?php echo $this->getNs();?>config[base.enableEcommerceReporting]">
@@ -239,6 +239,15 @@
 				</select>
 			</div>
 		</div>
+		
+		
+		<div class="setting" id="timezone">	
+			<div class="title">Reporting Timezone</div>
+			<div class="description">This is the timezone that should be used to generate statistics for a specific time period. Enter a valid <a href="http://php.net/manual/en/timezones.php">PHP timezone</a>.</div>
+			<div class="field"><input type="text" size="40" name="<?php echo $this->getNs();?>config[base.timezone]" value="<?php echo $config['timezone']?>"></div>
+		</div>
+		
+		
 	</fieldset>
 	
 	<BR>

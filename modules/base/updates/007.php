@@ -58,7 +58,8 @@ class owa_base_007_update extends owa_update {
 				'year',
 				'dayofweek',
 				'dayofyear',
-				'weekofyear'
+				'weekofyear',
+				'user_name'
 		);
 		
 		$this->entities['base.domstream']['addColumn'] = array(
@@ -85,7 +86,8 @@ class owa_base_007_update extends owa_update {
 				'year',
 				'dayofweek',
 				'dayofyear',
-				'weekofyear'
+				'weekofyear',
+				'user_name'
 		);
 		
 		$this->entities['base.click']['addColumn'] = array(
@@ -102,7 +104,8 @@ class owa_base_007_update extends owa_update {
 				'is_repeat_visitor',
 				'location_id',
 				'language',
-				'referer_id'
+				'referer_id',
+				'user_name'
 				
 		);
 		
@@ -131,7 +134,8 @@ class owa_base_007_update extends owa_update {
 				'year',
 				'dayofweek',
 				'dayofyear',
-				'weekofyear'
+				'weekofyear',
+				'user_name'
 				
 		);
 		
@@ -151,7 +155,8 @@ class owa_base_007_update extends owa_update {
 				'year',
 				'dayofweek',
 				'dayofyear',
-				'weekofyear'
+				'weekofyear',
+				'user_name'
 				
 		);
 		
