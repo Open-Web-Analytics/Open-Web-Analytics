@@ -105,7 +105,9 @@ class owa_factTable extends owa_entity {
 		$columns['ad_id']->setForeignKey('base.ad_dim');
 		
 		$columns['campaign_id'] = new owa_dbColumn( 'campaign_id', OWA_DTD_BIGINT );
-		$columns['campaign_id']->setForeignKey('base.campaign_dim');
+		$columns['campaign_id']->setForeignKey( 'base.campaign_dim' );
+		
+		$columns['user_name'] = new owa_dbColumn( 'user_name', OWA_DTD_VARCHAR255 );
 		
 		// custom variable columns
 		$cv_max = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );

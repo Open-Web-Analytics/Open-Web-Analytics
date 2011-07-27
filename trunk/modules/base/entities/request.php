@@ -76,16 +76,16 @@ class owa_request extends owa_factTable {
 		$this->properties['feed_subscription_id'] = new owa_dbColumn;
 		$this->properties['feed_subscription_id']->setDataType(OWA_DTD_BIGINT);
 		
-		// drop
-		$this->properties['user_name'] = new owa_dbColumn;
-		$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['user_email'] = new owa_dbColumn;
+		// move to abstract
+		//$this->properties['user_name'] = new owa_dbColumn;
+		//$this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
 		
 		//drop
+		$this->properties['user_email'] = new owa_dbColumn;
 		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
-		$ts =  new owa_dbColumn;
 		
 		// move to abstract
+		//$ts =  new owa_dbColumn;
 		//$ts->setName('timestamp');
 		//$ts->setDataType(OWA_DTD_BIGINT);
 		//$ts->setIndex();

@@ -51,10 +51,7 @@ class owa_visitorHandlers extends owa_observer {
 			$v->setProperties($event->getProperties());
 		
 			// Set Primary Key
-			$v->set( 'id', $event->get('visitor_id') );
-			
-			$v->set('user_name', $event->get('user_name'));
-			$v->set('user_email', $event->get('user_email'));
+			$v->set( 'id', $event->get( 'visitor_id' ) );
 			$v->set('first_session_id', $event->get('session_id'));
 			$v->set('first_session_year', $event->get('year'));
 			$v->set('first_session_month', $event->get('month'));
@@ -72,43 +69,8 @@ class owa_visitorHandlers extends owa_observer {
 			
 		} else {
 			
-			if ( owa_coreAPI::getSetting('base', 'update_visitor_attributes') ) {
-			
-				$update = false;
-				
-				// check for different user_name
-				$user_name = $event->get( 'user_name' );
-				$old_user_name = $v->get( 'user_name' );
-				if ( $user_name && $user_name != $old_user_name ) {
-					$v->set( 'user_name', $event->get( 'user_name' ) );
-					$update = true;
-				}
-				
-				// check for different email_address
-				$user_email = $event->get( 'user_email' );
-				$old_user_email = $v->get( 'user_email' );
-				if ( $user_email && $user_email != $old_user_email ) {
-					$v->set( 'user_email', $event->get( 'user_email' ) );
-					$update = true;
-				}
-				
-				if ( $update ) {
-				
-					owa_coreAPI::debug("Persisting. Visitor requires updating.");
-				
-					$ret = $v->update();
-					
-					if ( $ret ) {
-						return OWA_EHS_EVENT_HANDLED;
-					} else {
-						return OWA_EHS_EVENT_FAILED;
-					}
-				}
-			}
-			
-			owa_coreAPI::debug("Not persisting. Visitor already exists and no updates are needed.");
+			owa_coreAPI::debug("Not persisting. Visitor already exists.");
 			return OWA_EHS_EVENT_HANDLED;
-					
 		}
     }
 }
