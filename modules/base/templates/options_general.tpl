@@ -243,10 +243,39 @@
 		
 		<div class="setting" id="timezone">	
 			<div class="title">Reporting Timezone</div>
-			<div class="description">This is the timezone that should be used to generate statistics for a specific time period. Enter a valid <a href="http://php.net/manual/en/timezones.php">PHP timezone</a>.</div>
-			<div class="field"><input type="text" size="40" name="<?php echo $this->getNs();?>config[base.timezone]" value="<?php echo $config['timezone']?>"></div>
-		</div>
+			<div class="description">This is the timezone that should be used to generate statistics for a specific time period.</div>
+			<div class="field">
 		
+		
+				<select id="TIMEZONE" name="<?php echo $this->getNs();?>config[base.timezone]">
+			    <?php
+			    require_once(OWA_DIR.'conf/country2Timezones.php');
+			    require_once(OWA_DIR.'conf/countryCodes2Names.php');
+			    $selected_already = false;
+			    $selected = '';
+			    foreach( $timezones as $country => $zones){
+			    
+			        $country_name = $countryCode2Name[$country];
+			        echo sprintf('<optgroup label="%s">%s</optgroup>',$country_name, $country_name);
+			        
+			        foreach ($zones as $value) {        
+			   			
+			   			$display_value = str_replace('_', ' ', $value);
+			   			$selected = '';
+			            if ( ! $selected_already && $config['timezone'] === $value ) {
+			            	$selected_already = true;
+			            	echo sprintf('<option selected="yes" value="%s" >%s</option>', $value, $display_value);
+			            } else {
+							echo sprintf('<option value="%s">%s</option>', $value, $display_value);	            
+			            }
+			           
+			        }
+			    }
+			    ?>
+			        </optgroup>
+			    </select>
+			</div>
+		</div>
 		
 	</fieldset>
 	
