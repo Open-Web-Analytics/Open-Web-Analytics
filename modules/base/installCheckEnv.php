@@ -57,12 +57,15 @@ class owa_installCheckEnvController extends owa_installController {
 		// Check permissions on log directory
 		
 		// check for magic_quotes
-		$magic_quotes = ini_get('magic_quotes_gpc');
+		$magic_quotes = owa_lib::iniGet('magic_quotes_gpc');
+		
 		if ( $magic_quotes ) {
+			
 			$errors['magic_quotes_gpc']['name'] = 'magic_quotes_gpc';
 			$errors['magic_quotes_gpc']['value'] = $magic_quotes;
 			$errors['magic_quotes_gpc']['msg'] = "The magic_quotes_gpc PHP INI directive must be set to '0' in order for OWA domstreams to operate correctly.";
 			$bad_environment = true;
+			
 		}
 		
 		// Check for config file and then test the db connection
