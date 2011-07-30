@@ -57,7 +57,7 @@ class owa_installCheckEnvController extends owa_installController {
 		// Check permissions on log directory
 		
 		// check for magic_quotes
-		$magic_quotes = owa_lib::iniGet('magic_quotes_gpc');
+		$magic_quotes = get_magic_quotes_gpc();
 		
 		if ( $magic_quotes ) {
 			
