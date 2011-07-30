@@ -1184,6 +1184,22 @@ class owa_lib {
 	
   		return $url;
 	}
+	
+	public static function iniGet( $name ) {
+			
+		$b = ini_get( $name );
+		
+		switch ( strtolower( $b ) ) {
+		    case 'on':
+		    case 'yes':
+		    case 'true':
+		        return true;
+		        
+		    default:
+		        return (bool) (int) $b;
+		}
+		
+	}
 }
 
 ?>
