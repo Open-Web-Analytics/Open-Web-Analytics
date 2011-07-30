@@ -17,6 +17,14 @@
 			<?php endif;?>
 			</TD>
 		</TR>
+		
+		<?php if ($edit === true):?>
+		<TR>
+			<TH>API Key</TH>
+			<TD><?php echo $user['api_key'];?></TD>
+		</TR>
+		<?php endif;?>
+		
 		<TR>
 			<TH>Real Name</TH>
 			<TD><input type="text" size="30" name="<?php echo $this->getNs();?>real_name" value="<?php echo $user['real_name']?>"></TD>
