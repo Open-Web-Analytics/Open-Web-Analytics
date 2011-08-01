@@ -161,6 +161,14 @@ class owa_fileEventQueue extends owa_eventQueue {
 			owa_coreAPI::debug("Event file does not exist at $file");
 			return false;
 		}
+		
+		// check for access to db
+		$db = owa_coreAPI::dbSingleton();
+		$db->connect();
+		if ( ! $db->isConnectionEstablished() ) {
+			owa_coreAPI::debug("Aborting processing of event log file. Could not connect to database.");
+			return false;
+		}
 			
 		//create lock file
 		$this->create_lock_file();
