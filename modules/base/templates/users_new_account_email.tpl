@@ -1,11 +1,11 @@
-An Open Web Analytics account has been created for you.
+<p>An Open Web Analytics account has been created for you.</p>
 
-Your User Name is: <?php echo $user_id;?> 
+<p>Your User Name is: <?php echo $user_id;?></p> 
 
-To login you need to set your password by clicking on the link below.
+<p>To login you need to set your password by clicking on the link below.</p>
 
-<?php echo $this->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $key));?> 
+<p><?php echo $this->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $key));?> </p>
 
-Once your password has been setup you can login to OWA at the following URL:
+<p>Once your password has been setup you can login to OWA at the following URL:</p>
 
-<?php echo $this->makeAbsoluteLink(array('do' => 'base.reportDashboard'));?> 
+<p><?php echo $this->makeAbsoluteLink(array('do' => 'base.reportDashboard'));?></p> 
