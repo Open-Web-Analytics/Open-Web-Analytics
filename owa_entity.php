@@ -345,7 +345,12 @@ class owa_entity {
 	}
 	
 	function getByColumn($col, $value) {
-				
+		
+		if ( ! $col ) {
+			owa_coreAPI::debug('No column name passed to getByColumn in entity:'. getName() );
+			return;
+		}
+		
 		$cache_obj = '';
 		
 		if ($this->isCachable()) {
