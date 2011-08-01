@@ -27,7 +27,7 @@
 		
 		<TR>
 			<TH>Real Name</TH>
-			<TD><input type="text" size="30" name="<?php echo $this->getNs();?>real_name" value="<?php echo $user['real_name']?>"></TD>
+			<TD><input type="text" size="30" name="<?php echo $this->getNs();?>real_name" value="<?php $this->out( $this->getValue( 'real_name', $user ) );?>"></TD>
 		</TR>
 		<?php if ($user['id'] != 1):?>
 		<TR>	
