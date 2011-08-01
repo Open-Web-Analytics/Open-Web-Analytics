@@ -350,8 +350,9 @@ class owa_db extends owa_base {
 	
 	function getOneRow() {
 		
-		 $ret = $this->_selectQuery();
-		 return $ret[0];
+		$this->limit(1);
+		$ret = $this->_selectQuery();
+		return $ret[0];
 	}
 	
 	function _setSql($sql) {
