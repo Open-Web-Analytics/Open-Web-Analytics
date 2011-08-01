@@ -617,14 +617,9 @@ class owa_genericTableView extends owa_view {
 		endif;
 		
 		$this->body->set('table_id', str_replace('.', '-', $data['params']['do']).'-table');
-		
-		return;
-		
-		
+			
 	}
-
 }
-
 
 class owa_sparklineJsView extends owa_view {
 
@@ -649,37 +644,6 @@ class owa_sparklineJsView extends owa_view {
 		//$this->setJs("includes/jquery/jquery.sparkline.js");
 		return;
 	}
-
-
-}
-
-class owa_chartView extends owa_view {
-	
-	function __construct() {
-	
-		return parent::__construct();
-
-	}
-	
-	function render($data) {
-	
-		// load template
-		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('chart_dom.tpl');
-		// set
-		$this->body->set('widget', $this->get('widget'));
-		$this->body->set('type', $this->get('type'));
-		//print_r($this->get('height'));
-		//height should be passed in as a request params as it sets the height of the actual flash object
-		$this->body->set('height', $this->get('height'));
-		//width should always be 100%
-		$this->body->set('width', $this->get('width'));
-		$this->body->set('data', $this->get('chart_data'));
-		$this->body->set('dom_id', $this->get('dom_id').rand().'Chart');
-		$this->setJs('swfobject', "base/js/includes/swfobject.js");
-		return;
-	}
-	
 }
 
 class owa_mailView extends owa_view {
@@ -698,10 +662,10 @@ class owa_mailView extends owa_view {
 	
 	function postProcess() {
 		
-		$this->po->mailer->Body = $this->t->fetch();
+		$this->po->setHtmlBody( $this->t->fetch() );
 		
-		if (!empty($data['plainTextView'])) {
-			$this->po->mailer->AltBody = owa_coreAPI::displayView($this->get('plain_text_view'));
+		if ( $this->get( 'plainTextView' ) ) {
+			$this->po->setAltBody( owa_coreAPI::displayView( $this->get( 'plain_text_view' ) ) );
 		}
 
 		return $this->po->sendMail();
@@ -709,8 +673,7 @@ class owa_mailView extends owa_view {
 	
 	function setMailSubject($sbj) {
 	
-		$this->po->mailer->Subject = $sbj;
-		return;
+		$this->po->setSubject( $sbj );
 	}
 	
 	function addMailToAddress($email, $name = '') {
@@ -719,8 +682,7 @@ class owa_mailView extends owa_view {
 			$name = $email;
 		}
 		
-		$this->po->mailer->AddAddress($email, $name);
-		return;
+		$this->po->addAddress($email, $name);
 	}
 }
 
@@ -736,10 +698,7 @@ class owa_adminView extends owa_view {
 	function post() {
 		
 		$this->setJs('owa.admin.css');
-		return;
 	}
-	
-	
 }
 
 class owa_jsonView extends owa_view {
