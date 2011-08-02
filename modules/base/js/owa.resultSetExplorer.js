@@ -15,6 +15,79 @@
 //
 
 /**
+ * Result Set Object
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @web			<a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
+ * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.5.0
+ */
+
+OWA.resultSet = function( attributes ) {
+
+	for (attribute in attributes) {
+		
+		this[attribute] = attributes[attribute];
+	}
+};
+
+OWA.resultSet.prototype = {
+	
+	getMetricLabel : function(name) {
+		//alert(this.resultSet.aggregates[name].label);
+		if (this.aggregates[name].label.length > 0) {
+			return this.aggregates[name].label;
+		} else {
+			return 'unknown';
+		}
+	},
+	
+	getMetricValue : function(name) {
+		//alert(this.resultSet.aggregates[name].label);
+		if (this.aggregates[name].value.length > 0) {
+			return this.aggregates[name].value;
+		} else {
+			return 0;
+		}
+	},
+	
+	getSeries : function(value_name, value_name2, filter) {
+		
+		if (this.resultsRows.length > 0) {
+			
+			var series = [];
+			//create data array
+			for(var i=0;i<=this.resultsRows.length -1;i++) {
+			
+				if (filter) {
+					check = filter(this.resultsRows[i]);
+					if (!check) {
+						continue;
+					}
+				}
+				
+				var item = '';
+				if (value_name2) {
+					item =[this.resultsRows[i][value_name].value, this.resultsRows[i][value_name2].value];
+				} else {
+					item = this.resultsRows[i][value_name].value;
+					
+				}
+					
+				series.push(item);
+			}
+			
+			return series;
+		}
+    }
+};
+
+
+/**
  * Result Set Explorer Library
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
@@ -410,15 +483,20 @@ OWA.resultSetExplorer.prototype = {
 	setResultSet : function(rs) {
 		
 		// check to see if resultSet is new 
-		if (rs.length > 0) {
+		if ( OWA.util.is_object(rs) ) {
 			// if not new then return. nothing to do.
-			if (rs.resultSet.guid === this.resultSet.guid) {
+			if (rs.guid === this.resultSet.guid) {
+				OWA.debug('result set has same GUID. no change needed.');
 				return;
+			} else {
+				OWA.debug('result set has new GUID. change needed.');
 			}
 			
 		}
 		
-		this.resultSet = rs;
+		// this applies data to a special resultSet object that
+		// has some helper methods.
+		this.resultSet = new OWA.resultSet(rs);
 		this.applyLinks();
 		
 		// notify listeners of new data
@@ -488,76 +566,7 @@ OWA.resultSetExplorer.prototype = {
 		}
 	},
 	
-	getContainerWidth : function() {
-		
-		var that = this;
-		
-		if (this.getOption('autoResizeCharts')) {
-			return jQuery("#"+that.dom_id).width();
-		} else {
-			return this.getOption('chartWidth');
-		}
-	},
-	
-	getContainerHeight : function() {
-		var that = this;
-		var h =  jQuery("#"+that.dom_id).height();
-		//alert(h);
-		return h;
-		
-	},
-	
-	setupAreaChart : function(series, dom_id) {
-		
-		dom_id = dom_id || this.dom_id;
-		this.domSelectors.areaChart = "#"+dom_id + ' > .owa_areaChart';
-		
-		var that = this;
-	
-		//var w = this.getContainerWidth();
-		var w = jQuery("#"+dom_id).css('width');
-		//alert(w);
-		var h = this.getContainerHeight() || this.getOption('chartHeight');
-		
-		
-		jQuery("#"+dom_id).append('<div class="owa_areaChart"></div>');
-		
-		jQuery(that.domSelectors.areaChart).css('width', w);
-		jQuery(that.domSelectors.areaChart).css('height', h);
-		
-		// binds a tooltip to plot points
-		var previousPoint = null;
-		jQuery(that.domSelectors.areaChart).bind("plothover", function (event, pos, item) {
-
-	        jQuery("#x").text(pos.x.toFixed(2));
-	        jQuery("#y").text(pos.y.toFixed(2));
-	        
-            if (item) {
-                if (previousPoint != item.datapoint) {
-                    
-                    previousPoint = item.datapoint;
-                    
-                    jQuery("#tooltip").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(0);
-                        
-                    if (that.options.areaChart.flot.xaxis.mode === 'time') {
-                    
-						x = that.timestampFormatter(x);
-                    }
-                    
-                    that.showTooltip(item.pageX -75, item.pageY -50,
-                                x+'<BR><B>'+item.series.label + ":</B> " + y);
-                }
-            } else {
-                jQuery("#tooltip").remove();
-                previousPoint = null;            
-            }
-       
-		});
-       
-	},
-	
+	// move to resultSet obj?
 	formatValue : function(type, value) {
 		
 		switch(type) {
@@ -581,6 +590,7 @@ OWA.resultSetExplorer.prototype = {
 		return value;
 	},
 	
+	// move? check first to see if used by anyone other than area shart.
 	timestampFormatter : function(timestamp) {
 		
 		var d = new Date(timestamp*1);
@@ -599,119 +609,20 @@ OWA.resultSetExplorer.prototype = {
 	 */
 	makeAreaChart : function(series, dom_id) {
 		
-		dom_id = dom_id || this.dom_id;
-		var selector = "#"+dom_id + ' > .owa_areaChart';
+		// setup area chart options
+		var options = {
 		
-		if (this.resultSet.resultsRows.length > 0) {
-				
-			
-			var dataseries = [];
-			series = series || this.options.areaChart.series;
-			var data = [];
-			for(var ii=0;ii<=series.length -1;ii++) {
-			
-				var x_series_name = series[ii].x;
-				var y_series_name = series[ii].y;
-			
-				
-				
-				//create data array
-				for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
-					data_type_x = this.resultSet.resultsRows[i][x_series_name].data_type;
-					data_type_y = this.resultSet.resultsRows[i][y_series_name].data_type;
-					var item =[this.formatValue(data_type_x, this.resultSet.resultsRows[i][x_series_name].value), this.formatValue(data_type_y, this.resultSet.resultsRows[i][y_series_name].value)];
-					data.push(item);
-				}
-				//alert(this.resultSet.resultsRows[i][series[ii].x].value);
-				var l = this.getMetricLabel(y_series_name);
-				dataseries.push({ label: l,  data: data});
-				
-			}
-			
-			//var that = this;
-			
-			
-			
-			if(jQuery("#"+dom_id + ' > .owa_areaChart').length === 0) {
-			
-				this.setupAreaChart(series, dom_id);
-			}
-			
-			var num_ticks = data.length;
-			// reduce number of x axis ticks if data set has too many points.
-			if (data.length > 10) {
-			
-				num_ticks = 10;
-			}
-			
-			var options = { 
-				
-				yaxis: { 
-					tickDecimals:0 }, 
-				xaxis:{
-					ticks: num_ticks,
-					tickDecimals: null
-				},
-				grid: {show: this.options.chart.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
-				series: {
-					points: { show: this.options.areaChart.showDots, fill: this.options.areaChart.showDots},
-					lines: { show: true, fill: true, fillColor: "rgba(202,225,255, 0.6)", lineWidth: this.options.areaChart.lineWidth}
-					
-				},
-				colors: ["#1874CD", "#dba255", "#919733"],
-				legend: {
-					position: 'ne',
-					margin: [0,-10],
-					show:this.options.areaChart.showLegend
-				}
-			};
-			
-			if (data_type_x === 'yyyymmdd') {
-				
-				options.xaxis.mode = "time";
-				//options.xaxis.timeformat = "%m/%d/%y";
-				options.xaxis.timeformat = "%m/%d";
-			}
-			
-			this.options.areaChart.flot = options;
-			jQuery.plot(jQuery(selector), dataseries, options);
-			this.currentContainerWidth = jQuery("#"+dom_id).width();
-			this.currentWindowWidth = jQuery(window).width();
-			
-			// resize window handler
-			var that = this;
-			jQuery(window).resize(function () {
-				var sel = that.domSelectors.areaChart;
-				//alert(sel);
-				//var that = this;
-				var chartw =jQuery(sel).width();
-				var containerw = jQuery("#"+dom_id).width();
-				var ccontainerw = that.currentContainerWidth;
-				var ww = jQuery(window).width();
-				OWA.debug('cur-container-w: '+ccontainerw);
-				OWA.debug('new-container-w: '+containerw);
-				
-				// check to see if the container or the window width has changed
-				// redraw the graph if it has.
-				if ((containerw != ccontainerw) || (ww != that.currentWindowWidth)) {
-					
-					//var d = that.currentWindowWidth - ww;
-					var d =  ww - that.currentWindowWidth;
-					//alert(d);
-					jQuery(sel).css('width', chartw + d);
-					that.makeAreaChart(series, dom_id);
-				}
-				that.currentContainerWidth = containerw;
-				that.currentWindowWidth = ww;
-			});			
-			
-
-		} else {
-			jQuery('#'+ dom_id).html("No data is available for this time period");
-			jQuery('#'+ dom_id).css('height', '50px');
-
-		}
-			
+		};
+		
+		var ac = new OWA.areaChart();
+		dom_id = dom_id || this.dom_id;
+		// set the target dom_id chart should appear in
+		ac.setDomId( dom_id );
+		// generate area chart
+		ac.generate(this.resultSet, series, dom_id);
+		
+		//register dom_id as a listener for data change events
+		this.registerDataChangeSubscriber( dom_id );					
 	},
 	
 	// shows a tool tip for flot charts
@@ -730,139 +641,37 @@ OWA.resultSetExplorer.prototype = {
     },
     
     getMetricLabel : function(name) {
-		//alert(this.resultSet.aggregates[name].label);
-		if (this.resultSet.aggregates[name].label.length > 0) {
-			return this.resultSet.aggregates[name].label;
-		} else {
-			return 'unknown';
-		}
+		
+		return this.resultSet.getMetricLabel( name );
 	},
 	
     getMetricValue : function(name) {
-		//alert(this.resultSet.aggregates[name].label);
-		if (this.resultSet.aggregates[name].value.length > 0) {
-			return this.resultSet.aggregates[name].value;
-		} else {
-			return 0;
-		}
+		
+		return this.resultSet.getMetricValue( name );
 	},
-	
-	setupPieChart : function() {
-	
-		var that = this;
-		var w = this.getContainerWidth();
-		//alert(w);
-		var h = this.getContainerWidth(); //this.getOption('chartHeight');
-		//alert(h);
-		jQuery("#"+that.dom_id).append('<div class="owa_pieChart"></div>');
-		jQuery(that.domSelectors.pieChart).css('width', w);
-		jQuery(that.domSelectors.pieChart).css('height', h);
-    },
-    
-    makePieChart : function () {
-     
-	    this.domSelectors.pieChart = "#"+this.dom_id + ' > .owa_pieChart';
-	    var selector = this.domSelectors.pieChart;
-		var that = this;			
-		//create data array
-		var data = [];
-		var count = 0;
-
-		if (this.options.pieChart.dimension.length > 0) {
-		// plots a dimensional set of data
-		
-			if (this.resultSet.resultsRows.length > 0) {
-				
-				var dimension = this.options.pieChart.dimension;
-				var numSlices = this.options.pieChart.numSlices;
-				var metric = this.options.pieChart.metric;
-				
-				//create data array
-				var iterations = 0; 
-				if (numSlices > this.resultSet.resultsRows.length) {
-					iterations = this.resultSet.resultsRows.length;
-				} else {
-					iterations = numSlices;
-				}
-				
-				
-				for(var i=0;i<=iterations -1;i++) {
-					
-					var item = {label: this.resultSet.resultsRows[i][dimension].value, data: this.resultSet.resultsRows[i][metric].value * 1};
-					data.push(item);
-					count = count + this.resultSet.resultsRows[i][metric].value;
-				}
-				
-				// if there are extra slices then lump into other bucket.
-				if (this.resultSet.resultsRows.length > iterations) {
-					var others = this.resultSet.aggregates[metric] - count;
-					data.push({label: 'others', data: others});
-				}
-				
-			} else {
-				//no results
-				jQuery('#'+ that.dom_id).append("No data is available for this time period");
-				jQuery('#'+ that.dom_id).css('height', '50px');
-
-			}
-		} else {
-			
-			 if (!jQuery.isEmptyObject(that.resultSet.aggregates)) {
-				// plots a set of values taken from the aggregrate metrics array
-				var metrics = this.options.pieChart.metrics;
-				for(var ii=0;ii<=metrics.length -1 ;ii++) {
-					var value = this.resultSet.aggregates[metrics[ii]].value * 1; 
-					data.push({label: this.getMetricLabel(metrics[ii]), data: value});
-				}
-			} else {
-				//OWA.setSetting('debug', true);
-				//OWA.debug('there was no data');
-				//alert('hi');
-				jQuery('#'+ that.dom_id).append("No data is available for this time period");
-				jQuery('#'+ that.dom_id).css('height', '50px');
-				
-			}			
-			
-		}
-		
-		if (this.init.pieInit !== true) {
-		
-			this.setupPieChart();
-		}
 	    
-	    // options
-	    var options = {
-			series: {
-				pie: { 
-					show: true,
-					//showLabel: true,
-					label: {
-						show: true,
-						background: {
-							color: '#ffffff',
-							opacity: '.7'
-						},
-						radius:1,
-						formatter: function(label, slice){
-							return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+Math.round(slice.percent)+'%</div>';
-						}
-						//formatter: function(label, slice){ return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+label+'<br/>'+Math.round(slice.percent)+'%</div>';}
-
-					}
-				}
-			},
-			
-			legend: {
-				show: true,
-				position: "ne",
-				margin: [-160,50]
-			},
-			colors: ["#6BAED6", "#FD8D3C", "#dba255", "#919733"]
-		};
-		
-		//GRAPH
-		jQuery.plot(jQuery(selector), data, options);
-		this.init.pieChart = true;
+    makePieChart : function (resultSet, dom_id, options) {
+     
+     	var pc = new OWA.pieChart();
+     	
+     	if ( ! options ) {
+     		options = this.options.pieChart;
+     	};
+     	
+     	if ( ! dom_id ) {
+     		
+     		dom_id = this.dom_id;
+     	}
+     	
+     	if ( ! resultSet ) {
+     		
+     		resultSet = this.resultSet;
+     	}
+     	
+     	pc.generate(resultSet, dom_id, options);
+     	
+     	//register dom_id as a listener for data change events
+		this.registerDataChangeSubscriber( dom_id );		
     },
     
 	renderTemplate : function(template, params, mode, dom_id) {
@@ -883,21 +692,7 @@ OWA.resultSetExplorer.prototype = {
 		}
 	},
 	
-	makeSparkline : function(metric_name, dom_id, filter) {
-		metric_name = metric_name || this.options.sparkline.metric;
-		dom_id = dom_id || this.dom_id;
-		var sl = new OWA.sparkline(dom_id);
-		var data = this.getSeries(metric_name, '',filter);
-		
-		if (!data) {
-			data = [0,0,0];
-		}
-		
-		sl.loadFromArray(data);
-		
-		this.currentView = 'sparkline';
-	},
-	
+	// moved to resultSet
 	getSeries : function(value_name, value_name2, filter) {
 		
 		if (this.resultSet.resultsRows.length > 0) {
@@ -929,34 +724,53 @@ OWA.resultSetExplorer.prototype = {
     },
     
 	makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
-		dom_id = dom_id || this.dom_id;
-		template = template || '#metricInfobox';
+	
+		var kpi = new OWA.kpiBox();
 		
-		jQuery('#' + dom_id).append('<div class="metricInfoboxesContainer" style="width:auto;">');	
-		for(var i in this.resultSet.aggregates) {
-		
-			if (this.resultSet.aggregates.hasOwnProperty(i)) {
-				var item = this.resultSet.aggregates[i];
-				item.dom_id = dom_id+'-'+this.resultSet.aggregates[i].name+'-'+this.resultSet.guid;
-				if (label) {
-					item.label = label;
-				}
-				
-				if (this.options.metricBoxes.width) {
-					item.width = this.options.metricBoxes.width;
-				}
-				
-				
-				// set alt tag for jqote. needed to avoid problem with php's asp_tags ini directive
-				jQuery.jqotetag('*');
-				jQuery('#' + dom_id).jqoteapp(template, item);		
-				
-				this.makeSparkline(this.resultSet.aggregates[i].name, item.dom_id+'-sparkline', filter);
-				
-			}	
+		if ( ! dom_id ) {
+			dom_id = this.dom_id;
 		}
-		jQuery('#' + dom_id).append('</div>');	
-		jQuery('#' + dom_id).append('<div style="clear:both;"></div>');	
+		
+		var options = {};
+		
+		if (template) {
+			options.template = template;
+		}
+		
+		if ( label ) {
+			options.label = label;
+		}
+		
+		if ( metrics ) {
+		
+			options.metrics = metrics;
+		}
+		
+		if ( filter ) {
+			options.filter = filter;
+		}
+		
+		if ( this.options.metricBoxes.width ) {
+			options.width = this.options.metricBoxes.width;
+		}
+		
+		kpi.generate(this.resultSet, dom_id, options);
+		
+		//register dom_id as a listener for data change events
+		this.registerDataChangeSubscriber( dom_id );
+		
+    },
+    
+    makeSparkLine : function(dom_id, options) {
+    	
+    	if ( ! dom_id ) {
+    		dom_id = this.dom_id;
+    	}
+    	
+    	var sl = new OWA.sparkline();
+    	sl.generate( this.resultSet, dom_id, options);
+    	//register dom_id as a listener for data change events
+		this.registerDataChangeSubscriber( dom_id );
     },
     
 	renderResultsRows : function(dom_id, template) {
