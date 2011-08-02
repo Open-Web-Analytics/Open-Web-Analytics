@@ -1,4 +1,3 @@
-OWA.setOption('debug', true);
 OWA.report = function(dom_id, options) {
 	
 	this.options = {
