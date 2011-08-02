@@ -1,3 +1,4 @@
+OWA.setOption('debug', true);
 OWA.report = function(dom_id, options) {
 	
 	this.options = {
@@ -139,7 +140,7 @@ OWA.report.prototype = {
 				
 				if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
 					
-					this.resultSetExplorers[name].stopAutoRefresh( interval );
+					this.resultSetExplorers[name].stopAutoRefresh( );
 				}
 			}
 		}
