@@ -1200,6 +1200,15 @@ class owa_lib {
 		}
 		
 	}
+	
+	// better empty check when you need to accept these as valid, non-empty values:
+	// - 0 (0 as an integer)
+	//- 0.0 (0 as a float)
+	//- "0" (0 as a string)
+	public static function isEmpty($value) {
+    	
+    	return empty($value) && ! is_numeric($value);
+	}
 }
 
 ?>

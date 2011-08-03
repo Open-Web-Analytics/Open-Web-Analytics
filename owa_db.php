@@ -239,7 +239,7 @@ class owa_db extends owa_base {
 	
 	function where($name, $value, $operator = '=') {
 		
-		if (!empty($value)){
+		if ( ! owa_lib::isEmpty( $value ) ) {
 		
 			// hack for intentional empty value
 			if($value == ' '){
@@ -252,10 +252,10 @@ class owa_db extends owa_base {
 	
 	function having($name, $value, $operator = '=') {
 		
-		if (!empty($value)){
+		if ( ! owa_lib::isEmpty( $value ) ) {
 		
 			// hack for intentional empty value
-			if($value == ' '){
+			if($value == ' ') {
 				$value = '';
 			}
 			
@@ -268,7 +268,7 @@ class owa_db extends owa_base {
 		if (!empty($where_array)):
 		
 			foreach ($where_array as $k => $v) {
-				if (!empty($v)):
+				if ( ! owa_lib::isEmpty($v) ):
 				
 					if (empty($v['operator'])):
 						$v['operator'] = '=';
