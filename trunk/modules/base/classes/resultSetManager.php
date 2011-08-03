@@ -128,7 +128,7 @@ class owa_resultSetManager extends owa_base {
 			$operator = '=';
 		}
 		
-		if (!empty($value)) {
+		if ( ! owa_lib::isEmpty( $value ) ) {
 			$this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
 		}
 	}
