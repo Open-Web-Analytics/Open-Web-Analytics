@@ -1037,35 +1037,35 @@ OWA.dataGrid.prototype = {
 			}
 			
 		});
+			
+		// load grid control
+			
+		// happens with first results set when loading from URL.
+		if (this.init !== true) {
 		
-		if (resultSet.resultsReturned > 0) {
-			
-			
-			// happens with first results set when loading from URL.
-			if (this.init !== true) {
-				this.display(resultSet);
-			} else {
-				this.refresh(resultSet);
-			}
-			
-			// hide the built in jqgrid loading divs. 
-			jQuery("#load_"+that.dom_id+"_grid").hide(); 
-			jQuery("#load_"+that.dom_id+"_grid").css("z-index", 101);
-			
-			// check to see if we need ot hide the previous page control.
-			if (resultSet.page == 1) {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').show();
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
-			} else if (resultSet.page == resultSet.total_pages) {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').hide();
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
-			} else {
-				jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
-			}
-			//alert(resultSet.page + ' ' + resultSet.total_pages);
+			this.display(resultSet);
+					
 		} else {
-			jQuery("#"+that.dom_id).html("No data is available for this time period.");
-		}		
+		
+			this.refresh(resultSet);
+		}
+		
+		// hide the built in jqgrid loading divs. 
+		jQuery("#load_"+that.dom_id+"_grid").hide(); 
+		jQuery("#load_"+that.dom_id+"_grid").css("z-index", 101);
+		
+		// check to see if we need ot hide the previous page control.
+		if (resultSet.page == 1) {
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').show();
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
+		} else if (resultSet.page == resultSet.total_pages) {
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').hide();
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
+		} else {
+			jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
+		}
+		//alert(resultSet.page + ' ' + resultSet.total_pages);
+		
 	},
 
 	
@@ -1075,13 +1075,20 @@ OWA.dataGrid.prototype = {
 	 */
 	display : function( resultSet ) {
 		
-		// listen for changes to result set
-		this.subscribeToDataUpdates();
-		this.injectDomElements(resultSet);
-		this.setGridOptions(resultSet);
-		this.addAllRowsToGrid(resultSet);
-		this.makeGridPagination(resultSet);
-		this.init = true;
+		if (resultSet.resultsReturned > 0) {
+			
+			// listen for changes to result set
+			this.subscribeToDataUpdates();
+			this.injectDomElements(resultSet);
+			this.setGridOptions(resultSet);
+			this.addAllRowsToGrid(resultSet);
+			this.makeGridPagination(resultSet);
+			this.init = true;
+					
+		} else {
+			var dom_id = this.dom_id;
+			jQuery("#" + dom_id).html("No data is available for this time period.");
+		}
 	},
 	
 	/**
@@ -1446,7 +1453,7 @@ OWA.constraintBuilder.prototype = {
 		'!=':	'Not Matching',
 		'>':	'Greater than',
 		'<':	'Less than',
-		'@=':	'Contains'
+		'=@':	'Contains'
 			
 	},
 	

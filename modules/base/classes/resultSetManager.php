@@ -215,7 +215,7 @@ class owa_resultSetManager extends owa_base {
 		if ( ! $constraints ) {
 			$constraints = $this->getConstraints();
 		}
-		
+		//owa_coreAPI::debug(print_r($constraints, true));
 		foreach ($constraints as $k => $constraint) {
 			
 			$this->applyConstraint($constraint, $db, $entity);
