@@ -43,7 +43,7 @@ class owa_notifyNewSessionController extends owa_controller {
 		$this->set( 'session', $event->getProperties() );
 		
 		$this->set( 'subject', sprintf('OWA: New Visit to %s', $site->get( 'domain' ) ) );
-		$this->set( 'plainTextView', 'base.notifyNewSessionPlainText');
+		//$this->set( 'plainTextView', 'base.notifyNewSessionPlainText');
 		$this->setView( 'base.notifyNewSession' );
 	}
 }
