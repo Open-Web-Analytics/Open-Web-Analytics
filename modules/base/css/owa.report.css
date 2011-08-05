@@ -687,6 +687,11 @@ li.constraintRow {
 	margin-right:10px;
 }
 
+.constraintRow .constraintRemoveButton {
+	float:right;
+	margin-right:10px;
+}
+
 .controlItem .label {
 	font-size:10px;
 	padding-top:7px;
