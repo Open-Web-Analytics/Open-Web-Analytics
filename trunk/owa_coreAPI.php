@@ -31,8 +31,11 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
  */
 
 class owa_coreAPI {
-		
-	public static function &singleton($params = array()) {
+	
+	
+	// @depricated
+	// @todo remove
+	public static function singleton($params = array()) {
 		
 		static $api;
 		
@@ -72,7 +75,7 @@ class owa_coreAPI {
 
 	}
 	
-	public static function &dbSingleton() {
+	public static function dbSingleton() {
 		
 		static $db;
 	
@@ -123,7 +126,7 @@ class owa_coreAPI {
 		return $config;
 	}
 	
-	public static function &errorSingleton() {
+	public static function errorSingleton() {
 		
 		static $e;
 		
@@ -261,7 +264,7 @@ class owa_coreAPI {
 		return $s;
 	}
 	
-	public static function &cacheSingleton($params = array()) {
+	public static function cacheSingleton($params = array()) {
 		
 		static $cache;
 		
@@ -408,7 +411,7 @@ class owa_coreAPI {
 		return $subview;
 	}
 	
-	public static function &supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
+	public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 		
 		$obj = &owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
 		$obj->module = $module;

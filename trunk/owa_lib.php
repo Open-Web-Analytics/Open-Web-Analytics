@@ -488,7 +488,7 @@ class owa_lib {
 	 * @param array $conf
 	 * @return object
 	 */
-	public static function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
+	public static function factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
 		
         //$class_dir = strtolower($class_dir).'/';
         $class_dir = $class_dir.'/';
@@ -527,7 +527,7 @@ class owa_lib {
      * @param array $conf
      * @return object
      */
-    public static function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
+    public static function singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
     	
         static $instance;
         
