@@ -241,6 +241,11 @@ class owa_db_mysql extends owa_db {
 		return mysql_real_escape_string($string, $this->connection); 
 		
 	}
+	
+	function getAffectedRows() {
+		
+		return mysql_affected_rows();
+	}
 }
 
 ?>
