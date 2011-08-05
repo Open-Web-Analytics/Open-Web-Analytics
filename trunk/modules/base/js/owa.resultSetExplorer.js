@@ -1676,7 +1676,7 @@ OWA.constraintBuilder.prototype = {
 		
 		// generate the dim/metric chooser button
 		jQuery( selector ).append(
-			'<LI class="constraintRow"><span class="constraintDimensionPicker"></span> <span class="constraintOperatorPicker"></span><input class="constraintValueField" type="text" size="30"></LI>'
+			'<LI class="constraintRow"><span class="constraintDimensionPicker"></span> <span class="constraintOperatorPicker"></span><input class="constraintValueField" type="text" size="30"><span class="constraintRemoveButton">X</span></LI>'
 		);
 		
 		// create constraint dimension picker
@@ -1691,6 +1691,20 @@ OWA.constraintBuilder.prototype = {
 		if (value) {
 			jQuery(selector + ' > li:last > .constraintValueField').val(value);
 		}
+		
+		// setup add button
+		jQuery( selector + '> li:last > .constraintRemoveButton' )
+			.button({ 
+				
+				label: OWA.l('X')
+			})
+			.click(function() {
+				jQuery( this ).parent().remove();
+		});
+
+		
+		
+		
 	},
 	
 	makeOperatorPicker : function( selector, selected ) {
