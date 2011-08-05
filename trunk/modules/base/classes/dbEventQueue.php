@@ -111,6 +111,14 @@ class owa_dbEventQueue extends eventQueue {
 		}		
 	}
 	
+	function flushHandledEvents() {
+		
+		$this->db->deleteFrom( 'owa_queue_item' );
+		$this->db->where( 'status' , 'handled');
+		$ret = $this->db->executeQuery();
+		return $this->db->getAffectedRows();
+	}
+	
 	function getNextItem() {
 	
 		return $this->getNextItems(1);

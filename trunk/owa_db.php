@@ -1125,6 +1125,11 @@ class owa_db extends owa_base {
 	
 		return sprintf(OWA_SQL_AVERAGE, $value);
 	}
+	
+	function getAffectedRows() {
+		
+		return false;
+	}
 }
 
 ?>

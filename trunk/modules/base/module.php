@@ -1580,6 +1580,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
 		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
 		$this->registerCliCommand('add-site', 'base.sitesAddCli');
+		$this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
 		
 		/**
 		 * Register API methods
