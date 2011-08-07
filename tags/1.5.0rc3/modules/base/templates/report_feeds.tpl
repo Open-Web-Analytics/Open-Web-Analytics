@@ -1,0 +1,1 @@
+<?php require('report_dimensionDetailNoTabs.php');?>

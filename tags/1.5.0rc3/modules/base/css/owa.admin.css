@@ -1,0 +1,57 @@
+.owa {
+	background-color: #fffff;
+	overflow:hidden;
+}
+
+/* management table */
+.owa table.management {
+	border:1px solid #9f9f9f;
+	border-spacing: 0px;
+	width: 100%;
+	
+}
+
+.owa table.management th{
+	background-color: #efefef;
+	min-width: ;
+	border-bottom:1px solid #cecece;
+	border-right:1px solid #cecece;
+}
+
+.owa table.management td{
+	background-color: #ffffff;
+	font-size: 12px;
+	padding: 7px 7px 7px 7px;
+	border:0px;
+}
+.owa .genericHorizontalList {}
+.owa .genericHorizontalList ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
+.owa .genericHorizontalList li {text-decoration: none; float:left; margin: 0px; padding:0px 5px 0px 5px;}
+.owa .genericHorizontalList li a {
+	
+	height:;
+	line-height:;
+	float: left;
+	width: ;
+	display: block;
+	text-decoration: none;
+	text-align: center;
+}
+
+.owa .genericHorizontalList li a:hover {
+	
+	border-bottom: 2px solid orange;
+}
+
+.owa .user-greating {
+	
+	color: #9f9f9f;
+	font-weight: normal;
+	float:right;
+	vertical-align:middle;
+}
+
+.owa a.login {
+	font-size: 12px;
+	text-decoration: none;
+}
