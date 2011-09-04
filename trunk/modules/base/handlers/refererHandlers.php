@@ -82,7 +82,7 @@ class owa_refererHandlers extends owa_observer {
 			$r->set('page_title', '(not set)');
 			
 			// Crawl and analyze refering page
-			if (owa_coreAPI::getSetting( 'base', 'fetch_refering_page_info') && $medium === 'organic-search' ) {
+			if (owa_coreAPI::getSetting( 'base', 'fetch_refering_page_info') && $medium != 'organic-search' ) {
 				//owa_coreAPI::debug('hello from logReferer');
 				$crawler = new owa_http;
 				//$crawler->fetch($this->params['HTTP_REFERER']);
