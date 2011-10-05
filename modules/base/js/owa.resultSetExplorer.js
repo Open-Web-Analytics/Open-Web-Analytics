@@ -906,7 +906,7 @@ OWA.dimensionPicker.prototype = {
 	generateDimList : function(selector, selected) {
 		
 		var container_selector = selector;
-		var c = '<select data-placeholder="Select..." name="dim-list" class="dim-list"><option value=""></option>';
+		var c = '<select data-placeholder="Select..." name="dim-list" class="dim-list" style="width:150px;"><option value=""></option>';
 		var that = this;
 		
 		if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
@@ -977,33 +977,7 @@ jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
 			// hack for setting label of select menu
 			//jQuery(container_selector + ' > .ui-selectmenu > .ui-selectmenu-status').html(OWA.l('Select...'));
 		
-		}
-		
-		
-/*
-		jQuery( container_selector + ' > .dim-list' ).selectmenu({
-			width:175,
-			change: function(e, obj) {
-				
-				jQuery( that.dom_id ).trigger(
-					'dimension_change', 
-					['', obj.value]	
-				);
-			}
-		});
-
-		
-		// set select value
-		if ( selected ) {
-			jQuery(selector + ' > .dim-list').selectmenu("value", selected);
-			
-		} else {		
-		
-			// hack for setting label of select menu
-			jQuery(container_selector + ' > .ui-selectmenu > .ui-selectmenu-status').html(OWA.l('Select...'));
-		
-		}
-*/		
+		}		
 	},
 	
 	setAlternateField : function( selector ) {
@@ -1596,7 +1570,7 @@ OWA.constraintBuilder.prototype = {
 		jQuery( builder_selector + ' > .add-button' )
 			.button({ 
 				
-				label: OWA.l('Add Metric/Dimension')
+				label: OWA.l('+ Add Filter ')
 			})
 			.click(function() {
 				that.addNewConstraintRow( builder_selector + ' > ul' );
@@ -1618,7 +1592,7 @@ OWA.constraintBuilder.prototype = {
     				var name = jQuery(this)
     					.children('.constraintDimensionPicker')
     						.children('.dimensionPicker')
-    							.children('.dim-list').selectmenu('value');
+    							.children('.dim-list').val();
     							
     				var operator = jQuery(this)
     					.children('.constraintOperatorPicker')
