@@ -906,7 +906,7 @@ OWA.dimensionPicker.prototype = {
 	generateDimList : function(selector, selected) {
 		
 		var container_selector = selector;
-		var c = '<select name="dim-list" class="dim-list">';
+		var c = '<select data-placeholder="Select..." name="dim-list" class="dim-list"><option value=""></option>';
 		var that = this;
 		
 		if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
@@ -953,6 +953,34 @@ OWA.dimensionPicker.prototype = {
 		// append container and list to dom
 		jQuery( container_selector ).append(c);
 		// transform into select menu
+		
+		jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found."});
+		
+		
+jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
+				
+				//OWA.debug(JSON.stringify(obj));
+				var value = jQuery(selector + ' > .dim-list').val();
+				jQuery( that.dom_id ).trigger(
+					'dimension_change', 
+					['', value]	
+				);			
+		});
+
+		
+		// set select value
+		if ( selected ) {
+			jQuery(selector + ' > .dim-list').val( selected ).trigger('liszt:updated');
+			
+		} else {		
+		
+			// hack for setting label of select menu
+			//jQuery(container_selector + ' > .ui-selectmenu > .ui-selectmenu-status').html(OWA.l('Select...'));
+		
+		}
+		
+		
+/*
 		jQuery( container_selector + ' > .dim-list' ).selectmenu({
 			width:175,
 			change: function(e, obj) {
@@ -963,6 +991,7 @@ OWA.dimensionPicker.prototype = {
 				);
 			}
 		});
+
 		
 		// set select value
 		if ( selected ) {
@@ -974,7 +1003,7 @@ OWA.dimensionPicker.prototype = {
 			jQuery(container_selector + ' > .ui-selectmenu > .ui-selectmenu-status').html(OWA.l('Select...'));
 		
 		}
-		
+*/		
 	},
 	
 	setAlternateField : function( selector ) {
