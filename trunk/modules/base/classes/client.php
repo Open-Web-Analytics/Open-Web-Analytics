@@ -564,6 +564,11 @@ class owa_client extends owa_caller {
 		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
 	}
 	
+	public function setUserName( $value ) {
+		
+		$this->setGlobalEventProperty( 'user_name', $value );
+	}
+	
 	function getCampaignProperties( $event ) {
 		
 		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );

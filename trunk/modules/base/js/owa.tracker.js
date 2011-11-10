@@ -446,7 +446,7 @@ OWA.tracker.prototype = {
 		}
 	},
 	
-	shareShareByPost : function (form) {
+	shareStateByPost : function (form) {
 
 		var state = this.createSharedStateValue();
 		form.action += '#owa_state.' + state;
@@ -586,7 +586,7 @@ OWA.tracker.prototype = {
 	},
 	
 	/**
-	 * Convienence method for seting page title
+	 * Convienence method for setting page title
 	 */
 	setPageTitle: function(title) {
 		
@@ -594,11 +594,19 @@ OWA.tracker.prototype = {
 	},
 	
 	/**
-	 * Convienence method for seting page type
+	 * Convienence method for setting page type
 	 */
 	setPageType : function(type) {
 		
 		this.page.set("page_type", type);
+	},
+	
+	/**
+	 * Convienence method for setting user name
+	 */
+	setUserName : function( value ) {
+		
+		this.setGlobalEventProperty( 'user_name', value );
 	},
 	
 	/**
