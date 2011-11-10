@@ -1554,6 +1554,37 @@ OWA.tracker.prototype = {
 		
 	},
 	
+	setCampaignMediumKey : function ( key ) {
+		
+		this.options.campaignKeys[0].public = key;
+	},
+	
+	setCampaignNameKey : function ( key ) {
+		
+		this.options.campaignKeys[1].public = key;
+	},
+	
+	setCampaignSourceKey : function ( key ) {
+		
+		this.options.campaignKeys[2].public = key;
+	},
+	
+	setCampaignSearchTermsKey : function ( key ) {
+		
+		this.options.campaignKeys[3].public = key;
+	},
+	
+	setCampaignAdKey : function ( key ) {
+		
+		this.options.campaignKeys[4].public = key;
+	},
+	
+	setCampaignAdTypeKey : function ( key ) {
+		
+		this.options.campaignKeys[5].public = key;
+	},
+
+		
 	setTrafficAttribution : function( event ) {
 		
 		var campaignState = OWA.getState( 'c', 'attribs' );
