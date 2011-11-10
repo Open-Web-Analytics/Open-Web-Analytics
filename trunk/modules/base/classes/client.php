@@ -522,32 +522,75 @@ class owa_client extends owa_caller {
 		return md5($value);
 	}
 	
+	public function setCampaignNameKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'campaign' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignMediumKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'medium' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignSourceKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'source' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignSearchTermsKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'search_terms' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignAdKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'ad' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignAdTypeKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'ad_type' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
 	function getCampaignProperties( $event ) {
 		
 		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
 		$campaign_properties = array();
 		$campaign_state = array();
-		foreach ($campaign_params as $k => $param) {
+		$request = owa_coreAPI::getRequest();
+		foreach ( $campaign_params as $k => $param ) {
 			//look for property on the event
-			$property = $event->get($param);
+			$property = $event->get( $param );
 			
 			// look for property on the request scope.
 			if ( ! $property ) {
-				$property = owa_coreAPI::getRequestParam($param);	
+				$property = $request->getRequestParam( $param );	
 			}
 			if ( $property ) {
-				$campaign_properties[$k] = $property;
+				$campaign_properties[ $k ] = $property;
 			}
 		}
 	
 		// backfill values for incomplete param combos
 		
-		if (array_key_exists('at', $campaign_properties) && !array_key_exists('ad', $campaign_properties)) {
+		if (array_key_exists('ad_type', $campaign_properties) && !array_key_exists('ad', $campaign_properties)) {
 			$campaign_properties['ad'] = '(not set)';
 		}
 		
-		if (array_key_exists('ad', $campaign_properties) && !array_key_exists('at', $campaign_properties)) {
-			$campaign_properties['at'] = '(not set)';
+		if (array_key_exists('ad', $campaign_properties) && !array_key_exists('ad_type', $campaign_properties)) {
+			$campaign_properties['ad_type'] = '(not set)';
 		}
 		
 		if (!empty($campaign_properties)) {
@@ -566,7 +609,7 @@ class owa_client extends owa_caller {
 			
 			if (array_key_exists( $k, $properties ) ) {
 			
-				owa_coreAPI::setState( 's', $v, $properties[$k] );
+				owa_coreAPI::setState( 's', $k, $properties[$k] );
 			}
 		}
 	}
@@ -686,10 +729,10 @@ class owa_client extends owa_caller {
 		$campaign_params = owa_coreAPI::getSetting('base', 'campaign_params');
 		foreach( $campaign_params as $k => $v ) {
 		
-			$value = owa_coreAPI::getState( 's', $v );
+			$value = owa_coreAPI::getState( 's', $k );
 			
 			if ( $value ) { 
-				$this->setGlobalEventProperty( $v, $value );
+				$this->setGlobalEventProperty( $k, $value );
 			}
 		}
 		

@@ -413,7 +413,7 @@ class owa_coreAPI {
 	
 	public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 		
-		$obj = &owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
+		$obj = owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
 		$obj->module = $module;
 		
 		return $obj;
