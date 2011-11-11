@@ -41,7 +41,7 @@ class owa_reportEntryPagesController extends owa_reportController {
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array(
-				'linkColumn' => 'entryPageTitle', 
+				'linkColumn' => 'entryPagePath', 
 				'template' => array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
 				'valueColumns' => 'entryPageUrl'));
 				

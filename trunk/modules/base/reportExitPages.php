@@ -37,11 +37,11 @@ class owa_reportExitPagesController extends owa_reportController {
 		$this->setSubview('base.reportDimension');
 		$this->setTitle('Exit Pages');
 		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'exitPageTitle,exitPagePath,exitPageUrl');
+		$this->set('dimensions', 'exitPagePath,exitPageUrl,exitPageTitle');
 		$this->set('sort', 'visits-');
 		$this->set('resultsPerPage', 30);
 		$this->set('dimensionLink', array(
-				'linkColumn'	=> 'exitPageTitle', 
+				'linkColumn'	=> 'exitPagePath', 
 				'template'		=> array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
 				'valueColumns' 	=> 'exitPageUrl'));
 				
