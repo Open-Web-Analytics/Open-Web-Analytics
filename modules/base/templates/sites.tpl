@@ -16,6 +16,7 @@ if it is to be tracked/reported separately.</P>
 	</TR>
 	</thead>
 	<tbody>
+	<?php if ($tracked_sites): ?>
 	<?php foreach ($tracked_sites as $site => $value):?>
 	<TR>
 		<TD>
@@ -37,6 +38,11 @@ if it is to be tracked/reported separately.</P>
 	
 	</TR>
 	<?php endforeach;?>
+	<?php else: ?>
+	<TR>
+		<TD>There are no tracked sites. <a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a site</a>.</TD>
+	</TR>
+	<?php endif;?>
 	</tbody>
 </TABLE>
 
