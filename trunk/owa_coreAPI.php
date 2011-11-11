@@ -1155,11 +1155,17 @@ class owa_coreAPI {
 	
 	public static function getSitesList() {
 		
-		//$s = owa_coreAPI::entityFactory('base.site');
 		$db = owa_coreAPI::dbSingleton();
 		$db->selectFrom('owa_site');
 		$db->selectColumn('*');
-		return $db->getAllRows();
+		$sites = $db->getAllRows();
+		
+		if ( ! $sites ) {
+			
+			$sites = array();
+		}
+		
+		return $sites;
 		
 	}
 	
