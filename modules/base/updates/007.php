@@ -105,7 +105,8 @@ class owa_base_007_update extends owa_update {
 				'location_id',
 				'language',
 				'referer_id',
-				'user_name'
+				'user_name',
+				'dayofweek'
 				
 		);
 		

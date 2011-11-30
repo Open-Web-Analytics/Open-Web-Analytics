@@ -73,7 +73,7 @@ class owa_template extends Template {
 		$c = &owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
 		
-		$this->e = &owa_coreAPI::errorSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
 		
 		// set template dirs
 		if(!empty($caller_params['module'])):

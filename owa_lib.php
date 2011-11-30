@@ -1209,6 +1209,17 @@ class owa_lib {
     	
     	return empty($value) && ! is_numeric($value);
 	}
+	
+	public static function isIpAddressValid( $ip = '' ) {
+		
+		if ( $ip && filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+ 			 // it's valid
+ 			 return true;
+		} else {
+  			// it's not valid
+  			return false;
+		}
+	}
 }
 
 ?>

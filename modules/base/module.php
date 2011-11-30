@@ -1971,32 +1971,41 @@ class owa_baseModule extends owa_module {
 	 * @access private
 	 */
 	function setIp($ip) {
-	
-		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');
-		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam('HTTP_CLIENT_IP');
 		
-		// check for a non-unknown proxy address
-		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
-			
-			// if more than one use the last one
-			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false) {
-				$ip = $HTTP_X_FORWARDED_FOR;
-			} else {
-				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
-				$ip = $ips[0];
-			}
+		// order of headers denoted preference
+		$headers = array(
+			'HTTP_CLIENT_IP', 
+			'HTTP_X_FORWARDED_FOR', 
+			'HTTP_X_FORWARDED', 
+			'HTTP_X_CLUSTER_CLIENT_IP', 
+			'HTTP_FORWARDED_FOR', 
+			'HTTP_FORWARDED', 
+			'REMOTE_ADDR'
+		);
 		
-		// or else just use the remote address	
-		} else {
+		$final_ip = '';
 		
-			if ($HTTP_CLIENT_IP) {
-		    	$ip = $HTTP_CLIENT_IP;
-			}
-			
-		}
+		foreach ($headers as $key) {
 		
-		return $ip;
-	
+	        if ( owa_coreAPI::getServerParam( $key ) ) {
+	        	
+	        	foreach ( explode( ',', owa_coreAPI::getServerParam( $key ) ) as $ip ) {
+	            	// set last IP found
+	            	$final_ip = $ip;
+	            	// if valid just return and end loop.
+	            	if ( owa_lib::isIpAddressValid( $ip ) ) {
+	            		
+	                    return $ip;
+	                }
+	            
+	            }
+	        
+	        }
+	    
+	    }
+	    
+	    // if no IP was valid just return the last one found.
+	    return $final_ip;
 	}
 	
 	/**
@@ -2007,13 +2016,16 @@ class owa_baseModule extends owa_module {
 	function resolveHost($remote_host = '', $ip_address = '') {
 	
 		// See if host is already resolved
-		if (empty($remote_host)) {
+		if (! $remote_host && owa_lib::isIpAddressValid( $ip_address ) ) {
 			
 			// Do the host lookup
 			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
 				$remote_host = @gethostbyaddr($ip_address);
 			}
 			
+		} else {
+			owa_coreAPI::debug('Could not resolve host from IP address provided: ' . $ip_address );
+			$remote_host = '(unknown)';
 		}
 		
 		return $remote_host;
@@ -2028,8 +2040,8 @@ class owa_baseModule extends owa_module {
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
 			if ($fullhost === 'localhost') {
 				$host = 'localhost';
-			} elseif ($fullhost === 'unknown') {
-				$host = $ip_address;
+			} elseif ( $fullhost === 'unknown' || $fullhost === '(unknown)' ) {
+				$host = '(unknown)';
 			} elseif ($fullhost != $ip_address) {
 		
 				$host_array = explode('.', $fullhost);
