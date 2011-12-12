@@ -66,11 +66,11 @@ class owa_template extends Template {
 	 */
 	var $caller_params;
 	
-	function owa_template($module = null, $caller_params = array()) {
+	function __construct( $module = null, $caller_params = array() ) {
 		
 		$this->caller_params = $caller_params;
 			
-		$c = &owa_coreAPI::configSingleton();
+		$c = owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
 		
 		$this->e = owa_coreAPI::errorSingleton();
@@ -83,8 +83,6 @@ class owa_template extends Template {
 		endif;
 		
 		$this->time_now = owa_lib::time_now();
-		
-		return;
 	}
 	
 	function _setTemplateDir($module) {
@@ -945,6 +943,16 @@ class owa_template extends Template {
 		$t->set_template('metricInfobox.php');
 		
 		return $t->fetch();	
+		
+	}
+	
+	public function renderKpiInfobox($number, $label, $link = '', $class = '') {
+		
+		$t = new owa_template;
+		$t->set_template( 'kpiInfobox.php' );
+		$t->set( 'number', $number );
+		$t->set( 'label', $label );
+		echo $t->fetch();
 		
 	}
 	

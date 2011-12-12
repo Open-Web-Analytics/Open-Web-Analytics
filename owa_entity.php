@@ -218,7 +218,7 @@ class owa_entity {
 	function addToCache($col = 'id') {
 		
 		if($this->isCachable()) {
-			$cache = &owa_coreAPI::cacheSingleton();
+			$cache = owa_coreAPI::cacheSingleton();
 			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
 			$cache->set($this->getTableName(), $col.$this->get('id'), $this, $this->getCacheExpirationPeriod());
 		}
@@ -354,7 +354,7 @@ class owa_entity {
 		$cache_obj = '';
 		
 		if ($this->isCachable()) {
-			$cache =  &owa_coreAPI::cacheSingleton();
+			$cache =  owa_coreAPI::cacheSingleton();
 			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
 			$cache_obj = $cache->get($this->getTableName(), $col.$value);
 		}		

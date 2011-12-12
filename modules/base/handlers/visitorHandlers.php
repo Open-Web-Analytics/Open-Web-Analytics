@@ -58,6 +58,7 @@ class owa_visitorHandlers extends owa_observer {
 			$v->set('first_session_day', $event->get('day'));
 			$v->set('first_session_dayofyear', $event->get('dayofyear'));
 			$v->set('first_session_timestamp', $event->get('timestamp'));
+			$v->set('first_session_yyyymmdd', $event->get('yyyymmdd'));
 			
 			$ret = $v->create();
 			

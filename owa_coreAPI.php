@@ -1394,6 +1394,12 @@ class owa_coreAPI {
 		
 		return $gm[$siteId];
 	}
+	
+	public static function getRequestTimestamp() {
+	
+		$r = owa_coreAPI::requestContainerSingleton();
+		return $r->getTimestamp();
+	}
 }
 
 ?>
