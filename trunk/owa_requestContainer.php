@@ -41,6 +41,7 @@ class owa_requestContainer {
 	var $guid;
 	var $state;
 	var $request_type;
+	var $timestamp;
 	
 	/**
 	 * Singleton returns request params
@@ -76,6 +77,7 @@ class owa_requestContainer {
 	
 	function __construct() {
 		
+		$this->timestamp = time();
 		$this->guid = crc32(microtime().getmypid());
 		
 		// CLI args
@@ -294,6 +296,11 @@ class owa_requestContainer {
 			return false;
 		}
 		
+	}
+	
+	public function getTimestamp() {
+		
+		return $this->timestamp;
 	}
 	
 }

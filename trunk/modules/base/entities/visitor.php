@@ -90,6 +90,13 @@ class owa_visitor extends owa_entity {
 			return $this->get('id');
 		}
 	}
+	
+	function getAvatarId() {
+		
+		$eq = owa_coreAPI::getEventDispatch();
+		
+		return $eq->filter( 'visitor_avatar_id', $this->get( 'user_email' ) ); 
+	}
 }
 
 
