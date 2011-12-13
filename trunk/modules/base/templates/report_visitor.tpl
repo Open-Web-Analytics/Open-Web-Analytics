@@ -15,16 +15,23 @@
 
 <table width="100%">
 		<TR>
-			<td>
-				<div class="owa_reportSectionContent" style="width:500px;">	
+			<td valign="top">
+				<div class="owa_reportSectionContent" style="min-width:500px;">	
 					<div class="owa_reportSectionHeader">Latest Visits</div>
 					<?php include('report_latest_visits.tpl')?>
 					<?php echo $this->makePaginationFromResultSet($visits, array('do' => 'base.reportVisitors'), true);?>
 				</div>
 			</td>
-			<td>
-				<div class="owa_reportSectionHeader">Latest Actions</div>
-				
+			<td valign="top">
+				<div class="owa_reportSectionContent" style="min-width:300px;">
+					<div class="owa_reportSectionHeader">Latest Actions</div>
+					<?php echo $this->getLatestActions($this->get('startDate'), 
+													   $this->get('endDate'), 
+													   $this->get('siteId'), 
+													   $this->get('visitor_id'), 
+													   '',  
+													   '300px'); ?>
+				</div>
 			</td>
 		</TR>
 </table>

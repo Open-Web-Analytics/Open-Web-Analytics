@@ -165,7 +165,7 @@
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
 
-.owa_metricInfobox {
+.owa_metricInfobox, .owa .action_infobox {
 	color:#505050; 
 	background-color: #ffffff;
 	text-align: left; 
@@ -178,20 +178,20 @@
 	
 }
 
-.owa_metricInfobox p, .owa_metricInfobox span {
+.owa_metricInfobox p, .owa_metricInfobox span, .owa .action_infobox {
 	padding:0px 7px 0px 7px;
 	margin:0px;
 	
 }
 
-p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel  {
+p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .action_name  {
 	color:#666666;
 	font-size:12px;
 	padding-top:6px;
 	margin-bottom:0px;
 }
 
-p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
+p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
 	color:#505050;
 	font-size:28px;
 	padding-bottom: 0px;
@@ -721,4 +721,9 @@ li.constraintRow {
 .ui-selectmenu {
 	
 	height: 1.75em;
+}
+
+.owa .actionInfobox {
+	
+	border: 1
 }

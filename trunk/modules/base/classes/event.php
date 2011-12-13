@@ -257,7 +257,19 @@ class owa_event {
 	
 	function setSiteId($value) {
 		
+		$this->set('siteId', $value);
 		$this->set('site_id', $value);
+	}
+	
+	function getSiteId() {
+		
+		if ( $this->get('siteId') ) {
+			return $this->get('siteId');	
+		} else {
+			return $this->get('site_id');
+		}
+		
+		
 	}
 	
 	function setPageType($value) {

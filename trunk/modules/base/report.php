@@ -119,7 +119,11 @@ class owa_reportView extends owa_view {
 		// set period label
 		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
-		$this->subview->body->set('period_label', $period_label);	
+		$this->subview->body->set('period_label', $period_label);
+		$this->body->set('startDate', $this->get('startDate') );
+		$this->subview->body->set('startDate', $this->get('startDate') );
+		$this->body->set('endDate', $this->get('endDate') );
+		$this->subview->body->set('endDate', $this->get('endDate') );
 	}
 	
 	/**

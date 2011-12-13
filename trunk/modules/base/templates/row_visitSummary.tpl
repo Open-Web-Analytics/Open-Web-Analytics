@@ -15,10 +15,8 @@
 							<span class="owa_userNameLabel">
 							<a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">
 							<?php
-							if (!empty($row['visitor_user_name'])) {
-								echo $row['visitor_user_name'];
-							} elseif (!empty($row['visitor_user_email'])) {
-								echo $row['visitor_user_email'];
+							if ( isset( $row[ 'session_user_name' ] ) ) {
+								echo $row[ 'session_user_name' ];
 							} else {
 								echo $row['visitor_id'];
 							}?></a></span>
@@ -27,8 +25,8 @@
 							 <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor">
 							<?php endif;?>
 							<BR>
-							<?php if ($row['host_city']):?> 
-							<span class="owa_userGeoLabel"><?php echo $row['host_city'];?>, <?php echo $row['host_country'];?></span>
+							<?php if ($row['location_city']):?> 
+							<span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
 							<?php endif;?>
 						</TD>
 					</table>
@@ -67,12 +65,12 @@
 						<a href="<?php echo $row['document_url'];?>"><?php echo $row['document_page_title'];?></a>
 					</span>
 					<span class="owa_secondaryText">
-						<?php if($row['document_page_type']):?> 
-						(<?php echo $row['document_page_type'];?>)
-						<?php endif;?>
+						<?php if ( $row['document_page_type'] ): echo $row['document_page_type']; endif;?>
 					</span>
 					<BR>
-					<span class="owa_secondaryText"><?php echo $this->truncate($row['document_url'],80,'...');?></span>
+					<span class="owa_secondaryText">
+						<?php echo $this->truncate( $row['document_url'], 80, '...');?>
+					</span>
 				</TD>							
 			</tr>
 			

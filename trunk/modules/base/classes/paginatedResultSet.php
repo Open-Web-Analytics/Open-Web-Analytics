@@ -301,6 +301,10 @@ class owa_paginatedResultSet {
 		return $this->resultsRows;
 	}
 	
+	function getResultsRows() {
+		return $this->resultsRows;
+	}
+	
 	function addLinkToRowItem($item_name, $template, $subs) {
 		
 				
