@@ -60,19 +60,34 @@ class owa_visitorHandlers extends owa_observer {
 			$v->set('first_session_timestamp', $event->get('timestamp'));
 			$v->set('first_session_yyyymmdd', $event->get('yyyymmdd'));
 			
-			$ret = $v->create();
 			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
-			} else {
-				return OWA_EHS_EVENT_FAILED;
-			}
 			
 		} else {
 			
-			owa_coreAPI::debug("Not persisting. Visitor already exists.");
-			return OWA_EHS_EVENT_HANDLED;
+			
+			$v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
+			
+			owa_coreAPI::debug("Updating... Visitor already exists.");
+			
 		}
+		
+		$ret = $v->save();
+			
+		if ( $ret ) {
+			return OWA_EHS_EVENT_HANDLED;
+		} else {
+			return OWA_EHS_EVENT_FAILED;
+		}
+    }
+    
+    function summarizePriorSessions($id) {
+    	
+    	$ret = owa_coreAPI::summarize(array(
+    			'entity'		=> 'base.session',
+    			'columns'		=> array('num_prior_sessions' => 'max'),
+    			'constraints'	=> array( 'visitor_id' => $id ) ) );
+    	
+    	return $ret['num_prior_sessions_max'];
     }
 }
 

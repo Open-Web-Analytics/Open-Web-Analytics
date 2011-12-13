@@ -54,23 +54,9 @@ class owa_reportVisitorController extends owa_reportController {
 			'period'			=> $this->getParam('period'),
 			'visitorId'			=> $v->get('id'),
 			'resultsPerPage'	=> 10
-		));
-		
-		$la = owa_coreAPI::executeApiCommand(array(
-			
-			'do'				=> 'getLatestActions',
-			'siteId'			=> $this->getParam('siteId'),
-			'page'				=> $this->getParam('page'),
-			'startDate'			=> $this->getParam('startDate'),
-			'endDate'			=> $this->getParam('endDate'),
-			'period'			=> $this->getParam('period'),
-			'visitorId'			=> $v->get('id'),
-			'sessionId'			=> $this->getParam('sessionId'),
-			'resultsPerPage'	=> 10
-		));
+		));		
 		
 		$this->set('visits', $lv);
-		$this->set('actions', $la);
 		$this->set('visitor_label', $v->getVisitorName());
 		$first_visit_date = date( 'm/d/y',$v->get('first_session_timestamp' ) );
 		$this->set('first_visit_date', $first_visit_date);
@@ -104,7 +90,6 @@ class owa_reportVisitorView extends owa_view {
 		$this->body->set_template('report_visitor.tpl');	
 		$this->body->set( 'visitor_id', $this->get('visitor_id') );
 		$this->body->set( 'visits', $this->get('visits') );
-		$this->body->set( 'actions', $this->get('actions') );
 		$this->body->set( 'visitor', $this->get('visitor') );
 		$this->body->set( 'num_prior_visits', $this->get('num_prior_visits') );
 		$this->body->set( 'first_visit_date', $this->get('first_visit_date') );

@@ -1825,9 +1825,9 @@ class owa_baseModule extends owa_module {
 			'base.page_request_logged', 
 			'base.first_page_request_logged', 
 			'base.new_session',
-			'dom.stream',
-			'dom.click',
-			'track.action',
+			'dom.stream_logged',
+			'dom.click_logged',
+			'track.action_logged',
 			'ecommerce.transaction_persisted'
 		);
 		
