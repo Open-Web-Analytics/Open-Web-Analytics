@@ -1010,6 +1010,30 @@ class owa_template extends Template {
 		
 		return owa_coreAPI::getCurrentUser();
 	}
+	
+	function getLatestActions( $startDate, $endDate, $siteId, $visitorId = '', $sessionId = '', $width = '300px', $resultsPerPage = 25, $page = 1 ) {
+		
+		$la = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestActions',
+			'siteId'			=> $siteId,
+			'page'				=> $page,
+			'startDate'			=> $startDate,
+			'endDate'			=> $endDate,
+			'visitorId'			=> $visitorId,
+			'sessionId'			=> $sessionId,
+			'resultsPerPage'	=> $resultsPerPage
+		));
+		
+		
+		$items = $la->getResultsRows();
+		
+		$t = new owa_template;
+		$t->set('items', $items);
+		$t->set('width', $width);
+		$t->set_template('widget_latestActions.php');
+		return $t->fetch();
+	}
 }
 
 

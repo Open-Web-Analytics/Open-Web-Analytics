@@ -1691,6 +1691,14 @@ class owa_baseModule extends owa_module {
 				'view_reports' 
 		);
 		
+		$this->registerApiMethod('getLatestActions', 
+				array($this, 'getLatestActions'), 
+				array('startDate', 'endDate', 'visitorId', 'sessionId', 'action_group','siteId','resultsPerPage', 'page', 'format'),
+				'', 
+				'view_reports' 
+		);
+		
+		
 		return parent::__construct();
 	}
 	
@@ -1971,41 +1979,32 @@ class owa_baseModule extends owa_module {
 	 * @access private
 	 */
 	function setIp($ip) {
+	
+		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');
+		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam('HTTP_CLIENT_IP');
 		
-		// order of headers denoted preference
-		$headers = array(
-			'HTTP_CLIENT_IP', 
-			'HTTP_X_FORWARDED_FOR', 
-			'HTTP_X_FORWARDED', 
-			'HTTP_X_CLUSTER_CLIENT_IP', 
-			'HTTP_FORWARDED_FOR', 
-			'HTTP_FORWARDED', 
-			'REMOTE_ADDR'
-		);
+		// check for a non-unknown proxy address
+		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
+			
+			// if more than one use the last one
+			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false) {
+				$ip = $HTTP_X_FORWARDED_FOR;
+			} else {
+				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
+				$ip = $ips[0];
+			}
 		
-		$final_ip = '';
+		// or else just use the remote address	
+		} else {
 		
-		foreach ($headers as $key) {
+			if ($HTTP_CLIENT_IP) {
+		    	$ip = $HTTP_CLIENT_IP;
+			}
+			
+		}
 		
-	        if ( owa_coreAPI::getServerParam( $key ) ) {
-	        	
-	        	foreach ( explode( ',', owa_coreAPI::getServerParam( $key ) ) as $ip ) {
-	            	// set last IP found
-	            	$final_ip = $ip;
-	            	// if valid just return and end loop.
-	            	if ( owa_lib::isIpAddressValid( $ip ) ) {
-	            		
-	                    return $ip;
-	                }
-	            
-	            }
-	        
-	        }
-	    
-	    }
-	    
-	    // if no IP was valid just return the last one found.
-	    return $final_ip;
+		return $ip;
+	
 	}
 	
 	/**
@@ -2016,16 +2015,13 @@ class owa_baseModule extends owa_module {
 	function resolveHost($remote_host = '', $ip_address = '') {
 	
 		// See if host is already resolved
-		if (! $remote_host && owa_lib::isIpAddressValid( $ip_address ) ) {
+		if (empty($remote_host)) {
 			
 			// Do the host lookup
 			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
 				$remote_host = @gethostbyaddr($ip_address);
 			}
 			
-		} else {
-			owa_coreAPI::debug('Could not resolve host from IP address provided: ' . $ip_address );
-			$remote_host = '(unknown)';
 		}
 		
 		return $remote_host;
@@ -2040,8 +2036,8 @@ class owa_baseModule extends owa_module {
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
 			if ($fullhost === 'localhost') {
 				$host = 'localhost';
-			} elseif ( $fullhost === 'unknown' || $fullhost === '(unknown)' ) {
-				$host = '(unknown)';
+			} elseif ($fullhost === 'unknown') {
+				$host = $ip_address;
 			} elseif ($fullhost != $ip_address) {
 		
 				$host_array = explode('.', $fullhost);
@@ -2365,27 +2361,29 @@ class owa_baseModule extends owa_module {
 		
 		$s = owa_coreAPI::entityFactory('base.session');
 		$h = owa_coreAPI::entityFactory('base.host');
+		$l = owa_coreAPI::entityFactory('base.location_dim');
 		$ua = owa_coreAPI::entityFactory('base.ua');
 		$d = owa_coreAPI::entityFactory('base.document');
 		$v = owa_coreAPI::entityFactory('base.visitor');
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
-		$db->selectFrom($s->getTableName());
+		$db->selectFrom($s->getTableName(), 'session');
 		
-		$db->selectColumn($s->getColumnsSql('session_'));
-		$db->selectColumn($h->getColumnsSql('host_'));
-		$db->selectColumn($ua->getColumnsSql('ua_'));
-		$db->selectColumn($d->getColumnsSql('document_'));
-		$db->selectColumn($v->getColumnsSql('visitor_'));
-		$db->selectColumn($r->getColumnsSql('referer_'));
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $l->getTableName(), 'location', 'location_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), 'host', 'host_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), 'ua', 'ua_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), 'document', 'first_page_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), 'visitor', 'visitor_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), 'referer', 'referer_id');
 		
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
-			
-		$db->orderBy('session_timestamp','DESC');
+		$db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id');
+						   
+		$db->selectColumn('host.host as host_host');
+		$db->selectColumn('location.city as location_city, location.country as location_country');
+		$db->selectColumn('ua.browser_type as ua_browser_type');
+		$db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
+		$db->selectColumn('visitor.user_email as visitor_user_email');
+		$db->selectColumn('referer.url as referer_url, referer.page_title as referer_page_title, referer.snippet as referer_snippet');
 		
 		if ($visitorId) {
 			$db->where('visitor_id', $visitorId);
@@ -2396,7 +2394,7 @@ class owa_baseModule extends owa_module {
 		}
 		
 		if ($startDate && $endDate) {
-			$db->where('owa_session.yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
+			$db->where('session.yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
 		}
 		
 		$db->orderBy('timestamp', 'DESC');
@@ -2416,6 +2414,62 @@ class owa_baseModule extends owa_module {
 		} else {
 			return $rs;
 		}
+	}
+	
+	function getLatestActions( $startDate = '', $endDate = '', $visitorId= '', $sessionId = '',
+							   $action_group ='', $siteId = '', $resultsPerPage = 20, 
+							   $page = 1, $format = '') {
+							   
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		$db = owa_coreAPI::dbSingleton();
+		
+		$a = owa_coreAPI::entityFactory('base.action_fact');
+		$d = owa_coreAPI::entityFactory('base.document');
+		
+		$db->selectFrom($a->getTableName(), 'action');
+		
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), 'document', 'document_id');
+		
+		
+		$db->selectColumn('action.timestamp, action.action_name, action.action_label, action.action_group, action.numeric_value');
+		$db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
+		
+		if ($visitorId) {
+			$db->where('action.visitor_id', $visitorId);
+		}
+		
+		if ($sessionId) {
+			$db->where('action.session_id', $sessionId);
+		}
+		
+		if ($siteId) {
+			$db->where('site_id', $siteId);
+		}
+		
+		if ($startDate && $endDate) {
+			$db->where('action.yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
+		}
+		
+		$db->orderBy('action.timestamp', 'DESC');
+		
+		// pass limit to rs object if one exists
+		$rs->setLimit($resultsPerPage);
+			
+		// pass page to rs object if one exists
+		$rs->setPage($page);
+		
+		$results = $rs->generate($db);
+		$rs->resultsRows = $results;
+		
+		if ($format) {
+			owa_lib::setContentTypeHeader($format);
+			return $rs->formatResults($format);		
+		} else {
+			return $rs;
+		}
+		
+		
+	
 	}
 	
 	function getClickstream($sessionId, $resultsPerPage = 100, $page = 1, $format = '') {

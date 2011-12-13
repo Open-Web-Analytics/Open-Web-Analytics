@@ -42,7 +42,8 @@ class owa_notifyHandlers extends owa_observer {
     function notify($event) {
     
 		$s = owa_coreAPI::entityFactory('base.site');
-		$s->getByPk('siteId', $event->get( 'siteId' ) );
+		owa_coreAPI::debug('siteId: ' . $event->get( 'siteId' ) );
+		$s->load( $s->generateId( $event->getSiteId() ) );
 
 		if ( $s->wasPersisted() ) {
 		
