@@ -1262,6 +1262,10 @@ class owa_coreAPI {
 					$col_def = sprintf("COUNT(distinct %s)", $col);
 					$name = $col.'_dcount';
 					break;
+				case 'max':
+					$col_def = sprintf("MAX(%s)", $col);
+					$name = $col.'_max';
+					break;
 			}
 			
 			$db->selectColumn($col_def, $name);

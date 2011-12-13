@@ -59,6 +59,13 @@ class owa_domstreamHandlers extends owa_observer {
 			$ret = $ds->create();
 			
 			if ( $ret ) {
+			
+				// Tell others that "dom.stream" has been logged 
+				$eq = owa_coreAPI::getEventDispatch(); 
+				$nevent = $eq->makeEvent($event->getEventType().'_logged'); 
+				$nevent->setProperties($event->getProperties()); 
+				$eq->asyncNotify($nevent);
+			
 				return OWA_EHS_EVENT_HANDLED;
 			} else {
 				return OWA_EHS_EVENT_FAILED;
