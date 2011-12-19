@@ -1819,6 +1819,9 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
 		$this->registerEventHandler('ecommerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
 		
+		$this->registerEventHandler('base.new_session', 'visitorUpdateHandlers');
+		
+		
 		// register standard dimension handlers to listen to events 
 		// that populate fact tables.
 		$fact_events = array(
