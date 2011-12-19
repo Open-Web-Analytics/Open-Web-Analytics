@@ -927,6 +927,9 @@ OWA.tracker.prototype = {
     	
     	if (this.active) {
     	
+    		// append site_id to properties
+    		properties.site_id = this.getSiteId();
+    	
 	    	var url = this._assembleRequestUrl(properties);
 	    	var limit = this.getOption('getRequestCharacterLimit');
 	    	if ( url.length > limit ) {
@@ -951,9 +954,7 @@ OWA.tracker.prototype = {
      */
     _assembleRequestUrl : function(properties) {
     
-    	// append site_id to properties
-    	properties.site_id = this.getSiteId();
-    	var get = this.prepareRequestParams(properties);
+    	var get = this.prepareRequestDataForGet( properties );
     	
     	var log_url = this.getLoggerEndpoint();
     	
@@ -966,13 +967,11 @@ OWA.tracker.prototype = {
 		// add some radomness for cache busting
 		return log_url + get;
     },
-    
+    /*
     prepareRequestParams : function(properties) {
     
   		var get = '';
     	
-    	// append site_id to properties
-    	properties.site_id = this.getSiteId();
     	//assemble query string
 	    for ( param in properties ) {  
 	    	// print out the params
@@ -1014,14 +1013,12 @@ OWA.tracker.prototype = {
 		//OWA.debug('GET string: %s', get);
 		return get;
     },
-    
+    */
     prepareRequestData : function( properties ) {
     
   		var data = {};
     	
-    	// append site_id to properties
-    	properties.site_id = this.getSiteId();
-    	//assemble query string
+       	//assemble query string
 	    for ( param in properties ) {  
 	    	// print out the params
 			var value = '';
@@ -1048,8 +1045,27 @@ OWA.tracker.prototype = {
 				}
 			}
 		}
-		//OWA.debug('GET string: %s', get);
+		
 		return data;
+    },
+    
+    prepareRequestDataForGet : function( properties ) {
+    	
+    	var properties = this.prepareRequestData( properties );
+
+    	var get = '';
+    	
+    	for ( param in properties ) {
+    		
+    		if ( properties.hasOwnProperty( param ) ) {
+
+    			var kvp = '';
+    			kvp = OWA.util.sprintf('%s=%s&', param, properties[ param ] );
+    			get += kvp;
+    		}
+    	}
+    	
+    	return get;
     },
 
     
@@ -1094,7 +1110,7 @@ OWA.tracker.prototype = {
 			if (data.hasOwnProperty(param)) {
 				
 				var input = document.createElement( "input" );
-    			input.setAttribute( "name","owa_" + param );
+    			input.setAttribute( "name",param );
     			input.setAttribute( "value", data[ param ] );
     			input.setAttribute( "type","hidden");
     			frm.appendChild( input );
@@ -1149,7 +1165,7 @@ OWA.tracker.prototype = {
 		
 		// If we did not succeed in finding the document then throw an exception
 		if( iframe.doc == null ) {
-			throw "Document not found, append the parent element to the DOM before creating the IFrame";
+			OWA.debug("Document not found, append the parent element to the DOM before creating the IFrame");
 		}
 		// Return the iframe, now with an extra property iframe.doc containing the
 		// iframe's document
