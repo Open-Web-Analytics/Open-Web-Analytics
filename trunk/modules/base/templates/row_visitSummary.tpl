@@ -13,13 +13,13 @@
 						<TD class="owa_userLabel" style="width:auto;">
 							
 							<span class="owa_userNameLabel">
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">
+							
 							<?php
-							if ( isset( $row[ 'session_user_name' ] ) ) {
+							if ( ! empty( $row[ 'session_user_name' ] ) ) {
 								echo $row[ 'session_user_name' ];
 							} else {
 								echo $row['visitor_id'];
-							}?></a></span>
+							}?></span> &nbsp  <a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>"><span class="moreLink">Visitor Details</span></a>
 							
 							<?php if ($row['session_is_new_visitor'] == true): ?>
 							 <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor">
