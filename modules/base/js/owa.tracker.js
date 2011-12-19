@@ -173,7 +173,8 @@ OWA.tracker = function( options ) {
 				{ public: 'owa_ad_type', private: 'at', full: 'ad_type' } ],
 		logger_endpoint: '',
 		api_endpoint: '',
-		maxCustomVars: 5
+		maxCustomVars: 5,
+		getRequestCharacterLimit: 2000
 		
 	};
 	
@@ -793,40 +794,11 @@ OWA.tracker.prototype = {
     	return this.logEvent(this.page);
     },
     
-    /**
-     * Logs event asyncronously using AJAX GET
-     */
-    logEventAjax : function (event, method) {
-    	if (this.active) {
-    		
-    		if (event instanceof OWA.event) { 
-	    		var properties = event.getProperties(); 
-	    	} else {
-	    		var properties = event;
-	    	}
-	    	
-	    	method = method || 'GET';
-	    	
-	    	if (method === 'GET') {
-	    		return this.ajaxGet(properties);
-	    	} else {
-	    		this.ajaxPost(properties);
-	    		return;
-	    	}
-    		
-    	}
-    	
-    	
-    },
-    
     isObjectType : function(obj, type) {
     	return !!(obj && type && type.prototype && obj.constructor == type.prototype.constructor);
 	},
 
-    
-    /**
-     * Gets XMLHttpRequest Object
-     */
+    /*
     getAjaxObj : function() {
     
     	if (window.XMLHttpRequest){
@@ -851,9 +823,6 @@ OWA.tracker.prototype = {
 		ajax.send(null);
     },
     
-    /**
-     * AJAX POST Request
-     */
     ajaxPost : function(properties) {
     	
     	var ajax = this.getAjaxObj();
@@ -882,55 +851,8 @@ OWA.tracker.prototype = {
 	    script.setAttribute("type","text/javascript");                
 	    document.body.appendChild(script);
 	},
-    
-    prepareRequestParams : function(properties) {
-    
-  		var get = '';
-    	
-    	// append site_id to properties
-    	properties.site_id = this.getSiteId();
-    	//assemble query string
-	    for ( param in properties ) {  
-	    	// print out the params
-			var value = '';
-			var kvp = '';
-				
-			if ( properties.hasOwnProperty(param) ) {
-	  			
-	  			if ( OWA.util.is_array( properties[param] ) ) {
-				
-					for ( var i = 0, n = properties[param].length; i < n; i++ ) {
-						
-						if ( OWA.util.is_object( properties[param][i] ) ) {
-							for ( o_param in properties[param][i] ) {
-								kvp = OWA.util.sprintf('owa_%s[%s][%s]=%s&', param, i, o_param, OWA.util.urlEncode( properties[param][i][o_param] ) );
-								get += kvp;
-							}
-						} else {
-							// what the heck is it then. assum string
-							kvp = OWA.util.sprintf('owa_%s[%s]=%s&', param, i, OWA.util.urlEncode( properties[param][i] ) );
-							get += kvp;
-						}
-					}
-				// assume it's a string
-				} else {
-					kvp = OWA.util.sprintf('owa_%s=%s&', param, OWA.util.urlEncode( properties[param] ) );
-					
-				}
-			
-				
-    		//needed?	
-	    	} else {
-    	
-    			kvp = OWA.util.sprintf('owa_%s=%s&', '', OWA.util.urlEncode( properties[param] ) );
-    		}
-    		
-    		get += kvp;
-		}
-		//OWA.debug('GET string: %s', get);
-		return get;
-    },
-    
+    */
+        
     /** 
      * Sends an OWA event to the server for processing using GET
      * inserts 1x1 pixel IMG tag into DOM
@@ -1006,15 +928,21 @@ OWA.tracker.prototype = {
     	if (this.active) {
     	
 	    	var url = this._assembleRequestUrl(properties);
-	    	OWA.debug('url : %s', url);
-		   	image = new Image(1, 1);
-		   	//expireDateTime = now.getTime() + delay;
-		   	image.onLoad = function () { };
-			image.src = url;
-			if (block) {
-				//OWA.debug(' blocking...');
+	    	var limit = this.getOption('getRequestCharacterLimit');
+	    	if ( url.length > limit ) {
+	    		this.cdPost( this.prepareRequestData( properties ) );
+	    	} else {
+	    	
+		    	OWA.debug('url : %s', url);
+			   	image = new Image(1, 1);
+			   	//expireDateTime = now.getTime() + delay;
+			   	image.onLoad = function () { };
+				image.src = url;
+				if (block) {
+					//OWA.debug(' blocking...');
+				}
+				OWA.debug('Inserted web bug for %s', properties['event_type']);
 			}
-			OWA.debug('Inserted web bug for %s', properties['event_type']);
 		}
     },
         
@@ -1037,7 +965,196 @@ OWA.tracker.prototype = {
     	    	
 		// add some radomness for cache busting
 		return log_url + get;
-    },	
+    },
+    
+    prepareRequestParams : function(properties) {
+    
+  		var get = '';
+    	
+    	// append site_id to properties
+    	properties.site_id = this.getSiteId();
+    	//assemble query string
+	    for ( param in properties ) {  
+	    	// print out the params
+			var value = '';
+			var kvp = '';
+				
+			if ( properties.hasOwnProperty(param) ) {
+	  			
+	  			if ( OWA.util.is_array( properties[param] ) ) {
+				
+					for ( var i = 0, n = properties[param].length; i < n; i++ ) {
+						
+						if ( OWA.util.is_object( properties[param][i] ) ) {
+							for ( o_param in properties[param][i] ) {
+								kvp = OWA.util.sprintf('owa_%s[%s][%s]=%s&', param, i, o_param, OWA.util.urlEncode( properties[param][i][o_param] ) );
+								get += kvp;
+							}
+						} else {
+							// what the heck is it then. assum string
+							kvp = OWA.util.sprintf('owa_%s[%s]=%s&', param, i, OWA.util.urlEncode( properties[param][i] ) );
+							get += kvp;
+						}
+					}
+				// assume it's a string
+				} else {
+					kvp = OWA.util.sprintf('owa_%s=%s&', param, OWA.util.urlEncode( properties[param] ) );
+					
+				}
+			
+				
+    		//needed?	
+	    	} else {
+    	
+    			kvp = OWA.util.sprintf('owa_%s=%s&', '', OWA.util.urlEncode( properties[param] ) );
+    		}
+    		
+    		get += kvp;
+		}
+		//OWA.debug('GET string: %s', get);
+		return get;
+    },
+    
+    prepareRequestData : function( properties ) {
+    
+  		var data = {};
+    	
+    	// append site_id to properties
+    	properties.site_id = this.getSiteId();
+    	//assemble query string
+	    for ( param in properties ) {  
+	    	// print out the params
+			var value = '';
+				
+			if ( properties.hasOwnProperty( param ) ) {
+	  			
+	  			if ( OWA.util.is_array( properties[param] ) ) {
+				
+					for ( var i = 0, n = properties[param].length; i < n; i++ ) {
+						
+						if ( OWA.util.is_object( properties[param][i] ) ) {
+							for ( o_param in properties[param][i] ) {
+								
+								data[ OWA.util.sprintf( 'owa_%s[%s][%s]', param, i, o_param ) ] = OWA.util.urlEncode( properties[ param ][ i ][ o_param ] );
+							}
+						} else {
+							// what the heck is it then. assume string
+							data[ OWA.util.sprintf('owa_%s[%s]', param, i) ] = OWA.util.urlEncode( properties[ param ][ i ] );
+						}
+					}
+				// assume it's a string
+				} else {
+					data[ OWA.util.sprintf('owa_%s', param) ] = OWA.util.urlEncode( properties[ param ] );
+				}
+			}
+		}
+		//OWA.debug('GET string: %s', get);
+		return data;
+    },
+
+    
+    /** 
+	 * Issues a cross-domain http post
+	 *
+	 * This method generates a 1x1 iframe with a form in it that is
+	 * populated by whatever data is passed to it. The http response cannot be evaluated
+	 * So this is really only to be used as an alternative to the GET tracking request
+	 */
+	cdPost : function ( data ) {
+		
+		var container_id = "owa-tracker-post-container";
+		var post_url = this.getLoggerEndpoint();
+		
+		var iframe_container = document.getElementById( container_id );
+		
+		// create iframe container if necessary
+		if ( ! iframe_container ) {
+		
+			// create post frame container	
+			var div = document.createElement( 'div' );
+			div.setAttribute( 'id', container_id );
+			document.body.appendChild( div );
+			iframe_container = document.getElementById( container_id );
+		}		
+		
+		// create iframe
+		var ifr = this.generateHiddenIframe( iframe_container );
+    	
+	    // create form
+	    var frm = ifr.doc.createElement('form');
+	    var form_name = 'post_form' + Math.random();
+	    frm.setAttribute( 'id', form_name );
+	    frm.setAttribute( 'name', form_name );
+ 		frm.setAttribute("action", post_url);
+ 		frm.setAttribute("method", "POST");
+		
+		// create hidden inputs, add them to form
+		for ( param in data ) {
+			
+			if (data.hasOwnProperty(param)) {
+				
+				var input = document.createElement( "input" );
+    			input.setAttribute( "name","owa_" + param );
+    			input.setAttribute( "value", data[ param ] );
+    			input.setAttribute( "type","hidden");
+    			frm.appendChild( input );
+			}
+		}
+	
+	    // add form to iframe
+	    ifr.doc.body.appendChild( frm );
+	    //submit the form inside the iframe
+	    ifr.doc.forms[form_name].submit();
+ 		// remove the form from iframe to clean things up
+  		ifr.doc.body.removeChild( frm );
+	},
+	
+	/**
+	 * Generates a hidden 1x1 pixel iframe
+	 */
+	generateHiddenIframe: function ( parentElement ) {
+	    
+	    // Create the iframe which will be returned
+	    var iframe = document.createElement("iframe");
+	    var iframe_name = 'owa-tracker-post-iframe';
+	    iframe.setAttribute('class', iframe_name);
+	    //iframe.setAttribute('name', iframe_name);
+		iframe.setAttribute('width', 1);
+    	iframe.setAttribute('height', 1);
+    	iframe.setAttribute('style', 'border: none;');
+    	
+    	// If no parent element is specified then use body as the parent element
+		if ( parentElement == null ) {
+			parentElement = document.body;
+	 	}
+		// This is necessary in order to initialize the document inside the iframe
+		parentElement.appendChild(iframe);
+		
+		// Initiate the iframe's document to null
+		iframe.doc = null;
+		
+		// Depending on browser platform get the iframe's document, this is only
+		// available if the iframe has already been appended to an element which
+		// has been added to the document
+		if( iframe.contentDocument ) {
+			// Firefox, Opera
+			iframe.doc = iframe.contentDocument;
+		} else if( iframe.contentWindow ) {
+			// Internet Explorer
+			iframe.doc = iframe.contentWindow.document;
+		} else if(iframe.document) {
+			// Others?
+			iframe.doc = iframe.document;
+		}
+		
+		// If we did not succeed in finding the document then throw an exception
+		if( iframe.doc == null ) {
+			throw "Document not found, append the parent element to the DOM before creating the IFrame";
+		}
+		// Return the iframe, now with an extra property iframe.doc containing the
+		// iframe's document
+		return iframe;
+	},
 	
 	getViewportDimensions : function() {
 	
