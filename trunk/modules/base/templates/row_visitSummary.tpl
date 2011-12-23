@@ -96,30 +96,25 @@
 							),
 						true 
 					) );?>"><?php $this->out( $row['source']);?></a> (<?php $this->out( $row['medium'] );?>)</span>
-					<?php if ( $row['medium'] === 'referral' ):?>
-					<BR><span class="inline_h4">
-						<a href="<?php echo $row['referer_url'];?>">
-						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
-					</span>
-					<?php endif;?>
 					
+					<?php if ( $row['medium'] === 'referral' ):?>
+					<BR><BR>
+					<div style="line-spacing:15px;">
+						<span class="inline_h4">
+							<a href="<?php echo $row['referer_url'];?>">
+								<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?>
+							</a>
+						</span>
+						
+						<?php if ( ! empty( $row['referer_snippet'] ) ):?>			
+						<br><span class="snippet_text"><?php echo $row['referer_snippet'];?></span>
+						<?php endif;?>
+					</div>					
+					<?php endif;?>
 				</TD>
 																
 			</TR>
-			
-						
-		<?php if ( $row['medium'] === 'referral' && ! empty( $row['referer_snippet'] ) ):?>			
-			<TR>
-				<TD colspan="1">
-					<span class="snippet_text"><?php echo $row['referer_snippet'];?></span>
-				</TD>
-				
-			</TR>
-		<?php endif;?>
-
-								
-			</TR>
-						
+									
 		</table>
 	
 </div>
