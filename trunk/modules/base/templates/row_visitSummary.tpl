@@ -65,10 +65,11 @@
 					<span class="inline_h4">
 						<a href="<?php echo $row['document_url'];?>"><?php echo $row['document_page_title'];?></a> &nbsp;
 						(<?php if ( $row['document_page_type'] ): echo $row['document_page_type']; endif;?>)
-					</span>
-					<BR>
-					<span class="owa_secondaryText">
-						<?php $this->out( $this->truncate( $row['document_url'], 80, '...') );?>
+						
+						<BR>
+						<span class="externalUrl">
+							<?php $this->out( $this->truncate( $row['document_url'], 80, '...') );?>
+						</span>
 					</span>
 				</TD>							
 			</tr>
@@ -83,11 +84,11 @@
 			<TR>
 				<TD class="owa_icon16x16" rowspan="2" align="right" valign="top">
 				
-					<span class="h_label"><img src="<?php echo $this->makeImageLink('base/i/referer_icon.gif');?>" alt="Refering URL"></span>
+					<span class="h_label"><img src="<?php echo $this->makeImageLink('base/i/referer_icon.gif');?>" alt="Traffic Source"></span>
 				</TD>
 
 				<TD valign="top" colspan="2">
-					<span class="inline_h4">Traffic Source: 
+					<span class="inline_h4"> 
 					<a href="<?php $this->out( $this->makeLink( 
 						array(
 							'do' => 'base.reportSourceDetail', 
@@ -99,7 +100,7 @@
 					
 					<?php if ( $row['medium'] === 'referral' ):?>
 					<BR><BR>
-					<div style="line-height:110%; width:inherit;">
+					<div style="line-height:120%; width:inherit;">
 						<span class="inline_h4">
 							<a href="<?php echo $row['referer_url'];?>">
 								<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?>
