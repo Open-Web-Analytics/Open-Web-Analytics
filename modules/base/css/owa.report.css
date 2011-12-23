@@ -593,6 +593,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa .externalUrl {
 	color: #093;
+	font-size:12px;
 }
 
 .submit-button:hover {
