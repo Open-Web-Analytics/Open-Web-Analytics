@@ -88,7 +88,15 @@
 				</TD>
 
 				<TD valign="top" colspan="2">
-					<span class="inline_h4">Traffic Source: <?php $this->out( $row['medium'] );?> (<?php $this->out( $row['source']);?>)</span>
+					<span class="inline_h4">Traffic Source: 
+					<a href="<?php $this->out( $this->makeLink( 
+						array(
+							'do' => 'base.reportSourceDetail', 
+							'source' => urlencode($row['source']), 
+							'site_id' => $this->get('site_id')
+							),
+						true 
+					) );?>"><?php $this->out( $row['source']);?></a> (<?php $this->out( $row['medium'] );?>)</span>
 					<?php if ( $row['medium'] === 'referral' ):?>
 					<BR><span class="inline_h4">
 						<a href="<?php echo $row['referer_url'];?>">
