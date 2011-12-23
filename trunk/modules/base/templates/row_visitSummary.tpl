@@ -98,8 +98,8 @@
 					) );?>"><?php $this->out( $row['source']);?></a> (<?php $this->out( $row['medium'] );?>)</span>
 					<?php if ( $row['medium'] === 'referral' ):?>
 					<BR><span class="inline_h4">
-						<a class="externalUrl" href="<?php echo $row['referer_url'];?>">
-						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
+						<a href="<?php echo $row['referer_url'];?>">
+						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
 					</span>
 					<?php endif;?>
 					
