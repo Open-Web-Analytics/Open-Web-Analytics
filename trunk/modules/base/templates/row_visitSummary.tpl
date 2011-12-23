@@ -24,93 +24,64 @@
 							<?php if ($row['session_is_new_visitor'] == true): ?>
 							 <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor">
 							<?php endif;?>
-							&nbsp  <span class="owa_moreLinks"><a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">View Visitor &raquo</a></span>
+							
 							<BR>
 							<?php if ($row['location_city']):?> 
 							<span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
 							<?php endif;?>
+							<BR>
+							<span class="owa_moreLinks"><a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">View Visitor &raquo</a></span>
 						</TD>
 					</table>
 				</td>
 				<TD class="owa_visitInfoboxItem">
-					<?php echo $this->choose_browser_icon($row['ua_browser_type']);?>
+					
+					<?php $this->renderKpiInfobox(
+						$this->choose_browser_icon($row['ua_browser_type']),
+						'Browser Type',
+						$this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
+						'visitSummaryKpi'	
+					);?>
+				
 				</TD>
 				<TD class="owa_visitInfoboxItem">
-					<span class="owa_largeNumber">
-						<a href="<?php echo $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true);?>">
-							<?php echo $row['session_num_pageviews'];?>
-						</a>
-					</span>
-					<BR>
-					<span class="info_text">Pages</span>
+				
+					<?php $this->renderKpiInfobox(
+						$row['session_num_pageviews'],
+						'Pages Viewed',
+						$this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
+						'visitSummaryKpi'	
+					);?>
 					
 				</TD>
 				<TD class="owa_visitInfoboxItem">
-					<span class="">
-						<?php echo date("G:i:s",mktime(0,0,($row['session_last_req'] - $row['session_timestamp'])));?>
-					</span>
-					<BR>
-					<span class="info_text">Length</span>
+					<?php $this->renderKpiInfobox(
+						date("G:i:s",mktime(0,0,($row['session_last_req'] - $row['session_timestamp']))),
+						'Visit Length',
+						'',
+						'visitSummaryKpi'	
+					);?>
+					
 				</TD>
 			</TR>
 		</table>
 		
 		<table class="owa_visitInfoboxDocContainer">		
-			<TR>					
-				<TD class="owa_icon16x16" align="" valign="top"><span class="h_label">
-					<img src="<?php echo $this->makeImageLink('base/i/document_icon.gif');?>" alt="Entry Page"></span>
-				</TD>
-										
-				<TD valign="top">
-					<span class="inline_h4">
-						<a href="<?php echo $row['document_url'];?>"><?php echo $row['document_page_title'];?></a> &nbsp;
-						(<?php if ( $row['document_page_type'] ): echo $row['document_page_type']; endif;?>)
-						
-						<BR>
-						<span class="externalUrl">
-							<?php $this->out( $this->truncate( $row['document_url'], 80, '...') );?>
-						</span>
-					</span>
-				</TD>							
-			</tr>
 			
-			<tr>
-				<td>
+			<TR style="border-top: 1px solid #cccccc;">	
 				
-				</td>
-			</tr>
-			
+				<td valign="top"colspan="2">
 					
-			<TR>
-				<TD class="owa_icon16x16" rowspan="2" align="right" valign="top">
+					<?php include('documentNavSum.php'); ?>
 				
-					<span class="h_label"><img src="<?php echo $this->makeImageLink('base/i/referer_icon.gif');?>" alt="Traffic Source"></span>
-				</TD>
-
+				</td>	
+								
+			</tr>
+								
+			<TR style="border-top: 1px solid #cccccc;">
+			
 				<TD valign="top" colspan="2">
-					<span class="inline_h4"> 
-					<a href="<?php $this->out( $this->makeLink( 
-						array(
-							'do' => 'base.reportSourceDetail', 
-							'source' => urlencode($row['source']), 
-							'site_id' => $this->get('site_id')
-							),
-						true 
-					) );?>"><?php $this->out( $row['source']);?></a> (<?php $this->out( $row['medium'] );?>)</span>
-					
-					<?php if ( $row['medium'] === 'referral' ):?>
-					<div style="line-height:120%; width:inherit; padding-left:20px; padding-top:15px;">
-						<span class="inline_h4">
-							<a href="<?php echo $row['referer_url'];?>">
-								<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?>
-							</a>
-						</span>
-						
-						<?php if ( ! empty( $row['referer_snippet'] ) ):?>			
-						<br><span class="snippet_text"><?php echo $row['referer_snippet'];?></span>
-						<?php endif;?>
-					</div>					
-					<?php endif;?>
+					<?php include('trafficSourceSum.php');?>
 				</TD>
 																
 			</TR>

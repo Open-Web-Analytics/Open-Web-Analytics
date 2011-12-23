@@ -164,7 +164,6 @@
 
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
-
 .owa_metricInfobox, .owa .action_infobox {
 	color:#505050; 
 	background-color: #ffffff;
@@ -209,7 +208,15 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 	width:auto;
 }
 
+.kpiInfoboxLink {
+	text-decoration:none;
+}
 
+.visitSummaryKpi {
+	width:120px;
+	min-width:120px;
+	min-height: 60px;
+}
 
 .owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
 .owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}

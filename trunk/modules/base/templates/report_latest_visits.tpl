@@ -2,7 +2,7 @@
 <table style="width:100%;">
 	<?php foreach($visits->resultsRows as $row): ?>
 		<TR>
-		<?php include('row_visitSummary.tpl');?>
+		<?php include('row_visitSummary.tpl'); ?>
 		</TR>
 	<?php endforeach; ?>
 </table>
