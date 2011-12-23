@@ -967,54 +967,8 @@ OWA.tracker.prototype = {
 		// add some radomness for cache busting
 		return log_url + get;
     },
-    /*
-    prepareRequestParams : function(properties) {
-    
-  		var get = '';
-    	
-    	//assemble query string
-	    for ( param in properties ) {  
-	    	// print out the params
-			var value = '';
-			var kvp = '';
-				
-			if ( properties.hasOwnProperty(param) ) {
-	  			
-	  			if ( OWA.util.is_array( properties[param] ) ) {
-				
-					for ( var i = 0, n = properties[param].length; i < n; i++ ) {
-						
-						if ( OWA.util.is_object( properties[param][i] ) ) {
-							for ( o_param in properties[param][i] ) {
-								kvp = OWA.util.sprintf('owa_%s[%s][%s]=%s&', param, i, o_param, OWA.util.urlEncode( properties[param][i][o_param] ) );
-								get += kvp;
-							}
-						} else {
-							// what the heck is it then. assum string
-							kvp = OWA.util.sprintf('owa_%s[%s]=%s&', param, i, OWA.util.urlEncode( properties[param][i] ) );
-							get += kvp;
-						}
-					}
-				// assume it's a string
-				} else {
-					kvp = OWA.util.sprintf('owa_%s=%s&', param, OWA.util.urlEncode( properties[param] ) );
-					
-				}
-			
-				
-    		//needed?	
-	    	} else {
-    	
-    			kvp = OWA.util.sprintf('owa_%s=%s&', '', OWA.util.urlEncode( properties[param] ) );
-    		}
-    		
-    		get += kvp;
-		}
-		//OWA.debug('GET string: %s', get);
-		return get;
-    },
-    */
-    prepareRequestData : function( properties ) {
+
+	prepareRequestData : function( properties ) {
     
   		var data = {};
     	
