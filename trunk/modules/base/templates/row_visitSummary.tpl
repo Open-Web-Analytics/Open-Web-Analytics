@@ -12,18 +12,19 @@
 						</TD>
 						<TD class="owa_userLabel" style="width:auto;">
 							
-							<span class="owa_userNameLabel">
+							<span class="inline_h2">
 							
 							<?php
 							if ( ! empty( $row[ 'session_user_name' ] ) ) {
 								echo $row[ 'session_user_name' ];
 							} else {
 								echo $row['visitor_id'];
-							}?></span> &nbsp  <a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>"><span class="moreLink">Visitor Details</span></a>
+							}?></span> 
 							
 							<?php if ($row['session_is_new_visitor'] == true): ?>
 							 <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor">
 							<?php endif;?>
+							&nbsp  <span class="owa_moreLinks"><a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">View Visitor &raquo</a></span>
 							<BR>
 							<?php if ($row['location_city']):?> 
 							<span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
@@ -61,11 +62,9 @@
 				</TD>
 										
 				<TD valign="top">
-					<span class="">
-						<a href="<?php echo $row['document_url'];?>"><?php echo $row['document_page_title'];?></a>
-					</span>
-					<span class="owa_secondaryText">
-						<?php if ( $row['document_page_type'] ): echo $row['document_page_type']; endif;?>
+					<span class="inline_h4">
+						<a href="<?php echo $row['document_url'];?>"><?php echo $row['document_page_title'];?></a> &nbsp;
+						(<?php if ( $row['document_page_type'] ): echo $row['document_page_type']; endif;?>)
 					</span>
 					<BR>
 					<span class="owa_secondaryText">
@@ -99,7 +98,7 @@
 					) );?>"><?php $this->out( $row['source']);?></a> (<?php $this->out( $row['medium'] );?>)</span>
 					<?php if ( $row['medium'] === 'referral' ):?>
 					<BR><span class="inline_h4">
-						<a href="<?php echo $row['referer_url'];?>">
+						<a class="externalUrl" href="<?php echo $row['referer_url'];?>">
 						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
 					</span>
 					<?php endif;?>
