@@ -69,12 +69,18 @@
 					</span>
 					<BR>
 					<span class="owa_secondaryText">
-						<?php echo $this->truncate( $row['document_url'], 80, '...');?>
+						<?php $this->out( $this->truncate( $row['document_url'], 80, '...') );?>
 					</span>
 				</TD>							
 			</tr>
 			
-			<?php if ( $row['referer_url'] != '(none)' && $row['referer_url'] != '(not set)' ):?>		
+			<tr>
+				<td>
+				
+				</td>
+			</tr>
+			
+					
 			<TR>
 				<TD class="owa_icon16x16" rowspan="2" align="right" valign="top">
 				
@@ -82,18 +88,20 @@
 				</TD>
 
 				<TD valign="top" colspan="2">
-					
+					<span>Traffic Source:</span> <?php $this->out( $row['medium'] );?> (<?php $this->out( $row['medium']);?>)
+					<?php if ( $row['medium'] === 'referral' ):?>
 					<span class="inline_h4">
 						<a href="<?php echo $row['referer_url'];?>">
 						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
 					</span>
+					<?php endif;?>
 					
 				</TD>
 																
 			</TR>
-			<?php endif;?>
+			
 						
-		<?php if (!empty($row['referer_snippet'])):?>			
+		<?php if ( $row['medium'] === 'referral' && ! empty( $row['referer_snippet'] ) ):?>			
 			<TR>
 				<TD colspan="1">
 					<span class="snippet_text"><?php echo $row['referer_snippet'];?></span>
