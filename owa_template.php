@@ -241,18 +241,15 @@ class owa_template extends Template {
 			case "aol":
 				$file = 'aol.png';
 				$name = 'AOL';
-				break; 
-			case "default browser":
-				$file = 'default_browser.png';
-				$name = 'Unknown Browser';
-				break; 
+				break;
+			
 			default:
 				$name = 'Unknown Browser';
-				$file = 'default_browser.png';
+				$file = 'default.png';
 			
 		}
 			
-		return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink('base/i/'.$file));
+		return sprintf('<img alt="%s" align="baseline" src="%s" width="32" height="32">', $name, $this->makeImageLink('base/i/browsers/128x128/'.$file));
 		
 	}
 	
@@ -952,6 +949,15 @@ class owa_template extends Template {
 		$t->set_template( 'kpiInfobox.php' );
 		$t->set( 'number', $number );
 		$t->set( 'label', $label );
+		
+		if ($link) {
+			$t->set( 'link', $link );	
+		}
+		
+		if ($class) {
+			$t->set( 'class', $class );	
+		}
+		
 		echo $t->fetch();
 		
 	}

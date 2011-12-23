@@ -2321,29 +2321,33 @@ class owa_baseModule extends owa_module {
 			
 			$s = owa_coreAPI::entityFactory('base.session');
 			$h = owa_coreAPI::entityFactory('base.host');
+			$l = owa_coreAPI::entityFactory('base.location_dim');
 			$ua = owa_coreAPI::entityFactory('base.ua');
 			$d = owa_coreAPI::entityFactory('base.document');
 			$v = owa_coreAPI::entityFactory('base.visitor');
 			$r = owa_coreAPI::entityFactory('base.referer');
+			$sr = owa_coreAPI::entityFactory('base.source_dim');
+			$db->selectFrom($s->getTableName(), 'session');
 			
-			$db->selectFrom($s->getTableName());
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $l->getTableName(), 'location', 'location_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), 'host', 'host_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), 'ua', 'ua_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), 'document', 'first_page_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), 'visitor', 'visitor_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), 'referer', 'referer_id');
+			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'source_id');
 			
-			$db->selectColumn($s->getColumnsSql('session_'));
-			$db->selectColumn($h->getColumnsSql('host_'));
-			$db->selectColumn($ua->getColumnsSql('ua_'));
-			$db->selectColumn($d->getColumnsSql('document_'));
-			$db->selectColumn($v->getColumnsSql('visitor_'));
-			$db->selectColumn($r->getColumnsSql('referer_'));
+			$db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
+							   
+			$db->selectColumn('host.host as host_host');
+			$db->selectColumn('location.city as location_city, location.country as location_country');
+			$db->selectColumn('ua.browser_type as ua_browser_type');
+			$db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
+			$db->selectColumn('visitor.user_email as visitor_user_email');
+			$db->selectColumn('source.source_domain as source');
+			$db->selectColumn('referer.url as referer_url, referer.page_title as referer_page_title, referer.snippet as referer_snippet');
 			
-			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), '', 'host_id');
-			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), '', 'ua_id');
-			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), '', 'first_page_id');
-			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), '', 'visitor_id');
-			$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), '', 'referer_id');
-			
-			
-			$db->where($s->getTableName().'.id', $sessionId);
-			
+			$db->where('session.id', $sessionId);
 			
 			$results = $rs->generate($db);
 			$rs->resultsRows = $results;
