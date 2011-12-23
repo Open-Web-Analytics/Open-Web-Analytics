@@ -99,7 +99,7 @@
 					
 					<?php if ( $row['medium'] === 'referral' ):?>
 					<BR><BR>
-					<div style="line-spacing:15px;">
+					<div style="line-height:110%; width:inherit;">
 						<span class="inline_h4">
 							<a href="<?php echo $row['referer_url'];?>">
 								<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?>
