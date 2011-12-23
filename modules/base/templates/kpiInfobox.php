@@ -1,5 +1,5 @@
 <?php if ( $this->get( 'link' ) ): ?>
-<a class="kpiInfoBoxLink" href="<?php $this->out($this->get('link'));?>">
+<a class="kpiInfoboxLink" href="<?php $this->out($this->get('link'));?>">
 <?php endif;?>
 
 <div id="<?php $this->out( str_replace(' ', '', $this->get( 'label' ) ) );?>_kpibox" class="owa_metricInfobox kpiInfobox <?php $this->out($this->get('class'));?>">
