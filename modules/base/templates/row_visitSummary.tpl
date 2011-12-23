@@ -88,9 +88,9 @@
 				</TD>
 
 				<TD valign="top" colspan="2">
-					<span>Traffic Source:</span> <?php $this->out( $row['medium'] );?> (<?php $this->out( $row['medium']);?>)
+					<span>Traffic Source:</span> <?php $this->out( $row['medium'] );?> (<?php $this->out( $row['source']);?>)
 					<?php if ( $row['medium'] === 'referral' ):?>
-					<span class="inline_h4">
+					<BR><span class="inline_h4">
 						<a href="<?php echo $row['referer_url'];?>">
 						<?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '...');?></span></a><BR><span class="info_text"><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '...');?><?php endif;?></a>
 					</span>
