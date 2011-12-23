@@ -7,10 +7,14 @@
 			<TR>
 				<TD>
 					<table class="owa_userInfobox">
-						<TD class="owa_avatar">
-							<img src="<?php echo $this->getAvatarImage($row['visitor_user_email']);?>" width="30" height="30">
+						<TD valign="top">
+							
+							<?php if ($row['session_is_new_visitor'] == true): ?>
+							 <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor"><BR>
+							<?php endif;?>
+							<img class="owa_avatar" src="<?php echo $this->getAvatarImage($row['visitor_user_email']);?>" width="30" height="30">
 						</TD>
-						<TD class="owa_userLabel" style="width:auto;">
+						<TD valign="top" class="owa_userLabel" style="width:auto;">
 							
 							<span class="inline_h2">
 							
@@ -21,16 +25,13 @@
 								echo $row['visitor_id'];
 							}?></span> 
 							
-							<?php if ($row['session_is_new_visitor'] == true): ?>
-							 <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor">
-							<?php endif;?>
-							
 							<BR>
 							<?php if ($row['location_city']):?> 
 							<span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
 							<?php endif;?>
 							<BR>
-							<span class="owa_moreLinks"><a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">View Visitor &raquo</a></span>
+							<span class="owa_moreLinks"><a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $row['visitor_id'], 'site_id' => $this->get('site_id')),true);?>">Visitor Detail &raquo</a></span>
+							&nbsp<span class="owa_moreLinks"><a href="<?php echo $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true);?>">Visit Detail &raquo</a></span>
 						</TD>
 					</table>
 				</td>
