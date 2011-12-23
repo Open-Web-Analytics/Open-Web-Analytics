@@ -203,11 +203,11 @@ class owa_template extends Template {
 		switch (strtolower($browser_type)) {
 			
 			case "ie":
-				$file = 'msie.png';
+				$file = 'ie.png';
 				$name = 'Microsoft Internet Explorer';
 				break;
 			case "internet explorer":
-				$file = 'msie.png';
+				$file = 'ie.png';
 				$name = 'Microsoft Internet Explorer';
 				break;
 			case "firefox":
