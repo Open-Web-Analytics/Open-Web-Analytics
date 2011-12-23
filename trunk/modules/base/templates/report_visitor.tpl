@@ -1,8 +1,9 @@
 <div>
-	<div>
-		<span><img src="<?php echo $this->getAvatarImage( $this->out($this->get('visitor_avatar_id') ) );?>" /></span>
-		<span><?php $this->out( $visitor_label );?></span>
+	<div style="display: table-cell; vertical-align: middle">
+		<span><img class="owa_avatar" style="vertical-align:middle;" src="<?php echo $this->getAvatarImage( $this->out($this->get('visitor_avatar_id') ) );?>" /></span>
+		<span class="inline_h2"><?php $this->out( $visitor_label );?></span>
 	</div>
+	<BR>
 	<div>			
 		<?php $this->renderKpiInfobox( $first_visit_date, 'First Visit' ); ?>
 			
@@ -25,6 +26,7 @@
 			<td valign="top">
 				<div class="owa_reportSectionContent" style="min-width:300px;">
 					<div class="owa_reportSectionHeader">Latest Actions</div>
+					
 					<?php echo $this->getLatestActions($this->get('startDate'), 
 													   $this->get('endDate'), 
 													   $this->get('siteId'), 
