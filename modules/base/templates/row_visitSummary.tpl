@@ -88,7 +88,7 @@
 				</TD>
 
 				<TD valign="top" colspan="2">
-					<span>Traffic Source:</span> <?php $this->out( $row['medium'] );?> (<?php $this->out( $row['source']);?>)
+					<span class="inline_h4">Traffic Source: <?php $this->out( $row['medium'] );?> (<?php $this->out( $row['source']);?>)</span>
 					<?php if ( $row['medium'] === 'referral' ):?>
 					<BR><span class="inline_h4">
 						<a href="<?php echo $row['referer_url'];?>">
