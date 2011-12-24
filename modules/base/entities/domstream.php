@@ -72,7 +72,7 @@ class owa_domstream extends owa_factTable {
 		$this->setProperty($domstream_guid);
 		
 		$this->properties['events'] = new owa_dbColumn;
-		$this->properties['events']->setDataType(OWA_DTD_TEXT);
+		$this->properties['events']->setDataType(OWA_DTD_BLOB);
 		$this->properties['duration'] = new owa_dbColumn;
 		$this->properties['duration']->setDataType(OWA_DTD_INT);
 		
