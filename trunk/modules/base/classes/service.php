@@ -264,7 +264,7 @@ class owa_service extends owa_base {
 		
 		if (array_key_exists($map_name, $this->maps)) {
 			
-			if (array_key_exists($name, $this->maps[$map_name])) {
+			if ( $name && array_key_exists($name, $this->maps[$map_name])) {
 				
 				return $this->maps[$map_name][$name];
 			} else {
