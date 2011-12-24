@@ -2680,12 +2680,21 @@ class owa_baseModule extends owa_module {
 		$ret = $db->getAllRows();
 		//print_r($ret);
 		$combined = '';
-		foreach ($ret as $row) {
-			$combined = $this->mergeStreamEvents( $row['events'], $combined );
+		
+		if ( $ret ) {
+			// if rows then combine the events
+			foreach ($ret as $row) {
+				$combined = $this->mergeStreamEvents( $row['events'], $combined );
+			}
+			
+			$row['events'] = json_decode($combined);
+		} else {
+			// no rows found for some reason…..
+			$error = 'No domstream rows found for domstream_guid: ' . $domstream_guid;
+			owa_coreAPI::debug( $error );
+			$row = array('errors' => $error);
 		}
-		
-		$row['events'] = json_decode($combined);
-		
+			
 		$t = new owa_template;
 		$t->set_template('json.php');
 		//$json = new Services_JSON();
