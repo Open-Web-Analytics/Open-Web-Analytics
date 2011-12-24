@@ -51,7 +51,7 @@ class owa_site extends owa_entity {
 		$this->properties['site_family'] = new owa_dbColumn;
 		$this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['settings'] = new owa_dbColumn;
-		$this->properties['settings']->setDataType(OWA_DTD_TEXT);
+		$this->properties['settings']->setDataType(OWA_DTD_BLOB);
 	}
 	
 	function generateSiteId($domain) {
