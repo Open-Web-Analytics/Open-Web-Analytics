@@ -204,11 +204,11 @@ class owa_template extends Template {
 			
 			case "ie":
 				$file = 'ie.png';
-				$name = 'Microsoft Internet Explorer';
+				$name = 'Internet Explorer';
 				break;
 			case "internet explorer":
 				$file = 'ie.png';
-				$name = 'Microsoft Internet Explorer';
+				$name = 'Internet Explorer';
 				break;
 			case "firefox":
 				$file = 'firefox.png';
@@ -238,9 +238,13 @@ class owa_template extends Template {
 				$file = 'camino.png';
 				$name = 'Camino';
 				break; 
-			case "aol":
-				$file = 'aol.png';
-				$name = 'AOL';
+			case "chrome":
+				$file = 'chrome.png';
+				$name = 'Chrome';
+				break;
+			case "chrome":
+				$file = 'chromium.png';
+				$name = 'Chromium';
 				break;
 			
 			default:

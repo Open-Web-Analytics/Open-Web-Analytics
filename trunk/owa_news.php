@@ -50,18 +50,17 @@ class owa_news extends lastRSS {
 	
 	var $crawler;
 	
-	function owa_news() {
+	function __construct() {
 	
-		$c = &owa_coreAPI::configSingleton();
+		$c = owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
-		$this->e = &owa_coreAPI::errorSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
 		$this->crawler = new owa_http;
 		$this->crawler->read_timeout = 20;
 		$this->cache_dir = '';
 		$this->date_format = "F j, Y";
 		$this->CDATA = 'content';
 		$this->items_limit = 3;
-		return;	
 	}
 	
 	/**
