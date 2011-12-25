@@ -164,7 +164,7 @@ var topkeywordsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet'
 												'sort' => 'visits-',
 												'format' => 'json',
 												'resultsPerPage' => 25,
-												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
+												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId') . 'medium==organic-search')), true);?>';
 												  
 OWA.items.topkeywords = new OWA.resultSetExplorer('top-keywords');
 OWA.items.topkeywords.addLinkToColumn('referralSearchTerms', '<?php echo $this->makeLink(array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), true);?>', ['referralSearchTerms']);
