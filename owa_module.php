@@ -220,6 +220,36 @@ class owa_module extends owa_base {
 		
 		parent::__construct();
 		
+		/**
+		 * Register Filters
+		 */
+		$this->registerFilters();
+		
+		/**
+		 * Register Metrics
+		 */
+		$this->registerMetrics();
+		
+		/**
+		 * Register Dimensions
+		 */
+		$this->registerDimensions();
+		
+		/**
+		 * Register CLI Commands
+		 */
+		$this->registerCliCommands();
+		
+		/**
+		 * Register API Methods
+		 */
+		$this->registerApiMethods();
+		
+		/**
+		 * Register Background Jobs
+		 */
+		$this->registerBackgroundJobs();
+		
 		$this->_registerEventHandlers();
 		$this->_registerEventProcessors();
 		$this->_registerEntities();
@@ -786,6 +816,73 @@ class owa_module extends owa_base {
 		$s = owa_coreAPI::serviceSingleton();
 		$s->setMapValue('background_jobs', $name, $job);
 	}
+	
+	/**
+	 * Abstract method for registering individual API methods
+	 *
+	 * This method is called automaticalled by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerApiMethods() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual CLI commands
+	 *
+	 * This method is called automaticalled by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerCliCommands() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual Metrics
+	 *
+	 * This method is called automaticalled by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerMetrics() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual CLI commands
+	 *
+	 * This method is called automaticalled by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerDimensions() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual Filter Methods
+	 *
+	 * This method is called automaticalled by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerFilters() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual Filter Methods
+	 *
+	 * This method is called automaticalled by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerBackgroundJobs() {
+		
+		return false;
+	}
+	
 }
 
 ?>
