@@ -483,7 +483,7 @@ OWA.resultSetExplorer.prototype = {
 	setResultSet : function(rs) {
 		
 		// check to see if resultSet is new 
-		if ( OWA.util.is_object(rs) ) {
+		if ( OWA.util.is_object(rs) && OWA.util.is_object( this.resultSet ) ) {
 			// if not new then return. nothing to do.
 			if (rs.guid === this.resultSet.guid) {
 				OWA.debug('result set has same GUID. no change needed.');
@@ -724,7 +724,7 @@ OWA.resultSetExplorer.prototype = {
     },
     
 	makeMetricBoxes : function(dom_id, template, label, metrics, filter) {
-	
+		
 		var kpi = new OWA.kpiBox();
 		
 		if ( ! dom_id ) {
