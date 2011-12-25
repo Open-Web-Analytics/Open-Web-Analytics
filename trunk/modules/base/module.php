@@ -47,11 +47,16 @@ class owa_baseModule extends owa_module {
 		$this->config_required = false;
 		$this->required_schema_version = 7;
 		
-		/**
-		 * Register Filters
-		 *
-		 * The following lines register filter methods. 
-		 */
+		return parent::__construct();
+	}
+	
+	/**
+	 * Register Filters
+	 *
+	 * The following lines register filter methods. 
+	 */
+	function registerFilters() {
+				
 		$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
 		$this->registerFilter('ip_address', $this, 'setIp', 0);
 		$this->registerFilter('full_host', $this, 'resolveHost', 0);
@@ -64,15 +69,219 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
-		
+	}
+	
+	/**
+	 * Register Filters
+	 *
+	 * The following lines register background jobs used by the
+	 * background daemon. 
+	 */
+	function registerBackgroundJobs() {
+	
 		// event procesing daemon jobs
 		$this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
+	
+	}
+	
+	
+	/**
+	 * Register CLI Commands
+	 *
+	 * The following lines register various command line interface (CLI) controller. 
+	 */
+	function registerCliCommands() {
+			
+		$this->registerCliCommand('update', 'base.updatesApplyCli');
+		$this->registerCliCommand('build', 'base.build');
+		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
+		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
+		$this->registerCliCommand('install', 'base.installCli');
+		$this->registerCliCommand('activate', 'base.moduleActivateCli');
+		$this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
+		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
+		$this->registerCliCommand('add-site', 'base.sitesAddCli');
+		$this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
+	}
+	
+	/**
+	 * Register API methods
+	 *
+	 * The following lines register various API methods. 
+	 */
+	function registerApiMethods() {
+			
+		$this->registerApiMethod('getResultSet', 
+				array($this, 'getResultSet'), 
+				array(
+					'metrics', 
+					'dimensions', 
+					'siteId', 
+					'constraints', 
+					'sort', 
+					'resultsPerPage', 
+					'page', 
+					'offset', 
+					'period', 
+					'startDate', 
+					'endDate', 
+					'startTime', 
+					'endTime', 
+					'format',
+					'segment'), 
+				'', 
+				'view_reports'
+		);
 		
-		/**
-		 * Register Metrics
-		 *
-		 * The following lines register various data metrics. 
-		 */
+		$this->registerApiMethod('getDomstreams', 
+				array( $this, 'getDomstreams' ), 
+				array( 
+					'startDate', 
+					'endDate', 
+					'document_id', 
+					'siteId', 
+					'resultsPerPage', 
+					'page', 
+					'format' ), 
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getLatestVisits', 
+				array($this, 'getLatestVisits'), 
+				array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), 
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getClickstream', 
+				array($this, 'getClickstream'), 
+				array( 'sessionId', 'resultsPerPage', 'page','format'),
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getVisitDetail', 
+				array($this, 'getVisitDetail'), 
+				array( 'sessionId', 'format'),
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getTransactionDetail', 
+				array($this, 'getTransactionDetail'), 
+				array( 'transactionId', 'format'),
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getDomClicks', 
+				array($this, 'getDomClicks'), 
+				array(
+					'pageUrl', 
+					'siteId', 
+					'startDate', 
+					'endDate', 
+					'document_id', 
+					'period',
+					'resultsPerPage', 
+					'page',
+					'format'
+				),
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getTransactions', 
+				array($this, 'getTransactions'), 
+				array( 
+					'siteId', 
+					'startDate', 
+					'endDate', 
+					'period',
+					'sort',
+					'resultsPerPage', 
+					'page',
+					'format'
+				),
+				'', 
+				'view_reports'
+		);
+		
+		$this->registerApiMethod('getDomstream', 
+				array($this, 'getDomstream'), 
+				array('domstream_guid'),
+				'', 
+				'view_reports' 
+		);
+		
+		$this->registerApiMethod('getLatestActions', 
+				array($this, 'getLatestActions'), 
+				array('startDate', 'endDate', 'visitorId', 'sessionId', 'action_group','siteId','resultsPerPage', 'page', 'format'),
+				'', 
+				'view_reports' 
+		);
+	}
+	
+	/**
+	 * Registers Admin panels
+	 *
+	 */
+	function registerAdminPanels() {
+		
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.optionsGeneral', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Main Configuration',
+				'group'			=> 'General',
+				'order'			=> 1)
+		);
+		
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.users', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'User Management',
+				'group'			=> 'General',
+				'order'			=> 2)
+		);
+									
+		
+									
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.sites', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Tracked Sites',
+				'group'			=> 'General',
+				'order'			=> 3)
+		);
+								
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.optionsModules', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Modules',
+				'group'			=> 'General',
+				'order'			=> 3)
+		);		
+		
+		/*
+		$this->addAdminPanel(array(
+				'do' 			=> 'base.optionsGoals', 
+				'priviledge' 	=> 'admin', 
+				'anchortext' 	=> 'Goal Settings',
+				'group'			=> 'General',
+				'order'			=> 3)
+		);	
+		*/	
+	}
+	
+	
+	/**
+	 * Register Metrics
+	 *
+	 * The following lines register various data metrics. 
+	 */
+	function registerMetrics() {		
+		
 		$this->registerMetric(
 			'pageViews', 
 			array( 
@@ -435,14 +644,16 @@ class owa_baseModule extends owa_module {
 			'Total number of clicks on DOM elements.',
 			'Clicks'
 		);
+	}
 		
-		/**
-		 * Register Dimensions
-		 *
-		 * The following lines register various data dimensions.
-		 * To register a dimenison use the registerDimension method.
-		 * See owa_module class for documentation on this method.
-		 */
+	/**
+	 * Register Dimensions
+	 *
+	 * The following lines register various data dimensions.
+	 * To register a dimenison use the registerDimension method.
+	 * See owa_module class for documentation on this method.
+	 */
+	function registerDimensions() {
 		
 		// fact table entity names used by a number of dimensions.
 		$fact_table_entities = array(
@@ -1565,192 +1776,6 @@ class owa_baseModule extends owa_module {
 					'string'
 			);	
 		}
-		
-		/**
-		 * Register CLI Commands
-		 *
-		 * The following lines register various command line interface (CLI) controller. 
-		 */
-		$this->registerCliCommand('update', 'base.updatesApplyCli');
-		$this->registerCliCommand('build', 'base.build');
-		$this->registerCliCommand('flush-cache', 'base.flushCacheCli');
-		$this->registerCliCommand('processEventQueue', 'base.processEventQueue');
-		$this->registerCliCommand('install', 'base.installCli');
-		$this->registerCliCommand('activate', 'base.moduleActivateCli');
-		$this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
-		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
-		$this->registerCliCommand('add-site', 'base.sitesAddCli');
-		$this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
-		
-		/**
-		 * Register API methods
-		 *
-		 * The following lines register various API methods. 
-		 */
-		$this->registerApiMethod('getResultSet', 
-				array($this, 'getResultSet'), 
-				array(
-					'metrics', 
-					'dimensions', 
-					'siteId', 
-					'constraints', 
-					'sort', 
-					'resultsPerPage', 
-					'page', 
-					'offset', 
-					'period', 
-					'startDate', 
-					'endDate', 
-					'startTime', 
-					'endTime', 
-					'format',
-					'segment'), 
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getDomstreams', 
-				array( $this, 'getDomstreams' ), 
-				array( 
-					'startDate', 
-					'endDate', 
-					'document_id', 
-					'siteId', 
-					'resultsPerPage', 
-					'page', 
-					'format' ), 
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getLatestVisits', 
-				array($this, 'getLatestVisits'), 
-				array( 'startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'), 
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getClickstream', 
-				array($this, 'getClickstream'), 
-				array( 'sessionId', 'resultsPerPage', 'page','format'),
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getVisitDetail', 
-				array($this, 'getVisitDetail'), 
-				array( 'sessionId', 'format'),
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getTransactionDetail', 
-				array($this, 'getTransactionDetail'), 
-				array( 'transactionId', 'format'),
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getDomClicks', 
-				array($this, 'getDomClicks'), 
-				array(
-					'pageUrl', 
-					'siteId', 
-					'startDate', 
-					'endDate', 
-					'document_id', 
-					'period',
-					'resultsPerPage', 
-					'page',
-					'format'
-				),
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getTransactions', 
-				array($this, 'getTransactions'), 
-				array( 
-					'siteId', 
-					'startDate', 
-					'endDate', 
-					'period',
-					'sort',
-					'resultsPerPage', 
-					'page',
-					'format'
-				),
-				'', 
-				'view_reports'
-		);
-		
-		$this->registerApiMethod('getDomstream', 
-				array($this, 'getDomstream'), 
-				array('domstream_guid'),
-				'', 
-				'view_reports' 
-		);
-		
-		$this->registerApiMethod('getLatestActions', 
-				array($this, 'getLatestActions'), 
-				array('startDate', 'endDate', 'visitorId', 'sessionId', 'action_group','siteId','resultsPerPage', 'page', 'format'),
-				'', 
-				'view_reports' 
-		);
-		
-		
-		return parent::__construct();
-	}
-	
-	/**
-	 * Registers Admin panels
-	 *
-	 */
-	function registerAdminPanels() {
-		
-		$this->addAdminPanel(array(
-				'do' 			=> 'base.optionsGeneral', 
-				'priviledge' 	=> 'admin', 
-				'anchortext' 	=> 'Main Configuration',
-				'group'			=> 'General',
-				'order'			=> 1)
-		);
-		
-		$this->addAdminPanel(array(
-				'do' 			=> 'base.users', 
-				'priviledge' 	=> 'admin', 
-				'anchortext' 	=> 'User Management',
-				'group'			=> 'General',
-				'order'			=> 2)
-		);
-									
-		
-									
-		$this->addAdminPanel(array(
-				'do' 			=> 'base.sites', 
-				'priviledge' 	=> 'admin', 
-				'anchortext' 	=> 'Tracked Sites',
-				'group'			=> 'General',
-				'order'			=> 3)
-		);
-								
-		$this->addAdminPanel(array(
-				'do' 			=> 'base.optionsModules', 
-				'priviledge' 	=> 'admin', 
-				'anchortext' 	=> 'Modules',
-				'group'			=> 'General',
-				'order'			=> 3)
-		);		
-		
-		/*
-		$this->addAdminPanel(array(
-				'do' 			=> 'base.optionsGoals', 
-				'priviledge' 	=> 'admin', 
-				'anchortext' 	=> 'Goal Settings',
-				'group'			=> 'General',
-				'order'			=> 3)
-		);	
-		*/	
 	}
 	
 	function registerNavigation() {
