@@ -108,13 +108,15 @@ OWA.items.rsh.load(aurl);
 
 var tturl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 														'metrics' => 'visits', 
-														'dimensions' => 'date,medium', 
+														'dimensions' => 'date', 
 														'sort' => 'date',
 														'format' => 'json',
-														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId').',medium=@organic')),true);?>';
+														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId').',medium==organic-search')),true);?>';
 																	  
 OWA.items.tt = new OWA.resultSetExplorer('trend-metrics');
-OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines', '',function(row) {if (row.medium.value === 'organic-search') return true;}]);
+//OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines', '',function(row) {if (row.medium.value === 'organic-search') return true;}]);
+OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines']);
+
 OWA.items.tt.load(tturl);
 
 var tt1url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -124,9 +126,9 @@ var tt1url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
 														'format' => 'json',
 														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId')).'medium==direct'),true);?>';
 																	  
-var tt1 = new OWA.resultSetExplorer('trend-metrics');
-tt1.asyncQueue.push(['makeMetricBoxes','','','Visits From Direct Navigation']);
-tt1.load(tt1url);
+OWA.items.tt1 = new OWA.resultSetExplorer('trend-metrics');
+OWA.items.tt1.asyncQueue.push(['makeMetricBoxes','','','Visits From Direct Navigation']);
+OWA.items.tt1.load(tt1url);
 
 
 var tt2url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 

@@ -56,6 +56,7 @@ OWA.kpiBox.prototype = {
 	
 	generate : function(resultSet, dom_id, options) {
 	
+		OWA.debug('Generating KPI box for: ' + dom_id + ' with options: ' + JSON.stringify(options));
 		if ( dom_id ) {
      		
      		this.setDomId( dom_id );
@@ -67,12 +68,14 @@ OWA.kpiBox.prototype = {
      		
      		this.mergeOptions( options );
      	}
-     			
-		jQuery('#' + dom_id).append('<div class="metricInfoboxesContainer" style="width:auto;"></div>');	
+     	
+     	var html = '';
+     	var con_id = 'kpiContainer-'+ resultSet.guid;
+		jQuery('#' + dom_id).append(OWA.util.sprintf('<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div>', con_id ) );	
 		jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
 		
 		for(var i in resultSet.aggregates) {
-		
+			
 			if (resultSet.aggregates.hasOwnProperty(i)) {
 				var item = resultSet.aggregates[i];
 				
@@ -92,7 +95,8 @@ OWA.kpiBox.prototype = {
 				html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
 				html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>', item.formatted_value);
 				html += '</div>';
-				jQuery( selector ).append(html);
+				
+				jQuery('#' + con_id ).append( html );
 				
 				var spark_options = {
 					metric: resultSet.aggregates[i].name,
