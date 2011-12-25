@@ -199,61 +199,32 @@ class owa_template extends Template {
 	 * @return unknown
 	 */
 	function choose_browser_icon($browser_type) {
+	
+		$default_location = 'base/i/browsers/128x128/';
 		
-		switch (strtolower($browser_type)) {
+		$icons = array(
+		
+			'internet explorer'	=>  $default_location . 'ie.png',
+			'unknown browser'	=>	$default_location . 'default.png'
 			
-			case "ie":
-				$file = 'ie.png';
-				$name = 'Internet Explorer';
-				break;
-			case "internet explorer":
-				$file = 'ie.png';
-				$name = 'Internet Explorer';
-				break;
-			case "firefox":
-				$file = 'firefox.png';
-				$name = 'Firefox';
-				break;
-			case "safari":
-				$file = 'safari.png';
-				$name = 'Safari';
-				break;
-			case "opera":
-				$file = 'opera.png';
-				$name = 'Opera';
-				break;
-			case "netscape":
-				$file = 'netscape.png';
-				$name = 'Netscape';
-				break;
-			case "mozilla":
-				$file = 'mozilla.png';
-				$name = 'Mozilla';
-				break;
-			case "konqueror":
-				$file = 'kon.png';
-				$name = 'Konqueror';
-				break;
-			case "camino":
-				$file = 'camino.png';
-				$name = 'Camino';
-				break; 
-			case "chrome":
-				$file = 'chrome.png';
-				$name = 'Chrome';
-				break;
-			case "chrome":
-				$file = 'chromium.png';
-				$name = 'Chromium';
-				break;
+		);
+		
+		$file = $default_location . strtolower( $browser_type ) . '.png' ;
+		
+		if ( file_exists( OWA_MODULES_DIR . $file ) ) {
 			
-			default:
-				$name = 'Unknown Browser';
-				$file = 'default.png';
+			$file = $file;
+		
+		} else if ( isset( $icons[ strtolower($browser_type) ] ) ) {
 			
+			$file = $icons[ strtolower($browser_type) ];	
+		
+		} else {
+			
+			$file = $icons['unknown browser'];
 		}
-			
-		return sprintf('<img alt="%s" align="baseline" src="%s" width="32" height="32">', $name, $this->makeImageLink('base/i/browsers/128x128/'.$file));
+				
+		return sprintf( '<img alt="%s" align="baseline" src="%s" width="32" height="32">', $browser_type, $this->makeImageLink( $file ) );
 		
 	}
 	
