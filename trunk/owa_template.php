@@ -205,6 +205,7 @@ class owa_template extends Template {
 		$icons = array(
 		
 			'internet explorer'	=>  $default_location . 'ie.png',
+			'opera mini'		=>	$default_location . 'opera.png',
 			'unknown browser'	=>	$default_location . 'default.png'
 			
 		);
