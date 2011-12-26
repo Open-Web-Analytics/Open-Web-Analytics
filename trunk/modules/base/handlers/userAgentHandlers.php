@@ -60,6 +60,22 @@ class owa_userAgentHandlers extends owa_observer {
 			}
 			
 		} else {
+			
+			$old = $ua->get('browser_type');
+			$new = $event->get('browser_type'); 
+			
+			if ( $new != $old && $new != 'Default Browser') {
+				$ua->set('browser_type', $new);
+				$ua->set('browser', $event->get('browser') );
+				$ret = $ua->save();
+				
+				if ( $ret ) {
+					owa_coreAPI::debug('Updating user agent with new browser type: '. $new);
+					return OWA_EHS_EVENT_HANDLED;
+				} else {
+					return OWA_EHS_EVENT_FAILED;
+				}
+			}
 		
 			owa_coreAPI::debug('not logging, user agent already exists.');
 			return OWA_EHS_EVENT_HANDLED;

@@ -2366,7 +2366,7 @@ class owa_baseModule extends owa_module {
 							   
 			$db->selectColumn('host.host as host_host');
 			$db->selectColumn('location.city as location_city, location.country as location_country');
-			$db->selectColumn('ua.browser_type as ua_browser_type');
+			$db->selectColumn('ua.browser_type as browser_type');
 			$db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
 			$db->selectColumn('visitor.user_email as visitor_user_email');
 			$db->selectColumn('source.source_domain as source');
@@ -2413,7 +2413,7 @@ class owa_baseModule extends owa_module {
 						   
 		$db->selectColumn('host.host as host_host');
 		$db->selectColumn('location.city as location_city, location.country as location_country');
-		$db->selectColumn('ua.browser_type as ua_browser_type');
+		$db->selectColumn('ua.browser_type as browser_type');
 		$db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
 		$db->selectColumn('visitor.user_email as visitor_user_email');
 		$db->selectColumn('source.source_domain as source');
