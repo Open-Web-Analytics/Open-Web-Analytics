@@ -228,8 +228,8 @@ class owa_template extends Template {
 		return sprintf( '<img alt="%s" align="baseline" src="%s" width="%s" height="%s">', 
 						$browser_type, 
 						$this->makeImageLink( $file ), 
-						$height, 
-						$width 
+						$width, 
+						$height 
 		);
 		
 	}
