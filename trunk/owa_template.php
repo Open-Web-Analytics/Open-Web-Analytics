@@ -198,7 +198,7 @@ class owa_template extends Template {
 	 * @param unknown_type $browser_type
 	 * @return unknown
 	 */
-	function choose_browser_icon($browser_type) {
+	function choose_browser_icon($browser_type, $height= '32', $width='') {
 	
 		$default_location = 'base/i/browsers/128x128/';
 		
@@ -225,7 +225,12 @@ class owa_template extends Template {
 			$file = $icons['unknown browser'];
 		}
 				
-		return sprintf( '<img alt="%s" align="baseline" src="%s" width="32" height="32">', $browser_type, $this->makeImageLink( $file ) );
+		return sprintf( '<img alt="%s" align="baseline" src="%s" width="%s" height="%s">', 
+						$browser_type, 
+						$this->makeImageLink( $file ), 
+						$height, 
+						$width 
+		);
 		
 	}
 	
