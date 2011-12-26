@@ -1968,6 +1968,8 @@ class owa_baseModule extends owa_module {
 		if (empty($os)) {
 		
 			$matches = array(
+				'Win.*NT 7\.0'					=>'Windows 7',
+				'Win.*NT 6\.0'					=>'Windows Vista',
 				'Win.*NT 5\.0'					=>'Windows 2000',
 				'Win.*NT 5.1'					=>'Windows XP',
 				'Win.*(Vista|XP|2000|ME|NT|9.?)'=>'Windows $1',
