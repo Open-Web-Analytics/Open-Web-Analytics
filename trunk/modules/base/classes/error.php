@@ -324,9 +324,6 @@ class owa_error {
 	 */
 	function make_file_logger() {
 		
-		// fetch config object
-		//$c = &owa_coreAPI::configSingleton();
-
 		// test to see if file is writable
 		$handle = @fopen(owa_coreAPI::getSetting('base', 'error_log_file'), "a");
 		
@@ -347,9 +344,6 @@ class owa_error {
 	 */
 	function make_mail_logger() {
 		
-		// fetch config object
-		$c = &owa_coreAPI::configSingleton();
-
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
 		$logger = Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
 		

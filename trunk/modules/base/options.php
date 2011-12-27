@@ -52,7 +52,7 @@ class owa_optionsView extends owa_view {
 		$this->body->set('headline', 'OWA Settings');
 		
 		// get admin panels
-		$api = &owa_coreAPI::singleton();
+		$api = owa_coreAPI::singleton();
 		$panels = $api->getAdminPanels();
 		//print_r($panels);
 		$this->body->set('panels', $panels);

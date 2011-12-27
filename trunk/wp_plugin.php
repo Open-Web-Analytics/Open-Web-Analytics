@@ -221,7 +221,7 @@ function &owa_getInstance() {
       	//print_r($current_user);
 		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
-		$cu =&owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 		
 		if (isset($current_user->user_login)) {
 			$cu->setUserData('user_id', $current_user->user_login);

@@ -127,7 +127,7 @@ class owa_caller extends owa_base {
 		}
 		
 		/* LOAD SERVICE LAYER */
-		$this->service = &owa_coreAPI::serviceSingleton();
+		$this->service = owa_coreAPI::serviceSingleton();
 		// initialize framework
 		$this->service->initializeFramework();	
 		// notify handlers of 'init' action
@@ -178,7 +178,7 @@ class owa_caller extends owa_base {
 			// check to see if first hit tag is needed
 			if ( isset( $options['delay_first_hit'] ) || owa_coreAPI::getSetting('base', 'delay_first_hit')) {
 			
-				$service = &owa_coreAPI::serviceSingleton();
+				$service = owa_coreAPI::serviceSingleton();
 				//check for persistant cookie
 				$v = $service->request->getOwaCookie('v');
 				
@@ -275,7 +275,7 @@ class owa_caller extends owa_base {
 	}
 		
 	function setCurrentUser($role, $login_name = '') {
-		$cu =&owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 		$cu->setRole($role);
 		$cu->setAuthStatus(true);
 	}

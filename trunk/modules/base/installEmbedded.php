@@ -42,7 +42,7 @@ class owa_installEmbeddedController extends owa_installController {
 
 	function action() {
 		
-	    $service = &owa_coreAPI::serviceSingleton();
+	    $service = owa_coreAPI::serviceSingleton();
 	    
 	    $this->e->notice('starting Embedded install');
 	    

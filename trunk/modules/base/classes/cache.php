@@ -50,7 +50,7 @@ class owa_cache {
 	 */
 	function __construct($cache_dir = '') {
 		
-		$this->e = &owa_coreAPI::errorSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
 	}
 		
 	function set($collection, $key, $value, $expires = '') {
