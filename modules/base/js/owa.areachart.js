@@ -32,6 +32,7 @@ OWA.areaChart = function( options ) {
 	
 	this.dom_id = '';
 	this.domSelector = '';
+	this.init = false;
 }
 
 OWA.areaChart.prototype = {
@@ -110,7 +111,7 @@ OWA.areaChart.prototype = {
 	 * Main method for displaying an area chart
 	 */
 	generate : function( resultSet, series, dom_id ) {
-		
+		OWA.debug('generating area chart for ' + dom_id);
 		// set dom_id just in case.
 		if ( dom_id ) {
 		
@@ -121,11 +122,14 @@ OWA.areaChart.prototype = {
 		
 		// set series just in case.
 		if ( series ) {
-			
+		
 			this.options.series = series;
 		}
 		
 		var selector = this.domSelector;
+		
+		// remove in case the chart is already there.
+		jQuery( selector ).remove();
 		
 		// if there is data, plot it.
 		if ( resultSet.resultsRows.length > 0 ) {
@@ -156,7 +160,7 @@ OWA.areaChart.prototype = {
 			}
 			
 			if ( ! this.init ) {
-			
+				OWA.debug('ac init not set');
 				this.setupAreaChart(series, dom_id);
 			}
 			

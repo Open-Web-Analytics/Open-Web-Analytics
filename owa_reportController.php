@@ -97,7 +97,8 @@ class owa_reportController extends owa_adminController {
 		$site_usage = array(
 				'tab_label'		=> 'Site Usage',
 				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-				'sort'			=> 'visits-'
+				'sort'			=> 'visits-',
+				'trendchartmetric'	=>	'visits'
 		);
 		
 		$tabs['site_usage'] = $site_usage;
@@ -108,7 +109,8 @@ class owa_reportController extends owa_adminController {
 			$ecommerce = array(
 					'tab_label'		=> 'e-commerce',
 					'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
-					'sort'			=> 'transactionRevenue-'
+					'sort'			=> 'transactionRevenue-',
+					'trendchartmetric'	=>	'transactions'
 			);
 		
 			$tabs['ecommerce'] = $ecommerce;
@@ -131,7 +133,8 @@ class owa_reportController extends owa_adminController {
 				$goal_group = array(
 						'tab_label'		=>	$gm->getGoalGroupLabel($group),
 						'metrics'		=>	$goal_metrics,
-						'sort'			=> 'goalValueAll-'
+						'sort'			=> 'goalValueAll-',
+						'trendchartmetric'	=>	'visits'
 				);
 				$name = 'goal_group_'.$group;
 				$tabs[$name] = $goal_group;
