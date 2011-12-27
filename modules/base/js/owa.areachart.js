@@ -129,6 +129,9 @@ OWA.areaChart.prototype = {
 		var selector = this.domSelector;
 		
 		// remove in case the chart is already there.
+		// this is kind of a hack as it mean that only one area chart can be placed in a dom_id at a time.
+		// this is needed so that charts can be over riden when report
+		// tabs change.
 		jQuery( selector ).remove();
 		
 		// if there is data, plot it.
