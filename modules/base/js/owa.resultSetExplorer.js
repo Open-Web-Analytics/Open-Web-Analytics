@@ -1188,11 +1188,14 @@ OWA.dataGrid.prototype = {
 				end = ((resultSet.page -1) * resultSet.resultsPerPage) + resultSet.resultsReturned;
 			}
 			
+			var that = this;
+			//jQuery("#"+that.dom_id + '_grid').jqGrid('setGridParam', { rowNum: start } );
+			
 			var p = '<li class="owa_rowCount">';
 			p += 'Results: '+ start + ' - ' + end;
 			p = p + '</li>';
 		
-			var that = this;
+			
 			//alert ("#"+that.dom_id + '_grid' + ' > .owa_rowCount');
 			var check = jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html();
 			//alert(check);
