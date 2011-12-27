@@ -74,9 +74,9 @@ class owa_optionsGoalEditController extends owa_adminController {
 		
 		$steps = $goal['details']['funnel_steps'];
 		
-		if ($steps) {
-			
-			foreach ($steps as $num => $step) {
+		 if ( isset( $goal['details']['funnel_steps'] ) ) {
+		 	
+		 	foreach ( $goal['details']['funnel_steps'] as $num => $step) { 
 				
 				if (!empty($step['name']) || !empty($step['url'])) { 
 					// check that step name is present

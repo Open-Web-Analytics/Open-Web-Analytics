@@ -32,12 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  */
 
 class owa_usersProfileController extends owa_controller {
-	
-	function owa_usersProfileController($params) {
 		
-		return owa_usersProfileController::__construct($params); 
-	}
-	
 	function __construct($params) {
 	
 		$this->setRequiredCapability('edit_users');
@@ -55,13 +50,13 @@ class owa_usersProfileController extends owa_controller {
 			$this->set('edit', true);
 			$this->set('user_id', $this->getParam('user_id'));
 		} else {
+			$this->set('edit', false);
 			$this->set('profile', array());
 		}
 		
 		$this->setView('base.options');
 		$this->setSubview('base.usersProfile');
 		
-		return $data;
 	}
 	
 }
@@ -92,6 +87,7 @@ class owa_usersProfileView extends owa_view {
 			$this->body->set('action', 'base.usersEdit');
 			$this->body->set('edit', true);
 		} else {
+			$this->body->set('edit', false); 
 			$this->body->set('headline', 'Add a new user profile');
 			$this->body->set('action', 'base.usersAdd');
 		}
@@ -99,12 +95,15 @@ class owa_usersProfileView extends owa_view {
 		$this->t->set('page_title', 'User Profile');
 		$this->body->set_template('users_addoredit.tpl');
 		$this->body->set('roles', owa_coreAPI::getAllRoles());	
-		$this->body->set('user', $this->get('profile'));
+		$user = $this->get('profile'); 
+		$this->body->set('user', $user); 
+		$this->body->set('isAdmin', false); 
 		
+		// this should be done in the controller not here.
+		if ( isset( $user['id'] ) && $user['id'] == 1 ) { 
+			$this->body->set('isAdmin', true); 
+		} 
 	}
-	
-	
 }
-
 
 ?>
