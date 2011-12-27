@@ -40,11 +40,6 @@ class owa_entity {
 	var $wasPersisted;
 	var $cache;
 	
-	function __construct($cache = '', $db = '') {
-		
-	}
-		
-	
 	function _getProperties() {
 		
 		$properties = array();
@@ -62,7 +57,14 @@ class owa_entity {
 		return $properties;	
 	}
 	
-	function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
+	/** 
+	 * Return Array or string of column names used for SQL queries - e.g. like " tablename.fieldname as namespace.fieldname" 
+	 *  
+	 * @param boolean $return_as_string  If false array is returned 
+	 * @param string $as_namespace  Optional namespace for fields  
+	 * @param boolean $table_namespace 
+	 */ 
+	public function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
 		
 		if (!empty($this->properties)) {
 			$all_cols = array_keys($this->properties);
@@ -98,11 +100,6 @@ class owa_entity {
 		//print_r($new_cols);
 		return $new_cols; 
 		
-	}
-	
-	function getColumnsSql($as_namespace = '', $table_namespace = true) {
-	
-		return $this->getColumns(true, $as_namespace, $table_namespace);
 	}
 	
 	/**

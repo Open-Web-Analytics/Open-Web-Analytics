@@ -125,7 +125,7 @@
 				</p>
 				</th>
 				<td>
-					<input name="<?php echo $this->getNs();?>goal[details][goal_url]" value="<?php $this->out($goal['details']['goal_url']);?>" type="text" size="60" value="<?php $this->out($goal['url']);?>">
+					<input name="<?php echo $this->getNs();?>goal[details][goal_url]" value="<?php $this->out(@$goal['details']['goal_url']);?>" type="text" size="60" value="<?php $this->out($goal['url']);?>">
 				</td>
 			</tr>
 		</table>
