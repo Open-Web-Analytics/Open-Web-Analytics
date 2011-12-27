@@ -228,7 +228,7 @@
 	<fieldset name="owa-reporting-options" class="options">
 		
 		<legend>Reporting</legend>
-		
+		<!--
 		<div class="setting" id="ecommerce_reporting">	
 			<div class="title">E-commerce Reporting</div>
 			<div class="description">Adds e-commerce metrics/statistics to reports.</div>
@@ -239,7 +239,7 @@
 				</select>
 			</div>
 		</div>
-		
+		-->
 		
 		<div class="setting" id="timezone">	
 			<div class="title">Reporting Timezone</div>

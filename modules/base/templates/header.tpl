@@ -16,7 +16,7 @@
 		Hi, <?php $this->out( $cu->getUserData('user_id') );?> ! &bull;
 		<?php if ( ! owa_coreAPI::getSetting( 'base', 'is_embedded' ) ):?>
 			
-				<?php if (owa_coreAPI::isCurrentUserAuthenticated()):?>
+				<?php if ( owa_coreAPI::isCurrentUserAuthenticated() ):?>
 				<a class="login" href="<?php echo $this->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
 				<?php else:?>
 				<a class="login" href="<?php echo $this->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
