@@ -35,7 +35,7 @@ class owa_updatesApplyController extends owa_controller {
 	function action() {
 		
 		// fetch list of modules that require updates
-		$s = &owa_coreAPI::serviceSingleton();
+		$s = owa_coreAPI::serviceSingleton();
 		
 		$modules = $s->getModulesNeedingUpdates();
 		//print_r($modules);

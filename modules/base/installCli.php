@@ -37,7 +37,7 @@ class owa_installCliController extends owa_cliController {
 
 	function action() {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 	    $im = owa_coreAPI::supportClassFactory('base', 'installManager');
 	    $this->e->notice('Starting OWA Install from command line.');
 	    

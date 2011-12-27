@@ -60,7 +60,7 @@ class owa_installController extends owa_controller {
 	
 	function installSchema() {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$base = $service->getModule('base');
 		$status = $base->install();
 		return $status;
@@ -148,7 +148,7 @@ class owa_installController extends owa_controller {
 	function checkDbConnection() {
 		
 		// Check DB connection status
-		$db = &owa_coreAPI::dbSingleton();
+		$db = owa_coreAPI::dbSingleton();
 		$db->connect();
 		if ($db->connection_status === true) {
 			return true;

@@ -517,7 +517,7 @@
  		
  		if (!isset($config2)):
  			//print 'hello from alt constructor';
- 			$config2 = &owa_coreAPI::configSingleton();
+ 			$config2 = owa_coreAPI::configSingleton();
  		endif;
  		
  		return $config2->fetch('base');

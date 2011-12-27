@@ -37,7 +37,7 @@ define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
 define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules/base/');
 define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'classes/');
 define('OWA_INCLUDE_DIR', OWA_DIR.'includes/');
-define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.12.2');
+define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.12.7');
 define('OWA_PHPMAILER_DIR', OWA_INCLUDE_DIR.'PHPMailer_5.2.0/');
 define('OWA_HTTPCLIENT_DIR', OWA_INCLUDE_DIR.'httpclient-2009-09-02/');
 define('OWA_PLUGINS_DIR', OWA_DIR.'plugins'); //depricated

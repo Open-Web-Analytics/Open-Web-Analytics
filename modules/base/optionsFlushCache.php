@@ -40,7 +40,7 @@ class owa_optionsFlushCacheController extends owa_adminController {
 	
 	function action() {
 	
-		$cache = &owa_coreAPI::cacheSingleton(); 
+		$cache = owa_coreAPI::cacheSingleton(); 
 		$cache->flush();
 				
 		$this->e->notice("Cache Flushed");

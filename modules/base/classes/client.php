@@ -332,7 +332,7 @@ class owa_client extends owa_caller {
 		
 		// keeps php executing even if the client closes the connection
 		ignore_user_abort(true);
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$service->request->decodeRequestParams();
 		$event = owa_coreAPI::supportClassFactory('base', 'event');
 		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
@@ -823,7 +823,7 @@ class owa_client extends owa_caller {
 	function setCookieDomain($domain) {
 		
 		if (!empty($domain)) {
-			$c = &owa_coreAPI::configSingleton();
+			$c = owa_coreAPI::configSingleton();
 			// sanitizes the domain
 			$c->setCookieDomain($domain);
 		}
