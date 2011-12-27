@@ -698,7 +698,7 @@ class owa_lib {
 	 */
 	public static function redirectToView($data) {
 		//print_r($data);
-		$c = &owa_coreAPI::configSingleton();
+		$c = owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
 		
 		$control_params = array('view_method', 'auth_status');

@@ -145,13 +145,13 @@ class owa_coreAPI {
 	
 	public static function getSetting($module, $name) {
 		
-		$s = &owa_coreAPI::configSingleton();
+		$s = owa_coreAPI::configSingleton();
 		return $s->get($module, $name);
 	}
 	
 	public static function setSetting($module, $name, $value, $persist = false) {
 		
-		$s = &owa_coreAPI::configSingleton();
+		$s = owa_coreAPI::configSingleton();
 		
 		if ($persist === true) {
 			$s->persistSetting($module, $name, $value);
@@ -163,7 +163,7 @@ class owa_coreAPI {
 	
 	public static function persistSetting($module, $name, $value) {
 		
-		$s = &owa_coreAPI::configSingleton();
+		$s = owa_coreAPI::configSingleton();
 		$s->persistSetting($module, $name, $value);
 		
 	}
@@ -223,7 +223,7 @@ class owa_coreAPI {
 	
 	public static function &getCurrentUser() {
 		
-		$s = &owa_coreAPI::serviceSingleton();
+		$s = owa_coreAPI::serviceSingleton();
 		return $s->getCurrentUser();
 	}
 	
@@ -233,7 +233,7 @@ class owa_coreAPI {
 	 */
 	public static function isCurrentUserCapable($capability) {
 		
-		$cu = &owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 		owa_coreAPI::debug("Current User Role: ".$cu->getRole());
 		owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
 		$ret = $cu->isCapable($capability);
@@ -243,7 +243,7 @@ class owa_coreAPI {
 	
 	public static function isCurrentUserAuthenticated() {
 		
-		$cu = &owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 		return $cu->isAuthenticated();
 	}
 	
@@ -805,7 +805,7 @@ class owa_coreAPI {
 		}
 			
 		// do not log if the request is robotic
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$bcap = $service->getBrowscap();
 		owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);
 		if (!owa_coreAPI::getSetting('base', 'log_robots')) {
@@ -939,20 +939,20 @@ class owa_coreAPI {
 	
 	public static function getRequestParam($name) {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		
 		return $service->request->getParam($name);
 		
 	}
 	
 	public static function getRequest() {
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->request;
 	}
 	
 	public static function setRequestParam($name, $value) {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->request->setParam($name, $value);
 		
 	}
@@ -1052,19 +1052,19 @@ class owa_coreAPI {
 	
 	public static function registerStateStore($name, $expiration, $length = '', $format = '', $type = 'cookie', $cdh_required = '') {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->request->state->registerStore( $name, $expiration, $length, $format, $type, $cdh_required );
 	}
 	
 	public static function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
 	}
 	
 	public static function getState($store, $name = '') {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->request->state->get($store, $name);	
 	}
 	
@@ -1076,20 +1076,20 @@ class owa_coreAPI {
 	
 	public static function getServerParam($name = '') {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->request->getServerParam($name);	
 	}
 	
 	public static function clearState($store, $name = '') {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$service->request->state->clear($store, $name); 
 				
 	}
 	
 	public static function getEventProcessor($event_type) {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$processor = $service->getMapValue('event_processors', $event_type);
 		
 		if (empty($processor)) {
@@ -1109,7 +1109,7 @@ class owa_coreAPI {
 		
 		static $init;
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		// Override request parsms with those passed by caller
 		if (!empty($caller_params)) {
 			$service->request->mergeParams($caller_params);
@@ -1149,7 +1149,7 @@ class owa_coreAPI {
 	
 	public static function isUpdateRequired() {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		return $service->isUpdateRequired();
 	}
 	
@@ -1219,7 +1219,7 @@ class owa_coreAPI {
 	
 	public static function getGeolocationFromIpAddress($ip_address) {
 		
-		$s = &owa_coreAPI::serviceSingleton();
+		$s = owa_coreAPI::serviceSingleton();
 		$s->geolocation->getGeolocationFromIp($ip_address);
 		return $s->geolocation;
 	}
