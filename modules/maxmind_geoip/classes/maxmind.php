@@ -60,7 +60,7 @@ class owa_maxmind extends owa_location {
 	var $db_file_dir;
 	var $db_file_name = 'GeoLiteCity.dat';
 	var $db_file_path;
-	var $db_File_present = false;
+	var $db_file_present = false;
 	
 	/**
 	 * Constructor

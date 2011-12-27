@@ -89,7 +89,7 @@ class owa_usersNewAccountView extends owa_mailView {
 			
 		// mailer specific
 		$this->setMailSubject($data['subject']);
-		$this->addMailToAddress($data['email_address'], $data['name']);
+		$this->addMailToAddress($data['email_address'], @$data['name']);
 			
 	}
 }
