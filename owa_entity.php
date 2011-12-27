@@ -275,7 +275,7 @@ class owa_entity {
 	 */
 	function partialUpdate($named_properties, $where) {
 		
-		$db = &owa_coreAPI::dbSingleton();		
+		$db = owa_coreAPI::dbSingleton();		
 		$db->updateTable($this->getTableName());
 		
 		foreach ($named_properties as $v) {
@@ -323,7 +323,7 @@ class owa_entity {
 		if ( $status ){
 			if ($this->isCachable()) {
 				owa_coreAPI::debug('about to remove from cache');
-				$cache =  &owa_coreAPI::cacheSingleton();
+				$cache = owa_coreAPI::cacheSingleton();
 				$cache->remove($this->getTableName(), $col.$value);
 			}			
 		}
@@ -354,7 +354,7 @@ class owa_entity {
 		$cache_obj = '';
 		
 		if ($this->isCachable()) {
-			$cache =  owa_coreAPI::cacheSingleton();
+			$cache = owa_coreAPI::cacheSingleton();
 			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
 			$cache_obj = $cache->get($this->getTableName(), $col.$value);
 		}		

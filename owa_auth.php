@@ -147,7 +147,7 @@ class owa_auth extends owa_base {
 		
 		if ($this->u->get('user_id')) {
 			// get current user
-			$cu = &owa_coreAPI::getCurrentUser();				
+			$cu = owa_coreAPI::getCurrentUser();				
 			// set as new current user in service layer
 			$cu->loadNewUserByObject($this->u);
 			$cu->setAuthStatus(true);
@@ -170,7 +170,7 @@ class owa_auth extends owa_base {
 		if ($this->_is_user == false) {
 		
 			// check to see if the current user has already been authenticated by something upstream
-			$cu = &owa_coreAPI::getCurrentUser();
+			$cu = owa_coreAPI::getCurrentUser();
 			if (!$cu->isAuthenticated()) {
 				// check to see if they are a user.
 				return $this->isUser();
@@ -336,7 +336,7 @@ class owa_auth extends owa_base {
 	function isUser() {
 		
 		// get current user
-		$cu = &owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 				
 		// fetches user object from DB
 		$this->getUser();

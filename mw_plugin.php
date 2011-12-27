@@ -179,7 +179,7 @@ function owa_singleton() {
 	 	 * This info is needed by OWA authentication system as well as to add dimensions
 	 	 * requests that are logged.
 	 	 */
-		$cu = &owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 		$cu->setUserData( 'user_id', $wgUser->getName() );
 		$cu->setUserData( 'email_address', $wgUser->getEmail() );
 		$cu->setUserData( 'real_name', $wgUser->getRealName() );

@@ -8,7 +8,7 @@
 	
 	<div id="trend-chart"></div>
 	<div id="trend-title" class="owa_reportHeadline"></div>	
-	<div id="trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
+	<div id="trend-metrics" style="height:auto;width:auto;<?php if( isset( $pie ) ) {echo 'float:right';}?>"></div>
 	
 	<?php if(isset($pie) && $pie): ?>	
 	<div id="pie" style="min-width:300px;"></div>

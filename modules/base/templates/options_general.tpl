@@ -254,8 +254,13 @@
 			    $selected_already = false;
 			    $selected = '';
 			    foreach( $timezones as $country => $zones){
-			    
-			        $country_name = $countryCode2Name[$country];
+			     
+			        if (isset($countryCode2Name[$country])) { 
+ 						$country_name = $countryCode2Name[$country]; 
+					} else { 
+						$country_name = 'unknown - '.$country; 
+					}     
+			        
 			        echo sprintf('<optgroup label="%s">%s</optgroup>',$country_name, $country_name);
 			        
 			        foreach ($zones as $value) {        
