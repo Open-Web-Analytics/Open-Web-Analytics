@@ -146,6 +146,7 @@ class owa_reportController extends owa_adminController {
 		$nav = owa_coreAPI::getGroupNavigation('Reports');
 		
 		if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
+		
 			unset($nav['Ecommerce']);
 		}
 		
