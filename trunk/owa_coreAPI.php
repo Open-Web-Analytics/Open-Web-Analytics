@@ -172,8 +172,9 @@ class owa_coreAPI {
 		
 		$site = owa_coreAPI::entityFactory('base.site');
 		$site->load( $site->generateId( $site_id ) );
-		if ( $site->wasPersisted() ) {
 		
+		if ( $site->wasPersisted() ) {
+			
 			$settings = $site->get('settings');
 			if (!empty($settings)) {
 				if ( array_key_exists($name, $settings) ) {
