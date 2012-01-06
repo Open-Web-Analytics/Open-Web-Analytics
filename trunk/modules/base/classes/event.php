@@ -183,8 +183,7 @@ class owa_event {
 	 */
 	function set_guid() {
 	
-		return crc32(getmypid().time().rand());
-	
+		return owa_lib::generateRandomUid();
 	}
 		
 	/**
@@ -284,7 +283,7 @@ class owa_event {
 	
 	function getSiteSpecificGuid($site_id) {
 		
-		return crc32(getmypid().time().rand().$site_id);
+		return owa_lib::generateRandomUid();
 	}
 	
 		

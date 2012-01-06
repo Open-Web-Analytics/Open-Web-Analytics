@@ -1220,6 +1220,24 @@ class owa_lib {
   			return false;
 		}
 	}
+	
+	public static function zeroFill( $number, $char_length ) {
+		
+		return str_pad( (int) $number, $char_length, "0", STR_PAD_LEFT );
+	}
+	
+	public static function generateRandomUid($seed='') {
+		
+		$time = (string) time();
+		$random = owa_lib::zeroFill( mt_rand( 0, 999999 ), 6 );
+		if ( defined('OWA_SERVER_ID') ) {
+			$server = owa_lib::zeroFill( OWA_SERVER_ID, 3 );
+		} else {
+			$server = substr( getmypid(), 0, 3);
+		}
+		
+		return $time.$random.$server;
+	}
 }
 
 ?>

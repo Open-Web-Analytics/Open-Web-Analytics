@@ -613,7 +613,9 @@ class owa_entity {
 	
 	function generateRandomUid($seed = '') {
 		
-		return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
+		return owa_lib::generateRandomUid();
+		 
+		//return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
 	}
 	
 	/**
