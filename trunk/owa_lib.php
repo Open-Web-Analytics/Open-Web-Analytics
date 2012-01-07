@@ -743,11 +743,18 @@ class owa_lib {
 	 * @access 	private
 	 */
 	public static function setStringGuid($string) {
-		if (!empty($string)):
-			return crc32(strtolower($string));
-		else:
-			return;
-		endif;
+	
+		if ( $string ) {
+			
+			
+			if ( owa_coreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_MAX == '9223372036854775807') {
+				// make 64 bit ID from partial sha1	
+				return (string) (int) hexdec( substr( sha1( strtolower( $string ) ), 0, 16 ) );
+			} else {
+				// make 32 bit ID from crc32
+				return crc32( strtolower( $string ) );
+			}
+		}
 	}
 	
 	/**
