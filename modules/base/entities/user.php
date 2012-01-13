@@ -100,7 +100,6 @@ class owa_user extends owa_entity {
 	public function isOWAAdmin() {
 		return $this->get('user_id') == self::ADMIN_USER_ID;
 	}
-	
 }
 
 ?>

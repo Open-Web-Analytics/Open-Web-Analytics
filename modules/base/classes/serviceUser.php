@@ -37,6 +37,8 @@ class owa_serviceUser extends owa_base {
 	var $capabilities = array();
 	var $preferences = array();
 	var $is_authenticated;
+	public $assignedSites = array();
+	private $isLoaded = false;
 	
 	function __construct() {
 		
@@ -46,16 +48,19 @@ class owa_serviceUser extends owa_base {
 	
 	function load($user_id) {
 		
-		$this->user->load($user_id, 'user_id');
-		$this->loadRelatedUserData();
-		return;
+		if ( ! $this->isUserLoaded() ) {
+			$this->user->load($user_id, 'user_id');
+			$this->loadRelatedUserData();
+			$this->isLoaded = true;
+		}
 	}
 	
 	function loadRelatedUserData() {
 		
 		$this->capabilities = $this->getCapabilities($this->user->get('role'));
 		$this->preferences = $this->getPreferences($this->user->get('user_id'));
-		return;
+		$this->loadAssignedSites();
+		
 	}
 	/**
 	 * gets allowed capabilities for the user role
@@ -154,6 +159,62 @@ class owa_serviceUser extends owa_base {
 		
 	}
 	
+	private function loadAssignedSites() {
+				
+		if ( ! $this->user->get( 'id' ) ) {
+		 	throw new Exception('no user data loaded!');
+		}
+				
+		$result = array();
+		
+		if ( $this->isOWAAdmin() ) {
+			$relations = owa_coreAPI::getSitesList();
+			
+			foreach ($relations as $siteRow) {
+				$site = owa_coreAPI::entityFactory('base.site');
+				$site->load($siteRow['id']);
+				$result[$siteRow['site_id']] = $site;
+			}
+			
+		} else {
+		
+			$db = owa_coreAPI::dbSingleton();		
+			$db->selectFrom( 'owa_site_user' );
+			$db->selectColumn( '*' );
+			$db->where( 'user_id', $this->user->get('id') );
+			$relations = $db->getAllRows();
+			
+			if (is_array($relations)) {		
+				foreach ($relations as $row) {
+					$siteEntity = owa_coreApi::entityFactory('base.site');
+					$siteEntity->load($row['site_id']);
+					$result[ $siteEntity->get('site_id') ] = $siteEntity;
+				}
+			}
+		}
+		
+		$this->assignedSites = $result;
+	}
+	
+	public function getAssignedSites() {
+		
+		if ( ! $this->isUserLoaded() ) {
+			// can always count on user_id being set
+			$this->load($this->user->get('user_id') );
+		}
+		
+		return $this->assignedSites;
+	}
+	
+	public function isUserLoaded() {
+		
+		return $this->isLoaded;
+	}
+	
+	public function isOWAAdmin() {
+		
+		return $this->user->isOWAAdmin();
+	}
 }
 
 
