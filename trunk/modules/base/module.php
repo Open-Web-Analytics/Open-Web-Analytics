@@ -1955,7 +1955,8 @@ class owa_baseModule extends owa_module {
 				'location_dim',
 				'commerce_transaction_fact',
 				'commerce_line_item_fact',
-				'queue_item')
+				'queue_item',
+				'site_user')
 			);
 		
 	}
