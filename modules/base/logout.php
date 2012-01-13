@@ -35,7 +35,7 @@ class owa_logoutController extends owa_controller {
 		
 	function action() {
 		
-		$auth = &owa_auth::get_instance();
+		$auth = owa_auth::get_instance();
 		$auth->deleteCredentials();
 		$this->setRedirectAction('base.loginForm');
 	}

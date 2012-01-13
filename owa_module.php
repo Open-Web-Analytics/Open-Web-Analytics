@@ -387,12 +387,12 @@ abstract class owa_module extends owa_base {
 	 * Registers Group Link with a particular View
 	 * @DEPRICATED - use addNavigationSubGroup and addNavigationLinkInSubGroup
 	 */
-	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'viewer') {
+	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'view_reports') {
 					
 		if (!empty($subgroup)):
-			$this->addNavigationLinkInSubGroup($subgroup,$ref, $anchortext, $order = 0, $priviledge = 'viewer',$group);
+			$this->addNavigationLinkInSubGroup($subgroup,$ref, $anchortext, $order = 0, $priviledge ,$group);
 		else:
-			$this->addNavigationSubGroup($anchortext,$ref, $anchortext, $order = 0, $priviledge = 'viewer',$group);		
+			$this->addNavigationSubGroup($anchortext,$ref, $anchortext, $order = 0, $priviledge ,$group);		
 		endif;
 
 		return;
@@ -408,7 +408,7 @@ abstract class owa_module extends owa_base {
 	 * @param string $priviledge
 	 * @param string $groupName
 	 */
-	public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = owa_coreAPI::OWA_ROLE_VIEWER, $groupName = 'Reports') {		
+	public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {		
 		$this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
 	}
 	
@@ -422,7 +422,7 @@ abstract class owa_module extends owa_base {
 	 * @param string $priviledge
 	 * @param string $groupName
 	 */
-	public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = owa_coreAPI::OWA_ROLE_VIEWER, $groupName = 'Reports') {	
+	public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {	
 		if (!isset($this->nav_links[$groupName][$subgroupName]) || !is_array($this->nav_links[$groupName][$subgroupName])) {
 			throw new Exception('Subgroup "'.$subgroupName.'" is not existend - add Subgroup first with addNavigationSubGroup ');
 		}

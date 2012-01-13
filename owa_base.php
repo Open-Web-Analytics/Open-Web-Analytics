@@ -49,7 +49,7 @@ class owa_base {
 	/**
 	 * Configuration Entity
 	 * 
-	 * @var Object global configuration object
+	 * @var owa_settings  Object global configuration object
 	 */
 	var $c;
 	

@@ -783,12 +783,14 @@ class owa_template extends Template {
 		}
 	}
 	
-	function makeNavigationMenu($links) {
+	function makeNavigationMenu($links, $currentSiteId) {
 		
-		if (!empty($links)) {
+		if (!empty($links) && !empty($currentSiteId)) {
 		
 			$t = new owa_template;
 			$t->set('links', $links);
+			$t->set('currentSiteId', $currentSiteId);
+			
 			$t->caller_params['link_state'] = $this->caller_params['link_state'];
 			$t->set_template('report_nav.tpl');
 			return $t->fetch();
