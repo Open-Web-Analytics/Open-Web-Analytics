@@ -524,9 +524,13 @@ class owa_controller extends owa_base {
 		$this->data['status_message'] = $msg;
 	}
 	
-	function authenticatedButNotCapableAction($additionalMessage = '') {
+	function authenticatedButNotCapableAction($additionalMessage = '') {		
 		if ( empty($additionalMessage) ) {
-			$additionalMessage = '('.$this->getRequiredCapability().' / '.$this->getCurrentSiteId() .')';
+			$siteIdMsg = $this->getCurrentSiteId();
+			if ( empty ($siteIdMsg) ) {
+				$siteIdMsg = 'No access to any site for the permission "'.$this->getRequiredCapability().'"';
+			}
+			$additionalMessage = $siteIdMsg;
 		}
 		$this->setView('base.error');
 		$this->set('error_msg', $this->getMsg(2003).' '.$additionalMessage);
@@ -567,21 +571,23 @@ class owa_controller extends owa_base {
 	
 	
 	/**
+	 * Returns array of owa_site entities where the current user has access to, taken the current controller cap into account 
 	 * @return array
 	 */
-	protected function getAllowedSitesForCurrentUserAndControllerCap() {
+	protected function getSitesAllowedForCurrentUser() {
 		$currentUser = owa_coreAPI::getCurrentUser();
 		$allSites = owa_coreAPI::getSitesList();
 		$allowedSites=array();
 		foreach ($allSites as $siteRow) {
-			if ($currentUser->isCapable($this->capability,$siteRow['site_id'])) {
-				$site = owa_coreAPI::entityFactory('base.site');
-				$site->load($siteRow['id']);
+			$site = owa_coreAPI::entityFactory('base.site');
+			$site->load($siteRow['id']);
+			if ($site->isUserAssigned($currentUser->user->get('id'))) {
 				$allowedSites[$siteRow['site_id']] = $site;
 			}
 		}
 		return $allowedSites;
 	}
+	
 	/**
 	 * gets the siteid taking the site access permissions into account
 	 * If not a typical siteId parameter is set or user lacks permission, the first availabe site is used
@@ -589,17 +595,18 @@ class owa_controller extends owa_base {
 	 * @return string or false if no site access
 	 */
 	protected function getCurrentSiteId() {
-		$allowedSites = $this->getAllowedSitesForCurrentUserAndControllerCap();
+		$allowedSites = $this->getSitesAllowedForCurrentUser();
 		$siteParameterValue = $this->getSiteIdParameterValue();
 		
 		// set siteId from Request if set
 		if ( $siteParameterValue !== false && isset($allowedSites[$siteParameterValue])) {
 			return $siteParameterValue;
 		}
-		elseif (isset($allowedSites[0])) {
+		elseif ( current($allowedSites) instanceof owa_site) {
 			//set default
-			return $allowedSites[0]->get('site_id');
+			return current($allowedSites)->get('site_id');
 		}
+		
 		return false;
 	}
 	

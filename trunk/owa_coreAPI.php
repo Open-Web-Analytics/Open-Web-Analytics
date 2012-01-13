@@ -32,7 +32,6 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 class owa_coreAPI {
 	
-	const OWA_ROLE_VIEWER = 'viewer';
 	
 	// @depricated
 	// @todo remove
@@ -674,6 +673,8 @@ class owa_coreAPI {
 					foreach ($nav_links as $link) {	
 									
 						if (array_key_exists($group, $links)) {
+							
+						
 							
 							// check to see if link is already present in the main array
 							if (array_key_exists($link['anchortext'], $links[$group])) {

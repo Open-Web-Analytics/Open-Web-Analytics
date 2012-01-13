@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
+<?php $cu = $this->getCurrentUser(); ?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 	<head>
@@ -9,7 +9,7 @@
 		<?php include($this->getTemplatePath('base','css.tpl'));?>
 	</head>
 	
-	<body>
+	<body class="<?php if ($cu->user->isOWAAdmin()) echo 'owaadmin'; ?>">
 		<style>
 			html {background-color: #F2F2F2;}
 		</style>

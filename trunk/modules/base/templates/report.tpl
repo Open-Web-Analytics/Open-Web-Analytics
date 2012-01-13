@@ -26,7 +26,7 @@ jQuery(document).ready(function(){
 			<TD valign="top" class="owa_reportLeftNavColumn">
 				<div class="reportSectionContainer">
 					<div id="owa_reportNavPanel">
-						<?php echo $this->makeNavigationMenu($top_level_report_nav);?>
+						<?php echo $this->makeNavigationMenu($top_level_report_nav, $currentSiteId);?>
 					</div>
 				</div>			
 			</TD>

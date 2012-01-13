@@ -66,6 +66,8 @@ class owa_reportView extends owa_view {
 		
 		// Set navigation
 		$this->body->set('top_level_report_nav', $this->get('top_level_report_nav'));
+		$this->body->set('currentSiteId', $this->get('currentSiteId'));
+		
 		
 		// load body template
 		$this->body->set_template('report.tpl');
@@ -100,6 +102,7 @@ class owa_reportView extends owa_view {
 		$this->setCss("base/css/owa.report.css");
 		$this->setCss('base/css/ui.jqgrid.css');
 		$this->setCss('base/css/chosen/chosen.css');
+
 	}
 	
 	/**

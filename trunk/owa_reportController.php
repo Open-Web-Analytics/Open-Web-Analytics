@@ -41,7 +41,7 @@ class owa_reportController extends owa_adminController {
 	 */
 	function __construct($params) {	
 		$this->setControllerType('report');
-		$this->_setCapability('view_reports');
+		$this->setRequiredCapability('view_reports');
 		return parent::__construct($params);
 	}
 	
@@ -53,7 +53,7 @@ class owa_reportController extends owa_adminController {
 	 */
 	function pre() {
 		
-		$this->set('sites', $this->getAllowedSitesForCurrentUserAndControllerCap());
+		$this->set('sites', $this->getSitesAllowedForCurrentUser());
 		$this->setParam('siteId', $this->getCurrentSiteId());
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
@@ -143,7 +143,8 @@ class owa_reportController extends owa_adminController {
 			unset($nav['Ecommerce']);
 		}
 		
-		$this->set('top_level_report_nav', $nav);
+		$this->set('top_level_report_nav', $nav);		
+		$this->set('currentSiteId', $this->getCurrentSiteId());
 		
 	}
 	

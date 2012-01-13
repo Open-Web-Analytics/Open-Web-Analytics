@@ -64,18 +64,9 @@ class owa_helloModule extends owa_module {
 		
 	}
 	
-	function registerNavigation() {
-		
-		/*$this->addNavigationLink(array('view' 			=> 'base.reportDocument', 
-										'nav_name'		=> 'subnav',
-										'ref'			=> 'base.reportClicks',
-										'priviledge' 	=> 'viewer', 
-										'anchortext' 	=> 'Click Map Report',
-										'order'			=> 1));
-		
-		*/
-		
-		return;
+	public function registerNavigation() {
+		$this->addNavigationSubGroup('Hello World', 'hello.reportDashboard', 'Hello Dashboard');
+		$this->addNavigationLinkInSubGroup('Hello World','hello.reportSearchterms','also to the dashboard',1);
 		
 	}
 	
