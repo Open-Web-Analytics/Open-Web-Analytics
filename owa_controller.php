@@ -590,19 +590,9 @@ class owa_controller extends owa_base {
 	 * @return string or false if no site access
 	 */
 	protected function getCurrentSiteId() {
-		$allowedSites = $this->getSitesAllowedForCurrentUser();
+		
 		$siteParameterValue = $this->getSiteIdParameterValue();
-		
-		// set siteId from Request if set
-		if ( $siteParameterValue !== false && isset($allowedSites[$siteParameterValue])) {
-			return $siteParameterValue;
-		}
-		elseif ( current($allowedSites) instanceof owa_site) {
-			//set default
-			return current($allowedSites)->get('site_id');
-		}
-		
-		return false;
+		return $siteParameterValue;
 	}
 	
 	/**

@@ -113,8 +113,11 @@ class owa_serviceUser extends owa_base {
 			return true;
 		}
 		if (!in_array($cap, $this->capabilities)) {
+			owa_coreAPI::debug('no capability passed does not exist.');
 			return false;	
 		}
+		
+		$this->load();
 		
 		$capabilitiesThatRequireSiteAccess = owa_coreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
 		if (is_array($capabilitiesThatRequireSiteAccess) && in_array($cap, $capabilitiesThatRequireSiteAccess)) {
