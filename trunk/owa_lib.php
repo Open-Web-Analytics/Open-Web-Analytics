@@ -485,12 +485,11 @@ class owa_lib {
 	 * @param string $class_dir
 	 * @param string $class_prefix
 	 * @param string $class_name
-	 * @param array $conf
+	 * @param array $constructorArguments
 	 * @return object
 	 */
-	public static function factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
+	public static function factory($class_dir, $class_prefix, $class_name, $constructorArguments = array(), $class_suffix = '') {
 		
-        //$class_dir = strtolower($class_dir).'/';
         $class_dir = $class_dir.'/';
         $classfile = $class_dir . $class_name . '.php';
 		$class = $class_prefix . $class_name . $class_suffix;
@@ -500,22 +499,17 @@ class owa_lib {
          * a failure as fatal.  The caller may have already included their own
          * version of the named class.
          */
-        if (!class_exists($class)) {
-        	
-        	if (file_exists($classfile)) {
-        		require_once ($classfile);
+        if (!class_exists($class)) {        	
+        	if (!file_exists($classfile)) {
+        		throw new Exception('Class File '.$classfile.' not existend!');
         	}
-            
+       		require_once ($classfile);
         }
 
-        /* If the class exists, return a new instance of it. */
-        if (class_exists($class)) {
-            $obj = new $class($conf);
-            return $obj;
+        if (!class_exists($class)) {
+        		throw new Exception('Class '.$class.' not existend!');
         }
-
-        $null = null;
-        return $null;
+		return new $class($constructorArguments);
     }
 	
     /**

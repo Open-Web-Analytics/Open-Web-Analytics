@@ -34,6 +34,7 @@ require_once(OWA_DIR.'owa_php.php');
 // Initialize owa admin
 $owa = new owa_php;
 
+
 if (!$owa->isOwaInstalled()) {
 	// redirect to install
 	owa_lib::redirectBrowser(owa_coreAPI::getSetting('base','public_url').'install.php');
@@ -44,6 +45,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	// run controller or view and echo page content
 	echo $owa->handleRequestFromURL();
 } else {
+	
 	// unload owa
 	$owa->restInPeace();
 }

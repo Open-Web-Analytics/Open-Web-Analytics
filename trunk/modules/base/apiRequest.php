@@ -55,7 +55,7 @@ class owa_apiRequestController extends owa_controller {
 					// doesn't look like the currentuser has the necessary priviledges
 					owa_coreAPI::debug('User does not have capability required by this controller.');
 					// auth user
-					$auth = &owa_auth::get_instance();
+					$auth = owa_auth::get_instance();
 					$status = $auth->authenticateUser();
 					// if auth was not successful then return login view.
 					if ($status['auth_status'] != true) {

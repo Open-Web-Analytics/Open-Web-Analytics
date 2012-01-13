@@ -38,7 +38,7 @@ class owa_updatesView extends owa_view {
 		
 		//switch wrapper if OWA is not embedded
 		// needed becasue this view might be rendered before anything else.
-		if ($this->config['is_embedded'] != true) {
+		if (isset($this->config['is_embedded']) && $this->config['is_embedded'] != true) {
 			$this->t->set_template('wrapper_public.tpl');
 		}
 		

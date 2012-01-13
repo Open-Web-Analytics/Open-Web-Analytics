@@ -182,18 +182,19 @@ class owa_controller extends owa_base {
 		}				
 		
 		/* CHECK USER FOR CAPABILITIES */
-		if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())) {
+		$currentUser = owa_coreAPI::getCurrentUser();
+		if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {
 		
 			owa_coreAPI::debug('User does not have capability required by this controller.');
 			
 			// check to see if the user has already been authenticated 
 			if (owa_coreAPI::isCurrentUserAuthenticated()) {
-				$this->authenticatedButNotCapableAction();
+				$this->authenticatedButNotCapableAction('User does not have capability required by this controller.');
 				return $this->data;
 			}
 			
 			/* PERFORM AUTHENTICATION */	
-			$auth = &owa_auth::get_instance();
+			$auth = owa_auth::get_instance();
 			$status = $auth->authenticateUser();
 			// if auth was not successful then return login view.
 			if ($status['auth_status'] != true) {
@@ -201,7 +202,7 @@ class owa_controller extends owa_base {
 				return $this->data;
 			} else {
 				//check for needed capability again now that they are authenticated
-				if (!owa_coreAPI::isCurrentUserCapable($this->getRequiredCapability())) {
+				if ( !$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId()) ) {
 					$this->authenticatedButNotCapableAction();
 					//needed?
 					$this->set('go', urlencode(owa_lib::get_current_url()));
@@ -523,10 +524,12 @@ class owa_controller extends owa_base {
 		$this->data['status_message'] = $msg;
 	}
 	
-	function authenticatedButNotCapableAction() {
-		
+	function authenticatedButNotCapableAction($additionalMessage = '') {
+		if ( empty($additionalMessage) ) {
+			$additionalMessage = '('.$this->getRequiredCapability().' / '.$this->getCurrentSiteId() .')';
+		}
 		$this->setView('base.error');
-		$this->set('error_msg', $this->getMsg(2003));
+		$this->set('error_msg', $this->getMsg(2003).' '.$additionalMessage);
 	}
 	
 	function notAuthenticatedAction() {
@@ -560,6 +563,57 @@ class owa_controller extends owa_base {
 	
 	function getSetting($module, $name) {
 		return owa_coreAPI::getSetting($module, $name);
+	}
+	
+	
+	/**
+	 * @return array
+	 */
+	protected function getAllowedSitesForCurrentUserAndControllerCap() {
+		$currentUser = owa_coreAPI::getCurrentUser();
+		$allSites = owa_coreAPI::getSitesList();
+		$allowedSites=array();
+		foreach ($allSites as $siteRow) {
+			if ($currentUser->isCapable($this->capability,$siteRow['site_id'])) {
+				$site = owa_coreAPI::entityFactory('base.site');
+				$site->load($siteRow['id']);
+				$allowedSites[$siteRow['site_id']] = $site;
+			}
+		}
+		return $allowedSites;
+	}
+	/**
+	 * gets the siteid taking the site access permissions into account
+	 * If not a typical siteId parameter is set or user lacks permission, the first availabe site is used
+	 * 
+	 * @return string or false if no site access
+	 */
+	protected function getCurrentSiteId() {
+		$allowedSites = $this->getAllowedSitesForCurrentUserAndControllerCap();
+		$siteParameterValue = $this->getSiteIdParameterValue();
+		
+		// set siteId from Request if set
+		if ( $siteParameterValue !== false && isset($allowedSites[$siteParameterValue])) {
+			return $siteParameterValue;
+		}
+		elseif (isset($allowedSites[0])) {
+			//set default
+			return $allowedSites[0]->get('site_id');
+		}
+		return false;
+	}
+	
+	/**
+	 * @return integer or false
+	 */
+	protected function getSiteIdParameterValue() {
+		if ($this->getParam('siteId') ) {
+			return $this->getParam('siteId');
+		}
+		elseif ($this->getParam('site_id') ) {
+			return $this->getParam('site_id');
+		}
+		return false;
 	}
 	
 }

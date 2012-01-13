@@ -874,6 +874,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 				$type = 'metric';
 				$data_type = $this->getMetric($k)->getDataType();
 			}
+			else {
+				throw new Exception($k.' is not a metric or dimension. Check the configuration!');
+			}
 			
 			
 			

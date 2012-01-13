@@ -34,10 +34,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_errorView extends owa_view {
 	
-	function owa_errorView() {
-		
-		return owa_errorView::__construct();
-	}
 	
 	function __construct() {
 		

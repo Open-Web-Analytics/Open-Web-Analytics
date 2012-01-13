@@ -245,8 +245,10 @@ class owa_service extends owa_base {
 	
 	}
 	
-	function &getCurrentUser() {
-		
+	/**
+	 * @return owa_serviceUser
+	 */
+	function getCurrentUser() {		
 		return $this->current_user;
 	}
 	

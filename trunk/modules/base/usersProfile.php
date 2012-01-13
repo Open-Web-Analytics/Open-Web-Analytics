@@ -81,11 +81,16 @@ class owa_usersProfileView extends owa_view {
 	}
 	
 	function render($data) {
+		$user = $this->get('profile');
+		$this->body->set('isAdmin', false);
 		
 		if ($this->get('edit')) {
 			$this->body->set('headline', 'Edit user profile');
 			$this->body->set('action', 'base.usersEdit');
 			$this->body->set('edit', true);
+			$userEntity =  owa_coreAPI::entityFactory( 'base.user' );
+			$userEntity->load( $user['id'] );
+			$this->body->set('isAdmin', $userEntity->isOWAAdmin());
 		} else { 
 			$this->body->set('headline', 'Add a new user profile');
 			$this->body->set('action', 'base.usersAdd');
@@ -95,12 +100,9 @@ class owa_usersProfileView extends owa_view {
 		$this->t->set('page_title', 'User Profile');
 		$this->body->set_template('users_addoredit.tpl');
 		$this->body->set('roles', owa_coreAPI::getAllRoles());	
-		$user = $this->get('profile'); 
-		$this->body->set('user', $user); 
-		$this->body->set('isAdmin', false);
-		if ( isset( $user['id'] ) && $user['id'] == 1 ) { 
-			$this->body->set('isAdmin', true); 
-		} 
+		 
+		$this->body->set('user', $user); 		
+		
 	}
 }
 

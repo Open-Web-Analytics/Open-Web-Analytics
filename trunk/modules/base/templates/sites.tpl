@@ -17,23 +17,23 @@ if it is to be tracked/reported separately.</P>
 	</thead>
 	<tbody>
 	<?php if ($tracked_sites): ?>
-	<?php foreach ($tracked_sites as $site => $value):?>
+	<?php foreach ($tracked_sites as $site):?>
 	<TR>
 		<TD>
 			<span style="font-size:14px; font-weight:bold;">
-				<a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $value['site_id'] ), false );?>"><?php $this->out( $value['name'] );?></a>
+				<a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), false );?>"><?php $this->out( $site->get('name') );?></a>
 			</span><BR>
-			<?php if (!empty($value['description'])):?>
-			<span class="info_text"><?php $this->out( $value['description'] );?></span><BR>
+			<?php if ($site->get('description') != ''):?>
+			<span class="info_text"><?php $this->out( $site->get('description') );?></span><BR>
 			<?php endif;?>
-			<span class="info_text"><?php $this->out( $value['domain'] );?></span><BR>
+			<span class="info_text"><?php $this->out( $site->get('domain') );?></span><BR>
 		</TD>
 		
 		<TD>
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $value['site_id'], 'edit' => true ) );?>">Edit</a> |
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $value['site_id'] ), false, false, false, true );?>">Delete</a> |
-			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $value['site_id'] ) );?>">Get Tracking Code</a> | 
-			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $value['site_id'] ) );?>">Goals</a>
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $site->get('site_id'), 'edit' => true ) );?>">Edit</a> |
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $site->get('site_id') ), false, false, false, true );?>">Delete</a> |
+			<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $site->get('site_id') ) );?>">Get Tracking Code</a> | 
+			<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $site->get('site_id') ) );?>">Goals</a>
 		</TD>
 	
 	</TR>
