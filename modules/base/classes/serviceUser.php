@@ -51,6 +51,7 @@ class owa_serviceUser extends owa_base {
 		if ( ! $this->isUserLoaded() ) {
 			$this->user->load($user_id, 'user_id');
 			$this->loadRelatedUserData();
+			$this->loadAssignedSites();
 			$this->isLoaded = true;
 		}
 	}
@@ -59,7 +60,6 @@ class owa_serviceUser extends owa_base {
 		
 		$this->capabilities = $this->getCapabilities($this->user->get('role'));
 		$this->preferences = $this->getPreferences($this->user->get('user_id'));
-		$this->loadAssignedSites();
 		
 	}
 	/**
@@ -93,7 +93,6 @@ class owa_serviceUser extends owa_base {
 	function setUserData($name, $value) {
 		
 		$this->user->set($name, $value);
-		return;
 	}
 	
 	function getUserData($name) {
@@ -110,6 +109,7 @@ class owa_serviceUser extends owa_base {
 		owa_coreAPI::debug("check cap ".$cap);
 		//global admin can always everything:
 		if ($this->user->isOWAAdmin() || empty($cap)) {
+			owa_coreAPI::debug('no capability passed, therefor user is capable.');
 			return true;
 		}
 		if (!in_array($cap, $this->capabilities)) {
@@ -145,6 +145,7 @@ class owa_serviceUser extends owa_base {
 	
 	function loadNewUserByObject($obj) {
 		$this->user = $obj;
+		$this->isLoaded = true;
 		//$this->current_user->loadNewUserByObject($obj);
 		$this->loadRelatedUserData();
 		return;

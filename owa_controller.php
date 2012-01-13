@@ -182,33 +182,36 @@ class owa_controller extends owa_base {
 		}				
 		
 		/* CHECK USER FOR CAPABILITIES */
-		$currentUser = owa_coreAPI::getCurrentUser();
-		if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {
-		
-			owa_coreAPI::debug('User does not have capability required by this controller.');
+		if ( $this->getRequiredCapability() ) {
 			
-			// check to see if the user has already been authenticated 
-			if (owa_coreAPI::isCurrentUserAuthenticated()) {
-				$this->authenticatedButNotCapableAction('User does not have capability required by this controller.');
-				return $this->data;
-			}
+			$currentUser = owa_coreAPI::getCurrentUser();
+			if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {
 			
-			/* PERFORM AUTHENTICATION */	
-			$auth = owa_auth::get_instance();
-			$status = $auth->authenticateUser();
-			// if auth was not successful then return login view.
-			if ($status['auth_status'] != true) {
-				$this->notAuthenticatedAction();
-				return $this->data;
-			} else {
-				//check for needed capability again now that they are authenticated
-				if ( !$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId()) ) {
-					$this->authenticatedButNotCapableAction();
-					//needed?
-					$this->set('go', urlencode(owa_lib::get_current_url()));
-					// needed? -- set auth status for downstream views
-					$this->set('auth_status', true);
-					return $this->data;	
+				owa_coreAPI::debug('User does not have capability required by this controller.');
+				
+				// check to see if the user has already been authenticated 
+				if (owa_coreAPI::isCurrentUserAuthenticated()) {
+					$this->authenticatedButNotCapableAction('User does not have capability required by this controller.');
+					return $this->data;
+				}
+				
+				/* PERFORM AUTHENTICATION */	
+				$auth = owa_auth::get_instance();
+				$status = $auth->authenticateUser();
+				// if auth was not successful then return login view.
+				if ($status['auth_status'] != true) {
+					$this->notAuthenticatedAction();
+					return $this->data;
+				} else {
+					//check for needed capability again now that they are authenticated
+					if ( !$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId()) ) {
+						$this->authenticatedButNotCapableAction();
+						//needed?
+						$this->set('go', urlencode(owa_lib::get_current_url()));
+						// needed? -- set auth status for downstream views
+						$this->set('auth_status', true);
+						return $this->data;	
+					}
 				}
 			}
 		}
