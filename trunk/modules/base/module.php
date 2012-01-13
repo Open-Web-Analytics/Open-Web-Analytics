@@ -1780,45 +1780,53 @@ class owa_baseModule extends owa_module {
 	
 	function registerNavigation() {
 		
-		$this->addNavigationLink('Reports', '', 'base.reportDashboard', 'Dashboard', 1);
-		$this->addNavigationLink('Reports', '', 'base.reportVisitors', 'Visitors', 3);
+		$this->addNavigationSubGroup('Dashboard', 'base.reportDashboard', 'Dashboard', 1);		
 		
-		$this->addNavigationLink('Reports', '', 'base.reportContent', 'Content', 4);		
+		//Ecommerce
+		$this->addNavigationSubGroup('Ecommerce', 'base.reportEcommerce', 'Ecommerce', 5, 'view_reports_ecommerce');
+		$this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportRevenue', 'Revenue', 2);
+		$this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportTransactions', 'Transactions', 3);
+		$this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportVisitsToPurchase', 'Visits To Purchase', 4);
+		$this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportDaysToPurchase', 'Days To Purchase', 5);
 		
-		$this->addNavigationLink('Reports', '', 'base.reportEcommerce', 'Ecommerce', 1);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportRevenue', 'Revenue', 2);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportTransactions', 'Transactions', 3);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportVisitsToPurchase', 'Visits To Purchase', 4);
-		$this->addNavigationLink('Reports', 'Ecommerce', 'base.reportDaysToPurchase', 'Days To Purchase', 5);
-
-		$this->addNavigationLink('Reports', 'Content', 'base.reportPages', 'Top Pages', 1);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportPageTypes', 'Page Types', 2);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportFeeds', 'Feeds', 7);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportEntryPages', 'Entry Pages', 3);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportExitPages', 'Exit Pages', 4);
-		$this->addNavigationLink('Reports', 'Content', 'base.reportDomstreams', 'Domstreams', 5);
-		$this->addNavigationLink('Reports', '', 'base.reportActionTracking', 'Action Tracking', 1);
-		$this->addNavigationLink('Reports', 'Action Tracking', 'base.reportActionGroups', 'Action Groups', 2);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportGeolocation', 'Geo-location', 1);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportHosts', 'Domains', 2);								
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsRecency', 'Visitor Recency', 4);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportVisitorsAge', 'Visitor Age', 5);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportBrowsers', 'Browser Types', 6);
-		$this->addNavigationLink('Reports', 'Visitors', 'base.reportOs', 'Operating Systems', 7);
+		//Content
+		$this->addNavigationSubGroup('Content', 'base.reportContent', 'Content', 4);
+		$this->addNavigationLinkInSubGroup( 'Content', 'base.reportPages', 'Top Pages', 1);
+		$this->addNavigationLinkInSubGroup( 'Content', 'base.reportPageTypes', 'Page Types', 2);
+		$this->addNavigationLinkInSubGroup( 'Content', 'base.reportFeeds', 'Feeds', 7);
+		$this->addNavigationLinkInSubGroup( 'Content', 'base.reportEntryPages', 'Entry Pages', 3);
+		$this->addNavigationLinkInSubGroup( 'Content', 'base.reportExitPages', 'Exit Pages', 4);
+		$this->addNavigationLinkInSubGroup( 'Content', 'base.reportDomstreams', 'Domstreams', 5);
 		
-		$this->addNavigationLink('Reports', '', 'base.reportTraffic', 'Traffic', 2);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportKeywords', 'Search Terms', 1);								
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAds', 'Ad Performance', 6);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportCreativePerformance', 'Creative Performance', 8);
-		$this->addNavigationLink('Reports', 'Traffic', 'base.reportAttributionHistory', 'Attribution History', 8);
-		$this->addNavigationLink('Reports', '', 'base.reportGoals', 'Goals', 5);
-		$this->addNavigationLink('Reports', 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);	
+		//Actions
+		$this->addNavigationSubGroup('Action Tracking', 'base.reportActionTracking', 'Action Tracking', 1);
+		$this->addNavigationLinkInSubGroup('Action Tracking', 'base.reportActionGroups', 'Action Groups', 2);
+		
+		//Visitors
+		$this->addNavigationSubGroup( 'Visitors', 'base.reportVisitors', 'Visitors', 3);
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportGeolocation', 'Geo-location', 1);
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportHosts', 'Domains', 2);								
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsRecency', 'Visitor Recency', 4);
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsAge', 'Visitor Age', 5);
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportBrowsers', 'Browser Types', 6);
+		$this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportOs', 'Operating Systems', 7);
+		
+		//Traffic
+		$this->addNavigationSubGroup('Traffic', 'base.reportTraffic', 'Traffic', 2);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportKeywords', 'Search Terms', 1);								
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportReferringSites', 'Referring Web Sites', 4);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportCampaigns', 'Campaigns', 5);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAds', 'Ad Performance', 6);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAdTypes', 'Ad Types', 7);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportCreativePerformance', 'Creative Performance', 8);
+		$this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAttributionHistory', 'Attribution History', 8);
+		
+		//Goals
+		$this->addNavigationSubGroup('Goals', 'base.reportGoals', 'Goals', 5);
+		$this->addNavigationLinkInSubGroup( 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);	
 				
 	}
 	

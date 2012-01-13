@@ -672,18 +672,20 @@
  				//list of capabilities that require access to the site
  				'capabilitiesThatRequireSiteAccess' => array(
  					'view_reports', 
+ 					'view_reports_ecommerce', 
  					'edit_sites', 
  				),
  				// role to capabilities configuration
 				'capabilities'						=> array(
 						'admin' => array(
 								'view_reports', 
+ 								'view_reports_ecommerce', 
 								'edit_settings', 
 								'edit_sites', 
 								'edit_users', 
 								'edit_modules'
 						),
-						'analyst' => array('view_reports'), 
+						'analyst' => array('view_reports', 'view_reports_ecommerce'), 
 						'viewer' => array('view_reports'), 
 						'everyone' => array()
 				),
