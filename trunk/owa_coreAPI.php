@@ -239,12 +239,12 @@ class owa_coreAPI {
 	 * check to see if the current user has a capability
 	 * always returns a bool
 	 */
-	public static function isCurrentUserCapable($capability) {
+	public static function isCurrentUserCapable($capability, $site_id = '') {
 		
 		$cu = owa_coreAPI::getCurrentUser();
 		owa_coreAPI::debug("Current User Role: ".$cu->getRole());
 		owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
-		$ret = $cu->isCapable($capability);
+		$ret = $cu->isCapable($capability, $site_id);
 		owa_coreAPI::debug("Is current User capable: ".$ret);
 		return $ret;
 	}
