@@ -62,7 +62,7 @@ class owa_user extends owa_entity {
 		$apiKey->setName('api_key');
 		$apiKey->setDataType(OWA_DTD_VARCHAR255);
 		$this->setProperty($apiKey);
-*/
+
 	}
 	
 	function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
