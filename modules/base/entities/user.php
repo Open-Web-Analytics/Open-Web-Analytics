@@ -62,12 +62,6 @@ class owa_user extends owa_entity {
 		$apiKey->setName('api_key');
 		$apiKey->setDataType(OWA_DTD_VARCHAR255);
 		$this->setProperty($apiKey);
-		
-		/*
-$allowedSite = new owa_dbColumn;
-		$allowedSite->setName('allowed_site');
-		$allowedSite->setDataType(OWA_DTD_VARCHAR255);
-		$this->setProperty($allowedSite);
 */
 	}
 	
