@@ -37,12 +37,6 @@ require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 class owa_usersChangePasswordController extends owa_controller {
 	
-	function owa_usersChangePasswordController($params) {
-		
-		return owa_usersChangePasswordController::__construct($params);
-		
-	}
-	
 	function __construct($params) {
 		
 		parent::__construct($params);
