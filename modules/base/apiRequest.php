@@ -51,7 +51,8 @@ class owa_apiRequestController extends owa_controller {
 			if (array_key_exists('required_capability', $do)) {
 			
 				/* CHECK USER FOR CAPABILITIES */
-				if ( ! owa_coreAPI::isCurrentUserCapable( $do['required_capability'] ) ) {
+				$site_id = $this->getCurrentSiteId();
+				if ( ! owa_coreAPI::isCurrentUserCapable( $do['required_capability'], $site_id ) ) {
 					// doesn't look like the currentuser has the necessary priviledges
 					owa_coreAPI::debug('User does not have capability required by this controller.');
 					// auth user
