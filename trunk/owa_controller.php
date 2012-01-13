@@ -581,7 +581,7 @@ class owa_controller extends owa_base {
 		foreach ($allSites as $siteRow) {
 			$site = owa_coreAPI::entityFactory('base.site');
 			$site->load($siteRow['id']);
-			if ($site->isUserAssigned($currentUser->user->get('id'))) {
+			if ($site->isUserAssigned($currentUser->user->get('id')) || $currentUser->user->isOWAAdmin()) {
 				$allowedSites[$siteRow['site_id']] = $site;
 			}
 		}

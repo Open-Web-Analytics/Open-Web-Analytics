@@ -102,7 +102,12 @@ class owa_reportView extends owa_view {
 		$this->setCss("base/css/owa.report.css");
 		$this->setCss('base/css/ui.jqgrid.css');
 		$this->setCss('base/css/chosen/chosen.css');
-
+		$additionalCss = $this->c->get('base','additionalCss');
+		if (is_array($additionalCss)) {
+			foreach ($additionalCss as $css) {
+				$this->setCss($css);
+			}			
+		}
 	}
 	
 	/**
