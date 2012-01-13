@@ -30,8 +30,10 @@
 
 
 class owa_serviceUser extends owa_base {
-
-	var $user;
+	/**
+	 * @var owa_user
+	 */
+	public $user;
 	var $capabilities = array();
 	var $preferences = array();
 	var $is_authenticated;
@@ -55,26 +57,24 @@ class owa_serviceUser extends owa_base {
 		$this->preferences = $this->getPreferences($this->user->get('user_id'));
 		return;
 	}
-		
-	function getCapabilities($role) {
-		
-		$caps = owa_coreAPI::getSetting('base', 'capabilities');
-		
+	/**
+	 * gets allowed capabilities for the user role
+	 * @param unknown_type $role
+	 */
+	function getCapabilities($role) {		
+		$caps = owa_coreAPI::getSetting('base', 'capabilities');		
 		if (array_key_exists($role, $caps)) {
 			return $caps[$role];
 		} else {
 			return array();
-		}
-		
+		}		
 	}
 	
-	function getPreferences($user_id) {
-		
+	function getPreferences($user_id) {		
 		return false;
 	}
 	
-	function getRole() {
-		
+	function getRole() {		
 		return $this->user->get('role');
 	}
 	
@@ -96,23 +96,33 @@ class owa_serviceUser extends owa_base {
 		return $this->user->get($name);
 	}
 	
-	function isCapable($cap) {
-		//owa_coreAPI::debug(print_r($this->user->getProperties(), true));
-		owa_coreAPI::debug("cap ".$cap);
-		// just in case there is no cap passed
-		if (!empty($cap)) {
-			//adding @ here as is_array throws warning that an empty array is not the right data type!
-			if (in_array($cap, $this->capabilities)) {
-				return true;
-			} else {
-				return false;
-			}
-				
-		} else {
-			
+	/**
+	 * Checks if user is capable to do something
+	 * @param string $cap
+	 * @param integer $currentSiteId optionel - only needed if cap is a  capabilities That Require SiteAccess. You need to pass site_id (not id) field
+	 */
+	function isCapable($cap, $siteId = null) {
+		owa_coreAPI::debug("check cap ".$cap);
+		//global admin can always everything:
+		if ($this->user->isOWAAdmin() || empty($cap)) {
 			return true;
 		}
+		if (!in_array($cap, $this->capabilities)) {
+			return false;	
+		}
 		
+		$capabilitiesThatRequireSiteAccess = owa_coreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
+		if (is_array($capabilitiesThatRequireSiteAccess) && in_array($cap, $capabilitiesThatRequireSiteAccess)) {
+			if (is_null($siteId)) {
+				throw new InvalidArgumentException('Capability "'.$cap.'" that should be checked requires a sited - but nothing given');
+			}
+			$site = owa_coreAPI::entityFactory('base.site');			
+			$site->load($siteId,'site_id');
+			if (!$site->isUserAssigned($this->user->get('id'))) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	// mark the user as authenticated and populate their capabilities	

@@ -11,7 +11,7 @@
 			<TH>User Name</TH>
 			<TD>
 			<?php if ( $edit === true ):?>
-			<input type="hidden" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user['user_id'];?>"><?php $this->out( $user['user_id'] )?>
+			<input type="hidden" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user['user_id'];?>"><span class="noedit"><?php $this->out( $user['user_id'] )?></span>
 			<?php else:?>
 			<input type="text" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php $this->out( @$user['user_id']);?>">
 			<?php endif;?>
@@ -21,7 +21,7 @@
 		<?php if ($edit === true):?>
 		<TR>
 			<TH>API Key</TH>
-			<TD><?php echo $user['api_key'];?></TD>
+			<TD><span class="noedit"><?php echo $user['api_key'];?></span></TD>
 		</TR>
 		<?php endif;?>
 		
@@ -40,6 +40,8 @@
 			</select>
 			</TD>
 		</TR>
+		
+		
 		<?php endif;?>
 		<TR>
 			<TH>E-mail Address</TH>

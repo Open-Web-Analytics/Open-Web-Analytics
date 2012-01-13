@@ -56,7 +56,7 @@ class owa_installManager extends owa_base {
 		if (empty($id_check)) {
 	
 			//Check to see if user name already exists
-			$u->getByColumn('user_id', 'admin');
+			$u->getByColumn('user_id', owa_user::ADMIN_USER_ID);
 	
 			$id = $u->get('id');
 	

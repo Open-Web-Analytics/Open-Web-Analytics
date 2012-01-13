@@ -28,7 +28,7 @@
  * @since		owa 1.0.0
  */
 
-class owa_module extends owa_base {
+abstract class owa_module extends owa_base {
 	
 	/**
 	 * Name of module
@@ -385,22 +385,48 @@ class owa_module extends owa_base {
 		
 	/**
 	 * Registers Group Link with a particular View
-	 * 
+	 * @DEPRICATED - use addNavigationSubGroup and addNavigationLinkInSubGroup
 	 */
 	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'viewer') {
-		
-		$link = array('ref' => $ref, 
-					'anchortext' => $anchortext, 
-					'order' => $order, 
-					'priviledge' => $priviledge);
 					
 		if (!empty($subgroup)):
-			$this->nav_links[$group][$subgroup]['subgroup'][] = $link;
+			$this->addNavigationLinkInSubGroup($subgroup,$ref, $anchortext, $order = 0, $priviledge = 'viewer',$group);
 		else:
-			$this->nav_links[$group][$anchortext] = $link;			
+			$this->addNavigationSubGroup($anchortext,$ref, $anchortext, $order = 0, $priviledge = 'viewer',$group);		
 		endif;
 
 		return;
+	}
+	
+	/**
+	 * Adds a new Subgroup in the navigation
+	 * 
+	 * @param string $subgroupName
+	 * @param string $ref
+	 * @param string $anchortext
+	 * @param integer $order
+	 * @param string $priviledge
+	 * @param string $groupName
+	 */
+	public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = owa_coreAPI::OWA_ROLE_VIEWER, $groupName = 'Reports') {		
+		$this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
+	}
+	
+	/**
+	 * Adds a new Link to an existing Subgroup in the navigation
+	 * 
+	 * @param string $subgroupName
+	 * @param string $ref
+	 * @param string $anchortext
+	 * @param integer $order
+	 * @param string $priviledge
+	 * @param string $groupName
+	 */
+	public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = owa_coreAPI::OWA_ROLE_VIEWER, $groupName = 'Reports') {	
+		if (!isset($this->nav_links[$groupName][$subgroupName]) || !is_array($this->nav_links[$groupName][$subgroupName])) {
+			throw new Exception('Subgroup "'.$subgroupName.'" is not existend - add Subgroup first with addNavigationSubGroup ');
+		}
+		$this->nav_links[$groupName][$subgroupName]['subgroup'][] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
 	}
 	
 	/**
@@ -881,6 +907,21 @@ class owa_module extends owa_base {
 	function registerBackgroundJobs() {
 		
 		return false;
+	}
+	
+	/**
+	 * Retuns internal struct array used for saving link infos
+	 * @param string $ref
+	 * @param string $anchortext
+	 * @param integer $order
+	 * @param string $priviledge
+	 * @return array
+	 */
+	private function getLinkStruct($ref,$anchortext,$order,$priviledge) {
+		return array('ref' => $ref, 
+					'anchortext' => $anchortext, 
+					'order' => $order, 
+					'priviledge' => $priviledge);
 	}
 	
 }

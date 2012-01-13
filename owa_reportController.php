@@ -39,12 +39,13 @@ class owa_reportController extends owa_adminController {
 	 * @param array $params
 	 * @return
 	 */
-	function __construct($params) {
-	
+	function __construct($params) {	
 		$this->setControllerType('report');
 		$this->_setCapability('view_reports');
 		return parent::__construct($params);
 	}
+	
+	
 	
 	/**
 	 * pre action
@@ -52,19 +53,8 @@ class owa_reportController extends owa_adminController {
 	 */
 	function pre() {
 		
-		// site lists
-		$sites = owa_coreAPI::getSitesList();
-		$this->set('sites', $sites);
-		// set default siteId if none exists on request
-		$site_id = $this->getParam('siteId');
-		if ( ! $site_id ) {
-			$site_id = $this->getParam('site_id'); 
-		}
-		if ( ! $site_id ) {
-			$site_id = $sites[0]['site_id']; 
-		}
-		$this->setParam('siteId', $site_id);
-		
+		$this->set('sites', $this->getAllowedSitesForCurrentUserAndControllerCap());
+		$this->setParam('siteId', $this->getCurrentSiteId());
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
 				

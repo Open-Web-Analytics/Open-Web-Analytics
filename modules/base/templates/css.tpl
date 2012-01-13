@@ -279,6 +279,6 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 	font-weight: normal;
 }
 
-
+.noedit {color: #999;}
   
 </style>

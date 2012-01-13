@@ -33,7 +33,7 @@
  	/**
  	 * Configuration Entity
  	 * 
- 	 * @var object configuration entity
+ 	 * @var owa_configuration
  	 */
  	var $config;
  	
@@ -59,7 +59,8 @@
  		// create configuration object
  		$this->config = owa_coreAPI::entityFactory('base.configuration');
  		// load the default settings
- 		$this->getDefaultConfig();
+ 		$this->config->set('settings', $this->getDefaultSettingsArray());
+ 		
  		// include/load config file
  		$this->loadConfigFile();
  		// apply config constants
@@ -87,7 +88,10 @@
  			
  	}
  	
- 	function isConfigFilePresent() {
+ 	/**
+ 	 * @return boolean
+ 	 */
+ 	public function isConfigFilePresent() {
  		
 		$file = OWA_DIR.'owa-config.php';
 		$oldfile = OWA_BASE_DIR.'/conf/owa-config.php';
@@ -101,7 +105,7 @@
 		}
  	}
  	
- 	function loadConfigFile() {
+ 	private function loadConfigFile() {
  	
  		/* LOAD CONFIG FILE */
 		$file = OWA_DIR.'owa-config.php';
@@ -225,8 +229,12 @@
 		}
 		
  	}
- 	
- 	function applyModuleOverrides($module, $config) {
+ 	/**
+ 	 * Ovverrides settings - used in some controllers (@see owa_caller ) 
+ 	 * @param string $module
+ 	 * @param array $config
+ 	 */
+ 	public function applyModuleOverrides($module, $config) {
  		
  		// merge default config with overrides 
  		
@@ -429,16 +437,15 @@
  	
  	/**
  	 * Adds Setting value to be configuration and persistant data store
+ 	 * same as $this->set
  	 * 
  	 * @param string $module the name of the module
  	 * @param string $key the configuration key
  	 * @param string $value the configuration value
  	 * @depricated 
  	 */
- 	function setSetting($module, $key, $value) {
- 	
- 		return $this->set($module, $key, $value);
- 	
+ 	function setSetting($module, $key, $value) { 	
+ 		return $this->set($module, $key, $value); 	
  	}
  	
  	/**
@@ -449,49 +456,45 @@
  	 * @param string $value the configuration value
  	 * @return 
  	 */
- 	function persistSetting($module, $key, $value) {
+ 	public function persistSetting($module, $key, $value) {
  	
  		$this->set($module, $key, $value);
 	 	$this->db_settings[$module][$key] = $value;
 	 	$this->is_dirty = true;
  	}
  	
- 	function defaultSetting($module, $key) {
- 		$defaults = $this->getDefaultSettingsArray();
- 		
- 		if ( array_key_exists($module, $defaults) && array_key_exists($key, $defaults[$module]) ) {
- 			$this->set($module, $key, $defaults[$module][$key]);
- 			
- 			if ( array_key_exists($module, $this->db_settings) && array_key_exists($key, $this->db_settings[$module]) ) {
- 				unset($this->db_settings[$module][$key]);
-			 	$this->is_dirty = true;
- 			}
- 		}
- 	}
-
- 	
- 	
  	/**
- 	 * Adds Setting value to be configuration but DOES NOT add to persistant data store
+ 	 * SEEMS unused - To be removed later
+ 	 *
  	 * 
- 	 * @param string $module the name of the module
- 	 * @param string $key the configuration key
- 	 * @param string $value the configuration value
- 	 * @return 
- 	 */
- 	function setSettingTemporary($module, $key, $value) {
- 	
- 		$this->set($module, $key, $value);
+	 	function defaultSetting($module, $key) {
+	 		$defaults = $this->getDefaultSettingsArray();
+	 		
+	 		if ( array_key_exists($module, $defaults) && array_key_exists($key, $defaults[$module]) ) {
+	 			$this->set($module, $key, $defaults[$module][$key]);
+	 			
+	 			if ( array_key_exists($module, $this->db_settings) && array_key_exists($key, $this->db_settings[$module]) ) {
+	 				unset($this->db_settings[$module][$key]);
+				 	$this->is_dirty = true;
+	 			}
+	 		}
+	 	}
+ 
+	 	//Adds Setting value to be configuration but DOES NOT add to persistant data store
+	 	function setSettingTemporary($module, $key, $value) {
 	 	
-	 	return;
- 	
- 	}
+	 		$this->set($module, $key, $value);
+		 	
+		 	return;
+	 	
+	 	}
+	*/
  	
  	/**
  	 * Replaces all values of a particular module's configuration
  	 * @todo: search to see where else this is used. If unused then make it for use in persist only.
  	 */
- 	function replace($module, $values, $persist = false) {
+ 	private function replace($module, $values, $persist = false) {
  		
  		if ($persist) {
  			$this->db_settings[$module] = $values; 
@@ -510,8 +513,7 @@
  	 * Needed for backwards compatability with older classes
  	 * 
  	 */
- 	function &get_settings($id = 1) {
- 		
+ 	function &get_settings($id = 1) { 		
  		
  		static $config2;
  		
@@ -524,14 +526,11 @@
  		
  	}
  	
- 	function getDefaultConfig() {
- 		
- 			$config = $this->getDefaultSettingsArray();
-			// set default values
-			$this->config->set('settings', $config); 		
- 	}
- 	
- 	function getDefaultSettingsArray() {
+
+ 	/**
+ 	 * @return array
+ 	 */
+ 	private function getDefaultSettingsArray() {
  	
  		return array(
  			'base' => array(
@@ -670,6 +669,12 @@
 						'ad_type'		=> 'owa_ad_type'),
 				'trafficAttributionMode'			=> 'direct',
 				'campaignAttributionWindow'			=> 60,
+ 				//list of capabilities that require access to the site
+ 				'capabilitiesThatRequireSiteAccess' => array(
+ 					'view_reports', 
+ 					'edit_sites', 
+ 				),
+ 				// role to capabilities configuration
 				'capabilities'						=> array(
 						'admin' => array(
 								'view_reports', 
@@ -701,7 +706,11 @@
  	
  	}
  	
- 	function setupPaths() {
+ 	/**
+ 	 * sets the basic path settings in the config object like "public_path" / "images_url" ...
+ 	 * @return void
+ 	 */
+ 	private function setupPaths() {
  		
  		//build base url
  		$base_url = '';
@@ -759,7 +768,12 @@
 		}
  	}
  	
- 	function createConfigFile($config_values) {
+ 	/**
+ 	 * Writes the config file based on the default config file - but with the given database credentials
+ 	 * 
+ 	 * @param array $config_values with the database setting keys
+ 	 */
+ 	public function createConfigFile($config_values) {
  		
  		if (file_exists(OWA_DIR.'owa-config.php')) {
  			owa_coreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".OWA_DIR.'owa-config.php');
@@ -768,13 +782,14 @@
  		}
  		
  		if (!file_exists(OWA_DIR.'owa-config-dist.php')) {
- 			owa_coreAPI::error("We can't find the configuration file template. Are you sure you installed OWA's files correctly? Exiting.");
- 			exit;
- 		} else {
- 			$configFileTemplate = file(OWA_DIR . 'owa-config-dist.php');
- 			owa_coreAPI::debug('found sample config file.');
- 		}
+ 			$errorMsg = "We can't find the configuration file template. Are you sure you installed OWA's files correctly? Exiting.";
+ 			owa_coreAPI::error($errorMsg);
+ 			throw new Exception($errorMsg);
+ 		} 
  		
+ 		$configFileTemplate = file(OWA_DIR . 'owa-config-dist.php');
+ 		owa_coreAPI::debug('found sample config file.');
+ 	
  		$handle = fopen(OWA_DIR . 'owa-config.php', 'w');
 
 		foreach ($configFileTemplate as $line_num => $line) {
@@ -824,7 +839,12 @@
 		}			
 	}
 	
-	function setCookieDomain ($domain = '') {
+	/**
+	 * sets and checks the cookie domain setting
+	 * 
+	 * @param unknown_type $domain
+	 */
+	public function setCookieDomain ($domain = '') {
 		
 		$explicit = false;
 		

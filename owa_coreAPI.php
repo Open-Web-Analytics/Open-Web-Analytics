@@ -32,6 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 class owa_coreAPI {
 	
+	const OWA_ROLE_VIEWER = 'viewer';
 	
 	// @depricated
 	// @todo remove
@@ -74,7 +75,9 @@ class owa_coreAPI {
 	 	return true;
 
 	}
-	
+	/**
+	 * @return owa_db
+	 */
 	public static function dbSingleton() {
 		
 		static $db;
@@ -109,8 +112,11 @@ class owa_coreAPI {
 			return $db;
 		}
 	}
-		
-	public static function &configSingleton($params = array()) {
+	
+	/**
+	 * @return owa_settings
+	 */
+	public static function configSingleton() {
 		
 		static $config;
 		
@@ -222,8 +228,10 @@ class owa_coreAPI {
 		return array_keys($caps);
 	}
 	
-	public static function &getCurrentUser() {
-		
+	/**
+	 * @return owa_serviceUser
+	 */
+	public static function getCurrentUser() {		
 		$s = owa_coreAPI::serviceSingleton();
 		return $s->getCurrentUser();
 	}
@@ -247,8 +255,10 @@ class owa_coreAPI {
 		$cu = owa_coreAPI::getCurrentUser();
 		return $cu->isAuthenticated();
 	}
-	
-	public static function &serviceSingleton() {
+	/**
+	 * @return owa_service
+	 */
+	public static function serviceSingleton() {
 		
 		static $s;
 		
@@ -329,7 +339,6 @@ class owa_coreAPI {
 	}
 	
 	public static function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
-		
 		list($module, $file) = explode(".", $modulefile);
 		$class = $class_ns.$file.$class_suffix;
 		//print $class;
@@ -707,9 +716,10 @@ class owa_coreAPI {
 	public static function getActiveModules() {
 	
 		$c = owa_coreAPI::configSingleton();
-		$config = $c->config->get('settings');
 		
-		//print_r($config);
+		$config = $c->config->get('settings');
+
+
 		$active_modules = array();
 		
 		foreach ($config as $k => $module) {
@@ -742,12 +752,12 @@ class owa_coreAPI {
 		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
 		
 		if (!$controller || !method_exists($controller, 'doAction')) {
+			
 			owa_coreAPI::debug("No controller is associated with $action.");
 			return;
 		}
 		
-		$data = $controller->doAction();
-						
+		$data = $controller->doAction();				
 		// Display view if controller calls for one.
 		if (!empty($data['view']) || !empty($data['action'])):
 		
@@ -1154,20 +1164,19 @@ class owa_coreAPI {
 		return $service->isUpdateRequired();
 	}
 	
-	public static function getSitesList() {
-		
+	/**
+	 * @return array
+	 */
+	public static function getSitesList() {		
 		$db = owa_coreAPI::dbSingleton();
 		$db->selectFrom('owa_site');
 		$db->selectColumn('*');
 		$sites = $db->getAllRows();
 		
-		if ( ! $sites ) {
-			
+		if ( ! $sites ) {			
 			$sites = array();
-		}
-		
-		return $sites;
-		
+		}		
+		return $sites;		
 	}
 	
 	public static function profile($that = '', $function = '', $line = '', $msg = '') {

@@ -42,10 +42,10 @@ class owa_baseModule extends owa_module {
 		$this->display_name = 'Open Web Analytics';
 		$this->group = 'Base';
 		$this->author = 'Peter Adams';
-		$this->version = 7;
+		$this->version = 8;
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 7;
+		$this->required_schema_version = 8;
 		
 		return parent::__construct();
 	}

@@ -3,8 +3,8 @@
 	<div style="float:left;">
 		<span>Web Site:</span>
 		<SELECT name="owa_reportSiteFilterSelect" id="owa_reportSiteFilterSelect" style="width:auto;height:auto;">
-		<?php foreach ($sites as $site => $value):?>
-			<OPTION VALUE="<?php $this->out($value['site_id'], false);?>" <?php if ($params['siteId'] === $value['site_id']):?>selected="selected" selected <?php endif; ?>><?php $this->out( $value['name'] );?></OPTION>
+		<?php  foreach ($sites as $site ):?>
+			<OPTION VALUE="<?php $this->out($site->get('site_id'), false);?>" <?php if ($params['siteId'] === $site->get('site_id')):?>selected="selected" selected <?php endif; ?>><?php $this->out( $site->get('name') );?></OPTION>
 		<?php endforeach;?>
 		</SELECT>
 	</div>

@@ -23,7 +23,7 @@ class owa_loginController extends owa_controller {
 		
 	function action() {
 		
-		$auth = &owa_auth::get_instance();
+		$auth = owa_auth::get_instance();
 		$status = $auth->authenticateUser();
 		$go = $this->getParam('go');
 		// if authentication is successfull

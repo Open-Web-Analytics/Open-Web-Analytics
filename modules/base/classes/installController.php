@@ -78,7 +78,7 @@ class owa_installController extends owa_controller {
 		if (empty($id_check)) {
 	
 			//Check to see if user name already exists
-			$u->getByColumn('user_id', 'admin');
+			$u->getByColumn('user_id', owa_user::ADMIN_USER_ID);
 	
 			$id = $u->get('id');
 	
@@ -89,7 +89,7 @@ class owa_installController extends owa_controller {
 				if ( ! $password ) {
 					$password = $u->generateRandomPassword();
 				}
-				$ret = $u->createNewUser('admin', 'admin', $password, $email_address, $real_name);
+				$ret = $u->createNewUser('admin', owa_user::ADMIN_USER_ID, $password, $email_address, $real_name);
 				owa_coreAPI::debug("Admin user created successfully.");
 				return $password;
 				

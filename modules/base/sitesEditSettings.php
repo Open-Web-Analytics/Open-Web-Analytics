@@ -40,7 +40,7 @@ class owa_sitesEditSettingsController extends owa_adminController {
 		
 		// validations
 		
-		// check that user_id is present
+		// check that siteId is present
 		$v1 = owa_coreAPI::validationFactory('required');
 		$v1->setValues($this->getParam('siteId'));
 		$this->setValidation('siteId', $v1);
@@ -91,7 +91,7 @@ class owa_sitesEditSettingsController extends owa_adminController {
 		$site_id = $this->getParam( 'siteId' );
 		$site = owa_coreAPI::entityFactory( 'base.site' );
 		$site->load( $site->generateId( $site_id ) );
-		$this->set('site', $site);
+		$this->set('site', $site->_getProperties());
 		$this->set('config', $this->params);
 	}
 }
