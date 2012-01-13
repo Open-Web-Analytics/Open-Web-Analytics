@@ -41,18 +41,6 @@ class owa_base_008_update extends owa_update {
 			return false;
 		}
 		
-		$ret = $site->addColumn('site_id');
-		if ($ret === false ) {
-			$this->e->notice('Add column site_id failed');
-			return false;
-		}
-		
-		$ret = $site->addColumn('user_id');
-		if ($ret === false ) {
-			$this->e->notice('Add column site_id failed');
-			return false;
-		}
-		
 		return true;
 	}
 	
