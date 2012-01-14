@@ -109,11 +109,11 @@ class owa_serviceUser extends owa_base {
 		owa_coreAPI::debug("check cap ".$cap);
 		//global admin can always everything:
 		if ($this->user->isOWAAdmin() || empty($cap)) {
-			owa_coreAPI::debug('no capability passed, therefor user is capable.');
+			owa_coreAPI::debug('no capability passed or user is owaadmin, therefor user is capable.');
 			return true;
 		}
 		if (!in_array($cap, $this->capabilities)) {
-			owa_coreAPI::debug('no capability passed does not exist.');
+			owa_coreAPI::debug('capability passed does not exist. user is not capable');
 			return false;	
 		}
 		
@@ -134,10 +134,8 @@ class owa_serviceUser extends owa_base {
 	}
 	
 	// mark the user as authenticated and populate their capabilities	
-	function setAuthStatus($bool) {
-		
-		$this->is_authenticated = true;
-		
+	function setAuthStatus($bool) {		
+		$this->is_authenticated = true;		
 		return;
 	}	
 	
