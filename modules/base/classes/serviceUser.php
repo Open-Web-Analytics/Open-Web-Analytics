@@ -117,8 +117,6 @@ class owa_serviceUser extends owa_base {
 			return false;	
 		}
 		
-		$this->load();
-		
 		$capabilitiesThatRequireSiteAccess = owa_coreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
 		if (is_array($capabilitiesThatRequireSiteAccess) && in_array($cap, $capabilitiesThatRequireSiteAccess)) {
 			if (is_null($siteId)) {
