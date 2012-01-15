@@ -181,6 +181,7 @@ class owa_controller extends owa_base {
 			}
 		}				
 		
+		
 		/* CHECK USER FOR CAPABILITIES */
 		if ( $this->getRequiredCapability() ) {
 			
@@ -256,10 +257,11 @@ class owa_controller extends owa_base {
 			}
 		}
 		
-		
 		/* PERFORM PRE ACTION */
 		// often used by abstract descendant controllers to set various things
 		$this->pre();
+		
+		
 		
 		/* PERFORM MAIN ACTION */
 		// need to check ret for backwards compatability with older 
@@ -407,8 +409,7 @@ class owa_controller extends owa_base {
 	}
 	
 	function setPeriod() {
-	
-	// set period 
+		// set period 
 	
 		$period = $this->makeTimePeriod($this->getParam('period'), $this->params);
 		
@@ -578,7 +579,6 @@ class owa_controller extends owa_base {
 	 * @return array
 	 */
 	protected function getSitesAllowedForCurrentUser() {
-		
 		$currentUser = owa_coreAPI::getCurrentUser();
 		return $currentUser->getAssignedSites();
 	}

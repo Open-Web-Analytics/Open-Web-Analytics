@@ -80,9 +80,7 @@ class owa_service extends owa_base {
 			$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
 			$this->current_user->setRole('everyone');
 			// the 'log_users' config directive relies on this being populated
-			$this->current_user->setUserData('user_id', $this->request->state->get('u'));
-			//owa_coreAPI::debug("user: ". print_r($this->request->state->stores, true) );
-			
+			$this->current_user->load($this->request->state->get('u'));
 			// load geolocation obj.
 			$this->geolocation = owa_geolocation::getInstance();			
 		}
@@ -249,6 +247,9 @@ class owa_service extends owa_base {
 	 * @return owa_serviceUser
 	 */
 	function getCurrentUser() {		
+		if (!$this->isInit()) {
+			throw new Exception('Current User Object could only be get if framework is initialized');
+		}
 		return $this->current_user;
 	}
 	
