@@ -38,26 +38,36 @@ class owa_serviceUser extends owa_base {
 	var $preferences = array();
 	var $is_authenticated;
 	public $assignedSites = array();
-	private $isLoaded = false;
+	private $isInitialized = false;
 	
 	function __construct() {
-		
 		//parent::__construct();
 		$this->user = owa_coreApi::entityFactory('base.user');
 	}
 	
 	function load($user_id) {
-		
-		if ( ! $this->isUserLoaded() ) {
-			$this->user->load($user_id, 'user_id');
-			$this->loadRelatedUserData();
-			$this->loadAssignedSites();
-			$this->isLoaded = true;
+		if (empty($user_id)) {
+			throw new Exception('No valid userid given!');
 		}
+		$this->user->load($user_id, 'user_id');			
+		$this->isInitialized = false;
+		$this->initInternalProperties();
 	}
 	
-	function loadRelatedUserData() {
-		
+	function loadNewUserByObject($obj) {
+		$this->user = $obj;
+		$this->isInitialized = false;
+		$this->initInternalProperties();
+		return;
+	}
+	
+	private function initInternalProperties() {
+		$this->loadRelatedUserData();
+		$this->loadAssignedSites();
+		$this->isInitialized = true;
+	}
+	
+	function loadRelatedUserData() {		
 		$this->capabilities = $this->getCapabilities($this->user->get('role'));
 		$this->preferences = $this->getPreferences($this->user->get('user_id'));
 		
@@ -137,30 +147,15 @@ class owa_serviceUser extends owa_base {
 		return;
 	}	
 	
-	function isAuthenticated() {
-		
+	function isAuthenticated() {		
 		return $this->is_authenticated;
 	}
 	
-	function loadNewUserByObject($obj) {
-		$this->user = $obj;
-		$this->isLoaded = true;
-		//$this->current_user->loadNewUserByObject($obj);
-		$this->loadRelatedUserData();
-		return;
-	}
 	
-	function loadNewUserById($id) {
-	
-		// get a user object
-		// load it
-		// $this->loadNewUserByObject($obj);
-		return;
-		
-	}
-	
+	/**
+	 * Loads internal $this->assignedSites member
+	 */
 	private function loadAssignedSites() {
-				
 		if ( ! $this->user->get( 'id' ) ) {
 		 	throw new Exception('no user data loaded!');
 		}
@@ -196,21 +191,17 @@ class owa_serviceUser extends owa_base {
 		$this->assignedSites = $result;
 	}
 	
-	public function getAssignedSites() {
-		
-		if ( ! $this->isUserLoaded() ) {
+	public function getAssignedSites() {				
+		if ( !$this->isInitialized) {
+			throw new Exception('serviceUser not loaded and initialised');
 			// can always count on user_id being set
-			$this->load($this->user->get('user_id') );
+			//$this->load($this->user->get('user_id') );
 		}
 		
 		return $this->assignedSites;
 	}
 	
-	public function isUserLoaded() {
-		
-		return $this->isLoaded;
-	}
-	
+
 	public function isOWAAdmin() {
 		
 		return $this->user->isOWAAdmin();
