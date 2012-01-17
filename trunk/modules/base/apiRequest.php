@@ -38,37 +38,74 @@ class owa_apiRequestController extends owa_controller {
 		return parent::__construct($params);
 	}
 	
-	function action() {
-		
+	function getRequiredCapability() {
+	
 		$s = owa_coreAPI::serviceSingleton();
 			// lookup method class
 		$do = $s->getApiMethodClass($this->getParam('do'));
 
 		if ($do) {
-			// check credentials
-			if (array_key_exists('required_capability', $do)) {
-				/* PERFORM AUTHENTICATION */
-				$auth = owa_auth::get_instance();
-				$status = $auth->authenticateUser();
-				// if auth was not successful then return login view.
-				if ($status['auth_status'] != true) {
-					return 'This method requires authentication.';
-				}
-				
-				/* CHECK USER FOR CAPABILITIES */
-				$site_id = $this->getCurrentSiteId();
-				if ( ! owa_coreAPI::isCurrentUserCapable( $do['required_capability'], $site_id ) ) {
-					// doesn't look like the currentuser has the necessary priviledges
-					owa_coreAPI::debug('User does not have capability required by this controller.');
-					return 'Your user does not have privileges to access this method.';	
-				}
-			}
 		
-			//perform
-			$map = owa_coreAPI::getRequest()->getAllOwaParams();
-			
-			echo owa_coreAPI::executeApiCommand($map);		
+			// check for capability
+			if (array_key_exists('required_capability', $do)) {
+				return $do['required_capability'];
+			}
 		}
+	}
+	
+	function doAction() {
+		
+					
+		/* CHECK USER FOR CAPABILITIES */
+		if ( ! $this->checkCapabilityAndAuthenticateUser( $this->getRequiredCapability() ) ) {
+		
+			return $this->data;
+		}
+		
+		/* PERFORM PRE ACTION */
+		// often used by abstract descendant controllers to set various things
+		$this->pre();
+		/* PERFORM MAIN ACTION */
+	   	return $this->finishActionCall($this->action());			
+	}
+	
+	function action() {
+		
+		$map = owa_coreAPI::getRequest()->getAllOwaParams();
+		echo owa_coreAPI::executeApiCommand($map);
+	}
+	
+	function notAuthenticatedAction() {
+		
+		$this->setErrorMsg('Authentication failed.');
+		$this->setView('base.apiError');
+	}
+	
+	function authenticatedButNotCapableAction($additionalMessage = '') {
+		$this->setErrorMsg('Thus user is not capable to perform this api method.');
+		$this->setView('base.apiError');
+	}
+}
+
+/**
+ * API Error View
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2012 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version		$Revision$	      
+ * @since		owa 1.5.0
+ */
+
+class owa_apiErrorView extends owa_view {
+
+	function render() {
+		
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('apiError.php');
+		$this->body->set( 'error_msg', $this->get( 'error_msg' ) );
 	}
 }
 
