@@ -1219,7 +1219,7 @@ class owa_coreAPI {
 			require_once(OWA_DIR.'/eventQueue.php');
 		}
 
-		$eq = &eventQueue::get_instance();
+		$eq = eventQueue::get_instance();
 		return $eq;
 	}
 	
