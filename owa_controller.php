@@ -517,6 +517,11 @@ class owa_controller extends owa_base {
 		$this->data['status_message'] = $msg;
 	}
 	
+	function setErrorMsg( $msg ) {
+		
+		$this->set( 'error_msg', $msg );
+	}
+	
 	function authenticatedButNotCapableAction($additionalMessage = '') {		
 		if ( empty($additionalMessage) ) {
 			$siteIdMsg = $this->getCurrentSiteId();
