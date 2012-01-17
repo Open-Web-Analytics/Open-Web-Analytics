@@ -236,7 +236,7 @@ class owa_controller extends owa_base {
 	/**
 	 * Checks if the current controller requires privilegses and authenticates the user and checks for capabilities
 	 * If the user is not allowed the correct error view is also initialized and the calling method should return
-	 * 
+	 * @uses ->getRequiredCapability and ->getCurrentSiteId
 	 * @param string $capability
 	 * @return boolean
 	 */
