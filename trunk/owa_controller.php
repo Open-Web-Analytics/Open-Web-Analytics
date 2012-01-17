@@ -159,63 +159,22 @@ class owa_controller extends owa_base {
 		}
 		
 		
-		/* Check validity of nonce */
-		 
+		/* Check validity of nonce */		 
 		if ($this->is_nonce_required == true) {
 			$nonce = $this->getParam('nonce');
 			
-			if ($nonce) {
-				$is_nonce_valid = $this->verifyNonce($nonce);
-			}
-			
-			if (!$nonce || !$is_nonce_valid) {
+			if (!$nonce || !$this->verifyNonce($nonce)) {
 				$this->e->debug('Nonce is not valid.');
-				$ret = $this->notAuthenticatedAction();
-				if (!empty($ret)) {
-					$this->post();
-					return $ret;
-				} else {
-					$this->post();
-					return $this->data;
-				}
+				return $this->finishActionCall($this->notAuthenticatedAction());
 			}
 		}				
 		
 		
 		/* CHECK USER FOR CAPABILITIES */
-		if ( $this->getRequiredCapability() ) {
-			
-			$currentUser = owa_coreAPI::getCurrentUser();
-			if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {
-			
-				owa_coreAPI::debug('User does not have capability required by this controller.');
-				
-				// check to see if the user has already been authenticated 
-				if (owa_coreAPI::isCurrentUserAuthenticated()) {
-					$this->authenticatedButNotCapableAction('User does not have capability required by this controller.');
-					return $this->data;
-				}
-				
-				/* PERFORM AUTHENTICATION */	
-				$auth = owa_auth::get_instance();
-				$status = $auth->authenticateUser();
-				// if auth was not successful then return login view.
-				if ($status['auth_status'] != true) {
-					$this->notAuthenticatedAction();
-					return $this->data;
-				} else {
-					//check for needed capability again now that they are authenticated
-					if ( !$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId()) ) {
-						$this->authenticatedButNotCapableAction();
-						//needed?
-						$this->set('go', urlencode(owa_lib::get_current_url()));
-						// needed? -- set auth status for downstream views
-						$this->set('auth_status', true);
-						return $this->data;	
-					}
-				}
-			}
+		if (!$this->checkCapabilityAndAuthenticateUser($this->getRequiredCapability())) {
+			return $this->data;
 		}
+
 		// TODO: These sets need to be removed and added to pre(), action() or post() methods 
 		// in various concrete controller classes as they screw up things when 
 		// redirecting from one controller to another.
@@ -246,36 +205,66 @@ class owa_controller extends owa_base {
 				//print_r($this->v);
 				// if errors, do the errorAction instead of the normal action
 				$this->set('validation_errors', $this->getValidationErrorMsgs());
-				$ret = $this->errorAction();
-				if (!empty($ret)) {
-					$this->post();
-					return $ret;
-				} else {
-					$this->post();
-					return $this->data;
-				}
+				return $this->finishActionCall($this->errorAction());
 			}
 		}
 		
 		/* PERFORM PRE ACTION */
 		// often used by abstract descendant controllers to set various things
 		$this->pre();
-		
-		
-		
 		/* PERFORM MAIN ACTION */
+	   	return $this->finishActionCall($this->action());	
+	}
+	
+	/**
+	 * Checks for the action result, calls the post method and returns correct result
+	 * Usage return $this->finishActionCall($this->action()))
+	 * @return mixed
+	 */
+	protected function finishActionCall($actionResult) {
 		// need to check ret for backwards compatability with older 
 		// controllers that donot use $this->data
-		$ret = $this->action();
-
-		if (!empty($ret)) {
+		if (!empty($actionResult)) {
 			$this->post();
-			return $ret;
+			return $actionResult;
 		} else {
 			$this->post();
 			return $this->data;
+		}	
+	}
+	
+	/**
+	 * Checks if the current controller requires privilegses and authenticates the user and checks for capabilities
+	 * If the user is not allowed the correct error view is also initialized and the calling method should return
+	 * 
+	 * @param string $capability
+	 * @return boolean
+	 */
+	protected function checkCapabilityAndAuthenticateUser($capability) {
+		if ( !empty($capability) ) {
+			/* PERFORM AUTHENTICATION */	
+			$auth = owa_auth::get_instance();
+			if (!owa_coreAPI::isCurrentUserAuthenticated()) {
+				$status = $auth->authenticateUser();
+				if ($status['auth_status'] != true) {
+					$this->notAuthenticatedAction();
+					return false;
+				} 
+			}
+			
+			$currentUser = owa_coreAPI::getCurrentUser();
+			if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {			
+				owa_coreAPI::debug('User does not have capability required by this controller.');
+				$this->authenticatedButNotCapableAction();
+				//needed?
+				//$this->set('go', urlencode(owa_lib::get_current_url()));
+				// needed? -- set auth status for downstream views
+				//$this->set('auth_status', true);
+				return false;
+			}
+			
 		}
-		
+		return true;
 	}
 	
 	function logEvent($event_type, $properties) {
@@ -284,7 +273,7 @@ class owa_controller extends owa_base {
 			require_once(OWA_BASE_DIR.'/eventQueue.php');
 		endif;
 		
-		$eq = &eventQueue::get_instance();
+		$eq = eventQueue::get_instance();
 		
 		if (!is_a($properties, 'owa_event')) {
 	
