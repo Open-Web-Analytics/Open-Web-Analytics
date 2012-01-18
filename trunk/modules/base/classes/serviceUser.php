@@ -193,9 +193,9 @@ class owa_serviceUser extends owa_base {
 	
 	public function getAssignedSites() {				
 		if ( !$this->isInitialized) {
-			throw new Exception('serviceUser not loaded and initialised');
+			//throw new Exception('serviceUser not loaded and initialized');
 			// can always count on user_id being set
-			//$this->load($this->user->get('user_id') );
+			$this->load($this->user->get('user_id') );
 		}
 		
 		return $this->assignedSites;
