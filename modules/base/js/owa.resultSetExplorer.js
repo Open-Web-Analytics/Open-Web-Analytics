@@ -315,7 +315,7 @@ OWA.resultSetExplorer.prototype = {
 	},
 	
 	load : function(url) {
-		
+		this.showLoader();
 		url = url || this.loadUrl;
 		this.getResultSet(url);
 	},
@@ -465,11 +465,19 @@ OWA.resultSetExplorer.prototype = {
 		this[func[0]].apply(this, args);
 	},
 	
+	showLoader: function() {
+		jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'/modules/base/i/loader.gif"></div>');
+	},
+	
+	hideLoader: function() {
+		jQuery('#'+this.dom_id).find('.loader').remove();
+	},
+	
 	// fetch the result set from the server
 	getResultSet : function(url) {
 		
 		var that = this;
-		jQuery.getJSON(url, '', function (data) {that.loader(data);});
+		jQuery.getJSON(url, '', function (data) {that.hideLoader(); that.loader(data); });
 	},
 	
 	getNewResultSet : function( url ) {
