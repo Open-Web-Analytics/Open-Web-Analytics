@@ -16,7 +16,7 @@
 						</TD>
 						<TD valign="top" class="owa_userLabel" style="width:auto;">
 							
-							<span class="inline_h2">
+							<span class="inline_h4">
 							
 							<?php
 							if ( ! empty( $row[ 'session_user_name' ] ) ) {
