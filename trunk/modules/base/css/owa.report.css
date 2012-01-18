@@ -739,3 +739,13 @@ li.constraintRow {
 	
 	border: 1
 }
+
+.owa img.loading { 
+	margin: 5px 5px 5px 30px
+}
+.owa #trend-chart {
+	min-height: 125px
+}
+.owa #trend-metrics {
+	min-height: 70px
+}
