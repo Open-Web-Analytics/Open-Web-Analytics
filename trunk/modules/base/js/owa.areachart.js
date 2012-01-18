@@ -16,7 +16,9 @@ OWA.areaChart = function( options ) {
 		showDots: true,
 		showLegend: true,
 		lineWidth: 4,
-		autoResizeCharts: true
+		autoResizeCharts: true,
+		fillColor: "rgba(202,225,255, 0.6)",
+		colors: ["#1874CD", "#dba255", "#919733"],
 	};
 	
 	// merge passed options with defaults.
@@ -185,10 +187,10 @@ OWA.areaChart.prototype = {
 				grid: {show: this.options.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
 				series: {
 					points: { show: this.options.showDots, fill: this.options.showDots},
-					lines: { show: true, fill: true, fillColor: "rgba(202,225,255, 0.6)", lineWidth: this.options.lineWidth}
+					lines: { show: true, fill: true, fillColor: this.options.fillColor, lineWidth: this.options.lineWidth}
 					
 				},
-				colors: ["#1874CD", "#dba255", "#919733"],
+				colors: this.options.colors,
 				legend: {
 					position: 'ne',
 					margin: [0,-10],
