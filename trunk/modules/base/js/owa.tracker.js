@@ -248,7 +248,6 @@ OWA.tracker.prototype = {
 	isNewSessionFlag: false,
 	// flag for whether or not traffic has been attributed
 	isTrafficAttributed: false,
-	cookie_names: ['owa_s', 'owa_v', 'owa_c'],
 	linkedStateSet: false,
 	hashCookiesToDomain: true,
 	organicSearchEngines: [
@@ -348,10 +347,10 @@ OWA.tracker.prototype = {
 		
 		if ( this.linkedStateSet != true ) {
 		
-			var ls = this.getUrlParam('owa_state');
+			var ls = this.getUrlParam(OWA.getSetting('ns') + 'state');
 			
 			if ( ! ls ) {
-				ls = this.getAnchorParam('owa_state');
+				ls = this.getAnchorParam(OWA.getSetting('ns') + 'state');
 			}
 			
 			if ( ls ) {
@@ -412,7 +411,7 @@ OWA.tracker.prototype = {
 			if ( ! anchor ) {
 
 				OWA.debug('shared state: %s', state);
-				document.location.href = url + '#owa_state.' + state ;
+				document.location.href = url + '#' + OWA.getSetting('ns')+ 'state.' + state ;
 			
 			// if not then we need ot insert it into GET params
 			} else {
@@ -450,7 +449,7 @@ OWA.tracker.prototype = {
 	shareStateByPost : function (form) {
 
 		var state = this.createSharedStateValue();
-		form.action += '#owa_state.' + state;
+		form.action += '#' + OWA.getSetting('ns') + 'state.' + state;
 		form.submit();
 	},
 
@@ -514,7 +513,7 @@ OWA.tracker.prototype = {
 	checkForOverlaySession: function() {
 		
 		// check to see if overlay sesson should be created
-		var a = this.getAnchorParam('owa_overlay');
+		var a = this.getAnchorParam( OWA.getSetting('ns') + 'overlay');
 		
 		if ( a ) {
 			a = OWA.util.base64_decode(OWA.util.urldecode(a));
@@ -524,7 +523,7 @@ OWA.tracker.prototype = {
 			//var domain = this.getCookieDomain();
 			
 			// set the overlay cookie
-			OWA.util.setCookie('owa_overlay',a, '','/', document.domain );
+			OWA.util.setCookie( OWA.getSetting('ns') + 'overlay',a, '','/', document.domain );
 			////alert(OWA.util.readCookie('owa_overlay') );
 			// pause tracker so we dont log anything during an overlay session
 			this.pause();
@@ -986,16 +985,16 @@ OWA.tracker.prototype = {
 						if ( OWA.util.is_object( properties[param][i] ) ) {
 							for ( o_param in properties[param][i] ) {
 								
-								data[ OWA.util.sprintf( 'owa_%s[%s][%s]', param, i, o_param ) ] = OWA.util.urlEncode( properties[ param ][ i ][ o_param ] );
+								data[ OWA.util.sprintf( OWA.getSetting('ns') + '%s[%s][%s]', param, i, o_param ) ] = OWA.util.urlEncode( properties[ param ][ i ][ o_param ] );
 							}
 						} else {
 							// what the heck is it then. assume string
-							data[ OWA.util.sprintf('owa_%s[%s]', param, i) ] = OWA.util.urlEncode( properties[ param ][ i ] );
+							data[ OWA.util.sprintf(OWA.getSetting('ns') + '%s[%s]', param, i) ] = OWA.util.urlEncode( properties[ param ][ i ] );
 						}
 					}
 				// assume it's a string
 				} else {
-					data[ OWA.util.sprintf('owa_%s', param) ] = OWA.util.urlEncode( properties[ param ] );
+					data[ OWA.util.sprintf(OWA.getSetting('ns') + '%s', param) ] = OWA.util.urlEncode( properties[ param ] );
 				}
 			}
 		}

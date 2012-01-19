@@ -67,7 +67,7 @@ OWA.player.prototype = {
 	 */
 	fetchData: function() {
 	
-		var p = OWA.util.readCookie('owa_overlay');
+		var p = OWA.util.readCookie(OWA.getSetting('ns') + 'overlay');
 		//alert(unescape(p));
 		var params = OWA.util.parseCookieStringToJson(p);
 		params.action = 'getDomstream';
