@@ -188,7 +188,7 @@
 	
 	endOverlaySession : function() {
 				
-		OWA.util.eraseCookie('owa_overlay', document.domain);
+		OWA.util.eraseCookie(OWA.getSetting('ns') + 'overlay', document.domain);
 		OWA.overlayActive = false;
 	}
 
@@ -288,7 +288,7 @@ OWA.stateManager.prototype = {
 		// erase cookie
 		//OWA.util.eraseCookie( 'owa_'+store_name, domain );
 		// set cookie
-		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
+		OWA.util.setCookie( OWA.getSetting('ns') + store_name, state_value, expiration_days, '/', domain );
 	},
 	
 	replaceStore : function (store_name, value, is_perminant, format, expiration_days) {
@@ -316,7 +316,7 @@ OWA.stateManager.prototype = {
 			expiration_days = this.getExpirationDays( store_name );
 			
 			OWA.debug('About to replace state store (%s) with: %s', store_name, cookie_value);
-			OWA.util.setCookie( 'owa_'+ store_name, cookie_value, expiration_days, '/', domain );
+			OWA.util.setCookie( OWA.getSetting('ns') + store_name, cookie_value, expiration_days, '/', domain );
 			
 		}
 	},
@@ -882,7 +882,7 @@ OWA.util =  {
 		
 		for(param in obj) {
 			if (obj.hasOwnProperty(param)) {
-				new_obj['owa_'+ param] = obj[param];
+				new_obj[OWA.getSetting('ns') + param] = obj[param];
 			}
 		}
 		
