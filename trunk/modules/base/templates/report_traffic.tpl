@@ -37,25 +37,6 @@
 				</div>
 			</div>
 		
-			<div class="owa_reportSectionHeader">Related Reports</div>
-				<div class="relatedReports">
-					<UL>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
-						</LI>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
-						</LI>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
-						</LI>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
-						</LI>
-					</UL>
-				</div>
-			</div>
-		
 			<div class="owa_reportSectionContent" style="min-width:350px;">
 				<div class="owa_reportSectionHeader">Top Keywords</div>
 				
@@ -84,6 +65,26 @@
 					</UL>
 				</div>
 			</div>
+			
+			<div class="owa_reportSectionHeader">Related Reports</div>
+				<div class="relatedReports">
+					<UL>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
+						</LI>
+					</UL>
+				</div>
+			</div>
+			
 		</td>
 	</tr>
 </table>
