@@ -241,7 +241,7 @@ class owa_controller extends owa_base {
 	 * @return boolean
 	 */
 	protected function checkCapabilityAndAuthenticateUser($capability) {
-		if ( !empty($capability) ) {
+		if ( !empty($capability) && ! $this->isEveryoneCapable( $capability ) ) {
 			/* PERFORM AUTHENTICATION */	
 			$auth = owa_auth::get_instance();
 			if (!owa_coreAPI::isCurrentUserAuthenticated()) {
@@ -265,6 +265,16 @@ class owa_controller extends owa_base {
 			
 		}
 		return true;
+	}
+	
+	protected function isEveryoneCapable($capability) {
+		
+		$caps = owa_coreAPI::getCapabilities('everyone');
+		if ( in_array( $capability, $caps ) ) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	function logEvent($event_type, $properties) {

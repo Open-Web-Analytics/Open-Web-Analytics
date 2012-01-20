@@ -77,12 +77,7 @@ class owa_serviceUser extends owa_base {
 	 * @param unknown_type $role
 	 */
 	function getCapabilities($role) {		
-		$caps = owa_coreAPI::getSetting('base', 'capabilities');		
-		if (array_key_exists($role, $caps)) {
-			return $caps[$role];
-		} else {
-			return array();
-		}		
+		return owa_coreAPI::getCapabilities( $role );	
 	}
 	
 	function getPreferences($user_id) {		

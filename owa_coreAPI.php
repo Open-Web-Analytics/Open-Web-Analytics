@@ -227,6 +227,15 @@ class owa_coreAPI {
 		return array_keys($caps);
 	}
 	
+	public static function getCapabilities($role) {		
+		$caps = owa_coreAPI::getSetting('base', 'capabilities');		
+		if (array_key_exists($role, $caps)) {
+			return $caps[$role];
+		} else {
+			return array();
+		}		
+	}
+	
 	/**
 	 * @return owa_serviceUser
 	 */
