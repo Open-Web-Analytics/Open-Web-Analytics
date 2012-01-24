@@ -250,9 +250,15 @@ abstract class owa_module extends owa_base {
 		 */
 		$this->registerBackgroundJobs();
 		
+		/**
+		 * Register Build Packages
+		 */
+		$this->registerBuildPackages();
+		
 		$this->_registerEventHandlers();
 		$this->_registerEventProcessors();
 		$this->_registerEntities();
+		
 	}
 	
 	/**
@@ -846,7 +852,7 @@ abstract class owa_module extends owa_base {
 	/**
 	 * Abstract method for registering individual API methods
 	 *
-	 * This method is called automaticalled by a module's constructor 
+	 * This method is called by a module's constructor 
 	 * and should be redefined in a concrete module class.
 	 */
 	function registerApiMethods() {
@@ -857,7 +863,7 @@ abstract class owa_module extends owa_base {
 	/**
 	 * Abstract method for registering individual CLI commands
 	 *
-	 * This method is called automaticalled by a module's constructor 
+	 * This method is called by a module's constructor 
 	 * and should be redefined in a concrete module class.
 	 */
 	function registerCliCommands() {
@@ -868,7 +874,7 @@ abstract class owa_module extends owa_base {
 	/**
 	 * Abstract method for registering individual Metrics
 	 *
-	 * This method is called automaticalled by a module's constructor 
+	 * This method is called by a module's constructor 
 	 * and should be redefined in a concrete module class.
 	 */
 	function registerMetrics() {
@@ -879,7 +885,7 @@ abstract class owa_module extends owa_base {
 	/**
 	 * Abstract method for registering individual CLI commands
 	 *
-	 * This method is called automaticalled by a module's constructor 
+	 * This method is called by a module's constructor 
 	 * and should be redefined in a concrete module class.
 	 */
 	function registerDimensions() {
@@ -890,7 +896,7 @@ abstract class owa_module extends owa_base {
 	/**
 	 * Abstract method for registering individual Filter Methods
 	 *
-	 * This method is called automaticalled by a module's constructor 
+	 * This method is called by a module's constructor 
 	 * and should be redefined in a concrete module class.
 	 */
 	function registerFilters() {
@@ -901,13 +907,67 @@ abstract class owa_module extends owa_base {
 	/**
 	 * Abstract method for registering individual Filter Methods
 	 *
-	 * This method is called automaticalled by a module's constructor 
+	 * This method is called by a module's constructor 
 	 * and should be redefined in a concrete module class.
 	 */
 	function registerBackgroundJobs() {
 		
 		return false;
 	}
+	
+	/**
+	 * Abstract method for registering package files to build
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerBuildPackages() {
+		
+		return false;
+	}
+	
+	/**
+	 * Registers a new package of files to be built by 
+	 * the 'build' CLI command.
+	 *
+	 * $package array	the package array takes the form of 
+	 *
+	 * 		'name'			=> 'mypackage'
+	 *		'output_dir'	=> '/path/to/output'
+	 *		'files'			=> array('foo' => array('path' => '/path/to/file/file.js', 
+	 *                                              'compression' => 'minify'))	
+	 */
+	protected function registerBuildPackage( $package ) {
+		
+		if (! isset( $package['name'] ) ) {
+			
+			throw exception('Build Package does not have a name.');
+		}
+		
+		if (! isset( $package['output_dir'] ) ) {
+			
+			throw exception('Build Package does not have an output directory.');
+		} else {
+			//check for trailing slash
+			$check = substr($package['output_dir'], -1, 1);
+			if ($check != '/') {
+				$package['output_dir'] = $package['output_dir'].'/';
+			}
+		}
+		
+		if (! isset( $package['files'] ) ) {
+			
+			throw exception('Build Package does not any files.');
+		}
+		
+		// filter the pcakge in case other modules want to change something.
+		$eq = owa_coreAPI::getEventDispatch();
+		$package = $eq->filter( 'register_build_package', $package );
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$s->setMapValue('build_packages', $package['name'], $package);
+	}
+	
 	
 	/**
 	 * Retuns internal struct array used for saving link infos

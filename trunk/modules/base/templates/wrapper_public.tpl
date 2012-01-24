@@ -4,14 +4,13 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
 		<title><?php echo $page_title;?> - Open Web Analytics</title>
+		<?php include($this->getTemplatePath('base','head.tpl'));?>
 	</head>
 	
 	<body>
 	
-		<?php include($this->setTemplate('css.tpl'));?>
-		
 		<div class="owa">
-			<DIV id="header" style="text-align:center;">
+			<div id="header" style="text-align:center;">
 				<table width="100%">
 					<TR>
 						<TD class="">
@@ -30,7 +29,8 @@
 			<div style="text-align:center">	
 				<span class="inline_h4"><a href="http://www.openwebanalytics.com">Web Analytics</a> powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a> - v: <?php echo OWA_VERSION;?></span>
 			</div>
-		
 		</div>
+		
 	</body>
+	
 </html>
