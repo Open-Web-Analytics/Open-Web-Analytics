@@ -1951,7 +1951,7 @@ class owa_baseModule extends owa_module {
 			'type'			=> 'css',
 			'files'			=> array(
 					'jqueryui' 		=> array(
-											'path' 	=> OWA_MODULES_DIR.'base/css/smoothness-1.8.12/jquery-ui.css'
+											'path' 	=> OWA_MODULES_DIR.'base/css/jquery-ui.css'
 										),
 					'selectmenu'		=> array(
 											'path'	=>	OWA_MODULES_DIR.'base/css/jquery.ui.selectmenu.css'	
@@ -1960,7 +1960,7 @@ class owa_baseModule extends owa_module {
 											'path'	=>	OWA_MODULES_DIR.'base/css/ui.jqgrid.css'
 										),
 					'chosen' 	=> array(
-											'path'	=> OWA_MODULES_DIR.'base/css/chosen/chosen.css'
+											'path'	=> OWA_MODULES_DIR.'base/css/chosen.css'
 										),
 					'owa.css' 	=> array(
 											'path'	=> OWA_MODULES_DIR.'base/css/owa.css'
