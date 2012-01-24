@@ -79,7 +79,7 @@ class owa_optionsGoalEntryView extends owa_view {
 		$this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
 		$this->body->set( 'goal_number', $this->get( 'goal_number' ) );
 		$this->body->set( 'siteId', $this->get( 'siteId' ) );
-		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js');
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js');
 		$this->setJs('jqote', 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 	}
 }
