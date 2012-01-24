@@ -6,7 +6,6 @@
 		<title>Open Web Analytics - <?php echo $page_title;?></title>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<?php include($this->getTemplatePath('base','head.tpl'));?>
-		<?php include($this->getTemplatePath('base','css.tpl'));?>
 	</head>
 	
 	<body class="<?php if ($cu->user->isOWAAdmin()) echo 'owaadmin'; ?>">

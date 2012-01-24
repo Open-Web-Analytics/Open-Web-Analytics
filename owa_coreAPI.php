@@ -1123,6 +1123,23 @@ class owa_coreAPI {
 	}
 	
 	/**
+	 * Retrieves any registered build packages
+	 *
+	 * @return array
+	 */
+	public static function getBuildPackages() {
+		
+		$service = owa_coreAPI::serviceSingleton();
+		$map = $service->getMap('build_packages');
+		
+		if ( ! $map ) {
+			$map = array();
+		}
+		
+		return $map;
+	}
+	
+	/**
 	 * Handles OWA internal page/action requests
 	 *
 	 * @return unknown

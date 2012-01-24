@@ -1831,6 +1831,153 @@ class owa_baseModule extends owa_module {
 	}
 	
 	/**
+	 * Registers Package Files To be Built
+	 *
+	 */
+	function registerBuildPackages() {
+		
+		$package = array(
+			'name'			=> 'owa.tracker',
+			'output_dir'	=> OWA_MODULES_DIR.'base/js/',
+			'type'			=> 'js',
+			'files'			=> array(
+					'json2' 		=> array(
+											'path' 			=> OWA_MODULES_DIR.'base/js/includes/json2.js',
+											'compression'	=> 'minify'
+										),
+					'lazyload'		=> array(
+											'path'			=>	OWA_MODULES_DIR.'base/js/includes/lazyload-2.0.min.js'	
+										),
+					'owa'			=> array(
+											'path'			=>	OWA_MODULES_DIR.'base/js/owa.js',
+											'compression'	=> 'minify'
+										),
+					'owa.tracker' 	=> array(
+											'path'			=> OWA_MODULES_DIR.'base/js/owa.tracker.js',
+											'compression'	=> 'minify'
+										)
+			)
+		);
+		
+		$this->registerBuildPackage( $package );
+		
+		$package = array(
+			'name'			=> 'owa.reporting',
+			'output_dir'	=> OWA_MODULES_DIR.'base/js/',
+			'type'			=> 'js',
+			'files'			=> array(
+					'lazy-load' 			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/lazyload-2.0.min.js'
+												),
+					'json2' 				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/json2.js'
+												),
+					'jquery'				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jquery-1.6.4.min.js'
+												),
+					'sprintf'				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jquery.sprintf.js'
+													
+												), // needed?
+					'jquery-ui'         	=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js'
+												),
+					'jquery-ui-selectmenu' 	=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jquery.ui.selectmenu.js'
+												
+												),
+					'chosen' 				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/chosen.jquery.js',
+													'compression'	=> 'minify'
+												),
+					'sparkline' 			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jquery.sparkline.min.js'
+												),
+					'jqgrid' 				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jquery.jqGrid.min.js'
+												),
+					'excanvas' 				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/excanvas.compiled.js'
+												),
+					'flot'					=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.min.js'
+												),
+					'flot-resize'			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js'
+												),
+					'flot-pie'				=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js'
+												),
+					'jqote'					=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/includes/jquery/jQote2/jquery.jqote2.min.js'
+												),
+					'owa'					=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.js',
+													'compression'	=> 'minify'
+												),
+					'owa.report'			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.report.js',
+													'compression'	=> 'minify'
+												),
+					'owa.resultSetExplorer' => array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.resultSetExplorer.js',
+													'compression'	=> 'minify'
+												),
+					'owa.sparkline'			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.sparkline.js',
+													'compression'	=> 'minify'
+												),
+					'owa.areaChart'			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.areachart.js',
+													'compression'	=> 'minify'
+												),
+					'owa.pieChart'			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.piechart.js',
+													'compression'	=> 'minify'
+												),
+					'owa.kpibox'			=> array(
+													'path'			=> OWA_MODULES_DIR.'base/js/owa.kpibox.js',
+													'compression'	=> 'minify'
+												)
+				)
+		);
+		
+		$this->registerBuildPackage( $package );
+		
+		
+		$package = array(
+			'name'			=> 'owa.reporting-css',
+			'output_dir'	=> OWA_MODULES_DIR.'base/css/',
+			'type'			=> 'css',
+			'files'			=> array(
+					'jqueryui' 		=> array(
+											'path' 	=> OWA_MODULES_DIR.'base/css/smoothness-1.8.12/jquery-ui.css'
+										),
+					'selectmenu'		=> array(
+											'path'	=>	OWA_MODULES_DIR.'base/css/jquery.ui.selectmenu.css'	
+										),
+					'jqgrid'			=> array(
+											'path'	=>	OWA_MODULES_DIR.'base/css/ui.jqgrid.css'
+										),
+					'chosen' 	=> array(
+											'path'	=> OWA_MODULES_DIR.'base/css/chosen/chosen.css'
+										),
+					'owa.css' 	=> array(
+											'path'	=> OWA_MODULES_DIR.'base/css/owa.css'
+										),
+					'owa.admin.css' 	=> array(
+											'path'	=> OWA_MODULES_DIR.'base/css/owa.admin.css'
+										),
+					'owa.report.css' 	=> array(
+											'path'	=> OWA_MODULES_DIR.'base/css/owa.report.css'
+										),
+			)
+		);
+		
+		$this->registerBuildPackage( $package );
+	}
+	
+	/**
 	 * Registers Event Handlers with queue queue
 	 *
 	 */

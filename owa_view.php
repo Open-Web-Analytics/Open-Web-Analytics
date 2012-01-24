@@ -123,7 +123,7 @@ class owa_view extends owa_base {
 		$this->t = new owa_template();
 		$this->body = new owa_template($this->module);
 		$this->setTheme();
-		//header('Content-type: text/html; charset=utf-8');
+		$this->setCss("base/css/owa.css");
 	}
 	
 	/**
@@ -135,6 +135,7 @@ class owa_view extends owa_base {
 	function assembleView($data) {
 		
 		$this->e->debug('Assembling view: '.get_class($this));
+		
 		
 		// set view name in template class. used for navigation.
 		if (array_key_exists('view', $this->data)) {
@@ -326,9 +327,6 @@ class owa_view extends owa_base {
 		$this->subview = owa_coreAPI::subViewFactory($subview);
 		//print_r($subview.'///');
 		$this->subview->setData($this->data);
-		
-		return;
-		
 	}
 	
 	/**
@@ -341,12 +339,9 @@ class owa_view extends owa_base {
 		// Stores subview as string into $this->subview
 		$this->subview_rendered = $this->subview->assembleSubView($data);
 		
-		// pull css and jas elements needed by subview
+		// pull css and js elements needed by subview
 		$this->css = array_merge($this->css, $this->subview->css);
-		$this->js = array_merge($this->js, $this->subview->js);
-	
-		return;
-		
+		$this->js = array_merge($this->js, $this->subview->js);		
 	}
 	
 	/**
@@ -377,11 +372,21 @@ class owa_view extends owa_base {
 					
 	}
 	
-	function setCss($path) {
+	function setCss($path, $version = null, $deps = array(), $ie_only = false) {
 		
-		$url = owa_coreAPI::getSetting('base', 'modules_url').$path;
-		$this->css[] = $url;
-		return true;
+		if ( ! $version ) {
+			$version = OWA_VERSION;
+		}
+		
+		$uid = $path;
+		$url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+		$this->css[$uid]['url'] = $url;
+		// build file system path just in case we need to concatenate the JS into a single file.
+		$fs_path = OWA_MODULES_DIR.$path;
+		$this->css[$uid]['path'] = $fs_path;
+		$this->css[$uid]['deps'] = $deps;
+		$this->css[$uid]['version'] = $version;
+		$this->css[$uid]['ie_only'] = $ie_only;
 	}
 	
 	function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
@@ -401,8 +406,6 @@ class owa_view extends owa_base {
 		$this->js[$uid]['deps'] = $deps;
 		$this->js[$uid]['version'] = $version;
 		$this->js[$uid]['ie_only'] = $ie_only;
-		
-		return true;
 	}
 	
 	function concatinateJs() {
@@ -621,6 +624,9 @@ class owa_genericTableView extends owa_view {
 	}
 }
 
+/**
+ * @depricated
+ */
 class owa_sparklineJsView extends owa_view {
 
 	function __construct() {
@@ -696,7 +702,7 @@ class owa_adminView extends owa_view {
 	}
 	
 	function post() {
-		
+		$this->setJs('owa.css');
 		$this->setJs('owa.admin.css');
 	}
 }
