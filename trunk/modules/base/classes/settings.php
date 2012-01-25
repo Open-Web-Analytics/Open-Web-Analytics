@@ -702,7 +702,8 @@
 				'processQueuesJobSchedule'			=> '10 * * * *',
 				'maxCustomVars'						=> 5,
 				'update_session_user_name'			=> true, // updates the session with latest user_name value
-				'log_owa_user_names'				=> true  // logs the OWA user naem as the user_name property on events
+				'log_owa_user_names'				=> true,  // logs the OWA user name as the user_name property on events
+				'logo_image_path'					=> 'base/i/owa-logo-100w.png'
 			)
 		);
  	
