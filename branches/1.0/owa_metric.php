@@ -94,7 +94,11 @@ class owa_metric extends owa_base {
 	
 	var $is_calculated = false;	
 	
+	var $is_aggregate;
+	
 	var $data_type;
+	
+	var $name;
 	
 	var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency');
 		
@@ -104,316 +108,11 @@ class owa_metric extends owa_base {
 			$this->params = $params;
 		}
 			
-		$this->db = owa_coreAPI::dbSingleton();
+		//$this->db = owa_coreAPI::dbSingleton();
 
-		$this->pagination = new owa_pagination;
+		//$this->pagination = new owa_pagination;
 		
 		return parent::__construct();
-	}
-	
-	
-	/**
-	 * @depricated
-	 * @remove
-	 */
-	function applyOptions($params) {
-	
-		// apply constraints
-		if (array_key_exists('constraints', $params)) {
-			
-			foreach ($params['constraints'] as $k => $v) {
-				
-				if(is_array($v)) {
-					$this->setConstraint($k, $v[1], $v[0]);
-				} else {
-					$this->setConstraint($k, $value);	
-				}				
-			}
-		}
-		
-		// apply limit
-		if (array_key_exists('limit', $params)) {
-			$this->setLimit($params['limit']);
-		}
-		
-		// apply order
-		if (array_key_exists('order', $params)) {
-			$this->setOrder($params['order']);
-		}
-		
-		// apply page
-		if (array_key_exists('page', $params)) {
-			$this->setOrder($params['page']);
-		}
-		
-		// apply offset
-		if (array_key_exists('offset', $params)) {
-			$this->setOrder($params['offset']);
-		}
-		
-		// apply format
-		if (array_key_exists('format', $params)) {
-			//$this->setFormat($params['format']);
-		}
-		
-		// apply period
-		if (array_key_exists('period', $params)) {
-			$this->setFormat($params['period']);
-		}
-		
-		// apply start date
-		if (array_key_exists('startDate', $params)) {
-			$this->setFormat($params['startDate']);
-		}
-
-		// apply end date
-		if (array_key_exists('endDate', $params)) {
-			$this->setFormat($params['endDate']);
-		}
-	}
-	
-	function setConstraint($name, $value, $operator = '') {
-		
-		if (empty($operator)):
-			$operator = '=';
-		endif;
-		
-		if (!empty($value)):
-			$this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
-		endif;
-		
-		return;
-
-	}
-	
-	function setConstraints($array) {
-	
-		if (is_array($array)) {
-			
-			if (is_array($this->params['constraints'])) {
-				$this->params['constraints'] = array_merge($array, $this->params['constraints']);
-			} else {
-				$this->params['constraints'] = $array;
-			}
-		}
-	}
-	
-	function setLimit($value) {
-		
-		if (!empty($value)):
-		
-			$this->limit = $value;
-		
-		endif;
-	}
-	
-	function setOrder($value) {
-		
-		if (!empty($value)):
-		
-			$this->params['order'] = $value;
-		
-		endif;
-	}
-	
-	function setSort($column, $order) {
-		
-		//$this->params['orderby'][] = array($this->getColumnName($column), $order);
-	}
-	
-	function setSorts($array) {
-		
-		if (is_array($array)) {
-			
-			if (!empty($this->params['orderby'])) {
-				$this->params['orderby'] = array_merge($array, $this->params['orderby']);
-
-			} else {
-				$this->params['orderby'] = $array;
-			}
-				
-		}
-		
-	}
-
-	function setPage($value) {
-		
-		if (!empty($value)):
-		
-			$this->page = $value;
-			
-			if (!empty($this->pagination)):
-				$this->pagination->setPage($value);
-			endif;
-			
-		endif;
-	}
-	
-
-	function getConstraints() {
-	
-		return $this->params['constraints'];
-	}
-	
-	function setOffset($value) {
-		
-		if (!empty($value)):
-			$this->params['offset'] = $value;
-		endif;
-	}
-	
-	function setFormat($value) {
-		if (!empty($value)):
-			$this->params['result_format'] = $value;
-		endif;
-	}
-	
-	function setPeriod($value) {
-		if (!empty($value)):
-			$this->params['period'] = $value;
-		endif;
-	}
-	
-	function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
-	
-		if ($startDate && $endDate) {
-			$period_name = 'date_range';
-			$map = array('startDate' => $startDate, 'endDate' => $endDate);
-		} elseif ($startTime && $endTime) {
-			$period_name = 'time_range';
-			$map = array('startTime' => $startTime, 'endTime' => $endTime);
-		} else {
-			$this->debug('no period params passed to owa_metric::setTimePeriod');
-			return false;
-		}
-		
-		$p = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-		
-		$p->set($period_name, $map);
-		
-		$this->setPeriod($p);
-	}
-	
-	function makeTimePeriod($period = '') {
-		
-		$start = $this->params['period']->startDate->get($this->time_period_constraint_format);
-		$end = $this->params['period']->endDate->get($this->time_period_constraint_format);
-		
-		if (!empty($this->entity)) {
-			$col = $this->entity->getTableAlias().'.'.$this->time_period_constraint_format;
-		} else {
-			// needed  for backwards compatability
-			$col = $this->time_period_constraint_format;
-		}
-		
-		
-		$this->params['constraints'][$col] = array('operator' => 'BETWEEN', 'value' => array('start' => $start, 'end' => $end));
-
-		return;
-		
-	}
-	
-	function setStartDate($date) {
-		if (!empty($date)):
-			$this->params['startDate'] = $date;
-		endif;
-	}
-	
-	function setEndDate($date) {
-		if (!empty($date)):
-			$this->params['endDate'] = $date;
-		endif;
-	}
-	
-	/**
-	 * @depricated
-	 */
-	function generate($method = 'calculate') {
-		
-		$this->makeTimePeriod();
-		
-		$this->db->multiWhere($this->getConstraints());
-				
-		if (!empty($this->pagination)):
-			$this->pagination->setLimit($this->limit);
-		endif;
-		
-		// pass limit to db object if one exists
-		if (!empty($this->limit)):
-			$this->db->limit($this->limit);
-		endif;
-		
-		// pass order to db object if one exists
-		
-		
-		
-		// pagination
-		if (!empty($this->page)):
-			$this->pagination->setPage($this->page);
-			$offset = $this->pagination->calculateOffset();
-			$this->db->offset($offset);
-		endif;
-	
-		
-		$results = $this->$method();
-		
-		if (!empty($this->pagination)):
-			$this->pagination->countResults($results);
-		endif;
-		
-		return $results;
-	
-	}
-	
-	/**
-	 * @depricated
-	 */
-	function generateResults() {
-		
-		// set period specific constraints
-		$this->makeTimePeriod();
-		// set constraints
-		$this->db->multiWhere($this->getConstraints());
-		// sets metric specific SQL
-		$this->calculate();
-		// generate paginated result set
-		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
-		// pass limit to db object if one exists
-		if (!empty($this->limit)) {
-			$rs->setLimit($this->limit);
-		}
-		
-		// pass limit to db object if one exists
-		if (!empty($this->page)) {
-			$rs->setPage($this->page);
-		}
-		
-		// get results
-		$rs->generate($this->db);
-		
-		// add labels
-		$rs->setLabels($this->getLabels());
-		
-		// add period info
-		$rs->setPeriodInfo($this->params['period']->getAllInfo());
-		
-		return $rs; 
-	}
-	
-	/**
-	 * @depricated
-	 */
-	function calculatePaginationCount() {
-		
-		if (method_exists($this, 'paginationCount')):
-			$this->makeTimePeriod();
-		
-			$this->db->multiWhere($this->getConstraints());
-		
-			return $this->paginationCount();
-		else:
-			return false;
-		endif;
 	}
 	
 	/**
@@ -466,7 +165,8 @@ class owa_metric extends owa_base {
 		return $this->labels;
 	
 	}
-	
+	/*
+
 	function getPagination() {
 		
 		$count = $this->calculatePaginationCount();
@@ -475,6 +175,7 @@ class owa_metric extends owa_base {
 	
 	}
 	
+	*/
 	function zeroFill(&$array) {
 	
 		// PHP 5 only function used here
@@ -498,7 +199,8 @@ class owa_metric extends owa_base {
 		
 		return;
 	}
-	
+	/*
+
 	function getPeriod() {
 	
 		return $this->params['period'];
@@ -517,6 +219,7 @@ class owa_metric extends owa_base {
 		
 	}
 	
+	*/
 	function setEntity($name) {
 		
 		$this->entity = owa_coreAPI::entityFactory($name);
@@ -545,6 +248,11 @@ class owa_metric extends owa_base {
 	function getSelect() {
 		
 		return $this->select;
+	}
+	
+	function getSelectWithNoAlias() {
+		
+		return $this->select[0];
 	}
 	
 	function setName($name) {
@@ -603,6 +311,16 @@ class owa_metric extends owa_base {
 	
 	function getDataType() {
 		return $this->data_type;
+	}
+	
+	function setAggregate() {
+	
+		$this->is_aggregate = true;
+	}
+	
+	function isAggregate() {
+	
+		return $this->is_aggregate;
 	}
 }
 

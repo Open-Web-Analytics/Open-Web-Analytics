@@ -33,6 +33,17 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_reportEcommerceController extends owa_reportController {
 	
+	/**
+	 * Constructor
+	 *
+	 * @param array $params
+	 * @return
+	 */
+	function __construct($params) {		
+		return parent::__construct($params);
+		$this->setRequiredCapability('view_reports_ecommerce');
+	}
+	
 	function action() {
 		
 		$this->setSubview('base.reportEcommerce');

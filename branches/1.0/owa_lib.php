@@ -485,13 +485,12 @@ class owa_lib {
 	 * @param string $class_dir
 	 * @param string $class_prefix
 	 * @param string $class_name
-	 * @param array $conf
+	 * @param array $constructorArguments
 	 * @return object
 	 */
-	public static function &factory($class_dir, $class_prefix, $class_name, $conf = array(), $class_suffix = '') {
+	public static function factory($class_dir, $class_prefix, $class_name, $constructorArguments = array(), $class_suffix = '') {
 		
-        //$class_dir = strtolower($class_dir).DIRECTORY_SEPARATOR;
-        $class_dir = $class_dir.DIRECTORY_SEPARATOR;
+        $class_dir = $class_dir.'/';
         $classfile = $class_dir . $class_name . '.php';
 		$class = $class_prefix . $class_name . $class_suffix;
 		
@@ -500,22 +499,17 @@ class owa_lib {
          * a failure as fatal.  The caller may have already included their own
          * version of the named class.
          */
-        if (!class_exists($class)) {
-        	
-        	if (file_exists($classfile)) {
-        		require_once ($classfile);
+        if (!class_exists($class)) {        	
+        	if (!file_exists($classfile)) {
+        		throw new Exception('Class File '.$classfile.' not existend!');
         	}
-            
+       		require_once ($classfile);
         }
 
-        /* If the class exists, return a new instance of it. */
-        if (class_exists($class)) {
-            $obj = &new $class($conf);
-            return $obj;
+        if (!class_exists($class)) {
+        		throw new Exception('Class '.$class.' not existend!');
         }
-
-        $null = null;
-        return $null;
+		return new $class($constructorArguments);
     }
 	
     /**
@@ -527,7 +521,7 @@ class owa_lib {
      * @param array $conf
      * @return object
      */
-    public static function &singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
+    public static function singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
     	
         static $instance;
         
@@ -698,7 +692,7 @@ class owa_lib {
 	 */
 	public static function redirectToView($data) {
 		//print_r($data);
-		$c = &owa_coreAPI::configSingleton();
+		$c = owa_coreAPI::configSingleton();
 		$config = $c->fetch('base');
 		
 		$control_params = array('view_method', 'auth_status');
@@ -743,11 +737,18 @@ class owa_lib {
 	 * @access 	private
 	 */
 	public static function setStringGuid($string) {
-		if (!empty($string)):
-			return crc32(strtolower($string));
-		else:
-			return;
-		endif;
+	
+		if ( $string ) {
+			
+			
+			if ( owa_coreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_MAX == '9223372036854775807') {
+				// make 64 bit ID from partial sha1	
+				return (string) (int) hexdec( substr( sha1( strtolower( $string ) ), 0, 16 ) );
+			} else {
+				// make 32 bit ID from crc32
+				return crc32( strtolower( $string ) );
+			}
+		}
 	}
 	
 	/**
@@ -874,7 +875,7 @@ class owa_lib {
 			
 				// loop through the files, skipping . and .., and recursing if necessary
 				if (strcmp($file, '.')==0 || strcmp($file, '..')==0) continue;
-				$filepath = $start_dir . DIRECTORY_SEPARATOR . $file;
+				$filepath = $start_dir . '/' . $file;
 				
 				
 				if (is_dir($filepath)):
@@ -1089,11 +1090,11 @@ class owa_lib {
 		}
 	}
 	
-	public static function formatCurrency($value, $local) {
+	public static function formatCurrency($value, $local, $decimalDigits = 2) {
 		
 		setlocale( LC_MONETARY, $local );
-		$value = $value /100;
-		return money_format( '%.2n',$value );
+		$value = $value / 100;
+		return money_format( '%.' . $decimalDigits . 'n',$value );
 	}
 	
 	public static function crc32AsHex($string) {
@@ -1117,34 +1118,126 @@ class owa_lib {
 	}
 	
 	public static function sanitizeCookieDomain($domain) {
-		
-		$pos = strpos($domain, '.');
-		
-		//check for local host
-		if ( strpos( $domain, 'localhost' ) ) {
-		 	return false;
-		
-		// check for local domain 	
-		} elseif ( $pos === false) {
-			
-			return false;
-			
-		// ah-ha a real domain
-		} else {
-			// Remove port information.
-     		$port = strpos( $domain, ':' );
-			if ( $port ) {
-				$domain = substr( $domain, 0, $port );
-			}
-			
-			// check for leading period, add if missing
-			$period = substr( $domain, 0, 1);
-			if ( $period != '.' ) {
-				$domain = '.'.$domain;
-			}
-			
-			return $domain;
+				
+		// Remove port information.
+ 		$port = strpos( $domain, ':' );
+		if ( $port ) {
+			$domain = substr( $domain, 0, $port );
 		}
+			
+		// check for leading period, add if missing
+		$period = substr( $domain, 0, 1);
+		if ( $period != '.' ) {
+			$domain = '.'.$domain;
+		}
+			
+		return $domain;
+	}
+	
+	public static function stripWWWFromDomain($domain) {
+		
+		$part = substr( $domain, 0, 5 );
+		if ($part === '.www.') {
+			//strip .www.
+			$domain = substr( $domain, 5);
+			// add back the leading period
+			$domain = '.'.$domain;
+			$done = true;
+		}
+		
+		if ( ! $done ) {
+			$part = substr( $domain, 0, 4 );
+			if ($part === 'www.') {
+				//strip .www.
+				$domain = substr( $domain, 4);
+				$done = true;
+			}
+			
+		}
+		
+		return $domain;
+	}
+	
+    /**
+     *  Use this function to parse out the url and query array element from
+     *  a url.
+     */
+	public static function parse_url( $url ) {
+		
+		$url = parse_url($url);
+		
+		if ( isset( $url['query'] ) ) {
+			$var = $url['query'];
+			
+			$var  = html_entity_decode($var);
+			$var  = explode('&', $var);
+			$arr  = array();
+	
+	  		foreach( $var as $val ) {
+	    		$x = explode('=', $val);
+	    		$arr[$x[0]] = urldecode($x[1]);
+	   		}
+	  		unset($val, $x, $var);
+	  		
+	  		$url['query_params'] = $arr;
+		
+		}
+	
+  		return $url;
+	}
+	
+	public static function iniGet( $name ) {
+			
+		$b = ini_get( $name );
+		
+		switch ( strtolower( $b ) ) {
+		    case 'on':
+		    case 'yes':
+		    case 'true':
+		        return true;
+		        
+		    default:
+		        return (bool) (int) $b;
+		}
+		
+	}
+	
+	// better empty check when you need to accept these as valid, non-empty values:
+	// - 0 (0 as an integer)
+	//- 0.0 (0 as a float)
+	//- "0" (0 as a string)
+	public static function isEmpty($value) {
+    	
+    	return empty($value) && ! is_numeric($value);
+	}
+	
+	public static function isIpAddressValid( $ip = '' ) {
+		
+		if ( $ip && filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+ 			 // it's valid
+ 			 return true;
+		} else {
+  			// it's not valid
+  			return false;
+		}
+	}
+	
+	public static function zeroFill( $number, $char_length ) {
+		
+		return str_pad( (int) $number, $char_length, "0", STR_PAD_LEFT );
+	}
+	
+	public static function generateRandomUid($seed='') {
+		
+		$time = (string) time();
+		$random = owa_lib::zeroFill( mt_rand( 0, 999999 ), 6 );
+		if ( defined('OWA_SERVER_ID') ) {
+			$server = owa_lib::zeroFill( OWA_SERVER_ID, 3 );
+		} else {
+			$server = substr( getmypid(), 0, 3);
+		}
+		
+		return $time.$random.$server;
 	}
 }
 

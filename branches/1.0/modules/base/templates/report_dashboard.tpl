@@ -76,6 +76,7 @@
 				<div class="owa_moreLinks">
 					<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
 				</div>
+				<div id="test"></div>
 			</div>
 		
 			<div class="owa_reportSectionContent">
@@ -106,6 +107,7 @@
 	rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics']);
 	
 	rsh.load(aurl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('rsh', rsh);
 
 (function() {
 	var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -123,6 +125,7 @@
 	OWA.items.tc.options.grid.excludeColumns = ['pageUrl'];
 	OWA.items.tc.asyncQueue.push(['refreshGrid']);
 	OWA.items.tc.load(tcurl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'tc', OWA.items.tc );
 })();			
 
 (function() {
@@ -131,6 +134,7 @@
 													'dimensions' => 'referralPageTitle,referralPageUrl', 
 													'sort' => 'visits-',
 													'format' => 'json',
+													'constraints' => urlencode('medium==referral'),
 													'resultsPerPage' => 10
 													),true);?>';
 
@@ -141,6 +145,8 @@
 	OWA.items.topreferers.options.grid.excludeColumns = ['referralPageUrl'];
 	OWA.items.topreferers.asyncQueue.push(['refreshGrid']);
 	OWA.items.topreferers.load(traurl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'topreferers', OWA.items.topreferers );
+	
 })();
 	
 (function() {
@@ -157,6 +163,8 @@
 	at = new OWA.resultSetExplorer('actions-trend');
 	at.options.areaChart.series.push({x:'date',y:'actions'});
 	at.setView('areaChart');
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'at', at );
+	
 	//at.load(aturl);
 })();
 
@@ -173,6 +181,7 @@
 	vm.options.pieChart.dimension = 'medium';
 	vm.setView('pie');
 	vm.load(vmurl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'vm', vm );
 })();
 
 (function() {	
@@ -187,8 +196,9 @@
 	OWA.items.vt.options.pieChart.metrics = ['repeatVisitors', 'newVisitors'];
 	OWA.items.vt.asyncQueue.push(['makePieChart']);
 	OWA.items.vt.load(aurl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer( 'vt', OWA.items.vt );
 })();				
-				
+		
 </script>
 
 <?php require_once('js_report_templates.php');?>

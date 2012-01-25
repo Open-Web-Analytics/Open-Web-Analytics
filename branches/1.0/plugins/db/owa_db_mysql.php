@@ -66,6 +66,11 @@ define('OWA_SQL_REGEXP', 'REGEXP');
 define('OWA_SQL_NOTREGEXP', 'NOT REGEXP');
 define('OWA_SQL_LIKE', 'LIKE');
 define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s');
+define('OWA_SQL_COUNT', 'COUNT(%s)');
+define('OWA_SQL_ROUND', 'ROUND(%s)');
+define('OWA_SQL_AVERAGE', 'AVG(%s)');
+define('OWA_SQL_DISTINCT', 'DISTINCT %s');
+define('OWA_SQL_DIVISION', '(%s / %s)');
 define('OWA_DTD_CHARACTER_ENCODING_UTF8', 'utf8');
 define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
 
@@ -235,6 +240,11 @@ class owa_db_mysql extends owa_db {
 		
 		return mysql_real_escape_string($string, $this->connection); 
 		
+	}
+	
+	function getAffectedRows() {
+		
+		return mysql_affected_rows();
 	}
 }
 

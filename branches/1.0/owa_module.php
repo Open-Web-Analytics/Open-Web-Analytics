@@ -28,7 +28,7 @@
  * @since		owa 1.0.0
  */
 
-class owa_module extends owa_base {
+abstract class owa_module extends owa_base {
 	
 	/**
 	 * Name of module
@@ -175,6 +175,12 @@ class owa_module extends owa_base {
 	var $denormalizedDimensions = array();
 	
 	/**
+	 *
+	 * @var array
+	 */
+	var $formatters = array();
+
+	/**
 	 * cli_commands
 	 * 
 	 * @var array 
@@ -214,9 +220,45 @@ class owa_module extends owa_base {
 		
 		parent::__construct();
 		
+		/**
+		 * Register Filters
+		 */
+		$this->registerFilters();
+		
+		/**
+		 * Register Metrics
+		 */
+		$this->registerMetrics();
+		
+		/**
+		 * Register Dimensions
+		 */
+		$this->registerDimensions();
+		
+		/**
+		 * Register CLI Commands
+		 */
+		$this->registerCliCommands();
+		
+		/**
+		 * Register API Methods
+		 */
+		$this->registerApiMethods();
+		
+		/**
+		 * Register Background Jobs
+		 */
+		$this->registerBackgroundJobs();
+		
+		/**
+		 * Register Build Packages
+		 */
+		$this->registerBuildPackages();
+		
 		$this->_registerEventHandlers();
 		$this->_registerEventProcessors();
 		$this->_registerEntities();
+		
 	}
 	
 	/**
@@ -349,22 +391,48 @@ class owa_module extends owa_base {
 		
 	/**
 	 * Registers Group Link with a particular View
-	 * 
+	 * @DEPRICATED - use addNavigationSubGroup and addNavigationLinkInSubGroup
 	 */
-	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'viewer') {
-		
-		$link = array('ref' => $ref, 
-					'anchortext' => $anchortext, 
-					'order' => $order, 
-					'priviledge' => $priviledge);
+	function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'view_reports') {
 					
 		if (!empty($subgroup)):
-			$this->nav_links[$group][$subgroup]['subgroup'][] = $link;
+			$this->addNavigationLinkInSubGroup($subgroup,$ref, $anchortext, $order = 0, $priviledge ,$group);
 		else:
-			$this->nav_links[$group][$anchortext] = $link;			
+			$this->addNavigationSubGroup($anchortext,$ref, $anchortext, $order = 0, $priviledge ,$group);		
 		endif;
 
 		return;
+	}
+	
+	/**
+	 * Adds a new Subgroup in the navigation
+	 * 
+	 * @param string $subgroupName
+	 * @param string $ref
+	 * @param string $anchortext
+	 * @param integer $order
+	 * @param string $priviledge
+	 * @param string $groupName
+	 */
+	public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {		
+		$this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
+	}
+	
+	/**
+	 * Adds a new Link to an existing Subgroup in the navigation
+	 * 
+	 * @param string $subgroupName
+	 * @param string $ref
+	 * @param string $anchortext
+	 * @param integer $order
+	 * @param string $priviledge
+	 * @param string $groupName
+	 */
+	public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {	
+		if (!isset($this->nav_links[$groupName][$subgroupName]) || !is_array($this->nav_links[$groupName][$subgroupName])) {
+			throw new Exception('Subgroup "'.$subgroupName.'" is not existend - add Subgroup first with addNavigationSubGroup ');
+		}
+		$this->nav_links[$groupName][$subgroupName]['subgroup'][] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
 	}
 	
 	/**
@@ -496,7 +564,7 @@ class owa_module extends owa_base {
 	function update() {
 		
 		// list files in a directory
-		$files = owa_lib::listDir(OWA_DIR.'modules'.DIRECTORY_SEPARATOR.$this->name.DIRECTORY_SEPARATOR.'updates', false);
+		$files = owa_lib::listDir(OWA_DIR.'modules'.'/'.$this->name.'/'.'updates', false);
 		//print_r($files);
 		
 		$current_schema_version = $this->c->get($this->name, 'schema_version');
@@ -668,10 +736,26 @@ class owa_module extends owa_base {
 		return;
 	}
 	
-	function registerMetric($metric_name, $class_name, $params = array()) {
+	function registerMetric($metric_name, $classes, $params = array(), $label = '', $description = '', $group = '') {
 		
-		$map = array('class' => $class_name, 'params' => $params);
-		$this->metrics[$metric_name][] = $map;
+		if ( ! $label ) {
+			$label = $metric_name;
+		}
+		
+		if ( ! $description ) {
+			$description = 'No description available.';
+		}
+		
+		if ( ! is_array( $classes ) ) {
+			
+			$classes = array($classes);
+		}
+		
+		foreach ($classes as $class_name) {
+		
+			$map = array('name' => $metric_name, 'class' => $class_name, 'params' => $params, 'label' => $label, 'description' => $description, 'group' => $group);
+			$this->metrics[$metric_name][] = $map;
+		}
 	}
 	
 	/**
@@ -680,7 +764,7 @@ class owa_module extends owa_base {
 	 * registers a dimension for use by metrics in producing results sets.
 	 * 
 	 * @param	$dim_name string
-	 * @param	$entity	string the entiy housing the dimension. uses module.name format
+	 * @param	$entity_names	string||array the names of entity housing the dimension. uses module.name format
 	 * @param	$column	string the name of the column that represents the dimension
 	 * @param 	$family	string the name of the group or family that this dimension belongs to. optional.
 	 * @param	$description	string	a short description of this metric, used in various interfaces.
@@ -695,20 +779,45 @@ class owa_module extends owa_base {
 	 * @param	$denormalized	boolean	flag marks the dimension as being denormalized into a fact table
 	 *          as opposed to being housed in a related table.
 	 */
-	function registerDimension($dim_name, $entity, $column, $label = '', $family, $description = '', $foreign_key_name = '', $denormalized = false, $data_type = 'string') {
+	function registerDimension(
+			$dim_name, $entity_names, $column, $label = '', $family, 
+			$description = '', $foreign_key_name = '', 
+			$denormalized = false, $data_type = 'string') {
+		
+		if ( ! is_array( $entity_names ) ) {
+			$entity_names = array($entity_names);
+		}
+		
+		foreach ($entity_names as $entity) {
 	
-		$dim = array('family' => $family, 'name' => $dim_name, 'entity' => $entity, 'column' => $column, 'label' => $label, 'description' => $description, 'foreign_key_name' => $foreign_key_name, 'data_type' => $data_type, 'denormalized' => $denormalized);
-	
-		if ($denormalized) {
-			$this->denormalizedDimensions[$dim_name][$entity] = $dim;
-		} else {
-			$this->dimensions[$dim_name] = $dim;
+			$dim = array(
+				'family' 			=> $family, 
+				'name' 				=> $dim_name, 
+				'entity' 			=> $entity, 
+				'column' 			=> $column, 
+				'label' 			=> $label, 
+				'description' 		=> $description, 
+				'foreign_key_name' 	=> $foreign_key_name, 
+				'data_type' 		=> $data_type, 
+				'denormalized' 		=> $denormalized
+			);
+		
+			if ($denormalized) {
+				$this->denormalizedDimensions[$dim_name][$entity] = $dim;
+			} else {
+				$this->dimensions[$dim_name] = $dim;
+			}
 		}
 	}
 	
 	function registerCliCommand($command, $class) {
 		
 		$this->cli_commands[$command] = $class;
+	}
+	
+	function registerFormatter($type, $formatter) {
+	
+		$this->formatters[$type] = $formatter;
 	}
 
 	function registerApiMethod($api_method_name, $user_function, $argument_names, $file = '', $required_capability = '') {
@@ -739,6 +848,142 @@ class owa_module extends owa_base {
 		$s = owa_coreAPI::serviceSingleton();
 		$s->setMapValue('background_jobs', $name, $job);
 	}
+	
+	/**
+	 * Abstract method for registering individual API methods
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerApiMethods() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual CLI commands
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerCliCommands() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual Metrics
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerMetrics() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual CLI commands
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerDimensions() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual Filter Methods
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerFilters() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering individual Filter Methods
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerBackgroundJobs() {
+		
+		return false;
+	}
+	
+	/**
+	 * Abstract method for registering package files to build
+	 *
+	 * This method is called by a module's constructor 
+	 * and should be redefined in a concrete module class.
+	 */
+	function registerBuildPackages() {
+		
+		return false;
+	}
+	
+	/**
+	 * Registers a new package of files to be built by 
+	 * the 'build' CLI command.
+	 *
+	 * $package array	the package array takes the form of 
+	 *
+	 * 		'name'			=> 'mypackage'
+	 *		'output_dir'	=> '/path/to/output'
+	 *		'files'			=> array('foo' => array('path' => '/path/to/file/file.js', 
+	 *                                              'compression' => 'minify'))	
+	 */
+	protected function registerBuildPackage( $package ) {
+		
+		if (! isset( $package['name'] ) ) {
+			
+			throw exception('Build Package does not have a name.');
+		}
+		
+		if (! isset( $package['output_dir'] ) ) {
+			
+			throw exception('Build Package does not have an output directory.');
+		} else {
+			//check for trailing slash
+			$check = substr($package['output_dir'], -1, 1);
+			if ($check != '/') {
+				$package['output_dir'] = $package['output_dir'].'/';
+			}
+		}
+		
+		if (! isset( $package['files'] ) ) {
+			
+			throw exception('Build Package does not any files.');
+		}
+		
+		// filter the pcakge in case other modules want to change something.
+		$eq = owa_coreAPI::getEventDispatch();
+		$package = $eq->filter( 'register_build_package', $package );
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$s->setMapValue('build_packages', $package['name'], $package);
+	}
+	
+	
+	/**
+	 * Retuns internal struct array used for saving link infos
+	 * @param string $ref
+	 * @param string $anchortext
+	 * @param integer $order
+	 * @param string $priviledge
+	 * @return array
+	 */
+	private function getLinkStruct($ref,$anchortext,$order,$priviledge) {
+		return array('ref' => $ref, 
+					'anchortext' => $anchortext, 
+					'order' => $order, 
+					'priviledge' => $priviledge);
+	}
+	
 }
 
 ?>

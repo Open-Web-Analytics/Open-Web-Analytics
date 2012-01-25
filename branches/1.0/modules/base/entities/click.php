@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
+
 /**
  * Click Request Entity
  * 
@@ -28,24 +30,38 @@
  * @since		owa 1.0.0
  */
 
-class owa_click extends owa_entity {
+class owa_click extends owa_factTable {
 	
 	function __construct() {
 		
 		$this->setTableName('click');
-		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['id']->setPrimaryKey();
+		
+		// set common fact table columns
+		$parent_columns = parent::__construct();
+		
+		foreach ($parent_columns as $pcolumn) {
+				
+			$this->setProperty($pcolumn);
+		}
+		
+		// move to abstract
+		//$this->properties['id'] = new owa_dbColumn;
+		//$this->properties['id']->setDataType(OWA_DTD_BIGINT);
+		//$this->properties['id']->setPrimaryKey();
+		
+		// drop
 		$this->properties['last_impression_id'] = new owa_dbColumn;
 		$this->properties['last_impression_id']->setDataType(OWA_DTD_BIGINT);
 		
-		$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
-		$visitor_id->setForeignKey('base.visitor');
-		$this->setProperty($visitor_id);
+		// move to abstract
+		//$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
+		//$visitor_id->setForeignKey('base.visitor');
+		//$this->setProperty($visitor_id);
 		
-		$session_id = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
-		$session_id->setForeignKey('base.session');
-		$this->setProperty($session_id);
+		// move to abstract
+		//$session_id = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
+		//$session_id->setForeignKey('base.session');
+		//$this->setProperty($session_id);
 		
 		$document_id = new owa_dbColumn('document_id', OWA_DTD_BIGINT);
 		$document_id->setForeignKey('base.document');
@@ -55,9 +71,12 @@ class owa_click extends owa_entity {
 		$this->properties['target_id']->setDataType(OWA_DTD_BIGINT);
 		
 		$this->properties['target_url'] = new owa_dbColumn;
-		$this->properties['target_url']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['timestamp'] = new owa_dbColumn;
-		$this->properties['timestamp']->setDataType(OWA_DTD_INT);
+		$this->properties['target_url']->setDataType(OWA_DTD_VARCHAR255);
+		
+		// move to abstract
+		//$this->properties['timestamp'] = new owa_dbColumn;
+		//$this->properties['timestamp']->setDataType(OWA_DTD_INT);
+		/*
 		$this->properties['year'] = new owa_dbColumn;
 		$this->properties['year']->setDataType(OWA_DTD_INT);
 		$this->properties['month'] = new owa_dbColumn;
@@ -68,6 +87,8 @@ class owa_click extends owa_entity {
 		$this->properties['dayofyear']->setDataType(OWA_DTD_INT);
 		$this->properties['weekofyear'] = new owa_dbColumn;
 		$this->properties['weekofyear']->setDataType(OWA_DTD_INT);
+		*/
+		// drop these soon
 		$this->properties['hour'] = new owa_dbColumn;
 		$this->properties['hour']->setDataType(OWA_DTD_TINYINT2);
 		$this->properties['minute'] = new owa_dbColumn;
@@ -76,6 +97,7 @@ class owa_click extends owa_entity {
 		$this->properties['second']->setDataType(OWA_DTD_INT);
 		$this->properties['msec'] = new owa_dbColumn;
 		$this->properties['msec']->setDataType(OWA_DTD_VARCHAR255);
+		
 		$this->properties['click_x'] = new owa_dbColumn;
 		$this->properties['click_x']->setDataType(OWA_DTD_INT);
 		$this->properties['click_y'] = new owa_dbColumn;
@@ -106,40 +128,57 @@ class owa_click extends owa_entity {
 		$this->properties['dom_element_class']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['dom_element_parent_id'] = new owa_dbColumn;
 		$this->properties['dom_element_parent_id']->setDataType(OWA_DTD_VARCHAR255);
+		
+		// drop
 		$this->properties['tag_id'] = new owa_dbColumn;
 		$this->properties['tag_id']->setDataType(OWA_DTD_BIGINT);
+		
+		//drop
 		$this->properties['placement_id'] = new owa_dbColumn;
 		$this->properties['placement_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['campaign_id'] = new owa_dbColumn;
-		$this->properties['campaign_id']->setDataType(OWA_DTD_BIGINT);
+		
+		// move to abstract
+		//$this->properties['campaign_id'] = new owa_dbColumn;
+		//$this->properties['campaign_id']->setDataType(OWA_DTD_BIGINT);
+		
+		//drop
 		$this->properties['ad_group_id'] = new owa_dbColumn;
 		$this->properties['ad_group_id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['ad_id'] = new owa_dbColumn;
-		$this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
 		
-		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
-		$site_id->setForeignKey('base.site', 'site_id');
-		$this->setProperty($site_id);
+		// move to abstract
+		//$this->properties['ad_id'] = new owa_dbColumn;
+		//$this->properties['ad_id']->setDataType(OWA_DTD_BIGINT);
 		
-		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
-		$ua_id->setForeignKey('base.ua');
-		$this->setProperty($ua_id);
+		// move to absctract
+		//$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
+		//$site_id->setForeignKey('base.site', 'site_id');
+		//$this->setProperty($site_id);
 		
-		$this->properties['ip_address'] = new owa_dbColumn;
-		$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
+		// move to absctract
+		//$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
+		//$ua_id->setForeignKey('base.ua');
+		//$this->setProperty($ua_id);
+		
+		// move to abstract
+		//$this->properties['ip_address'] = new owa_dbColumn;
+		//$this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
+		
+		// drop
 		$this->properties['host'] = new owa_dbColumn;
 		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
 		
+		// move to abstract
 		//wrong data type
-		$host_id = new owa_dbColumn('host_id', OWA_DTD_VARCHAR255);
-		$host_id->setForeignKey('base.host');
-		$this->setProperty($host_id);
+		//$host_id = new owa_dbColumn('host_id', OWA_DTD_VARCHAR255);
+		//$host_id->setForeignKey('base.host');
+		//$this->setProperty($host_id);
 		
-		$yyyymmdd =  new owa_dbColumn;
-		$yyyymmdd->setName('yyyymmdd');
-		$yyyymmdd->setDataType(OWA_DTD_INT);
-		$yyyymmdd->setIndex();
-		$this->setProperty($yyyymmdd);
+		// move to abstract
+		//$yyyymmdd =  new owa_dbColumn;
+		//$yyyymmdd->setName('yyyymmdd');
+		//$yyyymmdd->setDataType(OWA_DTD_INT);
+		//$yyyymmdd->setIndex();
+		//$this->setProperty($yyyymmdd);
 		
 	}	
 }

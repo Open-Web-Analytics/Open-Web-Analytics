@@ -49,9 +49,12 @@ class owa_sitesProfileController extends owa_adminController {
 			$site_data = $site->_getProperties();
 			$this->set('config', $site->get('settings') );
 			$this->set('edit', $this->getParam('edit'));
+			
 		} else {
 			$site_data = array();
 		}
+		
+	
 		
 		$this->set('site', $site_data);
 		$this->set('siteId', $site_id);
@@ -59,6 +62,7 @@ class owa_sitesProfileController extends owa_adminController {
 		$this->setSubview('base.sitesProfile');
 	}
 	
+
 }
 
 
@@ -78,18 +82,30 @@ class owa_sitesProfileView extends owa_view {
 			
 	function render() {
 	
+	
 		$site = $this->get('site');
 		if ($this->get('edit')) {
 			$this->body->set('action', 'base.sitesEdit');
 			$this->body->set('headline', 'Edit Site Profile for: '. $site['domain'] );
+			
+			$siteEntity = owa_coreAPI::entityFactory('base.site');
+			$siteEntity->getByColumn('site_id', $this->get('siteId'));
+			$this->body->set('siteEntity', $siteEntity);
 
 		} else {
 			$this->body->set('action', 'base.sitesAdd');
 			$this->body->set('headline', 'Add a New Tracked Site Profile');
 		
 		}
+		if (isset($site['domain'])) {
+			$this->t->set( 'page_title', 'Site Profile for: '.  $site['domain'] );
+		}
+		else {
+			$this->t->set( 'page_title', 'Site Profile for new Site');
+		}
 		
-		$this->t->set( 'page_title', 'Site Profile for: '.  $site['domain'] );
+		$this->body->set('users', $this->getAllUserRows());
+			
 		$this->body->set( 'site', $site );
 		$this->body->set( 'edit', $this->get('edit') );
 		$this->body->set( 'site_id', $this->get('siteId') );
@@ -98,6 +114,15 @@ class owa_sitesProfileView extends owa_view {
 		$this->body->set_template( 'sites_addoredit.tpl' );	
 	}
 	
+	/**
+	 * @return array
+	 */
+	private function getAllUserRows() {
+		$db = owa_coreAPI::dbSingleton();
+		$db->selectFrom('owa_user');
+		$db->selectColumn("*");
+		return $db->getAllRows();
+	}
 	
 }
 

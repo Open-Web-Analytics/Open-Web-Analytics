@@ -30,6 +30,8 @@
 
 class owa_user extends owa_entity {
 	
+	const ADMIN_USER_ID = 'admin';
+	
 	function __construct() {
 	
 		$this->setTableName('user');
@@ -55,10 +57,12 @@ class owa_user extends owa_entity {
 		$this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
 		$this->properties['last_update_date'] = new owa_dbColumn;
 		$this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
+		
 		$apiKey = new owa_dbColumn;
 		$apiKey->setName('api_key');
 		$apiKey->setDataType(OWA_DTD_VARCHAR255);
 		$this->setProperty($apiKey);
+
 	}
 	
 	function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
@@ -86,11 +90,16 @@ class owa_user extends owa_entity {
 		return md5($seed.time().rand());
 	}
 	
-	function generateRandomPassword() {
-	
+	function generateRandomPassword() {	
 		return substr(owa_lib::encryptPassword(microtime()),0,6);
 	}
 	
+	/**
+	 * @return boolean
+	 */
+	public function isOWAAdmin() {
+		return $this->get('user_id') == self::ADMIN_USER_ID;
+	}
 }
 
 ?>

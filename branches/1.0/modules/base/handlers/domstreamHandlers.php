@@ -47,20 +47,25 @@ class owa_domstreamHandlers extends owa_observer {
     	
     	if ( ! $ds->wasPersisted() ) {
 	    	
-			$ds->set('id', $event->get('guid') );
-			$ds->set('domstream_guid', $event->get('domstream_guid'));
-			$ds->set('visitor_id', $event->get('visitor_id'));
-			$ds->set('session_id', $event->get('session_id'));
-			$ds->set('site_id', $event->get('site_id'));
-			$ds->set('document_id', $ds->generateId($event->get('page_url')));	
-			$ds->set('page_url', $event->get('page_url'));
-			$ds->set('events', $event->get('stream_events'));
-			$ds->set('duration', $event->get('duration'));
-			$ds->set('timestamp', $event->get('timestamp'));
-			$ds->set('yyyymmdd', owa_lib::timestampToYyyymmdd($event->get('timestamp')));
+	    	$ds->setProperties( $event->getProperties() );
+	    	
+			$ds->set( 'id', $event->get( 'guid' ) );
+			$ds->set( 'domstream_guid', $event->get('domstream_guid') );
+			$ds->set( 'document_id', $ds->generateId( $event->get('page_url') ) );	
+			$ds->set( 'page_url', $event->get('page_url') );
+			$ds->set( 'events', $event->get('stream_events') );
+			$ds->set( 'duration', $event->get('duration') );
+			
 			$ret = $ds->create();
 			
 			if ( $ret ) {
+			
+				// Tell others that "dom.stream" has been logged 
+				$eq = owa_coreAPI::getEventDispatch(); 
+				$nevent = $eq->makeEvent($event->getEventType().'_logged'); 
+				$nevent->setProperties($event->getProperties()); 
+				$eq->asyncNotify($nevent);
+			
 				return OWA_EHS_EVENT_HANDLED;
 			} else {
 				return OWA_EHS_EVENT_FAILED;

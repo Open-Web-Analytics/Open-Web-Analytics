@@ -8,7 +8,7 @@
 	border: 2px solid orange;
 	border-right:0px; 
 	opacity: 1; 
-	z-index: 100; 
+	z-index: 999999; 
 	width:auto; 
 	vertical-align: bottom;
 	font-family: sans-serif;
@@ -55,12 +55,12 @@ body > div.jGrowl.center {
 	background-color: red;
 	width:5px;
 	height:5px;
-	
+	z-index:999997;
 }
 
 #owa-cursor {
 	position:absolute; 
-	z-index:99;
+	z-index:999998;
 }
 
 #owa-overlay-status {

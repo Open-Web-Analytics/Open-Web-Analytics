@@ -69,7 +69,7 @@ class owa_error {
 	function __construct() {
 				
 		// setup composite logger
-		$this->logger = &Log::singleton('composite');
+		$this->logger = Log::singleton('composite');
 		$this->addLogger('null');	 
 	}
 	
@@ -298,7 +298,7 @@ class owa_error {
 	 */
 	function make_null_logger() {
 		
-		$logger = &Log::singleton('null');
+		$logger = Log::singleton('null');
 		return $logger;
 	}
 	
@@ -324,16 +324,13 @@ class owa_error {
 	 */
 	function make_file_logger() {
 		
-		// fetch config object
-		//$c = &owa_coreAPI::configSingleton();
-
 		// test to see if file is writable
 		$handle = @fopen(owa_coreAPI::getSetting('base', 'error_log_file'), "a");
 		
 		if ($handle != false):
 			fclose($handle);
 			$conf = array('mode' => 0600, 'timeFormat' => '%X %x', 'lineFormat' => '%1$s %2$s [%3$s] %4$s');
-			$logger = &Log::singleton('file', owa_coreAPI::getSetting('base', 'error_log_file'), getmypid(), $conf);
+			$logger = Log::singleton('file', owa_coreAPI::getSetting('base', 'error_log_file'), getmypid(), $conf);
 			return $logger;
 		else:
 			return;
@@ -347,11 +344,8 @@ class owa_error {
 	 */
 	function make_mail_logger() {
 		
-		// fetch config object
-		$c = &owa_coreAPI::configSingleton();
-
 		$conf = array('subject' => 'Important Error Log Events', 'from' => 'OWA-Error-Logger');
-		$logger = &Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
+		$logger = Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
 		
 		return $logger;
 	}

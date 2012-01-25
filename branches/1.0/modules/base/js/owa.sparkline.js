@@ -51,29 +51,84 @@ OWA.sparkline = function(dom_id) {
 
 OWA.sparkline.prototype = {
 	
+	mergeOptions: function ( options ) {
+	
+		for (option in options) {
+			
+			if ( options.hasOwnProperty( option ) ) {
+				this.options[ option ] = options[ option ];
+			}
+		}
+	},
+	
+	setDomId: function( dom_id ) {
+		
+		this.dom_id = dom_id;
+		this.domSelector = this.dom_id + ' > .sparkline';
+		// listen for data change events
+		var that = this;
+		jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
+			jQuery( that.domSelector ).remove();
+			that.generate( resultSet );
+		});
+		
+	},
+	
+	getOption: function( name ) {
+		
+		if ( this.options.hasOwnProperty( name ) ) {
+			return this.options[ name ];
+		}
+	},
+	
+	setOption: function ( name, value ) {
+		
+		this.options[name] = value;
+	},
+	
+	generate : function(resultSet, dom_id, options) {
+	
+		if ( dom_id ) {
+     		
+     		this.setDomId( dom_id );
+     	}
+     	
+     	dom_id = this.dom_id;
+     	
+     	if ( options ) {
+     		
+     		this.mergeOptions( options );
+     	}
+     	
+     	
+     	var data = resultSet.getSeries(this.options.metric, '', this.options.filter);
+     	
+     	if ( ! data) {
+			data = [0,0,0];
+		}
+		var selector = this.domSelector;
+		jQuery('#' + dom_id ).append('<p class="sparkline"></p>');
+		
+		this.loadFromArray(data);
+    },
+
 	render: function() {
 		
 		 jQuery('#' + this.dom_id).sparkline('html', this.options);
 	},
 	
 	loadFromArray :function(data) {
-		jQuery('#' + this.dom_id).sparkline(data, this.options);
+		var selector = '#' + this.domSelector;
+		jQuery( selector ).sparkline(data, this.options);
 	},
 		
 	setHeight: function(height) {
 		
 		this.options.height = height;
-		return;
 	},
 	
 	setWidth: function(width) {
 		
 		this.options.width = width;
-	},
-	
-	setDomId: function(dom_id) {
-		
-		this.dom_id = dom_id;
-	}
-	
+	}	
 }

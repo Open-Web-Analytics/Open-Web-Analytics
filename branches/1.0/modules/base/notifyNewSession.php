@@ -18,7 +18,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * Notify New Session Controller
@@ -33,37 +32,23 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_notifyNewSessionController extends owa_controller {
-	
-	function __construct($params) {
 		
-		$this->priviledge_level = 'guest';
-		return parent::__construct($params);
-	}
-	
 	function action() {
 		
-		// Control logic
-		
-		$s = owa_coreAPI::entityFactory('base.site');
-		
-		$s->getByPk('site_id', $this->params['site_id']);
-		
-		$data['site'] = $s->_getProperties();
-
-		$data['email_address']= $this->config['notice_email'];
-		$data['session'] = $this->params;
-		$data['subject'] = sprintf('OWA: New Visit to %s', $s->get('domain'));
-		$data['view'] = 'base.notifyNewSession';
-		$data['plainTextView'] = 'base.notifyNewSessionPlainText';
-		$data['view_method'] = 'email-html';
+		$event = $this->getParam( 'event' );
+		$site = $this->getParam( 'site' );
+		$this->set( 'site', $site->_getProperties() );
 			
-		return $data;
-			
+		$this->set( 'email_address', owa_coreAPI::getSetting( 'base', 'notice_email' ) );
+		$this->set( 'session', $event->getProperties() );
+		
+		$this->set( 'subject', sprintf('OWA: New Visit to %s', $site->get( 'domain' ) ) );
+		//$this->set( 'plainTextView', 'base.notifyNewSessionPlainText');
+		$this->setView( 'base.notifyNewSession' );
 	}
-	
-	
 }
 
+require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
  * New Session Notification View
@@ -77,19 +62,16 @@ class owa_notifyNewSessionController extends owa_controller {
  * @since		owa 1.0.0
  */
 
-class owa_notifyNewSessionView extends owa_view {
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
-	function render($data) {
+class owa_notifyNewSessionView extends owa_mailView {
 		
-		$this->t->set_template('wrapper_email.tpl');
-		$this->body->set_template('new_session_email.tpl');
-		$this->body->set('site', $data['site']);
-		$this->body->set('session', $data['session']);
+	function render() {
+		
+		$this->t->set_template( 'wrapper_email.tpl' );
+		$this->body->set_template( 'new_session_email.tpl' );
+		$this->body->set( 'site', $this->get( 'site' ) );
+		$this->body->set( 'session', $this->get( 'session' ) );
+		$this->setMailSubject( $this->get('subject') );	
+		$this->addMailToAddress( $this->get('email_address') );
 	}
 }
 

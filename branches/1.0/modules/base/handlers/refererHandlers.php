@@ -20,10 +20,8 @@ if(!class_exists('owa_observer')) {
 	require_once(OWA_BASE_DIR.'owa_observer.php');
 }	
 
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
-
 if (!class_exists('owa_http')) {
-	require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_httpRequest.php');
+	require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
 }
 
 /**
@@ -48,46 +46,47 @@ class owa_refererHandlers extends owa_observer {
      */
     function notify($event) {
 		
-		if (!$event->get('external_referer')) {
-			return;
+		$medium = $event->get('medium');
+		
+		// if there is no session referer then return
+		if ( ! $event->get('session_referer') ) {
+			return OWA_EHS_EVENT_HANDLED;
 		}
 		
     	// Make entity
 		$r = owa_coreAPI::entityFactory('base.referer');
 		
-		$r->load( $r->generateId( $event->get( 'HTTP_REFERER' ) ) );
+		$r->load( $event->get( 'referer_id' ) );
 		
 		if ( ! $r->wasPersisted() ) {
-		
-			// set referer url
-			$r->set('url', $event->get('HTTP_REFERER'));
 			
-			// check for search engine
-			$se_info = $this->lookupSearchEngine($event->get('HTTP_REFERER'));
-			if (!empty($se_info)) {
-				$r->set('is_searchengine', true);
-				$r->set('site_name', $se_info->name);
+			// Set id
+			if ( $event->get( 'referer_id' ) ) {
+				$r->set( 'id', $event->get( 'referer_id' ) );
+			} else {
+				$r->set( 'id', $r->generateId( $event->get( 'session_referer' ) ) );
 			}
 			
+			// set referer url
+			$r->set('url', $event->get('session_referer'));
+				
 			// Set site
-			$url = parse_url($event->get('HTTP_REFERER'));
+			$url = owa_lib::parse_url($event->get('session_referer'));
 			$r->set('site', $url['host']);
 					
-			if ($event->get('source') === 'organic-search') {
+			if ( $medium === 'organic-search' ) {
 				$r->set('is_searchengine', true);
 			}
 				
 			// set title. this will be updated later by the crawler.
 			$r->set('page_title', '(not set)');
-			// Set id
-			$r->set('id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 			
 			// Crawl and analyze refering page
-			if (owa_coreAPI::getSetting('base', 'fetch_refering_page_info')) {
+			if (owa_coreAPI::getSetting( 'base', 'fetch_refering_page_info') && $medium != 'organic-search' ) {
 				//owa_coreAPI::debug('hello from logReferer');
 				$crawler = new owa_http;
 				//$crawler->fetch($this->params['HTTP_REFERER']);
-				$res = $crawler->getRequest($event->get('HTTP_REFERER'));
+				$res = $crawler->getRequest($event->get('session_referer'));
 				owa_coreAPI::debug('http request response: '.print_r($res, true));
 				//Extract Title
 				
@@ -134,29 +133,6 @@ class owa_refererHandlers extends owa_observer {
 			return OWA_EHS_EVENT_HANDLED;
 		}
     }
-    
-    /**
-	 * Lookup info about referring domain 
-	 *
-	 * @param string $referer
-	 * @return object
-	 * @access private
-	 */
-	function lookupSearchEngine($referer) {
-	
-		/*	Look for match against Search engine groups */
-		$db = new ini_db(owa_coreAPI::getSetting('base', 'search_engines.ini'), $sections = true);
-		
-		$se_info = $db->fetch($referer);
-		
-		if (!empty($se_info->name)):
-			return $se_info;
-		else:
-			return false;
-		endif;
-			
-	}
-    
 }
 
 ?>

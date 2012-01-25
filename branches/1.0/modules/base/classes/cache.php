@@ -50,14 +50,14 @@ class owa_cache {
 	 */
 	function __construct($cache_dir = '') {
 		
-		$this->e = &owa_coreAPI::errorSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
 	}
 		
 	function set($collection, $key, $value, $expires = '') {
 	
 		$hkey = $this->hash($key);
-		//owa_coreAPI::debug('set key: '.$key);
-		//owa_coreAPI::debug('set hkey: '.$hkey);
+		owa_coreAPI::debug('set key: '.$key);
+		owa_coreAPI::debug('set hkey: '.$hkey);
 		$this->cache[$collection][$hkey] = $value;
 		$this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
 		$this->statistics['added']++;		
@@ -126,7 +126,6 @@ class owa_cache {
 	
 		$id = $this->hash($key);
 		unset($this->cache[$collection][$id]);
-		
 		return $this->removeItemFromCacheStore($collection, $id);
 		
 	}

@@ -60,14 +60,14 @@ class owa_installController extends owa_controller {
 	
 	function installSchema() {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$base = $service->getModule('base');
 		$status = $base->install();
 		return $status;
 
 	}
 	
-	function createAdminUser($email_address, $real_name = '') {
+	function createAdminUser($email_address, $real_name = '', $password = '') {
 		
 		//create user entity
 		$u = owa_coreAPI::entityFactory('base.user');
@@ -78,15 +78,18 @@ class owa_installController extends owa_controller {
 		if (empty($id_check)) {
 	
 			//Check to see if user name already exists
-			$u->getByColumn('user_id', 'admin');
+			$u->getByColumn('user_id', owa_user::ADMIN_USER_ID);
 	
 			$id = $u->get('id');
 	
 			// Set user object Params
 			if (empty($id)) {
 				
-				$password = $u->generateRandomPassword();
-				$ret = $u->createNewUser('admin', 'admin', $password, $email_address, $real_name);
+				// create random passsword if none provided.
+				if ( ! $password ) {
+					$password = $u->generateRandomPassword();
+				}
+				$ret = $u->createNewUser('admin', owa_user::ADMIN_USER_ID, $password, $email_address, $real_name);
 				owa_coreAPI::debug("Admin user created successfully.");
 				return $password;
 				
@@ -145,7 +148,7 @@ class owa_installController extends owa_controller {
 	function checkDbConnection() {
 		
 		// Check DB connection status
-		$db = &owa_coreAPI::dbSingleton();
+		$db = owa_coreAPI::dbSingleton();
 		$db->connect();
 		if ($db->connection_status === true) {
 			return true;

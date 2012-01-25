@@ -39,7 +39,8 @@
  		
  		$value = $this->getValues();
  		
- 		$substring = $this->getConfig('subString');
+ 		$substring = $this->getConfig('substring');
+ 		
  		$pos = strpos($value, $substring);
  		
  		$operator = $this->getConfig('operator');
@@ -56,7 +57,7 @@
  				}
  					
  						
- 			break;
+ 				break;
  			
  			case "!=":
  				
@@ -64,13 +65,13 @@
  					$this->hasError();
  				}
  			
- 			break;
+ 				break;
  		}
 		
 		$error = $this->getErrorMsg();
 		
 		if (empty($error)) {
-			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $subString, $pos));
+			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $substring, $pos));
 		} 		
 		
  		

@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
+
 /**
  * Action Event Fact Entity
  * 
@@ -28,51 +30,23 @@
  * @since		owa 1.3.0
  */
 
-class owa_action_fact extends owa_entity {
+class owa_action_fact extends owa_factTable {
 	
 	function __construct() {
 		
 		$this->setTableName('action_fact');
 		
-		$id = new owa_dbColumn('id', OWA_DTD_BIGINT);
-		$id->setPrimaryKey();
-		$this->setProperty($id);
+		// set common fact table columns
+		$parent_columns = parent::__construct();
 		
-		$visitor_id = new owa_dbColumn('visitor_id', OWA_DTD_BIGINT);
-		$visitor_id->setForeignKey('base.visitor');
-		$this->setProperty($visitor_id);
-		
-		$session_id = new owa_dbColumn('session_id', OWA_DTD_BIGINT);
-		$session_id->setForeignKey('base.session');
-		$this->setProperty($session_id);
+		foreach ($parent_columns as $pcolumn) {
+				
+			$this->setProperty($pcolumn);
+		}
 		
 		$document_id = new owa_dbColumn('document_id', OWA_DTD_BIGINT);
 		$document_id->setForeignKey('base.document');
 		$this->setProperty($document_id);
-		
-		$site_id = new owa_dbColumn('site_id', OWA_DTD_VARCHAR255);
-		$site_id->setForeignKey('base.site', 'site_id');
-		$this->setProperty($site_id);
-		
-		// wrong data type
-		$ua_id = new owa_dbColumn('ua_id', OWA_DTD_BIGINT);
-		$ua_id->setForeignKey('base.ua');
-		$this->setProperty($ua_id);
-		
-		$host_id = new owa_dbColumn('host_id', OWA_DTD_BIGINT);
-		$host_id->setForeignKey('base.host');
-		$this->setProperty($host_id);
-		
-		// wrong data type
-		$os_id = new owa_dbColumn('os_id', OWA_DTD_BIGINT);
-		$os_id->setForeignKey('base.os');
-		$this->setProperty($os_id);
-		
-		$timestamp = new owa_dbColumn('timestamp', OWA_DTD_INT);
-		$this->setProperty($timestamp);
-		
-		$yyyymmdd = new owa_dbColumn('yyyymmdd', OWA_DTD_INT);
-		$this->setProperty($yyyymmdd);
 		
 		$action_name = new owa_dbColumn('action_name', OWA_DTD_VARCHAR255);
 		$this->setProperty($action_name);

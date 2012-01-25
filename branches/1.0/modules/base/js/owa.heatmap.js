@@ -123,7 +123,7 @@ OWA.heatmap.prototype = {
 	
 	endSession: function() {
 		
-		OWA.util.eraseCookie('owa_overlay', document.domain);
+		OWA.util.eraseCookie(OWA.getSetting('ns') + 'overlay', document.domain);
 		window.close();
 	},
 	
@@ -205,7 +205,7 @@ OWA.heatmap.prototype = {
 	 */
 	fetchData: function(page) {
 	
-		var p = OWA.util.readCookie('owa_overlay');
+		var p = OWA.util.readCookie(OWA.getSetting('ns') + 'overlay');
 		//alert(unescape(p));
 		var params = OWA.util.parseCookieStringToJson(p);
 		//params.action = 'base.reportOverlay';

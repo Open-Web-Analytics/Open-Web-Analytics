@@ -9,7 +9,7 @@
 	<p class="form-row">
 		<span class="form-label">Password:</span>
 		<span class="form-field"><?php echo $p;?></span>
-		<span class="form-instructions">Be sure to change this password.</span>
+		<span class="form-instructions"></span>
 	</p>
 	<BR>
 	<p>		

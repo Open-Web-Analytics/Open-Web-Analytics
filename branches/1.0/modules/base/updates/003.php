@@ -34,7 +34,7 @@ class owa_base_003_update extends owa_update {
 	function up() {
 		
 		$db = owa_coreAPI::dbSingleton();
-		$s = &owa_coreAPI::serviceSingleton();
+		$s = owa_coreAPI::serviceSingleton();
 		
 		$entities = $s->modules[$this->module_name]->getEntities();
 		

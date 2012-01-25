@@ -1,6 +1,6 @@
 /* REPORT CSS */
 
-ul {margin-left:10px;}
+/*ul {margin-left:10px;} */
 .owa {font-family: Helvetica, Arial, sans-serif; width:auto;}
 #report_header {width:100%; margin: 0 0 20px 0; }
 
@@ -141,14 +141,14 @@ ul {margin-left:10px;}
 .owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
 .owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
 .owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
-.owa_reportPeriod {text-align: right;}
+/*.owa_reportPeriod {text-align: right;}*/
 #owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
 
 
 #owa_reportPeriodFiltersContainer {background-color: #efefef; width:100%;}
-#owa_reportPeriodFiltersContainer table {width:100%;}
-#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}
 
+/*#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}*/
+#owa_reportPeriodFiltersContainer .picker { padding-left:15px;}
 #owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
 .owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
 
@@ -164,7 +164,7 @@ ul {margin-left:10px;}
 
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
 
-.owa_metricInfobox {
+.owa_metricInfobox, .owa .action_infobox {
 	color:#505050; 
 	background-color: #ffffff;
 	text-align: left; 
@@ -177,20 +177,20 @@ ul {margin-left:10px;}
 	
 }
 
-.owa_metricInfobox p,span {
+.owa_metricInfobox p, .owa_metricInfobox span, .owa .action_infobox {
 	padding:0px 7px 0px 7px;
 	margin:0px;
 	
 }
 
-p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel  {
+p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .action_name  {
 	color:#666666;
 	font-size:12px;
 	padding-top:6px;
 	margin-bottom:0px;
 }
 
-p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
+p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
 	color:#505050;
 	font-size:28px;
 	padding-bottom: 0px;
@@ -198,9 +198,25 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	margin-top:5px;
 	font-weight: bold;
 	line-height: normal;
+	white-space:nowrap;
 }
 
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
+
+.kpiInfobox {
+	min-width:200px;
+	width:auto;
+}
+
+.kpiInfoboxLink {
+	text-decoration:none;
+}
+
+.visitSummaryKpi {
+	width:120px;
+	min-width:120px;
+	min-height: 60px;
+}
 
 .owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
 .owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}
@@ -319,7 +335,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 }
 
 .owa_icon16x16 {
-	width:auto;
+	width:20px;
 	padding:3px;
 }
 
@@ -333,10 +349,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 .owa_genericHorizontalList li {text-decoration: none; float:left; margin: 2px; padding:3px;}
 .owa_genericHorizontalList li a {
 	
-	height:;
-	line-height:;
-	float: left;
-	width: ;
 	display: block;
 	text-decoration: none;
 	text-align: center;
@@ -348,7 +360,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 
 .owa_resultsExplorerBottomControls {
 	background-color: #9f9f9f;
-	
+	font-size:10px;
 }
 
 .owa_resultsExplorerBottomControls li a {
@@ -569,4 +581,171 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 	
 	font-size:14px;
 	color: #9f9f9f;
+}
+
+.owa .submit-button {
+	border-radius:4px; 
+	background-color:orange; 
+	padding:10px 10px 10px 10px; 
+	color:#ffffff; 
+	font-size:14px;
+	font-weight:bold;
+	border: 1px solid #efefef;
+	-moz-border-radius: 3px; 
+	-webkit-border-radius: 3px;	
+	margin-top: 20px;
+	text-decoration: none;
+	
+}
+
+.owa .externalUrl {
+	color: #093;
+	font-size:12px;
+}
+
+.submit-button:hover {
+	color: #000000;
+	border-color: #9f9f9f;
+	-moz-box-shadow:2px 2px 2px #999;
+    box-shadow:2px 2px 2px #999;
+    -webkit-box-shadow:2px 2px 2px #999;
+}
+
+.submit-button a  {
+	text-decoration: none;
+}
+
+.dimensionPicker {
+	
+	width:175px;
+	font-size: 10px;
+	
+}
+
+.dimensionPicker .dim-list {
+	
+}
+
+.dimensionPicker .dim-list ul {
+
+	padding-left: 7px;
+}
+
+.dimensionPicker .dimensionListItem {
+	
+	color: white;
+	background-color: green;
+	border: 1px solid #efefef;
+	padding:7px;
+	list-style: none;
+}
+
+.dimensionPicker .select-button {
+	
+	font-size: 10px;
+	height:;
+	
+}
+
+.dimensionPicker .dimensionListItem:hover {
+	
+	font-weight: bold;
+	background-color: orange;
+}
+
+.dimensionPicker h4 {
+	font-size:  14px;
+	font-weight: bold;
+	margin-bottom: 5px;
+	margin-top: 10px;
+}
+
+.explorerTopControls {
+	
+	font-size: 12px;
+	width:auto;
+	border: 1px solid #B0B0B0;
+	padding: 0px;
+	margin-bottom:3px;
+	background-color: #fafafa;
+	
+}
+
+.dimensionPicker li, .dimensionPicker ul {
+	
+	float:none;
+}
+
+.explorerTopControls .controlItem span {
+	font-size: 10px;
+}
+
+.explorerTopControls li {
+	
+	list-style: none;
+	text-decoration: none;
+	width:;
+}
+
+.constraintPickerContainer .builder {
+	
+	margin:15px;
+	padding:10px;
+	background-color: #ffffff;
+	border: 1px solid #9f9f9f;	
+}
+
+li.constraintRow {
+	width:700px;
+	padding:20px;
+	border: 1px solid #9f9f9f;
+	background-color: #fafafa;
+}
+
+.constraintRow .constraintOperatorPicker, .constraintRow .constraintDimensionPicker {
+	float:left;
+	margin-right:10px;
+}
+
+.constraintRow .constraintRemoveButton {
+	float:right;
+	margin-right:10px;
+}
+
+.controlItem .label {
+	font-size:10px;
+	padding-top:7px;
+	padding-right:5px
+}
+
+.controlItem span {
+	
+	float:left;
+	
+}
+
+.controlItem {
+
+	display: inline-block;
+    vertical-align: middle;
+}
+
+.ui-selectmenu {
+	
+	height: 1.75em;
+}
+
+.owa .actionInfobox {
+	
+	border: 1
+}
+
+.owa img.loading { 
+	margin: 5px 5px 5px 30px
+}
+.owa #trend-chart {
+	min-height: 125px
+}
+.owa #trend-metrics {
+	min-height: 70px
 }

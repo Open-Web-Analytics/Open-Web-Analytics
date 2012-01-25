@@ -21,6 +21,14 @@
 			</span>
 			<span class="form-instructions">This is the e-mail address of the admin user.</span>
 		</p>
+		
+		<p class="form-row">
+			<span class="form-label">Your Password</span>
+			<span class="form-field">
+				<input type="password"size="30" name="<?php echo $this->getNs();?>password" value="">
+			</span>
+			<span class="form-instructions">This will be the password of the admin user.</span>
+		</p>
 				
 		<p>
 			<?php echo $this->createNonceFormField('base.installBase');?>

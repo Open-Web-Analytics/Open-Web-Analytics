@@ -63,6 +63,13 @@ class owa_event {
 	var $guid;
 	
 	/**
+	 * Creation Timestamp in UNIX EPOC UTC
+	 *
+	 * @var int
+	 */
+	var $timestamp;
+	
+	/**
 	 * Constructor
 	 * @access public
 	 */	
@@ -70,10 +77,15 @@ class owa_event {
 		
 		// Set GUID for event
 		$this->guid = $this->set_guid();
+		$this->timestamp = time();
 		//needed?
 		$this->set('guid', $this->guid);
-		$this->set('timestamp', time() );
+		$this->set('timestamp', $this->timestamp );
+	}
+	
+	function getTimestamp() {
 		
+		return $this->timestamp;
 	}
 	
 	function set($name, $value) {
@@ -102,15 +114,12 @@ class owa_event {
 		if ( $timestamp ) {
 			$this->set('timestamp', $timestamp);	
 		} else {
-			$timestamp = $this->get('timestamp');
+			$timestamp = $this->getTimestamp();
 		}
-		
-		// convert to local time and reset timestamp
-		//$timestamp = owa_lib::utcToLocalTimestamp($timestamp);
-		//$this->set('timestamp', $timestamp);
-		
+	
+		$this->set('timestamp', $timestamp);
 		$this->set('year', date("Y", $timestamp));
-		$this->set('month', date("n", $timestamp));
+		$this->set('month', date("Ym", $timestamp));
 		$this->set('day', date("d", $timestamp));
 		$this->set('yyyymmdd', date("Ymd", $timestamp));
 		$this->set('dayofweek', date("D", $timestamp));
@@ -174,8 +183,7 @@ class owa_event {
 	 */
 	function set_guid() {
 	
-		return crc32(getmypid().time().rand());
-	
+		return owa_lib::generateRandomUid();
 	}
 		
 	/**
@@ -248,7 +256,19 @@ class owa_event {
 	
 	function setSiteId($value) {
 		
+		$this->set('siteId', $value);
 		$this->set('site_id', $value);
+	}
+	
+	function getSiteId() {
+		
+		if ( $this->get('siteId') ) {
+			return $this->get('siteId');	
+		} else {
+			return $this->get('site_id');
+		}
+		
+		
 	}
 	
 	function setPageType($value) {
@@ -263,7 +283,7 @@ class owa_event {
 	
 	function getSiteSpecificGuid($site_id) {
 		
-		return crc32(getmypid().time().rand().$site_id);
+		return owa_lib::generateRandomUid();
 	}
 	
 		

@@ -51,7 +51,7 @@
 			
 			<div class="owa_reportSectionContent" style="min-width:350px;">
 				<div class="owa_reportSectionHeader">Top Page Types</div>
-				<div id="top-pagetypes"></div>
+				<div id="top-pagetypes" style="width:auto;margin-top:-10px;"></div>
 				<div class="owa_genericHorizonalList owa_moreLinks">
 					<UL>
 						<LI>
@@ -81,23 +81,6 @@ OWA.items.rsh.asyncQueue.push(['makeAreaChart', [{x:'date',y:'pageViews'}]]);
 OWA.items.rsh.asyncQueue.push(['makeMetricBoxes', 'trend-metrics']);
 OWA.items.rsh.asyncQueue.push(['renderTemplate','#content-headline-template', {data: OWA.items.rsh}, 'replace', 'content-headline']);
 OWA.items.rsh.load(aurl);
-
-
-
-var vmurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
-																	'metrics' => 'visits', 
-																	'dimensions' => 'medium', 
-																	'sort' => 'visits-',
-																	'format' => 'json',
-																	'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))),true);?>';
-																	  
-OWA.items.vm = new OWA.resultSetExplorer('traffic-sources');
-OWA.items.vm.options.pieChart.metric = 'visits';
-OWA.items.vm.options.pieChart.dimension = 'medium';
-OWA.items.vm.options.chartWidth = '300px';
-OWA.items.vm.asyncQueue.push(['makePieChart']);
-OWA.items.vm.load(vmurl);
-
 
 var toppagesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 												'metrics' => 'visits', 

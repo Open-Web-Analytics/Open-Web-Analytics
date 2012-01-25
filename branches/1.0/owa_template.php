@@ -66,14 +66,14 @@ class owa_template extends Template {
 	 */
 	var $caller_params;
 	
-	function owa_template($module = null, $caller_params = array()) {
+	function __construct( $module = null, $caller_params = array() ) {
 		
 		$this->caller_params = $caller_params;
 			
-		$c = &owa_coreAPI::configSingleton();
+		$c = owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
 		
-		$this->e = &owa_coreAPI::errorSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
 		
 		// set template dirs
 		if(!empty($caller_params['module'])):
@@ -83,20 +83,18 @@ class owa_template extends Template {
 		endif;
 		
 		$this->time_now = owa_lib::time_now();
-		
-		return;
 	}
 	
 	function _setTemplateDir($module) {
 	
 		// set module template dir
-		$this->module_template_dir = OWA_DIR.'modules'.DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR;
+		$this->module_template_dir = OWA_DIR.'modules'.'/' . $module . '/'.'templates'.'/';
 		
 		// set module local template override dir
-		$this->module_local_template_dir = $this->module_template_dir.'local'.DIRECTORY_SEPARATOR;
+		$this->module_local_template_dir = $this->module_template_dir.'local'.'/';
 		
 		// set theme template dir
-		$this->theme_template_dir = OWA_THEMES_DIR.$this->config['theme'].DIRECTORY_SEPARATOR;
+		$this->theme_template_dir = OWA_THEMES_DIR.$this->config['theme'].'/';
 		
 		return;
 	}
@@ -200,61 +198,39 @@ class owa_template extends Template {
 	 * @param unknown_type $browser_type
 	 * @return unknown
 	 */
-	function choose_browser_icon($browser_type) {
+	function choose_browser_icon($browser_type, $height= '32', $width='') {
+	
+		$default_location = 'base/i/browsers/128x128/';
 		
-		switch (strtolower($browser_type)) {
+		$icons = array(
+		
+			'internet explorer'	=>  $default_location . 'ie.png',
+			'opera mini'		=>	$default_location . 'opera.png',
+			'unknown browser'	=>	$default_location . 'default.png'
 			
-			case "ie":
-				$file = 'msie.png';
-				$name = 'Microsoft Internet Explorer';
-				break;
-			case "internet explorer":
-				$file = 'msie.png';
-				$name = 'Microsoft Internet Explorer';
-				break;
-			case "firefox":
-				$file = 'firefox.png';
-				$name = 'Firefox';
-				break;
-			case "safari":
-				$file = 'safari.png';
-				$name = 'Safari';
-				break;
-			case "opera":
-				$file = 'opera.png';
-				$name = 'Opera';
-				break;
-			case "netscape":
-				$file = 'netscape.png';
-				$name = 'Netscape';
-				break;
-			case "mozilla":
-				$file = 'mozilla.png';
-				$name = 'Mozilla';
-				break;
-			case "konqueror":
-				$file = 'kon.png';
-				$name = 'Konqueror';
-				break;
-			case "camino":
-				$file = 'camino.png';
-				$name = 'Camino';
-				break; 
-			case "aol":
-				$file = 'aol.png';
-				$name = 'AOL';
-				break; 
-			case "default browser":
-				$file = 'default_browser.png';
-				$name = 'Unknown Browser';
-				break; 
-			default:
-				$name = 'Unknown Browser';
-				$file = 'default_browser.png';
+		);
+		
+		$file = $default_location . strtolower( $browser_type ) . '.png' ;
+		
+		if ( file_exists( OWA_MODULES_DIR . $file ) ) {
 			
+			$file = $file;
+		
+		} else if ( isset( $icons[ strtolower($browser_type) ] ) ) {
+			
+			$file = $icons[ strtolower($browser_type) ];	
+		
+		} else {
+			
+			$file = $icons['unknown browser'];
 		}
-			
-		return sprintf('<img alt="%s" align="baseline" src="%s">', $name, $this->makeImageLink('base/i/'.$file));
+				
+		return sprintf( '<img alt="%s" align="baseline" src="%s" width="%s" height="%s">', 
+						$browser_type, 
+						$this->makeImageLink( $file ), 
+						$width, 
+						$height 
+		);
 		
 	}
 	
@@ -807,12 +783,14 @@ class owa_template extends Template {
 		}
 	}
 	
-	function makeNavigationMenu($links) {
+	function makeNavigationMenu($links, $currentSiteId) {
 		
-		if (!empty($links)) {
+		if (!empty($links) && !empty($currentSiteId)) {
 		
 			$t = new owa_template;
 			$t->set('links', $links);
+			$t->set('currentSiteId', $currentSiteId);
+			
 			$t->caller_params['link_state'] = $this->caller_params['link_state'];
 			$t->set_template('report_nav.tpl');
 			return $t->fetch();
@@ -948,6 +926,25 @@ class owa_template extends Template {
 		
 	}
 	
+	public function renderKpiInfobox($number, $label, $link = '', $class = '') {
+		
+		$t = new owa_template;
+		$t->set_template( 'kpiInfobox.php' );
+		$t->set( 'number', $number );
+		$t->set( 'label', $label );
+		
+		if ($link) {
+			$t->set( 'link', $link );	
+		}
+		
+		if ($class) {
+			$t->set( 'class', $class );	
+		}
+		
+		echo $t->fetch();
+		
+	}
+	
 	function renderDimension($template, $properties) {
 		
 		$t = new owa_template;
@@ -1001,6 +998,30 @@ class owa_template extends Template {
 	function getCurrentUser() {
 		
 		return owa_coreAPI::getCurrentUser();
+	}
+	
+	function getLatestActions( $startDate, $endDate, $siteId, $visitorId = '', $sessionId = '', $width = '300px', $resultsPerPage = 25, $page = 1 ) {
+		
+		$la = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestActions',
+			'siteId'			=> $siteId,
+			'page'				=> $page,
+			'startDate'			=> $startDate,
+			'endDate'			=> $endDate,
+			'visitorId'			=> $visitorId,
+			'sessionId'			=> $sessionId,
+			'resultsPerPage'	=> $resultsPerPage
+		));
+		
+		
+		$items = $la->getResultsRows();
+		
+		$t = new owa_template;
+		$t->set('items', $items);
+		$t->set('width', $width);
+		$t->set_template('widget_latestActions.php');
+		return $t->fetch();
 	}
 }
 

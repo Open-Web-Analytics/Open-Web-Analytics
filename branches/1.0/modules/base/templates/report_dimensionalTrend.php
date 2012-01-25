@@ -47,7 +47,7 @@
 	<?php if ($trendTitle):?>
 	trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
 	<?php endif;?>
-	trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
+	trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php if ( isset($tab['trendchartmetric'] ) ): echo $tab['trendchartmetric']; else: echo $trendChartMetric; endif; ?>'}], 'trend-chart']);
 	trend.options.metricBoxes.width = '150px';
 	trend.asyncQueue.push(['makeMetricBoxes' , '<?php $this->out($k, false);?>_trend-metrics']);
 	// add rse to tab

@@ -19,7 +19,7 @@
 
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
+require_once(OWA_BASE_DIR.'/ini_db.php'); // needed?
 
 /**
  * Generic Event Processor Controller
@@ -91,42 +91,38 @@ class owa_processEventController extends owa_controller {
 		//set user agent id
 		$this->event->set( 'ua_id', owa_lib::setStringGuid( $this->event->get( 'HTTP_USER_AGENT' ) ) );
 		
-		// set referer
-		// needed in case javascript logger sets the referer variable but is blank
-		if ($this->event->get('referer')) {
-			//TODO: STANDARDIZE NAME to avoid doing this map
-			$referer = $this->event->get('referer');
-		} else {
-			owa_coreAPI::debug('ref: '.owa_coreAPI::getServerParam('HTTP_REFERER'));
-			$referer = owa_coreAPI::getServerParam('HTTP_REFERER');
+		// filter http referer
+		if ( $this->event->get( 'HTTP_REFERER' ) ) {
+			$this->event->set( 'HTTP_REFERER', $this->eq->filter( 'HTTP_REFERER', $this->event->get( 'HTTP_REFERER' ) ) );
 		}
 		
-		$this->event->set('HTTP_REFERER', $this->eq->filter('http_referer', $referer));
-		
-		// set host
-		if (!$this->event->get('HTTP_HOST')) {
-			$this->event->set('HTTP_HOST', owa_coreAPI::getServerParam('HTTP_HOST'));
+		// set http_host
+		if ( ! $this->event->get( 'HTTP_HOST' ) ) {
+			$this->event->set( 'HTTP_HOST', owa_coreAPI::getServerParam( 'HTTP_HOST' ) );
 		}
+		
+		//filter http_host
+		$this->event->set( 'HTTP_HOST', $this->eq->filter( 'HTTP_HOST', $this->event->get( 'HTTP_HOST' ) ) );
 		
 		// set language
-		if (!$this->event->get( 'language' ) ) {
-			$this->event->set( 'language', $this->eq->filter('language', substr(owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ),0,5 ) ) );
+		if ( ! $this->event->get( 'language' ) ) {
+			$this->event->set( 'language', substr( owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 ) );
 		}
-		
-		$this->event->set('HTTP_HOST', $this->eq->filter('http_host', $this->event->get('HTTP_HOST')));
+		// filter language
+		$this->event->set( 'language', $this->eq->filter( 'language', $this->event->get( 'language' ) ) );
 		
 		// set page type to unknown if not already set by caller
-		if (!$this->event->get('page_type')) {
-			$this->event->set('page_type', '(not set)');
+		if (!$this->event->get( 'page_type' ) ) {
+			$this->event->set( 'page_type', '(not set)' );
 		} 
-		
-		$this->event->set('page_type', $this->eq->filter('page_type', $this->event->get('page_type')));
+		//filter page_type
+		$this->event->set( 'page_type', $this->eq->filter( 'page_type', $this->event->get( 'page_type' ) ) );
 		
 		// Set the page url or else construct it from environmental vars
 		if (!$this->event->get('page_url')) {
 			$this->event->set('page_url', owa_lib::get_current_url());
 		}
-		
+		// filter page_url
 		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ), $this->event->get( 'site_id' ) ) );
 		// set document/page id
 		$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
@@ -157,33 +153,35 @@ class owa_processEventController extends owa_controller {
 			}
 			
 		}
+		
+		// set session referer (the site that originally referer the visit)
+		if ( $this->event->get( 'session_referer' ) ) {
+			//filter session_referer
+			$this->event->set( 'session_referer', $this->eq->filter( 'session_referer', $this->event->get( 'session_referer' ) ) );
+			// generate referer_id for downstream handlers
+			$this->event->set( 'referer_id',  owa_lib::setStringGuid( $this->event->get('session_referer' ) ) );
+		}
 				
-		// set internal referer
-		if ($this->event->get('HTTP_REFERER')) {
+		// set prior page properties
+		if ( $this->event->get( 'HTTP_REFERER' ) ) {
 
-			$referer_parse = parse_url($this->event->get('HTTP_REFERER'));
+			$referer_parse = owa_lib::parse_url( $this->event->get('HTTP_REFERER') );
 
 			if ($referer_parse['host'] === $page_parse['host']) {
-				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER'), $this->event->get( 'site_id' ) ) );	
-			} else {
-				
-				$this->event->set('external_referer', true);
-				$this->event->set('referer_id', owa_lib::setStringGuid($this->event->get('HTTP_REFERER' ) ) );
-			
-				if ( ! $this->event->get( 'search_terms' ) ) {
-					// set query terms
-					$qt = $this->extractSearchTerms($this->event->get('HTTP_REFERER'));
-					
-					if ($qt) {
-						$this->event->set('search_terms', trim( strtolower( $qt ) ) );	
-					}
-				}				
+				$this->event->set('prior_page', 
+						$this->eq->filter('prior_page', 
+								$this->event->get('HTTP_REFERER'), 
+								$this->event->get( 'site_id' ) 
+						) 
+				);	
 			}
 		}
 		
-		// set referring search term id		
-		if ($this->event->get( 'search_terms' ) ) {
-			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get('search_terms') ) ) ) );
+		// set  search terms and id		
+		$search_terms = $this->event->get( 'search_terms' );
+		if ( $search_terms && $search_terms != '(not set)' ) {
+			$this->event->set( 'search_terms', $this->eq->filter('search_terms', trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
+			$this->event->set('referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
 		}
 				
 		// Filter the target url of clicks
@@ -198,6 +196,12 @@ class owa_processEventController extends owa_controller {
 		
 		$this->event->set('ip_address', $this->eq->filter('ip_address', $this->event->get('ip_address')));
 		
+		// check to see if IP should be excluded
+		if ( $this->isIpAddressExcluded( $this->event->get('ip_address') ) ) {
+			$this->event->set('do_not_log', true);
+			return;
+		}
+		
 		// Set host related properties
 		if (!$this->event->get('REMOTE_HOST')) {
 			$this->event->set('REMOTE_HOST', owa_coreAPI::getServerParam('REMOTE_HOST'));
@@ -206,10 +210,19 @@ class owa_processEventController extends owa_controller {
 		$this->event->set( 'full_host', $this->eq->filter( 'full_host', 
 				$this->event->get( 'REMOTE_HOST' ), 
 				$this->event->get( 'ip_address' ) ) );
+		
+		if ( ! $this->event->get( 'full_host' ) ) {
+			$this->event->set('full_host', '(not set)');
+		}
 				
 		$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
+		
+		if ( ! $this->event->get( 'host' ) ) {
+			$this->event->set('host', '(not set)');
+		}
+		
 		// Generate host_id
-		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'full_host' ) ) );
+		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'host' ) ) );
 		
 		// Browser related properties
 		$service = owa_coreAPI::serviceSingleton();
@@ -221,9 +234,9 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('browser_type', $this->eq->filter('browser_type', $bcap->get('Browser')));
 		
 		if ($bcap->get('Version')) {
-			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser') . ' ' . $bcap->get('Version')));
+			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Version')));
 		} else {
-			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Browser')));
+			$this->event->set('browser', $this->eq->filter('browser', '(unknown)'));
 		}
 	
 		// Set Operating System
@@ -252,69 +265,70 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('is_browser', false);
 		}
 		
-		// record and filter visitor personally identifiable info (PII)		
-		if (owa_coreAPI::getSetting('base', 'log_visitor_pii')) {
+		// record and filter personally identifiable info (PII)		
+		if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 			
-			$cu = owa_coreAPI::getCurrentUser();
+			// set user name if one does not already exist on event
+			if ( ! $this->event->get( 'user_name' ) && owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
 			
-			// set user name
-			$this->event->set('user_name', $this->eq->filter('user_name', $cu->user->get('user_id')));
+				$cu = owa_coreAPI::getCurrentUser();
+				$this->event->set( 'user_name',  $cu->user->get( 'user_id' ) );
 			
-			// set email_address
-			if ($this->event->get('email_address')) {
-				$email_adress = $this->event->get('email_address');
-			} else {
-				$email_address = $cu->user->get('email_address');
 			}
 			
-			$this->event->set('user_email', $this->eq->filter('user_email', $email_address));
-		} else {
-			// remove ip address from event
-			$this->event->set('ip_address', '(not set)');
+			$this->event->set( 'user_name', $this->eq->filter( 'user_name', $this->event->get( 'user_name' ) ) );
+			
+			// set email_address if one does not already exist on event
+			if ( ! $this->event->get( 'email_address' ) ) {
+				
+				$cu = owa_coreAPI::getCurrentUser();
+				$this->event->set( 'email_address', $cu->user->get( 'email_address' ) );
+			}
+			
+			$this->event->set( 'user_email', $this->eq->filter( 'user_email', $this->event->get( 'email_address' ) ) );
 		}
 		
-		// calc days since first session
-		$this->setDaysSinceFirstSession();
+		$this->event->set( 'days_since_first_session', $this->event->get( 'dsfs' ) );
+		$this->event->set( 'days_since_prior_session', $this->event->get( 'dsps' ) );
+		$this->event->set( 'num_prior_sessions', $this->event->get( 'nps' ) );
 		
 		if ( $this->event->get('is_new_session') ) {
 			//mark entry page flag on current request
-			$this->event->set( 'is_entry_page', true );
-			
-			// mark event type as first_page_request. Necessary?????
-			//$this->event->setEventType('base.first_page_request');
-	
-			// if this is not the first sessio nthen calc days sisne last session
-			if ($this->event->get('last_req')) {
-				$this->event->set('days_since_prior_session', round(($this->event->get('timestamp') - $this->event->get('last_req'))/(3600*24)));
-			}
-			
-			if ( ! $this->event->get('medium') ) {
-				$this->setMedium();
-			}
-			
-			if ( ! $this->event->get('source') ) {
-				$this->setSource();
-			}
-			
+			$this->event->set( 'is_entry_page', true );			
+		}
+		
+		if ( $this->event->get( 'medium' ) ) {
+			$this->event->set( 'medium', $this->eq->filter( 'medium', trim( strtolower( $this->event->get( 'medium' ) ) ) ) );		
 		}
 		
 		if ( $this->event->get( 'source' ) ) {
-				$this->event->set( 'source_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'source' ) ) ) ) );
-			}
-			
+			$this->event->set( 'source', $this->eq->filter( 'source', trim( strtolower( $this->event->get( 'source' ) ) ) ) );
+			$this->event->set( 'source_id', owa_lib::setStringGuid( $this->event->get( 'source' ) ) );
+		}
+				
 		if ( $this->event->get( 'campaign' ) ) {
 			$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
 		}
 		
 		if ( $this->event->get( 'ad' ) ) {
 			$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
-		}		
+		}
+		
+		$this->setCustomVariables();
+		
+		$this->setGeolocation();
+		
+		// anonymize Ip address
+		if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+			$this->event->set('ip_address', $this->anonymizeIpAddress($this->event->get('ip_address')));
+			$this->event->set('full_host', '(not set)');
+		}
+		
 	}
 	
 	function post() {
 			
 		return $this->addToEventQueue();
-	
 	}
 		
 	/**
@@ -344,80 +358,6 @@ class owa_processEventController extends owa_controller {
 
 	}
 	
-	/**
-	 * Parses query terms from referer
-	 *
-	 * @param string $referer
-	 * @return string
-	 * @access private
-	 */
-	function extractSearchTerms($referer) {
-	
-		/*	Look for query_terms */
-		$db = new ini_db(owa_coreAPI::getSetting('base', 'query_strings.ini'));
-		
-		$match = $db->match($referer);
-		
-		if (!empty($match[1])) {
-		
-			return trim(strtolower(urldecode($match[1])));
-		
-		}
-	}
-	
-	// if no campaign attribution look for standard medium/source:
-	// organic-search, referral, direct
-	function setMedium() {
-				
-		// if there is an external referer
-		if ( $this->event->get( 'external_referer' ) ) {
-	
-			// see if its from a search engine
-			if ( $this->event->get( 'search_terms' ) ) {
-				$medium = 'organic-search';
-			} else {
-				// assume its a plain old referral
-				$medium = 'referral';
-			}
-		} else {
-			// set as direct
-			$medium = 'direct';
-		}
-		
-		$this->event->set( 'medium', $medium );
-	}
-	
-	function setSource() {
-		
-		$ref = $this->event->get( 'external_referer' );
-		
-		if ( $ref ) {
-			$source = $this->getDomainFromUrl( $ref );
-		} else {
-			$source = '(none)';
-		}
-		
-		$this->event->set( 'source', $source);
-	}
-	
-	function getDomainFromUrl($url, $strip_www = true) {
-		
-		$split_url = preg_split('/\/+/', $url);
-		$domain = $split_url[1];
-		if ($strip_www === true) {
-			$domain_parts = explode('.', $domain);
-			$fp = $domain_parts[0];
-			if ($fp === 'www') {
-				return substring($domain, 4);
-			} else {
-				return $domain;
-			}
-			
-		} else {
-			return $domain;
-		}
-	}	
-	
 	function setDaysSinceFirstSession() {
 		
 		$fsts = $this->event->get( 'fsts' );
@@ -429,7 +369,89 @@ class owa_processEventController extends owa_controller {
 			$this->event->set('days_since_first_session', 0);
 		}
 	}
+	
+	function setCustomVariables() {
+		
+		$maxCustomVars = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+		
+		for ($i = 1; $i <= $maxCustomVars; $i++) {
+		
+			$cvar = $this->event->get( 'cv'.$i );
+			
+			if ( $cvar ) {
+				//split the string
+				$pieces = explode('=', trim( $cvar ) );
+				if ( isset( $pieces[1] ) ) {
+					$this->event->set( 'cv'.$i.'_name', $pieces[0] );
+					$this->event->set( 'cv'.$i.'_value', $pieces[1] );
+				}
+			} else {
+				$this->event->set( 'cv'.$i.'_name', '(not set)' );
+				$this->event->set( 'cv'.$i.'_value', '(not set)' );
+			}
+		}
+	}
+	
+	function setGeolocation() {
+		
+		if ( ! $this->event->get( 'country' ) ) {
+			
+			$location = owa_coreAPI::getGeolocationFromIpAddress( $this->event->get( 'ip_address' ) );
+			owa_coreAPI::debug( 'geolocation: ' .print_r( $location, true ) );
+			$this->event->set( 'country', $location->getCountry() );
+			$this->event->set( 'city', $location->getCity() );
+			$this->event->set( 'latitude', $location->getLatitude() );
+			$this->event->set( 'longitude', $location->getLongitude() );
+			$this->event->set( 'country_code', $location->getCountryCode() );
+			$this->event->set( 'state', $location->getState() );
+			$location_id = $location->generateId();
+			
+		} else {
+			$s = owa_coreAPI::serviceSingleton();
+			$location_id = $s->geolocation->generateId($this->event->get( 'country' ), $this->event->get( 'state' ), $this->event->get( 'city' ) );
+		}
+		
+		if ( $location_id ) {
+			$this->event->set( 'location_id', $location_id );
+		}
+	}
+	
+	private function isIpAddressExcluded( $ip_address ) {
+		
+		// do not log if ip address is on the do not log list
+		$ips = owa_coreAPI::getSetting( 'base', 'excluded_ips' );
+		owa_coreAPI::debug('excluded ips: '.$ips);
+		if ( $ips ) {
+		
+			$ips = trim( $ips );
+			
+			if ( strpos( $ips, ',' ) ) {
+				$ips = explode( ',', $ips );
+			} else {
+				$ips = array( $ips );
+			}
+			
+			foreach( $ips as $ip ) {
+				$ip = trim( $ip );
+				if ( $ip_address === $ip ) {
+					owa_coreAPI::debug("Request is from excluded ip address: $ip.");
+					return true;
+				}
+			}
+		}
+	}
+	
+	private function anonymizeIpAddress( $ip_address ) {
+		
+		if ( $ip_address && strpos($ip_address, '.' ) ) {
+		
+			$ip = explode( '.', $ip_address );
+			array_pop($ip);
+			$ip = implode('.', $ip);
+			
+			return $ip;
+		}
+	}
 }
-
 
 ?>

@@ -9,7 +9,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
 		<p class="form-row">
 			<span class="form-label">URL of OWA:</span>
 			<span class="form-field">
-				<input type="text"size="30" name="<?php echo $this->getNs();?>public_url" value="<?php echo $config['public_url'];?>">
+				<input type="text"size="50" name="<?php echo $this->getNs();?>public_url" value="<?php echo $public_url;?>">
 			</span>
 			<span class="form-instructions">This is the web URL of OWA's base directory.</span>
 		</p>
@@ -52,7 +52,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
 		<p class="form-row">
 			<span class="form-label">Database Password:</span>
 			<span class="form-field">
-				<input type="text"size="30" name="<?php echo $this->getNs();?>db_password" value="<?php echo $config['db_password'];?>">
+				<input type="password"size="30" name="<?php echo $this->getNs();?>db_password" value="<?php echo $config['db_password'];?>">
 			</span>
 			<span class="form-instructions">This is the password to connect to the database.</span>
 		</p>

@@ -40,11 +40,6 @@ class owa_entity {
 	var $wasPersisted;
 	var $cache;
 	
-	function __construct($cache = '', $db = '') {
-		
-	}
-		
-	
 	function _getProperties() {
 		
 		$properties = array();
@@ -62,7 +57,14 @@ class owa_entity {
 		return $properties;	
 	}
 	
-	function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
+	/** 
+	 * Return Array or string of column names used for SQL queries - e.g. like " tablename.fieldname as namespace.fieldname" 
+	 *  
+	 * @param boolean $return_as_string  If false array is returned 
+	 * @param string $as_namespace  Optional namespace for fields  
+	 * @param boolean $table_namespace 
+	 */ 
+	public function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
 		
 		if (!empty($this->properties)) {
 			$all_cols = array_keys($this->properties);
@@ -98,11 +100,6 @@ class owa_entity {
 		//print_r($new_cols);
 		return $new_cols; 
 		
-	}
-	
-	function getColumnsSql($as_namespace = '', $table_namespace = true) {
-	
-		return $this->getColumns(true, $as_namespace, $table_namespace);
 	}
 	
 	/**
@@ -218,7 +215,7 @@ class owa_entity {
 	function addToCache($col = 'id') {
 		
 		if($this->isCachable()) {
-			$cache = &owa_coreAPI::cacheSingleton();
+			$cache = owa_coreAPI::cacheSingleton();
 			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
 			$cache->set($this->getTableName(), $col.$this->get('id'), $this, $this->getCacheExpirationPeriod());
 		}
@@ -275,7 +272,7 @@ class owa_entity {
 	 */
 	function partialUpdate($named_properties, $where) {
 		
-		$db = &owa_coreAPI::dbSingleton();		
+		$db = owa_coreAPI::dbSingleton();		
 		$db->updateTable($this->getTableName());
 		
 		foreach ($named_properties as $v) {
@@ -319,11 +316,12 @@ class owa_entity {
 
 		$status = $db->executeQuery();
 	
-		// Add to Cache
-		if ($status == true){
+		// Delete from Cache
+		if ( $status ){
 			if ($this->isCachable()) {
-				$cache =  &owa_coreAPI::cacheSingleton();
-				$cache->remove($this->getTableName(), 'id'.$this->get('id'));
+				owa_coreAPI::debug('about to remove from cache');
+				$cache = owa_coreAPI::cacheSingleton();
+				$cache->remove($this->getTableName(), $col.$value);
 			}			
 		}
 		
@@ -344,11 +342,16 @@ class owa_entity {
 	}
 	
 	function getByColumn($col, $value) {
-				
+		
+		if ( ! $col ) {
+			owa_coreAPI::debug('No column name passed to getByColumn in entity:'. getName() );
+			return;
+		}
+		
 		$cache_obj = '';
 		
 		if ($this->isCachable()) {
-			$cache =  &owa_coreAPI::cacheSingleton();
+			$cache = owa_coreAPI::cacheSingleton();
 			$cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
 			$cache_obj = $cache->get($this->getTableName(), $col.$value);
 		}		
@@ -393,6 +396,11 @@ class owa_entity {
 		if ($this->_tableProperties) {
 			return $this->_tableProperties['alias'];
 		}
+	}
+	
+	function setTableAlias( $alias ) {
+	
+		$this->_tableProperties['alias'] = $alias;
 	}
 	
 	function setTableName($name, $namespace = 'owa_') {
@@ -605,7 +613,9 @@ class owa_entity {
 	
 	function generateRandomUid($seed = '') {
 		
-		return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
+		return owa_lib::generateRandomUid();
+		 
+		//return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
 	}
 	
 	/**

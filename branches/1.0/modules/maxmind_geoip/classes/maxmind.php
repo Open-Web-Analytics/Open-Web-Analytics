@@ -22,10 +22,7 @@ if (!class_exists('PEAR_Exception')) {
 	set_include_path(get_include_path().PATH_SEPARATOR.OWA_MODULES_DIR.'maxmind_geoip/includes/PEAR-1.9.1/');
 }
 
-define('OWA_MAXMIND_DIR', OWA_MODULES_DIR.
-		'maxmind_geoip'.DIRECTORY_SEPARATOR.
-		'includes'.DIRECTORY_SEPARATOR.
-		'Net_GeoIP-1.0.0RC3'.DIRECTORY_SEPARATOR);
+define('OWA_MAXMIND_DIR', OWA_MODULES_DIR . 'maxmind_geoip/includes/Net_GeoIP-1.0.0RC3/');
 		
 if (!class_exists('Net_GeoIP')) {
 	require_once(OWA_MAXMIND_DIR.'Net/GeoIP.php');
@@ -36,10 +33,7 @@ set_include_path(
 	OWA_MODULES_DIR.'maxmind_geoip/includes/Net_GeoIP-1.0.0RC3/'
 );
 
-require_once(OWA_MODULES_DIR.
-		'maxmind_geoip'.DIRECTORY_SEPARATOR.
-		'includes'.DIRECTORY_SEPARATOR.
-		'maxmind-ws/GeoCityLocateIspOrg.class.php');
+require_once(OWA_MODULES_DIR . 'maxmind_geoip/includes/maxmind-ws/GeoCityLocateIspOrg.class.php');
 
 
 /**
@@ -66,7 +60,7 @@ class owa_maxmind extends owa_location {
 	var $db_file_dir;
 	var $db_file_name = 'GeoLiteCity.dat';
 	var $db_file_path;
-	var $db_File_present = false;
+	var $db_file_present = false;
 	
 	/**
 	 * Constructor
@@ -76,7 +70,7 @@ class owa_maxmind extends owa_location {
 	function __construct() {
 		
 		if ( ! defined( 'OWA_MAXMIND_DATA_DIR' ) ) {
-			define('OWA_MAXMIND_DATA_DIR', OWA_DATA_DIR.'maxmind'.DIRECTORY_SEPARATOR);
+			define('OWA_MAXMIND_DATA_DIR', OWA_DATA_DIR.'maxmind/');
 		}
 		
 		$this->db_file_path = OWA_MAXMIND_DATA_DIR.$this->db_file_name;
@@ -118,13 +112,13 @@ class owa_maxmind extends owa_location {
 		}
 		
 		$geoip = Net_GeoIP::getInstance($this->db_file_path, $flag);
- 		$location = $geoip->lookupLocation($location_map['ip_address']);
+ 		$location = $geoip->lookupLocation(trim($location_map['ip_address']));
  		
  		if ($location) {
  			
- 			$location_map['city'] = strtolower(trim($location->__get('city')));
-	       	$location_map['state'] =  strtolower(trim($location->__get('region')));
-			$location_map['country'] =  strtolower(trim($location->__get('countryName')));
+ 			$location_map['city'] = utf8_encode( strtolower( trim( $location->__get( 'city' ) ) ) );
+	       	$location_map['state'] =  utf8_encode( strtolower( trim( $location->__get( 'region' ) ) ) );
+			$location_map['country'] =  utf8_encode( strtolower( trim( $location->__get( 'countryName' ) ) ) );
 			$location_map['country_code'] =  strtoupper(trim($location->__get('countryCode')));
 			$location_map['country_code3'] =  strtoupper(trim($location->__get('countryCode3')));
 			$location_map['latitude'] = trim($location->__get('latitude'));
@@ -148,16 +142,16 @@ class owa_maxmind extends owa_location {
 		
 		$geoloc = GeoCityLocateIspOrg::getInstance();
 		$geoloc->setLicenceKey( $license_key );
-		$geoloc->setIP( $location_map['ip_address'] );
+		$geoloc->setIP( trim($location_map['ip_address']) );
 		
 		if ( $geoloc->isError() ) {
 			owa_coreAPI::debug( $geoloc->isError().": " . $geoloc->getError() );
 			return $location_map;				
 		}
 		
-		$location_map['city'] = strtolower( trim( $geoloc->getCity() ) );
-       	$location_map['state'] =  strtolower( trim($geoloc->getState() ) );
-		$location_map['country'] =  strtolower( trim( $geoloc->lookupCountryCode( $geoloc->getCountryCode() ) ) );
+		$location_map['city'] = utf8_encode( strtolower( trim( $geoloc->getCity() ) ) );
+       	$location_map['state'] =  utf8_encode( strtolower( trim($geoloc->getState() ) ) );
+		$location_map['country'] =  utf8_encode( strtolower( trim( $geoloc->lookupCountryCode( $geoloc->getCountryCode() ) ) ) );
 		$location_map['country_code'] =  strtoupper( trim($geoloc->getCountryCode() ) );
 		$location_map['latitude'] = trim( $geoloc->getLat() );
 		$location_map['longitude'] = trim( $geoloc->getLong() );
@@ -165,8 +159,8 @@ class owa_maxmind extends owa_location {
 		$location_map['dma'] = trim( $geoloc->lookupMetroCode( $geoloc->getMetroCode() ) );
 		$location_map['area_code'] = trim( $geoloc->getAreaCode() );
 		$location_map['postal_code'] = trim( $geoloc->getZip() );
-		$location_map['isp'] = trim( $geoloc->getIsp() );
-		$location_map['organization'] = trim( $geoloc->getOrganization() );
+		$location_map['isp'] = utf8_encode( trim( $geoloc->getIsp() ) );
+		$location_map['organization'] = utf8_encode( trim( $geoloc->getOrganization() ) );
 		$location_map['subcountry_code'] = trim( $geoloc->lookupSubCountryCode( $geoloc->getState(), $geoloc->getCountryCode() ) );
 		
 		return $location_map;

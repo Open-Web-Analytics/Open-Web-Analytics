@@ -111,6 +111,14 @@ class owa_dbEventQueue extends eventQueue {
 		}		
 	}
 	
+	function flushHandledEvents() {
+		
+		$this->db->deleteFrom( 'owa_queue_item' );
+		$this->db->where( 'status' , 'handled');
+		$ret = $this->db->executeQuery();
+		return $this->db->getAffectedRows();
+	}
+	
 	function getNextItem() {
 	
 		return $this->getNextItems(1);
@@ -118,7 +126,7 @@ class owa_dbEventQueue extends eventQueue {
 	
 	function determineNextAttempt($event_type, $failed_count) {
 	
-		return $this->makeTimeStamp(time() + 30);
+		return $this->makeTimeStamp() +30;
 	}
 	
 	function makeTimestamp() {

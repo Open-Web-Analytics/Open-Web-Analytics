@@ -1,6 +1,7 @@
 	var OWA = {
 
 	items: {},
+	loadedJsLibs: {},
 	overlay: '',
 	config: {
 		ns: 'owa_',
@@ -27,6 +28,28 @@
 		return this.config[name];
 	},
 	
+	// localize wrapper
+	l: function (string) {
+		
+		return string;
+	},
+	
+	requireJs : function (name, url, callback) {
+		
+		if ( ! this.isJsLoaded( name ) ) {
+			OWA.util.loadScript( url, callback );
+		}
+		
+		this.loadedJsLibs[name] = url;
+	},
+	
+	isJsLoaded : function( name ) {
+	
+		if ( this.loadedJsLibs.hasOwnProperty( name ) ) {
+			return true;
+		}
+	},
+
 	initializeStateManager: function() {
 		
 		if ( ! this.state.hasOwnProperty('init') ) {
@@ -34,6 +57,11 @@
 			OWA.debug('initializing state manager...');
 			this.state = new OWA.stateManager();
 		}
+	},
+	
+	registerStateStore : function ( name, expiration, length, format ) {
+		this.initializeStateManager();
+		return this.state.registerStore(name, expiration, length, format);
 	},
 	
 	checkForState: function( store_name ) {
@@ -66,10 +94,10 @@
 		return this.state.get(store_name, key);
 	},
 	
-	clearState : function(store_name) {
+	clearState : function(store_name, key) {
 	
 		this.initializeStateManager();
-		return this.state.clear(store_name);
+		return this.state.clear(store_name, key);
 	},
 	
 	getStateStoreFormat: function(store_name) {
@@ -114,7 +142,7 @@
 	
 	loadHeatmap: function(p) {
 		var that = this;
-		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.4.2.min.js', function(){});
+		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
 		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.heatmap.js', function(){
 			that.overlay = new OWA.heatmap();
@@ -128,7 +156,7 @@
 	loadPlayer: function() {
 		var that = this;
 		OWA.debug("Loading Domstream Player");
-		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.4.2.min.js', function(){});
+		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
 		OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
 		OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.player.js', function(){
 			that.overlay = new OWA.player();	
@@ -160,7 +188,7 @@
 	
 	endOverlaySession : function() {
 				
-		OWA.util.eraseCookie('owa_overlay', document.domain);
+		OWA.util.eraseCookie(OWA.getSetting('ns') + 'overlay', document.domain);
 		OWA.overlayActive = false;
 	}
 
@@ -179,8 +207,29 @@ OWA.stateManager.prototype = {
 	cookies: '',
 	stores: {},
 	storeFormats: {},
+	storeMeta: {},
 	
-	isPresent: function( store_name ) {
+	registerStore : function ( name, expiration, length, format ) {
+		this.storeMeta[name] = {'expiration' : expiration, 'length': length, 'format' : format};
+	},
+	
+	getExpirationDays : function ( store_name ) {
+		
+		if ( this.storeMeta.hasOwnProperty( store_name ) ) {
+			
+			return this.storeMeta[store_name].expiration;
+		}
+	},
+	
+	getFormat : function ( store_name ) {
+		
+		if ( this.storeMeta.hasOwnProperty( store_name ) ) {
+			
+			return this.storeMeta[store_name].format;
+		}
+	},
+	
+	isPresent: function ( store_name ) {
 		
 		if ( this.stores.hasOwnProperty( store_name ) ) {
 			return true;
@@ -190,14 +239,14 @@ OWA.stateManager.prototype = {
 	set: function(store_name, key, value, is_perminant,format, expiration_days) {
 		
 		if ( ! this.isPresent( store_name ) ) {
-			this.load(store_name);
+			this.load( store_name );
 		}
 		
 		if ( ! this.isPresent( store_name ) ) {
-			OWA.debug('Creating state store (%s)', store_name);
+			OWA.debug( 'Creating state store (%s)', store_name );
 			this.stores[store_name] = {};
 			// add cookie domain hash
-			if (OWA.getSetting('hashCookiesToDomain')) {
+			if ( OWA.getSetting( 'hashCookiesToDomain' ) ) {
 				this.stores[store_name].cdh = OWA.util.getCookieDomainHash(OWA.getSetting('cookie_domain'));
 			}
 		}
@@ -207,6 +256,8 @@ OWA.stateManager.prototype = {
 		} else {
 			this.stores[store_name] = value;
 		}
+		
+		format = this.getFormat(store_name);
 		
 		if ( ! format ) {
 			
@@ -222,6 +273,8 @@ OWA.stateManager.prototype = {
 			state_value = OWA.util.assocStringFromJson(this.stores[store_name]);
 		}
 		
+		expiration_days = this.getExpirationDays( store_name );
+		
 		if ( ! expiration_days ) {
 			
 			if ( is_perminant ) {
@@ -235,7 +288,7 @@ OWA.stateManager.prototype = {
 		// erase cookie
 		//OWA.util.eraseCookie( 'owa_'+store_name, domain );
 		// set cookie
-		OWA.util.setCookie( 'owa_'+store_name, state_value, expiration_days, '/', domain );
+		OWA.util.setCookie( OWA.getSetting('ns') + store_name, state_value, expiration_days, '/', domain );
 	},
 	
 	replaceStore : function (store_name, value, is_perminant, format, expiration_days) {
@@ -245,8 +298,11 @@ OWA.stateManager.prototype = {
 		
 			if (value) {
 				
+				format = this.getFormat(store_name);
 				this.stores[store_name] = value;
 				this.storeFormats[store_name] = format;
+				
+				
 				
 				if (format === 'json') {
 					cookie_value = JSON.stringify(value);
@@ -257,14 +313,10 @@ OWA.stateManager.prototype = {
 		
 			var domain = OWA.getSetting('cookie_domain') || document.domain;
 			
-			if ( ! expiration_days ) {
-				
-				if ( is_perminant ) {
-					expiration_days =  3600;
-				}
-			}
+			expiration_days = this.getExpirationDays( store_name );
+			
 			OWA.debug('About to replace state store (%s) with: %s', store_name, cookie_value);
-			OWA.util.setCookie( 'owa_'+ store_name, cookie_value, expiration_days, '/', domain );
+			OWA.util.setCookie( OWA.getSetting('ns') + store_name, cookie_value, expiration_days, '/', domain );
 			
 		}
 	},
@@ -358,23 +410,285 @@ OWA.stateManager.prototype = {
 		}
 	},
 	
-	clear: function(store_name) {
+	clear: function(store_name, key) {
 		// delete cookie
-		this.stores[store_name] = '';
-		OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
-	},
-	
-	getStoreFormat: function(store_name) {
 		
-		return this.storeFormats[store_name];
+		if ( ! key ) {
+			delete this.stores[store_name];
+			OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
+		} else {
+			var state = this.get(store_name);
+			
+			if ( state && state.hasOwnProperty( key ) ) {
+				delete state['key'];
+				this.replaceStore(store_name, state, true, this.getFormat( store_name ),  this.getExpirationDays( store_name ) );
+			}
+		}
 	},
 	
-	setStoreFormat: function(store_name, format) {
+	getStoreFormat: function ( store_name ) {
+		
+		return this.getFormat(store_name);
+	},
+	
+	setStoreFormat: function( store_name, format ) {
 		
 		this.storeFormats[store_name] = format;
 	}
 };
 
+OWA.uri = function( str ) {
+	this.components = {};
+	this.dirty = false;
+	this.options = {
+			strictMode: false,
+			key: ["source","protocol","authority","userInfo","user","password","host","port","relative","path","directory","file","query","anchor"],
+			q:   {
+				name:   "queryKey",
+				parser: /(?:^|&)([^&=]*)=?([^&]*)/g
+			},
+			parser: {
+				strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
+				loose:  /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
+			}
+	};
+	
+	if ( str ) {
+		this.components = this.parseUri( str );
+	}
+};
+
+OWA.uri.prototype = {
+	
+	parseUri : function (str) {
+		// parseUri 1.2.2
+		// (c) Steven Levithan <stevenlevithan.com>
+		// MIT License
+		var o = this.options;
+		var m   = o.parser[o.strictMode ? "strict" : "loose"].exec(str);
+		var uri = {};
+		var i   = 14;
+	
+		while (i--) uri[o.key[i]] = m[i] || "";
+	
+		uri[o.q.name] = {};
+		uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
+			if ($1) uri[o.q.name][$1] = $2;
+		});
+	
+		return uri;
+	},
+	
+	getHost : function() {
+		
+		if (this.components.hasOwnProperty('host')) {
+			return this.components.host;
+		}
+	},
+	
+	getQueryParam : function ( name ) {
+		
+		if ( this.components.hasOwnProperty('queryKey')
+			&& this.components.queryKey.hasOwnProperty(name) ) {
+			return OWA.util.urldecode( this.components.queryKey[name] );
+		}
+	},
+	
+	isQueryParam : function( name ) {
+	
+		if ( this.components.hasOwnProperty('queryKey') 
+			&& this.components.queryKey.hasOwnProperty(name) ) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+	
+	getComponent : function ( name ) {
+	
+		if ( this.components.hasOwnProperty( name ) ) {
+			return this.components[name];
+		}
+	},
+	
+	getProtocol : function() {
+		
+		return this.getComponent('protocol');
+	},
+	
+	getAnchor : function() {
+		
+		return this.getComponent('anchor');
+	},
+	
+	getQuery : function() {
+		
+		return this.getComponent('query');
+		
+	},
+	
+	getFile : function() {
+		
+		return this.getComponent('file');
+	},
+	
+	getRelative : function() {
+	
+		return this.getComponent('relative');
+	},
+	
+	getDirectory : function() {
+		
+		return this.getComponent('directory');
+	},
+	
+	getPath : function() {
+		
+		return this.getComponent('path');
+	},
+	
+	getPort : function() {
+	
+		return this.getComponent('port');
+	},
+	
+	getPassword : function() {
+		
+		return this.getComponent('password');
+	},
+	
+	getUser : function() {
+		
+		return this.getComponent('user');
+	},
+	
+	getUserInfo : function() {
+	
+		return this.getComponent('userInfo');
+	},
+	
+	getQueryParams : function() {
+	
+		return this.getComponent('queryKey');
+	},
+	
+	getSource : function() {
+	
+		return this.getComponent('source');
+	},
+	
+	setQueryParam : function (name, value) {
+		
+		if ( ! this.components.hasOwnProperty('queryKey') ) {
+			
+			this.components.queryKey = {};
+		}
+		
+		this.components.queryKey[name] = OWA.util.urlEncode(value);
+		
+		this.resetQuery();
+	},
+	
+	removeQueryParam : function( name ) {
+	
+		if ( this.components.hasOwnProperty( 'queryKey' ) 
+			 && this.components.queryKey.hasOwnProperty( name )	
+		) {
+			delete this.components.queryKey[name];			
+			this.resetQuery();
+		}
+	},
+	
+	resetSource : function() {
+	
+		this.components.source = this.assembleUrl();
+		//alert (this.components.source);
+	},
+	
+	resetQuery : function() {
+		
+		var qp = this.getQueryParams();
+		
+		if (qp) {
+			
+			var query = '';
+			var count = OWA.util.countObjectProperties(qp);
+			var i = 1;
+			
+			for (var name in qp) {
+				
+				query += name + '=' + qp[name];
+				
+				if (i < count) {
+					query += '&';
+				}	
+			}
+			
+			this.components.query = query;
+			
+			this.resetSource();
+		}
+	},
+	
+	isDirty : function() {
+		
+		return this.dirty;
+	},
+	
+	setPath: function ( path ) {
+	
+	},
+	
+	assembleUrl : function() {
+		
+		var url = '';
+		
+		// protocol
+		url += this.getProtocol();
+		url += '://';
+		// user
+		if ( this.getUser() ) {
+			url += this.getUser();
+		}
+		
+		// password
+		if ( this.getUser() && this.getPassword() ) {
+			url += ':' + this.password();
+		}
+		// host
+		url += this.getHost();
+		
+		// port
+		if ( this.getPort() ) {
+			url += ':' + this.getPort();
+		}
+
+		// directory
+		url += this.getDirectory();
+
+		// file
+		url += this.getFile();
+		
+		// query params
+		var query = this.getQuery();
+		if (query) {
+			url += '?' + query;
+		}
+		
+		// query params
+		var anchor = this.getAnchor();
+		if (anchor) {
+			url += '#' + anchor;
+		}
+		
+		
+		// anchor
+		url += this.getAnchor();
+		
+		return url;
+	}
+	
+};
 
 OWA.util =  {
 
@@ -442,9 +756,9 @@ OWA.util =  {
 		
 		if (ca) {
 			OWA.debug(document.cookie);
-			for(var i=0;i < ca.length;i++) {
+			for( var i=0;i < ca.length;i++ ) {
 				
-				cat = OWA.util.trim(ca[i]);
+				var cat = OWA.util.trim(ca[i]);
 				var pos = OWA.util.strpos(cat, '=');
 				var key = cat.substring(0,pos);
 				var value = cat.substring(pos+1, cat.length);
@@ -568,7 +882,7 @@ OWA.util =  {
 		
 		for(param in obj) {
 			if (obj.hasOwnProperty(param)) {
-				new_obj['owa_'+ param] = obj[param];
+				new_obj[OWA.getSetting('ns') + param] = obj[param];
 			}
 		}
 		
@@ -736,9 +1050,9 @@ OWA.util =  {
 		return OWA.getState(store_name, key);
 	},
 	
-	clearState : function(store_name) {
+	clearState : function(store_name, key) {
 		
-		return OWA.clearState(store_name);
+		return OWA.clearState(store_name, key);
 	},
 	
 	getCookieValueFormat : function(cstring) {
@@ -796,6 +1110,61 @@ OWA.util =  {
 	is_array : function (input) {
   		return typeof(input)=='object'&&(input instanceof Array);	
   	},
+  	
+  	// Returns input string padded on the left or right to specified length with pad_string  
+    // 
+    // version: 1109.2015
+    // discuss at: http://phpjs.org/functions/str_pad
+    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // + namespaced by: Michael White (http://getsprink.com)
+    // +      input by: Marco van Oort
+    // +   bugfixed by: Brett Zamir (http://brett-zamir.me)
+    // *     example 1: str_pad('Kevin van Zonneveld', 30, '-=', 'STR_PAD_LEFT');
+    // *     returns 1: '-=-=-=-=-=-Kevin van Zonneveld'
+    // *     example 2: str_pad('Kevin van Zonneveld', 30, '-', 'STR_PAD_BOTH');
+    // *     returns 2: '------Kevin van Zonneveld-----'
+  	str_pad : function (input, pad_length, pad_string, pad_type) {
+
+	    var half = '',
+	        pad_to_go;
+	 
+	    var str_pad_repeater = function (s, len) {
+	        var collect = '',
+	            i;
+	 
+	        while (collect.length < len) {
+	            collect += s;
+	        }
+	        collect = collect.substr(0, len);
+	 
+	        return collect;
+	    };
+	 
+	    input += '';
+	    pad_string = pad_string !== undefined ? pad_string : ' ';
+	 
+	    if (pad_type != 'STR_PAD_LEFT' && pad_type != 'STR_PAD_RIGHT' && pad_type != 'STR_PAD_BOTH') {
+	        pad_type = 'STR_PAD_RIGHT';
+	    }
+	    if ((pad_to_go = pad_length - input.length) > 0) {
+	        if (pad_type == 'STR_PAD_LEFT') {
+	            input = str_pad_repeater(pad_string, pad_to_go) + input;
+	        } else if (pad_type == 'STR_PAD_RIGHT') {
+	            input = input + str_pad_repeater(pad_string, pad_to_go);
+	        } else if (pad_type == 'STR_PAD_BOTH') {
+	            half = str_pad_repeater(pad_string, Math.ceil(pad_to_go / 2));
+	            input = half + input + half;
+	            input = input.substr(0, pad_length);
+	        }
+	    }
+	 
+	    return input;
+	},
+	
+	zeroFill : function(number, length) {
+		
+		return OWA.util.str_pad( number, length, '0', 'STR_PAD_LEFT');
+	},
   	
 	// Returns true if variable is an object  
     // 
@@ -881,14 +1250,23 @@ OWA.util =  {
 		var domain = url.split(/\/+/g)[1];
 		
 		if (strip_www === true) {
-			var fp = domain.split('.')[0];
 			
-			if (fp === 'www') {
-				return domain.substring(4);
-			} else {
-				return domain;
-			}
+			return OWA.util.stripWwwFromDomain( domain );
 			
+		} else {
+		
+			return domain;
+		}
+	},
+	
+	// strips www. from begining of domain if present
+	// otherwise returns the domain as is.
+	stripWwwFromDomain : function ( domain ) {
+		
+		var fp = domain.split('.')[0];
+			
+		if (fp === 'www') {
+			return domain.substring(4);
 		} else {
 			return domain;
 		}
@@ -903,10 +1281,11 @@ OWA.util =  {
 		return this.crc32(value);
 	},
 	
-	generateRandomGuid : function(salt) {
-		var time = this.getCurrentUnixTimestamp();
-		var random = this.rand();
-		return this.generateHash(time + random + salt);
+	generateRandomGuid : function() {
+		var time = this.getCurrentUnixTimestamp() + '';
+		var random = OWA.util.zeroFill( this.rand(0,999999) + '' , 6);
+		var client = OWA.util.zeroFill( this.rand(0,999) + '', 3);
+		return time + random + client;
 	},
 	
 	crc32 : function ( str ) {
@@ -1495,5 +1874,6 @@ OWA.util =  {
 	        partA.push(partB);
 	        return partA;
 	    }
-	}	
-}
+	}
+	
+};

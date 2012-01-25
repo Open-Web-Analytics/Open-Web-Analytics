@@ -41,16 +41,10 @@ class owa_sitesDeleteController extends owa_adminController {
 	function action() {
 		
 		$site = owa_coreAPI::entityFactory('base.site');
-		$site->delete($this->params['siteId'], 'site_id');
-		
-		$data['view_method'] = 'redirect';
-		$data['do'] = 'base.sites';
-		$data['status_code'] = 3204;
-		
-		return $data;
+		$site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
+		$this->setRedirectAction('base.sites');
+		$this->set('status_code', 3204); 
 	}
-	
 }
-
 
 ?>

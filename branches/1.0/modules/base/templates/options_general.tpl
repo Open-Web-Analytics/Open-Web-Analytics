@@ -49,7 +49,24 @@
 				<OPTION VALUE="1" <?php if ($config['log_named_users'] == true):?>SELECTED<?php endif;?>>On</OPTION>
 			</SELECT>
 		</div>
-	</div>	
+	</div>
+	
+	<div class="setting" id="excluded_ips">	
+		<div class="title">Excluded IP Addresses</div>
+		<div class="description">Enter a comma seperated list of the IP addresses that you wish to exclude from tracking.</div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.excluded_ips]" value="<?php $this->out( $config['excluded_ips'] );?>"></div>
+	</div>
+	
+	<div class="setting" id="anonymize_ips">	
+		<div class="title">Anonymize IP Addresses</div>
+		<div class="description">Anonymizes the IP addresses of visitors by removing the last octet from their IP address.</div>
+		<div class="field">
+			<SELECT NAME="<?php echo $this->getNs();?>config[base.anonymize_ips]">
+				<OPTION VALUE="0" <?php if ($config['anonymize_ips'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
+				<OPTION VALUE="1" <?php if ($config['anonymize_ips'] == true):?>SELECTED<?php endif;?>>On</OPTION>
+			</SELECT>
+		</div>
+	</div>
 
 	
 	
@@ -146,12 +163,6 @@
 			</div>
 		</div>
 		
-		<div class="setting" id="google_maps_api_key">
-			<div class="title">Google Maps API Key</div>
-			<div class="description">Google maps API key is needed to produce Google maps of visitor geo-locations. You may obtain an API key from <a href="http://www.google.com/apis/maps/signup.html">this Google web site</a> for free.</div>
-			<div class="field"><input type="text" size="90" name="<?php echo $this->getNs();?>config[base.google_maps_api_key]" value="<?php echo $config['google_maps_api_key']?>"></div>
-		</div>
-		
 	</fieldset>
 		
 	<BR>
@@ -214,12 +225,12 @@
 	
 	<BR>
 	
-	<fieldset name="owa-ecommerce-options" class="options">
+	<fieldset name="owa-reporting-options" class="options">
 		
-		<legend>e-commerce</legend>
-		
+		<legend>Reporting</legend>
+		<!--
 		<div class="setting" id="ecommerce_reporting">	
-			<div class="title">e-commerce Reporting</div>
+			<div class="title">E-commerce Reporting</div>
 			<div class="description">Adds e-commerce metrics/statistics to reports.</div>
 			<div class="field">
 				<select name="<?php echo $this->getNs();?>config[base.enableEcommerceReporting]">
@@ -228,6 +239,49 @@
 				</select>
 			</div>
 		</div>
+		-->
+		
+		<div class="setting" id="timezone">	
+			<div class="title">Reporting Timezone</div>
+			<div class="description">This is the timezone that should be used to generate statistics for a specific time period.</div>
+			<div class="field">
+		
+		
+				<select id="TIMEZONE" name="<?php echo $this->getNs();?>config[base.timezone]">
+			    <?php
+			    require_once(OWA_DIR.'conf/country2Timezones.php');
+			    require_once(OWA_DIR.'conf/countryCodes2Names.php');
+			    $selected_already = false;
+			    $selected = '';
+			    foreach( $timezones as $country => $zones){
+			     
+			        if (isset($countryCode2Name[$country])) { 
+ 						$country_name = $countryCode2Name[$country]; 
+					} else { 
+						$country_name = 'unknown - '.$country; 
+					}     
+			        
+			        echo sprintf('<optgroup label="%s">%s</optgroup>',$country_name, $country_name);
+			        
+			        foreach ($zones as $value) {        
+			   			
+			   			$display_value = str_replace('_', ' ', $value);
+			   			$selected = '';
+			            if ( ! $selected_already && $config['timezone'] === $value ) {
+			            	$selected_already = true;
+			            	echo sprintf('<option selected="yes" value="%s" >%s</option>', $value, $display_value);
+			            } else {
+							echo sprintf('<option value="%s">%s</option>', $value, $display_value);	            
+			            }
+			           
+			        }
+			    }
+			    ?>
+			        </optgroup>
+			    </select>
+			</div>
+		</div>
+		
 	</fieldset>
 	
 	<BR>

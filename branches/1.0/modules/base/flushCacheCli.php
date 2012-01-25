@@ -32,7 +32,7 @@ class owa_flushCacheCliController extends owa_cliController {
 	
 	function action() {
 		
-		$cache = &owa_coreAPI::cacheSingleton(); 
+		$cache = owa_coreAPI::cacheSingleton(); 
 		$cache->flush();
 				
 		$this->e->notice("Cache Flushed");

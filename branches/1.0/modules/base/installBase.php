@@ -51,6 +51,12 @@ class owa_installBaseController extends owa_installController {
 		$v2->setErrorMessage($this->getMsg(3310));
 		$this->setValidation('email_address', $v2);
 		
+		// validations
+		$v5 = owa_coreAPI::validationFactory('required');
+		$v5->setValues($this->getParam('password'));
+		$v5->setErrorMessage($this->getMsg(3310));
+		$this->setValidation('password', $v5);
+		
 		// Check entity exists
 		$v3 = owa_coreAPI::validationFactory('entityDoesNotExist');
 		$v3->setConfig('entity', 'base.site');
@@ -61,7 +67,7 @@ class owa_installBaseController extends owa_installController {
 		
 		// Config for the domain validation
 		$v4 = owa_coreAPI::validationFactory('subStringPosition');
-		$v4->setConfig('subString', 'http');
+		$v4->setConfig('substring', 'http');
 		$v4->setValues($this->getParam('domain'));
 		$v4->setConfig('position', 0);
 		$v4->setConfig('operator', '!=');
@@ -76,7 +82,7 @@ class owa_installBaseController extends owa_installController {
 		if ($status == true) {
 			$this->set('status_code', 3305);
 			
-			$password = $this->createAdminUser($this->getParam('email_address'));
+			$password = $this->createAdminUser($this->getParam('email_address'), '', $this->getParam('password') );
 			
 			$site_id = $this->createDefaultSite($this->getParam('protocol').$this->getParam('domain'));	
 			

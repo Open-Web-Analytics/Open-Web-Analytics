@@ -42,15 +42,69 @@ class owa_client extends owa_caller {
 	
 	var $stateInit;
 	
+	var $organicSearchEngines;
+	
 	// set one traffic has been attributed.
 	var $isTrafficAttributed;
 
 	public function __construct($config = null) {
-	
+			
+		parent::__construct($config);
+		
 		$this->pageview_event = $this->makeEvent();
 		$this->pageview_event->setEventType('base.page_request');
+		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
+		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
+		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie', true);
+		$cwindow = owa_coreAPI::getSetting( 'base', 'campaignAttributionWindow' );
+		owa_coreAPI::registerStateStore('c', time() + 3600 * 24 * $cwindow , '', 'json', 'cookie', true);
 		
-		return parent::__construct($config);
+		$this->organicSearchEngines = array(
+		
+			array('d' => 'google', 'q' => 'q'),
+			array('d' => 'yahoo', 'q' => 'p'),
+			array('d' => 'msn', 'q' => 'q'),
+			array('d' => 'bing', 'q' => 'q'),
+			array('d' => 'images.google', 'q' => 'q'),
+			array('d' => 'images.search.yahoo.com', 'q' => 'p'),
+			array('d' => 'aol', 'q' => 'query'),
+			array('d' => 'aol', 'q' => 'encquery'),
+			array('d' => 'aol', 'q' => 'q'),
+			array('d' => 'lycos', 'q' => 'query'),
+			array('d' => 'ask', 'q' => 'q'),
+			array('d' => 'altavista', 'q' => 'q'),
+			array('d' => 'netscape', 'q' => 'query'),
+			array('d' => 'cnn', 'q' => 'query'),
+			array('d' => 'about', 'q' => 'terms'),
+			array('d' => 'mamma', 'q' => 'q'),
+			array('d' => 'daum', 'q' => 'q'),
+			array('d' => 'eniro', 'q' => 'search_word'),
+			array('d' => 'naver', 'q' => 'query'),
+			array('d' => 'pchome', 'q' => 'q'),
+			array('d' => 'alltheweb', 'q' => 'q'),
+			array('d' => 'voila', 'q' => 'rdata'),
+			array('d' => 'virgilio', 'q' => 'qs'),
+			array('d' => 'live', 'q' => 'q'),
+			array('d' => 'baidu', 'q' => 'wd'),
+			array('d' => 'alice', 'q' => 'qs'),
+			array('d' => 'yandex', 'q' => 'text'),
+			array('d' => 'najdi', 'q' => 'q'),
+			array('d' => 'mama', 'q' => 'query'),
+			array('d' => 'seznam', 'q' => 'q'),
+			array('d' => 'search', 'q' => 'q'),
+			array('d' => 'wp', 'q' => 'szukaj'),
+			array('d' => 'onet', 'q' => 'qt'),
+			array('d' => 'szukacz', 'q' => 'q'),
+			array('d' => 'yam', 'q' => 'k'),
+			array('d' => 'kvasir', 'q' => 'q'),
+			array('d' => 'sesam', 'q' => 'q'),
+			array('d' => 'ozu', 'q' => 'q'),
+			array('d' => 'terra', 'q' => 'query'),
+			array('d' => 'mynet', 'q' => 'q'),
+			array('d' => 'ekolay', 'q' => 'q'),
+			array('d' => 'rambler', 'q' => 'query'),
+			array('d' => 'rambler', 'q' => 'words')
+		);
 	}
 	
 	public function setPageTitle($value) {
@@ -76,20 +130,25 @@ class owa_client extends owa_caller {
 			return $this->global_event_properties[$name];
 		}
 	}
+	
+	private function deleteGlobalEventProperty( $name ) {
+		
+		if ( array_key_exists($name, $this->global_event_properties) ) {
+			unset($this->global_event_properties[$name]);
+		}
+	}
 				
 	private function manageState( &$event ) {
 		
 		if ( ! $this->stateInit ) {
+		
 			$this->setVisitorId( $event );
 			$this->setFirstSessionTimestamp( $event );
 			$this->setLastRequestTime( $event );
 			$this->setSessionId( $event );
 			$this->setNumberPriorSessions( $event );
+			$this->setDaysSinceLastSession( $event );
 			$this->setTrafficAttribution( $event );
-			// clear old style session cookie
-			$session_store_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'site_session_param'), $this->site_id);
-			owa_coreAPI::clearState( $session_store_name );
-			
 			$this->stateInit = true;
 		}
 	}
@@ -128,7 +187,7 @@ class owa_client extends owa_caller {
 		}
 		
 		// set property on the event object
-		$this->setGlobalEventProperty('num_prior_sessions', $nps);
+		$this->setGlobalEventProperty('nps', $nps);
 	}
 	
 	private function setFirstSessionTimestamp( &$event ) {
@@ -141,6 +200,37 @@ class owa_client extends owa_caller {
 		}
 		
 		$this->setGlobalEventProperty( 'fsts', $fsts );
+		
+		// calc days since first session
+		$dsfs = round( ( $fsts - $event->get( 'timestamp' ) ) / ( 3600 * 24 ) ) ;
+		owa_coreAPI::setState(owa_coreAPI::getSetting('base', 'visitor_param'), 'dsfs', $dsfs , 'cookie', true);
+		$this->setGlobalEventProperty( 'dsfs', $dsfs );
+	}
+	
+	private function setDaysSinceLastSession( &$event ) {
+		
+		owa_coreAPI::debug('setting days since last session.');
+		$dsps = '';
+		if ( $this->getGlobalEventProperty( 'is_new_session' ) ) {
+			owa_coreAPI::debug( 'timestamp: ' . $event->get( 'timestamp' ) );
+			$last_req = $this->getGlobalEventProperty( 'last_req' );
+			if ( ! $last_req ) {
+				$last_req = $event->get( 'timestamp' );
+			}
+			owa_coreAPI::debug( 'last_req: ' . $last_req );
+			$dsps = round( ( $event->get( 'timestamp' ) - $last_req ) / ( 3600*24 ) );
+			owa_coreAPI::setState('s', 'dsps', $dsps , 'cookie', true);
+		}
+		
+		if ( ! $dsps ) {
+			$dsps = owa_coreAPI::getState( 's', 'dsps' );
+			
+			if ( ! $dsps ) {
+				$dsps = 0;
+			}
+		}
+		
+		$this->setGlobalEventProperty( 'dsps', $dsps );
 	}
 	
 	private function setSessionId( &$event ) {
@@ -156,12 +246,15 @@ class owa_client extends owa_caller {
 			if ($prior_session_id) {
 				$this->setGlobalEventProperty( 'prior_session_id', $prior_session_id );
 			}
+			
+			$this->resetSessionState();
+			
 			$session_id = $event->getSiteSpecificGuid( $this->site_id );
-			// it's a new session. generate new session ID 
-	   		$this->setGlobalEventProperty( 'session_id', $session_id );
+			
 	   		//mark new session flag on current request
 			$this->setGlobalEventProperty( 'is_new_session', true );
 			owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
+			
 		} else {
 			// Must be an active session so just pull the session id from the state store
 			$session_id = owa_coreAPI::getStateParam('s', 'sid');
@@ -170,21 +263,22 @@ class owa_client extends owa_caller {
 			if ( ! $session_id ) {
 				$state_store_name = sprintf('%s_%s', owa_coreAPI::getSetting('base', 'site_session_param'), $this->site_id);		
 				$session_id = owa_coreAPI::getStateParam($state_store_name, 's');
-				owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
+				
 			}
-		
-			$this->setGlobalEventProperty('session_id', $session_id);
+			
+			// fail-safe just in case there is no session_id 
+			if ( ! $session_id ) {
+				$session_id = $event->getSiteSpecificGuid( $this->site_id );
+				//mark new session flag on current request
+				$this->setGlobalEventProperty( 'is_new_session', true );
+				owa_coreAPI::debug('setting failsafe session id');
+			}
 		}
 		
-		// fail-safe just in case there is no session_id 
-		if ( ! $this->getGlobalEventProperty( 'session_id' ) ) {
-			$session_id = $event->getSiteSpecificGuid( $this->site_id );
-			$this->setGlobalEventProperty( 'session_id', $session_id );
-			//mark new session flag on current request
-			$this->setGlobalEventProperty( 'is_new_session', true );
-			owa_coreAPI::debug('hello from failsafe');
-			owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
-		}
+		// set global event property 
+	   	$this->setGlobalEventProperty( 'session_id', $session_id );
+		// set sid state
+		owa_coreAPI::setState( 's', 'sid', $session_id, 'cookie', true );
 	}
 	
 	private function setLastRequestTime( &$event ) {
@@ -198,6 +292,7 @@ class owa_client extends owa_caller {
 		}
 		// set property on event object
 		$this->setGlobalEventProperty( 'last_req', $last_req );
+		owa_coreAPI::debug("setting last_req value of $last_req as global event property.");
 		// store new state value
 		owa_coreAPI::setState( 's', 'last_req', $event->get( 'timestamp' ), 'cookie', true );
 	}
@@ -237,7 +332,7 @@ class owa_client extends owa_caller {
 		
 		// keeps php executing even if the client closes the connection
 		ignore_user_abort(true);
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$service->request->decodeRequestParams();
 		$event = owa_coreAPI::supportClassFactory('base', 'event');
 		$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
@@ -267,6 +362,8 @@ class owa_client extends owa_caller {
 			return false;
 		}
 		
+		$this->setGlobalEventProperty( 'HTTP_REFERER', owa_coreAPI::getServerParam('HTTP_REFERER') );
+		
 		// needed by helper page tags function so it can append to first hit tag url	
 		if (!$this->getSiteId()) {
 			$this->setSiteId($event->get('site_id'));
@@ -279,7 +376,6 @@ class owa_client extends owa_caller {
 		// set various state properties.
 		$this->manageState( $event );
 		
-		
 		$event = $this->setAllGlobalEventProperties( $event );
 		
 		// send event to log API for processing.
@@ -291,6 +387,22 @@ class owa_client extends owa_caller {
 		if ( ! $event->get('site_id') ) {
 			$event->set( 'site_id', $this->getSiteId() );
 		}
+		
+		// add custom variables to global properties if not there already
+    	for ( $i=1; $i <= owa_coreAPI::getSetting('base', 'maxCustomVars'); $i++ ) {
+    		$cv_param_name = 'cv' + $i;
+    		$cv_value = '';
+    		
+    		// if the custom var is not already a global property
+    		if ( ! $this->getGlobalEventProperty( $cv_param_name ) ) {
+    			// check to see if it exists
+    			$cv_value = $this->getCustomVar( $i );
+    			// if so add it
+    			if ( $cv_value ) {
+    				$this->setGlobalEventProperty( $cv_param_name, $cv_value );
+    			}
+    		}
+    	}
 		
 		// merge global event properties
 		foreach ($this->global_event_properties as $k => $v) {
@@ -410,32 +522,80 @@ class owa_client extends owa_caller {
 		return md5($value);
 	}
 	
+	public function setCampaignNameKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'campaign' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignMediumKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'medium' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignSourceKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'source' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignSearchTermsKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'search_terms' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignAdKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'ad' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setCampaignAdTypeKey( $key ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		$campaign_params[ 'ad_type' ] = $key;
+		owa_coreAPI::setSetting('base', 'campaign_params', $campaign_params);
+	}
+	
+	public function setUserName( $value ) {
+		
+		$this->setGlobalEventProperty( 'user_name', $value );
+	}
+	
 	function getCampaignProperties( $event ) {
 		
 		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
 		$campaign_properties = array();
 		$campaign_state = array();
-		foreach ($campaign_params as $k => $param) {
+		$request = owa_coreAPI::getRequest();
+		foreach ( $campaign_params as $k => $param ) {
 			//look for property on the event
-			$property = $event->get($param);
+			$property = $event->get( $param );
 			
 			// look for property on the request scope.
 			if ( ! $property ) {
-				$property = owa_coreAPI::getRequestParam($param);	
+				$property = $request->getRequestParam( $param );	
 			}
 			if ( $property ) {
-				$campaign_properties[$k] = $property;
+				$campaign_properties[ $k ] = $property;
 			}
 		}
 	
 		// backfill values for incomplete param combos
 		
-		if (array_key_exists('at', $campaign_properties) && !array_key_exists('ad', $campaign_properties)) {
+		if (array_key_exists('ad_type', $campaign_properties) && !array_key_exists('ad', $campaign_properties)) {
 			$campaign_properties['ad'] = '(not set)';
 		}
 		
-		if (array_key_exists('ad', $campaign_properties) && !array_key_exists('at', $campaign_properties)) {
-			$campaign_properties['at'] = '(not set)';
+		if (array_key_exists('ad', $campaign_properties) && !array_key_exists('ad_type', $campaign_properties)) {
+			$campaign_properties['ad_type'] = '(not set)';
 		}
 		
 		if (!empty($campaign_properties)) {
@@ -447,13 +607,26 @@ class owa_client extends owa_caller {
 		return $campaign_properties;
 	}
 	
+	private function setCampaignSessionState( $properties ) {
+		
+		$campaign_params = owa_coreAPI::getSetting( 'base', 'campaign_params' );
+		foreach ($campaign_params as $k => $v) {
+			
+			if (array_key_exists( $k, $properties ) ) {
+			
+				owa_coreAPI::setState( 's', $k, $properties[$k] );
+			}
+		}
+	}
+	
 	function directAttributionModel( &$campaign_properties ) {
 	
 		// add new campaign info to existing campaign cookie.
-		if ( !empty( $campaign_properties ) ) {
+		if ( $campaign_properties ) {
+			
+			// get prior campaing touches from c cookie			
 			$campaign_state = $this->getCampaignState();
-			// add timestamp
-			//$campaign_properties['ts'] = $event->get('timestamp');
+			
 			// add new campaign into state array
 			$campaign_state[] = (object) $campaign_properties;
 			
@@ -469,6 +642,9 @@ class owa_client extends owa_caller {
 			
 			// set flag
 			$this->isTrafficAttributed = true;
+			
+			// persist state to session store
+			$this->setCampaignSessionState( $campaign_properties );
 		}
 
 	}
@@ -496,14 +672,16 @@ class owa_client extends owa_caller {
 				$this->isTrafficAttributed = true;
 			}
 		}
+		
+		// persist state to session store
+		$this->setCampaignSessionState( $campaign_properties );
 	}
 	
 	function getCampaignState() {
 		
-		$campaign_state = owa_coreAPI::getStateParam( 'c' );
-		if ( $campaign_state ) {
-			$campaign_state = json_decode( $campaign_state );
-		} else {
+		$campaign_state = owa_coreAPI::getState( 'c', 'attribs' );
+		if ( ! $campaign_state ) {
+
 			$campaign_state = array();
 		}
 		
@@ -540,70 +718,202 @@ class owa_client extends owa_caller {
 		// set attribution properties on the event object	
 		if ( $this->isTrafficAttributed ) {
 			
-			owa_coreAPI::debug( 'Attributing Traffic to: %s', print_r($campaign_pproperties, true ) );
-		
-			$this->applyCampaignPropertiesToEvent( $event, $campaign_properties );
-			
-			// set campaign touches
-			$campaign_state = owa_coreAPI::getStateParam('c');
-			if ($campaign_state) {
-				$this->setGlobalEventProperty( 'attribs', json_encode( $campaign_state ) );
-			}
-			
+			owa_coreAPI::debug( 'Attributing Traffic to: %s', print_r($campaign_properties, true ) );
+					
 		} else {
-			owa_coreAPI::debug( 'No traffic attribution.' );
+			// infer the attribution from the referer
+			// if the request is the start of a new session
+			if ( $this->getGlobalEventProperty( 'is_new_session' ) ) {
+				owa_coreAPI::debug( 'Infering traffic attribution.' );
+				$this->inferTrafficAttribution();
+			}
+		}
+		
+		// apply traffic attribution realted properties to events
+		// all properties should be set in the state store by this point.
+		$campaign_params = owa_coreAPI::getSetting('base', 'campaign_params');
+		foreach( $campaign_params as $k => $v ) {
+		
+			$value = owa_coreAPI::getState( 's', $k );
+			
+			if ( $value ) { 
+				$this->setGlobalEventProperty( $k, $value );
+			}
+		}
+		
+		// set sesion referer
+		$session_referer = owa_coreAPI::getState('s', 'referer'); 
+		if ( $session_referer ) {
+			
+			$this->setGlobalEventProperty( 'session_referer', $session_referer );
+		}
+
+		// set campaign touches
+		$campaign_state = owa_coreAPI::getState('c', 'attribs');
+		if ( $campaign_state ) {
+			
+			$this->setGlobalEventProperty( 'attribs', json_encode( $campaign_state ));
 		}
 	}
 	
-	function applyCampaignPropertiesToEvent( $event, $campaign_properties) {
+	private function inferTrafficAttribution() {
+	
+		$ref = owa_coreAPI::getServerParam('HTTP_REFERER');
+		$medium = 'direct';
+		$source = '(none)';
+		$search_terms = '(none)';
+		$session_referer = '(none)';
 		
-		// set the attributes
-		if (!empty($campaign_properties)) {
+		if ( $ref ) {
+			$uri = owa_lib::parse_url( $ref );
+			
+			// check for external referer
+			$host = owa_coreAPI::getServerParam('HTTP_HOST');
+			if ( $host != $uri['host'] ) {			
+						
+				$medium = 'referral';
+				$source = owa_lib::stripWwwFromDomain( $uri['host'] );
+				$engine = $this->isRefererSearchEngine( $uri );
+				$session_referer = $ref;
+				if ( $engine ) {
+					$medium = 'organic-search';
+					$search_terms = $engine['t'];
+				} 
+			}
+		}
 		
-			foreach ($campaign_properties as $k => $v) {
-									
-				if ($k === 'md') {
-					$this->setGlobalEventProperty( 'medium', $campaign_properties[$k] );
-				}
+		owa_coreAPI::setState('s', 'referer', $session_referer);
+		owa_coreAPI::setState('s', 'medium', $medium);
+		owa_coreAPI::setState('s', 'source', $source);
+		owa_coreAPI::setState('s', 'search_terms', $search_terms);
+	}
+	
+	private function isRefererSearchEngine( $uri ) {
+		
+		if ( isset( $uri['host'] ) ) {
+			$host = $uri['host'];
+		} else {
+			return;
+		}
+		
+		foreach ( $this->organicSearchEngines as $engine ) {
+			
+			$domain = $engine['d'];
+			$query_param = $engine['q'];
+			$term = '';
+			
+			if ( isset ($uri['query_params'][$query_param] ) ) {
+				$term = $uri['query_params'][$query_param];
+			}
+			
+			if ( strpos($host, $domain) && $term ) {
+				owa_coreAPI::debug( 'Found search engine: %s with query param %s:, query term: %s', $domain, $query_param, $term);
 				
-				if ($k === 'sr') {
-					$this->setGlobalEventProperty( 'source', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'cn') {
-					$this->setGlobalEventProperty( 'campaign', $campaign_properties[$k] );
-				}
-					
-				if ($k === 'at') {
-					$this->setGlobalEventProperty( 'ad_type', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'ad') {
-					$this->setGlobalEventProperty( 'ad', $campaign_properties[$k] );
-				}
-				
-				if ($k === 'tr') {
-					$this->setGlobalEventProperty( 'search_terms', $campaign_properties[$k] );
-				}
-			}		
+				return array('d' => $domain, 'q' => $query_param, 't' => $term );
+			}
 		}
 	}
 	
 	function setCampaignCookie($values) {
 		// reset state
-		owa_coreAPI::setState('c', '', 
-				json_encode( $values ), 
-				'cookie', 
-				owa_coreAPI::getSetting( 'base', 'campaign_attribution_window' ) );
+		owa_coreAPI::setState('c', 'attribs', $values);
 	}
 	
 	// sets cookies domain
 	function setCookieDomain($domain) {
 		
 		if (!empty($domain)) {
-			$c = &owa_coreAPI::configSingleton();
+			$c = owa_coreAPI::configSingleton();
 			// sanitizes the domain
 			$c->setCookieDomain($domain);
+		}
+	}
+	
+	/**
+	 * Set a custom variable
+	 *
+	 * @param	slot	int		the identifying number for the custom variable. 1-5.
+	 * @param	name	string	the key of the custom variable.
+	 * @param	value	string	the value of the varible
+	 * @param	scope	string	the scope of the variable. can be page, session, or visitor
+	 */
+	public function setCustomVar( $slot, $name, $value, $scope = '' ) {
+		
+		$cv_param_name = 'cv' . $slot;
+		$cv_param_value = $name . '=' . $value;
+		
+		if ( strlen( $cv_param_value ) > 65 ) {
+			owa_coreAPI::debug('Custom variable name + value is too large. Must be less than 64 characters.');
+			return;
+		}
+				
+		switch ( $scope ) {
+			
+			case 'session':
+				
+				// store in session cookie
+				owa_coreAPI::setState( 'b', $cv_param_name, $cv_param_value );
+				owa_coreAPI::debug( 'just set custom var on session.' );
+				break;
+				
+			case 'visitor':
+				
+				// store in visitor cookie
+				owa_coreAPI::setState( 'v', $cv_param_name, $cv_param_value );
+				// remove slot from session level cookie
+				owa_coreAPI::clearState( 'b', $cv_param_name );
+				break;
+		}
+		
+		$this->setGlobalEventProperty( $cv_param_name, $cv_param_value );	
+	}
+	
+	public function getCustomVar( $slot ) {
+		
+		$cv_param_name = 'cv' + $slot;
+		$cv = '';
+		// check request/page level
+		$cv = $this->getGlobalEventProperty( $cv_param_name );
+		//check session store
+		if ( ! $cv ) {
+			$cv = owa_coreAPI::getState( 'b', $cv_param_name );
+		}
+		// check visitor store
+		if ( ! $cv ) {
+			$cv = owa_coreAPI::getState( 'v', $cv_param_name );
+		}
+		
+		return $cv;
+		
+	}
+	
+	public function deleteCustomVar( $slot ) {
+		
+		$cv_param_name = 'cv' . $slot;
+		//clear session level
+		owa_coreAPI::clearState( 'b', $cv_param_name );
+		//clear visitor level
+		owa_coreAPI::clearState( 'v', $cv_param_name );
+		// clear page level
+		$this->deleteGlobalEventProperty( $cv_param_name );
+		
+		owa_coreAPI::debug("Deleting custom variable named $cv_param_name in slot $slot.");
+	}
+	
+	private function resetSessionState() {
+		
+		$last_req = owa_coreAPI::getState( 's', 'last_req' );
+		owa_coreAPI::clearState( 's' );
+		owa_coreAPI::setState( 's', 'last_req', $last_req);
+	}
+	
+	public function addOrganicSearchEngine( $domain, $query_param, $prepend = '' ) {
+		
+		$engine = array('d' => $domain, 'q' => $query_param);
+		if ( $prepend) {
+			array_unshift($this->organicSearchEngines, $engine );
+		} else {
+				$this->organicSearchEngines[] = $engine;
 		}
 	}
 }

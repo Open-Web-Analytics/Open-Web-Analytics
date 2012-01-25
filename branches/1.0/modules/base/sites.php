@@ -42,7 +42,7 @@ class owa_sitesController extends owa_adminController {
 	function action() {
 	
 		$s = owa_coreAPI::entityFactory('base.site');
-		$sites = owa_coreAPI::getSitesList();
+		$sites = $this->getSitesAllowedForCurrentUser();		
 		$this->set('tracked_sites', $sites);
 		$this->setSubview('base.sites');
 		$this->setView('base.options');

@@ -41,6 +41,7 @@ class owa_requestContainer {
 	var $guid;
 	var $state;
 	var $request_type;
+	var $timestamp;
 	
 	/**
 	 * Singleton returns request params
@@ -76,6 +77,7 @@ class owa_requestContainer {
 	
 	function __construct() {
 		
+		$this->timestamp = time();
 		$this->guid = crc32(microtime().getmypid());
 		
 		// CLI args
@@ -92,20 +94,43 @@ class owa_requestContainer {
 			$this->files = $_FILES;	
 		}
 		
-		// cookies
-		if (!empty($_COOKIE)) {
-			$this->cookies = $_COOKIE;
-			$this->owa_cookies = owa_lib::stripParams($_COOKIE, owa_coreAPI::getSetting('base', 'ns'));
-			// hack against other frameworks sanitizing cookie data and blowing away our '>' delimiter
-			// this should be removed once all cookies are using json format.
-			foreach ($this->owa_cookies as $k => $cookie) {
-				if (strpos($cookie, '&gt;')) {
-					$this->owa_cookies[$k] = str_replace("&gt;", ">", $cookie);
+		// setup cookies
+		$this->cookies = array();
+		
+		// look for access to the raw HTTP cookie string. This is needed becuause OWA can set settings cookies
+		// with the same name under different subdomains. Multiple cookies with the same name are not
+		// available under $_COOKIE. Therefor OWA's cookie conainter must be an array of arrays.
+		if ( isset( $_SERVER['HTTP_COOKIE'] ) && strpos( $_SERVER['HTTP_COOKIE'], ';') ) {
+			
+			$raw_cookie_array = explode(';', $_SERVER['HTTP_COOKIE']);
+			
+			foreach($raw_cookie_array as $raw_cookie ) {
+				
+				$nvp = explode( '=', trim( $raw_cookie ) );
+				$this->cookies[ $nvp[0] ][] = urldecode($nvp[1]);
+			}
+			
+		} else {
+			// just use the normal cookie global
+			if ( $_COOKIE && is_array($_COOKIE) ) {
+				
+				foreach ($_COOKIE as $n => $v) {
+					// hack against other frameworks sanitizing cookie data and blowing away our '>' delimiter
+					// this should be removed once all cookies are using json format.
+					if (strpos($v, '&gt;')) {
+						$v = str_replace("&gt;", ">", $v);
+					}
+				
+					$cookies[ $n ][] = $v;
 				}
 			}
 		}
 		
-		// cookies
+		// populate owa_cookie container with just the cookies that have the owa namespace.
+		$this->owa_cookies = owa_lib::stripParams( $this->cookies, owa_coreAPI::getSetting('base', 'ns') );
+			
+	
+		// session
 		if (!empty($_SESSION)) {
 			$this->session = $_SESSION;
 		}
@@ -120,9 +145,9 @@ class owa_requestContainer {
 		}
 		
 		// merges cookies
-		foreach ($this->owa_cookies as $k => $cookie) {
+		foreach ( $this->owa_cookies as $k => $owa_cookie ) {
 			
-			$this->state->setInitialState($k, $cookie, 'cookie');
+			$this->state->setInitialState( $k, $owa_cookie );
 		}
 		
 		
@@ -155,13 +180,8 @@ class owa_requestContainer {
 			   $this->request_type = 'cli';
 		}
 		
-		// merge in cookies into the request params
-		if (!empty($_COOKIE)) {
-			//$params = array_merge($params, $this->owa_cookies);
-		}
-		
 		// Clean Input arrays
-		$this->request = owa_lib::inputFilter($params);	
+		$this->request = owa_lib::inputFilter($params);
 		if (array_key_exists('owa_action', $this->request)) {
 			
 			$this->request['owa_action'] = owa_lib::fileInclusionFilter($this->request['owa_action']);
@@ -176,12 +196,9 @@ class owa_requestContainer {
 		// translate certain request variables that are reserved in javascript
 		$this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 		
-		if(isset($_SERVER['HTTPS'])):
+		if(isset($_SERVER['HTTPS'])) {
 			$this->is_https = true;
-		endif;
-			
-		return;
-	
+		}
 	}
 		
 	function getParam($name) {
@@ -279,6 +296,11 @@ class owa_requestContainer {
 			return false;
 		}
 		
+	}
+	
+	public function getTimestamp() {
+		
+		return $this->timestamp;
 	}
 	
 }

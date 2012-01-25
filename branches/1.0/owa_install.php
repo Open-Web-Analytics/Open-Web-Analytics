@@ -65,12 +65,10 @@ class owa_install extends owa_base{
 	 * @return owa_install
 	 */
 
-	function owa_install() {
+	function __construct() {
 		
-		$this->owa_base();
-		$this->db = &owa_coreAPI::dbSingleton();
-		
-		return;
+		parent::__construct();
+		$this->db = owa_coreAPI::dbSingleton();
 	}
 	
 	/**

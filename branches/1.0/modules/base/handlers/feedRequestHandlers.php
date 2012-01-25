@@ -72,7 +72,7 @@ class owa_feedRequestHandlers extends owa_observer {
 			if ( $ret ) {
 				
 				$eq = owa_coreAPI::getEventDispatch();
-				$nevent = $eq->makeEvent($event->getEventType().'_persisted');
+				$nevent = $eq->makeEvent($event->getEventType().'_logged');
 				$nevent->setProperties($event->getProperties());
 				$eq->notify($nevent);
 				return OWA_EHS_EVENT_HANDLED;

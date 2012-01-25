@@ -35,11 +35,6 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 class owa_usersPasswordEntryController extends owa_controller {
 	
-	function owa_usersPasswordEntryController($params) {
-			
-		return owa_usersPasswordEntryController::__construct($params);
-	}
-	
 	function __construct($params) {
 		
 		return parent::__construct($params);
@@ -70,11 +65,6 @@ class owa_usersPasswordEntryController extends owa_controller {
  */
 
 class owa_usersPasswordEntryView extends owa_view {
-	
-	function owa_usersPasswordEntryView() {
-		
-		return owa_usersPasswordEntryView::__construct();
-	}
 	
 	function __construct() {
 		

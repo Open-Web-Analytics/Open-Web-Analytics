@@ -69,12 +69,7 @@ class owa_usersNewAccountController extends owa_controller {
  */
 
 class owa_usersNewAccountView extends owa_mailView {
-	
-	function owa_usersNewAccountView() {
 		
-		return owa_usersNewAccountView::__construct();
-	}
-	
 	function __construct() {
 		
 		return parent::__construct();
@@ -86,10 +81,9 @@ class owa_usersNewAccountView extends owa_mailView {
 		$this->body->set_template('users_new_account_email.tpl');
 		$this->body->set('user_id', $data['user_id']);
 		$this->body->set('key', $data['temp_passkey']);
-			
 		// mailer specific
 		$this->setMailSubject($data['subject']);
-		$this->addMailToAddress($data['email_address'], $data['name']);
+		$this->addMailToAddress($data['email_address'], @$data['name']);
 			
 	}
 }

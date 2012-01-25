@@ -63,9 +63,11 @@ class owa_usersEditController extends owa_adminController {
 		$u->set('real_name', $this->getParam('real_name'));
 		
 		// never change the role of the admin user
-		if ($u->get('user_id') != 'admin') {
+		if (!$u->isOWAAdmin()) {
 			$u->set('role', $this->getParam('role'));
 		}
+		
+		
 		$u->update();
 		$this->set('status_code', 3003);
 		$this->setRedirectAction('base.users');

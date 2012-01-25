@@ -86,7 +86,7 @@ class owa_fileCache extends owa_cache {
 	}
 	
 	function putItemToCacheStore($collection, $id) {
-		owa_coreAPI::debug('put id: '.$id);
+		
 		if ( $this->acquire_lock() ) {
 			$this->makeCacheCollectionDir($collection);
 			$this->debug(' writing file for: '.$collection.$id);
@@ -141,9 +141,9 @@ class owa_fileCache extends owa_cache {
 	function makeCollectionDirPath($collection) {
 	
 		if (!in_array($collection, $this->global_collections)) {
-			return $this->cache_dir.$this->cache_id.DIRECTORY_SEPARATOR.$collection.DIRECTORY_SEPARATOR;
+			return $this->cache_dir.$this->cache_id.'/'.$collection.'/';
 		} else {
-			return $this->cache_dir.$collection.DIRECTORY_SEPARATOR;	
+			return $this->cache_dir.$collection.'/';	
 		}
 	}
 	
@@ -186,6 +186,7 @@ class owa_fileCache extends owa_cache {
 			$this->statistics['removed']++;
 			return true;
 		} else {
+			$this->debug('Cache File does not exist: '.$cache_file);
 			return false;
 		}
 	}
@@ -200,18 +201,16 @@ class owa_fileCache extends owa_cache {
 			
 			$sld = $this->readDir($dir);
 			$this->debug("Reading cache file list from: ". $dir);
-			if (array_key_exists('files', $sld)) {	
-				$this->deleteFiles($sld['files']);
+			
+			if ( array_key_exists( 'files', $sld ) ) {	
+				$this->deleteFiles( $sld['files'] );
 			}
-			foreach ($sld['dirs'] as $sk => $sdir) {
-				$ssld = $this->readDir($sdir);
-				$this->debug("Reading cache file list from: ". $sdir);	
-				$this->deleteFiles($ssld['files']);	
-				
-				rmdir($sdir);
+			
+			foreach ( $sld['dirs'] as $sk => $sdir ) {
+				$ssld = $this->readDir( $sdir );
+				$this->debug( "Reading cache file list from: ". $sdir );	
+				$this->deleteFiles( $ssld['files'] );	
 			}
-	
-			rmdir($dir);		
 		}			
 	}
 			
@@ -246,7 +245,7 @@ class owa_fileCache extends owa_cache {
 				if (is_dir($dir.$file)) {
 				
 					if (strpos($file, '.') === false) {
-						$data['dirs'][] = $dir.$file.DIRECTORY_SEPARATOR;
+						$data['dirs'][] = $dir.$file.'/';
 					} 
 				} else {
 					if (strpos($file, '.php') == true) { 

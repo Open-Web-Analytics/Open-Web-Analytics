@@ -18,8 +18,7 @@
 
 if(!class_exists('owa_observer')) {
 	require_once(OWA_DIR.'owa_observer.php');
-}	
-require_once(OWA_DIR.'owa_lib.php');
+}
 
 /**
  * Host Event handlers
@@ -43,15 +42,20 @@ class owa_hostHandlers extends owa_observer {
      */
     function notify($event) {
 		
+		if ( ! $event->get('host_id') ) {
+			owa_coreAPI::debug('Nothing to handle. Host id missing from event.');
+			return OWA_EHS_EVENT_HANDLED;
+		}
+		
     	$h = owa_coreAPI::entityFactory('base.host');
 		
-		$h->getByPk('id', owa_lib::setStringGuid($event->get('full_host')));
+		$h->getByPk( 'id', $event->get( 'host_id' ) );
 		$id = $h->get('id'); 
 		
 		if (!$id) {
 			
-			$h->setProperties($event->getProperties());
-			$h->set('id', owa_lib::setStringGuid($event->get('full_host'))); 
+			$h->setProperties( $event->getProperties() );
+			$h->set( 'id', $event->get( 'host_id' ) ); 
 			$ret = $h->create();
 			
 			if ( $ret ) {

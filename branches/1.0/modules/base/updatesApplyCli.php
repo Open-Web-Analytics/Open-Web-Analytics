@@ -38,7 +38,7 @@ class owa_updatesApplyCliController extends owa_cliController {
 	function action() {
 		
 		// fetch list of modules that require updates
-		$s = &owa_coreAPI::serviceSingleton();
+		$s = owa_coreAPI::serviceSingleton();
 		
 		if ($this->isParam('listpending')) {
 			
@@ -90,7 +90,7 @@ class owa_updatesApplyCliController extends owa_cliController {
 	
 	function listPendingUpdates() {
 		
-		$s = &owa_coreAPI::serviceSingleton();
+		$s = owa_coreAPI::serviceSingleton();
 		$modules = $s->getModulesNeedingUpdates();
 		if ($modules) {
 			owa_coreAPI::notice(sprintf("Updates pending include: %s",print_r($modules, true)));
@@ -103,7 +103,15 @@ class owa_updatesApplyCliController extends owa_cliController {
 	
 		list($module, $seq) = explode('.', $update);
 		$u = owa_coreAPI::updateFactory($module, $seq);
-		$ret = $u->apply();
+		
+		// check for force command param
+		$force = false;
+		if ($this->isParam('--force')) {
+			
+			$force = true;
+		}
+		
+		$ret = $u->apply($force);
 		
 		if ($ret) {
 			owa_coreAPI::notice("Updates applied successfully.");

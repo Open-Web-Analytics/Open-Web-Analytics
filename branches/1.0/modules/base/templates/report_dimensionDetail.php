@@ -13,8 +13,8 @@
 		<?php foreach ($tabs as $k => $tab): ?>
 		<div id="tab_<?php $this->out($k); ?>">
 			
-				<div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if($pie) {echo 'float:right';}?>"></div>
-				<?php if($pie): ?>	
+				<div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if(isset($pie)) {echo 'float:right';}?>"></div>
+				<?php if(isset($pie)): ?>	
 				<div id="pie" style="min-width:300px;"></div>
 				<?php endif;?>
 				<div class="spacer" style="clear:both; height:20px;"></div>
@@ -50,7 +50,7 @@
 	<?php if ($trendTitle):?>
 	trend.asyncQueue.push(['renderTemplate', '<?php echo $trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
 	<?php endif;?>
-	trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php echo $trendChartMetric; ?>'}], 'trend-chart']);
+	trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php if ( isset($tab['trendchartmetric'] ) ): echo $tab['trendchartmetric']; else: echo $trendChartMetric; endif; ?>'}], 'trend-chart']);
 	trend.options.metricBoxes.width = '150px';
 	trend.asyncQueue.push(['makeMetricBoxes' , '<?php $this->out($k, false);?>_trend-metrics']);
 	tab.addRse('trend', trend);

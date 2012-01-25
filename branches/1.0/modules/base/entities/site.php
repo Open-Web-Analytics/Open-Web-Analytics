@@ -32,6 +32,8 @@
 
 class owa_site extends owa_entity {
 	
+	private static $cachedAssignedUsers = array();
+	
 	function __construct() {
 		
 		$this->setTableName('site');
@@ -51,7 +53,7 @@ class owa_site extends owa_entity {
 		$this->properties['site_family'] = new owa_dbColumn;
 		$this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['settings'] = new owa_dbColumn;
-		$this->properties['settings']->setDataType(OWA_DTD_TEXT);
+		$this->properties['settings']->setDataType(OWA_DTD_BLOB);
 	}
 	
 	function generateSiteId($domain) {
@@ -71,7 +73,77 @@ class owa_site extends owa_entity {
 		owa_coreAPI::debug($value);
 		return $value;
 	}
+	
+	
+	
 
+	/**
+	 * Updates the allowed Sites for the current loaded user
+	 * @param array $siteIds
+	 */
+	public function updateAssignedUserIds(array $userIds) {
+		 if (!$this->get('id')) {
+		 	throw new Exception('no site data loaded!');
+		 }
+		 $db = owa_coreAPI::dbSingleton();	
+		 $db->deleteFrom('owa_site_user');
+		 $db->where( 'site_id', $this->get('id') );
+		 $ret = $db->executeQuery();
+		 
+		 foreach ($userIds as $id) {
+		 	$relation = owa_coreAPI::entityFactory('base.site_user');
+			$relation->set( 'user_id', intval ($id ) );			
+			$relation->set( 'site_id', $this->get('id') );
+			$relation->save();
+		 }
+		 
+		 unset ( self::$cachedAssignedUsers[$this->get('id')] );
+
+	}
+	
+	
+	/**
+	 * Checks if user is allowed to access the site.
+	 * @param integer $userId
+	 * @return boolean
+	 */
+	public function isUserAssigned($userId) {		
+		$users = $this->getAssignedUsers();	
+		foreach ($users as $user) {
+			if ($userId == $user->get('id')) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Returns collection of owa_user entities that are allowed for current user
+	 * @return owa_user[]
+	 */
+	public function getAssignedUsers() {		
+		if (!$this->get('id')) {
+		 	throw new Exception('no site data loaded!');
+		}
+		if (!isset(self::$cachedAssignedUsers[$this->get('id')])) {
+			$db = owa_coreAPI::dbSingleton();		
+			$db->selectFrom( 'owa_site_user' );
+			$db->selectColumn( '*' );
+			$db->where( 'site_id', $this->get('id') );
+			$relations = $db->getAllRows();
+			$result = array();
+			if (is_array($relations)) {		
+				foreach ($relations as $row) {
+					$userEntity = owa_coreApi::entityFactory('base.user');
+					$userEntity->load($row['user_id']);
+					$result[] = $userEntity;
+				}
+			}
+			self::$cachedAssignedUsers[$this->get('id')] = $result;
+		}
+		
+		return self::$cachedAssignedUsers[$this->get('id')];		
+	}
 	
 }
 

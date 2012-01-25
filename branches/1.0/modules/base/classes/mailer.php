@@ -42,52 +42,97 @@ class owa_mailer extends owa_base {
 	function __construct() {
 	
 		parent::__construct();
+		
 		$this->mailer = new PHPMailer();
 		
-		if (!empty($this->config['mailer-from'])):
-			$this->mailer->From = $this->config['mailer-from'];
-		endif;
+		if ( owa_coreAPI::getSetting( 'base', 'mailer-from' ) ) {
 		
-		if (!empty($this->config['mailer-fromName'])):
-			$this->mailer->FromName = $this->config['mailer-fromName'];
-		endif;
+			$this->mailer->From = owa_coreAPI::getSetting( 'base', 'mailer-from' );
+		}
 		
-		if (!empty($this->config['mailer-host'])):
-			$this->mailer->Host = $this->config['mailer-host'];
-		endif;
+		if ( owa_coreAPI::getSetting( 'base', 'mailer-fromName' ) ) {
+			
+			$this->mailer->FromName = owa_coreAPI::getSetting( 'base', 'mailer-fromName' );
+		}
 		
-		if (!empty($this->config['mailer-port'])):
-			$this->mailer->Port = $this->config['mailer-port'];
-		endif;
+		if ( owa_coreAPI::getSetting( 'base', 'mailer-use-smtp' ) ) {
 		
-		if (!empty($this->config['mailer-smtpAuth'])):
-			$this->mailer->SMTPAuth = $this->config['mailer-smtpAuth'];
-		endif;
+			$this->mailer->IsSMTP(); // telling the class to use SMTP
+			
+			if ( owa_coreAPI::getSetting( 'base', 'mailer-host' ) ) {
 		
-		if (!empty($this->config['mailer-username'])):
-			$this->mailer->Username = $this->config['mailer-username'];
-		endif;
-		
-		if (!empty($this->config['mailer-password'])):
-			$this->mailer->Password = $this->config['mailer-password'];
-		endif;
-		
-		return;
-		
+				$this->mailer->Host = owa_coreAPI::getSetting( 'base', 'mailer-host' );
+			}
+			
+			if ( owa_coreAPI::getSetting( 'base', 'mailer-port' ) ) {
+			
+				$this->mailer->Port =  owa_coreAPI::getSetting( 'base', 'mailer-port' );
+			}
+			
+			if ( owa_coreAPI::getSetting( 'base', 'mailer-smtpAuth' ) ) {
+				
+				$this->mailer->SMTPAuth = owa_coreAPI::getSetting( 'base', 'mailer-smtpAuth' );
+			}
+			
+			if ( owa_coreAPI::getSetting( 'base', 'mailer-username') && owa_coreAPI::getSetting( 'base', 'mailer-password') ) {
+				
+				$this->mailer->Username = owa_coreAPI::getSetting( 'base', 'mailer-username');
+				$this->mailer->Password = owa_coreAPI::getSetting( 'base', 'mailer-password');
+			}		
+		}
 	}
 	
 	function sendMail() {
 	
-		if(!$this->mailer->Send()):
+		if( ! $this->mailer->Send() ) {
 			
-			return $this->e->debug(sprintf("Mailer Failure. Was not able to send to %s with subject of '%s'. Error Msgs: '%s'", $this->mailer->to, $this->mailer->Subject, $this->mailer->ErrorInfo));
+			return $this->e->debug(sprintf("Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $this->mailer->ErrorInfo));
 			
-		else:
-			return $this->e->debug(sprintf("Mail sent to %s with the subject of '%s'.", $this->mailer->to[0], $this->mailer->Subject));
-		endif;
-		
-		
+		} else {
+			return owa_coreAPI::debug( sprintf ("Mail sent with the subject of '%s'.", $this->mailer->Subject ) );
+		}
 	}
+	
+	function send() {
+		
+		return $this->sendMail();
+	}
+	
+	function addAddress( $address, $name ) {
+		
+		$this->mailer->AddAddress( $address, $name );
+	}
+	
+	function setFrom( $address, $name ) {
+		
+		$this->mailer->SetFrom( $address, $name );
+	}
+	
+	function setHtmlBody ( $html ) {
+		
+		$this->mailer->MsgHTML( $html );
+	}
+	
+	function setAltBody ( $text ) {
+		
+		$this->mailer->AltBody =  $text;
+	}
+	
+	function setSubject( $subject ) {
+	
+		$this->mailer->Subject = $subject;
+	}
+	
+	function addReplyTo( $address, $name ) {
+	
+		$this->mailer->AddReplyTo( $address, $name );
+	}
+	
+	function addAttachment( $attachment ) {
+	
+		$this->mailer->AddAttachment( $attachment );
+	}
+	
 }
 
 ?>

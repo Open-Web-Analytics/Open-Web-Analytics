@@ -74,9 +74,9 @@ class owa_optionsGoalEditController extends owa_adminController {
 		
 		$steps = $goal['details']['funnel_steps'];
 		
-		if ($steps) {
-			
-			foreach ($steps as $num => $step) {
+		 if ( isset( $goal['details']['funnel_steps'] ) ) {
+		 	
+		 	foreach ( $goal['details']['funnel_steps'] as $num => $step) { 
 				
 				if (!empty($step['name']) || !empty($step['url'])) { 
 					// check that step name is present
@@ -87,12 +87,7 @@ class owa_optionsGoalEditController extends owa_adminController {
 					// check that step url is present
 					$v1 = owa_coreAPI::validationFactory('required');
 					$v1->setValues($step['url']);
-					$this->setValidation('step_url_'.$num, $v1);	
-					
-					// check that step is_required is present
-					$v1 = owa_coreAPI::validationFactory('required');
-					$v1->setValues($step['is_required']);
-					//$this->setValidation('step_is_required_'.$num, $v1);
+					$this->setValidation('step_url_'.$num, $v1);
 				}
 				
 				$check = owa_lib::array_values_assoc($step);

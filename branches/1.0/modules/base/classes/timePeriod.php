@@ -71,20 +71,9 @@ class owa_timePeriod {
 		return $this->period;
 	}
 	
-	function _setLabel($value) {
+	function _setLabel($value = '') {
 
-		if ($value === 'date_range') {
-			// Set date labels
-			$this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();
-		} elseif ($value === 'day') {
-		
-			$this->label = $this->startDate->getLabel() . ' - ' . $this->startDate->getLabel();
-		
-		} else {
-		
-			$periods = $this->getPeriodLabels();
-			$this->label = $periods[$value]['label'];
-		}
+		$this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();	
 	}
 	
 	/**
@@ -112,7 +101,7 @@ class owa_timePeriod {
 					'same_day_last_week' 	=> array('label' => 'Same Day last Week'),
 					'same_week_last_year' 	=> array('label' => 'Same Week Last Year'),
 					'same_month_last_year' 	=> array('label' => 'Same Month Last Year'),
-					'date_range' 			=> array('label' => 'Date Range')
+					//'date_range' 			=> array('label' => 'Date Range')
 					//'time_range'			=> array('label' => 'Time Range')
 		);
 		
@@ -249,20 +238,11 @@ class owa_timePeriod {
 	
 		$period_params = array();
 		$period_params['period'] = $this->get();
-		
-		if ($period_params['period'] === 'date_range') {
-		
-			$period_params['startDate'] = $this->startDate->getYyyymmdd();
-			$period_params['endDate'] = $this->endDate->getYyyymmdd();	
-		
-		} elseif ($period_params['period'] === 'time_range') {
-		
-			$period_params['startTime'] = $this->startDate->getTimestamp();
-			$period_params['endTime'] = $this->endDate->getTimestamp();	
-		}
-		
+		$period_params['startDate'] = $this->startDate->getYyyymmdd();
+		$period_params['endDate'] = $this->endDate->getYyyymmdd();	
+		//$period_params['startTime'] = $this->startDate->getTimestamp();
+		//$period_params['endTime'] = $this->endDate->getTimestamp();
 		return $period_params;
-	
 	}
 	
 	function getAllInfo() {

@@ -48,16 +48,9 @@ class owa_actionHandler extends owa_observer {
 		
 		if ( ! $a->wasPersisted() ) {
 			
-			$a->set('id', $event->get( 'guid' ) );
-			$a->set('visitor_id', $event->get('visitor_id'));
-			$a->set( 'session_id', $event->get( 'session_id' ) );
-			$a->set('site_id', $event->get('site_id'));
-			$a->set('document_id', $a->generateId($event->get('page_url')));
-			$a->set('ua_id', $a->generateId($event->get('HTTP_USER_AGENT')));
-			$a->set('host_id', $a->generateId($event->get('full_host')));
-			$a->set('os_id', $a->generateId($event->get('os')));
-			$a->set('timestamp', $event->get('timestamp'));
-			$a->set('yyyymmdd', $event->get('yyyymmdd'));
+			$a->setProperties( $event->getProperties() );
+			// Set Primary Key 
+			$a->set( 'id', $event->get('guid') ); 
 			$a->set('action_name', strtolower(trim($event->get('action_name'))));
 			$a->set('action_group', strtolower(trim($event->get('action_group'))));
 			$a->set('action_label', strtolower(trim($event->get('action_label'))));
@@ -66,6 +59,12 @@ class owa_actionHandler extends owa_observer {
 			$ret = $a->create();
 			
 			if ( $ret ) {
+				// Tell others that "track.action" has been logged 
+				$eq = owa_coreAPI::getEventDispatch(); 
+				$nevent = $eq->makeEvent($event->getEventType().'_logged'); 
+				$nevent->setProperties($event->getProperties()); 
+				$eq->asyncNotify($nevent);
+			
 				return OWA_EHS_EVENT_HANDLED;
 			} else {
 				return OWA_EHS_EVENT_FAILED;

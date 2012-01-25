@@ -86,9 +86,9 @@ class owa_http {
 		
 	function __construct() {
 	
-		$c = &owa_coreAPI::configSingleton();
+		$c = owa_coreAPI::configSingleton();
 		$this->config = $c->fetch('base');
-		$this->e = &owa_coreAPI::errorSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
 		$this->crawler = new Snoopy;
 		// do not allow snoopy to follow links
 		$this->crawler->maxredirs = 5;

@@ -71,7 +71,10 @@ class owa_searchTermHandlers extends owa_observer {
 				owa_coreAPI::debug('Not Logging. Search term already exists.');
 				return OWA_EHS_EVENT_HANDLED;
 			}
-		}	
+		} else {
+			return OWA_EHS_EVENT_HANDLED;
+		}
+			
     }
 }
 

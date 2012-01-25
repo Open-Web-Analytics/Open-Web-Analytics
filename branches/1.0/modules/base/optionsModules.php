@@ -41,7 +41,7 @@ class owa_optionsModulesController extends owa_adminController {
 
 	function action() {
 		
-		$path = OWA_BASE_CLASSES_DIR.'modules'.DIRECTORY_SEPARATOR;
+		$path = OWA_BASE_CLASSES_DIR.'modules/';
 		$dirs = array();
 		
 		if ($handle = opendir($path)):

@@ -49,7 +49,7 @@ class owa_base {
 	/**
 	 * Configuration Entity
 	 * 
-	 * @var Object global configuration object
+	 * @var owa_settings  Object global configuration object
 	 */
 	var $c;
 	
@@ -71,17 +71,11 @@ class owa_base {
 	 * Base Constructor
 	 *
 	 * @return owa_base
-	 */
-	function owa_base() {
-		
-		return owa_base::__construct();
-
-	}
-	
+	 */	
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-		$this->e = &owa_coreAPI::errorSingleton();
-		$this->c = &owa_coreAPI::configSingleton();
+		$this->e = owa_coreAPI::errorSingleton();
+		$this->c = owa_coreAPI::configSingleton();
 		$this->config = $this->c->fetch('base');
 	}
 	

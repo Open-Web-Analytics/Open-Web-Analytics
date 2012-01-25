@@ -41,7 +41,7 @@
 					</select>
 					<BR><BR>Edit the group label:
 					
-					<input name="<?php echo $this->getNs();?>new_goal_group_name" type="text" size="20" value="<?php $this->out($goal_groups[$goal['goal_group']]);?>">
+					<input name="<?php echo $this->getNs();?>new_goal_group_name" type="text" size="20" value="<?php $this->out(@$goal_groups[$goal['goal_group']]);?>">
 				</td>
 			</tr>
 			<tr>
@@ -68,7 +68,7 @@
 					</p>
 				</th>
 				<td>
-					<input name="<?php echo $this->getNs();?>goal[goal_value]" type="text" size="20" value="<?php $this->out($goal['goal_value']);?>"> 
+					<input name="<?php echo $this->getNs();?>goal[goal_value]" type="text" size="20" value="<?php $this->out(@$goal['goal_value']);?>"> 
 					<span class="optional">Optional</span>
 				</td>
 			</tr>
@@ -125,7 +125,7 @@
 				</p>
 				</th>
 				<td>
-					<input name="<?php echo $this->getNs();?>goal[details][goal_url]" value="<?php $this->out($goal['details']['goal_url']);?>" type="text" size="60" value="<?php $this->out($goal['url']);?>">
+					<input name="<?php echo $this->getNs();?>goal[details][goal_url]" value="<?php $this->out(@$goal['details']['goal_url']);?>" type="text" size="60" value="<?php $this->out($goal['url']);?>">
 				</td>
 			</tr>
 		</table>

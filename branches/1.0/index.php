@@ -32,7 +32,8 @@ require_once(OWA_DIR.'owa_php.php');
  */
 
 // Initialize owa admin
-$owa = &new owa_php;
+$owa = new owa_php;
+
 
 if (!$owa->isOwaInstalled()) {
 	// redirect to install
@@ -44,7 +45,9 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	// run controller or view and echo page content
 	echo $owa->handleRequestFromURL();
 } else {
+	
 	// unload owa
 	$owa->restInPeace();
 }
+
 ?>

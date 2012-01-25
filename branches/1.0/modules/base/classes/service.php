@@ -49,6 +49,7 @@ class owa_service extends owa_base {
 	var $denormalizedDimensions = array();
 	var $browscap;
 	var $geolocation;
+	var $formatters = array();
 	
 	function __construct() {
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
@@ -62,22 +63,24 @@ class owa_service extends owa_base {
 	function initializeFramework() {
 	
 		if (!$this->isInit()) {
+			
+			// setup request container
+			$this->request = owa_coreAPI::requestContainerSingleton();
+			
 			$this->_loadModules();
 			$this->_loadEntities();
 			$this->_loadMetrics();
 			$this->_loadDimensions();
+			$this->_loadFormatters();
 			$this->_loadApiMethods();	
 			$this->_loadEventProcessors();
 			$this->setInit();
 			
-			// setup request container
-			$this->request = owa_coreAPI::requestContainerSingleton();
 			// setup current user
 			$this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
 			$this->current_user->setRole('everyone');
 			// the 'log_users' config directive relies on this being populated
-			$this->current_user->setUserData('user_id', $this->request->state->get('u'));	
-			
+			$this->current_user->setUserData( 'user_id' ,  $this->request->state->get('u') );
 			// load geolocation obj.
 			$this->geolocation = owa_geolocation::getInstance();			
 		}
@@ -149,6 +152,27 @@ class owa_service extends owa_base {
 				$this->metrics = array_merge_recursive( $this->metrics, $module->metrics);
 			}	
 		}
+		
+		$metricsByEntityMap = array();
+		
+		foreach ( $this->metrics as $metric => $implementations ) {
+			
+			foreach ( $implementations as $implementation ) {
+				
+				$m = owa_coreAPI::metricFactory( $implementation['class'], $implementation['params']);
+				
+				if ( ! $m->isCalculated() ) {
+					$metricsByEntityMap[ $m->getEntityName() ][ $implementation['name'] ] = $implementation;
+				}			
+			}	
+		}
+
+		$this->setMap('metricsByEntity', $metricsByEntityMap);
+	}
+	
+	function getAllMetrics() {
+		
+		return $this->metrics;
 	}
 	
 	function loadCliCommands() {
@@ -196,6 +220,16 @@ class owa_service extends owa_base {
 		}
 	}
 	
+	function _loadFormatters() {
+	
+		foreach ($this->modules as $k => $module) {
+
+			if (is_array($module->formatters)) {
+				$this->formatters = array_merge($this->formatters, $module->formatters);
+			}
+		}
+	}
+
 	function _loadEventProcessors() {
 		
 		$processors = array();
@@ -209,8 +243,13 @@ class owa_service extends owa_base {
 	
 	}
 	
-	function &getCurrentUser() {
-		
+	/**
+	 * @return owa_serviceUser
+	 */
+	function getCurrentUser() {		
+		if (!$this->isInit()) {
+			throw new Exception('Current User Object could only be get if framework is initialized');
+		}
 		return $this->current_user;
 	}
 	
@@ -228,7 +267,7 @@ class owa_service extends owa_base {
 		
 		if (array_key_exists($map_name, $this->maps)) {
 			
-			if (array_key_exists($name, $this->maps[$map_name])) {
+			if ( $name && array_key_exists($name, $this->maps[$map_name])) {
 				
 				return $this->maps[$map_name][$name];
 			} else {
@@ -253,7 +292,6 @@ class owa_service extends owa_base {
 	function setMap($name, $map) {
 		
 		$this->maps[$name] = $map;
-		return;
 	}
 	
 	function setMapValue($map_name, $name, $value) {
@@ -347,6 +385,13 @@ class owa_service extends owa_base {
 			if (array_key_exists($entity, $this->denormalizedDimensions[$name])) {	
 				return $this->denormalizedDimensions[$name][$entity];
 			}
+		}
+	}
+	
+	function getFormatter($name) {
+	
+		if (array_key_exists($name, $this->formatters)) {
+			return $this->formatters[$name];
 		}
 	}
 	

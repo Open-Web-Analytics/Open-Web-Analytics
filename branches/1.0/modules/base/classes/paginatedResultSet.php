@@ -77,6 +77,18 @@ class owa_paginatedResultSet {
 	 */	
 	var $base_url;
 	
+	/**
+	 * The list of related dimensions that can be added to the result set
+	 *
+	 */
+	var $relatedDimensions = array();
+	
+	/**
+	 * The list of related metrics that can be added to the result set
+	 *
+	 */
+	var $relatedMetrics = array();
+	
 	var $results_count = 0;
 	var $offset = 0;
 	var $limit;
@@ -135,7 +147,8 @@ class owa_paginatedResultSet {
 	function generate($dao, $method = 'getAllRows') {
 		
 		if (!empty($this->limit)) {
-			// query for more than we need	
+			// query for more than we need
+			owa_coreAPI::debug('applying limit of: '.$this->limit);	
 			$dao->limit($this->limit * 10);
 		}
 		
@@ -288,6 +301,10 @@ class owa_paginatedResultSet {
 		return $this->resultsRows;
 	}
 	
+	function getResultsRows() {
+		return $this->resultsRows;
+	}
+	
 	function addLinkToRowItem($item_name, $template, $subs) {
 		
 				
@@ -339,7 +356,14 @@ class owa_paginatedResultSet {
 	
 	function appendRow($row_num, $type, $name, $value, $label, $data_type, $formatted_value = '') {
 	
-		$this->resultsRows[$row_num][$name] = array('result_type' => $type, 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type, 'formatted_value' => $formatted_value);	
+		$this->resultsRows[$row_num][$name] = array(
+			'result_type' 		=> $type, 
+			'name' 				=> $name, 
+			'value' 			=> $value, 
+			'label' 			=> $label, 
+			'data_type' 		=> $data_type, 
+			'formatted_value' 	=> $formatted_value
+		);	
 	}
 	
 	function removeMetric($name) {
@@ -364,6 +388,20 @@ class owa_paginatedResultSet {
 	function createResultSetHash() {
 		
 		$this->guid = md5(serialize($this));
+	}
+	
+	function setRelatedDimensions( $dims = '' ) {
+		
+		if ( $dims ) {
+			$this->relatedDimensions = $dims;
+		}
+	}
+	
+	function setRelatedMetrics( $metrics = '' ) {
+		
+		if ( $metrics ) {
+			$this->relatedMetrics = $metrics;
+		}
 	}
 }
 

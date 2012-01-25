@@ -16,8 +16,7 @@
 // $Id$
 //
 
-//require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'owa_base.php');
-require_once(OWA_BASE_DIR.DIRECTORY_SEPARATOR.'ini_db.php');
+require_once(OWA_BASE_DIR.'/ini_db.php');
 
 /**
  * Browscap Class
@@ -67,7 +66,7 @@ class owa_browscap extends owa_base {
 		$this->ua = $ua;
 		
 		// init cache
-		$this->cache = &owa_coreAPI::cacheSingleton(); 
+		$this->cache = owa_coreAPI::cacheSingleton(); 
 		$this->cacheExpiration = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
 		$this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 		//lookup robot in main browscap db

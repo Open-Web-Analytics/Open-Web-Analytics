@@ -45,9 +45,9 @@ class owa_installCheckEnvController extends owa_installController {
 		$config_file_present = false;
 		
 		// check PHP version
-		$version = split('\.',phpversion());
+		$version = explode( '.', phpversion() );
 		
-		if ($version[0] < 5) {
+		if ( $version[0] < 5 && $version[1] < 2 ) {
 			$errors['php_version']['name'] = 'PHP Version';
 			$errors['php_version']['value'] = phpversion();
 			$errors['php_version']['msg'] = $this->getMsg(3301);
@@ -56,13 +56,16 @@ class owa_installCheckEnvController extends owa_installController {
 		
 		// Check permissions on log directory
 		
-		// Check for Windows OS
-		$os = php_uname("s");
-		if (strtoupper(substr($os, 0, 3)) === 'WIN') {
-			$errors['php_os']['value'] = 'Operating System';
-			$errors['php_os']['value'] = $os;
-			$errors['php_os']['msg'] = 'You are running PHP on an Operating System that OWA does not support.';
+		// check for magic_quotes
+		$magic_quotes = get_magic_quotes_gpc();
+		
+		if ( $magic_quotes ) {
+			
+			$errors['magic_quotes_gpc']['name'] = 'magic_quotes_gpc';
+			$errors['magic_quotes_gpc']['value'] = $magic_quotes;
+			$errors['magic_quotes_gpc']['msg'] = "The magic_quotes_gpc PHP INI directive must be set to 'OFF' in order for OWA domstreams to operate correctly.";
 			$bad_environment = true;
+			
 		}
 		
 		// Check for config file and then test the db connection

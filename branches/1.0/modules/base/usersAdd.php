@@ -83,6 +83,7 @@ class owa_usersAddController extends owa_adminController {
 						'base.new_user_account');
 		
 		
+		
 		$this->setRedirectAction('base.users');
 		$this->set('status_code', 3000);
 				

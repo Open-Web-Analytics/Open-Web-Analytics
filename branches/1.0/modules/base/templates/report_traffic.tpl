@@ -37,25 +37,6 @@
 				</div>
 			</div>
 		
-			<div class="owa_reportSectionHeader">Related Reports</div>
-				<div class="relatedReports">
-					<UL>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
-						</LI>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
-						</LI>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
-						</LI>
-						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
-						</LI>
-					</UL>
-				</div>
-			</div>
-		
 			<div class="owa_reportSectionContent" style="min-width:350px;">
 				<div class="owa_reportSectionHeader">Top Keywords</div>
 				
@@ -84,6 +65,26 @@
 					</UL>
 				</div>
 			</div>
+			
+			<div class="owa_reportSectionHeader">Related Reports</div>
+				<div class="relatedReports">
+					<UL>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
+						</LI>
+						<LI>
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
+						</LI>
+					</UL>
+				</div>
+			</div>
+			
 		</td>
 	</tr>
 </table>
@@ -108,13 +109,15 @@ OWA.items.rsh.load(aurl);
 
 var tturl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
 														'metrics' => 'visits', 
-														'dimensions' => 'date,medium', 
+														'dimensions' => 'date', 
 														'sort' => 'date',
 														'format' => 'json',
-														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId').',medium=@organic')),true);?>';
+														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId').',medium==organic-search')),true);?>';
 																	  
 OWA.items.tt = new OWA.resultSetExplorer('trend-metrics');
-OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines', '',function(row) {if (row.medium.value === 'organic-search') return true;}]);
+//OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines', '',function(row) {if (row.medium.value === 'organic-search') return true;}]);
+OWA.items.tt.asyncQueue.push(['makeMetricBoxes','','','Visits From Search Engines']);
+
 OWA.items.tt.load(tturl);
 
 var tt1url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -124,9 +127,9 @@ var tt1url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
 														'format' => 'json',
 														'constraints' => urlencode($this->substituteValue('siteId==%s,', 'siteId')).'medium==direct'),true);?>';
 																	  
-var tt1 = new OWA.resultSetExplorer('trend-metrics');
-tt1.asyncQueue.push(['makeMetricBoxes','','','Visits From Direct Navigation']);
-tt1.load(tt1url);
+OWA.items.tt1 = new OWA.resultSetExplorer('trend-metrics');
+OWA.items.tt1.asyncQueue.push(['makeMetricBoxes','','','Visits From Direct Navigation']);
+OWA.items.tt1.load(tt1url);
 
 
 var tt2url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
@@ -162,7 +165,7 @@ var topkeywordsurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet'
 												'sort' => 'visits-',
 												'format' => 'json',
 												'resultsPerPage' => 25,
-												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
+												'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId') . 'medium==organic-search')), true);?>';
 												  
 OWA.items.topkeywords = new OWA.resultSetExplorer('top-keywords');
 OWA.items.topkeywords.addLinkToColumn('referralSearchTerms', '<?php echo $this->makeLink(array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), true);?>', ['referralSearchTerms']);

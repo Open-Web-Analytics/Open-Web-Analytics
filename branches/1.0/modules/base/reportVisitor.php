@@ -43,12 +43,30 @@ class owa_reportVisitorController extends owa_reportController {
 		
 		$v = owa_coreAPI::entityFactory('base.visitor');
 		$v->load($visitorId);
-				
+		
+		$lv = owa_coreAPI::executeApiCommand(array(
+			
+			'do'				=> 'getLatestVisits',
+			'siteId'			=> $this->getParam('siteId'),
+			'page'				=> $this->getParam('page'),
+			'startDate'			=> $this->getParam('startDate'),
+			'endDate'			=> $this->getParam('endDate'),
+			'period'			=> $this->getParam('period'),
+			'visitorId'			=> $v->get('id'),
+			'resultsPerPage'	=> 10
+		));		
+		
+		$this->set('visits', $lv);
+		$this->set('visitor_label', $v->getVisitorName());
+		$first_visit_date = date( 'm/d/y',$v->get('first_session_timestamp' ) );
+		$this->set('first_visit_date', $first_visit_date);
+		$this->set('num_prior_visits', $v->get('num_prior_sessions') );
 		$this->set('visitor_id', $visitorId);
 		$this->set('visitor', $v);
+		$this->set('visitor_avatar_id', $v->getAvatarId() );
 		$this->setView('base.report');
 		$this->setSubview('base.reportVisitor');
-		$this->setTitle('Visitor History:', $v->getVisitorName());	
+		$this->setTitle('Visitor History');	
 	}
 	
 }
@@ -70,9 +88,14 @@ class owa_reportVisitorView extends owa_view {
 	function render($data) {
 	
 		$this->body->set_template('report_visitor.tpl');	
-		$this->body->set('visitor_id', $this->get('visitor_id'));
-		$this->body->set('visits', $this->get('visits'));
-		$this->body->set('visitor', $this->get('visitor'));
+		$this->body->set( 'visitor_id', $this->get('visitor_id') );
+		$this->body->set( 'visits', $this->get('visits') );
+		$this->body->set( 'visitor', $this->get('visitor') );
+		$this->body->set( 'num_prior_visits', $this->get('num_prior_visits') );
+		$this->body->set( 'first_visit_date', $this->get('first_visit_date') );
+		$this->body->set( 'visitor_label', $this->get('visitor_label') );
+		$this->body->set( 'visitor_avatar_id', $this->get('visitor_avatar_id') );
+		$this->body->set( 'visits', $this->get( 'visits') );
 	}	
 }
 

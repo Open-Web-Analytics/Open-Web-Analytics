@@ -123,7 +123,7 @@ class owa_view extends owa_base {
 		$this->t = new owa_template();
 		$this->body = new owa_template($this->module);
 		$this->setTheme();
-		//header('Content-type: text/html; charset=utf-8');
+		$this->setCss("base/css/owa.css");
 	}
 	
 	/**
@@ -135,6 +135,7 @@ class owa_view extends owa_base {
 	function assembleView($data) {
 		
 		$this->e->debug('Assembling view: '.get_class($this));
+		
 		
 		// set view name in template class. used for navigation.
 		if (array_key_exists('view', $this->data)) {
@@ -326,9 +327,6 @@ class owa_view extends owa_base {
 		$this->subview = owa_coreAPI::subViewFactory($subview);
 		//print_r($subview.'///');
 		$this->subview->setData($this->data);
-		
-		return;
-		
 	}
 	
 	/**
@@ -341,12 +339,9 @@ class owa_view extends owa_base {
 		// Stores subview as string into $this->subview
 		$this->subview_rendered = $this->subview->assembleSubView($data);
 		
-		// pull css and jas elements needed by subview
+		// pull css and js elements needed by subview
 		$this->css = array_merge($this->css, $this->subview->css);
-		$this->js = array_merge($this->js, $this->subview->js);
-	
-		return;
-		
+		$this->js = array_merge($this->js, $this->subview->js);		
 	}
 	
 	/**
@@ -377,11 +372,21 @@ class owa_view extends owa_base {
 					
 	}
 	
-	function setCss($path) {
+	function setCss($path, $version = null, $deps = array(), $ie_only = false) {
 		
-		$url = owa_coreAPI::getSetting('base', 'modules_url').$path;
-		$this->css[] = $url;
-		return;
+		if ( ! $version ) {
+			$version = OWA_VERSION;
+		}
+		
+		$uid = $path;
+		$url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+		$this->css[$uid]['url'] = $url;
+		// build file system path just in case we need to concatenate the JS into a single file.
+		$fs_path = OWA_MODULES_DIR.$path;
+		$this->css[$uid]['path'] = $fs_path;
+		$this->css[$uid]['deps'] = $deps;
+		$this->css[$uid]['version'] = $version;
+		$this->css[$uid]['ie_only'] = $ie_only;
 	}
 	
 	function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
@@ -401,8 +406,6 @@ class owa_view extends owa_base {
 		$this->js[$uid]['deps'] = $deps;
 		$this->js[$uid]['version'] = $version;
 		$this->js[$uid]['ie_only'] = $ie_only;
-		
-		return;
 	}
 	
 	function concatinateJs() {
@@ -508,13 +511,11 @@ class owa_view extends owa_base {
 	function set($name, $value) {
 		
 		$this->data[$name] = $value;
-		return;
 	}
 	
 	function setSubViewProperty($name, $value) {
 		
 		$this->subview->set($name, $value);
-		return;
 	}
 	
 	function getSubViewProperty($name) {
@@ -619,15 +620,13 @@ class owa_genericTableView extends owa_view {
 		endif;
 		
 		$this->body->set('table_id', str_replace('.', '-', $data['params']['do']).'-table');
-		
-		return;
-		
-		
+			
 	}
-
 }
 
-
+/**
+ * @depricated
+ */
 class owa_sparklineJsView extends owa_view {
 
 	function __construct() {
@@ -651,37 +650,6 @@ class owa_sparklineJsView extends owa_view {
 		//$this->setJs("includes/jquery/jquery.sparkline.js");
 		return;
 	}
-
-
-}
-
-class owa_chartView extends owa_view {
-	
-	function __construct() {
-	
-		return parent::__construct();
-
-	}
-	
-	function render($data) {
-	
-		// load template
-		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('chart_dom.tpl');
-		// set
-		$this->body->set('widget', $this->get('widget'));
-		$this->body->set('type', $this->get('type'));
-		//print_r($this->get('height'));
-		//height should be passed in as a request params as it sets the height of the actual flash object
-		$this->body->set('height', $this->get('height'));
-		//width should always be 100%
-		$this->body->set('width', $this->get('width'));
-		$this->body->set('data', $this->get('chart_data'));
-		$this->body->set('dom_id', $this->get('dom_id').rand().'Chart');
-		$this->setJs('swfobject', "base/js/includes/swfobject.js");
-		return;
-	}
-	
 }
 
 class owa_mailView extends owa_view {
@@ -700,10 +668,10 @@ class owa_mailView extends owa_view {
 	
 	function postProcess() {
 		
-		$this->po->mailer->Body = $this->t->fetch();
+		$this->po->setHtmlBody( $this->t->fetch() );
 		
-		if (!empty($data['plainTextView'])) {
-			$this->po->mailer->AltBody = owa_coreAPI::displayView($this->get('plain_text_view'));
+		if ( $this->get( 'plainTextView' ) ) {
+			$this->po->setAltBody( owa_coreAPI::displayView( $this->get( 'plain_text_view' ) ) );
 		}
 
 		return $this->po->sendMail();
@@ -711,8 +679,7 @@ class owa_mailView extends owa_view {
 	
 	function setMailSubject($sbj) {
 	
-		$this->po->mailer->Subject = $sbj;
-		return;
+		$this->po->setSubject( $sbj );
 	}
 	
 	function addMailToAddress($email, $name = '') {
@@ -721,8 +688,7 @@ class owa_mailView extends owa_view {
 			$name = $email;
 		}
 		
-		$this->po->mailer->AddAddress($email, $name);
-		return;
+		$this->po->addAddress($email, $name);
 	}
 }
 
@@ -736,12 +702,9 @@ class owa_adminView extends owa_view {
 	}
 	
 	function post() {
-		
+		$this->setJs('owa.css');
 		$this->setJs('owa.admin.css');
-		return;
 	}
-	
-	
 }
 
 class owa_jsonView extends owa_view {

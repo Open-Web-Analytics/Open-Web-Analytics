@@ -39,13 +39,12 @@ class owa_reportController extends owa_adminController {
 	 * @param array $params
 	 * @return
 	 */
-	function __construct($params) {
-	
+	function __construct($params) {	
 		$this->setControllerType('report');
-		$this->_setCapability('view_reports');
+		$this->setRequiredCapability('view_reports');
 		return parent::__construct($params);
-	
 	}
+	
 	
 	/**
 	 * pre action
@@ -53,29 +52,26 @@ class owa_reportController extends owa_adminController {
 	 */
 	function pre() {
 		
-		// site lists
-		$sites = owa_coreAPI::getSitesList();
-		$this->set('sites', $sites);
-		// set default siteId if none exists on request
-		$site_id = $this->getParam('siteId');
-		if ( ! $site_id ) {
-			$site_id = $this->getParam('site_id'); 
-		}
-		if ( ! $site_id ) {
-			$site_id = $sites[0]['site_id']; 
-		}
-		$this->setParam('siteId', $site_id);
+		$this->set('sites', $this->getSitesAllowedForCurrentUser());
+		
+		$this->setParam('siteId', $this->getCurrentSiteId());
 		
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
 				
 		// set default period if necessary
-		if (empty($this->params['period'])) {
-			$this->params['period'] = 'last_seven_days';
+		if ( ! $this->getParam( 'period' ) && ! $this->getParam( 'startDate' ) ) {
 			$this->set('is_default_period', true);
+			$period = 'last_seven_days';
+			$this->params['period'] = $period;
+		} elseif (  ! $this->getParam( 'period' ) &&  $this->getParam( 'startDate' ) ) {
+			$period = 'date_range';
+			$this->params['period'] = $period;
+		} else {
+			$period = $this->getParam('period');
 		}
 		
-		$this->setPeriod($this->getParam('period'));
+		$this->setPeriod($period);
 		
 		$this->setView('base.report');
 		$this->setViewMethod('delegate');
@@ -92,7 +88,8 @@ class owa_reportController extends owa_adminController {
 		$site_usage = array(
 				'tab_label'		=> 'Site Usage',
 				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-				'sort'			=> 'visits-'
+				'sort'			=> 'visits-',
+				'trendchartmetric'	=>	'visits'
 		);
 		
 		$tabs['site_usage'] = $site_usage;
@@ -103,7 +100,8 @@ class owa_reportController extends owa_adminController {
 			$ecommerce = array(
 					'tab_label'		=> 'e-commerce',
 					'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
-					'sort'			=> 'transactionRevenue-'
+					'sort'			=> 'transactionRevenue-',
+					'trendchartmetric'	=>	'transactions'
 			);
 		
 			$tabs['ecommerce'] = $ecommerce;
@@ -126,7 +124,8 @@ class owa_reportController extends owa_adminController {
 				$goal_group = array(
 						'tab_label'		=>	$gm->getGoalGroupLabel($group),
 						'metrics'		=>	$goal_metrics,
-						'sort'			=> 'goalValueAll-'
+						'sort'			=> 'goalValueAll-',
+						'trendchartmetric'	=>	'visits'
 				);
 				$name = 'goal_group_'.$group;
 				$tabs[$name] = $goal_group;
@@ -141,10 +140,12 @@ class owa_reportController extends owa_adminController {
 		$nav = owa_coreAPI::getGroupNavigation('Reports');
 		
 		if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
+		
 			unset($nav['Ecommerce']);
 		}
 		
-		$this->set('top_level_report_nav', $nav);
+		$this->set('top_level_report_nav', $nav);		
+		$this->set('currentSiteId', $this->getCurrentSiteId());
 		
 	}
 	
@@ -157,6 +158,24 @@ class owa_reportController extends owa_adminController {
 		
 		$this->set('title', $title);
 		$this->set('titleSuffix', $suffix);
+	}
+	
+	/**
+	 * Override owa_controller method - in order to always get a valid site id if the user has at least access to one site
+	 * @return string
+	 */
+	protected function getCurrentSiteId() {
+		$site_id =  parent::getCurrentSiteId();
+		// if there is no site_id o nthis request then pick one from
+		// the alowed sites list for this user.
+		if ( ! $site_id ) {		
+			$allowedSites = $this->getSitesAllowedForCurrentUser();
+			if ( current($allowedSites) instanceof owa_site) {
+				//set default
+				$site_id =  current($allowedSites)->get('site_id');
+			}
+		}
+		return $site_id;
 	}
 }
 

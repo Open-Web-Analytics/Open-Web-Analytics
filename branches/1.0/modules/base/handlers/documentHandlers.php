@@ -16,8 +16,8 @@
 // $Id$
 //
 
-if(!class_exists('owa_observer')) {
-	require_once(OWA_BASE_DIR.'owa_observer.php');
+if ( ! class_exists( 'owa_observer' ) ) {
+	require_once( OWA_BASE_DIR.'owa_observer.php' );
 }
 
 /**
@@ -42,11 +42,28 @@ class owa_documentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-		$d = owa_coreAPI::entityFactory('base.document');
-		$id = owa_lib::setStringGuid($event->get('page_url'));
-		$d->load($id);
+		// create entity
+		$d = owa_coreAPI::entityFactory( 'base.document' );
 		
-		if ( ! $d->get('id') ) {
+		// get document id from event
+		$id = $event->get( 'document_id' );
+		
+		// if no document_id present attempt to make one from the page_url property
+		if ( ! $id ) {
+			
+			$page_url = $event->get( 'page_url' );
+			
+			if ( $page_url ) {
+				$id = $d->generateId( $page_url );
+			} else {
+				owa_coreAPI::debug( 'Not persisting Document, no page_url or document_id event property found.' );
+				return OWA_EHS_EVENT_HANDLED;
+			}
+		}
+		
+		$d->load( $id );
+		
+		if ( ! $d->wasPersisted() ) {
 			
 			$d->setProperties($event->getProperties());
 			$d->set('url', $event->get('page_url'));
@@ -65,7 +82,6 @@ class owa_documentHandlers extends owa_observer {
 			return OWA_EHS_EVENT_HANDLED;
 		}   	
     }
-    
 }
 
 ?>

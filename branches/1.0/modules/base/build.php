@@ -38,38 +38,52 @@ class owa_buildController extends owa_cliController {
 		parent::__construct($params);
 		
 		$this->setRequiredCapability('edit_modules');
-		
-		return;
 	}
 	
 	function action() {
 		
+		$packages = owa_coreAPI::getBuildPackages();
 		
-		// build owa.tracker-combined-min.js
-		owa_coreAPI::debug("Building owa.tracker-combined-min.js");
-		
-		$tracker_js = array();
-		$tracker_js['json2'] = OWA_MODULES_DIR.'base/js/includes/json2.js';
-		$tracker_js['lazyload'] = OWA_MODULES_DIR.'base/js/includes/lazyload-2.0.min.js';
-		$tracker_js['owa'] = OWA_MODULES_DIR.'base/js/owa.js';
-		$tracker_js['owa.tracker'] = OWA_MODULES_DIR.'base/js/owa.tracker.js';
-		
-		$minjs = sprintf("// OWA Tracker Min file created %s \n\n",date(time()));
-		
-		foreach ($tracker_js as $k => $v) {
-			owa_coreAPI::debug("Minimizing Javascript in $v");
-			$minjs .= "//// Start of $k //// \n";
-			$minjs .= JSMin::minify(file_get_contents($v)) . "\n";
-			$minjs .= "//// End of $k //// \n";		
-		}
+		if ( $this->getParam('package') ) {
 			
-		$handle = fopen(OWA_MODULES_DIR."base/js/owa.tracker-combined-min.js", "w");
-		fwrite($handle, $minjs);
-		fclose($handle);
+			$packages = array($packages[$this->getParam('package')]);	
+		}
 		
-		return;
+		if ($packages) {
+			foreach ($packages as $package) {
+				
+				owa_coreAPI::debug(sprintf("Building %s Package.", $package['name'] ) );
+				$con = sprintf("/* OWA %s package file created %s */ \n\n", $package['name'] ,date( DATE_RFC822 ) );		
+				$isMin = false;
+				foreach ($package['files'] as $name => $file_info) {
+					
+					owa_coreAPI::debug("Reading file from: " . $file_info['path'] );
+					$con .= "/* Start of $name */ \n\n";
+					$content = file_get_contents( $file_info['path'] );
+					if (isset($file_info['compression']) && $file_info['compression'] === 'minify') {
+						owa_coreAPI::debug("Minimizing Javascript in: " . $file_info['path'] );
+						$content = JSMin::minify($content);
+						$isMin = true;
+					} 
+					$con .= $content . "\n\n";
+					$con .= "/* End of $name */ \n\n";	
+				}
+				$file_name = $package['output_dir'].$package['name']."-combined";
+				if ($isMin) {
+					$file_name .= '-min';
+				}
+				
+				$file_name .= '.' . $package['type'];
+				
+				owa_coreAPI::debug('Writing package to file: '.$file_name);
+				$handle = fopen($file_name, "w");
+				fwrite($handle, $con);
+				fclose($handle);
+			}
+		} else {
+			owa_coreAPI::debug( "No packages registered to build." );
+		}
 	}
-		
 }
 
 

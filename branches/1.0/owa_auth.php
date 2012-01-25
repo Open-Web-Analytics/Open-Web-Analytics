@@ -74,7 +74,7 @@ class owa_auth extends owa_base {
 	 *
 	 * @return object
 	 */
-	public static function &get_instance($plugin = '') {
+	public static function get_instance($plugin = '') {
 		
 		static $auth;
 		
@@ -95,6 +95,10 @@ class owa_auth extends owa_base {
 	 */
 	function __construct() {
 		
+		// register auth cookies
+		owa_coreAPI::registerStateStore('u', time()+3600*24*365*10, '', '', 'cookie');
+		owa_coreAPI::registerStateStore('p', time()+3600*2, '', '', 'cookie');
+		
 		parent::__construct();
 		$this->eq = owa_coreAPI::getEventDispatch();	
 	}
@@ -110,6 +114,8 @@ class owa_auth extends owa_base {
 		if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
 			$ret = true;
 		} elseif (owa_coreAPI::getRequestParam('apiKey')) {
+			
+			
 			// auth user by api key
 			$ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
 		} elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
@@ -121,6 +127,8 @@ class owa_auth extends owa_base {
 		} elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
 			// auth user by cookies
 			$ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
+			// bump expiration time
+			//owa_coreAPI::setState('p', '', owa_coreAPI::getStateParam('p'));
 		} else {
 			$ret = false;
 			owa_coreAPI::debug("Could not find any credentials to authenticate with.");
@@ -141,7 +149,7 @@ class owa_auth extends owa_base {
 		
 		if ($this->u->get('user_id')) {
 			// get current user
-			$cu = &owa_coreAPI::getCurrentUser();				
+			$cu = owa_coreAPI::getCurrentUser();				
 			// set as new current user in service layer
 			$cu->loadNewUserByObject($this->u);
 			$cu->setAuthStatus(true);
@@ -164,7 +172,7 @@ class owa_auth extends owa_base {
 		if ($this->_is_user == false) {
 		
 			// check to see if the current user has already been authenticated by something upstream
-			$cu = &owa_coreAPI::getCurrentUser();
+			$cu = owa_coreAPI::getCurrentUser();
 			if (!$cu->isAuthenticated()) {
 				// check to see if they are a user.
 				return $this->isUser();
@@ -330,7 +338,7 @@ class owa_auth extends owa_base {
 	function isUser() {
 		
 		// get current user
-		$cu = &owa_coreAPI::getCurrentUser();
+		$cu = owa_coreAPI::getCurrentUser();
 				
 		// fetches user object from DB
 		$this->getUser();

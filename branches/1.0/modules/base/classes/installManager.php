@@ -38,7 +38,7 @@ class owa_installManager extends owa_base {
 			
 	function installSchema() {
 		
-		$service = &owa_coreAPI::serviceSingleton();
+		$service = owa_coreAPI::serviceSingleton();
 		$base = $service->getModule('base');
 		$status = $base->install();
 		return $status;
@@ -56,7 +56,7 @@ class owa_installManager extends owa_base {
 		if (empty($id_check)) {
 	
 			//Check to see if user name already exists
-			$u->getByColumn('user_id', 'admin');
+			$u->getByColumn('user_id', owa_user::ADMIN_USER_ID);
 	
 			$id = $u->get('id');
 	
@@ -127,7 +127,7 @@ class owa_installManager extends owa_base {
 	function checkDbConnection() {
 		
 		// Check DB connection status
-		$db = &owa_coreAPI::dbSingleton();
+		$db = owa_coreAPI::dbSingleton();
 		$db->connect();
 		if ($db->connection_status === true) {
 			return true;

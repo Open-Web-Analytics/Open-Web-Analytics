@@ -1,7 +1,7 @@
 <!-- HEAD Elements -->
 <?php if(!empty($css)): ?>
 <?php foreach ($css as $cssfile): ?>
-<LINK REL=StyleSheet HREF="<?php echo $cssfile;?>" TYPE="text/css">
+<LINK REL=StyleSheet HREF="<?php echo $cssfile['url'];?>" TYPE="text/css">
 <?php endforeach; ?>
 <?php endif;?>
 

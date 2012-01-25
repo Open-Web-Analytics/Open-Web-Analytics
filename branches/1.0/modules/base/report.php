@@ -41,35 +41,13 @@ class owa_reportView extends owa_view {
 		// Set Page headline
 		$this->body->set('title', $this->get('title'));
 		$this->body->set('titleSuffix', $this->get('titleSuffix'));
-		
-		// Report Period Filters
-		$pl = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-		$this->body->set('reporting_periods', $pl->getPeriodLabels());
-		
+			
 		// Set reporting period
 		$this->setPeriod($this->data['period']);
 		$this->subview->body->set('is_default_period', $this->get('is_default_period'));
 	
 		//create the report control params array
 		$this->report_params = $this->data['params'];
-		unset($this->report_params['p']);
-		unset($this->report_params['u']);
-		unset($this->report_params['v']);
-		
-		// unset per site session cookies but not site_id param
-		foreach ($this->report_params as $k => $v) {
-		
-			// remove site specific session values
-			if (substr($k, 0, 3) == 'ss_'):
-				unset($this->report_params[$k]);
-			endif;
-			
-			// remove left over first hit session value if found.
-			if (substr($k, 0, 10) == 'first_hit_'):
-				unset($this->report_params[$k]);
-			endif;
-			
-		}
 		
 		unset($this->report_params['guid']);
 		unset($this->report_params['caller']);
@@ -81,38 +59,61 @@ class owa_reportView extends owa_view {
 		// set site filter list
 		$this->body->set('sites', $this->get('sites') );
 	
-		$this->body->set('dom_id', $this->data['dom_id']);
+		$this->body->set('dom_id', $this->get( 'dom_id' ) );
 		// add if here
-		$this->subview->body->set('dom_id', $this->data['dom_id']);
+		$this->subview->body->set('dom_id', $this->get( 'dom_id' ) );
 		$this->body->set('do', $this->data['do']);
 		
 		// Set navigation
 		$this->body->set('top_level_report_nav', $this->get('top_level_report_nav'));
+		$this->body->set('currentSiteId', $this->get('currentSiteId'));
+		
 		
 		// load body template
 		$this->body->set_template('report.tpl');
 			
 		// set Js libs to be loaded
-		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.4.2.min.js', '1.4.2');
-		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery'));
-		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.1.custom.min.js", '1.8.1', array('jquery'));
+		/*
+$this->setJs('lazy-load', 'base/js/includes/lazyload-2.0.min.js', '2.0');
+		$this->setJs("json2", "base/js/includes/json2.js");
+		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js', '1.6.4');
+		$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery')); // needed anymore?
+		$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js", '1.8.12', array('jquery'));
+		$this->setJs("jquery-ui-selectmenu", "base/js/includes/jquery/jquery.ui.selectmenu.js", '1.8.1', array('jquery-ui'));
+		$this->setJs("chosen", "base/js/includes/jquery/chosen.jquery.min.js", '0.9.7', array('jquery'));
 		$this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
 		$this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
 		$this->setJs('excanvas','base/js/includes/excanvas.compiled.js', '', '', true);
-		$this->setJs('flot','base/js/includes/jquery/flot/jquery.flot.min.js');
-		$this->setJs('flot-pie','base/js/includes/jquery/flot/jquery.flot.pie.js');
+		$this->setJs('flot','base/js/includes/jquery/flot_v0.7/jquery.flot.min.js');
+		$this->setJs('flot-resize','base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js');
+		$this->setJs('flot-pie','base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js');		
 		$this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
 		$this->setJs("owa", "base/js/owa.js");
 		$this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
-		//$this->setJs("owa.dataGrid", "base/js/owa.dataGrid.js", '', array('owa', 'jquery', 'jquery-ui'));
 		$this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
-		$this->setJs("json2", "base/js/includes/json2.js");
 		$this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
+		$this->setJs("owa.areaChart", "base/js/owa.areachart.js", '', array('owa', 'jquery', 'owa.resultSetExplorer', 'flot'));
+		$this->setJs("owa.pieChart", "base/js/owa.piechart.js", '', array('owa', 'jquery', 'owa.resultSetExplorer', 'flot'));
+		$this->setJs("owa.kpibox", "base/js/owa.kpibox.js", '', array('owa', 'jquery', 'owa.resultSetExplorer', 'jqote'));
 		
+*/
+		$this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
 		// css libs to be loaded
-		$this->setCss('base/css/smoothness/jquery-ui-1.8.1.custom.css');
-		$this->setCss("base/css/owa.report.css");
+		/*
+$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
+		$this->setCss('base/css/jquery.ui.selectmenu.css');
 		$this->setCss('base/css/ui.jqgrid.css');
+		$this->setCss('base/css/chosen/chosen.css');
+		$this->setCss("base/css/owa.admin.css");
+		$this->setCss("base/css/owa.report.css");
+*/
+		$this->setCss("base/css/owa.reporting-css-combined.css");
+		$additionalCss = $this->c->get('base','additionalCss');
+		if (is_array($additionalCss)) {
+			foreach ($additionalCss as $css) {
+				$this->setCss($css);
+			}			
+		}
 	}
 	
 	/**
@@ -133,6 +134,10 @@ class owa_reportView extends owa_view {
 		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
 		$this->subview->body->set('period_label', $period_label);
+		$this->body->set('startDate', $this->get('startDate') );
+		$this->subview->body->set('startDate', $this->get('startDate') );
+		$this->body->set('endDate', $this->get('endDate') );
+		$this->subview->body->set('endDate', $this->get('endDate') );
 	}
 	
 	/**
@@ -150,11 +155,6 @@ class owa_reportView extends owa_view {
 				}
 			}
 		}
-	}
-
-	function post() {
-		
-		$this->setCss("base/css/owa.admin.css");
 	}	
 }
 

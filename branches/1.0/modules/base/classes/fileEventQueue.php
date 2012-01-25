@@ -18,8 +18,8 @@
 
 require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
 require_once(OWA_BASE_CLASS_DIR.'event.php');
-require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log.php');
-require_once(OWA_PEARLOG_DIR . DIRECTORY_SEPARATOR . 'Log/file.php');
+require_once(OWA_PEARLOG_DIR . '/Log.php');
+require_once(OWA_PEARLOG_DIR . '/Log/file.php');
 
 /**
  * File based Event Queue Implementation
@@ -159,6 +159,14 @@ class owa_fileEventQueue extends owa_eventQueue {
 		// check to see if event log file exisits
 		if (!file_exists($file)) {
 			owa_coreAPI::debug("Event file does not exist at $file");
+			return false;
+		}
+		
+		// check for access to db
+		$db = owa_coreAPI::dbSingleton();
+		$db->connect();
+		if ( ! $db->isConnectionEstablished() ) {
+			owa_coreAPI::debug("Aborting processing of event log file. Could not connect to database.");
 			return false;
 		}
 			

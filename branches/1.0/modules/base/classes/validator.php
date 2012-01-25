@@ -88,7 +88,7 @@
 	 * 
 	 * @return Object
 	 */
-	function validationFactory($class_file) {
+	function validationFactory($class_file, $conf = array()) {
 		
 		return owa_coreAPI::validationFactory($class_file, $conf);		
 	}
@@ -108,7 +108,7 @@
 				$this->hasErrors = true;
 				$this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
 				
-				if ($k['obj']->conf['stopOnError'] === true) {
+				if ( isset( $k['obj']->conf['stopOnError'] ) && $k['obj']->conf['stopOnError'] === true ) {
 					break;
 				}
 				
