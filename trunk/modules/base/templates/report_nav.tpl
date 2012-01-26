@@ -2,7 +2,7 @@
 	
 	<UL>
 		<?php foreach ($links as $kl => $l): ?>
-		<?php if (!$this->getCurrentUser()->isCapable($l['priviledge'], $currentSiteId)) continue; ?>
+		<?php if (!$this->getCurrentUser()->isCapable($l['priviledge'], $currentSiteId)) { continue; } ?>
 		<LI>
 			<div class="owa_admin_nav_topmenu">
 				
