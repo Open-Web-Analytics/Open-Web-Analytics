@@ -36,7 +36,7 @@ class owa_serviceUser extends owa_base {
 	public $user;
 	var $capabilities = array();
 	var $preferences = array();
-	var $is_authenticated;
+	var $is_authenticated = false;
 	public $assignedSites = array();
 	private $isInitialized = false;
 	
@@ -45,20 +45,27 @@ class owa_serviceUser extends owa_base {
 		$this->user = owa_coreApi::entityFactory('base.user');
 	}
 	
-	function load($user_id) {
-		if (empty($user_id)) {
-			throw new Exception('No valid userid given!');
+	function load( $user_id = '' ) {
+		
+		if (! $user_id ) {
+			
+			// if there is no user_id and role is everyone
+			// procead with loading sites and 
+			if ( $this->isAnonymousUser() ) {
+				return $this->initInternalProperties();
+			} else {
+				throw new Exception('No valid userid given!');
+			}
 		}
+		
+		// if there is a user_id load the user object and other properties.
 		$this->user->load($user_id, 'user_id');			
-		$this->isInitialized = false;
 		$this->initInternalProperties();
 	}
 	
 	function loadNewUserByObject($obj) {
 		$this->user = $obj;
-		$this->isInitialized = false;
 		$this->initInternalProperties();
-		return;
 	}
 	
 	private function initInternalProperties() {
@@ -111,35 +118,79 @@ class owa_serviceUser extends owa_base {
 	 * @param integer $currentSiteId optionel - only needed if cap is a  capabilities That Require SiteAccess. You need to pass site_id (not id) field
 	 */
 	function isCapable($cap, $siteId = null) {
-		owa_coreAPI::debug("check cap ".$cap);
-		//global admin can always everything:
-		if ($this->user->isOWAAdmin() || empty($cap)) {
-			owa_coreAPI::debug('no capability passed or user is owaadmin, therefor user is capable.');
+		owa_coreAPI::debug("Checking if user is capable of: ".$cap);
+		
+		// is this capability assigned to everyone? 
+		// is this the global admin user?
+		// was no capability passed?
+		// if so, the user can see and do everything
+		if ( owa_coreAPI::isEveryoneCapable( $cap ) || $this->user->isOWAAdmin() || empty($cap)) {
+			owa_coreAPI::debug('No capability passed or user is owaadmin and capable of everything.');
 			return true;
 		}
+		
 		if (!in_array($cap, $this->capabilities)) {
 			owa_coreAPI::debug('capability passed does not exist. user is not capable');
 			return false;	
 		}
 		
-		$capabilitiesThatRequireSiteAccess = owa_coreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
-		if (is_array($capabilitiesThatRequireSiteAccess) && in_array($cap, $capabilitiesThatRequireSiteAccess)) {
-			if (is_null($siteId)) {
-				throw new InvalidArgumentException('Capability "'.$cap.'" that should be checked requires a sited - but nothing given');
-			}
-			$site = owa_coreAPI::entityFactory('base.site');			
-			$site->load($siteId,'site_id');
-			if (!$site->isUserAssigned($this->user->get('id'))) {
+		// Does capability also require site access?
+		if ( $this->isSiteAccessRequiredForCapability( $cap ) ) {
+			
+			if ( ! $this->isSiteAccessible( $siteId ) ) {
 				return false;
 			}
 		}
+		
 		return true;
+	}
+	
+	/**
+	 * Checks to see if the Capability requires
+	 * user to pass site access control check
+	 *
+	 * @param	$capability	string	the name of the capability (e.g. 'view_reports')
+	 * @return	boolean
+	 */
+	function isSiteAccessRequiredForCapability( $capability ) {
+		
+		$capabilitiesThatRequireSiteAccess = owa_coreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
+		if (is_array($capabilitiesThatRequireSiteAccess) && in_array($capability, $capabilitiesThatRequireSiteAccess)) {
+			return true;
+		}
+	}
+	
+	/**
+	 * Checks to see if the a site is accessible to a user
+	 *
+	 * @param	$siteId	string	the siteId of the site in question
+	 * @return	boolean
+	 */
+	function isSiteAccessible( $siteId ) {
+		
+		if ( is_null($siteId) ) {
+			throw new InvalidArgumentException('Cannot tell if site is accessible to user without a siteId (none given).');
+		}
+		
+		if ( $this->user->isOWAAdmin() ) {
+			return true;
+		}
+		
+		$user_id = $this->user->get('id');
+		
+		if ( $user_id ) {
+			$site = owa_coreAPI::entityFactory('base.site');			
+			$site->load( $siteId,'site_id' );
+			
+			if ( $site->isUserAssigned($user_id) ) {
+				return true;
+			}
+		}
 	}
 	
 	// mark the user as authenticated and populate their capabilities	
 	function setAuthStatus($bool) {		
-		$this->is_authenticated = true;		
-		return;
+		$this->is_authenticated = true;
 	}	
 	
 	function isAuthenticated() {		
@@ -151,6 +202,12 @@ class owa_serviceUser extends owa_base {
 	 * Loads internal $this->assignedSites member
 	 */
 	private function loadAssignedSites() {
+		
+		if ( $this->isAnonymousUser() ) {
+			owa_coreAPI::debug('Anonymous User. No assigned sites to load.');
+			return;
+		}
+	
 		if ( ! $this->user->get( 'id' ) ) {
 		 	throw new Exception('no user data loaded!');
 		}
@@ -187,6 +244,7 @@ class owa_serviceUser extends owa_base {
 	}
 	
 	public function getAssignedSites() {				
+		
 		if ( !$this->isInitialized) {
 			//throw new Exception('serviceUser not loaded and initialized');
 			// can always count on user_id being set
@@ -200,6 +258,15 @@ class owa_serviceUser extends owa_base {
 	public function isOWAAdmin() {
 		
 		return $this->user->isOWAAdmin();
+	}
+	
+	public function isAnonymousUser() {
+		$role = $this->getRole();
+		if ( ! $this->user->get('user_id') && $this->getRole() === 'everyone') {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }
 
