@@ -239,6 +239,7 @@ function &owa_getInstance() {
 		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
 		$cu->setAuthStatus(true);
+		//$cu->isInitialized = true;
 	}
 	
 	return $owa;
