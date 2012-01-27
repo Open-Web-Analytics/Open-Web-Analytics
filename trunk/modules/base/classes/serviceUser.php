@@ -207,11 +207,7 @@ class owa_serviceUser extends owa_base {
 			owa_coreAPI::debug('Anonymous User. No assigned sites to load.');
 			return;
 		}
-	
-		if ( ! $this->user->get( 'id' ) ) {
-		 	throw new Exception('no user data loaded!');
-		}
-				
+			
 		$result = array();
 		
 		if ( $this->isOWAAdmin() ) {
@@ -224,7 +220,16 @@ class owa_serviceUser extends owa_base {
 			}
 			
 		} else {
-		
+			
+			// this can happen if a plugin is setting the role
+			// but there is no user in the user table.
+			// hmmm...
+			if ( ! $this->user->get( 'id' ) ) {
+		 		owa_coreAPI::debug('no user object loaded! Cant fetch assigned sites.');
+		 		return;
+			}
+			
+				
 			$db = owa_coreAPI::dbSingleton();		
 			$db->selectFrom( 'owa_site_user' );
 			$db->selectColumn( '*' );
