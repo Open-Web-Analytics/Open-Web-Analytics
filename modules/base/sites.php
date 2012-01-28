@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
@@ -31,12 +32,12 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_sitesController extends owa_adminController {
+class owa_sitesController extends owa_reportController {
 	
 	function __construct($params) {
-		
-		$this->setRequiredCapability('edit_sites');
-		return parent::__construct($params);
+
+		parent::__construct($params);
+		$this->setRequiredCapability('view_site_list');
 	}
 	
 	function action() {
@@ -45,7 +46,8 @@ class owa_sitesController extends owa_adminController {
 		$sites = $this->getSitesAllowedForCurrentUser();		
 		$this->set('tracked_sites', $sites);
 		$this->setSubview('base.sites');
-		$this->setView('base.options');
+		$this->setView('base.adminPage');
+		$this->set('title', 'Sites Roster');
 	}
 }
 

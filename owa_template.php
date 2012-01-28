@@ -1023,6 +1023,11 @@ class owa_template extends Template {
 		$t->set_template('widget_latestActions.php');
 		return $t->fetch();
 	}
+	
+	public function getSiteThumbnail( $domain, $width = '200' ) {
+		
+		echo sprintf('<img src="http://s.wordpress.com/mshots/v1/%s?w=%s" width="%s">', urlencode($domain .'/'), $width, $width );
+	}
 }
 
 
