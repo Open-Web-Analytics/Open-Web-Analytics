@@ -1,8 +1,8 @@
 
-<P>Below is the list of Web Sites that can be tracked. A site must appear in this list if it is to be tracked/reported separately.</P>
+<P>Below is the list of web sites that are being tracked.</P>
 
 
-<p class="legend_link">(<a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a Site</a>)</p>
+<p class="inline_h2"><a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add New</a></p>
 
 <?php if ($tracked_sites): ?>
 	<?php foreach ($tracked_sites as $site):?>
@@ -16,7 +16,7 @@
 					<?php $this->getSiteThumbnail( $site->get( 'domain' ), 150 );?>
 				</td>
 				
-				<td valign="">
+				<td valign="" style="min-width:300px;">
 					<span style="font-size:14px; font-weight:bold;">
 						<a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), false );?>"><?php $this->out( $site->get('name') );?></a>
 					</span><BR>
@@ -51,8 +51,8 @@
 						//rsh.asyncQueue.push(['makeAreaChart', [{x: 'date', y: 'visits'}], 'trend-chart']);
 						rsh.options.metricBoxes.width = '150px';
 						rsh.asyncQueue.push(['makeMetricBoxes' , 'trend-metrics-<?php echo $site->get('site_id'); ?>']);
-						
 						rsh.load(aurl);
+						OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('rsh-<?php echo $site->get('site_id'); ?>', rsh);
 					</script>
 					
 					
