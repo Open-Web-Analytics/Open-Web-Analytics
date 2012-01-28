@@ -654,7 +654,7 @@
 				'reserved_words'					=> array('do' => 'action'),
 				'login_view'						=> 'base.login',
 				'not_capable_view'					=> 'base.error',
-				'start_page'						=> 'base.reportDashboard',
+				'start_page'						=> 'base.sites',
 				'default_action'					=> 'base.loginForm',
 				'default_page'						=> '', // move to site settings
 				'default_cache_expiration_period'	=> 604800,
@@ -686,7 +686,7 @@
 								'edit_modules'
 						),
 						'analyst' => array('view_reports', 'view_reports_ecommerce'), 
-						'viewer' => array('view_reports'), 
+						'viewer' => array('view_site_list', 'view_reports'), 
 						'everyone' => array()
 				),
 				'numGoals'							=> 15,
