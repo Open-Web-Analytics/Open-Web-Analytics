@@ -46,6 +46,7 @@ add_action('add_attachment', 'owa_newAttachmentActionTracker');
 add_action('edit_attachment', 'owa_editAttachmentActionTracker');
 add_action('transition_post_status', 'owa_postActionTracker', 10, 3);
 add_action('wpmu_new_blog', 'owa_newBlogActionTracker', 10, 5);
+add_action('wpmu_new_blog', 'owa_createTrackedSiteForNewBlog', 10, 6);
 // Installation hook
 register_activation_hook(__FILE__, 'owa_install');
 
@@ -58,6 +59,13 @@ function owa_newBlogActionTracker($blog_id, $user_id, $domain, $path, $site_id) 
 
 	$owa = owa_getInstance();
 	$owa->trackAction('wordpress', 'Blog Created', $domain);
+}
+
+function owa_createTrackedSiteForNewBlog($blog_id, $user_id, $domain, $path, $site_id, $meta) {
+	
+	$owa = owa_getInstance();
+	$sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
+	$sm->createNewSite( $domain, $domain, '', ''); 
 }
 
 /**
@@ -582,33 +590,13 @@ function owa_dashboard_menu() {
 }
 
 /**
- * Produces the analytics dashboard
- * 
+ * Main page handler.
+ *
  */
-function owa_dashboard_report() {
-	
-	$owa = owa_getInstance();
-	
-	$params = array();
-	$params['do'] = 'base.reportDashboard';
-	echo $owa->handleRequest($params);
-	
-	return;
-	
-}
-
 function owa_pageController() {
 
-	$owa = owa_getInstance();
-	
-	$do = owa_coreAPI::getRequestParam('do');
-	$params = array();
-	if (empty($do)) {
-		
-		$params['do'] = 'base.reportDashboard';	
-	}
-	
-	echo $owa->handleRequest($params);
+	$owa = owa_getInstance();	
+	echo $owa->handleRequest();
 
 }
 
