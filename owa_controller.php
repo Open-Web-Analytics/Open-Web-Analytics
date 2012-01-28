@@ -582,7 +582,7 @@ class owa_controller extends owa_base {
 	
 		$currentUser = owa_coreAPI::getCurrentUser();
 		
-		if ( $currentUser->isAnonymousUser() ) {
+		if ( $currentUser->isAnonymousUser() || $currentUser->isAdmin() ) {
 			$result = array();
 			$relations = owa_coreAPI::getSitesList();
 			
