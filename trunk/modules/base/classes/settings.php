@@ -678,6 +678,7 @@
  				// role to capabilities configuration
 				'capabilities'						=> array(
 						'admin' => array(
+								'view_site_list',
 								'view_reports', 
  								'view_reports_ecommerce', 
 								'edit_settings', 
@@ -685,7 +686,7 @@
 								'edit_users', 
 								'edit_modules'
 						),
-						'analyst' => array('view_reports', 'view_reports_ecommerce'), 
+						'analyst' => array('view_site_list, view_reports', 'view_reports_ecommerce'), 
 						'viewer' => array('view_site_list', 'view_reports'), 
 						'everyone' => array()
 				),
