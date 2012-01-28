@@ -579,7 +579,7 @@ class owa_controller extends owa_base {
 	 * @return array
 	 */
 	protected function getSitesAllowedForCurrentUser() {
-	
+	owa_coreAPI::debug('get Sites Allowed for user');
 		$currentUser = owa_coreAPI::getCurrentUser();
 		
 		if ( $currentUser->isAnonymousUser() || $currentUser->isAdmin() ) {
@@ -587,10 +587,14 @@ class owa_controller extends owa_base {
 			$relations = owa_coreAPI::getSitesList();
 			
 			foreach ($relations as $siteRow) {
+				
 				$site = owa_coreAPI::entityFactory('base.site');
+				owa_coreAPI::debug('getSitesAllowedforuser');
+				
 				$site->load($siteRow['id']);
 				$result[$siteRow['site_id']] = $site;
 			}
+			
 			return $result;
 			
 		} else {

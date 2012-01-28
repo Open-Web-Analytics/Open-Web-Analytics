@@ -1200,7 +1200,7 @@ class owa_coreAPI {
 		$db->selectFrom('owa_site');
 		$db->selectColumn('*');
 		$sites = $db->getAllRows();
-		
+	
 		if ( ! $sites ) {			
 			$sites = array();
 		}		
