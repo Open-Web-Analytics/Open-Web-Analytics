@@ -217,13 +217,46 @@ function &owa_getInstance() {
 		$owa->setSetting( 'base', 'delay_first_hit', false );
 		
 		// Access WP current user object to check permissions
-		$current_user = owa_getCurrentWpUser();
+		//$current_user = owa_getCurrentWpUser();
       	//print_r($current_user);
 		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
-		$cu = owa_coreAPI::getCurrentUser();
 		
-		if (isset($current_user->user_login)) {
+		//$cu->isInitialized = true;
+		
+		// register allowedSitesList filter
+		$dispatch = owa_coreAPI::getEventDispatch();
+		// alternative auth method, sets auth status, role, and allowed sites list.
+		$dispatch->attachFilter('auth_status', 'owa_wpAuthUser',0);
+		//print_r( $current_user );
+	}
+	
+	return $owa;
+}
+
+/**
+ * OWA authentication filter method
+ *
+ * This filter function authenticates the user and populates the
+ * the current user in OWA with the proper role, and allowed sites list.
+ *
+ * This method kicks in after all over OWA's built in auth methods have failed
+ * in the owa_auth class.
+ * 
+ * @param 	$auth_status	boolean
+ * @return	$auth_status	boolean
+ */
+function owa_wpAuthUser($auth_status) {
+
+	$current_user = wp_get_current_user();
+	
+    if ( $current_user instanceof WP_User ) { 
+    	// logged in, authenticated
+    	$cu = owa_coreAPI::getCurrentUser();
+    	
+    	$cu->setAuthStatus(true);
+    	
+    	if (isset($current_user->user_login)) {
 			$cu->setUserData('user_id', $current_user->user_login);
 			owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
 		}
@@ -236,13 +269,27 @@ function &owa_getInstance() {
 			$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
 			$cu->setRole(owa_translate_role($current_user->roles));
 		}
+		
 		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
-		$cu->setAuthStatus(true);
-		//$cu->isInitialized = true;
-	}
+		
+		// fetch the list of allowed blogs from WP
+		$domains = array();
+		$allowedBlogs = get_blogs_of_user($current_user->ID);
 	
-	return $owa;
+		foreach ( $allowedBlogs as $blog) {
+			$domains[] = $blog->siteurl;		
+		}
+		// load assigned sites list by domain
+    	$cu->loadAssignedSitesByDomain($domains);
+		$cu->setInitialized();
+    
+    	return true;
+    
+    } else {
+    	// not logged in to WP and therefor not authenticated
+    	return false;
+    }	
 }
 
 function owa_getCurrentWpUser() {

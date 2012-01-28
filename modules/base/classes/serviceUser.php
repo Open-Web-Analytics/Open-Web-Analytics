@@ -39,23 +39,34 @@ class owa_serviceUser extends owa_base {
 	var $is_authenticated = false;
 	public $assignedSites = array();
 	private $isInitialized = false;
+	private $isAssignedSitesListLoaded = false;
 	
 	function __construct() {
 		//parent::__construct();
+		// create empty user entity
 		$this->user = owa_coreApi::entityFactory('base.user');
+		// set default role
+		$this->setRole('everyone');
 	}
 	
+	/**
+	 * Loads Current user based on user_id
+	 * This method should only used if the user is authenticated.
+	 *
+	 * @param $user_id	string	the user_id
+	 * @depricated
+	 */
 	function load( $user_id = '' ) {
 		
 		if (! $user_id ) {
 			
 			// if there is no user_id and role is everyone
 			// procead with loading sites and 
-			if ( $this->isAnonymousUser() ) {
-				return $this->initInternalProperties();
-			} else {
+			//if ( $this->isAnonymousUser() ) {
+			//	return $this->initInternalProperties();
+			//} else {
 				throw new Exception('No valid userid given!');
-			}
+			//}
 		}
 		
 		// if there is a user_id load the user object and other properties.
@@ -63,15 +74,21 @@ class owa_serviceUser extends owa_base {
 		$this->initInternalProperties();
 	}
 	
-	function loadNewUserByObject($obj) {
-		$this->user = $obj;
+	/**
+	 * Loads the current user from an owa_user object 
+	 * owa_auth uses this after the user is authenticated
+	 *
+	 * @param $user_obj	object	owa_user object
+	 */
+	function loadNewUserByObject($user_obj) {
+		$this->user = $user_obj;
 		$this->initInternalProperties();
 	}
 	
 	private function initInternalProperties() {
 		$this->loadRelatedUserData();
 		$this->loadAssignedSites();
-		$this->isInitialized = true;
+		$this->setInitialized();
 	}
 	
 	function loadRelatedUserData() {		
@@ -95,11 +112,15 @@ class owa_serviceUser extends owa_base {
 		return $this->user->get('role');
 	}
 	
+	/**
+	 * Sets role and related capabilities
+	 *
+	 * @param	$value	string	the user's role
+	 */
 	function setRole($value) {
 		
 		$this->user->set('role', $value);
 		$this->capabilities = $this->getCapabilities($value);
-		
 	}
 	
 	function setUserData($name, $value) {
@@ -113,9 +134,11 @@ class owa_serviceUser extends owa_base {
 	}
 	
 	/**
-	 * Checks if user is capable to do something
-	 * @param string $cap
-	 * @param integer $currentSiteId optionel - only needed if cap is a  capabilities That Require SiteAccess. You need to pass site_id (not id) field
+	 * Checks if user has a partciular capability
+	 *
+	 * @param string 	$cap
+	 * @param integer 	$siteId	only needed if capability requires site access. you need to pass site_id (not id) field
+	 * @return boolean
 	 */
 	function isCapable($cap, $siteId = null) {
 		owa_coreAPI::debug("Checking if user is capable of: ".$cap);
@@ -129,16 +152,20 @@ class owa_serviceUser extends owa_base {
 			return true;
 		}
 		
+		// is this user's role capable?
 		if (!in_array($cap, $this->capabilities)) {
-			owa_coreAPI::debug('capability passed does not exist. user is not capable');
+			owa_coreAPI::debug('capability does not exist for this role. user is not capable');
 			return false;	
 		}
 		
 		// Does capability also require site access?
 		if ( $this->isSiteAccessRequiredForCapability( $cap ) ) {
-			
+			owa_coreAPI::debug('Site access required for this capability.');
 			if ( ! $this->isSiteAccessible( $siteId ) ) {
+				owa_coreAPI::debug('Site is not accessible for this user.');
 				return false;
+			} else {
+				owa_coreAPI::debug('Site is accessible for this user.');
 			}
 		}
 		
@@ -163,7 +190,7 @@ class owa_serviceUser extends owa_base {
 	/**
 	 * Checks to see if the a site is accessible to a user
 	 *
-	 * @param	$siteId	string	the siteId of the site in question
+	 * @param	string	$siteId	the siteId of the site in question
 	 * @return	boolean
 	 */
 	function isSiteAccessible( $siteId ) {
@@ -176,15 +203,15 @@ class owa_serviceUser extends owa_base {
 			return true;
 		}
 		
-		$user_id = $this->user->get('id');
+		//if ( ! $this->isAssignedSitesListLoaded ) {
+		//	$this->loadAssignedSites();	
+		//}
 		
-		if ( $user_id ) {
-			$site = owa_coreAPI::entityFactory('base.site');			
-			$site->load( $siteId,'site_id' );
-			
-			if ( $site->isUserAssigned($user_id) ) {
-				return true;
-			}
+		if ( isset( $this->assignedSites[ $siteId ] ) ) {
+			owa_coreAPI::debug("Site ID: $siteId in accessible list for this user.");
+			return true;
+		} else {
+			owa_coreAPI::debug("Site ID: $siteId is not in accessible list for this user.");
 		}
 	}
 	
@@ -202,60 +229,62 @@ class owa_serviceUser extends owa_base {
 	 * Loads internal $this->assignedSites member
 	 */
 	private function loadAssignedSites() {
-		
-		if ( $this->isAnonymousUser() ) {
-			owa_coreAPI::debug('Anonymous User. No assigned sites to load.');
-			return;
-		}
-			
-		$result = array();
-		
-		if ( $this->isOWAAdmin() ) {
-			$relations = owa_coreAPI::getSitesList();
-			
-			foreach ($relations as $siteRow) {
-				$site = owa_coreAPI::entityFactory('base.site');
-				$site->load($siteRow['id']);
-				$result[$siteRow['site_id']] = $site;
-			}
-			
-		} else {
-			
-			// this can happen if a plugin is setting the role
-			// but there is no user in the user table.
-			// hmmm...
-			if ( ! $this->user->get( 'id' ) ) {
-		 		owa_coreAPI::debug('no user object loaded! Cant fetch assigned sites.');
-		 		return;
-			}
-			
 				
-			$db = owa_coreAPI::dbSingleton();		
-			$db->selectFrom( 'owa_site_user' );
-			$db->selectColumn( '*' );
-			$db->where( 'user_id', $this->user->get('id') );
-			$relations = $db->getAllRows();
+		if ( ! $this->user->get( 'id' ) ) {
+	 		throw exception('no user object loaded!');
+		}
+		
+		$site_ids = array();
+		$db = owa_coreAPI::dbSingleton();		
+		$db->selectFrom( 'owa_site_user' );
+		$db->selectColumn( '*' );
+		$db->where( 'user_id', $this->user->get('id') );
+		$site_ids = $db->getAllRows();
+		
+		// filter array of site_ids.
+		$dispatch = owa_coreAPI::getEventDispatch();
+		$site_ids = $dispatch->filter('allowed_sites_list', $site_ids);
+		
+		$this->setAllowedSitesList($site_ids);
+	}
+	
+	public function setInitialized() {
+		$this->isInitialized = true;
+	}
+	
+	public function loadAssignedSitesByDomain($domains) {
+		
+		if ( $domains ) {
+			$site_ids = array();
+			$s = owa_coreApi::entityFactory('base.site');
 			
-			if (is_array($relations)) {		
-				foreach ($relations as $row) {
-					$siteEntity = owa_coreApi::entityFactory('base.site');
-					$siteEntity->load($row['site_id']);
-					$result[ $siteEntity->get('site_id') ] = $siteEntity;
-				}
+			foreach ($domains as $domain) {
+				
+				$site_ids[] = array('site_id' => $s->generateId( $s->generateSiteId( $domain ) ) );
+			}
+			
+			$this->setAllowedSitesList($site_ids);
+		}
+	}
+	
+	private function setAllowedSitesList($site_ids) {
+		
+		$list = array();
+		
+		if ( $site_ids ) {		
+			foreach ($site_ids as $row) {
+				$siteEntity = owa_coreApi::entityFactory('base.site');
+				$siteEntity->load($row['site_id']);
+				$list[ $siteEntity->get('site_id') ] = $siteEntity;
 			}
 		}
 		
-		$this->assignedSites = $result;
+		$this->assignedSites = $list;
+		$this->isAssignedSitesListLoaded = true;
 	}
 	
 	public function getAssignedSites() {				
-		
-		if ( !$this->isInitialized) {
-			//throw new Exception('serviceUser not loaded and initialized');
-			// can always count on user_id being set
-			$this->load($this->user->get('user_id') );
-		}
-		
+				
 		return $this->assignedSites;
 	}
 	
