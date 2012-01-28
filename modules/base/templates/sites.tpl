@@ -43,7 +43,6 @@
 											'dimensions' 	=> 'date', 
 											'sort' 			=> 'date',
 											'format' 		=> 'json',
-											'period'		=> 'last_thirty_days',
 											'constraints'	=> urlencode('siteId=='.$site->get('site_id'))	
 									), true); ?>';
 													  

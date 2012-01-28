@@ -203,9 +203,9 @@ class owa_serviceUser extends owa_base {
 			return true;
 		}
 		
-		//if ( ! $this->isAssignedSitesListLoaded ) {
-		//	$this->loadAssignedSites();	
-		//}
+		if ( ! $this->isAssignedSitesListLoaded ) {
+			//$this->loadAssignedSites();	
+		}
 		
 		if ( isset( $this->assignedSites[ $siteId ] ) ) {
 			owa_coreAPI::debug("Site ID: $siteId in accessible list for this user.");
@@ -229,9 +229,9 @@ class owa_serviceUser extends owa_base {
 	 * Loads internal $this->assignedSites member
 	 */
 	private function loadAssignedSites() {
-				
+		owa_coreAPI::debug('loading assigned sites');	
 		if ( ! $this->user->get( 'id' ) ) {
-	 		throw exception('no user object loaded!');
+	 		throw new Exception('no user object loaded!');
 		}
 		
 		$site_ids = array();
@@ -271,7 +271,7 @@ class owa_serviceUser extends owa_base {
 		
 		$list = array();
 		
-		if ( $site_ids ) {		
+		if ( ! empty($site_ids) ) {		
 			foreach ($site_ids as $row) {
 				$siteEntity = owa_coreApi::entityFactory('base.site');
 				$siteEntity->load($row['site_id']);

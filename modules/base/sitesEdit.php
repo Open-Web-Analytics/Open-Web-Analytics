@@ -60,17 +60,19 @@ class owa_sitesEditController extends owa_adminController {
 		// This needs form validation in a bad way.
 		
 		$site = owa_coreAPI::entityFactory('base.site');
-		$site->set('site_id', $this->params['siteId']);
-		$site->set('name', $this->params['name']);
-		$site->set('domain', $this->params['domain']);
-		$site->set('description', $this->params['description']);
-		$site->update('site_id');
+		if (! $this->getParam('siteId')) {
+			throw exception('No siteId passed on request');
+		}
+		$site->load( $site->generateId( $this->getParam('siteId') ) );
+		$site->set('name', $this->getParam( 'name' ) );
+		$site->set('domain', $this->getParam( 'domain' ) );
+		$site->set('description', $this->getParam( 'description') );
+		$site->save();
 		
-		$data['view_method'] = 'redirect';
-		$data['do'] = 'base.sites';
-		$data['status_code'] = 3201;
-		
-		return $data;
+		//$data['view_method'] = 'redirect';
+		//$data['do'] = 'base.sites';
+		$this->setRedirectAction('base.sites');
+		$this->set('status_code', 3201);
 	}
 }
 
