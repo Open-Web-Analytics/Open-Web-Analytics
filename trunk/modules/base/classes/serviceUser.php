@@ -147,8 +147,8 @@ class owa_serviceUser extends owa_base {
 		// is this the global admin user?
 		// was no capability passed?
 		// if so, the user can see and do everything
-		if ( owa_coreAPI::isEveryoneCapable( $cap ) || $this->user->isOWAAdmin() || empty($cap)) {
-			owa_coreAPI::debug('No capability passed or user is owaadmin and capable of everything.');
+		if ( owa_coreAPI::isEveryoneCapable( $cap ) || $this->user->isAdmin() || empty($cap)) {
+			owa_coreAPI::debug('No capability passed or user is an admin and capable of everything.');
 			return true;
 		}
 		
@@ -199,7 +199,7 @@ class owa_serviceUser extends owa_base {
 			throw new InvalidArgumentException('Cannot tell if site is accessible to user without a siteId (none given).');
 		}
 		
-		if ( $this->user->isOWAAdmin() ) {
+		if ( $this->user->isAdmin() ) {
 			return true;
 		}
 		
@@ -292,6 +292,11 @@ class owa_serviceUser extends owa_base {
 	public function isOWAAdmin() {
 		
 		return $this->user->isOWAAdmin();
+	}
+	
+	public function isAdmin() {
+		
+		return $this->user->isAdmin();
 	}
 	
 	public function isAnonymousUser() {

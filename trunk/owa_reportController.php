@@ -42,7 +42,16 @@ class owa_reportController extends owa_adminController {
 	function __construct($params) {	
 		$this->setControllerType('report');
 		$this->setRequiredCapability('view_reports');
-		return parent::__construct($params);
+		parent::__construct($params);
+		
+		// set a siteId is none is set on the request params
+		$siteId = $this->getCurrentSiteId();
+		
+		if ( ! $siteId ) {
+			$siteId = $this->getDefaultSiteId();
+		}
+		
+		$this->setParam( 'siteId', $siteId );
 	}
 	
 	
@@ -53,9 +62,10 @@ class owa_reportController extends owa_adminController {
 	 */
 	function pre() {
 		
-		$this->set('sites', $this->getSitesAllowedForCurrentUser());
-		$this->setParam('siteId', $this->getCurrentSiteId());
-		$this->set('currentSiteId', $this->getCurrentSiteId());
+		$sites = $this->getSitesAllowedForCurrentUser();
+		$this->set('sites', $sites);
+		
+		$this->set( 'currentSiteId', $this->getParam('siteId') );
 		
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
@@ -162,21 +172,20 @@ class owa_reportController extends owa_adminController {
 	}
 	
 	/**
-	 * Override owa_controller method - in order to always get a valid site id if the user has at least access to one site
+	 * Chooses a siteId from a list of AllowedSites
+	 *
+	 * needed jsut in case a siteId is not passed on the request.
 	 * @return string
 	 */
-	protected function getCurrentSiteId() {
-		$site_id =  parent::getCurrentSiteId();
-		// if there is no site_id o nthis request then pick one from
-		// the alowed sites list for this user.
-		if ( ! $site_id ) {		
-			$allowedSites = $this->getSitesAllowedForCurrentUser();
-			if ( current($allowedSites) instanceof owa_site) {
-				//set default
-				$site_id =  current($allowedSites)->get('site_id');
-			}
-		}
-		return $site_id;
+	protected function getDefaultSiteId() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->select('site_id');
+		$db->from('owa_site');
+		$db->limit(1);
+		$ret = $db->getOneRow();
+		
+		return $ret['site_id'];
 	}
 }
 

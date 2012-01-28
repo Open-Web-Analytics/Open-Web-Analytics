@@ -99,8 +99,18 @@ class owa_user extends owa_entity {
 	 * @return boolean
 	 */
 	public function isOWAAdmin() {
-		if ( $this->get('user_id') == self::ADMIN_USER_ID || 
-			 $this->get('role') == self::ADMIN_USER_ROLE ) {
+		if ( $this->get('user_id') == self::ADMIN_USER_ID ) {
+			return true; 
+		} else {
+			return false;
+		}
+	}
+	
+	/**
+	 * @return boolean
+	 */
+	public function isAdmin() {
+		if ( $this->get('role') == self::ADMIN_USER_ROLE ) {
 			return true; 
 		} else {
 			return false;
