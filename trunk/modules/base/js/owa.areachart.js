@@ -164,10 +164,10 @@ OWA.areaChart.prototype = {
 				
 			}
 			
-			if ( ! this.init ) {
+			//if ( ! this.init ) {
 				OWA.debug('ac init not set');
 				this.setupAreaChart(series, dom_id);
-			}
+			//}
 			
 			var num_ticks = data.length;
 			// reduce number of x axis ticks if data set has too many points.
@@ -246,7 +246,7 @@ OWA.areaChart.prototype = {
 		var h = this.getContainerHeight() || this.getOption('height');
 		//var h = this.getOption('height');
 		
-		jQuery("#"+dom_id).append('<div class="owa_areaChart"></div>');
+		jQuery("#"+dom_id).html('<div class="owa_areaChart"></div>');
 		
 		jQuery(that.domSelector).css('width', this.getOption('width'));
 		jQuery(that.domSelector).css('height', h);
