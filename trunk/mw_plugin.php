@@ -85,6 +85,9 @@ $wgHooks['ArticleEditUpdateNewTalk'][] ='owa_editTalkPageAction';
 // used to register OWA's special page
 $wgHooks['SpecialPage_initList'][] = 'owa_registerSpecialPage';
 
+// add 'owa_view' right to admin groups in order to view special page
+$wgGroupPermissions['user']['owa_view'] = true;
+
 /**
  * Hook Function for Registering OWA's Special Page
  */
@@ -174,20 +177,51 @@ function owa_singleton() {
 		}
 		
 		$owa->setSiteId( $wgOwaSiteId );
-		/**
-	 	 * Populates OWA's current user object with info about the current mediawiki user.
-	 	 * This info is needed by OWA authentication system as well as to add dimensions
-	 	 * requests that are logged.
-	 	 */
+		
+		// filter authentication
+		$dispatch = owa_coreAPI::getEventDispatch();
+		// alternative auth method, sets auth status, role, and allowed sites list.
+		$dispatch->attachFilter('auth_status', 'owa_mwAuthUser',0);
+		//print_r( $current_user );
+		
+	}
+		
+	return $owa;
+}
+
+/**
+ * Populates OWA's current user object with info about the current mediawiki user.
+ * This info is needed by OWA authentication system as well as to add dimensions
+ * requests that are logged.
+ */
+function owa_mwAuthUser($auth_status) {
+	
+	global 	$wgUser, $wgOwaSiteId;
+	
+	if ( $wgUser->isLoggedIn() ) { 
+	
 		$cu = owa_coreAPI::getCurrentUser();
+		$cu->setAuthStatus(true);	
+
 		$cu->setUserData( 'user_id', $wgUser->getName() );
 		$cu->setUserData( 'email_address', $wgUser->getEmail() );
 		$cu->setUserData( 'real_name', $wgUser->getRealName() );
 		$cu->setRole( owa_translate_role( $wgUser->getGroups() ) );
-		$cu->setAuthStatus(true);
-	}
 		
-	return $owa;
+		// set list of allowed sites. In this case it's only this wiki.
+		
+		$domains = array($wgOwaSiteId);		
+		// load assigned sites list by domain
+    	$cu->loadAssignedSitesByDomain($domains);
+		$cu->setInitialized();
+    	
+    	return true;
+    	
+	} else {
+		// not logged in
+		return false;
+	} 		
+
 }
 
 /**
@@ -462,7 +496,7 @@ function owa_getLanguage() {
 class SpecialOwa extends SpecialPage {
 
     function __construct() {
-            parent::__construct('Owa');
+            parent::SpecialPage('Owa', 'owa_view');
             self::loadMessages();
     }
 
@@ -470,49 +504,56 @@ class SpecialOwa extends SpecialPage {
     
     	global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer, 
     		   $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword;
-            
-        $this->setHeaders();
-        //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.
-        $owa = owa_singleton();
-        $params = array();
-        
-        // if no action is found...
-        $do = owa_coreAPI::getRequestParam('do');
-        if (empty($do)) {
-        	// check to see that owa in installed.
-            if (!$owa->getSetting('base', 'install_complete')) {
-				
-				define('OWA_INSTALLING', true);
-				               	
-            	$site_url = $wgServer.$wgScriptPath;
 
-            	$params = array(
-            			'site_id' 		=> md5($site_url), 
-						'name' 			=> $wgSitename,
-						'domain' 		=> $site_url, 
-						'description' 	=> '',
-						'do' 			=> 'base.installStartEmbedded');
-				
-				$params['db_type'] = $wgDBtype;
-				$params['db_name'] = $wgDBname;
-				$params['db_host'] = $wgDBserver;
-				$params['db_user'] = $wgDBuser;
-				$params['db_password'] = $wgDBpassword;
-				$params['public_url'] = $wgServer.$wgScriptPath.'/extensions/owa/';
-				$page = $owa->handleRequest($params);
-			
-			// send to daashboard
-           } else {
-            	$params['do'] = 'base.reportDashboard';
-	           	$page = $owa->handleRequest($params);
-            }
-        // do action found on url
-        } else {
-       		$page = $owa->handleRequestFromURL(); 
-        }
+        //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.        
+        $this->setHeaders();
         
-		return $wgOut->addHTML($page);					
-			
+        if ($this->userCanExecute($wgUser)) {
+         
+
+	        $owa = owa_singleton();
+	        $params = array();
+	        
+	        // if no action is found...
+	        $do = owa_coreAPI::getRequestParam('do');
+	        if (empty($do)) {
+	        	// check to see that owa in installed.
+	            if (!$owa->getSetting('base', 'install_complete')) {
+					
+					define('OWA_INSTALLING', true);
+					               	
+	            	$site_url = $wgServer.$wgScriptPath;
+	
+	            	$params = array(
+	            			'site_id' 		=> md5($site_url), 
+							'name' 			=> $wgSitename,
+							'domain' 		=> $site_url, 
+							'description' 	=> '',
+							'do' 			=> 'base.installStartEmbedded');
+					
+					$params['db_type'] = $wgDBtype;
+					$params['db_name'] = $wgDBname;
+					$params['db_host'] = $wgDBserver;
+					$params['db_user'] = $wgDBuser;
+					$params['db_password'] = $wgDBpassword;
+					$params['public_url'] = $wgServer.$wgScriptPath.'/extensions/owa/';
+					$page = $owa->handleRequest($params);
+				
+				// send to daashboard
+	           } else {
+	            	//$params['do'] = 'base.reportDashboard';
+	            	
+		           	$page = $owa->handleRequest($params);
+	            }
+	        // do action found on url
+	        } else {
+	       		$page = $owa->handleRequestFromURL(); 
+	        }
+	        
+			return $wgOut->addHTML($page);					
+		} else {
+			$this->displayRestrictionError();
+		}
     }
 
     function loadMessages() {
