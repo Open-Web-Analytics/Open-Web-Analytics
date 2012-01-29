@@ -234,14 +234,14 @@ class owa_controller extends owa_base {
 	}
 	
 	/**
-	 * Checks if the current controller requires privilegses and authenticates the user and checks for capabilities
+	 * Checks if the current controller requires privileges and authenticates the user and checks for capabilities
 	 * If the user is not allowed the correct error view is also initialized and the calling method should return
 	 * @uses ->getRequiredCapability and ->getCurrentSiteId
 	 * @param string $capability
 	 * @return boolean
 	 */
 	protected function checkCapabilityAndAuthenticateUser($capability) {
-		if ( !empty($capability) && ! $this->isEveryoneCapable( $capability ) ) {
+		if ( !empty($capability) && ! owa_coreAPI::isEveryoneCapable( $capability ) ) {
 			/* PERFORM AUTHENTICATION */	
 			$auth = owa_auth::get_instance();
 			if (!owa_coreAPI::isCurrentUserAuthenticated()) {
@@ -267,14 +267,10 @@ class owa_controller extends owa_base {
 		return true;
 	}
 	
+	// needed?
 	protected function isEveryoneCapable($capability) {
 		
-		$caps = owa_coreAPI::getCapabilities('everyone');
-		if ( in_array( $capability, $caps ) ) {
-			return true;
-		} else {
-			return false;
-		}
+		return owa_coreAPI::isEveryoneCapable( $capability );
 	}
 	
 	function logEvent($event_type, $properties) {
@@ -583,8 +579,27 @@ class owa_controller extends owa_base {
 	 * @return array
 	 */
 	protected function getSitesAllowedForCurrentUser() {
+	owa_coreAPI::debug('get Sites Allowed for user');
 		$currentUser = owa_coreAPI::getCurrentUser();
-		return $currentUser->getAssignedSites();
+		
+		if ( $currentUser->isAnonymousUser() || $currentUser->isAdmin() ) {
+			$result = array();
+			$relations = owa_coreAPI::getSitesList();
+			
+			foreach ($relations as $siteRow) {
+				
+				$site = owa_coreAPI::entityFactory('base.site');
+				owa_coreAPI::debug('getSitesAllowedforuser');
+				
+				$site->load($siteRow['id']);
+				$result[$siteRow['site_id']] = $site;
+			}
+			
+			return $result;
+			
+		} else {
+			return $currentUser->getAssignedSites();
+		}
 	}
 	
 	/**

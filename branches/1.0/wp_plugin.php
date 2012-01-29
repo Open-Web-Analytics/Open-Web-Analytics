@@ -5,7 +5,7 @@ Plugin Name: Open Web Analytics
 Plugin URI: http://www.openwebanalytics.com
 Description: This plugin enables Wordpress blog owners to use the Open Web Analytics Framework.
 Author: Peter Adams
-Version: v1.5.0
+Version: v1.5.1
 Author URI: http://www.openwebanalytics.com
 */
 
@@ -46,6 +46,7 @@ add_action('add_attachment', 'owa_newAttachmentActionTracker');
 add_action('edit_attachment', 'owa_editAttachmentActionTracker');
 add_action('transition_post_status', 'owa_postActionTracker', 10, 3);
 add_action('wpmu_new_blog', 'owa_newBlogActionTracker', 10, 5);
+add_action('wpmu_new_blog', 'owa_createTrackedSiteForNewBlog', 10, 6);
 // Installation hook
 register_activation_hook(__FILE__, 'owa_install');
 
@@ -58,6 +59,13 @@ function owa_newBlogActionTracker($blog_id, $user_id, $domain, $path, $site_id) 
 
 	$owa = owa_getInstance();
 	$owa->trackAction('wordpress', 'Blog Created', $domain);
+}
+
+function owa_createTrackedSiteForNewBlog($blog_id, $user_id, $domain, $path, $site_id, $meta) {
+	
+	$owa = owa_getInstance();
+	$sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
+	$sm->createNewSite( $domain, $domain, '', ''); 
 }
 
 /**
@@ -217,13 +225,46 @@ function &owa_getInstance() {
 		$owa->setSetting( 'base', 'delay_first_hit', false );
 		
 		// Access WP current user object to check permissions
-		$current_user = owa_getCurrentWpUser();
+		//$current_user = owa_getCurrentWpUser();
       	//print_r($current_user);
 		// Set OWA's current user info and mark as authenticated so that
 		// downstream controllers don't have to authenticate
-		$cu = owa_coreAPI::getCurrentUser();
 		
-		if (isset($current_user->user_login)) {
+		//$cu->isInitialized = true;
+		
+		// register allowedSitesList filter
+		$dispatch = owa_coreAPI::getEventDispatch();
+		// alternative auth method, sets auth status, role, and allowed sites list.
+		$dispatch->attachFilter('auth_status', 'owa_wpAuthUser',0);
+		//print_r( $current_user );
+	}
+	
+	return $owa;
+}
+
+/**
+ * OWA authentication filter method
+ *
+ * This filter function authenticates the user and populates the
+ * the current user in OWA with the proper role, and allowed sites list.
+ *
+ * This method kicks in after all over OWA's built in auth methods have failed
+ * in the owa_auth class.
+ * 
+ * @param 	$auth_status	boolean
+ * @return	$auth_status	boolean
+ */
+function owa_wpAuthUser($auth_status) {
+
+	$current_user = wp_get_current_user();
+	
+    if ( $current_user instanceof WP_User ) { 
+    	// logged in, authenticated
+    	$cu = owa_coreAPI::getCurrentUser();
+    	
+    	$cu->setAuthStatus(true);
+    	
+    	if (isset($current_user->user_login)) {
 			$cu->setUserData('user_id', $current_user->user_login);
 			owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
 		}
@@ -236,12 +277,27 @@ function &owa_getInstance() {
 			$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
 			$cu->setRole(owa_translate_role($current_user->roles));
 		}
+		
 		owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
 		owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
-		$cu->setAuthStatus(true);
-	}
+		
+		// fetch the list of allowed blogs from WP
+		$domains = array();
+		$allowedBlogs = get_blogs_of_user($current_user->ID);
 	
-	return $owa;
+		foreach ( $allowedBlogs as $blog) {
+			$domains[] = $blog->siteurl;		
+		}
+		// load assigned sites list by domain
+    	$cu->loadAssignedSitesByDomain($domains);
+		$cu->setInitialized();
+    
+    	return true;
+    
+    } else {
+    	// not logged in to WP and therefor not authenticated
+    	return false;
+    }	
 }
 
 function owa_getCurrentWpUser() {
@@ -534,33 +590,13 @@ function owa_dashboard_menu() {
 }
 
 /**
- * Produces the analytics dashboard
- * 
+ * Main page handler.
+ *
  */
-function owa_dashboard_report() {
-	
-	$owa = owa_getInstance();
-	
-	$params = array();
-	$params['do'] = 'base.reportDashboard';
-	echo $owa->handleRequest($params);
-	
-	return;
-	
-}
-
 function owa_pageController() {
 
-	$owa = owa_getInstance();
-	
-	$do = owa_coreAPI::getRequestParam('do');
-	$params = array();
-	if (empty($do)) {
-		
-		$params['do'] = 'base.reportDashboard';	
-	}
-	
-	echo $owa->handleRequest($params);
+	$owa = owa_getInstance();	
+	echo $owa->handleRequest();
 
 }
 

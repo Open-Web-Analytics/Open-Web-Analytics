@@ -203,13 +203,25 @@ class eventQueue {
 				// inner filter class/function loop
 				foreach ($priority as $observer_id) {
 					// pass args to filter
-					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value passed: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], print_r($value, true)));
+					
+					if (is_array($this->listeners[$observer_id])) {
+						
+						$class = get_class($this->listeners[$observer_id][0]);
+						$method = $this->listeners[$observer_id][1];
+						$filter_method = $class . '::' . $method;
+					} else {
+						$filter_method = $this->listeners[$observer_id];
+					}
+					
+					
+					
+					owa_coreAPI::debug(sprintf("Filter: %s. Value passed: %s", $filter_method, print_r($value, true)));
 					$value = call_user_func_array($this->listeners[$observer_id], array_slice($args,1));
-					owa_coreAPI::debug(sprintf("Filter: %s::%s. Value returned: %s", get_class($this->listeners[$observer_id][0]),$this->listeners[$observer_id][1], print_r($value, true)));
+					owa_coreAPI::debug(sprintf("Filter: %s. Value returned: %s", $filter_method, print_r($value, true)));
 					// set filterred value as value in args for next filter
 					$args[1] = $value;
 					// debug whats going on
-					owa_coreAPI::debug(sprintf("%s filtered by %s.", $filter_name, get_class($this->listeners[$observer_id][0])));
+					owa_coreAPI::debug(sprintf("%s filtered by %s.", $filter_name, $filter_method));
 				}
 			}
 		}

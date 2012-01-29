@@ -65,7 +65,11 @@ class owa_reportView extends owa_view {
 		$this->body->set('do', $this->data['do']);
 		
 		// Set navigation
+		$this->body->set('hideReportingNavigation', $this->get('hideReportingNavigation') );
 		$this->body->set('top_level_report_nav', $this->get('top_level_report_nav'));
+		
+		$this->body->set('hideSitesFilter', $this->get('hideSitesFilter') );
+		
 		$this->body->set('currentSiteId', $this->get('currentSiteId'));
 		
 		

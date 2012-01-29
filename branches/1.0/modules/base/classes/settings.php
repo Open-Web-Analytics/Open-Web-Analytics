@@ -654,7 +654,7 @@
 				'reserved_words'					=> array('do' => 'action'),
 				'login_view'						=> 'base.login',
 				'not_capable_view'					=> 'base.error',
-				'start_page'						=> 'base.reportDashboard',
+				'start_page'						=> 'base.sites',
 				'default_action'					=> 'base.loginForm',
 				'default_page'						=> '', // move to site settings
 				'default_cache_expiration_period'	=> 604800,
@@ -678,6 +678,7 @@
  				// role to capabilities configuration
 				'capabilities'						=> array(
 						'admin' => array(
+								'view_site_list',
 								'view_reports', 
  								'view_reports_ecommerce', 
 								'edit_settings', 
@@ -685,8 +686,8 @@
 								'edit_users', 
 								'edit_modules'
 						),
-						'analyst' => array('view_reports', 'view_reports_ecommerce'), 
-						'viewer' => array('view_reports'), 
+						'analyst' => array('view_site_list, view_reports', 'view_reports_ecommerce'), 
+						'viewer' => array('view_site_list', 'view_reports'), 
 						'everyone' => array()
 				),
 				'numGoals'							=> 15,
@@ -890,6 +891,89 @@
 		
 		if ($this->is_dirty) {
 			$this->save();
+		}
+	}
+	
+	/**
+	 * Adds a capability ot a role, creating the role if it does
+	 * not already exist. Also adds the capability to the 
+	 * siteAccessRequired list if role is not 'everyone'.
+	 *
+	 * @param $role						string	role name.
+	 * @param $capability				string	capability name.
+	 * @param $isSiteAccesssRequired	boolean	flag for adding to SA list.
+	 *
+	 */
+	function addCapabilityToRole( $role, $capability, $isSiteAccessRequired = false ) {
+		
+		$caps = $this->get('base', 'capabilities');
+		
+		// check to make sure role exists
+		if ( ! isset( $caps[ $role ] ) || ! is_array( $caps[ $role ] ) ) {
+			$caps[ $role ] = array();
+		}
+		
+		//add capability to role
+		if ( is_array( $capability ) ) {
+			//merge new values
+			$caps[ $role ] = array_merge($caps[ $role ], $capability);
+		} else {
+			$caps[ $role ][] = $capability;
+		}
+			
+		// unique the array
+		$caps[ $role ] = array_unique( $caps[ $role ] );
+		// set new values
+		$this->set('base', 'capabilities', $caps);
+		
+		// make site access is required, if role is not 'everyone'
+		if ( ! $role === 'everyone' && $isSiteAccessRequired ) {
+			$sar = $this->get('base', 'capabilitiesThatRequireSiteAccess');
+			$sar[] = $capability;
+			// unique the array
+			$sar = array_unique( $sar );
+			$this->set('base', 'capabilitiesThatRequireSiteAccess', $sar);
+		}
+	}
+	
+	function removeCapabilityFromRole( $role, $capability ) {
+		
+		$caps = $this->get('base', 'capabilities');
+		
+		if ( isset( $caps[ $role ] ) && in_array( $capability, $caps[ $role ] ) ) {
+			$caps[ $role ] = array_flip($caps[ $role ]);
+			unset( $caps[ $role ][ $capability ] );
+			$caps[ $role ] = array_unique( array_flip($caps[ $role ] ) );
+			$this->set('base', 'capabilities', $caps);
+		}
+	}
+	
+	function removeSiteAccessRequiredFromCapability( $capability ) {
+		
+		$sar = $this->get('base', 'capabilitiesThatRequireSiteAccess');
+		
+		if ( in_array( $capability, $sar ) ) {
+			$sar = array_flip( $sar );
+			unset( $sar[ $capability ] );
+			$sar = array_unique( array_flip($sar ) );
+			$this->set('base', 'capabilitiesThatRequireSiteAccess', $sar);
+		}
+	}
+	
+	function getAllRolesAndCapabilities() {
+		return $this->get('base', 'capabilities');
+	}
+	
+	function getCapabilitiesThatRequireSiteAccess() {
+		return $this->get('base', 'capabilitiesThatRequireSiteAccess');
+	}
+	
+	function getCapabilitiesForRole( $role ) {
+	
+		$caps = $this->get('base', 'capabilities');
+		
+		if ( isset( $caps[ $role ] ) ) {
+			return $caps[ $role ];
 		}
 	}
 }

@@ -45,7 +45,7 @@ if (!empty($_POST)) {
 	
 	   for ($i=1; $i<count($argv);$i++)
 	   {
-		   $it = split("=",$argv[$i]);
+		   $it = explode("=",$argv[$i]);
 		   $params[$it[0]] = $it[1];
 	   }
 	 unset($params['action']);
@@ -57,7 +57,7 @@ if (!empty($_POST)) {
 }
 
 // Initialize owa
-$owa = &new owa_php;
+$owa = new owa_php;
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 

@@ -767,4 +767,20 @@ class owa_jsonResultsView extends owa_view {
 	}
 }
 
+class owa_adminPageView extends owa_view {
+	
+	function render() {
+		
+		// Set Page title
+		$this->t->set('page_title', $this->get('title'));
+		
+		// Set Page headline
+		$this->body->set('title', $this->get('title'));
+		$this->body->set('titleSuffix', $this->get('titleSuffix'));
+		$this->body->set_template('genericAdminPage.php');
+		$this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
+		$this->setCss("base/css/owa.reporting-css-combined.css");
+	}
+}
+
 ?>

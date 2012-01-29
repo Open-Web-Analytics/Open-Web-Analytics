@@ -42,19 +42,30 @@ class owa_reportController extends owa_adminController {
 	function __construct($params) {	
 		$this->setControllerType('report');
 		$this->setRequiredCapability('view_reports');
-		return parent::__construct($params);
+		parent::__construct($params);
+		
+		// set a siteId is none is set on the request params
+		$siteId = $this->getCurrentSiteId();
+		
+		if ( ! $siteId ) {
+			//$siteId = $this->getDefaultSiteId();
+		}
+		
+		$this->setParam( 'siteId', $siteId );
 	}
 	
 	
 	/**
-	 * pre action
+	 * Pre Action
+	 * Current user is fully authenticated and loaded by this point
 	 *
 	 */
 	function pre() {
 		
-		$this->set('sites', $this->getSitesAllowedForCurrentUser());
+		$sites = $this->getSitesAllowedForCurrentUser();
+		$this->set('sites', $sites);
 		
-		$this->setParam('siteId', $this->getCurrentSiteId());
+		$this->set( 'currentSiteId', $this->getParam('siteId') );
 		
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
@@ -79,73 +90,76 @@ class owa_reportController extends owa_adminController {
 		$this->dom_id = str_replace('.', '-', $this->getParam('do'));
 		$this->data['dom_id'] = $this->dom_id;
 		$this->data['do'] = $this->getParam('do');
-		
+		$nav = owa_coreAPI::getGroupNavigation('Reports');
 		// setup tabs
 		$siteId = $this->get('siteId');
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
-		
-		$tabs = array();
-		$site_usage = array(
-				'tab_label'		=> 'Site Usage',
-				'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-				'sort'			=> 'visits-',
-				'trendchartmetric'	=>	'visits'
-		);
-		
-		$tabs['site_usage'] = $site_usage;
-		
-		// ecommerce tab
-		if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
-		
-			$ecommerce = array(
-					'tab_label'		=> 'e-commerce',
-					'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
-					'sort'			=> 'transactionRevenue-',
-					'trendchartmetric'	=>	'transactions'
+		if ($siteId) {
+			$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+			
+			$tabs = array();
+			$site_usage = array(
+					'tab_label'		=> 'Site Usage',
+					'metrics'		=> 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
+					'sort'			=> 'visits-',
+					'trendchartmetric'	=>	'visits'
 			);
-		
-			$tabs['ecommerce'] = $ecommerce;
-		}		
-		$goal_groups = $gm->getActiveGoalGroups();
-		
-		if ( $goal_groups ) {
-			foreach ($goal_groups as $group) {
-				$goal_metrics = 'visits';
-				$active_goals = $gm->getActiveGoalsByGroup($group);
-					
-				if ( $active_goals ) {
-				
-					foreach ($active_goals as $goal) {
-						$goal_metrics .= sprintf(',goal%sCompletions', $goal);
-					}
-				}
-				
-				$goal_metrics .= ',goalValueAll';
-				$goal_group = array(
-						'tab_label'		=>	$gm->getGoalGroupLabel($group),
-						'metrics'		=>	$goal_metrics,
-						'sort'			=> 'goalValueAll-',
-						'trendchartmetric'	=>	'visits'
+			
+			$tabs['site_usage'] = $site_usage;
+			
+			// ecommerce tab
+			if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+			
+				$ecommerce = array(
+						'tab_label'		=> 'e-commerce',
+						'metrics'		=> 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
+						'sort'			=> 'transactionRevenue-',
+						'trendchartmetric'	=>	'transactions'
 				);
-				$name = 'goal_group_'.$group;
-				$tabs[$name] = $goal_group;
+			
+				$tabs['ecommerce'] = $ecommerce;
+			}		
+			$goal_groups = $gm->getActiveGoalGroups();
+			
+			if ( $goal_groups ) {
+				foreach ($goal_groups as $group) {
+					$goal_metrics = 'visits';
+					$active_goals = $gm->getActiveGoalsByGroup($group);
+						
+					if ( $active_goals ) {
+					
+						foreach ($active_goals as $goal) {
+							$goal_metrics .= sprintf(',goal%sCompletions', $goal);
+						}
+					}
+					
+					$goal_metrics .= ',goalValueAll';
+					$goal_group = array(
+							'tab_label'		=>	$gm->getGoalGroupLabel($group),
+							'metrics'		=>	$goal_metrics,
+							'sort'			=> 'goalValueAll-',
+							'trendchartmetric'	=>	'visits'
+					);
+					$name = 'goal_group_'.$group;
+					$tabs[$name] = $goal_group;
+				}
 			}
-		}
-				
-		$this->set('tabs', $tabs);
-		$this->set('tabs_json', json_encode($tabs));
+					
+			$this->set('tabs', $tabs);
+			$this->set('tabs_json', json_encode($tabs));
 		
+			
+		
+			if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
+			
+				unset($nav['Ecommerce']);
+			}
+		}				
 		
 		//$this->body->set('sub_nav', owa_coreAPI::getNavigation($this->get('nav_tab'), 'sub_nav'));
-		$nav = owa_coreAPI::getGroupNavigation('Reports');
 		
-		if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
-		
-			unset($nav['Ecommerce']);
-		}
 		
 		$this->set('top_level_report_nav', $nav);		
-		$this->set('currentSiteId', $this->getCurrentSiteId());
+		
 		
 	}
 	
@@ -161,21 +175,30 @@ class owa_reportController extends owa_adminController {
 	}
 	
 	/**
-	 * Override owa_controller method - in order to always get a valid site id if the user has at least access to one site
+	 * Chooses a siteId from a list of AllowedSites
+	 *
+	 * needed jsut in case a siteId is not passed on the request.
 	 * @return string
 	 */
-	protected function getCurrentSiteId() {
-		$site_id =  parent::getCurrentSiteId();
-		// if there is no site_id o nthis request then pick one from
-		// the alowed sites list for this user.
-		if ( ! $site_id ) {		
-			$allowedSites = $this->getSitesAllowedForCurrentUser();
-			if ( current($allowedSites) instanceof owa_site) {
-				//set default
-				$site_id =  current($allowedSites)->get('site_id');
-			}
-		}
-		return $site_id;
+	protected function getDefaultSiteId() {
+		
+		$db = owa_coreAPI::dbSingleton();
+		$db->select('site_id');
+		$db->from('owa_site');
+		$db->limit(1);
+		$ret = $db->getOneRow();
+		
+		return $ret['site_id'];
+	}
+	
+	protected function hideReportingNavigation() {
+		
+		$this->set('hideReportingNavigation', true);
+	}
+	
+	protected function hideSitesFilter() {
+		
+		$this->set('hideSitesFilter', true);
 	}
 }
 

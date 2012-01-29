@@ -71,8 +71,8 @@ OWA.kpiBox.prototype = {
      	
      	var html = '';
      	var con_id = 'kpiContainer-'+ resultSet.guid;
-		jQuery('#' + dom_id).append(OWA.util.sprintf('<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div>', con_id ) );	
-		jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
+		jQuery('#' + dom_id).html(OWA.util.sprintf('<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div><div style="clear:both;"></div>', con_id ) );	
+		//jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
 		
 		for(var i in resultSet.aggregates) {
 			

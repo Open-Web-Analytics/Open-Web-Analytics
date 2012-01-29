@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
+require_once(OWA_BASE_DIR.'/owa_reportController.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
@@ -31,21 +32,24 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since		owa 1.0.0
  */
 
-class owa_sitesController extends owa_adminController {
+class owa_sitesController extends owa_reportController {
 	
 	function __construct($params) {
-		
-		$this->setRequiredCapability('edit_sites');
-		return parent::__construct($params);
+
+		parent::__construct($params);
+		$this->setRequiredCapability('view_site_list');
 	}
 	
 	function action() {
 	
 		$s = owa_coreAPI::entityFactory('base.site');
-		$sites = $this->getSitesAllowedForCurrentUser();		
+		$sites = $this->getSitesAllowedForCurrentUser();	
 		$this->set('tracked_sites', $sites);
 		$this->setSubview('base.sites');
-		$this->setView('base.options');
+		$this->setView('base.report');
+		$this->set('title', 'Sites Roster');
+		$this->hideReportingNavigation();
+		$this->hideSitesFilter();
 	}
 }
 
@@ -69,7 +73,6 @@ class owa_sitesView extends owa_view {
 		//page title
 		$this->t->set('page_title', 'Sites Roster');
 		$this->body->set_template('sites.tpl');
-		$this->body->set('headline', 'Web Sites Roster');
 		$this->body->set('tracked_sites', $this->get('tracked_sites'));
 	}
 }

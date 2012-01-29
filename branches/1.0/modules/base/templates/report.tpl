@@ -6,7 +6,7 @@ OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php $this->out( $this->getV
 OWA.items['<?php echo $dom_id;?>'].max_page_num = "<?php $this->out( $this->getValue( 'more_pages', 'pagination' ), false );?>";
 OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($params);?>;
 
-
+<?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
 // Bind event handlers
 jQuery(document).ready(function(){   
 	
@@ -15,7 +15,7 @@ jQuery(document).ready(function(){
       jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
     });
 });
-
+<?php endif;?>
 </script>
 
 <div id="<?php echo $dom_id;?>" class="owa_reportContainer">
@@ -23,6 +23,7 @@ jQuery(document).ready(function(){
 	<table width="100%" cellpadding="0" cellspacing="0">
 		
 		<TR>
+			<?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
 			<TD valign="top" class="owa_reportLeftNavColumn">
 				<div class="reportSectionContainer">
 					<div id="owa_reportNavPanel">
@@ -30,12 +31,14 @@ jQuery(document).ready(function(){
 					</div>
 				</div>			
 			</TD>
+			<?php endif;?>
 			<TD valign="top" width="*">
-			
+				
+				<?php if ( ! $this->get( 'hideSitesFilter' ) ):?>
 				<div class="reportSectionContainer" style="margin-bottom:20px;">
 				<?php include('filter_site.tpl');?>
 				</div>
-				
+				<?php endif;?>
 				<div class="reportSectionContainer">
 					<div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
 					<div id="liveViewSwitch" style="width:auto;float:right; padding-right:30px;"></div>	

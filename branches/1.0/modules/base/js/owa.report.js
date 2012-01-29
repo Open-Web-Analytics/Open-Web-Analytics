@@ -254,7 +254,10 @@ OWA.report.prototype = {
 		// add new site_id to properties
 		var siteId = jQuery("#owa_reportSiteFilterSelect option:selected").val(); 
 		OWA.debug(this.properties['action']);
-		this.properties['siteId'] = siteId;
+		
+		if (siteId != undefined) {
+			this.properties['siteId'] = siteId;
+		}
 		// reload report	
 		var url = OWA.util.makeUrl(OWA.config.link_template, OWA.config.main_url, this.properties);
 		window.location.href = url;

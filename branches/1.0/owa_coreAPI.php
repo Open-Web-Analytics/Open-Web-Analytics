@@ -1200,7 +1200,7 @@ class owa_coreAPI {
 		$db->selectFrom('owa_site');
 		$db->selectColumn('*');
 		$sites = $db->getAllRows();
-		
+	
 		if ( ! $sites ) {			
 			$sites = array();
 		}		
@@ -1441,6 +1441,17 @@ class owa_coreAPI {
 	
 		$r = owa_coreAPI::requestContainerSingleton();
 		return $r->getTimestamp();
+	}
+	
+	public static function isEveryoneCapable( $capability ) {
+		
+		$caps = owa_coreAPI::getCapabilities('everyone');
+		
+		if ( in_array( $capability, $caps ) ) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }
 

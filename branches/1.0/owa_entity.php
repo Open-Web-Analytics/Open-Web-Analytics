@@ -330,7 +330,7 @@ class owa_entity {
 	}
 	
 	function load($value, $col = 'id') {
-		
+
 		return $this->getByColumn($col, $value);
 		
 	}
@@ -342,10 +342,13 @@ class owa_entity {
 	}
 	
 	function getByColumn($col, $value) {
-		
+				
 		if ( ! $col ) {
-			owa_coreAPI::debug('No column name passed to getByColumn in entity:'. getName() );
-			return;
+			throw new Exception("No column name passed.");
+		}
+		
+		if ( ! $value ) {
+			throw new Exception("No value passed.");
 		}
 		
 		$cache_obj = '';
@@ -367,6 +370,7 @@ class owa_entity {
 			$db = owa_coreAPI::dbSingleton();
 			$db->selectFrom($this->getTableName());
 			$db->selectColumn('*');
+			owa_coreAPI::debug("Col: $col, value: $value");	
 			$db->where($col, $value);
 			$properties = $db->getOneRow();
 			
