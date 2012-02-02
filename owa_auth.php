@@ -72,7 +72,7 @@ class owa_auth extends owa_base {
 	/**
 	 * Auth class Singleton
 	 *
-	 * @return object
+	 * @return owa_auth
 	 */
 	public static function get_instance($plugin = '') {
 		
@@ -113,9 +113,7 @@ class owa_auth extends owa_base {
 		// check existing auth status first in case someone else took care of this already.
 		if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
 			$ret = true;
-		} elseif (owa_coreAPI::getRequestParam('apiKey')) {
-			
-			
+		} elseif (owa_coreAPI::getRequestParam('apiKey')) {			
 			// auth user by api key
 			$ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
 		} elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
