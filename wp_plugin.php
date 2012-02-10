@@ -288,8 +288,15 @@ function owa_wpAuthUser($auth_status) {
 		foreach ( $allowedBlogs as $blog) {
 			$domains[] = $blog->siteurl;		
 		}
-		// load assigned sites list by domain
-    	$cu->loadAssignedSitesByDomain($domains);
+		
+		// check to see if we are installing before trying to load sites
+		// other wise you run into a race condition as config file
+		// might not be created.
+		if (! defined('OWA_INSTALLING') ) {
+			// load assigned sites list by domain
+    		$cu->loadAssignedSitesByDomain($domains);
+    	}
+    	
 		$cu->setInitialized();
     
     	return true;
@@ -555,8 +562,7 @@ function owa_install() {
 	//$params['do_not_fetch_config_from_db'] = true;
 
 	$owa = owa_getInstance($params);
-	$owa->setSetting('base', 'cache_objects', false);
-		
+	$owa->setSetting('base', 'cache_objects', false);	
 	$public_url =  get_bloginfo('wpurl').'/wp-content/plugins/owa/';
 	
 	$install_params = array('site_id' => md5(get_settings('siteurl')), 
