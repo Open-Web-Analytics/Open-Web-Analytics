@@ -35,7 +35,7 @@ jQuery(document).ready(function(){
 			<TD valign="top" width="*">
 				
 				<?php if ( ! $this->get( 'hideSitesFilter' ) ):?>
-				<div class="reportSectionContainer" style="margin-bottom:20px;">
+				<div class="reportSectionContainer reportSiteFilter" style="margin-bottom:20px;">
 				<?php include('filter_site.tpl');?>
 				</div>
 				<?php endif;?>
