@@ -2218,7 +2218,9 @@ class owa_baseModule extends owa_module {
 		$host = '';
 		
 		if (!empty($fullhost)) {
-		
+			
+			$host = '';
+			
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
 			if ($fullhost === 'localhost') {
 				$host = 'localhost';
@@ -2234,15 +2236,28 @@ class owa_baseModule extends owa_module {
 				// array of tlds. this should probably be in the config array not here.
 				$tlds = array('com', 'net', 'org', 'gov', 'mil', 'edu');
 				
-				if (in_array($host_array[0], $tlds)) {
-					$host = $host_array[1].".".$host_array[0];
-				} else {
-					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
-				}
+				// if it's not a standard tld then use third piece of the domain
+				if ( ! in_array( $host_array[0], $tlds ) ) {
 					
+					if ( isset( $host_array[2] ) ) {
+					
+						$host .= $host_array[2] . '.';
+					}
+				}
+
+				if ( isset( $host_array[1] ) ) {
+					
+					$host .= $host_array[1] . '.';
+				}
+				
+				if ( isset( $host_array[0] ) ) {
+					
+					$host .= $host_array[0];
+				}				
 			}
 				
 		} else {
+		
 			$host = $ip_address;
 		}
 		
