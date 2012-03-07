@@ -292,29 +292,33 @@ class owa_baseModule extends owa_module {
 			'base.commerce_line_item_fact'
 		);
 		
-		$this->registerMetric(
-			'pageViews', 
-			array( 
-				'base.pageViews',
-				'base.pageViewsFromSessionFact'
-			), 
-			'', 
-			'Page Views', 
-			'The total number of pages viewed.', 
-			'Site Usage'
-		);
+		// page views
+		$this->registerMetricDefinition(array(
+			'name'			=> 'pageViews',
+			'label'			=> 'Page Views',
+			'description'	=> 'The total number of pages viewed.',
+			'group'			=> 'Site Usage',
+			'entity'		=> 'base.request',
+			'metric_type'	=> 'count',
+			'data_type'		=> 'integer',
+			'column'		=> 'id'
+			
+		));
+		
+		$this->registerMetricDefinition(array(
+			'name'			=> 'pageViews',
+			'label'			=> 'Page Views',
+			'description'	=> 'The total number of pages viewed.',
+			'group'			=> 'Site Usage',
+			'entity'		=> 'base.session',
+			'metric_type'	=> 'sum',
+			'data_type'		=> 'integer',
+			'column'		=> 'num_pageviews'
+			
+		));
+		
 		
 		// unique visitors
-		/*
-		$this->registerMetric(
-			'uniqueVisitors', 
-			'base.uniqueVisitors', 
-			'',
-			'Unique Visitors', 
-			'The total number of unique visitors.', 
-			'Site Usage'
-		);
-		*/
 		foreach($fact_table_entities as $factEntity ) {
 		
 			$this->registerMetricDefinition(array(
@@ -331,33 +335,36 @@ class owa_baseModule extends owa_module {
 		}
 		
 		// visits
-		$this->registerMetric(
-			'visits', 
-			'base.visits',
-			'',
-			'Visits',
-			'The total number of visits/sessions.',
-			'Site Usage'
-		);
-		
 		foreach($fact_table_entities as $factEntity ) {
 		
 			// owa_session uses a different column name and has it's own metric registration above.
 			if ($factEntity === 'base.session') {
-				continue;
-			}
-			
-			$this->registerMetricDefinition(array(
-				'name'			=> 'visits',
-				'label'			=> 'Visits',
-				'description'	=> 'The total number of visits/sessions.',
-				'group'			=> 'Site Usage',
-				'entity'		=> $factEntity,
-				'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-				'data_type'		=> 'integer', // 'integrer', 'currency'
-				'column'		=> 'session_id'
+				$this->registerMetricDefinition(array(
+					'name'			=> 'visits',
+					'label'			=> 'Visits',
+					'description'	=> 'The total number of visits/sessions.',
+					'group'			=> 'Site Usage',
+					'entity'		=> 'base.session',
+					'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+					'data_type'		=> 'integer', // 'integrer', 'currency'
+					'column'		=> 'id'
+					
+				));
 				
-			));
+			} else {
+			
+				$this->registerMetricDefinition(array(
+					'name'			=> 'visits',
+					'label'			=> 'Visits',
+					'description'	=> 'The total number of visits/sessions.',
+					'group'			=> 'Site Usage',
+					'entity'		=> $factEntity,
+					'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+					'data_type'		=> 'integer', // 'integrer', 'currency'
+					'column'		=> 'session_id'
+					
+				));
+			}
 		}
 		
 		$this->registerMetric(
