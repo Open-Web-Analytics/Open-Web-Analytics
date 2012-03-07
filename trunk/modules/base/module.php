@@ -282,6 +282,16 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerMetrics() {		
 		
+		$fact_table_entities = array(
+			'base.action_fact',
+			'base.request',
+			'base.session',
+			'base.domstream',
+			'base.click',
+			'base.commerce_transaction_fact',
+			'base.commerce_line_item_fact'
+		);
+		
 		$this->registerMetric(
 			'pageViews', 
 			array( 
@@ -294,6 +304,8 @@ class owa_baseModule extends owa_module {
 			'Site Usage'
 		);
 		
+		// unique visitors
+		/*
 		$this->registerMetric(
 			'uniqueVisitors', 
 			'base.uniqueVisitors', 
@@ -302,18 +314,51 @@ class owa_baseModule extends owa_module {
 			'The total number of unique visitors.', 
 			'Site Usage'
 		);
+		*/
+		foreach($fact_table_entities as $factEntity ) {
 		
+			$this->registerMetricDefinition(array(
+				'name'			=> 'uniqueVisitors',
+				'label'			=> 'Unique Visitors',
+				'description'	=> 'The total number of unique visitors.',
+				'group'			=> 'Site Usage',
+				'entity'		=> $factEntity,
+				'metric_type'	=> 'distinct_count',
+				'data_type'		=> 'integer',
+				'column'		=> 'visitor_id'
+				
+			));
+		}
+		
+		// visits
 		$this->registerMetric(
 			'visits', 
-			array(
-				'base.visits',
-				'base.visitsFromRequestFact',
-			),
+			'base.visits',
 			'',
 			'Visits',
 			'The total number of visits/sessions.',
 			'Site Usage'
 		);
+		
+		foreach($fact_table_entities as $factEntity ) {
+		
+			// owa_session uses a different column name and has it's own metric registration above.
+			if ($factEntity === 'base.session') {
+				continue;
+			}
+			
+			$this->registerMetricDefinition(array(
+				'name'			=> 'visits',
+				'label'			=> 'Visits',
+				'description'	=> 'The total number of visits/sessions.',
+				'group'			=> 'Site Usage',
+				'entity'		=> $factEntity,
+				'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+				'data_type'		=> 'integer', // 'integrer', 'currency'
+				'column'		=> 'session_id'
+				
+			));
+		}
 		
 		$this->registerMetric(
 			'visitors', 

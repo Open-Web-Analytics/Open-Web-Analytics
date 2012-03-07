@@ -67,6 +67,7 @@ define('OWA_SQL_NOTREGEXP', 'NOT REGEXP');
 define('OWA_SQL_LIKE', 'LIKE');
 define('OWA_SQL_ADD_INDEX', 'ALTER TABLE %s ADD INDEX (%s) %s');
 define('OWA_SQL_COUNT', 'COUNT(%s)');
+define('OWA_SQL_SUM', 'SUM(%s)');
 define('OWA_SQL_ROUND', 'ROUND(%s)');
 define('OWA_SQL_AVERAGE', 'AVG(%s)');
 define('OWA_SQL_DISTINCT', 'DISTINCT %s');

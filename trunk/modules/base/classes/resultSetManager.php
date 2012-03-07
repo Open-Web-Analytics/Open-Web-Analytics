@@ -1190,6 +1190,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		$this->params['selects'][] = $select_array; 
 	}
 	
+	//depricated?
 	function getSelects() {
 	
 		if (array_key_exists('selects', $this->params)) {

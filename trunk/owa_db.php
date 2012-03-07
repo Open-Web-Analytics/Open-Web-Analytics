@@ -1106,6 +1106,11 @@ class owa_db extends owa_base {
 		return sprintf(OWA_SQL_COUNT, $column_name);
 	}
 	
+	function sum($column_name) {
+		
+		return sprintf(OWA_SQL_SUM, $column_name);
+	}
+	
 	function distinct($column_name) {
 		
 		return sprintf(OWA_SQL_DISTINCT, $column_name);
