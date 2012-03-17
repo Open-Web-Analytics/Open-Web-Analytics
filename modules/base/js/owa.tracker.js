@@ -343,6 +343,14 @@ OWA.tracker.prototype = {
 		OWA.setSetting('debug', bool);
 	},
 	
+	/**
+	 * Looks for shared state cookies passed on the URL from OWA running
+	 * under anohter domain. 
+	 *
+	 * This method must be called explicitly before any of the tracking 
+	 * methods if you want shared state cookies ot be respected.
+	 *
+	 */
 	checkForLinkedState : function() {
 		
 		if ( this.linkedStateSet != true ) {
