@@ -1332,11 +1332,13 @@ class owa_baseModule extends owa_module {
 		// Network Dimensions
 		$this->registerDimension(
 			'ipAddress', 
-			'base.host', 
+			$fact_table_entities, 
 			'ip_address', 
 			'IP Address', 
 			'network', 
-			'The IP address of the visitor.'
+			'The IP address of the visitor.',
+			'',
+			true
 		);
 		
 		$this->registerDimension(
