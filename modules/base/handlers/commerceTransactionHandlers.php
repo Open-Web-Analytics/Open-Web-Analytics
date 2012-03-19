@@ -49,20 +49,25 @@ class owa_commerceTransactionHandlers extends owa_observer {
 		$ct->getByPk( 'id', $pk );
 		$id = $ct->get('id'); 
 		$resulting_event_name = 'ecommerce.transaction_persisted';
-		if ( ! $id ) {
 		
-			// The ecommerce transaction PHP API allows for 
-			// events to be fired into OWA from a non-web request by passing
-			// the original_session_id.
-			$original_session_id = $event->get( 'original_session_id' );
-			if ( $original_session_id ) {
-				$resulting_event_name = 'ecommerce.async_transaction_persisted';
-				$s = owa_coreAPI::entityFactory( 'base.session' );
-				$s->load( $original_session_id );
+		// The ecommerce transaction PHP API allows for 
+		// events to be fired into OWA from a non-web request by passing
+		// the original_session_id.
+		$original_session_id = $event->get( 'original_session_id' );
+		
+		// look up properties from the orieginal session and add them to the transaction event.
+		if ( $original_session_id ) {
+			// change the resulting evnt name so that downstream handers know that dimensions
+			// were already persisted.
+			$resulting_event_name = 'ecommerce.async_transaction_persisted';
+			// set the session id with original session id
+			$event->set('session_id', $original_session_id);
+			// load the original session
+			$s = owa_coreAPI::entityFactory( 'base.session' );
+			$s->load( $original_session_id );
 				
-				// set the session id with original session id
-				$event->set('session_id', $original_session_id);
-				
+			if ( $s->get( 'id' ) ) {
+			
 				// add properties from retrieved session into the commerce transaction event
 				// this is needed for downstream events that do not know or care that the
 				// transaction event was generated via the REST API.
@@ -71,17 +76,16 @@ class owa_commerceTransactionHandlers extends owa_observer {
 				unset( $osession_properties['id'] );
 				// do not overwrite existing properties.
 				$event->setNewProperties( $osession_properties );
-					
-				if ( $s->get( 'id' ) ) {
-					$ct->setProperties( $s->_getProperties() );
-					$ct->set( 'session_id', $original_session_id );
-				} else {
-					owa_coreAPI::debug('Cannot find original session with id: '.$original_session_id);
-					return OWA_EHS_EVENT_FAILED;
-				}
 				
+			} else {
+				owa_coreAPI::debug('Cannot find original session with id: '.$original_session_id);
+				return OWA_EHS_EVENT_FAILED;
 			}
-			
+		}
+		
+		// check to see if the transaction was already persisted.
+		if ( ! $id ) {
+		
 			$ct->setProperties($event->getProperties());
 			
 			$ct->set( 'id', $pk ); 
