@@ -170,6 +170,18 @@ class owa_event {
 		}
 	}
 	
+	/**
+	 * Adds new properties to the eventt without overwriting values
+	 * for properties that are already set.
+	 *
+	 * @param 	array $properties
+	 */
+	function setNewProperties( $properties = array() ) {
+	
+		$this->properties = array_merge($properties, $this->properties);
+	
+	}
+	
 	function replaceProperties($properties) {
 		
 		$this->properties = $properties;

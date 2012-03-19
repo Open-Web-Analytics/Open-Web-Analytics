@@ -2049,15 +2049,28 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 		// actions
 		$this->registerEventHandler('track.action', 'actionHandler');
-		// Commerce
+		
+		// ecommerce
+		
+		// handles new ecommerce transactions
 		$this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
-		$this->registerEventHandler('ecommerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
+		
+		// updates session once ecommerce transactions are persisted
+		$this->registerEventHandler(array(
+				'ecommerce.transaction_persisted', 
+				'ecommerce.async_transaction_persisted'), 
+			'sessionCommerceSummaryHandlers'
+		);
 		
 		$this->registerEventHandler('base.new_session', 'visitorUpdateHandlers');
 		
 		
-		// register standard dimension handlers to listen to events 
+		// register standard dimension handlers to listen for events 
 		// that populate fact tables.
+		
+		// Note: ecommerce.async_transaction_persisted events are ommited here
+		// because it the event gets alll non ecommerce dimensional properties
+		// from a previously persisted session entity
 		$fact_events = array(
 			'base.page_request_logged', 
 			'base.first_page_request_logged', 
