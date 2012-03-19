@@ -2339,6 +2339,8 @@ class owa_baseModule extends owa_module {
 	function makeUrlCanonical($url, $site_id = '') {
 		
 		owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->load( $site->generateId( $site_id ) );
 		//remove anchors
 		$pos = strpos($url, '#');
 		if($pos) {
@@ -2346,7 +2348,7 @@ class owa_baseModule extends owa_module {
 			$url = substr($url, 0, $pos);
 		}
 		
-		$filter_string = owa_coreAPI::getSiteSetting($site_id, 'query_string_filters');
+		$filter_string = $site->getSiteSetting( 'query_string_filters' );
 		
 		if ($filter_string) {
 			$filters = str_replace(' ', '', $filter_string);
@@ -2403,7 +2405,7 @@ class owa_baseModule extends owa_module {
 		}
 		
 		//check and remove default page
-		$default_page = owa_coreAPI::getSiteSetting($site_id, 'default_page');
+		$default_page = $site->getSiteSetting('default_page');
 		
 		if ($default_page) {
 		
@@ -2423,6 +2425,28 @@ class owa_baseModule extends owa_module {
 		if (substr($url, -1) === '/') {
 			
 			$url = substr($url, 0, -1);
+		}
+		
+		// check for domain aliases
+		$das = $site->getSiteSetting( 'domain_aliases' );
+		
+		if ( $das ) {
+			
+			$site_domain = $site->getDomainName();
+			
+			if ( ! strpos( $url, '://'. $site_domain ) ) {
+			
+				$das = explode(',', $das);
+				
+				foreach ($das as $da) {
+					owa_coreAPI::debug("Checking URL for domain alias: $da");
+					$da = trim($da);
+					if ( strpos( $url, $da ) ) {
+						$url = str_replace($da, $site_domain, $url);
+						break;
+					}
+				}
+			}
 		}
 			
      	return $url;
