@@ -180,12 +180,7 @@ class owa_coreAPI {
 		
 		if ( $site->wasPersisted() ) {
 			
-			$settings = $site->get('settings');
-			if (!empty($settings)) {
-				if ( array_key_exists($name, $settings) ) {
-					return $settings[$name];
-				}
-			}			
+			return $site->getSiteSetting($name);			
 		}
 	}
 	
