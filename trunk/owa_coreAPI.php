@@ -184,6 +184,17 @@ class owa_coreAPI {
 		}
 	}
 	
+	public static function getRegisteredDomain( $full_domain ) {
+		
+		static $psl;
+		
+		if ( ! $psl ) {
+			$psl = owa_coreAPI::supportClassFactory( 'base', 'pslReader' );
+		}
+		
+		return $psl->getRegisteredDomain( $full_domain );
+	}
+	
 	public static function persistSiteSetting($site_id, $name, $value) {
 		
 		$site = owa_coreAPI::entityFactory('base.site');
