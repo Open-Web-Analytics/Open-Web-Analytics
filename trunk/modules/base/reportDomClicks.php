@@ -54,8 +54,8 @@ class owa_reportDomClicksController extends owa_reportController {
 		if ($this->getParam('document_id')) {
 			$did = $this->getParam('document_id');
 			$d->load( $did );
-			$pagePath = $d->get('uri');
-			$this->set('constraints', 'pagePath=='.urlencode($pagePath));
+			$pageUrl = $d->get('url');
+			$this->set('constraints', 'pageUrl=='.urlencode($pageUrl));
 			$title_slug = $pagePath;
 		}
 		
