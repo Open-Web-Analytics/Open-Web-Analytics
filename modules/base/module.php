@@ -2268,67 +2268,36 @@ class owa_baseModule extends owa_module {
 	function resolveHost($remote_host = '', $ip_address = '') {
 	
 		// See if host is already resolved
-		if (empty($remote_host)) {
+		if ( ! $remote_host && owa_coreAPI::getSetting('base', 'resolve_hosts') ) {
 			
 			// Do the host lookup
-			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
-				$remote_host = @gethostbyaddr($ip_address);
-			}
 			
+			$remote_host = @gethostbyaddr( $ip_address );
+			
+			if ($remote_host &&
+				$remote_host != $ip_address &&
+				$remote_host != 'unknown') {
+				
+				return $remote_host;	
+			}
 		}
-		
-		return $remote_host;
 	}
 	
 	function getHostDomain($fullhost = '', $ip_address = '') {
-	
-		$host = '';
-		
-		if (!empty($fullhost)) {
-			
-			$host = '';
+					
+		if ( $fullhost ) {
 			
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
 			if ($fullhost === 'localhost') {
 				$host = 'localhost';
-			} elseif ($fullhost === 'unknown') {
-				$host = $ip_address;
-			} elseif ($fullhost != $ip_address) {
-		
-				$host_array = explode('.', $fullhost);
-				
-				// resort so top level domain is first in array
-				$host_array = array_reverse($host_array);
-				
-				// array of tlds. this should probably be in the config array not here.
-				$tlds = array('com', 'net', 'org', 'gov', 'mil', 'edu');
-				
-				// if it's not a standard tld then use third piece of the domain
-				if ( ! in_array( $host_array[0], $tlds ) ) {
-					
-					if ( isset( $host_array[2] ) ) {
-					
-						$host .= $host_array[2] . '.';
-					}
-				}
-
-				if ( isset( $host_array[1] ) ) {
-					
-					$host .= $host_array[1] . '.';
-				}
-				
-				if ( isset( $host_array[0] ) ) {
-					
-					$host .= $host_array[0];
-				}				
-			}
-				
-		} else {
-		
-			$host = $ip_address;
+			} else {
+				// lookup the registered domain using the Public Suffix List.
+				$host = owa_coreAPI::getRegisteredDomain($fullhost);
+				owa_coreAPI::debug("Registered domain is: $host");
+			}	
+			
+			return $host;	
 		}
-		
-		return $host;
 	}
 	
 	/**
