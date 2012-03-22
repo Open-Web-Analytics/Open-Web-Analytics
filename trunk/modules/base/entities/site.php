@@ -85,9 +85,9 @@ class owa_site extends owa_entity {
 		
 		$settings = $this->get('settings');
 
-		if (!empty($settings)) {
+		if ( ! empty( $settings ) ) {
 		
-			if ( array_key_exists($name, $settings) ) {
+			if ( array_key_exists( $name, $settings ) ) {
 			
 				return $settings[$name];
 			}
