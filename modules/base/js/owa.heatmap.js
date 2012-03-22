@@ -212,7 +212,7 @@ OWA.heatmap.prototype = {
 		//params.action = 'base.reportOverlay';
 		//params.document_url = OWA.util.urlEncode(document.location);
 		params.action = 'getDomClicks';
-		params.pageUrl = OWA.util.urlEncode(document.location);
+		//params.pageUrl = OWA.util.urlEncode(document.location);
 		//params.document_url = document.location;
 		//OWA.debug('encoded url: '+OWA.util.urlEncode(document.location));
 		params.resultsPerPage = this.options.rowsPerFetch;
