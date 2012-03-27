@@ -44,41 +44,13 @@ class owa_requestContainer {
 	var $timestamp;
 	
 	/**
-	 * Singleton returns request params
-	 *
-	 * @return array
-	 * @todo DEPRICATED
+	 * Constructor
+	 * 
 	 */
-	function &getInstance() {
-		
-		static $params;
-		
-		if(empty($params)):
-			
-			$params = owa_lib::getRequestParams();
-			// Clean Input arrays
-			$params = owa_lib::inputFilter($params);
-			//strip all params that do not include the namespace
-			$params = owa_lib::stripParams($params, owa_coreAPI::getSetting('base', 'ns'));
-			// translate certain request variables that are reserved in javascript
-			$params = owa_lib::rekeyArray($params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
-			
-			$params['guid'] = crc32(microtime().getmypid());
-			
-			return $params;
-			
-		else:
-		
-			return $params;
-		
-		endif;
-		
-	}
-	
 	function __construct() {
 		
 		$this->timestamp = time();
-		$this->guid = crc32(microtime().getmypid());
+		$this->guid = owa_lib::generateRandomUid();
 		
 		// php's server variables
 		$this->server = $_SERVER;
