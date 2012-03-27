@@ -80,12 +80,6 @@ class owa_requestContainer {
 		$this->timestamp = time();
 		$this->guid = crc32(microtime().getmypid());
 		
-		// CLI args
-		if (array_key_exists('argv', $_SERVER)) {
-			
-			$this->cli_args = $_SERVER['argv'];
-		}
-		
 		// php's server variables
 		$this->server = $_SERVER;
 		
@@ -155,29 +149,38 @@ class owa_requestContainer {
 		// create request params from GET or POST or CLI args
 		$params = array();
 		
-		if (!empty($_POST)) {
+		
+		if ( isset($_SERVER['REQUEST_METHOD'] ) && 
+		     $_SERVER['REQUEST_METHOD'] == 'POST' ) {
+		     
 			// get params from _POST
 			$params = $_POST;
 			$this->request_type = 'post';
-		} elseif (!empty($_GET)) {
-			// get params from _GET
+		
+		} elseif ( isset( $_SERVER['REQUEST_METHOD'] ) && 
+		           $_SERVER['REQUEST_METHOD'] == 'GET' ) {
+		    
+		    // get params from _GET
 			$params = $_GET;
 			$this->request_type = 'get';
-		} elseif (!empty($this->cli_args)) {
+			
+		} elseif ( isset( $_SERVER['argv'] ) ) {
+			
+			$this->cli_args = $_SERVER['argv'];
 			// get params from the command line args
 			// $argv is a php super global variable
 			
-			   for ($i=1; $i<count($this->cli_args);$i++) {
-				   $it = explode("=",$this->cli_args[$i]);
-				   
-				   if ( isset( $it[1] ) ) {
-				   		$params[ $it[0] ] = $it[1];
-				   } else {
-				   		$params[ $it[0] ] = '';
-				   }
-			   }
-			   
-			   $this->request_type = 'cli';
+			for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
+				$it = explode( "=", $this->cli_args[$i] );
+			  
+				if ( isset( $it[1] ) ) {
+			   		$params[ $it[0] ] = $it[1];
+			   	} else {
+			   		$params[ $it[0] ] = '';
+			   	}
+		   	}
+		   
+			$this->request_type = 'cli';
 		}
 		
 		// Clean Input arrays
