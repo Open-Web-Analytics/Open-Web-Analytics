@@ -116,32 +116,31 @@ class owa_requestContainer {
 			$this->state->setInitialState( $k, $owa_cookie );
 		}
 		
-		
-		//print_r($this->state);
 		// create request params from GET or POST or CLI args
 		$params = array();
 		
-		
-		if ( isset($_SERVER['REQUEST_METHOD'] ) && 
-		     $_SERVER['REQUEST_METHOD'] == 'POST' ) {
-		     
-			// get params from _POST
-			$params = $_POST;
-			$this->request_type = 'post';
-		
-		} elseif ( isset( $_SERVER['REQUEST_METHOD'] ) && 
-		           $_SERVER['REQUEST_METHOD'] == 'GET' ) {
-		    
-		    // get params from _GET
+		// use GET vars as the base for the request
+		if ( isset( $_GET ) && ! empty( $_GET ) ) {
+			// get params from _GET
 			$params = $_GET;
-			$this->request_type = 'get';
 			
-		} elseif ( isset( $_SERVER['argv'] ) ) {
+			$this->request_type = 'get';
+		}
+		
+		// merge in POST vars. GET and POST can occure on the same request.
+		if ( isset( $_POST ) && ! empty( $_POST ) ) {
+			// get params from _GET
+			$params = array_merge( $params, $_POST);
+			
+			$this->request_type = 'post';
+		}
+		
+		// look for command line arguments in the 'argv' index.	
+		if ( isset( $_SERVER['argv'] ) ) {
 			
 			$this->cli_args = $_SERVER['argv'];
-			// get params from the command line args
-			// $argv is a php super global variable
 			
+			// parse arguments into key value pairs
 			for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
 				$it = explode( "=", $this->cli_args[$i] );
 			  
@@ -157,6 +156,8 @@ class owa_requestContainer {
 		
 		// Clean Input arrays
 		$this->request = owa_lib::inputFilter($params);
+		
+		// strip action and do params of nasty include exploits.
 		if (array_key_exists('owa_action', $this->request)) {
 			
 			$this->request['owa_action'] = owa_lib::fileInclusionFilter($this->request['owa_action']);
@@ -166,12 +167,15 @@ class owa_requestContainer {
 			
 			$this->request['owa_do'] = owa_lib::fileInclusionFilter($this->request['owa_do']);
 		}
+		
 		// strip owa namespace
 		$this->owa_params = owa_lib::stripParams($this->request, owa_coreAPI::getSetting('base', 'ns'));
+		
 		// translate certain request variables that are reserved in javascript
 		$this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 		
-		if(isset($_SERVER['HTTPS'])) {
+		// set https flag
+		if( isset($_SERVER['HTTPS'] ) ) {
 			$this->is_https = true;
 		}
 	}
