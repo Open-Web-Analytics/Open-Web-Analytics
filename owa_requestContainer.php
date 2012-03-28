@@ -156,20 +156,21 @@ class owa_requestContainer {
 		
 		// Clean Input arrays
 		$this->request = owa_lib::inputFilter($params);
-		
+		// get namespace
+		$ns = owa_coreAPI::getSetting('base', 'ns');
 		// strip action and do params of nasty include exploits.
-		if (array_key_exists('owa_action', $this->request)) {
+		if (array_key_exists( $ns.'action', $this->request)) {
 			
-			$this->request['owa_action'] = owa_lib::fileInclusionFilter($this->request['owa_action']);
+			$this->request[$ns.'action'] = owa_lib::fileInclusionFilter($this->request[$ns.'action']);
 		}
 		
-		if (array_key_exists('owa_do', $this->request)) {
+		if (array_key_exists($ns.'do', $this->request)) {
 			
-			$this->request['owa_do'] = owa_lib::fileInclusionFilter($this->request['owa_do']);
+			$this->request[$ns.'do'] = owa_lib::fileInclusionFilter($this->request[$ns.'do']);
 		}
 		
 		// strip owa namespace
-		$this->owa_params = owa_lib::stripParams($this->request, owa_coreAPI::getSetting('base', 'ns'));
+		$this->owa_params = owa_lib::stripParams($this->request, $ns);
 		
 		// translate certain request variables that are reserved in javascript
 		$this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
