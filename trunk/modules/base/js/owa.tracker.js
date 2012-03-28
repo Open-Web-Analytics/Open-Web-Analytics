@@ -1099,7 +1099,6 @@ OWA.tracker.prototype = {
 	postFromIframe: function( ifr, data ) {
 	
 		var post_url = this.getLoggerEndpoint();
-		//var ifr = document.getElementById('someid');
 		var doc = this.getIframeDocument(ifr);
 	    // create form
 	    var frm = doc.createElement('form');
