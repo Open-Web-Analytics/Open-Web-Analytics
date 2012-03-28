@@ -131,12 +131,12 @@ class owa_requestContainer {
 		if ( isset( $_POST ) && ! empty( $_POST ) ) {
 			// get params from _GET
 			$params = array_merge( $params, $_POST);
-			
+
 			$this->request_type = 'post';
 		}
-		
+			
 		// look for command line arguments in the 'argv' index.	
-		if ( isset( $_SERVER['argv'] ) ) {
+		if ( ! $this->request_type && isset( $_SERVER['argv'] ) ) {
 			
 			$this->cli_args = $_SERVER['argv'];
 			
@@ -150,7 +150,7 @@ class owa_requestContainer {
 			   		$params[ $it[0] ] = '';
 			   	}
 		   	}
-		   
+		  
 			$this->request_type = 'cli';
 		}
 		

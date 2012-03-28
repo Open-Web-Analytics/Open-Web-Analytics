@@ -1054,11 +1054,55 @@ OWA.tracker.prototype = {
 			iframe_container = document.getElementById( container_id );
 		}		
 		
-		// create iframe
-		var ifr = this.generateHiddenIframe( iframe_container );
+		// create iframe and post data once its fully loaded.
+		this.generateHiddenIframe( iframe_container, data );
+	},
+	
+	/**
+	 * Generates a hidden 1x1 pixel iframe
+	 */
+	generateHiddenIframe: function ( parentElement, data ) {
+	    
+	    // Create the iframe which will be returned
+	    var iframe = document.createElement("iframe");
+	    var iframe_name = 'owa-tracker-post-iframe';
+	    iframe.setAttribute('class', iframe_name);
+	    //iframe.setAttribute('name', iframe_name);
+		iframe.setAttribute('width', 1);
+    	iframe.setAttribute('height', 1);
+    	iframe.setAttribute('style', 'border: none;');
+    	//iframe.onload = function () { this.postFromIframe( data );};
     	
+    	var that = this;
+    	
+    	// If no parent element is specified then use body as the parent element
+		if ( parentElement == null ) {
+			parentElement = document.body;
+	 	}
+		// This is necessary in order to initialize the document inside the iframe
+		parentElement.appendChild(iframe);
+		
+		// set a timer to check and see if the iframe is fully loaded.
+		// without this there is a race condition in IE8
+		var timer = setTimeout( function() {
+        	
+        	var doc = that.getIframeDocument(iframe);
+            
+            if (doc) {
+            	that.postFromIframe(iframe, data);
+            }
+            
+            clearTimeout(timer)
+        }, 1 );
+	},
+	
+	postFromIframe: function( ifr, data ) {
+	
+		var post_url = this.getLoggerEndpoint();
+		//var ifr = document.getElementById('someid');
+		var doc = this.getIframeDocument(ifr);
 	    // create form
-	    var frm = ifr.doc.createElement('form');
+	    var frm = doc.createElement('form');
 	    var form_name = 'post_form' + Math.random();
 	    frm.setAttribute( 'id', form_name );
 	    frm.setAttribute( 'name', form_name );
@@ -1077,60 +1121,43 @@ OWA.tracker.prototype = {
     			frm.appendChild( input );
 			}
 		}
-	
+		
 	    // add form to iframe
-	    ifr.doc.body.appendChild( frm );
+	    doc.body.appendChild( frm );
 	    //submit the form inside the iframe
-	    ifr.doc.forms[form_name].submit();
+	    doc.forms[form_name].submit();
  		// remove the form from iframe to clean things up
-  		ifr.doc.body.removeChild( frm );
+  		doc.body.removeChild( frm );
+  		
+  		
+		
 	},
 	
-	/**
-	 * Generates a hidden 1x1 pixel iframe
-	 */
-	generateHiddenIframe: function ( parentElement ) {
-	    
-	    // Create the iframe which will be returned
-	    var iframe = document.createElement("iframe");
-	    var iframe_name = 'owa-tracker-post-iframe';
-	    iframe.setAttribute('class', iframe_name);
-	    //iframe.setAttribute('name', iframe_name);
-		iframe.setAttribute('width', 1);
-    	iframe.setAttribute('height', 1);
-    	iframe.setAttribute('style', 'border: none;');
-    	
-    	// If no parent element is specified then use body as the parent element
-		if ( parentElement == null ) {
-			parentElement = document.body;
-	 	}
-		// This is necessary in order to initialize the document inside the iframe
-		parentElement.appendChild(iframe);
+	getIframeDocument: function ( iframe ) {
 		
 		// Initiate the iframe's document to null
-		iframe.doc = null;
+		var doc = null;
 		
 		// Depending on browser platform get the iframe's document, this is only
 		// available if the iframe has already been appended to an element which
 		// has been added to the document
 		if( iframe.contentDocument ) {
 			// Firefox, Opera
-			iframe.doc = iframe.contentDocument;
-		} else if( iframe.contentWindow ) {
+			doc = iframe.contentDocument;
+		} else if( iframe.contentWindow && iframe.contentWindow.document ) {
 			// Internet Explorer
-			iframe.doc = iframe.contentWindow.document;
+			doc = iframe.contentWindow.document;
 		} else if(iframe.document) {
 			// Others?
-			iframe.doc = iframe.document;
+			doc = iframe.document;
 		}
 		
 		// If we did not succeed in finding the document then throw an exception
-		if( iframe.doc == null ) {
+		if( doc == null ) {
 			OWA.debug("Document not found, append the parent element to the DOM before creating the IFrame");
 		}
-		// Return the iframe, now with an extra property iframe.doc containing the
-		// iframe's document
-		return iframe;
+		
+		return doc;
 	},
 	
 	getViewportDimensions : function() {
