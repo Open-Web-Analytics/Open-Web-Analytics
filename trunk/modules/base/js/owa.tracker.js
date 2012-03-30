@@ -199,8 +199,9 @@ OWA.tracker = function( options ) {
 	}
 	
 	// private vars
-	this.ecommerce_transaction = '',
+	this.ecommerce_transaction = '';
 	this.isClickTrackingEnabled = false;
+	this.domstream_guid = '';
 	
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
@@ -757,26 +758,28 @@ OWA.tracker.prototype = {
 	
 	logDomStream : function() {
     	
-    	this.domstream = this.domstream || new OWA.event;
+    	var domstream = new OWA.event;
     	
     	if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
     		
 			// make an domstream_id if one does not exist. needed for upstream processing
-			if ( ! this.domstream.get('domstream_guid') ) {
+			if ( ! this.domstream_guid ) {
 				var salt = 'domstream' + this.page.get('page_url') + this.getSiteId();
-				this.domstream.set( 'domstream_guid', OWA.util.generateRandomGuid( salt ) );
+				this.domstream_guid = OWA.util.generateRandomGuid( salt );
 			}
-			
-			this.domstream.setEventType( 'dom.stream' );
-			this.domstream.set( 'site_id', this.getSiteId());
-			this.domstream.set( 'page_url', this.page.get('page_url') );
-			//this.domstream.set( 'timestamp', this.startTime);
-			this.domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
-			this.domstream.set( 'duration', this.getElapsedTime());
-			this.domstream.set( 'stream_events', JSON.stringify(this.event_queue));
-			this.domstream.set( 'stream_length', this.event_queue.length );
-			this.trackEvent( this.domstream );
+			domstream.setEventType( 'dom.stream' );
+			domstream.set( 'domstream_guid', this.domstream_guid );
+			domstream.set( 'site_id', this.getSiteId());
+			domstream.set( 'page_url', this.page.get('page_url') );
+			//domstream.set( 'timestamp', this.startTime);
+			domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
+			domstream.set( 'duration', this.getElapsedTime());
+			domstream.set( 'stream_events', JSON.stringify(this.event_queue));
+			domstream.set( 'stream_length', this.event_queue.length );
+			// clear event queue now instead of waiting for new trackevent
+			// which might be delayed if using an ifram to POST data
 			this.event_queue = [];
+			this.trackEvent( domstream );
 	
 		} else {
 			OWA.debug("Domstream had too few events to log.");
