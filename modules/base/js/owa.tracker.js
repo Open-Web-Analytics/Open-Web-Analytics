@@ -1083,19 +1083,21 @@ OWA.tracker.prototype = {
 			parentElement = document.body;
 	 	}
 		// This is necessary in order to initialize the document inside the iframe
-		parentElement.appendChild(iframe);
+		parentElement.appendChild( iframe );
 		
 		// set a timer to check and see if the iframe is fully loaded.
 		// without this there is a race condition in IE8
-		var timer = setTimeout( function() {
+		var timer = setInterval( function() {
         	
-        	var doc = that.getIframeDocument(iframe);
+        	var doc = that.getIframeDocument( iframe );
             
-            if (doc) {
+            if ( doc ) {
             	that.postFromIframe(iframe, data);
+				clearInterval(timer);
             }
+			
+			            
             
-            clearTimeout(timer)
         }, 1 );
 	},
 	
