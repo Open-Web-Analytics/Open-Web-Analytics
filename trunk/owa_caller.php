@@ -129,6 +129,12 @@ class owa_caller extends owa_base {
 			$this->e->logPhpErrors();
 		}
 		
+		if (defined('OWA_MAIL_EXCEPTIONS')) {
+			set_exception_handler( array($this->e, 'mailException') );
+			
+		}
+		
+		
 		/* LOAD SERVICE LAYER */
 		$this->service = owa_coreAPI::serviceSingleton();
 		// initialize framework
