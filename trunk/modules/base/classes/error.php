@@ -410,7 +410,9 @@ class owa_error {
 	
 	function mailException($exception) {
 		owa_coreAPI::debug('heelo');
-  		 $body = "Uncaught exception: " . $exception->getMessage() . "\n";
+  		 $body = "Uncaught exception: " . $exception->getTraceAsString() . "\n";
+  		 $body .= "POST: ". print_r($_POST, true) . "\n";
+  		 $body .= "GET: ". print_r($_GET, true) . "\n";
   		 $body .= "Request: ". print_r($_REQUEST, true) . "\n";
   		 $body .= "Server: ". print_r($_SERVER, true) . "\n";
   		 
