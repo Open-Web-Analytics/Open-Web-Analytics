@@ -71,7 +71,7 @@ class owa_visitorHandlers extends owa_observer {
 		} else {
 			
 			owa_coreAPI::debug("Not updating... Visitor already exists.");
-			
+			return OWA_EHS_EVENT_HANDLED;
 		}	
     }
 }
