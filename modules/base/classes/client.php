@@ -54,7 +54,7 @@ class owa_client extends owa_caller {
 		$this->pageview_event = $this->makeEvent();
 		$this->pageview_event->setEventType('base.page_request');
 		// Set the page url from environmental vars
-		$this->setGlobalEventProperty( 'page_url', owa_lib::get_current_url() );
+		$this->setGlobalEventProperty( 'page_url', owa_coreAPI::getCurrentUrl() );
 		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
 		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
 		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie', true);

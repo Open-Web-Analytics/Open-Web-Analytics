@@ -1459,6 +1459,11 @@ class owa_coreAPI {
 			return false;
 		}
 	}
+	
+	public static function getCurrentUrl() {
+		$r = owa_coreAPI::requestContainerSingleton();
+		return $r->getCurrentUrl();	
+	}
 }
 
 ?>

@@ -42,6 +42,7 @@ class owa_requestContainer {
 	var $state;
 	var $request_type;
 	var $timestamp;
+	var $current_url;
 	
 	/**
 	 * Constructor
@@ -152,6 +153,11 @@ class owa_requestContainer {
 		   	}
 		  
 			$this->request_type = 'cli';
+		}
+		
+		if ($this->request_type = 'get' || $this->request_type = 'post') {
+			
+			$this->current_url = owa_lib::get_current_url();
 		}
 		
 		// Clean Input arrays
@@ -281,6 +287,11 @@ class owa_requestContainer {
 	public function getTimestamp() {
 		
 		return $this->timestamp;
+	}
+	
+	public function getCurrentUrl() {
+		
+		return $this->current_url;
 	}
 	
 }
