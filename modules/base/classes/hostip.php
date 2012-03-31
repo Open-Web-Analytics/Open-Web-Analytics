@@ -123,7 +123,7 @@ class owa_hostip extends owa_location {
 					$country = $country_parts[0];
 					// if there is a second element then it's a country code.
 					if ( isset($country_parts[1] ) ) {	
-						$country_code = substr($country_code,0,-1);
+						$country_code = substr($country_parts[1],0,-1);
 					}
 					// debug
 					owa_coreAPI::debug('Parse of Hostip country string: '.$result['Country'].' c: '. $country.' cc: '.$country_code);
