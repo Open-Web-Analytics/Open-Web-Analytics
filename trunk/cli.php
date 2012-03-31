@@ -17,7 +17,7 @@
 // 
 
 require_once('owa_env.php');
-require_once(OWA_DIR.'owa_php.php');
+require_once(OWA_DIR.'owa_caller.php');
 require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
@@ -57,7 +57,7 @@ if (!empty($_POST)) {
 }
 
 // Initialize owa
-$owa = new owa_php;
+$owa = new owa_caller;
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 

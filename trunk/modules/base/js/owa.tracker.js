@@ -71,6 +71,14 @@ OWA.event.prototype = {
 				this.set(param, properties[param]);
 			}
 	    }
+	},
+	
+	isSet : function( name ) {
+		
+		if ( this.properties.hasOwnProperty( name ) ) {
+		
+			return true;
+		}
 	}
 }
 
@@ -926,7 +934,13 @@ OWA.tracker.prototype = {
     	
     	OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );	
     	for ( prop in this.globalEventProperties ) {
-    		event.set( prop, this.globalEventProperties[prop] );
+    	
+    		// only set global properties is they are not already set on the event
+    		if ( this.globalEventProperties.hasOwnProperty( prop )  
+    		     && ! event.isSet( prop ) )
+    		{	
+    			event.set( prop, this.globalEventProperties[prop] );
+    		}
     	}
     },
 
