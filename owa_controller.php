@@ -159,6 +159,14 @@ class owa_controller extends owa_base {
 		}
 		
 		
+					
+		
+		
+		/* CHECK USER FOR CAPABILITIES */
+		if (!$this->checkCapabilityAndAuthenticateUser($this->getRequiredCapability())) {
+			return $this->data;
+		}
+		
 		/* Check validity of nonce */		 
 		if ($this->is_nonce_required == true) {
 			$nonce = $this->getParam('nonce');
@@ -167,14 +175,8 @@ class owa_controller extends owa_base {
 				$this->e->debug('Nonce is not valid.');
 				return $this->finishActionCall($this->notAuthenticatedAction());
 			}
-		}				
-		
-		
-		/* CHECK USER FOR CAPABILITIES */
-		if (!$this->checkCapabilityAndAuthenticateUser($this->getRequiredCapability())) {
-			return $this->data;
 		}
-
+		
 		// TODO: These sets need to be removed and added to pre(), action() or post() methods 
 		// in various concrete controller classes as they screw up things when 
 		// redirecting from one controller to another.
@@ -555,7 +557,7 @@ class owa_controller extends owa_base {
 		}
 		
 		$matching_nonce = owa_coreAPI::createNonce($action);
-		//owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
+		owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
 		if ($nonce === $matching_nonce) {
 			return true;
 		}
