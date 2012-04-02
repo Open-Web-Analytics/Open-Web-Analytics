@@ -38,11 +38,12 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	// log event
 	$ret = $owa->logEventFromUrl();
 	
-	$r = owa_coreAPI::requestContainerSingleton();
-	$rt = $r->getRequestType();	
-	
+	$s = owa_coreAPI::serviceSingleton();
+	$rt = $s->request->getRequestType();	
+	owa_coreAPI::debug('request type. '.$rt);
 	if ($rt === 'post') {
-		owa_lib::redirectBrowser( owa_coreAPI::getSetting('base', 'main_url').'/blank.php');
+		
+		owa_lib::redirectBrowser( owa_coreAPI::getSetting('base', 'public_url').'blank.php');
 	} else {
 		echo owa_coreAPI::displayView(array(), 'base.pixel');
 	}
