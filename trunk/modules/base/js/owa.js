@@ -1874,6 +1874,13 @@ OWA.util =  {
 	        partA.push(partB);
 	        return partA;
 	    }
+	},
+	
+	isIE: function() {
+		
+		if (/MSIE (\d+\.\d+);/.test(navigator.userAgent)) {
+			return true;
+		}
 	}
 	
 };

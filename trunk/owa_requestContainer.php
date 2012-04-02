@@ -294,6 +294,11 @@ class owa_requestContainer {
 		return $this->current_url;
 	}
 	
+	public function getRequestType() {
+		
+		return $this->request_type;
+	}
+	
 }
 
 ?>
