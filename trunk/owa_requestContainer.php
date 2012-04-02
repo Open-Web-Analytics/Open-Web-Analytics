@@ -40,7 +40,7 @@ class owa_requestContainer {
 	var $server;
 	var $guid;
 	var $state;
-	var $request_type;
+	var $request_type = '';
 	var $timestamp;
 	var $current_url;
 	
@@ -155,7 +155,7 @@ class owa_requestContainer {
 			$this->request_type = 'cli';
 		}
 		
-		if ($this->request_type = 'get' || $this->request_type = 'post') {
+		if ( $this->request_type === 'get' || $this->request_type === 'post' ) {
 			
 			$this->current_url = owa_lib::get_current_url();
 		}
