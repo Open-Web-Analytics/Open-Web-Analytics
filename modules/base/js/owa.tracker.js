@@ -1130,12 +1130,12 @@ OWA.tracker.prototype = {
 		var form_name = 'post_form' + Math.random();
 		
 		// cannot set the name of an element using setAttribute
-		if ( OWA.util.isIE() ) {
-			var frm = doc.createElement('<form name="' + form_name + '"></form>');
-		} else {
+		//if ( OWA.util.isIE() ) {
+		//	var frm = doc.createElement('<form name="' + form_name + '"></form>');
+		//} else {
 			var frm = doc.createElement('form');
-			frm.setAttribute( 'name', form_name );
-		}
+		//	frm.setAttribute( 'name', form_name );
+		//}
 		
 	    frm.setAttribute( 'id', form_name );
  		frm.setAttribute("action", post_url);
@@ -1164,6 +1164,7 @@ OWA.tracker.prototype = {
   		
 	},
 	
+	//depricated
 	createPostForm : function () {
 		
 		var post_url = this.getLoggerEndpoint();
@@ -1223,6 +1224,9 @@ OWA.tracker.prototype = {
 		if( doc == null ) {
 			OWA.debug("Document not found, append the parent element to the DOM before creating the IFrame");
 		}
+		
+		doc.open();
+        doc.close();
 		
 		return doc;
 	},
