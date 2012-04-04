@@ -85,11 +85,12 @@ OWA.event.prototype = {
 OWA.commandQueue = function() {
 
 	OWA.debug('Command Queue object created');
+	var asyncCmds = [];
 }
 
 OWA.commandQueue.prototype = {
-	asyncCmds: '',
-	push : function (cmd) {
+	
+	push : function (cmd, callback) {
 		
 		//alert(func[0]);
 		var args = Array.prototype.slice.call(cmd, 1);
@@ -118,6 +119,10 @@ OWA.commandQueue.prototype = {
 		}
 		
 		window[obj_name][method].apply(window[obj_name], args);
+		
+		if ( callback && ( typeof callback == 'function') ) {
+			callback();
+		}
 	},
 	
 	loadCmds: function(cmds) {
@@ -127,9 +132,24 @@ OWA.commandQueue.prototype = {
 	
 	process: function() {
 		
+		var that = this;
+		var callback = function () {
+        	// when the handler says it's finished (i.e. runs the callback)
+        	// We check for more tasks in the queue and if there are any we run again
+        	if (that.asyncCmds.length > 0) {
+            	that.process();
+         	}
+        }
+        
+        // give the first item in the queue & the callback to the handler
+        this.push(this.asyncCmds.shift(), callback);
+        
+     
+		/*
 		for (var i=0; i < this.asyncCmds.length;i++) {
 			this.push(this.asyncCmds[i]);
 		}
+		*/
 	}
 };
 
