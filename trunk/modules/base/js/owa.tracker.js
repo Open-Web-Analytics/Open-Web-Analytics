@@ -925,16 +925,22 @@ OWA.tracker.prototype = {
 	    		this.setCampaignRelatedProperties(event);
 	    	} else {
 	    		// else we are in first party mode, so manage state on the client.
-	    		this.manageState(event);
+	    		//this.manageState(event);
+	    		var that = this;
+	    		this.manageState( event, function(event) {
+	    			that.addGlobalPropertiesToEvent( event, function(event) {
+	    				return that.logEvent( event.getProperties(), block_flag );
+	    			});
+	    		});
 	    	}
 	    	
-	    	this.addGlobalPropertiesToEvent( event );
+	    	//this.addGlobalPropertiesToEvent( event );
 	    	//OWA.debug('post global event: %s', JSON.stringify(event));
-	    	return this.logEvent( event.getProperties(), block_flag );
+	    	//return this.logEvent( event.getProperties(), block_flag );
 	    }
     },
     
-    addGlobalPropertiesToEvent : function ( event ) {
+    addGlobalPropertiesToEvent : function ( event, callback ) {
     	
     	// add custom variables to global properties if not there already
     	for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
@@ -962,12 +968,17 @@ OWA.tracker.prototype = {
     			event.set( prop, this.globalEventProperties[prop] );
     		}
     	}
+    	
+    	if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
+    	
     },
 
     /** 
      * Logs event by inserting 1x1 pixel IMG tag into DOM
      */
-    logEvent : function (properties, block) {
+    logEvent : function (properties, block, callback) {
     	
     	if (this.active) {
     	
@@ -989,6 +1000,10 @@ OWA.tracker.prototype = {
 					//OWA.debug(' blocking...');
 				}
 				OWA.debug('Inserted web bug for %s', properties['event_type']);
+			}
+			
+			if (callback && (typeof(callback) === "function")) {
+				callback();
 			}
 		}
     },
@@ -1983,7 +1998,7 @@ OWA.tracker.prototype = {
 		}
 	},
 	
-	manageState : function( event ) {
+	manageState : function( event, callback ) {
 		
 		if ( ! this.stateInit ) {
 			this.setVisitorId( event );
@@ -1994,6 +2009,10 @@ OWA.tracker.prototype = {
 			this.setDaysSinceLastSession( event );
 			this.setTrafficAttribution( event );
 			this.stateInit = true;
+		}
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
 		}
 	},
 	
