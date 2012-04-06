@@ -1157,7 +1157,7 @@ OWA.tracker.prototype = {
 	},
 	
 	postFromIframe: function( ifr, data ) {
-	
+		
 		var post_url = this.getLoggerEndpoint();
 		var doc = this.getIframeDocument(ifr);
 	    // create form
@@ -1165,12 +1165,12 @@ OWA.tracker.prototype = {
 		var form_name = 'post_form' + Math.random();
 		
 		// cannot set the name of an element using setAttribute
-		//if ( OWA.util.isIE() ) {
-		//	var frm = doc.createElement('<form name="' + form_name + '"></form>');
-		//} else {
+		if ( OWA.util.isIE() ) {
+			var frm = doc.createElement('<form name="' + form_name + '"></form>');
+		} else {
 			var frm = doc.createElement('form');
-		//	frm.setAttribute( 'name', form_name );
-		//}
+			frm.setAttribute( 'name', form_name );
+		}
 		
 	    frm.setAttribute( 'id', form_name );
  		frm.setAttribute("action", post_url);
@@ -1180,20 +1180,31 @@ OWA.tracker.prototype = {
 		for ( param in data ) {
 			
 			if (data.hasOwnProperty(param)) {
-				var input = this.createHiddenFormField( param, data[param] );
-				//var input = document.createElement( "input" );
-				//var input = document.createElement( '<input name="' + param + '">' );
-    			//input.setAttribute( "name",param );
-    			//input.setAttribute( "value", data[ param ] );
-    			//input.setAttribute( "type","hidden");
+				
+				// cannot set the name of an element using setAttribute
+				if ( OWA.util.isIE() ) {
+					var input = doc.createElement( "<input type='hidden' name='" + param + "' />" );
+					
+				} else {
+					var input = document.createElement( "input" );
+					input.setAttribute( "name",param );
+					input.setAttribute( "type","hidden");
+		
+				}
+				
+				input.setAttribute( "value", data[param] );
+				
     			frm.appendChild( input );
+    			
 			}
 		}
 		
 	    // add form to iframe
 	    doc.body.appendChild( frm );
+	    
 	    //submit the form inside the iframe
 	    doc.forms[form_name].submit();
+	    
  		// remove the form from iframe to clean things up
   		doc.body.removeChild( frm );
   		
@@ -1218,22 +1229,6 @@ OWA.tracker.prototype = {
  		frm.setAttribute("method", "POST");
  		
  		return frm;
-	},
-	
-	createHiddenFormField : function( name, value ) {
-		
-		// cannot set the name of an element using setAttribute
-		if ( OWA.util.isIE() ) {
-			var input = document.createElement( '<input name="' + name + '">' );
-		} else {
-			var input = document.createElement( "input" );
-			input.setAttribute( "name",name );
-		}
-		
-		input.setAttribute( "value", value );
-		input.setAttribute( "type","hidden");
-		
-		return input;
 	},
 	
 	getIframeDocument: function ( iframe ) {
