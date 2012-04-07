@@ -988,7 +988,9 @@ OWA.tracker.prototype = {
 	    	var url = this._assembleRequestUrl(properties);
 	    	var limit = this.getOption('getRequestCharacterLimit');
 	    	if ( url.length > limit ) {
-	    		this.cdPost( this.prepareRequestData( properties ) );
+	    		//this.cdPost( this.prepareRequestData( properties ) );
+	    		var data = this.prepareRequestData( properties );
+	    		this.cdPost( data );
 	    	} else {
 	    	
 		    	OWA.debug('url : %s', url);
