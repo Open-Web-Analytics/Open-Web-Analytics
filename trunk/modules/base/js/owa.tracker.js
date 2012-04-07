@@ -234,14 +234,8 @@ OWA.tracker = function( options ) {
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
 	
-	// set default page properties
+	// create page object.
 	this.page = new OWA.event();
-    this.page.set('page_url', document.URL);
-	this.setPageTitle(document.title);
-	this.page.set('timestamp', this.startTime);
-	
-	// set referer
-	this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
 	
 	// merge page properties from global owa_params object
 	if (typeof owa_params != 'undefined') {
@@ -627,7 +621,7 @@ OWA.tracker.prototype = {
 	 */
 	setPageTitle: function(title) {
 		
-		this.page.set("page_title", title);
+		this.setGlobalEventProperty("page_title", title);
 	},
 	
 	/**
@@ -635,7 +629,7 @@ OWA.tracker.prototype = {
 	 */
 	setPageType : function(type) {
 		
-		this.page.set("page_type", type);
+		this.setGlobalEventProperty("page_type", type);
 	},
 	
 	/**
@@ -701,15 +695,24 @@ OWA.tracker.prototype = {
 		return this.getOption('baseUrl');
 	},
 	
+	getCurrentUrl : function () {
+		
+		return document.URL
+	},
+	
 	/**
 	 * Logs a page view event
 	 */
 	trackPageView : function(url) {
 		
+		
 		if (url) {
 			this.page.set('page_url', url);
 		}
-		
+		// set default event properties
+    	//this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
+    	//this.setPageTitle(document.title);
+		this.page.set('timestamp', this.startTime);
 		this.page.setEventType("base.page_request");
 		
 		return this.trackEvent(this.page);
@@ -721,7 +724,7 @@ OWA.tracker.prototype = {
 		
 		event.setEventType('track.action');
 		event.set('site_id', this.getSiteId());
-		event.set('page_url', this.page.get('page_url'));
+		event.set('page_url', this.getCurrentUrl() );
 		event.set('action_group', action_group);
 		event.set('action_name', action_name);
 		event.set('action_label', action_label);
@@ -792,13 +795,13 @@ OWA.tracker.prototype = {
     		
 			// make an domstream_id if one does not exist. needed for upstream processing
 			if ( ! this.domstream_guid ) {
-				var salt = 'domstream' + this.page.get('page_url') + this.getSiteId();
+				var salt = 'domstream' + this.getCurrentUrl() + this.getSiteId();
 				this.domstream_guid = OWA.util.generateRandomGuid( salt );
 			}
 			domstream.setEventType( 'dom.stream' );
 			domstream.set( 'domstream_guid', this.domstream_guid );
 			domstream.set( 'site_id', this.getSiteId());
-			domstream.set( 'page_url', this.page.get('page_url') );
+			domstream.set( 'page_url', this.getCurrentUrl() );
 			//domstream.set( 'timestamp', this.startTime);
 			domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
 			domstream.set( 'duration', this.getElapsedTime());
@@ -902,14 +905,7 @@ OWA.tracker.prototype = {
     		// set default cookie domain
 			this.setCookieDomain();
     	}
-    	/*
-
-    	if ( this.linkedStateSet != true ) {
-    		//check for linked state send from another domain
-			this.checkForLinkedState();
-    	}
-    	
-		*/
+		    
     	if ( this.active ) {
 	    	if ( ! block ) {
 	    		block_flag = false;
@@ -929,18 +925,23 @@ OWA.tracker.prototype = {
 	    		var that = this;
 	    		this.manageState( event, function(event) {
 	    			that.addGlobalPropertiesToEvent( event, function(event) {
-	    				return that.logEvent( event.getProperties(), block_flag );
+	    				that.addDefaultsToEvent( event, function(event) {
+	    					return that.logEvent( event.getProperties(), block_flag );
+	    				});
 	    			});
 	    		});
 	    	}
-	    	
-	    	//this.addGlobalPropertiesToEvent( event );
-	    	//OWA.debug('post global event: %s', JSON.stringify(event));
-	    	//return this.logEvent( event.getProperties(), block_flag );
 	    }
     },
     
+    /**
+     * Applies global properties to any event that 
+     * were not already set locally by the method that
+     * created the event.
+     *
+     */
     addGlobalPropertiesToEvent : function ( event, callback ) {
+
     	
     	// add custom variables to global properties if not there already
     	for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
@@ -972,6 +973,32 @@ OWA.tracker.prototype = {
     	if (callback && (typeof(callback) === "function")) {
 			callback(event);
 		}
+    	
+    },
+    
+    /**
+     * Applies default values for required properties 
+     * to any event where the properties were not
+     * already set globally or locally.
+     */
+    addDefaultsToEvent : function ( event, callback ) {
+    	
+    	
+    	if ( ! event.get( 'page_url') ) {
+    		event.set('page_url', this.getCurrentUrl() );
+    	}
+    	
+    	if ( ! event.get( 'HTTP_REFERER') ) {
+    		event.set('HTTP_REFERER', document.referrer );
+    	}
+    	
+    	if ( ! event.get( 'page_title') ) {
+    		event.set('page_title', OWA.util.trim( document.title ) );
+    	}
+   		
+   		if (callback && ( typeof( callback ) == 'function' ) ) {
+   			callback( event );
+   		}
     	
     },
 
@@ -1958,7 +1985,7 @@ OWA.tracker.prototype = {
 		this.ecommerce_transaction.set( 'ct_tax', tax );
 		this.ecommerce_transaction.set( 'ct_shipping', shipping );
 		this.ecommerce_transaction.set( 'ct_gateway', gateway );
-		this.ecommerce_transaction.set( 'page_url', this.page.get('page_url') );
+		this.ecommerce_transaction.set( 'page_url', this.getCurrentUrl() );
 		this.ecommerce_transaction.set( 'city', city );
 		this.ecommerce_transaction.set( 'state', state );
 		this.ecommerce_transaction.set( 'country', country );
