@@ -238,8 +238,10 @@ class owa_fileCache extends owa_cache {
 	
 	function readDir($dir) {
 	
+		$data = array();
+		
 		if ($handle = opendir($dir)) {
- 	
+ 			
  			while (($file = readdir($handle)) !== false) {
 				
 				if (is_dir($dir.$file)) {
