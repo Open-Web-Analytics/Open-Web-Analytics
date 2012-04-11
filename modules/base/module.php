@@ -2233,27 +2233,31 @@ class owa_baseModule extends owa_module {
 	 */
 	function setIp($ip) {
 	
-		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');
+		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');	
 		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam('HTTP_CLIENT_IP');
 		
 		// check for a non-unknown proxy address
-		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
+		if ( $HTTP_X_FORWARDED_FOR && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
+				
+			if ( strpos( $HTTP_X_FORWARDED_FOR, ',' ) ) {
+				
+				$HTTP_X_FORWARDED_FOR = trim( end( explode( ',', $HTTP_X_FORWARDED_FOR ) ) );
+			} 
 			
-			// if more than one use the last one
-			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false) {
+			if ( filter_var( 
+					$HTTP_X_FORWARDED_FOR , 
+					FILTER_VALIDATE_IP, 
+					FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) 
+			) {
+			
 				$ip = $HTTP_X_FORWARDED_FOR;
-			} else {
-				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
-				$ip = $ips[0];
-			}
-		
-		// or else just use the remote address	
-		} else {
-		
-			if ($HTTP_CLIENT_IP) {
-		    	$ip = $HTTP_CLIENT_IP;
-			}
 			
+			}			
+			
+		// or else just use the remote address	
+		} elseif ( $HTTP_CLIENT_IP ) {
+		
+		    $ip = $HTTP_CLIENT_IP;	
 		}
 		
 		return $ip;
