@@ -1,4 +1,4 @@
-/* OWA owa.tracker package file created Sat, 07 Apr 12 01:37:03 -0700 */ 
+/* OWA owa.tracker package file created Wed, 11 Apr 12 02:18:51 -0400 */ 
 
 /* Start of json2 */ 
 
@@ -127,8 +127,8 @@ if(!limit){return string.toString().split(delimiter.toString());}else{var splitt
 /* Start of owa.tracker */ 
 
 
-OWA.event=function(){this.properties=new Object();this.set('timestamp',OWA.util.getCurrentUnixTimestamp());}
-OWA.event.prototype={id:'',siteId:'',properties:{},get:function(name){if(this.properties.hasOwnProperty(name)){return this.properties[name];}},set:function(name,value){this.properties[name]=value;},setEventType:function(event_type){this.set("event_type",event_type);},getProperties:function(){return this.properties;},merge:function(properties){for(param in properties){if(properties.hasOwnProperty(param)){this.set(param,properties[param]);}}},isSet:function(name){if(this.properties.hasOwnProperty(name)){return true;}}}
+OWA.event=function(){this.properties={};this.id='';this.siteId='';this.set('timestamp',OWA.util.getCurrentUnixTimestamp());}
+OWA.event.prototype={get:function(name){if(this.properties.hasOwnProperty(name)){return this.properties[name];}},set:function(name,value){this.properties[name]=value;},setEventType:function(event_type){this.set("event_type",event_type);},getProperties:function(){return this.properties;},merge:function(properties){for(param in properties){if(properties.hasOwnProperty(param)){this.set(param,properties[param]);}}},isSet:function(name){if(this.properties.hasOwnProperty(name)){return true;}}}
 OWA.commandQueue=function(){OWA.debug('Command Queue object created');var asyncCmds=[];}
 OWA.commandQueue.prototype={push:function(cmd,callback){var args=Array.prototype.slice.call(cmd,1);var obj_name='';var method='';var check=OWA.util.strpos(cmd[0],'.');if(!check){obj_name='OWATracker';method=cmd[0];}else{var parts=cmd[0].split('.');obj_name=parts[0];method=parts[1];}
 OWA.debug('cmd queue object name %s',obj_name);OWA.debug('cmd queue object method name %s',method);if(typeof window[obj_name]=="undefined"){OWA.debug('making global object named: %s',obj_name);window[obj_name]=new OWA.tracker({globalObjectName:obj_name});}

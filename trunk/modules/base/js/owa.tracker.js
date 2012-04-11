@@ -27,17 +27,13 @@
  */
 OWA.event = function() {
 
-	this.properties = new Object();
+	this.properties = {};
+	this.id = '';
+	this.siteId = '';
 	this.set('timestamp', OWA.util.getCurrentUnixTimestamp() );
 }
 
 OWA.event.prototype = {
-	
-	id : '',
-	
-	siteId : '',
-	
-	properties : {},
 	
 	get : function(name) {
 		
