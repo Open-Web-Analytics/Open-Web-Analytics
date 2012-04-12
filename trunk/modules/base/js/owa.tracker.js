@@ -324,10 +324,6 @@ OWA.tracker.prototype = {
 	 */ 
 	streamBindings : ['bindMovementEvents', 'bindScrollEvents','bindKeypressEvents', 'bindClickEvents'],
 	/**
-	 * Page view event
-	 */
-	page : '',
-	/**
 	 * Latest click event
 	 */
 	click : '',
@@ -834,61 +830,6 @@ OWA.tracker.prototype = {
     isObjectType : function(obj, type) {
     	return !!(obj && type && type.prototype && obj.constructor == type.prototype.constructor);
 	},
-
-    /*
-    getAjaxObj : function() {
-    
-    	if (window.XMLHttpRequest){
-			// If IE7, Mozilla, Safari, etc: Use native object
-			var ajax = new XMLHttpRequest()
-		} else {
-			
-			if (window.ActiveXObject){
-		          // ...otherwise, use the ActiveX control for IE5.x and IE6
-		          var ajax = new ActiveXObject("Microsoft.XMLHTTP"); 
-			}
-	
-		}
-		return ajax;
-    },
-    
-    ajaxGet : function(properties) {
-    	
-    	var url = this._assembleRequestUrl(properties);
-		var ajax = this.getAjaxObj();
-		ajax.open("GET", url, false); 
-		ajax.send(null);
-    },
-    
-    ajaxPost : function(properties) {
-    	
-    	var ajax = this.getAjaxObj();
-	    var params = this.prepareRequestParams(properties);
-	    
-		ajax.open("POST", this.getLoggerEndpoint(), false); 
-		//Send the proper header information along with the request
-		ajax.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		ajax.setRequestHeader("Content-length", params.length);
-		ajax.setRequestHeader("Connection", "close");
-		
-		ajax.onreadystatechange = function() {//Call a function when the state changes.
-			if(ajax.readyState == 4 && ajax.status == 200) {
-				//console.log("ajax response: %s", ajax.responseText);
-			}
-		}
-
-		ajax.send(params);
-    	
-    },
-    
-    ajaxJsonp : function (url) {                
-	   
-	    var script = document.createElement("script");        
-	    script.setAttribute("src",url);
-	    script.setAttribute("type","text/javascript");                
-	    document.body.appendChild(script);
-	},
-    */
         
     /** 
      * Sends an OWA event to the server for processing using GET
@@ -1017,7 +958,7 @@ OWA.tracker.prototype = {
 	    	} else {
 	    	
 		    	OWA.debug('url : %s', url);
-			   	image = new Image(1, 1);
+			   	var image = new Image(1, 1);
 			   	//expireDateTime = now.getTime() + delay;
 			   	image.onLoad = function () { };
 				image.src = url;
@@ -1054,7 +995,7 @@ OWA.tracker.prototype = {
 
 	prepareRequestData : function( properties ) {
     
-  		var data = {};
+  		var data = {_jsv: '1.5.3'};
     	
        	//assemble query string
 	    for ( param in properties ) {  
