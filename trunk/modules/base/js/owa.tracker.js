@@ -216,7 +216,7 @@ OWA.tracker = function( options ) {
 	
 	if ( options ) {
 		
-		for (opt in options) {
+		for (var opt in options) {
 			
 			this.options[opt] = options[opt];
 		}
@@ -842,11 +842,12 @@ OWA.tracker.prototype = {
     		// set default cookie domain
 			this.setCookieDomain();
     	}
-		    
+		
+		var block_flag = false;
+		
     	if ( this.active ) {
-	    	if ( ! block ) {
-	    		block_flag = false;
-	    	} else {
+	    	if ( block ) {
+	    		
 	    		block_flag = true;
 	    	}
 	    	
@@ -897,7 +898,7 @@ OWA.tracker.prototype = {
     	}
     	
     	OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );	
-    	for ( prop in this.globalEventProperties ) {
+    	for ( var prop in this.globalEventProperties ) {
     	
     		// only set global properties is they are not already set on the event
     		if ( this.globalEventProperties.hasOwnProperty( prop )  
@@ -998,18 +999,19 @@ OWA.tracker.prototype = {
   		var data = {_jsv: '1.5.3'};
     	
        	//assemble query string
-	    for ( param in properties ) {  
+	    for ( var param in properties ) {  
 	    	// print out the params
 			var value = '';
 				
 			if ( properties.hasOwnProperty( param ) ) {
 	  			
 	  			if ( OWA.util.is_array( properties[param] ) ) {
-				
-					for ( var i = 0, n = properties[param].length; i < n; i++ ) {
+					
+					var n = properties[param].length;
+					for ( var i = 0; i < n; i++ ) {
 						
 						if ( OWA.util.is_object( properties[param][i] ) ) {
-							for ( o_param in properties[param][i] ) {
+							for ( var o_param in properties[param][i] ) {
 								
 								data[ OWA.util.sprintf( OWA.getSetting('ns') + '%s[%s][%s]', param, i, o_param ) ] = OWA.util.urlEncode( properties[ param ][ i ][ o_param ] );
 							}
@@ -1034,7 +1036,7 @@ OWA.tracker.prototype = {
 
     	var get = '';
     	
-    	for ( param in properties ) {
+    	for ( var param in properties ) {
     		
     		if ( properties.hasOwnProperty( param ) ) {
 
@@ -1143,7 +1145,7 @@ OWA.tracker.prototype = {
  		frm.setAttribute("method", "POST");
  				
 		// create hidden inputs, add them to form
-		for ( param in data ) {
+		for ( var param in data ) {
 			
 			if (data.hasOwnProperty(param)) {
 				
@@ -2020,7 +2022,7 @@ OWA.tracker.prototype = {
 		var visitor_id =  OWA.getState( 'v', 'vid' );
 		//OWA.debug('vid: '+ visitor_id);
 		if ( ! visitor_id ) {
-			old_vid_test =  OWA.getState( 'v' );
+			var old_vid_test =  OWA.getState( 'v' );
 			//OWA.debug('vid: '+ visitor_id);
 			
 			if ( ! OWA.util.is_object( old_vid_test ) ) {
@@ -2181,7 +2183,7 @@ OWA.tracker.prototype = {
 	
 	setPageProperties : function ( properties ) {
 		
-		for (prop in properties) {
+		for (var prop in properties) {
 			
 			if ( properties.hasOwnProperty( prop ) ) {
 				this.page.set( prop, properties[prop] );
