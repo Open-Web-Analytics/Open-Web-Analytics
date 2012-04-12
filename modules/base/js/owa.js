@@ -267,6 +267,8 @@ OWA.stateManager.prototype = {
 			}
 		}
 		
+		var state_value = '';
+		
 		if (format === 'json') {
 			state_value = JSON.stringify(this.stores[store_name]);
 		} else {
@@ -1211,7 +1213,7 @@ OWA.util =  {
 			} else {
 				
 				var assoc = {};
-				outer_array = str.split(outer);
+				var outer_array = str.split(outer);
 				//OWA.debug('outer array: %s', JSON.stringify(outer_array));
 				for (var i = 0, n = outer_array.length; i < n; i++) {
 				
@@ -1232,7 +1234,7 @@ OWA.util =  {
 		var i = 0;
 		var count = OWA.util.countObjectProperties(obj);
 		
-		for (prop in obj) {
+		for (var prop in obj) {
 			i++;
 			string += prop + '=>' + obj[prop];
 			
@@ -1747,7 +1749,7 @@ OWA.util =  {
 	clone : function (mixed) {
 		
 		var newObj = (mixed instanceof Array) ? [] : {};
-		for (i in mixed) {
+		for (var i in mixed) {
 			if (mixed[i] && (typeof mixed[i] == "object") ) {
 				newObj[i] = OWA.util.clone(mixed[i]);
 			} else {
