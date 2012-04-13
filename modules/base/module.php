@@ -2231,13 +2231,13 @@ class owa_baseModule extends owa_module {
 	 * @return string
 	 * @access private
 	 */
-	function setIp($ip) {
+	function setIp( $ip ) {
 	
-		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');	
-		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam('HTTP_CLIENT_IP');
+		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' );	
+		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam( 'HTTP_CLIENT_IP' );
 		
 		// check for a non-unknown proxy address
-		if ( $HTTP_X_FORWARDED_FOR && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
+		if ( $HTTP_X_FORWARDED_FOR ) {
 				
 			if ( strpos( $HTTP_X_FORWARDED_FOR, ',' ) ) {
 				
@@ -2261,7 +2261,6 @@ class owa_baseModule extends owa_module {
 		}
 		
 		return $ip;
-	
 	}
 	
 	/**
