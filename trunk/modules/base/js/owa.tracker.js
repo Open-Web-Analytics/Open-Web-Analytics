@@ -991,7 +991,9 @@ OWA.tracker.prototype = {
     	}
     	    	
 		// add some radomness for cache busting
-		return log_url + get;
+		var full_url = log_url + get;
+		
+		return full_url;
     },
 
 	prepareRequestData : function( properties ) {
