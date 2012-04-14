@@ -1785,7 +1785,7 @@ OWA.tracker.prototype = {
 	},
 
 		
-	setTrafficAttribution : function( event ) {
+	setTrafficAttribution : function( event, callback ) {
 		
 		var campaignState = OWA.getState( 'c', 'attribs' );
 		
@@ -1850,6 +1850,10 @@ OWA.tracker.prototype = {
 			this.setGlobalEventProperty( 'attribs', JSON.stringify( this.campaignState ) );
 			//event.set( 'campaign_timestamp', campaign_params.ts );
 
+		}
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
 		}
 	},
 	
@@ -1965,23 +1969,39 @@ OWA.tracker.prototype = {
 	
 	manageState : function( event, callback ) {
 		
+		var that = this;
 		if ( ! this.stateInit ) {
-			this.setVisitorId( event );
-			this.setFirstSessionTimestamp( event );
-			this.setLastRequestTime( event );
-			this.setSessionId( event );
-			this.setNumberPriorSessions( event );
-			this.setDaysSinceLastSession( event );
-			this.setTrafficAttribution( event );
-			this.stateInit = true;
-		}
 		
-		if (callback && (typeof(callback) === "function")) {
-			callback(event);
+			this.setVisitorId( event, function(event) {
+			
+				that.setFirstSessionTimestamp( event, function( event ) {
+				
+					that.setLastRequestTime( event, function( event ) {
+					
+						that.setSessionId( event, function( event ) {
+							
+							that.setNumberPriorSessions( event, function( event ) {
+								
+								that.setDaysSinceLastSession( event, function( event ) {
+									
+									that.setTrafficAttribution( event, function( event ) {
+										
+										that.stateInit = true;
+										
+										if (callback && ( typeof( callback ) === "function" ) ) {
+											callback( event );
+										}
+									});
+								});						
+							});				
+						});
+					});
+				});
+			});	
 		}
 	},
 	
-	setNumberPriorSessions : function ( event ) {
+	setNumberPriorSessions : function ( event, callback ) {
 		
 		OWA.debug('setting number of prior sessions');
 		// if check for nps value in vistor cookie.
@@ -1999,9 +2019,13 @@ OWA.tracker.prototype = {
 		}
 
 		this.setGlobalEventProperty( 'nps',  nps );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setDaysSinceLastSession : function ( event ) {
+	setDaysSinceLastSession : function ( event, callback ) {
 		
 		OWA.debug('setting days since last session.');
 		var dsps = '';
@@ -2016,10 +2040,15 @@ OWA.tracker.prototype = {
 		if ( ! dsps ) {
 			dsps = OWA.getState( 's', 'dsps' ) || 0;
 		}
+		
 		this.setGlobalEventProperty( 'dsps', dsps );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setVisitorId : function( event ) {
+	setVisitorId : function( event, callback ) {
 		
 		var visitor_id =  OWA.getState( 'v', 'vid' );
 		//OWA.debug('vid: '+ visitor_id);
@@ -2044,9 +2073,13 @@ OWA.tracker.prototype = {
 		}
 		// set property on event object
 		this.setGlobalEventProperty( 'visitor_id', visitor_id );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setFirstSessionTimestamp : function( event ) {
+	setFirstSessionTimestamp : function( event, callback ) {
 		
 		// set first session timestamp
 		var fsts = OWA.getState( 'v', 'fsts' );
@@ -2061,9 +2094,13 @@ OWA.tracker.prototype = {
 		var dsfs = Math.round( ( event.get( 'timestamp' ) - fsts ) / ( 3600 * 24 ) ) ;
 		OWA.setState( 'v', 'dsfs', dsfs );
 		this.setGlobalEventProperty( 'dsfs', dsfs );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setLastRequestTime : function( event ) {
+	setLastRequestTime : function( event, callback ) {
 		
 		
 		var last_req = OWA.getState('s', 'last_req');
@@ -2080,9 +2117,13 @@ OWA.tracker.prototype = {
 		
 		// store new state value
 		OWA.setState( 's', 'last_req', event.get( 'timestamp' ), true );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setSessionId : function ( event ) {
+	setSessionId : function ( event, callback ) {
 		var session_id = '';
 		var state_store_name = '';
 		var is_new_session = this.isNewSession( event.get( 'timestamp' ),  this.getGlobalEventProperty( 'last_req' ) ); 
@@ -2127,6 +2168,10 @@ OWA.tracker.prototype = {
 			this.globalEventProperties.is_new_session = true;
 			this.isNewSessionFlag = true;
 			OWA.setState( 's', 'sid', session_id, true );
+		}
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
 		}
 
 	},
