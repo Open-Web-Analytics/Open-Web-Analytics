@@ -37,7 +37,7 @@
 							<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'));?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
 						</LI>
 						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportActions'));?>">Actions</a></span> - See which actions your user performed.
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'));?>">Actions</a></span> - See which actions your user performed.
 						</LI>
 						<LI>
 							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
