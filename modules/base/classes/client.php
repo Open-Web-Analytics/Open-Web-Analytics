@@ -870,7 +870,7 @@ class owa_client extends owa_caller {
 	
 	public function getCustomVar( $slot ) {
 		
-		$cv_param_name = 'cv' + $slot;
+		$cv_param_name = 'cv' . $slot;
 		$cv = '';
 		// check request/page level
 		$cv = $this->getGlobalEventProperty( $cv_param_name );
