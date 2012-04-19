@@ -1878,11 +1878,25 @@ OWA.util =  {
 	    }
 	},
 	
-	isIE: function() {
+	isIE : function() {
 		
 		if (/MSIE (\d+\.\d+);/.test(navigator.userAgent)) {
 			return true;
 		}
+	},
+	
+	isBrowserTrackable : function() {
+	
+		var dntProperties = ['doNotTrack', 'msDoNotTrack'];
+		
+		for (var i = 0, l = dntProperties.length; i < l; i++) {
+		
+			if ( navigator[ dntProperties[i] ] === 'yes' ) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 };

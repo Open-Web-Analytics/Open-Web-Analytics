@@ -1,4 +1,4 @@
-/* OWA owa.tracker package file created Sat, 14 Apr 12 16:09:51 -0400 */ 
+/* OWA owa.tracker package file created Thu, 19 Apr 12 19:01:54 -0400 */ 
 
 /* Start of json2 */ 
 
@@ -120,7 +120,8 @@ return parseInt(number,10).toString(16);},explode:function(delimiter,string,limi
 if(delimiter===''||delimiter===false||delimiter===null){return false;}
 if(typeof delimiter=='function'||typeof delimiter=='object'||typeof string=='function'||typeof string=='object'){return emptyArray;}
 if(delimiter===true){delimiter='1';}
-if(!limit){return string.toString().split(delimiter.toString());}else{var splitted=string.toString().split(delimiter.toString());var partA=splitted.splice(0,limit-1);var partB=splitted.join(delimiter.toString());partA.push(partB);return partA;}},isIE:function(){if(/MSIE (\d+\.\d+);/.test(navigator.userAgent)){return true;}}};
+if(!limit){return string.toString().split(delimiter.toString());}else{var splitted=string.toString().split(delimiter.toString());var partA=splitted.splice(0,limit-1);var partB=splitted.join(delimiter.toString());partA.push(partB);return partA;}},isIE:function(){if(/MSIE (\d+\.\d+);/.test(navigator.userAgent)){return true;}},isBrowserTrackable:function(){var dntProperties=['doNotTrack','msDoNotTrack'];for(var i=0,l=dntProperties.length;i<l;i++){if(navigator[dntProperties[i]]==='yes'){return false;}}
+return true;}};
 
 /* End of owa */ 
 
@@ -231,8 +232,8 @@ var time_since_lastreq=timestamp-last_req;var len=this.options.sessionLength;if(
 switch(scope){case'session':OWA.util.setState('b',cv_param_name,cv_param_value);OWA.debug('just set custom var on session.');break;case'visitor':OWA.util.setState('v',cv_param_name,cv_param_value);OWA.util.clearState('b',cv_param_name);break;}
 this.setGlobalEventProperty(cv_param_name,cv_param_value);},getCustomVar:function(slot){var cv_param_name='cv'+slot;var cv='';cv=this.getGlobalEventProperty(cv_param_name);if(!cv){cv=OWA.util.getState('b',cv_param_name);}
 if(!cv){cv=OWA.util.getState('v',cv_param_name);}
-return cv;},deleteCustomVar:function(slot){var cv_param_name='cv'+slot;OWA.util.clearState('b',cv_param_name);OWA.util.clearState('v',cv_param_name);this.deleteGlobalEventProperty(cv_param_name)}};(function(){if(typeof owa_cmds==='undefined'){var q=new OWA.commandQueue();}else{if(OWA.util.is_array(owa_cmds)){var q=new OWA.commandQueue();q.loadCmds(owa_cmds);}}
-window['owa_cmds']=q;window['owa_cmds'].process();})();
+return cv;},deleteCustomVar:function(slot){var cv_param_name='cv'+slot;OWA.util.clearState('b',cv_param_name);OWA.util.clearState('v',cv_param_name);this.deleteGlobalEventProperty(cv_param_name)}};(function(){if(OWA.util.isBrowserTrackable()){if(typeof owa_cmds==='undefined'){var q=new OWA.commandQueue();}else{if(OWA.util.is_array(owa_cmds)){var q=new OWA.commandQueue();q.loadCmds(owa_cmds);}}
+window['owa_cmds']=q;window['owa_cmds'].process();}})();
 
 /* End of owa.tracker */ 
 
