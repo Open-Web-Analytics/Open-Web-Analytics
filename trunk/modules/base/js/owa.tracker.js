@@ -2315,16 +2315,20 @@ OWA.tracker.prototype = {
 	//if ( typeof owa_baseUrl != "undefined" ) {
 	//	OWA.config.baseUrl = owa_baseUrl;
 	//}
-	// execute commands global owa_cmds command queue
-	if ( typeof owa_cmds === 'undefined' ) {
-		var q = new OWA.commandQueue();	
-	} else {
-		if ( OWA.util.is_array(owa_cmds) ) {
-			var q = new OWA.commandQueue();
-			q.loadCmds( owa_cmds );
-		}
-	}
 	
-	window['owa_cmds'] = q;
-	window['owa_cmds'].process();
+	if ( OWA.util.isBrowserTrackable() ) {
+	
+		// execute commands global owa_cmds command queue
+		if ( typeof owa_cmds === 'undefined' ) {
+			var q = new OWA.commandQueue();	
+		} else {
+			if ( OWA.util.is_array(owa_cmds) ) {
+				var q = new OWA.commandQueue();
+				q.loadCmds( owa_cmds );
+			}
+		}
+		
+		window['owa_cmds'] = q;
+		window['owa_cmds'].process();
+	}
 })();
