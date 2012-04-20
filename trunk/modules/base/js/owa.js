@@ -418,6 +418,8 @@ OWA.stateManager.prototype = {
 		if ( ! key ) {
 			delete this.stores[store_name];
 			OWA.util.eraseCookie(OWA.getSetting('ns') + store_name);
+			//reload cookies
+			this.cookies = OWA.util.readAllCookies();
 		} else {
 			var state = this.get(store_name);
 			
@@ -800,6 +802,7 @@ OWA.util =  {
 	},
 	
 	eraseCookie: function (name, domain) {
+	
 		OWA.debug(document.cookie);
 		if ( ! domain ) {
 			domain = OWA.getSetting('cookie_domain') || document.domain;
