@@ -1987,17 +1987,18 @@ OWA.tracker.prototype = {
 									that.setTrafficAttribution( event, function( event ) {
 										
 										that.stateInit = true;
-										
-										if (callback && ( typeof( callback ) === "function" ) ) {
-											callback( event );
-										}
+		
 									});
 								});						
 							});				
 						});
 					});
 				});
-			});	
+			});
+		}
+		
+		if (callback && ( typeof( callback ) === "function" ) ) {
+			callback( event );
 		}
 	},
 	
