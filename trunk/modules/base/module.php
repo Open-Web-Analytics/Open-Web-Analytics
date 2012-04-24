@@ -2309,16 +2309,13 @@ class owa_baseModule extends owa_module {
 	 * @return string
 	 */
 	function makeUrlCanonical($url, $site_id = '') {
+	
+		// remove port, pass, user, and fragment
+		$url = owa_lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
 		
 		owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
 		$site = owa_coreAPI::entityFactory('base.site');
 		$site->load( $site->generateId( $site_id ) );
-		//remove anchors
-		$pos = strpos($url, '#');
-		if($pos) {
-			
-			$url = substr($url, 0, $pos);
-		}
 		
 		$filter_string = $site->getSiteSetting( 'query_string_filters' );
 		
@@ -2420,7 +2417,7 @@ class owa_baseModule extends owa_module {
 				}
 			}
 		}
-			
+		
      	return $url;
 		
 	}
