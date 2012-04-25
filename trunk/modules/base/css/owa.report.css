@@ -268,7 +268,8 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     border-collapse: collapse;
     padding:0;
     margin:0;
-	
+	border-radius: 5px;
+	-moz-border-radius: 5px;
 }
 
 .owa_visitInfoboxItemContainer, .owa_visitInfoboxItem   {
@@ -749,3 +750,42 @@ li.constraintRow {
 .owa #trend-metrics {
 	min-height: 70px
 }
+
+.owa .inbound_traffic_properties dl {
+	width:100%;
+ 	overflow:hidden;
+ 	background: #efefef;
+ 	padding:0;
+  	margin:0;
+  	font-size:12px;
+}
+
+.owa .inbound_traffic_properties dt {
+	float:left;
+ 	width:100px; /* adjust the width; make sure the total of both is 100% */
+ 	background:#6AA9CF;
+ 	color: #ffffff;
+ 	padding:5px;
+ 	margin:0;
+ 	border-top-left-radius: 5px;
+	border-bottom-left-radius: 5px;
+	-moz-border-radius-topleft: 5px;
+	-moz-border-radius-bottomleft: 5px;
+
+ 	
+}
+
+.owa .inbound_traffic_properties dd {
+	float:left;
+ 	width:auto; /* adjust the width; make sure the total of both is 100% */
+ 	background:#ffffff;
+ 	padding:5px 10px 5px 10px;
+	margin:0 10px 0 0;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+	-moz-border-radius-topright: 5px;
+	-moz-border-radius-bottomright: 5px;
+	
+}
+
+
