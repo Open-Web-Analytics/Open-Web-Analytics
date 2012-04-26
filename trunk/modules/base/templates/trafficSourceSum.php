@@ -1,9 +1,10 @@
-<div class="inbound_traffic_properties" style="background-image: url('<?php echo $this->makeImageLink('base/i/referer_icon.gif');?>');background-repeat: no-repeat; padding:5px 5px 5px 35px; background-position:0px 5px;">
+<div class="propertyList" style="background-image: url('<?php echo $this->makeImageLink('base/i/referer_icon.gif');?>');background-repeat: no-repeat; padding:5px 5px 5px 35px; background-position:0px 5px;">
 	<dl>
 	
 		<dt>Medium:</dt>
 		<dd><?php $this->out( $row['medium'] );?></dd>
 		
+		<?php if ( isset( $row['source'] ) && $row['source'] != '(none)' ): ?>
 		<dt>Source:</dt>
 		<dd>
 			<a href="<?php $this->out( $this->makeLink( 
@@ -17,9 +18,11 @@
 		<?php $this->out( $row['source']);?>
 			</a>
 		</dd>
-	
+		<?php endif;?>
+	</dl>
+	<dl>
 		<?php if ( isset( $row['search_term'] ) && $row['search_term'] != '(none)' ): ?>
-		<BR>
+		
 		<dt>Search Term:</dt>
 		<dd>
 			<a href="<?php $this->out( $this->makeLink( 
