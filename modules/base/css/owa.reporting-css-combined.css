@@ -1,4 +1,4 @@
-/* OWA owa.reporting-css package file created Wed, 25 Apr 12 01:53:06 -0400 */ 
+/* OWA owa.reporting-css package file created Thu, 26 Apr 12 15:02:31 -0400 */ 
 
 /* Start of jqueryui */ 
 
@@ -2112,16 +2112,17 @@ li.constraintRow {
 	min-height: 70px
 }
 
-.owa .inbound_traffic_properties dl {
+.owa .propertyList dl {
 	width:100%;
  	overflow:hidden;
  	background: #efefef;
  	padding:0;
   	margin:0;
   	font-size:12px;
+  	margin-bottom:5px;
 }
 
-.owa .inbound_traffic_properties dt {
+.owa .propertyList dt {
 	float:left;
  	width:100px; /* adjust the width; make sure the total of both is 100% */
  	background:#6AA9CF;
@@ -2136,7 +2137,7 @@ li.constraintRow {
  	
 }
 
-.owa .inbound_traffic_properties dd {
+.owa .propertyList dd {
 	float:left;
  	width:auto; /* adjust the width; make sure the total of both is 100% */
  	background:#ffffff;
