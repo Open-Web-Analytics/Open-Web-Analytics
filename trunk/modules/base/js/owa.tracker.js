@@ -692,46 +692,6 @@ OWA.tracker.prototype = {
 		return document.URL
 	},
 	
-	/**
-	 * Logs a page view event
-	 */
-	trackPageView : function(url) {
-		
-		
-		if (url) {
-			this.page.set('page_url', url);
-		}
-		// set default event properties
-    	//this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
-    	//this.setPageTitle(document.title);
-		this.page.set('timestamp', this.startTime);
-		this.page.setEventType("base.page_request");
-		
-		return this.trackEvent(this.page);
-	},
-	
-	trackAction : function(action_group, action_name, action_label, numeric_value) {
-		
-		var event = new OWA.event;
-		
-		event.setEventType('track.action');
-		event.set('site_id', this.getSiteId());
-		event.set('page_url', this.getCurrentUrl() );
-		event.set('action_group', action_group);
-		event.set('action_name', action_name);
-		event.set('action_label', action_label);
-		event.set('numeric_value', numeric_value);
-		this.trackEvent(event);
-		OWA.debug("Action logged");
-	},
-	
-	trackClicks : function(handler) {
-		// flag to tell handler to log clicks as they happen
-		this.setOption('logClicksAsTheyHappen', true);
-		this.bindClickEvents();		
-		
-	},
-	
 	bindClickEvents : function() {
 	
 		if ( ! this.isClickTrackingEnabled ) {
@@ -748,65 +708,9 @@ OWA.tracker.prototype = {
 	
 	},
 	
-	trackDomStream : function() {
-		
-		if (this.active) {
-		
-			// check random number against logging percentage
-			var rand = Math.floor(Math.random() * 100 + 1 );
-
-			if (rand <= this.getOption('logDomStreamPercentage')) {
-				
-				// needed by click handler 
-				this.setOption('trackDomStream', true);	
-				// loop through stream event bindings
-				var len = this.streamBindings.length;
-				for ( var i = 0; i < len; i++ ) {	
-				//for (method in this.streamBindings) {
-				
-					this.callMethod(this.streamBindings[i]);
-				}
-				
-				this.startDomstreamTimer();			
-			} else {
-				OWA.debug("not tracking domstream for this user.");
-			}
-		}
-	},
-	
 	setDomstreamSampleRate : function(value) {
 		
 		this.setOption('logDomStreamPercentage', value);
-	},
-	
-	logDomStream : function() {
-    	
-    	var domstream = new OWA.event;
-    	
-    	if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
-    		
-			// make an domstream_id if one does not exist. needed for upstream processing
-			if ( ! this.domstream_guid ) {
-				var salt = 'domstream' + this.getCurrentUrl() + this.getSiteId();
-				this.domstream_guid = OWA.util.generateRandomGuid( salt );
-			}
-			domstream.setEventType( 'dom.stream' );
-			domstream.set( 'domstream_guid', this.domstream_guid );
-			domstream.set( 'site_id', this.getSiteId());
-			domstream.set( 'page_url', this.getCurrentUrl() );
-			//domstream.set( 'timestamp', this.startTime);
-			domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
-			domstream.set( 'duration', this.getElapsedTime());
-			domstream.set( 'stream_events', JSON.stringify(this.event_queue));
-			domstream.set( 'stream_length', this.event_queue.length );
-			// clear event queue now instead of waiting for new trackevent
-			// which might be delayed if using an ifram to POST data
-			this.event_queue = [];
-			this.trackEvent( domstream );
-	
-		} else {
-			OWA.debug("Domstream had too few events to log.");
-		}
 	},
 	
 	startDomstreamTimer : function() {
@@ -830,116 +734,7 @@ OWA.tracker.prototype = {
     isObjectType : function(obj, type) {
     	return !!(obj && type && type.prototype && obj.constructor == type.prototype.constructor);
 	},
-        
-    /** 
-     * Sends an OWA event to the server for processing using GET
-     * inserts 1x1 pixel IMG tag into DOM
-     */
-    trackEvent : function(event, block) {
-    	//OWA.debug('pre global event: %s', JSON.stringify(event));
-    	
-    	if ( this.getOption('cookie_domain_set') != true ) {
-    		// set default cookie domain
-			this.setCookieDomain();
-    	}
-		
-		var block_flag = false;
-		
-    	if ( this.active ) {
-	    	if ( block ) {
-	    		
-	    		block_flag = true;
-	    	}
-	    	
-	    	// check for third party mode.
-	    	if ( this.getOption( 'thirdParty' ) ) {
-	    		// tell upstream client to manage state
-	    		this.globalEventProperties.thirdParty = true;
-	    		// add in campaign related properties for upstream evaluation
-	    		this.setCampaignRelatedProperties(event);
-	    	} else {
-	    		// else we are in first party mode, so manage state on the client.
-	    		//this.manageState(event);
-	    		var that = this;
-	    		this.manageState( event, function(event) {
-	    			that.addGlobalPropertiesToEvent( event, function(event) {
-	    				that.addDefaultsToEvent( event, function(event) {
-	    					return that.logEvent( event.getProperties(), block_flag );
-	    				});
-	    			});
-	    		});
-	    	}
-	    }
-    },
     
-    /**
-     * Applies global properties to any event that 
-     * were not already set locally by the method that
-     * created the event.
-     *
-     */
-    addGlobalPropertiesToEvent : function ( event, callback ) {
-
-    	
-    	// add custom variables to global properties if not there already
-    	for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
-    		var cv_param_name = 'cv' + i;
-    		var cv_value = '';
-    		
-    		// if the custom var is not already a global property
-    		if ( ! this.globalEventProperties.hasOwnProperty( cv_param_name ) ) {
-    			// check to see if it exists
-    			cv_value = this.getCustomVar(i);
-    			// if so add it
-    			if ( cv_value ) {
-    				this.setGlobalEventProperty( cv_param_name, cv_value );
-    			}
-    		}
-    	}
-    	
-    	OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );	
-    	for ( var prop in this.globalEventProperties ) {
-    	
-    		// only set global properties is they are not already set on the event
-    		if ( this.globalEventProperties.hasOwnProperty( prop )  
-    		     && ! event.isSet( prop ) )
-    		{	
-    			event.set( prop, this.globalEventProperties[prop] );
-    		}
-    	}
-    	
-    	if (callback && (typeof(callback) === "function")) {
-			callback(event);
-		}
-    	
-    },
-    
-    /**
-     * Applies default values for required properties 
-     * to any event where the properties were not
-     * already set globally or locally.
-     */
-    addDefaultsToEvent : function ( event, callback ) {
-    	
-    	
-    	if ( ! event.get( 'page_url') ) {
-    		event.set('page_url', this.getCurrentUrl() );
-    	}
-    	
-    	if ( ! event.get( 'HTTP_REFERER') ) {
-    		event.set('HTTP_REFERER', document.referrer );
-    	}
-    	
-    	if ( ! event.get( 'page_title') ) {
-    		event.set('page_title', OWA.util.trim( document.title ) );
-    	}
-   		
-   		if (callback && ( typeof( callback ) == 'function' ) ) {
-   			callback( event );
-   		}
-    	
-    },
-
     /** 
      * Logs event by inserting 1x1 pixel IMG tag into DOM
      */
@@ -1967,41 +1762,6 @@ OWA.tracker.prototype = {
 		}
 	},
 	
-	manageState : function( event, callback ) {
-		
-		var that = this;
-		if ( ! this.stateInit ) {
-		
-			this.setVisitorId( event, function(event) {
-			
-				that.setFirstSessionTimestamp( event, function( event ) {
-				
-					that.setLastRequestTime( event, function( event ) {
-					
-						that.setSessionId( event, function( event ) {
-							
-							that.setNumberPriorSessions( event, function( event ) {
-								
-								that.setDaysSinceLastSession( event, function( event ) {
-									
-									that.setTrafficAttribution( event, function( event ) {
-										
-										that.stateInit = true;
-		
-									});
-								});						
-							});				
-						});
-					});
-				});
-			});
-		}
-		
-		if (callback && ( typeof( callback ) === "function" ) ) {
-			callback( event );
-		}
-	},
-	
 	setNumberPriorSessions : function ( event, callback ) {
 		
 		OWA.debug('setting number of prior sessions');
@@ -2308,8 +2068,247 @@ OWA.tracker.prototype = {
 		OWA.util.clearState( 'v', cv_param_name );
 		// clear page level
 		this.deleteGlobalEventProperty( cv_param_name )
-	}
+	},
 	
+	/**
+     * Applies default values for required properties 
+     * to any event where the properties were not
+     * already set globally or locally.
+     */
+    addDefaultsToEvent : function ( event, callback ) {
+    	
+    	
+    	if ( ! event.get( 'page_url') ) {
+    		event.set('page_url', this.getCurrentUrl() );
+    	}
+    	
+    	if ( ! event.get( 'HTTP_REFERER') ) {
+    		event.set('HTTP_REFERER', document.referrer );
+    	}
+    	
+    	if ( ! event.get( 'page_title') ) {
+    		event.set('page_title', OWA.util.trim( document.title ) );
+    	}
+   		
+   		if (callback && ( typeof( callback ) == 'function' ) ) {
+   			callback( event );
+   		}
+    	
+    },
+	
+	/**
+     * Applies global properties to any event that 
+     * were not already set locally by the method that
+     * created the event.
+     *
+     */
+    addGlobalPropertiesToEvent : function ( event, callback ) {
+
+    	
+    	// add custom variables to global properties if not there already
+    	for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
+    		var cv_param_name = 'cv' + i;
+    		var cv_value = '';
+    		
+    		// if the custom var is not already a global property
+    		if ( ! this.globalEventProperties.hasOwnProperty( cv_param_name ) ) {
+    			// check to see if it exists
+    			cv_value = this.getCustomVar(i);
+    			// if so add it
+    			if ( cv_value ) {
+    				this.setGlobalEventProperty( cv_param_name, cv_value );
+    			}
+    		}
+    	}
+    	
+    	OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );	
+    	for ( var prop in this.globalEventProperties ) {
+    	
+    		// only set global properties is they are not already set on the event
+    		if ( this.globalEventProperties.hasOwnProperty( prop )  
+    		     && ! event.isSet( prop ) )
+    		{	
+    			event.set( prop, this.globalEventProperties[prop] );
+    		}
+    	}
+    	
+    	if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
+    	
+    },
+	
+	manageState : function( event, callback ) {
+		
+		var that = this;
+		if ( ! this.stateInit ) {
+		
+			this.setVisitorId( event, function(event) {
+			
+				that.setFirstSessionTimestamp( event, function( event ) {
+				
+					that.setLastRequestTime( event, function( event ) {
+					
+						that.setSessionId( event, function( event ) {
+							
+							that.setNumberPriorSessions( event, function( event ) {
+								
+								that.setDaysSinceLastSession( event, function( event ) {
+									
+									that.setTrafficAttribution( event, function( event ) {
+										
+										that.stateInit = true;
+		
+									});
+								});						
+							});				
+						});
+					});
+				});
+			});
+		}
+		
+		if (callback && ( typeof( callback ) === "function" ) ) {
+			callback( event );
+		}
+	},
+	
+	/** 
+     * Sends an OWA event to the server for processing using GET
+     * inserts 1x1 pixel IMG tag into DOM
+     */
+    trackEvent : function(event, block) {
+    	//OWA.debug('pre global event: %s', JSON.stringify(event));
+    	
+    	if ( this.getOption('cookie_domain_set') != true ) {
+    		// set default cookie domain
+			this.setCookieDomain();
+    	}
+		
+		var block_flag = false;
+		
+    	if ( this.active ) {
+	    	if ( block ) {
+	    		
+	    		block_flag = true;
+	    	}
+	    	
+	    	// check for third party mode.
+	    	if ( this.getOption( 'thirdParty' ) ) {
+	    		// tell upstream client to manage state
+	    		this.globalEventProperties.thirdParty = true;
+	    		// add in campaign related properties for upstream evaluation
+	    		this.setCampaignRelatedProperties(event);
+	    	} else {
+	    		// else we are in first party mode, so manage state on the client.
+	    		//this.manageState(event);
+	    		var that = this;
+	    		this.manageState( event, function(event) {
+	    			that.addGlobalPropertiesToEvent( event, function(event) {
+	    				that.addDefaultsToEvent( event, function(event) {
+	    					return that.logEvent( event.getProperties(), block_flag );
+	    				});
+	    			});
+	    		});
+	    	}
+	    }
+    },
+    
+    /**
+	 * Logs a page view event
+	 */
+	trackPageView : function(url) {
+		
+		
+		if (url) {
+			this.page.set('page_url', url);
+		}
+		// set default event properties
+    	//this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
+    	//this.setPageTitle(document.title);
+		this.page.set('timestamp', this.startTime);
+		this.page.setEventType("base.page_request");
+		
+		return this.trackEvent(this.page);
+	},
+	
+	trackAction : function(action_group, action_name, action_label, numeric_value) {
+		
+		var event = new OWA.event;
+		
+		event.setEventType('track.action');
+		event.set('site_id', this.getSiteId());
+		event.set('page_url', this.getCurrentUrl() );
+		event.set('action_group', action_group);
+		event.set('action_name', action_name);
+		event.set('action_label', action_label);
+		event.set('numeric_value', numeric_value);
+		this.trackEvent(event);
+		OWA.debug("Action logged");
+	},
+	
+	trackClicks : function(handler) {
+		// flag to tell handler to log clicks as they happen
+		this.setOption('logClicksAsTheyHappen', true);
+		this.bindClickEvents();		
+		
+	},
+	
+	logDomStream : function() {
+    	
+    	var domstream = new OWA.event;
+    	
+    	if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
+    		
+			// make an domstream_id if one does not exist. needed for upstream processing
+			if ( ! this.domstream_guid ) {
+				var salt = 'domstream' + this.getCurrentUrl() + this.getSiteId();
+				this.domstream_guid = OWA.util.generateRandomGuid( salt );
+			}
+			domstream.setEventType( 'dom.stream' );
+			domstream.set( 'domstream_guid', this.domstream_guid );
+			domstream.set( 'site_id', this.getSiteId());
+			domstream.set( 'page_url', this.getCurrentUrl() );
+			//domstream.set( 'timestamp', this.startTime);
+			domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
+			domstream.set( 'duration', this.getElapsedTime());
+			domstream.set( 'stream_events', JSON.stringify(this.event_queue));
+			domstream.set( 'stream_length', this.event_queue.length );
+			// clear event queue now instead of waiting for new trackevent
+			// which might be delayed if using an ifram to POST data
+			this.event_queue = [];
+			return this.trackEvent( domstream );
+	
+		} else {
+			OWA.debug("Domstream had too few events to log.");
+		}
+	},
+	
+	trackDomStream : function() {
+		
+		if (this.active) {
+		
+			// check random number against logging percentage
+			var rand = Math.floor(Math.random() * 100 + 1 );
+
+			if (rand <= this.getOption('logDomStreamPercentage')) {
+				
+				// needed by click handler 
+				this.setOption('trackDomStream', true);	
+				// loop through stream event bindings
+				var len = this.streamBindings.length;
+				for ( var i = 0; i < len; i++ ) {	
+				//for (method in this.streamBindings) {
+				
+					this.callMethod(this.streamBindings[i]);
+				}
+				
+				this.startDomstreamTimer();			
+			} else {
+				OWA.debug("not tracking domstream for this user.");
+			}
+		}
+	}
 };
 
 (function() {
