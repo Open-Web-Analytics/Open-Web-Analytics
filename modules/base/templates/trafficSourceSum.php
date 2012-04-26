@@ -19,6 +19,7 @@
 		</dd>
 	
 		<?php if ( isset( $row['search_term'] ) && $row['search_term'] != '(none)' ): ?>
+		<BR>
 		<dt>Search Term:</dt>
 		<dd>
 			<a href="<?php $this->out( $this->makeLink( 
