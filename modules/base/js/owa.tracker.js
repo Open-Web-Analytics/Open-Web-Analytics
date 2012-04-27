@@ -793,7 +793,7 @@ OWA.tracker.prototype = {
 
 	prepareRequestData : function( properties ) {
     
-  		var data = {_jsv: '1.5.3'};
+  		var data = {};
     	
        	//assemble query string
 	    for ( var param in properties ) {  
