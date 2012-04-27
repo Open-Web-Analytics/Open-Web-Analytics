@@ -27,17 +27,13 @@
  */
 OWA.event = function() {
 
-	this.properties = new Object();
+	this.properties = {};
+	this.id = '';
+	this.siteId = '';
 	this.set('timestamp', OWA.util.getCurrentUnixTimestamp() );
 }
 
 OWA.event.prototype = {
-	
-	id : '',
-	
-	siteId : '',
-	
-	properties : {},
 	
 	get : function(name) {
 		
@@ -71,17 +67,26 @@ OWA.event.prototype = {
 				this.set(param, properties[param]);
 			}
 	    }
+	},
+	
+	isSet : function( name ) {
+		
+		if ( this.properties.hasOwnProperty( name ) ) {
+		
+			return true;
+		}
 	}
 }
 
 OWA.commandQueue = function() {
 
 	OWA.debug('Command Queue object created');
+	var asyncCmds = [];
 }
 
 OWA.commandQueue.prototype = {
-	asyncCmds: '',
-	push : function (cmd) {
+	
+	push : function (cmd, callback) {
 		
 		//alert(func[0]);
 		var args = Array.prototype.slice.call(cmd, 1);
@@ -110,6 +115,10 @@ OWA.commandQueue.prototype = {
 		}
 		
 		window[obj_name][method].apply(window[obj_name], args);
+		
+		if ( callback && ( typeof callback == 'function') ) {
+			callback();
+		}
 	},
 	
 	loadCmds: function(cmds) {
@@ -119,9 +128,24 @@ OWA.commandQueue.prototype = {
 	
 	process: function() {
 		
+		var that = this;
+		var callback = function () {
+        	// when the handler says it's finished (i.e. runs the callback)
+        	// We check for more tasks in the queue and if there are any we run again
+        	if (that.asyncCmds.length > 0) {
+            	that.process();
+         	}
+        }
+        
+        // give the first item in the queue & the callback to the handler
+        this.push(this.asyncCmds.shift(), callback);
+        
+     
+		/*
 		for (var i=0; i < this.asyncCmds.length;i++) {
 			this.push(this.asyncCmds[i]);
 		}
+		*/
 	}
 };
 
@@ -192,27 +216,22 @@ OWA.tracker = function( options ) {
 	
 	if ( options ) {
 		
-		for (opt in options) {
+		for (var opt in options) {
 			
 			this.options[opt] = options[opt];
 		}
 	}
 	
 	// private vars
-	this.ecommerce_transaction = '',
+	this.ecommerce_transaction = '';
 	this.isClickTrackingEnabled = false;
+	this.domstream_guid = '';
 	
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
 	
-	// set default page properties
+	// create page object.
 	this.page = new OWA.event();
-    this.page.set('page_url', document.URL);
-	this.setPageTitle(document.title);
-	this.page.set('timestamp', this.startTime);
-	
-	// set referer
-	this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
 	
 	// merge page properties from global owa_params object
 	if (typeof owa_params != 'undefined') {
@@ -305,10 +324,6 @@ OWA.tracker.prototype = {
 	 */ 
 	streamBindings : ['bindMovementEvents', 'bindScrollEvents','bindKeypressEvents', 'bindClickEvents'],
 	/**
-	 * Page view event
-	 */
-	page : '',
-	/**
 	 * Latest click event
 	 */
 	click : '',
@@ -343,6 +358,14 @@ OWA.tracker.prototype = {
 		OWA.setSetting('debug', bool);
 	},
 	
+	/**
+	 * Looks for shared state cookies passed on the URL from OWA running
+	 * under anohter domain. 
+	 *
+	 * This method must be called explicitly before any of the tracking 
+	 * methods if you want shared state cookies ot be respected.
+	 *
+	 */
 	checkForLinkedState : function() {
 		
 		if ( this.linkedStateSet != true ) {
@@ -590,7 +613,7 @@ OWA.tracker.prototype = {
 	 */
 	setPageTitle: function(title) {
 		
-		this.page.set("page_title", title);
+		this.setGlobalEventProperty("page_title", title);
 	},
 	
 	/**
@@ -598,7 +621,7 @@ OWA.tracker.prototype = {
 	 */
 	setPageType : function(type) {
 		
-		this.page.set("page_type", type);
+		this.setGlobalEventProperty("page_type", type);
 	},
 	
 	/**
@@ -664,40 +687,9 @@ OWA.tracker.prototype = {
 		return this.getOption('baseUrl');
 	},
 	
-	/**
-	 * Logs a page view event
-	 */
-	trackPageView : function(url) {
+	getCurrentUrl : function () {
 		
-		if (url) {
-			this.page.set('page_url', url);
-		}
-		
-		this.page.setEventType("base.page_request");
-		
-		return this.trackEvent(this.page);
-	},
-	
-	trackAction : function(action_group, action_name, action_label, numeric_value) {
-		
-		var event = new OWA.event;
-		
-		event.setEventType('track.action');
-		event.set('site_id', this.getSiteId());
-		event.set('page_url', this.page.get('page_url'));
-		event.set('action_group', action_group);
-		event.set('action_name', action_name);
-		event.set('action_label', action_label);
-		event.set('numeric_value', numeric_value);
-		this.trackEvent(event);
-		OWA.debug("Action logged");
-	},
-	
-	trackClicks : function(handler) {
-		// flag to tell handler to log clicks as they happen
-		this.setOption('logClicksAsTheyHappen', true);
-		this.bindClickEvents();		
-		
+		return document.URL
 	},
 	
 	bindClickEvents : function() {
@@ -716,63 +708,9 @@ OWA.tracker.prototype = {
 	
 	},
 	
-	trackDomStream : function() {
-		
-		if (this.active) {
-		
-			// check random number against logging percentage
-			var rand = Math.floor(Math.random() * 100 + 1 );
-
-			if (rand <= this.getOption('logDomStreamPercentage')) {
-				
-				// needed by click handler 
-				this.setOption('trackDomStream', true);	
-				// loop through stream event bindings
-				var len = this.streamBindings.length;
-				for ( var i = 0; i < len; i++ ) {	
-				//for (method in this.streamBindings) {
-				
-					this.callMethod(this.streamBindings[i]);
-				}
-				
-				this.startDomstreamTimer();			
-			} else {
-				OWA.debug("not tracking domstream for this user.");
-			}
-		}
-	},
-	
 	setDomstreamSampleRate : function(value) {
 		
 		this.setOption('logDomStreamPercentage', value);
-	},
-	
-	logDomStream : function() {
-    	
-    	this.domstream = this.domstream || new OWA.event;
-    	
-    	if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
-    		
-			// make an domstream_id if one does not exist. needed for upstream processing
-			if ( ! this.domstream.get('domstream_guid') ) {
-				var salt = 'domstream' + this.page.get('page_url') + this.getSiteId();
-				this.domstream.set( 'domstream_guid', OWA.util.generateRandomGuid( salt ) );
-			}
-			
-			this.domstream.setEventType( 'dom.stream' );
-			this.domstream.set( 'site_id', this.getSiteId());
-			this.domstream.set( 'page_url', this.page.get('page_url') );
-			//this.domstream.set( 'timestamp', this.startTime);
-			this.domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
-			this.domstream.set( 'duration', this.getElapsedTime());
-			this.domstream.set( 'stream_events', JSON.stringify(this.event_queue));
-			this.domstream.set( 'stream_length', this.event_queue.length );
-			this.trackEvent( this.domstream );
-			this.event_queue = [];
-	
-		} else {
-			OWA.debug("Domstream had too few events to log.");
-		}
 	},
 	
 	startDomstreamTimer : function() {
@@ -796,133 +734,11 @@ OWA.tracker.prototype = {
     isObjectType : function(obj, type) {
     	return !!(obj && type && type.prototype && obj.constructor == type.prototype.constructor);
 	},
-
-    /*
-    getAjaxObj : function() {
     
-    	if (window.XMLHttpRequest){
-			// If IE7, Mozilla, Safari, etc: Use native object
-			var ajax = new XMLHttpRequest()
-		} else {
-			
-			if (window.ActiveXObject){
-		          // ...otherwise, use the ActiveX control for IE5.x and IE6
-		          var ajax = new ActiveXObject("Microsoft.XMLHTTP"); 
-			}
-	
-		}
-		return ajax;
-    },
-    
-    ajaxGet : function(properties) {
-    	
-    	var url = this._assembleRequestUrl(properties);
-		var ajax = this.getAjaxObj();
-		ajax.open("GET", url, false); 
-		ajax.send(null);
-    },
-    
-    ajaxPost : function(properties) {
-    	
-    	var ajax = this.getAjaxObj();
-	    var params = this.prepareRequestParams(properties);
-	    
-		ajax.open("POST", this.getLoggerEndpoint(), false); 
-		//Send the proper header information along with the request
-		ajax.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		ajax.setRequestHeader("Content-length", params.length);
-		ajax.setRequestHeader("Connection", "close");
-		
-		ajax.onreadystatechange = function() {//Call a function when the state changes.
-			if(ajax.readyState == 4 && ajax.status == 200) {
-				//console.log("ajax response: %s", ajax.responseText);
-			}
-		}
-
-		ajax.send(params);
-    	
-    },
-    
-    ajaxJsonp : function (url) {                
-	   
-	    var script = document.createElement("script");        
-	    script.setAttribute("src",url);
-	    script.setAttribute("type","text/javascript");                
-	    document.body.appendChild(script);
-	},
-    */
-        
-    /** 
-     * Sends an OWA event to the server for processing using GET
-     * inserts 1x1 pixel IMG tag into DOM
-     */
-    trackEvent : function(event, block) {
-    	//OWA.debug('pre global event: %s', JSON.stringify(event));
-    	
-    	if ( this.getOption('cookie_domain_set') != true ) {
-    		// set default cookie domain
-			this.setCookieDomain();
-    	}
-    	/*
-
-    	if ( this.linkedStateSet != true ) {
-    		//check for linked state send from another domain
-			this.checkForLinkedState();
-    	}
-    	
-		*/
-    	if ( this.active ) {
-	    	if ( ! block ) {
-	    		block_flag = false;
-	    	} else {
-	    		block_flag = true;
-	    	}
-	    	
-	    	// check for third party mode.
-	    	if ( this.getOption( 'thirdParty' ) ) {
-	    		// tell upstream client to manage state
-	    		this.globalEventProperties.thirdParty = true;
-	    		// add in campaign related properties for upstream evaluation
-	    		this.setCampaignRelatedProperties(event);
-	    	} else {
-	    		// else we are in first party mode, so manage state on the client.
-	    		this.manageState(event);
-	    	}
-	    	
-	    	this.addGlobalPropertiesToEvent( event );
-	    	//OWA.debug('post global event: %s', JSON.stringify(event));
-	    	return this.logEvent( event.getProperties(), block_flag );
-	    }
-    },
-    
-    addGlobalPropertiesToEvent : function ( event ) {
-    	
-    	// add custom variables to global properties if not there already
-    	for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
-    		var cv_param_name = 'cv' + i;
-    		var cv_value = '';
-    		
-    		// if the custom var is not already a global property
-    		if ( ! this.globalEventProperties.hasOwnProperty( cv_param_name ) ) {
-    			// check to see if it exists
-    			cv_value = this.getCustomVar(i);
-    			// if so add it
-    			if ( cv_value ) {
-    				this.setGlobalEventProperty( cv_param_name, cv_value );
-    			}
-    		}
-    	}
-    	
-    	OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );	
-    	for ( prop in this.globalEventProperties ) {
-    		event.set( prop, this.globalEventProperties[prop] );
-    	}
-    },
-
     /** 
      * Logs event by inserting 1x1 pixel IMG tag into DOM
      */
-    logEvent : function (properties, block) {
+    logEvent : function (properties, block, callback) {
     	
     	if (this.active) {
     	
@@ -932,11 +748,13 @@ OWA.tracker.prototype = {
 	    	var url = this._assembleRequestUrl(properties);
 	    	var limit = this.getOption('getRequestCharacterLimit');
 	    	if ( url.length > limit ) {
-	    		this.cdPost( this.prepareRequestData( properties ) );
+	    		//this.cdPost( this.prepareRequestData( properties ) );
+	    		var data = this.prepareRequestData( properties );
+	    		this.cdPost( data );
 	    	} else {
 	    	
 		    	OWA.debug('url : %s', url);
-			   	image = new Image(1, 1);
+			   	var image = new Image(1, 1);
 			   	//expireDateTime = now.getTime() + delay;
 			   	image.onLoad = function () { };
 				image.src = url;
@@ -944,6 +762,10 @@ OWA.tracker.prototype = {
 					//OWA.debug(' blocking...');
 				}
 				OWA.debug('Inserted web bug for %s', properties['event_type']);
+			}
+			
+			if (callback && (typeof(callback) === "function")) {
+				callback();
 			}
 		}
     },
@@ -964,7 +786,9 @@ OWA.tracker.prototype = {
     	}
     	    	
 		// add some radomness for cache busting
-		return log_url + get;
+		var full_url = log_url + get;
+		
+		return full_url;
     },
 
 	prepareRequestData : function( properties ) {
@@ -972,18 +796,19 @@ OWA.tracker.prototype = {
   		var data = {};
     	
        	//assemble query string
-	    for ( param in properties ) {  
+	    for ( var param in properties ) {  
 	    	// print out the params
 			var value = '';
 				
 			if ( properties.hasOwnProperty( param ) ) {
 	  			
 	  			if ( OWA.util.is_array( properties[param] ) ) {
-				
-					for ( var i = 0, n = properties[param].length; i < n; i++ ) {
+					
+					var n = properties[param].length;
+					for ( var i = 0; i < n; i++ ) {
 						
 						if ( OWA.util.is_object( properties[param][i] ) ) {
-							for ( o_param in properties[param][i] ) {
+							for ( var o_param in properties[param][i] ) {
 								
 								data[ OWA.util.sprintf( OWA.getSetting('ns') + '%s[%s][%s]', param, i, o_param ) ] = OWA.util.urlEncode( properties[ param ][ i ][ o_param ] );
 							}
@@ -1008,7 +833,7 @@ OWA.tracker.prototype = {
 
     	var get = '';
     	
-    	for ( param in properties ) {
+    	for ( var param in properties ) {
     		
     		if ( properties.hasOwnProperty( param ) ) {
 
@@ -1046,83 +871,159 @@ OWA.tracker.prototype = {
 			iframe_container = document.getElementById( container_id );
 		}		
 		
-		// create iframe
-		var ifr = this.generateHiddenIframe( iframe_container );
-    	
-	    // create form
-	    var frm = ifr.doc.createElement('form');
-	    var form_name = 'post_form' + Math.random();
-	    frm.setAttribute( 'id', form_name );
-	    frm.setAttribute( 'name', form_name );
- 		frm.setAttribute("action", post_url);
- 		frm.setAttribute("method", "POST");
-		
-		// create hidden inputs, add them to form
-		for ( param in data ) {
-			
-			if (data.hasOwnProperty(param)) {
-				
-				var input = document.createElement( "input" );
-    			input.setAttribute( "name",param );
-    			input.setAttribute( "value", data[ param ] );
-    			input.setAttribute( "type","hidden");
-    			frm.appendChild( input );
-			}
-		}
-	
-	    // add form to iframe
-	    ifr.doc.body.appendChild( frm );
-	    //submit the form inside the iframe
-	    ifr.doc.forms[form_name].submit();
- 		// remove the form from iframe to clean things up
-  		ifr.doc.body.removeChild( frm );
+		// create iframe and post data once its fully loaded.
+		this.generateHiddenIframe( iframe_container, data );
 	},
 	
 	/**
 	 * Generates a hidden 1x1 pixel iframe
 	 */
-	generateHiddenIframe: function ( parentElement ) {
+	generateHiddenIframe: function ( parentElement, data ) {
 	    
-	    // Create the iframe which will be returned
-	    var iframe = document.createElement("iframe");
-	    var iframe_name = 'owa-tracker-post-iframe';
+	     var iframe_name = 'owa-tracker-post-iframe';
+	     
+	    if ( OWA.util.isIE() ) {
+			var iframe = document.createElement('<iframe name="' + iframe_name + '" scr="about:blank" width="1" height="1"></iframe>');
+		} else {
+			var iframe = document.createElement("iframe");
+			iframe.setAttribute('name', iframe_name);
+			iframe.setAttribute('src', 'about:blank');
+			iframe.setAttribute('width', 1);
+    		iframe.setAttribute('height', 1);
+		}
+	    
 	    iframe.setAttribute('class', iframe_name);
-	    //iframe.setAttribute('name', iframe_name);
-		iframe.setAttribute('width', 1);
-    	iframe.setAttribute('height', 1);
     	iframe.setAttribute('style', 'border: none;');
+    	//iframe.onload = function () { this.postFromIframe( data );};
+    	
+    	var that = this;
     	
     	// If no parent element is specified then use body as the parent element
 		if ( parentElement == null ) {
 			parentElement = document.body;
 	 	}
 		// This is necessary in order to initialize the document inside the iframe
-		parentElement.appendChild(iframe);
+		parentElement.appendChild( iframe );
+		
+		// set a timer to check and see if the iframe is fully loaded.
+		// without this there is a race condition in IE8
+		var timer = setInterval( function() {
+        	
+        	var doc = that.getIframeDocument( iframe );
+            
+            if ( doc ) {
+            	that.postFromIframe(iframe, data);
+				clearInterval(timer);
+            }
+			
+			            
+            
+        }, 1 );
+	},
+	
+	postFromIframe: function( ifr, data ) {
+		
+		var post_url = this.getLoggerEndpoint();
+		var doc = this.getIframeDocument(ifr);
+	    // create form
+	    //var frm = this.createPostForm();
+		var form_name = 'post_form' + Math.random();
+		
+		// cannot set the name of an element using setAttribute
+		if ( OWA.util.isIE() ) {
+			var frm = doc.createElement('<form name="' + form_name + '"></form>');
+		} else {
+			var frm = doc.createElement('form');
+			frm.setAttribute( 'name', form_name );
+		}
+		
+	    frm.setAttribute( 'id', form_name );
+ 		frm.setAttribute("action", post_url);
+ 		frm.setAttribute("method", "POST");
+ 				
+		// create hidden inputs, add them to form
+		for ( var param in data ) {
+			
+			if (data.hasOwnProperty(param)) {
+				
+				// cannot set the name of an element using setAttribute
+				if ( OWA.util.isIE() ) {
+					var input = doc.createElement( "<input type='hidden' name='" + param + "' />" );
+					
+				} else {
+					var input = document.createElement( "input" );
+					input.setAttribute( "name",param );
+					input.setAttribute( "type","hidden");
+		
+				}
+				
+				input.setAttribute( "value", data[param] );
+				
+    			frm.appendChild( input );
+    			
+			}
+		}
+		
+	    // add form to iframe
+	    doc.body.appendChild( frm );
+	    
+	    //submit the form inside the iframe
+	    doc.forms[form_name].submit();
+	    
+ 		// remove the form from iframe to clean things up
+  		doc.body.removeChild( frm );
+  		
+	},
+	
+	//depricated
+	createPostForm : function () {
+		
+		var post_url = this.getLoggerEndpoint();
+		var form_name = 'post_form' + Math.random();
+		
+		// cannot set the name of an element using setAttribute
+		if ( OWA.util.isIE() ) {
+			var frm = doc.createElement('<form name="' + form_name + '"></form>');
+		} else {
+			var frm = doc.createElement('form');
+			frm.setAttribute( 'name', form_name );
+		}
+		
+	    frm.setAttribute( 'id', form_name );
+ 		frm.setAttribute("action", post_url);
+ 		frm.setAttribute("method", "POST");
+ 		
+ 		return frm;
+	},
+	
+	getIframeDocument: function ( iframe ) {
 		
 		// Initiate the iframe's document to null
-		iframe.doc = null;
+		var doc = null;
 		
 		// Depending on browser platform get the iframe's document, this is only
 		// available if the iframe has already been appended to an element which
 		// has been added to the document
 		if( iframe.contentDocument ) {
 			// Firefox, Opera
-			iframe.doc = iframe.contentDocument;
-		} else if( iframe.contentWindow ) {
+			doc = iframe.contentDocument;
+		} else if( iframe.contentWindow && iframe.contentWindow.document ) {
 			// Internet Explorer
-			iframe.doc = iframe.contentWindow.document;
+			doc = iframe.contentWindow.document;
 		} else if(iframe.document) {
 			// Others?
-			iframe.doc = iframe.document;
+			doc = iframe.document;
 		}
 		
 		// If we did not succeed in finding the document then throw an exception
-		if( iframe.doc == null ) {
+		if( doc == null ) {
 			OWA.debug("Document not found, append the parent element to the DOM before creating the IFrame");
 		}
-		// Return the iframe, now with an extra property iframe.doc containing the
-		// iframe's document
-		return iframe;
+		
+		doc.open();
+        doc.close();
+		
+		return doc;
 	},
 	
 	getViewportDimensions : function() {
@@ -1679,7 +1580,7 @@ OWA.tracker.prototype = {
 	},
 
 		
-	setTrafficAttribution : function( event ) {
+	setTrafficAttribution : function( event, callback ) {
 		
 		var campaignState = OWA.getState( 'c', 'attribs' );
 		
@@ -1744,6 +1645,10 @@ OWA.tracker.prototype = {
 			this.setGlobalEventProperty( 'attribs', JSON.stringify( this.campaignState ) );
 			//event.set( 'campaign_timestamp', campaign_params.ts );
 
+		}
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
 		}
 	},
 	
@@ -1820,7 +1725,7 @@ OWA.tracker.prototype = {
 		this.ecommerce_transaction.set( 'ct_tax', tax );
 		this.ecommerce_transaction.set( 'ct_shipping', shipping );
 		this.ecommerce_transaction.set( 'ct_gateway', gateway );
-		this.ecommerce_transaction.set( 'page_url', this.page.get('page_url') );
+		this.ecommerce_transaction.set( 'page_url', this.getCurrentUrl() );
 		this.ecommerce_transaction.set( 'city', city );
 		this.ecommerce_transaction.set( 'state', state );
 		this.ecommerce_transaction.set( 'country', country );
@@ -1857,21 +1762,7 @@ OWA.tracker.prototype = {
 		}
 	},
 	
-	manageState : function( event ) {
-		
-		if ( ! this.stateInit ) {
-			this.setVisitorId( event );
-			this.setFirstSessionTimestamp( event );
-			this.setLastRequestTime( event );
-			this.setSessionId( event );
-			this.setNumberPriorSessions( event );
-			this.setDaysSinceLastSession( event );
-			this.setTrafficAttribution( event );
-			this.stateInit = true;
-		}
-	},
-	
-	setNumberPriorSessions : function ( event ) {
+	setNumberPriorSessions : function ( event, callback ) {
 		
 		OWA.debug('setting number of prior sessions');
 		// if check for nps value in vistor cookie.
@@ -1889,9 +1780,13 @@ OWA.tracker.prototype = {
 		}
 
 		this.setGlobalEventProperty( 'nps',  nps );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setDaysSinceLastSession : function ( event ) {
+	setDaysSinceLastSession : function ( event, callback ) {
 		
 		OWA.debug('setting days since last session.');
 		var dsps = '';
@@ -1906,15 +1801,20 @@ OWA.tracker.prototype = {
 		if ( ! dsps ) {
 			dsps = OWA.getState( 's', 'dsps' ) || 0;
 		}
+		
 		this.setGlobalEventProperty( 'dsps', dsps );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setVisitorId : function( event ) {
+	setVisitorId : function( event, callback ) {
 		
 		var visitor_id =  OWA.getState( 'v', 'vid' );
 		//OWA.debug('vid: '+ visitor_id);
 		if ( ! visitor_id ) {
-			old_vid_test =  OWA.getState( 'v' );
+			var old_vid_test =  OWA.getState( 'v' );
 			//OWA.debug('vid: '+ visitor_id);
 			
 			if ( ! OWA.util.is_object( old_vid_test ) ) {
@@ -1934,9 +1834,13 @@ OWA.tracker.prototype = {
 		}
 		// set property on event object
 		this.setGlobalEventProperty( 'visitor_id', visitor_id );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setFirstSessionTimestamp : function( event ) {
+	setFirstSessionTimestamp : function( event, callback ) {
 		
 		// set first session timestamp
 		var fsts = OWA.getState( 'v', 'fsts' );
@@ -1951,9 +1855,13 @@ OWA.tracker.prototype = {
 		var dsfs = Math.round( ( event.get( 'timestamp' ) - fsts ) / ( 3600 * 24 ) ) ;
 		OWA.setState( 'v', 'dsfs', dsfs );
 		this.setGlobalEventProperty( 'dsfs', dsfs );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setLastRequestTime : function( event ) {
+	setLastRequestTime : function( event, callback ) {
 		
 		
 		var last_req = OWA.getState('s', 'last_req');
@@ -1970,9 +1878,13 @@ OWA.tracker.prototype = {
 		
 		// store new state value
 		OWA.setState( 's', 'last_req', event.get( 'timestamp' ), true );
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
 	},
 	
-	setSessionId : function ( event ) {
+	setSessionId : function ( event, callback ) {
 		var session_id = '';
 		var state_store_name = '';
 		var is_new_session = this.isNewSession( event.get( 'timestamp' ),  this.getGlobalEventProperty( 'last_req' ) ); 
@@ -2017,6 +1929,10 @@ OWA.tracker.prototype = {
 			this.globalEventProperties.is_new_session = true;
 			this.isNewSessionFlag = true;
 			OWA.setState( 's', 'sid', session_id, true );
+		}
+		
+		if (callback && (typeof(callback) === "function")) {
+			callback(event);
 		}
 
 	},
@@ -2075,7 +1991,7 @@ OWA.tracker.prototype = {
 	
 	setPageProperties : function ( properties ) {
 		
-		for (prop in properties) {
+		for (var prop in properties) {
 			
 			if ( properties.hasOwnProperty( prop ) ) {
 				this.page.set( prop, properties[prop] );
@@ -2152,24 +2068,267 @@ OWA.tracker.prototype = {
 		OWA.util.clearState( 'v', cv_param_name );
 		// clear page level
 		this.deleteGlobalEventProperty( cv_param_name )
-	}
+	},
 	
+	/**
+     * Applies default values for required properties 
+     * to any event where the properties were not
+     * already set globally or locally.
+     */
+    addDefaultsToEvent : function ( event, callback ) {
+    	
+    	
+    	if ( ! event.get( 'page_url') ) {
+    		event.set('page_url', this.getCurrentUrl() );
+    	}
+    	
+    	if ( ! event.get( 'HTTP_REFERER') ) {
+    		event.set('HTTP_REFERER', document.referrer );
+    	}
+    	
+    	if ( ! event.get( 'page_title') ) {
+    		event.set('page_title', OWA.util.trim( document.title ) );
+    	}
+   		
+   		if (callback && ( typeof( callback ) == 'function' ) ) {
+   			callback( event );
+   		}
+    	
+    },
+	
+	/**
+     * Applies global properties to any event that 
+     * were not already set locally by the method that
+     * created the event.
+     *
+     */
+    addGlobalPropertiesToEvent : function ( event, callback ) {
+
+    	
+    	// add custom variables to global properties if not there already
+    	for ( var i=1; i <= this.getOption('maxCustomVars'); i++ ) {
+    		var cv_param_name = 'cv' + i;
+    		var cv_value = '';
+    		
+    		// if the custom var is not already a global property
+    		if ( ! this.globalEventProperties.hasOwnProperty( cv_param_name ) ) {
+    			// check to see if it exists
+    			cv_value = this.getCustomVar(i);
+    			// if so add it
+    			if ( cv_value ) {
+    				this.setGlobalEventProperty( cv_param_name, cv_value );
+    			}
+    		}
+    	}
+    	
+    	OWA.debug( 'Adding global properties to event: %s', JSON.stringify(this.globalEventProperties) );	
+    	for ( var prop in this.globalEventProperties ) {
+    	
+    		// only set global properties is they are not already set on the event
+    		if ( this.globalEventProperties.hasOwnProperty( prop )  
+    		     && ! event.isSet( prop ) )
+    		{	
+    			event.set( prop, this.globalEventProperties[prop] );
+    		}
+    	}
+    	
+    	if (callback && (typeof(callback) === "function")) {
+			callback(event);
+		}
+    	
+    },
+	
+	manageState : function( event, callback ) {
+		
+		var that = this;
+		if ( ! this.stateInit ) {
+		
+			this.setVisitorId( event, function(event) {
+			
+				that.setFirstSessionTimestamp( event, function( event ) {
+				
+					that.setLastRequestTime( event, function( event ) {
+					
+						that.setSessionId( event, function( event ) {
+							
+							that.setNumberPriorSessions( event, function( event ) {
+								
+								that.setDaysSinceLastSession( event, function( event ) {
+									
+									that.setTrafficAttribution( event, function( event ) {
+										
+										that.stateInit = true;
+		
+									});
+								});						
+							});				
+						});
+					});
+				});
+			});
+		}
+		
+		if (callback && ( typeof( callback ) === "function" ) ) {
+			callback( event );
+		}
+	},
+	
+	/** 
+     * Sends an OWA event to the server for processing using GET
+     * inserts 1x1 pixel IMG tag into DOM
+     */
+    trackEvent : function(event, block) {
+    	//OWA.debug('pre global event: %s', JSON.stringify(event));
+    	
+    	if ( this.getOption('cookie_domain_set') != true ) {
+    		// set default cookie domain
+			this.setCookieDomain();
+    	}
+		
+		var block_flag = false;
+		
+    	if ( this.active ) {
+	    	if ( block ) {
+	    		
+	    		block_flag = true;
+	    	}
+	    	
+	    	// check for third party mode.
+	    	if ( this.getOption( 'thirdParty' ) ) {
+	    		// tell upstream client to manage state
+	    		this.globalEventProperties.thirdParty = true;
+	    		// add in campaign related properties for upstream evaluation
+	    		this.setCampaignRelatedProperties(event);
+	    	} else {
+	    		// else we are in first party mode, so manage state on the client.
+	    		//this.manageState(event);
+	    		var that = this;
+	    		this.manageState( event, function(event) {
+	    			that.addGlobalPropertiesToEvent( event, function(event) {
+	    				that.addDefaultsToEvent( event, function(event) {
+	    					return that.logEvent( event.getProperties(), block_flag );
+	    				});
+	    			});
+	    		});
+	    	}
+	    }
+    },
+    
+    /**
+	 * Logs a page view event
+	 */
+	trackPageView : function(url) {
+		
+		
+		if (url) {
+			this.page.set('page_url', url);
+		}
+		// set default event properties
+    	//this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
+    	//this.setPageTitle(document.title);
+		this.page.set('timestamp', this.startTime);
+		this.page.setEventType("base.page_request");
+		
+		return this.trackEvent(this.page);
+	},
+	
+	trackAction : function(action_group, action_name, action_label, numeric_value) {
+		
+		var event = new OWA.event;
+		
+		event.setEventType('track.action');
+		event.set('site_id', this.getSiteId());
+		event.set('page_url', this.getCurrentUrl() );
+		event.set('action_group', action_group);
+		event.set('action_name', action_name);
+		event.set('action_label', action_label);
+		event.set('numeric_value', numeric_value);
+		this.trackEvent(event);
+		OWA.debug("Action logged");
+	},
+	
+	trackClicks : function(handler) {
+		// flag to tell handler to log clicks as they happen
+		this.setOption('logClicksAsTheyHappen', true);
+		this.bindClickEvents();		
+		
+	},
+	
+	logDomStream : function() {
+    	
+    	var domstream = new OWA.event;
+    	
+    	if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
+    		
+			// make an domstream_id if one does not exist. needed for upstream processing
+			if ( ! this.domstream_guid ) {
+				var salt = 'domstream' + this.getCurrentUrl() + this.getSiteId();
+				this.domstream_guid = OWA.util.generateRandomGuid( salt );
+			}
+			domstream.setEventType( 'dom.stream' );
+			domstream.set( 'domstream_guid', this.domstream_guid );
+			domstream.set( 'site_id', this.getSiteId());
+			domstream.set( 'page_url', this.getCurrentUrl() );
+			//domstream.set( 'timestamp', this.startTime);
+			domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
+			domstream.set( 'duration', this.getElapsedTime());
+			domstream.set( 'stream_events', JSON.stringify(this.event_queue));
+			domstream.set( 'stream_length', this.event_queue.length );
+			// clear event queue now instead of waiting for new trackevent
+			// which might be delayed if using an ifram to POST data
+			this.event_queue = [];
+			return this.trackEvent( domstream );
+	
+		} else {
+			OWA.debug("Domstream had too few events to log.");
+		}
+	},
+	
+	trackDomStream : function() {
+		
+		if (this.active) {
+		
+			// check random number against logging percentage
+			var rand = Math.floor(Math.random() * 100 + 1 );
+
+			if (rand <= this.getOption('logDomStreamPercentage')) {
+				
+				// needed by click handler 
+				this.setOption('trackDomStream', true);	
+				// loop through stream event bindings
+				var len = this.streamBindings.length;
+				for ( var i = 0; i < len; i++ ) {	
+				//for (method in this.streamBindings) {
+				
+					this.callMethod(this.streamBindings[i]);
+				}
+				
+				this.startDomstreamTimer();			
+			} else {
+				OWA.debug("not tracking domstream for this user.");
+			}
+		}
+	}
 };
 
 (function() {
 	//if ( typeof owa_baseUrl != "undefined" ) {
 	//	OWA.config.baseUrl = owa_baseUrl;
 	//}
-	// execute commands global owa_cmds command queue
-	if ( typeof owa_cmds === 'undefined' ) {
-		var q = new OWA.commandQueue();	
-	} else {
-		if ( OWA.util.is_array(owa_cmds) ) {
-			var q = new OWA.commandQueue();
-			q.loadCmds( owa_cmds );
-		}
-	}
 	
-	window['owa_cmds'] = q;
-	window['owa_cmds'].process();
+	if ( OWA.util.isBrowserTrackable() ) {
+	
+		// execute commands global owa_cmds command queue
+		if ( typeof owa_cmds === 'undefined' ) {
+			var q = new OWA.commandQueue();	
+		} else {
+			if ( OWA.util.is_array(owa_cmds) ) {
+				var q = new OWA.commandQueue();
+				q.loadCmds( owa_cmds );
+			}
+		}
+		
+		window['owa_cmds'] = q;
+		window['owa_cmds'].process();
+	}
 })();

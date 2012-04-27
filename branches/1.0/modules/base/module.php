@@ -282,38 +282,90 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerMetrics() {		
 		
-		$this->registerMetric(
-			'pageViews', 
-			array( 
-				'base.pageViews',
-				'base.pageViewsFromSessionFact'
-			), 
-			'', 
-			'Page Views', 
-			'The total number of pages viewed.', 
-			'Site Usage'
+		$fact_table_entities = array(
+			'base.action_fact',
+			'base.request',
+			'base.session',
+			'base.domstream',
+			'base.click',
+			'base.commerce_transaction_fact',
+			'base.commerce_line_item_fact'
 		);
 		
-		$this->registerMetric(
-			'uniqueVisitors', 
-			'base.uniqueVisitors', 
-			'',
-			'Unique Visitors', 
-			'The total number of unique visitors.', 
-			'Site Usage'
-		);
+		// page views
+		$this->registerMetricDefinition(array(
+			'name'			=> 'pageViews',
+			'label'			=> 'Page Views',
+			'description'	=> 'The total number of pages viewed.',
+			'group'			=> 'Site Usage',
+			'entity'		=> 'base.request',
+			'metric_type'	=> 'count',
+			'data_type'		=> 'integer',
+			'column'		=> 'id'
+			
+		));
 		
-		$this->registerMetric(
-			'visits', 
-			array(
-				'base.visits',
-				'base.visitsFromRequestFact',
-			),
-			'',
-			'Visits',
-			'The total number of visits/sessions.',
-			'Site Usage'
-		);
+		$this->registerMetricDefinition(array(
+			'name'			=> 'pageViews',
+			'label'			=> 'Page Views',
+			'description'	=> 'The total number of pages viewed.',
+			'group'			=> 'Site Usage',
+			'entity'		=> 'base.session',
+			'metric_type'	=> 'sum',
+			'data_type'		=> 'integer',
+			'column'		=> 'num_pageviews'
+			
+		));
+		
+		
+		// unique visitors
+		foreach($fact_table_entities as $factEntity ) {
+		
+			$this->registerMetricDefinition(array(
+				'name'			=> 'uniqueVisitors',
+				'label'			=> 'Unique Visitors',
+				'description'	=> 'The total number of unique visitors.',
+				'group'			=> 'Site Usage',
+				'entity'		=> $factEntity,
+				'metric_type'	=> 'distinct_count',
+				'data_type'		=> 'integer',
+				'column'		=> 'visitor_id'
+				
+			));
+		}
+		
+		// visits
+		foreach($fact_table_entities as $factEntity ) {
+		
+			// owa_session uses a different column name and has it's own metric registration above.
+			if ($factEntity === 'base.session') {
+				$this->registerMetricDefinition(array(
+					'name'			=> 'visits',
+					'label'			=> 'Visits',
+					'description'	=> 'The total number of visits/sessions.',
+					'group'			=> 'Site Usage',
+					'entity'		=> 'base.session',
+					'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+					'data_type'		=> 'integer', // 'integrer', 'currency'
+					'column'		=> 'id'
+					
+				));
+				
+			} else {
+			
+				$this->registerMetricDefinition(array(
+					'name'			=> 'visits',
+					'label'			=> 'Visits',
+					'description'	=> 'The total number of visits/sessions.',
+					'group'			=> 'Site Usage',
+					'entity'		=> $factEntity,
+					'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+					'data_type'		=> 'integer', // 'integrer', 'currency'
+					'column'		=> 'session_id'
+					
+				));
+			}
+		}
 		
 		$this->registerMetric(
 			'visitors', 
@@ -1280,11 +1332,13 @@ class owa_baseModule extends owa_module {
 		// Network Dimensions
 		$this->registerDimension(
 			'ipAddress', 
-			'base.host', 
+			$fact_table_entities, 
 			'ip_address', 
 			'IP Address', 
 			'network', 
-			'The IP address of the visitor.'
+			'The IP address of the visitor.',
+			'',
+			true
 		);
 		
 		$this->registerDimension(
@@ -1995,15 +2049,28 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('dom.stream', 'domstreamHandlers');
 		// actions
 		$this->registerEventHandler('track.action', 'actionHandler');
-		// Commerce
+		
+		// ecommerce
+		
+		// handles new ecommerce transactions
 		$this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
-		$this->registerEventHandler('ecommerce.transaction_persisted', 'sessionCommerceSummaryHandlers');
+		
+		// updates session once ecommerce transactions are persisted
+		$this->registerEventHandler(array(
+				'ecommerce.transaction_persisted', 
+				'ecommerce.async_transaction_persisted'), 
+			'sessionCommerceSummaryHandlers'
+		);
 		
 		$this->registerEventHandler('base.new_session', 'visitorUpdateHandlers');
 		
 		
-		// register standard dimension handlers to listen to events 
+		// register standard dimension handlers to listen for events 
 		// that populate fact tables.
+		
+		// Note: ecommerce.async_transaction_persisted events are ommited here
+		// because it the event gets alll non ecommerce dimensional properties
+		// from a previously persisted session entity
 		$fact_events = array(
 			'base.page_request_logged', 
 			'base.first_page_request_logged', 
@@ -2164,33 +2231,36 @@ class owa_baseModule extends owa_module {
 	 * @return string
 	 * @access private
 	 */
-	function setIp($ip) {
+	function setIp( $ip ) {
 	
-		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam('HTTP_X_FORWARDED_FOR');
-		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam('HTTP_CLIENT_IP');
+		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' );	
+		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam( 'HTTP_CLIENT_IP' );
 		
 		// check for a non-unknown proxy address
-		if (!empty($HTTP_X_FORWARDED_FOR) && strpos(strtolower($HTTP_X_FORWARDED_FOR), 'unknown') === false) {
+		if ( $HTTP_X_FORWARDED_FOR ) {
+				
+			if ( strpos( $HTTP_X_FORWARDED_FOR, ',' ) ) {
+				
+				$HTTP_X_FORWARDED_FOR = trim( end( explode( ',', $HTTP_X_FORWARDED_FOR ) ) );
+			} 
 			
-			// if more than one use the last one
-			if (strpos($HTTP_X_FORWARDED_FOR, ',') === false) {
+			if ( filter_var( 
+					$HTTP_X_FORWARDED_FOR , 
+					FILTER_VALIDATE_IP, 
+					FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) 
+			) {
+			
 				$ip = $HTTP_X_FORWARDED_FOR;
-			} else {
-				$ips = array_reverse(explode(",", $HTTP_X_FORWARDED_FOR));
-				$ip = $ips[0];
-			}
-		
-		// or else just use the remote address	
-		} else {
-		
-			if ($HTTP_CLIENT_IP) {
-		    	$ip = $HTTP_CLIENT_IP;
-			}
 			
+			}			
+			
+		// or else just use the remote address	
+		} elseif ( $HTTP_CLIENT_IP ) {
+		
+		    $ip = $HTTP_CLIENT_IP;	
 		}
 		
 		return $ip;
-	
 	}
 	
 	/**
@@ -2201,52 +2271,36 @@ class owa_baseModule extends owa_module {
 	function resolveHost($remote_host = '', $ip_address = '') {
 	
 		// See if host is already resolved
-		if (empty($remote_host)) {
+		if ( ! $remote_host && owa_coreAPI::getSetting('base', 'resolve_hosts') ) {
 			
 			// Do the host lookup
-			if (owa_coreAPI::getSetting('base', 'resolve_hosts')) {
-				$remote_host = @gethostbyaddr($ip_address);
-			}
 			
+			$remote_host = @gethostbyaddr( $ip_address );
+			
+			if ($remote_host &&
+				$remote_host != $ip_address &&
+				$remote_host != 'unknown') {
+				
+				return $remote_host;	
+			}
 		}
-		
-		return $remote_host;
 	}
 	
 	function getHostDomain($fullhost = '', $ip_address = '') {
-	
-		$host = '';
-		
-		if (!empty($fullhost)) {
-		
+					
+		if ( $fullhost ) {
+			
 			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
 			if ($fullhost === 'localhost') {
 				$host = 'localhost';
-			} elseif ($fullhost === 'unknown') {
-				$host = $ip_address;
-			} elseif ($fullhost != $ip_address) {
-		
-				$host_array = explode('.', $fullhost);
-				
-				// resort so top level domain is first in array
-				$host_array = array_reverse($host_array);
-				
-				// array of tlds. this should probably be in the config array not here.
-				$tlds = array('com', 'net', 'org', 'gov', 'mil', 'edu');
-				
-				if (in_array($host_array[0], $tlds)) {
-					$host = $host_array[1].".".$host_array[0];
-				} else {
-					$host = $host_array[2].".".$host_array[1].".".$host_array[0];
-				}
-					
-			}
-				
-		} else {
-			$host = $ip_address;
+			} else {
+				// lookup the registered domain using the Public Suffix List.
+				$host = owa_coreAPI::getRegisteredDomain($fullhost);
+				owa_coreAPI::debug("Registered domain is: $host");
+			}	
+			
+			return $host;	
 		}
-		
-		return $host;
 	}
 	
 	/**
@@ -2255,16 +2309,15 @@ class owa_baseModule extends owa_module {
 	 * @return string
 	 */
 	function makeUrlCanonical($url, $site_id = '') {
+	
+		// remove port, pass, user, and fragment
+		$url = owa_lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
 		
 		owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
-		//remove anchors
-		$pos = strpos($url, '#');
-		if($pos) {
-			
-			$url = substr($url, 0, $pos);
-		}
+		$site = owa_coreAPI::entityFactory('base.site');
+		$site->load( $site->generateId( $site_id ) );
 		
-		$filter_string = owa_coreAPI::getSiteSetting($site_id, 'query_string_filters');
+		$filter_string = $site->getSiteSetting( 'query_string_filters' );
 		
 		if ($filter_string) {
 			$filters = str_replace(' ', '', $filter_string);
@@ -2321,7 +2374,7 @@ class owa_baseModule extends owa_module {
 		}
 		
 		//check and remove default page
-		$default_page = owa_coreAPI::getSiteSetting($site_id, 'default_page');
+		$default_page = $site->getSiteSetting('default_page');
 		
 		if ($default_page) {
 		
@@ -2342,7 +2395,29 @@ class owa_baseModule extends owa_module {
 			
 			$url = substr($url, 0, -1);
 		}
+		
+		// check for domain aliases
+		$das = $site->getSiteSetting( 'domain_aliases' );
+		
+		if ( $das ) {
 			
+			$site_domain = $site->getDomainName();
+			
+			if ( ! strpos( $url, '://'. $site_domain ) ) {
+			
+				$das = explode(',', $das);
+				
+				foreach ($das as $da) {
+					owa_coreAPI::debug("Checking URL for domain alias: $da");
+					$da = trim($da);
+					if ( strpos( $url, $da ) ) {
+						$url = str_replace($da, $site_domain, $url);
+						break;
+					}
+				}
+			}
+		}
+		
      	return $url;
 		
 	}
@@ -2557,6 +2632,8 @@ class owa_baseModule extends owa_module {
 		$v = owa_coreAPI::entityFactory('base.visitor');
 		$r = owa_coreAPI::entityFactory('base.referer');
 		$sr = owa_coreAPI::entityFactory('base.source_dim');
+		$st = owa_coreAPI::entityFactory('base.search_term_dim');
+		
 		$db->selectFrom($s->getTableName(), 'session');
 		
 		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $l->getTableName(), 'location', 'location_id');
@@ -2566,6 +2643,7 @@ class owa_baseModule extends owa_module {
 		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), 'visitor', 'visitor_id');
 		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), 'referer', 'referer_id');
 		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'source_id');
+		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $st->getTableName(), 'search_term', 'referring_search_term_id');
 		
 		$db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
 						   
@@ -2576,6 +2654,7 @@ class owa_baseModule extends owa_module {
 		$db->selectColumn('visitor.user_email as visitor_user_email');
 		$db->selectColumn('source.source_domain as source');
 		$db->selectColumn('referer.url as referer_url, referer.page_title as referer_page_title, referer.snippet as referer_snippet');
+		$db->selectColumn('search_term.terms as search_term');
 		
 		if ($visitorId) {
 			$db->where('visitor_id', $visitorId);

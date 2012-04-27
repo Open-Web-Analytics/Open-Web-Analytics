@@ -180,13 +180,19 @@ class owa_coreAPI {
 		
 		if ( $site->wasPersisted() ) {
 			
-			$settings = $site->get('settings');
-			if (!empty($settings)) {
-				if ( array_key_exists($name, $settings) ) {
-					return $settings[$name];
-				}
-			}			
+			return $site->getSiteSetting($name);			
 		}
+	}
+	
+	public static function getRegisteredDomain( $full_domain ) {
+		
+		static $psl;
+		
+		if ( ! $psl ) {
+			$psl = owa_coreAPI::supportClassFactory( 'base', 'pslReader' );
+		}
+		
+		return $psl->getRegisteredDomain( $full_domain );
 	}
 	
 	public static function persistSiteSetting($site_id, $name, $value) {
@@ -1452,6 +1458,11 @@ class owa_coreAPI {
 		} else {
 			return false;
 		}
+	}
+	
+	public static function getCurrentUrl() {
+		$r = owa_coreAPI::requestContainerSingleton();
+		return $r->getCurrentUrl();	
 	}
 }
 

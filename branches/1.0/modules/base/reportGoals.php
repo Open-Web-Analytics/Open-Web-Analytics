@@ -41,7 +41,7 @@ class owa_reportGoalsController extends owa_reportController {
 		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.goalCompletionsAll.formatted_value *> goals completed.');
 		$this->set('trendChartMetric', 'goalCompletionsAll');
 		
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $this->getParam( 'siteId' ) );
     	$goals = $gm->getActiveGoals();
     	
     	if ($goals) {

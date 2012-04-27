@@ -1,4 +1,4 @@
-/* OWA owa.reporting package file created Sat, 28 Jan 12 12:52:15 -0800 */ 
+/* OWA owa.reporting package file created Mon, 02 Apr 12 23:25:22 -0400 */ 
 
 /* Start of lazy-load */ 
 
@@ -2863,7 +2863,7 @@ return parseInt(number,10).toString(16);},explode:function(delimiter,string,limi
 if(delimiter===''||delimiter===false||delimiter===null){return false;}
 if(typeof delimiter=='function'||typeof delimiter=='object'||typeof string=='function'||typeof string=='object'){return emptyArray;}
 if(delimiter===true){delimiter='1';}
-if(!limit){return string.toString().split(delimiter.toString());}else{var splitted=string.toString().split(delimiter.toString());var partA=splitted.splice(0,limit-1);var partB=splitted.join(delimiter.toString());partA.push(partB);return partA;}}};
+if(!limit){return string.toString().split(delimiter.toString());}else{var splitted=string.toString().split(delimiter.toString());var partA=splitted.splice(0,limit-1);var partB=splitted.join(delimiter.toString());partA.push(partB);return partA;}},isIE:function(){if(/MSIE (\d+\.\d+);/.test(navigator.userAgent)){return true;}}};
 
 /* End of owa */ 
 

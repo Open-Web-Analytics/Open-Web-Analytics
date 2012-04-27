@@ -68,6 +68,13 @@
 			<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[p3p_policy]" value="<?php $this->out( @$config['p3p_policy'] );?>"></div>
 		</div>
 		
+		<div class="setting" id="domain_aliases">	
+			<div class="title">Domain Aliases</div>
+			<div class="description">This setting allows you to specify additional domain names that you want OWA to treat as the same as the one you are using for this tracked website. For example, if the domain of your website is "www.mydomain.com" you could add an alias here for "mydomain.com". Aliases should be separated by comma.</div>
+			<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[domain_aliases]" value="<?php $this->out( @$config['domain_aliases'] );?>"></div>
+		</div>
+		
+		
 		<div class="setting" id="url_params">	
 			<div class="title">URL Parameters</div>
 			<div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>

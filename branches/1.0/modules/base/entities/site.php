@@ -74,8 +74,36 @@ class owa_site extends owa_entity {
 		return $value;
 	}
 	
+	/**
+	 * Retrieves a specific setting from the settings
+	 * property for this site
+	 *
+	 * @param string $name the name of the setting
+	 * @return mixed
+	 */
+	public function getSiteSetting($name) {
+		
+		$settings = $this->get('settings');
+
+		if ( ! empty( $settings ) ) {
+		
+			if ( array_key_exists( $name, $settings ) ) {
+			
+				return $settings[$name];
+			}
+		}	
+	}
 	
-	
+	public function getDomainName() {
+		
+		$domain = $this->get('domain');
+		
+		if ( $domain && strpos( $domain, '://' ) ) {
+			list( $protocol, $domain ) = explode( '://', $domain );
+			
+			return rtrim( trim( $domain ), '/' );
+		}
+	}
 
 	/**
 	 * Updates the allowed Sites for the current loaded user

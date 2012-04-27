@@ -80,8 +80,7 @@ class eventQueue {
 
 	function attach($event_name, $observer) {
 	
-        $id = md5(microtime());
-        
+        $id = owa_lib::generateRandomUid();
         // Register event names for this handler
 		if(is_array($event_name)) {
 			
@@ -113,7 +112,7 @@ class eventQueue {
 
 	function attachFilter($filter_name, $observer, $priority = 10) {
 	
-        $id = md5(microtime());
+        $id = owa_lib::generateRandomUid();
         
         $this->listenersByFilterType[$filter_name][$priority][] = $id;
 		

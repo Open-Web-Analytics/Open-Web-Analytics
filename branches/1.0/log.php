@@ -37,7 +37,18 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	$owa->e->debug('Logging Event from Url...');
 	// log event
 	$ret = $owa->logEventFromUrl();
-	echo owa_coreAPI::displayView(array(), 'base.pixel');
+	
+	$s = owa_coreAPI::serviceSingleton();
+	$rt = $s->request->getRequestType();	
+	owa_coreAPI::debug('request type. '.$rt);
+	if ($rt === 'post') {
+		
+		owa_lib::redirectBrowser( owa_coreAPI::getSetting('base', 'public_url').'blank.php');
+	} else {
+		echo owa_coreAPI::displayView(array(), 'base.pixel');
+	}
+	
+	
 } else {
 	// unload owa
 	$owa->restInPeace();

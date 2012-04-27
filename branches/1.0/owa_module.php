@@ -759,6 +759,107 @@ abstract class owa_module extends owa_base {
 	}
 	
 	/**
+	 * Registers a metric definition which is used by the
+	 * resultSetExplorer and getResultSet API methods
+	 *
+	 * This method dynamically creates an owa_metric class and 
+	 * properly configures it based on the properties passed in. 
+	 *
+	 * Map properties include:
+	 *
+	 * 		'name'			=> '', 			// the name of the metric as called via the API
+	 *		'label'			=> '', 			// the label that will be displayed in result sets
+	 *		'description'	=> '', 			// the descript displayed in the GUI
+	 *		'group'			=> 'unknown',	// the group that this metric will belong to in the UI
+	 *		'entity'		=> '',          // the entity to use when calculating this metric
+	 *		                                // you must register the same metric for each entity that
+	 *		                                // it can be calculated on.
+	 *		'metric_type'	=> '',          // 'count', 'distinct_count', 'sum', or 'calculated'
+	 *		'data_type'		=> '',          // 'integrer', 'currency', 'average'
+	 *		'column'		=> '',          // the column of the entity to use when calculating
+	 *		'child_metrics'	=> array(),     // if it's a clculated metric, the child metrics used in the formula.
+	 *		'formula'		=> ''           // if it's a calculated metric, the formula to use (e.g. pageViews / visits). 
+	 *
+	 *
+	 */
+	function registerMetricDefinition( $params ) {
+		
+		$map = array(
+			'name'			=> '',
+			'label'			=> '',
+			'description'	=> '',
+			'group'			=> 'unknown',
+			'entity'		=> '',
+			'metric_type'	=> '', 
+			'data_type'		=> '',
+			'column'		=> '',
+			'child_metrics'	=> array(),
+			'formula'		=> ''
+		);
+		
+		$map = array_intersect_key( array_merge( $map, $params ), $map );
+		
+		if ( ! isset( $map['name'] ) ) {
+			// throw exception
+		}
+		
+		if ( ! isset( $map['label'] ) ) {
+			$map['label'] = $map['name'];
+		}
+		
+		if ( ! isset( $map['entity'] ) ) {
+			// throw exception
+		}
+		
+		if ( ! isset( $map['metric_type'] ) ) {
+			// throw exception
+		}
+		
+		if ( ! isset( $map['data_type'] ) ) {
+			// throw exception
+		}
+		
+		if ( isset( $map['metric_type'] ) 
+			 && $map['metric_type'] != 'calculated' 
+			 && ! isset( $map['column'] ) ) 
+		{
+			
+			// throw exception			
+		
+		}
+		
+		if ( isset( $map['metric_type'] ) 
+			 && $map['metric_type'] === 'calculated' 
+			 && ! isset( $map['child_metrics'] ) ) 
+		{
+			
+			// throw exception			
+		
+		}
+		
+		if ( isset( $map['metric_type'] ) 
+			 && $map['metric_type'] === 'calculated' 
+			 && ! isset( $map['formula'] ) ) 
+		{
+			
+			// throw exception			
+		
+		}
+		
+		$definition = array(
+			'name' 			=> $map['name'], 
+			'class' 		=> 'base.configurableMetric', 
+			'params' 		=> $map, 
+			'label' 		=> $map['label'], 
+			'description' 	=> $map['description'], 
+			'group' 		=> $map['group']
+		);
+		//print_r($definition);
+		$this->metrics[ $map['name'] ][] = $definition;
+		
+	}
+	
+	/**
 	 * Register a dimension
 	 *
 	 * registers a dimension for use by metrics in producing results sets.

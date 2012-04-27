@@ -40,51 +40,18 @@ class owa_requestContainer {
 	var $server;
 	var $guid;
 	var $state;
-	var $request_type;
+	var $request_type = '';
 	var $timestamp;
+	var $current_url;
 	
 	/**
-	 * Singleton returns request params
-	 *
-	 * @return array
-	 * @todo DEPRICATED
+	 * Constructor
+	 * 
 	 */
-	function &getInstance() {
-		
-		static $params;
-		
-		if(empty($params)):
-			
-			$params = owa_lib::getRequestParams();
-			// Clean Input arrays
-			$params = owa_lib::inputFilter($params);
-			//strip all params that do not include the namespace
-			$params = owa_lib::stripParams($params, owa_coreAPI::getSetting('base', 'ns'));
-			// translate certain request variables that are reserved in javascript
-			$params = owa_lib::rekeyArray($params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
-			
-			$params['guid'] = crc32(microtime().getmypid());
-			
-			return $params;
-			
-		else:
-		
-			return $params;
-		
-		endif;
-		
-	}
-	
 	function __construct() {
 		
 		$this->timestamp = time();
-		$this->guid = crc32(microtime().getmypid());
-		
-		// CLI args
-		if (array_key_exists('argv', $_SERVER)) {
-			
-			$this->cli_args = $_SERVER['argv'];
-		}
+		$this->guid = owa_lib::generateRandomUid();
 		
 		// php's server variables
 		$this->server = $_SERVER;
@@ -150,53 +117,72 @@ class owa_requestContainer {
 			$this->state->setInitialState( $k, $owa_cookie );
 		}
 		
-		
-		//print_r($this->state);
 		// create request params from GET or POST or CLI args
 		$params = array();
 		
-		if (!empty($_POST)) {
-			// get params from _POST
-			$params = $_POST;
-			$this->request_type = 'post';
-		} elseif (!empty($_GET)) {
+		// use GET vars as the base for the request
+		if ( isset( $_GET ) && ! empty( $_GET ) ) {
 			// get params from _GET
 			$params = $_GET;
-			$this->request_type = 'get';
-		} elseif (!empty($this->cli_args)) {
-			// get params from the command line args
-			// $argv is a php super global variable
 			
-			   for ($i=1; $i<count($this->cli_args);$i++) {
-				   $it = explode("=",$this->cli_args[$i]);
-				   
-				   if ( isset( $it[1] ) ) {
-				   		$params[ $it[0] ] = $it[1];
-				   } else {
-				   		$params[ $it[0] ] = '';
-				   }
-			   }
-			   
-			   $this->request_type = 'cli';
+			$this->request_type = 'get';
+		}
+		
+		// merge in POST vars. GET and POST can occure on the same request.
+		if ( isset( $_POST ) && ! empty( $_POST ) ) {
+			// get params from _GET
+			$params = array_merge( $params, $_POST);
+
+			$this->request_type = 'post';
+		}
+			
+		// look for command line arguments in the 'argv' index.	
+		if ( ! $this->request_type && isset( $_SERVER['argv'] ) ) {
+			
+			$this->cli_args = $_SERVER['argv'];
+			
+			// parse arguments into key value pairs
+			for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
+				$it = explode( "=", $this->cli_args[$i] );
+			  
+				if ( isset( $it[1] ) ) {
+			   		$params[ $it[0] ] = $it[1];
+			   	} else {
+			   		$params[ $it[0] ] = '';
+			   	}
+		   	}
+		  
+			$this->request_type = 'cli';
+		}
+		
+		if ( $this->request_type === 'get' || $this->request_type === 'post' ) {
+			
+			$this->current_url = owa_lib::get_current_url();
 		}
 		
 		// Clean Input arrays
 		$this->request = owa_lib::inputFilter($params);
-		if (array_key_exists('owa_action', $this->request)) {
+		// get namespace
+		$ns = owa_coreAPI::getSetting('base', 'ns');
+		// strip action and do params of nasty include exploits.
+		if (array_key_exists( $ns.'action', $this->request)) {
 			
-			$this->request['owa_action'] = owa_lib::fileInclusionFilter($this->request['owa_action']);
+			$this->request[$ns.'action'] = owa_lib::fileInclusionFilter($this->request[$ns.'action']);
 		}
 		
-		if (array_key_exists('owa_do', $this->request)) {
+		if (array_key_exists($ns.'do', $this->request)) {
 			
-			$this->request['owa_do'] = owa_lib::fileInclusionFilter($this->request['owa_do']);
+			$this->request[$ns.'do'] = owa_lib::fileInclusionFilter($this->request[$ns.'do']);
 		}
+		
 		// strip owa namespace
-		$this->owa_params = owa_lib::stripParams($this->request, owa_coreAPI::getSetting('base', 'ns'));
+		$this->owa_params = owa_lib::stripParams($this->request, $ns);
+		
 		// translate certain request variables that are reserved in javascript
 		$this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 		
-		if(isset($_SERVER['HTTPS'])) {
+		// set https flag
+		if( isset($_SERVER['HTTPS'] ) ) {
 			$this->is_https = true;
 		}
 	}
@@ -301,6 +287,16 @@ class owa_requestContainer {
 	public function getTimestamp() {
 		
 		return $this->timestamp;
+	}
+	
+	public function getCurrentUrl() {
+		
+		return $this->current_url;
+	}
+	
+	public function getRequestType() {
+		
+		return $this->request_type;
 	}
 	
 }

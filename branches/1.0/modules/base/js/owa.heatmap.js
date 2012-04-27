@@ -36,7 +36,7 @@ OWA.heatmap = function(w, h) {
 	this.createCanvas(w,h);
 	this.canvas = document.getElementById('owa_heatmap');
 	this.context = this.canvas.getContext('2d');
-	this.calcRegions();
+	//this.calcRegions();
 	
 };
 
@@ -72,6 +72,7 @@ OWA.heatmap.prototype = {
 	
 	/**
 	 * Marks a region as dirty so that it can be re-rendered
+	 * @depricated
 	 */
 	markRegionDirty: function(region_num) {
 		if (region_num >= 0) {
@@ -211,7 +212,7 @@ OWA.heatmap.prototype = {
 		//params.action = 'base.reportOverlay';
 		//params.document_url = OWA.util.urlEncode(document.location);
 		params.action = 'getDomClicks';
-		params.pageUrl = OWA.util.urlEncode(document.location);
+		//params.pageUrl = OWA.util.urlEncode(document.location);
 		//params.document_url = document.location;
 		//OWA.debug('encoded url: '+OWA.util.urlEncode(document.location));
 		params.resultsPerPage = this.options.rowsPerFetch;
@@ -280,6 +281,7 @@ OWA.heatmap.prototype = {
 	
 	/**
 	 * Sets the color of a pixels a region based on their alpha values
+	 * @depircated
 	 */
 	setColor: function(num) {
 		OWA.debug("About to set color for region %s", num);
@@ -302,7 +304,7 @@ OWA.heatmap.prototype = {
 		// Draw the ImageData object at the given (x,y) coordinates.
 		this.context.putImageData(canvasData,dims.x,dims.y);
 	},
-	
+		
 	getRgbFromAlpha : function(alpha) {
 		
 		var rgb = {'r': null, 'g': null, 'b': null};
@@ -507,11 +509,62 @@ OWA.heatmap.prototype = {
 	        this.context.fillRect(data[i].x-this.options.dotSize,data[i].y-this.options.dotSize,2*this.options.dotSize,2*this.options.dotSize); 
 			
 			// mark region dirty
-			this.markRegionDirty(this.findRegion(data[i].x,data[i].y));
+			//this.markRegionDirty(this.findRegion(data[i].x,data[i].y));
+			this.setColorForDot(data[i].x, data[i].y);
 		}
 		// color dirty Regions
-		this.processDirtyRegions();
+		//this.processDirtyRegions();
+
 	},
+	
+	/**
+	 * Sets the color of a pixels a region based on their alpha values
+	 */
+	setColorForDot: function( x, y ) {
+	
+		OWA.debug("About to set color for %s, %s", x, y);
+		
+		
+		var radius = this.options.dotSize * 1.3; // little extra just in case
+		x = x - radius; 
+		y = y - radius;
+		var width = this.docDimensions.w;
+		var height = this.docDimensions.h;
+		var x2 = this.options.dotSize * 2;
+                
+        if( x + x2 > width ) {
+        	x = width - x2;
+        }
+        
+        if( x < 0 ) {
+            x = 0;
+        }
+        
+        if(y < 0) {
+            y = 0;
+        }
+        
+        if( y + x2 > height ) {
+            y = height - x2;
+		}
+		
+		// get the actual pixel data from the region
+		var canvasData = this.context.getImageData(x, y, x2, x2);
+		var pix = canvasData.data;
+		
+		// Loop over each pixel and invert the color.
+		for (var i = 0, n = pix.length; i < n; i += 4) {
+	    	var rgb = this.getRgbFromAlpha(pix[i+3]);
+	    	pix[i  ] = Math.round(parseInt(rgb.r)); // red
+	    	pix[i+1] = Math.round(parseInt(rgb.g)); // green
+	    	pix[i+2] = Math.round(parseInt(rgb.b)); // blue
+	    	
+		}
+	
+		// Draw the ImageData object at the given (x,y) coordinates.
+		this.context.putImageData(canvasData,x,y);
+	},
+
 	
 	processDirtyRegions: function() {
 	

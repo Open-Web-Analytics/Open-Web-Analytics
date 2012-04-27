@@ -247,12 +247,40 @@ class owa_metric extends owa_base {
 	
 	function getSelect() {
 		
-		return $this->select;
+		if ( $this->select) {
+			// old style metrics populate this explicitly.
+			return $this->select;
+		} else {
+			$db = owa_coreAPI::dbSingleton();
+			switch ( $this->type ) {
+				
+				case 'count':
+					
+					$statement = $db->count( $this->getColumn() );
+					break;
+				
+				case 'distinct_count':
+					$statement = $db->count( $db->distinct( $this->getColumn() ) );				
+					break;
+				
+				case 'sum':
+					$statement = $db->sum( $this->getColumn() );
+					break;
+			}
+			
+			return array( $statement, $this->getName() );	
+		}
+		
 	}
 	
 	function getSelectWithNoAlias() {
 		
-		return $this->select[0];
+		if ( $this->select ) {
+			return $this->select[0];
+		} else {
+			$select = $this->getSelect();
+			return $select[0];
+		}
 	}
 	
 	function setName($name) {
@@ -321,6 +349,14 @@ class owa_metric extends owa_base {
 	function isAggregate() {
 	
 		return $this->is_aggregate;
+	}
+	
+	function setMetricType( $type ) {
+		$this->type = $type;
+		
+		if ( $type === 'calculated' ) {
+			 $this->is_calculated = true;
+		}
 	}
 }
 

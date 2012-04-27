@@ -118,16 +118,14 @@ class owa_processEventController extends owa_controller {
 		//filter page_type
 		$this->event->set( 'page_type', $this->eq->filter( 'page_type', $this->event->get( 'page_type' ) ) );
 		
-		// Set the page url or else construct it from environmental vars
-		if (!$this->event->get('page_url')) {
-			$this->event->set('page_url', owa_lib::get_current_url());
-		}
 		// filter page_url
 		$this->event->set( 'page_url', $this->eq->filter( 'page_url', $this->event->get( 'page_url' ), $this->event->get( 'site_id' ) ) );
 		// set document/page id
-		$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
+		if ( $this->event->get('page_url') ) {
+			$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
+		}
 		// needed?
-		$this->event->set('inbound_page_url', $this->event->get('page_url'));
+		//$this->event->set('inbound_page_url', $this->event->get('page_url'));
 		
 		// Page title
 		if ( $this->event->get( 'page_title' ) ) {

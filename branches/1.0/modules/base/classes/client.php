@@ -53,6 +53,8 @@ class owa_client extends owa_caller {
 		
 		$this->pageview_event = $this->makeEvent();
 		$this->pageview_event->setEventType('base.page_request');
+		// Set the page url from environmental vars
+		$this->setGlobalEventProperty( 'page_url', owa_coreAPI::getCurrentUrl() );
 		owa_coreAPI::registerStateStore('v', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
 		owa_coreAPI::registerStateStore('s', time()+3600*24*365*10, '', 'assoc', 'cookie', true);
 		owa_coreAPI::registerStateStore('b', null, '', 'json', 'cookie', true);
@@ -405,9 +407,7 @@ class owa_client extends owa_caller {
     	}
 		
 		// merge global event properties
-		foreach ($this->global_event_properties as $k => $v) {
-			$event->set($k, $v);
-		}
+		$event->setNewProperties( $this->global_event_properties );
 		
 		return $event;
 		
@@ -469,9 +469,9 @@ class owa_client extends owa_caller {
 		$this->commerce_event->set( 'ct_gateway', $gateway );
 		$this->commerce_event->set( 'page_url', $page_url );
 		$this->commerce_event->set( 'ct_line_items', array() );
-		$this->commerce_event->set( 'country', $page_url );
-		$this->commerce_event->set( 'state', $page_url );
-		$this->commerce_event->set( 'city', $page_url );
+		$this->commerce_event->set( 'country', $country );
+		$this->commerce_event->set( 'state', $state );
+		$this->commerce_event->set( 'city', $city );
 		if ( $session_id ) {
 			$this->commerce_event->set( 'original_session_id', $session_id );
 			// tells the client to NOT manage state properties as we are
@@ -870,7 +870,7 @@ class owa_client extends owa_caller {
 	
 	public function getCustomVar( $slot ) {
 		
-		$cv_param_name = 'cv' + $slot;
+		$cv_param_name = 'cv' . $slot;
 		$cv = '';
 		// check request/page level
 		$cv = $this->getGlobalEventProperty( $cv_param_name );

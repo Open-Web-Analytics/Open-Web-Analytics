@@ -97,10 +97,13 @@ class owa_caller extends owa_base {
 		if (!defined('OWA_INSTALLING')) {
 			if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
 				if ($this->c->isConfigFilePresent())  {
-					$this->c->load($this->c->get('base', 'configuration_id'));
+					$this->c->load( $this->c->get( 'base', 'configuration_id' ) );
 				}
 			}
 		}
+		
+		// set timezone once config is loaded from DB.
+		$this->c->setTimezone();
 		 	
 
 		/* APPLY CALLER CONFIGURATION OVERRIDES */
@@ -125,6 +128,12 @@ class owa_caller extends owa_base {
 		if (defined('OWA_LOG_PHP_ERRORS')) {
 			$this->e->logPhpErrors();
 		}
+		
+		if (defined('OWA_MAIL_EXCEPTIONS')) {
+			set_exception_handler( array($this->e, 'mailException') );
+			
+		}
+		
 		
 		/* LOAD SERVICE LAYER */
 		$this->service = owa_coreAPI::serviceSingleton();
