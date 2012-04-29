@@ -7,7 +7,7 @@
 <?php if (!empty($visit['host_longitude'])):?>
             <Placemark id="<?php echo $visit['session_id'];?>">
             <name><?php echo $visit['host_host'];?> - <?php echo $visit['session_month'];?>/<?php echo $visit['session_day'];?> at <?php echo $visit['session_hour'];?>:<?php echo $visit['session_minute'];?></name>
-            <description><![CDATA[<? include('report_visit_summary_balloon.tpl');?>]]></description>
+            <description><![CDATA[<?php include('report_visit_summary_balloon.tpl');?>]]></description>
             <Point>
                 <coordinates><?php echo trim($visit['host_longitude']);?>,<?php echo trim($visit['host_latitude']);?>,5000</coordinates>
             </Point>

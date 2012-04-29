@@ -18,7 +18,7 @@
 			<img src="<?php echo $this->makeImageLink("base/i/loading.gif");?>" border="0" align="ABSMIDDLE"> Loading...
 		</div> 
 	
-		<div id="<?php echo $widget;?>_widget-content" class="owa_widget-content" style="height:<? //$params['height'];?>px;"><?php echo $subview;?></div>
+		<div id="<?php echo $widget;?>_widget-content" class="owa_widget-content" style="height:<?php //$params['height'];?>px;"><?php echo $subview;?></div>
 		
 		<div id="<?php echo $widget;?>_widget-pagination" class="owa_widget-pagination"></div>
 		
