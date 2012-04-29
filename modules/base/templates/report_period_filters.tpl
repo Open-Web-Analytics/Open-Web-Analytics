@@ -10,7 +10,7 @@
 	<TR>
 		<TD valign="top">
 			<form action="" method="GET">
-				<SELECT name="sites" onchange='OnChange(this.form.sites, "site_id");' <? if (count($sites) == 1):?>DISABLED<?endif;?>>
+				<SELECT name="sites" onchange='OnChange(this.form.sites, "site_id");' <?php if (count($sites) == 1):?>DISABLED<?endif;?>>
 				
 				<?foreach ($sites as $site => $value):?>
 					<OPTION VALUE="<?php echo $value['site_id'];?>" <?php if ($params['site_id'] == $value['site_id']): echo 'selected'; endif; ?>><?php echo $value['name'];?></OPTION>
@@ -25,12 +25,12 @@
 			<TABLE cellpadding="0" cellspacing="0">
 				<TR>
 					<TD valign="top">
-						<input type="radio" name="period_type" id="set_periods" onclick='choosePeriodType("set_periods_form");' <? if (array_key_exists($params['period'], $reporting_periods)):?>CHECKED<?endif;?>>
+						<input type="radio" name="period_type" id="set_periods" onclick='choosePeriodType("set_periods_form");' <?php if (array_key_exists($params['period'], $reporting_periods)):?>CHECKED<?endif;?>>
 					</TD>
 					<TH valign="top">Time Period: </th>
 					<TD valign="top"><form action="" method="GET" name="set_periods_form">
-							<SELECT name="period" onchange='OnChange(this.form.period, "period");' <? if (!array_key_exists($params['period'], $reporting_periods)):?>DISABLED<?endif;?>>
-							<? foreach ($reporting_periods as $reporting_period => $value):?>
+							<SELECT name="period" onchange='OnChange(this.form.period, "period");' <?php if (!array_key_exists($params['period'], $reporting_periods)):?>DISABLED<?endif;?>>
+							<?php foreach ($reporting_periods as $reporting_period => $value):?>
 								<OPTION VALUE="<?php echo $reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
 							<?endforeach;?>
 							</SELECT>
@@ -40,7 +40,7 @@
 				<TR>
 					
 					<td valign="top">
-						<input type="radio" name="period_type" id="date_periods" onclick='choosePeriodType("date_periods_form");' <? if (array_key_exists($params['period'], $date_reporting_periods)):?>CHECKED<?endif;?>>
+						<input type="radio" name="period_type" id="date_periods" onclick='choosePeriodType("date_periods_form");' <?php if (array_key_exists($params['period'], $date_reporting_periods)):?>CHECKED<?endif;?>>
 					</TD>
 					<TH valign="top">Date Period:</TH>
 					<TD valign="top">

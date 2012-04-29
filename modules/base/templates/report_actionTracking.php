@@ -1,4 +1,4 @@
-<? include('report_dimensionDetailNoTabs.php');?>
+<?php include('report_dimensionDetailNoTabs.php');?>
 
 
 <table width="100%">
