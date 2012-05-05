@@ -1673,7 +1673,7 @@ OWA.tracker.prototype = {
 				var engine = this.isRefererSearchEngine( uri );
 				if ( engine ) {
 					medium = 'organic-search';
-					search_terms = engine.t;
+					search_terms = engine.t || '(not provided)';
 				} 
 			}
 		}
