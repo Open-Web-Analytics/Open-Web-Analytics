@@ -7,6 +7,7 @@
 <?php foreach ($rs->resultsRows[0] as $k => $v):?>
 			<th class="<?php if($v['result_type'] === 'dimension') { echo 'dimensionColumn';} else { echo 'metricColumn';}?>"><?php echo $v['label'];?></th>
 <?php endforeach;?>
+<?php endif;?>
 		</tr>
 	</thead>
 
@@ -29,5 +30,6 @@
 <?php endforeach;?>
 		</tr>
 <?php endforeach;?>
+<?php endif;?>
 	</tbody>
 </table>
