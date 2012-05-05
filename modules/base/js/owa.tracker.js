@@ -700,7 +700,7 @@ OWA.tracker.prototype = {
 			if (window.addEventListener) {
 				window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
 			} else if(window.attachEvent) {
-				window.attachEvent('click', function (e) {that.clickEventHandler(e);});
+				document.attachEvent('onclick', function (e) {that.clickEventHandler(e);});
 			}
 			
 			this.isClickTrackingEnabled = true;
@@ -1172,25 +1172,25 @@ OWA.tracker.prototype = {
 	    var targ = this._getTarget(e);
 	    
 	    var dom_name = '(not set)';
-	    if ( targ.hasOwnProperty( 'name' ) && targ.name.length > 0 ) {
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'name' ) && targ.name.length > 0 ) {
 	    	dom_name = targ.name;
 	    }
 	    click.set("dom_element_name", dom_name);
 	    
 	    var dom_value = '(not set)';
-	    if ( targ.hasOwnProperty( 'value' ) && targ.value.length > 0 ) { 
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'value' ) && targ.value.length > 0 ) { 
 	    	dom_value = targ.value;
 	    }
 	    click.set("dom_element_value", dom_value);
 	    
 	    var dom_id = '(not set)';
-	    if ( ! targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
+	    if ( targ.hasOwnProperty && ! targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
 	    	dom_id = targ.id;
 	    }
 	    click.set("dom_element_id", dom_id);
 	    
 	    var dom_class = '(not set)';
-	    if ( targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
 	    	dom_class = targ.className;
 	    }
 	    click.set("dom_element_class", dom_class);
