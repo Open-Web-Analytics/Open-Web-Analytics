@@ -880,9 +880,9 @@ OWA.tracker.prototype = {
 	 */
 	generateHiddenIframe: function ( parentElement, data ) {
 	    
-	     var iframe_name = 'owa-tracker-post-iframe';
-	     
-	    if ( OWA.util.isIE() ) {
+	    var iframe_name = 'owa-tracker-post-iframe';
+	   
+	    if ( OWA.util.isIE() && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 			var iframe = document.createElement('<iframe name="' + iframe_name + '" scr="about:blank" width="1" height="1"></iframe>');
 		} else {
 			var iframe = document.createElement("iframe");
