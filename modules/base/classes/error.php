@@ -409,14 +409,19 @@ class owa_error {
 	}
 	
 	function mailException($exception) {
-		owa_coreAPI::debug('heelo');
-  		 $body = "Uncaught exception: " . $exception->getTraceAsString() . "\n";
+		
+		$this->mailErrorMsg( $exception->getTraceAsString(), 'Uncaught Exception' );
+	}
+	
+	function mailErrorMsg( $msg, $subject ) {
+		
+		 $body = 'Error Message: '. $msg . "\n";
   		 $body .= "POST: ". print_r($_POST, true) . "\n";
   		 $body .= "GET: ". print_r($_GET, true) . "\n";
   		 $body .= "Request: ". print_r($_REQUEST, true) . "\n";
   		 $body .= "Server: ". print_r($_SERVER, true) . "\n";
   		 
-  		 $conf = array('subject' => 'Uncaught Exception on '.$_SERVER['SERVER_NAME'], 'from' => 'OWA Error-logger');
+  		 $conf = array('subject' => $subject . ' on '. $_SERVER['SERVER_NAME'], 'from' => 'OWA Error-logger');
   		 $logger = Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
 		
 		 $logger->log($body);
