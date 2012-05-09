@@ -930,7 +930,7 @@ OWA.tracker.prototype = {
 		var form_name = 'post_form' + Math.random();
 		
 		// cannot set the name of an element using setAttribute
-		if ( OWA.util.isIE() ) {
+		if ( OWA.util.isIE()  && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 			var frm = doc.createElement('<form name="' + form_name + '"></form>');
 		} else {
 			var frm = doc.createElement('form');
@@ -947,7 +947,7 @@ OWA.tracker.prototype = {
 			if (data.hasOwnProperty(param)) {
 				
 				// cannot set the name of an element using setAttribute
-				if ( OWA.util.isIE() ) {
+				if ( OWA.util.isIE() && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 					var input = doc.createElement( "<input type='hidden' name='" + param + "' />" );
 					
 				} else {
@@ -982,7 +982,7 @@ OWA.tracker.prototype = {
 		var form_name = 'post_form' + Math.random();
 		
 		// cannot set the name of an element using setAttribute
-		if ( OWA.util.isIE() ) {
+		if ( OWA.util.isIE()  && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 			var frm = doc.createElement('<form name="' + form_name + '"></form>');
 		} else {
 			var frm = doc.createElement('form');
