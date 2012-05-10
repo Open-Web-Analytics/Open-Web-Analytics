@@ -32,11 +32,10 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  */
 
 ignore_user_abort(true);
+
 $owa = new owa_php();
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	$owa->e->debug('Logging Event from Url...');
-	// log event
-	$ret = $owa->logEventFromUrl();
 	
 	$s = owa_coreAPI::serviceSingleton();
 	$rt = $s->request->getRequestType();	
@@ -44,10 +43,15 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	if ($rt === 'post') {
 		
 		owa_lib::redirectBrowser( owa_coreAPI::getSetting('base', 'public_url').'blank.php');
+		
 	} else {
 		echo owa_coreAPI::displayView(array(), 'base.pixel');
 	}
+	ob_flush();
+	flush();
 	
+	// log event
+	$ret = $owa->logEventFromUrl();
 	
 } else {
 	// unload owa
