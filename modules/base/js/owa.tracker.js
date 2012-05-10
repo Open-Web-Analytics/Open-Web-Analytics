@@ -919,6 +919,19 @@ OWA.tracker.prototype = {
 			            
             
         }, 1 );
+        
+        // needed to cleanup history items in browsers like Firefox
+       
+        var cleanuptimer = setInterval( function() {
+        	
+        	
+			 parentElement.removeChild(iframe);	
+			 clearInterval(cleanuptimer);
+            
+        }, 1000 );
+        
+        
+       
 	},
 	
 	postFromIframe: function( ifr, data ) {
@@ -971,8 +984,7 @@ OWA.tracker.prototype = {
 	    doc.forms[form_name].submit();
 	    
  		// remove the form from iframe to clean things up
-  		doc.body.removeChild( frm );
-  		
+  		doc.body.removeChild( frm );  		
 	},
 	
 	//depricated
