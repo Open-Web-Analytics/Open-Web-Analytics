@@ -259,7 +259,7 @@ class owa_http {
            		$pattern = sprintf('#(<%s.*?>)(.*?)(<\/%s.*?>)#is', preg_quote($tag), preg_quote($tag));
                $str = preg_replace($pattern,"",$str);
            }
-           $str = preg_replace($pattern, ${2},$str);
+           $str = preg_replace($pattern, '${2}',$str);
        }
        
        return $str;

@@ -1172,8 +1172,16 @@ class owa_lib {
 			$arr  = array();
 	
 	  		foreach( $var as $val ) {
-	    		$x = explode('=', $val);
-	    		$arr[$x[0]] = urldecode($x[1]);
+	    		
+	    		if ( strpos($val, '=') ) {
+	    			$x = explode('=', $val);
+	    		
+		    		if ( isset( $x[1] ) ) {
+		    			$arr[$x[0]] = urldecode($x[1]);
+		    		}
+		    	} else {
+		    		$arr[$val] = '';
+		    	}
 	   		}
 	  		unset($val, $x, $var);
 	  		
