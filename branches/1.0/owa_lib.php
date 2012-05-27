@@ -540,11 +540,9 @@ class owa_lib {
      */
     public static function redirectBrowser($url) {
     	
-    	//ob_clean();
 	    // 302 redirect to URL 
-		header ('Location: '.$url, true);
-		header ('HTTP/1.0 302 Found', true);
-		return;
+		header ('Location: '.$url);
+		header ('HTTP/1.0 302 Found');
     }
 	
 	public static function makeLinkQueryString($query_params) {
@@ -1174,8 +1172,16 @@ class owa_lib {
 			$arr  = array();
 	
 	  		foreach( $var as $val ) {
-	    		$x = explode('=', $val);
-	    		$arr[$x[0]] = urldecode($x[1]);
+	    		
+	    		if ( strpos($val, '=') ) {
+	    			$x = explode('=', $val);
+	    		
+		    		if ( isset( $x[1] ) ) {
+		    			$arr[$x[0]] = urldecode($x[1]);
+		    		}
+		    	} else {
+		    		$arr[$val] = '';
+		    	}
 	   		}
 	  		unset($val, $x, $var);
 	  		

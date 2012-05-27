@@ -69,6 +69,11 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
+		
+		// debug filter for examining events with no type created by browwser corner cases.
+		if ( defined( 'OWA_MAIL_EXCEPTIONS' ) ) {
+			$this->registerFilter('post_processed_tracking_event', $this, 'checkEventForType');
+		}
 	}
 	
 	/**
@@ -2309,7 +2314,11 @@ class owa_baseModule extends owa_module {
 	 * @return string
 	 */
 	function makeUrlCanonical($url, $site_id = '') {
-	
+		
+		if ( ! $site_id ) {
+			owa_coreAPI::debug('no site_id passed to make makeUrlCanonical. Returning URL as is.');
+			return $url;
+		}
 		// remove port, pass, user, and fragment
 		$url = owa_lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
 		
@@ -2997,6 +3006,19 @@ class owa_baseModule extends owa_module {
     		return $combined;
     	
     }
+    
+    function checkEventForType( $event ) {
+		
+		$type = $event->getEventType();
+		
+		if ( $type === 'unknown_event_type' ) {
+			
+			$e = owa_coreAPI::errorSingleton();
+			$e->mailErrorMsg( print_r( $event->getProperties(), true ), 'Unknown Event Type' );		
+		}
+		
+		return $event;
+	}
 }
 
 

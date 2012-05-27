@@ -700,7 +700,7 @@ OWA.tracker.prototype = {
 			if (window.addEventListener) {
 				window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
 			} else if(window.attachEvent) {
-				window.attachEvent('click', function (e) {that.clickEventHandler(e);});
+				document.attachEvent('onclick', function (e) {that.clickEventHandler(e);});
 			}
 			
 			this.isClickTrackingEnabled = true;
@@ -880,9 +880,9 @@ OWA.tracker.prototype = {
 	 */
 	generateHiddenIframe: function ( parentElement, data ) {
 	    
-	     var iframe_name = 'owa-tracker-post-iframe';
-	     
-	    if ( OWA.util.isIE() ) {
+	    var iframe_name = 'owa-tracker-post-iframe';
+	   
+	    if ( OWA.util.isIE() && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 			var iframe = document.createElement('<iframe name="' + iframe_name + '" scr="about:blank" width="1" height="1"></iframe>');
 		} else {
 			var iframe = document.createElement("iframe");
@@ -919,6 +919,19 @@ OWA.tracker.prototype = {
 			            
             
         }, 1 );
+        
+        // needed to cleanup history items in browsers like Firefox
+       
+        var cleanuptimer = setInterval( function() {
+        	
+        	
+			 parentElement.removeChild(iframe);	
+			 clearInterval(cleanuptimer);
+            
+        }, 1000 );
+        
+        
+       
 	},
 	
 	postFromIframe: function( ifr, data ) {
@@ -930,7 +943,7 @@ OWA.tracker.prototype = {
 		var form_name = 'post_form' + Math.random();
 		
 		// cannot set the name of an element using setAttribute
-		if ( OWA.util.isIE() ) {
+		if ( OWA.util.isIE()  && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 			var frm = doc.createElement('<form name="' + form_name + '"></form>');
 		} else {
 			var frm = doc.createElement('form');
@@ -947,7 +960,7 @@ OWA.tracker.prototype = {
 			if (data.hasOwnProperty(param)) {
 				
 				// cannot set the name of an element using setAttribute
-				if ( OWA.util.isIE() ) {
+				if ( OWA.util.isIE() && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 					var input = doc.createElement( "<input type='hidden' name='" + param + "' />" );
 					
 				} else {
@@ -971,8 +984,7 @@ OWA.tracker.prototype = {
 	    doc.forms[form_name].submit();
 	    
  		// remove the form from iframe to clean things up
-  		doc.body.removeChild( frm );
-  		
+  		doc.body.removeChild( frm );  		
 	},
 	
 	//depricated
@@ -982,7 +994,7 @@ OWA.tracker.prototype = {
 		var form_name = 'post_form' + Math.random();
 		
 		// cannot set the name of an element using setAttribute
-		if ( OWA.util.isIE() ) {
+		if ( OWA.util.isIE()  && OWA.util.getInternetExplorerVersion() < 9.0 ) {
 			var frm = doc.createElement('<form name="' + form_name + '"></form>');
 		} else {
 			var frm = doc.createElement('form');
@@ -1172,25 +1184,25 @@ OWA.tracker.prototype = {
 	    var targ = this._getTarget(e);
 	    
 	    var dom_name = '(not set)';
-	    if ( targ.hasOwnProperty( 'name' ) && targ.name.length > 0 ) {
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'name' ) && targ.name.length > 0 ) {
 	    	dom_name = targ.name;
 	    }
 	    click.set("dom_element_name", dom_name);
 	    
 	    var dom_value = '(not set)';
-	    if ( targ.hasOwnProperty( 'value' ) && targ.value.length > 0 ) { 
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'value' ) && targ.value.length > 0 ) { 
 	    	dom_value = targ.value;
 	    }
 	    click.set("dom_element_value", dom_value);
 	    
 	    var dom_id = '(not set)';
-	    if ( ! targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
+	    if ( targ.hasOwnProperty && ! targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
 	    	dom_id = targ.id;
 	    }
 	    click.set("dom_element_id", dom_id);
 	    
 	    var dom_class = '(not set)';
-	    if ( targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
 	    	dom_class = targ.className;
 	    }
 	    click.set("dom_element_class", dom_class);
@@ -1673,7 +1685,7 @@ OWA.tracker.prototype = {
 				var engine = this.isRefererSearchEngine( uri );
 				if ( engine ) {
 					medium = 'organic-search';
-					search_terms = engine.t;
+					search_terms = engine.t || '(not provided)';
 				} 
 			}
 		}

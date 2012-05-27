@@ -3,10 +3,11 @@
 	<!-- <CAPTION>Result set for <?php echo $rs->timePeriod['label'];?>.</CAPTION> -->
 	<thead>
 		<tr>
-<? if ($rs->resultsRows):?>
+<?php if ($rs->resultsRows):?>
 <?php foreach ($rs->resultsRows[0] as $k => $v):?>
 			<th class="<?php if($v['result_type'] === 'dimension') { echo 'dimensionColumn';} else { echo 'metricColumn';}?>"><?php echo $v['label'];?></th>
 <?php endforeach;?>
+<?php endif;?>
 		</tr>
 	</thead>
 
@@ -15,7 +16,7 @@
 	</tfoot>
 		
 	<tbody>
-<? if ($rs->resultsRows):?>
+<?php if ($rs->resultsRows):?>
 <?php foreach ($rs->resultsRows as $row):?>
 		<tr>
 <?php foreach ($row as $k => $v):?>
@@ -29,5 +30,6 @@
 <?php endforeach;?>
 		</tr>
 <?php endforeach;?>
+<?php endif;?>
 	</tbody>
 </table>
