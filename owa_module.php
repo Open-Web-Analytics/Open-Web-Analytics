@@ -918,7 +918,7 @@ abstract class owa_module extends owa_base {
 		}
 	}
 	
-	protected function registerActions() {
+	function registerActions() {
 		
 		return false;
 	}
