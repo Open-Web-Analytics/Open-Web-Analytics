@@ -765,43 +765,50 @@ class owa_coreAPI {
 	 */
 	public static function performAction($action, $params = array()) {
 		
-		// Load 
-		$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+		// Load action from service map
+		$service = owa_coreAPI::serviceSingleton();
+		$action_map = $service->getMapValue('actions', $action );
 		
-		if (!$controller || !method_exists($controller, 'doAction')) {
+		// create the controller object
+		if ( $action_map ) {
+			$controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
+		} else {
+			// attempt to use old style convention
+			$controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+		}
+		
+		if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
 			
 			owa_coreAPI::debug("No controller is associated with $action.");
 			return;
 		}
 		
-		$data = $controller->doAction();				
+		// call the doAction method which is part of the abstract controller class
+		// inherited by all other controller classes
+		$data = $controller->doAction();
+						
 		// Display view if controller calls for one.
-		if (!empty($data['view']) || !empty($data['action'])):
-		
-			// 
-			if ($data['view_method'] == 'delegate'):
-				return owa_coreAPI::displayView($data);
-			
+		if ( ! empty( $data['view'] ) || ! empty( $data['action'] ) ) {
+		 
 			// Redirect to a view	
-			elseif ($data['view_method'] == 'redirect'):
-				owa_lib::redirectToView($data);
-				return;
+			if ( $data['view_method'] == 'redirect' ) {
+			
+				return owa_lib::redirectToView( $data );
 				
 			// return an image . Will output headers and binary data.
-			elseif ($data['view_method'] == 'image'):
-				return owa_coreAPI::displayImage($data);
+			} elseif ( $data['view_method'] == 'image' ) {
 			
-			else:
-				return owa_coreAPI::displayView($data);
-				
-			endif;
+				return owa_coreAPI::displayImage( $data );
+			
+			} else {
+			
+				return owa_coreAPI::displayView( $data );	
+			}
 		
-		elseif(!empty($data['do'])):
-			//print_r($data);
-			owa_lib::redirectToView($data);
-			return;
+		} elseif( ! empty( $data['do'] ) ) {
 			
-		endif;
+			return owa_lib::redirectToView( $data );
+		}
 	}
 	
 	/**

@@ -511,6 +511,24 @@ class owa_lib {
         }
 		return new $class($constructorArguments);
     }
+    
+    public static function simpleFactory( $class_name, $file_path = '', $args = '' ) {
+	    
+	    if ( ! class_exists( $class_name ) ) {        	
+        	if ( ! file_exists( $file_path ) ) {
+        		throw new Exception("Factory cannot make $class_name becasue $file_path does not exist!");
+        	} else {
+		   		require_once( $file_path );    	
+        	}
+  
+        }
+
+        if (! class_exists( $class_name ) ) {
+        	throw new Exception("Class $class_name still does not exist!");
+        }
+        
+		return new $class_name( $args );	    
+    }
 	
     /**
      * Generic Object Singleton
@@ -700,17 +718,16 @@ class owa_lib {
 		
 		foreach ($data as $n => $v) {
 			
-			if (!in_array($n, $control_params)): 			
+			if (!in_array($n, $control_params)) {			
 			
 				$get .= $config['ns'].$n.'='.$v.'&';
 			
-			endif;
+			}
 		}
+		
 		$new_url = sprintf($config['link_template'], $config['main_url'], $get);
 		
 		owa_lib::redirectBrowser($new_url);
-		
-		return;
 	}
 	
 	/**
