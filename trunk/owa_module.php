@@ -202,6 +202,13 @@ abstract class owa_module extends owa_base {
 	var $background_jobs = array();
 	
 	/**
+	 * Controllers
+	 * 
+	 * @var array 
+	 */
+	var $actionControllers = array();
+	
+	/**
 	 * Update from CLI Required flag
 	 *
 	 * Used by controllers to see if an update error was becuase it needs
@@ -909,6 +916,27 @@ abstract class owa_module extends owa_base {
 				$this->dimensions[$dim_name] = $dim;
 			}
 		}
+	}
+	
+	protected function registerActions() {
+		
+		return false;
+	}
+	
+	
+	/**
+	 * Registers an Action Controller
+	 *
+	 * @param	$action_name	string	the name of the action used as the value in the 'do' url param
+	 * @param	$class_name 	string	the name of the controller class
+	 * @param	$file			string	the path to the file housing the class
+	 *
+	 */
+	protected function registerAction( $action_name, $class_name, $file = '' ) {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$s->setMapValue( 'actions', $action_name, array( 'class_name' => $class_name, 'file' => $file ) );
+		
 	}
 	
 	function registerCliCommand($command, $class) {
