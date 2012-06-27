@@ -1,4 +1,4 @@
-//
+	//
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
 // Copyright 2006 Peter Adams. All rights reserved.
@@ -1196,7 +1196,7 @@ OWA.tracker.prototype = {
 	    click.set("dom_element_value", dom_value);
 	    
 	    var dom_id = '(not set)';
-	    if ( targ.hasOwnProperty && ! targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
+	    if ( targ.hasOwnProperty && targ.hasOwnProperty( 'id' ) && targ.id.length > 0) {
 	    	dom_id = targ.id;
 	    }
 	    click.set("dom_element_id", dom_id);
