@@ -1,4 +1,4 @@
-/* OWA owa.tracker package file created Fri, 11 May 12 01:56:46 -0400 */ 
+/* OWA owa.tracker package file created Wed, 27 Jun 12 01:23:17 -0400 */ 
 
 /* Start of json2 */ 
 
@@ -182,7 +182,7 @@ return coords;},getDomElementProperties:function(targ){var properties=new Object
 properties.target_url=targ.href;}else if(targ.tagName=="INPUT"){properties.dom_element_text=targ.value;}else if(targ.tagName=="IMG"){properties.target_url=targ.parentNode.href;properties.dom_element_text=targ.alt;}else{if(targ.textContent!=undefined){properties.html_element_text='';}else{properties.html_element_text='';}}
 return properties;},clickEventHandler:function(e){e=e||window.event;var click=new OWA.event();click.setEventType("dom.click");var targ=this._getTarget(e);var dom_name='(not set)';if(targ.hasOwnProperty&&targ.hasOwnProperty('name')&&targ.name.length>0){dom_name=targ.name;}
 click.set("dom_element_name",dom_name);var dom_value='(not set)';if(targ.hasOwnProperty&&targ.hasOwnProperty('value')&&targ.value.length>0){dom_value=targ.value;}
-click.set("dom_element_value",dom_value);var dom_id='(not set)';if(targ.hasOwnProperty&&!targ.hasOwnProperty('id')&&targ.id.length>0){dom_id=targ.id;}
+click.set("dom_element_value",dom_value);var dom_id='(not set)';if(targ.hasOwnProperty&&targ.hasOwnProperty('id')&&targ.id.length>0){dom_id=targ.id;}
 click.set("dom_element_id",dom_id);var dom_class='(not set)';if(targ.hasOwnProperty&&targ.hasOwnProperty('className')&&targ.className.length>0){dom_class=targ.className;}
 click.set("dom_element_class",dom_class);click.set("dom_element_tag",OWA.util.strtolower(targ.tagName));click.set("page_url",window.location.href);var viewport=this.getViewportDimensions();click.set("page_width",viewport.width);click.set("page_height",viewport.height);var properties=this.getDomElementProperties(targ);click.merge(this.filterDomProperties(properties));click.set("dom_element_x",this.findPosX(targ)+'');click.set("dom_element_y",this.findPosY(targ)+'');var coords=this.getCoords(e);click.set('click_x',coords.x);click.set('click_y',coords.y);if(this.getOption('trackDomStream')){this.addToEventQueue(click)}
 var full_click=OWA.util.clone(click);if(this.getOption('logClicksAsTheyHappen')){this.trackEvent(full_click);}
