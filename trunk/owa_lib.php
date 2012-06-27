@@ -1151,6 +1151,7 @@ class owa_lib {
 	
 	public static function stripWWWFromDomain($domain) {
 		
+		$done = false;
 		$part = substr( $domain, 0, 5 );
 		if ($part === '.www.') {
 			//strip .www.
