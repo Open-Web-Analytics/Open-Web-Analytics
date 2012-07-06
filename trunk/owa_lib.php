@@ -425,7 +425,10 @@ class owa_lib {
 		
 		$url = 'http';	
 		
-		if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+		// check for https
+		if( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on') {
+			$url.= 's';
+		} elseif ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) {
 			$url.= 's';
 		}
 		
@@ -515,19 +518,23 @@ class owa_lib {
     public static function simpleFactory( $class_name, $file_path = '', $args = '' ) {
 	    
 	    if ( ! class_exists( $class_name ) ) {        	
+		     
         	if ( ! file_exists( $file_path ) ) {
         		throw new Exception("Factory cannot make $class_name becasue $file_path does not exist!");
         	} else {
-		   		require_once( $file_path );    	
+        		
+		   		require_once( $file_path );
+		   		   	
         	}
   
         }
-
-        if (! class_exists( $class_name ) ) {
+       
+        if ( ! class_exists( $class_name ) ) {
+        	
         	throw new Exception("Class $class_name still does not exist!");
         }
-        
-		return new $class_name( $args );	    
+       
+		return new $class_name( $args );    
     }
 	
     /**
@@ -1288,7 +1295,24 @@ class owa_lib {
 		}
   	
   		return $p['scheme'].$p['user'].$p['pass'].$p['host'].$p['port'].$p['path'].$p['query'].$p['fragment']; 
-	} 
+	}
+	
+	public static function moveFile( $oldfile, $newfile ) {
+	
+		if ( file_exists( $oldfile ) && ! rename( $oldfile, $newfile ) ) {
+		
+			if ( copy( $oldfile, $newfile ) ) {
+		
+				unlink( $oldfile );
+				
+				return true;
+			}
+			
+			return false;
+		}
+		
+		return true;
+	}
 }
 
 ?>
