@@ -59,12 +59,14 @@ class eventQueue {
 	 */
 	var $listenersByFilterType = array();
 	
+	var $queues	= array();
+	
 	/**
 	 * Constructor
 	 *
 	 */
 	function __construct() {
-	
+		
 	}
 	
 	/**
@@ -155,8 +157,8 @@ class eventQueue {
 		
 		if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
 			owa_coreAPI::debug("EHS: Event was not handled successfully by some handlers.");
-			//$q = $this->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
-			//$q->addToQueue($event);
+			$q = $this->getEventQueue( 'processing' );
+			$q->addToQueue($event);
 			return OWA_EHS_EVENT_FAILED;
 		} else {
 			owa_coreAPI::debug("EHS: Event was handled successfully by all handlers.");
@@ -260,66 +262,48 @@ class eventQueue {
 	 * @param	$event	array
 	 * @return bool
 	 */
-	function asyncNotify($event) {
+	function asyncNotify( $event ) {
 		
-		// check config to see if async mode is enabled, if not fall back to realtime notification
-		if (owa_coreAPI::getSetting('base', 'queue_events')) {
-			owa_coreAPI::debug(sprintf("Adding event of %s to async %s queue.", $event->getEventType(), owa_coreAPI::getSetting('base', 'event_queue_type')));
-			// check to see first if OWA is not already acting as a remote event queue, 
-			// then check to see if we are configured to use a remote or local event queue
-			// then see if we have an endpoint
-			if (!owa_coreAPI::getSetting('base', 'is_remote_event_queue') && 
-			    owa_coreAPI::getSetting('base', 'use_remote_event_queue') &&
-			    owa_coreAPI::getSetting('base', 'remote_event_queue_type') &&
-			    owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint')) {
-			    // get a network queue
-				$q = $this->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'remote_event_queue_type'));
-			// use a local event queue
-			} else {
-				// get a local event queue
-				$q = $this->getAsyncEventQueue(owa_coreAPI::getSetting('base', 'event_queue_type'));
-			}
-			
-			// if an event queue is returned then pass it the event
-			if ($q) {
-			
-				return $q->addToQueue($event);
-			// otherwise skip the queue and just notify the listeners immeadiately. 
-			} else {
-				return $this->notify($event);
-			}
-			
-		// otherwise skip the queue and just notify the listeners immeadiately. 	
-		} else {
-			return $this->notify($event);
-		}	
+		return $this->notify( $event );	
 	}
 	
-	function getAsyncEventQueue($type) {
-	
-		static $q = array();
+	function getEventQueue( $name ) {
 		
-		if ( ! array_key_exists( $type, $q ) ) {
+		// get queue config
+		$s = owa_coreAPI::serviceSingleton();
+		$map = $s->getMapValue('event_queues', $name);
+		
+		if ( $map ) {		
+		// make queue if needed
+			if ( ! isset( $this->queues[ $name ] ) ) {
 			
-			switch( $type ) {
-				
-				case 'http':
-					$q['http'] = owa_coreAPI::supportClassFactory( 'base', 'httpEventQueue' );
-					break;
-				case 'database':
-					$q['database'] = owa_coreAPI::supportClassFactory( 'base', 'dbEventQueue' );
-					break;
-				case 'file':
-					$q['file'] = owa_coreAPI::supportClassFactory( 'base', 'fileEventQueue' );
-					break;
+				$this->queues[ $name ] = $this->getAsyncEventQueue( $map['queue_type'], $map );
 			}
-		}		
-		
-		if ( array_key_exists( $type, $q ) ) {
-			return $q[$type];
+			
+			// return queue
+			return $this->queues[ $name ];
+			
 		} else {
-			owa_coreAPI::debug('No event queue of that type exists.'); 
-			return false;
+			
+			throw new Exception("No event queue by that name found.");
+		}			
+	}
+	
+	function getAsyncEventQueue($type, $params = '') {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$implementation = $s->getMapValue( 'event_queue_types', $type );
+		
+		if ( $implementation 
+			 && isset( $implementation[0] ) 
+			 && isset( $implementation[1] )
+		) {
+		
+			return owa_lib::simpleFactory($implementation[0], $implementation[1], $params);
+
+		} else {
+			
+			throw new Exception("No event queue by that type found.");	
 		}
 	}
 	
@@ -339,21 +323,6 @@ class eventQueue {
 		return $event;
 	}
 	
-/*
-	function processEventQueue($processing_queue_type = '') {
-		
-		// get the primary async queue
-		
-		// get an item from the queue
-		
-		// send to the notify method
-		
-		// check return status
-		
-		// mark item accordingly
-	}
-*/
-
 	/**
 	 * Singleton
 	 *
