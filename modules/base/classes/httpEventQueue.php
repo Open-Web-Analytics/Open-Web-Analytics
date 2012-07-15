@@ -34,16 +34,18 @@ class owa_httpEventQueue extends owa_eventQueue {
 	
 	var $endpoint = '';
 	
-	function __construct($options = '') {
-		// set the endpoint. move this to constructor
-		if (array_key_exists('endpoint', $options)) {
-			$this->endpoint = $options['endpoint'];
+	function __construct( $map = array() ) {
+		
+		if ( array_key_exists( 'endpoint', $map ) ) {
+			$this->endpoint = $map['endpoint'];
 		} else {
 			$this->endpoint = owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint');
 		}
+		
+		return parent::__construct( $map );
 	}
 	
-	function sendMessage($event) {
+	function sendMessage( $event ) {
 		
 		if ($event) {
 			$properties['owa_event'] = base64_encode(serialize($event));
@@ -75,13 +77,7 @@ class owa_httpEventQueue extends owa_eventQueue {
 	      	fclose($fp);
 	      	return true;
 	  	}
-	
-	}
-	
-	function processQueue() {
-	
-	}
-
+	}	
 }
 
 ?>

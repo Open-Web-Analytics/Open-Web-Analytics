@@ -1115,6 +1115,7 @@ abstract class owa_module extends owa_base {
 	
 	protected function registerEventQueue( $name, $map ) {
 		
+		$map['queue_name'] = $name;
 		$s = owa_coreAPI::serviceSingleton();
 		$s->setMapValue( 'event_queues', $name, $map );
 	}
