@@ -16,8 +16,12 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
-require_once(OWA_BASE_CLASS_DIR.'event.php');
+if ( ! class_exists( 'owa_eventQueue' ) ) {
+	require_once( OWA_BASE_CLASS_DIR.'eventQueue.php' );
+}
+if ( ! class_exists( 'owa_event' ) ) {
+	require_once(OWA_BASE_CLASS_DIR.'event.php');
+}
 require_once(OWA_PEARLOG_DIR . '/Log.php');
 require_once(OWA_PEARLOG_DIR . '/Log/file.php');
 
@@ -36,18 +40,64 @@ require_once(OWA_PEARLOG_DIR . '/Log/file.php');
 class owa_fileEventQueue extends owa_eventQueue {
 	
 	var $queue;
-	var $error_logger;
 	var $queue_dir;
 	var $event_file;
+	var $date_format;
+	var $unprocessed_path;
+	var $archive_path;
+	var $rotation_size;
+	var $rotation_interval = 3600;
+	var $currentProcessingFileHandle;
 	
-	function __construct($queue_dir = '') {
+	function __construct( $map ) {
+		
+		parent::__construct( $map );
 		
 		// set event file
-		if (!$queue_dir) {
+		if ( ! isset( $map['path'] ) ) {
 			$this->queue_dir = owa_coreAPI::getSetting('base', 'async_log_dir');
+		} else {
+			$this->queue_dir = $map['path'];
+			
 		}
 		
-		$this->event_file = $this->queue_dir.'events.txt';
+		// set directory where unprocessed, rotated files reside
+		if ( ! isset( $map['unprocessed_path'] ) ) {
+			
+			$this->unprocessed_path = $this->queue_dir . 'unprocessed/';
+			
+		} else {
+			$this->unprocessed_path = $map['unprocessed_path'];
+		}
+		
+		// test or make dir
+		if ( ! is_dir( $this->unprocessed_path ) && ! mkdir( $this->unprocessed_path, 0755 ) ) {
+				
+			throw new Exception("Cannot make unprocessed directory.");
+		}
+		
+		// set directory where processed files will be archived.
+		if ( ! isset( $map['archive_path'] ) ) {
+			$this->archive_path = $this->queue_dir . 'archive/';
+		} else {
+			$this->archive_path = $map['archive_path'];
+		}
+		
+		// test or make dir
+		if ( ! is_dir( $this->archive_path ) && ! mkdir( $this->archive_path, 0755 ) ) {
+				
+			throw new Exception("Cannot make archive directory.");
+		}
+		
+		if ( ! isset( $map['date_format'] ) ) {
+			$this->date_format = "YmdHis";
+		}
+		
+		if ( ! isset( $map['rotation_interval'] ) ) {
+			$this->rotation_interval = $map['rotation_interval'];
+		}
+		
+		$this->event_file = $this->queue_dir. 'events.txt';
 		$this->lock_file = $this->queue_dir.'lock.txt';
 	}
 		
@@ -56,64 +106,34 @@ class owa_fileEventQueue extends owa_eventQueue {
 		//make file queue
 		$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
 		//$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
-		$this->queue = Log::singleton('file', $this->event_file, 'async_event_queue', $conf);
+		$this->queue = Log::singleton('file', $this->event_file, $this->queue_name, $conf);
 		$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s';
 		// not sure why this is needed but it is.
 		$this->queue->_filename	= $this->event_file;
 	}
-	
-	function addToQueue($event) {
 		
-		if (!$this->queue) {
-			$this->makeQueue();
+	function openFile( $file ) {
+				
+		// check to see if event log file exisits
+		if ( file_exists( $file ) && is_readable( $file ) ) {
+			//create lock file
+			$this->create_lock_file();
+			return @fopen($file, "r");
+		} else {
+			throw new Exception("Cannot open queue file at ".$file);
 		}
-		
-		$this->queue->log(urlencode(serialize($event)));
-	
 	}
 	
-	function processQueue($event_file = '') {
-	
-		if ($event_file) {
+	function closeFile( $handle ) {
 		
-			$this->event_file = $this->queue_dir.$event_file;
-		}
-		
-		if ( file_exists( $this->event_file ) ) {
-			
-			$event_log_rotate_size = owa_coreAPI::getSetting( 'base', 'async_log_rotate_size' );
-			
-			if ( filesize( $this->event_file ) > $event_log_rotate_size ) {
-				
-				owa_coreAPI::notice(sprintf('Starting Async Event Processing Run for: %s', $this->event_file));
-				
-				//check for lock file
-				if (!$this->isLocked()) {
-					
-					return $this->process_event_log($this->event_file);
-					
-				} else {
-					
-					owa_coreAPI::notice(sprintf('Previous Process (%d) still active. Terminating Run.', $former_pid));
-				}
-							
-			} else {
-				
-				owa_coreAPI::debug("Event file is not large enough to process yet. Size is only: ".filesize($this->event_file));
-			}
-			
-		} else {
-			
-			owa_coreAPI::debug("No event file found at: ".$this->event_file);
-		}
-				
+		fclose( $handle );
 	}
 	
 	function isLocked() {
 		
-		if (file_exists($this->lock_file)) {
+		if ( file_exists( $this->lock_file ) ) {
 			//read contents of lock file for last PID
-			$lock = fopen($this->lock_file, "r") or die ("Could not read lock file");
+			$lock = fopen( $this->lock_file, "r" ) or die ("Could not read lock file");
 			if ($lock) {
 				while (!feof($lock)) {
 					$former_pid = fgets($lock, 4096);
@@ -145,7 +165,7 @@ class owa_fileEventQueue extends owa_eventQueue {
       
    		exec("ps $pid", $process_state);
    		//print $pid;
-   		print_r($process_state);
+   		//print_r($process_state);
    
 		if (count($process_state) >= 2) {
 			return true;
@@ -154,113 +174,130 @@ class owa_fileEventQueue extends owa_eventQueue {
 		}
 	}
 	
-	function process_event_log($file) {
+	function sendMessage($event) {
 		
-		// check to see if event log file exisits
-		if (!file_exists($file)) {
-			owa_coreAPI::debug("Event file does not exist at $file");
-			return false;
+		if ( ! $this->queue ) {
+			$this->makeQueue();
 		}
 		
-		// check for access to db
-		$db = owa_coreAPI::dbSingleton();
-		$db->connect();
-		if ( ! $db->isConnectionEstablished() ) {
-			owa_coreAPI::debug("Aborting processing of event log file. Could not connect to database.");
-			return false;
-		}
-			
-		//create lock file
-		$this->create_lock_file();
-		
-		// get event dispatcher
-		$dispatch = owa_coreAPI::getEventDispatch();
-		
-		// Create a new log file name	
-		$new_file_name = $this->queue_dir.time().".".getmypid();
-		$new_file = $new_file_name.".processing";
-		
-		// Rename current log file 
-		rename ($file, $new_file ) or die ("Could not rename file");
-		owa_coreAPI::debug('renamed event file.');
-		
-		// open file for reading
-		$handle = @fopen($new_file, "r");
-		if ($handle) {
-			while (!feof($handle)) {
-				
-				// Read row
-				$buffer = fgets($handle, 14096); // big enough?
-					
-				// Parse the row
-				$event = $this->parse_log_row($buffer);
-				
-				// Log event to the event queue
-				if (!empty($event)) {
-					//print_r($event);
-					// debug
-					owa_coreAPI::debug(sprintf('Processing: %s (%s)', '', $event->guid));
-					// send event object to event queue
-					$ret = $dispatch->notify($event);
-					
-					// is the dispatch was not successful then add the event back into the queue.
-					if ( $ret != OWA_EHS_EVENT_HANDLED ) {
-						$dispatch->asyncNotify($event);
-					}
-					
-				} else {
-					owa_coreAPI::debug("No event found in log row. Must be end of file.");
-				}						
-			}
-			//Close file
-			fclose($handle);
-			
-			// rename file to mark it as processed
-			$processed_file_name = $new_file_name.".processed";
-			rename ($new_file, $processed_file_name) or die ("Could not rename file");	
-			owa_coreAPI::debug(sprintf('Processing Complete. Renaming File to %s', $processed_file_name ));
-			
-			//Delete processed file
-			unlink($processed_file_name);
-			owa_coreAPI::debug(sprintf('Deleting File %s', $processed_file_name));
-			
-			//Delete Lock file
-			unlink($this->lock_file);
-			
-			return true;	
-		} else {
-			//could not open file for processing
-			owa_coreAPI::error(sprintf('Could not open file %s. Terminating Run.', $new_file));
-		}
+		$this->queue->log( urlencode( serialize( $event ) ) );
 	}
 
-	function makeErrorLogFile() {
+	
+	function receiveMessage() {
+		owa_coreAPI::notice("receive event.");
+		$qfile = $this->getNextUnprocessedQueueFile();
 		
-		$conf = array('mode' => 640, 'timeFormat' => '%X %x');
-		$this->error_logger = &Log::singleton('file', owa_coreAPI::getSetting('async_error_log_file'), 'ident', $conf);
-		$this->error_logger->_lineFormat = '[%3$s]';
-		$this->error_logger->_filename = owa_coreAPI::getSetting('async_error_log_file');
+		if ( ! $this->currentProcessingFileHandle ) {
+			
+			if ( $qfile ) {
+				// set current processing file handle to
+				owa_coreAPI::notice("Opening queue file $qfile to process.");
+
+				$this->currentProcessingFileHandle = $this->openFile( $qfile );
+			} else {
+				
+				owa_coreAPI::notice('No queue file to process.');
+				return false;
+			}
+		}
+		
+		if ( $this->currentProcessingFileHandle ) {
+			
+			$buffer = fgets( $this->currentProcessingFileHandle );
+			
+			if ( ! feof( $this->currentProcessingFileHandle ) ) {
+					
+				// Parse the row
+				//owa_coreAPI::debug('returning buffer: '. print_r( $buffer, true));	
+				//owa_coreAPI::debug('returning buffer: '. print_r( $buffer, true));
+				$event = $this->parse_log_row( $buffer );
+				//owa_coreAPI::debug('returning event: '. print_r( $event, true));
+				$event->wasReceived();
+				return $event;			
+				
+			} else {
+				// if it is the end of file then, close, archive and move onto the next file.
+				owa_coreAPI::notice('EOF reached.');
+				$this->closeFile( $this->currentProcessingFileHandle );
+				$this->currentProcessingFileHandle = '';
+				$this->archiveProcessedFile( $qfile );
+				owa_coreAPI::notice('Moving on to next queue file.');
+				return $this->receiveMessage();
+				
+			}
+			
+		} else {
+			owa_coreAPI::notice('still no queue to process.');
+			return false;
+		}
+	}
+		
+	function getNextUnprocessedQueueFile() {
+		
+		// get a list of all unprocesed queue files
+		$qfiles = $this->getUnprocessedFileList();
+		owa_coreAPI::notice('queue files to process: '.print_r($qfiles, true));
+		// get earliest queue file based on creation time so we can process them in order
+		if ( $qfiles && is_array( $qfiles ) ) {
+			
+			return array_shift( $qfiles );
+		
+		} else {
+			
+			return owa_coreAPI::notice('No unprocessed queue files to process.');
+		}
 	}
 	
-	function logError($event) {
-	
+	function getUnprocessedFileList() {
+		
+		$files = array();
+		
+		$this->rotateEventFile();
+		
+		if ( is_dir( $this->unprocessed_path ) ) {
+			foreach ( new DirectoryIterator( $this->unprocessed_path ) as $item ) {
+				if ( $item->isFile() && ! $item->isDot() ) {
+					$files[ $item->getMTime() ] = $item->getPathname();
+				}
+			}
+			
+			// sort by key ascending
+			ksort( $files );
+		}
+					
+		return $files;
 	}
 	
-	/**
-	 * Parse row from event log file
-	 *
-	 * @param string $row
-	 * @return array
-	 */
-	function parse_log_row($row) {
+	function rotateEventFile() {
+		
+		if ( file_exists( $this->event_file ) ) {
+		
+			// Create a new log file name	
+			$new_file_path = sprintf("%s-events-%s.txt", $this->unprocessed_path . $this->queue_name, date( $this->date_format ) );
+			$ret = owa_lib::moveFile( $this->event_file, $new_file_path );
+			
+			if ( $ret ) {
+				owa_coreAPI::debug('Rotated event file.');
+			} else {
+				owa_coreAPI::debug('Could not rotate event file.');
+			}
+		}
+	}
+	
+	function archiveProcessedFile( $file ) {
+		
+		$new_file_path = $this->archive_path . basename( $file );
+		$ret = owa_lib::moveFile( $file, $new_file_path );
+	}
+	
+	
+	function parse_log_row( $row ) {
+		
 		if ($row) {
 			$raw_event = explode("|*|", $row);
-			//print_r($raw_event);
-			//$row_array = array( 'timestamp' 		=> $raw_event[0], 'event_type'	=> $raw_event[3], 'event_obj'		=> $raw_event[4]); 
-			$row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]); 
-			//print_r($row_array);			
+			$row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]); 			
 			$event = unserialize(urldecode($row_array['event_obj']));
-			//print_r($event);
 			return $event;
 		}
 	}

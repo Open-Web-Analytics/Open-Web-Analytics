@@ -219,7 +219,7 @@ class owa_error {
 
 	}
 	
-	function log($err, $priority) {
+	function log($err, $priority = '') {
 		
 		// log to normal logger
 		if ($this->init) {
@@ -351,10 +351,10 @@ class owa_error {
 	}
 	
 	function logPhpErrors() {
-		error_reporting(E_ALL);
-		ini_set('display_errors', E_ALL);
-		return set_error_handler(array("owa_error", "handlePhpError"));
-	
+		
+		error_reporting(E_ALL | E_STRICT);
+		ini_set('display_errors', 'On');
+		set_error_handler( array( $this, "handlePhpError" ) );
 	}
 	
 	
@@ -372,7 +372,7 @@ class owa_error {
 	    $dt = date("Y-m-d H:i:s (T)");
 	    
 	    // set of errors for which a var trace will be saved
-		$user_errors = array(E_USER_ERROR, E_USER_WARNING, E_USER_NOTICE, E_STRICT);
+		//$user_errors = array(E_USER_ERROR, E_USER_WARNING, E_USER_NOTICE, E_STRICT);
 	   
 		$err = "<errorentry>\n";
 		$err .= "\t<datetime>" . $dt . "</datetime>\n";
@@ -381,15 +381,13 @@ class owa_error {
 		$err .= "\t<scriptname>" . $filename . "</scriptname>\n";
 		$err .= "\t<scriptlinenum>" . $linenum . "</scriptlinenum>\n";
 	
-		if (in_array($errno, $user_errors)) {
+		//if (in_array($errno, $user_errors)) {
 		//	$err .= "\t<vartrace>" . wddx_serialize_value($vars, "Variables") . "</vartrace>\n";
-		}
+		//}
 		
 		$err .= "</errorentry>\n\n";
 	   
-	    owa_coreAPI::debug($err);
-		
-		return;
+	    owa_coreAPI::debug( $err );
 	}
 	
 	function backtrace() {
@@ -408,9 +406,14 @@ class owa_error {
 
 	}
 	
-	function mailException($exception) {
+	function logException($exception) {
 		
-		$this->mailErrorMsg( $exception->getTraceAsString(), 'Uncaught Exception' );
+		$msg = $exception->getMessage() . ' // '.$exception->getTraceAsString();
+		if (defined('OWA_MAIL_EXCEPTIONS')) {
+			$this->mailErrorMsg( $msg, 'Uncaught Exception' );
+		}
+		
+		$this->log( $msg );
 	}
 	
 	function mailErrorMsg( $msg, $subject ) {
@@ -421,7 +424,14 @@ class owa_error {
   		 $body .= "Request: ". print_r($_REQUEST, true) . "\n";
   		 $body .= "Server: ". print_r($_SERVER, true) . "\n";
   		 
-  		 $conf = array('subject' => $subject . ' on '. $_SERVER['SERVER_NAME'], 'from' => 'OWA Error-logger');
+  		 if ( isset( $_SERVER['SERVER_NAME'] ) ) {
+  		 
+  		 	$server = $_SERVER['SERVER_NAME'];
+  		 } else {
+	  		 
+	  		 $server = __FILE__;
+  		 }
+  		 $conf = array('subject' => $subject . ' on '. $server, 'from' => 'OWA Error-logger');
   		 $logger = Log::singleton('mail', owa_coreAPI::getSetting('base', 'notice_email'), getmypid(), $conf);
 		
 		 $logger->log($body);

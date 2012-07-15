@@ -1254,12 +1254,48 @@ class owa_coreAPI {
 	
 	public static function getEventDispatch() {
 		
-		if (!class_exists('eventQueue')) {
-			require_once(OWA_DIR.'/eventQueue.php');
+		if (! class_exists( 'owa_eventDispatch' ) ) {
+			require_once(OWA_BASE_CLASS_DIR.'eventDispatch.php');
 		}
 
-		$eq = eventQueue::get_instance();
-		return $eq;
+		return owa_eventDispatch::get_instance();
+		
+	}
+	
+	public static function getEventQueue( $name ) {
+		
+		static $queues;
+						
+		// make queue if needed
+		if ( ! isset( $queues[ $name ] ) ) {
+					
+			// get queue config
+			$s = owa_coreAPI::serviceSingleton();
+			$map = $s->getMapValue('event_queues', $name);
+			
+			if ( $map ) {		
+				
+				$implementation = $s->getMapValue( 'event_queue_types', $map['queue_type'] );
+		
+				if ( $implementation 
+					 && isset( $implementation[0] ) 
+					 && isset( $implementation[1] )
+				) {
+					owa_coreAPI::debug(print_r($implementation, true));	
+					$queues[ $name ] = owa_lib::simpleFactory( $implementation[0], $implementation[1], $map );
+					
+				} else {
+					
+					throw new Exception("No event queue by that type found.");	
+				}
+				
+			} else {
+				
+				throw new Exception("No configuration found for event queue $name.");
+			}
+		}
+			// return queue
+		return $queues[ $name ];
 	}
 	
 	public static function getCliCommandClass($command) {

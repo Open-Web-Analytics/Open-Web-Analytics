@@ -70,6 +70,50 @@ class owa_event {
 	var $timestamp;
 	
 	/**
+	 * Last error msg set by handler
+	 * 
+	 * @var string
+	 */
+	var $last_error_msg;
+	
+	/**
+	 * Number of times event was received from message quque
+	 * 
+	 * @var integer
+	 */
+	var $receive_count = 0;
+	
+	/**
+	 * Timestamp of last receipt from message queue
+	 * 
+	 * @var string
+	 */
+	var $last_receive_timestamp;
+	
+	/**
+	 * Timestamp of first receipt from message queue
+	 * 
+	 * @var string
+	 */
+	var $first_receive_timestamp;
+	
+	/**
+	 * Timestamp not to handled event before
+	 * 
+	 * @var string
+	 */
+	var $do_not_receive_before_timestamp;
+	
+	var $status;
+	
+	// backwards compat. remove soon.
+	var $old_queue_id;
+	
+	const handled = 'handled';
+	const unhandled = 'unhandled';
+	const broken = 'broken';
+	
+	/**
 	 * Constructor
 	 * @access public
 	 */	
@@ -81,6 +125,19 @@ class owa_event {
 		//needed?
 		$this->set('guid', $this->guid);
 		$this->set('timestamp', $this->timestamp );
+		$this->status = self::unhandled;
+	}
+	
+	function setStatusAsHandled() {
+		
+		$this->status = self::handled;
+		//clear any error
+		$this->last_error_msg = '';
+	}
+	
+	function setStatusAsBroken() {
+		
+		$this->status = self::broken;
 	}
 	
 	function getTimestamp() {
@@ -91,7 +148,6 @@ class owa_event {
 	function set($name, $value) {
 		
 		$this->properties[$name] = $value;
-		return;
 	}
 	
 	function get($name) {
@@ -298,7 +354,80 @@ class owa_event {
 		return owa_lib::generateRandomUid();
 	}
 	
+	function getStatus() {
 		
+		return $this->status;
+	}
+	
+	function setDoNotReceiveBeforeTimestamp( $time ) {
+		
+		$this->do_not_receive_before_timestamp = $time;
+	}
+	
+	function wasReceived() {
+		
+		$time = time();
+		
+		$this->last_receive_timestamp = $time;	
+		
+		if ( $this->receive_count === 0 ) {
+			
+			$this->first_receive_timestamp = $time;
+		}
+		
+		$this->incrementReceiveCount();
+	}
+	
+	function incrementReceiveCount() {
+		
+		$this->receive_count++;
+	}
+	
+	function getReceiveCount() {
+		
+		return $this->receive_count;
+	}
+	
+	function setErrorMeg( $error_msg ) {
+		
+		$this->last_error_msg = $error_msg;
+	}
+	
+	function getErrorMsg() {
+		
+		return $this->last_error_msg;
+	}
+	
+	function getLastReceiveTimestamp() {
+		
+		return $this->last_receive_timestamp;
+	}
+	
+	function getDoNotReceiveBeforeTimestamp() {
+		
+		return $this->do_not_receive_before_timestamp;
+	}
+		
+	// backwards compat for dbEventQueue. remove_soon.
+	function setOldQueueId( $id ) {
+		
+		if ( $id != $this->getGuid() ) {
+			
+			$this->old_queue_id = $id;
+		}
+	}
+	
+	function getQueueGuid() {
+		
+		if ( $this->old_queue_id ) {
+			
+			return $this->old_queue_id;
+			 
+		} else {
+			
+			return $this->getGuid();
+		}
+	}
 }
 
 ?>

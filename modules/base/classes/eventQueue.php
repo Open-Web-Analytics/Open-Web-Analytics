@@ -30,18 +30,61 @@
 
 class owa_eventQueue  {
 
-	function __construct() {
+	var $queue_name;
 	
+	function __construct( $map = array() ) {
+		
+		if ( ! isset( $map['queue_name'] ) ) {
+			$this->queue_name = 'somequeue';
+		} else {
+			$this->queue_name = $map['queue_name'];	
+		}
 	}
 	
-	function addToQueue($event) {
+	// deprecated
+	function addToQueue( $event ) {
 		
-		return false;	
+		return $this->sendMessage( $event );
 	}
 	
 	function processQueue() {
 		
 		return false;
+	}
+	
+	function connect() {
+		
+		return true;
+	}
+	
+	function disconnect() {
+		
+		return true;
+	}
+	
+	function sendMessage( $event) {
+		
+		return false;
+	}
+	
+	function receiveMessage() {
+		
+		return false;
+	}
+	
+	function deleteMessage( $id ) {
+		
+		return true;
+	}
+	
+	function prepareMessage( $msg ) {
+		
+		return serialize( $msg );
+	}
+	
+	function decodeMessage ( $msg ) {
+		
+		return unserialize( $msg );
 	}
 
 }

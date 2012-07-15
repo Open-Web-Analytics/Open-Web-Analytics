@@ -126,13 +126,14 @@ class owa_caller extends owa_base {
 		/* PHP ERROR LOGGING */
 		
 		if (defined('OWA_LOG_PHP_ERRORS')) {
+			
 			$this->e->logPhpErrors();
 		}
 		
-		if (defined('OWA_MAIL_EXCEPTIONS')) {
-			set_exception_handler( array($this->e, 'mailException') );
+		
+		set_exception_handler( array($this->e, 'logException') );
 			
-		}
+	
 		
 		
 		/* LOAD SERVICE LAYER */

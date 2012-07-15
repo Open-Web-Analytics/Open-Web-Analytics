@@ -40,36 +40,52 @@ class owa_processEventQueueController extends owa_cliController {
 
 	function action() {
 		
-		if ( $this->getParam( 'source' ) ) {
-			$input_queue_type = $this->getParam( 'source' );
+		if ( $this->getParam( 'queues' ) ) {
+			
+			$queues = $this->getParam( 'queues' );
+						
 		} else {
-			$input_queue_type = owa_coreAPI::getSetting( 'base', 'event_queue_type' );
+		
+			$queues = 'incoming_tracking_events,processing';
 		}
 		
-		$processing_queue_type = $this->getParam( 'destination' );
+		owa_coreAPI::notice( "About to process event queues: $queues");
 		
-		if ( ! $processing_queue_type ) {
+		$queues = explode( ',', $this->getParam( 'queues' ) );
+		
+		foreach ( $queues as $queue_name ) {
 			
-			$processing_queue_type = owa_coreAPI::getSetting( 'base', 'event_secondary_queue_type' );
-		}
+			$q = owa_coreAPI::getEventQueue($queue_name);
 			
-		// switch event queue setting in case a new events should be sent to a different type of queue.
-		// this is handy for when processing from a file queue to a database queue
-		if ( $processing_queue_type ) {
-			owa_coreAPI::setSetting( 'base', 'event_queue_type', $processing_queue_type );
-			owa_coreAPI::debug( "Setting event queue type to $processing_queue_type for processing." );
-		}
-		
-		$d = owa_coreAPI::getEventDispatch();
-		owa_coreAPI::debug( "Loading $input_queue_type event queue." );
-		$q = $d->getAsyncEventQueue( $input_queue_type );
-	
-		$ret = $q->processQueue();
-		
-		// go ahead and process the secondary event queue
-		if ( $ret && $processing_queue_type ) {
-			$destq = $d->getAsyncEventQueue( $processing_queue_type );
-			$destq->processQueue();
+			if ( $q->connect() ) {
+				
+				$d = owa_coreAPI::getEventDispatch();
+				$more = true;
+				
+				while( $more ) {
+					owa_coreAPI::debug('calling receive message');
+					// get an item from the queue		
+					$event = $q->receiveMessage();
+					owa_coreAPI::debug('Event returned: '.print_r($event, true));
+					if ( $event ) {
+						// dispatch event	
+						$ret = $d->notify( $event );
+					
+						if ( $ret  = OWA_EHS_EVENT_HANDLED ) {
+							// delete event from queue
+							// second param is for backwards compat. remove soon
+							$q->deleteMessage( $event->getQueueGuid() );
+						}
+						
+					} else {
+						// if no event, stop the loop
+						$more = false;
+						owa_coreAPI::notice("No more events to process.");
+					}
+				}
+				
+				$q->disconnect();
+			}
 		}
 	}
 }
