@@ -49,7 +49,7 @@ class owa_fileEventQueue extends owa_eventQueue {
 	var $rotation_interval = 3600;
 	var $currentProcessingFileHandle;
 	
-	function __construct( $map ) {
+	function __construct( $map = array() ) {
 		
 		parent::__construct( $map );
 		
@@ -99,6 +99,8 @@ class owa_fileEventQueue extends owa_eventQueue {
 		
 		$this->event_file = $this->queue_dir. 'events.txt';
 		$this->lock_file = $this->queue_dir.'lock.txt';
+		
+		return parent::__construct( $map );
 	}
 		
 	function makeQueue() {

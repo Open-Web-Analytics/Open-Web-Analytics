@@ -36,9 +36,9 @@ class owa_dbEventQueue extends owa_eventQueue {
 	var $db;
 	var $items_per_fetch = 50;
 		
-	function __construct($queue_dir = '') {
+	function __construct( $map = array() ) {
 	
-		return parent::__construct();	
+		return parent::__construct( $map );	
 	}
 	
 	function connect() {
