@@ -347,8 +347,22 @@ class owa_processEventController extends owa_controller {
 	function addToEventQueue() {
 			
 		if (!$this->event->get('do_not_log')) {
-			// pass event to handlers but filter it first
-			$this->eq->asyncNotify($this->eq->filter('post_processed_tracking_event', $this->event));
+			
+			//filter event
+			$this->event = $this->eq->filter( 'post_processed_tracking_event', $this->event );
+			
+			// queue for later or notify listeners
+			if ( owa_coreAPI::getSetting( 'base', 'queue_events' ) || 
+				 owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
+				
+				$q = owa_coreAPI::getEventQueue( 'incoming_tracking_events' );
+				
+				$q->sendMessage( $this->event );
+				
+			} else {
+				$this->eq->notify( $this->event );	
+			}
+			
 			return owa_coreAPI::debug('Logged '.$this->event->getEventType().' to event queue with properties: '.print_r($this->event->getProperties(), true));
 		} else {
 			owa_coreAPI::debug("Not logging event due to 'do not log' flag being set.");

@@ -47,6 +47,46 @@ class owa_baseModule extends owa_module {
 		$this->config_required = false;
 		$this->required_schema_version = 8;
 		
+		// create event queues
+		
+		// register queue type implementations 
+		$this->registerImplementation('event_queue_types', 'file', 'owa_fileEventQueue', OWA_MODULES_DIR.'base/classes/fileEventQueue.php');
+		$this->registerImplementation('event_queue_types', 'database', 'owa_dbEventQueue', OWA_MODULES_DIR.'base/classes/dbEventQueue.php');
+		$this->registerImplementation('event_queue_types', 'http', 'owa_httpEventQueue', OWA_MODULES_DIR.'base/classes/httpEventQueue.php');
+		
+		// register named queues
+		$this->registerEventQueue( 'incoming_tracking_events', array(
+			
+			'queue_type'			=> 	'file',
+			'path'					=>	owa_coreAPI::getSetting('base', 'async_log_dir'),
+			'rotation_interval'		=> 3600
+		));
+		
+		// creat processing queue
+		if ( ! owa_coreAPI::getSetting('base', 'is_remote_event_queue') && 
+			    owa_coreAPI::getSetting('base', 'use_remote_event_queue') &&
+			    owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint')) {
+		
+			$this->registerEventQueue( 'incoming_tracking_events', array(
+				
+				'queue_type'			=> 	'http',
+				'endpoint'				=> owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint')
+	
+			));
+				    
+		} else {
+		
+			$this->registerEventQueue( 'processing', array(
+				
+				'queue_type'			=> 'database',
+				'server'				=> owa_coreAPI::getSetting('base', 'db_host'),
+				'port'					=> owa_coreAPI::getSetting('base', 'db_port'),
+				'username'				=> owa_coreAPI::getSetting('base', 'db_user'),
+				'password'				=> owa_coreAPI::getSetting('base', 'db_password')
+			));
+		
+		}
+		
 		return parent::__construct();
 	}
 	

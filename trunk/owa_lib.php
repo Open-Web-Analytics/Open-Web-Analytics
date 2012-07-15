@@ -1309,9 +1309,7 @@ class owa_lib {
 			}
 			
 			return false;
-		}
-		
-		return true;
+		}		
 	}
 }
 

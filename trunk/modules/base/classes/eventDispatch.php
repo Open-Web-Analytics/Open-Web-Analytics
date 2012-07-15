@@ -29,7 +29,7 @@ define('OWA_EHS_EVENT_HANDLED', 2);
 define('OWA_EHS_EVENT_FAILED', 3);
 
 /**
- * Event Dispatcher
+ * Event Dispatch
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -39,7 +39,7 @@ define('OWA_EHS_EVENT_FAILED', 3);
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
-class eventQueue {
+class owa_eventDispatch {
 	
 	/**
 	 * Stores listeners
@@ -60,6 +60,25 @@ class eventQueue {
 	var $listenersByFilterType = array();
 	
 	var $queues	= array();
+	
+	
+	/**
+	 * Singleton
+	 *
+	 * @static 
+	 * @return 	object
+	 * @access 	public
+	 */
+	public static function &get_instance() {
+	
+		static $ed;
+		
+		if ( ! $ed ) {
+			$ed = new owa_eventDispatch();
+		}
+	
+		return $ed;
+	}
 	
 	/**
 	 * Constructor
@@ -158,9 +177,10 @@ class eventQueue {
 		if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
 			owa_coreAPI::debug("EHS: Event was not handled successfully by some handlers.");
 			$q = $this->getEventQueue( 'processing' );
-			$q->addToQueue($event);
+			$q->sendMessage( $event );
 			return OWA_EHS_EVENT_FAILED;
 		} else {
+			$event->setStatusAsHandled();
 			owa_coreAPI::debug("EHS: Event was handled successfully by all handlers.");
 			return OWA_EHS_EVENT_HANDLED;
 		}
@@ -238,6 +258,7 @@ class eventQueue {
 	 * 
 	 * @param	$event_params	array
 	 * @param 	$event_type	string
+	 * @depricated
 	 */
 	function log($event_params, $event_type = '') {
 		//owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
@@ -261,6 +282,7 @@ class eventQueue {
 	 * 
 	 * @param	$event	array
 	 * @return bool
+	 * @depricated
 	 */
 	function asyncNotify( $event ) {
 		
@@ -269,44 +291,9 @@ class eventQueue {
 	
 	function getEventQueue( $name ) {
 		
-		// get queue config
-		$s = owa_coreAPI::serviceSingleton();
-		$map = $s->getMapValue('event_queues', $name);
-		
-		if ( $map ) {		
-		// make queue if needed
-			if ( ! isset( $this->queues[ $name ] ) ) {
-			
-				$this->queues[ $name ] = $this->getAsyncEventQueue( $map['queue_type'], $map );
-			}
-			
-			// return queue
-			return $this->queues[ $name ];
-			
-		} else {
-			
-			throw new Exception("No event queue by that name found.");
-		}			
+		return owa_coreAPI::getEventQueue( $name );
 	}
-	
-	function getAsyncEventQueue($type, $params = '') {
 		
-		$s = owa_coreAPI::serviceSingleton();
-		$implementation = $s->getMapValue( 'event_queue_types', $type );
-		
-		if ( $implementation 
-			 && isset( $implementation[0] ) 
-			 && isset( $implementation[1] )
-		) {
-		
-			return owa_lib::simpleFactory($implementation[0], $implementation[1], $params);
-
-		} else {
-			
-			throw new Exception("No event queue by that type found.");	
-		}
-	}
-	
 	function eventFactory() {
 		
 		return owa_coreAPI::supportClassFactory('base', 'event');
@@ -316,31 +303,12 @@ class eventQueue {
 		
 		$event = $this->eventFactory();
 		
-		if ($type) {
+		if ( $type ) {
 			$event->setEventType($type);
 		}
 		
 		return $event;
 	}
-	
-	/**
-	 * Singleton
-	 *
-	 * @static 
-	 * @return 	object
-	 * @access 	public
-	 */
-	public static function &get_instance() {
-	
-		static $eq;
-		
-		if (empty($eq)) {
-			$eq = new eventQueue();
-		}
-	
-		return $eq;
-	}
-
 }
 
 ?>

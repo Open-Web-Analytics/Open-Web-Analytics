@@ -16,7 +16,7 @@
 // $Id$
 //
 
-if ( ! class_exists( 'eventQueue' ) ) {
+if ( ! class_exists( 'owa_eventQueue' ) ) {
 	require_once( OWA_BASE_CLASS_DIR.'eventQueue.php' );
 }
 /**
@@ -31,53 +31,81 @@ if ( ! class_exists( 'eventQueue' ) ) {
  * @since		owa 1.4.0
  */
 
-class owa_dbEventQueue extends eventQueue {
+class owa_dbEventQueue extends owa_eventQueue {
 	
 	var $db;
 	var $items_per_fetch = 50;
 		
 	function __construct($queue_dir = '') {
-		
-		$this->db = owa_coreAPI::dbSingleton();
+	
 		return parent::__construct();	
 	}
+	
+	function connect() {
 		
-	function addToQueue($event) {
+		$this->db = owa_coreAPI::dbSingleton();
+		owa_coreAPI::debug('Connected to event queue.');
+		return true;
+	}
+		
+	function sendMessage( $event ) {
 		
 		$qi = owa_coreAPI::entityFactory('base.queue_item');
-		$serialized_event = serialize( $event );
-		$qi->set( 'id', $qi->generateId( $serialized_event) );
+		$qi->set( 'id', $event->getGuid() );
 		$qi->set( 'event_type', $event->getEventType() );
-		$qi->set( 'status', 'unhandled' );
+		$qi->set( 'status', $event->getStatus() );
 		$qi->set( 'priority', $this->determinPriority( $event->getEventType() ) );
-		$qi->set( 'event', $serialized_event );
+		$qi->set( 'event', $this->prepareMessage( $event ) );
 		$qi->set( 'insertion_timestamp', $this->makeTimestamp() );
 		$qi->set( 'insertion_datestamp', $this->makeDatestamp() );
+		$qi->set( 'failed_attempt_count' , $event->getReceiveCount() ); // need to rename this column to received count
+		$qi->set( 'last_error_msg', $event->getErrorMsg() );
+		$qi->set( 'last_attempt_timestamp', $event->getLastReceiveTimestamp() );
+		
+		// set do not receive before timestamp
+		$not_before = $event->getDoNotReceiveBeforeTimestamp();
+		
+		// backwards compatability, should remove this soon.
+		if ( ! $not_before && $event->getReceiveCount() != 0 ) {
+			$not_before = $this->determineNextAttempt( $qi->get('event_type'), $event->getReceiveCount() );
+		}
+		
+		if ( $not_before ) {
+			$qi->set( 'not_before_timestamp', $not_before );
+		}
+		
 		$qi->save();
 	}
 	
-	function markAsFailed($item_id, $error_msg = '') {
+	function receiveMessage() {
+		owa_coreAPI::debug('getting message');
+		$msg = $this->getNextItem();
 		
-		$qi = owa_coreAPI::entityFactory('base.queue_item');
-		$qi->load($item_id);
-		$inserted_timestamp = $qi->get('insertion_timestamp');
-		if ($inserted_timestamp) {
-			$qi->set( 'failed_attempt_count' , $qi->get( 'failed_attempt_count' ) + 1 );
-			$qi->set( 'last_attempt_timestamp', $this->makeTimestamp() );
-			$qi->set( 'not_before_timestamp', $this->determineNextAttempt($qi->get('event_type'), $qi->get('failed_attempt_count') ) );
-			$qi->set( 'last_error_msg', $error_msg);
-			$qi->save();
-		}
+		if ( $msg ) {
+			$event = $this->decodeMessage( $msg->get('event') );
+			$event->wasReceived();
+			// backwards compat. remove soon.
+			$event->setOldQueueId( $msg->get('id') );
+			return $event;
+		}	
 	}
 	
-	function markAsHandled($item_id) {
+	function deleteMessage( $id ) {
+		
+		return $this->markAsHandled( $id );
+	}
+		
+	function markAsHandled( $item_id ) {
+		
 		$qi = owa_coreAPI::entityFactory('base.queue_item');
-		$qi->load($item_id);
-		$inserted_timestamp = $qi->get('insertion_timestamp');
-		if ($inserted_timestamp) {
+		$qi->load( $item_id );
+			
+		if ( $qi->wasPersisted() ) {
 			$qi->set( 'status', 'handled' );
 			$qi->set( 'handled_timestamp', $this->makeTimestamp() );
 			$qi->save();
+		} else {
+			owa_coreAPI::notice("Could not find/delete queue item id: $item_id");		
 		}
 	}
 	
@@ -147,40 +175,6 @@ class owa_dbEventQueue extends eventQueue {
 	function determinPriority($event_type) {
 		
 		return 99;
-	}
-	
-	function processQueue() {
-		
-		$more = true;
-		
-		while( $more ) {
-		
-			$items = $this->getNextItems();
-			
-			if ( $items ) {
-			
-				foreach ( $items as $item ) {
-					owa_coreAPI::debug('About to dispatch queue item id: ' . $item->get( 'id' ) );			
-					$event = unserialize( $item->get('event') );
-					$dispatch = owa_coreAPI::getEventDispatch();
-					$ret = $dispatch->notify( $event );
-					owa_coreAPI::debug($ret);
-					
-					$id = $item->get( 'id' );
-					if ( $ret === OWA_EHS_EVENT_HANDLED ) {
-						$this->markAsHandled( $id );
-						owa_coreAPI::debug("EHS: marked item ($id) as handled.");
-					} else {
-						$this->markAsFailed( $id );
-						owa_coreAPI::debug("EHS: marked item ($id) as failed.");
-					}	
-					
-				}
-				
-			} else {
-				$more = false;
-			}
-		}
 	}
 }
 

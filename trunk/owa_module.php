@@ -1113,6 +1113,12 @@ abstract class owa_module extends owa_base {
 					'priviledge' => $priviledge);
 	}
 	
+	protected function registerEventQueue( $name, $map ) {
+		
+		$s = owa_coreAPI::serviceSingleton();
+		$s->setMapValue( 'event_queues', $name, $map );
+	}
+	
 }
 
 ?>

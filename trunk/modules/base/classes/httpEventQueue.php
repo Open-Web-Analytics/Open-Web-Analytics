@@ -43,7 +43,7 @@ class owa_httpEventQueue extends owa_eventQueue {
 		}
 	}
 	
-	function addToQueue($event) {
+	function sendMessage($event) {
 		
 		if ($event) {
 			$properties['owa_event'] = base64_encode(serialize($event));
