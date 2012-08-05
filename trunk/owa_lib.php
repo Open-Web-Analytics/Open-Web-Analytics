@@ -1299,17 +1299,22 @@ class owa_lib {
 	
 	public static function moveFile( $oldfile, $newfile ) {
 	
-		if ( file_exists( $oldfile ) && ! rename( $oldfile, $newfile ) ) {
+		if ( file_exists( $oldfile ) ) {
+			
+			if ( ! rename( $oldfile, $newfile ) ) {
 		
-			if ( copy( $oldfile, $newfile ) ) {
-		
-				unlink( $oldfile );
+				if ( copy( $oldfile, $newfile ) ) {
+			
+					unlink( $oldfile );
+					
+					return true;
+				}
+				
+			} else {
 				
 				return true;
-			}
-			
-			return false;
-		}		
+			}	
+		}
 	}
 }
 
