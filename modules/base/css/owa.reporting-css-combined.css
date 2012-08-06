@@ -1,4 +1,4 @@
-/* OWA owa.reporting-css package file created Thu, 26 Apr 12 15:02:31 -0400 */ 
+/* OWA owa.reporting-css package file created Mon, 06 Aug 12 01:15:15 -0400 */ 
 
 /* Start of jqueryui */ 
 
@@ -2126,6 +2126,7 @@ li.constraintRow {
 	float:left;
  	width:100px; /* adjust the width; make sure the total of both is 100% */
  	background:#6AA9CF;
+ 	border: 1px solid #6AA9CF;
  	color: #ffffff;
  	padding:4px 5px 4px 5px;
  	margin:0;
@@ -2141,6 +2142,7 @@ li.constraintRow {
 	float:left;
  	width:auto; /* adjust the width; make sure the total of both is 100% */
  	background:#ffffff;
+ 	border: 1px solid #cccccc;
  	padding:4px 10px 4px 10px;
 	margin:0 10px 0 0;
 	border-top-right-radius: 5px;
