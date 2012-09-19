@@ -4,7 +4,7 @@ OWA.kpiBox = function( options ) {
 	this.options = {
 		
 		template: '#metricInfobox',
-		width: '',
+		width: ''
 	};
 	
 	// merge passed options with defaults.

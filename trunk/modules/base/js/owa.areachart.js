@@ -18,7 +18,7 @@ OWA.areaChart = function( options ) {
 		lineWidth: 4,
 		autoResizeCharts: true,
 		fillColor: "rgba(202,225,255, 0.6)",
-		colors: ["#1874CD", "#dba255", "#919733"],
+		colors: ["#1874CD", "#dba255", "#919733"]
 	};
 	
 	// merge passed options with defaults.
