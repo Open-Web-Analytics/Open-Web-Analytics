@@ -41,38 +41,46 @@ class owa_visitorHandlers extends owa_observer {
      * @access 	public
      */
     function notify($event) {
-			
-    	$v = owa_coreAPI::entityFactory('base.visitor');
-    	
-    	$v->load( $event->get( 'visitor_id' ) );
-    	
-    	if ( ! $v->wasPersisted() ) {
-    		
-			$v->setProperties($event->getProperties());
 		
-			// Set Primary Key
-			$v->set( 'id', $event->get( 'visitor_id' ) );
-			$v->set('first_session_id', $event->get('session_id'));
-			$v->set('first_session_year', $event->get('year'));
-			$v->set('first_session_month', $event->get('month'));
-			$v->set('first_session_day', $event->get('day'));
-			$v->set('first_session_dayofyear', $event->get('dayofyear'));
-			$v->set('first_session_timestamp', $event->get('timestamp'));
-			$v->set('first_session_yyyymmdd', $event->get('yyyymmdd'));
+		if ( $event->get( 'visitor_id' ) ) {
 			
-			$ret = $v->save();
+	    	$v = owa_coreAPI::entityFactory('base.visitor');
+	    	
+	    	$v->load( $event->get( 'visitor_id' ) );
+	    	
+	    	if ( ! $v->wasPersisted() ) {
+	    		
+				$v->setProperties($event->getProperties());
 			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
+				// Set Primary Key
+				$v->set( 'id', $event->get( 'visitor_id' ) );
+				$v->set('first_session_id', $event->get('session_id'));
+				$v->set('first_session_year', $event->get('year'));
+				$v->set('first_session_month', $event->get('month'));
+				$v->set('first_session_day', $event->get('day'));
+				$v->set('first_session_dayofyear', $event->get('dayofyear'));
+				$v->set('first_session_timestamp', $event->get('timestamp'));
+				$v->set('first_session_yyyymmdd', $event->get('yyyymmdd'));
+				
+				$ret = $v->save();
+				
+				if ( $ret ) {
+					return OWA_EHS_EVENT_HANDLED;
+				} else {
+					return OWA_EHS_EVENT_FAILED;
+				}	
+				
 			} else {
-				return OWA_EHS_EVENT_FAILED;
-			}	
-			
+				
+				owa_coreAPI::debug("Not updating... Visitor already exists.");
+				return OWA_EHS_EVENT_HANDLED;
+			}
+				
 		} else {
 			
-			owa_coreAPI::debug("Not updating... Visitor already exists.");
+			owa_coreAPI::debug("No visitor_id part of event...");
 			return OWA_EHS_EVENT_HANDLED;
-		}	
+		}
     }
 }
 
