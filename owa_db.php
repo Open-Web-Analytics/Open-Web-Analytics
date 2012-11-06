@@ -568,15 +568,12 @@ class owa_db extends owa_base {
 			
 			$constraint = $type.' ';
 			
-			foreach ($params as $k => $v) {
-				//print_r($v);
-				//escape input just in case.
-				$v['value'] = $this->prepare( $v['value'] );
+			foreach ($params as $k => $v) {			
 				
 				switch (strtolower($v['operator'])) {
 					
 					case '==':
-						$constraint .= sprintf("%s = '%s'",$v['name'], $v['value']);
+						$constraint .= sprintf("%s = '%s'",$v['name'], $this->prepare( $v['value'] ) );
 						break;
 					
 					case 'between':
