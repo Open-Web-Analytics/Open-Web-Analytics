@@ -569,7 +569,10 @@ class owa_db extends owa_base {
 			$constraint = $type.' ';
 			
 			foreach ($params as $k => $v) {
-				//print_r($v);	
+				//print_r($v);
+				//escape input just in case.
+				$v['value'] = this->prepare( $v['value'] );
+				
 				switch (strtolower($v['operator'])) {
 					
 					case '==':
@@ -632,6 +635,11 @@ class owa_db extends owa_base {
 											 'foreign_key' => $foreign_key, 
 											 'primary_key' => $primary_key);
 		
+	}
+	
+	function prepare ( $string ) {
+		
+		return $string;
 	}
 	
 	function _makeJoinClause() {
