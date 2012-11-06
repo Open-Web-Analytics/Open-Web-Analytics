@@ -571,7 +571,7 @@ class owa_db extends owa_base {
 			foreach ($params as $k => $v) {
 				//print_r($v);
 				//escape input just in case.
-				$v['value'] = this->prepare( $v['value'] );
+				$v['value'] = $this->prepare( $v['value'] );
 				
 				switch (strtolower($v['operator'])) {
 					
