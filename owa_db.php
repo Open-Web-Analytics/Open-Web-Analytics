@@ -577,27 +577,27 @@ class owa_db extends owa_base {
 						break;
 					
 					case 'between':
-						$constraint .= sprintf("%s BETWEEN '%s' AND '%s'", $v['name'], $v['value']['start'], $v['value']['end']);
+						$constraint .= sprintf("%s BETWEEN '%s' AND '%s'", $v['name'], $this->prepare( $v['value']['start'] ), $this->prepare( $v['value']['end'] ) );
 						break;
 						
 					case '=~':
-						$constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $v['value']);
+						$constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $this->prepare( $v['value'] ) );
 						break;
 						
 					case '!~':
-						$constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $v['value']);
+						$constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $this->prepare( $v['value'] ) );
 						break;
 						
 					case '=@':
-						$constraint .= sprintf("LOCATE('%s', %s) > 0",$v['value'], $v['name']);
+						$constraint .= sprintf("LOCATE('%s', %s) > 0",$v['value'], $this->prepare( $v['name'] ) );
 						break;
 						
 					case '!@':
-						$constraint .= sprintf("LOCATE('%s', %s) = 0",$v['value'], $v['name']);
+						$constraint .= sprintf("LOCATE('%s', %s) = 0",$v['value'], $this->prepare( $v['name'] ) );
 						break;
 							
 					default:
-						$constraint .= sprintf("%s %s '%s'",$v['name'], $v['operator'], $v['value']);		
+						$constraint .= sprintf("%s %s '%s'",$v['name'], $v['operator'], $this->prepare( $v['value'] ) );		
 						break;
 				}
 					
