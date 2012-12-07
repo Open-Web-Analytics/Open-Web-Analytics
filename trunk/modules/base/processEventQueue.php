@@ -51,41 +51,59 @@ class owa_processEventQueueController extends owa_cliController {
 		
 		owa_coreAPI::notice( "About to process event queues: $queues");
 		
-		$queues = explode( ',', $this->getParam( 'queues' ) );
+		// pull list of event queues to process from command line
+		$queues = $this->getParam( 'queues' );
 		
-		foreach ( $queues as $queue_name ) {
+		if ( $queues ) {
+			// parse command line
+			$queues = explode( ',', $this->getParam( 'queues' ) );
 			
-			$q = owa_coreAPI::getEventQueue($queue_name);
+		} else {
 			
-			if ( $q->connect() ) {
+			// get whatever queues are registered by modules
+			$s = owa_coreAPI::serviceSingleton();
+			$queues = array_keys( $s->getMap('event_queues') );
+		}
+		
+		if ( $queues ) {		
+		
+			foreach ( $queues as $queue_name ) {
 				
-				$d = owa_coreAPI::getEventDispatch();
-				$more = true;
+				$q = owa_coreAPI::getEventQueue($queue_name);
 				
-				while( $more ) {
-					owa_coreAPI::debug('calling receive message');
-					// get an item from the queue		
-					$event = $q->receiveMessage();
-					owa_coreAPI::debug('Event returned: '.print_r($event, true));
-					if ( $event ) {
-						// dispatch event	
-						$ret = $d->notify( $event );
+				if ( $q->connect() ) {
 					
-						if ( $ret  = OWA_EHS_EVENT_HANDLED ) {
-							// delete event from queue
-							// second param is for backwards compat. remove soon
-							$q->deleteMessage( $event->getQueueGuid() );
-						}
+					$d = owa_coreAPI::getEventDispatch();
+					$more = true;
+					
+					while( $more ) {
+						owa_coreAPI::debug('calling receive message');
+						// get an item from the queue		
+						$event = $q->receiveMessage();
+						owa_coreAPI::debug('Event returned: '.print_r($event, true));
+						if ( $event ) {
+							// dispatch event	
+							$ret = $d->notify( $event );
 						
-					} else {
-						// if no event, stop the loop
-						$more = false;
-						owa_coreAPI::notice("No more events to process.");
+							if ( $ret  = OWA_EHS_EVENT_HANDLED ) {
+								// delete event from queue
+								// second param is for backwards compat. remove soon
+								$q->deleteMessage( $event->getQueueGuid() );
+							}
+							
+						} else {
+							// if no event, stop the loop
+							$more = false;
+							owa_coreAPI::notice("No more events to process.");
+						}
 					}
+					
+					$q->disconnect();
 				}
-				
-				$q->disconnect();
 			}
+		} else {
+		
+			owa_coreAPI::notice("There are no event queues registered.");
 		}
 	}
 }
