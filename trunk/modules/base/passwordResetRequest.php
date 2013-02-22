@@ -47,30 +47,24 @@ class owa_passwordResetRequestController extends owa_controller {
 	function action() {
 				
 		// Log password reset request to event queue
-		$eq = &eventQueue::get_instance();
+		$ed = owa_coreAPI::getEventDispatch();
 		
-		$eq->log(array('email_address' => $this->getParam('email_address')), 'base.reset_password');
+		$event = $ed->makeEvent( 'base.reset_password' );
+		$event->set('email_address', $this->getParam( 'email_address' ) );
+		$ed->notify( $event );	
 	
 		// return view
 		$this->setView('base.passwordResetForm');
 		$email_address = trim($this->getParam('email_address'));
 		$msg = $this->getMsg(2000, $email_address);
-		$this->set('status_msg', $msg);	
-							
-		return;
+		$this->set('status_msg', $msg);
 	}
 	
 	function errorAction() {
 	
 		$this->setView('base.passwordResetForm');
 		$this->set('error_msg', $this->getMsg(2001, $this->getParam('email_address')));
-		return;
 	}
-	
-	
-	
 }
-
-
 
 ?>
