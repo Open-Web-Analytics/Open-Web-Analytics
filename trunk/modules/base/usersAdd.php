@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_adminController.php');
-require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 /**
  * Add User Controller
@@ -57,8 +56,6 @@ class owa_usersAddController extends owa_adminController {
 		$v2->setValues(trim($this->getParam('user_id')));
 		$v2->setErrorMessage($this->getMsg(3001));
 		$this->setValidation('user_id', $v2);
-
-		return;
 	}
 	
 	function action() {
@@ -74,20 +71,16 @@ class owa_usersAddController extends owa_adminController {
 		$temp_passkey = $userManager->createNewUser($user_params);
 		
 		// log account creation event to event queue
-		$eq = &eventQueue::get_instance();
-		$eq->log(array( 'user_id' 	=> $this->params['user_id'],
+		$ed = owa_coreAPI::getEventDispatch();
+		$ed->log(array( 'user_id' 	=> $this->params['user_id'],
 						'real_name' => $this->params['real_name'],
 						'role' 		=> $this->params['role'],
 						'email_address' => $this->params['email_address'],
 						'temp_passkey' => $temp_passkey), 
 						'base.new_user_account');
 		
-		
-		
 		$this->setRedirectAction('base.users');
 		$this->set('status_code', 3000);
-				
-		return;
 	}
 	
 	function errorAction() {
@@ -95,13 +88,8 @@ class owa_usersAddController extends owa_adminController {
 		$this->setSubview('base.usersProfile');
 		$this->set('error_code', 3009);
 		//assign original form data so the user does not have to re-enter the data
-		$this->set('profile', $this->params);
-		
-		return;
-		
+		$this->set('profile', $this->params);	
 	}
-	
 }
-
 
 ?>

@@ -277,11 +277,7 @@ class owa_controller extends owa_base {
 	
 	function logEvent($event_type, $properties) {
 		
-		if (!class_exists('eventQueue')):
-			require_once(OWA_BASE_DIR.'/eventQueue.php');
-		endif;
-		
-		$eq = eventQueue::get_instance();
+		$ed = owa_coreAPI::getEventDispatch();
 		
 		if (!is_a($properties, 'owa_event')) {
 	
@@ -292,22 +288,20 @@ class owa_controller extends owa_base {
 			$event = $properties;
 		}
 		
-		return $eq->log($event, $event->getEventType());
+		return $ed->notify( $event );
 	}
 	
 	function createValidator() {
 		
-		$this->v = owa_coreAPI::supportClassFactory('base', 'validator');
-		
-		return;
-		
+		$this->v = owa_coreAPI::supportClassFactory('base', 'validator');		
 	}
 	
 	function addValidation($name, $value, $validation, $conf = array()) {
 	
-		if (empty($this->v)):
+		if ( empty( $this->v ) ) {
+		
 			$this->createValidator();
-		endif;
+		}
 	
 		return $this->v->addValidation($name, $value, $validation, $conf);
 		
@@ -315,12 +309,11 @@ class owa_controller extends owa_base {
 	
 	function setValidation($name, $obj) {
 	
-		if (empty($this->v)):
+		if (empty($this->v)) {
 			$this->createValidator();
-		endif;
+		}
 	
 		return $this->v->setValidation($name, $obj);
-		
 	}
 	
 	function getValidationErrorMsgs() {
@@ -331,26 +324,20 @@ class owa_controller extends owa_base {
 	
 	function isAdmin() {
 		
-		if ($this->is_admin == true):
+		if ($this->is_admin == true) {
 			return true;
-		else:
-			return false;
-		endif;
-	
+		}
 	}
 	
 	// depricated
 	function _setCapability($capability) {
 	
 		$this->setRequiredCapability($capability);
-		
-		return;
 	}
 	
 	function setRequiredCapability($capability) {
 	
 		$this->capability = $capability;
-		return;
 	}
 		
 	function getRequiredCapability() {
@@ -362,9 +349,7 @@ class owa_controller extends owa_base {
 	
 		if (array_key_exists($name, $this->params)) {
 			return $this->params[$name];
-		} else {
-			return false;
-		}
+		} 
 	}
 	
 	function setParam($name, $value) {
@@ -376,9 +361,7 @@ class owa_controller extends owa_base {
 	
 		if (array_key_exists($name, $this->params)) {
 			return true;
-		} else {
-			return false;
-		}	
+		}
 	}
 	
 	function get($name) {
@@ -429,21 +412,24 @@ class owa_controller extends owa_base {
 	
 		
 	function setView($view) {
+	
 		$this->data['view'] = $view;
-		return;
 	}
 	
 	function setSubview($subview) {
+	
 		$this->data['subview'] = $subview;
-		return;
+	
 	}
 	
 	function setViewMethod($method = 'delegate') {
+	
 		$this->data['view_method'] = $method;
-		return;
+	
 	}
 	
 	function setRedirectAction($do) {
+	
 		$this->set('view_method', 'redirect');
 		$this->set('do', $do);
 		
@@ -457,26 +443,26 @@ class owa_controller extends owa_base {
 	}
 	
 	function setPagination($pagination, $name = 'pagination') {
+	
 		$this->data[$name] = $pagination;
-		return;
+	
 	}
 	
 	function set($name, $value) {
 	
 		$this->data[$name] = $value;
-		return;
 	}
 	
 	function setControllerType($string) {
 	
 		$this->type = $string;
-		return;
+
 	}
 	
 	function mergeParams($array) {
 	
 		$this->params = array_merge($this->params, $array);
-		return;
+
 	}
 	
 	/**

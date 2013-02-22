@@ -19,7 +19,6 @@
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_view.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
-require_once(OWA_BASE_DIR.'/eventQueue.php');
 
 /**
  * Change Password Controller
@@ -64,9 +63,9 @@ class owa_usersChangePasswordController extends owa_controller {
 			
 		// log to event queue
 		if ($status === true) {
-			$eq = & eventQueue::get_instance();
+			$ed = owa_coreAPI::getEventDispatch();
 			$new_password = array('key' => $this->params['k'], 'password' => $auth->encryptPassword($this->params['password']), 'ip' => $_SERVER['REMOTE_ADDR']);
-			$eq->log($new_password, 'base.set_password');
+			$ed->log($new_password, 'base.set_password');
 			$auth->deleteCredentials();	
 			$this->setRedirectAction('base.loginForm');
 			$this->set('status_code', 3006);
@@ -74,17 +73,12 @@ class owa_usersChangePasswordController extends owa_controller {
 			$this->setRedirectAction('base.loginForm');
 			$this->set('error_code', 2011); // can't find key in the db
 		}
-				
-		return;
 	}
 	
 	function errorAction() {
-		//print 'error action';
+
 		$this->setView('base.usersPasswordEntry');
 		$this->set('k', $this->getParam('k'));
-		//$this->set('password',  $this->getParam('password'));
-		//$this->set('password2',  $this->getParam('password2'));
-		return;
 	}
 }
 
