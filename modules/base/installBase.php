@@ -97,13 +97,13 @@ class owa_installBaseController extends owa_installController {
 			}
 			
 			// fire install complete event.
-			$eq = &eventQueue::get_instance();
-			$event = $eq->eventFactory();
+			$ed = owa_coreAPI::getEventDispatch();
+			$event = $ed->eventFactory();
 			$event->set('u', 'admin');
 			$event->set('p', $password);
 			$event->set('site_id', $site_id);
 			$event->setEventType('install_complete');
-			$eq->notify($event);
+			$ed->notify($event);
 			
 			// set view
 			$this->set('u', 'admin');
@@ -118,8 +118,6 @@ class owa_installBaseController extends owa_installController {
 			$this->set('error_msg', $this->getMsg(3302));
 			$this->errorAction();
 		}
-				
-		return;
 	}
 	
 	function errorAction() {
