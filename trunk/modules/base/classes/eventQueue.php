@@ -86,7 +86,11 @@ class owa_eventQueue  {
 		
 		return unserialize( $msg );
 	}
-
+	
+	function pruneArchive ( $interval ) {
+		
+		return false;
+	}
 }
 
 ?>

@@ -147,6 +147,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('install-module', 'base.moduleInstallCli');
 		$this->registerCliCommand('add-site', 'base.sitesAddCli');
 		$this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
+		$this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
 	}
 	
 	/**
