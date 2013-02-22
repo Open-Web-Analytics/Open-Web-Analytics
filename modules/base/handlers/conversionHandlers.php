@@ -168,6 +168,8 @@ class owa_conversionHandlers extends owa_observer {
     	
     	$is_match = false;
     	
+    	$start = '';
+    	
     	foreach ($goals as $num => $goal) {
     		
     		if (!empty($goal)) {

@@ -90,7 +90,7 @@ class owa_fileEventQueue extends owa_eventQueue {
 		}
 		
 		if ( ! isset( $map['date_format'] ) ) {
-			$this->date_format = "YmdHis";
+			$this->date_format = "Y-m-d-H-is";
 		}
 		
 		if ( ! isset( $map['rotation_interval'] ) ) {
@@ -223,8 +223,18 @@ class owa_fileEventQueue extends owa_eventQueue {
 				owa_coreAPI::notice('EOF reached.');
 				$this->closeFile( $this->currentProcessingFileHandle );
 				$this->currentProcessingFileHandle = '';
-				$this->archiveProcessedFile( $qfile );
+				
+				if ( owa_coreAPI::getSetting( 'base', 'archive_old_events' ) ) {
+					
+					$this->archiveProcessedFile( $qfile );
+										
+				} else {
+					
+					$this->deleteFile( $qfile );	
+				}
+				
 				owa_coreAPI::notice('Moving on to next queue file.');
+				
 				return $this->receiveMessage();
 				
 			}
@@ -271,12 +281,34 @@ class owa_fileEventQueue extends owa_eventQueue {
 		return $files;
 	}
 	
+	function pruneArchive( $interval ) {
+		
+		if ( is_dir( $this->archive_path ) ) {
+		
+			foreach ( new DirectoryIterator( $this->archive_path ) as $item ) {
+			
+				if ( $item->isFile() && 
+					! $item->isDot() && 
+					$item->getMTime() < ( time() - $interval ) ) 
+				{
+						owa_coreAPI::notice('about to unlink' . $item->getRealPath());
+						$this->deleteFile( $item->getRealPath() );
+				}
+			}
+		}
+	}
+	
+	function deleteFile( $path ) {
+		
+		return unlink( $path );
+	}
+	
 	function rotateEventFile() {
 		
 		if ( file_exists( $this->event_file ) ) {
 		
 			// Create a new log file name	
-			$new_file_path = sprintf("%s-events-%s.txt", $this->unprocessed_path . $this->queue_name, date( $this->date_format ) );
+			$new_file_path = sprintf("%s-eventfile-%s.txt", $this->unprocessed_path . $this->queue_name, date( $this->date_format ) );
 			$ret = owa_lib::moveFile( $this->event_file, $new_file_path );
 			
 			if ( $ret ) {
@@ -313,8 +345,6 @@ class owa_fileEventQueue extends owa_eventQueue {
        		owa_coreAPI::debug('Cannot write to lock file. Terminating Run.');
        		exit;
    		}
-		
-		return;
 	}
 }
 

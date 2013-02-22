@@ -147,6 +147,16 @@ class owa_dbEventQueue extends owa_eventQueue {
 		return $this->db->getAffectedRows();
 	}
 	
+	/**
+	 * Prune the event archive
+	 * @todo make an event archive table
+	 * @todo modify flushHandledEvents to move handled events to an archive.
+	 */
+	function pruneArchive( $interval ) {
+		
+		return true;
+	}
+	
 	function getNextItem() {
 	
 		return $this->getNextItems(1);
