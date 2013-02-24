@@ -40,16 +40,19 @@ class owa_hostHandlers extends owa_observer {
      * @param 	unknown_type $event
      * @access 	public
      */
-    function notify($event) {
+    function notify( $event ) {
 		
-		if ( ! $event->get('host_id') ) {
-			owa_coreAPI::debug('Nothing to handle. Host id missing from event.');
+		if ( ! $event->get( 'host_id' ) ) {
+		
+			owa_coreAPI::notice('Not persisting host dimension. Host id missing from event.');
+		
 			return OWA_EHS_EVENT_HANDLED;
 		}
 		
     	$h = owa_coreAPI::entityFactory('base.host');
 		
 		$h->getByPk( 'id', $event->get( 'host_id' ) );
+		
 		$id = $h->get('id'); 
 		
 		if (!$id) {

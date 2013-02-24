@@ -43,99 +43,120 @@ class owa_conversionHandlers extends owa_observer {
     function notify($event) {
     
 		$update = false;
-		$conversion_info = $this->checkForConversion($event);
 		
-		if ($conversion_info) {
-	    	$s = owa_coreAPI::entityFactory('base.session');
+		$conversion_info = $this->checkForConversion( $event );
+		
+		// check for conversion
+		if ( $conversion_info ) {
 			
-			$new_id = $s->generateId(trim( strtolower( $event->get('campaign') ) ) );
-			$s->getByPk('id', $event->get('session_id'));
-			$id = $s->get('id'); 
+			// check for needed session_id
+			if ( $event->get('session_id') ) {
 			
-			// only record one goal of a particular type per session
-			if ($id) {
-				//record conversion
-				if ( !empty( $conversion_info['conversion'] ) ) {
-					$goal_column = 'goal_'.$conversion_info['conversion'];
-					$already = $s->get( $goal_column );
-					// see if an existing value has been set goal value
-					$goal_value_column = 'goal_'.$conversion_info['conversion'].'_value';
-					$existing_value = $s->get( $goal_value_column );
-					$value = $conversion_info['value'];
-					
-					// determin is we have a conversion event worth updating
-					if ( $already != true )	{
-						// there is a goal conversion					
-						$s->set( $goal_column , true );
-						$update = true;
-						owa_coreAPI::debug( "$goal_column was achieved." );
-					} else {
-						// goal already happened but check to see if we need to add a value to it. 
-						// happens in the case of ecommerce transaction where the value
-						// can come in a secondary request. if no value then return.
-						if ( ! $value ) {
-							owa_coreAPI::debug( 'Not updating session. Goal was already achieved and in same session.' );
-							return OWA_EHS_EVENT_HANDLED;
+		   		// load session
+		    	$s = owa_coreAPI::entityFactory('base.session');
+				
+				$s->load( $event->get( 'session_id' ) );
+				
+				// if session exists
+				if ( $s->wasPersisted() ) {
+				
+					//record conversion
+					if ( !empty( $conversion_info['conversion'] ) ) {
+						$goal_column = 'goal_'.$conversion_info['conversion'];
+						$already = $s->get( $goal_column );
+						// see if an existing value has been set goal value
+						$goal_value_column = 'goal_'.$conversion_info['conversion'].'_value';
+						$existing_value = $s->get( $goal_value_column );
+						$value = $conversion_info['value'];
+						
+						// determin is we have a conversion event worth updating
+						// only record one goal of a particular type per session
+						if ( $already != true )	{
+							// there is a goal conversion					
+							$s->set( $goal_column , true );
+							$update = true;
+							owa_coreAPI::debug( "$goal_column was achieved." );
+						} else {
+							// goal already happened but check to see if we need to add a value to it. 
+							// happens in the case of ecommerce transaction where the value
+							// can come in a secondary request. if no value then return.
+							if ( ! $value ) {
+							
+								owa_coreAPI::debug( 'Not updating session. Goal was already achieved and in same session.' );
+							
+								return OWA_EHS_EVENT_HANDLED;
+							}
+						}
+						
+						// Allow a value to be set if one has not be set already.
+						// this is needed to support dynamic values passed by commerce transaction events
+						if ( $value  && ! $existing_value )  {
+							$s->set( $goal_value_column, owa_lib::prepareCurrencyValue( $value ) );
+							$update = true;
+						}	
+					}
+					//record goal start
+					if ( !empty($conversion_info['start'] ) ) {
+						$goal_start_column = 'goal_'.$conversion_info['start'].'_start';
+						$already_started = $s->get( $goal_start_column );
+						
+						if ( $already_started != true ) {
+							
+							$s->set( $goal_start_column, true );
+							$update = true;
+							owa_coreAPI::debug( "$goal_start_column was started." );
+							
+						} else {
+							owa_coreAPI::debug( "$goal_start_column was already started." );
 						}
 					}
 					
-					// Allow a value to be set if one has not be set already.
-					// this is needed to support dynamic values passed by commerce transaction events
-					if ( $value  && ! $existing_value )  {
-						$s->set( $goal_value_column, owa_lib::prepareCurrencyValue( $value ) );
-						$update = true;
-					}	
-				}
-				//record goal start
-				if ( !empty($conversion_info['start'] ) ) {
-					$goal_start_column = 'goal_'.$conversion_info['start'].'_start';
-					$already_started = $s->get( $goal_start_column );
+					//update object
+					if ( $update ) {
+						
+						// summarize goal conversions
+						$s->set('num_goals', $this->countGoalConversions($s));
 					
-					if ( $already_started != true ) {
+						// summarize goal conversion value
+						$s->set('goals_value', $this->sumGoalValues($s));
+					
+						// summarize goal starts
+						$s->set('num_goal_starts', $this->countGoalStarts($s));
+					
+						$ret = $s->update();
+						if ( $ret ) {
+							// create a new_conversion event so that the total conversion 
+							// metrics can be resummarized
+							$this->dispatchNewConversionEvent($event);
+							
+							return OWA_EHS_EVENT_HANDLED;
+						} else {
 						
-						$s->set( $goal_start_column, true );
-						$update = true;
-						owa_coreAPI::debug( "$goal_start_column was started." );
-						
+							return OWA_EHS_EVENT_FAILED;
+						}
+												
 					} else {
-						owa_coreAPI::debug( "$goal_start_column was already started." );
-					}
-				}
-				
-				//update object
-				if ( $update ) {
+						owa_coreAPI::debug( "nothing about this conversion is worth updating." );
 					
-					// summarize goal conversions
-					$s->set('num_goals', $this->countGoalConversions($s));
-				
-					// summarize goal conversion value
-					$s->set('goals_value', $this->sumGoalValues($s));
-				
-					// summarize goal starts
-					$s->set('num_goal_starts', $this->countGoalStarts($s));
-				
-					$ret = $s->update();
-					if ( $ret ) {
-						// create a new_conversion event so that the total conversion 
-						// metrics can be resummarized
-						$this->dispatchNewConversionEvent($event);
 						return OWA_EHS_EVENT_HANDLED;
-					} else {
-						return OWA_EHS_EVENT_FAILED;
 					}
-											
+					
 				} else {
-					owa_coreAPI::debug( "nothing about this conversion is worth updating." );
-					return OWA_EHS_EVENT_HANDLED;
+					owa_coreAPI::debug("Conversion processing aborted. No session could be found.");
+					
+					return OWA_EHS_EVENT_FAILED;
 				}
 				
 			} else {
-				owa_coreAPI::debug("Conversion processing aborted. No session could be found.");
-				return OWA_EHS_EVENT_FAILED;
+				
+				owa_coreAPI::notice('Not persisting conversion. Session id missing from event.');
+				
+				return OWA_EHS_EVENT_HANDLED;
 			}
 				
 		} else {
 			owa_coreAPI::debug('No goal start or conversion detected.');
+			
 			return OWA_EHS_EVENT_HANDLED;
 		}
     }
