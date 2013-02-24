@@ -40,27 +40,42 @@ class owa_osHandlers extends owa_observer {
      * @param 	unknown_type $event
      * @access 	public
      */
-    function notify($event) {
+    function notify( $event ) {
 		
-		$os = owa_coreAPI::entityFactory('base.os');
+		if ( $event->get( 'os' ) ) {
 		
-		$os->getByColumn('id', owa_lib::setStringGuid($event->get('os')));
-		
-		if (!$os->get('id')) {
+			$os = owa_coreAPI::entityFactory( 'base.os' );
 			
-			$os->set('name', $event->get('os'));
-			$os->set('id', owa_lib::setStringGuid($event->get('os'))); 
-			$ret = $os->create();
+			$os->getByColumn( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) );
 			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
+			if ( ! $os->get( 'id' ) ) {
+				
+				$os->set( 'name', $event->get( 'os' ) );
+			
+				$os->set( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) ); 
+			
+				$ret = $os->create();
+				
+				if ( $ret ) {
+			
+					return OWA_EHS_EVENT_HANDLED;
+			
+				} else {
+			
+					return OWA_EHS_EVENT_FAILED;
+				}
+				
 			} else {
-				return OWA_EHS_EVENT_FAILED;
+			
+				owa_coreAPI::debug('Not persisting. Operating system already exists.');
+			
+				return OWA_EHS_EVENT_HANDLED;
 			}
 			
 		} else {
-		
-			owa_coreAPI::debug('Not persistig. Operating system already exists.');
+			
+			owa_coreAPI::debug('Not persisting. Operating system not present.');
+			
 			return OWA_EHS_EVENT_HANDLED;
 		}
     }

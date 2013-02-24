@@ -43,24 +43,32 @@ class owa_visitorUpdateHandlers extends owa_observer {
      * @access 	public
      */
     function notify($event) {
-			
-    	$v = owa_coreAPI::entityFactory('base.visitor');
-    	
-    	$v->load( $event->get( 'visitor_id' ) );
-    	
-    	if ( $v->wasPersisted() ) {
-    			
-			$v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
-			
-			owa_coreAPI::debug("Updating... Visitor already exists.");
 		
-			$ret = $v->save();
+		if ( $event->get( 'visitor_id' ) ) {
+			
+	    	$v = owa_coreAPI::entityFactory('base.visitor');
+	    	
+	    	$v->load( $event->get( 'visitor_id' ) );
+	    	
+	    	if ( $v->wasPersisted() ) {
+	    			
+				$v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
 				
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
-			} else {
-				return OWA_EHS_EVENT_FAILED;
+				owa_coreAPI::debug("Updating... Visitor already exists.");
+			
+				$ret = $v->save();
+					
+				if ( $ret ) {
+					return OWA_EHS_EVENT_HANDLED;
+				} else {
+					return OWA_EHS_EVENT_FAILED;
+				}
 			}
+			
+		} else {
+		
+			owa_coreAPI::debug("Not updating... no visitor ID present.");
+			return OWA_EHS_EVENT_HANDLED;
 		}
     }
     

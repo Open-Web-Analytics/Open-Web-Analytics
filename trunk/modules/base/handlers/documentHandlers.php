@@ -42,43 +42,63 @@ class owa_documentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-		// create entity
-		$d = owa_coreAPI::entityFactory( 'base.document' );
+		if ( $event->get( 'document_id' ) || $event->get( 'page_url' ) ) {
 		
-		// get document id from event
-		$id = $event->get( 'document_id' );
-		
-		// if no document_id present attempt to make one from the page_url property
-		if ( ! $id ) {
+			// create entity
+			$d = owa_coreAPI::entityFactory( 'base.document' );
 			
-			$page_url = $event->get( 'page_url' );
+			// get document id from event
+			$id = $event->get( 'document_id' );
 			
-			if ( $page_url ) {
-				$id = $d->generateId( $page_url );
-			} else {
-				owa_coreAPI::debug( 'Not persisting Document, no page_url or document_id event property found.' );
-				return OWA_EHS_EVENT_HANDLED;
+			// if no document_id present attempt to make one from the page_url property
+			if ( ! $id ) {
+				
+				$page_url = $event->get( 'page_url' );
+				
+				if ( $page_url ) {
+			
+					$id = $d->generateId( $page_url );
+				} else {
+			
+					owa_coreAPI::debug( 'Not persisting Document, no page_url or document_id event property found.' );
+			
+					return OWA_EHS_EVENT_HANDLED;
+				}
 			}
-		}
-		
-		$d->load( $id );
-		
-		if ( ! $d->wasPersisted() ) {
 			
-			$d->setProperties($event->getProperties());
-			$d->set('url', $event->get('page_url'));
-			$d->set('uri', $event->get('page_uri'));
-			$d->set('id', $id); 
-			$ret = $d->create();
+			$d->load( $id );
 			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
+			if ( ! $d->wasPersisted() ) {
+				
+				$d->setProperties( $event->getProperties() );
+			
+				$d->set( 'url', $event->get( 'page_url' ) );
+			
+				$d->set( 'uri', $event->get( 'page_uri' ) );
+			
+				$d->set( 'id', $id ); 
+			
+				$ret = $d->create();
+				
+				if ( $ret ) {
+			
+					return OWA_EHS_EVENT_HANDLED;
+			
+				} else {
+			
+					return OWA_EHS_EVENT_FAILED;
+				}
+				
 			} else {
-				return OWA_EHS_EVENT_FAILED;
+			
+				owa_coreAPI::debug('Not logging Document, already exists');
+				return OWA_EHS_EVENT_HANDLED;
 			}
 			
 		} else {
-			owa_coreAPI::debug('Not logging Document, already exists');
+			
+			owa_coreAPI::notice('Not persisting Document dimension. document id or page url are missing from event.');
+			
 			return OWA_EHS_EVENT_HANDLED;
 		}   	
     }

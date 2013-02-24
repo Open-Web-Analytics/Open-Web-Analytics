@@ -42,42 +42,50 @@ class owa_userAgentHandlers extends owa_observer {
      */
     function notify($event) {
 		
-		$ua = owa_coreAPI::entityFactory('base.ua');
-		
-		$ua->getByColumn('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
-		
-		if (!$ua->get('id')) {
+		if ( $event->get('HTTP_USER_AGENT') ) {
+					
+			$ua = owa_coreAPI::entityFactory('base.ua');
 			
-			$ua->setProperties($event->getProperties());
-			$ua->set('ua', $event->get('HTTP_USER_AGENT'));
-			$ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT'))); 
-			$ret = $ua->create();
+			$ua->getByColumn('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
-			} else {
-				return OWA_EHS_EVENT_FAILED;
-			}
-			
-		} else {
-			
-			$old = $ua->get('browser_type');
-			$new = $event->get('browser_type'); 
-			
-			if ( $new != $old && $new != 'Default Browser') {
-				$ua->set('browser_type', $new);
-				$ua->set('browser', $event->get('browser') );
-				$ret = $ua->save();
+			if (!$ua->get('id')) {
+				
+				$ua->setProperties($event->getProperties());
+				$ua->set('ua', $event->get('HTTP_USER_AGENT'));
+				$ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT'))); 
+				$ret = $ua->create();
 				
 				if ( $ret ) {
-					owa_coreAPI::debug('Updating user agent with new browser type: '. $new);
 					return OWA_EHS_EVENT_HANDLED;
 				} else {
 					return OWA_EHS_EVENT_FAILED;
 				}
+				
+			} else {
+				
+				$old = $ua->get('browser_type');
+				$new = $event->get('browser_type'); 
+				
+				if ( $new != $old && $new != 'Default Browser') {
+					$ua->set('browser_type', $new);
+					$ua->set('browser', $event->get('browser') );
+					$ret = $ua->save();
+					
+					if ( $ret ) {
+						owa_coreAPI::debug('Updating user agent with new browser type: '. $new);
+						return OWA_EHS_EVENT_HANDLED;
+					} else {
+						return OWA_EHS_EVENT_FAILED;
+					}
+				}
+			
+				owa_coreAPI::debug('not logging, user agent already exists.');
+				return OWA_EHS_EVENT_HANDLED;
 			}
+			
+		} else {
 		
-			owa_coreAPI::debug('not logging, user agent already exists.');
+			owa_coreAPI::debug('not logging, no user agent present.');
 			return OWA_EHS_EVENT_HANDLED;
 		}
     }

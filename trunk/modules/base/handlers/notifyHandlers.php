@@ -39,21 +39,29 @@ class owa_notifyHandlers extends owa_observer {
      * @access 	public
      * @param 	object $event
      */
-    function notify($event) {
-    
-		$s = owa_coreAPI::entityFactory('base.site');
-		owa_coreAPI::debug('siteId: ' . $event->get( 'siteId' ) );
-		$s->load( $s->generateId( $event->getSiteId() ) );
+    function notify( $event ) {
+    	
+    	if ( $event->get( 'siteId' ) ) {
+	    	
+			$s = owa_coreAPI::entityFactory( 'base.site' );
+			
+			$s->load( $s->generateId( $event->getSiteId() ) );
 
-		if ( $s->wasPersisted() ) {
+			if ( $s->wasPersisted() ) {
 		
-			$ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
-   			return OWA_EHS_EVENT_HANDLED;
+				$ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
    			
+				return OWA_EHS_EVENT_HANDLED;
+   			
+			} else {
+					
+				return OWA_EHS_EVENT_FAILED;
+			}
+			
 		} else {
-			return OWA_EHS_EVENT_FAILED;
-
-   		}
+			
+			return OWA_EHS_EVENT_HANDLED;
+		}
 	}
 }
 
