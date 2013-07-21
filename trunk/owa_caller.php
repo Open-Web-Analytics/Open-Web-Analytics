@@ -338,7 +338,7 @@ class owa_caller extends owa_base {
 	
 	function restInPeace() {
 	
-		echo '...';
+		return false;
 	}
 	
 }

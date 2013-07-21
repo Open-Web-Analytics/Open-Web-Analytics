@@ -2313,6 +2313,7 @@ class owa_baseModule extends owa_module {
 	 * Resolve hostname from IP address
 	 * 
 	 * @access public
+	 * @todo move to trackig helper
 	 */
 	function resolveHost($remote_host = '', $ip_address = '') {
 	
@@ -2354,7 +2355,7 @@ class owa_baseModule extends owa_module {
 	 *
 	 * @return string
 	 */
-	function makeUrlCanonical($url, $site_id = '') {
+	static function makeUrlCanonical($url, $site_id = '') {
 		
 		if ( ! $site_id ) {
 			owa_coreAPI::debug('no site_id passed to make makeUrlCanonical. Returning URL as is.');

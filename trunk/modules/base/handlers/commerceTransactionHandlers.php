@@ -16,10 +16,10 @@
 // $Id$
 //
 
-if(!class_exists('owa_observer')) {
+if ( ! class_exists('owa_observer') ) {
+
 	require_once(OWA_DIR.'owa_observer.php');
-}	
-require_once(OWA_DIR.'owa_lib.php');
+}
 
 /**
  * Commerce Transaction Event handlers

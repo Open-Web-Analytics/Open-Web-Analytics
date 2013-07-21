@@ -186,7 +186,7 @@ class owa_sanitize {
 		return preg_replace( "/\\\(?!&amp;#|\?#)/", "\\", $input );
 	}
 	
-	public static function stirpCarriageReturns( $input = '' ) {
+	public static function stripCarriageReturns( $input = '' ) {
 		
 		return str_replace( "\r", "", $input );
 	}
@@ -312,6 +312,40 @@ class owa_sanitize {
 	public static function cleanUrl( $url ) {
 		
 		return;
+	}
+	
+	public static function cleanUserId ( $user_id ) {
+		
+		$illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
+ 		
+ 		foreach ( $illegals as $k => $char ) {
+	 		
+	 		if ( strpos( $user_id, $char ) ) {
+		 		
+		 		$user_id = str_replace( $char, "", $user_id);
+	 		}
+ 		}
+ 		
+ 		return owa_sanitize::cleanInput($user_id, array() );
+	}
+	
+	public static function cleanMd5( $md5 ) {
+		
+		$valid = false;
+		
+		if ( ! empty( $md5 ) && preg_match( '/^[a-f0-9]{32}$/', $md5 ) ) {
+			
+			$valid = true;
+		}
+		
+		if ( $valid ) {
+			
+			return $md5;
+		} else {
+			
+			owa_coreAPI::debug("This is not a valid MD5: ".$md5 );
+			return "";
+		}
 	}
 }
 
