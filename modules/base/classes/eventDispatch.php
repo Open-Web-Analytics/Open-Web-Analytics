@@ -227,7 +227,16 @@ class owa_eventDispatch {
 					
 					if (is_array($this->listeners[$observer_id])) {
 						
-						$class = get_class($this->listeners[$observer_id][0]);
+						if ( is_object( $this->listeners[$observer_id][0] ) ) {
+							
+							$class = get_class( $this->listeners[$observer_id][0] );
+						
+						} else {
+							// class could be passed as a string
+							$class = $this->listeners[$observer_id][0];
+						}
+						
+						
 						$method = $this->listeners[$observer_id][1];
 						$filter_method = $class . '::' . $method;
 					} else {

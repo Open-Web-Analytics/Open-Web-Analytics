@@ -709,6 +709,7 @@
 				'log_owa_user_names'				=> true,  // logs the OWA user name as the user_name property on events
 				'logo_image_path'					=> 'base/i/owa-logo-100w.png',
 				'use_64bit_hash'					=> false,
+				'user_id_illegal_chars'				=> array( " ", ";", "'", "\"", "|", ")", "("),
 				'archive_old_events'				=> true // used by event queues to archive processed events.
 			)
 		);

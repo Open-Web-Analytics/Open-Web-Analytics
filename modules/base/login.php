@@ -20,7 +20,19 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_loginController extends owa_controller {
+	
+	
+	function __construct( $params ) {
 		
+		parent::__construct($params);
+		
+		$v0 = owa_coreAPI::validationFactory('userName');
+		$v0->setValues( $this->getParam( 'user_id' ) );
+		$v0->setConfig( 'stopOnError', true );
+		$this->setValidation( 'user_id', $v0 );
+
+	}
+	
 	function action() {
 		
 		$auth = owa_auth::get_instance();
@@ -54,6 +66,15 @@ class owa_loginController extends owa_controller {
 			$this->set('user_id', $this->getParam('user_id'));
 		
 		}
+	}
+	
+	function errorAction() {
+		
+		// return login form with error msg
+		$this->setView('base.loginForm');
+		$this->set('go', $go);		
+		//$this->set('error_code', 2002);
+		$this->set('user_id', $this->getParam('user_id'));
 	}
 }
 

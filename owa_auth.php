@@ -16,6 +16,8 @@
 // $Id$
 //
 
+require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
+
 /**
  * User Authentication Object
  * 
@@ -139,31 +141,39 @@ class owa_auth extends owa_base {
 			
 	}
 	
-	function authByApiKey($key) {
+	function authByApiKey( $key ) {
 		
-		// fetch user object from the db
-		$this->u = owa_coreAPI::entityFactory('base.user');
-		$this->u->load($key, 'api_key');
+		$key = owa_sanitize::cleanMd5( $key );
 		
-		if ($this->u->get('user_id')) {
-			// get current user
-			$cu = owa_coreAPI::getCurrentUser();				
-			// set as new current user in service layer
-			$cu->loadNewUserByObject($this->u);
-			$cu->setAuthStatus(true);
-			$this->_is_user = true;	
-			return true;
+		if ( $key ) {
+		
+			// fetch user object from the db
+			$this->u = owa_coreAPI::entityFactory('base.user');
+			$this->u->load($key, 'api_key');
+			
+			if ($this->u->get('user_id')) {
+				// get current user
+				$cu = owa_coreAPI::getCurrentUser();				
+				// set as new current user in service layer
+				$cu->loadNewUserByObject($this->u);
+				$cu->setAuthStatus(true);
+				$this->_is_user = true;	
+				return true;
+			} else {
+				return false;
+			}
+			
 		} else {
+			
 			return false;
 		}
-		
 		
 	}
 	
 	function authByCookies($user_id, $password) {
 	
 		// set credentials
-		$this->credentials['user_id'] = $user_id;
+		$this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
 		$this->credentials['password'] = $password;
 		
 		// lookup user if not already done.	
@@ -183,7 +193,7 @@ class owa_auth extends owa_base {
 	function authByInput($user_id, $password) {
 		
 		// set credentials
-		$this->credentials['user_id'] = $user_id;
+		$this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
 		// must encrypt password to see if it matches whats in the db
 		$this->credentials['password'] = $this->encryptPassword($password);
 		//owa_coreAPI::debug(print_r($this->credentials, true));
@@ -202,18 +212,30 @@ class owa_auth extends owa_base {
 	 * @param unknown_type $key
 	 * @return unknown
 	 */
-	function authenticateUserTempPasskey($key) {
+	function authenticateUserTempPasskey( $key ) {
 		
-		$this->u = owa_coreAPI::entityFactory('base.user');
-		$this->u->getByColumn('temp_passkey', $key);
+		$key = owa_sanitize::cleanMd5( $key );
 		
-		$id = $this->u->get('id');
-		if (!empty($id)):
-			return true;
-		else:
+		if ( $key ) {
+		
+			$this->u = owa_coreAPI::entityFactory('base.user');
+			$this->u->getByColumn('temp_passkey', $key);
+			
+			$id = $this->u->get('id');
+			
+			if (!empty($id)) {
+			
+				return true;
+			
+			} else {
+			
+				return false;
+			}
+			
+		} else {
+			
 			return false;
-		endif;
-		
+		}
 	}
 	
 	/**
@@ -223,24 +245,34 @@ class owa_auth extends owa_base {
 	 * @return unknown
 	 */
 	function authenticateUserByUrlPasskey($user_id, $passkey) {
-	
-		// set credentials
-		$this->credentials['user_id'] = $user_id;
-		$this->credentials['passkey'] = $passkey;
 		
-		// fetch user obj
-		$this->getUser();
+		$passkey = owa_sanitize::cleanMd5( $passkey );
 		
-		// generate a new passkey from its components in the db
-		$key = $this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
+		if ( $passkey ) {
 		
-		// see if it matches the key on the url
-		if ($key == $passkey):
-			return true;
-		else:
+			// set credentials
+			$this->credentials['user_id'] = $user_id;
+			$this->credentials['passkey'] = $passkey;
+			
+			// fetch user obj
+			$this->getUser();
+			
+			// generate a new passkey from its components in the db
+			$key = $this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
+			
+			// see if it matches the key on the url
+			if ($key == $passkey) {
+			
+				return true;
+			
+			} else {
+				return false;
+			}
+			
+		} else {
+			
 			return false;
-		endif;
-		
+		}
 	}
 	
 	/**

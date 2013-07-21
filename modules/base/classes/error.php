@@ -352,11 +352,10 @@ class owa_error {
 	
 	function logPhpErrors() {
 		
-		error_reporting(E_ALL | E_STRICT);
+		error_reporting( -1 );
 		ini_set('display_errors', 'On');
 		set_error_handler( array( $this, "handlePhpError" ) );
 	}
-	
 	
 	/**
 	 * Alternative error handler for PHP specific errors.

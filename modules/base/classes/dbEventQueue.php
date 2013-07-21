@@ -51,13 +51,20 @@ class owa_dbEventQueue extends owa_eventQueue {
 	function sendMessage( $event ) {
 		
 		$qi = owa_coreAPI::entityFactory('base.queue_item');
-		$qi->set( 'id', $event->getGuid() );
+		
+		$qi->getByPk( 'id',  $event->getGuid() );
+		
+		if ( ! $qi->wasPersisted() ) {
+			
+			$qi->set( 'id', $event->getGuid() );
+			$qi->set( 'insertion_timestamp', $this->makeTimestamp() );
+			$qi->set( 'insertion_datestamp', $this->makeDatestamp() );
+		}
+
 		$qi->set( 'event_type', $event->getEventType() );
 		$qi->set( 'status', $event->getStatus() );
 		$qi->set( 'priority', $this->determinPriority( $event->getEventType() ) );
 		$qi->set( 'event', $this->prepareMessage( $event ) );
-		$qi->set( 'insertion_timestamp', $this->makeTimestamp() );
-		$qi->set( 'insertion_datestamp', $this->makeDatestamp() );
 		$qi->set( 'failed_attempt_count' , $event->getReceiveCount() ); // need to rename this column to received count
 		$qi->set( 'last_error_msg', $event->getErrorMsg() );
 		$qi->set( 'last_attempt_timestamp', $event->getLastReceiveTimestamp() );
@@ -73,7 +80,7 @@ class owa_dbEventQueue extends owa_eventQueue {
 		if ( $not_before ) {
 			$qi->set( 'not_before_timestamp', $not_before );
 		}
-		
+				
 		$qi->save();
 	}
 	
@@ -86,6 +93,10 @@ class owa_dbEventQueue extends owa_eventQueue {
 			$event->wasReceived();
 			// backwards compat. remove soon.
 			$event->setOldQueueId( $msg->get('id') );
+			// incrment the count of times the event has been receieved from the queue.
+			// increment timesstamps of when last receieved
+			$event->wasReceived();
+			
 			return $event;
 		}	
 	}

@@ -1,6 +1,5 @@
 <?php
 
-
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -17,11 +16,8 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/owa_view.php');
-
-
 /**
- * View
+ * User Name Validation
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -31,31 +27,35 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @version		$Revision$	      
  * @since		owa 1.0.0
  */
+ 
+ class owa_userNameValidation extends owa_validation {
+ 	
+ 	function __construct() {
+ 		
+ 		return parent::__construct();
+ 	}
+ 	
+ 	function validate() {
+ 		
+ 		$error = $this->getErrorMsg();
+ 		
+ 		if (empty($error)) {
+ 			$this->setErrorMessage('The user name contains illegal characters.');
+ 		}
 
-class owa_errorView extends owa_view {
-	
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		// Set Page title
-		$this->t->set('page_title', 'Error');
-			
-		if($this->is_subview === true):
-			$this->t->set_template('wrapper_blank.tpl');
-		endif;
-		
-		// load body template
-		$this->body->set_template('generic_error.tpl');
-		
-		return;
-	}
-	
-	
-}
-
+ 		$u = $this->getValues();
+ 		
+ 		$illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
+ 		
+ 		foreach ( $illegals as $k => $char ) {
+	 		
+	 		if ( strpos( $u, $char ) ) {
+		 		
+		 		$this->hasError();
+		 		break;	
+	 		}
+ 		}
+ 	}	 	
+ }
+ 
 ?>

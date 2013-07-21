@@ -40,7 +40,7 @@ class owa_feedRequestHandlers extends owa_observer {
      * @param 	unknown_type $event
      * @access 	public
      */
-    function notify($event) {
+    function notify( $event ) {
 		
     	// Make entity
 		$f = owa_coreAPI::entityFactory('base.feed_request');
@@ -48,7 +48,22 @@ class owa_feedRequestHandlers extends owa_observer {
 		$f->load( $event->get('guid') );
 		
 		if ( ! $f->wasPersisted() ) {
-			$f->setProperties($event->getProperties());
+			
+			// rekey Feed subscription id tracking code
+			// @todo check the wordpress plugin to see if this is even needed
+			if ( ! $event->get( 'feed_subscription_id' ) ) {
+			
+				$event->set( 'feed_subscription_id', $event->get( owa_coreAPI::getSetting( 'base', 'feed_subscription_param' ) ) );
+			}
+			
+			// needed??
+			$event->set('feed_reader_guid', $event->setEnvGUID() );
+			// set feedreader flag to true, browser flag to false
+			$event->set('is_feedreader', true);
+			$event->set('is_browser', false);
+			
+			// set params on entity
+			$f->setProperties( $event->getProperties() );
 			
 			// Set Primary Key
 			$f->set( 'id', $event->get('guid') );
@@ -72,16 +87,25 @@ class owa_feedRequestHandlers extends owa_observer {
 			if ( $ret ) {
 				
 				$eq = owa_coreAPI::getEventDispatch();
+				
 				$nevent = $eq->makeEvent($event->getEventType().'_logged');
+				
 				$nevent->setProperties($event->getProperties());
+				
 				$eq->notify($nevent);
+				
 				return OWA_EHS_EVENT_HANDLED;
+				
 			} else {
+			
 				return OWA_EHS_EVENT_FAILED;
 			}
 		} else {
+		
 			owa_coreAPI::debug('Not persisting. Feed request already exists.');
-			return OWA_EHS_EVENT_HANDLED;	
+			
+			return OWA_EHS_EVENT_HANDLED;
+				
 		}    	
     }
 }

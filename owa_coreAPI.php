@@ -1507,6 +1507,45 @@ class owa_coreAPI {
 		$r = owa_coreAPI::requestContainerSingleton();
 		return $r->getCurrentUrl();	
 	}
+	
+	public static function isIpAddressExcluded( $ip_address ) {
+		
+		// do not log if ip address is on the do not log list
+		$ips = owa_coreAPI::getSetting( 'base', 'excluded_ips' );
+		owa_coreAPI::debug('excluded ips: '.$ips);
+		if ( $ips ) {
+		
+			$ips = trim( $ips );
+			
+			if ( strpos( $ips, ',' ) ) {
+				$ips = explode( ',', $ips );
+			} else {
+				$ips = array( $ips );
+			}
+			
+			foreach( $ips as $ip ) {
+				$ip = trim( $ip );
+				if ( $ip_address === $ip ) {
+					owa_coreAPI::debug("Request is from excluded ip address: $ip.");
+					return true;
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Attaches an event handler to the event queue
+	 *
+	 * @param array $event_name
+	 * @param string $handler_name
+	 * @return boolean
+	 */
+	public static function registerFilter( $filter_name, $callback, $priority = 10 ) {
+			
+		$eq = owa_coreAPI::getEventDispatch();
+		$eq->attachFilter($filter_name, $callback, $priority);
+	}
+
 }
 
 ?>

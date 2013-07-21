@@ -36,6 +36,11 @@ class owa_passwordResetRequestController extends owa_controller {
 		
 		parent::__construct($params);
 		
+		$v0 = owa_coreAPI::validationFactory('emailAddress');
+		$v0->setValues( $this->getParam( 'email_address' ) );
+		$v0->setConfig( 'stopOnError', true );
+		$this->setValidation( 'email_address', $v0 );
+		
 		$v1 = owa_coreAPI::validationFactory('entityExists');
 		$v1->setConfig('entity', 'base.user');
 		$v1->setConfig('column', 'email_address');
