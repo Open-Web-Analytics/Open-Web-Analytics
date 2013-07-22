@@ -257,24 +257,27 @@ class owa_processEventController extends owa_controller {
 		$this->event->set('is_browser',true);
 		
 		/* moved */
-		$this->event->set('browser_type', $this->eq->filter('browser_type', $bcap->get('Browser')));
+		$this->event->set('browser_type', $this->eq->filter( 'browser_type', $bcap->getUaFamily() ) );
 		
 		/* moved */
-		if ($bcap->get('Version')) {
-			$this->event->set('browser', $this->eq->filter('browser', $bcap->get('Version')));
+		if ( $bcap->getUaVersion() ) {
+		
+			$this->event->set('browser', $this->eq->filter('browser', $bcap->getUaVersion() ) );
+		
 		} else {
+		
 			$this->event->set('browser', $this->eq->filter('browser', '(unknown)'));
 		}
 		
 		//Check for what kind of page request this is
 		/* moved */
-		if ($bcap->get('Crawler')) {
+		if ( $bcap->isRobot() ) {
 			$this->event->set('is_robot', true);
 			$this->event->set('is_browser', false);
 		}
 		
 		/* moved */
-		$this->event->set( 'os', $this->eq->filter( 'operating_system', $bcap->get( 'Platform' ), $this->event->get( 'HTTP_USER_AGENT' ) ) );
+		$this->event->set( 'os', $this->eq->filter( 'operating_system', $bcap->getOsFamily(), $this->event->get( 'HTTP_USER_AGENT' ) ) );
 		
 		/*moved */
 		if ( $this->event->get('is_new_session') ) {

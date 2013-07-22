@@ -352,9 +352,11 @@ class owa_error {
 	
 	function logPhpErrors() {
 		
-		error_reporting( -1 );
+		error_reporting( E_ALL );
 		ini_set('display_errors', 'On');
 		set_error_handler( array( $this, "handlePhpError" ) );
+		ini_set("log_errors", 1);
+		ini_set("error_log", owa_coreAPI::getSetting('base', 'error_log_file') );
 	}
 	
 	/**
