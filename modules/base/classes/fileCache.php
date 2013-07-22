@@ -194,27 +194,28 @@ class owa_fileCache extends owa_cache {
 	function flush() {
 	
 		$tld = $this->readDir($this->cache_dir);
-		$this->debug("Reading cache file list from: ". $this->cache_dir);
+		
 		
 		if ( array_key_exists( 'files', $tld ) ) {	
 
-			$this->deleteFiles($tld['files']);
+			//$this->deleteFiles($tld['files']);
 		}	
 		
 		foreach ($tld['dirs'] as $k => $dir) {
 			
 			$sld = $this->readDir($dir);
-			$this->debug("Reading cache file list from: ". $dir);
 			
-			if ( array_key_exists( 'files', $sld ) ) {	
+			if ( array_key_exists( 'files', $sld ) ) {
+			
 				$this->deleteFiles( $sld['files'] );
 			}
 			
 			foreach ( $sld['dirs'] as $sk => $sdir ) {
+			
 				$ssld = $this->readDir( $sdir );
-				$this->debug( "Reading cache file list from: ". $sdir );	
-				
-				if ( array_key_exists( 'files', $sld ) ) {	
+			
+				if ( array_key_exists( 'files', $ssld ) ) {
+					
 					$this->deleteFiles( $ssld['files'] );
 				}
 			}
@@ -244,7 +245,9 @@ class owa_fileCache extends owa_cache {
 	}
 	
 	function readDir($dir) {
-	
+		
+		$this->debug( "Reading cache file list from: ". $dir );
+		
 		$data = array();
 		
 		if ($handle = opendir($dir)) {
