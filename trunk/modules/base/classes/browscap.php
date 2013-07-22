@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_DIR.'/ini_db.php');
+require_once( OWA_UAPARSER_LIB );
 
 /**
  * Browscap Class
@@ -36,8 +36,7 @@ class owa_browscap extends owa_base {
 	
 	
 	/**
-	 * main browscap_db maintained by Gary Keith's 
-	 * Browser Capabilities project.
+	 * main regex file location
 	 *
 	 * @var array
 	 */
@@ -59,9 +58,10 @@ class owa_browscap extends owa_base {
 	var $cache;
 	var $cacheExpiration;
 	
-	function __construct($ua = '') {
+	function __construct( $ua = '' ) {
 		
 		parent::__construct();
+		
 		// set user agent
 		$this->ua = $ua;
 		
@@ -69,108 +69,179 @@ class owa_browscap extends owa_base {
 		$this->cache = owa_coreAPI::cacheSingleton(); 
 		$this->cacheExpiration = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
 		$this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
-		//lookup robot in main browscap db
-		$this->browser = $this->lookup($this->ua);
-		$this->e->debug('Browser Name : '. $this->browser->Browser);
+		
+		//lookup UA
+		$this->browser = $this->lookup( $this->ua );
+		$this->e->debug('Browser Name : '. $this->getUaFamilyVersion() );
 		
 	}
 	
+	// DEPRICATED
 	function robotCheck() {
-		// must use == due to wacky type issues with phpBrowsecap ini file
-		if ($this->browser->Crawler == "true" || $this->browser->Crawler == "1") {
-			return true;
-		} elseif ($this->browser->Browser === "Default Browser") {
-			return $this->robotRegexCheck();
-		}
 		
-		return false;
+		return $this->isRobot();
 	}
 	
-	function lookup($user_agent) {
+	function lookup( $user_agent ) {
 		
-		if (owa_coreAPI::getSetting('base','cache_objects') === true) {
-			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-			$cache_obj = $this->cache->get('browscap', $this->ua);
+		if ( owa_coreAPI::getSetting('base','cache_objects') ) {
+			
+			owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );
+			
+			$cache_obj = $this->cache->get( 'browscap', $this->ua );
 		}
 		
-		if (!empty($cache_obj)) {
-			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-			return $cache_obj;
-					
-		} else {
-			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-						
-			// Load browscap file into memory
-			$user_browscap_file = OWA_DATA_DIR.'browscap/php_browscap.ini';
-			// check to see if a user downloaded version of the file exists
-			if ( file_exists( $user_browscap_file ) ) {
-				$this->browscap_db = $this->load( $user_browscap_file );	
-			} else {
-				$this->browscap_db = $this->load( $this->config['browscap.ini'] );
-			}
-		
-			$cap = null;
+		if ( ! $cache_obj ) {
 			
-			foreach ($this->browscap_db as $key=>$value) {
-				  if (($key!='*')&&(!array_key_exists('Parent',$value))) continue;
-				  $keyEreg='^'.str_replace(
-				   array('\\','.','?','*','^','$','[',']','|','(',')','+','{','}','%'),
-				   array('\\\\','\\.','.','.*','\\^','\\$','\\[','\\]','\\|','\\(','\\)','\\+','\\{','\\}','\\%'),
-				   $key).'$';
-				  if (preg_match('%'.$keyEreg.'%i',$user_agent))
-				  {
-				   $cap=array('browser_name_regex'=>strtolower($keyEreg),'browser_name_pattern'=>$key)+$value;
-				   $maxDeep=8;
-				   while (array_key_exists('Parent',$value)&&(--$maxDeep>0))
-					$cap += ($value = $this->browscap_db[$value['Parent']]);
-				   break;
-				  }
-			 }
-			 
-			if ( ! empty( $cap ) ) {
+			$custom_db = owa_coreAPI::getSetting('base','ua-regexes');
 				
-				if ( $this->config['cache_objects'] == true ) {
-					if ( $cap['Browser'] != 'Default Browser' ) {
-						$this->cache->set( 'browscap', $this->ua, (object)$cap, $this->cacheExpiration );
-					}
+			if ( $custom_db ) {
+				
+				$parser = new UAParser($custom_db);
+			
+			} else {
+				$parser = new UAParser;	
+			}
+			
+			$cap = $parser->parse( $this->ua );
+		
+		} else {
+			
+			$cap = $cache_obj;
+		}
+		if ( ! empty( $cap ) ) {
+			
+			if ( owa_coreAPI::getSetting('base', 'cache_objects') ) {
+				
+				$family = $cap->ua->family;
+				
+				if (  $family != 'Default Browser' ) {
+
+					$this->cache->set( 'browscap', $this->ua, $cap, $this->cacheExpiration );
 				}
 			}
-
-			return ( (object)$cap );
 		}
-	}
-	
-	function load($file) {
-	
-		if(defined('INI_SCANNER_RAW')) {
-        	return parse_ini_file($file, true, INI_SCANNER_RAW);
-    	} else {
-        	return parse_ini_file($file, true);
-     	}
 
+		return $cap;	
 	}
 	
 	function robotRegexCheck() {
 		
-		$db = new ini_db(OWA_CONF_DIR.'robots.ini');
-		owa_coreAPI::debug('Checking for robot strings...');
-		$match = $db->contains($this->ua);
-		
-		if (!empty($match)):
-			owa_coreAPI::debug('Robot detect string found.');
-			$this->browser->Crawler = true;
-			return true;
-		else:
-			return false;
-		endif;
+		$robots = array(
+			'bot',
+			'crawl',
+			'spider',
+			'curl',
+			'host',
+			'localhost',
+			'java',
+			'libcurl',
+			'libwww',
+			'lwp',
+			'perl',
+			'php',
+			'wget',
+			'search',
+			'slurp',
+			'robot'
+		);
 	
+		$match = false;
+		
+		foreach ( $robots as $k => $robot ) {
+			
+			$match = strpos( $this->ua, $robot );
+			
+			if ( $match ) {
+				
+				owa_coreAPI::debug('Robot detect string found.');				
+				
+				break;
+			} 
+		}
+		
+		return $match;
 	}
 	
-	function get($name) {
+	function isRobot() {
+		
+		return $this->robotRegexCheck();		
+	}
+	
+	function get( $name ) {
 	
 		return $this->browser->$name;
 	}
 	
+	function getUaFamily() {
+		
+		return $this->browser->ua->family;
+	}
+	
+	function getUaVersionMajor() {
+		
+		return $this->browser->ua->major;
+	}
+	
+	function getUaVersionMinor() {
+		
+		return $this->browser->ua->minor;
+	}
+	
+	function getUaVersionPatch() {
+		
+		return $this->browser->ua->patch;
+	}
+	
+	function getUaFamilyVersion() {
+		
+		return $this->browser->ua->toString;
+	}
+	
+	function getUaVersion() {
+		
+		return $this->browser->ua->toVersionString;
+	}
+	
+	function getUaOriginal() {
+		
+		return $this->browser->uaOriginal;
+	}
+	
+	function getUaOs() {
+		
+		return $this->browser->toFullString;
+	}
+	
+	function getOsFamily() {
+		
+		return $this->browser->os->family;
+	}
+	
+	function getOsVersionMajor() {
+		
+		return $this->browser->os->major;
+	}
+	
+	function getOsVersionMinor() {
+		
+		return $this->browser->os->minor;
+	}
+	
+	function getOsVersionPatch() {
+		
+		return $this->browser->os->patch;
+	}
+	
+	function getOsFamilyVersion() {
+		
+		return $this->browser->os->toString;
+	}
+	
+	function getOsVersion() {
+		
+		return $this->browser->os->toVersionString;
+	}
 }
 
 ?>

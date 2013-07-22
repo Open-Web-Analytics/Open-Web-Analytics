@@ -594,7 +594,7 @@
 				'error_handler'						=> 'production',
 				'error_log_level'					=> 0,
 				'error_log_file'					=> '', //OWA_DATA_DIR . 'logs/errors.txt',
-				'browscap.ini'						=> OWA_BASE_DIR . '/modules/base/data/php_browscap.ini',
+				'ua-regexes'						=> '',
 				'search_engines.ini'				=> OWA_BASE_DIR . '/conf/search_engines.ini',
 				'query_strings.ini'					=> OWA_BASE_DIR . '/conf/query_strings.ini',
 				'db_class_dir'						=> OWA_BASE_DIR . '/plugins/db/',
