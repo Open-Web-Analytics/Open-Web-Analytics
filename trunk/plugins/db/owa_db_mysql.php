@@ -141,38 +141,52 @@ class owa_db_mysql extends owa_db {
 	 * @access 	public
 	 * 
 	 */
-	function query($sql) {
+	function query( $sql ) {
   
-  		if ($this->connection_status == false):
-  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+  		if ( $this->connection_status == false) {
+  			
+  			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+  			
   			$this->connect();
-  		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-  		endif;
+  			
+  			owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+  		}
   
   		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+		
 		$this->e->debug(sprintf('Query: %s', $sql));
 		
 		$this->result = '';
+		
 		$this->new_result = '';	
 		
-		if (!empty($this->new_result)):
+		if (!empty($this->new_result)) {
 			mysql_free_result($this->new_result);
-		endif;
+		}
+		
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
-		$result = @mysql_unbuffered_query($sql, $this->connection);
+		
+		$result = @mysql_unbuffered_query( $sql, $this->connection );
+		
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);			
 		// Log Errors
-		if (mysql_errno($this->connection)):
-			$this->e->debug(sprintf('A MySQL error occured. Error: (%s) %s. Query: %s',
-			mysql_errno($this->connection),
-			htmlspecialchars(mysql_error($this->connection)),
-			$sql));
-		endif;			
+		
+		if ( mysql_errno( $this->connection ) ) {
+			$this->e->debug(
+				sprintf(
+					'A MySQL error ocured. Error: (%s) %s. Query: %s',
+					mysql_errno( $this->connection ), 
+					htmlspecialchars( mysql_error( $this->connection ) ),
+					$sql
+				)
+			);
+		}
+		
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+		
 		$this->new_result = $result;
 		
 		return $this->new_result;
-		
 	}
 	
 	function close() {
@@ -189,26 +203,29 @@ class owa_db_mysql extends owa_db {
 	 * @return 	array
 	 * @access  public
 	 */
-	function get_results($sql) {
+	function get_results( $sql ) {
 	
-		if ($sql):
+		if ( $sql ) {
+		
 			$this->query($sql);
-		endif;
+		}
 	
 		$num_rows = 0;
 		
 		while ( $row = @mysql_fetch_assoc($this->new_result) ) {
+		
 			$this->result[$num_rows] = $row;
 			$num_rows++;
 		}
 		
-		if ($this->result):
+		if ( $this->result ) {
 					
 			return $this->result;
 			
-		else:
+		} else {
+		
 			return null;
-		endif;
+		}
 	}
 	
 	/**
@@ -233,11 +250,11 @@ class owa_db_mysql extends owa_db {
 	 * @param string $string
 	 * @return string
 	 */
-	function prepare($string) {
+	function prepare( $string ) {
 		
-		if ($this->connection_status == false):
+		if ($this->connection_status == false) {
   			$this->connect();
-  		endif;
+  		}
 		
 		return mysql_real_escape_string($string, $this->connection); 
 		
