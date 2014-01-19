@@ -9,7 +9,7 @@
 			<form method="POST">
 		    
 			<div class="inline_h3"><B>User Name:</B></div>
-			<INPUT class="owa_largeFormField" type="text" size="20" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user_id;?>"><BR><BR>
+			<INPUT class="owa_largeFormField" type="text" size="20" name="<?php echo $this->getNs();?>user_id" value="<?php $this->out( $user_id); ?>"><BR><BR>
 			<div class="inline_h3"><B>Password:</B></div>
 			<INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $this->getNs();?>password"><BR><BR>
 			<input type="hidden" size="70" name="<?php echo $this->getNs();?>go" value="<?php echo $go?>">
