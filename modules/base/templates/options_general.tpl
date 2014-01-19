@@ -85,7 +85,7 @@
 	
 	<div class="setting" id="first_hit">	
 		<div class="title">Delay First Hit</div>
-		<div class="description">This setting controls whether OWA should delay logging the first hit of new visitors untill a secondary http request for a special web bug is made. This tactic is used to foil spiders/robots that spoof their user agents in an attempt to appear like a normal web browser.</div> 
+		<div class="description">This setting controls whether OWA should delay logging the first hit of new visitors until a secondary http request for a special web bug is made. This tactic is used to foil spiders/robots that spoof their user agents in an attempt to appear like a normal web browser.</div> 
 		<div class="field">
 			<select name="<?php echo $this->getNs();?>config[base.delay_first_hit]">
 				<option value="0" <?php if ($config['delay_first_hit'] == false):?>SELECTED<?php endif;?>>Off</option>
@@ -109,13 +109,13 @@
 	<div class="setting" id="p3p_policy">	
 		<div class="title">P3P Compact Privacy Policy</div>
 		<div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="http://www.p3pwriter.com/LRN_111.asp">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
-		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.p3p_policy]" value="<?php echo $config['p3p_policy'];?>"></div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.p3p_policy]" value="<?php $this->out( $config['p3p_policy'] );?>"></div>
 	</div>
 	
 	<div class="setting" id="url_params">	
 		<div class="title">URL Parameters</div>
 		<div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>
-		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.query_string_filters]" value="<?php echo $config['query_string_filters'];?>"></div>
+		<div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.query_string_filters]" value="<?php $this->out( $config['query_string_filters']);?>"></div>
 	</div>
 	
     </fieldset>
@@ -139,7 +139,7 @@
 		<div class="setting" id="notice_email">	
 			<div class="title">Notice E-mail Address</div>
 			<div class="description">This is the e-mail address that new visitor e-mails will be sent to.</div>
-			<div class="field"><input size="50" type="text" name="<?php echo $this->getNs();?>config[base.notice_email]" value="<?php echo $config['notice_email']?>"></div>
+			<div class="field"><input size="50" type="text" name="<?php echo $this->getNs();?>config[base.notice_email]" value="<?php $this->out( $config['notice_email']);?>"></div>
 
 		</div>
 	
@@ -192,7 +192,7 @@
 		<div class="setting" id="async_log_dir">	
 			<div class="title">Event Log File Directory</div>
 			<div class="description">This is the file system path of the file that OWA will write queued events to when Event Queuing mode is turned on. (e.g. /path/to/owa/log/file.txt)</div>
-			<div class="field"><input type="text" size="80" name="<?php echo $this->getNs();?>config[base.async_log_dir]" value="<?php echo $config['async_log_dir']?>"></div>
+			<div class="field"><input type="text" size="80" name="<?php echo $this->getNs();?>config[base.async_log_dir]" value="<?php $this->out( $config['async_log_dir'] );?>"></div>
 		</div>
 	
     </fieldset>
