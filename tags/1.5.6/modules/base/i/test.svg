@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  
+  
+  <filter id="f1">
+  	 <feGaussianBlur  stdDeviation="4" result="blur"/>
+  </filter>
+
+</svg>
