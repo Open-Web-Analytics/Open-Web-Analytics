@@ -20,9 +20,9 @@
 		<tbody>		
 			<?php foreach ($users as $user => $value):?>
 			<TR>
-				<TD><?php echo $value['user_id'];?></TD>
-				<TD><?php echo $value['real_name'];?></TD>
-				<TD><?php echo $value['role'];?></TD>
+				<TD><?php $this->out( $value['user_id'] );?></TD>
+				<TD><?php $this->out( $value['real_name'] );?></TD>
+				<TD><?php $this->out( $value['role'] );?></TD>
 				<TD><a href="<?php echo $this->makeLink(array('do' => 'base.usersProfile', 'edit' => true, 'user_id' => $value['user_id']));?>">Edit</a>  
 				<?php if ($value['id'] != 1):?>
 				| <a href="<?php echo $this->makeLink( array( 'do' => 'base.usersDelete', 'user_id' => $value['user_id'] ), false, false, false, true );?>">Delete</a></TD>
