@@ -1322,9 +1322,90 @@ class owa_coreAPI {
 		$cu = owa_coreAPI::getCurrentUser();
 		$user_id = $cu->getUserData( 'user_id' );
 		$full_nonce = $time . $action . $user_id . 'owa_nonce';
-		$nonce = substr(md5($full_nonce), -12, 10);
+		$nonce = substr( owa_coreAPI::saltedHash($full_nonce, 'nonce'), -12, 10);
 		
 		return $nonce;
+	}
+	
+	public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
+		
+		$salt = owa_coreAPI::getSalt( $scheme );
+		return hash_hmac( $hash_type, $data, $salt );
+	}
+	
+	public static function getSalt( $scheme ) {
+		
+		static $cached_salts;
+		
+		$scheme = strtoupper($scheme);
+		
+		if ( ! $cached_salts ) {
+			
+			$cached_salts = array();
+			$ns = strtoupper( owa_coreAPI::getSetting('base', 'ns') );
+		
+			foreach (array('NONCE', 'SECRET') as $f ) {
+				
+				foreach (array('KEY', 'SALT') as $s ) {
+		
+					$const = sprintf("%s%s_%s", $ns, $f, $s);
+					
+					if ( ! defined ( "$const" ) ) {
+						continue;
+					} else {
+						
+						$cached_salts[ $scheme.'_'.$s ] = constant("$const");
+					}
+				}
+			}	
+		}
+		
+		
+		$key = '';
+		$salt = '';
+		
+		if (array_key_exists( $scheme.'_KEY', $cached_salts ) ) {
+			
+			$key = $cached_salts[ $scheme.'_KEY' ];
+		}
+		
+		if (array_key_exists( $scheme.'_SALT', $cached_salts ) ) {
+			
+			$salt = $cached_salts[ $scheme.'_SALT' ];
+		}
+		
+		return $key . $salt;
+	}
+	
+	public static function secureRandomString( $length ) {
+		
+		if(function_exists('openssl_random_pseudo_bytes')) {
+	    	$rnd = openssl_random_pseudo_bytes($length, $strong);
+			if ($strong === TRUE) {
+				return $rnd;
+			}
+		}
+		
+		$sha =''; $rnd ='';
+		
+		if (file_exists('/dev/urandom')) {
+	    	$fp = fopen('/dev/urandom', 'rb');
+		    if ($fp) {
+		        if (function_exists('stream_set_read_buffer')) {
+		            stream_set_read_buffer($fp, 0);
+		        }
+		        $sha = fread($fp, $length);
+		        fclose($fp);
+			}
+		}
+		
+		for ($i=0; $i<$length; $i++) {
+		    $sha  = hash('sha256',$sha.mt_rand());
+		    $char = mt_rand(0,62);
+		    $rnd .= chr(hexdec($sha[$char].$sha[$char+1]));
+		}
+		
+		return $rnd;
 	}
 	
 	public static function summarize($map) {
