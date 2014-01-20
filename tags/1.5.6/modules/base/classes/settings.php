@@ -661,7 +661,7 @@
 				'default_action'					=> 'base.loginForm',
 				'default_page'						=> '', // move to site settings
 				'default_cache_expiration_period'	=> 604800,
-				'nonce_expiration_period'			=> 43200,
+				'nonce_expiration_period'			=> 7200,
 				'max_prior_campaigns'				=> 5,
 				'campaign_params'					=> array(
 						'campaign'		=> 'owa_campaign',
@@ -821,6 +821,12 @@
 					break;
 				case "define('OWA_PUBLIC_U":
 					fwrite($handle, str_replace("http://domain/path/to/owa/", $config_values['public_url'], $line));
+					break;
+				case "define('OWA_NONCE_KEY'":
+					fwrite($handle, str_replace("yournoncekeygoeshere", owa_coreAPI::secureRandomString(40), $line));
+					break;
+				case "define('OWA_NONCE_SALT'":
+					fwrite($handle, str_replace("yournoncesaltgoeshere", owa_coreAPI::secureRandomString(40), $line));
 					break;
 				default:
 					fwrite($handle, $line);
