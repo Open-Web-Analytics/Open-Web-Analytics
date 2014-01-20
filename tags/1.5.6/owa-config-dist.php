@@ -41,6 +41,13 @@ define('OWA_DB_HOST', 'yourdbhostgoeshere'); // host name of the server housing 
 define('OWA_DB_USER', 'yourdbusergoeshere'); // database user
 define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
 
+/**
+ * AUTHENTICATION KEYS AND SALTS
+ *
+ * Change these to different unique phrases.
+ */
+define('OWA_NONCE_KEY', 'yournouncekeygoeshere');  
+define('OWA_NONCE_SALT', 'yournouncesaltgoeshere'); 
 
 /** 
  * PUBLIC URL
