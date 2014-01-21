@@ -42,10 +42,10 @@ class owa_baseModule extends owa_module {
 		$this->display_name = 'Open Web Analytics';
 		$this->group = 'Base';
 		$this->author = 'Peter Adams';
-		$this->version = 8;
+		$this->version = 9;
 		$this->description = 'Base functionality for OWA.';
 		$this->config_required = false;
-		$this->required_schema_version = 8;
+		$this->required_schema_version = 9;
 		
 		// create event queues
 		
@@ -105,7 +105,7 @@ class owa_baseModule extends owa_module {
 		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
 		//Clean Query Strings 
 		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
-			$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
+			//$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
 			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
 		}
@@ -2322,7 +2322,19 @@ class owa_baseModule extends owa_module {
 			
 			// Do the host lookup
 			
-			$remote_host = @gethostbyaddr( $ip_address );
+			if ( ! strpos( $ip_address, '.' ) ) {
+				
+				 $result = @dns_get_record($host_name,DNS_AAAA);
+				 
+				 if ( is_array( $result ) && isset( $result[0] ) && isset( $result[0]['host'] ) ) {
+					 
+					 $remote_host = $result[0]['host'];
+				 }
+				 
+			} else {
+			
+				$remote_host = @gethostbyaddr( $ip_address );
+			}
 			
 			if ($remote_host &&
 				$remote_host != $ip_address &&
