@@ -47,7 +47,9 @@ define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
  * Change these to different unique phrases.
  */
 define('OWA_NONCE_KEY', 'yournoncekeygoeshere');  
-define('OWA_NONCE_SALT', 'yournoncesaltgoeshere'); 
+define('OWA_NONCE_SALT', 'yournoncesaltgoeshere');
+define('OWA_AUTH_KEY', 'yourauthkeygoeshere');
+define('OWA_AUTH_SALT', 'yourauthsaltgoeshere');
 
 /** 
  * PUBLIC URL
