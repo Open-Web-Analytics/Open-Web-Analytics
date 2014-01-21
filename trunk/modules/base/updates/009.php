@@ -39,6 +39,13 @@ class owa_base_009_update extends owa_update {
 		
 		$c = file_get_contents(OWA_DIR . 'owa-config.php');
 		
+		$ret = copy(OWA_DIR . 'owa-config.php', OWA_DIR . 'owa-config.php.backup.' . time() );
+		
+		if ($ret === false ) {
+			$this->e->notice('A backup of your owa-config.php could not be created. Check permissions to ensure your main OWA directory is writable.');
+			return false;
+		}
+		
 		
 		if ($c) {
 		
@@ -48,26 +55,28 @@ class owa_base_009_update extends owa_update {
  * 
  * Change these to different unique phrases.
  */" . PHP_EOL.PHP_EOL;
-			$n1 = "define('OWA_NONCE_KEY', '" . owa_coreAPI::secureRandomString(40) . "');" . PHP_EOL;
-			$n2 = "define('OWA_NONCE_SALT', '" . owa_coreAPI::secureRandomString(40) . "');" . PHP_EOL . PHP_EOL;
-			$n3 = "?>";
+			$n1 = "define('OWA_NONCE_KEY', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
+			$n2 = "define('OWA_NONCE_SALT', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
+			$n3 = "define('OWA_AUTH_KEY', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
+			$n4 = "define('OWA_AUTH_SALT', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL . PHP_EOL;
+			$ne = "?>";
 			
-			$value = $n0. $n1 . $n2 . $n3;
+			$value = $n0. $n1 . $n2 . $n3 . $n4 . $ne;
 			//fseek($handle, -1, SEEK_END);
 			//$ret = fwrite($handle, $value);
 			//fclose($handle);				
 			$c = str_replace('?>', $value, $c);
-			print $c;
+			
 			$ret = file_put_contents(OWA_DIR . 'owa-config.php', $c);	
 			if ($ret === false ) {
-				$this->e->notice('config file not updated.');
+				$this->e->notice('owa-config.php could not be written to. Check permissions to ensure this file is writable.');
 				return false;
 			}
-			$this->e->notice('config file updated.');
+			$this->e->notice('Auth keys added to owa-config.php.');
 			return true;
 			
 		} else {
-			$this->e->notice('config file could not be read.');
+			$this->e->notice('owa-config.php could not be read. check permissions to ensure this file is readable.');
 			return false;
 		}
 		
