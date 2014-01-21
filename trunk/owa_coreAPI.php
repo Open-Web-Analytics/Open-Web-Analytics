@@ -1377,35 +1377,49 @@ class owa_coreAPI {
 		return $key . $salt;
 	}
 	
-	public static function secureRandomString( $length ) {
+	public static function secureRandomString( $length, $special_chars = true, $more_special_chars = true ) {
 		
-		if(function_exists('openssl_random_pseudo_bytes')) {
-	    	$rnd = openssl_random_pseudo_bytes($length, $strong);
-			if ($strong === TRUE) {
-				return $rnd;
-			}
+		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+		if ( $special_chars )
+			$chars .= '!@#$%^&*()';
+		if ( $more_special_chars )
+			$chars .= '-_ []{}<>~`+=,.;:/?|';
+	
+		$password = '';
+		for ( $i = 0; $i < $length; $i++ ) {
+			$password .= substr($chars, owa_coreAPI::random(0, strlen($chars) - 1), 1);
 		}
 		
-		$sha =''; $rnd ='';
+		return $password;
+	}
+	
+	public static function random($min, $max) {
 		
-		if (file_exists('/dev/urandom')) {
-	    	$fp = fopen('/dev/urandom', 'rb');
-		    if ($fp) {
-		        if (function_exists('stream_set_read_buffer')) {
-		            stream_set_read_buffer($fp, 0);
-		        }
-		        $sha = fread($fp, $length);
-		        fclose($fp);
-			}
-		}
+		static $rnd_value;
 		
-		for ($i=0; $i<$length; $i++) {
-		    $sha  = hash('sha256',$sha.mt_rand());
-		    $char = mt_rand(0,62);
-		    $rnd .= chr(hexdec($sha[$char].$sha[$char+1]));
-		}
-		
-		return $rnd;
+		if ( strlen($rnd_value) < 8 ) {
+			$seed = microtime();
+			$rnd_value = md5( uniqid(microtime() . mt_rand(), true ) . $seed );
+			$rnd_value .= sha1($rnd_value);
+			$rnd_value .= sha1($rnd_value . $seed);
+			//$seed = md5($seed . $rnd_value);
+		}			
+		// Take the first 8 digits for our value
+		$value = substr($rnd_value, 0, 8);
+	
+		// Strip the first eight, leaving the remainder for the next call to random.
+		$rnd_value = substr($rnd_value, 8);
+	
+		$value = abs(hexdec($value));
+	
+		// Some misconfigured 32bit environments (Entropy PHP, for example) truncate integers larger than PHP_INT_MAX to PHP_INT_MAX rather than overflowing them to floats.
+		$max_random_number = 3000000000 === 2147483647 ? (float) "4294967295" : 4294967295; // 4294967295 = 0xffffffff
+	
+		// Reduce the value to be within the min - max range
+		if ( $max != 0 )
+			$value = $min + ( $max - $min + 1 ) * $value / ( $max_random_number + 1 );
+	
+		return abs(intval($value));
 	}
 	
 	public static function summarize($map) {
