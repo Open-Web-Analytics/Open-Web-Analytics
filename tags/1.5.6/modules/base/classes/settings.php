@@ -823,10 +823,16 @@
 					fwrite($handle, str_replace("http://domain/path/to/owa/", $config_values['public_url'], $line));
 					break;
 				case "define('OWA_NONCE_KE":
-					fwrite($handle, str_replace("yournoncekeygoeshere", owa_coreAPI::secureRandomString(40), $line));
+					fwrite($handle, str_replace("yournoncekeygoeshere", owa_coreAPI::secureRandomString(64), $line));
 					break;
 				case "define('OWA_NONCE_SA":
-					fwrite($handle, str_replace("yournoncesaltgoeshere", owa_coreAPI::secureRandomString(40), $line));
+					fwrite($handle, str_replace("yournoncesaltgoeshere", owa_coreAPI::secureRandomString(64), $line));
+					break;
+				case "define('OWA_AUTH_KEY":
+					fwrite($handle, str_replace("yourauthkeygoeshere", owa_coreAPI::secureRandomString(64), $line));
+					break;
+				case "define('OWA_AUTH_SAL":
+					fwrite($handle, str_replace("yourauthsaltgoeshere", owa_coreAPI::secureRandomString(64), $line));
 					break;
 				default:
 					fwrite($handle, $line);
