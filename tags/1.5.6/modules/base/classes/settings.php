@@ -822,10 +822,10 @@
 				case "define('OWA_PUBLIC_U":
 					fwrite($handle, str_replace("http://domain/path/to/owa/", $config_values['public_url'], $line));
 					break;
-				case "define('OWA_NONCE_KEY'":
+				case "define('OWA_NONCE_KE":
 					fwrite($handle, str_replace("yournoncekeygoeshere", owa_coreAPI::secureRandomString(40), $line));
 					break;
-				case "define('OWA_NONCE_SALT'":
+				case "define('OWA_NONCE_SA":
 					fwrite($handle, str_replace("yournoncesaltgoeshere", owa_coreAPI::secureRandomString(40), $line));
 					break;
 				default:
