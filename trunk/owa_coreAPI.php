@@ -1398,10 +1398,32 @@ class owa_coreAPI {
 		static $rnd_value;
 		
 		if ( strlen($rnd_value) < 8 ) {
-			$seed = microtime();
-			$rnd_value = md5( uniqid(microtime() . mt_rand(), true ) . $seed );
-			$rnd_value .= sha1($rnd_value);
-			$rnd_value .= sha1($rnd_value . $seed);
+			
+			$notrandom = false;
+			
+			if ( function_exists( 'openssl_random_pseudo_bytes' ) ) {
+				
+				$rnd_value = bin2hex(openssl_random_pseudo_bytes(32, $cstrong));
+				
+				if ( ! $cstrong ) {
+					
+					$notrandom = true;
+				}
+			
+			} else {
+				
+				$notrandom = true;
+			}
+			
+			if ( $notrandom ) {
+				
+				$seed = microtime();
+				$rnd_value = md5( uniqid(microtime() . mt_rand(), true ) . $seed );
+				$rnd_value .= sha1($rnd_value);
+				$rnd_value .= sha1($rnd_value . $seed);	
+					
+			}			
+			
 			//$seed = md5($seed . $rnd_value);
 		}			
 		// Take the first 8 digits for our value
