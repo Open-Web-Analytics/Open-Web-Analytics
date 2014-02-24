@@ -1,0 +1,794 @@
+/* REPORT CSS */
+
+/*ul {margin-left:10px;} */
+.owa {font-family: Helvetica, Arial, sans-serif; width:auto;}
+#report_header {width:100%; margin: 0 0 20px 0; }
+
+.owa_reportTitle, .report_headline {
+	font-size:26px; 
+	padding:5px 5px 5px 0px; 
+	font-weight:bold; 
+	color:#505050;
+	margin-bottom:20px;
+}
+
+.titleSuffix {
+	
+	font-weight: normal;
+	font-size: 20px;
+}
+
+.owa_reportContainer {width:auto; background-color: ; height:;}
+.owa_reportElement {width:100%; text-align:center; vertical-align: top;}
+.owa_reportSectionHeader, .section_header {
+	width:auto; 
+	padding-top:5px;
+	padding-bottom:10px; 
+	margin: 10px 0 10px 0; 
+	font-size: 18px; 
+	font-weight: ;
+	color: #666666;
+	border-top: 4px solid #cccccc;
+}
+
+.owa_reportHeadline {
+	font-weight:bold;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size:20px;
+	margin: 10px 0 10px 0;
+	color: #505050;
+}
+
+.reportSectionContainer {
+	margin: 10px;
+	padding:7px 7px 7px 7px; 
+	background-color: #ffffff;
+	-moz-border-radius:5px 5px 5px 5px;
+	-moz-box-shadow:2px 2px 2px 1px #9f9f9f;
+	border-radius:5px 5px 5px 5px;
+	box-shadow:2px 2px 2px 1px #9f9f9f;
+	-webkit-border-radius:5px 5px 5px 5px;
+	-webkit-box-shadow:2px 2px 2px 1px #9f9f9f;
+
+}
+
+.owa_reportSectionContent {
+	margin: 0 10px 0 10px;
+	padding:0px 7px 7px 0px; 
+	background-color: #ffffff;
+	width:auto;
+}
+
+#owa_reportHeader {
+	color:#505050; background-color:#cccccc;
+}
+
+.ui-jqgrid tr.jqgrow td {
+	font-size:10px;
+}
+
+.ui-jqgrid .ui-jqgrid-htable th.ui-th-column {
+	font-size:10px;
+}
+
+.clear {
+	float:none;
+	clear:both;
+}
+
+.owa_reportSubSectionLabel {
+	color: #666666;
+	border-top:2px solid #cccccc;
+	font-size: 12px;
+	padding-left:2px;
+	width:80%;
+}
+
+.owa .moreLink, .owa_moreLinks {
+	
+	text-align:left;
+	margin-top:6px;
+	padding:2px;
+	
+	
+}
+
+.owa_moreLinks li {
+	border-bottom:0px solid #cccccc;
+	text-align: right;
+	padding: 0px 0px 0px 0px;
+	list-style-type: none;
+	
+}
+.owa_moreLinks a:hover, .owa .moreLink a:hover {
+	border-bottom:2px solid orange;
+}
+
+.owa_moreLinks li a, .owa_moreLinks a, .owa .moreLink a  {
+	border:0px solid #ffffff;
+	font-size:10px;
+	text-decoration: none;
+	padding-left:0px;
+}
+
+.data_table {border-collapse: collapse;margin:0;width:100%;}
+.data_table td {border:2px solid #CCCCCC;  min-width:80px;padding:10px;}
+.col_item_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999;}
+.col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
+.data_cell {text-align:center; vertical-align:center;}
+.item_cell {}
+
+.owa_reportHeaderControls {background-color:#ffffff; border-bottom: 1px solid #a0a0a0;height:60px;margin-bottom:20px;}
+
+.owa_reportHeaderControls li {
+	
+	border-right: 1px solid #efefef;
+	padding: 30px;
+}
+
+.owa_reportControl {
+	
+	border: 1px solid #cccccc;
+	background-color: #ffffff;
+	height: 30px;
+	padding:5px;
+}
+
+#owa_reportSiteFilter {text-align:;}
+#owa_reportSiteFilterSelect {font-size: 12px;}
+#owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline;}
+
+.owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
+.owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
+.owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
+/*.owa_reportPeriod {text-align: right;}*/
+#owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
+
+
+#owa_reportPeriodFiltersContainer {background-color: #efefef; width:100%;}
+
+/*#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}*/
+#owa_reportPeriodFiltersContainer .picker { padding-left:15px;}
+#owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
+.owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
+
+#owa_reportNavPanel {width:150px;}
+#report_top_level_nav_ul {width:;}
+
+.owa_reportLeftNavColumn {width:150px; margin-right:0px; border-right: 0px solid orange; padding: 5px 5px 5px 5px;}
+.owa_reportLeftNavColumn a {
+	text-decoration: none;
+	color:;
+	
+}
+
+.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
+
+.owa_metricInfobox, .owa .action_infobox {
+	color:#505050; 
+	background-color: #ffffff;
+	text-align: left; 
+	border: 1px solid #cccccc;
+	padding:0px; 
+	margin:3px; 
+	min-width:110px;
+	width:100%; 
+	float:left;
+	
+}
+
+.owa_metricInfobox p, .owa_metricInfobox span, .owa .action_infobox {
+	padding:0px 7px 0px 7px;
+	margin:0px;
+	
+}
+
+p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .action_name  {
+	color:#666666;
+	font-size:12px;
+	padding-top:6px;
+	margin-bottom:0px;
+}
+
+p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
+	color:#505050;
+	font-size:28px;
+	padding-bottom: 0px;
+	font-family: "Helvetica";
+	margin-top:5px;
+	font-weight: bold;
+	line-height: normal;
+	white-space:nowrap;
+}
+
+.owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
+
+.kpiInfobox {
+	min-width:200px;
+	width:auto;
+}
+
+.kpiInfoboxLink {
+	text-decoration:none;
+}
+
+.visitSummaryKpi {
+	width:120px;
+	min-width:120px;
+	min-height: 60px;
+}
+
+.owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
+.owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}
+.owa_admin_nav_topmenu {
+	padding:0px;
+	border:1px solid #cccccc; 
+	background-color:#ffffff;
+	-moz-border-radius: 5px 5px; 
+}
+
+.owa_admin_nav_subgroup_item {
+	padding:3px 3px 3px 10px;
+}
+.owa_admin_nav_topmenu_container {background-color: #efefef;}
+.owa_admin_nav_topmenu_item {border-bottom: 1px solid #cccccc;background-color: #efefef;padding:0px;height:20px; vertical-align: middle; font-weight: bold; font-size:12px;	}
+.owa_admin_nav_topmenu_toggle {border-left:1px solid #cfcfcf;width:25px;height:20px;float:right;background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
+/*
+.owa_document {
+	border: 1px solid #efefef;
+	padding: 13px 10px 10px 63px;
+}
+
+.owa_document div {
+	padding:2px;
+}
+
+.owa_document .title {
+	font-size:22px;
+}
+
+.owa_document .url, .owa .refererDetailPanel .url {
+	font-size:14px;
+	color: #0E774A;
+	padding-bottom:5px;
+}
+
+.owa_document .pagetype {
+	font-size:12px;
+}
+*/
+.owa_visitInfobox {
+	color:#9f9f9f; 
+	background-color: #505050;
+	border:1px solid #cccccc;
+	text-align: left; 
+	padding:5px; 
+	margin:5px; 
+	width:350px; 	
+    border-collapse: collapse;
+    padding:0;
+    margin:0;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+}
+
+.owa_visitInfoboxItemContainer, .owa_visitInfoboxItem   {
+	background-color: #ffffff;
+	border: 0px solid #A0A0A0;
+	border-collapse: collapse;
+}
+
+.owa_visitInfoboxItem   {
+	width: 50px;
+}
+
+.owa_visitInfoboxItem   {
+	text-align:center;
+	border-left: 1px solid #efefef;
+	border-right: 1px solid #efefef;
+}
+
+.owa_visitInfoboxTitle {
+	color:#A0A0A0;
+	padding:6px;
+	font-size:12px;
+	margin:0px;
+}
+
+.owa_userInfobox {
+	background-color: #ffffff;
+}
+
+.owa_avatar {
+	height: 30px;
+	width: 30px;
+	border: 1px solid #efefef;
+	padding: 2px;
+	
+}
+
+.owa_userLabel {
+	width:100px;
+	height:50px;
+}
+
+.owa_userNameLabel {
+	font-size: 14px;
+	
+}
+
+.owa_userGeoLabel {
+	font-size: 10px;
+	line-height: 13px;
+}
+
+.owa_largeNumber {
+	color:#505050;
+	font-size:20px;
+}
+
+.owa_visitInfoboxDocContainer {
+	background-color: #efefef;
+	border: 1px solid #E0E0E0;
+	border-collapse: collapse;
+	width:100%;
+	font-size: 10px;
+}
+
+.owa_icon16x16 {
+	width:20px;
+	padding:3px;
+}
+
+.owa_secondaryText {
+	font-size: 10px;
+	color:#505050;
+}
+
+/* keep this */  
+.owa_genericHorizontalList ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:5px;}
+.owa_genericHorizontalList li {text-decoration: none; float:left; margin: 2px; padding:3px;}
+.owa_genericHorizontalList li a {
+	
+	display: block;
+	text-decoration: none;
+	text-align: center;
+}
+
+.owa .relatedReports li {
+	padding-bottom: 10px;
+}
+
+.owa_resultsExplorerBottomControls {
+	background-color: #9f9f9f;
+	font-size:10px;
+}
+
+.owa_resultsExplorerBottomControls li a {
+	border: 1px solid #efefef;
+}
+
+
+
+.owa_resultsExplorerBottomControls ul {
+	
+	float:right;
+
+}
+.owa_rowCount {
+	
+	font-size:12px;
+	color: #9f9f9f;
+	margin-right:30px;
+}
+
+.owa_nextPageControl:hover, .owa_previousPageControl:hover{
+	color: orange;
+	padding:;
+	border: 1px solid orange;
+}
+
+.owa_nextPageControl, .owa_previousPageControl {
+	background-color: #efefef;
+	border: 1px solid #505050;
+	color: #505050;
+	padding:5px;
+	font-size: 12px;
+}
+
+.owa_metricGridCell {
+	padding-right: 20px;
+}
+
+.owa_dimensionGridCell td {
+	padding-left: 30px;
+}
+
+.owa_dimensionGridCell a {
+	text-decoration: none;
+	color: blue;
+}
+
+.owa_dimensionGridCell a:hover{
+	text-decoration: underline;
+	color: blue;
+}
+
+.simpleTable {
+	font-size:12px;
+	width:100%;
+}
+
+.simpleTable th {
+	background-color: #efefef;
+	border-bottom: 1px solid #cccccc;
+	border-right: 1px solid #cccccc;
+	padding: 4px 5px 4px 5px;
+}
+
+.simpleTable td {
+	padding:3px 5px 3px 5px;
+	font-size:10px;
+
+}
+
+.metriccell {
+	text-align:right;
+	width:100px;
+}
+
+.owa_dimensionDetail {
+	border: 1px solid #cccccc;
+	width:inherit;
+	height:auto;
+	padding:10px;
+}
+
+.owa_dimensionDetail .title {
+	
+	font-size:22px;
+	padding-bottom: 7px;
+}
+
+.owa_dimensionDetail .url {
+	
+	font-size:14px;
+	color: #0E774A;
+	padding-bottom:5px;
+}
+
+.owa_dimensionDetail .icon {
+	
+	padding-right:10px;
+}
+
+.owa .refererDetailPanel  {
+
+	height:auto;
+}
+
+.owa .refererDetailPanel .snippet {
+	font-size:10px;
+	color: #9f9f9f;
+	
+}
+
+.owa .ui-widget {
+	font-size: 12px;
+}
+
+.owa .ui-tabs-nav {
+	font-size:14px;
+}
+
+.owa .funnel {
+	padding: 0px;
+	margin: 0px;
+}
+
+.owa .funnel td {
+	
+	padding: 10px;
+}
+
+.owa .funnel .funnelMiddle {
+	
+	text-align: center;
+}
+
+.owa .funnel .funnelLargeNumber {
+	
+	font-size:20px;
+	font-weight: bold;
+	padding-bottom:10px;
+}
+
+.owa .funnel .funnelStepName {
+	
+	font-size:18px;
+	font-weight: bold;
+	color:;
+	padding-bottom:5px;
+}
+
+.owa .funnel .funnelStepUrl {
+	
+	font-size:12px;
+	font-weight:;
+	color: #707070;
+	padding-bottom:5px;
+}
+
+.owa .funnel .funnelStepCount {
+	
+	font-size:26px;
+	font-weight: bold;
+	color:;
+	padding:10px 0px 10px 0px;
+}
+
+.owa .funnel span.visitorCountLabel {
+	
+	vertical-align:middle;
+	font-size:12px;
+	font-weight:normal;
+	color: #9f9f9f;
+}
+
+.owa .funnel .funnelStep {
+	
+	background-color: #D6F5FF;
+	padding: 15px;
+}
+
+.owa .funnel .funnelFlow {
+	background-image: url('../i/funnel_flow.png');
+	height: 150px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.owa .funnel .funnelFlow {
+	background-image: url('../i/funnel_flow.png');
+	height: 150px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.owa .funnel .entranceCount {
+	
+	padding: 0px 30px 0px 0px;
+	margin-bottom: 10px;
+	background-image: url('../i/funnel_entrance_arrow.png');
+	height: 27px;
+	font-size: 26px;
+	background-repeat: no-repeat;
+	background-position: right;
+	
+}
+
+.owa .funnel .exitCount {
+	
+	padding: 0px 0px 0px 30px;
+	margin-bottom: 10px;
+	background-image: url('../i/funnel_exit_arrow.png');
+	height: 27px;
+	font-size: 26px;
+	background-repeat: no-repeat;
+	background-position: left;	
+}
+
+.owa .secondaryText {
+	
+	font-size:14px;
+	color: #9f9f9f;
+}
+
+.owa .submit-button {
+	border-radius:4px; 
+	background-color:orange; 
+	padding:10px 10px 10px 10px; 
+	color:#ffffff; 
+	font-size:14px;
+	font-weight:bold;
+	border: 1px solid #efefef;
+	-moz-border-radius: 3px; 
+	-webkit-border-radius: 3px;	
+	margin-top: 20px;
+	text-decoration: none;
+	
+}
+
+.owa .externalUrl {
+	color: #093;
+	font-size:12px;
+}
+
+.submit-button:hover {
+	color: #000000;
+	border-color: #9f9f9f;
+	-moz-box-shadow:2px 2px 2px #999;
+    box-shadow:2px 2px 2px #999;
+    -webkit-box-shadow:2px 2px 2px #999;
+}
+
+.submit-button a  {
+	text-decoration: none;
+}
+
+.dimensionPicker {
+	
+	width:175px;
+	font-size: 10px;
+	
+}
+
+.dimensionPicker .dim-list {
+	
+}
+
+.dimensionPicker .dim-list ul {
+
+	padding-left: 7px;
+}
+
+.dimensionPicker .dimensionListItem {
+	
+	color: white;
+	background-color: green;
+	border: 1px solid #efefef;
+	padding:7px;
+	list-style: none;
+}
+
+.dimensionPicker .select-button {
+	
+	font-size: 10px;
+	height:;
+	
+}
+
+.dimensionPicker .dimensionListItem:hover {
+	
+	font-weight: bold;
+	background-color: orange;
+}
+
+.dimensionPicker h4 {
+	font-size:  14px;
+	font-weight: bold;
+	margin-bottom: 5px;
+	margin-top: 10px;
+}
+
+.explorerTopControls {
+	
+	font-size: 12px;
+	width:auto;
+	border: 1px solid #B0B0B0;
+	padding: 0px;
+	margin-bottom:3px;
+	background-color: #fafafa;
+	
+}
+
+.dimensionPicker li, .dimensionPicker ul {
+	
+	float:none;
+}
+
+.explorerTopControls .controlItem span {
+	font-size: 10px;
+}
+
+.explorerTopControls li {
+	
+	list-style: none;
+	text-decoration: none;
+	width:;
+}
+
+.constraintPickerContainer .builder {
+	
+	margin:15px;
+	padding:10px;
+	background-color: #ffffff;
+	border: 1px solid #9f9f9f;	
+}
+
+li.constraintRow {
+	width:700px;
+	padding:20px;
+	border: 1px solid #9f9f9f;
+	background-color: #fafafa;
+}
+
+.constraintRow .constraintOperatorPicker, .constraintRow .constraintDimensionPicker {
+	float:left;
+	margin-right:10px;
+}
+
+.constraintRow .constraintRemoveButton {
+	float:right;
+	margin-right:10px;
+}
+
+.controlItem .label {
+	font-size:10px;
+	padding-top:7px;
+	padding-right:5px
+}
+
+.controlItem span {
+	
+	float:left;
+	
+}
+
+.controlItem {
+
+	display: inline-block;
+    vertical-align: middle;
+}
+
+.ui-selectmenu {
+	
+	height: 1.75em;
+}
+
+.owa .actionInfobox {
+	
+	border: 1
+}
+
+.owa img.loading { 
+	margin: 5px 5px 5px 30px
+}
+.owa #trend-chart {
+	min-height: 125px
+}
+.owa #trend-metrics {
+	min-height: 70px
+}
+
+.owa .propertyList dl {
+	width:100%;
+ 	overflow:hidden;
+ 	background: #efefef;
+ 	padding:0;
+  	margin:0;
+  	font-size:12px;
+  	margin-bottom:5px;
+}
+
+.owa .propertyList dt {
+	float:left;
+ 	width:100px; /* adjust the width; make sure the total of both is 100% */
+ 	background:#6AA9CF;
+ 	border: 1px solid #6AA9CF;
+ 	color: #ffffff;
+ 	padding:4px 5px 4px 5px;
+ 	margin:0;
+ 	border-top-left-radius: 5px;
+	border-bottom-left-radius: 5px;
+	-moz-border-radius-topleft: 5px;
+	-moz-border-radius-bottomleft: 5px;
+
+ 	
+}
+
+.owa .propertyList dd {
+	float:left;
+ 	width:auto; /* adjust the width; make sure the total of both is 100% */
+ 	background:#ffffff;
+ 	border: 1px solid #cccccc;
+ 	padding:4px 10px 4px 10px;
+	margin:0 10px 0 0;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+	-moz-border-radius-topright: 5px;
+	-moz-border-radius-bottomright: 5px;
+	
+}
+
+
