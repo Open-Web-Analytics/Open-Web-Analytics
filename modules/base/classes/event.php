@@ -161,6 +161,17 @@ class owa_event {
 	}
 	
 	/**
+	 * removes a property
+	 */
+	function delete( $name ) {
+		
+		if (array_key_exists( $name, $this->properties ) ) {
+			
+			unset( $this->properties['name'] );
+		}
+	}
+	
+	/**
 	 * Sets time related event properties
 	 *
 	 * @param integer $timestamp
@@ -236,6 +247,34 @@ class owa_event {
 	
 		$this->properties = array_merge($properties, $this->properties);
 	
+	}
+	
+	/**
+	 * Exports Event Class variables
+	 *
+	 * @return 	array
+	 */
+	 function export() {
+		 
+		 return get_object_vars( $this );
+	 }
+	 
+	/**
+	 * Loads Event class variables from an array
+	 *
+	 * @param 	array $properties
+	 */ 
+	 function loadFromArray ( $vars ) {
+	 
+	 	$has = get_object_vars( $this );
+		
+		foreach ($has as $name => $oldValue ) {
+        
+        	if ( isset( $vars[$name] ) ) {
+	        	
+	        	$this->$name = $vars[ $name ];
+        	}
+		}
 	}
 	
 	function replaceProperties($properties) {
