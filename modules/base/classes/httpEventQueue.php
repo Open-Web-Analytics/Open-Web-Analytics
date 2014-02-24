@@ -47,13 +47,12 @@ class owa_httpEventQueue extends owa_eventQueue {
 	
 	function sendMessage( $event ) {
 		
-		if ($event) {
-			$properties['owa_event'] = base64_encode(serialize($event));
+		if ( $event ) {
 			
-			//$properties = array_map('urlencode', $properties);
-			$properties = owa_lib::implode_assoc('=', '&', $properties);
-			//print_r($properties);
-			//return;
+			$properties = array();
+			
+			$properties['owa_event'] = $event->export();
+			
 		} else {
 			return;
 		}
@@ -65,16 +64,19 @@ class owa_httpEventQueue extends owa_eventQueue {
 	  	if (!$fp) {
 	    	return false;
 	  	} else {
+	  		
+	  		$content = http_build_query( $properties );
+	  	
 	      	$out = "POST ".$parts['path']." HTTP/1.1\r\n";
 	      	$out.= "Host: ".$parts['host']."\r\n";
 	      	$out.= "Content-Type: application/x-www-form-urlencoded\r\n";
-	      	$out.= "Content-Length: ".strlen($properties)."\r\n";
+	      	$out.= "Content-Length: ".strlen( $content )."\r\n";
 	      	$out.= "Connection: Close\r\n\r\n";
-	    	$out.= $properties;
-	 		owa_coreAPI::debug("out: $out");
-	 		
+	    	$out.= $content;
+	 	
 	      	fwrite($fp, $out);
 	      	fclose($fp);
+	      	owa_coreAPI::debug("out: $out");
 	      	return true;
 	  	}
 	}	
