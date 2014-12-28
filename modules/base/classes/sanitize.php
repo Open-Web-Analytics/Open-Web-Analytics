@@ -228,7 +228,7 @@ class owa_sanitize {
 	 * @access public
 	 * @static
 	 */
-	function cleanInput($input, $options = array()) {
+	public static function cleanInput($input, $options = array()) {
 		
 		if (empty($input)) {
 			return;
