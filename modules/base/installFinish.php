@@ -38,7 +38,7 @@ class owa_installFinishController extends owa_installController {
 	function action() {
 	
 		// Persist install complete flag. 
-		$this->c->setSetting('base', 'install_complete', true);
+		$this->c->persistSetting('base', 'install_complete', true);
 		$save_status = $this->c->save();
 		
 		if ($save_status == true) {
