@@ -339,9 +339,34 @@ abstract class owa_module extends owa_base {
 	 * @param string $handler_name
 	 * @return boolean
 	 */
-	function registerFilter($filter_name, $handler_name, $method, $priority = 10, $dir = 'filters') {
+	function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
 		
-		if ( ! is_object( $handler_name ) ) {
+		// if it's an object
+		if ( is_object( $handler_name ) ) {
+		
+			owa_coreAPI::registerFilter($filter_name, array($handler_name, $method), $priority);
+		
+		// if it's a static method name
+		} elseif ( strpos( $handler_name, '::') ) {
+			
+			owa_coreAPI::registerFilter($filter_name, $handler_name, $priority);
+			
+		// else try to create the class object
+		} else {
+			// create object
+			if ( ! class_exists( $handler_name ) ) {		
+			
+				//$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
+				$class = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
+			}
+			
+			// register
+			owa_coreAPI::registerFilter($filter_name, array($class, $method), $priority);
+		}
+		
+		
+		/*
+if ( ! is_object( $handler_name ) ) {
 			
 			if ( ! class_exists( $handler_name ) ) {		
 			
@@ -352,6 +377,7 @@ abstract class owa_module extends owa_base {
 		
 		
 		return owa_coreAPI::registerFilter($filter_name, array($handler_name, $method), $priority);
+*/
 	}
 
 	/**

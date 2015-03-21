@@ -20,7 +20,7 @@
 require_once(OWA_BASE_DIR.'/owa_lib.php');
 require_once(OWA_BASE_DIR.'/owa_controller.php');
 require_once(OWA_BASE_DIR.'/ini_db.php'); // needed?
-//require_once(OWA_BASE_CLASS_DIR.'trackingEventHelpers.php'); // needed?
+require_once(OWA_BASE_CLASS_DIR.'trackingEventHelpers.php'); // needed?
 /**
  * Generic Event Processor Controller
  * 
@@ -77,7 +77,7 @@ class owa_processEventController extends owa_controller {
 		// clean
 		// apply default if necessary
 		// filter
-		
+		/*
 		// these should really be pulled from the service layer	
 		$this->event->set( 'timestamp', owa_coreAPI::getRequestTimestamp() );
 		$this->event->set( 'microtime', microtime() );
@@ -114,9 +114,9 @@ class owa_processEventController extends owa_controller {
 		if (!$this->event->get('REMOTE_HOST')) {
 			$this->event->set('REMOTE_HOST', owa_coreAPI::getServerParam('REMOTE_HOST'));
 		}
-		
-		//$teh = owa_trackingEventHelpers::getInstance();
-		//$teh->setEnvironmentals( $this->event );
+		*/
+		$teh = owa_trackingEventHelpers::getInstance();
+		$teh->setEnvironmentals( $this->event );
 		
 		/// REQUIRED PARAMS
 		
@@ -126,7 +126,7 @@ class owa_processEventController extends owa_controller {
 		// apply default value if necessary
 		
 		
-		
+		/*
 		// set page type
 		// moved
 		if ( ! $this->event->get( 'page_type' ) ) {
@@ -151,221 +151,14 @@ class owa_processEventController extends owa_controller {
 		
 		$this->event->set('page_title', $this->eq->filter( 'page_title', $page_title ) );
 		
-		// needs key translation
-		// translated,
-		$this->event->set( 'days_since_first_session', $this->event->get( 'dsfs' ) );
-		$this->event->set( 'days_since_prior_session', $this->event->get( 'dsps' ) );
-		$this->event->set( 'num_prior_sessions', $this->event->get( 'nps' ) );
 		
-		// OPTIONAL PARAMS
-		
-		// filter http referer
-		/* moved */
-		if ( $this->event->get( 'HTTP_REFERER' ) ) {
-		
-			$this->event->set( 'HTTP_REFERER', $this->eq->filter( 'HTTP_REFERER', $this->event->get( 'HTTP_REFERER' ) ) );
-		}
-		
-		// Filter the target url of clicks
-		/* moved */
-		if ( $this->event->get( 'target_url' ) ) {
-		
-			$this->event->set( 'target_url', $this->eq->filter( 'target_url', $this->event->get( 'target_url' ), $this->event->get( 'site_id' ) ) );
-		}
-		
-		/* moved */
-		if ( $this->event->get( 'source' ) ) {
-		
-			$this->event->set( 'source', $this->eq->filter( 'source', trim( strtolower( $this->event->get( 'source' ) ) ) ) );
-		}
-		
-		/* moved */
-		if ( $this->event->get( 'medium' ) ) {
-			
-			$this->event->set( 'medium', $this->eq->filter( 'medium', trim( strtolower( $this->event->get( 'medium' ) ) ) ) );		
-		}
-		
-		// set session referer (the site that originally referer the visit)
-		/* moved */
-		if ( $this->event->get( 'session_referer' ) ) {
-		
-			$this->event->set( 'session_referer', $this->eq->filter( 'session_referer', $this->event->get( 'session_referer' ) ) );
-		}
-
-		
-		$this->setCustomVariables();
-		
-		
-		// DEPENDANT SETS
-		
-		// evaluate
-		// produce value
-		// filter
-		// add default if required
-		
-		// Set all time related properties
-		// depends on 'timestamp'
-		/* moved */
-		$this->setTimeProperties( $this->event );
-		
-		/* moved */
-		// set repeat visitor type flag visitor is not new.		
-		if ( ! $this->event->get( 'is_new_visitor' ) ) {
-		
-			$this->event->set( 'is_repeat_visitor', true );
-		
-		} else {
-			// properly cast this to a bool.
-			$this->event->set( 'is_new_visitor', true );
-		}
-		
-		/* moved */
-		if ( ! $this->event->get ('page_uri') ) {
-		
-			$page_uri = $this->derivePageUri($this->event->get( 'page_url' ) );
-		}
-		
-		$this->event->set('page_uri', $this->eq->filter( 'page_uri', $page_uri ) );
-		
-		// host properties
-		/* mooved */
-		$this->event->set( 'full_host', $this->eq->filter( 'full_host', 
-				$this->event->get( 'REMOTE_HOST' ), 
-				$this->event->get( 'ip_address' ) ) );
-		
-		// required
-		if ( ! $this->event->get( 'full_host' ) ) {
-		
-			$this->event->set('full_host', '(not set)');
-		}
-		
-		/* moved */		
-		$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
-		
-		//required
-		if ( ! $this->event->get( 'host' ) ) {
-			$this->event->set( 'host', '(not set)' );
-		}
-		
-		// Browser related properties
-		// required
-		$service = owa_coreAPI::serviceSingleton();
-		$bcap = $service->getBrowscap();
-		
-		// Assume browser untill told otherwise
-		/* moved */
-		$this->event->set('is_browser',true);
-		
-		/* moved */
-		$this->event->set('browser_type', $this->eq->filter( 'browser_type', $bcap->getUaFamily() ) );
-		
-		/* moved */
-		if ( $bcap->getUaVersion() ) {
-		
-			$this->event->set('browser', $this->eq->filter('browser', $bcap->getUaVersion() ) );
-		
-		} else {
-		
-			$this->event->set('browser', $this->eq->filter('browser', '(unknown)'));
-		}
-		
-		//Check for what kind of page request this is
-		/* moved */
-		if ( $bcap->isRobot() ) {
-			$this->event->set('is_robot', true);
-			$this->event->set('is_browser', false);
-		}
-		
-		/* moved */
-		$this->event->set( 'os', $this->eq->filter( 'operating_system', $bcap->getOsFamily(), $this->event->get( 'HTTP_USER_AGENT' ) ) );
-		
-		/*moved */
-		if ( $this->event->get('is_new_session') ) {
-			//mark entry page flag on current request
-			$this->event->set( 'is_entry_page', true );			
-		}
-		
-		/* moved */
-		$this->setGeolocation();
-		
-		// set prior page properties
-		/* moved */
-		if ( $this->event->get( 'HTTP_REFERER' ) ) {
-
-			$referer_parse = owa_lib::parse_url( $this->event->get('HTTP_REFERER') );
-
-			if ( $referer_parse['host'] === $page_parse['host'] ) {
-				$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER'), $this->event->get( 'site_id' ) ) );	
-			}
-		}
-		
-		// set  search terms
-		/* moved */	
-		$search_terms = $this->event->get( 'search_terms' );
-		
-		if ( $search_terms && $search_terms != '(not set)' ) {
-		
-			$this->event->set( 'search_terms', $this->eq->filter('search_terms', trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
-		}
-
-						
-		// ID GENERATION
-		
-		//set user agent id
-		/* moved */
-		$this->event->set( 'ua_id', owa_lib::setStringGuid( $this->event->get( 'HTTP_USER_AGENT' ) ) );
-		
-				
-		// set document/page id
-		/* moved */
-		if ( $this->event->get('page_url') ) {
-			$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
-		}
-		
-		// Generate host_id
-		/* moved */
-		$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'host' ) ) );
-		
-		// generate os_id
-		/* moved */
-		$this->event->set( 'os_id', owa_lib::setStringGuid( $this->event->get( 'os' ) ) );
-		
-		/* moved */
-		if ( $this->event->get( 'campaign' ) ) {
-			$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
-		}
-		
-		/* moved */
-		if ( $this->event->get( 'ad' ) ) {
-			$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
-		}
-		
-		/* moved */
-		if ( $this->event->get( 'source' ) ) {
-			
-			$this->event->set( 'source_id', owa_lib::setStringGuid( $this->event->get( 'source' ) ) );
-		}
-		
-		// set session referer (the site that originally referer the visit)
-		/* moved */
-		if ( $this->event->get( 'session_referer' ) ) {
-			// generate referer_id for downstream handlers
-			$this->event->set( 'referer_id',  owa_lib::setStringGuid( $this->event->get('session_referer' ) ) );
-		}
-		
-		/* moved */		
-		if ( $this->event->get( 'search_terms' ) ) {
-		
-			$this->event->set( 'referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
-		}				
-				
 		// SHOULD BE A FILTER
 		
 		// record and filter personally identifiable info (PII)		
 		if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 			
 			// set user name if one does not already exist on event
-			/* moved */
+			// moved
 			if ( ! $this->event->get( 'user_name' ) && owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
 			
 				$cu = owa_coreAPI::getCurrentUser();
@@ -376,7 +169,7 @@ class owa_processEventController extends owa_controller {
 			$this->event->set( 'user_name', $this->eq->filter( 'user_name', $this->event->get( 'user_name' ) ) );
 			
 			// set email_address if one does not already exist on event
-			/* moved */
+			// moved
 			if ( ! $this->event->get( 'email_address' ) ) {
 				
 				$cu = owa_coreAPI::getCurrentUser();
@@ -385,12 +178,232 @@ class owa_processEventController extends owa_controller {
 			
 			$this->event->set( 'user_email', $this->eq->filter( 'user_email', $this->event->get( 'email_address' ) ) );
 		}
+		*/
+				
+		// needs key translation
+		//$teh->translateKeys( $this->event );
+		// translated,
+		//$this->event->set( 'days_since_first_session', $this->event->get( 'dsfs' ) );
+		//$this->event->set( 'days_since_prior_session', $this->event->get( 'dsps' ) );
+		//$this->event->set( 'num_prior_sessions', $this->event->get( 'nps' ) );
+		// add custom var properties
+		$properties = $teh->required;
+		$properties = $teh->addCustomVariableProperties( $properties );
+		// translate custom var properties
+		$teh->translateCustomVariables( $this->event );
+		// filter all core properties
+		$teh->setTrackerProperties( $this->event, $properties );
+
+		
+		// OPTIONAL PARAMS
+		
+		// filter http referer
+		/* moved */
+		//if ( $this->event->get( 'HTTP_REFERER' ) ) {
+		
+		//	$this->event->set( 'HTTP_REFERER', $this->eq->filter( 'HTTP_REFERER', $this->event->get( 'HTTP_REFERER' ) ) );
+		//}
+		
+		// Filter the target url of clicks
+		/* moved */
+		//if ( $this->event->get( 'target_url' ) ) {
+		
+		//	$this->event->set( 'target_url', $this->eq->filter( 'target_url', $this->event->get( 'target_url' ), $this->event->get( 'site_id' ) ) );
+		//}
+		
+		/* moved */
+		//if ( $this->event->get( 'source' ) ) {
+		
+		//	$this->event->set( 'source', $this->eq->filter( 'source', trim( strtolower( $this->event->get( 'source' ) ) ) ) );
+		//}
+		
+		/* moved */
+		//if ( $this->event->get( 'medium' ) ) {
+			
+		//	$this->event->set( 'medium', $this->eq->filter( 'medium', trim( strtolower( $this->event->get( 'medium' ) ) ) ) );		
+		//}
+		
+		// set session referer (the site that originally referer the visit)
+		/* moved */
+		//if ( $this->event->get( 'session_referer' ) ) {
+		
+		//	$this->event->set( 'session_referer', $this->eq->filter( 'session_referer', $this->event->get( 'session_referer' ) ) );
+		//}
+
+		
+		//$this->setCustomVariables();
+		
+		
+		// DEPENDANT SETS
+		$derived_properties = $teh->derived;
+		$teh->setTrackerProperties( $this->event, $derived_properties );
+
+		// evaluate
+		// produce value
+		// filter
+		// add default if required
+		
+		// Set all time related properties
+		// depends on 'timestamp'
+		/* moved */
+		//$this->setTimeProperties( $this->event );
+		
+		/* moved */
+		// set repeat visitor type flag visitor is not new.		
+		//if ( ! $this->event->get( 'is_new_visitor' ) ) {
+		
+		//	$this->event->set( 'is_repeat_visitor', true );
+		
+		//} else {
+			// properly cast this to a bool.
+		//	$this->event->set( 'is_new_visitor', true );
+		//}
+		
+		/* moved */
+		//if ( ! $this->event->get ('page_uri') ) {
+		
+		//	$page_uri = $this->derivePageUri($this->event->get( 'page_url' ) );
+		//}
+		
+		//$this->event->set('page_uri', $this->eq->filter( 'page_uri', $page_uri ) );
+		
+		// host properties
+		/* mooved */
+		//$this->event->set( 'full_host', $this->eq->filter( 'full_host', 
+		//		$this->event->get( 'REMOTE_HOST' ), 
+		//		$this->event->get( 'ip_address' ) ) );
+		
+		// required
+		//if ( ! $this->event->get( 'full_host' ) ) {
+		
+		//	$this->event->set('full_host', '(not set)');
+		//}
+		
+		/* moved */		
+		//$this->event->set( 'host', $this->eq->filter( 'host', $this->event->get( 'full_host' ), $this->event->get( 'ip_address' ) ) );
+		
+		//required
+		//if ( ! $this->event->get( 'host' ) ) {
+		//	$this->event->set( 'host', '(not set)' );
+		//}
+		
+		// Browser related properties
+		// required
+		//$service = owa_coreAPI::serviceSingleton();
+		//$bcap = $service->getBrowscap();
+		
+		// Assume browser untill told otherwise
+		/* moved */
+		//$this->event->set('is_browser',true);
+		
+		/* moved */
+		//$this->event->set('browser_type', $this->eq->filter( 'browser_type', $bcap->getUaFamily() ) );
+		
+		/* moved */
+		//if ( $bcap->getUaVersion() ) {
+		
+		//	$this->event->set('browser', $this->eq->filter('browser', $bcap->getUaVersion() ) );
+		
+		//} else {
+		
+		//	$this->event->set('browser', $this->eq->filter('browser', '(unknown)'));
+		//}
+		
+		//Check for what kind of page request this is
+		/* moved */
+		//if ( $bcap->isRobot() ) {
+		//	$this->event->set('is_robot', true);
+		//	$this->event->set('is_browser', false);
+		//}
+		
+		/* moved */
+		//$this->event->set( 'os', $this->eq->filter( 'operating_system', $bcap->getOsFamily(), $this->event->get( 'HTTP_USER_AGENT' ) ) );
+		
+		/*moved */
+		//if ( $this->event->get('is_new_session') ) {
+		//	//mark entry page flag on current request
+		//	$this->event->set( 'is_entry_page', true );			
+		//}
+		
+		/* moved */
+		//$this->setGeolocation();
+		
+		// set prior page properties
+		/* moved */
+		//if ( $this->event->get( 'HTTP_REFERER' ) ) {
+
+		//	$referer_parse = owa_lib::parse_url( $this->event->get('HTTP_REFERER') );
+
+		//	if ( $referer_parse['host'] === $page_parse['host'] ) {
+		//		$this->event->set('prior_page', $this->eq->filter('prior_page', $this->event->get('HTTP_REFERER'), $this->event->get( 'site_id' ) ) );	
+		//	}
+		//}
+		
+		// set  search terms
+		/* moved */	
+		//$search_terms = $this->event->get( 'search_terms' );
+		
+		//if ( $search_terms && $search_terms != '(not set)' ) {
+		
+		//	$this->event->set( 'search_terms', $this->eq->filter('search_terms', trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
+		//}
+
+						
+		// ID GENERATION
+		
+		//set user agent id
+		/* moved */
+		//$this->event->set( 'ua_id', owa_lib::setStringGuid( $this->event->get( 'HTTP_USER_AGENT' ) ) );
+		
+				
+		// set document/page id
+		/* moved */
+		//if ( $this->event->get('page_url') ) {
+		//	$this->event->set( 'document_id', owa_lib::setStringGuid( $this->event->get( 'page_url' ) ) );
+		//}
+		
+		// Generate host_id
+		/* moved */
+		//$this->event->set( 'host_id',  owa_lib::setStringGuid( $this->event->get( 'host' ) ) );
+		
+		// generate os_id
+		/* moved */
+		//$this->event->set( 'os_id', owa_lib::setStringGuid( $this->event->get( 'os' ) ) );
+		
+		/* moved */
+		//if ( $this->event->get( 'campaign' ) ) {
+		//	$this->event->set( 'campaign_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'campaign' ) ) ) ) );
+		//}
+		
+		/* moved */
+		//if ( $this->event->get( 'ad' ) ) {
+		//	$this->event->set( 'ad_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'ad' ) ) ) ) );
+		//}
+		
+		/* moved */
+		//if ( $this->event->get( 'source' ) ) {
+			
+		//	$this->event->set( 'source_id', owa_lib::setStringGuid( $this->event->get( 'source' ) ) );
+		//}
+		
+		// set session referer (the site that originally referer the visit)
+		/* moved */
+		//if ( $this->event->get( 'session_referer' ) ) {
+			// generate referer_id for downstream handlers
+		//	$this->event->set( 'referer_id',  owa_lib::setStringGuid( $this->event->get('session_referer' ) ) );
+		//}
+		
+		/* moved */		
+		//if ( $this->event->get( 'search_terms' ) ) {
+		
+		//	$this->event->set( 'referring_search_term_id', owa_lib::setStringGuid( trim( strtolower( $this->event->get( 'search_terms' ) ) ) ) );
+		//}
 		
 		// anonymize Ip address
-		if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
-			$this->event->set('ip_address', $this->anonymizeIpAddress($this->event->get('ip_address')));
-			$this->event->set('full_host', '(not set)');
-		}
+		//if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+		//	$this->event->set('ip_address', $this->anonymizeIpAddress($this->event->get('ip_address')));
+		//	$this->event->set('full_host', '(not set)');
+		//}
 	}
 	
 	function post() {

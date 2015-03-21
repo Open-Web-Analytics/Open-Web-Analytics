@@ -97,24 +97,48 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerFilters() {
 				
-		$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
-		$this->registerFilter('ip_address', $this, 'setIp', 0);
-		$this->registerFilter('full_host', $this, 'resolveHost', 0);
-		$this->registerFilter('host', $this, 'getHostDomain', 0);
+		//$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
+		//$this->registerFilter('ip_address', $this, 'setIp', 0);
+		//$this->registerFilter('full_host', $this, 'resolveHost', 0);
+		//$this->registerFilter('host', $this, 'getHostDomain', 0);
 		$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
 		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
 		//Clean Query Strings 
-		if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
+		//if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
 			//$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
-			$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
-			$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
-		}
+			//$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
+			//$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
+		//}
 		
 		// debug filter for examining events with no type created by browwser corner cases.
 		if ( defined( 'OWA_MAIL_EXCEPTIONS' ) ) {
+		
 			$this->registerFilter('post_processed_tracking_event', $this, 'checkEventForType');
 		}
+		
+		if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+			
+			$this->registerFilter('post_processed_tracking_event', $this, 'anonymizeIpAddress');
+		}
 	}
+	
+	public function anonymizeIpAddress( $event ) {
+	
+		$ip_address = $event->get( 'ip_address');
+		
+		if ( $ip_address && strpos($ip_address, '.' ) ) {
+		
+			$ip = explode( '.', $ip_address );
+			array_pop($ip);
+			$ip = implode('.', $ip);
+			
+			$event->set( 'ip_address', $ip);
+			$event->set('full_host', '(not set)');
+		}
+		
+		return $event;
+	}
+
 	
 	/**
 	 * Register Filters
