@@ -61,34 +61,424 @@ class owa_baseModule extends owa_module {
 			'path'					=>	owa_coreAPI::getSetting('base', 'async_log_dir'),
 			'rotation_interval'		=> 3600
 		));
-		
-		// creat processing queue
-		if ( ! owa_coreAPI::getSetting('base', 'is_remote_event_queue') && 
-			    owa_coreAPI::getSetting('base', 'use_remote_event_queue') &&
-			    owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint')) {
-		
-			$this->registerEventQueue( 'incoming_tracking_events', array(
 				
-				'queue_type'			=> 	'http',
-				'endpoint'				=> owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint')
-	
-			));
-				    
-		} else {
+		$this->registerEventQueue( 'processing', array(
+			
+			'queue_type'			=> 'database',
+			'server'				=> owa_coreAPI::getSetting('base', 'db_host'),
+			'port'					=> owa_coreAPI::getSetting('base', 'db_port'),
+			'username'				=> owa_coreAPI::getSetting('base', 'db_user'),
+			'password'				=> owa_coreAPI::getSetting('base', 'db_password')
+		));
 		
-			$this->registerEventQueue( 'processing', array(
-				
-				'queue_type'			=> 'database',
-				'server'				=> owa_coreAPI::getSetting('base', 'db_host'),
-				'port'					=> owa_coreAPI::getSetting('base', 'db_port'),
-				'username'				=> owa_coreAPI::getSetting('base', 'db_user'),
-				'password'				=> owa_coreAPI::getSetting('base', 'db_password')
-			));
-		
-		}
+		$this->setupTrackingProperties();
 		
 		return parent::__construct();
 	}
+	
+	/**
+	 * Register Tracking Event Properties
+	 *
+	 *
+	 */
+	 
+	 public function setupTrackingProperties() {
+		 
+		 $environmental = array(
+									
+			'REMOTE_HOST'		=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::remoteHostDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'string',
+				'filter'			=> true
+			),
+				
+			'HTTP_USER_AGENT'	=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::userAgentDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'string',
+				'filter'			=> true
+			),
+				
+			'HTTP_HOST'			=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::httpHostDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'string',
+				'filter'			=> true
+			),
+				
+			'language'			=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::languageDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'string',
+				'filter'			=> true
+			),
+				
+			'ip_address'		=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::ipAddressDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'string',
+				'filter'			=> true
+			),
+				
+			'timestamp'			=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::timestampDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'integer',
+				'filter'			=> false
+			),
+				
+			'microtime'			=> array(
+				'callbacks'			=> array( 'owa_trackingEventHelpers::microtimeDefault' ),
+				'default_value'		=> '(not set)',
+				'required'			=> true,
+				'data_type'			=> 'string',
+				'filter'			=> false
+			)
+			
+		);
+		
+		$this->registerTrackingProperties( 'environmental', $environmental );
+		
+		$regular = array(
+	
+			'page_type'						=> array(
+				'default_value'					=> '(not set)',
+				'required'						=> true,
+				'data_type'						=> 'string'
+			),
+				
+			'page_url'						=> array(
+				'default_value'					=> '(not set)',
+				'required'						=> true,
+				'data_type'						=> 'string',
+				'callbacks'						=> array( 'owa_trackingEventHelpers::makeUrlCanonical' )
+			),
+			
+			'page_title' 					=> array(
+				'required'						=> true,
+				'callbacks'						=> array( 'owa_trackingEventHelpers::utfEncodeProperty' ),
+				'data_type'						=> 'string',
+				'default_value'					=> '(not set)'
+			),
+	
+			'days_since_first_session' 		=> array(
+				'required'						=> true,
+				'callbacks'						=> array( ),
+				'data_type'						=> 'integer',
+				'default_value'					=> false,
+				'alternative_key'				=> 'dsfs'
+			),
+			
+			'days_since_prior_session' 		=> array(
+				'required'						=> true,
+				'callbacks'						=> array( ),
+				'data_type'						=> 'integer',
+				'default_value'					=> false,
+				'alternative_key'				=> 'dsps'
+			),
+			
+			'num_prior_sessions' 			=> array(
+				'required'						=> true,
+				'callbacks'						=> array( ),
+				'data_type'						=> 'integer',
+				'default_value'					=> false,
+				'alternative_key'				=> 'nps'
+			),
+				
+			'is_new_visitor'				=> array (
+				'required'						=> true,
+				'data_type'						=> 'boolean',
+				' default_value'				=> false			
+			),
+			
+			'user_name'						=> array(
+				'required'						=> true,
+				'callbacks'						=> array( 'owa_trackingEventHelpers::setUserName' ),
+				'default_value'					=> '(not set)'
+			),
+			
+			'email_address'					=> array(
+				'required'						=> true,
+				'callbacks'						=> array( 'owa_trackingEventHelpers::setEmailAddress' ),
+				'default_value'					=> '(not set)'
+			),
+			
+			'HTTP_REFERER'					=> array(
+				'required'						=> false,
+				'data_type'						=> 'string',
+				'callbacks'						=> array()
+			),
+	
+			'target_url'					=> array(
+				'required'						=> false,
+				'data_type'						=> 'string',
+				'callbacks'						=> array( 'owa_trackingEventHelpers::makeUrlCanonical' )
+			),
+			
+			'source'						=> array(
+				'required'						=> true,
+				'data_type'						=> 'string',
+				'callbacks'						=> array( 'owa_trackingEventHelpers::lowercaseString' ),
+				'default_value'					=> '(not set)'
+			),
+			
+			'medium'						=> array(
+				'required'						=> true,
+				'data_type'						=> 'string',
+				'callbacks'						=> array( 'owa_trackingEventHelpers::lowercaseString' ),
+				'default_value'					=> '(not set)'
+			),
+			
+			'session_referer'				=> array(
+				'required'						=> false,
+				'data_type'						=> 'string',
+				'callbacks'						=> array()
+			),
+			// @todo investigate if this should be a required property so that a proper join can occur.
+			'search_terms'					=> array(
+				'required'						=> false,
+				'callbacks'						=> array( 'owa_trackingEventHelpers::setSearchTerms' ),
+				'default_value'					=> '(not set)'
+			
+			)		
+		);
+		
+		$this->registerTrackingProperties( 'regular', $regular );
+
+		$derived = array(
+	
+			'year' 				=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveYear')
+			),
+				
+			'month' 			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveMonth')
+			),
+				
+			'day' 				=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveDay')
+			),
+				
+			'yyyymmdd' 			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveYyyymmdd')
+			),
+				
+			'dayofweek' 		=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveDayOfWeek')
+			),
+			
+			'dayofyear' 		=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveDayOfYear')
+			),
+				
+			'weekofyear' 		=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveWeekOfYear')
+			),
+				
+			'hour' 				=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveHour')
+			),
+				
+			'minute' 			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveMinute')
+			),
+				
+			'second' 			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveSecond')
+			),
+				
+			'sec' 				=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveSec')
+			),
+				
+			'msec' 				=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::deriveMsec')
+			),
+	
+			'page_uri' 			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri', 'owa_trackingEventHelpers::makeUrlCanonical')
+			),
+		
+			'is_repeat_visitor' => array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::setRepeatVisitorFlag')
+			),
+				
+			'full_host'			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::resolveFullHost'),
+				'default_value'		=> '(not set)'
+			),
+			
+			'host'				=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::getHostDomain'),
+				'default_value'		=> '(not set)'
+			),
+			
+			'browser_type'		=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::resolveBrowserType')
+			),
+			
+			'is_browser'		=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::isBrowser'),
+				'default_value'		=> false
+			),
+			
+			'browser'			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::resolveBrowserVersion'),
+				'default_value'		=> '(unknown)'
+			),
+			
+			'is_robot'			=> array(
+				'required'			=> true,
+				'callbacks'			=> array('owa_trackingEventHelpers::isRobot'),
+				'default_value'		=> false
+			),
+			
+			'os'				=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveOs' ),
+				'default_value'		=> '(unknown)'
+			),
+			
+			'is_entry_page'		=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveEntryPage' ),
+				'default_value'		=> false
+			),
+			
+			'country'			=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveCountry' ),
+				'default_value'		=> false
+			),
+			
+			'city'				=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveCity' ),
+				'default_value'		=> false
+			),
+			
+			'state'				=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveState' ),
+				'default_value'		=> false
+			),
+			
+			'latitude'			=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveLatitude' ),
+				'default_value'		=> false
+			),
+	
+			'longitude'			=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveLongitude' ),
+				'default_value'		=> false
+			),
+			
+			'country_code'		=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::resolveCountryCode' ),
+				'default_value'		=> false
+			),
+			
+			'prior_page'		=> array(
+				'required'			=> true,
+				'callbacks'			=> array( 'owa_trackingEventHelpers::setPriorPage', 'owa_trackingEventHelpers::makeUrlCanonical' ),
+				'default_value'		=> false
+			),	
+			//related object IDs
+			/* @todo these should really be moved to handlers and logic encoded in entity objects.*/
+		
+			'document_id' 		=> array(
+			
+				'alternative_key'	=> 'page_url',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+			
+			'ua_id' 			=> array(
+			
+				'alternative_key'	=> 'HTTP_USER_AGENT',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+			
+			'location_id' 		=> array(
+			
+				'alternative_key'	=> 'country',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateLocationId'
+			),
+			
+			'host_id' 			=> array(
+			
+				'alternative_key'	=> 'host',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+			
+			'os_id' 			=> array(
+			
+				'alternative_key'	=> 'os',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+			
+			'campaign_id' 		=> array(
+			
+				'alternative_key'	=> 'campaign',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+			
+			'ad_id' 			=> array(
+			
+				'alternative_key'	=> 'ad',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+			
+			'source_id' 		=> array(
+			
+				'alternative_key'	=> 'source',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),
+	
+			'referer_id' 		=> array(
+			
+				'alternative_key'	=> 'session_referer',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			),		
+			
+			'referring_search_term_id' => array(
+			
+				'alternative_key'	=> 'search_terms',
+				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
+			)
+		);
+		
+		$this->registerTrackingProperties( 'derived', $derived );
+
+	 }
 	
 	/**
 	 * Register Filters
@@ -97,20 +487,10 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerFilters() {
 				
-		//$this->registerFilter('operating_system', $this, 'determineOperatingSystem', 0);
-		//$this->registerFilter('ip_address', $this, 'setIp', 0);
-		//$this->registerFilter('full_host', $this, 'resolveHost', 0);
-		//$this->registerFilter('host', $this, 'getHostDomain', 0);
+
 		$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
 		$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');
-		//Clean Query Strings 
-		//if (owa_coreAPI::getSetting('base', 'clean_query_string')) {
-			//$this->registerFilter('page_url', $this, 'makeUrlCanonical',0);
-			//$this->registerFilter('prior_page', $this, 'makeUrlCanonical',0);
-			//$this->registerFilter('target_url', $this, 'makeUrlCanonical',0);
-		//}
-		
-		// debug filter for examining events with no type created by browwser corner cases.
+
 		if ( defined( 'OWA_MAIL_EXCEPTIONS' ) ) {
 		
 			$this->registerFilter('post_processed_tracking_event', $this, 'checkEventForType');
@@ -121,25 +501,7 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('post_processed_tracking_event', $this, 'anonymizeIpAddress');
 		}
 	}
-	
-	public function anonymizeIpAddress( $event ) {
-	
-		$ip_address = $event->get( 'ip_address');
 		
-		if ( $ip_address && strpos($ip_address, '.' ) ) {
-		
-			$ip = explode( '.', $ip_address );
-			array_pop($ip);
-			$ip = implode('.', $ip);
-			
-			$event->set( 'ip_address', $ip);
-			$event->set('full_host', '(not set)');
-		}
-		
-		return $event;
-	}
-
-	
 	/**
 	 * Register Filters
 	 *
@@ -2249,266 +2611,7 @@ class owa_baseModule extends owa_module {
 		
 		//owa_coreAPI::debug('test handler: '.print_r($event, true));
 	}
-	
-	/**
-	 * Determine the operating system of the browser making the request
-	 *
-	 * @param string $user_agent
-	 * @return string
-	 */
-	function determineOperatingSystem($os = '', $ua) {
-		
-		if (empty($os)) {
-		
-			$matches = array(
-				'Win.*NT 7\.0'					=>'Windows 7',
-				'Win.*NT 6\.0'					=>'Windows Vista',
-				'Win.*NT 5\.0'					=>'Windows 2000',
-				'Win.*NT 5.1'					=>'Windows XP',
-				'Win.*(Vista|XP|2000|ME|NT|9.?)'=>'Windows $1',
-				'Windows .*(3\.11|NT)'			=>'Windows $1',
-				'Win32'							=>'Windows [prior to 1995]',
-				'Linux 2\.(.?)\.'				=>'Linux 2.$1.x',
-				'Linux'							=>'Linux [unknown version]',
-				'FreeBSD .*-CURRENT$'			=>'FreeBSD -CURRENT',
-				'FreeBSD (.?)\.'				=>'FreeBSD $1.x',
-				'NetBSD 1\.(.?)\.'				=>'NetBSD 1.$1.x',
-				'(Free|Net|Open)BSD'			=>'$1BSD [unknown]',
-				'HP-UX B\.(10|11)\.'			=>'HP-UX B.$1.x',
-				'IRIX(64)? 6\.'					=>'IRIX 6.x',
-				'SunOS 4\.1'					=>'SunOS 4.1.x',
-				'SunOS 5\.([4-6])'				=>'Solaris 2.$1.x',
-				'SunOS 5\.([78])'				=>'Solaris $1.x',
-				'Mac_PowerPC'					=>'Mac OS [PowerPC]',
-				'Mac OS X'						=>'Mac OS X',
-				'X11'							=>'UNIX [unknown]',
-				'Unix'							=>'UNIX [unknown]',
-				'BeOS'							=>'BeOS [unknown]',
-				'QNX'							=>'QNX [unknown]',
-			);
-			
-			$uas = array_map(create_function('$a', 'return "#.*$a.*#";'), array_keys($matches));
-			
-			$os = preg_replace($uas, array_values($matches), $ua);
-		}
-			
-		return $os;
-	}
-	
-	/**
-	 * Get IP address from request
-	 *
-	 * @return string
-	 * @access private
-	 */
-	function setIp( $ip ) {
-	
-		$HTTP_X_FORWARDED_FOR = owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' );	
-		$HTTP_CLIENT_IP = owa_coreAPI::getServerParam( 'HTTP_CLIENT_IP' );
-		
-		// check for a non-unknown proxy address
-		if ( $HTTP_X_FORWARDED_FOR ) {
-				
-			if ( strpos( $HTTP_X_FORWARDED_FOR, ',' ) ) {
-				
-				$HTTP_X_FORWARDED_FOR = trim( end( explode( ',', $HTTP_X_FORWARDED_FOR ) ) );
-			} 
-			
-			if ( filter_var( 
-					$HTTP_X_FORWARDED_FOR , 
-					FILTER_VALIDATE_IP, 
-					FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) 
-			) {
-			
-				$ip = $HTTP_X_FORWARDED_FOR;
-			
-			}			
-			
-		// or else just use the remote address	
-		} elseif ( $HTTP_CLIENT_IP ) {
-		
-		    $ip = $HTTP_CLIENT_IP;	
-		}
-		
-		return $ip;
-	}
-	
-	/**
-	 * Resolve hostname from IP address
-	 * 
-	 * @access public
-	 * @todo move to trackig helper
-	 */
-	function resolveHost($remote_host = '', $ip_address = '') {
-	
-		// See if host is already resolved
-		if ( ! $remote_host && owa_coreAPI::getSetting('base', 'resolve_hosts') ) {
-			
-			// Do the host lookup
-			
-			if ( ! strpos( $ip_address, '.' ) ) {
-				
-				 $result = @dns_get_record($host_name,DNS_AAAA);
-				 
-				 if ( is_array( $result ) && isset( $result[0] ) && isset( $result[0]['host'] ) ) {
-					 
-					 $remote_host = $result[0]['host'];
-				 }
-				 
-			} else {
-			
-				$remote_host = @gethostbyaddr( $ip_address );
-			}
-			
-			if ($remote_host &&
-				$remote_host != $ip_address &&
-				$remote_host != 'unknown') {
-				
-				return $remote_host;	
-			}
-		}
-	}
-	
-	function getHostDomain($fullhost = '', $ip_address = '') {
-					
-		if ( $fullhost ) {
-			
-			// Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-			if ($fullhost === 'localhost') {
-				$host = 'localhost';
-			} else {
-				// lookup the registered domain using the Public Suffix List.
-				$host = owa_coreAPI::getRegisteredDomain($fullhost);
-				owa_coreAPI::debug("Registered domain is: $host");
-			}	
-			
-			return $host;	
-		}
-	}
-	
-	/**
-	 * Filter function Strips a URL of certain defined session or tracking params
-	 *
-	 * @return string
-	 */
-	static function makeUrlCanonical($url, $site_id = '') {
-		
-		if ( ! $site_id ) {
-			owa_coreAPI::debug('no site_id passed to make makeUrlCanonical. Returning URL as is.');
-			return $url;
-		}
-		// remove port, pass, user, and fragment
-		$url = owa_lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
-		
-		owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
-		$site = owa_coreAPI::entityFactory('base.site');
-		$site->load( $site->generateId( $site_id ) );
-		
-		$filter_string = $site->getSiteSetting( 'query_string_filters' );
-		
-		if ($filter_string) {
-			$filters = str_replace(' ', '', $filter_string);
-			$filters = explode(',', $filter_string);
-		} else {
-			$filters = array();
-		}
-		
-		// merge global filters
-		$global_filters = owa_coreAPI::getSetting('base', 'query_string_filters');
-		if ($global_filters) {
-			$global_filters = str_replace(' ', '', $global_filters);
-			$global_filters = explode(',', $global_filters);
-			$filters = array_merge($global_filters, $filters);
-		}
-			
-		// OWA specific params to filter
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'source');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'medium');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'campaign');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad_type');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'overlay');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').'state');
-		array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
-		
-		//print_r($filters);
-		
-		foreach ($filters as $filter => $value) {
-			
-		  $url = preg_replace(
-			'#\?' .
-			$value .
-			'=.*$|&' .
-			$value .
-			'=.*$|' .
-			$value .
-			'=.*&#msiU',
-			'',
-			$url
-		  );
-		  
-		}
-	        
-	        
-	    //check for dangling '?'. this might occure if all params are stripped.
-	        
-	    // returns last character of string
-		$test = substr($url, -1);   		
-		
-		// if dangling '?' is found clean up the url by removing it.
-		if ($test == '?') {
-			$url = substr($url, 0, -1);
-		}
-		
-		//check and remove default page
-		$default_page = $site->getSiteSetting('default_page');
-		
-		if ($default_page) {
-		
-			$default_length = strlen($default_page);
-			
-			if ($default_length) {
-				
-				//test for string
-				$default_test = substr($url, 0 - $default_length, $default_length);
-				if ($default_test === $default_page) {
-					$url = substr($url, 0, 0 - $default_length);
-				}
-			}
-		}
-				
-		// check and remove trailing slash
-		if (substr($url, -1) === '/') {
-			
-			$url = substr($url, 0, -1);
-		}
-		
-		// check for domain aliases
-		$das = $site->getSiteSetting( 'domain_aliases' );
-		
-		if ( $das ) {
-			
-			$site_domain = $site->getDomainName();
-			
-			if ( ! strpos( $url, '://'. $site_domain ) ) {
-			
-				$das = explode(',', $das);
-				
-				foreach ($das as $da) {
-					owa_coreAPI::debug("Checking URL for domain alias: $da");
-					$da = trim($da);
-					if ( strpos( $url, $da ) ) {
-						$url = str_replace($da, $site_domain, $url);
-						break;
-					}
-				}
-			}
-		}
-		
-     	return $url;
-		
-	}
-	
+
 	/**
 	 * Convienence method for generating a data result set
 	 *
@@ -3097,6 +3200,24 @@ class owa_baseModule extends owa_module {
 		
 		return $event;
 	}
+	
+	public function anonymizeIpAddress( $event ) {
+	
+		$ip_address = $event->get( 'ip_address');
+		
+		if ( $ip_address && strpos($ip_address, '.' ) ) {
+		
+			$ip = explode( '.', $ip_address );
+			array_pop($ip);
+			$ip = implode('.', $ip);
+			
+			$event->set( 'ip_address', $ip);
+			$event->set('full_host', '(not set)');
+		}
+		
+		return $event;
+	}
+
 }
 
 

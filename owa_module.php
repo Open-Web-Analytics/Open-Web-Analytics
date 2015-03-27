@@ -1008,6 +1008,65 @@ if ( ! is_object( $handler_name ) ) {
 	}
 	
 	/**
+	 * Register Environmental Tracking Properties
+	 *
+	 * These are tracking properties that are derived from the Server environment
+	 * and should be added to all tracking tracking events as they are recieved.
+	 *
+	 *
+	 * @var $type			string	the type of tracking property environmental|regular|derived
+	 *
+	 * 		environmental = properties that are only dependant on the PHP SERVER environment.
+	 *		regular 	  = properties that are set by clients
+	 *		derived		  = properties that are derived from or dependant on other properties				
+	 *
+	 * @var	$properties 	array 	an associative array of tracking properties
+	 *
+	 * Example:
+	 *
+	 * 		'REMOTE_HOST'		=> array(
+	 *			'default_value'		=> array( 'owa_trackingEventHelpers::remoteHostDefault' ),
+	 *			'required'			=> true,
+	 *			'data_type'			=> 'string',
+	 *			'filter'			=> true
+	 *		)
+	 *
+	 *
+	 * The key of the array is the name the property
+	 */
+	
+	function registerTrackingProperties( $type, $properties = array() ) {
+	
+		switch( strtolower( $type ) ) {
+			
+			case 'environmental':
+				$map_key = 'tracking_properties_environmental';
+				break;
+				
+			case 'regular':
+				$map_key = 'tracking_properties_regular';
+				break;
+			
+			case 'derived':
+				$map_key = 'tracking_properties_derived';
+				break;
+				
+			default:
+				$map_key = '';
+		}
+		
+		if ( is_array( $properties ) && $map_key ) {
+			
+			$s = owa_coreAPI::serviceSingleton();
+		
+			foreach ( $properties as $k => $property ) {
+				
+				$s->setMapValue( $map_key, $k, $property);
+			}			
+		}
+	}
+	
+	/**
 	 * Abstract method for registering individual API methods
 	 *
 	 * This method is called by a module's constructor 
