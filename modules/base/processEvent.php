@@ -100,36 +100,18 @@ class owa_processEventController extends owa_controller {
 	
 	function addToEventQueue() {
 	
-		// check to see if IP should be excluded
-		if ( owa_coreAPI::isIpAddressExcluded( $this->event->get('ip_address') ) ) {
-			owa_coreAPI::debug("Not dispatching event. IP address found in exclusion list.");
-			return;
-		}
-	
-		if (!$this->event->get('do_not_log')) {
+		if ( ! $this->event->get( 'do_not_log' ) ) {
 			
 			//filter event
 			$this->event = $this->eq->filter( 'post_processed_tracking_event', $this->event );
-			
-			// queue for later or notify listeners
-			if ( owa_coreAPI::getSetting( 'base', 'queue_events' ) || 
-				 owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
-				
-				$q = owa_coreAPI::getEventQueue( 'incoming_tracking_events' );
-				owa_coreAPI::debug('Queuing '.$this->event->getEventType().' event with properties: '.print_r($this->event->getProperties(), true ) );
-				$q->sendMessage( $this->event );
-				
-			} else {
-			
-				owa_coreAPI::debug('Dispatching '.$this->event->getEventType().' event with properties: '.print_r($this->event->getProperties(), true ) );
-				$this->eq->notify( $this->event );
-			}
-			
+		
+			owa_coreAPI::debug( 'Dispatching ' . $this->event->getEventType() . ' event with properties: ' . print_r($this->event->getProperties(), true ) );
+			$this->eq->notify( $this->event );
+		
 		} else {
 			
 			owa_coreAPI::debug("Not dispatching event due to 'do not log' flag being set.");
 		}
-
 	}	
 }
 

@@ -876,10 +876,26 @@ class owa_coreAPI {
 			return false;
 		}
 		
-		// lookup which event processor to use to process this event type
-		$processor_action = owa_coreAPI::getEventProcessor($event->getEventType());
+		// check to see if IP should be excluded
+		if ( owa_coreAPI::isIpAddressExcluded( $event->get('ip_address') ) ) {
+			owa_coreAPI::debug("Not logging event. IP address found in exclusion list.");
+			return false;
+		}
 		
-		return owa_coreAPI::handleRequest(array('event' => $event), $processor_action);
+		// queue for later or process event straight away
+		if ( owa_coreAPI::getSetting( 'base', 'queue_events' ) || 
+			 owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
+			
+			$q = owa_coreAPI::getEventQueue( 'incoming_tracking_events' );
+			owa_coreAPI::debug('Queuing '.$event->getEventType().' event with properties: '.print_r($event->getProperties(), true ) );
+			$q->sendMessage( $event );
+			
+		} else {
+			
+			// lookup which event processor to use to process this event type
+			$processor_action = owa_coreAPI::getEventProcessor( $event->getEventType() );
+			return owa_coreAPI::handleRequest( array( 'event' => $event ), $processor_action );
+		}		
 	}
 	
 	public static function getInstance( $class, $path ) {

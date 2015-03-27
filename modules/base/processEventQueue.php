@@ -32,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 class owa_processEventQueueController extends owa_cliController {
 	
-	function __construct($params) {
+	function __construct( $params ) {
 	
 		$this->setRequiredCapability( 'edit_modules' );
 		return parent::__construct( $params );
@@ -69,7 +69,7 @@ class owa_processEventQueueController extends owa_cliController {
 		
 			foreach ( $queues as $queue_name ) {
 				
-				$q = owa_coreAPI::getEventQueue($queue_name);
+				$q = owa_coreAPI::getEventQueue( $queue_name );
 				
 				if ( $q->connect() ) {
 					
@@ -77,13 +77,28 @@ class owa_processEventQueueController extends owa_cliController {
 					$more = true;
 					
 					while( $more ) {
-						owa_coreAPI::debug('calling receive message');
+					
+						owa_coreAPI::debug( 'calling receive message' );
 						// get an item from the queue		
 						$event = $q->receiveMessage();
-						owa_coreAPI::debug('Event returned: '.print_r($event, true));
+						owa_coreAPI::debug( 'Event returned: '.print_r( $event, true ) );
+					
 						if ( $event ) {
-							// dispatch event	
-							$ret = $d->notify( $event );
+						
+							// process event if needed
+							// lookup which event processor to use to process this event type
+							$processor_action = owa_coreAPI::getEventProcessor( $event->getEventType() );
+					
+							if ( $processor_action ) {
+								
+								// processor handles it's own event dispatching, so just return
+								return owa_coreAPI::handleRequest( array( 'event' => $event ), $processor_action );								
+						
+							} else {
+								
+								// dispatch event	
+								$ret = $d->notify( $event );	
+							}
 						
 							if ( $ret  = OWA_EHS_EVENT_HANDLED ) {
 								// delete event from queue
@@ -101,6 +116,7 @@ class owa_processEventQueueController extends owa_cliController {
 					$q->disconnect();
 				}
 			}
+			
 		} else {
 		
 			owa_coreAPI::notice("There are no event queues registered.");
