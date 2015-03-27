@@ -853,8 +853,6 @@ class owa_coreAPI {
 			owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);
 		}
 		
-		$service->setBrowscap($bcap);
-		
 		// form event if one was not passed
 		$class= 'owa_event';
 		if (!($message instanceof $class)) {
@@ -864,6 +862,11 @@ class owa_coreAPI {
 		} else {
 			$event = $message;
 		}
+		
+		// STAGE 1 - set environmental properties from SERVER
+		$teh = owa_coreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+		$environmentals = $service->getMap( 'tracking_properties_environmental' );
+		$teh->setTrackerProperties( $event, $environmentals );
 								
 		// Filter XSS exploits from event properties
 		$event->cleanProperties();
@@ -878,7 +881,16 @@ class owa_coreAPI {
 		
 		return owa_coreAPI::handleRequest(array('event' => $event), $processor_action);
 	}
-
+	
+	public static function getInstance( $class, $path ) {
+		
+		if ( ! class_exists( $class ) ) {
+			
+			require_once( $path );
+		}
+		
+		return $class::getInstance();
+	}
 	
 	public static function displayImage($data) {
 		
