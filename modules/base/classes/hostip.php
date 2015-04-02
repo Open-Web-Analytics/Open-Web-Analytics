@@ -59,7 +59,7 @@ class owa_hostip extends owa_location {
 	 *
 	 * @param string $ip
 	 */
-	function get_location($location_map) {
+	function get_location( $location_map ) {
 		
 		$city = '';
 		$state = '';

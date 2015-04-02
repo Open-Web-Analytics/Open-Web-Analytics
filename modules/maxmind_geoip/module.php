@@ -32,6 +32,8 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
 
 class owa_maxmind_geoipModule extends owa_module {
 	
+	var $method;
+	
 	function __construct() {
 		
 		$this->name = 'maxmind_geoip';
@@ -59,9 +61,20 @@ class owa_maxmind_geoipModule extends owa_module {
 				$method = 'getLocation';
 		}
 		
+		$this->method = $method;
 		
-		$this->registerFilter('geolocation', 'maxmind', $method, 0, 'classes');
+		// needed so default filters will not fun
+		owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
+		
 		
 		return parent::__construct();
+	}
+	
+	function registerFilters() {
+		
+		if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
+		
+			$this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
+		}
 	}
 }
