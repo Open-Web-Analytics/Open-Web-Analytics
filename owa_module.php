@@ -230,7 +230,7 @@ abstract class owa_module extends owa_base {
 		/**
 		 * Register Filters
 		 */
-		$this->registerFilters();
+		//$this->registerFilters();
 		
 		/**
 		 * Register Metrics

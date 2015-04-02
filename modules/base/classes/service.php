@@ -68,6 +68,7 @@ class owa_service extends owa_base {
 			$this->request = owa_coreAPI::requestContainerSingleton();
 			
 			$this->_loadModules();
+			$this->_loadFilters();
 			$this->_loadEntities();
 			$this->_loadMetrics();
 			$this->_loadDimensions();
@@ -140,6 +141,14 @@ class owa_service extends owa_base {
 		}
 		
 		return;
+	}
+	
+	function _loadFilters() {
+		
+		foreach ($this->modules as $k => $module) {
+			
+			$module->registerFilters();
+		}
 	}
 	
 	function _loadMetrics() {
