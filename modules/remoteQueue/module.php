@@ -47,7 +47,7 @@ class owa_remoteQueueModule extends owa_module {
 		
 		$endpoint = owa_coreAPI::getSetting( 'remoteQueue', 'endpoint' );
 		
-		if ( $endppoint ) {
+		if ( $endpoint ) {
 		
 			$this->registerEventQueue( 'incoming_tracking_events', array(
 				

@@ -12,9 +12,9 @@
 			<form action="" method="GET">
 				<SELECT name="sites" onchange='OnChange(this.form.sites, "site_id");' <?php if (count($sites) == 1):?>DISABLED<?endif;?>>
 				
-				<?foreach ($sites as $site => $value):?>
+				<?php foreach ($sites as $site => $value) { ?>
 					<OPTION VALUE="<?php echo $value['site_id'];?>" <?php if ($params['site_id'] == $value['site_id']): echo 'selected'; endif; ?>><?php echo $value['name'];?></OPTION>
-				<?endforeach;?>
+				<?php } ?>
 					<OPTION VALUE="" <?php if (empty($params['site_id'])): echo 'selected'; endif; ?>>All Sites</OPTION>
 				
 				</SELECT>
@@ -30,9 +30,9 @@
 					<TH valign="top">Time Period: </th>
 					<TD valign="top"><form action="" method="GET" name="set_periods_form">
 							<SELECT name="period" onchange='OnChange(this.form.period, "period");' <?php if (!array_key_exists($params['period'], $reporting_periods)):?>DISABLED<?endif;?>>
-							<?php foreach ($reporting_periods as $reporting_period => $value):?>
+							<?php foreach ($reporting_periods as $reporting_period => $value) { ?>
 								<OPTION VALUE="<?php echo $reporting_period;?>" <?php if ($params['period'] == $reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
-							<?endforeach;?>
+							<?php } ?>
 							</SELECT>
 						</FORM>		
 					</TD>
@@ -46,9 +46,9 @@
 					<TD valign="top">
 						<form action="" method="GET" name="date_periods_form" >
 							<SELECT name="period" onchange='dateFormReveal(this.form.period);' <?php if (!array_key_exists($params['period'], $date_reporting_periods)):?>DISABLED<?php endif;?>>
-							<?php foreach ($date_reporting_periods as $date_reporting_period => $value):?>
+							<?php foreach ($date_reporting_periods as $date_reporting_period => $value) { ?>
 								<OPTION VALUE="<?php echo $date_reporting_period;?>" <?php if ($params['period'] == $date_reporting_period): echo 'selected'; endif; ?>><?php echo $value['label'];?></OPTION>
-							<?php endforeach;?>
+							<?php } ?>
 							</SELECT>
 						</FORM>	
 					</TD>
