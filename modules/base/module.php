@@ -490,7 +490,7 @@ class owa_baseModule extends owa_module {
 
 		$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
 		
-		if ( owa_coreAPI::getSetting('base', 'geo_provider') === 'hostip' ) {
+		if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'hostip' ) {
 		
 			$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');			
 		}
