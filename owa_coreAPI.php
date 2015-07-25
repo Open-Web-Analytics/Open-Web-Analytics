@@ -1023,27 +1023,7 @@ class owa_coreAPI {
 	public static function makeTimePeriod($time_period, $params = array()) {
 		
 		$period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-/*
-		$map = array();
-		
-		if (array_key_exists('startDate', $params)) {
-			$map['startDate'] = $params['startDate'];			
-		}
-		
-		if (array_key_exists('endDate', $params)) {
-			$map['endDate'] = $params['endDate'];
-		}
-		
-		if (array_key_exists('startTime', $params)) {
-			$map['startTime'] = $params['startTime'];			
-		}
-		
-		if (array_key_exists('endTime', $params)) {
-			$map['endTime'] = $params['endTime'];
-		}
-*/
-		
-		//$period->set($time_period, $map);
+
 		if ( ! array_key_exists('period', $params)) {
 			$params['period'] = $time_period;
 		}

@@ -9,7 +9,7 @@
 					<option value="http://">http://</option>
 				    <option value="https://">https://</option>
 				</select> 
-				<input type="text"size="30" name="<?php echo $this->getNs();?>domain" value="<?php echo $defaults['domain'];?>">
+				<input type="text"size="30" name="<?php echo $this->getNs();?>domain" value="<?php $this->out( $defaults['domain'] );?>">
 			</span>
 			<span class="form-instructions">This is the domain of the site to track.</span>
 		</p>
@@ -17,7 +17,7 @@
 		<p class="form-row">
 			<span class="form-label">Your E-mail Address</span>
 			<span class="form-field">
-				<input type="text"size="30" name="<?php echo $this->getNs();?>email_address" value="<?php echo $defaults['email_address'];?>">
+				<input type="text"size="30" name="<?php echo $this->getNs();?>email_address" value="<?php $this->out( $defaults['email_address'] );?>">
 			</span>
 			<span class="form-instructions">This is the e-mail address of the admin user.</span>
 		</p>
