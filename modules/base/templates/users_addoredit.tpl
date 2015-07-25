@@ -11,9 +11,9 @@
 			<TH>User Name</TH>
 			<TD>
 			<?php if ( $edit === true ):?>
-			<input type="hidden" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php echo $user['user_id'];?>"><span class="noedit"><?php $this->out( $user['user_id'] )?></span>
+			<input type="hidden" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php $this->out( $user['user_id'] );?>"><span class="noedit"><?php $this->out( $user['user_id'] )?></span>
 			<?php else:?>
-			<input type="text" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php $this->out( @$user['user_id']);?>">
+			<input type="text" size="30" name="<?php echo $this->getNs();?>user_id" value="<?php $this->out( @$user['user_id'] );?>">
 			<?php endif;?>
 			</TD>
 		</TR>

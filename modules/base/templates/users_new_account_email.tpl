@@ -1,6 +1,6 @@
 <p>An Open Web Analytics account has been created for you.</p>
 
-<p>Your User Name is: <?php echo $user_id;?></p> 
+<p>Your User Name is: <?php $this->out( $user_id );?></p> 
 
 <p>To login you need to set your password by clicking on the link below.</p>
 

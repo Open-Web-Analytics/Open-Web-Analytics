@@ -1357,7 +1357,7 @@ class owa_coreAPI {
 			$cached_salts = array();
 			$ns = strtoupper( owa_coreAPI::getSetting('base', 'ns') );
 		
-			foreach (array('NONCE', 'SECRET') as $f ) {
+			foreach (array('NONCE', 'SECRET', 'AUTH') as $f ) {
 				
 				foreach (array('KEY', 'SALT') as $s ) {
 		

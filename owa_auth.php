@@ -330,7 +330,7 @@ class owa_auth extends owa_base {
 		
 		$this->e->debug('saving user credentials to cookies');
 		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*10, '/', $this->config['cookie_domain']);
-		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*30, '/', $this->config['cookie_domain']);
+		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*2, '/', $this->config['cookie_domain']);
 	}
 	
 	/**
@@ -351,6 +351,7 @@ class owa_auth extends owa_base {
 	function encryptPassword($password) {
 		
 		return owa_lib::encryptPassword($password);
+		
 	}
 	
 	function getUser() {
