@@ -198,7 +198,7 @@ class owa_view extends owa_base {
 			$this->body->set('pagination', $this->data['pagination']);
 		endif;
 		
-		$this->_setLinkState();
+		//$this->_setLinkState();
 			
 		// assemble subview
 		if (!empty($this->data['subview'])):
@@ -466,30 +466,35 @@ class owa_view extends owa_base {
 	 * report and widget requests. This is used by many template functions.
 	 *
 	 */
-	function _setLinkState() {
+	function _setLinkState( $p = array() ) {
 		
 		// array of params to check
-		$p = $this->get('params');
-		
+		if ( ! $p ) {
+			$p = $this->get('params');
+		}
 		// control array - will check for these params. If they exist it will return.
-		$sp = array('period' => null, 
-					'startDate' => null, 
-					'endDate' => null,
-					'siteId' => null,  
-					'startTime' => null, 
-					'endTime' => null);
+		$sp = array(
+			'period' => null, 
+			'startDate' => null, 
+			'endDate' => null,
+			'siteId' => null,
+			'startTime' => null,
+			'endTime' => null  
+				);
 					
 		// result array
 		$link_params = array();
 		
-		if (!empty($p)):
-			$link_params = owa_lib::array_intersect_key($p, $sp);
-		endif;
+		if ( ! empty( $p ) ) {
+		
+			$link_params = array_intersect_key($p, $sp);
+		}
 		
 		// needed for forwards compatability with 
-		if (array_key_exists('site_id', $link_params) && !array_key_exists('siteId', $link_params)) {
+		if ( array_key_exists('site_id', $link_params ) && ! array_key_exists('siteId', $link_params) ) {
 			$link_params['siteId'] = $link_params['site_id']; 
 		}
+		
 		$this->t->caller_params['link_state'] =  $link_params;				
 		$this->body->caller_params['link_state'] =  $link_params;
 		

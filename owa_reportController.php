@@ -69,21 +69,11 @@ class owa_reportController extends owa_adminController {
 		
 		// pass full set of params to view
 		$this->data['params'] = $this->params;
-				
-		// set default period if necessary
-		if ( ! $this->getParam( 'period' ) && ! $this->getParam( 'startDate' ) ) {
-			$this->set('is_default_period', true);
-			$period = 'last_seven_days';
-			$this->params['period'] = $period;
-		} elseif (  ! $this->getParam( 'period' ) &&  $this->getParam( 'startDate' ) ) {
-			$period = 'date_range';
-			$this->params['period'] = $period;
-		} else {
-			$period = $this->getParam('period');
-		}
 		
-		$this->setPeriod($period);
-		
+		// setup the time period object in $this->period				
+		$this->setPeriod();
+		// check to see if the period is a default period. TODO move this ot view where needed.
+		$this->set('is_default_period', $this->period->isDefaultPeriod() );
 		$this->setView('base.report');
 		$this->setViewMethod('delegate');
 		

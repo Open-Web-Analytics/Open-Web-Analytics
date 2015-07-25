@@ -663,6 +663,7 @@
 				'default_cache_expiration_period'	=> 604800,
 				'nonce_expiration_period'			=> 7200,
 				'max_prior_campaigns'				=> 5,
+				'default_reporting_period'			=> 'last_seven_days',
 				'campaign_params'					=> array(
 						'campaign'		=> 'owa_campaign',
 						'medium'		=> 'owa_medium',

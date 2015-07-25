@@ -38,6 +38,7 @@ class owa_timePeriod {
 	var $diff_years;
 	var $diff_months;
 	var $diff_days;
+	var $is_default_period = false;
 	
 	function __construct() {
 		
@@ -45,6 +46,75 @@ class owa_timePeriod {
 		
 		$this->startDate = owa_coreAPI::supportClassFactory('base', 'date');
 		$this->endDate = owa_coreAPI::supportClassFactory('base', 'date');
+	}
+	
+	function getDefaultReportingPeriod() {
+		
+		return owa_coreAPI::getSetting( 'base', 'default_reporting_period' );
+	}
+	
+	function setFromMap( $map ) {
+		
+		// normalize map
+		$m = array(
+			'period' => false,
+			'startDate' => false,
+			'endDate' => false,
+			'startTime'  => false,
+			'endTime' => false
+		);
+		
+		$map = owa_lib::array_intersect_key($map, $m);
+		
+		
+		// set default period if necessary
+		if ( empty( $map[ 'period' ] ) && empty( $map[ 'startDate' ] ) ) {
+
+			$this->is_default_period = true;
+			$period = $this->getDefaultReportingPeriod();
+			
+		} elseif (  empty( $map[ 'period' ] ) &&  ! empty( $map[ 'startDate' ] ) && ! empty( $map[ 'endDate' ] ) ) {
+
+			$period = 'date_range';
+
+		} else {
+
+			$period = $map['period'];
+		}
+		
+		//validate period value
+		$valid = $this->isValid( $period );
+		
+		if ( $valid ) {
+			
+			$this->period = $period;
+			
+		
+		} else {
+		
+			$this->period = $this->getDefaultReportingPeriod();
+			owa_coreAPI::debug("$period is not a valid period. Defaulting to default.");
+		}
+		
+		$this->_setDates( $map );
+		$this->_setLabel( $period );
+		$this->_setDifferences();
+		
+	}
+	
+	// checks to see if the period value passsed is valid.
+	function isValid( $value ) {
+		
+		$valid_periods = $this->getPeriodLabels();
+		//add in date_range
+		$valid_periods[ 'date_range' ] = '';
+		
+		return array_key_exists( $value, $valid_periods );
+	}
+	
+	function isDefaultPeriod() {
+		
+		return $this->is_default_period;
 	}
 	
 	function set($value = '', $map = array()) {
@@ -112,6 +182,8 @@ class owa_timePeriod {
 		$time_now = owa_lib::time_now();
 		$nowDate = owa_coreAPI::supportClassFactory('base', 'date');
 		$nowDate->set(time(), 'timestamp');
+		$start = '';
+		$end = '';
 		
 		switch ($this->period) {
 			

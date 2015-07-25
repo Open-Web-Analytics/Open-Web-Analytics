@@ -47,6 +47,7 @@ class owa_reportView extends owa_view {
 		$this->subview->body->set('is_default_period', $this->get('is_default_period'));
 	
 		//create the report control params array
+		// TODO: this is evil as it may contain xss. Kill it's use downstream with fire, then nuke it here.
 		$this->report_params = $this->data['params'];
 		
 		unset($this->report_params['guid']);
@@ -54,7 +55,7 @@ class owa_reportView extends owa_view {
 		
 		$this->body->set('params', $this->report_params);
 		$this->subview->body->set('params', $this->report_params);
-		$this->_setLinkState();
+		
 		
 		// set site filter list
 		$this->body->set('sites', $this->get('sites') );
@@ -75,6 +76,25 @@ class owa_reportView extends owa_view {
 		
 		// load body template
 		$this->body->set_template('report.tpl');
+		
+		// set link state used by report navigation
+		$period = $this->get('period');
+		
+		$link_state = array(
+			'siteId' => $this->get('currentSiteId')
+		);
+		
+		if ( $period->get() === 'date_range' ) {
+			
+			$link_state[ 'startDate' ] = $period->getStartDate()->getYyyymmdd();
+			$link_state[ 'endDate' ] = $period->getEndDate()->getYyyymmdd();
+			
+		} else {
+		
+			$link_state[ 'period' ] = $period->get();
+		}
+	
+		$this->_setLinkState( $link_state );
 			
 		// set Js libs to be loaded
 		/*
@@ -126,22 +146,24 @@ $this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
 	 * @access public
 	 * @param string $period
 	 */
-	function setPeriod($period) {
+	function setPeriod( $period ) {
 			
 		// set in various templates and params
 		$this->data['params']['period'] = $period->get();
-		$this->body->set('period', $period->get());
-		$this->body->set('period_obj', $period);
-		$this->subview->body->set('period_obj', $period);
-		$this->subview->body->set('period', $period->get());
+		$this->body->set( 'period_obj', $period);
+		$this->subview->body->set( 'period_obj', $period);
+		$this->body->set( 'period', $period->get() );
+		$this->subview->body->set( 'period', $period->get() );
 		// set period label
 		$period_label = $period->getLabel();
 		$this->body->set('period_label', $period_label);
 		$this->subview->body->set('period_label', $period_label);
-		$this->body->set('startDate', $this->get('startDate') );
-		$this->subview->body->set('startDate', $this->get('startDate') );
-		$this->body->set('endDate', $this->get('endDate') );
-		$this->subview->body->set('endDate', $this->get('endDate') );
+		$start_date = $period->get('startDate');
+		$this->body->set( 'startDate', $start_date );
+		$this->subview->body->set('startDate', $start_date );
+		$end_date =  $period->get('endDate');
+		$this->body->set('endDate', $end_date );
+		$this->subview->body->set('endDate', $end_date );
 	}
 	
 	/**

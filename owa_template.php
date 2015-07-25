@@ -507,7 +507,7 @@ class owa_template extends Template {
 			
 			foreach ($all_params as $n => $v) {
 				
-				$get .= $this->config['ns'].$n.'='.$v;
+				$get .= $this->config['ns'].owa_sanitize::escapeForDisplay($n).'='.owa_sanitize::escapeForDisplay($v);
 				
 				$i++;
 				
