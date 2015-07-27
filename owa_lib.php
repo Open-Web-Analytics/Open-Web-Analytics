@@ -1002,7 +1002,13 @@ class owa_lib {
 	 */
 	public static function encryptPassword($password) {
 		
-		return owa_coreAPI::saltedHash( $password, 'auth');
+		return md5(strtolower($password).strlen($password));
+		//return owa_coreAPI::saltedHash( $password, 'auth');
+	}
+	
+	public static function hash( $hash_type = 'md5', $data, $salt = '' ) {
+		
+		return hash_hmac( $hash_type, $data, $salt );
 	}
 	
 	public static function timestampToYyyymmdd($timestamp = '') {

@@ -183,7 +183,9 @@ class owa_auth extends owa_base {
 			$cu = owa_coreAPI::getCurrentUser();
 			if (!$cu->isAuthenticated()) {
 				// check to see if they are a user.
-				return $this->isUser();
+				$val = $this->isUser();
+				//print ("val: ". $val);
+				return $val;
 			}	
 		} else {
 			return true;
@@ -195,7 +197,7 @@ class owa_auth extends owa_base {
 		// set credentials
 		$this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
 		// must encrypt password to see if it matches whats in the db
-		$this->credentials['password'] = $this->encryptPassword($password);
+		$this->credentials['password'] = $this->generateAuthCredential( $this->credentials['user_id'], $this->encryptPassword( $password ) );
 		//owa_coreAPI::debug(print_r($this->credentials, true));
 		$ret = $this->isUser();
 	
@@ -330,7 +332,7 @@ class owa_auth extends owa_base {
 		
 		$this->e->debug('saving user credentials to cookies');
 		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*10, '/', $this->config['cookie_domain']);
-		setcookie($this->config['ns'].'p', $this->u->get('password'), time()+3600*24*2, '/', $this->config['cookie_domain']);
+		setcookie($this->config['ns'].'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2, '/', $this->config['cookie_domain']);
 	}
 	
 	/**
@@ -373,24 +375,77 @@ class owa_auth extends owa_base {
 				
 		// fetches user object from DB
 		$this->getUser();
-		if ($this->credentials['user_id'] === $this->u->get('user_id')):
+		
+		if ( $this->credentials['user_id'] === $this->u->get('user_id') ) {
 			
-			if ($this->credentials['password'] === $this->u->get('password')):
+			//if ($this->credentials['password'] === $this->u->get('password')):
+			if ( $this->isValidAuthCredential( $this->credentials['user_id'], $this->credentials['password'] ) ) {
 				$this->_is_user = true;	
 				
 				// set as new current user in service layer
-				$cu->loadNewUserByObject($this->u);
+				$cu->loadNewUserByObject( $this->u );
 				$cu->setAuthStatus(true);
+				
 				return true;
-			else:
+			} else {
 				$this->_is_user = false;
 				return false;
-			endif;
-		else:
+			}
+		} else {
 			$this->_is_user = false;
 			return false;
-		endif;
+		}
+	}
+	
+	function isValidAuthCredential( $user_id, $passed_credential ) {
 		
+		$hash = '';
+		$hash = $this->reconstructAuthCredential( $user_id );
+		//print "hash: $hash ";
+		//print "passed credential: $passed_credential ";
+		if ( function_exists('hash_equals') ) {
+			
+			return hash_equals( $hash, $passed_credential );
+		
+		} else {
+			
+			if ( $hash === $passed_credential ) {
+				
+				return true;
+			}				
+		}
+	}
+	
+	function reconstructAuthCredential( $user_id ) {
+	
+		$u = owa_coreAPI::entityFactory('base.user');
+		
+		$u->getByColumn( 'user_id', $user_id );
+		
+		$password = $u->get('password');
+		//print "password $password";
+		return $this->generateAuthCredential( $user_id, $password );
+	}
+	
+	function generateAuthCredential($user_id, $password, $expiration = '', $scheme = 'auth') {
+		
+		$frag = substr($password, 8, 4);
+		
+		$key = owa_coreAPI::saltedHash( $user_id . $frag . $expiration, $scheme );
+		
+		$algo = 'sha1';
+		
+		if ( function_exists( 'hash' ) ) {
+			
+			$algo = 'sha256';
+			
+		}
+		
+		$hash = owa_lib::hash( $algo, $user_id . $expiration, $key );
+		
+		$credential = $hash; // could add other elements here.
+		
+		return $credential;
 	}
 	
 }

@@ -1343,8 +1343,10 @@ class owa_coreAPI {
 	public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
 		
 		$salt = owa_coreAPI::getSalt( $scheme );
-		return hash_hmac( $hash_type, $data, $salt );
+		return owa_lib::hash( $hash_type, $data, $salt );
 	}
+	
+
 	
 	public static function getSalt( $scheme ) {
 		
