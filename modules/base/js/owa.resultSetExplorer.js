@@ -505,12 +505,14 @@ OWA.resultSetExplorer.prototype = {
 		// this applies data to a special resultSet object that
 		// has some helper methods.
 		this.resultSet = new OWA.resultSet(rs);
+		
 		this.applyLinks();
 		
 		// notify listeners of new data
 		var that = this;
+		
 		for (var i = 0; i < that.subscriber_dom_ids.length; i++) {
-			
+			OWA.debug('about to trigger data updates.');
 			jQuery('#' + that.subscriber_dom_ids[i]).trigger('new_result_set', [that.resultSet]);
 		}
 	},
@@ -560,7 +562,7 @@ OWA.resultSetExplorer.prototype = {
 								for (var z in this.columnLinks[y].params) {
 									
 									if (this.columnLinks[y].params.hasOwnProperty(z)) {
-										//alert(this.columnLinks[y].params[z]);
+										
 										template = template.replace('%s', OWA.util.urlEncode(this.resultSet.resultsRows[i][this.columnLinks[y].params[z]].value)); 
 									}
 								}
@@ -1021,7 +1023,7 @@ OWA.dataGrid = function(target_dom_id, options) {
 OWA.dataGrid.prototype = {
 
 	generate : function(resultSet) {
-		
+		OWA.debug( 'hi from generate');
 		var that = this;
 		
 		// custom formattter functions.
