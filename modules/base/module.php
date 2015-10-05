@@ -720,9 +720,9 @@ class owa_baseModule extends owa_module {
 	function registerMetrics() {		
 		
 		$fact_table_entities = array(
-			'base.action_fact',
-			'base.request',
 			'base.session',
+			'base.request',
+			'base.action_fact',
 			'base.domstream',
 			'base.click',
 			'base.commerce_transaction_fact',
@@ -772,10 +772,9 @@ class owa_baseModule extends owa_module {
 		}
 		
 		// visits
-		foreach($fact_table_entities as $factEntity ) {
+
 		
 			// owa_session uses a different column name and has it's own metric registration above.
-			if ($factEntity === 'base.session') {
 				$this->registerMetricDefinition(array(
 					'name'			=> 'visits',
 					'label'			=> 'Visits',
@@ -787,22 +786,18 @@ class owa_baseModule extends owa_module {
 					'column'		=> 'id'
 					
 				));
-				
-			} else {
 			
 				$this->registerMetricDefinition(array(
 					'name'			=> 'visits',
 					'label'			=> 'Visits',
 					'description'	=> 'The total number of visits/sessions.',
 					'group'			=> 'Site Usage',
-					'entity'		=> $factEntity,
+					'entity'		=> 'base.request',
 					'metric_type'	=> 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
 					'data_type'		=> 'integer', // 'integrer', 'currency'
 					'column'		=> 'session_id'
 					
 				));
-			}
-		}
 		
 		$this->registerMetric(
 			'visitors', 

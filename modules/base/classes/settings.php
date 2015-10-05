@@ -943,6 +943,7 @@
 		// unique the array
 		$caps[ $role ] = array_unique( $caps[ $role ] );
 		// set new values
+		
 		$this->set('base', 'capabilities', $caps);
 		
 		// make site access is required, if role is not 'everyone'
