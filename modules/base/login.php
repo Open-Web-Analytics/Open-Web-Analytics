@@ -37,7 +37,7 @@ class owa_loginController extends owa_controller {
 		
 		$auth = owa_auth::get_instance();
 		$status = $auth->authenticateUser();
-		$go = $this->getParam('go');
+		$go = owa_sanitize::cleanUrl( $this->getParam('go') );
 		// if authentication is successfull
 		if ($status['auth_status'] == true) {
 			

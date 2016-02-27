@@ -73,7 +73,7 @@ class owa_loginFormView extends owa_view {
 		$this->body->set_template('login_form.tpl');
 		$this->body->set('headline', 'Please login using the from below');
 		$this->body->set('user_id', $this->get('user_id'));
-		$this->body->set('go', $this->get('go'));
+		$this->body->set('go', owa_sanitize::cleanUrl( $this->get('go') ) );
 	}
 }
 
