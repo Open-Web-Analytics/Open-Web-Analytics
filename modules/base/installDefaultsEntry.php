@@ -62,6 +62,7 @@ class owa_installDefaultsEntryView extends owa_view {
 		$this->body->set('defaults', $this->get('defaults'));
 		// load body template
 		$this->body->set_template('install_defaults_entry.php');
+		$this->setJs("owa", "base/js/owa.js");
 	}
 }
 

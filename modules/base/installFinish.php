@@ -73,6 +73,7 @@ class owa_installFinishView extends owa_view {
 		$this->body->set('p', $this->get('p'));
 		// load body template
 		$this->body->set_template('install_finish.tpl');
+		$this->setJs("owa", "base/js/owa.js");
 	}
 }
 

@@ -129,6 +129,7 @@ class owa_installCheckEnvView extends owa_view {
 		$this->body->set('errors', $this->get('errors'));
 		// load body template
 		$this->body->set_template('install_check_env.tpl');
+		$this->setJs("owa", "base/js/owa.js");
 	}
 }
 

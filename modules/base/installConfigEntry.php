@@ -44,6 +44,7 @@ class owa_installConfigEntryView extends owa_view {
 		$pos = strpos($public_url, 'install.php');
 		$public_url = substr($public_url, 0, $pos);
 		$this->body->set('public_url', $public_url);
+		$this->setJs("owa", "base/js/owa.js");
 	}
 }
 
