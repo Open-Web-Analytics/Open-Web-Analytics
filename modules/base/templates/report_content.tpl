@@ -34,16 +34,16 @@
 				<div class="relatedReports">
 					<UL>
 						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'));?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'), true);?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
 						</LI>
 						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'));?>">Actions</a></span> - See which actions your user performed.
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">Actions</a></span> - See which actions your user performed.
 						</LI>
 						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
 						</LI>
 						<LI>
-							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Feeds</a></span> - See trends for feed subscribers and usage.
+							<a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'), true);?>">Feeds</a></span> - See trends for feed subscribers and usage.
 						</LI>
 					</UL>
 				</div>	
