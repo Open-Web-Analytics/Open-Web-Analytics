@@ -146,6 +146,9 @@ class owa_trackingEventHelpers {
 			
 				$var = $var + 0;
 				break;
+			case "string":
+			
+				$var = owa_sanitize::cleanInput( $var, array('remove_html' => true) );
 		}
 		
 		return $var;

@@ -427,6 +427,12 @@ class owa_template extends Template {
 				
 				$string = owa_lib::implode_assoc('=>', '|||', $all_params);
 				break;
+			
+			case 'json': 
+			
+				$string = json_encode( $all_params );
+				
+				break;
 		}
 		
 		

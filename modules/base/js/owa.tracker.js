@@ -547,7 +547,7 @@ OWA.tracker.prototype = {
 			
 			// set the overlay cookie
 			OWA.util.setCookie( OWA.getSetting('ns') + 'overlay',a, '','/', document.domain );
-			////alert(OWA.util.readCookie('owa_overlay') );
+			//alert(OWA.util.readCookie('owa_overlay') );
 			// pause tracker so we dont log anything during an overlay session
 			this.pause();
 			// start overlay session

@@ -21,7 +21,7 @@
 					<div class="owa_reportSectionHeader">Related Reports:</div>
 				
 					<P>
-						<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document->get('id'), 'overlay_params' => urlencode($this->makeParamString(array('action' => 'loadHeatmap', 'api_url' => owa_coreAPI::getSetting('base', 'api_url'), 'document_id' => $document->get('id') ), true, 'cookie'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
+						<span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document->get('id'), 'overlay_params' => base64_encode($this->makeParamString(array('action' => 'loadHeatmap', 'api_url' => owa_coreAPI::getSetting('base', 'api_url'), 'document_id' => $document->get('id') ), true, 'json'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
 					</P>
 					
 					<P>

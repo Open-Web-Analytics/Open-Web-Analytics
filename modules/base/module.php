@@ -487,13 +487,14 @@ class owa_baseModule extends owa_module {
 	 */
 	function registerFilters() {
 				
-
-		$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
+		// I dont think this is used any more as logic is not in the tracking clients
+		//$this->registerFilter('attributed_campaign', $this, 'attributeCampaign', 10);
 		
-		if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'hostip' ) {
+		// @TODO hostip appears to be defunk. remove this block completely at some point.
+		//if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'hostip' ) {
 		
-			$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');			
-		}
+			//$this->registerFilter('geolocation', 'hostip', 'get_location', 10, 'classes');			
+		//}
 
 
 		if ( defined( 'OWA_MAIL_EXCEPTIONS' ) ) {
@@ -2995,6 +2996,12 @@ class owa_baseModule extends owa_module {
 		return $trans_detail;
 	}
 	
+	/**
+	 * Deprecated 
+	 *
+	 * @todo remove	
+	 *	
+	*/
 	function attributeCampaign( $tracking_event ) {
 		
 		$mode = owa_coreAPI::getSetting('base', 'campaign_attribution_mode');
@@ -3136,10 +3143,10 @@ class owa_baseModule extends owa_module {
 		if ( $ret ) {
 			// if rows then combine the events
 			foreach ($ret as $row) {
-				$combined = $this->mergeStreamEvents( $row['events'], $combined );
+				$combined = $this->mergeStreamEvents( htmlspecialchars_decode( $row['events'] ), $combined );
 			}
 			
-			$row['events'] = json_decode($combined);
+			$row['events'] = json_decode( $combined  );
 		} else {
 			// no rows found for some reason…..
 			$error = 'No domstream rows found for domstream_guid: ' . $domstream_guid;

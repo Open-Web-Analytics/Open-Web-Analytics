@@ -450,15 +450,9 @@ class owa_lib {
 		return $url;
 	}
 	
-	public static function inputFilter($array) {
+	public static function inputFilter($input, $options = array() ) {
 		
-		if ( ! class_exists( 'owa_InputFilter' ) ) {
-			require_once(OWA_INCLUDE_DIR.'/class.inputfilter.php');
-		}
-		
-		$f = new owa_InputFilter;		
-		return $f->process($array);
-		
+		return owa_sanitize::cleanInput( $input, $options );		
 	}
 	
 	public static function fileInclusionFilter($str) {

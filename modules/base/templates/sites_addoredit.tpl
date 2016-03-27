@@ -1,4 +1,4 @@
-<DIV class="panel_headline"><?php echo $headline;?></DIV>
+<DIV class="panel_headline"><?php $this->out( $headline );?></DIV>
 <div id="panel">
 <fieldset>
 

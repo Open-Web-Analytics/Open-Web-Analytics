@@ -869,7 +869,7 @@ class owa_coreAPI {
 		$teh->setTrackerProperties( $event, $environmentals );
 								
 		// Filter XSS exploits from event properties
-		$event->cleanProperties();
+		//$event->cleanProperties();
 		
 		// do not log if the do not log property is set on the event.
 		if ($event->get('do_not_log')) {

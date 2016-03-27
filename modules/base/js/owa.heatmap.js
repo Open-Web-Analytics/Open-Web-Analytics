@@ -206,15 +206,9 @@ OWA.heatmap.prototype = {
 	 */
 	fetchData: function(page) {
 	
-		var p = OWA.util.readCookie(OWA.getSetting('ns') + 'overlay');
-		//alert(unescape(p));
-		var params = OWA.util.parseCookieStringToJson(p);
-		//params.action = 'base.reportOverlay';
-		//params.document_url = OWA.util.urlEncode(document.location);
+		var p = unescape(OWA.state.getStateFromCookie('overlay'));
+		var params = JSON.parse(p);
 		params.action = 'getDomClicks';
-		//params.pageUrl = OWA.util.urlEncode(document.location);
-		//params.document_url = document.location;
-		//OWA.debug('encoded url: '+OWA.util.urlEncode(document.location));
 		params.resultsPerPage = this.options.rowsPerFetch;
 		params.format = 'jsonp';
 		

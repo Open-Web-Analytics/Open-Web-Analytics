@@ -31,14 +31,14 @@
 				<a href="<?php $api_url = owa_coreAPI::getSetting('base', 'api_url'); echo $this->makeLink(array(
 						'do' => 'base.overlayLauncher', 
 						'document_id' => $ds['document_id'], 
-						'overlay_params' => urlencode( 
+						'overlay_params' => base64_encode(  
 								$this->makeParamString( 
 									array(
 										'action' => 'loadPlayer', 
-										'api_url' => trim(owa_coreAPI::getSetting('base', 'api_url')),
+										'api_url' => trim( owa_coreAPI::getSetting( 'base', 'api_url' ) ),
 										'domstream_guid' => $ds['domstream_guid']), 
 									true, 
-									'cookie'))));?>" target="_blank">Play</a>
+									'json'))));?>" target="_blank">Play</a>
 			</TD>
 		</TR>		
 		<?php endforeach; ?>

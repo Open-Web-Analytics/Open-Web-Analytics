@@ -603,7 +603,7 @@
 				'module_dir'						=> OWA_BASE_DIR . '/modules',
 				'public_path'						=> '',
 				'geolocation_lookup'            	=> true,
-				'geolocation_service'				=> 'hostip',
+				'geolocation_service'				=> '',
 				'report_wrapper'					=> 'wrapper_default.tpl',
 				'do_not_fetch_config_from_db'		=> false,
 				'announce_visitors'					=> false,
