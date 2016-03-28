@@ -161,7 +161,16 @@ class owa_requestContainer {
 		}
 		
 		// Clean Input arrays
-		$this->request = owa_sanitize::cleanInput( $params, array('remove_html' => true) );
+		if ( $params ) {
+		
+			$params = owa_sanitize::cleanInput( $params, array('remove_html' => true) );
+			
+			if ( is_array( $params ) && ! empty( $params ) ) {
+				
+				$this->request = $params;
+			}
+		}
+		
 		// get namespace
 		$ns = owa_coreAPI::getSetting('base', 'ns');
 		// strip action and do params of nasty include exploits.
