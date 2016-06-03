@@ -91,43 +91,46 @@ class owa_db_mysql extends owa_db {
 
 	function connect() {
 	
-		if (!$this->connection) {
-		
-			if ($this->getConnectionParam('persistant')) {
-				
-				$this->connection = mysql_pconnect(
-					$this->getConnectionParam('host'),
-					$this->getConnectionParam('user'),
-					$this->getConnectionParam('password'),
-					$this->getConnectionParam('open_new_connection')
-	    		);
-	    		
+		if ( ! $this->connection ) {
+			
+			// make a persistent connection if need be.
+			if ( $this->getConnectionParam('persistant') ) {
+			
+				$host = 'p:' . $this->getConnectionParam('host');
+			
 			} else {
 				
-				$this->connection = mysql_connect(
-					$this->getConnectionParam('host'),
-					$this->getConnectionParam('user'),
-					$this->getConnectionParam('password'),
-					$this->getConnectionParam('open_new_connection')
-	    		);
+				$host = $this->getConnectionParam('host');
 			}
 			
-			$this->database_selection = mysql_select_db($this->getConnectionParam('name'), $this->connection);
+			// get a connection
+			$this->connection = mysqli_connect(
+				$host,
+				$this->getConnectionParam('user'),
+				$this->getConnectionParam('password'),
+				$this->getConnectionParam('name')
+	    	);
 			
-			if (function_exists('mysql_set_charset')) {
-				mysql_set_charset('utf8',$this->connection);
+			// explicitng set the character set as UTF-8	
+			if (function_exists('mysqli_set_charset')) {
+			
+				mysqli_set_charset($this->connection, 'utf8' );
+				
 			} else {
+				
 				$this->query("SET NAMES 'utf8'");
 			}
 			
 		}
-			
-			
-		if (!$this->connection || !$this->database_selection) {
+				
+		if ( ! $this->connection ) {
+		
 			$this->e->alert('Could not connect to database.');
 			$this->connection_status = false;
 			return false;
+			
 		} else {
+			
 			$this->connection_status = true;
 			return true;
 		}
@@ -160,23 +163,25 @@ class owa_db_mysql extends owa_db {
 		
 		$this->new_result = '';	
 		
-		if (!empty($this->new_result)) {
-			mysql_free_result($this->new_result);
+		if ( ! empty( $this->new_result ) ) {
+		
+			mysqli_free_result($this->new_result);
 		}
 		
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 		
-		$result = @mysql_unbuffered_query( $sql, $this->connection );
+		$result = @mysqli_query( $this->connection, $sql );
 		
 		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);			
 		// Log Errors
 		
-		if ( mysql_errno( $this->connection ) ) {
+		if ( mysqli_errno( $this->connection ) ) {
+			
 			$this->e->debug(
 				sprintf(
 					'A MySQL error ocured. Error: (%s) %s. Query: %s',
-					mysql_errno( $this->connection ), 
-					htmlspecialchars( mysql_error( $this->connection ) ),
+					mysqli_errno( $this->connection ), 
+					htmlspecialchars( mysqli_error( $this->connection ) ),
 					$sql
 				)
 			);
@@ -191,9 +196,7 @@ class owa_db_mysql extends owa_db {
 	
 	function close() {
 		
-		@mysql_close($this->connection);
-		return;
-		
+		@mysqli_close( $this->connection );
 	}
 	
 	/**
@@ -212,7 +215,7 @@ class owa_db_mysql extends owa_db {
 	
 		$num_rows = 0;
 		
-		while ( $row = @mysql_fetch_assoc($this->new_result) ) {
+		while ( $row = @mysqli_fetch_assoc( $this->new_result ) ) {
 		
 			$this->result[$num_rows] = $row;
 			$num_rows++;
@@ -239,7 +242,7 @@ class owa_db_mysql extends owa_db {
 		$this->query($sql);
 		
 		//print_r($this->result);
-		$row = @mysql_fetch_assoc($this->new_result);
+		$row = @mysqli_fetch_assoc($this->new_result);
 		
 		return $row;
 	}
@@ -256,13 +259,13 @@ class owa_db_mysql extends owa_db {
   			$this->connect();
   		}
 		
-		return mysql_real_escape_string($string, $this->connection); 
+		return mysqli_real_escape_string( $this->connection, $string ); 
 		
 	}
 	
 	function getAffectedRows() {
 		
-		return mysql_affected_rows();
+		return mysqli_affected_rows();
 	}
 }
 
