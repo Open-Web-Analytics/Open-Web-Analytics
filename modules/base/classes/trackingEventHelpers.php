@@ -221,8 +221,17 @@ class owa_trackingEventHelpers {
 	}
 	
 	static function ipAddressDefault() {
+	
+		return owa_coreAPI::getServerParam(self::getIp());
+	}
+	
+	static function getIp() {
 		
-		return owa_coreAPI::getServerParam('REMOTE_ADDR');	
+		if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			return 'HTTP_X_FORWARDED_FOR';
+		} else {
+			return 'REMOTE_ADDR';
+		}
 	}
 	
 	static function timestampDefault() {
