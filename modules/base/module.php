@@ -2478,13 +2478,6 @@ class owa_baseModule extends owa_module {
 		$this->registerEventHandler('dom.click', 'clickHandlers');
 		// Feed requests
 		$this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
-		// domstreams
-		if ( owa_coreAPI::getSetting('base', 'log_dom_streams') ) {
-			$this->registerEventHandler('dom.stream', 'domstreamHandlers');
-		} else {
-			
-			owa_coreAPI::debug("Not loading Domstream handlers");
-		}
 		
 		// actions
 		$this->registerEventHandler('track.action', 'actionHandler');
