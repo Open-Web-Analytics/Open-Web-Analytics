@@ -430,6 +430,10 @@ class owa_lib {
 			$url.= 's';
 		} elseif ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) {
 			$url.= 's';
+		} elseif ( isset( $_SERVER['HTTP_ORIGIN'] ) && substr( $_SERVER['HTTP_ORIGIN'], 0, 5 ) === 'https' ) {
+			$url.= 's';
+		} elseif ( isset( $_SERVER['HTTP_REFERER'] ) && substr( $_SERVER['HTTP_REFERER'], 0, 5 ) === 'https' ) {
+			$url.= 's';
 		}
 		
 		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
