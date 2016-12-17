@@ -30,7 +30,7 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @since		owa 1.6.1
  */
 
-class owa_remoteQueueModule extends owa_module {
+class owa_domstreamModule extends owa_module {
 	
 	function __construct() {
 		
