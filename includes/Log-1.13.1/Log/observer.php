@@ -3,7 +3,7 @@
  * $Header$
  * $Horde: horde/lib/Log/observer.php,v 1.5 2000/06/28 21:36:13 jon Exp $
  *
- * @version $Revision: 316951 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -47,9 +47,9 @@ class Log_observer
      *
      * @access public
      */
-    function Log_observer($priority = PEAR_LOG_INFO)
+    public function __construct($priority = PEAR_LOG_INFO)
     {
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_priority = $priority;
     }
 

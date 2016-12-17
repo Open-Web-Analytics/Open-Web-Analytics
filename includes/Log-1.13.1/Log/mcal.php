@@ -3,7 +3,7 @@
  * $Header$
  * $Horde: horde/lib/Log/mcal.php,v 1.2 2000/06/28 21:36:13 jon Exp $
  *
- * @version $Revision: 180836 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -61,7 +61,6 @@ class Log_mcal extends Log
      */
     var $_name = LOG_SYSLOG;
 
-
     /**
      * Constructs a new Log_mcal object.
      *
@@ -71,10 +70,10 @@ class Log_mcal extends Log
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_mcal($name, $ident = '', $conf = array(),
-                      $level = PEAR_LOG_DEBUG)
+    public function __construct($name, $ident = '', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_name = $name;
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);

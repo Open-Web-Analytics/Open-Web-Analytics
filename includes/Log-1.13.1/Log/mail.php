@@ -2,7 +2,7 @@
 /**
  * $Header$
  *
- * @version $Revision: 266658 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -116,10 +116,10 @@ class Log_mail extends Log
      * @param int    $level     Log messages up to and including this level.
      * @access public
      */
-    function Log_mail($name, $ident = '', $conf = array(),
-                      $level = PEAR_LOG_DEBUG)
+    public function __construct($name, $ident = '', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_recipients = $name;
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);

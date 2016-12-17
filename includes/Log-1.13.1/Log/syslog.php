@@ -3,7 +3,7 @@
  * $Header$
  * $Horde: horde/lib/Log/syslog.php,v 1.6 2000/06/28 21:36:13 jon Exp $
  *
- * @version $Revision: 308379 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -45,8 +45,8 @@ class Log_syslog extends Log
     var $_reopen = false;
 
     /**
-     * Maximum message length that will be sent to syslog().  If the handler 
-     * receives a message longer than this length limit, it will be split into 
+     * Maximum message length that will be sent to syslog().  If the handler
+     * receives a message longer than this length limit, it will be split into
      * multiple syslog() calls.
      * @var integer
      * @access private
@@ -78,8 +78,8 @@ class Log_syslog extends Log
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_syslog($name, $ident = '', $conf = array(),
-                        $level = PEAR_LOG_DEBUG)
+    public function __construct($name, $ident = '', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
         /* Ensure we have a valid integer value for $name. */
         if (empty($name) || !is_int($name)) {
@@ -105,7 +105,7 @@ class Log_syslog extends Log
             $this->_timeFormat = $conf['timeFormat'];
         }
 
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_name = $name;
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);
@@ -173,9 +173,9 @@ class Log_syslog extends Log
         $message = $this->_extractMessage($message);
 
         /* Build a syslog priority value based on our current configuration. */
-        $priority = $this->_toSyslog($priority);
+        $syslogPriority = $this->_toSyslog($priority);
         if ($this->_inherit) {
-            $priority |= $this->_name;
+            $syslogPriority |= $this->_name;
         }
 
         /* Apply the configured line format to the message string. */
@@ -190,7 +190,7 @@ class Log_syslog extends Log
         }
 
         foreach ($parts as $part) {
-            if (!syslog($priority, $part)) {
+            if (!syslog($syslogPriority, $part)) {
                 return false;
             }
         }

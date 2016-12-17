@@ -3,7 +3,7 @@
  * $Header$
  * $Horde: horde/lib/Log/sql.php,v 1.12 2000/08/16 20:27:34 chuck Exp $
  *
- * @version $Revision: 250926 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -107,7 +107,6 @@ class Log_sql extends Log
      */
     var $_identLimit = 16;
 
-
     /**
      * Constructs a new sql logging object.
      *
@@ -117,10 +116,10 @@ class Log_sql extends Log
      * @param int $level           Log messages up to and including this level.
      * @access public
      */
-    function Log_sql($name, $ident = '', $conf = array(),
-                     $level = PEAR_LOG_DEBUG)
+    public function __construct($name, $ident = '', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_table = $name;
         $this->_mask = Log::UPTO($level);
 

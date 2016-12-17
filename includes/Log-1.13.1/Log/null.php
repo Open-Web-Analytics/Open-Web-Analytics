@@ -2,7 +2,7 @@
 /**
  * $Header$
  *
- * @version $Revision: 215527 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -27,10 +27,10 @@ class Log_null extends Log
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_null($name, $ident = '', $conf = array(),
-					  $level = PEAR_LOG_DEBUG)
+    public function __construct($name, $ident = '', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);
     }

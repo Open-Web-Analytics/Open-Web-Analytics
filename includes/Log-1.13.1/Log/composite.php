@@ -3,7 +3,7 @@
  * $Header$
  * $Horde: horde/lib/Log/composite.php,v 1.2 2000/06/28 21:36:13 jon Exp $
  *
- * @version $Revision: 305990 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -35,15 +35,15 @@ class Log_composite extends Log
     /**
      * Constructs a new composite Log object.
      *
-     * @param boolean   $name       This parameter is ignored.
-     * @param boolean   $ident      This parameter is ignored.
-     * @param boolean   $conf       This parameter is ignored.
-     * @param boolean   $level      This parameter is ignored.
+     * @param string   $name       This parameter is ignored.
+     * @param string   $ident      This parameter is ignored.
+     * @param array    $conf       This parameter is ignored.
+     * @param int      $level      This parameter is ignored.
      *
      * @access public
      */
-    function Log_composite($name, $ident = '', $conf = array(),
-                           $level = PEAR_LOG_DEBUG)
+    public function __construct($name, $ident = '', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
         $this->_ident = $ident;
     }
@@ -143,12 +143,12 @@ class Log_composite extends Log
         }
 
         /*
-         * Abort early if the priority is above the composite handler's 
+         * Abort early if the priority is above the composite handler's
          * maximum logging level.
          *
          * XXX: Consider whether or not introducing this change would break
-         * backwards compatibility.  Some users may be expecting composite 
-         * handlers to pass on all events to their children regardless of 
+         * backwards compatibility.  Some users may be expecting composite
+         * handlers to pass on all events to their children regardless of
          * their own priority.
          */
         #if (!$this->_isMasked($priority)) {
@@ -156,9 +156,9 @@ class Log_composite extends Log
         #}
 
         /*
-         * Iterate over all of our children.  If a unopened child will respond 
+         * Iterate over all of our children.  If a unopened child will respond
          * to this log event, we attempt to open it immediately.  The composite
-         * handler's opened state will be enabled as soon as the first child 
+         * handler's opened state will be enabled as soon as the first child
          * handler is successfully opened.
          *
          * We track an overall success state that indicates whether or not all

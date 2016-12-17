@@ -2,7 +2,7 @@
 /**
  * $Header$
  *
- * @version $Revision: 313304 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -78,10 +78,10 @@ class Log_firebug extends Log
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_firebug($name = '', $ident = 'PHP', $conf = array(),
-                         $level = PEAR_LOG_DEBUG)
+    public function __construct($name = '', $ident = 'PHP', $conf = array(),
+                                $level = PEAR_LOG_DEBUG)
     {
-        $this->_id = md5(microtime());
+        $this->_id = md5(microtime().rand());
         $this->_ident = $ident;
         $this->_mask = Log::UPTO($level);
         if (isset($conf['buffering'])) {
@@ -182,11 +182,11 @@ class Log_firebug extends Log
 
         /* normalize line breaks and escape quotes*/
         $message = preg_replace("/\r?\n/", "\\n", addslashes($message));
-        
+
         /* Build the string containing the complete log line. */
         $line = $this->_format($this->_lineFormat,
                                strftime($this->_timeFormat),
-                               $priority, 
+                               $priority,
                                $message);
 
         if ($this->_buffering) {

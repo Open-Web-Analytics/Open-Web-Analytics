@@ -3,7 +3,7 @@
  * $Header$
  * $Horde: horde/lib/Log.php,v 1.15 2000/06/29 23:39:45 jon Exp $
  *
- * @version $Revision: 310238 $
+ * @version $Revision$
  * @package Log
  */
 
@@ -86,7 +86,7 @@ class Log
     var $_listeners = array();
 
     /**
-     * Starting depth to use when walking a backtrace in search of the 
+     * Starting depth to use when walking a backtrace in search of the
      * function that invoked the log system.
      *
      * @var integer
@@ -110,6 +110,10 @@ class Log
                             '%{function}'   => '%7$s',
                             '%{class}'      => '%8$s',
                             '%\{'           => '%%{');
+
+    public function __construct()
+    {
+    }
 
     /**
      * Attempts to return a concrete Log instance of type $handler.
@@ -512,8 +516,8 @@ class Log
     }
 
     /**
-     * Sets the starting depth to use when walking a backtrace in search of 
-     * the function that invoked the log system.  This is used on conjunction 
+     * Sets the starting depth to use when walking a backtrace in search of
+     * the function that invoked the log system.  This is used on conjunction
      * with the 'file', 'line', 'function', and 'class' formatters.
      *
      * @param int $depth    The new backtrace depth.
@@ -712,7 +716,7 @@ class Log
     /**
      * Returns the current level mask.
      *
-     * @return interger         The current level mask.
+     * @return integer         The current level mask.
      *
      * @access  public
      * @since   Log 1.7.0
@@ -771,7 +775,7 @@ class Log
      * @param object    $observer   The Log_observer instance to attach as a
      *                              listener.
      *
-     * @param boolean   True if the observer is successfully attached.
+     * @return boolean  True if the observer is successfully attached.
      *
      * @access  public
      * @since   Log 1.0
@@ -793,7 +797,7 @@ class Log
      * @param object    $observer   The Log_observer instance to detach from
      *                              the list of listeners.
      *
-     * @param boolean   True if the observer is successfully detached.
+     * @return boolean  True if the observer is successfully detached.
      *
      * @access  public
      * @since   Log 1.0
