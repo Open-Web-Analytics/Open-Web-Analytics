@@ -221,8 +221,6 @@ function &owa_getInstance() {
 		$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/index.php?owa_specialAction' );
 		$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/index.php?owa_apiAction' );
 		$owa->setSetting( 'base', 'is_embedded', true );
-		// needed as old installs might have this turned on by default...
-		$owa->setSetting( 'base', 'delay_first_hit', false );
 		
 		// Access WP current user object to check permissions
 		//$current_user = owa_getCurrentWpUser();

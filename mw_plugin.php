@@ -170,7 +170,6 @@ function owa_singleton() {
 		$owa->setSetting( 'base', 'link_template', '%s&%s' );
 		$owa->setSetting( 'base', 'is_embedded', true );
 		$owa->setSetting( 'base', 'query_string_filters', 'returnto' );
-		$owa->setSetting( 'base', 'delay_first_hit', false );
 		
 		if ( ! $wgOwaSiteId ) {
 			$wgOwaSiteId = md5($wgServer.$wgScriptPath);

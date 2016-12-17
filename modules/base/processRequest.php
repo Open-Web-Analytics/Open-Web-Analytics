@@ -64,16 +64,6 @@ class owa_processRequestController extends owa_processEventController {
 	
 	function post() {
 				
-		if ( owa_coreAPI::getSetting('base', 'delay_first_hit') ) {	
-			
-			// If not, then make sure that there is an inbound visitor_id
-			if ( ! $this->event->get( 'visitor_id' ) ) {
-				// Log request properties to a cookie for processing by a second request and return
-				owa_coreAPI::debug('Logging this request to first hit cookie.');
-				return $this->log_first_hit();
-			}
-		}
-		
 		owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
 		
 		return $this->addToEventQueue();
