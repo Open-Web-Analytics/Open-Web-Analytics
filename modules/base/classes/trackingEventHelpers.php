@@ -713,20 +713,26 @@ class owa_trackingEventHelpers {
 			
 				$cu = owa_coreAPI::getCurrentUser();
 				
-				return $cu->user->get( 'user_id' );
+				$user_name = $cu->user->get( 'user_id' );
 			}
+			
+			return $user_name;
 		}
 	}
 	
 	static function setEmailAddress ( $email_address, $event ) {
 		
 		if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-		
-			$cu = owa_coreAPI::getCurrentUser();
 			
-			return $cu->user->get( 'email_address' );
+			if ( ! $email_address && owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+			
+				$cu = owa_coreAPI::getCurrentUser();
+				
+				$email_address = $cu->user->get( 'email_address' );
+			}
+			
+			return $email_address;
 		}
-		
 	}
 		
 }
