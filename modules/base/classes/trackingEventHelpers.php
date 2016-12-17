@@ -222,7 +222,16 @@ class owa_trackingEventHelpers {
 	
 	static function ipAddressDefault() {
 		
-		return owa_coreAPI::getServerParam('REMOTE_ADDR');	
+		if ( owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' ) ) {
+		
+ 			$ip = owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' );
+ 			
+ 		} else {
+ 		
+ 			$ip = owa_coreAPI::getServerParam('REMOTE_ADDR');	
+ 		}
+ 		
+ 		return $ip;
 	}
 	
 	static function timestampDefault() {
