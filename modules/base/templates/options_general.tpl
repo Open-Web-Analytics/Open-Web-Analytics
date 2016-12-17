@@ -94,18 +94,6 @@
 		</div>
 	</div>
 	
-	<div class="setting" id="log_dom_streams">	
-		<div class="title">Log Domstreams</div>
-		<div class="description">This setting controls whether OWA should should log Domstreams.</div> 
-		<div class="field">
-			<select name="<?php echo $this->getNs();?>config[base.log_dom_streams]">
-				<option value="0" <?php if ($config['log_dom_streams'] == false):?>SELECTED<?php endif;?>>Off</option>
-				<option value="1" <?php if ($config['log_dom_streams'] == true):?>SELECTED<?php endif;?>>On</option>	
-			</select>
-		</div>
-	</div>	
-
-	
 	<div class="setting" id="p3p_policy">	
 		<div class="title">P3P Compact Privacy Policy</div>
 		<div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="http://www.p3pwriter.com/LRN_111.asp">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>

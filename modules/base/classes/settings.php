@@ -622,7 +622,6 @@
 				'summary_framework'					=> '',
 				'click_drawing_mode'				=> 'center_on_page', // remove
 				'log_clicks'						=> true,
-				'log_dom_streams'					=> true,
 				'timezone'							=> 'America/Los_Angeles',
 				'log_dom_stream_percentage'			=> 50,
 				'owa_wiki_link_template'			=> 'http://wiki.openwebanalytics.com/index.php?title=%s',

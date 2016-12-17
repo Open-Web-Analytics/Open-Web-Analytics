@@ -299,7 +299,7 @@ abstract class owa_module extends owa_base {
 		
 		return $this->nav_links;
 	}
-		
+			
 	/**
 	 * Abstract method for registering event handlers
 	 *
@@ -464,10 +464,7 @@ if ( ! is_object( $handler_name ) ) {
 	 * @param string $priviledge
 	 * @param string $groupName
 	 */
-	public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {	
-		if (!isset($this->nav_links[$groupName][$subgroupName]) || !is_array($this->nav_links[$groupName][$subgroupName])) {
-			throw new Exception('Subgroup "'.$subgroupName.'" is not existend - add Subgroup first with addNavigationSubGroup ');
-		}
+	public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {		
 		$this->nav_links[$groupName][$subgroupName]['subgroup'][] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
 	}
 	
