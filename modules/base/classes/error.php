@@ -87,29 +87,35 @@ class owa_error {
 		return;
 	}
 	
-	function addLogger($type, $mask = null, $config = array()) {
+	function addLogger($type, $mask = null, $config = array() ) {
 		
 		// make child logger
 		$child = $this->loggerFactory($type, $config);
 		
-		if (!empty($child)):
+		if ( ! empty( $child ) ) {
 			//set error level mask
-			if (!empty($mask)):
-				$child->setMask($mask);
-			endif;
+			if ( ! empty( $mask ) ) {
+			
+				$child->setMask( $mask );
+			}
 			
 			// add child to main composite logger
-			$ret = $this->logger->addChild($child);
-		else:
+			$ret = $this->logger->addChild( $child );
+		
+		} else {
+		
 			$ret = false;
-		endif;
+		}
 				
 		//set hasChildren flag
-		if ($ret == true):
+		if ( $ret == true ) {
+		
 			$this->hasChildren = true;
-		else:
+		
+		} else {
+		
 			return false;
-		endif;
+		}
 	}
 	
 	function removeLogger($type) {

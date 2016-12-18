@@ -302,6 +302,7 @@ class owa_caller extends owa_base {
 	function isOwaInstalled() {
 		
 		$version = owa_coreAPI::getSetting('base', 'schema_version');
+		
 		if ($version > 0) {
 			return true;
 		} else {

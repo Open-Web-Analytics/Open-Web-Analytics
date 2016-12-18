@@ -562,7 +562,7 @@ class owa_lib {
      * @param string $url
      */
     public static function redirectBrowser($url) {
-    	
+    	//print ($url); exit;
 	    // 302 redirect to URL 
 		header ('Location: '.$url);
 		header ('HTTP/1.0 302 Found');

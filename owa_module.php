@@ -532,7 +532,7 @@ if ( ! is_object( $handler_name ) ) {
 		$errors = '';
 
 		// Install schema
-		if (!empty($this->entities)):
+		if (!empty($this->entities)) {
 		
 			foreach ($this->entities as $k => $v) {
 			
@@ -540,18 +540,17 @@ if ( ! is_object( $handler_name ) ) {
 				//$this->e->debug("about to  execute createtable");
 				$status = $entity->createTable();
 				
-				if ($status != true):
+				if ($status != true) {
 					$this->e->notice("Entity Installation Failed.");
 					$errors = true;
 					//return false;
-				endif;
+				}
 				
 			}
-		
-		endif;
+		}
 		
 		// activate module and persist configuration changes 
-		if ($errors != true):
+		if ($errors != true) {
 			
 			// run post install hook
 			$ret = $this->postInstall();
@@ -569,10 +568,10 @@ if ( ! is_object( $handler_name ) ) {
 			$this->e->notice("Installation complete.");
 			return true;
 			
-		else:
+		} else {
 			$this->e->notice("Installation failed.");
 			return false;
-		endif;
+		}
 
 	}
 	
@@ -611,9 +610,9 @@ if ( ! is_object( $handler_name ) ) {
 			
 			settype($seq, "integer");
 			
-			if ($seq > $current_schema_version):
+			if ($seq > $current_schema_version) {
 			
-				if ($seq <= $this->required_schema_version):
+				if ($seq <= $this->required_schema_version) {
 					$this->updates[$seq] = owa_coreAPI::updateFactory($this->name, substr($v['name'], 0, -4));
 					// if the cli update mode is required and we are not running via cli then return an error.
 					owa_coreAPI::debug('cli update mode required: '.$this->updates[$seq]->isCliModeRequired());
@@ -626,8 +625,8 @@ if ( ! is_object( $handler_name ) ) {
 					// set schema version from sequence number in file name. This ensures that only one update
 					// class can ever be in use for a particular schema version
 					$this->updates[$seq]->schema_version = $seq;
-				endif;
-			endif;	
+				}
+			}	
 			
 		}
 		
@@ -708,11 +707,11 @@ if ( ! is_object( $handler_name ) ) {
 		owa_coreAPI::debug("$this->name Schema version is $current_schema");
 		owa_coreAPI::debug("$this->name Required Schema version is $required_schema");
 		
-		if ($current_schema >= $required_schema):
+		if ($current_schema >= $required_schema) {
 			return true;
-		else:
+		} else {
 			return false;
-		endif;
+		}
 	}
 	
 	function getSchemaVersion() {

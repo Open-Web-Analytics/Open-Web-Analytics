@@ -41,9 +41,9 @@ class owa_loginController extends owa_controller {
 		// if authentication is successfull
 		if ($status['auth_status'] == true) {
 			
-			if (!empty($go)) {
+			if (!empty($go)) { 
 				// redirect to url if present
-				$url = urldecode($go);
+				$url = urldecode(htmlspecialchars_decode( $go ) );
 				$this->e->debug("redirecting browser to...:". $url);
 				owa_lib::redirectBrowser($url);
 			
