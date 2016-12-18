@@ -234,7 +234,7 @@ class owa_paginatedResultSet {
 		
 		if (array_key_exists($format, $formats)) {
 			
-			return $this->$formats[$format]();
+			return $this->{$formats[$format]}();
 		} else {
 			return 'That format is not supported';
 		}
