@@ -55,9 +55,8 @@ class Template {
      *
      * @access public 
      */
-    function Template() {
+    function __construct() {
         
-        return;
     }
 	
     /**
@@ -129,8 +128,8 @@ class CachedTemplate extends Template {
      * @param $cache_id string unique cache identifier
      * @param $expire int number of seconds the cache will live
      */
-    function CachedTemplate($cache_id = null, $expire = 900) {
-        $this->Template();
+    function __construct($cache_id = null, $expire = 900) {
+        parent::__construct();
         $this->cache_id = $cache_id ? 'cache/' . md5($cache_id) : $cache_id;
         $this->expire   = $expire;
     }

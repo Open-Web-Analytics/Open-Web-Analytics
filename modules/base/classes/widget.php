@@ -177,11 +177,9 @@ class owa_widgetController extends owa_controller {
 
 class owa_widgetView extends owa_view {
 	
-	function owa_widgetView() {
+	function __construct() {
 		
-		$this->owa_view();
-		
-		return;
+		return parent::__construct();
 	}
 	
 	function render($data) {
