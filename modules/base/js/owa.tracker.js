@@ -1710,7 +1710,7 @@ OWA.tracker.prototype = {
 			var host = uri.getHost();
 			var term = uri.getQueryParam(query_param);
 			
-			if ( OWA.util.strpos(host, domain) && uri.isQueryParam( query_param ) ) {
+			if ( OWA.util.strpos(host, domain) ) {
 				OWA.debug( 'Found search engine: %s with query param %s:, query term: %s', domain, query_param, term);
 				
 				return {d: domain, q: query_param, t: term };

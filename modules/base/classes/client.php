@@ -806,7 +806,7 @@ class owa_client extends owa_caller {
 				$term = $uri['query_params'][$query_param];
 			}
 			
-			if ( strpos($host, $domain) && $term ) {
+			if ( strpos($host, $domain) ) {
 				owa_coreAPI::debug( 'Found search engine: %s with query param %s:, query term: %s', $domain, $query_param, $term);
 				
 				return array('d' => $domain, 'q' => $query_param, 't' => $term );
