@@ -300,8 +300,8 @@ class owa_serviceUser extends owa_base {
 	}
 	
 	public function isAnonymousUser() {
-		$role = $this->getRole();
-		if ( ! $this->user->get('user_id') && $this->getRole() === 'everyone') {
+	
+		if ( ! $this->user->get('user_id') || $this->getRole() === 'everyone') { 
 			return true;
 		} else {
 			return false;

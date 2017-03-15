@@ -1336,8 +1336,10 @@ class owa_coreAPI {
 		
 		$time = owa_coreAPI::getNonceTimeInterval();
 		$cu = owa_coreAPI::getCurrentUser();
-		$user_id = $cu->getUserData( 'user_id' );
+		$user_id = $cu->getUserData( 'user_id' ); 
+		
 		$full_nonce = $time . $action . $user_id . 'owa_nonce';
+		
 		$nonce = substr( owa_coreAPI::saltedHash($full_nonce, 'nonce'), -12, 10);
 		
 		return $nonce;
@@ -1372,7 +1374,7 @@ class owa_coreAPI {
 						continue;
 					} else {
 						
-						$cached_salts[ $scheme.'_'.$s ] = constant("$const");
+						$cached_salts[ $f.'_'.$s ] = constant("$const");
 					}
 				}
 			}	
