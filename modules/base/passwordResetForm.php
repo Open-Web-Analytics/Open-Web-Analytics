@@ -60,6 +60,8 @@ class owa_passwordResetFormView extends owa_view {
 	}
 	
 	function render($data) {
+	
+		$this->setTitle('Password Reset');
 		$this->t->set_template('wrapper_public.tpl');
 		$this->body->set_template('users_password_reset_request.tpl');
 	}

@@ -125,12 +125,14 @@ class owa_caller extends owa_base {
 		
 		/* PHP ERROR LOGGING */
 		
+		/*
 		if (defined('OWA_LOG_PHP_ERRORS')) {
 			
 			$this->e->logPhpErrors();
 		}
 		
 		set_exception_handler( array($this->e, 'logException') );
+		*/
 			
 		/* LOAD SERVICE LAYER */
 		$this->service = owa_coreAPI::serviceSingleton();
