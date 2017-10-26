@@ -121,6 +121,9 @@ class owa_db_mysql extends owa_db {
 				$this->query("SET NAMES 'utf8'");
 			}
 			
+			// turn off strict mode. needed on mysql 5.7 and lter when it is turned on by default.
+			$this->query( "SET SESSION sql_mode=''" );
+			
 		}
 				
 		if ( ! $this->connection ) {
