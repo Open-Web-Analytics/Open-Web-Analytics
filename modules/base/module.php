@@ -204,10 +204,11 @@ class owa_baseModule extends owa_module {
 				'default_value'					=> '(not set)'
 			),
 			
-			'email_address'					=> array(
+			'user_email'					=> array(
 				'required'						=> true,
 				'callbacks'						=> array( 'owa_trackingEventHelpers::setEmailAddress' ),
-				'default_value'					=> '(not set)'
+				'default_value'					=> '(not set)',
+				'alternative_key'				=> 'email_address'
 			),
 			
 			'HTTP_REFERER'					=> array(

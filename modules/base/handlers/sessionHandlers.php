@@ -210,15 +210,25 @@ class owa_sessionHandlers extends owa_observer {
 				}
 				
 				// update user name if changed.
-				if ( $event->get( 'user_name' ) ) {
+				if ( $event->get( 'user_name' ) ||  $event->get( 'user_email' ) ) {
 					
 					if ( owa_coreAPI::getSetting( 'base', 'update_session_user_name' ) ) {
 					
 						// check for different user_name
 						$user_name = $event->get( 'user_name' );
 						$old_user_name = $s->get( 'user_name' );
+						
 						if ( $user_name != $old_user_name ) {
 							$s->set( 'user_name', $user_name );
+						}
+						
+						// check for different email address
+						// check for different user_name
+						$email = $event->get( 'user_email' );
+						$old_email = $s->get( 'user_email' );
+						
+						if ( $email != $old_email ) {
+							$s->set( 'user_email', $email );
 						}
 					}
 				}
