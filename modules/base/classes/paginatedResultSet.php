@@ -232,13 +232,16 @@ class owa_paginatedResultSet {
 						 'csv'	=>	'resultSetToCsv',
 						 'debug' => 'resultSetToDebug');
 		
-		if (array_key_exists($format, $formats)) {
+		if ( array_key_exists( $format, $formats ) ) {
 			
-			return $this->{$formats[$format]}();
+			$method = $formats[ $format ];
+			
+			return $this->$method();
+			
 		} else {
+		
 			return 'That format is not supported';
-		}
-				
+		}		
 	}
 	
 	
