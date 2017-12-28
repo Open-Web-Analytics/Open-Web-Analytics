@@ -88,7 +88,7 @@ define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
  * @since		owa 1.0.0
  */
 class owa_db_mysql extends owa_db {
-
+	
 	function connect() {
 	
 		if ( ! $this->connection ) {
@@ -162,7 +162,7 @@ class owa_db_mysql extends owa_db {
 		
 		$this->e->debug(sprintf('Query: %s', $sql));
 		
-		$this->result = '';
+		$this->result = array();
 		
 		$this->new_result = '';	
 		
@@ -216,16 +216,15 @@ class owa_db_mysql extends owa_db {
 			$this->query($sql);
 		}
 	
-		$num_rows = 0;
+		//$this->result = array();
+		while ( $row = mysqli_fetch_assoc( $this->new_result ) ) {
+			
+			array_push($this->result, $row);
 		
-		while ( $row = @mysqli_fetch_assoc( $this->new_result ) ) {
-		
-			$this->result[$num_rows] = $row;
-			$num_rows++;
 		}
 		
 		if ( $this->result ) {
-					
+						
 			return $this->result;
 			
 		} else {
