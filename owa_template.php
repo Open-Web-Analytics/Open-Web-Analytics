@@ -902,7 +902,7 @@ class owa_template extends Template {
 	function getAvatarImage($email) {
 		
 		if (false != $email) {
-			$url = sprintf("http://www.gravatar.com/avatar/%s?s=30", md5($email));
+			$url = sprintf("https://www.gravatar.com/avatar/%s?s=30", md5($email));
 		} else {
 			$url = $this->makeImageLink('base/i/default_user_50x50.png');
 		}
@@ -1032,7 +1032,7 @@ class owa_template extends Template {
 	
 	public function getSiteThumbnail( $domain, $width = '200' ) {
 		
-		echo sprintf('<img src="http://s.wordpress.com/mshots/v1/%s?w=%s" width="%s">', urlencode($domain .'/'), $width, $width );
+		echo sprintf('<img src="https://s.wordpress.com/mshots/v1/%s?w=%s" width="%s">', urlencode($domain .'/'), $width, $width );
 	}
 }
 
