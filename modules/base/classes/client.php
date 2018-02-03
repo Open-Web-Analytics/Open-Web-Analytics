@@ -392,7 +392,7 @@ class owa_client extends owa_caller {
 		
 		// add custom variables to global properties if not there already
     	for ( $i=1; $i <= owa_coreAPI::getSetting('base', 'maxCustomVars'); $i++ ) {
-    		$cv_param_name = 'cv' + $i;
+    		$cv_param_name = 'cv' . $i;
     		$cv_value = '';
     		
     		// if the custom var is not already a global property
