@@ -72,8 +72,8 @@
 	<tr>
 		<td><?php $this->out( $li['product_name'] ); ?> (<?php $this->out( $li['category'] ); ?>)</td>
 		<td><?php $this->out( $li['sku'] ); ?></td>
-		<td><?php $this->out( $li['unit_price'] ); ?></td>
-		<td><?php $this->out( $this->formatCurrency( $li['quantity'] ) ); ?></td>
+		<td><?php $this->out( $this->formatCurrency( $li['unit_price'] ) ); ?></td>
+		<td><?php $this->out( $li['quantity'] ); ?></td>
 		<td><?php $this->out( $this->formatCurrency( $li['item_revenue'] ) ); ?></td>
 	</tr>
 	<?php endforeach; ?>
