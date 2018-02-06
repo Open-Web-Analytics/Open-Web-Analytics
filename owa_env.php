@@ -47,4 +47,5 @@ define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
 define('OWA_CONF_DIR', OWA_DIR.'conf/');
 define('OWA_THEMES_DIR', OWA_DIR.'themes/');
 define('OWA_VERSION', 'master');
+
 ?>
