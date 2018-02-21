@@ -360,6 +360,17 @@ class owa_sanitize {
 			return "";
 		}
 	}
+	
+	public static function cleanJson( $json_string ) {
+		
+		if ( $json_string) {
+					
+			$json_array = json_decode( $json_string, true );
+			$json_string = json_encode( $json_array );
+				
+			return $json_string;
+		}
+	}
 }
 
 ?>

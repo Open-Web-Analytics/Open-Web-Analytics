@@ -46,10 +46,8 @@ class owa_refererHandlers extends owa_observer {
      */
     function notify($event) {
 		
-		$medium = $event->get('medium');
-		
 		// if there is no session referer then return
-		if ( ! $event->get('session_referer') ) {
+		if ( ! $event->get('referer_id') ) {
 			return OWA_EHS_EVENT_HANDLED;
 		}
 		
@@ -60,21 +58,20 @@ class owa_refererHandlers extends owa_observer {
 		
 		if ( ! $r->wasPersisted() ) {
 			
-			// Set id
-			if ( $event->get( 'referer_id' ) ) {
-				$r->set( 'id', $event->get( 'referer_id' ) );
-			} else {
-				$r->set( 'id', $r->generateId( $event->get( 'session_referer' ) ) );
-			}
+			$r->set( 'id', $event->get( 'referer_id' ) );
 			
 			// set referer url
-			$r->set('url', $event->get('session_referer'));
+			$r->set('url', $event->get('HTTP_REFERER'));
 				
 			// Set site
-			$url = owa_lib::parse_url($event->get('session_referer'));
-			$r->set('site', $url['host']);
-					
+			$url = owa_lib::parse_url( $event->get( 'HTTP_REFERER' ) );
+			
+			$r->set( 'site', $url['host'] );
+			
+			$medium = $event->get('medium');
+			
 			if ( $medium === 'organic-search' ) {
+			
 				$r->set('is_searchengine', true);
 			}
 				
@@ -86,7 +83,7 @@ class owa_refererHandlers extends owa_observer {
 				//owa_coreAPI::debug('hello from logReferer');
 				$crawler = new owa_http;
 				//$crawler->fetch($this->params['HTTP_REFERER']);
-				$res = $crawler->getRequest($event->get('session_referer'));
+				$res = $crawler->getRequest($event->get('HTTP_REFERER'));
 				owa_coreAPI::debug('http request response: '.print_r($res, true));
 				//Extract Title
 				
@@ -101,7 +98,7 @@ class owa_refererHandlers extends owa_observer {
 				//Extract anchortext and page snippet but not if it's a search engine...
 				if ($se != true) {
 				
-					$snippet = $crawler->extract_anchor_snippet($event->get('inbound_page_url'));
+					$snippet = $crawler->extract_anchor_snippet($event->get('page_url'));
 					
 					if ($snippet) {
 						if (function_exists('iconv')) {

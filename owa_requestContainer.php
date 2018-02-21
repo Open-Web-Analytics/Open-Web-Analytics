@@ -162,9 +162,12 @@ class owa_requestContainer {
 		
 		// Clean Input arrays
 		if ( $params ) {
-		
-			$params = owa_sanitize::cleanInput( $params, array('remove_html' => true) );
 			
+			if ( ! owa_coreAPI::getSetting('base', 'tracking_mode') ) {
+				
+				$params = owa_sanitize::cleanInput( $params, array('remove_html' => true) );
+			
+			}
 			if ( is_array( $params ) && ! empty( $params ) ) {
 				
 				$this->request = $params;
@@ -270,7 +273,7 @@ class owa_requestContainer {
 		}
 		
 		// clean params after decode
-		$params = owa_lib::inputFilter($params);
+		//$params = owa_lib::inputFilter($params);
 		// replace owa params
 		$this->owa_params = $params;
 		//debug

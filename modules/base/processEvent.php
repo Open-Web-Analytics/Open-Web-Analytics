@@ -69,6 +69,8 @@ class owa_processEventController extends owa_controller {
 	 */
 	function pre() {
 		
+		// TODO: move this all into the coreAPI::logEvent method. We really don't need the overhead of a controller for this.
+		
 		$teh = owa_coreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
 		
 		$s = owa_coreAPI::serviceSingleton();
@@ -82,6 +84,19 @@ class owa_processEventController extends owa_controller {
 		
 		// add custom var properties
 		$properties = $teh->addCustomVariableProperties( $properties );
+		
+		// there is no global input sanitization on tracking requests
+		// because each module needs to register tracking properties and
+		// their data types. Therefor we need to sanitize unregistered input
+		// here before we pass it along to any handlers.
+		
+		// get a list of properties that we do not know the data type of
+		$unsanitized_properties = array_diff_key( $this->event->getProperties(), $properties );
+		
+		// santize them genericly. we will apply them back to the event later
+		$sanitized_properties = owa_sanitize::cleanInput( $unsanitized_properties, array('remove_html' => true) );
+		//owa_coreAPI::debug( print_r($sanitized_properties, true ) );
+		
 		// translate custom var properties
 		$teh->translateCustomVariables( $this->event );
 		
@@ -91,6 +106,9 @@ class owa_processEventController extends owa_controller {
 		
 		$derived_properties = $s->getMap( 'tracking_properties_derived' );
 		$teh->setTrackerProperties( $this->event, $derived_properties );
+		
+		// re-apply sanitized properties to event.
+		$this->event->setProperties( $sanitized_properties );
 	}
 	
 	function post() {

@@ -167,7 +167,7 @@ class owa_event {
 		
 		if (array_key_exists( $name, $this->properties ) ) {
 			
-			unset( $this->properties['name'] );
+			unset( $this->properties[ $name ] );
 		}
 	}
 	

@@ -157,7 +157,7 @@ class owa_baseModule extends owa_module {
 			'page_url'						=> array(
 				'default_value'					=> '(not set)',
 				'required'						=> true,
-				'data_type'						=> 'string',
+				'data_type'						=> 'url',
 				'callbacks'						=> array( 'owa_trackingEventHelpers::makeUrlCanonical' )
 			),
 			
@@ -213,13 +213,13 @@ class owa_baseModule extends owa_module {
 			
 			'HTTP_REFERER'					=> array(
 				'required'						=> false,
-				'data_type'						=> 'string',
+				'data_type'						=> 'url',
 				'callbacks'						=> array()
 			),
 	
 			'target_url'					=> array(
 				'required'						=> false,
-				'data_type'						=> 'string',
+				'data_type'						=> 'url',
 				'callbacks'						=> array( 'owa_trackingEventHelpers::makeUrlCanonical' )
 			),
 			
@@ -248,7 +248,15 @@ class owa_baseModule extends owa_module {
 				'callbacks'						=> array( 'owa_trackingEventHelpers::setSearchTerms' ),
 				'default_value'					=> '(not set)'
 			
-			)		
+			),
+			
+			'attribs'						=> array(
+				'required'						=> false,
+				'data_type'						=> 'json',
+				'callbacks'						=> '',
+				'default_value'					=> ''
+			)
+				
 		);
 		
 		$this->registerTrackingProperties( 'regular', $regular );
@@ -466,7 +474,7 @@ class owa_baseModule extends owa_module {
 	
 			'referer_id' 		=> array(
 			
-				'alternative_key'	=> 'session_referer',
+				'alternative_key'	=> 'HTTP_REFERER',
 				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
 			),		
 			
