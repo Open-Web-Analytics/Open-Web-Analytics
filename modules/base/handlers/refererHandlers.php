@@ -61,10 +61,10 @@ class owa_refererHandlers extends owa_observer {
 			$r->set( 'id', $event->get( 'referer_id' ) );
 			
 			// set referer url
-			$r->set('url', $event->get('HTTP_REFERER'));
+			$r->set('url', $event->get('session_referer'));
 				
 			// Set site
-			$url = owa_lib::parse_url( $event->get( 'HTTP_REFERER' ) );
+			$url = owa_lib::parse_url( $event->get( 'session_referer' ) );
 			
 			$r->set( 'site', $url['host'] );
 			
@@ -83,7 +83,7 @@ class owa_refererHandlers extends owa_observer {
 				//owa_coreAPI::debug('hello from logReferer');
 				$crawler = new owa_http;
 				//$crawler->fetch($this->params['HTTP_REFERER']);
-				$res = $crawler->getRequest($event->get('HTTP_REFERER'));
+				$res = $crawler->getRequest($event->get('session_referer'));
 				owa_coreAPI::debug('http request response: '.print_r($res, true));
 				//Extract Title
 				

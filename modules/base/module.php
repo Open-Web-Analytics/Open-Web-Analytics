@@ -239,7 +239,7 @@ class owa_baseModule extends owa_module {
 			
 			'session_referer'				=> array(
 				'required'						=> false,
-				'data_type'						=> 'string',
+				'data_type'						=> 'url',
 				'callbacks'						=> array()
 			),
 			// @todo investigate if this should be a required property so that a proper join can occur.
@@ -474,7 +474,7 @@ class owa_baseModule extends owa_module {
 	
 			'referer_id' 		=> array(
 			
-				'alternative_key'	=> 'HTTP_REFERER',
+				'alternative_key'	=> 'session_referer',
 				'callbacks'			=> 'owa_trackingEventHelpers::generateDimensionId'
 			),		
 			
