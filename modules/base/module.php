@@ -507,10 +507,22 @@ class owa_baseModule extends owa_module {
 			
 			$this->registerFilter('post_processed_tracking_event', $this, 'anonymizeIpAddress');
 		}
+		
+		$this->registerFilter('tracker_tag_cmds', $this, 'addTrackerCmds', 0);
+		
+		
+	}
+	
+	function addTrackerCmds( $cmds ) {
+		
+		$cmds[] = "owa_cmds.push(['trackPageView']);";
+		$cmds[] = "owa_cmds.push(['trackClicks']);";
+		
+		return $cmds;
 	}
 		
 	/**
-	 * Register Filters
+	 * Register Background jobs
 	 *
 	 * The following lines register background jobs used by the
 	 * background daemon. 

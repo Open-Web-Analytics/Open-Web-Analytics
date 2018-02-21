@@ -1516,15 +1516,6 @@ class owa_coreAPI {
 		
 		$t = new owa_template();
 		
-		//check to see if we shuld log clicks.
-		if ( ! owa_coreAPI::getSetting( 'base', 'log_dom_clicks' ) ) {
-			$options['do_not_log_clicks'] = true;
-		}
-
-		if ( ! owa_coreAPI::getSetting( 'base', 'log_dom_streams' ) ) {
-			$options['do_not_log_domstream'] = true;
-		}
-		
 		if (owa_coreAPI::getSetting('base', 'is_embedded')) {
 			
 			// needed to override the endpoint used by the js tracker
@@ -1532,8 +1523,8 @@ class owa_coreAPI {
 		}
 				
 		$t->set( 'site_id', $site_id );
-		$t->set( 'options', $options);
-		
+		$cmds = owa_coreAPI::filter( 'tracker_tag_cmds', array() );
+		$t->set( 'cmds', $cmds );
 		$t->set_template('js_log_tag.tpl');
 		return $t->fetch();
 	}
@@ -1679,8 +1670,14 @@ class owa_coreAPI {
 	 */
 	public static function registerFilter( $filter_name, $callback, $priority = 10 ) {
 			
-		$eq = owa_coreAPI::getEventDispatch();
-		$eq->attachFilter($filter_name, $callback, $priority);
+		$ed = owa_coreAPI::getEventDispatch();
+		$ed->attachFilter($filter_name, $callback, $priority);
+	}
+	
+	public static function filter( $filter_name, $value ) {
+		
+		$ed = owa_coreAPI::getEventDispatch();
+		return $ed->filter( $filter_name, $value );
 	}
 
 }

@@ -48,6 +48,26 @@ class owa_domstreamModule extends owa_module {
 		return parent::__construct();
 	}
 	
+	function registerFilters() {
+		
+		// adds tracking cmd to js tracker.
+		if ( owa_coreAPI::getSetting( 'domstream', 'is_active' ) ) {
+		
+			$this->registerFilter('tracker_tag_cmds', $this, 'addToTracker', 99);
+		}
+	}
+	
+	/**
+	 * Adds domstream logging to the JS tracker tag.
+ 	 * @return array
+ 	 */
+	function addToTracker( $cmds ) {
+		
+		$cmds[] = "owa_cmds.push(['trackDomStream']);";
+		
+		return $cmds;
+	}
+	
 	/**
 	 * Registers Event Handlers with queue queue
 	 *

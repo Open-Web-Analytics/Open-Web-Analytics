@@ -15,15 +15,13 @@ owa_cmds.push(['setSiteId', '<?php echo $site_id; ?>']);
 <?php if ( isset($options) && $this->getValue( 'cmds', $options ) ): ?>
 <?php $this->out($this->getValue( 'cmds', $options ), false ); ?>
 <?php endif;?>
-<?php if (isset($options) && ! $this->getValue('do_not_log_pageview', $options ) ): ?>
-owa_cmds.push(['trackPageView']);
-<?php endif;?>
-<?php if (isset($options) && ! $this->getValue('do_not_log_clicks', $options ) ): ?>
-owa_cmds.push(['trackClicks']);
-<?php endif;?>
-<?php if (isset($options) && ! $this->getValue('do_not_log_domstream', $options ) ): ?>
-owa_cmds.push(['trackDomStream']);
-<?php endif;?>
+<?php
+foreach ($cmds as $cmd) {
+	
+	$this->out( $cmd );
+	$this->out( "\n");
+}
+?>
 
 (function() {
 	var _owa = document.createElement('script'); _owa.type = 'text/javascript'; _owa.async = true;

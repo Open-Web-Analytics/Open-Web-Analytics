@@ -333,7 +333,7 @@ abstract class owa_module extends owa_base {
 	}
 	
 	/**
-	 * Attaches an event handler to the event queue
+	 * Hooks a function to a filter
 	 *
 	 * @param array $event_name
 	 * @param string $handler_name
@@ -363,21 +363,6 @@ abstract class owa_module extends owa_base {
 			// register
 			owa_coreAPI::registerFilter($filter_name, array($class, $method), $priority);
 		}
-		
-		
-		/*
-if ( ! is_object( $handler_name ) ) {
-			
-			if ( ! class_exists( $handler_name ) ) {		
-			
-				//$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-				$handler_name = owa_coreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
-			}	
-		}
-		
-		
-		return owa_coreAPI::registerFilter($filter_name, array($handler_name, $method), $priority);
-*/
 	}
 
 	/**
