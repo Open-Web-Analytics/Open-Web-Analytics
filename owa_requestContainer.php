@@ -155,7 +155,7 @@ class owa_requestContainer {
 			$this->request_type = 'cli';
 		}
 		
-		if ( $this->request_type === 'get' || $this->request_type === 'post' ) {
+		if ( $this->request_type != 'cli' ) {
 			
 			$this->current_url = owa_lib::get_current_url();
 		}
