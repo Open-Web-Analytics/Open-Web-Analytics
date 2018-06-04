@@ -82,6 +82,7 @@ OWA.commandQueue = function() {
 
 	OWA.debug('Command Queue object created');
 	var asyncCmds = [];
+	var is_paused = false;
 }
 
 OWA.commandQueue.prototype = {
@@ -108,20 +109,36 @@ OWA.commandQueue.prototype = {
 		OWA.debug('cmd queue object name %s', obj_name);
 		OWA.debug('cmd queue object method name %s', method);
 		
-		// is OWATracker created?
-		if ( typeof window[obj_name] == "undefined" ) {
-			OWA.debug('making global object named: %s', obj_name);
-			window[obj_name] = new OWA.tracker( { globalObjectName: obj_name } );
+		if ( method === "pause-owa" ) {
+			
+			this.pause();
 		}
 		
-		window[obj_name][method].apply(window[obj_name], args);
+		// check to see if the command queue has been paused
+		// used to stop tracking		
+		if ( ! this.is_paused ) {
 		
+			// is OWATracker created?
+			if ( typeof window[obj_name] == "undefined" ) {
+				OWA.debug('making global object named: %s', obj_name);
+				window[obj_name] = new OWA.tracker( { globalObjectName: obj_name } );
+			}
+			
+			window[obj_name][method].apply(window[obj_name], args);
+		}
+		
+		if ( method === "unpause-owa") {
+			
+			this.unpause();
+		}
+			
 		if ( callback && ( typeof callback == 'function') ) {
 			callback();
 		}
+		
 	},
 	
-	loadCmds: function(cmds) {
+	loadCmds: function( cmds ) {
 		
 		this.asyncCmds = cmds;
 	},
@@ -146,6 +163,18 @@ OWA.commandQueue.prototype = {
 			this.push(this.asyncCmds[i]);
 		}
 		*/
+	},
+	
+	pause: function() {
+		
+		this.is_paused = true;
+		OWA.debug('Pausing Command Queue');
+	},
+	
+	unpause: function() {
+		
+		this.is_paused = false;
+		OWA.debug('Un-pausing Command Queue');
 	}
 };
 
