@@ -247,6 +247,17 @@ class owa_trackingEventHelpers {
  			$ip = owa_coreAPI::getServerParam('REMOTE_ADDR');	
  		}
  		
+ 		// Anonymize IP if needed.
+ 		if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+	 		if ( $ip && strpos( $ip , '.' ) ) {
+			
+				$ip = explode( '.', $ip );
+				array_pop($ip);
+				$ip = implode('.', $ip);
+				$ip .= '.0';
+			}
+		}
+		
  		return $ip;
 	}
 	

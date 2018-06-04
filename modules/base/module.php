@@ -511,11 +511,6 @@ class owa_baseModule extends owa_module {
 			$this->registerFilter('post_processed_tracking_event', $this, 'checkEventForType');
 		}
 		
-		if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
-			
-			$this->registerFilter('post_processed_tracking_event', $this, 'anonymizeIpAddress');
-		}
-		
 		$this->registerFilter('tracker_tag_cmds', $this, 'addTrackerCmds', 0);
 		
 		
@@ -3091,23 +3086,6 @@ class owa_baseModule extends owa_module {
 			
 			$e = owa_coreAPI::errorSingleton();
 			$e->mailErrorMsg( print_r( $event->getProperties(), true ), 'Unknown Event Type' );		
-		}
-		
-		return $event;
-	}
-	
-	public function anonymizeIpAddress( $event ) {
-	
-		$ip_address = $event->get( 'ip_address');
-		
-		if ( $ip_address && strpos($ip_address, '.' ) ) {
-		
-			$ip = explode( '.', $ip_address );
-			array_pop($ip);
-			$ip = implode('.', $ip);
-			
-			$event->set( 'ip_address', $ip);
-			$event->set('full_host', '(not set)');
 		}
 		
 		return $event;
