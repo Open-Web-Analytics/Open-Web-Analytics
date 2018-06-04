@@ -280,7 +280,7 @@ OWA.stateManager.prototype = {
 		if ( ! expiration_days ) {
 			
 			if ( is_perminant ) {
-				expiration_days =  3600;
+				expiration_days =  364;
 			}
 		}
 		

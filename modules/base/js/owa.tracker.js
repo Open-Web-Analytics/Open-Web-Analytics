@@ -167,9 +167,9 @@ OWA.tracker = function( options ) {
 	this.startTime = this.getTimestamp();
 	
 	// register cookies
-	OWA.registerStateStore('v', 3600, '', 'assoc');
-	OWA.registerStateStore('s', 3600, '', 'assoc');
-	OWA.registerStateStore('c', 3600, '', 'json');
+	OWA.registerStateStore('v', 364, '', 'assoc');
+	OWA.registerStateStore('s', 364, '', 'assoc');
+	OWA.registerStateStore('c', 60, '', 'json');
 	OWA.registerStateStore('b', '', '', 'json');
 	
 	// Configuration options
@@ -1842,10 +1842,10 @@ OWA.tracker.prototype = {
 			visitor_id = OWA.util.generateRandomGuid( this.siteId );
 			
 			this.globalEventProperties.is_new_visitor = true;
-			OWA.setState( 'v', 'vid', visitor_id, true );
 			OWA.debug('Creating new visitor id');
-		}
+		} 
 		// set property on event object
+		OWA.setState( 'v', 'vid', visitor_id, true );
 		this.setGlobalEventProperty( 'visitor_id', visitor_id );
 		
 		if (callback && (typeof(callback) === "function")) {
