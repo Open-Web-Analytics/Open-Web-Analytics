@@ -1524,6 +1524,7 @@ class owa_coreAPI {
 		$t->set( 'site_id', $site_id );
 		$cmds = owa_coreAPI::filter( 'tracker_tag_cmds', array() );
 		$t->set( 'cmds', $cmds );
+		$t->set('options', $options);
 		$t->set_template('js_log_tag.tpl');
 		return $t->fetch();
 	}
