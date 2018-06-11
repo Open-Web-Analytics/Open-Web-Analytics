@@ -46,6 +46,6 @@ define('OWA_PLUGINS_DIR', OWA_DIR.'plugins'); //depricated
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
 define('OWA_CONF_DIR', OWA_DIR.'conf/');
 define('OWA_THEMES_DIR', OWA_DIR.'themes/');
-define('OWA_VERSION', '1.6.2');
+define('OWA_VERSION', 'master');
 
 ?>
