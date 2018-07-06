@@ -18,7 +18,7 @@ owa_cmds.push(['setSiteId', '<?php echo $site_id; ?>']);
 <?php
 foreach ($cmds as $cmd) {
 	
-	$this->out( $cmd );
+	$this->out( $cmd , false);
 	$this->out( "\n");
 }
 ?>
