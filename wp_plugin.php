@@ -308,9 +308,7 @@ function owa_wpAuthUser($auth_status) {
 function owa_getCurrentWpUser() {
 
 	// Access WP current user object to check permissions
-	global $current_user;
-    get_currentuserinfo();
-    return $current_user;
+    return wp_get_current_user();
 
 }
 
