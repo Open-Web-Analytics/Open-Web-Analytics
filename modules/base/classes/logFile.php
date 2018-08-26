@@ -39,7 +39,7 @@ class owa_logFile {
 	
 	function append( $msg ) {
 		
-		if ( $this->file_path ) {
+		if ( $this->file_path && is_writable( $this->file_path ) ) {
 		
 			$handle = fopen( $this->file_path , "a" );
 			fwrite( $handle, $msg );

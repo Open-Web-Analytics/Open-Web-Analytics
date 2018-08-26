@@ -6,10 +6,10 @@
 
 <style>
 .form-row {border-bottom:1px solid #efefef;padding:10px;}
-.form-label {position: inherit;}
-.form-field {position: absolute; left: 420px;}
+.form-label {position: inherit; min-width: 300px;}
+.form-field {position: absolute; left: 620px;}
 .form-error {background-color: red; border:1px solid red; color:#ffffff; padding:3px;}
-.form-instructions {position: absolute; left: 650px; font-size:12px; color: #9f9f9f;}
+.form-instructions {position: absolute; left: 850px; font-size:12px; color: #9f9f9f;}
 </style>    
 
 <h3>Problems</h3>

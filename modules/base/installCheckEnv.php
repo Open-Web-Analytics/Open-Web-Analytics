@@ -55,6 +55,22 @@ class owa_installCheckEnvController extends owa_installController {
 		}
 		
 		// Check permissions on log directory
+		if ( ! is_writable( OWA_DATA_DIR . 'logs/' ) ) {
+		
+			$errors['owa_logdir_permissions']['name'] = 'Log Directory Permissions';
+			$errors['owa_logdir_permissions']['value'] = 'Not writable';
+			$errors['owa_logdir_permissions']['msg'] = 'Check filesystem permissions for '. OWA_DATA_DIR . 'logs/ ' . ' to ensure it is writable.';
+			$bad_environment = true;
+		}
+		
+		// Check permissions on caches directory
+		if ( ! is_writable( OWA_DATA_DIR . 'caches/' ) ) {
+		
+			$errors['owa_caches_permissions']['name'] = 'Caches Directory Permissions';
+			$errors['owa_caches_permissions']['value'] = 'Not writable';
+			$errors['owa_caches_permissions']['msg'] = 'Check filesystem permissions for '. OWA_DATA_DIR . 'caches/ ' . ' to ensure it is writable.';
+			$bad_environment = true;
+		}
 		
 		// check for magic_quotes
 		if ( function_exists( 'get_magic_quotes_gpc' ) ) {
