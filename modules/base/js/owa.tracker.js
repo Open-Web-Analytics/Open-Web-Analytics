@@ -259,16 +259,6 @@ OWA.tracker = function( options ) {
 	// check to se if an overlay session is active
 	this.checkForOverlaySession();
 	
-	// create page object.
-	this.page = new OWA.event();
-	
-	// merge page properties from global owa_params object
-	if (typeof owa_params != 'undefined') {
-		// merge page params from the global object if it exists
-		if (owa_params.length > 0) {
-			this.page.merge(owa_params);
-		}
-	}
 }
 
 OWA.tracker.prototype = {
@@ -756,8 +746,10 @@ OWA.tracker.prototype = {
 	 * Deprecated
 	 */
 	log : function() {
-    	this.page.setEventType("base.page_request");
-    	return this.logEvent(this.page);
+	
+		var event = new OWA.event
+    	event.setEventType("base.page_request");
+    	return this.logEvent(event);
     },
     
     isObjectType : function(obj, type) {
@@ -1500,10 +1492,6 @@ OWA.tracker.prototype = {
 			campaign_params['at'] = '(not set)';
 		}
 		
-		if (this.isNewCampaign) {
-			//campaign_params['ts'] = this.page.get('timestamp');
-		}
-		
 		return campaign_params;
 	},
 	
@@ -2031,16 +2019,6 @@ OWA.tracker.prototype = {
 		}
 	},
 	
-	setPageProperties : function ( properties ) {
-		
-		for (var prop in properties) {
-			
-			if ( properties.hasOwnProperty( prop ) ) {
-				this.page.set( prop, properties[prop] );
-			}
-		}
-	},
-	
 	/**
 	 * Set a custom variable
 	 *
@@ -2259,19 +2237,18 @@ OWA.tracker.prototype = {
     /**
 	 * Logs a page view event
 	 */
-	trackPageView : function(url) {
+	trackPageView : function( url ) {
 		
+		var event = new OWA.event;
 		
 		if (url) {
-			this.page.set('page_url', url);
+			event.set('page_url', url);
 		}
-		// set default event properties
-    	//this.setGlobalEventProperty( 'HTTP_REFERER', document.referrer );
-    	//this.setPageTitle(document.title);
-		this.page.set('timestamp', this.startTime);
-		this.page.setEventType("base.page_request");
+		//is this even needed?
+		event.set( 'timestamp', this.getTimestamp() );
+		event.setEventType( "base.page_request" );
 		
-		return this.trackEvent(this.page);
+		return this.trackEvent( event );
 	},
 	
 	trackAction : function(action_group, action_name, action_label, numeric_value) {
