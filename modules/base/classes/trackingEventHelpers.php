@@ -238,13 +238,56 @@ class owa_trackingEventHelpers {
 	
 	static function ipAddressDefault() {
 		
-		if ( owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' ) ) {
+		$ip = '';
 		
- 			$ip = owa_coreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' );
- 			
- 		} else {
- 		
- 			$ip = owa_coreAPI::getServerParam('REMOTE_ADDR');	
+		// array of SERVER params that could possibly contain the IP address
+		// ordered by probability of relevant match
+		$possible_ip_params = array(
+			
+			'HTTP_CLIENT_IP', 
+			'HTTP_X_FORWARDED_FOR', 
+			'HTTP_X_CLUSTER_CLIENT_IP', 
+			'HTTP_FORWARDED_FOR', 
+			'REMOTE_ADDR'
+		
+		);
+		
+		// check for IP address, break when found.
+		foreach ( $possible_ip_params as $param ) {
+			
+			if ( owa_coreAPI::getServerParam( $param ) ) {
+		
+ 				$ip = owa_coreAPI::getServerParam( $param );
+ 				owa_coreAPI::debug("ip address found in $param");
+ 				break;
+ 			}
+		}
+				
+ 		// check to see if there are multiple ips possibly passed from a poxy
+ 		if ( strpos( $ip, ',' ) ) {
+	 		
+	 		owa_coreAPI::debug('multiple ip addresses found');
+	 		// evaluate each IP to make sure it's valid and that it's not a private IP
+	 		$candidate_ips = explode( ',', $ip );
+	 		
+	 		foreach ( $candidate_ips as $candidate_ip ) {
+		 		
+		 		$candidate_ip = trim( $candidate_ip );
+		 		
+		 		if ( owa_lib::isValidIp( $candidate_ip ) && ! owa_lib::isPrivateIp( $candidate_ip ) ) {
+			 		
+			 		$ip = $candidate_ip;
+			 		
+			 		break;
+		 		}
+	 		}
+	 		
+	 		// if still no valid public IP then just use the first one found
+	 		if ( strpos( $ip, ',' ) ) {
+
+	 			$ip = trim( $candidate_ips[0] ) ;
+	 		}
+	 		
  		}
  		
  		// Anonymize IP if needed.

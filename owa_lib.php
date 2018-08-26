@@ -1320,6 +1320,51 @@ class owa_lib {
 			}	
 		}
 	}
+	
+	public static function isValidIp( $ip_address ) {
+		
+		// if valid ip address
+		if ( ! empty( $ip_address ) 
+			&& ip2long( $ip_address ) != -1 
+			&& ip2long( $ip_address ) != false
+		) {
+		
+			return true;
+		}
+		
+	}
+	
+	// check to see if the IP address falls within known private IP ranges
+	public static function isPrivateIp( $ip_address ) {
+		
+		$ip = ip2long( $ip_address);
+		
+		$private_ip_ranges = array (
+			array('0.0.0.0','2.255.255.255'),
+			array('10.0.0.0','10.255.255.255'),
+			array('127.0.0.0','127.255.255.255'),
+			array('169.254.0.0','169.254.255.255'),
+			array('172.16.0.0','172.31.255.255'),
+			array('192.0.2.0','192.0.2.255'),
+			array('192.168.0.0','192.168.255.255'),
+			array('255.255.255.0','255.255.255.255')
+		);
+			
+		//check to see if it falls within a known private range
+		foreach ( $private_ip_ranges as $range ) {
+			
+			$min = ip2long( $range[0] );
+			$max = ip2long( $range[1] );
+			
+			if ( ( $ip >= $min ) && ( $ip <= $max ) ) { 
+				
+				return true;
+			}
+		}
+		
+		// if it makes it through the checks then it's not private.
+		return false;
+	}
 }
 
 ?>
