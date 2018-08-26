@@ -632,7 +632,7 @@ OWA.tracker.prototype = {
 	 */
 	setPageTitle: function(title) {
 		
-		this.setGlobalEventProperty("page_title", title);
+		this.setGlobalEventProperty("page_title", OWA.util.trim( title ) );
 	},
 	
 	/**
@@ -640,7 +640,7 @@ OWA.tracker.prototype = {
 	 */
 	setPageType : function(type) {
 		
-		this.setGlobalEventProperty("page_type", type);
+		this.setGlobalEventProperty("page_type", OWA.util.trim( type ) );
 	},
 	
 	/**
@@ -648,7 +648,7 @@ OWA.tracker.prototype = {
 	 */
 	setUserName : function( value ) {
 		
-		this.setGlobalEventProperty( 'user_name', value );
+		this.setGlobalEventProperty( 'user_name', OWA.util.trim( value ) );
 	},
 	
 	/**
@@ -762,9 +762,6 @@ OWA.tracker.prototype = {
     logEvent : function (properties, block, callback) {
     	
     	if (this.active) {
-    	
-    		// append site_id to properties
-    		properties.site_id = this.getSiteId();
     	
 	    	var url = this._assembleRequestUrl(properties);
 	    	var limit = this.getOption('getRequestCharacterLimit');
@@ -2097,20 +2094,30 @@ OWA.tracker.prototype = {
      */
     addDefaultsToEvent : function ( event, callback ) {
     	
+    	event.set( 'site_id', this.getSiteId() );
     	
-    	if ( ! event.get( 'page_url') ) {
+    	if ( ! event.get( 'page_url') && ! this.getGlobalEventProperty('page_url') ) {
+    		
     		event.set('page_url', this.getCurrentUrl() );
     	}
     	
-    	if ( ! event.get( 'HTTP_REFERER') ) {
+    	if ( ! event.get( 'HTTP_REFERER') && ! this.getGlobalEventProperty('HTTP_REFERER')) {
+    		
     		event.set('HTTP_REFERER', document.referrer );
     	}
     	
-    	if ( ! event.get( 'page_title') ) {
+    	if ( ! event.get( 'page_title') && ! this.getGlobalEventProperty('page_title') ) {
+    		 
     		event.set('page_title', OWA.util.trim( document.title ) );
+    	}
+    	
+    	if ( ! event.get( 'timestamp') ) {
+    		 
+    		event.set('timestamp', this.getTimestamp() );
     	}
    		
    		if (callback && ( typeof( callback ) == 'function' ) ) {
+   			
    			callback( event );
    		}
     	
@@ -2244,8 +2251,7 @@ OWA.tracker.prototype = {
 		if (url) {
 			event.set('page_url', url);
 		}
-		//is this even needed?
-		event.set( 'timestamp', this.getTimestamp() );
+		
 		event.setEventType( "base.page_request" );
 		
 		return this.trackEvent( event );
@@ -2256,8 +2262,6 @@ OWA.tracker.prototype = {
 		var event = new OWA.event;
 		
 		event.setEventType('track.action');
-		event.set('site_id', this.getSiteId());
-		event.set('page_url', this.getCurrentUrl() );
 		event.set('action_group', action_group);
 		event.set('action_name', action_name);
 		event.set('action_label', action_label);
@@ -2286,10 +2290,6 @@ OWA.tracker.prototype = {
 			}
 			domstream.setEventType( 'dom.stream' );
 			domstream.set( 'domstream_guid', this.domstream_guid );
-			domstream.set( 'site_id', this.getSiteId());
-			domstream.set( 'page_url', this.getCurrentUrl() );
-			//domstream.set( 'timestamp', this.startTime);
-			domstream.set( 'timestamp', OWA.util.getCurrentUnixTimestamp() );
 			domstream.set( 'duration', this.getElapsedTime());
 			domstream.set( 'stream_events', JSON.stringify(this.event_queue));
 			domstream.set( 'stream_length', this.event_queue.length );
