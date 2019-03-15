@@ -998,10 +998,19 @@ class owa_lib {
 	 * @param string $password
 	 * @return string
 	 */
-	public static function encryptPassword($password) {
+	public static function encryptOldPassword($password) {
 		
 		return md5(strtolower($password).strlen($password));
 		//return owa_coreAPI::saltedHash( $password, 'auth');
+	}
+	public static function encryptPassword($password) {
+		
+		// check function exists to support older PHP
+		if ( function_exists(password_hash) ) {
+			return password_hash( $password, PASSWORD_BCRYPT );
+		} else {
+			return $this->encryptOldPassword($password);
+		}
 	}
 	
 	public static function hash( $hash_type = 'md5', $data, $salt = '' ) {
