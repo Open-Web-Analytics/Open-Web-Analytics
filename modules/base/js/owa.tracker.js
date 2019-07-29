@@ -930,8 +930,9 @@ OWA.tracker.prototype = {
         	var doc = that.getIframeDocument( iframe );
             
             if ( doc ) {
+		    clearInterval(timer); //clear the interval before submitting data, race condition could occur otherwise resulting in duplicate tracked events
             	that.postFromIframe(iframe, data);
-				clearInterval(timer);
+				
             }
 			
 			            
