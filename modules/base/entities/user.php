@@ -40,7 +40,6 @@ class owa_user extends owa_entity {
 		// properties
 		$this->properties['id'] = new owa_dbColumn;
 		$this->properties['id']->setDataType(OWA_DTD_SERIAL);
-		$this->properties['id']->setAutoIncrement();
 		$this->properties['user_id'] = new owa_dbColumn;
 		$this->properties['user_id']->setDataType(OWA_DTD_VARCHAR255);
 		$this->properties['user_id']->setPrimaryKey();
