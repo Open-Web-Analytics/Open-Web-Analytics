@@ -197,7 +197,9 @@ class owa_auth extends owa_base {
 		// set credentials
 		$this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
 		// must encrypt password to see if it matches whats in the db
-		$this->credentials['password'] = $this->generateAuthCredential( $this->credentials['user_id'], $this->encryptPassword( $password ) );
+		$this->credentials['password'] = $this->generateAuthCredential( $this->credentials['user_id'], $this->encryptOldPassword( $password ) );
+		// pass plain text password to test with password_verify
+		$this->credentials['new_password'] = $password;
 		//owa_coreAPI::debug(print_r($this->credentials, true));
 		$ret = $this->isUser();
 	
@@ -355,6 +357,11 @@ class owa_auth extends owa_base {
 		return owa_lib::encryptPassword($password);
 		
 	}
+	function encryptOldPassword($password) {
+		
+		return owa_lib::encryptOldPassword($password);
+		
+	}
 	
 	function getUser() {
 		
@@ -377,6 +384,20 @@ class owa_auth extends owa_base {
 		$this->getUser();
 		
 		if ( $this->credentials['user_id'] === $this->u->get('user_id') ) {
+
+			// new_password will only be set when using authByInput
+			if ( isset($this->credentials['new_password']) ) {
+				// plain text password matches DB password we can authorize
+				if ( password_verify( $this->credentials['new_password'], $this->u->get('password') ) ) {
+				$this->_is_user = true;	
+				
+				// set as new current user in service layer
+				$cu->loadNewUserByObject( $this->u );
+				$cu->setAuthStatus(true);
+				
+				return true;
+				}
+			}
 			
 			//if ($this->credentials['password'] === $this->u->get('password')):
 			if ( $this->isValidAuthCredential( $this->credentials['user_id'], $this->credentials['password'] ) ) {
