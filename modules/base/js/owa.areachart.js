@@ -14,7 +14,6 @@ OWA.areaChart = function( options ) {
 		showGrid: true,
 		showLegend: true,
 		showDots: true,
-		showLegend: true,
 		lineWidth: 4,
 		autoResizeCharts: true,
 		fillColor: "rgba(202,225,255, 0.6)",
