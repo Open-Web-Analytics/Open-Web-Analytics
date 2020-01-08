@@ -47,6 +47,7 @@ add_action('edit_attachment', 'owa_editAttachmentActionTracker');
 add_action('transition_post_status', 'owa_postActionTracker', 10, 3);
 add_action('wpmu_new_blog', 'owa_newBlogActionTracker', 10, 5);
 add_action('wpmu_new_blog', 'owa_createTrackedSiteForNewBlog', 10, 6);
+
 // Installation hook
 register_activation_hook(__FILE__, 'owa_install');
 
@@ -192,8 +193,6 @@ function owa_trackbackActionTracker($comment_id) {
 	$label = $comment_id;
 	$owa->trackAction('wordpress', 'Trackback', $label);
 }
-
-
 
 
 /**
@@ -378,26 +377,24 @@ function owa_logCommentEdit($new_status, $old_status, $comment) {
 function owa_insertPageTags() {
 	
 	// Don't log if the page request is a preview - Wordpress 2.x or greater
-	if (function_exists('is_preview')) {
-		if (is_preview()) {
+	if ( function_exists( 'is_preview' ) ) {
+		
+		if ( is_preview() ) {
+			
 			return;
 		}
 	}
 	
+	// get instance of OWA
 	$owa = owa_getInstance();
 	
-	$page_properties = $owa->getAllEventProperties($owa->pageview_event);
-	$cmds = '';
-	if ( $page_properties ) {
-		$page_properties_json = json_encode( $page_properties );
-		$cmds .= "owa_cmds.push( ['setPageProperties', $page_properties_json] );";
-	}
+	// create a cmds object
+	$wp_cmds = owa_wp_cmds::getInstance();
 	
-	//$wgOut->addInlineScript( $cmds );
+	// convert cmds to string and feed to tracking tag template	
+	$options = array( 'cmds' => $wp_cmds->cmdsToString() );
 	
-	$options = array( 'cmds' => $cmds );
-	
-	
+	// place the tracking tag
 	$owa->placeHelperPageTags(true, $options);	
 }	
 
@@ -420,91 +417,6 @@ function owa_main() {
 		// Process the request by calling owa
 		return $owa->trackEvent($event);
 	}
-	
-	// Set the type and title of the page
-	$page_type = owa_get_page_type();
-	$owa->setPageType( $page_type );
-	// Get Title of Page
-	$owa->setPageTitle( owa_get_title( $page_type ) );
-}
-
-/**
- * Determines the title of the page being requested
- *
- * @param string $page_type
- * @return string $title
- */
-function owa_get_title($page_type) {
-
-	if ($page_type == "Home"):
-		$title = get_bloginfo('name');
-	elseif ($page_type == "Search Results"):
-		$title = "Search Results for \"".$_GET['s']."\"";	
-	elseif ($page_type == "Page" || "Post"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Author"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Category"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Month"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Day"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Year"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Time"):
-		$title = wp_title($sep = '', $display = 0);
-	elseif ($page_type == "Feed"):
-		$title = wp_title($sep = '', $display = 0);
-	endif;	
-	
-	return $title;
-}
-
-/**
- * Determines the type of page being requested
- *
- * @return string $type
- */
-function owa_get_page_type() {	
-	
-	if (is_home()):
-		$type = "Home";
-	elseif (is_attachment()):
-		$type = "Attachment";
-	elseif (is_page()):
-		$type = "Page";
-	// general page catch, should be after more specific post types	
-	elseif (is_single()):
-		$type = "Post";
-	elseif (is_feed()):
-		$type = "Feed";
-	elseif (is_author()):
-		$type = "Author";
-	elseif (is_category()):
-		$type = "Category";
-	elseif (is_search()):
-		$type = "Search Results";
-	elseif (is_month()):
-		$type = "Month";
-	elseif (is_day()):
-		$type = "Day";
-	elseif (is_year()):
-		$type = "Year";
-	elseif (is_time()):
-		$type = "Time";
-	elseif (is_tag()):
-		$type = "Tag";
-	elseif (is_tax()):
-		$type = "Taxonomy";
-	// general archive catch, should be after specific archive types	
-	elseif (is_archive()):
-		$type = "Archive";
-	else:
-		$type = '(not set)';
-	endif;
-	
-	return $type;
 }
 
 /**
@@ -644,6 +556,126 @@ function owa_parse_version($version) {
    
    return $version_array;
 	
+}
+
+
+class owa_wp_cmds {
+	
+	// cmd array
+	var $cmds = array();
+	
+	function __construct() {
+		
+		$this->setPageType();
+		$this->setPageTitle();
+	}
+	
+	
+	function getInstance() {
+		
+		static $cmds;
+	
+		if ( ! isset( $cmds ) ) {
+			
+			$cmds = new owa_wp_cmds();
+		}
+		
+		return $cmds;
+	}
+	
+	/**
+	 * Determines the title of the page being requested
+	 *
+	 * @param string $page_type
+	 * @return string $title
+	 */
+	function getPageTitle() {
+	
+		$page_type = $this->getPageType();
+		
+		if ( $page_type == "Home" ) {
+		
+			$title = get_bloginfo( "name" );
+		
+		} elseif ( $page_type == "Search Results" ) {
+			
+			$title = "Search Results for \"" . get_search_query() . "\"";	
+		
+		} else {
+			
+			$title = wp_title($sep = '', $display = 0);
+		}	
+		
+		return $title;
+	}
+	
+	function setPageTitle() {
+		
+		$this->cmds[] = sprintf("owa_cmds.push(['setPageTitle', '%s' ]);", $this->getPageTitle() );
+	}
+	
+	/**
+	 * Determines the type of page being requested
+	 *
+	 * @return string $type
+	 */
+	function getPageType() {	
+		
+		if ( is_home() ) {
+			$type = "Home";
+		} elseif ( is_attachment() ){
+			$type = "Attachment";
+		} elseif ( is_page() ) {
+			$type = "Page";
+		// general page catch, should be after more specific post types	
+		} elseif ( is_single() ) {
+			$type = "Post";
+		} elseif ( is_feed() ) {
+			$type = "Feed";
+		} elseif ( is_author() ) {
+			$type = "Author";
+		} elseif ( is_category() ) {
+			$type = "Category";
+		} elseif ( is_search() ) {
+			$type = "Search Results";
+		} elseif ( is_month() ) {
+			$type = "Month";
+		} elseif ( is_day() ) {
+			$type = "Day";
+		} elseif ( is_year() ) {
+			$type = "Year";
+		} elseif ( is_time() ) {
+			$type = "Time";
+		} elseif ( is_tag() ) {
+			$type = "Tag";
+		} elseif ( is_tax() ) {
+			$type = "Taxonomy";
+		// general archive catch, should be after specific archive types	
+		} elseif ( is_archive() ) {
+			$type = "Archive";
+		} else {
+			$type = '(not set)';
+		}
+		
+		return $type;
+	}
+	
+	function setPageType() {
+		
+		$this->cmds[] = sprintf("owa_cmds.push(['setPageType', '%s' ]);", $this->getPageType() );
+	}
+	
+	function cmdsToString() {
+		
+		$out = '';
+		
+		foreach ( $this->cmds as $cmd ) {
+			
+			$out .= $cmd . " \n";	
+		}
+		
+		return $out;
+	}
 }
 
 ?>
