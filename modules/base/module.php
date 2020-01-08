@@ -325,7 +325,7 @@ class owa_baseModule extends owa_module {
 	
 			'page_uri' 			=> array(
 				'required'			=> true,
-				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri', 'owa_trackingEventHelpers::makeUrlCanonical')
+				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri')
 			),
 		
 			'is_repeat_visitor' => array(
