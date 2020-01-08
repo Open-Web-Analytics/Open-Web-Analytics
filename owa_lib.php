@@ -1009,7 +1009,7 @@ class owa_lib {
 		if ( function_exists(password_hash) ) {
 			return password_hash( $password, PASSWORD_DEFAULT );
 		} else {
-			return $this->encryptOldPassword($password);
+			return self::encryptOldPassword($password);
 		}
 	}
 	
