@@ -385,6 +385,22 @@ function owa_insertPageTags() {
 		}
 	}
 	
+	// dont log customizer previews either.
+	if ( function_exists( 'is_customize_preview' ) ) {
+		
+		if ( is_customize_preview() ) {
+			
+			return;
+		}
+	}
+	
+	// dont log requests for admin interface pages.
+	if ( function_exists( ' is_admin' ) && is_admin() ) {
+		
+		return;
+	}
+
+	
 	// get instance of OWA
 	$owa = owa_getInstance();
 	
