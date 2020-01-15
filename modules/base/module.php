@@ -250,6 +250,13 @@ class owa_baseModule extends owa_module {
 			
 			),
 			
+			'feed_subscription_id'					=> array(
+				'required'						=> false,
+				'callbacks'						=> array( ),
+				'default_value'					=> null,
+				'alternative_key'				=> 'sid'
+			),
+			
 			'attribs'						=> array(
 				'required'						=> false,
 				'data_type'						=> 'json',

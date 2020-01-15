@@ -28,7 +28,7 @@ Author URI: http://www.openwebanalytics.com
 require_once('owa_env.php');
 
 // Filter and Action hook assignments
-add_action('template_redirect', 'owa_main');
+
 add_action('wp_head', 'owa_insertPageTags',100);
 add_filter('the_permalink_rss', 'owa_post_link');
 add_action('init', 'owa_handleSpecialActionRequest');
@@ -242,26 +242,6 @@ function owa_insertPageTags() {
 	$owa->placeHelperPageTags(true, $options);	
 }	
 
-/**
- * This is the main logging controller that is called on each request.
- * 
- */
-function owa_main() {
-	
-	//global $user_level;
-	
-	$owa = owa_getInstance();
-	owa_coreAPI::debug('wp main request method');
-	
-	//Check to see if this is a Feed Reeder
-	if( $owa->getSetting('base', 'log_feedreaders') && is_feed() ) {
-		$event = $owa->makeEvent();
-		$event->setEventType('base.feed_request');
-		$event->set('feed_format', $_GET['feed']);
-		// Process the request by calling owa
-		return $owa->trackEvent($event);
-	}
-}
 
 /**
  * Wordpress filter function adds a GUID to the feed URL.
@@ -465,11 +445,28 @@ class owa_wp_plugin {
 			add_action( 'transition_post_status', array( $this, 'trackPostAction') , 10, 3);
 			// New Blog (WPMU)
 			add_action( 'wpmu_new_blog', array( $this, 'trackNewBlogAction') , 10, 5);
+			
+			
+			// track feeds
+			
+			add_action('init', array( $this, 'addFeedTrackingQueryParams'));
+			add_action( 'template_redirect', array( $this, 'trackFeedRequest'), 1 );
+			
+			
 
 		}
 		
 		// These hooks do NOT rely on OWA being accessable via PHP
 		
+	}
+	
+	// Add query vars to WordPress
+	function addFeedTrackingQueryParams() {
+		
+		global $wp; 
+		
+		// feed tracking param
+		$wp->add_query_var('owa_sid'); 
 		
 	}
 	
@@ -784,6 +781,31 @@ class owa_wp_plugin {
 		}
 	}
 	
+	// Tracks feed requests
+	function trackFeedRequest() {
+		
+		if ( is_feed() ) {
+		
+			
+			$owa = $this->getOwaInstance();
+	
+			if( $owa->getSetting( 'base', 'log_feedreaders') ) {
+				
+				owa_coreAPI::debug('Tracking WordPress feed request');			
+				
+				$event = $owa->makeEvent();
+				// set event type
+				$event->setEventType( 'base.feed_request' );
+				// determine and set the type of feed
+				$event->set( 'feed_format', get_query_var( 'feed' ) );
+				$event->set( 'feed_subscription_id', get_query_var( 'owa_sid' ) );
+				//$event->set( 'feed_subscription_id', $_GET['owa_sid'] );
+				// track
+				$owa->trackEvent( $event );
+			}
+		}
+	}
+	
 	// adds the JavaScript Tracker cmds and script tag to the page.
 	function addTrackerToPage() {
 		
@@ -792,6 +814,11 @@ class owa_wp_plugin {
 		
 		//Output the script
 		
+	}
+	
+	function generateUniqueNumericId() {
+		
+		return crc32(getmypid().microtime());
 	}
 }
 
