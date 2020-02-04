@@ -18,11 +18,21 @@
 
 require_once( OWA_BASE_DIR.'/owa_location.php' );
 
-require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader.php' );
-require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/Decoder.php' );
-require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/InvalidDatabaseException.php' );
-require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/Metadata.php' );
-require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/Util.php' );
+if(!class_exists('\MaxMind\Db\Reader')){
+	require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader.php' );
+}
+if (!class_exists('MaxMind\Db\Reader\Decoder')) {
+	require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/Decoder.php' );
+}
+if (!class_exists('MaxMind\Db\Reader\InvalidDatabaseException')) {
+	require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/InvalidDatabaseException.php' );
+}
+if (!class_exists('MaxMind\Db\Reader\Metadata')) {
+	require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/Metadata.php' );
+}
+if (!class_exists('MaxMind\Db\Reader\Util')) {
+	require_once( OWA_MODULES_DIR . 'maxmind_geoip/includes/MaxMind-DB-Reader-php-1.0.3/src/MaxMind/Db/Reader/Util.php' );
+}
 
 use MaxMind\Db\Reader;
 
