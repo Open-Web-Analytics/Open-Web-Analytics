@@ -49,13 +49,6 @@ class owa_feedRequestHandlers extends owa_observer {
 		
 		if ( ! $f->wasPersisted() ) {
 			
-			// rekey Feed subscription id tracking code
-			// @todo check the wordpress plugin to see if this is even needed
-			if ( ! $event->get( 'feed_subscription_id' ) ) {
-			
-				$event->set( 'feed_subscription_id', $event->get( owa_coreAPI::getSetting( 'base', 'feed_subscription_param' ) ) );
-			}
-			
 			// needed??
 			$event->set('feed_reader_guid', $event->setEnvGUID() );
 			// set feedreader flag to true, browser flag to false

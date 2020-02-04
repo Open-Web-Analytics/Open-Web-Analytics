@@ -77,15 +77,15 @@ class owa_wp extends owa_client {
 	 * @var string the feed link
 	 * @return string link string with special tracking id
 	 */
-	function add_feed_tracking($binfo) {
+	function add_feed_tracking( $binfo ) {
 		
-		if ($this->config['track_feed_links'] == true):
+		if ($this->config['track_feed_links'] == true) {
 			$guid = crc32(getmypid().microtime());
 		
 			return $binfo."&amp;".$this->config['ns'].$this->config['feed_subscription_param']."=".$guid;
-		else:
+		} else {
 			return;
-		endif;
+		}
 	}
 }
 

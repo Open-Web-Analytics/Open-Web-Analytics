@@ -250,6 +250,13 @@ class owa_baseModule extends owa_module {
 			
 			),
 			
+			'feed_subscription_id'					=> array(
+				'required'						=> false,
+				'callbacks'						=> array( ),
+				'default_value'					=> null,
+				'alternative_key'				=> 'sid'
+			),
+			
 			'attribs'						=> array(
 				'required'						=> false,
 				'data_type'						=> 'json',
@@ -325,7 +332,7 @@ class owa_baseModule extends owa_module {
 	
 			'page_uri' 			=> array(
 				'required'			=> true,
-				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri', 'owa_trackingEventHelpers::makeUrlCanonical')
+				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri')
 			),
 		
 			'is_repeat_visitor' => array(
