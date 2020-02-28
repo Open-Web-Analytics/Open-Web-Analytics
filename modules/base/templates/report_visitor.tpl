@@ -1,6 +1,6 @@
 <div>
 	<div style="display: table-cell; vertical-align: middle">
-		<span><img class="owa_avatar" style="vertical-align:middle;" src="<?php echo $this->getAvatarImage( $this->out($this->get('visitor_avatar_id') ) );?>" /></span>
+		<span><img class="owa_avatar" style="vertical-align:middle;" src="<?php echo $this->getAvatarImage( $this->get('visitor_avatar_id') );?>" /></span>
 		<span class="inline_h2"><?php $this->out( $visitor_label );?></span>
 	</div>
 	<BR>
