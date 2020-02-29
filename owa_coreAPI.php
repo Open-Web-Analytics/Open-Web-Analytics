@@ -653,11 +653,10 @@ class owa_coreAPI {
 		
 		//print_r($links[$view][$nav_name]);
 		if (!empty($links[$view][$nav_name])):
-			// anonymous sorting function, takes sort by variable.
-			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
-	   		
 	   		// sort the array
-	   		$ret = usort($links[$view][$nav_name], create_function('$a,$b', $code));
+	   		usort($links[$view][$nav_name], function($a, $b) use ($sortby) {
+                return strnatcmp($a[$sortby], $b[$sortby]);
+            });
 			
 			return $links[$view][$nav_name];
 		else: 
