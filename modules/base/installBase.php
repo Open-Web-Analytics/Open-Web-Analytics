@@ -82,7 +82,7 @@ class owa_installBaseController extends owa_installController {
 		if ($status == true) {
 			$this->set('status_code', 3305);
 			
-			$password = $this->createAdminUser($this->getParam('email_address'), '', $this->getParam('password') );
+			$password = $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 			
 			$site_id = $this->createDefaultSite($this->getParam('protocol').$this->getParam('domain'));	
 			
@@ -99,14 +99,14 @@ class owa_installBaseController extends owa_installController {
 			// fire install complete event.
 			$ed = owa_coreAPI::getEventDispatch();
 			$event = $ed->eventFactory();
-			$event->set('u', 'admin');
+			$event->set('u', $this->getParam('user_id'));
 			$event->set('p', $password);
 			$event->set('site_id', $site_id);
 			$event->setEventType('install_complete');
 			$ed->notify($event);
 			
 			// set view
-			$this->set('u', 'admin');
+			$this->set('u', $this->getParam('user_id'));
 			$this->set('p', $password);
 			$this->set('site_id', $site_id);
 			$this->setView('base.install');

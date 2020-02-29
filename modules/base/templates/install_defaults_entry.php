@@ -13,7 +13,15 @@
 			</span>
 			<span class="form-instructions">This is the domain of the site to track.</span>
 		</p>
-		
+
+        <p class="form-row">
+            <span class="form-label">Your Admin Name</span>
+            <span class="form-field">
+				<input type="text"size="30" name="<?php echo $this->getNs();?>user_id" value="<?php $this->out( $defaults['user_id'] );?>">
+			</span>
+            <span class="form-instructions">This is name of the admin user.</span>
+        </p>
+
 		<p class="form-row">
 			<span class="form-label">Your E-mail Address</span>
 			<span class="form-field">
