@@ -472,8 +472,8 @@ class owa_lib {
 		if (strpos($str, '%00')) {
 			$str = '';
 		}
-		
-		if (strpos($str, null)) {
+
+		if ($str == null) {
 			$str = '';
 		}
 		

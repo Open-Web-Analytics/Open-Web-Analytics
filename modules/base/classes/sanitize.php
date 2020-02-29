@@ -302,7 +302,7 @@ class owa_sanitize {
 			$str = '';
 		}
 		
-		if (strpos($str, null)) {
+		if ($str == null) {
 			$str = '';
 		}
 		
