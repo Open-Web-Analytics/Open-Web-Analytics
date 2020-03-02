@@ -641,6 +641,7 @@
 				'remote_event_queue_type'			=> 'http',
 				'remote_event_queue_endpoint'		=> '',
 				'cookie_domain'						=> false,
+                'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
 				'ws_timeout'						=> 10,
 				'is_active'							=> true,
 				'per_site_visitors'					=> false, // remove
