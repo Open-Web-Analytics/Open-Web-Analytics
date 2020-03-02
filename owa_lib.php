@@ -1006,7 +1006,7 @@ class owa_lib {
 	public static function encryptPassword($password) {
 		
 		// check function exists to support older PHP
-		if ( function_exists(password_hash) ) {
+		if ( function_exists('password_hash') ) {
 			return password_hash( $password, PASSWORD_DEFAULT );
 		} else {
 			return self::encryptOldPassword($password);
