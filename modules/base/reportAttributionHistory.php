@@ -47,7 +47,11 @@ class owa_reportAttributionHistoryController extends owa_reportController {
 		$this->set('gridFormatters', array('latestAttributions' =>
 				"function(value) {
 					if (value) {
-						table = jQuery('#attributionCell').jqote(JSON.parse(value), '*');
+					    if (typeof value !== 'object') {
+                            value = JSON.parse(value);
+                        }
+					
+						table = jQuery('#attributionCell').jqote(value, '*');
 						return table;
 					} else {
 						return '(none)';
