@@ -217,6 +217,11 @@ class owa_db_mysql extends owa_db {
 		}
 	
 		//$this->result = array();
+
+        if (!$this->new_result) {
+            return null;
+        }
+
 		while ( $row = mysqli_fetch_assoc( $this->new_result ) ) {
 			
 			array_push($this->result, $row);
