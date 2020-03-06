@@ -626,7 +626,7 @@
 				'wiki_url'							=> 'http://wiki.openwebanalytics.com',
 				'password_length'					=> 4,
 				'modules'							=> array('base'),
-				'mailer-from'						=> '',
+				'mailer-from'						=> 'owa@' . $_SERVER['SERVER_NAME'], // Set default address, because sending from root@localhost wont work
 				'mailer-fromName'					=> 'OWA Mailer',
 				'mailer-host'						=> '',
 				'mailer-port'						=> '',
@@ -696,7 +696,7 @@
 				'numGoalGroups'						=> 5,
 				'enableEcommerceReporting'			=> false, // move to site settings
 				'currencyLocal'						=> 'en_US', // move to site settings
-				'currencyDecimalDigits'				=> 2,   // move to site settings
+				'currencyISO3'				        => 'USD',   // move to site settings
 				'memcachedServers'					=> array(),
 				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file',

@@ -64,7 +64,7 @@ class owa_daemon extends Daemon {
 		// $argv is a php super global variable
 		global $argv;
 		for ( $i=1; $i < count( $argv ); $i++ ) {
-			$it = split("=",$argv[$i]);
+			$it = explode("=", $argv[$i]);
 			$params[$it[0]] = $it[1];
 		}
 		

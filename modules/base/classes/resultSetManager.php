@@ -933,7 +933,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		return owa_lib::formatCurrency( 
 				$value, 
 				owa_coreAPI::getSetting( 'base', 'currencyLocal' ), 
-				owa_coreAPI::getSetting( 'base', 'currencyDecimalDigits' )
+				owa_coreAPI::getSetting( 'base', 'currencyISO3' )
 		); 
 	}
 	

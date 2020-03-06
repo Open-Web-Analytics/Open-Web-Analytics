@@ -124,7 +124,7 @@ class PhpQuickProfiler {
 		}
 		catch(Exception $e) {}
 		if($rs) {
-			$row = mysql_fetch_array($rs, MYSQL_ASSOC);
+			$row = mysqli_fetch_array($rs, MYSQLI_ASSOC);
 			$query['explain'] = $row;
 		}
 		return $query;

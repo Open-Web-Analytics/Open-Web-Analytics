@@ -245,7 +245,7 @@ class memcached
     * @return  mixed
     * @access  public
     */
-   function memcached ($args)
+   function __construct ($args)
    {
       $this->set_servers(@$args['servers']);
       $this->_debug = @$args['debug'];

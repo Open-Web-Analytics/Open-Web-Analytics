@@ -472,8 +472,8 @@ class owa_lib {
 		if (strpos($str, '%00')) {
 			$str = '';
 		}
-		
-		if (strpos($str, null)) {
+
+		if ($str == null) {
 			$str = '';
 		}
 		
@@ -1125,11 +1125,10 @@ class owa_lib {
 		}
 	}
 	
-	public static function formatCurrency($value, $local, $decimalDigits = 2) {
-		
-		setlocale( LC_MONETARY, $local );
+	public static function formatCurrency($value, $local, $currency) {
 		$value = $value / 100;
-		return money_format( '%.' . $decimalDigits . 'n',$value );
+		$numberFormatter = new NumberFormatter($local, NumberFormatter::CURRENCY);
+		return $numberFormatter->formatCurrency($value, $currency);
 	}
 	
 	public static function crc32AsHex($string) {
