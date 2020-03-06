@@ -184,7 +184,7 @@ if(targ.nodeType==3){targ=target.parentNode;}
 return targ;},getCoords:function(e){var coords=new Object();if(typeof(e.pageX)=='number'){coords.x=e.pageX+'';coords.y=e.pageY+'';}else{coords.x=e.clientX+'';coords.y=e.clientY+'';}
 return coords;},getDomElementProperties:function(targ){var properties=new Object();properties.dom_element_tag=targ.tagName;if(targ.tagName=="A"){if(targ.textContent!=undefined){properties.dom_element_text=targ.textContent;}else{properties.dom_element_text=targ.innerText;}
 properties.target_url=targ.href;}else if(targ.tagName=="INPUT"){properties.dom_element_text=targ.value;}else if(targ.tagName=="IMG"){properties.target_url=targ.parentNode.href;properties.dom_element_text=targ.alt;}else{if(targ.textContent!=undefined){properties.html_element_text='';}else{properties.html_element_text='';}}
-return properties;},clickEventHandler:function(e){e=e||window.event;var click=new OWA.event();click.setEventType("dom.click");var targ=this._getTarget(e);var dom_name='(not set)';if(targ.hasAttribute('name')&&targ.name.length>0){dom_name=targ.name;}
+return properties;},clickEventHandler:function(e){e=e||window.event;var click=new OWA.event();click.setEventType("dom.click");var targ=this._getTarget(e);var dom_name='(not set)';if(targ.hasAttribute('name')&&(targ.name != null && targ.name.length>0)){dom_name=targ.name;}
 click.set("dom_element_name",dom_name);var dom_value='(not set)';if(targ.hasAttribute('value')&&targ.value.length>0){dom_value=targ.value;}
 click.set("dom_element_value",dom_value);var dom_id='(not set)';if(targ.id&&targ.id.length>0){dom_id=targ.id;}
 click.set("dom_element_id",dom_id);var dom_class='(not set)';if(targ.className&&targ.className.length>0){dom_class=targ.className;}
