@@ -25,12 +25,12 @@
 		</TR>
 		<?php endif;?>
 		
+		<?php if ( ! $isAdmin ):?>
 		<TR>
 			<TH>Real Name</TH>
 			<TD><input type="text" size="30" name="<?php echo $this->getNs();?>real_name" value="<?php $this->out( $this->getValue( 'real_name', $user ) );?>"></TD>
 		</TR>
-		<?php if ( ! $isAdmin ):?>
-		<TR>	
+		<TR>
 			<TH>Role</TH>
 			<TD>
 			<select name="<?php echo $this->getNs();?>role">
