@@ -1087,7 +1087,12 @@ class owa_coreAPI {
 		
 		// debug
 		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
-		
+
+		// makes cookie to session cookie only
+        if (!owa_coreAPI::getSetting('base', 'cookie_persistence')) {
+            $expires = 0;
+        }
+
 		// set compact privacy header
 		header(sprintf('P3P: CP="%s"', owa_coreAPI::getSetting('base', 'p3p_policy')));
 		//owa_coreAPI::debug('time: '.$expires);
