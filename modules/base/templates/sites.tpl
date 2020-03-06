@@ -1,8 +1,9 @@
 
 <P>Below is the list of web sites that are being tracked.</P>
 
-
-<p class="inline_h2"><a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add New</a></p>
+<?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
+	<p class="inline_h2"><a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add New</a></p>
+<?php endif; ?>
 
 <?php if ($tracked_sites): ?>
 	<?php foreach ($tracked_sites as $site):?>
@@ -25,12 +26,17 @@
 					<?php endif;?>
 					<span class="externalUrl"><?php $this->out( $site->get('domain') );?></span><BR><BR>
 					<div>
-					<a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), true );?>">View Reports</a> |
-					<a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $site->get('site_id'), 'edit' => true ) );?>">Edit Profile</a> |
-					<a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $site->get('site_id') ) );?>">Get Tracking Code</a> | 
-					<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $site->get('site_id') ) );?>">Goals</a>
-					|
-					<a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $site->get('site_id') ), false, false, false, true );?>">Delete</a>
+					<a href="<?php echo $this->makeLink( array('do' => 'base.reportDashboard', 'siteId' => $site->get('site_id') ), true );?>">View Reports</a>
+					<?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
+						| <a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $site->get('site_id'), 'edit' => true ) );?>">Edit Profile</a>
+						| <a href="<?php echo $this->makeLink( array('do' => 'base.sitesInvocation', 'siteId' => $site->get('site_id') ) );?>">Get Tracking Code</a>
+					<?php endif; ?>
+					<?php if ($this->getCurrentUser()->isCapable('edit_settings')): ?>
+						<a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $site->get('site_id') ) );?>">Goals</a>
+					<?php endif; ?>
+					<?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
+						| <a href="<?php echo $this->makeLink( array('do' => 'base.sitesDelete', 'siteId' => $site->get('site_id') ), false, false, false, true );?>">Delete</a>
+					<?php endif; ?>
 					</div>
 				</td>
 				<td>
@@ -65,6 +71,10 @@
 <?php endforeach;?>
 <?php else: ?>
 	
-There are no tracked sites. <a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a site</a>.</TD>
+There are no tracked sites.
+<?php if ($this->getCurrentUser()->isCapable('edit_sites')): ?>
+	<a href="<?php echo $this->makeLink(array('do' => 'base.sitesProfile'));?>">Add a site</a>.
+<?php endif; ?>
+</TD>
 	
 <?php endif;?>
