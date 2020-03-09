@@ -94,7 +94,7 @@ class owa_installController extends owa_controller {
 				return $password;
 				
 			} else {				
-				owa_coreAPI::debug($this->getMsg(3306));
+				owa_coreAPI::debug($this->getMsgAsString(3306));
 			}
 		} else {
 			owa_coreAPI::debug("Admin user already exists.");

@@ -230,12 +230,8 @@ class owa_view extends owa_base {
 		
 		// assign validation errors
 		if (!empty($this->data['validation_errors'])) {
-			$ves = new owa_template('base');
-			$ves->set_template('error_validation_summary.tpl');
-			$ves->set('validation_errors', $this->data['validation_errors']);
-			$validation_errors_summary = $ves->fetch();
-			$this->t->set('error_msg', $validation_errors_summary);
-		}		
+			$this->t->set('validation_errors', $this->data['validation_errors']);
+		}
 		
 		
 		// fire post method

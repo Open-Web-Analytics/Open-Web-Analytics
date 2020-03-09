@@ -87,8 +87,8 @@ class owa_base_004_update extends owa_update {
 				
 				return $password;
 				
-			} else {				
-				owa_coreAPI::debug($this->getMsg(3306));
+			} else {
+				owa_coreAPI::debug($this->getMsgAsString(3306));
 			}
 		} else {
 			owa_coreAPI::debug("Admin user already exists.");

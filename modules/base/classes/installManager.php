@@ -73,7 +73,7 @@ class owa_installManager extends owa_base {
 				return $password;
 				
 			} else {				
-				owa_coreAPI::debug($this->getMsg(3306));
+				owa_coreAPI::debug($this->getMsgAsString(3306));
 			}
 		} else {
 			owa_coreAPI::debug("Admin user already exists.");
