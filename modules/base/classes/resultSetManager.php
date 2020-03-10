@@ -887,7 +887,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 				'name' 		  => $k, 
 				'value' 	  => $v,
 				'formatted_value' => $this->formatValue($data_type, $v),
-				'label' => $this->getLabel($k), 'data_type' => $data_type);	
+				'label' => $this->getLabel($k), 'data_type' => $data_type);
 		}
 		
 		return $new_row;

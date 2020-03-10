@@ -1126,9 +1126,19 @@ class owa_lib {
 	}
 	
 	public static function formatCurrency($value, $local, $currency) {
+		
 		$value = $value / 100;
-		$numberFormatter = new NumberFormatter($local, NumberFormatter::CURRENCY);
-		return $numberFormatter->formatCurrency($value, $currency);
+		
+		if ( function_exists('numfmt_create') ) {
+		
+			$numberFormatter = new NumberFormatter($local, NumberFormatter::CURRENCY);
+			return $numberFormatter->formatCurrency($value, $currency);
+		
+		} else {
+			
+			setlocale( LC_MONETARY, $local );
+			return money_format( '%.' . 2 . 'n',$value );
+		}
 	}
 	
 	public static function crc32AsHex($string) {
