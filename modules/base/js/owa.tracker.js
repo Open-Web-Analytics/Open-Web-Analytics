@@ -1203,7 +1203,7 @@ OWA.tracker.prototype = {
 	    var targ = this._getTarget(e);
 	    
 	    var dom_name = '(not set)';
-	    if ( targ.hasAttribute('name') && targ.name.length > 0 ) {
+	    if ( targ.hasAttribute('name') && targ.name != null && targ.name.length > 0 ) {
 	    	dom_name = targ.name;
 	    }
 	    click.set("dom_element_name", dom_name);
