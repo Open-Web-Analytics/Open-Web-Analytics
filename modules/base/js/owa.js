@@ -1909,7 +1909,8 @@ OWA.util =  {
 		
 		for (var i = 0, l = dntProperties.length; i < l; i++) {
 		
-			if ( navigator[ dntProperties[i] ] === 'yes' ) {
+			if ( navigator[ dntProperties[i] ] && navigator[ dntProperties[i] ] == "1" ) {
+				
 				return false;
 			}
 		}

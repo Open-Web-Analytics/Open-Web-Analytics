@@ -653,11 +653,10 @@ class owa_coreAPI {
 		
 		//print_r($links[$view][$nav_name]);
 		if (!empty($links[$view][$nav_name])):
-			// anonymous sorting function, takes sort by variable.
-			$code = "return strnatcmp(\$a['$sortby'], \$b['$sortby']);";
-	   		
 	   		// sort the array
-	   		$ret = usort($links[$view][$nav_name], create_function('$a,$b', $code));
+	   		usort($links[$view][$nav_name], function($a, $b) use ($sortby) {
+                return strnatcmp($a[$sortby], $b[$sortby]);
+            });
 			
 			return $links[$view][$nav_name];
 		else: 
@@ -1087,7 +1086,12 @@ class owa_coreAPI {
 		
 		// debug
 		owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
-		
+
+		// makes cookie to session cookie only
+        if (!owa_coreAPI::getSetting('base', 'cookie_persistence')) {
+            $expires = 0;
+        }
+
 		// set compact privacy header
 		header(sprintf('P3P: CP="%s"', owa_coreAPI::getSetting('base', 'p3p_policy')));
 		//owa_coreAPI::debug('time: '.$expires);

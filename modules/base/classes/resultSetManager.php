@@ -185,7 +185,7 @@ class owa_resultSetManager extends owa_base {
 				if (strpos($constraint, $operator)) {
 					
 					list ($name, $value) = explode($operator, $constraint);
-					$constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+					$constraint_array[] = array('name' => $name, 'value' => html_entity_decode($value), 'operator' => $operator);
 					break;
 				}
 			}
@@ -887,7 +887,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 				'name' 		  => $k, 
 				'value' 	  => $v,
 				'formatted_value' => $this->formatValue($data_type, $v),
-				'label' => $this->getLabel($k), 'data_type' => $data_type);	
+				'label' => $this->getLabel($k), 'data_type' => $data_type);
 		}
 		
 		return $new_row;
@@ -933,7 +933,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		return owa_lib::formatCurrency( 
 				$value, 
 				owa_coreAPI::getSetting( 'base', 'currencyLocal' ), 
-				owa_coreAPI::getSetting( 'base', 'currencyDecimalDigits' )
+				owa_coreAPI::getSetting( 'base', 'currencyISO3' )
 		); 
 	}
 	

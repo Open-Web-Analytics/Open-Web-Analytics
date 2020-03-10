@@ -8,7 +8,7 @@
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
+// distributed under the License is distributed on an 'AS IS' BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -19,83 +19,82 @@
 
 /**
  * Messages and Strings file
- * 
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
-$_owa_messages = array(
+$_owa_messages = [
+    2000 => ['headline' => 'Success', 'message' => 'An e-mail containing instructions on how to complete the password reset process has been sent to %s'],
+    2001 => ['headline' => 'Error', 'message' => 'The e-mail %s was not found in our database. Please check the address and try again.'],
+    2002 => ['headline' => 'Login Failed', 'message' => 'Your user name or password did not match.'],
+    2003 => ['headline' => 'Error', 'message' => 'Your Account lacks the necessary privileges to access the requested resource.'],
+    2004 => ['headline' => 'Error', 'message' => 'You must login to access the requested resource.'],
+    2010 => ['headline' => 'Success', 'message' => 'Logout Complete.'],
+    2011 => ['headline' => 'Error', 'message' => 'Can\'t find your temporary passkey in the db.'],
 
-2000 => array("An e-mail containing instructions on how to complete the password reset process has been sent to %s",1),
-2001 => array("The e-mail <B>%s</B> was not found in our database. Please check the address and try again.",1),
-2002 => array("<B>Login Failed</B>. Your user name or password did not match.",0),
-2003 => array("Your Account lacks the necessary privileges to access the requested resource.",0),
-2004 => array("You must login to access the requested resource.",0),
-2010 => array("Success. Logout Complete.",0),
-2011 => array("Error. Can't find your temporary passkey in the db.",0),
-
-// Options/Configuration related
-2500 => array("Options Saved.",0),
-2501 => array("The module was activated successfully.",0),
-2502 => array("The module was deactivated successfully.",0),
-2503 => array("Options reset to Default Values.",0),
-2504 => array("Entity %s Schema Created.",1),
-2504 => array("Goal Saved.",0),
-
-
-//User managment
-3000 => array("Success. User Added.", 0),
-3001 => array("Error. That user name is already taken.",0),
-3002 => array("The form data that you entered contained one or more errors. Please check the data and submit the from again."),
-3003 => array("Success. User profile saved.",0),
-3004 => array("Success. User acount deleted."),
-3005 => array("Enter Your New Password", 0),
-3006 => array("Success. Please login with your new password.",0),
-3007 => array("Error. Your passwords must match.",0),
-3008 => array("Error. Your password must be %s characters long.", 1),
-3009 => array("Error. A user with that email address already exists.", 0),
-3010 => array("A user with that email address does not exist.", 0),
-3011 => array("Could not update user profile."),
-3012 => array("Could not connect the database. Check your settings and try again.",0),
-
-//sites management
-3200 => array("Error. Please fill in all required fields.",0),
-3201 => array("Success. Site Profile Updated.",0),
-3202 => array("Success. Site Added.",0),
-3203 => array("Error. Site Could not be added",0),
-3204 => array("Success. Site Deleted.",0),
-3206 => array("Error. A site with that domain already exists.",0),
-3207 => array("Error. You must enter a domain when adding a web site.",0),
-3208 => array("Error. That site does not exist.",0),
-3208 => array("Please remove the http:// from your beginning of your domain.",0),
+    // Options/Configuration related
+    2500 => ['headline' => 'Success', 'message' => 'Options Saved.'],
+    2501 => ['headline' => 'Success', 'message' => 'The module was activated successfully.'],
+    2502 => ['headline' => 'Success', 'message' => 'The module was deactivated successfully.'],
+    2503 => ['headline' => 'Success', 'message' => 'Options reset to Default Values.'],
+    2504 => ['headline' => 'Success', 'message' => 'Entity %s Schema Created.'],
+    2504 => ['headline' => 'Success', 'message' => 'Goal Saved.'],
 
 
-//install
-3300 => array("Could not connect to the database. Please check the database connection settings in your configuration file and try again.",0),
-3301 => array("This version of OWA requires PHP 5.2.x or higher.",0),
-3302 => array("Database Schema Installation failed. Please check the error log file for more details.",0),
-3303 => array("Success. Default Site Added.",0),
-3304 => array("Success. Admin User Added.",0),
-3305 => array("Success. Base Database Schema Installed.",0),
-3306 => array("Error. User id already exists for some reason.",0),
-3307 => array("Updates failed. Check OWA's error log file for more details and try again.",0),
-3308 => array("Success. Updates were applied.",0),
-3309 => array("Site Domain is required.",0),
-3310 => array("E-mail Address is required.",0),
-3310 => array("Password is required.",0),
-3311 => array("These updates must be applied using the command line interface (CLI). Run <code>'/path/to/php cli.php cmd=update'</code> from your server's command shell to apply these updates. For more information on updating see the install/update page on the wiki.",0),
-// Graph related
-3500 => array("There is no data for\nthis time period.",0),
+    //User managment
+    3000 => ['headline' => 'Success', 'message' => 'User Added.',],
+    3001 => ['headline' => 'Error', 'message' => 'That user name is already taken.'],
+    3002 => ['headline' => 'Error', 'message' => 'The form data that you entered contained one or more errors. Please check the data and submit the from again.'],
+    3003 => ['headline' => 'Success', 'message' => 'User profile saved.'],
+    3004 => ['headline' => 'Success', 'message' => 'User acount deleted.'],
+    3005 => ['message' => 'Enter Your New Password',],
+    3006 => ['headline' => 'Success', 'message' => 'Please login with your new password.'],
+    3007 => ['headline' => 'Error', 'message' => 'Your passwords must match.'],
+    3008 => ['headline' => 'Error', 'message' => 'Your password must be %s characters long.',],
+    3009 => ['headline' => 'Error', 'message' => 'A user with that email address already exists.',],
+    3010 => ['headline' => 'Error', 'message' => 'A user with that email address does not exist.',],
+    3011 => ['headline' => 'Error', 'message' => 'Could not update user profile.'],
+    3012 => ['headline' => 'Error', 'message' => 'Could not connect the database. Check your settings and try again.'],
 
-// Report Related
-3600 => array("Unknown",0)
+    //sites management
+    3200 => ['headline' => 'Error', 'message' => 'Please fill in all required fields.'],
+    3201 => ['headline' => 'Success', 'message' => 'Site Profile Updated.'],
+    3202 => ['headline' => 'Success', 'message' => 'Site Added.'],
+    3203 => ['headline' => 'Error', 'message' => 'Site Could not be added'],
+    3204 => ['headline' => 'Success', 'message' => 'Site Deleted.'],
+    3206 => ['headline' => 'Error', 'message' => 'A site with that domain already exists.'],
+    3207 => ['headline' => 'Error', 'message' => 'You must enter a domain when adding a web site.'],
+    3208 => ['headline' => 'Error', 'message' => 'That site does not exist.'],
+    3208 => ['headline' => 'Error', 'message' => 'Please remove the http:// from your beginning of your domain.'],
 
-);
+
+    //install
+    3300 => ['headline' => 'Error', 'message' => 'Could not connect to the database. Please check the database connection settings in your configuration file and try again.'],
+    3301 => ['headline' => 'Error', 'message' => 'This version of OWA requires PHP 5.2.x or higher.'],
+    3302 => ['headline' => 'Error', 'message' => 'Database Schema Installation failed. Please check the error log file for more details.'],
+    3303 => ['headline' => 'Success', 'message' => 'Default Site Added.'],
+    3304 => ['headline' => 'Success', 'message' => 'Admin User Added.'],
+    3305 => ['headline' => 'Success', 'message' => 'Base Database Schema Installed.'],
+    3306 => ['headline' => 'Error', 'message' => 'User id already exists for some reason.'],
+    3307 => ['headline' => 'Error', 'message' => 'Updates failed. Check OWA\'s error log file for more details and try again.'],
+    3308 => ['headline' => 'Success', 'message' => 'Updates were applied.'],
+    3309 => ['headline' => 'Error', 'message' => 'Site Domain is required.'],
+    3310 => ['headline' => 'Error', 'message' => 'E-mail Address is required.'],
+    3310 => ['headline' => 'Error', 'message' => 'Password is required.'],
+    3311 => ['headline' => 'Error', 'message' => 'These updates must be applied using the command line interface (CLI). Run <code>\'/path/to/php cli.php cmd=update\'</code> from your server\'s command shell to apply these updates. For more information on updating see the install/update page on the wiki.'],
+
+    // Graph related
+    3500 => ['headline' => 'Error', 'message' => 'There is no data for\nthis time period.'],
+
+    // Report Related
+    3600 => ['headline' => 'Error', 'message' => 'Unknown'],
+];
 
 
 ?>

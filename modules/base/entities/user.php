@@ -30,7 +30,7 @@
 
 class owa_user extends owa_entity {
 	
-	const ADMIN_USER_ID = 'admin';
+	const ADMIN_USER_REAL_NAME = 'default admin';
 	const ADMIN_USER_ROLE = 'admin';
 	
 	function __construct() {
@@ -98,7 +98,7 @@ class owa_user extends owa_entity {
 	 * @return boolean
 	 */
 	public function isOWAAdmin() {
-		if ( $this->get('user_id') == self::ADMIN_USER_ID ) {
+		if ( $this->get('real_name') == self::ADMIN_USER_REAL_NAME ) {
 			return true; 
 		} else {
 			return false;

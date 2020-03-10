@@ -67,7 +67,7 @@ class owa_installController extends owa_controller {
 
 	}
 	
-	function createAdminUser($email_address, $real_name = '', $password = '') {
+	function createAdminUser($user_id, $email_address, $password = '') {
 		
 		//create user entity
 		$u = owa_coreAPI::entityFactory('base.user');
@@ -78,7 +78,7 @@ class owa_installController extends owa_controller {
 		if (empty($id_check)) {
 	
 			//Check to see if user name already exists
-			$u->getByColumn('user_id', owa_user::ADMIN_USER_ID);
+			$u->getByColumn('user_id', $user_id);
 	
 			$id = $u->get('id');
 	
@@ -89,12 +89,12 @@ class owa_installController extends owa_controller {
 				if ( ! $password ) {
 					$password = $u->generateRandomPassword();
 				}
-				$ret = $u->createNewUser('admin', owa_user::ADMIN_USER_ID, $password, $email_address, $real_name);
+				$ret = $u->createNewUser($user_id, owa_user::ADMIN_USER_ROLE, $password, $email_address, owa_user::ADMIN_USER_REAL_NAME);
 				owa_coreAPI::debug("Admin user created successfully.");
 				return $password;
 				
 			} else {				
-				owa_coreAPI::debug($this->getMsg(3306));
+				owa_coreAPI::debug($this->getMsgAsString(3306));
 			}
 		} else {
 			owa_coreAPI::debug("Admin user already exists.");

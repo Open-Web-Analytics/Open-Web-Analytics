@@ -15,8 +15,11 @@
 //
 // $Id$
 //
+require_once(OWA_PHPMAILER_DIR.'PHPMailer.php');
+require_once(OWA_PHPMAILER_DIR.'SMTP.php');
+require_once(OWA_PHPMAILER_DIR.'Exception.php');
 
-require_once(OWA_PHPMAILER_DIR.'class.phpmailer.php');
+use PHPMailer\PHPMailer\PHPMailer;
 
 /**
  * phpmailer wrapper class
@@ -33,28 +36,23 @@ require_once(OWA_PHPMAILER_DIR.'class.phpmailer.php');
 class owa_mailer extends owa_base {
 		
 	var $mailer;
-	
-	/**
-	 * Constructor
-	 *
-	 * @return owa_mailer
-	 */
+
+    /**
+     * Constructor
+     *
+     * @return owa_mailer
+     * @throws \PHPMailer\PHPMailer\Exception
+     */
 	function __construct() {
 	
 		parent::__construct();
 		
 		$this->mailer = new PHPMailer();
-		
+
 		if ( owa_coreAPI::getSetting( 'base', 'mailer-from' ) ) {
-		
-			$this->mailer->From = owa_coreAPI::getSetting( 'base', 'mailer-from' );
+			$this->mailer->setFrom(owa_coreAPI::getSetting( 'base', 'mailer-from' ), owa_coreAPI::getSetting( 'base', 'mailer-fromName' ));
 		}
-		
-		if ( owa_coreAPI::getSetting( 'base', 'mailer-fromName' ) ) {
-			
-			$this->mailer->FromName = owa_coreAPI::getSetting( 'base', 'mailer-fromName' );
-		}
-		
+
 		if ( owa_coreAPI::getSetting( 'base', 'mailer-use-smtp' ) ) {
 		
 			$this->mailer->IsSMTP(); // telling the class to use SMTP
@@ -84,8 +82,7 @@ class owa_mailer extends owa_base {
 	
 	function sendMail() {
 	
-		if( ! $this->mailer->Send() ) {
-			
+		if( ! $this->mailer->send() ) {
 			return $this->e->debug(sprintf("Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $this->mailer->ErrorInfo));
 			
 		} else {
@@ -100,17 +97,17 @@ class owa_mailer extends owa_base {
 	
 	function addAddress( $address, $name ) {
 		
-		$this->mailer->AddAddress( $address, $name );
+		$this->mailer->addAddress( $address, $name );
 	}
 	
 	function setFrom( $address, $name ) {
 		
-		$this->mailer->SetFrom( $address, $name );
+		$this->mailer->setFrom( $address, $name );
 	}
 	
 	function setHtmlBody ( $html ) {
 		
-		$this->mailer->MsgHTML( $html );
+		$this->mailer->msgHTML( $html );
 	}
 	
 	function setAltBody ( $text ) {
@@ -125,12 +122,12 @@ class owa_mailer extends owa_base {
 	
 	function addReplyTo( $address, $name ) {
 	
-		$this->mailer->AddReplyTo( $address, $name );
+		$this->mailer->addReplyTo( $address, $name );
 	}
 	
 	function addAttachment( $attachment ) {
 	
-		$this->mailer->AddAttachment( $attachment );
+		$this->mailer->addAttachment( $attachment );
 	}
 	
 }

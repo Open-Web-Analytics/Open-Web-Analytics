@@ -1,4 +1,4 @@
-/* OWA owa.tracker package file created Sun, 26 Aug 18 05:38:38 -0700 */ 
+/* OWA owa.tracker package file created Mon, 09 Mar 20 16:00:08 -0700 */ 
 
 /* Start of json2 */ 
 
@@ -123,7 +123,7 @@ if(delimiter===true){delimiter='1';}
 if(!limit){return string.toString().split(delimiter.toString());}else{var splitted=string.toString().split(delimiter.toString());var partA=splitted.splice(0,limit-1);var partB=splitted.join(delimiter.toString());partA.push(partB);return partA;}},isIE:function(){if(/MSIE (\d+\.\d+);/.test(navigator.userAgent)){return true;}},getInternetExplorerVersion:function(){var rv=-1;if(navigator.appName=='Microsoft Internet Explorer')
 {var ua=navigator.userAgent;var re=new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");if(re.exec(ua)!=null)
 rv=parseFloat(RegExp.$1);}
-return rv;},isBrowserTrackable:function(){var dntProperties=['doNotTrack','msDoNotTrack'];for(var i=0,l=dntProperties.length;i<l;i++){if(navigator[dntProperties[i]]==='yes'){return false;}}
+return rv;},isBrowserTrackable:function(){var dntProperties=['doNotTrack','msDoNotTrack'];for(var i=0,l=dntProperties.length;i<l;i++){if(navigator[dntProperties[i]]&&navigator[dntProperties[i]]=="1"){return false;}}
 return true;}};
 
 /* End of owa */ 
@@ -163,7 +163,7 @@ return data;},prepareRequestDataForGet:function(properties){var properties=this.
 return get;},cdPost:function(data){var container_id="owa-tracker-post-container";var post_url=this.getLoggerEndpoint();var iframe_container=document.getElementById(container_id);if(!iframe_container){var div=document.createElement('div');div.setAttribute('id',container_id);document.body.appendChild(div);iframe_container=document.getElementById(container_id);}
 this.generateHiddenIframe(iframe_container,data);},generateHiddenIframe:function(parentElement,data){var iframe_name='owa-tracker-post-iframe';if(OWA.util.isIE()&&OWA.util.getInternetExplorerVersion()<9.0){var iframe=document.createElement('<iframe name="'+iframe_name+'" scr="about:blank" width="1" height="1"></iframe>');}else{var iframe=document.createElement("iframe");iframe.setAttribute('name',iframe_name);iframe.setAttribute('src','about:blank');iframe.setAttribute('width',1);iframe.setAttribute('height',1);}
 iframe.setAttribute('class',iframe_name);iframe.setAttribute('style','border: none;');var that=this;if(parentElement==null){parentElement=document.body;}
-parentElement.appendChild(iframe);var timer=setInterval(function(){var doc=that.getIframeDocument(iframe);if(doc){that.postFromIframe(iframe,data);clearInterval(timer);}},1);var cleanuptimer=setInterval(function(){parentElement.removeChild(iframe);clearInterval(cleanuptimer);},1000);},postFromIframe:function(ifr,data){var post_url=this.getLoggerEndpoint();var doc=this.getIframeDocument(ifr);var form_name='post_form'+Math.random();if(OWA.util.isIE()&&OWA.util.getInternetExplorerVersion()<9.0){var frm=doc.createElement('<form name="'+form_name+'"></form>');}else{var frm=doc.createElement('form');frm.setAttribute('name',form_name);}
+parentElement.appendChild(iframe);var timer=setInterval(function(){var doc=that.getIframeDocument(iframe);if(doc){clearInterval(timer);that.postFromIframe(iframe,data);}},1);var cleanuptimer=setInterval(function(){parentElement.removeChild(iframe);clearInterval(cleanuptimer);},1000);},postFromIframe:function(ifr,data){var post_url=this.getLoggerEndpoint();var doc=this.getIframeDocument(ifr);var form_name='post_form'+Math.random();if(OWA.util.isIE()&&OWA.util.getInternetExplorerVersion()<9.0){var frm=doc.createElement('<form name="'+form_name+'"></form>');}else{var frm=doc.createElement('form');frm.setAttribute('name',form_name);}
 frm.setAttribute('id',form_name);frm.setAttribute("action",post_url);frm.setAttribute("method","POST");for(var param in data){if(data.hasOwnProperty(param)){if(OWA.util.isIE()&&OWA.util.getInternetExplorerVersion()<9.0){var input=doc.createElement("<input type='hidden' name='"+param+"' />");}else{var input=document.createElement("input");input.setAttribute("name",param);input.setAttribute("type","hidden");}
 input.setAttribute("value",data[param]);frm.appendChild(input);}}
 doc.body.appendChild(frm);doc.forms[form_name].submit();doc.body.removeChild(frm);},createPostForm:function(){var post_url=this.getLoggerEndpoint();var form_name='post_form'+Math.random();if(OWA.util.isIE()&&OWA.util.getInternetExplorerVersion()<9.0){var frm=doc.createElement('<form name="'+form_name+'"></form>');}else{var frm=doc.createElement('form');frm.setAttribute('name',form_name);}

@@ -160,6 +160,9 @@ class owa_trackingEventHelpers {
 			
 				$var = owa_sanitize::cleanJson( $var );
 				break;
+			case "boolean":
+				$var = boolval( $var );
+				break;	
 			default:
 			
 				$var = owa_sanitize::cleanInput( $var, array('remove_html' => true) );
@@ -676,71 +679,79 @@ class owa_trackingEventHelpers {
 	}
 	
 	static function resolveEntryPage( $is_entry_page, $event ) {
-		
-		if ( $event->get( 'is_new_session' ) ) {
-			
-			return true;	
-		}
+        return $event->get('is_new_session') ? true : false;
 	}
 	
 	static function resolveCountry ( $country, $event ) {
-		
-		if ( ! $country ) {
-			
-			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-			
-			return $location->getCountry();
-		}
+
+	    // if country is set manually, use it
+		if ($country) {
+            return $country;
+        }
+
+        $location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+
+        return $location->getCountry();
 	}
 	
 	static function resolveCity ( $city, $event ) {
-		
-		if ( ! $city ) {
+
+        // if city is set manually, use it
+        if ($city) {
+            return $city;
+        }
 			
-			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-			
-			return $location->getCity();
-		}
+        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getCity();
 	}
 	
 	static function resolveLatitude ( $latitude, $event ) {
-		
-		if ( ! $latitude ) {
+
+        // if latitude is set manually, use it
+        if ($latitude) {
+            return $latitude;
+        }
 			
-			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-			
-			return $location->getLatitude();
-		}
+        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getLatitude();
 	}
 	
 	static function resolveLongitude ( $longitude, $event ) {
-		
-		if ( ! $longitude ) {
+
+        // if longitude is set manually, use it
+        if ($longitude) {
+            return $longitude;
+        }
 			
-			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-			
-			return $location->getLongitude();
-		}
+        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getLongitude();
 	}
 	
 	static function resolveCountryCode ( $country_code, $event ) {
-		
-		if ( ! $country_code ) {
+
+        // if country_code is set manually, use it
+        if ($country_code) {
+            return $country_code;
+        }
 			
-			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-			
-			return $location->getCountryCode();
-		}
+        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getCountryCode();
 	}
 	
 	static function resolveState ( $state, $event ) {
-		
-		if ( ! $state ) {
+
+        // if state is set manually, use it
+        if ($state) {
+            return $state;
+        }
 			
-			$location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-			
-			return $location->getState();
-		}
+        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getState();
 	}
 	
 	static function lowercaseString ( $string, $event ) {
@@ -749,21 +760,25 @@ class owa_trackingEventHelpers {
 	}
 	
 	static function setPriorPage ( $prior_page, $event ) {
+
+        // if prior_page is set manually, use it
+        if ($prior_page) {
+            return $prior_page;
+        }
 		
-		if ( ! $prior_page ) {
-		
-			if ( $event->get( 'HTTP_REFERER' ) ) {
-				// @todo is this parse done somewhere else already? source?	
-				$referer_parse = owa_lib::parse_url( $event->get('HTTP_REFERER') );
-				
-				$http_host = $event->get( 'HTTP_HOST' );
-	
-				if ( isset($referer_parse['host'] ) && $referer_parse['host'] === $http_host ) {
-					
-					return $event->get('HTTP_REFERER');	
-				}
-			}
-		}
+        if ( $event->get( 'HTTP_REFERER' ) ) {
+            // @todo is this parse done somewhere else already? source?
+            $referer_parse = owa_lib::parse_url( $event->get('HTTP_REFERER') );
+
+            $http_host = $event->get( 'HTTP_HOST' );
+
+            if ( isset($referer_parse['host'] ) && $referer_parse['host'] === $http_host ) {
+
+                return $event->get('HTTP_REFERER');
+            }
+        }
+
+        return null;
 	}
 	
 	static function setSearchTerms ( $search_terms, $event ) {
