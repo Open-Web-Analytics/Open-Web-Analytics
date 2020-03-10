@@ -185,7 +185,7 @@ class owa_resultSetManager extends owa_base {
 				if (strpos($constraint, $operator)) {
 					
 					list ($name, $value) = explode($operator, $constraint);
-					$constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+					$constraint_array[] = array('name' => $name, 'value' => html_entity_decode($value), 'operator' => $operator);
 					break;
 				}
 			}
