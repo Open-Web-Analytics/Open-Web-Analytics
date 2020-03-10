@@ -160,6 +160,9 @@ class owa_trackingEventHelpers {
 			
 				$var = owa_sanitize::cleanJson( $var );
 				break;
+			case "boolean":
+				$var = boolval( $var );
+				break;	
 			default:
 			
 				$var = owa_sanitize::cleanInput( $var, array('remove_html' => true) );
