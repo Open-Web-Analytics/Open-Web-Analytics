@@ -43,23 +43,23 @@ class owa_usersResetPasswordController extends owa_controller {
 	
 		$event = $this->getParam('event');
 		
-		$auth = &owa_auth::get_instance();
+		$auth = owa_auth::get_instance();
 		$u = owa_coreAPI::entityFactory('base.user');
 		$u->getByColumn('email_address', $event->get('email_address'));
 		$u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
 		$status = $u->update();
 		$this->e->debug('status: '.$status);
-		if ($status === true):
-	
-			$this->setView('base.usersResetPassword');
-			$this->set('key', $u->get('temp_passkey'));
-			$this->set('email_address', $u->get('email_address'));
-			
-		else:
-			$this->e->debug("could not update password in db.");	
-		endif;
 		
-		return;
+		if ($status === true) {
+	
+			$this->setView( 'base.usersResetPassword' );
+			$this->set( 'key', $u->get('temp_passkey' ) );
+			$this->set( 'email_address', $u->get('email_address' ) );
+			
+		} else {
+		
+			$this->e->debug( "could not update password in db." );	
+		}
 	}
 	
 }
