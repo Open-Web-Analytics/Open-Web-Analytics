@@ -3007,6 +3007,8 @@ class owa_baseModule extends owa_module {
 			$db->where('yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
 		}
 		
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		
 		// pass limit to rs object if one exists
 		$rs->setLimit($resultsPerPage);
 			
