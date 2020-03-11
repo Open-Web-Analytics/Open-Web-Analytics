@@ -563,7 +563,7 @@ OWA.report.timePeriodControl.prototype = {
 			selectedPeriod: this.selectedPeriod
 		};
 		// fetch template from server
-		jQuery.get(OWA.getOption('modules_url') + 'base/templates/filter_period.tpl', function(tmpl) {
+		jQuery.get(OWA.getOption('modules_url') + 'base/templates/filter_period.php', function(tmpl) {
 	
 			// inject into dom
     		jQuery(that.dom_id).jqoteapp(tmpl, data, '*');
