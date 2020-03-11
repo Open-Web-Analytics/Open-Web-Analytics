@@ -178,14 +178,21 @@ class owa_client extends owa_caller {
 	private function setNumberPriorSessions( &$event ) {
 		// if check for nps value in vistor cookie.
 		$nps = owa_coreAPI::getStateParam('v', 'nps');
-		// set value to 0 if not found.
-		if (!$nps) {
-			$nps = 0;
-		}
 		
 		// if new session, increment visit count and persist to state store
 		if ( $this->getGlobalEventProperty('is_new_session' ) ) {
-			owa_coreAPI::setState('v', 'nps', $nps + 1, 'cookie', true);
+			
+			// set value to 0 if not found.
+			if ( ! $nps ) {
+				
+				$nps = "0";
+			
+			} else {
+				
+				$nps = $nps + 1;
+			}
+			
+			owa_coreAPI::setState('v', 'nps', $nps, 'cookie', true);
 		}
 		
 		// set property on the event object
