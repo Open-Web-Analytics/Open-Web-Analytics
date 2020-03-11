@@ -1034,6 +1034,21 @@ class owa_template extends Template {
 		
 		echo sprintf('<img src="https://s.wordpress.com/mshots/v1/%s?w=%s" width="%s">', urlencode($domain .'/'), $width, $width );
 	}
+	
+	/**
+	 * Checks is a display value is set.
+	 */
+	public function isSet( $string ) {
+		
+		if ($string === '(not set)' || empty( $string ) ) {
+		
+			return false;
+				
+		} else {
+			
+			return true;
+		}
+	}
 }
 
 
