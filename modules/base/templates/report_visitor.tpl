@@ -7,7 +7,6 @@
 	<div>			
 		<?php $this->renderKpiInfobox( $first_visit_date, 'First Visit' ); ?>
 			
-		<?php $this->renderKpiInfobox( $num_prior_visits, 'Total Visits' ); ?>
 	</div>
 </div>
 

@@ -19,14 +19,13 @@
 							<span class="inline_h4">
 							
 							<?php
-							if ( ! empty( $row[ 'session_user_name' ] ) ) {
-								echo $row[ 'session_user_name' ];
+							if ( $this->isSet( $row[ 'session_user_name' ] ) ) {
+								$this->out( $row[ 'session_user_name' ] );
 							} else {
-								echo $row['visitor_id'];
+								$this->out( $row['visitor_id'] );
 							}?></span> 
-							
 							<BR>
-							<?php if ($row['location_city']):?> 
+							<?php if ( $this->isSet( $row['location_city'] ) || $this->isSet( $row['location_country'] ) ):?> 
 							<span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
 							<?php endif;?>
 							<BR>
@@ -59,6 +58,15 @@
 					<?php $this->renderKpiInfobox(
 						date("G:i:s",mktime(0,0,($row['session_last_req'] - $row['session_timestamp']))),
 						'Visit Length',
+						'',
+						'visitSummaryKpi'	
+					);?>
+					
+				</TD>
+				<TD class="owa_visitInfoboxItem">
+					<?php $this->renderKpiInfobox(
+						$row['session_num_prior_visits'],
+						'Prior Visits',
 						'',
 						'visitSummaryKpi'	
 					);?>
