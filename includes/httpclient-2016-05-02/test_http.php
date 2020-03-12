@@ -2,16 +2,18 @@
 /*
  * test_http.php
  *
- * @(#) $Header: /home/mlemos/cvsroot/http/test_http.php,v 1.18 2008/02/24 05:06:30 mlemos Exp $
+ * @(#) $Header: /opt2/ena/metal/http/test_http.php,v 1.19 2011/01/27 02:18:18 mlemos Exp $
  *
  */
 
-?><HTML>
+?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
 <HEAD>
 <TITLE>Test for Manuel Lemos' PHP HTTP class</TITLE>
 </HEAD>
 <BODY>
-<H1><CENTER>Test for Manuel Lemos' PHP HTTP class</CENTER></H1>
+<H1 align="center">Test for Manuel Lemos' PHP HTTP class</H1>
 <HR>
 <UL>
 <?php
@@ -151,24 +153,27 @@
 	$http->SetCookie($cookie_name, $cookie_value, $cookie_expiry, $cookie_uri_path, $cookie_domain, $cookie_secure);
 */
 
-	echo "<H2><LI>Opening connection to:</H2>\n<PRE>",HtmlEntities($arguments["HostName"]),"</PRE>\n";
+
+	echo "<LI><H2>Opening connection to:</H2>\n<P><TT>",HtmlSpecialChars($arguments["HostName"]),"</TT></P>\n";
 	flush();
 	$error=$http->Open($arguments);
+	echo "</LI>\n";
 
 	if($error=="")
 	{
-		echo "<H2><LI>Sending request for page:</H2>\n<PRE>";
-		echo HtmlEntities($arguments["RequestURI"]),"\n";
+		echo "<LI><H2>Sending request for page:</H2>\n<P><TT>";
+		echo HtmlSpecialChars($arguments["RequestURI"]),"\n";
 		if(strlen($user))
 			echo "\nLogin:    ",$user,"\nPassword: ",str_repeat("*",strlen($password));
-		echo "</PRE>\n";
+		echo "</TT></P>\n";
 		flush();
 		$error=$http->SendRequest($arguments);
+		echo "</LI>\n";
 
 		if($error=="")
 		{
-			echo "<H2><LI>Request:</LI</H2>\n<PRE>\n".HtmlEntities($http->request)."</PRE>\n";
-			echo "<H2><LI>Request headers:</LI</H2>\n<PRE>\n";
+			echo "<LI><H2>Request:</H2>\n<PRE>\n".HtmlSpecialChars($http->request)."</PRE></LI>\n";
+			echo "<LI><H2>Request headers:</H2>\n<PRE>\n";
 			for(Reset($http->request_headers),$header=0;$header<count($http->request_headers);Next($http->request_headers),$header++)
 			{
 				$header_name=Key($http->request_headers);
@@ -185,9 +190,10 @@
 
 			$headers=array();
 			$error=$http->ReadReplyHeaders($headers);
+			echo "</LI>\n";
 			if($error=="")
 			{
-				echo "<H2><LI>Response status code:</LI</H2>\n<P>".$http->response_status;
+				echo "<LI><H2>Response status code:</H2>\n<P>".$http->response_status;
 				switch($http->response_status)
 				{
 					case "301":
@@ -197,8 +203,8 @@
 						echo " (redirect to <TT>".$headers["location"]."</TT>)<BR>\nSet the <TT>follow_redirect</TT> variable to handle redirect responses automatically.";
 						break;
 				}
-				echo "</P>\n";
-				echo "<H2><LI>Response headers:</LI</H2>\n<PRE>\n";
+				echo "</P></LI>\n";
+				echo "<LI><H2>Response headers:</H2>\n<PRE>\n";
 				for(Reset($headers),$header=0;$header<count($headers);Next($headers),$header++)
 				{
 					$header_name=Key($headers);
@@ -210,10 +216,22 @@
 					else
 						echo $header_name.": ".$headers[$header_name],"\r\n";
 				}
-				echo "</PRE>\n";
+				echo "</PRE></LI>\n";
 				flush();
 
-				echo "<H2><LI>Response body:</LI</H2>\n<PRE>\n";
+				echo "<LI><H2>Response body:</H2>\n<PRE>\n";
+
+				/*
+					You can read the whole reply body at once or
+					block by block to not exceed PHP memory limits.
+				*/
+
+				/*
+				$error = $http->ReadWholeReplyBody($body);
+				if(strlen($error) == 0)
+					echo HtmlSpecialChars($body);
+				*/
+
 				for(;;)
 				{
 					$error=$http->ReadReplyBody($body,1000);
@@ -222,14 +240,15 @@
 						break;
 					echo HtmlSpecialChars($body);
 				}
-				echo "</PRE>\n";
+
+				echo "</PRE></LI>\n";
 				flush();
 			}
 		}
 		$http->Close();
 	}
 	if(strlen($error))
-		echo "<CENTER><H2>Error: ",$error,"</H2><CENTER>\n";
+		echo "<H2 align=\"center\">Error: ",$error,"</H2>\n";
 ?>
 </UL>
 <HR>
