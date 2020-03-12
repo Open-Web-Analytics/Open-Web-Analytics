@@ -1,9 +1,10 @@
 <?php if ($news):?>
 <DIV style="text-align:left;">
-<?php foreach ($news['items'] as $item => $value): ?>
-<span class="info_text"><?php echo $value['pubDate'];?></span><BR>
-<a href="<?php echo $value['link'];?>"><span class="h_label"><?php echo $value['title'];?></span></a> 
-<P><?php echo $value['description'];?></P>
+<?php foreach ($news as $newsItem): ?>
+<span class="info_text"><?php echo date_create($newsItem->published_at)->format("M j, Y"); ?></span><BR>
+<a href="<?php echo $newsItem->html_url; ?>"><span class="h_label">Release <?php echo $newsItem->name; ?></span></a>
+<P><?php echo nl2br($newsItem->body); ?></P>
 <?php endforeach;?>
 </DIV>
+<a href="https://github.com/padams/Open-Web-Analytics/releases">More...</a>
 <?php endif;?>
