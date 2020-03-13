@@ -1796,14 +1796,17 @@ OWA.tracker.prototype = {
 		// if check for nps value in vistor cookie.
 		var nps = OWA.getState( 'v', 'nps' );
 		// set value to 1 if not found as it means its he first session.
-		if ( ! nps ) {
-			nps = '0';
-		}
 		
-		if ( this.isNewSessionFlag === true ) {
-			// increment visit count and persist to state store
-			nps = nps * 1;
-			nps++;
+		if ( this.isNewSessionFlag ) {
+			
+			if ( ! nps ) {
+				nps = "0";
+			} else {
+				// increment visit count and persist to state store
+				nps = nps * 1;
+				nps++;	
+			}
+
 			OWA.setState( 'v', 'nps', nps, true );
 		}
 

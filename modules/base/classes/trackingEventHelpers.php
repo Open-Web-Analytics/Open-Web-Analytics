@@ -93,6 +93,20 @@ class owa_trackingEventHelpers {
 			
 			$value = $event->get( $name );
 			
+			// if no value try alternate key
+			
+			if ( ! $value && $value !== 0 && $value !== "0" ) {
+				
+				if ( isset( $property['alternative_key'] ) &&  $property['alternative_key'] ) {
+						
+					$value = $event->get( $property['alternative_key'] );
+					// should we delete the original key on the event? if so:
+					//$event->delete( $name );
+					owa_coreAPI::debug('alt key value: '.$value);
+				}
+			}
+			
+			
 			// sanitize properties by datatype
 			$data_type = '';
 			
@@ -108,16 +122,6 @@ class owa_trackingEventHelpers {
 			if ( isset( $property['required'] ) ) {
 				
 				$required = $property['required'];
-			}
-			
-			if ( ! $value && $value !== 0 && $value !== "0" ) {
-				
-				if ( isset( $property['alternative_key'] ) &&  $property['alternative_key'] ) {
-						
-					$value = $event->get( $property['alternative_key'] );
-					// should we delete the original key on the event? if so:
-					//$event->delete( $name );
-				}
 			}
 			
 			// filter value

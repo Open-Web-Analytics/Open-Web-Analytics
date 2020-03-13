@@ -82,9 +82,9 @@ class owa_visitor extends owa_entity {
 	
 	function getVisitorName() {
 		
-		if ($this->get('user_name')) {
+		if ($this->get('user_name') && $this->get('user_name') != '(not set)' ) {
 			return $this->get('user_name');
-		} elseif ($this->get('user_email')) {
+		} elseif ($this->get('user_email') && $this->get('user_email') != '(not set)') {
 			return $this->get('user_email');		
 		} else {
 			return $this->get('id');
