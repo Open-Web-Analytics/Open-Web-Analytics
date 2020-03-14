@@ -1,4 +1,6 @@
-/* OWA owa.tracker package file created Tue, 10 Mar 20 21:25:26 -0700 */ 
+
+/* OWA owa.tracker package file created Fri, 13 Mar 20 10:34:00 +0100 */ 
+
 
 /* Start of json2 */ 
 
@@ -123,7 +125,7 @@ if(delimiter===true){delimiter='1';}
 if(!limit){return string.toString().split(delimiter.toString());}else{var splitted=string.toString().split(delimiter.toString());var partA=splitted.splice(0,limit-1);var partB=splitted.join(delimiter.toString());partA.push(partB);return partA;}},isIE:function(){if(/MSIE (\d+\.\d+);/.test(navigator.userAgent)){return true;}},getInternetExplorerVersion:function(){var rv=-1;if(navigator.appName=='Microsoft Internet Explorer')
 {var ua=navigator.userAgent;var re=new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");if(re.exec(ua)!=null)
 rv=parseFloat(RegExp.$1);}
-return rv;},isBrowserTrackable:function(){var dntProperties=['doNotTrack','msDoNotTrack'];for(var i=0,l=dntProperties.length;i<l;i++){if(navigator[dntProperties[i]]&&navigator[dntProperties[i]]=="1"){return false;}}
+return rv;},isBrowserTrackable:function(){var dntProperties=['doNotTrack','msDoNotTrack'];for(var i=0,l=dntProperties.length;i<l;i++){if(navigator[dntProperties[i]]==='yes'){return false;}}
 return true;}};
 
 /* End of owa */ 
@@ -184,7 +186,7 @@ if(targ.nodeType==3){targ=target.parentNode;}
 return targ;},getCoords:function(e){var coords=new Object();if(typeof(e.pageX)=='number'){coords.x=e.pageX+'';coords.y=e.pageY+'';}else{coords.x=e.clientX+'';coords.y=e.clientY+'';}
 return coords;},getDomElementProperties:function(targ){var properties=new Object();properties.dom_element_tag=targ.tagName;if(targ.tagName=="A"){if(targ.textContent!=undefined){properties.dom_element_text=targ.textContent;}else{properties.dom_element_text=targ.innerText;}
 properties.target_url=targ.href;}else if(targ.tagName=="INPUT"){properties.dom_element_text=targ.value;}else if(targ.tagName=="IMG"){properties.target_url=targ.parentNode.href;properties.dom_element_text=targ.alt;}else{if(targ.textContent!=undefined){properties.html_element_text='';}else{properties.html_element_text='';}}
-return properties;},clickEventHandler:function(e){e=e||window.event;var click=new OWA.event();click.setEventType("dom.click");var targ=this._getTarget(e);var dom_name='(not set)';if(targ.hasAttribute('name')&&targ.name.length>0){dom_name=targ.name;}
+return properties;},clickEventHandler:function(e){e=e||window.event;var click=new OWA.event();click.setEventType("dom.click");var targ=this._getTarget(e);var dom_name='(not set)';if(targ.hasAttribute('name')&&targ.name!=null&&targ.name.length>0){dom_name=targ.name;}
 click.set("dom_element_name",dom_name);var dom_value='(not set)';if(targ.hasAttribute('value')&&targ.value.length>0){dom_value=targ.value;}
 click.set("dom_element_value",dom_value);var dom_id='(not set)';if(targ.id&&targ.id.length>0){dom_id=targ.id;}
 click.set("dom_element_id",dom_id);var dom_class='(not set)';if(targ.className&&targ.className.length>0){dom_class=targ.className;}
