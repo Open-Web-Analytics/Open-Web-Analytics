@@ -615,7 +615,7 @@
 				'link_template'						=> '%s?%s', // main_url?key=value....
 				'owa_user_agent'					=> 'Open Web Analytics Bot '.OWA_VERSION,
 				'fetch_owa_news'					=> true,
-				'owa_rss_url'						=> 'http://www.openwebanalytics.com/?feed=rss2',
+				'owa_news_url'						=> 'https://api.github.com/repos/padams/Open-Web-Analytics/releases?page=1&per_page=5',
 				'use_summary_tables'				=> false,
 				'summary_framework'					=> '',
 				'click_drawing_mode'				=> 'center_on_page', // remove
