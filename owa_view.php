@@ -784,4 +784,19 @@ class owa_adminPageView extends owa_view {
 	}
 }
 
+class owa_cliView extends owa_view() {
+	
+	function __construct() {
+
+	}
+	
+	function render() {
+		
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('cli.php');
+	}
+	
+	
+}
+
 ?>
