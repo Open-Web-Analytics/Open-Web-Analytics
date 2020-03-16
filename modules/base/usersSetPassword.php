@@ -51,8 +51,8 @@ class owa_usersSetPasswordController extends owa_controller {
             'temp_passkey' => $event->get('key'),
             'password' => $event->get('password'),
         ]);
-		
-		if ($u !== true) {
+
+		if ($u !== false) {
 			$data['view'] = 'base.usersSetPassword';
 			$data['view_method'] = 'email';
 			$data['ip'] = $event->get('ip');
