@@ -69,7 +69,7 @@ class owa_userManager extends owa_base {
     {
         $u = owa_coreAPI::entityFactory('base.user');
 
-        if (!isset($user_params['temp_passkey']) || !isset($user_params['user_id'])) {
+        if (!isset($user_params['temp_passkey']) && !isset($user_params['user_id'])) {
             owa_coreAPI::error( "No user identification given!" );
             return false;
         }
@@ -82,7 +82,7 @@ class owa_userManager extends owa_base {
             $u->getByColumn('user_id', $user_params['user_id']);
         }
 
-        $u->set('temp_passkey', '');
+        $u->set('temp_passkey', $u->generateTempPasskey($user_params['user_id']));
         $u->set('password', owa_lib::encryptPassword($user_params['password']));
         $ret = $u->update();
 
