@@ -35,7 +35,12 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  */
 
 class owa_usersChangePasswordController extends owa_controller {
-	
+
+    /**
+     * @var owa_userManager
+     */
+    private $_userManager;
+
 	function __construct($params) {
 		
 		parent::__construct($params);
@@ -45,13 +50,13 @@ class owa_usersChangePasswordController extends owa_controller {
 		$v1->setValues(array($this->getParam('password'), $this->getParam('password2')));
 		$v1->setErrorMessage("Your passwords must match.");
 		$this->setValidation('password_match', $v1);
-		
-		$v2 = owa_coreAPI::validationFactory('stringLength');
-		$v2->setValues($this->getParam('password'));
-		$v2->setConfig('operator', '>=');
-		$v2->setConfig('length', 6);
-		$v2->setErrorMessage("Your password must be at least 6 characters in length.");
-		$this->setValidation('password_length', $v2);
+
+        $this->_userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+        $rules = $this->_userManager->getPasswordValidationRules($this->getParam('password'));
+
+        foreach ($rules as $key => $rule) {
+            $this->setValidation($key, $rule);
+        }
 
 		return;
 	}
@@ -64,7 +69,7 @@ class owa_usersChangePasswordController extends owa_controller {
 		// log to event queue
 		if ($status === true) {
 			$ed = owa_coreAPI::getEventDispatch();
-			$new_password = array('key' => $this->params['k'], 'password' => $auth->encryptPassword($this->params['password']), 'ip' => $_SERVER['REMOTE_ADDR']);
+			$new_password = array('key' => $this->params['k'], 'password' => $this->params['password'], 'ip' => $_SERVER['REMOTE_ADDR']);
 			$ed->log($new_password, 'base.set_password');
 			$auth->deleteCredentials();	
 			$this->setRedirectAction('base.loginForm');

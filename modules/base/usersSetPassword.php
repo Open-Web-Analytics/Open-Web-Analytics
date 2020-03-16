@@ -42,22 +42,23 @@ class owa_usersSetPasswordController extends owa_controller {
 	function action() {
 		
 		$event = $this->getParam('event');
+
+        /**
+         * @var $userManager owa_userManager
+         */
+        $userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+        $u = $userManager->updateUserPassword([
+            'temp_passkey' => $event->get('key'),
+            'password' => $event->get('password'),
+        ]);
 		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('temp_passkey', $event->get('key'));
-		$u->set('temp_passkey', '');
-		$u->set('password', $event->get('password'));
-		$status = $u->update();
-		
-		if ($status == true):
-	
+		if ($u !== true) {
 			$data['view'] = 'base.usersSetPassword';
 			$data['view_method'] = 'email';
 			$data['ip'] = $event->get('ip');
 			$data['subject'] = 'Password Change Complete';
 			$data['email_address'] = $u->get('email_address');
-			
-		endif;
+        }
 		
 		return $data;
 	}

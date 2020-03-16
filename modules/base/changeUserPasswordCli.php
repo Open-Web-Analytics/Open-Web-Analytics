@@ -33,6 +33,11 @@ require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
 class owa_changeUserPasswordCliController extends owa_cliController
 {
     /**
+     * @var owa_userManager
+     */
+    private $_userManager;
+
+    /**
      * owa_changeUserPasswordCliController constructor.
      * @param $params
      */
@@ -41,6 +46,13 @@ class owa_changeUserPasswordCliController extends owa_cliController
         parent::__construct($params);
 
         $this->setRequiredCapability('edit_settings');
+
+        $this->_userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+        $rules = $this->_userManager->getPasswordValidationRules($this->getParam('password'));
+
+        foreach ($rules as $key => $rule) {
+            $this->setValidation($key, $rule);
+        }
     }
 
     /**
@@ -61,13 +73,12 @@ class owa_changeUserPasswordCliController extends owa_cliController
             return;
         }
 
-        $u = owa_coreAPI::entityFactory('base.user');
-        $u->getByColumn('user_id', $user);
-        $u->set('password', $password);
+        $status = $this->_userManager->updateUserPassword([
+            'user_id' => $user,
+            'password' => $password,
+        ]);
 
-        $status = $u->update();
-
-        if ($status == true) {
+        if ($status !== false) {
             owa_coreAPI::debug( "Updated user password successfully." );
             return;
         }
