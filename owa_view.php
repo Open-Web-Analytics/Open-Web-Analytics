@@ -784,7 +784,7 @@ class owa_adminPageView extends owa_view {
 	}
 }
 
-class owa_cliView extends owa_view() {
+class owa_cliView extends owa_view {
 	
 	function __construct() {
 
