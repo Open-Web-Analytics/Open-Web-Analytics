@@ -83,7 +83,8 @@ class owa_userManager extends owa_base {
         }
 
         $u->set('temp_passkey', '');
-        $ret = $u->set('password', owa_lib::encryptPassword($user_params['password']));
+        $u->set('password', owa_lib::encryptPassword($user_params['password']));
+        $ret = $u->update();
 
         return $ret ? $u : false;
 
