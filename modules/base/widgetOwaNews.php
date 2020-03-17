@@ -17,7 +17,6 @@
 //
 
 require_once(OWA_BASE_CLASS_DIR.'widget.php');
-require_once(OWA_BASE_DIR.'/owa_news.php');
 
 /**
  * OWA News Widget Controller
