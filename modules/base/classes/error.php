@@ -264,6 +264,11 @@ class owa_error {
 	
 	function logMsg( $msg, $priority ) {
 		
+		if ( is_object( $msg ) || is_array( $msg ) ) {
+			
+			$msg = print_r( $msg, true );
+		}
+		
 		// check error priority before logging.
 		if ( owa_coreAPI::getSetting('base', 'error_log_level') <= $priority ) {
 		

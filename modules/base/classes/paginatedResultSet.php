@@ -222,7 +222,7 @@ class owa_paginatedResultSet {
 	}
 	
 	
-	function formatResults($format) {
+	function formatResults( $format ) {
 		
 		$formats = array('html' => 'resultSetToHtml',
 						 'json'	=>	'resultSetToJson',
@@ -239,12 +239,13 @@ class owa_paginatedResultSet {
 			return $this->$method();
 			
 		} else {
-		
-			return 'That format is not supported';
+			
+			owa_coreAPI::debug("Format '$format' is not supported.");
+			return $this;
 		}		
 	}
 	
-	
+	// @todo move this to a proper xml view
 	function resultSetToXml() {
 	
 		$t = new owa_template;
@@ -255,30 +256,16 @@ class owa_paginatedResultSet {
 		return $t->fetch();	
 	}
 	
+	//json formatting has been moved to owa_jsonView
 	function resultSetToJson() {
-		return json_encode($this);
+		
+		return $this;
 	}
 	
+	//json formatting has been moved to owa_jsonView
 	function resultSetToJsonp($callback = '') {
 		
-		// if not found look on the request scope.
-		if ( ! $callback ) {
-			$callback = owa_coreAPI::getRequestParam('jsonpCallback');
-		}
-		
-		if ( ! $callback ) {
-			
-			return $this->resultSetToJson();
-		}
-		
-		$t = new owa_template;
-		$t->set_template('json.php');
-		
-		// set
-		$body = sprintf("%s(%s);", $callback, json_encode( $this ) );
-		
-		$t->set('json', $body);
-		return $t->fetch();
+		return $this;
 	}
 	
 	function resultSetToDebug() {

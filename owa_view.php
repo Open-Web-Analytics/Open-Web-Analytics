@@ -712,10 +712,6 @@ class owa_jsonView extends owa_view {
 
 	function __construct() {
 		
-		if (!class_exists('Services_JSON')) {
-			require_once(OWA_INCLUDE_DIR.'JSON.php');
-		}
-		
 		return parent::__construct();
 	}
 	
@@ -724,9 +720,6 @@ class owa_jsonView extends owa_view {
 		// load template
 		$this->t->set_template('wrapper_blank.tpl');
 		$this->body->set_template('json.php');
-		
-		$json = new Services_JSON();
-		// set
 		
 		// look for jsonp callback
 		$callback = $this->get('jsonpCallback');
@@ -737,11 +730,16 @@ class owa_jsonView extends owa_view {
 		}
 		
 		if ( $callback ) {
-			$body = sprintf("%s(%s);", $callback, $json->encode( $this->get( 'json' ) ) );
+			$body = sprintf("%s(%s);", $callback, json_encode( $this->get( 'json' ) ) );
+			$type = 'jsonp';
 		} else {
-			$body = $json->encode( $this->get( 'json' ) );
+			$body = json_encode( $this->get( 'json' ) );
+			$type = 'json';
 		}
+		
 		$this->body->set('json', $body);
+		
+		owa_lib::setContentTypeHeader( $type );
 	}
 }
 

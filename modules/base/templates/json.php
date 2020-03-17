@@ -1,1 +1,5 @@
-<?php echo $json; ?>
+<?php 
+	
+	echo $json; 
+	
+?>

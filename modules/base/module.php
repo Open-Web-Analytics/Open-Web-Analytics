@@ -662,6 +662,13 @@ class owa_baseModule extends owa_module {
 				'', 
 				'view_reports' 
 		);
+		
+		$this->registerApiMethod('listSiteProfiles', 
+				array( $this, 'listSiteProfiles'), 
+				array(),
+				'', 
+				'edit_sites' 
+		);
 	}
 	
 	/**
@@ -2716,12 +2723,9 @@ class owa_baseModule extends owa_module {
 		// get results
 		$rs = $rsm->getResults();
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		
+		return $rs->formatResults($format);
+		
 	}
 	
 	
@@ -2766,12 +2770,8 @@ class owa_baseModule extends owa_module {
 			$results = $rs->generate($db);
 			$rs->resultsRows = $results;
 			
-			if ($format) {
-				owa_lib::setContentTypeHeader($format);
-				return $rs->formatResults($format);		
-			} else {
-				return $rs;
-			}
+			return $rs->formatResults($format);
+			
 		}
 	}
 	
@@ -2835,12 +2835,8 @@ class owa_baseModule extends owa_module {
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		return $rs->formatResults($format);
+		
 	}
 	
 	function getLatestActions( $startDate = '', $endDate = '', $visitorId= '', $sessionId = '',
@@ -2888,15 +2884,8 @@ class owa_baseModule extends owa_module {
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		return $rs->formatResults($format);
 		
-		
-	
 	}
 	
 	function getClickstream($sessionId, $resultsPerPage = 100, $page = 1, $format = '') {
@@ -2922,14 +2911,8 @@ class owa_baseModule extends owa_module {
 		
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
-		//print_r($rs);
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			
-			return $rs;
-		}
+		
+		return $rs->formatResults($format);
 	}
 	
 	/**
@@ -3016,15 +2999,8 @@ class owa_baseModule extends owa_module {
 		$rs->setPage($page);
 		
 		$results = $rs->generate($db);
-		//$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
-		
+		return $rs->formatResults($format);
 	}
 	
 	function getDomClicks($pageUrl, $siteId, $startDate, $endDate, $document_id = '', $period = '', $resultsPerPage = 100, $page = 1, $format = 'jsonp') {
@@ -3077,14 +3053,8 @@ class owa_baseModule extends owa_module {
 		$rs->setPage($page);
 		
 		$results = $rs->generate($db);
-		//$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		return $rs->formatResults($format);
 	}
     
     function checkEventForType( $event ) {
