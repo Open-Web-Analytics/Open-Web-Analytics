@@ -16,11 +16,10 @@
 // $Id$
 //
 
-require(OWA_INCLUDE_DIR . 'jsmin-1.1.1.php');
 require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
 
 /**
- * Build Controller
+ * Change user password cli Controller
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -64,12 +63,12 @@ class owa_changeUserPasswordCliController extends owa_cliController
         $password = $this->getParam('password');
 
         if (!$user) {
-            owa_coreAPI::debug("No user given.");
+            owa_coreAPI::notice("No user given.");
             return;
         }
 
         if (!$password) {
-            owa_coreAPI::debug("No password given.");
+            owa_coreAPI::notice("No password given.");
             return;
         }
 
@@ -79,13 +78,35 @@ class owa_changeUserPasswordCliController extends owa_cliController
         ]);
 
         if ($status !== false) {
-            owa_coreAPI::debug( "Updated user password successfully." );
+            owa_coreAPI::notice( "Updated user password successfully." );
             return;
         }
 
-        owa_coreAPI::debug( "User password update failed." );
+        owa_coreAPI::notice( "User password update failed." );
+	}
+
+    public function errorAction()
+    {
+        $this->setView('base.changeUserPasswordCli');
+        $this->set('msgs', $this->getParam('validation_errors'));
 	}
 }
 
+require_once(OWA_BASE_DIR.'/owa_view.php');
 
+/**
+ * Change user password cli View
+ *
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.0.0
+ */
+class owa_changeUserPasswordCliView extends owa_cliView
+{
+
+}
 ?>
