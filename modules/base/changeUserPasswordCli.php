@@ -46,6 +46,11 @@ class owa_changeUserPasswordCliController extends owa_cliController
 
         $this->setRequiredCapability('edit_settings');
 
+        // Add validations to the run
+        $userRequired = owa_coreAPI::validationFactory('required');
+        $userRequired->setValues($this->getParam('user'));
+        $this->setValidation('user_required', $userRequired);
+
         $this->_userManager = owa_coreApi::supportClassFactory('base', 'userManager');
         $rules = $this->_userManager->getPasswordValidationRules($this->getParam('password'));
 
@@ -61,16 +66,6 @@ class owa_changeUserPasswordCliController extends owa_cliController
     {
         $user = $this->getParam('user');
         $password = $this->getParam('password');
-
-        if (!$user) {
-            owa_coreAPI::notice("No user given.");
-            return;
-        }
-
-        if (!$password) {
-            owa_coreAPI::notice("No password given.");
-            return;
-        }
 
         $status = $this->_userManager->updateUserPassword([
             'user_id' => $user,
