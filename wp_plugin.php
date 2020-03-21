@@ -177,8 +177,14 @@ class owa_wp_plugin {
 		$owa = $this->getOwaInstance();
 		
 		$params = array();
-		$params['view'] = 'base.options';
-		$params['subview'] = 'base.optionsGeneral';
+		
+		$params['do'] = owa_coreAPI::getRequestParam( 'do' );
+		
+		if ( ! $params['do'] ) {
+			
+			$params['do'] = 'base.optionsGeneral';		
+		}
+	
 		echo $owa->handleRequest($params);
 		
 	}

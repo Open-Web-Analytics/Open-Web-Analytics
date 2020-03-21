@@ -38,15 +38,15 @@ class owa_optionsGeneralController extends owa_adminController {
 		parent::__construct($params);
 		$this->type = 'options';
 		$this->setRequiredCapability('edit_settings');
-		return;
+	
 	}
 	
 	function action() {
 		
-		$this->data['configuration'] = $this->c->fetch('base');
+		$this->set( 'configuration',  $this->c->fetch('base') );
 			
 		// add data to container
-		$this->data['view'] = 'base.options';
+		$this->setView( 'base.options' );
 		$this->data['subview'] = 'base.optionsGeneral';
 		$this->data['view_method'] = 'delegate';
 		
@@ -79,7 +79,7 @@ class owa_optionsGeneralView extends owa_view {
 		
 		//print_r($data['config']);
 		// assign config data
-		$this->body->set('config', $data['configuration']);
+		$this->body->set( 'config', $this->get( 'configuration' ) ) ;
 	}
 }
 
