@@ -42,6 +42,15 @@ class owa_sessionHandlers extends owa_observer {
      */
     function notify($event) {
 		
+		// add derived params to event
+	    
+	    // set properties on entity
+	    
+	    // persist entity
+	    
+	    // dispatch new event based on properties of entity
+		
+		
     	if ($event->get('is_new_session')) {
     		return $this->logSession($event);
     	} else {
@@ -85,9 +94,9 @@ class owa_sessionHandlers extends owa_observer {
 				
 				// set last_req to be the timestamp of the event that triggered this session.
 				$s->set('last_req', $event->get('timestamp'));
-				$s->set('days_since_first_session', $event->get('days_since_first_session'));
-				$s->set('days_since_prior_session', $event->get('days_since_prior_session'));
-				$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
+				//$s->set('days_since_first_session', $event->get('days_since_first_session'));
+				//$s->set('days_since_prior_session', $event->get('days_since_prior_session'));
+				//$s->set('num_prior_sessions', $event->get('num_prior_sessions'));
 						
 				// set medium
 				//$s->set('medium', $event->get('medium'));
@@ -101,13 +110,13 @@ class owa_sessionHandlers extends owa_observer {
 				$s->set('last_page_id', $s->get('first_page_id'));
 			
 				// Generate Referer id
-				
+				// external referer does not exist anymore so i think we can take this out.
 				if ($event->get('external_referer')) {
 					$s->set('referer_id', owa_lib::setStringGuid($event->get('HTTP_REFERER')));
 				}	
 				
 				// this should already be set by the request handler.
-				$s->set( 'location_id', $event->get( 'location_id' ) );
+				//$s->set( 'location_id', $event->get( 'location_id' ) );
 						
 				$ret = $s->create();
 		
