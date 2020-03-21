@@ -61,14 +61,15 @@ class owa_passwordResetRequestController extends owa_controller {
 		// return view
 		$this->setView('base.passwordResetForm');
 		$email_address = trim($this->getParam('email_address'));
-		$msg = $this->getMsg(2000, $email_address);
+		$msg = $this->getMsg(2000, ['message' => $email_address]);
 		$this->set('status_msg', $msg);
 	}
-	
+
 	function errorAction() {
-	
+
 		$this->setView('base.passwordResetForm');
-		$this->set('error_msg', $this->getMsg(2001, $this->getParam('email_address')));
+		$email_address = trim($this->getParam('email_address'));
+		$this->set('error_msg', $this->getMsg(2001, ['message' => $email_address]));
 	}
 }
 

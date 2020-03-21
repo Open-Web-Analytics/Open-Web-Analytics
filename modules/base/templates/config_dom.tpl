@@ -12,6 +12,6 @@ OWA.config.modules_url = "<?php echo owa_coreAPI::getSetting('base', 'modules_ur
 OWA.config.api_endpoint = "<?php echo owa_coreAPI::getSetting('base', 'api_url');?>";
 OWA.config.ns = "<?php echo owa_coreAPI::getSetting('base', 'ns');?>";
 OWA.config.link_template = "<?php echo owa_coreAPI::getSetting('base', 'link_template');?>";
-<?php if ( OWA_ERROR_HANDLER === 'development') { ?>
+<?php if (defined('OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development') { ?>
 OWA.config.debug = true;
 <?php } ?>

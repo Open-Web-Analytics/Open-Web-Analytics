@@ -71,8 +71,37 @@ class owa_apiRequestController extends owa_controller {
 	
 	function action() {
 		
+		//determine output format, json is default.
+		$format = $this->getParam('format');
+	
+		if ( ! $format ) {
+			
+			$format = 'json';
+		}
+		
+		// set content type of reponse		
+		owa_lib::setContentTypeHeader($format);
+		
 		$map = owa_coreAPI::getRequest()->getAllOwaParams();
-		echo owa_coreAPI::executeApiCommand($map);
+		$output = owa_coreAPI::executeApiCommand($map);
+		
+		// assign to a view for output
+		if ( $format === 'json' || $format === 'jsonp') {
+			
+			$this->setView( 'base.json' );
+			$this->set( 'json', $output );
+			$this->set( 'format', $format );
+			
+			if ( $format ==='jsonp' ) {
+				
+				$this->set('jsonpCallback', $this->getParam('jsonpCallback') );
+			}
+			
+		} else {
+			//@todo move this to a generic raw output view.
+			echo $output;
+		}
+		
 	}
 	
 	function notAuthenticatedAction() {

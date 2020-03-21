@@ -1,13 +1,12 @@
 <div>
 	<div style="display: table-cell; vertical-align: middle">
-		<span><img class="owa_avatar" style="vertical-align:middle;" src="<?php echo $this->getAvatarImage( $this->out($this->get('visitor_avatar_id') ) );?>" /></span>
+		<span><img class="owa_avatar" style="vertical-align:middle;" src="<?php $this->out( $this->getAvatarImage( $this->get('visitor_avatar_id') ) );?>" /></span>
 		<span class="inline_h2"><?php $this->out( $visitor_label );?></span>
 	</div>
 	<BR>
 	<div>			
 		<?php $this->renderKpiInfobox( $first_visit_date, 'First Visit' ); ?>
 			
-		<?php $this->renderKpiInfobox( $num_prior_visits, 'Total Visits' ); ?>
 	</div>
 </div>
 

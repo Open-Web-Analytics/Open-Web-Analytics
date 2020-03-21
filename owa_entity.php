@@ -236,11 +236,12 @@ class owa_entity {
 		foreach ($all_cols as $k => $v){
 		
 			// drop column is it is marked as auto-incement as DB will take care of that.
-			if ($this->properties[$v]->auto_increment === true):
+			if ($this->properties[$v]->auto_increment === true) {
 				;
-			else:
+			} else {
+				
 				$db->set($v, $this->get($v, false));
-			endif;
+			}
 				
 		}
 	

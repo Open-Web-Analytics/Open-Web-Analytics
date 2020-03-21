@@ -930,8 +930,9 @@ OWA.tracker.prototype = {
         	var doc = that.getIframeDocument( iframe );
             
             if ( doc ) {
+		    clearInterval(timer); //clear the interval before submitting data, race condition could occur otherwise resulting in duplicate tracked events
             	that.postFromIframe(iframe, data);
-				clearInterval(timer);
+				
             }
 			
 			            
@@ -1202,7 +1203,7 @@ OWA.tracker.prototype = {
 	    var targ = this._getTarget(e);
 	    
 	    var dom_name = '(not set)';
-	    if ( targ.hasAttribute('name') && targ.name.length > 0 ) {
+	    if ( targ.hasAttribute('name') && targ.name != null && targ.name.length > 0 ) {
 	    	dom_name = targ.name;
 	    }
 	    click.set("dom_element_name", dom_name);
@@ -1795,14 +1796,17 @@ OWA.tracker.prototype = {
 		// if check for nps value in vistor cookie.
 		var nps = OWA.getState( 'v', 'nps' );
 		// set value to 1 if not found as it means its he first session.
-		if ( ! nps ) {
-			nps = '0';
-		}
 		
-		if ( this.isNewSessionFlag === true ) {
-			// increment visit count and persist to state store
-			nps = nps * 1;
-			nps++;
+		if ( this.isNewSessionFlag ) {
+			
+			if ( ! nps ) {
+				nps = "0";
+			} else {
+				// increment visit count and persist to state store
+				nps = nps * 1;
+				nps++;	
+			}
+
 			OWA.setState( 'v', 'nps', nps, true );
 		}
 

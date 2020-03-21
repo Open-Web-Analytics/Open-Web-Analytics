@@ -250,6 +250,13 @@ class owa_baseModule extends owa_module {
 			
 			),
 			
+			'feed_subscription_id'					=> array(
+				'required'						=> false,
+				'callbacks'						=> array( ),
+				'default_value'					=> null,
+				'alternative_key'				=> 'sid'
+			),
+			
 			'attribs'						=> array(
 				'required'						=> false,
 				'data_type'						=> 'json',
@@ -325,7 +332,7 @@ class owa_baseModule extends owa_module {
 	
 			'page_uri' 			=> array(
 				'required'			=> true,
-				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri', 'owa_trackingEventHelpers::makeUrlCanonical')
+				'callbacks'			=> array('owa_trackingEventHelpers::derivePageUri')
 			),
 		
 			'is_repeat_visitor' => array(
@@ -556,6 +563,7 @@ class owa_baseModule extends owa_module {
 		$this->registerCliCommand('add-site', 'base.sitesAddCli');
 		$this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
 		$this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
+        $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
 	}
 	
 	/**
@@ -654,6 +662,13 @@ class owa_baseModule extends owa_module {
 				array('startDate', 'endDate', 'visitorId', 'sessionId', 'action_group','siteId','resultsPerPage', 'page', 'format'),
 				'', 
 				'view_reports' 
+		);
+		
+		$this->registerApiMethod('listSiteProfiles', 
+				array( $this, 'listSiteProfiles'), 
+				array(),
+				'', 
+				'edit_sites' 
 		);
 	}
 	
@@ -2709,12 +2724,9 @@ class owa_baseModule extends owa_module {
 		// get results
 		$rs = $rsm->getResults();
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		
+		return $rs->formatResults($format);
+		
 	}
 	
 	
@@ -2759,12 +2771,8 @@ class owa_baseModule extends owa_module {
 			$results = $rs->generate($db);
 			$rs->resultsRows = $results;
 			
-			if ($format) {
-				owa_lib::setContentTypeHeader($format);
-				return $rs->formatResults($format);		
-			} else {
-				return $rs;
-			}
+			return $rs->formatResults($format);
+			
 		}
 	}
 	
@@ -2794,7 +2802,7 @@ class owa_baseModule extends owa_module {
 		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'source_id');
 		$db->join(OWA_SQL_JOIN_LEFT_OUTER, $st->getTableName(), 'search_term', 'referring_search_term_id');
 		
-		$db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
+		$db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
 						   
 		$db->selectColumn('host.host as host_host');
 		$db->selectColumn('location.city as location_city, location.country as location_country');
@@ -2828,12 +2836,8 @@ class owa_baseModule extends owa_module {
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		return $rs->formatResults($format);
+		
 	}
 	
 	function getLatestActions( $startDate = '', $endDate = '', $visitorId= '', $sessionId = '',
@@ -2881,15 +2885,8 @@ class owa_baseModule extends owa_module {
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		return $rs->formatResults($format);
 		
-		
-	
 	}
 	
 	function getClickstream($sessionId, $resultsPerPage = 100, $page = 1, $format = '') {
@@ -2915,14 +2912,8 @@ class owa_baseModule extends owa_module {
 		
 		$results = $rs->generate($db);
 		$rs->resultsRows = $results;
-		//print_r($rs);
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			
-			return $rs;
-		}
+		
+		return $rs->formatResults($format);
 	}
 	
 	/**
@@ -3000,6 +2991,8 @@ class owa_baseModule extends owa_module {
 			$db->where('yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
 		}
 		
+		$rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+		
 		// pass limit to rs object if one exists
 		$rs->setLimit($resultsPerPage);
 			
@@ -3007,15 +3000,8 @@ class owa_baseModule extends owa_module {
 		$rs->setPage($page);
 		
 		$results = $rs->generate($db);
-		//$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
-		
+		return $rs->formatResults($format);
 	}
 	
 	function getDomClicks($pageUrl, $siteId, $startDate, $endDate, $document_id = '', $period = '', $resultsPerPage = 100, $page = 1, $format = 'jsonp') {
@@ -3068,14 +3054,8 @@ class owa_baseModule extends owa_module {
 		$rs->setPage($page);
 		
 		$results = $rs->generate($db);
-		//$rs->resultsRows = $results;
 		
-		if ($format) {
-			owa_lib::setContentTypeHeader($format);
-			return $rs->formatResults($format);		
-		} else {
-			return $rs;
-		}
+		return $rs->formatResults($format);
 	}
     
     function checkEventForType( $event ) {

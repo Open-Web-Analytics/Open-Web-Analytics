@@ -78,47 +78,50 @@ class owa_base {
 		$this->c = owa_coreAPI::configSingleton();
 		$this->config = $this->c->fetch('base');
 	}
-	
-	/**
-	 * Retrieves string message from mesage file
-	 *
-	 * @param integer $code
-	 * @param string $s1
-	 * @param string $s2
-	 * @param string $s3
-	 * @param string $s4
-	 * @return string
-	 */
-	function getMsg($code, $s1 = null, $s2 = null, $s3 = null, $s4 = null) {
+
+    /**
+     * Retrieves string message from mesage file
+     *
+     * @param integer $code
+     * @param array $substitutions
+     * @return array
+     */
+	function getMsg($code, $substitutions = []) {
 		
 		static $_owa_messages;
 		
+		$msg = array();
+		
 		if (empty($_owa_messages)) {
-			
 			require_once(OWA_DIR.'conf/messages.php');
 		}
 		
-		switch ($_owa_messages[$code][1]) {
+		if ( $code && array_key_exists( $code, $_owa_messages ) ) {
 			
-			case 0:
-				$msg = $_owa_messages[$code][0];
-				break;
-			case 1:
-				$msg = sprintf($_owa_messages[$code][0], $s1);
-				break;
-			case 2:
-				$msg = sprintf($_owa_messages[$code][0], $s1, $s2);
-				break;
-			case 3:
-				$msg = sprintf($_owa_messages[$code][0], $s1, $s2, $s3);
-				break;
-			case 4:
-				$msg = sprintf($_owa_messages[$code][0], $s1, $s2, $s3, $s4);
-				break;
+			$msg = $_owa_messages[$code];
+
+			if (isset($msg['headline'])) {
+	            $msg['headline'] = vsprintf($msg['headline'], $substitutions['headline']);
+	        }
+	
+	        if (isset($msg['message'])) {
+	            $msg['message'] = vsprintf($msg['message'], $substitutions['message']);
+	        }
 		}
 		
 		return $msg;
-		
+	}
+
+    /**
+     * @param $code
+     * @param array $substitutions
+     * @return string
+     */
+    public function getMsgAsString($code, $substitutions = [])
+    {
+        $msg = $this->getMsg($code, $substitutions);
+
+        return implode(' ', array_values($msg));
 	}
 
 	/**

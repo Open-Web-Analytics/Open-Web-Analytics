@@ -64,7 +64,7 @@ class owa_request extends owa_factTable {
 		
 		// needed?
 		$inbound_visitor_id = new owa_dbColumn('inbound_visitor_id', OWA_DTD_BIGINT);
-		$inbound_visitor_id->setForeignKey('base.visitor');
+		//$inbound_visitor_id->setForeignKey('base.visitor');
 		$this->setProperty($inbound_visitor_id);
 		
 		// needed?

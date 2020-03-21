@@ -615,7 +615,7 @@
 				'link_template'						=> '%s?%s', // main_url?key=value....
 				'owa_user_agent'					=> 'Open Web Analytics Bot '.OWA_VERSION,
 				'fetch_owa_news'					=> true,
-				'owa_rss_url'						=> 'http://www.openwebanalytics.com/?feed=rss2',
+				'owa_news_url'						=> 'https://api.github.com/repos/padams/Open-Web-Analytics/releases?page=1&per_page=5',
 				'use_summary_tables'				=> false,
 				'summary_framework'					=> '',
 				'click_drawing_mode'				=> 'center_on_page', // remove
@@ -626,7 +626,7 @@
 				'wiki_url'							=> 'http://wiki.openwebanalytics.com',
 				'password_length'					=> 4,
 				'modules'							=> array('base'),
-				'mailer-from'						=> '',
+				'mailer-from'						=> 'owa@' . $_SERVER['SERVER_NAME'], // Set default address, because sending from root@localhost wont work
 				'mailer-fromName'					=> 'OWA Mailer',
 				'mailer-host'						=> '',
 				'mailer-port'						=> '',
@@ -641,6 +641,7 @@
 				'remote_event_queue_type'			=> 'http',
 				'remote_event_queue_endpoint'		=> '',
 				'cookie_domain'						=> false,
+                'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
 				'ws_timeout'						=> 10,
 				'is_active'							=> true,
 				'per_site_visitors'					=> false, // remove
@@ -695,7 +696,7 @@
 				'numGoalGroups'						=> 5,
 				'enableEcommerceReporting'			=> false, // move to site settings
 				'currencyLocal'						=> 'en_US', // move to site settings
-				'currencyDecimalDigits'				=> 2,   // move to site settings
+				'currencyISO3'				        => 'USD',   // move to site settings
 				'memcachedServers'					=> array(),
 				'memcachedPersisantConnections'		=> true,
 				'cacheType'							=> 'file',

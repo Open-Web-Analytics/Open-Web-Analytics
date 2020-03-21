@@ -31,13 +31,15 @@
  */
 
 class owa_userManager extends owa_base {
-	
-	function __construct() {
+    /**
+     * owa_userManager constructor.
+     */
+    public function __construct() {
 						
 		return parent::__construct();
 	}
-	
-	function createNewUser($user_params) {
+
+    public function createNewUser($user_params) {
 
 		if ( isset( $user_params['password'] ) ) {
 			$password = $user_params['password'];
@@ -62,8 +64,33 @@ class owa_userManager extends owa_base {
 		}
 	
 	}
+
+    public function updateUserPassword($user_params)
+    {
+        $u = owa_coreAPI::entityFactory('base.user');
+
+        if (!isset($user_params['temp_passkey']) && !isset($user_params['user_id'])) {
+            owa_coreAPI::error( "No user identification given!" );
+            return false;
+        }
+
+        if (isset($user_params['temp_passkey'])) {
+            $u->getByColumn('temp_passkey', $user_params['temp_passkey']);
+        }
+
+        if (isset($user_params['user_id'])) {
+            $u->getByColumn('user_id', $user_params['user_id']);
+        }
+
+        $u->set('temp_passkey', $u->generateTempPasskey($user_params['user_id']));
+        $u->set('password', owa_lib::encryptPassword($user_params['password']));
+        $ret = $u->update();
+
+        return $ret ? $u : false;
+
+    }
 	
-	function deleteUser($user_id) {
+	public function deleteUser($user_id) {
 	
 		$u = owa_coreAPI::entityFactory('base.user');
 
@@ -74,6 +101,27 @@ class owa_userManager extends owa_base {
 		} else {
 			return false;
 		}
+	}
+
+    /**
+     * @param $password
+     * @return array
+     */
+    public function getPasswordValidationRules($password)
+    {
+        $passwordRequiredValidation = owa_coreAPI::validationFactory('required');
+        $passwordRequiredValidation->setValues($password);
+
+        $passwordLengthValidation = owa_coreAPI::validationFactory('stringLength');
+        $passwordLengthValidation->setValues($password);
+        $passwordLengthValidation->setConfig('operator', '>=');
+        $passwordLengthValidation->setConfig('length', 6);
+        $passwordLengthValidation->setErrorMessage("Your password must be at least 6 characters in length.");
+
+        return [
+            'password_required' => $passwordRequiredValidation,
+            'password_length' => $passwordLengthValidation,
+        ];
 	}
 }
 

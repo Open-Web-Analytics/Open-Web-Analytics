@@ -34,7 +34,7 @@ class MySqlDatabase {
 	}
 	
 	function connect($new = false) {
-		$this->conn = mysql_connect($this->host, $this->user, $this->password, $new);
+		$this->conn = mysqli_connect($this->host, $this->user, $this->password, $new);
 		if(!$this->conn) {
 			throw new Exception('We\'re working on a few connection issues.');
 		}
@@ -43,7 +43,7 @@ class MySqlDatabase {
 	function changeDatabase($database) {
 		$this->database = $database;
 		if($this->conn) {
-			if(!mysql_select_db($database, $this->conn)) {
+			if(!mysqli_select_db($this->conn, $database)) {
 				throw new CustomException('We\'re working on a few connection issues.');
 			}
 		}
@@ -61,7 +61,7 @@ class MySqlDatabase {
 	function query($sql) {
 		if(!$this->conn) $this->lazyLoadConnection();
 		$start = $this->getTime();
-		$rs = mysql_query($sql, $this->conn);
+		$rs = mysqli_query($this->conn, $sql);
 		$this->queryCount += 1;
 		$this->logQuery($sql, $start);
 		if(!$rs) {
@@ -107,7 +107,7 @@ class MySqlDatabase {
 	}
 	
 	function __destruct()  {
-		@mysql_close($this->conn);
+		@mysqli_close($this->conn);
 	}
 	
 }

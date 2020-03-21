@@ -52,6 +52,7 @@ class owa_session extends owa_factTable {
 			$this->setProperty($pcolumn);
 		}
 		
+
 		// set remaining columns
 		if ( method_exists( $this, 'getEntityPropertyList' ) ) {
 			
@@ -59,6 +60,7 @@ class owa_session extends owa_factTable {
 		}
 /*
 		
+
 		// drop
 		$this->properties['user_email'] = new owa_dbColumn;
 		$this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
@@ -69,10 +71,6 @@ class owa_session extends owa_factTable {
 		$this->properties['minute'] = new owa_dbColumn;
 		$this->properties['minute']->setDataType(OWA_DTD_TINYINT2);
 		
-		// move to abstract
-		$this->properties['last_req'] = new owa_dbColumn;
-		$this->properties['last_req']->setDataType(OWA_DTD_BIGINT);
-		
 		$this->properties['num_pageviews'] = new owa_dbColumn;
 		$this->properties['num_pageviews']->setDataType(OWA_DTD_INT);
 		
@@ -80,7 +78,7 @@ class owa_session extends owa_factTable {
 		$this->properties['num_comments'] = new owa_dbColumn;
 		$this->properties['num_comments']->setDataType(OWA_DTD_INT);
 		
-		
+
 		// how to denormalize into other fact tables?
 		$is_bounce =  new owa_dbColumn;
 		$is_bounce->setName('is_bounce');
@@ -121,6 +119,22 @@ class owa_session extends owa_factTable {
 		$this->properties['os'] = new owa_dbColumn;
 		$this->properties['os']->setDataType(OWA_DTD_VARCHAR255);
 		
+
+		// wrong data type
+		//@todo investigate if this columne needs to be migrated to BIGINT in older installs.
+		// move to abstract
+		// $os_id = new owa_dbColumn('os_id', OWA_DTD_VARCHAR255);
+		// $os_id->setForeignKey('base.os');
+		// $this->setProperty($os_id);
+		
+		// wrong data type
+		//@todo investigate if this columne needs to be migrated to BIGINT in older installs.
+		// move to abstract
+		//$ua_id = new owa_dbColumn('ua_id', OWA_DTD_VARCHAR255);
+		//$ua_id->setForeignKey('base.ua');
+		//$this->setProperty($ua_id);
+		
+
 		$first_page_id = new owa_dbColumn('first_page_id', OWA_DTD_BIGINT);
 		$first_page_id->setForeignKey('base.document');
 		$this->setProperty($first_page_id);
@@ -128,11 +142,20 @@ class owa_session extends owa_factTable {
 		$last_page_id = new owa_dbColumn('last_page_id', OWA_DTD_BIGINT);
 		$last_page_id->setForeignKey('base.document');
 		$this->setProperty($last_page_id);
-		
+
 		// drop
 		$this->properties['host'] = new owa_dbColumn;
 		$this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
 		
+
+		// move to abstract
+		// wrong data type
+		// @todo investigate if this columne needs to be migrated to BIGINT in older installs.
+		//$host_id = new owa_dbColumn('host_id', OWA_DTD_VARCHAR255);
+		//$host_id->setForeignKey('base.host');
+		//$this->setProperty($host_id);
+	
+
 		//drop
 		$this->properties['city'] = new owa_dbColumn;
 		$this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
@@ -143,6 +166,7 @@ class owa_session extends owa_factTable {
 		$this->properties['site'] = new owa_dbColumn;
 		$this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
 		
+
 		//drop
 		$this->properties['is_robot'] = new owa_dbColumn;
 		$this->properties['is_robot']->setDataType(OWA_DTD_TINYINT);

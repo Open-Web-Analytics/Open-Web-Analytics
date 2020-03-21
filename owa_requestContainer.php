@@ -165,7 +165,7 @@ class owa_requestContainer {
 			
 			if ( ! owa_coreAPI::getSetting('base', 'tracking_mode') ) {
 				
-				$params = owa_sanitize::cleanInput( $params, array('remove_html' => true) );
+				$params = owa_sanitize::cleanInput( $params, array( 'remove_html' => true, 'escape_html' => false ) );
 			
 			}
 			if ( is_array( $params ) && ! empty( $params ) ) {

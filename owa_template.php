@@ -901,7 +901,7 @@ class owa_template extends Template {
 	
 	function getAvatarImage($email) {
 		
-		if (false != $email) {
+		if (false != $email && $email !== '(not set)') {
 			$url = sprintf("https://www.gravatar.com/avatar/%s?s=30", md5($email));
 		} else {
 			$url = $this->makeImageLink('base/i/default_user_50x50.png');
@@ -998,7 +998,7 @@ class owa_template extends Template {
 	}
 	
 	function formatCurrency($value) {
-		return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ) );
+		return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ), owa_coreAPI::getSetting( 'base', 'currencyISO3' ) );
 	}
 	
 	function getCurrentUser() {
@@ -1033,6 +1033,21 @@ class owa_template extends Template {
 	public function getSiteThumbnail( $domain, $width = '200' ) {
 		
 		echo sprintf('<img src="https://s.wordpress.com/mshots/v1/%s?w=%s" width="%s">', urlencode($domain .'/'), $width, $width );
+	}
+	
+	/**
+	 * Checks is a display value is set.
+	 */
+	public function isSet( $string ) {
+		
+		if ($string === '(not set)' || empty( $string ) ) {
+		
+			return false;
+				
+		} else {
+			
+			return true;
+		}
 	}
 }
 

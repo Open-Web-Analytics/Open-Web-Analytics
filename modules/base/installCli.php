@@ -56,7 +56,7 @@ class owa_installCliController extends owa_cliController {
 			    
 			    //create admin user
 			    //owa_coreAPI::debug('password: '.owa_lib::encryptPassword( $this->c->get('base', 'db_password') ) );
-			    $im->createAdminUser($this->getParam('email_address'), $this->getParam('real_name'), $this->c->get('base', 'db_password') );
+			    $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->c->get('base', 'db_password') );
 			    
 			    // create default site
 				$im->createDefaultSite(

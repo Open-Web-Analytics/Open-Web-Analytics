@@ -60,10 +60,10 @@ class owa_usersEditController extends owa_adminController {
 		$u = owa_coreAPI::entityFactory('base.user');
 		$u->getByColumn('user_id', $this->getParam('user_id'));
 		$u->set('email_address', $this->getParam('email_address'));
-		$u->set('real_name', $this->getParam('real_name'));
-		
+
 		// never change the role of the admin user
 		if (!$u->isOWAAdmin()) {
+		    $u->set('real_name', $this->getParam('real_name'));
 			$u->set('role', $this->getParam('role'));
 		}
 		

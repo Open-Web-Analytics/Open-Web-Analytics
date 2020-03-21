@@ -1018,6 +1018,7 @@ OWA.dataGrid = function(target_dom_id, options) {
 	this.gridColumnOrder = [];
 	this.columnLinks = '';
 	this.constraintPicker = '';
+	this.previousDimensionName = '';
 };
 
 OWA.dataGrid.prototype = {
@@ -1251,14 +1252,16 @@ OWA.dataGrid.prototype = {
 			.bind('dimension_change', function(event, oldname, newname) {
 			
 			// lookup current secondary dimension as displayed in the grid
-			if ( that.gridColumnOrder.length >= 1 ) {
+			/*if ( that.gridColumnOrder.length >= 1 ) {
 				oldname = that.gridColumnOrder[1];
 			} else {
 				oldname = '';
-			}
+			}*/
 			
 			// propigate the event up one level where result set explorer is listening
-			jQuery( '#' + that.dom_id ).trigger('secondary_dimension_change', [oldname, newname]);
+			jQuery( '#' + that.dom_id ).trigger('secondary_dimension_change', [that.previousDimensionName, newname]);
+
+			that.previousDimensionName = newname;
 		});
 		
 		// inject constraint builder

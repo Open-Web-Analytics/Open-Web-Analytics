@@ -230,12 +230,8 @@ class owa_view extends owa_base {
 		
 		// assign validation errors
 		if (!empty($this->data['validation_errors'])) {
-			$ves = new owa_template('base');
-			$ves->set_template('error_validation_summary.tpl');
-			$ves->set('validation_errors', $this->data['validation_errors']);
-			$validation_errors_summary = $ves->fetch();
-			$this->t->set('error_msg', $validation_errors_summary);
-		}		
+			$this->t->set('validation_errors', $this->data['validation_errors']);
+		}
 		
 		
 		// fire post method
@@ -716,10 +712,6 @@ class owa_jsonView extends owa_view {
 
 	function __construct() {
 		
-		if (!class_exists('Services_JSON')) {
-			require_once(OWA_INCLUDE_DIR.'JSON.php');
-		}
-		
 		return parent::__construct();
 	}
 	
@@ -728,9 +720,6 @@ class owa_jsonView extends owa_view {
 		// load template
 		$this->t->set_template('wrapper_blank.tpl');
 		$this->body->set_template('json.php');
-		
-		$json = new Services_JSON();
-		// set
 		
 		// look for jsonp callback
 		$callback = $this->get('jsonpCallback');
@@ -741,11 +730,16 @@ class owa_jsonView extends owa_view {
 		}
 		
 		if ( $callback ) {
-			$body = sprintf("%s(%s);", $callback, $json->encode( $this->get( 'json' ) ) );
+			$body = sprintf("%s(%s);", $callback, json_encode( $this->get( 'json' ) ) );
+			$type = 'jsonp';
 		} else {
-			$body = $json->encode( $this->get( 'json' ) );
+			$body = json_encode( $this->get( 'json' ) );
+			$type = 'json';
 		}
+		
 		$this->body->set('json', $body);
+		
+		owa_lib::setContentTypeHeader( $type );
 	}
 }
 
@@ -786,6 +780,21 @@ class owa_adminPageView extends owa_view {
 		$this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
 		$this->setCss("base/css/owa.reporting-css-combined.css");
 	}
+}
+
+class owa_cliView extends owa_view {
+	
+	function __construct() {
+
+	}
+	
+	function render() {
+		
+		$this->t->set_template('wrapper_blank.tpl');
+		$this->body->set_template('cli.php');
+	}
+	
+	
 }
 
 ?>

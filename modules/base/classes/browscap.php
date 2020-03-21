@@ -84,6 +84,8 @@ class owa_browscap extends owa_base {
 	
 	function lookup( $user_agent ) {
 		
+		$cache_obj = null;
+		
 		if ( owa_coreAPI::getSetting('base','cache_objects') ) {
 			
 			owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );

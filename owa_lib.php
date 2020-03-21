@@ -472,8 +472,8 @@ class owa_lib {
 		if (strpos($str, '%00')) {
 			$str = '';
 		}
-		
-		if (strpos($str, null)) {
+
+		if ($str == null) {
 			$str = '';
 		}
 		
@@ -998,10 +998,19 @@ class owa_lib {
 	 * @param string $password
 	 * @return string
 	 */
-	public static function encryptPassword($password) {
+	public static function encryptOldPassword($password) {
 		
 		return md5(strtolower($password).strlen($password));
 		//return owa_coreAPI::saltedHash( $password, 'auth');
+	}
+	public static function encryptPassword($password) {
+		
+		// check function exists to support older PHP
+		if ( function_exists('password_hash') ) {
+			return password_hash( $password, PASSWORD_DEFAULT );
+		} else {
+			return self::encryptOldPassword($password);
+		}
 	}
 	
 	public static function hash( $hash_type = 'md5', $data, $salt = '' ) {
@@ -1116,11 +1125,20 @@ class owa_lib {
 		}
 	}
 	
-	public static function formatCurrency($value, $local, $decimalDigits = 2) {
+	public static function formatCurrency($value, $local, $currency) {
 		
-		setlocale( LC_MONETARY, $local );
 		$value = $value / 100;
-		return money_format( '%.' . $decimalDigits . 'n',$value );
+		
+		if ( function_exists('numfmt_create') ) {
+		
+			$numberFormatter = new NumberFormatter($local, NumberFormatter::CURRENCY);
+			return $numberFormatter->formatCurrency($value, $currency);
+		
+		} else {
+			
+			setlocale( LC_MONETARY, $local );
+			return money_format( '%.' . 2 . 'n',$value );
+		}
 	}
 	
 	public static function crc32AsHex($string) {

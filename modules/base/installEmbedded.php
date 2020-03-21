@@ -59,7 +59,7 @@ class owa_installEmbeddedController extends owa_installController {
 		    
 		    //create admin user
 		    $cu = owa_coreAPI::getCurrentUser();
-		    $this->createAdminUser($cu->getUserData('email_address'), $cu->getUserData('real_name'));
+		    $this->createAdminUser($cu->getUserData('user_id'), $cu->getUserData('email_address'));
 		    
 		    // create default site
 			$this->createDefaultSite($this->getParam('domain'), $this->getParam('name'), $this->getParam('description'), $this->getParam('site_family'), $this->getParam('site_id'));
