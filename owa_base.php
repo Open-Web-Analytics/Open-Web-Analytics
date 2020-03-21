@@ -90,20 +90,25 @@ class owa_base {
 		
 		static $_owa_messages;
 		
+		$msg = array();
+		
 		if (empty($_owa_messages)) {
 			require_once(OWA_DIR.'conf/messages.php');
 		}
+		
+		if ( $code && array_key_exists( $code, $_owa_messages ) ) {
+			
+			$msg = $_owa_messages[$code];
 
-		$msg = $_owa_messages[$code];
-
-		if (isset($msg['headline'])) {
-            $msg['headline'] = vsprintf($msg['headline'], $substitutions['headline']);
-        }
-
-        if (isset($msg['message'])) {
-            $msg['message'] = vsprintf($msg['message'], $substitutions['message']);
-        }
-
+			if (isset($msg['headline'])) {
+	            $msg['headline'] = vsprintf($msg['headline'], $substitutions['headline']);
+	        }
+	
+	        if (isset($msg['message'])) {
+	            $msg['message'] = vsprintf($msg['message'], $substitutions['message']);
+	        }
+		}
+		
 		return $msg;
 	}
 
