@@ -61,7 +61,7 @@ class owa_coreAPI {
 		$connection_class = "owa_db_" . $type;
 		
 			if (!class_exists($connection_class)) {
-				$connection_class_path = OWA_PLUGINS_DIR.'/db/' . $connection_class . ".php";
+				$connection_class_path = OWA_PLUGIN_DIR.'db/' . $connection_class . ".php";
 		
 			 	if (!require_once($connection_class_path)) {
 			 		owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
@@ -1043,7 +1043,7 @@ class owa_coreAPI {
 			require_once(OWA_BASE_CLASS_DIR.'validation.php');
 		endif;
 		
-		return owa_lib::factory(OWA_PLUGINS_DIR.'/validations', 'owa_', $class_file, array(), 'Validation');
+		return owa_lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, array(), 'Validation');
 		
 	}
 	
