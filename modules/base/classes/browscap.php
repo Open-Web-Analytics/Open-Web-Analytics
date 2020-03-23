@@ -16,7 +16,9 @@
 // $Id$
 //
 
-require_once( OWA_UAPARSER_LIB );
+//require_once( OWA_UAPARSER_LIB );
+require_once ( OWA_VENDOR_DIR . 'autoload.php' );
+use UAParser\Parser;
 
 /**
  * Browscap Class
@@ -96,13 +98,13 @@ class owa_browscap extends owa_base {
 		if ( ! $cache_obj ) {
 			
 			$custom_db = owa_coreAPI::getSetting('base','ua-regexes');
-				
+			
 			if ( $custom_db ) {
 				
-				$parser = new UAParser($custom_db);
+				$parser = Parser::create($custom_db);
 			
 			} else {
-				$parser = new UAParser;	
+				$parser = Parser::create();	
 			}
 			
 			$cap = $parser->parse( $this->ua );
@@ -197,22 +199,22 @@ class owa_browscap extends owa_base {
 	
 	function getUaFamilyVersion() {
 		
-		return $this->browser->ua->toString;
+		return $this->browser->ua->toVersion();
 	}
 	
 	function getUaVersion() {
 		
-		return $this->browser->ua->toVersionString;
+		return $this->browser->ua->toVersion();
 	}
 	
 	function getUaOriginal() {
 		
-		return $this->browser->uaOriginal;
+		return $this->browser->originalUserAgent;
 	}
 	
 	function getUaOs() {
 		
-		return $this->browser->toFullString;
+		return $this->browser->toString();
 	}
 	
 	function getOsFamily() {
@@ -237,12 +239,12 @@ class owa_browscap extends owa_base {
 	
 	function getOsFamilyVersion() {
 		
-		return $this->browser->os->toString;
+		return $this->browser->os->toString();
 	}
 	
 	function getOsVersion() {
 		
-		return $this->browser->os->toVersionString;
+		return $this->browser->os->toVersion();
 	}
 }
 
