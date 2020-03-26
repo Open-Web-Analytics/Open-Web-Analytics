@@ -1038,7 +1038,7 @@ class owa_template extends Template {
 	/**
 	 * Checks is a display value is set.
 	 */
-	public function isSet( $string ) {
+	public function isValueSet( $string ) {
 		
 		if ($string === '(not set)' || empty( $string ) ) {
 		

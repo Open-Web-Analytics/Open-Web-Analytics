@@ -19,13 +19,13 @@
 							<span class="inline_h4">
 							
 							<?php
-							if ( $this->isSet( $row[ 'session_user_name' ] ) ) {
+							if ( $this->isValueSet( $row[ 'session_user_name' ] ) ) {
 								$this->out( $row[ 'session_user_name' ] );
 							} else {
 								$this->out( $row['visitor_id'] );
 							}?></span> 
 							<BR>
-							<?php if ( $this->isSet( $row['location_city'] ) || $this->isSet( $row['location_country'] ) ):?> 
+							<?php if ( $this->isValueSet( $row['location_city'] ) || $this->isValueSet( $row['location_country'] ) ):?> 
 							<span class="owa_userGeoLabel"><?php echo $row['location_city'];?>, <?php echo $row['location_country'];?></span>
 							<?php endif;?>
 							<BR>
