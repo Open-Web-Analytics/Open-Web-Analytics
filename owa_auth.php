@@ -333,8 +333,25 @@ class owa_auth extends owa_base {
 	function saveCredentials() {
 		
 		$this->e->debug('saving user credentials to cookies');
-		setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*10, '/', $this->config['cookie_domain']);
-		setcookie($this->config['ns'].'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2, '/', $this->config['cookie_domain']);
+
+		if (PHP_VERSION_ID < 70300) {
+			setcookie($this->config['ns'].'u', $this->u->get('user_id'), time()+3600*24*365*10, '/; samesite=None', $this->config['cookie_domain']);
+			setcookie($this->config['ns'].'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2, '/; samesite=None', $this->config['cookie_domain']);
+		} else {
+			setcookie($this->config['ns'].'u', $this->u->get('user_id'), [
+				'expires' => time()+3600*24*365*10,
+				'path' => '/',
+				'samesite' => 'None',
+				'domain' => $this->config['cookie_domain'],
+			]);
+			setcookie($this->config['ns'].'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), [
+				'expires' => time()+3600*24*365*10,
+				'path' => '/',
+				'samesite' => 'None',
+				'domain' => $this->config['cookie_domain'],
+			]);
+		}
+
 	}
 	
 	/**
