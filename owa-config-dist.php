@@ -38,6 +38,7 @@
 define('OWA_DB_TYPE', 'yourdbtypegoeshere'); // options: mysql
 define('OWA_DB_NAME', 'yourdbnamegoeshere'); // name of the database
 define('OWA_DB_HOST', 'yourdbhostgoeshere'); // host name of the server housing the database
+define('OWA_DB_PORT', '3306'); // port of database
 define('OWA_DB_USER', 'yourdbusergoeshere'); // database user
 define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
 

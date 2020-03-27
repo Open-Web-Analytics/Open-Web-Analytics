@@ -59,6 +59,11 @@ class owa_installConfigController extends owa_installController {
 		$v4->setValues($this->getParam('db_password'));
 		$v4->setErrorMessage("Database password is required.");
 		$this->setValidation('db_password', $v4);
+
+        $v5 = owa_coreAPI::validationFactory('required');
+        $v5->setValues($this->getParam('db_port'));
+        $v5->setErrorMessage("Database port is required.");
+        $this->setValidation('db_port', $v5);
 		
 		$v7 = owa_coreAPI::validationFactory('required');
 		$v7->setValues($this->getParam('db_type'));
@@ -95,6 +100,10 @@ class owa_installConfigController extends owa_installController {
 		if ( ! defined( 'OWA_DB_HOST' ) ) {
 			define('OWA_DB_HOST', $this->getParam( 'db_host' ) );
 		}
+
+        if ( ! defined( 'OWA_DB_PORT' ) ) {
+            define('OWA_DB_PORT', $this->getParam( 'db_port' ) );
+        }
 		
 		if ( ! defined( 'OWA_DB_NAME' ) ) {		
 			define('OWA_DB_NAME', $this->getParam( 'db_name' ) );
@@ -110,6 +119,7 @@ class owa_installConfigController extends owa_installController {
 		
 		owa_coreAPI::setSetting('base', 'db_type', OWA_DB_TYPE);
 		owa_coreAPI::setSetting('base', 'db_host', OWA_DB_HOST);
+		owa_coreAPI::setSetting('base', 'db_port', OWA_DB_PORT);
 		owa_coreAPI::setSetting('base', 'db_name', OWA_DB_NAME);
 		owa_coreAPI::setSetting('base', 'db_user', OWA_DB_USER);
 		owa_coreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);	
