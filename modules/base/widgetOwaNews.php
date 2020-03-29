@@ -45,9 +45,9 @@ class owa_widgetOwaNewsController extends owa_widgetController {
 		
 		//Fetch latest OWA news
         $crawler = new owa_http();
-        $response = $crawler->getRequest($this->config['owa_news_url']);
+        $crawler->fetch($this->config['owa_news_url']);
 
-        $news = json_decode($response);
+        $news = json_decode($crawler->crawler->results);
 
 		$this->set('news', $news);
 		$this->setView('base.widgetOwaNews');
