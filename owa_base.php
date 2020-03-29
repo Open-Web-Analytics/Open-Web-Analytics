@@ -91,11 +91,11 @@ class owa_base {
 		static $_owa_messages;
 		
 		$msg = array();
-
+		
 		if (empty($_owa_messages)) {
 			require_once(OWA_DIR.'conf/messages.php');
 		}
-
+		
 		if ( $code && array_key_exists( $code, $_owa_messages ) ) {
 			
 			$msg = $_owa_messages[$code];

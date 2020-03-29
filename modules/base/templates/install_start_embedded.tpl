@@ -15,7 +15,6 @@
 	<input type="hidden" name="<?php echo $this->getNs();?>db_type" value="<?php echo $db_type;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>db_name" value="<?php echo $db_name;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>db_host" value="<?php echo $db_host;?>">
-	<input type="hidden" name="<?php echo $this->getNs();?>db_port" value="<?php echo $db_port;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>db_user" value="<?php echo $db_user;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>db_password" value="<?php echo $db_password;?>">
 	<input type="hidden" name="<?php echo $this->getNs();?>public_url" value="<?php echo $public_url;?>">

@@ -131,13 +131,12 @@ class owa_db extends owa_base {
 	 */
 	var $_last_sql_statement;
 	
-	function __construct($db_host, $db_port, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
+	function __construct($db_host, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
 		
 		$this->connectionParams = array('host' => $db_host,
 		 								'user' => $db_user,
 		 								'password' => $db_password,
 		 								'name' => $db_name, 
-		 								'port' => $db_port,
 		 								'open_new_connection' => $open_new_connection,
 		 								'persistant' => $persistant); 
 		
