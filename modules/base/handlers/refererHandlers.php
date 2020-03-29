@@ -79,8 +79,41 @@ class owa_refererHandlers extends owa_observer {
 			$r->set('page_title', '(not set)');
 			
 			// Crawl and analyze refering page
-			if ($medium != 'organic-search' ) {
-				$r->crawlReferer();
+			if (owa_coreAPI::getSetting( 'base', 'fetch_refering_page_info') && $medium != 'organic-search' ) {
+				//owa_coreAPI::debug('hello from logReferer');
+				$crawler = new owa_http;
+				//$crawler->fetch($this->params['HTTP_REFERER']);
+				$res = $crawler->getRequest($event->get('session_referer'));
+				owa_coreAPI::debug('http request response: '.print_r($res, true));
+				//Extract Title
+				
+				$title = trim($crawler->extract_title());
+				
+				if ($title) {
+					
+					$r->set('page_title', owa_lib::utf8Encode( $title ) );	
+				}	
+				
+				$se = $r->get('is_searchengine');
+				//Extract anchortext and page snippet but not if it's a search engine...
+				if ($se != true) {
+				
+					$snippet = $crawler->extract_anchor_snippet($event->get('page_url'));
+					
+					if ($snippet) {
+						if (function_exists('iconv')) {
+							$snippet = iconv('UTF-8','UTF-8//TRANSLIT',$snippet);
+						}
+						$r->set('snippet', $snippet);
+					}
+					
+					$anchortext = $crawler->anchor_info['anchor_text'];
+					
+					if ($anchortext) {
+				
+						$r->set('refering_anchortext', owa_lib::utf8Encode( $anchortext ) );
+					}
+				}	
 			}
 			
 			// Persist to database
