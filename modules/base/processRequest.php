@@ -29,28 +29,28 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_processRequestController extends owa_processEventController {
-	
-	function __construct($params) {
-			
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		// Control logic	
-	}
-	
-	function post() {
-				
-		owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
-		
-		return $this->addToEventQueue();
-	}
+
+    function __construct($params) {
+
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        // Control logic
+    }
+
+    function post() {
+
+        owa_coreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
+
+        return $this->addToEventQueue();
+    }
 }
 
 ?>

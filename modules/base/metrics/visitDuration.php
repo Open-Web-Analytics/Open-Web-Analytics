@@ -24,22 +24,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$          
+ * @since        owa 1.3.0
  */
 
 class owa_visitDuration extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('visitDuration');
-		$this->setLabel('Avg. Visit Duration');
-		$this->setEntity('base.session');
-		$this->setSelect(sprintf("round(avg(%s.last_req - %s.timestamp))", $this->entity->getTableAlias(), $this->entity->getTableAlias()));
-		$this->setDataType('timestamp');
-		
-		return parent::__construct();
-	}
+    function __construct() {
+    
+        $this->setName('visitDuration');
+        $this->setLabel('Avg. Visit Duration');
+        $this->setEntity('base.session');
+        $this->setSelect(sprintf("round(avg(%s.last_req - %s.timestamp))", $this->entity->getTableAlias(), $this->entity->getTableAlias()));
+        $this->setDataType('timestamp');
+        
+        return parent::__construct();
+    }
 }
 
 ?>

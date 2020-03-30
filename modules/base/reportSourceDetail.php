@@ -27,25 +27,25 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportSourceDetailController extends owa_reportController {
-	
-	function action() {
-		
-		$dim_name = 'source';
-		$dim_value = $this->getParam('source');
-		
-		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Source Detail: ', $dim_value);
-		//$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimension', $dim_name);
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source.');
-		$this->set('constraints', $dim_name.'=='.urlencode($dim_value));	
-	}
+
+    function action() {
+
+        $dim_name = 'source';
+        $dim_value = $this->getParam('source');
+
+        $this->setSubview('base.reportDimensionDetail');
+        $this->setTitle('Source Detail: ', $dim_value);
+        //$this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimension', $dim_name);
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this source.');
+        $this->set('constraints', $dim_name.'=='.urlencode($dim_value));
+    }
 }
 
 ?>

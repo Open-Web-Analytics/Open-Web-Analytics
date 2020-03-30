@@ -21,12 +21,12 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class owa_installDetectedController extends owa_controller {
-	
-	function action() {
-	
-		$this->setView('base.install');
-		$this->setSubview('base.installDetected');
-	}
+    
+    function action() {
+    
+        $this->setView('base.install');
+        $this->setSubview('base.installDetected');
+    }
 }
 
 /**
@@ -37,18 +37,18 @@ class owa_installDetectedController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 class owa_installDetectedView extends owa_view {
-	
-	function render() {
-		
-		$this->body->set_template('install_schema_detected.tpl');
-		
-		//page title
-		$this->t->set('page_title', 'OWA Installation Detected');
-	}
+    
+    function render() {
+        
+        $this->body->set_template('install_schema_detected.tpl');
+        
+        //page title
+        $this->t->set('page_title', 'OWA Installation Detected');
+    }
 }
 
 ?>

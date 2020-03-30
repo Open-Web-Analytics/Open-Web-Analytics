@@ -28,20 +28,20 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersSetPasswordController extends owa_controller {
-	
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		$event = $this->getParam('event');
+
+    function __construct($params) {
+
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        $event = $this->getParam('event');
 
         /**
          * @var $userManager owa_userManager
@@ -52,17 +52,17 @@ class owa_usersSetPasswordController extends owa_controller {
             'password' => $event->get('password'),
         ]);
 
-		if ($u !== false) {
-			$data['view'] = 'base.usersSetPassword';
-			$data['view_method'] = 'email';
-			$data['ip'] = $event->get('ip');
-			$data['subject'] = 'Password Change Complete';
-			$data['email_address'] = $u->get('email_address');
+        if ($u !== false) {
+            $data['view'] = 'base.usersSetPassword';
+            $data['view_method'] = 'email';
+            $data['ip'] = $event->get('ip');
+            $data['subject'] = 'Password Change Complete';
+            $data['email_address'] = $u->get('email_address');
         }
-		
-		return $data;
-	}
-	
+
+        return $data;
+    }
+
 }
 
 /**
@@ -73,23 +73,23 @@ class owa_usersSetPasswordController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersSetPasswordView extends owa_view {
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		$this->t->set_template('wrapper_email.tpl');
-		$this->body->set_template('users_set_password_email.tpl');
-		$this->body->set('ip', $data['ip']);
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        $this->t->set_template('wrapper_email.tpl');
+        $this->body->set_template('users_set_password_email.tpl');
+        $this->body->set('ip', $data['ip']);
+    }
 }
 
 ?>

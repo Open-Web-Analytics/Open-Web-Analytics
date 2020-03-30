@@ -29,42 +29,42 @@ require_once(OWA_BASE_MODULE_DIR.'processEvent.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_processFirstRequestController extends owa_processEventController {
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
-	function pre() {
-		
-		return false;
-	}
-	
-	function action() {
-	
-		$fh_state_name = owa_coreAPI::getSetting('base', 'first_hit_param');
-		//print_r($fh_state_name);
-		$fh = owa_coreAPI::getStateParam($fh_state_name);
-		owa_coreAPI::debug('cookiename: '.$fh_state_name);
-		//owa_coreAPI::debug(print_r($_COOKIE, true));
-		if (!empty($fh)) {
-			
-			$this->event->replaceProperties($fh);
-			$this->event->setEventType('base.first_page_request');
-			//owa_coreAPI::debug(print_r($this->event, true));	
-			// Delete first_hit Cookie
-			owa_coreAPI::clearState($fh_state_name);
 
-		}
-				
-		$this->setView('base.pixel');
-		$this->setViewMethod('image');
-	}
+    function __construct($params) {
+
+        return parent::__construct($params);
+    }
+
+    function pre() {
+
+        return false;
+    }
+
+    function action() {
+
+        $fh_state_name = owa_coreAPI::getSetting('base', 'first_hit_param');
+        //print_r($fh_state_name);
+        $fh = owa_coreAPI::getStateParam($fh_state_name);
+        owa_coreAPI::debug('cookiename: '.$fh_state_name);
+        //owa_coreAPI::debug(print_r($_COOKIE, true));
+        if (!empty($fh)) {
+
+            $this->event->replaceProperties($fh);
+            $this->event->setEventType('base.first_page_request');
+            //owa_coreAPI::debug(print_r($this->event, true));
+            // Delete first_hit Cookie
+            owa_coreAPI::clearState($fh_state_name);
+
+        }
+
+        $this->setView('base.pixel');
+        $this->setViewMethod('image');
+    }
 }
 
 ?>

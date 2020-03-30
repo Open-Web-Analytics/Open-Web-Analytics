@@ -29,25 +29,25 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersPasswordEntryController extends owa_controller {
-	
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		$this->set('key', $this->getParam('k'));
-		$this->setView('base.usersPasswordEntry');
-		return;
-	}
-		
-	
+
+    function __construct($params) {
+
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        $this->set('key', $this->getParam('k'));
+        $this->setView('base.usersPasswordEntry');
+        return;
+    }
+
+
 }
 
 /**
@@ -60,24 +60,24 @@ class owa_usersPasswordEntryController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersPasswordEntryView extends owa_view {
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		$this->t->set_template('wrapper_public.tpl');
-		$this->body->set_template('users_change_password.tpl');
-		$this->body->set('headline', $this->getMsg(3005));
-		$this->body->set('key', $this->get('key'));
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        $this->t->set_template('wrapper_public.tpl');
+        $this->body->set_template('users_change_password.tpl');
+        $this->body->set('headline', $this->getMsg(3005));
+        $this->body->set('key', $this->get('key'));
+    }
 }
 
 ?>

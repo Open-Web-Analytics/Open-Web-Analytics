@@ -21,12 +21,12 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class owa_installStartController extends owa_installController {
-	
-	function action() {
-	
-		$this->setView('base.install');
-		$this->setSubview('base.installStart');
-	}
+
+    function action() {
+
+        $this->setView('base.install');
+        $this->setSubview('base.installStart');
+    }
 }
 
 /**
@@ -37,20 +37,20 @@ class owa_installStartController extends owa_installController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 class owa_installStartView extends owa_view {
-	
-	function render() {
-		
-		$this->body->set_template('install_start.tpl');
-		//page title
-		$this->t->set('page_title', 'OWA Installation Start');
-		// fetch admin links from all modules
-		$this->body->set('headline', 'Get Started...');
-		$this->setJs("owa", "base/js/owa.js");
-	}
+
+    function render() {
+
+        $this->body->set_template('install_start.tpl');
+        //page title
+        $this->t->set('page_title', 'OWA Installation Start');
+        // fetch admin links from all modules
+        $this->body->set('headline', 'Get Started...');
+        $this->setJs("owa", "base/js/owa.js");
+    }
 }
 
 ?>

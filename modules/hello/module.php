@@ -26,70 +26,70 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_helloModule extends owa_module {
-	
-	
-	function __construct() {
-		
-		$this->name = 'hello';
-		$this->display_name = 'Hello World';
-		$this->group = 'hello';
-		$this->author = 'Peter Adams';
-		$this->version = '1.0';
-		$this->description = 'Hello world sample module.';
-		$this->config_required = false;
-		$this->required_schema_version = 1;
-		
-		return parent::__construct();
-	}
-	
-	/**
-	 * Registers Admin panels with the core API
-	 *
-	 */
-	function registerAdminPanels() {
-		
-		$this->addAdminPanel(array( 'do' 			=> 'hello.exampleSettings', 
-									'priviledge' 	=> 'admin', 
-									'anchortext' 	=> 'Hello World!',
-									'group'			=> 'Test',
-									'order'			=> 1));
-		
-									
-		return;
-		
-	}
-	
-	public function registerNavigation() {
-		$this->addNavigationSubGroup('Hello World', 'hello.reportDashboard', 'Hello Dashboard');
-		$this->addNavigationLinkInSubGroup('Hello World','hello.reportSearchterms','also to the dashboard',1);
-		
-	}
-	
-	/**
-	 * Registers Event Handlers with queue queue
-	 *
-	 */
-	function _registerEventHandlers() {
-		
-		
-		// Clicks
-		//$this->_addHandler('base.click', 'clickHandlers');
-		
-		return;
-		
-	}
-	
-	function _registerEntities() {
-		
-		//$this->entities[] = 'myentity';
-	}
-	
-	
+
+
+    function __construct() {
+
+        $this->name = 'hello';
+        $this->display_name = 'Hello World';
+        $this->group = 'hello';
+        $this->author = 'Peter Adams';
+        $this->version = '1.0';
+        $this->description = 'Hello world sample module.';
+        $this->config_required = false;
+        $this->required_schema_version = 1;
+
+        return parent::__construct();
+    }
+
+    /**
+     * Registers Admin panels with the core API
+     *
+     */
+    function registerAdminPanels() {
+
+        $this->addAdminPanel(array( 'do'             => 'hello.exampleSettings',
+                                    'priviledge'     => 'admin',
+                                    'anchortext'     => 'Hello World!',
+                                    'group'            => 'Test',
+                                    'order'            => 1));
+
+
+        return;
+
+    }
+
+    public function registerNavigation() {
+        $this->addNavigationSubGroup('Hello World', 'hello.reportDashboard', 'Hello Dashboard');
+        $this->addNavigationLinkInSubGroup('Hello World','hello.reportSearchterms','also to the dashboard',1);
+
+    }
+
+    /**
+     * Registers Event Handlers with queue queue
+     *
+     */
+    function _registerEventHandlers() {
+
+
+        // Clicks
+        //$this->_addHandler('base.click', 'clickHandlers');
+
+        return;
+
+    }
+
+    function _registerEntities() {
+
+        //$this->entities[] = 'myentity';
+    }
+
+
 }
 
 

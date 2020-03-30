@@ -27,19 +27,19 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_reportTrafficController extends owa_reportController {
-		
-	function action() {
-	
-		// view stuff
-		$this->setView('base.report');
-		$this->setSubview('base.reportTraffic');
-		$this->setTitle('Traffic Sources');	
-	}
+        
+    function action() {
+    
+        // view stuff
+        $this->setView('base.report');
+        $this->setSubview('base.reportTraffic');
+        $this->setTitle('Traffic Sources');    
+    }
 }
 
 /**
@@ -50,18 +50,18 @@ class owa_reportTrafficController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_reportTrafficView extends owa_view {
-		
-	function render($data) {
-		
-		// Assign Data to templates
-		
-		$this->body->set_template('report_traffic.tpl');
-	}
+        
+    function render($data) {
+        
+        // Assign Data to templates
+        
+        $this->body->set_template('report_traffic.tpl');
+    }
 }
 
 ?>

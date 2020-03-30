@@ -27,18 +27,18 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportTransactionsController extends owa_reportController {
-	
-	function action() {
-			
-		$this->setSubview('base.reportTransactions');
-		$this->setTitle('Transactions Overview');
-	}
-	
+
+    function action() {
+
+        $this->setSubview('base.reportTransactions');
+        $this->setTitle('Transactions Overview');
+    }
+
 }
 
 /**
@@ -49,16 +49,16 @@ class owa_reportTransactionsController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportTransactionsView extends owa_view {
-		
-	function render($data) {
-		
-		$this->body->set_template('report_transactions.php');
-	}
+
+    function render($data) {
+
+        $this->body->set_template('report_transactions.php');
+    }
 
 }
 

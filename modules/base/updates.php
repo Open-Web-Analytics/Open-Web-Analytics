@@ -28,38 +28,38 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_updatesView extends owa_view {
-		
-	function render($data) {
-		
-		//switch wrapper if OWA is not embedded
-		// needed becasue this view might be rendered before anything else.
-		if (isset($this->config['is_embedded']) && $this->config['is_embedded'] != true) {
-			$this->t->set_template('wrapper_public.tpl');
-		}
-		
-		$this->body->set_template('updates.tpl');// This is the inner template
-		$this->body->set('headline', 'Your database needs to be upgraded...');
-		$this->body->set('modules', $data['modules']);
-	}
+        
+    function render($data) {
+        
+        //switch wrapper if OWA is not embedded
+        // needed becasue this view might be rendered before anything else.
+        if (isset($this->config['is_embedded']) && $this->config['is_embedded'] != true) {
+            $this->t->set_template('wrapper_public.tpl');
+        }
+        
+        $this->body->set_template('updates.tpl');// This is the inner template
+        $this->body->set('headline', 'Your database needs to be upgraded...');
+        $this->body->set('modules', $data['modules']);
+    }
 }
 
 class owa_updatesController extends owa_controller {
-	
-	function action() {
-		
-		$data = array();
-				
-		$data['view_method'] = 'delegate';
-		$data['view'] = 'base.updates';
-		$data['modules'] = owa_coreAPI::getModulesNeedingUpdates();
-		
-		return $data;
-	}
+    
+    function action() {
+        
+        $data = array();
+                
+        $data['view_method'] = 'delegate';
+        $data['view'] = 'base.updates';
+        $data['modules'] = owa_coreAPI::getModulesNeedingUpdates();
+        
+        return $data;
+    }
 }
 
 ?>

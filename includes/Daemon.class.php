@@ -290,7 +290,7 @@ class Daemon
       $this->_logMessage('Forking...');
       
       if (!function_exists('pcntl_fork')) {
-      	$this->_logMessage('Forking 2...');
+          $this->_logMessage('Forking 2...');
       }
       $pid = pcntl_fork();
       

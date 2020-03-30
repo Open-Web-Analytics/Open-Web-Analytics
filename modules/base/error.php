@@ -28,34 +28,34 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_errorView extends owa_view {
-	
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		// Set Page title
-		$this->t->set('page_title', 'Error');
-			
-		if($this->is_subview === true):
-			$this->t->set_template('wrapper_blank.tpl');
-		endif;
-		
-		// load body template
-		$this->body->set_template('generic_error.tpl');
-		
-		return;
-	}
-	
-	
+
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        // Set Page title
+        $this->t->set('page_title', 'Error');
+
+        if($this->is_subview === true):
+            $this->t->set_template('wrapper_blank.tpl');
+        endif;
+
+        // load body template
+        $this->body->set_template('generic_error.tpl');
+
+        return;
+    }
+
+
 }
 
 ?>

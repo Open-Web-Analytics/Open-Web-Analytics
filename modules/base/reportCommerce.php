@@ -27,18 +27,18 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportCommerceController extends owa_reportController {
-	
-	function action() {
-			
-		$this->setSubview('base.reportCommerce');
-		$this->setTitle('Ecommerce Overview');
-	}
-	
+
+    function action() {
+
+        $this->setSubview('base.reportCommerce');
+        $this->setTitle('Ecommerce Overview');
+    }
+
 }
 
 /**
@@ -49,19 +49,19 @@ class owa_reportCommerceController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportCommerceView extends owa_view {
-		
-	function render($data) {
-		
-		// Assign Data to templates
-		
-		$this->body->set('headline', 'Ecommerce');
-		$this->body->set_template('report_commerce.php');
-	}
+
+    function render($data) {
+
+        // Assign Data to templates
+
+        $this->body->set('headline', 'Ecommerce');
+        $this->body->set_template('report_commerce.php');
+    }
 
 }
 

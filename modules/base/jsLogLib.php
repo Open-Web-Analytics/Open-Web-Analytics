@@ -26,24 +26,24 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 class owa_jsLogLibController extends owa_controller {
 
 
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	
-	}
-	
-	function owa_jsLogLibController($params) {
-		
-		return owa_jsLogLibController::__construct($params);
-	}
-	
-	function action($data) {
-	
-		$this->setView('base.jsLogLibView');
-		
-		return;
-	
-	}
+    function __construct($params) {
+
+        return parent::__construct($params);
+
+    }
+
+    function owa_jsLogLibController($params) {
+
+        return owa_jsLogLibController::__construct($params);
+    }
+
+    function action($data) {
+
+        $this->setView('base.jsLogLibView');
+
+        return;
+
+    }
 
 }
 
@@ -59,58 +59,58 @@ class owa_jsLogLibController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_jsLogLibView extends owa_view {
-	
-	function owa_jsLogLibView() {
-				
-		return owa_jsLogLibView::__construct();
-	}
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-	
-		// load body template
-		$this->t->set_template('wrapper_blank.tpl');
-		
-		// check to see if we should log clicks.
-		if (!owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
-			$this->body->set('do_not_log_clicks', true);
-		}
-		
-		// check to see if we should log clicks.
-		if (!owa_coreAPI::getSetting('base', 'log_dom_stream')) {
-			$this->body->set('do_not_log_domstream', true);
-		}
-		
-		//set siteId variable name to support old style owa_params js object
-		$this->body->set("site_id", "owa_params['site_id']");
-		// set name of javascript object containing params that need to be logged
-		// depricated, but needed to support old style tags
-		$this->body->set("owa_params", true);
-		// load body template
-		$this->body->set_template('js_logger.tpl');
-		
-		// assemble JS libs
-		$this->setJs('json2', 'base/js/includes/json2.js');
-		$this->setJs('lazyload', 'base/js/includes/lazyload-2.0.min.js');
-		$this->setJs('owa', 'base/js/owa.js');
-		$this->setJs('owa.tracker', 'base/js/owa.tracker.js');
-		//$this->setJs('url_encode', 'base/js/includes/url_encode.js');
-		$this->concatinateJs();
-		
-		
-		return;
-	}
-	
-	
+
+    function owa_jsLogLibView() {
+
+        return owa_jsLogLibView::__construct();
+    }
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        // load body template
+        $this->t->set_template('wrapper_blank.tpl');
+
+        // check to see if we should log clicks.
+        if (!owa_coreAPI::getSetting('base', 'log_dom_clicks')) {
+            $this->body->set('do_not_log_clicks', true);
+        }
+
+        // check to see if we should log clicks.
+        if (!owa_coreAPI::getSetting('base', 'log_dom_stream')) {
+            $this->body->set('do_not_log_domstream', true);
+        }
+
+        //set siteId variable name to support old style owa_params js object
+        $this->body->set("site_id", "owa_params['site_id']");
+        // set name of javascript object containing params that need to be logged
+        // depricated, but needed to support old style tags
+        $this->body->set("owa_params", true);
+        // load body template
+        $this->body->set_template('js_logger.tpl');
+
+        // assemble JS libs
+        $this->setJs('json2', 'base/js/includes/json2.js');
+        $this->setJs('lazyload', 'base/js/includes/lazyload-2.0.min.js');
+        $this->setJs('owa', 'base/js/owa.js');
+        $this->setJs('owa.tracker', 'base/js/owa.tracker.js');
+        //$this->setJs('url_encode', 'base/js/includes/url_encode.js');
+        $this->concatinateJs();
+
+
+        return;
+    }
+
+
 }
 
 

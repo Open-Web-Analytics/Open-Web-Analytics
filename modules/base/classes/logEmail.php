@@ -18,36 +18,36 @@
 
 
 class owa_logEmail {
-	
-	var $name = 'generic_console_log';
-	var $subject = 'uncaught exception';
-	
-	function __construct( $conf = array() ) {
-		
-		if ( array_key_exists( 'name', $conf ) ) {
-			
-			$this->name = $conf['name'];
-		}
-		
-		if ( array_key_exists( 'subject', $conf ) ) {
-			
-			$this->subject = $conf['subject'];
-		}
-		
-	}
-	
-	function append( $msg ) {
-		
-		$address = owa_coreAPI::getSetting('base', 'notice_email');
-		
-		$mailer = owa_coreAPI::supportClassFactory('base', 'mailer');
-		$mailer->addAddress( $address, '');
-		//$mailer->setFrom('owa@localhost', 'Open Web Analytics');
-		$mailer->setSubject($this->subject);
-		$mailer->setHtmlBody( $msg );
-		$mailer->send();
-		
-	}
+
+    var $name = 'generic_console_log';
+    var $subject = 'uncaught exception';
+
+    function __construct( $conf = array() ) {
+
+        if ( array_key_exists( 'name', $conf ) ) {
+
+            $this->name = $conf['name'];
+        }
+
+        if ( array_key_exists( 'subject', $conf ) ) {
+
+            $this->subject = $conf['subject'];
+        }
+
+    }
+
+    function append( $msg ) {
+
+        $address = owa_coreAPI::getSetting('base', 'notice_email');
+
+        $mailer = owa_coreAPI::supportClassFactory('base', 'mailer');
+        $mailer->addAddress( $address, '');
+        //$mailer->setFrom('owa@localhost', 'Open Web Analytics');
+        $mailer->setSubject($this->subject);
+        $mailer->setHtmlBody( $msg );
+        $mailer->send();
+
+    }
 
 }
 

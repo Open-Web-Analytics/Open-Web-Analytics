@@ -24,22 +24,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_repeatVisitors extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('repeatVisitors');
-		$this->setLabel('Repeat Visitors');
-		$this->setEntity('base.session');
-		$this->setSelect("(count(distinct(session.visitor_id)) - sum(CASE session.is_new_visitor WHEN TRUE THEN 1 ELSE 0 END))");
-		$this->setDataType('integer');
-		
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('repeatVisitors');
+        $this->setLabel('Repeat Visitors');
+        $this->setEntity('base.session');
+        $this->setSelect("(count(distinct(session.visitor_id)) - sum(CASE session.is_new_visitor WHEN TRUE THEN 1 ELSE 0 END))");
+        $this->setDataType('integer');
+
+        return parent::__construct();
+    }
 }
 
 ?>

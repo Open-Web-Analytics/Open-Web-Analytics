@@ -17,8 +17,8 @@
 //
 
 if(!class_exists('owa_observer')) {
-	require_once(OWA_BASE_DIR.'owa_observer.php');
-}	
+    require_once(OWA_BASE_DIR.'owa_observer.php');
+}    
 
 /**
  * Click Event Handler
@@ -28,41 +28,41 @@ if(!class_exists('owa_observer')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 class owa_notifyHandlers extends owa_observer {
 
     /**
      * Notify Handler
      *
-     * @access 	public
-     * @param 	object $event
+     * @access     public
+     * @param     object $event
      */
     function notify( $event ) {
-    	
-    	if ( $event->getSiteId() ) {
-	    	
-			$s = owa_coreAPI::entityFactory( 'base.site' );
-			
-			$s->load( $s->generateId( $event->getSiteId() ) );
+        
+        if ( $event->getSiteId() ) {
+            
+            $s = owa_coreAPI::entityFactory( 'base.site' );
+            
+            $s->load( $s->generateId( $event->getSiteId() ) );
 
-			if ( $s->wasPersisted() ) {
-		
-				$ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
-   			
-				return OWA_EHS_EVENT_HANDLED;
-   			
-			} else {
-					
-				return OWA_EHS_EVENT_FAILED;
-			}
-			
-		} else {
-			
-			return OWA_EHS_EVENT_HANDLED;
-		}
-	}
+            if ( $s->wasPersisted() ) {
+        
+                $ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+               
+                return OWA_EHS_EVENT_HANDLED;
+               
+            } else {
+                    
+                return OWA_EHS_EVENT_FAILED;
+            }
+            
+        } else {
+            
+            return OWA_EHS_EVENT_HANDLED;
+        }
+    }
 }
 
 ?>

@@ -24,36 +24,36 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_sessionBrowserTypes extends owa_metric {
-	
-	function owa_sessionBrowserTypes($params = null) {
-		
-		return owa_sessionBrowserTypes::__construct($params);
-		
-	}
-	
-	function __construct($params = null) {
-	
-		parent::__construct($params);
-	}
-	
-	function calculate() {
-					
-		$this->db->selectFrom('owa_session', 'session');
-		$this->db->selectColumn("count(distinct session.id) as count, ua.ua as ua, ua.browser_type");
-		$this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id', 'ua.id');
-		$this->db->groupBy('ua.browser_type');
-		$this->db->orderBy('count', $this->getOrder());
-		
-		return $this->db->getAllRows();
 
-	}
-	
-	
+    function owa_sessionBrowserTypes($params = null) {
+
+        return owa_sessionBrowserTypes::__construct($params);
+
+    }
+
+    function __construct($params = null) {
+
+        parent::__construct($params);
+    }
+
+    function calculate() {
+
+        $this->db->selectFrom('owa_session', 'session');
+        $this->db->selectColumn("count(distinct session.id) as count, ua.ua as ua, ua.browser_type");
+        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_ua', 'ua', 'ua_id', 'ua.id');
+        $this->db->groupBy('ua.browser_type');
+        $this->db->orderBy('count', $this->getOrder());
+
+        return $this->db->getAllRows();
+
+    }
+
+
 }
 
 

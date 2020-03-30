@@ -26,34 +26,34 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportCampaignsController extends owa_reportController {
-	
-	function action() {
-		
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Campaigns');
-		$metrics = 'visits,pageViews,bounces';
-		if ( owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
-			$metrics .= ',transactions,transactionRevenue';
-		}
-		
-		$this->set('metrics', $metrics);
-		$this->set('dimensions', 'campaign');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'campaign', 
-				'template' 		=> array('do' => 'base.reportCampaignDetail', 'campaign' => '%s'), 
-				'valueColumns' 	=> 'campaign'));
-		$this->set('constraints', 'campaign!=null');
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from campaigns.');
-		$this->set('gridTitle', 'Top Campaigns');		
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Campaigns');
+        $metrics = 'visits,pageViews,bounces';
+        if ( owa_coreAPI::getSetting('base', 'enableEcommerceReporting') ) {
+            $metrics .= ',transactions,transactionRevenue';
+        }
+
+        $this->set('metrics', $metrics);
+        $this->set('dimensions', 'campaign');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array(
+                'linkColumn'     => 'campaign',
+                'template'         => array('do' => 'base.reportCampaignDetail', 'campaign' => '%s'),
+                'valueColumns'     => 'campaign'));
+        $this->set('constraints', 'campaign!=null');
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from campaigns.');
+        $this->set('gridTitle', 'Top Campaigns');
+    }
 }
 
 ?>

@@ -27,31 +27,31 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitorsController extends owa_reportController {
 
-	function action() {
+    function action() {
 
-		$rs = owa_coreAPI::executeApiCommand(array(
-			
-			'do'				=> 'getLatestVisits',
-			'siteId'			=> $this->getParam('siteId'),
-			'page'				=> $this->getParam('page'),
-			'startDate'			=> $this->getParam('startDate'),
-			'endDate'			=> $this->getParam('endDate'),
-			'period'			=> $this->getParam('period'),
-			'resultsPerPage'	=> 10 ) );
-		
-		$this->set('latest_visits', $rs);
-		
-		// view stuff
-		$this->setView('base.report');
-		$this->setSubview('base.reportVisitors');
-		$this->setTitle('Visitors');
-	}
+        $rs = owa_coreAPI::executeApiCommand(array(
+            
+            'do'                => 'getLatestVisits',
+            'siteId'            => $this->getParam('siteId'),
+            'page'                => $this->getParam('page'),
+            'startDate'            => $this->getParam('startDate'),
+            'endDate'            => $this->getParam('endDate'),
+            'period'            => $this->getParam('period'),
+            'resultsPerPage'    => 10 ) );
+        
+        $this->set('latest_visits', $rs);
+        
+        // view stuff
+        $this->setView('base.report');
+        $this->setSubview('base.reportVisitors');
+        $this->setTitle('Visitors');
+    }
 }
 
 /**
@@ -62,17 +62,17 @@ class owa_reportVisitorsController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitorsView extends owa_view {
-			
-	function render($data) {
-			
-		$this->body->set_template('report_visitors.tpl');
-		$this->body->set('visits', $this->get('latest_visits'));		
-	}
+            
+    function render($data) {
+            
+        $this->body->set_template('report_visitors.tpl');
+        $this->body->set('visits', $this->get('latest_visits'));        
+    }
 }
 
 ?>

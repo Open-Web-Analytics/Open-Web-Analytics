@@ -78,13 +78,13 @@ class owa_changeUserPasswordCliController extends owa_cliController
         }
 
         owa_coreAPI::notice( "User password update failed." );
-	}
+    }
 
     public function errorAction()
     {
         $this->setView('base.changeUserPasswordCli');
         $this->set('msgs', $this->getParam('validation_errors'));
-	}
+    }
 }
 
 require_once(OWA_BASE_DIR.'/owa_view.php');

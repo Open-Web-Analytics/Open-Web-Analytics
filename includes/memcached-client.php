@@ -75,27 +75,27 @@ class memcached
    // {{{ properties
    // {{{ public
 
-		// {{{ constants
-		// {{{ flags
+        // {{{ constants
+        // {{{ flags
 
-		/**
-		 * Flag: indicates data is serialized
-		 */
-		const SERIALIZED = 1;
+        /**
+         * Flag: indicates data is serialized
+         */
+        const SERIALIZED = 1;
 
-		/**
-		 * Flag: indicates data is compressed
-		 */
-		const COMPRESSED = 2;
+        /**
+         * Flag: indicates data is compressed
+         */
+        const COMPRESSED = 2;
 
-		// }}}
+        // }}}
 
-		/**
-		 * Minimum savings to store data compressed
-		 */
-		const COMPRESSION_SAVINGS = 0.20;
+        /**
+         * Minimum savings to store data compressed
+         */
+        const COMPRESSION_SAVINGS = 0.20;
 
-		// }}}
+        // }}}
 
 
    /**
@@ -407,14 +407,14 @@ class memcached
       }
 
       if (!$this->_active) {
-	     if (defined('MEDIAWIKI')) wfProfileOut( $fname );
+         if (defined('MEDIAWIKI')) wfProfileOut( $fname );
          return false;
       }
 
       $sock = $this->get_sock($key);
 
       if (!is_resource($sock)) {
-	     if (defined('MEDIAWIKI')) wfProfileOut( $fname );
+         if (defined('MEDIAWIKI')) wfProfileOut( $fname );
          return false;
       }
 
@@ -424,7 +424,7 @@ class memcached
       if (!$this->_safe_fwrite($sock, $cmd, strlen($cmd)))
       {
          $this->_dead_sock($sock);
-	     if (defined('MEDIAWIKI')) wfProfileOut( $fname );
+         if (defined('MEDIAWIKI')) wfProfileOut( $fname );
          return false;
       }
 
@@ -801,7 +801,7 @@ class memcached
          if (is_resource($sock)) {
             $this->_flush_read_buffer($sock);
             return $sock;
-		 }
+         }
          $hv = $this->_hashfunc( $hv . $realkey );
       }
 

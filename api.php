@@ -27,9 +27,9 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
- * @link		http://wiki.openwebanalytics.com/index.php?title=REST_API
+ * @version        $Revision$
+ * @since        owa 1.3.0
+ * @link        http://wiki.openwebanalytics.com/index.php?title=REST_API
  */
 
 // define entry point cnstant
@@ -39,11 +39,11 @@ $owa = new owa_php;
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-	// run api command and echo page content
-	echo $owa->handleRequest('', 'base.apiRequest');
+    // run api command and echo page content
+    echo $owa->handleRequest('', 'base.apiRequest');
 } else {
-	// unload owa
-	$owa->restInPeace();
+    // unload owa
+    $owa->restInPeace();
 }
 
 ?>

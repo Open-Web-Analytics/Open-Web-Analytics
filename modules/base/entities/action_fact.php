@@ -26,40 +26,40 @@ require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_action_fact extends owa_factTable {
-	
-	function __construct() {
-		
-		$this->setTableName('action_fact');
-		
-		// set common fact table columns
-		$parent_columns = parent::__construct();
-		
-		foreach ($parent_columns as $pcolumn) {
-				
-			$this->setProperty($pcolumn);
-		}
-		
-		$document_id = new owa_dbColumn('document_id', OWA_DTD_BIGINT);
-		$document_id->setForeignKey('base.document');
-		$this->setProperty($document_id);
-		
-		$action_name = new owa_dbColumn('action_name', OWA_DTD_VARCHAR255);
-		$this->setProperty($action_name);
-		
-		$action_label = new owa_dbColumn('action_label', OWA_DTD_VARCHAR255);
-		$this->setProperty($action_label);
-		
-		$action_group = new owa_dbColumn('action_group', OWA_DTD_VARCHAR255);
-		$this->setProperty($action_group);
-		
-		$numeric_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
-		$this->setProperty($numeric_value);
-	}
+
+    function __construct() {
+
+        $this->setTableName('action_fact');
+
+        // set common fact table columns
+        $parent_columns = parent::__construct();
+
+        foreach ($parent_columns as $pcolumn) {
+
+            $this->setProperty($pcolumn);
+        }
+
+        $document_id = new owa_dbColumn('document_id', OWA_DTD_BIGINT);
+        $document_id->setForeignKey('base.document');
+        $this->setProperty($document_id);
+
+        $action_name = new owa_dbColumn('action_name', OWA_DTD_VARCHAR255);
+        $this->setProperty($action_name);
+
+        $action_label = new owa_dbColumn('action_label', OWA_DTD_VARCHAR255);
+        $this->setProperty($action_label);
+
+        $action_group = new owa_dbColumn('action_group', OWA_DTD_VARCHAR255);
+        $this->setProperty($action_group);
+
+        $numeric_value = new owa_dbColumn('numeric_value', OWA_DTD_INT);
+        $this->setProperty($numeric_value);
+    }
 }
 
 ?>

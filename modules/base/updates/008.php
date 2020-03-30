@@ -23,32 +23,32 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.5.0
+ * @version        $Revision$
+ * @since        owa 1.5.0
  */
 
 
 class owa_base_008_update extends owa_update {
-	
-	var $schema_version = 8;
-	
-	
-	function up($force = false) {
-		$site = owa_coreAPI::entityFactory('base.site_user'); 
-		$ret = $site->createTable('site_user');
-		if ($ret === false ) {
-			$this->e->notice('Create table site_user failed');
-			return false;
-		}
-		
-		return true;
-	}
-	
-	function down() {
-		$site = owa_coreAPI::entityFactory('base.site_user'); 
-		$ret = $site->dropTable('site_user');
-		return true;
-	}
+
+    var $schema_version = 8;
+
+
+    function up($force = false) {
+        $site = owa_coreAPI::entityFactory('base.site_user');
+        $ret = $site->createTable('site_user');
+        if ($ret === false ) {
+            $this->e->notice('Create table site_user failed');
+            return false;
+        }
+
+        return true;
+    }
+
+    function down() {
+        $site = owa_coreAPI::entityFactory('base.site_user');
+        $ret = $site->dropTable('site_user');
+        return true;
+    }
 }
 
 ?>

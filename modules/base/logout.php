@@ -27,18 +27,18 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_logoutController extends owa_controller {
-		
-	function action() {
-		
-		$auth = owa_auth::get_instance();
-		$auth->deleteCredentials();
-		$this->setRedirectAction('base.loginForm');
-	}
+
+    function action() {
+
+        $auth = owa_auth::get_instance();
+        $auth->deleteCredentials();
+        $this->setRedirectAction('base.loginForm');
+    }
 }
 
 ?>

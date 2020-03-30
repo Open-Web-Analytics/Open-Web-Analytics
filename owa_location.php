@@ -27,54 +27,54 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 class owa_location {
-	
-	/**
-	 * City 
-	 *
-	 * @var string
-	 */
-	var $city;
-	
-	/**
-	 * Country
-	 *
-	 * @var string
-	 */
-	var $country;
-	
-	/**
-	 * Latitude coordinates
-	 *
-	 * @var string
-	 */
-	var $latitude;
-	
-	/**
-	 * Longitude coordinates
-	 *
-	 * @var string
-	 */
-	var $longitude;
-	
-	/**
-	 * Location of concrete class plugins
-	 *
-	 * @var unknown_type
-	 */
-	var $plugin_dir;
-	
-	/**
-	 * Constructor
-	 *
-	 * @return owa_location
-	 */
-	function __construct() {
-	
-	}
+
+    /**
+     * City
+     *
+     * @var string
+     */
+    var $city;
+
+    /**
+     * Country
+     *
+     * @var string
+     */
+    var $country;
+
+    /**
+     * Latitude coordinates
+     *
+     * @var string
+     */
+    var $latitude;
+
+    /**
+     * Longitude coordinates
+     *
+     * @var string
+     */
+    var $longitude;
+
+    /**
+     * Location of concrete class plugins
+     *
+     * @var unknown_type
+     */
+    var $plugin_dir;
+
+    /**
+     * Constructor
+     *
+     * @return owa_location
+     */
+    function __construct() {
+
+    }
 }
 
 ?>

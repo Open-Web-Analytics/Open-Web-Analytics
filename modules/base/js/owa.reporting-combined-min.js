@@ -524,44 +524,44 @@ t[h]}if(f.isEmptyObject(t)){var u=s.handle;u&&(u.elem=null),delete s.events,dele
  * @project jquery.sprintf
  */
 (function($){
-	var formats = {
-		'%': function(val) {return '%';},
-		'b': function(val) {return  parseInt(val, 10).toString(2);},
-		'c': function(val) {return  String.fromCharCode(parseInt(val, 10));},
-		'd': function(val) {return  parseInt(val, 10) ? parseInt(val, 10) : 0;},
-		'u': function(val) {return  Math.abs(val);},
-		'f': function(val, p) {return  (p > -1) ? Math.round(parseFloat(val) * Math.pow(10, p)) / Math.pow(10, p): parseFloat(val);},
-		'o': function(val) {return  parseInt(val, 10).toString(8);},
-		's': function(val) {return  val;},
-		'x': function(val) {return  ('' + parseInt(val, 10).toString(16)).toLowerCase();},
-		'X': function(val) {return  ('' + parseInt(val, 10).toString(16)).toUpperCase();}
-	};
+    var formats = {
+        '%': function(val) {return '%';},
+        'b': function(val) {return  parseInt(val, 10).toString(2);},
+        'c': function(val) {return  String.fromCharCode(parseInt(val, 10));},
+        'd': function(val) {return  parseInt(val, 10) ? parseInt(val, 10) : 0;},
+        'u': function(val) {return  Math.abs(val);},
+        'f': function(val, p) {return  (p > -1) ? Math.round(parseFloat(val) * Math.pow(10, p)) / Math.pow(10, p): parseFloat(val);},
+        'o': function(val) {return  parseInt(val, 10).toString(8);},
+        's': function(val) {return  val;},
+        'x': function(val) {return  ('' + parseInt(val, 10).toString(16)).toLowerCase();},
+        'X': function(val) {return  ('' + parseInt(val, 10).toString(16)).toUpperCase();}
+    };
 
-	var re = /%(?:(\d+)?(?:\.(\d+))?|\(([^)]+)\))([%bcdufosxX])/g;
+    var re = /%(?:(\d+)?(?:\.(\d+))?|\(([^)]+)\))([%bcdufosxX])/g;
 
-	var dispatch = function(data){
-		if(data.length == 1 && typeof data[0] == 'object') { //python-style printf
-			data = data[0];
-			return function(match, w, p, lbl, fmt, off, str) {
-				return formats[fmt](data[lbl]);
-			};
-		} else { // regular, somewhat incomplete, printf
-			var idx = 0; // oh, the beauty of closures :D
-			return function(match, w, p, lbl, fmt, off, str) {
-				return formats[fmt](data[idx++], p);
-			};
-		}
-	};
+    var dispatch = function(data){
+        if(data.length == 1 && typeof data[0] == 'object') { //python-style printf
+            data = data[0];
+            return function(match, w, p, lbl, fmt, off, str) {
+                return formats[fmt](data[lbl]);
+            };
+        } else { // regular, somewhat incomplete, printf
+            var idx = 0; // oh, the beauty of closures :D
+            return function(match, w, p, lbl, fmt, off, str) {
+                return formats[fmt](data[idx++], p);
+            };
+        }
+    };
 
-	$.extend({
-		sprintf: function(format) {
-			var argv = Array.apply(null, arguments).slice(1);
-			return format.replace(re, dispatch(argv));
-		},
-		vsprintf: function(format, data) {
-			return format.replace(re, dispatch(data));
-		}
-	});
+    $.extend({
+        sprintf: function(format) {
+            var argv = Array.apply(null, arguments).slice(1);
+            return format.replace(re, dispatch(argv));
+        },
+        vsprintf: function(format, data) {
+            return format.replace(re, dispatch(data));
+        }
+    });
 })(jQuery);
 
 /* End of sprintf */ 
@@ -610,7 +610,7 @@ enable:function(){return this._setOption("disabled",false)},disable:function(){r
  * http://docs.jquery.com/UI/Mouse
  *
  * Depends:
- *	jquery.ui.widget.js
+ *    jquery.ui.widget.js
  */
 (function(b){b.widget("ui.mouse",{options:{cancel:":input,option",distance:1,delay:0},_mouseInit:function(){var a=this;this.element.bind("mousedown."+this.widgetName,function(c){return a._mouseDown(c)}).bind("click."+this.widgetName,function(c){if(true===b.data(c.target,a.widgetName+".preventClickEvent")){b.removeData(c.target,a.widgetName+".preventClickEvent");c.stopImmediatePropagation();return false}});this.started=false},_mouseDestroy:function(){this.element.unbind("."+this.widgetName)},_mouseDown:function(a){a.originalEvent=
 a.originalEvent||{};if(!a.originalEvent.mouseHandled){this._mouseStarted&&this._mouseUp(a);this._mouseDownEvent=a;var c=this,e=a.which==1,f=typeof this.options.cancel=="string"?b(a.target).parents().add(a.target).filter(this.options.cancel).length:false;if(!e||f||!this._mouseCapture(a))return true;this.mouseDelayMet=!this.options.delay;if(!this.mouseDelayMet)this._mouseDelayTimer=setTimeout(function(){c.mouseDelayMet=true},this.options.delay);if(this._mouseDistanceMet(a)&&this._mouseDelayMet(a)){this._mouseStarted=
@@ -643,9 +643,9 @@ g=d.offset(),e=parseInt(c.curCSS(b,"top",true),10)||0,h=parseInt(c.curCSS(b,"lef
  * http://docs.jquery.com/UI/Draggables
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.mouse.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.widget.js
  */
 (function(d){d.widget("ui.draggable",d.ui.mouse,{widgetEventPrefix:"drag",options:{addClasses:true,appendTo:"parent",axis:false,connectToSortable:false,containment:false,cursor:"auto",cursorAt:false,grid:false,handle:false,helper:"original",iframeFix:false,opacity:false,refreshPositions:false,revert:false,revertDuration:500,scope:"default",scroll:true,scrollSensitivity:20,scrollSpeed:20,snap:false,snapMode:"both",snapTolerance:20,stack:false,zIndex:false},_create:function(){if(this.options.helper==
 "original"&&!/^(?:r|a|f)/.test(this.element.css("position")))this.element[0].style.position="relative";this.options.addClasses&&this.element.addClass("ui-draggable");this.options.disabled&&this.element.addClass("ui-draggable-disabled");this._mouseInit()},destroy:function(){if(this.element.data("draggable")){this.element.removeData("draggable").unbind(".draggable").removeClass("ui-draggable ui-draggable-dragging ui-draggable-disabled");this._mouseDestroy();return this}},_mouseCapture:function(a){var b=
@@ -693,10 +693,10 @@ parseInt(a[0].style.zIndex)||0;d(a).each(function(c){this.style.zIndex=b+c});thi
  * http://docs.jquery.com/UI/Droppables
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.widget.js
- *	jquery.ui.mouse.js
- *	jquery.ui.draggable.js
+ *    jquery.ui.core.js
+ *    jquery.ui.widget.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.draggable.js
  */
 (function(d){d.widget("ui.droppable",{widgetEventPrefix:"drop",options:{accept:"*",activeClass:false,addClasses:true,greedy:false,hoverClass:false,scope:"default",tolerance:"intersect"},_create:function(){var a=this.options,b=a.accept;this.isover=0;this.isout=1;this.accept=d.isFunction(b)?b:function(c){return c.is(b)};this.proportions={width:this.element[0].offsetWidth,height:this.element[0].offsetHeight};d.ui.ddmanager.droppables[a.scope]=d.ui.ddmanager.droppables[a.scope]||[];d.ui.ddmanager.droppables[a.scope].push(this);
 a.addClasses&&this.element.addClass("ui-droppable")},destroy:function(){for(var a=d.ui.ddmanager.droppables[this.options.scope],b=0;b<a.length;b++)a[b]==this&&a.splice(b,1);this.element.removeClass("ui-droppable ui-droppable-disabled").removeData("droppable").unbind(".droppable");return this},_setOption:function(a,b){if(a=="accept")this.accept=d.isFunction(b)?b:function(c){return c.is(b)};d.Widget.prototype._setOption.apply(this,arguments)},_activate:function(a){var b=d.ui.ddmanager.current;this.options.activeClass&&
@@ -719,9 +719,9 @@ d.data(g[0],"droppable");e.greedyChild=c=="isover"?1:0}}if(e&&c=="isover"){e.iso
  * http://docs.jquery.com/UI/Resizables
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.mouse.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.widget.js
  */
 (function(e){e.widget("ui.resizable",e.ui.mouse,{widgetEventPrefix:"resize",options:{alsoResize:false,animate:false,animateDuration:"slow",animateEasing:"swing",aspectRatio:false,autoHide:false,containment:false,ghost:false,grid:false,handles:"e,s,se",helper:false,maxHeight:null,maxWidth:null,minHeight:10,minWidth:10,zIndex:1E3},_create:function(){var b=this,a=this.options;this.element.addClass("ui-resizable");e.extend(this,{_aspectRatio:!!a.aspectRatio,aspectRatio:a.aspectRatio,originalElement:this.element,
 _proportionallyResizeElements:[],_helper:a.helper||a.ghost||a.animate?a.helper||"ui-resizable-helper":null});if(this.element[0].nodeName.match(/canvas|textarea|input|select|button|img/i)){/relative/.test(this.element.css("position"))&&e.browser.opera&&this.element.css({position:"relative",top:"auto",left:"auto"});this.element.wrap(e('<div class="ui-wrapper" style="overflow: hidden;"></div>').css({position:this.element.css("position"),width:this.element.outerWidth(),height:this.element.outerHeight(),
@@ -766,9 +766,9 @@ b.ghost&&b.ghost.css({position:"relative",height:b.size.height,width:b.size.widt
  * http://docs.jquery.com/UI/Selectables
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.mouse.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.widget.js
  */
 (function(e){e.widget("ui.selectable",e.ui.mouse,{options:{appendTo:"body",autoRefresh:true,distance:0,filter:"*",tolerance:"touch"},_create:function(){var c=this;this.element.addClass("ui-selectable");this.dragged=false;var f;this.refresh=function(){f=e(c.options.filter,c.element[0]);f.each(function(){var d=e(this),b=d.offset();e.data(this,"selectable-item",{element:this,$element:d,left:b.left,top:b.top,right:b.left+d.outerWidth(),bottom:b.top+d.outerHeight(),startselected:false,selected:d.hasClass("ui-selected"),
 selecting:d.hasClass("ui-selecting"),unselecting:d.hasClass("ui-unselecting")})})};this.refresh();this.selectees=f.addClass("ui-selectee");this._mouseInit();this.helper=e("<div class='ui-selectable-helper'></div>")},destroy:function(){this.selectees.removeClass("ui-selectee").removeData("selectable-item");this.element.removeClass("ui-selectable ui-selectable-disabled").removeData("selectable").unbind(".selectable");this._mouseDestroy();return this},_mouseStart:function(c){var f=this;this.opos=[c.pageX,
@@ -788,9 +788,9 @@ e.data(this,"selectable-item");d.$element.removeClass("ui-selecting").addClass("
  * http://docs.jquery.com/UI/Sortables
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.mouse.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.widget.js
  */
 (function(d){d.widget("ui.sortable",d.ui.mouse,{widgetEventPrefix:"sort",options:{appendTo:"parent",axis:false,connectWith:false,containment:false,cursor:"auto",cursorAt:false,dropOnEmpty:true,forcePlaceholderSize:false,forceHelperSize:false,grid:false,handle:false,helper:"original",items:"> *",opacity:false,placeholder:false,revert:false,scroll:true,scrollSensitivity:20,scrollSpeed:20,scope:"default",tolerance:"intersect",zIndex:1E3},_create:function(){this.containerCache={};this.element.addClass("ui-sortable");
 this.refresh();this.floating=this.items.length?/left|right/.test(this.items[0].item.css("float"))||/inline|table-cell/.test(this.items[0].item.css("display")):false;this.offset=this.element.offset();this._mouseInit()},destroy:function(){this.element.removeClass("ui-sortable ui-sortable-disabled").removeData("sortable").unbind(".sortable");this._mouseDestroy();for(var a=this.items.length-1;a>=0;a--)this.items[a].item.removeData("sortable-item");return this},_setOption:function(a,b){if(a==="disabled"){this.options[a]=
@@ -848,8 +848,8 @@ _uiHash:function(a){var b=a||this;return{helper:b.helper,placeholder:b.placehold
  * http://docs.jquery.com/UI/Accordion
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.widget.js
  */
 (function(c){c.widget("ui.accordion",{options:{active:0,animated:"slide",autoHeight:true,clearStyle:false,collapsible:false,event:"click",fillSpace:false,header:"> li > :first-child,> :not(li):even",icons:{header:"ui-icon-triangle-1-e",headerSelected:"ui-icon-triangle-1-s"},navigation:false,navigationFilter:function(){return this.href.toLowerCase()===location.href.toLowerCase()}},_create:function(){var a=this,b=a.options;a.running=0;a.element.addClass("ui-accordion ui-widget ui-helper-reset").children("li").addClass("ui-accordion-li-fix");
 a.headers=a.element.find(b.header).addClass("ui-accordion-header ui-helper-reset ui-state-default ui-corner-all").bind("mouseenter.accordion",function(){b.disabled||c(this).addClass("ui-state-hover")}).bind("mouseleave.accordion",function(){b.disabled||c(this).removeClass("ui-state-hover")}).bind("focus.accordion",function(){b.disabled||c(this).addClass("ui-state-focus")}).bind("blur.accordion",function(){b.disabled||c(this).removeClass("ui-state-focus")});a.headers.next().addClass("ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom");
@@ -878,9 +878,9 @@ paddingTop:"hide",paddingBottom:"hide"},a);else a.toShow.animate({height:"show",
  * http://docs.jquery.com/UI/Autocomplete
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.widget.js
- *	jquery.ui.position.js
+ *    jquery.ui.core.js
+ *    jquery.ui.widget.js
+ *    jquery.ui.position.js
  */
 (function(d){var e=0;d.widget("ui.autocomplete",{options:{appendTo:"body",autoFocus:false,delay:300,minLength:1,position:{my:"left top",at:"left bottom",collision:"none"},source:null},pending:0,_create:function(){var a=this,b=this.element[0].ownerDocument,g;this.element.addClass("ui-autocomplete-input").attr("autocomplete","off").attr({role:"textbox","aria-autocomplete":"list","aria-haspopup":"true"}).bind("keydown.autocomplete",function(c){if(!(a.options.disabled||a.element.attr("readonly"))){g=
 false;var f=d.ui.keyCode;switch(c.keyCode){case f.PAGE_UP:a._move("previousPage",c);break;case f.PAGE_DOWN:a._move("nextPage",c);break;case f.UP:a._move("previous",c);c.preventDefault();break;case f.DOWN:a._move("next",c);c.preventDefault();break;case f.ENTER:case f.NUMPAD_ENTER:if(a.menu.active){g=true;c.preventDefault()}case f.TAB:if(!a.menu.active)return;a.menu.select(c);break;case f.ESCAPE:a.element.val(a.term);a.close(c);break;default:clearTimeout(a.searching);a.searching=setTimeout(function(){if(a.term!=
@@ -910,8 +910,8 @@ this.activate(e,result)}else this.activate(e,this.element.children(".ui-menu-ite
  * http://docs.jquery.com/UI/Button
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.widget.js
  */
 (function(a){var g,i=function(b){a(":ui-button",b.target.form).each(function(){var c=a(this).data("button");setTimeout(function(){c.refresh()},1)})},h=function(b){var c=b.name,d=b.form,f=a([]);if(c)f=d?a(d).find("[name='"+c+"']"):a("[name='"+c+"']",b.ownerDocument).filter(function(){return!this.form});return f};a.widget("ui.button",{options:{disabled:null,text:true,label:null,icons:{primary:null,secondary:null}},_create:function(){this.element.closest("form").unbind("reset.button").bind("reset.button",
 i);if(typeof this.options.disabled!=="boolean")this.options.disabled=this.element.attr("disabled");this._determineButtonType();this.hasTitle=!!this.buttonElement.attr("title");var b=this,c=this.options,d=this.type==="checkbox"||this.type==="radio",f="ui-state-hover"+(!d?" ui-state-active":"");if(c.label===null)c.label=this.buttonElement.html();if(this.element.is(":disabled"))c.disabled=true;this.buttonElement.addClass("ui-button ui-widget ui-state-default ui-corner-all").attr("role","button").bind("mouseenter.button",
@@ -935,13 +935,13 @@ destroy:function(){this.element.removeClass("ui-buttonset");this.buttons.map(fun
  * http://docs.jquery.com/UI/Dialog
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.widget.js
  *  jquery.ui.button.js
- *	jquery.ui.draggable.js
- *	jquery.ui.mouse.js
- *	jquery.ui.position.js
- *	jquery.ui.resizable.js
+ *    jquery.ui.draggable.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.position.js
+ *    jquery.ui.resizable.js
  */
 (function(c,l){var m={buttons:true,height:true,maxHeight:true,maxWidth:true,minHeight:true,minWidth:true,width:true},n={maxHeight:true,maxWidth:true,minHeight:true,minWidth:true},o=c.attrFn||{val:true,css:true,html:true,text:true,data:true,width:true,height:true,offset:true,click:true};c.widget("ui.dialog",{options:{autoOpen:true,buttons:{},closeOnEscape:true,closeText:"close",dialogClass:"",draggable:true,hide:null,height:"auto",maxHeight:false,maxWidth:false,minHeight:150,minWidth:150,modal:false,
 position:{my:"center",at:"center",collision:"fit",using:function(a){var b=c(this).css(a).offset().top;b<0&&c(this).css("top",a.top-b)}},resizable:true,show:null,stack:true,title:"",width:300,zIndex:1E3},_create:function(){this.originalTitle=this.element.attr("title");if(typeof this.originalTitle!=="string")this.originalTitle="";this.options.title=this.options.title||this.originalTitle;var a=this,b=a.options,d=b.title||"&#160;",e=c.ui.dialog.getTitleId(a.element),g=(a.uiDialog=c("<div></div>")).appendTo(document.body).hide().addClass("ui-dialog ui-widget ui-widget-content ui-corner-all "+
@@ -975,9 +975,9 @@ function(){a=a.add(this)});a.css({width:0,height:0}).css({width:c.ui.dialog.over
  * http://docs.jquery.com/UI/Slider
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.mouse.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.mouse.js
+ *    jquery.ui.widget.js
  */
 (function(d){d.widget("ui.slider",d.ui.mouse,{widgetEventPrefix:"slide",options:{animate:false,distance:0,max:100,min:0,orientation:"horizontal",range:false,step:1,value:0,values:null},_create:function(){var b=this,a=this.options;this._mouseSliding=this._keySliding=false;this._animateOff=true;this._handleIndex=null;this._detectOrientation();this._mouseInit();this.element.addClass("ui-slider ui-slider-"+this.orientation+" ui-widget ui-widget-content ui-corner-all");a.disabled&&this.element.addClass("ui-slider-disabled ui-disabled");
 this.range=d([]);if(a.range){if(a.range===true){this.range=d("<div></div>");if(!a.values)a.values=[this._valueMin(),this._valueMin()];if(a.values.length&&a.values.length!==2)a.values=[a.values[0],a.values[0]]}else this.range=d("<div></div>");this.range.appendTo(this.element).addClass("ui-slider-range");if(a.range==="min"||a.range==="max")this.range.addClass("ui-slider-range-"+a.range);this.range.addClass("ui-widget-header")}d(".ui-slider-handle",this.element).length===0&&d("<a href='#'></a>").appendTo(this.element).addClass("ui-slider-handle");
@@ -1008,8 +1008,8 @@ if(k===1)c.range[e?"animate":"css"]({width:f-g+"%"},{queue:false,duration:a.anim
  * http://docs.jquery.com/UI/Tabs
  *
  * Depends:
- *	jquery.ui.core.js
- *	jquery.ui.widget.js
+ *    jquery.ui.core.js
+ *    jquery.ui.widget.js
  */
 (function(d,p){function u(){return++v}function w(){return++x}var v=0,x=0;d.widget("ui.tabs",{options:{add:null,ajaxOptions:null,cache:false,cookie:null,collapsible:false,disable:null,disabled:[],enable:null,event:"click",fx:null,idPrefix:"ui-tabs-",load:null,panelTemplate:"<div></div>",remove:null,select:null,show:null,spinner:"<em>Loading&#8230;</em>",tabTemplate:"<li><a href='#{href}'><span>#{label}</span></a></li>"},_create:function(){this._tabify(true)},_setOption:function(b,e){if(b=="selected")this.options.collapsible&&
 e==this.options.selected||this.select(e);else{this.options[b]=e;this._tabify()}},_tabId:function(b){return b.title&&b.title.replace(/\s/g,"_").replace(/[^\w\u00c0-\uFFFF-]/g,"")||this.options.idPrefix+u()},_sanitizeSelector:function(b){return b.replace(/:/g,"\\:")},_cookie:function(){var b=this.cookie||(this.cookie=this.options.cookie.name||"ui-tabs-"+w());return d.cookie.apply(null,[b].concat(d.makeArray(arguments)))},_ui:function(b,e){return{tab:b,panel:e,index:this.anchors.index(b)}},_cleanup:function(){this.lis.filter(".ui-state-processing").removeClass("ui-state-processing").find("span:data(label.tabs)").each(function(){var b=
@@ -1043,7 +1043,7 @@ a.rotate(null)}:function(){t=c.selected;h()});if(b){this.element.bind("tabsshow"
  * http://docs.jquery.com/UI/Datepicker
  *
  * Depends:
- *	jquery.ui.core.js
+ *    jquery.ui.core.js
  */
 (function(d,A){function K(){this.debug=false;this._curInst=null;this._keyEvent=false;this._disabledInputs=[];this._inDialog=this._datepickerShowing=false;this._mainDivId="ui-datepicker-div";this._inlineClass="ui-datepicker-inline";this._appendClass="ui-datepicker-append";this._triggerClass="ui-datepicker-trigger";this._dialogClass="ui-datepicker-dialog";this._disableClass="ui-datepicker-disabled";this._unselectableClass="ui-datepicker-unselectable";this._currentClass="ui-datepicker-current-day";this._dayOverClass=
 "ui-datepicker-days-cell-over";this.regional=[];this.regional[""]={closeText:"Done",prevText:"Prev",nextText:"Next",currentText:"Today",monthNames:["January","February","March","April","May","June","July","August","September","October","November","December"],monthNamesShort:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],dayNames:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],dayNamesShort:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],dayNamesMin:["Su",
@@ -1171,7 +1171,7 @@ a,b,d,e){return d-f.easing.easeOutBounce(c,e-a,0,d,e)+b},easeOutBounce:function(
  * http://docs.jquery.com/UI/Effects/Blind
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(b){b.effects.blind=function(c){return this.queue(function(){var a=b(this),g=["position","top","bottom","left","right"],f=b.effects.setMode(a,c.options.mode||"hide"),d=c.options.direction||"vertical";b.effects.save(a,g);a.show();var e=b.effects.createWrapper(a).css({overflow:"hidden"}),h=d=="vertical"?"height":"width";d=d=="vertical"?e.height():e.width();f=="show"&&e.css(h,0);var i={};i[h]=f=="show"?d:0;e.animate(i,c.duration,c.options.easing,function(){f=="hide"&&a.hide();b.effects.restore(a,
 g);b.effects.removeWrapper(a);c.callback&&c.callback.apply(a[0],arguments);a.dequeue()})})}})(jQuery);
@@ -1185,7 +1185,7 @@ g);b.effects.removeWrapper(a);c.callback&&c.callback.apply(a[0],arguments);a.deq
  * http://docs.jquery.com/UI/Effects/Bounce
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(e){e.effects.bounce=function(b){return this.queue(function(){var a=e(this),l=["position","top","bottom","left","right"],h=e.effects.setMode(a,b.options.mode||"effect"),d=b.options.direction||"up",c=b.options.distance||20,m=b.options.times||5,i=b.duration||250;/show|hide/.test(h)&&l.push("opacity");e.effects.save(a,l);a.show();e.effects.createWrapper(a);var f=d=="up"||d=="down"?"top":"left";d=d=="up"||d=="left"?"pos":"neg";c=b.options.distance||(f=="top"?a.outerHeight({margin:true})/3:a.outerWidth({margin:true})/
 3);if(h=="show")a.css("opacity",0).css(f,d=="pos"?-c:c);if(h=="hide")c/=m*2;h!="hide"&&m--;if(h=="show"){var g={opacity:1};g[f]=(d=="pos"?"+=":"-=")+c;a.animate(g,i/2,b.options.easing);c/=2;m--}for(g=0;g<m;g++){var j={},k={};j[f]=(d=="pos"?"-=":"+=")+c;k[f]=(d=="pos"?"+=":"-=")+c;a.animate(j,i/2,b.options.easing).animate(k,i/2,b.options.easing);c=h=="hide"?c*2:c/2}if(h=="hide"){g={opacity:0};g[f]=(d=="pos"?"-=":"+=")+c;a.animate(g,i/2,b.options.easing,function(){a.hide();e.effects.restore(a,l);e.effects.removeWrapper(a);
@@ -1200,7 +1200,7 @@ b.callback&&b.callback.apply(this,arguments)})}else{j={};k={};j[f]=(d=="pos"?"-=
  * http://docs.jquery.com/UI/Effects/Clip
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(b){b.effects.clip=function(e){return this.queue(function(){var a=b(this),i=["position","top","bottom","left","right","height","width"],f=b.effects.setMode(a,e.options.mode||"hide"),c=e.options.direction||"vertical";b.effects.save(a,i);a.show();var d=b.effects.createWrapper(a).css({overflow:"hidden"});d=a[0].tagName=="IMG"?d:a;var g={size:c=="vertical"?"height":"width",position:c=="vertical"?"top":"left"};c=c=="vertical"?d.height():d.width();if(f=="show"){d.css(g.size,0);d.css(g.position,
 c/2)}var h={};h[g.size]=f=="show"?c:0;h[g.position]=f=="show"?0:c/2;d.animate(h,{queue:false,duration:e.duration,easing:e.options.easing,complete:function(){f=="hide"&&a.hide();b.effects.restore(a,i);b.effects.removeWrapper(a);e.callback&&e.callback.apply(a[0],arguments);a.dequeue()}})})}})(jQuery);
@@ -1214,7 +1214,7 @@ c/2)}var h={};h[g.size]=f=="show"?c:0;h[g.position]=f=="show"?0:c/2;d.animate(h,
  * http://docs.jquery.com/UI/Effects/Drop
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(c){c.effects.drop=function(d){return this.queue(function(){var a=c(this),h=["position","top","bottom","left","right","opacity"],e=c.effects.setMode(a,d.options.mode||"hide"),b=d.options.direction||"left";c.effects.save(a,h);a.show();c.effects.createWrapper(a);var f=b=="up"||b=="down"?"top":"left";b=b=="up"||b=="left"?"pos":"neg";var g=d.options.distance||(f=="top"?a.outerHeight({margin:true})/2:a.outerWidth({margin:true})/2);if(e=="show")a.css("opacity",0).css(f,b=="pos"?-g:g);var i={opacity:e==
 "show"?1:0};i[f]=(e=="show"?b=="pos"?"+=":"-=":b=="pos"?"-=":"+=")+g;a.animate(i,{queue:false,duration:d.duration,easing:d.options.easing,complete:function(){e=="hide"&&a.hide();c.effects.restore(a,h);c.effects.removeWrapper(a);d.callback&&d.callback.apply(this,arguments);a.dequeue()}})})}})(jQuery);
@@ -1228,7 +1228,7 @@ c/2)}var h={};h[g.size]=f=="show"?c:0;h[g.position]=f=="show"?0:c/2;d.animate(h,
  * http://docs.jquery.com/UI/Effects/Explode
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(j){j.effects.explode=function(a){return this.queue(function(){var c=a.options.pieces?Math.round(Math.sqrt(a.options.pieces)):3,d=a.options.pieces?Math.round(Math.sqrt(a.options.pieces)):3;a.options.mode=a.options.mode=="toggle"?j(this).is(":visible")?"hide":"show":a.options.mode;var b=j(this).show().css("visibility","hidden"),g=b.offset();g.top-=parseInt(b.css("marginTop"),10)||0;g.left-=parseInt(b.css("marginLeft"),10)||0;for(var h=b.outerWidth(true),i=b.outerHeight(true),e=0;e<c;e++)for(var f=
 0;f<d;f++)b.clone().appendTo("body").wrap("<div></div>").css({position:"absolute",visibility:"visible",left:-f*(h/d),top:-e*(i/c)}).parent().addClass("ui-effects-explode").css({position:"absolute",overflow:"hidden",width:h/d,height:i/c,left:g.left+f*(h/d)+(a.options.mode=="show"?(f-Math.floor(d/2))*(h/d):0),top:g.top+e*(i/c)+(a.options.mode=="show"?(e-Math.floor(c/2))*(i/c):0),opacity:a.options.mode=="show"?0:1}).animate({left:g.left+f*(h/d)+(a.options.mode=="show"?0:(f-Math.floor(d/2))*(h/d)),top:g.top+
@@ -1243,7 +1243,7 @@ e*(i/c)+(a.options.mode=="show"?0:(e-Math.floor(c/2))*(i/c)),opacity:a.options.m
  * http://docs.jquery.com/UI/Effects/Fade
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(b){b.effects.fade=function(a){return this.queue(function(){var c=b(this),d=b.effects.setMode(c,a.options.mode||"hide");c.animate({opacity:d},{queue:false,duration:a.duration,easing:a.options.easing,complete:function(){a.callback&&a.callback.apply(this,arguments);c.dequeue()}})})}})(jQuery);
 ;/*
@@ -1256,7 +1256,7 @@ e*(i/c)+(a.options.mode=="show"?0:(e-Math.floor(c/2))*(i/c)),opacity:a.options.m
  * http://docs.jquery.com/UI/Effects/Fold
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(c){c.effects.fold=function(a){return this.queue(function(){var b=c(this),j=["position","top","bottom","left","right"],d=c.effects.setMode(b,a.options.mode||"hide"),g=a.options.size||15,h=!!a.options.horizFirst,k=a.duration?a.duration/2:c.fx.speeds._default/2;c.effects.save(b,j);b.show();var e=c.effects.createWrapper(b).css({overflow:"hidden"}),f=d=="show"!=h,l=f?["width","height"]:["height","width"];f=f?[e.width(),e.height()]:[e.height(),e.width()];var i=/([0-9]+)%/.exec(g);if(i)g=parseInt(i[1],
 10)/100*f[d=="hide"?0:1];if(d=="show")e.css(h?{height:0,width:g}:{height:g,width:0});h={};i={};h[l[0]]=d=="show"?f[0]:g;i[l[1]]=d=="show"?f[1]:0;e.animate(h,k,a.options.easing).animate(i,k,a.options.easing,function(){d=="hide"&&b.hide();c.effects.restore(b,j);c.effects.removeWrapper(b);a.callback&&a.callback.apply(b[0],arguments);b.dequeue()})})}})(jQuery);
@@ -1270,7 +1270,7 @@ e*(i/c)+(a.options.mode=="show"?0:(e-Math.floor(c/2))*(i/c)),opacity:a.options.m
  * http://docs.jquery.com/UI/Effects/Highlight
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(b){b.effects.highlight=function(c){return this.queue(function(){var a=b(this),e=["backgroundImage","backgroundColor","opacity"],d=b.effects.setMode(a,c.options.mode||"show"),f={backgroundColor:a.css("backgroundColor")};if(d=="hide")f.opacity=0;b.effects.save(a,e);a.show().css({backgroundImage:"none",backgroundColor:c.options.color||"#ffff99"}).animate(f,{queue:false,duration:c.duration,easing:c.options.easing,complete:function(){d=="hide"&&a.hide();b.effects.restore(a,e);d=="show"&&!b.support.opacity&&
 this.style.removeAttribute("filter");c.callback&&c.callback.apply(this,arguments);a.dequeue()}})})}})(jQuery);
@@ -1284,7 +1284,7 @@ this.style.removeAttribute("filter");c.callback&&c.callback.apply(this,arguments
  * http://docs.jquery.com/UI/Effects/Pulsate
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(d){d.effects.pulsate=function(a){return this.queue(function(){var b=d(this),c=d.effects.setMode(b,a.options.mode||"show");times=(a.options.times||5)*2-1;duration=a.duration?a.duration/2:d.fx.speeds._default/2;isVisible=b.is(":visible");animateTo=0;if(!isVisible){b.css("opacity",0).show();animateTo=1}if(c=="hide"&&isVisible||c=="show"&&!isVisible)times--;for(c=0;c<times;c++){b.animate({opacity:animateTo},duration,a.options.easing);animateTo=(animateTo+1)%2}b.animate({opacity:animateTo},duration,
 a.options.easing,function(){animateTo==0&&b.hide();a.callback&&a.callback.apply(this,arguments)});b.queue("fx",function(){b.dequeue()}).dequeue()})}})(jQuery);
@@ -1298,7 +1298,7 @@ a.options.easing,function(){animateTo==0&&b.hide();a.callback&&a.callback.apply(
  * http://docs.jquery.com/UI/Effects/Scale
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(c){c.effects.puff=function(b){return this.queue(function(){var a=c(this),e=c.effects.setMode(a,b.options.mode||"hide"),g=parseInt(b.options.percent,10)||150,h=g/100,i={height:a.height(),width:a.width()};c.extend(b.options,{fade:true,mode:e,percent:e=="hide"?g:100,from:e=="hide"?i:{height:i.height*h,width:i.width*h}});a.effect("scale",b.options,b.duration,b.callback);a.dequeue()})};c.effects.scale=function(b){return this.queue(function(){var a=c(this),e=c.extend(true,{},b.options),g=c.effects.setMode(a,
 b.options.mode||"effect"),h=parseInt(b.options.percent,10)||(parseInt(b.options.percent,10)==0?0:g=="hide"?0:100),i=b.options.direction||"both",f=b.options.origin;if(g!="effect"){e.origin=f||["middle","center"];e.restore=true}f={height:a.height(),width:a.width()};a.from=b.options.from||(g=="show"?{height:0,width:0}:f);h={y:i!="horizontal"?h/100:1,x:i!="vertical"?h/100:1};a.to={height:f.height*h.y,width:f.width*h.x};if(b.options.fade){if(g=="show"){a.from.opacity=0;a.to.opacity=1}if(g=="hide"){a.from.opacity=
@@ -1318,7 +1318,7 @@ n?e:g);c.effects.removeWrapper(a);b.callback&&b.callback.apply(this,arguments);a
  * http://docs.jquery.com/UI/Effects/Shake
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(d){d.effects.shake=function(a){return this.queue(function(){var b=d(this),j=["position","top","bottom","left","right"];d.effects.setMode(b,a.options.mode||"effect");var c=a.options.direction||"left",e=a.options.distance||20,l=a.options.times||3,f=a.duration||a.options.duration||140;d.effects.save(b,j);b.show();d.effects.createWrapper(b);var g=c=="up"||c=="down"?"top":"left",h=c=="up"||c=="left"?"pos":"neg";c={};var i={},k={};c[g]=(h=="pos"?"-=":"+=")+e;i[g]=(h=="pos"?"+=":"-=")+e*2;k[g]=
 (h=="pos"?"-=":"+=")+e*2;b.animate(c,f,a.options.easing);for(e=1;e<l;e++)b.animate(i,f,a.options.easing).animate(k,f,a.options.easing);b.animate(i,f,a.options.easing).animate(c,f/2,a.options.easing,function(){d.effects.restore(b,j);d.effects.removeWrapper(b);a.callback&&a.callback.apply(this,arguments)});b.queue("fx",function(){b.dequeue()});b.dequeue()})}})(jQuery);
@@ -1332,7 +1332,7 @@ n?e:g);c.effects.removeWrapper(a);b.callback&&b.callback.apply(this,arguments);a
  * http://docs.jquery.com/UI/Effects/Slide
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(c){c.effects.slide=function(d){return this.queue(function(){var a=c(this),h=["position","top","bottom","left","right"],f=c.effects.setMode(a,d.options.mode||"show"),b=d.options.direction||"left";c.effects.save(a,h);a.show();c.effects.createWrapper(a).css({overflow:"hidden"});var g=b=="up"||b=="down"?"top":"left";b=b=="up"||b=="left"?"pos":"neg";var e=d.options.distance||(g=="top"?a.outerHeight({margin:true}):a.outerWidth({margin:true}));if(f=="show")a.css(g,b=="pos"?isNaN(e)?"-"+e:-e:e);
 var i={};i[g]=(f=="show"?b=="pos"?"+=":"-=":b=="pos"?"-=":"+=")+e;a.animate(i,{queue:false,duration:d.duration,easing:d.options.easing,complete:function(){f=="hide"&&a.hide();c.effects.restore(a,h);c.effects.removeWrapper(a);d.callback&&d.callback.apply(this,arguments);a.dequeue()}})})}})(jQuery);
@@ -1346,7 +1346,7 @@ var i={};i[g]=(f=="show"?b=="pos"?"+=":"-=":b=="pos"?"-=":"+=")+e;a.animate(i,{q
  * http://docs.jquery.com/UI/Effects/Transfer
  *
  * Depends:
- *	jquery.effects.core.js
+ *    jquery.effects.core.js
  */
 (function(e){e.effects.transfer=function(a){return this.queue(function(){var b=e(this),c=e(a.options.to),d=c.offset();c={top:d.top,left:d.left,height:c.innerHeight(),width:c.innerWidth()};d=b.offset();var f=e('<div class="ui-effects-transfer"></div>').appendTo(document.body).addClass(a.options.className).css({top:d.top,left:d.left,height:b.innerHeight(),width:b.innerWidth(),position:"absolute"}).animate(c,a.duration,a.options.easing,function(){f.remove();a.callback&&a.callback.apply(b[0],arguments);
 b.dequeue()})})}})(jQuery);
@@ -1370,774 +1370,774 @@ b.dequeue()})})}})(jQuery);
 (function($) {
 
 $.widget("ui.selectmenu", {
-	getter: "value",
-	version: "1.8",
-	eventPrefix: "selectmenu",
-	options: {
-		transferClasses: true,
-		typeAhead: "sequential",
-		style: 'dropdown',
-		positionOptions: {
-			my: "left top",
-			at: "left bottom",
-			offset: null
-		},
-		width: null, 
-		menuWidth: null, 
-		handleWidth: 26,
-		maxHeight: null,
-		icons: null, 
-		format: null,
-		bgImage: function() {},
-		wrapperElement: ""
-	},
+    getter: "value",
+    version: "1.8",
+    eventPrefix: "selectmenu",
+    options: {
+        transferClasses: true,
+        typeAhead: "sequential",
+        style: 'dropdown',
+        positionOptions: {
+            my: "left top",
+            at: "left bottom",
+            offset: null
+        },
+        width: null, 
+        menuWidth: null, 
+        handleWidth: 26,
+        maxHeight: null,
+        icons: null, 
+        format: null,
+        bgImage: function() {},
+        wrapperElement: ""
+    },
 
-	_create: function() {
-		var self = this, o = this.options;
+    _create: function() {
+        var self = this, o = this.options;
 
-		// set a default id value, generate a new random one if not set by developer
-		var selectmenuId = this.element.attr('id') || 'ui-selectmenu-' + Math.random().toString(16).slice(2, 10);
+        // set a default id value, generate a new random one if not set by developer
+        var selectmenuId = this.element.attr('id') || 'ui-selectmenu-' + Math.random().toString(16).slice(2, 10);
 
-		// quick array of button and menu id's
-		this.ids = [ selectmenuId + '-button', selectmenuId + '-menu' ];
+        // quick array of button and menu id's
+        this.ids = [ selectmenuId + '-button', selectmenuId + '-menu' ];
 
-		// define safe mouseup for future toggling
-		this._safemouseup = true;
-		
-		// FIXME temp workaround for IE
-		if ($.browser.msie) o.typeAhead = "";
+        // define safe mouseup for future toggling
+        this._safemouseup = true;
+        
+        // FIXME temp workaround for IE
+        if ($.browser.msie) o.typeAhead = "";
 
-		// create menu button wrapper
-		this.newelement = $('<a class="' + this.widgetBaseClass + ' ui-widget ui-state-default ui-corner-all" id="' + this.ids[0] + '" role="button" href="#" tabindex="0" aria-haspopup="true" aria-owns="' + this.ids[1] + '"></a>')
-			.insertAfter(this.element);
-		this.newelement.wrap(o.wrapperElement);
+        // create menu button wrapper
+        this.newelement = $('<a class="' + this.widgetBaseClass + ' ui-widget ui-state-default ui-corner-all" id="' + this.ids[0] + '" role="button" href="#" tabindex="0" aria-haspopup="true" aria-owns="' + this.ids[1] + '"></a>')
+            .insertAfter(this.element);
+        this.newelement.wrap(o.wrapperElement);
 
-		// transfer tabindex
-		var tabindex = this.element.attr('tabindex');
-		if (tabindex) {
-			this.newelement.attr('tabindex', tabindex);
-		}
+        // transfer tabindex
+        var tabindex = this.element.attr('tabindex');
+        if (tabindex) {
+            this.newelement.attr('tabindex', tabindex);
+        }
 
-		// save reference to select in data for ease in calling methods
-		this.newelement.data('selectelement', this.element);
-		
-		// menu icon
-		this.selectmenuIcon = $('<span class="' + this.widgetBaseClass + '-icon ui-icon"></span>')
-			.prependTo(this.newelement);
-			
-		// append status span to button
-		this.newelement.prepend('<span class="' + self.widgetBaseClass + '-status" />');
-			
-		// make associated form label trigger focus
-		$('label[for="' + this.element.attr('id') + '"]')
-			.attr('for', this.ids[0])
-			.bind('click.selectmenu', function() {
-				self.newelement[0].focus();
-				return false;
-			});	
-			
-		// click toggle for menu visibility
-		this.newelement
-			.bind('mousedown.selectmenu', function(event) {
-				self._toggle(event, true);
-				// make sure a click won't open/close instantly
-				if (o.style == "popup") {
-					self._safemouseup = false;
-					setTimeout(function() { self._safemouseup = true; }, 300);
-				}
-				return false;
-			})
-			.bind('click.selectmenu', function() {
-				return false;
-			})
-			.bind("keydown.selectmenu", function(event) {
-				var ret = false;
-				switch (event.keyCode) {
-					case $.ui.keyCode.ENTER:
-						ret = true;
-						break;
-					case $.ui.keyCode.SPACE:
-						self._toggle(event);	
-						break;
-					case $.ui.keyCode.UP:
-						if (event.altKey) {
-							self.open(event);
-						} else {
-							self._moveSelection(-1);
-						}
-						break;
-					case $.ui.keyCode.DOWN:
-						if (event.altKey) {
-							self.open(event);
-						} else {
-							self._moveSelection(1);
-						}
-						break;
-					case $.ui.keyCode.LEFT:
-						self._moveSelection(-1);
-						break;
-					case $.ui.keyCode.RIGHT:
-						self._moveSelection(1);
-						break;
-					case $.ui.keyCode.TAB:
-						ret = true;
-						break;
-					default:
-						ret = true;
-						self._typeAhead(event.keyCode, 'mouseup');
-						break;	
-				}
-				return ret;
-			})
-			.bind('mouseover.selectmenu focus.selectmenu', function() { 
-				if (!o.disabled) {
-					$(this).addClass(self.widgetBaseClass + '-focus ui-state-hover');
-				}
-			})
-			.bind('mouseout.selectmenu blur.selectmenu', function() {
-				if (!o.disabled) {
-					$(this).removeClass(self.widgetBaseClass + '-focus ui-state-hover');
-				}
-			});
+        // save reference to select in data for ease in calling methods
+        this.newelement.data('selectelement', this.element);
+        
+        // menu icon
+        this.selectmenuIcon = $('<span class="' + this.widgetBaseClass + '-icon ui-icon"></span>')
+            .prependTo(this.newelement);
+            
+        // append status span to button
+        this.newelement.prepend('<span class="' + self.widgetBaseClass + '-status" />');
+            
+        // make associated form label trigger focus
+        $('label[for="' + this.element.attr('id') + '"]')
+            .attr('for', this.ids[0])
+            .bind('click.selectmenu', function() {
+                self.newelement[0].focus();
+                return false;
+            });    
+            
+        // click toggle for menu visibility
+        this.newelement
+            .bind('mousedown.selectmenu', function(event) {
+                self._toggle(event, true);
+                // make sure a click won't open/close instantly
+                if (o.style == "popup") {
+                    self._safemouseup = false;
+                    setTimeout(function() { self._safemouseup = true; }, 300);
+                }
+                return false;
+            })
+            .bind('click.selectmenu', function() {
+                return false;
+            })
+            .bind("keydown.selectmenu", function(event) {
+                var ret = false;
+                switch (event.keyCode) {
+                    case $.ui.keyCode.ENTER:
+                        ret = true;
+                        break;
+                    case $.ui.keyCode.SPACE:
+                        self._toggle(event);    
+                        break;
+                    case $.ui.keyCode.UP:
+                        if (event.altKey) {
+                            self.open(event);
+                        } else {
+                            self._moveSelection(-1);
+                        }
+                        break;
+                    case $.ui.keyCode.DOWN:
+                        if (event.altKey) {
+                            self.open(event);
+                        } else {
+                            self._moveSelection(1);
+                        }
+                        break;
+                    case $.ui.keyCode.LEFT:
+                        self._moveSelection(-1);
+                        break;
+                    case $.ui.keyCode.RIGHT:
+                        self._moveSelection(1);
+                        break;
+                    case $.ui.keyCode.TAB:
+                        ret = true;
+                        break;
+                    default:
+                        ret = true;
+                        self._typeAhead(event.keyCode, 'mouseup');
+                        break;    
+                }
+                return ret;
+            })
+            .bind('mouseover.selectmenu focus.selectmenu', function() { 
+                if (!o.disabled) {
+                    $(this).addClass(self.widgetBaseClass + '-focus ui-state-hover');
+                }
+            })
+            .bind('mouseout.selectmenu blur.selectmenu', function() {
+                if (!o.disabled) {
+                    $(this).removeClass(self.widgetBaseClass + '-focus ui-state-hover');
+                }
+            });
 
-		// document click closes menu
-		$(document).bind("mousedown.selectmenu", function(event) {
-			self.close(event);
-		});
+        // document click closes menu
+        $(document).bind("mousedown.selectmenu", function(event) {
+            self.close(event);
+        });
 
-		// change event on original selectmenu
-		this.element
-			.bind("click.selectmenu", function() {
-				self._refreshValue();
-			})
-			// FIXME: newelement can be null under unclear circumstances in IE8 
-			// TODO not sure if this is still a problem (fnagel 20.03.11)
-			.bind("focus.selectmenu", function() {
-				if (self.newelement) {
-					self.newelement[0].focus();
-				}
-			});
+        // change event on original selectmenu
+        this.element
+            .bind("click.selectmenu", function() {
+                self._refreshValue();
+            })
+            // FIXME: newelement can be null under unclear circumstances in IE8 
+            // TODO not sure if this is still a problem (fnagel 20.03.11)
+            .bind("focus.selectmenu", function() {
+                if (self.newelement) {
+                    self.newelement[0].focus();
+                }
+            });
 
-		// original selectmenu width
-		var selectWidth = this.element.width();
+        // original selectmenu width
+        var selectWidth = this.element.width();
 
-		// set menu button width
-		this.newelement.width(o.width ? o.width : selectWidth);
+        // set menu button width
+        this.newelement.width(o.width ? o.width : selectWidth);
 
-		// hide original selectmenu element
-		this.element.hide();		
+        // hide original selectmenu element
+        this.element.hide();        
 
-		// create menu portion, append to body
-		this.list = $('<ul class="' + self.widgetBaseClass + '-menu ui-widget ui-widget-content" aria-hidden="true" role="listbox" aria-labelledby="' + this.ids[0] + '" id="' + this.ids[1] + '"></ul>').appendTo('body');
-		this.list.wrap(o.wrapperElement);				
+        // create menu portion, append to body
+        this.list = $('<ul class="' + self.widgetBaseClass + '-menu ui-widget ui-widget-content" aria-hidden="true" role="listbox" aria-labelledby="' + this.ids[0] + '" id="' + this.ids[1] + '"></ul>').appendTo('body');
+        this.list.wrap(o.wrapperElement);                
 
-		// transfer menu click to menu button
-		this.list
-			.bind("keydown.selectmenu", function(event) {
-				var ret = false;
-				switch (event.keyCode) {
-					case $.ui.keyCode.UP:
-						if (event.altKey) {
-							self.close(event, true);
-						} else {
-							self._moveFocus(-1);
-						}
-						break;
-					case $.ui.keyCode.DOWN:
-						if (event.altKey) {
-							self.close(event, true);
-						} else {
-							self._moveFocus(1);
-						}
-						break;	
-					case $.ui.keyCode.LEFT:
-						self._moveFocus(-1);
-						break;
-					case $.ui.keyCode.RIGHT:
-						self._moveFocus(1);
-						break;	
-					case $.ui.keyCode.HOME:
-						self._moveFocus(':first');
-						break;		
-					case $.ui.keyCode.PAGE_UP:
-						self._scrollPage('up');
-						break;	
-					case $.ui.keyCode.PAGE_DOWN:
-						self._scrollPage('down');
-						break;
-					case $.ui.keyCode.END:
-						self._moveFocus(':last');
-						break;		
-					case $.ui.keyCode.ENTER:
-					case $.ui.keyCode.SPACE:
-						self.close(event, true);
-						$(event.target).parents('li:eq(0)').trigger('mouseup');
-						break;		
-					case $.ui.keyCode.TAB:
-						ret = true;
-						self.close(event, true);
-						$(event.target).parents('li:eq(0)').trigger('mouseup');
-						break;	
-					case $.ui.keyCode.ESCAPE:
-						self.close(event, true);
-						break;
-					default:
-						ret = true;	
-						self._typeAhead(event.keyCode,'focus');					
-						break;	
-				}
-				return ret;
-			});			
-		
-		// needed when window is resized
-		$(window).bind( "resize.selectmenu", $.proxy( self._refreshPosition, this ) );
-	},
+        // transfer menu click to menu button
+        this.list
+            .bind("keydown.selectmenu", function(event) {
+                var ret = false;
+                switch (event.keyCode) {
+                    case $.ui.keyCode.UP:
+                        if (event.altKey) {
+                            self.close(event, true);
+                        } else {
+                            self._moveFocus(-1);
+                        }
+                        break;
+                    case $.ui.keyCode.DOWN:
+                        if (event.altKey) {
+                            self.close(event, true);
+                        } else {
+                            self._moveFocus(1);
+                        }
+                        break;    
+                    case $.ui.keyCode.LEFT:
+                        self._moveFocus(-1);
+                        break;
+                    case $.ui.keyCode.RIGHT:
+                        self._moveFocus(1);
+                        break;    
+                    case $.ui.keyCode.HOME:
+                        self._moveFocus(':first');
+                        break;        
+                    case $.ui.keyCode.PAGE_UP:
+                        self._scrollPage('up');
+                        break;    
+                    case $.ui.keyCode.PAGE_DOWN:
+                        self._scrollPage('down');
+                        break;
+                    case $.ui.keyCode.END:
+                        self._moveFocus(':last');
+                        break;        
+                    case $.ui.keyCode.ENTER:
+                    case $.ui.keyCode.SPACE:
+                        self.close(event, true);
+                        $(event.target).parents('li:eq(0)').trigger('mouseup');
+                        break;        
+                    case $.ui.keyCode.TAB:
+                        ret = true;
+                        self.close(event, true);
+                        $(event.target).parents('li:eq(0)').trigger('mouseup');
+                        break;    
+                    case $.ui.keyCode.ESCAPE:
+                        self.close(event, true);
+                        break;
+                    default:
+                        ret = true;    
+                        self._typeAhead(event.keyCode,'focus');                    
+                        break;    
+                }
+                return ret;
+            });            
+        
+        // needed when window is resized
+        $(window).bind( "resize.selectmenu", $.proxy( self._refreshPosition, this ) );
+    },
 
-	_init: function() {
-		var self = this, o = this.options;
-		
-		// serialize selectmenu element options	
-		var selectOptionData = [];
-		this.element
-			.find('option')
-			.each(function() {
-				selectOptionData.push({
-					value: $(this).attr('value'),
-					text: self._formatText($(this).text()),
-					selected: $(this).attr('selected'),
-					disabled: $(this).attr('disabled'),
-					classes: $(this).attr('class'),
-					typeahead: $(this).attr('typeahead'),
-					parentOptGroup: $(this).parent('optgroup'),
-					bgImage: o.bgImage.call($(this))
-				});
-			});		
-				
-		// active state class is only used in popup style
-		var activeClass = (self.options.style == "popup") ? " ui-state-active" : "";
+    _init: function() {
+        var self = this, o = this.options;
+        
+        // serialize selectmenu element options    
+        var selectOptionData = [];
+        this.element
+            .find('option')
+            .each(function() {
+                selectOptionData.push({
+                    value: $(this).attr('value'),
+                    text: self._formatText($(this).text()),
+                    selected: $(this).attr('selected'),
+                    disabled: $(this).attr('disabled'),
+                    classes: $(this).attr('class'),
+                    typeahead: $(this).attr('typeahead'),
+                    parentOptGroup: $(this).parent('optgroup'),
+                    bgImage: o.bgImage.call($(this))
+                });
+            });        
+                
+        // active state class is only used in popup style
+        var activeClass = (self.options.style == "popup") ? " ui-state-active" : "";
 
-		// empty list so we can refresh the selectmenu via selectmenu()
-		this.list.html("");
+        // empty list so we can refresh the selectmenu via selectmenu()
+        this.list.html("");
 
-		// write li's
-		for (var i = 0; i < selectOptionData.length; i++) {
-				var thisLi = $('<li role="presentation"' + (selectOptionData[i].disabled ? ' class="' + this.namespace + '-state-disabled' + '"' : '' ) + '><a href="#" tabindex="-1" role="option"' + (selectOptionData[i].disabled ? ' aria-disabled="true"' : '' ) + ' aria-selected="false"' + (selectOptionData[i].typeahead ? ' typeahead="' + selectOptionData[i].typeahead + '"' : '' ) + '>'+ selectOptionData[i].text +'</a></li>')
-				.data('index', i)
-				.addClass(selectOptionData[i].classes)
-				.data('optionClasses', selectOptionData[i].classes || '')
-				.bind("mouseup.selectmenu", function(event) {
-					if (self._safemouseup && !self._disabled(event.currentTarget) && !self._disabled($( event.currentTarget ).parents( "ul>li." + self.widgetBaseClass + "-group " )) ) {
-						var changed = $(this).data('index') != self._selectedIndex();
-						self.index($(this).data('index'));
-						self.select(event);
-						if (changed) {
-							self.change(event);
-						}
-						self.close(event, true);
-					}
-					return false;
-				})
-				.bind("click.selectmenu", function() {
-					return false;
-				})
-				.bind('mouseover.selectmenu focus.selectmenu', function(e) {
-					// no hover if diabled
-					if (!$(e.currentTarget).hasClass(self.namespace + '-state-disabled')) {
-						self._selectedOptionLi().addClass(activeClass); 
-						self._focusedOptionLi().removeClass(self.widgetBaseClass + '-item-focus ui-state-hover'); 
-						$(this).removeClass('ui-state-active').addClass(self.widgetBaseClass + '-item-focus ui-state-hover'); 
-					}
-				})
-				.bind('mouseout.selectmenu blur.selectmenu', function() { 
-					if ($(this).is(self._selectedOptionLi().selector)) {
-						$(this).addClass(activeClass);
-					}
-					$(this).removeClass(self.widgetBaseClass + '-item-focus ui-state-hover');
-				});
+        // write li's
+        for (var i = 0; i < selectOptionData.length; i++) {
+                var thisLi = $('<li role="presentation"' + (selectOptionData[i].disabled ? ' class="' + this.namespace + '-state-disabled' + '"' : '' ) + '><a href="#" tabindex="-1" role="option"' + (selectOptionData[i].disabled ? ' aria-disabled="true"' : '' ) + ' aria-selected="false"' + (selectOptionData[i].typeahead ? ' typeahead="' + selectOptionData[i].typeahead + '"' : '' ) + '>'+ selectOptionData[i].text +'</a></li>')
+                .data('index', i)
+                .addClass(selectOptionData[i].classes)
+                .data('optionClasses', selectOptionData[i].classes || '')
+                .bind("mouseup.selectmenu", function(event) {
+                    if (self._safemouseup && !self._disabled(event.currentTarget) && !self._disabled($( event.currentTarget ).parents( "ul>li." + self.widgetBaseClass + "-group " )) ) {
+                        var changed = $(this).data('index') != self._selectedIndex();
+                        self.index($(this).data('index'));
+                        self.select(event);
+                        if (changed) {
+                            self.change(event);
+                        }
+                        self.close(event, true);
+                    }
+                    return false;
+                })
+                .bind("click.selectmenu", function() {
+                    return false;
+                })
+                .bind('mouseover.selectmenu focus.selectmenu', function(e) {
+                    // no hover if diabled
+                    if (!$(e.currentTarget).hasClass(self.namespace + '-state-disabled')) {
+                        self._selectedOptionLi().addClass(activeClass); 
+                        self._focusedOptionLi().removeClass(self.widgetBaseClass + '-item-focus ui-state-hover'); 
+                        $(this).removeClass('ui-state-active').addClass(self.widgetBaseClass + '-item-focus ui-state-hover'); 
+                    }
+                })
+                .bind('mouseout.selectmenu blur.selectmenu', function() { 
+                    if ($(this).is(self._selectedOptionLi().selector)) {
+                        $(this).addClass(activeClass);
+                    }
+                    $(this).removeClass(self.widgetBaseClass + '-item-focus ui-state-hover');
+                });
 
-			// optgroup or not...
-			if ( selectOptionData[i].parentOptGroup.length ) {
-				var optGroupName = self.widgetBaseClass + '-group-' + this.element.find( 'optgroup' ).index( selectOptionData[i].parentOptGroup );
-				if (this.list.find( 'li.' + optGroupName ).length ) {
-					this.list.find( 'li.' + optGroupName + ':last ul' ).append( thisLi );
-				} else {
-					$(' <li role="presentation" class="' + self.widgetBaseClass + '-group ' + optGroupName + (selectOptionData[i].parentOptGroup.attr("disabled") ? ' ' + this.namespace + '-state-disabled" aria-disabled="true"' : '"' ) + '><span class="' + self.widgetBaseClass + '-group-label">' + selectOptionData[i].parentOptGroup.attr('label') + '</span><ul></ul></li> ')
-						.appendTo( this.list )
-						.find( 'ul' )
-						.append( thisLi );
-				}
-			} else {
-				thisLi.appendTo(this.list);
-			}
-			
-			// this allows for using the scrollbar in an overflowed list
-			this.list.bind('mousedown.selectmenu mouseup.selectmenu', function() { return false; });
-			
-			// append icon if option is specified
-			if (o.icons) {
-				for (var j in o.icons) {
-					if (thisLi.is(o.icons[j].find)) {
-						thisLi
-							.data('optionClasses', selectOptionData[i].classes + ' ' + self.widgetBaseClass + '-hasIcon')
-							.addClass(self.widgetBaseClass + '-hasIcon');
-						var iconClass = o.icons[j].icon || "";						
-						thisLi
-							.find('a:eq(0)')
-							.prepend('<span class="' + self.widgetBaseClass + '-item-icon ui-icon ' + iconClass + '"></span>');
-						if (selectOptionData[i].bgImage) {
-							thisLi.find('span').css('background-image', selectOptionData[i].bgImage);
-						}
-					}
-				}
-			}
-		}	
-				
-		// we need to set and unset the CSS classes for dropdown and popup style
-		var isDropDown = (o.style == 'dropdown');
-		this.newelement
-			.toggleClass(self.widgetBaseClass + "-dropdown", isDropDown)
-			.toggleClass(self.widgetBaseClass + "-popup", !isDropDown);
-		this.list
-			.toggleClass(self.widgetBaseClass + "-menu-dropdown ui-corner-bottom", isDropDown)
-			.toggleClass(self.widgetBaseClass + "-menu-popup ui-corner-all", !isDropDown)
-			// add corners to top and bottom menu items
-			.find('li:first')
-			.toggleClass("ui-corner-top", !isDropDown)
-			.end().find('li:last')
-			.addClass("ui-corner-bottom");
-		this.selectmenuIcon
-			.toggleClass('ui-icon-triangle-1-s', isDropDown)
-			.toggleClass('ui-icon-triangle-2-n-s', !isDropDown);
+            // optgroup or not...
+            if ( selectOptionData[i].parentOptGroup.length ) {
+                var optGroupName = self.widgetBaseClass + '-group-' + this.element.find( 'optgroup' ).index( selectOptionData[i].parentOptGroup );
+                if (this.list.find( 'li.' + optGroupName ).length ) {
+                    this.list.find( 'li.' + optGroupName + ':last ul' ).append( thisLi );
+                } else {
+                    $(' <li role="presentation" class="' + self.widgetBaseClass + '-group ' + optGroupName + (selectOptionData[i].parentOptGroup.attr("disabled") ? ' ' + this.namespace + '-state-disabled" aria-disabled="true"' : '"' ) + '><span class="' + self.widgetBaseClass + '-group-label">' + selectOptionData[i].parentOptGroup.attr('label') + '</span><ul></ul></li> ')
+                        .appendTo( this.list )
+                        .find( 'ul' )
+                        .append( thisLi );
+                }
+            } else {
+                thisLi.appendTo(this.list);
+            }
+            
+            // this allows for using the scrollbar in an overflowed list
+            this.list.bind('mousedown.selectmenu mouseup.selectmenu', function() { return false; });
+            
+            // append icon if option is specified
+            if (o.icons) {
+                for (var j in o.icons) {
+                    if (thisLi.is(o.icons[j].find)) {
+                        thisLi
+                            .data('optionClasses', selectOptionData[i].classes + ' ' + self.widgetBaseClass + '-hasIcon')
+                            .addClass(self.widgetBaseClass + '-hasIcon');
+                        var iconClass = o.icons[j].icon || "";                        
+                        thisLi
+                            .find('a:eq(0)')
+                            .prepend('<span class="' + self.widgetBaseClass + '-item-icon ui-icon ' + iconClass + '"></span>');
+                        if (selectOptionData[i].bgImage) {
+                            thisLi.find('span').css('background-image', selectOptionData[i].bgImage);
+                        }
+                    }
+                }
+            }
+        }    
+                
+        // we need to set and unset the CSS classes for dropdown and popup style
+        var isDropDown = (o.style == 'dropdown');
+        this.newelement
+            .toggleClass(self.widgetBaseClass + "-dropdown", isDropDown)
+            .toggleClass(self.widgetBaseClass + "-popup", !isDropDown);
+        this.list
+            .toggleClass(self.widgetBaseClass + "-menu-dropdown ui-corner-bottom", isDropDown)
+            .toggleClass(self.widgetBaseClass + "-menu-popup ui-corner-all", !isDropDown)
+            // add corners to top and bottom menu items
+            .find('li:first')
+            .toggleClass("ui-corner-top", !isDropDown)
+            .end().find('li:last')
+            .addClass("ui-corner-bottom");
+        this.selectmenuIcon
+            .toggleClass('ui-icon-triangle-1-s', isDropDown)
+            .toggleClass('ui-icon-triangle-2-n-s', !isDropDown);
 
-		// transfer classes to selectmenu and list
-		if (o.transferClasses) {
-			var transferClasses = this.element.attr('class') || '';
-			this.newelement.add(this.list).addClass(transferClasses);
-		}
+        // transfer classes to selectmenu and list
+        if (o.transferClasses) {
+            var transferClasses = this.element.attr('class') || '';
+            this.newelement.add(this.list).addClass(transferClasses);
+        }
 
-		// original selectmenu width
-		var selectWidth = this.element.width();
+        // original selectmenu width
+        var selectWidth = this.element.width();
 
-		// set menu width to either menuWidth option value, width option value, or select width 
-		if (o.style == 'dropdown') { 
-			this.list.width(o.menuWidth ? o.menuWidth : (o.width ? o.width : selectWidth)); 
-		} else { 
-			this.list.width(o.menuWidth ? o.menuWidth : (o.width ? o.width - o.handleWidth : selectWidth - o.handleWidth)); 
-		}
+        // set menu width to either menuWidth option value, width option value, or select width 
+        if (o.style == 'dropdown') { 
+            this.list.width(o.menuWidth ? o.menuWidth : (o.width ? o.width : selectWidth)); 
+        } else { 
+            this.list.width(o.menuWidth ? o.menuWidth : (o.width ? o.width - o.handleWidth : selectWidth - o.handleWidth)); 
+        }
 
-		// calculate default max height
-		if (o.maxHeight) {
-			// set max height from option 
-			if (o.maxHeight < this.list.height()) {
-				this.list.height(o.maxHeight);
-			}
-		} else {
-			if (!o.format && ($(window).height() / 3) < this.list.height()) {
-				o.maxHeight = $(window).height() / 3;
-				this.list.height(o.maxHeight);
-			}
-		}
+        // calculate default max height
+        if (o.maxHeight) {
+            // set max height from option 
+            if (o.maxHeight < this.list.height()) {
+                this.list.height(o.maxHeight);
+            }
+        } else {
+            if (!o.format && ($(window).height() / 3) < this.list.height()) {
+                o.maxHeight = $(window).height() / 3;
+                this.list.height(o.maxHeight);
+            }
+        }
 
-		// save reference to actionable li's (not group label li's)
-		this._optionLis = this.list.find('li:not(.' + self.widgetBaseClass + '-group)');
-						
-		// transfer disabled state
-		if (this.element.attr('disabled') === true) {
-			this.disable();
-		}
+        // save reference to actionable li's (not group label li's)
+        this._optionLis = this.list.find('li:not(.' + self.widgetBaseClass + '-group)');
+                        
+        // transfer disabled state
+        if (this.element.attr('disabled') === true) {
+            this.disable();
+        }
 
-		// update value
-		this.index(this._selectedIndex());		
+        // update value
+        this.index(this._selectedIndex());        
 
-		// needed when selectmenu is placed at the very bottom / top of the page
-		window.setTimeout(function() {
-			self._refreshPosition();
-		}, 200);
-	},
+        // needed when selectmenu is placed at the very bottom / top of the page
+        window.setTimeout(function() {
+            self._refreshPosition();
+        }, 200);
+    },
 
-	destroy: function() {
-		this.element.removeData( this.widgetName )
-			.removeClass( this.widgetBaseClass + '-disabled' + ' ' + this.namespace + '-state-disabled' )
-			.removeAttr( 'aria-disabled' )
-			.unbind( ".selectmenu" );
-			
-		$( window ).unbind( ".selectmenu" );
-		$( document ).unbind( ".selectmenu" );
-	
-		// unbind click on label, reset its for attr
-		$( 'label[for=' + this.newelement.attr('id') + ']' )
-			.attr( 'for', this.element.attr( 'id' ) )
-			.unbind( '.selectmenu' );
-		
-		if ( this.options.wrapperElement ) {
-			this.newelement.find( this.options.wrapperElement ).remove();
-			this.list.find( this.options.wrapperElement ).remove();
-		} else {
-			this.newelement.remove();
-			this.list.remove();
-		}
-		this.element.show();	
+    destroy: function() {
+        this.element.removeData( this.widgetName )
+            .removeClass( this.widgetBaseClass + '-disabled' + ' ' + this.namespace + '-state-disabled' )
+            .removeAttr( 'aria-disabled' )
+            .unbind( ".selectmenu" );
+            
+        $( window ).unbind( ".selectmenu" );
+        $( document ).unbind( ".selectmenu" );
+    
+        // unbind click on label, reset its for attr
+        $( 'label[for=' + this.newelement.attr('id') + ']' )
+            .attr( 'for', this.element.attr( 'id' ) )
+            .unbind( '.selectmenu' );
+        
+        if ( this.options.wrapperElement ) {
+            this.newelement.find( this.options.wrapperElement ).remove();
+            this.list.find( this.options.wrapperElement ).remove();
+        } else {
+            this.newelement.remove();
+            this.list.remove();
+        }
+        this.element.show();    
 
-		// call widget destroy function
-		$.Widget.prototype.destroy.apply(this, arguments);
-	},
+        // call widget destroy function
+        $.Widget.prototype.destroy.apply(this, arguments);
+    },
 
-	_typeAhead: function(code, eventType){
-		var self = this, focusFound = false, C = String.fromCharCode(code);
-		c = C.toLowerCase();
+    _typeAhead: function(code, eventType){
+        var self = this, focusFound = false, C = String.fromCharCode(code);
+        c = C.toLowerCase();
 
-		if (self.options.typeAhead == 'sequential') {
-			// clear the timeout so we can use _prevChar
-			window.clearTimeout('ui.selectmenu-' + self.selectmenuId);
+        if (self.options.typeAhead == 'sequential') {
+            // clear the timeout so we can use _prevChar
+            window.clearTimeout('ui.selectmenu-' + self.selectmenuId);
 
-			// define our find var
-			var find = typeof(self._prevChar) == 'undefined' ? '' : self._prevChar.join('');
-			
-			function focusOptSeq(elem, ind, c){
-				focusFound = true;
-				$(elem).trigger(eventType);
-				typeof(self._prevChar) == 'undefined' ? self._prevChar = [c] : self._prevChar[self._prevChar.length] = c;
-			}
-			this.list.find('li a').each(function(i) {	
-				if (!focusFound) {
-					// allow the typeahead attribute on the option tag for a more specific lookup
-					var thisText = $(this).attr('typeahead') || $(this).text();
-					if (thisText.indexOf(find+C) == 0) {
-						focusOptSeq(this,i, C)
-					} else if (thisText.indexOf(find+c) == 0) {
-						focusOptSeq(this,i,c)
-					}
-				}
-			});
-			
-			// if we didnt find it clear the prevChar
-			// if (!focusFound) {
-				//self._prevChar = undefined
-			// }
+            // define our find var
+            var find = typeof(self._prevChar) == 'undefined' ? '' : self._prevChar.join('');
+            
+            function focusOptSeq(elem, ind, c){
+                focusFound = true;
+                $(elem).trigger(eventType);
+                typeof(self._prevChar) == 'undefined' ? self._prevChar = [c] : self._prevChar[self._prevChar.length] = c;
+            }
+            this.list.find('li a').each(function(i) {    
+                if (!focusFound) {
+                    // allow the typeahead attribute on the option tag for a more specific lookup
+                    var thisText = $(this).attr('typeahead') || $(this).text();
+                    if (thisText.indexOf(find+C) == 0) {
+                        focusOptSeq(this,i, C)
+                    } else if (thisText.indexOf(find+c) == 0) {
+                        focusOptSeq(this,i,c)
+                    }
+                }
+            });
+            
+            // if we didnt find it clear the prevChar
+            // if (!focusFound) {
+                //self._prevChar = undefined
+            // }
 
-			// set a 1 second timeout for sequenctial typeahead
-			//  	keep this set even if we have no matches so it doesnt typeahead somewhere else
-			window.setTimeout(function(el) {
-				el._prevChar = undefined;
-			}, 1000, self);
+            // set a 1 second timeout for sequenctial typeahead
+            //      keep this set even if we have no matches so it doesnt typeahead somewhere else
+            window.setTimeout(function(el) {
+                el._prevChar = undefined;
+            }, 1000, self);
 
-		} else {
-			//define self._prevChar if needed
-			if (!self._prevChar){ self._prevChar = ['',0]; }
+        } else {
+            //define self._prevChar if needed
+            if (!self._prevChar){ self._prevChar = ['',0]; }
 
-			var focusFound = false;
-			function focusOpt(elem, ind){
-				focusFound = true;
-				$(elem).trigger(eventType);
-				self._prevChar[1] = ind;
-			}
-			this.list.find('li a').each(function(i){	
-				if(!focusFound){
-					var thisText = $(this).text();
-					if( thisText.indexOf(C) == 0 || thisText.indexOf(c) == 0){
-							if(self._prevChar[0] == C){
-								if(self._prevChar[1] < i){ focusOpt(this,i); }	
-							}
-							else{ focusOpt(this,i); }	
-					}
-				}
-			});
-			this._prevChar[0] = C;
-		}
-	},
-	
-	// returns some usefull information, called by callbacks only
-	_uiHash: function() {
-		var index = this.index();
-		return {
-			index: index,
-			option: $("option", this.element).get(index),
-			value: this.element[0].value
-		};
-	},
+            var focusFound = false;
+            function focusOpt(elem, ind){
+                focusFound = true;
+                $(elem).trigger(eventType);
+                self._prevChar[1] = ind;
+            }
+            this.list.find('li a').each(function(i){    
+                if(!focusFound){
+                    var thisText = $(this).text();
+                    if( thisText.indexOf(C) == 0 || thisText.indexOf(c) == 0){
+                            if(self._prevChar[0] == C){
+                                if(self._prevChar[1] < i){ focusOpt(this,i); }    
+                            }
+                            else{ focusOpt(this,i); }    
+                    }
+                }
+            });
+            this._prevChar[0] = C;
+        }
+    },
+    
+    // returns some usefull information, called by callbacks only
+    _uiHash: function() {
+        var index = this.index();
+        return {
+            index: index,
+            option: $("option", this.element).get(index),
+            value: this.element[0].value
+        };
+    },
 
-	open: function(event) {
-		var self = this;
-		if ( this.newelement.attr("aria-disabled") != 'true' ) {
-			// TODO: seems to be useless
-			// this._refreshPosition();
-			this._closeOthers(event);
-			this.newelement
-				.addClass('ui-state-active');
-			if (self.options.wrapperElement) {
-				this.list.parent().appendTo('body');
-			} else {
-				this.list.appendTo('body');
-			}
-			
-			this.list.addClass(self.widgetBaseClass + '-open').attr('aria-hidden', false);
-			// FIX IE: Refreshing position before focusing the element, prevents IE from scrolling to the focused element before it is in position.
-			this._refreshPosition();
-			this.list.find('li:not(.' + self.widgetBaseClass + '-group):eq(' + this._selectedIndex() + ') a')[0].focus();
-			if ( this.options.style == "dropdown" ) {
-				this.newelement.removeClass('ui-corner-all').addClass('ui-corner-top');
-			}
-			this._trigger("open", event, this._uiHash());
-		}
-	},
+    open: function(event) {
+        var self = this;
+        if ( this.newelement.attr("aria-disabled") != 'true' ) {
+            // TODO: seems to be useless
+            // this._refreshPosition();
+            this._closeOthers(event);
+            this.newelement
+                .addClass('ui-state-active');
+            if (self.options.wrapperElement) {
+                this.list.parent().appendTo('body');
+            } else {
+                this.list.appendTo('body');
+            }
+            
+            this.list.addClass(self.widgetBaseClass + '-open').attr('aria-hidden', false);
+            // FIX IE: Refreshing position before focusing the element, prevents IE from scrolling to the focused element before it is in position.
+            this._refreshPosition();
+            this.list.find('li:not(.' + self.widgetBaseClass + '-group):eq(' + this._selectedIndex() + ') a')[0].focus();
+            if ( this.options.style == "dropdown" ) {
+                this.newelement.removeClass('ui-corner-all').addClass('ui-corner-top');
+            }
+            this._trigger("open", event, this._uiHash());
+        }
+    },
 
-	close: function(event, retainFocus) {
-		if ( this.newelement.is('.ui-state-active') ) {
-			this.newelement
-				.removeClass('ui-state-active');
-			this.list
-				.attr('aria-hidden', true)
-				.removeClass(this.widgetBaseClass + '-open');
-			if ( this.options.style == "dropdown" ) {
-				this.newelement.removeClass('ui-corner-top').addClass('ui-corner-all');
-			}
-			if ( retainFocus ) {
-				this.newelement.focus();
-			}
-			this._trigger("close", event, this._uiHash());
-		}
-	},
+    close: function(event, retainFocus) {
+        if ( this.newelement.is('.ui-state-active') ) {
+            this.newelement
+                .removeClass('ui-state-active');
+            this.list
+                .attr('aria-hidden', true)
+                .removeClass(this.widgetBaseClass + '-open');
+            if ( this.options.style == "dropdown" ) {
+                this.newelement.removeClass('ui-corner-top').addClass('ui-corner-all');
+            }
+            if ( retainFocus ) {
+                this.newelement.focus();
+            }
+            this._trigger("close", event, this._uiHash());
+        }
+    },
 
-	change: function(event) {
-		this.element.trigger("change");
-		this._trigger("change", event, this._uiHash());
-	},
+    change: function(event) {
+        this.element.trigger("change");
+        this._trigger("change", event, this._uiHash());
+    },
 
-	select: function(event) {
-		this._trigger("select", event, this._uiHash());
-	},
+    select: function(event) {
+        this._trigger("select", event, this._uiHash());
+    },
 
-	_closeOthers: function(event) {
-		$('.' + this.widgetBaseClass + '.ui-state-active').not(this.newelement).each(function() {
-			$(this).data('selectelement').selectmenu('close', event);
-		});
-		$('.' + this.widgetBaseClass + '.ui-state-hover').trigger('mouseout');
-	},
+    _closeOthers: function(event) {
+        $('.' + this.widgetBaseClass + '.ui-state-active').not(this.newelement).each(function() {
+            $(this).data('selectelement').selectmenu('close', event);
+        });
+        $('.' + this.widgetBaseClass + '.ui-state-hover').trigger('mouseout');
+    },
 
-	_toggle: function(event, retainFocus) {
-		if ( this.list.is('.' + this.widgetBaseClass + '-open') ) {
-			this.close(event, retainFocus);
-		} else {
-			this.open(event);
-		}
-	},
+    _toggle: function(event, retainFocus) {
+        if ( this.list.is('.' + this.widgetBaseClass + '-open') ) {
+            this.close(event, retainFocus);
+        } else {
+            this.open(event);
+        }
+    },
 
-	_formatText: function(text) {
-		return (this.options.format ? this.options.format(text) : text);
-	},
+    _formatText: function(text) {
+        return (this.options.format ? this.options.format(text) : text);
+    },
 
-	_selectedIndex: function() {
-		return this.element[0].selectedIndex;
-	},
+    _selectedIndex: function() {
+        return this.element[0].selectedIndex;
+    },
 
-	_selectedOptionLi: function() {
-		return this._optionLis.eq(this._selectedIndex());
-	},
+    _selectedOptionLi: function() {
+        return this._optionLis.eq(this._selectedIndex());
+    },
 
-	_focusedOptionLi: function() {
-		return this.list.find('.' + this.widgetBaseClass + '-item-focus');
-	},
+    _focusedOptionLi: function() {
+        return this.list.find('.' + this.widgetBaseClass + '-item-focus');
+    },
 
-	_moveSelection: function(amt) {
-		var currIndex = parseInt(this._selectedOptionLi().data('index'), 10);
-		var newIndex = currIndex + amt;
-		// do not loop when using up key
-		if (newIndex >= 0 )  return this._optionLis.eq(newIndex).trigger('mouseup');
-	},
+    _moveSelection: function(amt) {
+        var currIndex = parseInt(this._selectedOptionLi().data('index'), 10);
+        var newIndex = currIndex + amt;
+        // do not loop when using up key
+        if (newIndex >= 0 )  return this._optionLis.eq(newIndex).trigger('mouseup');
+    },
 
-	_moveFocus: function(amt) {
-		if (!isNaN(amt)) {
-			var currIndex = parseInt(this._focusedOptionLi().data('index') || 0, 10);
-			var newIndex = currIndex + amt;
-		}
-		else {
-			var newIndex = parseInt(this._optionLis.filter(amt).data('index'), 10);
-		}
+    _moveFocus: function(amt) {
+        if (!isNaN(amt)) {
+            var currIndex = parseInt(this._focusedOptionLi().data('index') || 0, 10);
+            var newIndex = currIndex + amt;
+        }
+        else {
+            var newIndex = parseInt(this._optionLis.filter(amt).data('index'), 10);
+        }
 
-		if (newIndex < 0) {
-			newIndex = 0;
-		}
-		if (newIndex > this._optionLis.size() - 1) {
-			newIndex = this._optionLis.size() - 1;
-		}
-		
-		var activeID = this.widgetBaseClass + '-item-' + Math.round(Math.random() * 1000);
+        if (newIndex < 0) {
+            newIndex = 0;
+        }
+        if (newIndex > this._optionLis.size() - 1) {
+            newIndex = this._optionLis.size() - 1;
+        }
+        
+        var activeID = this.widgetBaseClass + '-item-' + Math.round(Math.random() * 1000);
 
-		this._focusedOptionLi().find('a:eq(0)').attr('id', '');
-		
-		if (this._optionLis.eq(newIndex).hasClass( this.namespace + '-state-disabled' )) {
-			// if option at newIndex is disabled, call _moveFocus, incrementing amt by one
-			(amt > 0) ? amt++ : amt--;
-			this._moveFocus(amt, newIndex);
-		} else {
-			this._optionLis.eq(newIndex).find('a:eq(0)').attr('id',activeID).focus();
-		}
-		
-		this.list.attr('aria-activedescendant', activeID);
-	},
+        this._focusedOptionLi().find('a:eq(0)').attr('id', '');
+        
+        if (this._optionLis.eq(newIndex).hasClass( this.namespace + '-state-disabled' )) {
+            // if option at newIndex is disabled, call _moveFocus, incrementing amt by one
+            (amt > 0) ? amt++ : amt--;
+            this._moveFocus(amt, newIndex);
+        } else {
+            this._optionLis.eq(newIndex).find('a:eq(0)').attr('id',activeID).focus();
+        }
+        
+        this.list.attr('aria-activedescendant', activeID);
+    },
 
-	_scrollPage: function(direction) {
-		var numPerPage = Math.floor(this.list.outerHeight() / this.list.find('li:first').outerHeight());
-		numPerPage = (direction == 'up' ? -numPerPage : numPerPage);
-		this._moveFocus(numPerPage);
-	},
+    _scrollPage: function(direction) {
+        var numPerPage = Math.floor(this.list.outerHeight() / this.list.find('li:first').outerHeight());
+        numPerPage = (direction == 'up' ? -numPerPage : numPerPage);
+        this._moveFocus(numPerPage);
+    },
 
-	_setOption: function(key, value) {
-		this.options[key] = value;
-		// set 
-		if (key == 'disabled') {
-			this.close();
-			this.element
-				.add(this.newelement)
-				.add(this.list)[value ? 'addClass' : 'removeClass'](
-					this.widgetBaseClass + '-disabled' + ' ' +
-					this.namespace + '-state-disabled')
-				.attr("aria-disabled", value);
-		}
-	},
+    _setOption: function(key, value) {
+        this.options[key] = value;
+        // set 
+        if (key == 'disabled') {
+            this.close();
+            this.element
+                .add(this.newelement)
+                .add(this.list)[value ? 'addClass' : 'removeClass'](
+                    this.widgetBaseClass + '-disabled' + ' ' +
+                    this.namespace + '-state-disabled')
+                .attr("aria-disabled", value);
+        }
+    },
 
-	disable: function(index, type){
-			// if options is not provided, call the parents disable function
-			if ( typeof( index ) == 'undefined' ) {
-				this._setOption( 'disabled', true );
-			} else {
-				if ( type == "optgroup" ) {
-					this._disableOptgroup(index);
-				} else {
-					this._disableOption(index);
-				}
-			}
-	},
+    disable: function(index, type){
+            // if options is not provided, call the parents disable function
+            if ( typeof( index ) == 'undefined' ) {
+                this._setOption( 'disabled', true );
+            } else {
+                if ( type == "optgroup" ) {
+                    this._disableOptgroup(index);
+                } else {
+                    this._disableOption(index);
+                }
+            }
+    },
 
-	enable: function(index, type) {
-			// if options is not provided, call the parents enable function
-			if ( typeof( index ) == 'undefined' ) {
-				this._setOption('disabled', false);
-			} else {
-				if ( type == "optgroup" ) {
-					this._enableOptgroup(index);
-				} else {
-					this._enableOption(index);
-				}
-			}
-	},
+    enable: function(index, type) {
+            // if options is not provided, call the parents enable function
+            if ( typeof( index ) == 'undefined' ) {
+                this._setOption('disabled', false);
+            } else {
+                if ( type == "optgroup" ) {
+                    this._enableOptgroup(index);
+                } else {
+                    this._enableOption(index);
+                }
+            }
+    },
 
-	_disabled: function(elem) {
-			return $(elem).hasClass( this.namespace + '-state-disabled' );
-	},
-	
+    _disabled: function(elem) {
+            return $(elem).hasClass( this.namespace + '-state-disabled' );
+    },
+    
 
-	_disableOption: function(index) {
-			var optionElem = this._optionLis.eq(index);
-			if (optionElem) {
-				optionElem.addClass(this.namespace + '-state-disabled')
-					.find("a").attr("aria-disabled", true);
-				this.element.find("option").eq(index).attr("disabled", "disabled");
-			}
-	},
+    _disableOption: function(index) {
+            var optionElem = this._optionLis.eq(index);
+            if (optionElem) {
+                optionElem.addClass(this.namespace + '-state-disabled')
+                    .find("a").attr("aria-disabled", true);
+                this.element.find("option").eq(index).attr("disabled", "disabled");
+            }
+    },
 
-	_enableOption: function(index) {
-			var optionElem = this._optionLis.eq(index);
-			if (optionElem) {
-				optionElem.removeClass( this.namespace + '-state-disabled' )
-					.find("a").attr("aria-disabled", false);
-				this.element.find("option").eq(index).removeAttr("disabled");
-			}
-	},
+    _enableOption: function(index) {
+            var optionElem = this._optionLis.eq(index);
+            if (optionElem) {
+                optionElem.removeClass( this.namespace + '-state-disabled' )
+                    .find("a").attr("aria-disabled", false);
+                this.element.find("option").eq(index).removeAttr("disabled");
+            }
+    },
 
-	_disableOptgroup: function(index) {		
-			var optGroupElem = this.list.find( 'li.' + this.widgetBaseClass + '-group-' + index );
-			if (optGroupElem) {
-				optGroupElem.addClass(this.namespace + '-state-disabled')
-					.attr("aria-disabled", true);
-				this.element.find("optgroup").eq(index).attr("disabled", "disabled");
-			}
-	},
+    _disableOptgroup: function(index) {        
+            var optGroupElem = this.list.find( 'li.' + this.widgetBaseClass + '-group-' + index );
+            if (optGroupElem) {
+                optGroupElem.addClass(this.namespace + '-state-disabled')
+                    .attr("aria-disabled", true);
+                this.element.find("optgroup").eq(index).attr("disabled", "disabled");
+            }
+    },
 
-	_enableOptgroup: function(index) {		
-			var optGroupElem = this.list.find( 'li.' + this.widgetBaseClass + '-group-' + index );
-			if (optGroupElem) {
-				optGroupElem.removeClass(this.namespace + '-state-disabled')
-					.attr("aria-disabled", false);
-				this.element.find("optgroup").eq(index).removeAttr("disabled");
-			}
-	},
-	
-	index: function(newValue) {
-		if (arguments.length) {
-			if (!this._disabled($(this._optionLis[newValue]))) {
-				this.element[0].selectedIndex = newValue;
-				this._refreshValue();
-			} else {
-				return false;
-			}
-		} else {
-			return this._selectedIndex();
-		}
-	},
+    _enableOptgroup: function(index) {        
+            var optGroupElem = this.list.find( 'li.' + this.widgetBaseClass + '-group-' + index );
+            if (optGroupElem) {
+                optGroupElem.removeClass(this.namespace + '-state-disabled')
+                    .attr("aria-disabled", false);
+                this.element.find("optgroup").eq(index).removeAttr("disabled");
+            }
+    },
+    
+    index: function(newValue) {
+        if (arguments.length) {
+            if (!this._disabled($(this._optionLis[newValue]))) {
+                this.element[0].selectedIndex = newValue;
+                this._refreshValue();
+            } else {
+                return false;
+            }
+        } else {
+            return this._selectedIndex();
+        }
+    },
 
-	value: function(newValue) {
-		if (arguments.length) {
-			this.element[0].value = newValue;
-			this._refreshValue();
-		} else {
-			return this.element[0].value;
-		}
-	},
+    value: function(newValue) {
+        if (arguments.length) {
+            this.element[0].value = newValue;
+            this._refreshValue();
+        } else {
+            return this.element[0].value;
+        }
+    },
 
-	_refreshValue: function() {
-		var activeClass = (this.options.style == "popup") ? " ui-state-active" : "";
-		var activeID = this.widgetBaseClass + '-item-' + Math.round(Math.random() * 1000);
-		// deselect previous
-		this.list
-			.find('.' + this.widgetBaseClass + '-item-selected')
-			.removeClass(this.widgetBaseClass + "-item-selected" + activeClass)
-			.find('a')
-			.attr('aria-selected', 'false')
-			.attr('id', '');
-		// select new
-		this._selectedOptionLi()
-			.addClass(this.widgetBaseClass + "-item-selected" + activeClass)
-			.find('a')
-			.attr('aria-selected', 'true')
-			.attr('id', activeID);
-			
-		// toggle any class brought in from option
-		var currentOptionClasses = (this.newelement.data('optionClasses') ? this.newelement.data('optionClasses') : "");
-		var newOptionClasses = (this._selectedOptionLi().data('optionClasses') ? this._selectedOptionLi().data('optionClasses') : "");
-		this.newelement
-			.removeClass(currentOptionClasses)
-			.data('optionClasses', newOptionClasses)
-			.addClass( newOptionClasses )
-			.find('.' + this.widgetBaseClass + '-status')
-			.html( 
-				this._selectedOptionLi()
-					.find('a:eq(0)')
-					.html()
-			);
+    _refreshValue: function() {
+        var activeClass = (this.options.style == "popup") ? " ui-state-active" : "";
+        var activeID = this.widgetBaseClass + '-item-' + Math.round(Math.random() * 1000);
+        // deselect previous
+        this.list
+            .find('.' + this.widgetBaseClass + '-item-selected')
+            .removeClass(this.widgetBaseClass + "-item-selected" + activeClass)
+            .find('a')
+            .attr('aria-selected', 'false')
+            .attr('id', '');
+        // select new
+        this._selectedOptionLi()
+            .addClass(this.widgetBaseClass + "-item-selected" + activeClass)
+            .find('a')
+            .attr('aria-selected', 'true')
+            .attr('id', activeID);
+            
+        // toggle any class brought in from option
+        var currentOptionClasses = (this.newelement.data('optionClasses') ? this.newelement.data('optionClasses') : "");
+        var newOptionClasses = (this._selectedOptionLi().data('optionClasses') ? this._selectedOptionLi().data('optionClasses') : "");
+        this.newelement
+            .removeClass(currentOptionClasses)
+            .data('optionClasses', newOptionClasses)
+            .addClass( newOptionClasses )
+            .find('.' + this.widgetBaseClass + '-status')
+            .html( 
+                this._selectedOptionLi()
+                    .find('a:eq(0)')
+                    .html()
+            );
 
-		this.list.attr('aria-activedescendant', activeID);
-	},
+        this.list.attr('aria-activedescendant', activeID);
+    },
 
-	_refreshPosition: function() {
-		var o = this.options;
-		// if its a native pop-up we need to calculate the position of the selected li
-		if (o.style == "popup" && !o.positionOptions.offset) {
-			var selected = this._selectedOptionLi();
-			var _offset = "0 -" + (selected.outerHeight() + selected.offset().top - this.list.offset().top);
-		}
-		this.list
-			.css({
-				zIndex: this.element.zIndex()
-			})
-			.position({
-				// set options for position plugin
-				of: o.positionOptions.of || this.newelement,
-				my: o.positionOptions.my,
-				at: o.positionOptions.at,
-				offset: o.positionOptions.offset || _offset
-			});
-	}
+    _refreshPosition: function() {
+        var o = this.options;
+        // if its a native pop-up we need to calculate the position of the selected li
+        if (o.style == "popup" && !o.positionOptions.offset) {
+            var selected = this._selectedOptionLi();
+            var _offset = "0 -" + (selected.outerHeight() + selected.offset().top - this.list.offset().top);
+        }
+        this.list
+            .css({
+                zIndex: this.element.zIndex()
+            })
+            .position({
+                // set options for position plugin
+                of: o.positionOptions.of || this.newelement,
+                my: o.positionOptions.my,
+                at: o.positionOptions.at,
+                offset: o.positionOptions.offset || _offset
+            });
+    }
 });
 
 })(jQuery);

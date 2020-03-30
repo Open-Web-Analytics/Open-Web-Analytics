@@ -24,32 +24,32 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
  
  class owa_emailAddressValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	function validate() {
- 		
- 		$error = $this->getErrorMsg();
- 		
- 		if (empty($error)) {
- 			$this->setErrorMessage('The email address is not valid.');
- 		}
+     
+     function __construct() {
+         
+         return parent::__construct();
+     }
+     
+     function validate() {
+         
+         $error = $this->getErrorMsg();
+         
+         if (empty($error)) {
+             $this->setErrorMessage('The email address is not valid.');
+         }
 
- 		$email = $this->getValues();
-		
-		if ( ! filter_var ( $email, FILTER_VALIDATE_EMAIL ) ) { 
-		 		
- 			$this->hasError();
- 		}	
- 	}	 	
+         $email = $this->getValues();
+        
+        if ( ! filter_var ( $email, FILTER_VALIDATE_EMAIL ) ) { 
+                 
+             $this->hasError();
+         }    
+     }         
  }
  
 ?>
