@@ -115,7 +115,7 @@ class owa_db_mysql extends owa_db {
 				$this->getConnectionParam('user'),
 				$this->getConnectionParam('password'),
 				$this->getConnectionParam('name'),
-				$port,
+				$port
 	    	);
 			
 			// explicitng set the character set as UTF-8	
