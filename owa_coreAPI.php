@@ -100,7 +100,8 @@ class owa_coreAPI {
 		} else { 	
 			$connection_class = 'owa_db_'.$db_type;
 			$db = new $connection_class(
-				owa_coreAPI::getSetting('base','db_host'), 
+				owa_coreAPI::getSetting('base','db_host'),
+				owa_coreAPI::getSetting('base','db_port'),
 				owa_coreAPI::getSetting('base','db_name'),
 				owa_coreAPI::getSetting('base','db_user'),
 				owa_coreAPI::getSetting('base','db_password'),

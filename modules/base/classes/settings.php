@@ -181,6 +181,10 @@
 		if (defined('OWA_DB_HOST')) {
 			$this->set('base', 'db_host', OWA_DB_HOST);
 		}
+
+        if (defined('OWA_DB_PORT')) {
+            $this->set('base', 'db_port', OWA_DB_PORT);
+        }
 		
 		if (defined('OWA_DB_USER')) {
 			$this->set('base', 'db_user', OWA_DB_USER);
@@ -570,6 +574,7 @@
 				'db_type'							=> '',
 				'db_name'							=> '',
 				'db_host'							=> '',
+                'db_port'							=> 3306,
 				'db_user'							=> '',
 				'db_password'						=> '',
 				'db_force_new_connections'			=> true,
@@ -818,6 +823,9 @@
 				case "define('OWA_DB_HOST'":
 					fwrite($handle, str_replace("yourdbhostgoeshere", $config_values['db_host'], $line));
 					break;
+                case "define('OWA_DB_PORT'":
+                    fwrite($handle, str_replace("3306", $config_values['db_port'], $line));
+                    break;
 				case "define('OWA_PUBLIC_U":
 					fwrite($handle, str_replace("http://domain/path/to/owa/", $config_values['public_url'], $line));
 					break;

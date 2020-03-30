@@ -32,6 +32,14 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
 			</span>
 			<span class="form-instructions">This is the host that your database resides on. Localhost is ok.</span>
 		</p>
+
+        <p class="form-row">
+            <span class="form-label">Database Port:</span>
+            <span class="form-field">
+				<input type="text"size="30" name="<?php echo $this->getNs();?>db_port" value="<?php echo ($config['db_port'] ? $config['db_port'] : 3306);?>">
+			</span>
+            <span class="form-instructions">This optional setting is used to change the port for your database. OWA will use the default port 3306 if you leave this empty.</span>
+        </p>
 		
 		<p class="form-row">
 			<span class="form-label">Database Name:</span>

@@ -102,13 +102,20 @@ class owa_db_mysql extends owa_db {
 				
 				$host = $this->getConnectionParam('host');
 			}
+
+            if ($this->getConnectionParam('port')) {
+                $port = $this->getConnectionParam('port');
+            } else {
+                $port = 3306;
+            }
 			
 			// get a connection
 			$this->connection = mysqli_connect(
 				$host,
 				$this->getConnectionParam('user'),
 				$this->getConnectionParam('password'),
-				$this->getConnectionParam('name')
+				$this->getConnectionParam('name'),
+				$port
 	    	);
 			
 			// explicitng set the character set as UTF-8	
