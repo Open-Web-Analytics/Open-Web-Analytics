@@ -45,11 +45,6 @@ class owa_installConfigController extends owa_installController {
 		$v1->setErrorMessage("Database host is required.");
 		$this->setValidation('db_host', $v1);
 
-        $v8 = owa_coreAPI::validationFactory('required');
-        $v8->setValues($this->getParam('db_port'));
-        $v8->setErrorMessage("Database port is required.");
-        $this->setValidation('db_port', $v8);
-		
 		$v2 = owa_coreAPI::validationFactory('required');
 		$v2->setValues($this->getParam('db_name'));
 		$v2->setErrorMessage("Database name is required.");
