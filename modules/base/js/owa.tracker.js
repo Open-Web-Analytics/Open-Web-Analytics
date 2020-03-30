@@ -885,6 +885,9 @@ OWA.tracker.prototype = {
 			// create post frame container	
 			var div = document.createElement( 'div' );
 			div.setAttribute( 'id', container_id );
+			div.setAttribute('height', '0px');
+			div.setAttribute('width','0px');
+			div.setAttribute('style', 'border: none; overflow-x: hidden; overflow-y: hidden; display: none;');
 			document.body.appendChild( div );
 			iframe_container = document.getElementById( container_id );
 		}		
@@ -911,7 +914,8 @@ OWA.tracker.prototype = {
 		}
 	    
 	    iframe.setAttribute('class', iframe_name);
-    	iframe.setAttribute('style', 'border: none;');
+		iframe.setAttribute('style', 'border: none; overflow: hidden; ');
+		iframe.setAttribute('scrolling', 'no');
     	//iframe.onload = function () { this.postFromIframe( data );};
     	
     	var that = this;
