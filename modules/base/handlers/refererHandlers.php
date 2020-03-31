@@ -17,11 +17,11 @@
 //
 
 if(!class_exists('owa_observer')) {
-	require_once(OWA_BASE_DIR.'owa_observer.php');
-}	
+    require_once(OWA_BASE_DIR.'owa_observer.php');
+}
 
 if (!class_exists('owa_http')) {
-	require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
+    require_once(OWA_BASE_DIR.'/owa_httpRequest.php');
 }
 
 /**
@@ -32,70 +32,70 @@ if (!class_exists('owa_http')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_refererHandlers extends owa_observer {
-    	
+
     /**
      * Notify Event Handler
      *
-     * @param 	unknown_type $event
-     * @access 	public
+     * @param     unknown_type $event
+     * @access     public
      */
     function notify($event) {
-		
-		// if there is no session referer then return
-		if ( ! $event->get('referer_id') ) {
-			return OWA_EHS_EVENT_HANDLED;
-		}
-		
-    	// Make entity
-		$r = owa_coreAPI::entityFactory('base.referer');
-		
-		$r->load( $event->get( 'referer_id' ) );
-		
-		if ( ! $r->wasPersisted() ) {
-			
-			$r->set( 'id', $event->get( 'referer_id' ) );
-			
-			// set referer url
-			$r->set('url', $event->get('session_referer'));
-				
-			// Set site
-			$url = owa_lib::parse_url( $event->get( 'session_referer' ) );
-			
-			$r->set( 'site', $url['host'] );
-			
-			$medium = $event->get('medium');
-			
-			if ( $medium === 'organic-search' ) {
-			
-				$r->set('is_searchengine', true);
-			}
-				
-			// set title. this will be updated later by the crawler.
-			$r->set('page_title', '(not set)');
 
-			// Crawl and analyze refering page
-			if ($medium != 'organic-search' ) {
+        // if there is no session referer then return
+        if ( ! $event->get('referer_id') ) {
+            return OWA_EHS_EVENT_HANDLED;
+        }
+
+        // Make entity
+        $r = owa_coreAPI::entityFactory('base.referer');
+
+        $r->load( $event->get( 'referer_id' ) );
+
+        if ( ! $r->wasPersisted() ) {
+
+            $r->set( 'id', $event->get( 'referer_id' ) );
+
+            // set referer url
+            $r->set('url', $event->get('session_referer'));
+
+            // Set site
+            $url = owa_lib::parse_url( $event->get( 'session_referer' ) );
+
+            $r->set( 'site', $url['host'] );
+
+            $medium = $event->get('medium');
+
+            if ( $medium === 'organic-search' ) {
+
+                $r->set('is_searchengine', true);
+            }
+
+            // set title. this will be updated later by the crawler.
+            $r->set('page_title', '(not set)');
+
+            // Crawl and analyze refering page
+            if ($medium != 'organic-search' ) {
                 $r->crawlReferer();
-			}
-			
-			// Persist to database
-			$ret = $r->create();
-			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
-			} else {
-				return OWA_EHS_EVENT_FAILED;
-			}
-			
-		} else {
-			owa_coreAPI::debug('Not Persisting. Referrer already exists.');
-			return OWA_EHS_EVENT_HANDLED;
-		}
+            }
+
+            // Persist to database
+            $ret = $r->create();
+
+            if ( $ret ) {
+                return OWA_EHS_EVENT_HANDLED;
+            } else {
+                return OWA_EHS_EVENT_FAILED;
+            }
+
+        } else {
+            owa_coreAPI::debug('Not Persisting. Referrer already exists.');
+            return OWA_EHS_EVENT_HANDLED;
+        }
     }
 }
 

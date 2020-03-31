@@ -26,33 +26,33 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.1
+ * @version        $Revision$          
+ * @since        owa 1.4.1
  */
 
 class owa_sitesAddCliController extends owa_cliController {
-	
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_modules');
-		return parent::__construct($params);
-	}
+    
+    function __construct($params) {
+    
+        $this->setRequiredCapability('edit_modules');
+        return parent::__construct($params);
+    }
 
-	function action() {
-		
-		$sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
-		
-		$ret = $sm->createNewSite( $this->getParam( 'domain' ), 
-							$this->getParam( 'name' ), 
-							$this->getParam( 'description' ), 
-							$this->getParam( 'site_family' )
-		);
-		
-		if ( $ret ) {
-			owa_coreAPI::notice("Site added successfully. site_id: $ret");
-		}
-	}
-	
+    function action() {
+        
+        $sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
+        
+        $ret = $sm->createNewSite( $this->getParam( 'domain' ), 
+                            $this->getParam( 'name' ), 
+                            $this->getParam( 'description' ), 
+                            $this->getParam( 'site_family' )
+        );
+        
+        if ( $ret ) {
+            owa_coreAPI::notice("Site added successfully. site_id: $ret");
+        }
+    }
+    
 }
 
 ?>

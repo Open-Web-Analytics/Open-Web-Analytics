@@ -24,23 +24,23 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_visitors extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('visitors');
-		$this->setLabel('Visitors');
-		$this->setEntity('base.session');
-		$this->setColumn('visitor_id');
-		$this->setSelect(sprintf("count(%s)", $this->getColumn()));
-		$this->setDataType('integer');
-		
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('visitors');
+        $this->setLabel('Visitors');
+        $this->setEntity('base.session');
+        $this->setColumn('visitor_id');
+        $this->setSelect(sprintf("count(%s)", $this->getColumn()));
+        $this->setDataType('integer');
+
+        return parent::__construct();
+    }
 }
 
 ?>

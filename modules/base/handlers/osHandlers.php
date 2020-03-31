@@ -17,8 +17,8 @@
 //
 
 if(!class_exists('owa_observer')) {
-	require_once(OWA_BASE_DIR.'owa_observer.php');
-}	
+    require_once(OWA_BASE_DIR.'owa_observer.php');
+}
 
 /**
  * OWA Operating System Event handlers
@@ -28,56 +28,56 @@ if(!class_exists('owa_observer')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_osHandlers extends owa_observer {
-    	
+
     /**
      * Notify Event Handler
      *
-     * @param 	unknown_type $event
-     * @access 	public
+     * @param     unknown_type $event
+     * @access     public
      */
     function notify( $event ) {
-		
-		if ( $event->get( 'os' ) ) {
-		
-			$os = owa_coreAPI::entityFactory( 'base.os' );
-			
-			$os->getByColumn( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) );
-			
-			if ( ! $os->get( 'id' ) ) {
-				
-				$os->set( 'name', $event->get( 'os' ) );
-			
-				$os->set( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) ); 
-			
-				$ret = $os->create();
-				
-				if ( $ret ) {
-			
-					return OWA_EHS_EVENT_HANDLED;
-			
-				} else {
-			
-					return OWA_EHS_EVENT_FAILED;
-				}
-				
-			} else {
-			
-				owa_coreAPI::debug('Not persisting. Operating system already exists.');
-			
-				return OWA_EHS_EVENT_HANDLED;
-			}
-			
-		} else {
-			
-			owa_coreAPI::debug('Not persisting. Operating system not present.');
-			
-			return OWA_EHS_EVENT_HANDLED;
-		}
+
+        if ( $event->get( 'os' ) ) {
+
+            $os = owa_coreAPI::entityFactory( 'base.os' );
+
+            $os->getByColumn( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) );
+
+            if ( ! $os->get( 'id' ) ) {
+
+                $os->set( 'name', $event->get( 'os' ) );
+
+                $os->set( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) );
+
+                $ret = $os->create();
+
+                if ( $ret ) {
+
+                    return OWA_EHS_EVENT_HANDLED;
+
+                } else {
+
+                    return OWA_EHS_EVENT_FAILED;
+                }
+
+            } else {
+
+                owa_coreAPI::debug('Not persisting. Operating system already exists.');
+
+                return OWA_EHS_EVENT_HANDLED;
+            }
+
+        } else {
+
+            owa_coreAPI::debug('Not persisting. Operating system not present.');
+
+            return OWA_EHS_EVENT_HANDLED;
+        }
     }
 }
 

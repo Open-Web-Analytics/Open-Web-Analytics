@@ -24,22 +24,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_feedRequests extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('feedRequests');
-		$this->setLabel('Feed Requests');
-		$this->setEntity('base.feed_request');
-		$this->setColumn('id');
-		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
-		$this->setDataType('integer');
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('feedRequests');
+        $this->setLabel('Feed Requests');
+        $this->setEntity('base.feed_request');
+        $this->setColumn('id');
+        $this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
+        $this->setDataType('integer');
+        return parent::__construct();
+    }
 }
 
 ?>

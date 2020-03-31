@@ -24,35 +24,35 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$          
+ * @since        owa 1.3.0
  */
 
 class owa_calculatedMetric extends owa_metric {
-	
-	var $is_calculated = true;
-	var $child_metrics = array();
-	var $formula;
-	
-	function setChildMetric($name) {
-		
-		$this->child_metrics[] = $name;
-	}
-	
-	function getChildMetrics() {
-		
-		return $this->child_metrics;
-	}	
-	
-	function setFormula($string) {
-		
-		$this->formula = $string;
-	}
-	
-	function getFormula() {
-	
-		return $this->formula;
-	}	
+    
+    var $is_calculated = true;
+    var $child_metrics = array();
+    var $formula;
+    
+    function setChildMetric($name) {
+        
+        $this->child_metrics[] = $name;
+    }
+    
+    function getChildMetrics() {
+        
+        return $this->child_metrics;
+    }    
+    
+    function setFormula($string) {
+        
+        $this->formula = $string;
+    }
+    
+    function getFormula() {
+    
+        return $this->formula;
+    }    
 }
 
 ?>

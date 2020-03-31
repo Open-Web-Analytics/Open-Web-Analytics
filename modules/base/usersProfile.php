@@ -27,38 +27,38 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersProfileController extends owa_controller {
-		
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_users');
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		// This needs form validation in a bad way.
-		//Check to see if user is passed by constructor or else fetch the object.
-		if ($this->getParam('user_id')) {
-			$u = owa_coreAPI::entityFactory('base.user');
-			$u->getByColumn('user_id', $this->getParam('user_id'));
-			$this->set('profile', $u->_getProperties());
-			$this->set('edit', true);
-			$this->set('user_id', $this->getParam('user_id'));
-		} else {
-			$this->set('edit', false);
-			$this->set('profile', array());
-		}
-		
-		$this->setView('base.options');
-		$this->setSubview('base.usersProfile');
-		
-	}
-	
+
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_users');
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        // This needs form validation in a bad way.
+        //Check to see if user is passed by constructor or else fetch the object.
+        if ($this->getParam('user_id')) {
+            $u = owa_coreAPI::entityFactory('base.user');
+            $u->getByColumn('user_id', $this->getParam('user_id'));
+            $this->set('profile', $u->_getProperties());
+            $this->set('edit', true);
+            $this->set('user_id', $this->getParam('user_id'));
+        } else {
+            $this->set('edit', false);
+            $this->set('profile', array());
+        }
+
+        $this->setView('base.options');
+        $this->setSubview('base.usersProfile');
+
+    }
+
 }
 
 /**
@@ -69,41 +69,41 @@ class owa_usersProfileController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersProfileView extends owa_view {
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		$user = $this->get('profile');
-		$this->body->set('isAdmin', false);
-		
-		if ($this->get('edit')) {
-			$this->body->set('headline', 'Edit user profile');
-			$this->body->set('action', 'base.usersEdit');
-			$this->body->set('edit', true);
-			$userEntity =  owa_coreAPI::entityFactory( 'base.user' );
-			$userEntity->load( $user['id'] );
-			$this->body->set('isAdmin', $userEntity->isOWAAdmin());
-		} else { 
-			$this->body->set('headline', 'Add a new user profile');
-			$this->body->set('action', 'base.usersAdd');
-			$this->body->set('edit', false);
-		}
-		//page title
-		$this->t->set('page_title', 'User Profile');
-		$this->body->set_template('users_addoredit.tpl');
-		$this->body->set('roles', owa_coreAPI::getAllRoles());	
-		 
-		$this->body->set('user', $user); 		
-		
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+        $user = $this->get('profile');
+        $this->body->set('isAdmin', false);
+
+        if ($this->get('edit')) {
+            $this->body->set('headline', 'Edit user profile');
+            $this->body->set('action', 'base.usersEdit');
+            $this->body->set('edit', true);
+            $userEntity =  owa_coreAPI::entityFactory( 'base.user' );
+            $userEntity->load( $user['id'] );
+            $this->body->set('isAdmin', $userEntity->isOWAAdmin());
+        } else {
+            $this->body->set('headline', 'Add a new user profile');
+            $this->body->set('action', 'base.usersAdd');
+            $this->body->set('edit', false);
+        }
+        //page title
+        $this->t->set('page_title', 'User Profile');
+        $this->body->set_template('users_addoredit.tpl');
+        $this->body->set('roles', owa_coreAPI::getAllRoles());
+
+        $this->body->set('user', $user);
+
+    }
 }
 
 ?>

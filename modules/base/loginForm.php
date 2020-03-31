@@ -27,24 +27,24 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 class owa_loginFormController extends owa_controller {
-		
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
-	function action() {
-	
-		$cu = owa_coreAPI::getCurrentUser();
-		
-		$this->set('go', $this->getParam('go'));
-		$this->set('user_id', $cu->getUserData('user_id'));
-		$this->setView('base.loginForm');
-	}
+
+    function __construct($params) {
+
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        $cu = owa_coreAPI::getCurrentUser();
+
+        $this->set('go', $this->getParam('go'));
+        $this->set('user_id', $cu->getUserData('user_id'));
+        $this->setView('base.loginForm');
+    }
 }
 
 /**
@@ -55,27 +55,27 @@ class owa_loginFormController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_loginFormView extends owa_view {
-		
-	function __construct() {
-	
-		return parent::__construct();
-	}
-	
-	function construct($data) {
-	
-		$this->setTitle("Login");
-		$this->t->set_template('wrapper_public.tpl');
-		$this->body->set_template('login_form.tpl');
-		$this->body->set('headline', 'Please login using the from below');
-		$this->body->set('user_id', $this->get('user_id'));
-		$this->body->set('go', owa_sanitize::cleanUrl( $this->get('go') ) );
-		$this->setJs("owa", "base/js/owa.js");
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function construct($data) {
+
+        $this->setTitle("Login");
+        $this->t->set_template('wrapper_public.tpl');
+        $this->body->set_template('login_form.tpl');
+        $this->body->set('headline', 'Please login using the from below');
+        $this->body->set('user_id', $this->get('user_id'));
+        $this->body->set('go', owa_sanitize::cleanUrl( $this->get('go') ) );
+        $this->setJs("owa", "base/js/owa.js");
+    }
 }
 
 ?>

@@ -109,12 +109,12 @@ class Snoopy
     var $_fp_timeout = 30; // timeout for socket connection
 
     /*======================================================================*\
-        Function:	fetch
-        Purpose:	fetch the contents of a web page
+        Function:    fetch
+        Purpose:    fetch the contents of a web page
                     (and possibly other protocols in the
                     future like ftp, nntp, gopher, etc.)
-        Input:		$URI	the location of the page to fetch
-        Output:		$this->results	the output text from the fetch
+        Input:        $URI    the location of the page to fetch
+        Output:        $this->results    the output text from the fetch
     \*======================================================================*/
 
     function fetch($URI)
@@ -196,14 +196,14 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	submit
-        Purpose:	submit an http(s) form
-        Input:		$URI	the location to post the data
-                    $formvars	the formvars to use.
+        Function:    submit
+        Purpose:    submit an http(s) form
+        Input:        $URI    the location to post the data
+                    $formvars    the formvars to use.
                         format: $formvars["var"] = "val";
                     $formfiles  an array of files to submit
                         format: $formfiles["var"] = "/dir/filename.ext";
-        Output:		$this->results	the text output from the post
+        Output:        $this->results    the text output from the post
     \*======================================================================*/
 
     function submit($URI, $formvars = "", $formfiles = "")
@@ -293,10 +293,10 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	fetchlinks
-        Purpose:	fetch the links from a web page
-        Input:		$URI	where you are fetching from
-        Output:		$this->results	an array of the URLs
+        Function:    fetchlinks
+        Purpose:    fetch the links from a web page
+        Input:        $URI    where you are fetching from
+        Output:        $this->results    an array of the URLs
     \*======================================================================*/
 
     function fetchlinks($URI)
@@ -318,10 +318,10 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	fetchform
-        Purpose:	fetch the form elements from a web page
-        Input:		$URI	where you are fetching from
-        Output:		$this->results	the resulting html form
+        Function:    fetchform
+        Purpose:    fetch the form elements from a web page
+        Input:        $URI    where you are fetching from
+        Output:        $this->results    the resulting html form
     \*======================================================================*/
 
     function fetchform($URI)
@@ -342,10 +342,10 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	fetchtext
-        Purpose:	fetch the text from a web page, stripping the links
-        Input:		$URI	where you are fetching from
-        Output:		$this->results	the text from the web page
+        Function:    fetchtext
+        Purpose:    fetch the text from a web page, stripping the links
+        Input:        $URI    where you are fetching from
+        Output:        $this->results    the text from the web page
     \*======================================================================*/
 
     function fetchtext($URI)
@@ -362,10 +362,10 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	submitlinks
-        Purpose:	grab links from a form submission
-        Input:		$URI	where you are submitting from
-        Output:		$this->results	an array of the links from the post
+        Function:    submitlinks
+        Purpose:    grab links from a form submission
+        Input:        $URI    where you are submitting from
+        Output:        $this->results    an array of the links from the post
     \*======================================================================*/
 
     function submitlinks($URI, $formvars = "", $formfiles = "")
@@ -390,10 +390,10 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	submittext
-        Purpose:	grab text from a form submission
-        Input:		$URI	where you are submitting from
-        Output:		$this->results	the text from the web page
+        Function:    submittext
+        Purpose:    grab text from a form submission
+        Input:        $URI    where you are submitting from
+        Output:        $this->results    the text from the web page
     \*======================================================================*/
 
     function submittext($URI, $formvars = "", $formfiles = "")
@@ -419,8 +419,8 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	set_submit_multipart
-        Purpose:	Set the form submission content type to
+        Function:    set_submit_multipart
+        Purpose:    Set the form submission content type to
                     multipart/form-data
     \*======================================================================*/
     function set_submit_multipart()
@@ -431,8 +431,8 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	set_submit_normal
-        Purpose:	Set the form submission content type to
+        Function:    set_submit_normal
+        Purpose:    Set the form submission content type to
                     application/x-www-form-urlencoded
     \*======================================================================*/
     function set_submit_normal()
@@ -450,19 +450,19 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	_striplinks
-        Purpose:	strip the hyperlinks from an html document
-        Input:		$document	document to strip.
-        Output:		$match		an array of the links
+        Function:    _striplinks
+        Purpose:    strip the hyperlinks from an html document
+        Input:        $document    document to strip.
+        Output:        $match        an array of the links
     \*======================================================================*/
 
     function _striplinks($document)
     {
-        preg_match_all("'<\s*a\s.*?href\s*=\s*			# find <a href=
-						([\"\'])?					# find single or double quote
-						(?(1) (.*?)\\1 | ([^\s\>]+))		# if quote found, match up to next matching
-													# quote, otherwise match up to next space
-						'isx", $document, $links);
+        preg_match_all("'<\s*a\s.*?href\s*=\s*            # find <a href=
+                        ([\"\'])?                    # find single or double quote
+                        (?(1) (.*?)\\1 | ([^\s\>]+))        # if quote found, match up to next matching
+                                                    # quote, otherwise match up to next space
+                        'isx", $document, $links);
 
 
         // catenate the non-empty matches from the conditional subpattern
@@ -482,10 +482,10 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	_stripform
-        Purpose:	strip the form elements from an html document
-        Input:		$document	document to strip.
-        Output:		$match		an array of the links
+        Function:    _stripform
+        Purpose:    strip the form elements from an html document
+        Input:        $document    document to strip.
+        Output:        $match        an array of the links
     \*======================================================================*/
 
     function _stripform($document)
@@ -501,10 +501,10 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	_striptext
-        Purpose:	strip the text from an html document
-        Input:		$document	document to strip.
-        Output:		$text		the resulting text
+        Function:    _striptext
+        Purpose:    strip the text from an html document
+        Input:        $document    document to strip.
+        Output:        $text        the resulting text
     \*======================================================================*/
 
     function _striptext($document)
@@ -569,11 +569,11 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	_expandlinks
-        Purpose:	expand each link into a fully qualified URL
-        Input:		$links			the links to qualify
-                    $URI			the full URI to get the base from
-        Output:		$expandedLinks	the expanded links
+        Function:    _expandlinks
+        Purpose:    expand each link into a fully qualified URL
+        Input:        $links            the links to qualify
+                    $URI            the full URI to get the base from
+        Output:        $expandedLinks    the expanded links
     \*======================================================================*/
 
     function _expandlinks($links, $URI)
@@ -607,12 +607,12 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	_httprequest
-        Purpose:	go get the http(s) data from the server
-        Input:		$url		the url to fetch
-                    $fp			the current open file pointer
-                    $URI		the full URI
-                    $body		body contents to send if any (POST)
+        Function:    _httprequest
+        Purpose:    go get the http(s) data from the server
+        Input:        $url        the url to fetch
+                    $fp            the current open file pointer
+                    $URI        the full URI
+                    $body        body contents to send if any (POST)
         Output:
     \*======================================================================*/
 
@@ -790,8 +790,8 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	setcookies()
-        Purpose:	set cookies for a redirection
+        Function:    setcookies()
+        Purpose:    set cookies for a redirection
     \*======================================================================*/
 
     function setcookies()
@@ -805,9 +805,9 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	_check_timeout
-        Purpose:	checks whether timeout has occurred
-        Input:		$fp	file pointer
+        Function:    _check_timeout
+        Purpose:    checks whether timeout has occurred
+        Input:        $fp    file pointer
     \*======================================================================*/
 
     function _check_timeout($fp)
@@ -823,9 +823,9 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	_connect
-        Purpose:	make a socket connection
-        Input:		$fp	file pointer
+        Function:    _connect
+        Purpose:    make a socket connection
+        Input:        $fp    file pointer
     \*======================================================================*/
 
     function _connect(&$fp)
@@ -911,9 +911,9 @@ class Snoopy
     }
 
     /*======================================================================*\
-        Function:	_disconnect
-        Purpose:	disconnect a socket connection
-        Input:		$fp	file pointer
+        Function:    _disconnect
+        Purpose:    disconnect a socket connection
+        Input:        $fp    file pointer
     \*======================================================================*/
 
     function _disconnect($fp)
@@ -923,11 +923,11 @@ class Snoopy
 
 
     /*======================================================================*\
-        Function:	_prepare_post_body
-        Purpose:	Prepare post body according to encoding type
-        Input:		$formvars  - form variables
+        Function:    _prepare_post_body
+        Purpose:    Prepare post body according to encoding type
+        Input:        $formvars  - form variables
                     $formfiles - form upload files
-        Output:		post body
+        Output:        post body
     \*======================================================================*/
 
     function _prepare_post_body($formvars, $formfiles)
@@ -993,9 +993,9 @@ class Snoopy
     }
 
     /*======================================================================*\
-    Function:	getResults
-    Purpose:	return the results of a request
-    Output:		string results
+    Function:    getResults
+    Purpose:    return the results of a request
+    Output:        string results
     \*======================================================================*/
 
     function getResults()

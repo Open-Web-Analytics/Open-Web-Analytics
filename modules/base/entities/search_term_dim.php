@@ -24,25 +24,25 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_search_term_dim extends owa_entity {
-	
-	function __construct() {
-		
-		$this->setTableName('search_term_dim');
-		$this->setCachable();
-		// properties
-		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['id']->setPrimaryKey();
-		$this->properties['terms'] = new owa_dbColumn;
-		$this->properties['terms']->setDataType(OWA_DTD_VARCHAR255);
-		$this->properties['term_count'] = new owa_dbColumn;
-		$this->properties['term_count']->setDataType(OWA_DTD_VARCHAR255);
-	}
+
+    function __construct() {
+
+        $this->setTableName('search_term_dim');
+        $this->setCachable();
+        // properties
+        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setPrimaryKey();
+        $this->properties['terms'] = new owa_dbColumn;
+        $this->properties['terms']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['term_count'] = new owa_dbColumn;
+        $this->properties['term_count']->setDataType(OWA_DTD_VARCHAR255);
+    }
 }
 
 

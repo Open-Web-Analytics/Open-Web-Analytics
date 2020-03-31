@@ -17,8 +17,8 @@
 //
 
 if(!class_exists('owa_observer')) {
-	require_once(OWA_BASE_DIR.'owa_observer.php');
-}	
+    require_once(OWA_BASE_DIR.'owa_observer.php');
+}
 
 /**
  * OWA Visitor Update Event handlers
@@ -30,56 +30,56 @@ if(!class_exists('owa_observer')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_visitorUpdateHandlers extends owa_observer {
-    	
+
     /**
      * Notify Event Handler
      *
-     * @param 	unknown_type $event
-     * @access 	public
+     * @param     unknown_type $event
+     * @access     public
      */
     function notify($event) {
-		
-		if ( $event->get( 'visitor_id' ) ) {
-			
-	    	$v = owa_coreAPI::entityFactory('base.visitor');
-	    	
-	    	$v->load( $event->get( 'visitor_id' ) );
-	    	
-	    	if ( $v->wasPersisted() ) {
-	    			
-				$v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
-				
-				owa_coreAPI::debug("Updating... Visitor already exists.");
-			
-				$ret = $v->save();
-					
-				if ( $ret ) {
-					return OWA_EHS_EVENT_HANDLED;
-				} else {
-					return OWA_EHS_EVENT_FAILED;
-				}
-			}
-			
-		} else {
-		
-			owa_coreAPI::debug("Not updating... no visitor ID present.");
-			return OWA_EHS_EVENT_HANDLED;
-		}
+
+        if ( $event->get( 'visitor_id' ) ) {
+
+            $v = owa_coreAPI::entityFactory('base.visitor');
+
+            $v->load( $event->get( 'visitor_id' ) );
+
+            if ( $v->wasPersisted() ) {
+
+                $v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
+
+                owa_coreAPI::debug("Updating... Visitor already exists.");
+
+                $ret = $v->save();
+
+                if ( $ret ) {
+                    return OWA_EHS_EVENT_HANDLED;
+                } else {
+                    return OWA_EHS_EVENT_FAILED;
+                }
+            }
+
+        } else {
+
+            owa_coreAPI::debug("Not updating... no visitor ID present.");
+            return OWA_EHS_EVENT_HANDLED;
+        }
     }
     
     function summarizePriorSessions($id) {
-    	
-    	$ret = owa_coreAPI::summarize(array(
-    			'entity'		=> 'base.session',
-    			'columns'		=> array('num_prior_sessions' => 'max'),
-    			'constraints'	=> array( 'visitor_id' => $id ) ) );
-    	
-    	return $ret['num_prior_sessions_max'];
+
+        $ret = owa_coreAPI::summarize(array(
+                'entity'        => 'base.session',
+                'columns'        => array('num_prior_sessions' => 'max'),
+                'constraints'    => array( 'visitor_id' => $id ) ) );
+
+        return $ret['num_prior_sessions_max'];
     }
 }
 

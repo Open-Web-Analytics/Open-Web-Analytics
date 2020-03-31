@@ -17,7 +17,7 @@
 //
 
 if (!class_exists("owa_calculatedMetric")) {
-	require_once(OWA_BASE_CLASS_DIR.'calculatedMetric.php');
+    require_once(OWA_BASE_CLASS_DIR.'calculatedMetric.php');
 }
 
 /**
@@ -28,22 +28,22 @@ if (!class_exists("owa_calculatedMetric")) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_revenuePerTransaction extends owa_calculatedMetric {
 
-	function __construct() {
-	
-		$this->setName('revenuePerTransaction');
-		$this->setLabel('Avg. Transaction Value');
-		$this->setChildMetric('transactionRevenue');
-		$this->setChildMetric('transactions');
-		$this->setFormula('transactionRevenue / transactions');
-		$this->setDataType('currency');
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('revenuePerTransaction');
+        $this->setLabel('Avg. Transaction Value');
+        $this->setChildMetric('transactionRevenue');
+        $this->setChildMetric('transactions');
+        $this->setFormula('transactionRevenue / transactions');
+        $this->setDataType('currency');
+        return parent::__construct();
+    }
 }
 
 ?>

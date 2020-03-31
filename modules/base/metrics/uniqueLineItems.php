@@ -26,22 +26,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$          
+ * @since        owa 1.4.0
  */
 
 class owa_uniqueLineItems extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('uniqueLineItems');
-		$this->setLabel('Unique Items');
-		$this->setEntity('base.commerce_transaction_fact');
-		$this->setColumn('sku');
-		$this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
-		$this->setDataType('integer');
-		return parent::__construct();
-	}
+    function __construct() {
+    
+        $this->setName('uniqueLineItems');
+        $this->setLabel('Unique Items');
+        $this->setEntity('base.commerce_transaction_fact');
+        $this->setColumn('sku');
+        $this->setSelect(sprintf("count(distinct %s)", $this->getColumn()));
+        $this->setDataType('integer');
+        return parent::__construct();
+    }
 }
 
 ?>

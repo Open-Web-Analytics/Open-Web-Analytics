@@ -3,10 +3,10 @@
 <p>Visitor ID: <?php echo $session['visitor_id'];?></p>
 
 <p>Username (email): <?php echo $session['user_name'];?>  (<?php if (isset($session['user_email'])) { 
-																	echo $session['user_email']; 
-																} else {
-																	echo 'not set';
-																}  ?>)
+                                                                    echo $session['user_email'];
+                                                                } else {
+                                                                    echo 'not set';
+                                                                }  ?>)
 </p>
 <p>Host: <?php echo $session['host'];?></p>
 

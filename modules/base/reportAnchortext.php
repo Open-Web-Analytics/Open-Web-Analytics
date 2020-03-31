@@ -26,32 +26,32 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportAnchortextController extends owa_reportController {
-	
-	function action() {
-		
-		$this->setView('base.report');
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Referral Link Text');
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'referralLinkText');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 30);
-		$this->set('constraints', 'medium==referral');
-		$this->set('dimensionLink', array(
-				'linkColumn' => 'referralLinkText', 
-				'template' => array(
-						'do' => 'base.reportReferralLinkTextDetail', 
-						'referralLinkText' => '%s'), 
-				'valueColumns' => 'referralLinkText'));
-				
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
-	}
+
+    function action() {
+
+        $this->setView('base.report');
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Referral Link Text');
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimensions', 'referralLinkText');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 30);
+        $this->set('constraints', 'medium==referral');
+        $this->set('dimensionLink', array(
+                'linkColumn' => 'referralLinkText',
+                'template' => array(
+                        'do' => 'base.reportReferralLinkTextDetail',
+                        'referralLinkText' => '%s'),
+                'valueColumns' => 'referralLinkText'));
+
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
+    }
 }
 
 ?>

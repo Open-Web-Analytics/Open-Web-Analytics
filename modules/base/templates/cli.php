@@ -1,8 +1,8 @@
 <?php
-	
+
 if ( $msgs ) {
 
-	$this->out( $msgs );	
-}	
+    $this->out( $msgs );
+}
 
 ?>

@@ -27,17 +27,17 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_installDefaultsEntryController extends owa_installController {
-		
-	function action() {
-		
-		$this->setView('base.install');
-		$this->setSubview('base.installDefaultsEntry');
-	}
+
+    function action() {
+
+        $this->setView('base.install');
+        $this->setSubview('base.installDefaultsEntry');
+    }
 }
 
 /**
@@ -48,22 +48,22 @@ class owa_installDefaultsEntryController extends owa_installController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.2.1
+ * @version        $Revision$
+ * @since        owa 1.2.1
  */
 
 class owa_installDefaultsEntryView extends owa_view {
-		
-	function render($data) {
-		
-		// page title
-		$this->t->set('page_title', 'OWA User / Site Setup');
-		// set defaults
-		$this->body->set('defaults', $this->get('defaults'));
-		// load body template
-		$this->body->set_template('install_defaults_entry.php');
-		$this->setJs("owa", "base/js/owa.js");
-	}
+
+    function render($data) {
+
+        // page title
+        $this->t->set('page_title', 'OWA User / Site Setup');
+        // set defaults
+        $this->body->set('defaults', $this->get('defaults'));
+        // load body template
+        $this->body->set_template('install_defaults_entry.php');
+        $this->setJs("owa", "base/js/owa.js");
+    }
 }
 
 ?>

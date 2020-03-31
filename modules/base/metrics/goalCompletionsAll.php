@@ -24,22 +24,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_goalCompletionsAll extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('goalCompletionsAll');
-		$this->setLabel('Goal Completions');
-		$this->setEntity('base.session');
-		$this->setColumn('num_goals');
-		$this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
-		$this->setDataType('integer');
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('goalCompletionsAll');
+        $this->setLabel('Goal Completions');
+        $this->setEntity('base.session');
+        $this->setColumn('num_goals');
+        $this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
+        $this->setDataType('integer');
+        return parent::__construct();
+    }
 }
 
 ?>

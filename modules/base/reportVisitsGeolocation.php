@@ -27,39 +27,39 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitsGeolocationController extends owa_reportController {
-	
-	function action() {
-	
-		$site_id = $this->getParam('siteId');
-		
-		if ($site_id) {
-			//get site labels
-			$s = owa_coreAPI::entityFactory('base.site');
-			$s->getByColumn('site_id', $site_id);
-			$this->set('site_name', $s->get('name'));
-			$this->set('site_description', $s->get('description'));
-		}
-	
-		$rs = owa_coreAPI::executeApiCommand(array(
-				'do'				=> 'getLatestVisits',
-				'siteId'			=> $this->getParam('siteId'),
-				'page'				=> $this->getParam('page'),
-				'startDate'			=> $this->getParam('startDate'),
-				'endDate'			=> $this->getParam('endDate'),
-				'period'			=> $this->getParam('period'),
-				'resultsPerPage'	=> 200 ) );
-		
-		$this->set('latest_visits', $rs);
-		$this->set('site_id', $site_id);
-		$this->setTitle('Visitor Geo-location');
-		$this->setView('base.report');
-		$this->setSubview('base.reportVisitsGeolocation');
-	}
+
+    function action() {
+
+        $site_id = $this->getParam('siteId');
+
+        if ($site_id) {
+            //get site labels
+            $s = owa_coreAPI::entityFactory('base.site');
+            $s->getByColumn('site_id', $site_id);
+            $this->set('site_name', $s->get('name'));
+            $this->set('site_description', $s->get('description'));
+        }
+
+        $rs = owa_coreAPI::executeApiCommand(array(
+                'do'                => 'getLatestVisits',
+                'siteId'            => $this->getParam('siteId'),
+                'page'                => $this->getParam('page'),
+                'startDate'            => $this->getParam('startDate'),
+                'endDate'            => $this->getParam('endDate'),
+                'period'            => $this->getParam('period'),
+                'resultsPerPage'    => 200 ) );
+
+        $this->set('latest_visits', $rs);
+        $this->set('site_id', $site_id);
+        $this->setTitle('Visitor Geo-location');
+        $this->setView('base.report');
+        $this->setSubview('base.reportVisitsGeolocation');
+    }
 }
 
 
@@ -71,21 +71,21 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitsGeolocationView extends owa_view {
-		
-	function render($data) {
-		
-		// Assign data to templates
-		$this->body->set_template('report_geolocation.tpl');
-		$this->body->set('latest_visits', $this->get('latest_visits'));
-		$this->body->set('site_id', $this->get('site_id') );
-		$this->setjs('jmaps', 'base/js/includes/jquery/jquery.jmap-r72.js');
-		$this->setjs('owa.map', 'base/js/owa.map.js');
-	}
+
+    function render($data) {
+
+        // Assign data to templates
+        $this->body->set_template('report_geolocation.tpl');
+        $this->body->set('latest_visits', $this->get('latest_visits'));
+        $this->body->set('site_id', $this->get('site_id') );
+        $this->setjs('jmaps', 'base/js/includes/jquery/jquery.jmap-r72.js');
+        $this->setjs('owa.map', 'base/js/owa.map.js');
+    }
 }
 
 ?>

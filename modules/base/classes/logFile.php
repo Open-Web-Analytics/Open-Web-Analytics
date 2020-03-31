@@ -18,22 +18,22 @@
 
 
 class owa_logFile {
-	
-	var $name = 'generic_log';
-	var $file_path = '';
-	
-	function __construct( $conf = array() ) {
-		
-		if ( array_key_exists( 'name', $conf ) ) {
-			$this->name = $conf['name'];
-		}
-		
-		if ( array_key_exists( 'file_path', $conf ) ) {
-			$this->file_path = $conf['file_path'];
-		}
-	}
-	
-	function append( $msg ) {
+
+    var $name = 'generic_log';
+    var $file_path = '';
+
+    function __construct( $conf = array() ) {
+
+        if ( array_key_exists( 'name', $conf ) ) {
+            $this->name = $conf['name'];
+        }
+
+        if ( array_key_exists( 'file_path', $conf ) ) {
+            $this->file_path = $conf['file_path'];
+        }
+    }
+
+    function append( $msg ) {
         // no file path set stop execution
         if (!$this->file_path) {
             return;
@@ -47,7 +47,7 @@ class owa_logFile {
         $handle = fopen( $this->file_path , "a" ) or die('Could not open logfile: ' . $this->file_path);
         fwrite( $handle, $msg );
         fclose( $handle );
-	}
+    }
 }
 
 ?>

@@ -24,23 +24,23 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 class Template {
 
-	/**
-	 * Template files directory
-	 *
-	 * @var string
-	 */
-	var $template_dir;
-	
-	/**
-	 * Template Variables
-	 *
-	 * @var array
-	 */
+    /**
+     * Template files directory
+     *
+     * @var string
+     */
+    var $template_dir;
+
+    /**
+     * Template Variables
+     *
+     * @var array
+     */
     var $vars = array();
     
     /**
@@ -58,32 +58,32 @@ class Template {
     function __construct() {
         
     }
-	
+
     /**
      * Set the template file
      *
      * @param string $file
      */
-	function set_template($file = null) {
+    function set_template($file = null) {
         $this->file = $this->template_dir.$file;
         return;
     }
 
-	/**
-	 * Set a template variable
-	 *
-	 * @param string $name
-	 * @param unknown_value $value
-	 * @access public
-	 */
+    /**
+     * Set a template variable
+     *
+     * @param string $name
+     * @param unknown_value $value
+     * @access public
+     */
     function set($name, $value) {
     
-    	if (is_object($value)) {
-    		$class  = 'Template';
-    		if ($value instanceof $this) {
-    			$value = $value->fetch();
-    		}
-    	} 
+        if (is_object($value)) {
+            $class  = 'Template';
+            if ($value instanceof $this) {
+                $value = $value->fetch();
+            }
+        }
     
         $this->vars[$name] =  $value;
         return;
@@ -98,10 +98,10 @@ class Template {
      */
     function fetch($file = null) {
         if(!$file):
-			 $file = $this->file;
-		else:
-			$file = $this->template_dir.$file;
-		endif;
+             $file = $this->file;
+        else:
+            $file = $this->template_dir.$file;
+        endif;
 
         extract($this->vars);          // Extract the vars to local namespace
         ob_start();                    // Start output buffering
@@ -110,7 +110,7 @@ class Template {
         ob_end_clean();                // End buffering and discard
         return $contents;              // Return the contents
     }
-	
+
 }
 
 /**

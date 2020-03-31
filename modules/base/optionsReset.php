@@ -26,32 +26,32 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_optionsResetController extends owa_adminController {
-	
-	function __construct($params) {
-		
-		$this->setRequiredCapability('edit_settings');
-		return parent::__construct($params);	
-	}
 
-	function action() {
-		
-		$config = owa_coreAPI::configSingleton();
-		
-		$ret = $config->reset($this->get('module'));
-		
-		if ($ret) {
-		
-			$this->e->notice($this->getMsg(2503));
-			$this->setStatusCode(2503);
-		} 
-		
-		$this->setRedirectAction('base.optionsGeneral');
-	}
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_settings');
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        $config = owa_coreAPI::configSingleton();
+
+        $ret = $config->reset($this->get('module'));
+
+        if ($ret) {
+
+            $this->e->notice($this->getMsg(2503));
+            $this->setStatusCode(2503);
+        }
+
+        $this->setRedirectAction('base.optionsGeneral');
+    }
 }
 
 ?>

@@ -27,24 +27,24 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportVisitsToPurchaseController extends owa_reportController {
-	
-	function action() {
-		
-		$this->setSubview('base.reportSimpleDimensional');
-		$this->setTitle('Visits To Purchase');
-		$this->set('metrics', 'transactions');
-		$this->set('dimensions', 'visitsToTransaction');
-		$this->set('sort', 'visitsToTransaction');
-		$this->set('resultsPerPage', 30);
-		$this->set('trendChartMetric', 'transactions');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.');
-				
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportSimpleDimensional');
+        $this->setTitle('Visits To Purchase');
+        $this->set('metrics', 'transactions');
+        $this->set('dimensions', 'visitsToTransaction');
+        $this->set('sort', 'visitsToTransaction');
+        $this->set('resultsPerPage', 30);
+        $this->set('trendChartMetric', 'transactions');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions from all visitors.');
+
+    }
 }
 
 ?>

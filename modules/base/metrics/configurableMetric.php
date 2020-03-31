@@ -27,32 +27,32 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.5.3
+ * @version        $Revision$          
+ * @since        owa 1.5.3
  */
 
 class owa_configurableMetric extends owa_metric {
 
-	function __construct( $params ) {
-		
-		$this->setMetricType( $params['metric_type'] );
-		$this->setName( $params['name'] );
-		$this->setLabel( $params['label'] );
-		$this->setDataType( $params['data_type'] );
-		
-		if ( $this->isCalculated() ) {
-			foreach ( $params['child_metrics'] as $child ) {
-				$this->setChildMetric( $child );
-			}
-			
-			$this->setFormula( $params['formula']);	
-		} else {
-			$this->setEntity( $params['entity'] );
-			$this->setColumn( $params['column'] );
-		}
-		
-		return parent::__construct();
-	}
+    function __construct( $params ) {
+        
+        $this->setMetricType( $params['metric_type'] );
+        $this->setName( $params['name'] );
+        $this->setLabel( $params['label'] );
+        $this->setDataType( $params['data_type'] );
+        
+        if ( $this->isCalculated() ) {
+            foreach ( $params['child_metrics'] as $child ) {
+                $this->setChildMetric( $child );
+            }
+            
+            $this->setFormula( $params['formula']);    
+        } else {
+            $this->setEntity( $params['entity'] );
+            $this->setColumn( $params['column'] );
+        }
+        
+        return parent::__construct();
+    }
 }
 
 ?>

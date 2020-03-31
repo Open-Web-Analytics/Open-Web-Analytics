@@ -27,38 +27,38 @@ require_once(OWA_BASE_CLASS_DIR.'client.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_mw extends owa_client {
 
-	function __construct($config = null) {
-		
-		return parent::__construct($config);
-	}
-	
-	function owa_mw($config = null) {
-		
-		return owa_mw::__construct($config);
-	}
-	
-	/**
-	 * OWA Singleton Method
-	 *
-	 * Makes a singleton instance of OWA using the config array
-	 */
-	function singleton($config = null) {
-		
-		static $owa;
-		
-		if(!empty($owa)) {
-			return $owa;
-		} else {
-			$owa = new owa_mw($config);
-			return $owa;	
-		}
-	}
+    function __construct($config = null) {
+
+        return parent::__construct($config);
+    }
+
+    function owa_mw($config = null) {
+
+        return owa_mw::__construct($config);
+    }
+
+    /**
+     * OWA Singleton Method
+     *
+     * Makes a singleton instance of OWA using the config array
+     */
+    function singleton($config = null) {
+
+        static $owa;
+
+        if(!empty($owa)) {
+            return $owa;
+        } else {
+            $owa = new owa_mw($config);
+            return $owa;
+        }
+    }
 
 
 }
