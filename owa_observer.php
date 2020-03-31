@@ -24,13 +24,13 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_observer extends owa_base {
 
-	 /**
+     /**
      * The type of event that an observer would want to hear about.
      *
      * @var array
@@ -38,14 +38,14 @@ class owa_observer extends owa_base {
      */
     var $_event_type = array();
     
-	var $id;
+    var $id;
     
     /**
      * Event Message
      *
      * @var array
      */
-	var $m;
+    var $m;
    
     /**
      * Creates a new basic Log_observer instance.
@@ -56,21 +56,21 @@ class owa_observer extends owa_base {
      * @access public
      */  
     function __construct() {
-    	$this->id = md5(microtime());
+        $this->id = md5(microtime());
     }
     
     function handleEvent($action) {
     
-    	$data = owa_coreAPI::performAction($action, array('event' => $this->m));	
-    	return owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
-    	
+        $data = owa_coreAPI::performAction($action, array('event' => $this->m));
+        return owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
+
     }
     
     function sendMail($email_address, $subject, $msg) {
-    	
-    	mail($email_address, $subject, $msg);			
-		owa_coreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
-		return;
+
+        mail($email_address, $subject, $msg);
+        owa_coreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
+        return;
     }
 
 }

@@ -26,31 +26,31 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_moduleInstallCliController extends owa_cliController {
-	
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_modules');
-		return parent::__construct($params);
-	}
 
-	function action() {
-		
-		$module = $this->getParam('module');
-		
-		if ( $module ) {
-	
-			$ret = owa_coreAPI::installModule($module);
-			
-		} else {
-			owa_coreAPI::notice('No module argument was specified. Use module=xxx');
-		}	
-	}
-	
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_modules');
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        $module = $this->getParam('module');
+
+        if ( $module ) {
+
+            $ret = owa_coreAPI::installModule($module);
+
+        } else {
+            owa_coreAPI::notice('No module argument was specified. Use module=xxx');
+        }
+    }
+
 }
 
 ?>

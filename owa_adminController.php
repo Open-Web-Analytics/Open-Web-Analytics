@@ -28,25 +28,25 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 
 class owa_adminController extends owa_controller {
-	
-	var $is_admin = true;
-	
-	/**
-	 * Constructor
-	 *
-	 * @param array $params
-	 * @return owa_controller
-	 */
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
+    
+    var $is_admin = true;
+    
+    /**
+     * Constructor
+     *
+     * @param array $params
+     * @return owa_controller
+     */
+    function __construct($params) {
+    
+        return parent::__construct($params);
+    }
 }
 
 ?>

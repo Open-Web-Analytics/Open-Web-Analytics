@@ -26,28 +26,28 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportGeolocationController extends owa_reportController {
-		
-	function action() {
-			
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Visitor Geolocation');
-		//$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'country,countryCode');
-		$this->set('sort', 'visits');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'country', 
-				'template' 		=> array('do' => 'base.reportCountryDetail', 'country' => '%s'), 
-				'valueColumns' 	=> 'country'));
-				
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations.');
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Visitor Geolocation');
+        //$this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimensions', 'country,countryCode');
+        $this->set('sort', 'visits');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array(
+                'linkColumn'     => 'country',
+                'template'         => array('do' => 'base.reportCountryDetail', 'country' => '%s'),
+                'valueColumns'     => 'country'));
+
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all locations.');
+    }
 }
 
 ?>

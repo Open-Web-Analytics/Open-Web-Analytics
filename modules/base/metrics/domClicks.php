@@ -24,22 +24,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_domClicks extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('domClicks');
-		$this->setLabel('Dom Clicks');
-		$this->setEntity('base.click');
-		$this->setColumn('id');
-		$this->setSelect(sprintf("count(%s)", $this->getColumn()));
-		$this->setDataType('integer');
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('domClicks');
+        $this->setLabel('Dom Clicks');
+        $this->setEntity('base.click');
+        $this->setColumn('id');
+        $this->setSelect(sprintf("count(%s)", $this->getColumn()));
+        $this->setDataType('integer');
+        return parent::__construct();
+    }
 }
 
 ?>

@@ -6,4 +6,4 @@
 all: $(patsubst %.js,%.min.js,$(filter-out %.min.js,$(wildcard *.js)))
 
 %.min.js: %.js
-	yui-compressor $< -o $@
+    yui-compressor $< -o $@

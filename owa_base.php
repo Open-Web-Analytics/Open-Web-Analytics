@@ -26,58 +26,58 @@ require_once('owa_env.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_base {
-	
-	/**
-	 * Configuration
-	 *
-	 * @var array
-	 */
-	var $config;
-	
-	/**
-	 * Error Logger
-	 *
-	 * @var object
-	 */
-	var $e;
-	
-	/**
-	 * Configuration Entity
-	 * 
-	 * @var owa_settings  Object global configuration object
-	 */
-	var $c;
-	
-	/**
-	 * Module that this class belongs to
-	 *
-	 * @var unknown_type
-	 */
-	var $module;
-	
-	/**
-	 * Request Params
-	 *
-	 * @var array
-	 */
-	var $params;
-	
-	/**
-	 * Base Constructor
-	 *
-	 * @return owa_base
-	 */	
-	function __construct() {
-		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-		$this->e = owa_coreAPI::errorSingleton();
-		$this->c = owa_coreAPI::configSingleton();
-		$this->config = $this->c->fetch('base');
-	}
+
+    /**
+     * Configuration
+     *
+     * @var array
+     */
+    var $config;
+
+    /**
+     * Error Logger
+     *
+     * @var object
+     */
+    var $e;
+
+    /**
+     * Configuration Entity
+     *
+     * @var owa_settings  Object global configuration object
+     */
+    var $c;
+
+    /**
+     * Module that this class belongs to
+     *
+     * @var unknown_type
+     */
+    var $module;
+
+    /**
+     * Request Params
+     *
+     * @var array
+     */
+    var $params;
+
+    /**
+     * Base Constructor
+     *
+     * @return owa_base
+     */
+    function __construct() {
+        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        $this->e = owa_coreAPI::errorSingleton();
+        $this->c = owa_coreAPI::configSingleton();
+        $this->config = $this->c->fetch('base');
+    }
 
     /**
      * Retrieves string message from mesage file
@@ -86,31 +86,31 @@ class owa_base {
      * @param array $substitutions
      * @return array
      */
-	function getMsg($code, $substitutions = []) {
-		
-		static $_owa_messages;
-		
-		$msg = array();
-		
-		if (empty($_owa_messages)) {
-			require_once(OWA_DIR.'conf/messages.php');
-		}
-		
-		if ( $code && array_key_exists( $code, $_owa_messages ) ) {
-			
-			$msg = $_owa_messages[$code];
+    function getMsg($code, $substitutions = []) {
 
-			if (isset($msg['headline'])) {
-	            $msg['headline'] = vsprintf($msg['headline'], $substitutions['headline']);
-	        }
-	
-	        if (isset($msg['message'])) {
-	            $msg['message'] = vsprintf($msg['message'], $substitutions['message']);
-	        }
-		}
-		
-		return $msg;
-	}
+        static $_owa_messages;
+
+        $msg = array();
+
+        if (empty($_owa_messages)) {
+            require_once(OWA_DIR.'conf/messages.php');
+        }
+
+        if ( $code && array_key_exists( $code, $_owa_messages ) ) {
+
+            $msg = $_owa_messages[$code];
+
+            if (isset($msg['headline'])) {
+                $msg['headline'] = vsprintf($msg['headline'], $substitutions['headline']);
+            }
+
+            if (isset($msg['message'])) {
+                $msg['message'] = vsprintf($msg['message'], $substitutions['message']);
+            }
+        }
+
+        return $msg;
+    }
 
     /**
      * @param $code
@@ -122,44 +122,44 @@ class owa_base {
         $msg = $this->getMsg($code, $substitutions);
 
         return implode(' ', array_values($msg));
-	}
+    }
 
-	/**
-	 * Sets object attributes
-	 *
-	 * @param unknown_type $array
-	 */
-	function _setObjectValues($array) {
-		
-		foreach ($array as $n => $v) {
-				
-				$this->$n = $v;
-		
-			}
-		
-		return;
-	}
-	
-	/**
-	 * Sets array attributes
-	 *
-	 * @param unknown_type $array
-	 */
-	function _setArrayValues($array) {
-		
-		foreach ($array as $n => $v) {
-				
-				$this->params['$n'] = $v;
-		
-			}
-		
-		return;
-	}
-	
-	function __destruct() {
-		owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-	}
-	
+    /**
+     * Sets object attributes
+     *
+     * @param unknown_type $array
+     */
+    function _setObjectValues($array) {
+
+        foreach ($array as $n => $v) {
+
+                $this->$n = $v;
+
+            }
+
+        return;
+    }
+
+    /**
+     * Sets array attributes
+     *
+     * @param unknown_type $array
+     */
+    function _setArrayValues($array) {
+
+        foreach ($array as $n => $v) {
+
+                $this->params['$n'] = $v;
+
+            }
+
+        return;
+    }
+
+    function __destruct() {
+        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+    }
+
 }
 
 ?>

@@ -1,5 +1,5 @@
 <div id="<?php echo $dom_id;?>Container" style="width:; margin:0px; padding:0px;height:<?php echo $height;?>;">
-	<div id="<?php echo $dom_id;?>"></div>
+    <div id="<?php echo $dom_id;?>"></div>
 </div>
 
 <script>

@@ -26,27 +26,27 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_reportActionDetailController extends owa_reportController {
 
-	function action() {
-	
-		$actionName = $this->getParam('actionName');
-		$actionGroup = $this->getParam('actionGroup');
-		
-		$this->setSubview('base.reportSimpleDimensional');
-		$this->setTitle('Action Detail: ', $actionGroup.': '.$actionName);
-		$this->set('metrics', 'actions,actionsValue');
-		$this->set('dimensions', 'actionLabel');
-		$this->set('resultsPerPage', '30');
-		$this->set('sort', 'actions-');
-		$this->set('trendChartMetric', 'actions');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.');
-		$this->set('constraints', 'actionName=='.urlencode($actionName).',actionGroup=='.urlencode($actionGroup));	
-	}
+    function action() {
+
+        $actionName = $this->getParam('actionName');
+        $actionGroup = $this->getParam('actionGroup');
+
+        $this->setSubview('base.reportSimpleDimensional');
+        $this->setTitle('Action Detail: ', $actionGroup.': '.$actionName);
+        $this->set('metrics', 'actions,actionsValue');
+        $this->set('dimensions', 'actionLabel');
+        $this->set('resultsPerPage', '30');
+        $this->set('sort', 'actions-');
+        $this->set('trendChartMetric', 'actions');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.actions.formatted_value *> actions of this type.');
+        $this->set('constraints', 'actionName=='.urlencode($actionName).',actionGroup=='.urlencode($actionGroup));
+    }
 }
 
 ?>

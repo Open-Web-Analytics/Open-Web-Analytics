@@ -27,30 +27,30 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 
 class owa_installFinishEmbeddedView extends owa_view {
-		
-	function __construct() {
-	
-		$this->priviledge_level = 'guest';
-		return parent::__construct();
-	}
-	
-	function render($data) {
 
-		// Set Page title
-		$this->t->set('page_title', 'Installation Complete');
-		
-		// Set Page headline
-		$this->body->set('headline', 'Installation is Complete');
-		
-		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('install_finish_embedded.tpl');	
-	}	
+    function __construct() {
+
+        $this->priviledge_level = 'guest';
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        // Set Page title
+        $this->t->set('page_title', 'Installation Complete');
+
+        // Set Page headline
+        $this->body->set('headline', 'Installation is Complete');
+
+        $this->t->set_template('wrapper_blank.tpl');
+        $this->body->set_template('install_finish_embedded.tpl');
+    }
 }
 
 ?>

@@ -26,8 +26,8 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_userManager extends owa_base {
@@ -35,35 +35,35 @@ class owa_userManager extends owa_base {
      * owa_userManager constructor.
      */
     public function __construct() {
-						
-		return parent::__construct();
-	}
+
+        return parent::__construct();
+    }
 
     public function createNewUser($user_params) {
 
-		if ( isset( $user_params['password'] ) ) {
-			$password = $user_params['password'];
-		} else {
-			$password = '';
-		}
-		
-		// save new user to db		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$ret = $u->createNewUser( 
-				$user_params['user_id'], 
-				$user_params['role'], 
-				$password, 
-				$user_params['email_address'], 
-				$user_params['real_name']
-		);
-		
-		if ( $ret ) {
-			return $u->get('temp_passkey');
-		} else {
-			return false;
-		}
-	
-	}
+        if ( isset( $user_params['password'] ) ) {
+            $password = $user_params['password'];
+        } else {
+            $password = '';
+        }
+
+        // save new user to db
+        $u = owa_coreAPI::entityFactory('base.user');
+        $ret = $u->createNewUser(
+                $user_params['user_id'],
+                $user_params['role'],
+                $password,
+                $user_params['email_address'],
+                $user_params['real_name']
+        );
+
+        if ( $ret ) {
+            return $u->get('temp_passkey');
+        } else {
+            return false;
+        }
+
+    }
 
     public function updateUserPassword($user_params)
     {
@@ -89,19 +89,19 @@ class owa_userManager extends owa_base {
         return $ret ? $u : false;
 
     }
-	
-	public function deleteUser($user_id) {
-	
-		$u = owa_coreAPI::entityFactory('base.user');
 
-		$ret = $u->delete($user_id, 'user_id');
-		
-		if ( $ret ) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+    public function deleteUser($user_id) {
+
+        $u = owa_coreAPI::entityFactory('base.user');
+
+        $ret = $u->delete($user_id, 'user_id');
+
+        if ( $ret ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     /**
      * @param $password
@@ -122,7 +122,7 @@ class owa_userManager extends owa_base {
             'password_required' => $passwordRequiredValidation,
             'password_length' => $passwordLengthValidation,
         ];
-	}
+    }
 }
 
 ?>

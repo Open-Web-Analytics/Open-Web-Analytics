@@ -26,23 +26,23 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitorsLoyaltyController extends owa_reportController {
-	
-	function action() {
-						
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Visitor Loyalty');
-		$this->set('metrics', 'visits');
-		$this->set('dimensions', 'priorVisitCount');
-		$this->set('sort', 'priorVisitCount');
-		$this->set('resultsPerPage', 25);
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.');	
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Visitor Loyalty');
+        $this->set('metrics', 'visits');
+        $this->set('dimensions', 'priorVisitCount');
+        $this->set('sort', 'priorVisitCount');
+        $this->set('resultsPerPage', 25);
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.');
+    }
 }
 
 ?>

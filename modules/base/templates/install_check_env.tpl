@@ -15,7 +15,7 @@
 <h3>Problems</h3>
 <?php foreach ($errors as $error): ?>
 <p class="form-row">
-	<span class="form-label"><?php echo $error['name'];?></span>
+    <span class="form-label"><?php echo $error['name'];?></span>
     <span class="form-field form-error"><?php echo $error['value'];?></span>
     <span class="form-instructions"><?php echo $error['msg'];?></span>
 </p>

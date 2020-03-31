@@ -26,38 +26,38 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_reportReferralDetailController extends owa_reportController {
-		
-	function action() {
-		
-		$referral = $this->getParam('referralPageUrl');
-		
-		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Referral:');
-		
-		$r = owa_coreAPI::entityFactory('base.referer');
-		$r->getByColumn('url', $referral);
-		
-		$this->set('dimension_properties', array(
-				'page_title' 	=> $r->get('page_title'),
-				'url'		=> $r->get('url'),
-				'snippet'	=> $r->get('snippet') ) );
-				
-		$this->set('dimension_template', 'dimension_referral.php');
-		
-		
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'referralPageTitle,referralWebSite');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 25);
-		$this->set('constraints', 'referralPageUrl=='.urlencode($referral));
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this referral.');	
-	}
+
+    function action() {
+
+        $referral = $this->getParam('referralPageUrl');
+
+        $this->setSubview('base.reportDimensionDetail');
+        $this->setTitle('Referral:');
+
+        $r = owa_coreAPI::entityFactory('base.referer');
+        $r->getByColumn('url', $referral);
+
+        $this->set('dimension_properties', array(
+                'page_title'     => $r->get('page_title'),
+                'url'        => $r->get('url'),
+                'snippet'    => $r->get('snippet') ) );
+
+        $this->set('dimension_template', 'dimension_referral.php');
+
+
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimensions', 'referralPageTitle,referralWebSite');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 25);
+        $this->set('constraints', 'referralPageUrl=='.urlencode($referral));
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this referral.');
+    }
 }
 
 ?>

@@ -2,21 +2,21 @@
 /* Written by Anders Ekdahl ( anders@nomadiz.se). */
 jQuery(function($){
     $.datepicker.regional['sv'] = {clearText: 'Rensa', clearStatus: '',
-		closeText: 'Stäng', closeStatus: '',
+        closeText: 'Stäng', closeStatus: '',
         prevText: '&laquo;Förra',  prevStatus: '',
-		nextText: 'Nästa&raquo;', nextStatus: '',
-		currentText: 'Idag', currentStatus: '',
+        nextText: 'Nästa&raquo;', nextStatus: '',
+        currentText: 'Idag', currentStatus: '',
         monthNames: ['Januari','Februari','Mars','April','Maj','Juni', 
         'Juli','Augusti','September','Oktober','November','December'],
         monthNamesShort: ['Jan','Feb','Mar','Apr','Maj','Jun', 
         'Jul','Aug','Sep','Okt','Nov','Dec'],
-		monthStatus: '', yearStatus: '',
-		weekHeader: 'Ve', weekStatus: '',
-		dayNamesShort: ['Sön','Mån','Tis','Ons','Tor','Fre','Lör'],
-		dayNames: ['Söndag','Måndag','Tisdag','Onsdag','Torsdag','Fredag','Lördag'],
-		dayNamesMin: ['Sö','Må','Ti','On','To','Fr','Lö'],
-		dayStatus: 'DD', dateStatus: 'D, M d',
+        monthStatus: '', yearStatus: '',
+        weekHeader: 'Ve', weekStatus: '',
+        dayNamesShort: ['Sön','Mån','Tis','Ons','Tor','Fre','Lör'],
+        dayNames: ['Söndag','Måndag','Tisdag','Onsdag','Torsdag','Fredag','Lördag'],
+        dayNamesMin: ['Sö','Må','Ti','On','To','Fr','Lö'],
+        dayStatus: 'DD', dateStatus: 'D, M d',
         dateFormat: 'yy-mm-dd', firstDay: 1, 
-		initStatus: '', isRTL: false};
+        initStatus: '', isRTL: false};
     $.datepicker.setDefaults($.datepicker.regional['sv']); 
 });

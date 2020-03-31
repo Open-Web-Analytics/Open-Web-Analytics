@@ -24,23 +24,23 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_os extends owa_entity {
-	
-	function __construct() {
-		
-		$this->setTableName('os');
-		$this->setCachable();
-		// properties
-		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['id']->setPrimaryKey();
-		$this->properties['name'] = new owa_dbColumn;
-		$this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
-	}	
+
+    function __construct() {
+
+        $this->setTableName('os');
+        $this->setCachable();
+        // properties
+        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setPrimaryKey();
+        $this->properties['name'] = new owa_dbColumn;
+        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
+    }
 }
 
 ?>

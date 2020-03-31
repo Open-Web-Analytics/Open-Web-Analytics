@@ -27,8 +27,8 @@ require_once(OWA_DIR.'owa_php.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 // Initialize owa admin
@@ -36,18 +36,18 @@ $owa = new owa_php;
 
 
 if (!$owa->isOwaInstalled()) {
-	// redirect to install
-	owa_lib::redirectBrowser(owa_coreAPI::getSetting('base','public_url').'install.php');
+    // redirect to install
+    owa_lib::redirectBrowser(owa_coreAPI::getSetting('base','public_url').'install.php');
 }
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-	// run controller or view and echo page content
-	echo $owa->handleRequestFromURL();
+    // run controller or view and echo page content
+    echo $owa->handleRequestFromURL();
 } else {
-	
-	// unload owa
-	$owa->restInPeace();
+
+    // unload owa
+    $owa->restInPeace();
 }
 
 ?>

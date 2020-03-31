@@ -26,28 +26,28 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportCreativePerformanceController extends owa_reportController {
-	
-	function action() {
-			
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Creative Performance');
-		
-		$this->set('dimensions', 'ad,entryPagePath');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 25);
-		$this->set('dimensionLink', array(
-				'linkColumn' => 'ad', 
-				'template' => array('do' => 'base.reportAdDetail', 'ad' => '%s'), 
-				'valueColumns' => 'ad'));
-				
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.');		
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Creative Performance');
+
+        $this->set('dimensions', 'ad,entryPagePath');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 25);
+        $this->set('dimensionLink', array(
+                'linkColumn' => 'ad',
+                'template' => array('do' => 'base.reportAdDetail', 'ad' => '%s'),
+                'valueColumns' => 'ad'));
+
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits for all ads.');
+    }
 }
 
 

@@ -24,60 +24,60 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
  
  class owa_subStringPositionValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	function validate() {
- 		
- 		$value = $this->getValues();
- 		
- 		$substring = $this->getConfig('substring');
- 		
- 		$pos = strpos($value, $substring);
- 		
- 		$operator = $this->getConfig('operator');
- 		$position = $this->getConfig('position');
- 		
- 		switch ($operator) {
- 			
- 			case "=":
- 				
- 				if ($pos === $position) {
- 					;
- 				} else {
- 					$this->hasError();
- 				}
- 					
- 						
- 				break;
- 			
- 			case "!=":
- 				
- 				if ($pos === $position) {
- 					$this->hasError();
- 				}
- 			
- 				break;
- 		}
-		
-		$error = $this->getErrorMsg();
-		
-		if (empty($error)) {
-			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $substring, $pos));
-		} 		
-		
- 		
- 		
- 	}
- 	
+     
+     function __construct() {
+         
+         return parent::__construct();
+     }
+     
+     function validate() {
+         
+         $value = $this->getValues();
+         
+         $substring = $this->getConfig('substring');
+         
+         $pos = strpos($value, $substring);
+         
+         $operator = $this->getConfig('operator');
+         $position = $this->getConfig('position');
+         
+         switch ($operator) {
+             
+             case "=":
+                 
+                 if ($pos === $position) {
+                     ;
+                 } else {
+                     $this->hasError();
+                 }
+                     
+                         
+                 break;
+             
+             case "!=":
+                 
+                 if ($pos === $position) {
+                     $this->hasError();
+                 }
+             
+                 break;
+         }
+        
+        $error = $this->getErrorMsg();
+        
+        if (empty($error)) {
+            $error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $substring, $pos));
+        }         
+        
+         
+         
+     }
+     
  }
  
  

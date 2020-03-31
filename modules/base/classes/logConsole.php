@@ -18,28 +18,28 @@
 
 
 class owa_logConsole {
-	
-	var $name = 'generic_console_log';
-	
-	function __construct( $conf = array() ) {
-		
-		if ( array_key_exists( 'name', $conf ) ) {
-			
-			$this->name = $conf['name'];
-		}
-		
-	}
-	
-	function append( $msg ) {
-		
-		if ( ! defined('STDOUT') ) {
-		
-			define('STDOUT', fopen("php://stdout", "w") );
-		}
-		
-		fwrite( STDOUT, $msg );	
-		
-	}
+    
+    var $name = 'generic_console_log';
+    
+    function __construct( $conf = array() ) {
+        
+        if ( array_key_exists( 'name', $conf ) ) {
+            
+            $this->name = $conf['name'];
+        }
+        
+    }
+    
+    function append( $msg ) {
+        
+        if ( ! defined('STDOUT') ) {
+        
+            define('STDOUT', fopen("php://stdout", "w") );
+        }
+        
+        fwrite( STDOUT, $msg );    
+        
+    }
 
 }
 

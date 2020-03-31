@@ -27,27 +27,27 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportProductsController extends owa_reportController {
-	
-	function action() {
-		
-		$this->setSubview('base.reportSimpleDimensional');
-		$this->setTitle('Products');
-		$this->set('metrics', 'lineItemQuantity,lineItemRevenue');
-		$this->set('dimensions', 'productName');
-		$this->set('sort', 'actions');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array('linkColumn' => 'productName', 
-												'template' => array('do' => 'base.reportProductDetail', 'productName' => '%s'), 
-												'valueColumns' => 'productName'));
-		$this->set('trendChartMetric', 'lineItemQuantity');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.');
-				
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportSimpleDimensional');
+        $this->setTitle('Products');
+        $this->set('metrics', 'lineItemQuantity,lineItemRevenue');
+        $this->set('dimensions', 'productName');
+        $this->set('sort', 'actions');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array('linkColumn' => 'productName',
+                                                'template' => array('do' => 'base.reportProductDetail', 'productName' => '%s'),
+                                                'valueColumns' => 'productName'));
+        $this->set('trendChartMetric', 'lineItemQuantity');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold.');
+
+    }
 }
 
 ?>

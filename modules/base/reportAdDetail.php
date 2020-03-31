@@ -26,24 +26,24 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportAdDetailController extends owa_reportController {
-		
-	function action() {
-		
-		$dim_value = strtolower($this->getParam('ad'));
-		$this->setTitle('Ad: ', $dim_value);
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 25);
-		$this->set('constraints', 'ad=='.urlencode($dim_value));
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad.');	
-		$this->setSubview('base.reportDimensionDetail');
-	}
+
+    function action() {
+
+        $dim_value = strtolower($this->getParam('ad'));
+        $this->setTitle('Ad: ', $dim_value);
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 25);
+        $this->set('constraints', 'ad=='.urlencode($dim_value));
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this ad.');
+        $this->setSubview('base.reportDimensionDetail');
+    }
 }
 
 ?>

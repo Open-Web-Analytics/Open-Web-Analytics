@@ -26,36 +26,36 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.5.7
+ * @version        $Revision$
+ * @since        owa 1.5.7
  */
 
 class owa_remoteQueueModule extends owa_module {
-	
-	function __construct() {
-		
-		$this->name = 'remoteQueue';
-		$this->display_name = 'Remote Queue';
-		$this->group = 'logging';
-		$this->author = 'Peter Adams';
-		$this->version = '1.0';
-		$this->description = 'Posts incoming tracking events to a remote instance of OWA';
-		$this->config_required = false;
-		$this->required_schema_version = 1;
-		
-		// register named queues
-		
-		$endpoint = owa_coreAPI::getSetting( 'remoteQueue', 'endpoint' );
-		
-		if ( $endpoint ) {
-		
-			$this->registerEventQueue( 'incoming_tracking_events', array(
-				
-				'queue_type'			=> 	'http',
-				'endpoint'				=>	$endpoint
-			));
-		} 
-		
-		return parent::__construct();
-	}
+
+    function __construct() {
+
+        $this->name = 'remoteQueue';
+        $this->display_name = 'Remote Queue';
+        $this->group = 'logging';
+        $this->author = 'Peter Adams';
+        $this->version = '1.0';
+        $this->description = 'Posts incoming tracking events to a remote instance of OWA';
+        $this->config_required = false;
+        $this->required_schema_version = 1;
+
+        // register named queues
+
+        $endpoint = owa_coreAPI::getSetting( 'remoteQueue', 'endpoint' );
+
+        if ( $endpoint ) {
+
+            $this->registerEventQueue( 'incoming_tracking_events', array(
+
+                'queue_type'            =>     'http',
+                'endpoint'                =>    $endpoint
+            ));
+        }
+
+        return parent::__construct();
+    }
 }

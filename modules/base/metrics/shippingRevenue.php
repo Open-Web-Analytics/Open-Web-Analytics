@@ -26,22 +26,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_shippingRevenue extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('shippingRevenue');
-		$this->setLabel('Shipping');
-		$this->setEntity('base.commerce_transaction_fact');
-		$this->setColumn('shipping_revenue');
-		$this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
-		$this->setDataType('currency');
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('shippingRevenue');
+        $this->setLabel('Shipping');
+        $this->setEntity('base.commerce_transaction_fact');
+        $this->setColumn('shipping_revenue');
+        $this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
+        $this->setDataType('currency');
+        return parent::__construct();
+    }
 }
 
 ?>

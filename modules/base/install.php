@@ -26,33 +26,33 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_installView extends owa_view {
-		
-	function __construct() {
-		
-		$this->default_subview = 'base.installStart';
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		//page title
-		$this->t->set('page_title', 'Installation');
-		
-		// load wrapper template
-		$this->t->set_template('wrapper_public.tpl');
-		// load body template
-		$this->body->set_template('install.tpl');
-	
-		$this->setCss("base/css/owa.css");	
-		$this->body->set('headline', 'Welcome to the Open Web Analytics Installation Wizard');
-		$this->body->set('step', $data['subview']);
-		$this->setJs("owa", "base/js/owa.js");
-	}
+
+    function __construct() {
+
+        $this->default_subview = 'base.installStart';
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        //page title
+        $this->t->set('page_title', 'Installation');
+
+        // load wrapper template
+        $this->t->set_template('wrapper_public.tpl');
+        // load body template
+        $this->body->set_template('install.tpl');
+
+        $this->setCss("base/css/owa.css");
+        $this->body->set('headline', 'Welcome to the Open Web Analytics Installation Wizard');
+        $this->body->set('step', $data['subview']);
+        $this->setJs("owa", "base/js/owa.js");
+    }
 }
 
 ?>

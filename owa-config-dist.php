@@ -24,8 +24,8 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
  
 /**
@@ -39,6 +39,7 @@ define('OWA_DB_TYPE', 'yourdbtypegoeshere'); // options: mysql
 define('OWA_DB_NAME', 'yourdbnamegoeshere'); // name of the database
 define('OWA_DB_HOST', 'yourdbhostgoeshere'); // host name of the server housing the database
 define('OWA_DB_USER', 'yourdbusergoeshere'); // database user
+define('OWA_DB_PORT', '3306'); // port of database
 define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
 
 /**

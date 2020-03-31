@@ -17,7 +17,7 @@
 //
 
 if(!class_exists('owa_observer')) {
-	require_once(OWA_DIR.'owa_observer.php');
+    require_once(OWA_DIR.'owa_observer.php');
 }
 
 /**
@@ -28,50 +28,50 @@ if(!class_exists('owa_observer')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_hostHandlers extends owa_observer {
-    	
+
     /**
      * Notify Event Handler
      *
-     * @param 	unknown_type $event
-     * @access 	public
+     * @param     unknown_type $event
+     * @access     public
      */
     function notify( $event ) {
-		
-		if ( ! $event->get( 'host_id' ) ) {
-		
-			owa_coreAPI::notice('Not persisting host dimension. Host id missing from event.');
-		
-			return OWA_EHS_EVENT_HANDLED;
-		}
-		
-    	$h = owa_coreAPI::entityFactory('base.host');
-		
-		$h->getByPk( 'id', $event->get( 'host_id' ) );
-		
-		$id = $h->get('id'); 
-		
-		if (!$id) {
-			
-			$h->setProperties( $event->getProperties() );
-			$h->set( 'id', $event->get( 'host_id' ) ); 
-			$ret = $h->create();
-			
-			if ( $ret ) {
-				return OWA_EHS_EVENT_HANDLED;
-			} else {
-				return OWA_EHS_EVENT_FAILED;
-			}
-			
-		} else {
-		
-			owa_coreAPI::debug('Not Persisting. Host already exists.');
-			return OWA_EHS_EVENT_HANDLED;
-		}	
+
+        if ( ! $event->get( 'host_id' ) ) {
+
+            owa_coreAPI::notice('Not persisting host dimension. Host id missing from event.');
+
+            return OWA_EHS_EVENT_HANDLED;
+        }
+
+        $h = owa_coreAPI::entityFactory('base.host');
+
+        $h->getByPk( 'id', $event->get( 'host_id' ) );
+
+        $id = $h->get('id');
+
+        if (!$id) {
+
+            $h->setProperties( $event->getProperties() );
+            $h->set( 'id', $event->get( 'host_id' ) );
+            $ret = $h->create();
+
+            if ( $ret ) {
+                return OWA_EHS_EVENT_HANDLED;
+            } else {
+                return OWA_EHS_EVENT_FAILED;
+            }
+
+        } else {
+
+            owa_coreAPI::debug('Not Persisting. Host already exists.');
+            return OWA_EHS_EVENT_HANDLED;
+        }
     }
 }
 

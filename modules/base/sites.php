@@ -28,29 +28,29 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_sitesController extends owa_reportController {
-	
-	function __construct($params) {
+    
+    function __construct($params) {
 
-		parent::__construct($params);
-		$this->setRequiredCapability('view_site_list');
-	}
-	
-	function action() {
-	
-		$s = owa_coreAPI::entityFactory('base.site');
-		$sites = $this->getSitesAllowedForCurrentUser();	
-		$this->set('tracked_sites', $sites);
-		$this->setSubview('base.sites');
-		$this->setView('base.report');
-		$this->set('title', 'Sites Roster');
-		$this->hideReportingNavigation();
-		$this->hideSitesFilter();
-	}
+        parent::__construct($params);
+        $this->setRequiredCapability('view_site_list');
+    }
+    
+    function action() {
+    
+        $s = owa_coreAPI::entityFactory('base.site');
+        $sites = $this->getSitesAllowedForCurrentUser();    
+        $this->set('tracked_sites', $sites);
+        $this->setSubview('base.sites');
+        $this->setView('base.report');
+        $this->set('title', 'Sites Roster');
+        $this->hideReportingNavigation();
+        $this->hideSitesFilter();
+    }
 }
 
 
@@ -62,19 +62,19 @@ class owa_sitesController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_sitesView extends owa_view {
-		
-	function render() {
-		
-		//page title
-		$this->t->set('page_title', 'Sites Roster');
-		$this->body->set_template('sites.tpl');
-		$this->body->set('tracked_sites', $this->get('tracked_sites'));
-	}
+        
+    function render() {
+        
+        //page title
+        $this->t->set('page_title', 'Sites Roster');
+        $this->body->set_template('sites.tpl');
+        $this->body->set('tracked_sites', $this->get('tracked_sites'));
+    }
 }
 
 ?>

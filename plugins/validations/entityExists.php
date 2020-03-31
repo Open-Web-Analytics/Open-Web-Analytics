@@ -24,39 +24,39 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
  
  class owa_entityExistsValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	function validate() {
- 		
- 		$entity = owa_coreAPI::entityFactory($this->getConfig('entity'));
- 		$entity->getByColumn($this->getConfig('column'), $this->getValues());
- 		 		
- 		$error = $this->getErrorMsg();
- 		
- 		if (empty($error)) {
- 			$this->setErrorMessage('An entity with that value does not exist.');
- 		}
+     
+     function __construct() {
+         
+         return parent::__construct();
+     }
+     
+     function validate() {
+         
+         $entity = owa_coreAPI::entityFactory($this->getConfig('entity'));
+         $entity->getByColumn($this->getConfig('column'), $this->getValues());
+                  
+         $error = $this->getErrorMsg();
+         
+         if (empty($error)) {
+             $this->setErrorMessage('An entity with that value does not exist.');
+         }
 
-		$id = $entity->get('id');
-		
-		// validation logic 
- 		if (empty($id)) {
- 			$this->hasError();
- 		}	
-					
- 		return;
- 		
- 	}
- 	 	
+        $id = $entity->get('id');
+        
+        // validation logic 
+         if (empty($id)) {
+             $this->hasError();
+         }    
+                    
+         return;
+         
+     }
+          
  }
  
  

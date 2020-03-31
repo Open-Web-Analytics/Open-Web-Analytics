@@ -1300,5 +1300,4 @@ class owa_wp_util {
 	}
 }
 
-
 ?>

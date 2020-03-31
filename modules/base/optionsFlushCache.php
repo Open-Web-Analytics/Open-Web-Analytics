@@ -26,35 +26,35 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_optionsFlushCacheController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_settings');
-		return parent::__construct($params);
-	}
-	
-	function action() {
-	
-		$cache = owa_coreAPI::cacheSingleton(); 
-		$cache->flush();
-				
-		$this->e->notice("Cache Flushed");
-	
-		$data = array();
-		$data['do'] = 'base.optionsGeneral';
-		$data['view_method'] = 'redirect';
-		//$data['configuration'] = $nbsettings;
-		$data['status_code'] = 2500;
-		
-		return $data;
-	
-	}
-	
+
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_settings');
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+        $cache = owa_coreAPI::cacheSingleton();
+        $cache->flush();
+
+        $this->e->notice("Cache Flushed");
+
+        $data = array();
+        $data['do'] = 'base.optionsGeneral';
+        $data['view_method'] = 'redirect';
+        //$data['configuration'] = $nbsettings;
+        $data['status_code'] = 2500;
+
+        return $data;
+
+    }
+
 }
 
 ?>
