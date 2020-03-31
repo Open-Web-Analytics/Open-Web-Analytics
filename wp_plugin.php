@@ -25,6 +25,15 @@ Author URI: http://www.openwebanalytics.com
 // $Id$
 //
 
+// if this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Define the plugin path constant 
+define('OWA_WP_PATH', plugin_dir_path( __FILE__ ) );
+
+require_once 'owa_wp_classes.php';
 
 // Hook package creation
 add_action('plugins_loaded', array( 'owa_wp_plugin', 'getInstance'), 10 );
@@ -37,7 +46,7 @@ add_action('plugins_loaded', array( 'owa_wp_plugin', 'getInstance'), 10 );
  * OWA WordPress Plugin Class
  *
  */
-class owa_wp_plugin {
+class owa_wp_plugin extends owa_wp_module {
 	
 	// cmd array
 	var $cmds = array();
@@ -59,12 +68,18 @@ class owa_wp_plugin {
 		ob_start();
 		
 		// fetch plugin options from DB and combine them with defaults.
-		$options = get_option( 'owa_wp_plugin' );
-		
+		$options = get_option( 'owa_wp' );
+		//echo 'options from DB: '. print_r( $options, true );
 		if ( $options ) {
 			
 			$this->options = array_merge_recursive($this->options, $options);
 		}
+		
+		//echo 'options after merge: '. print_r( $this->options, true );
+		
+		$params = array();
+		$params['module_name'] = 'owa-wordpress';
+		parent::__construct( $params ); 
 		
 		/* register WordPress hooks and filters. */
 		
@@ -100,6 +115,7 @@ class owa_wp_plugin {
 			register_activation_hook(__FILE__, 'owa_install');
 			
 		}
+		
 	}
 	
 	/**
@@ -826,6 +842,463 @@ class owa_wp_plugin {
 		}
 	}
 	
+	public function registerOptions() {		
+
+		return array(
+		
+			'enable'				=> array(
+			
+				'default_value'							=> true,
+				'field'									=> array(
+					'type'									=> 'boolean',
+					'title'									=> 'Enable OWA ',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'general',
+					'description'							=> 'Enable OWA.',
+					'label_for'								=> 'Enable OWA.',
+					'error_message'							=> 'You must select On or Off.'		
+				)				
+			),
+			
+			// track domstreams
+			// track admin actions
+			// track clicks
+			// 
+			
+			'clickStart'				=> array(
+			
+				'default_value'							=> true,
+				'field'									=> array(
+					'type'									=> 'boolean',
+					'title'									=> 'Click Start Mode',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'general',
+					'description'							=> 'Click to Start the Slideshow',
+					'label_for'								=> 'Gallery Slideshow Click Start mode',
+					'error_message'							=> 'You must select On or Off.'		
+				)				
+			)
+		);
+	}
+
+	public function registerSettingsPages() {
+		
+		$pages = array();
+		
+		$pages['owa-wordpress'] = array(
+			
+			'parent_slug'					=> 'owa-wordpress',
+			'is_top_level'					=> true,
+			'top_level_menu_title'			=> 'OWA Tracking',
+			'title'							=> 'OWA Tracking',
+			'menu_title'					=> 'Tracking Settings',
+			'required_capability'			=> 'manage_options',
+			'menu_slug'						=> 'owa-wordpress-settings',
+			'description'					=> 'Settings for Open Web Analytics Tracking.',
+			'sections'						=> array(
+				'general'						=> array(
+					'id'							=> 'general',
+					'title'							=> 'General',
+					'description'					=> 'The following settings control Open Web Analytics.'
+				)
+			)
+		);
+		
+		return $pages;
+	}
+
+
+	
 }
+
+class owa_wp_module {
+	
+	public $module_name;
+	public $controllers;
+	public $entities;
+	public $views;
+	public $ns;
+	public $package_name;
+	public $options;
+	public $settings;
+	public $settings_pages;
+	
+	public function __construct( $params = array() ) {
+	
+		$this->controllers = array();
+		$this->entities	= array();
+		$this->views = array();
+		$this->settings_pages = array();
+		
+		
+		// set module name
+		if ( array_key_exists( 'module_name', $params ) ) {
+			
+			$this->module_name = $params['module_name'];
+		}
+		
+		// set package name
+		if ( array_key_exists( 'package_name', $params ) ) {
+			
+			$this->package_name = $params['package_name'];
+		}
+		
+		// set namespace
+		if ( array_key_exists( 'ns', $params ) ) {
+			
+			$this->ns = $params['ns'];
+		}
+	
+		// kick off the init sequence for each module during Wordpress 'init' hook.
+		add_action('init', array( $this, 'init'), 15, 0 );
+	}
+	
+	public function init() {
+	
+		// needs to be first as default Options are set here and used downstream in
+		// all other hooks and classes.
+		$this->processAdminConfig();
+		// load public hooks
+		$this->definePublicHooks();
+		// load admin hooks during WordPress 'admin_init' hook
+	
+		owa_wp_util::addAction( 'admin_init', array( $this, 'defineAdminHooks') );
+	}
+	
+		/**
+	 * Inititalizes Settings Page Objects
+	 *
+	 */
+	public function initSettingsPage() {
+		
+		// check for prior initialization as I'm not sure if the WP hook admin_init or admin_menu 
+		// gets called first.
+		if ( ! $this->settings_pages ) {			
+			
+			$sp_params = array(
+			
+				'ns'				=> $this->ns,
+				'package'			=> $this->package_name,
+				'module'			=> $this->module_name
+			);
+			
+			$pages = $this->registerSettingsPages();
+			
+			if ( $pages ) {
+				
+				foreach ( $pages as $k => $params ) {
+					
+					$new_params = array_merge($params, $sp_params);
+					$new_params['name'] = $k;
+					
+					$this->settings_pages[ $k ] = new owa_wp_settingsPage( $new_params, $this->options );
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Callback function for WordPress admin_menu hook
+	 *
+	 * Hooks create Menu Pages.
+	 */
+	public function addSettingsPages() {
+	
+		$this->initSettingsPage();
+		
+		$pages = $this->settings_pages;
+		
+		if ( $pages ) {
+			
+			foreach ( $pages as $k => $page ) {
+				
+				$menu_slug = '';
+				
+				$menu_slug = $page->get('menu_slug');
+				
+				// check for custom callback function.
+				if ( $page->get( 'render_callback' ) ) {
+					
+					$callback = $page->get( 'render_callback' );
+					
+				} else {
+					
+					$callback = array( $page, 'renderPage' );
+				}
+			
+				if ( $page->get('is_top_level') ) {
+					
+					add_menu_page( 
+						$page->get('title'), 
+						$page->get('top_level_menu_title'), 
+						$page->get('required_capability'), 
+						$page->get('parent_slug'), 
+						$callback, 
+						'', 
+						6 
+					);
+					
+					$menu_slug = $page->get('parent_slug');
+				}
+				
+				// register the page with WordPress admin navigation.
+				add_submenu_page( 
+					$page->get('parent_slug'), 
+					$page->get('title'), 
+					$page->get('menu_title'), 
+					$page->get('required_capability'),
+					$menu_slug,
+					$callback 
+				);			
+			}
+		}
+	}
+	
+	public function processAdminConfig() {
+		
+		$config = $this->registerOptions();
+		
+		if ( $config ) {
+		
+			foreach ( $config as $k => $v ) {
+				
+				// register setting field with module
+				if ( array_key_exists( 'field', $v ) ) {
+					// check for page_name, if not set it as 'default'
+					if ( ! array_key_exists( 'page_name', $v['field'] ) ) {
+						
+						$v['field']['page_name'] = 'default';
+					}
+					
+					// add field to settings array
+					$this->settings[ $v['field']['page_name'] ][ $k ] = $v[ 'field' ];
+				}
+				
+				// register default option value with module
+				if (array_key_exists( 'default_value', $v ) ) {
+				
+					//$this->options[ $k ] = $v[ 'default_value' ];
+				}
+			}
+			
+			// hook settings fields into WordPress		
+			if ( $this->settings ) {
+				
+				// we need ot init the settings page objects here 
+				// as they are needed by two the callbacks to seperate WordPress Hooks admin_init and admin_menu.
+				//$this->initSettingsPage();
+				
+				add_action( 'admin_init', array($this, 'registerSettings'),10,0);
+				// regsiter the settings pages with WordPress
+				add_action( 'admin_menu', array($this, 'addSettingsPages'), 11,0);
+		
+			}				
+		}
+	}
+	
+	public function registerAdminConfig() {
+		
+		return false;
+	}
+	
+	public function registerSettings() {
+					
+		// process options
+		
+		$this->initSettingsPage();
+		
+		//add_action( 'admin_menu', array($this, 'addSettingsPages'), 10, 0 );
+		
+		// iterate throught group of settings fields.
+		
+		foreach ( $this->settings as $group_name => $group ) {
+		
+			// iterate throug thhe fields in the group
+			foreach ( $group as $k => $v ) {
+				
+				// register each field with WordPress
+				$this->settings_pages[ $group_name ]->registerField( $k, $v );
+			}
+			
+			// register the group
+			$this->settings_pages[ $group_name ]->registerSettings( $group_name );
+			
+			// register the sections
+			
+			$sections = $this->settings_pages[ $group_name ]->get('sections');
+			
+			if ( $sections ) {
+				
+				foreach ( $sections as $section_name => $section ) {
+				
+					$this->settings_pages[ $group_name ]->registerSection( $section );		
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Get Options Key 
+	 *
+	 * Gets the key under which options for the module should be persisted.
+	 *
+	 * @return string
+	 */
+	public function getOptionsKey() {
+		
+		//return photopress_util::getModuleOptionKey( $this->package_name, $this->module_name );
+	}
+	
+	public function registerController( $action_name, $class, $path ) {
+		
+		$this->controllers[ $action_name ] = array(
+			'class'			=> $class,
+			'path'			=> $path
+		);
+	}
+	
+	public function registerControllers( $controllers = array() ) {
+		
+		return $controllers;
+	}
+	
+	public function loadDependancies() {
+			
+		return false;
+	}
+	
+	public function registerOptions() {
+		
+		return false;
+	}
+	
+	public function setDefaultOptions( $options ) {
+		
+		//$options[ $this->getOptionsKey() ] = $this->options;
+		return $this->options;
+		//return $options;
+	} 
+	
+	/**
+	 * Register all of the hooks related to the module
+	 * of the plugin.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	public function defineAdminHooks() {
+		
+		return false;
+	}
+	
+	/**
+	 * Register all of the hooks related to the public-facing functionality
+	 * of the plugin.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	public function definePublicHooks() {
+		
+		return false;
+	}
+}
+
+class owa_wp_util {
+
+	public static function getTaxonomies( $args ) {
+	
+		return get_taxonomies( $args );
+	}
+	
+	public static function getPostTypes( $args, $type = 'names', $operator = 'and') {
+		
+		return get_post_types( $args, $type, $operator );
+	}
+	
+	public static function getRemoteUrl( $url ) {
+		
+		return wp_remote_get ( urlencode ( $url ) );
+	}
+	
+	public static function getModuleOptionKey( $package_name, $module_name ) {
+		
+		return sprintf( '%s_%s_%s', 'owa_wp', $package_name, $module_name );
+	}
+	
+	public static function setDefaultParams( $defaults, $params, $class_name = '' ) {
+		
+		$newparams = $defaults;
+		
+		foreach ( $params as $k => $v ) {
+			
+			$newparams[$k] = $v;
+		}
+		
+		return $newparams;
+	}
+	
+	public static function addFilter( $hook, $callback, $priority = '', $accepted_args = '' ) {
+		
+		return add_filter( $hook, $callback, $priority, $accepted_args );
+	}
+	
+	public static function addAction( $hook, $callback, $priority = '', $accepted_args = '' ) {
+		
+		return add_action( $hook, $callback, $priority, $accepted_args );
+	}
+	
+	public static function escapeOutput( $string ) {
+		
+		return esc_html( $string );
+	}
+	
+	//
+	 // Outputs Localized String
+	 //
+	 //
+	public static function out( $string ) {
+		
+		echo ( owa_wp_util::escapeOutput ( $string ) );
+	}
+	
+	//
+	 // Localize String
+	 //
+	 //
+	public static function localize( $string ) {
+		
+		return $string;
+	}
+	
+	//
+	 // Flushes WordPress rewrite rules.
+	 //
+	 //
+	public static function flushRewriteRules() {
+		
+		global $wp_rewrite;
+		$wp_rewrite->flush_rules();
+	}
+	
+	//
+	 // Get a direct link to install or update a plugin
+	 //
+	 //
+	public static function getWpPluginInstallUrl( $slug, $action = 'install-plugin' ) {
+		
+		return wp_nonce_url(
+		    add_query_arg(
+		        array(
+		            'action' => $action,
+		            'plugin' => $slug
+		        ),
+		        admin_url( 'update.php' )
+		    ),
+		    $action . '_' . $slug
+		);
+	}
+}
+
 
 ?>
