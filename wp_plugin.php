@@ -75,7 +75,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		// register WordPress hooks and filters
 		
-		if ( $this->getOption('enabled') ) {
+		if ( $this->getOption('enable') ) {
 			
 			// insert javascript tracking tag	
 			add_action('wp_head', array( $this,'insertTrackingTag' ), 100 );
@@ -97,9 +97,6 @@ class owa_wp_plugin extends owa_wp_module {
 				
 				// @todo find a way for these methods to POST these to the OWA instance instead of via OWA's PHP Tracker
 				$this->defineActionHooks();
-				
-				// Register admin pages
-				add_action('admin_menu', array( $this, 'registerAdminPages' ) );
 				
 				// Create a new tracked site in OWA.
 				// @todo move this to REST API call when it's ready.
@@ -165,25 +162,6 @@ class owa_wp_plugin extends owa_wp_module {
 		}
 		
 		return $o;
-	}
-	
-	/**
-	 * Callback for admin_menu hook
-	 */
-	function registerAdminPages() {
-
-		if (function_exists('add_submenu_page')) {
-			
-			if ( $this->isOwaAvailable() ) {
-	
-				add_submenu_page('index.php', 'OWA Dashboard', 'OWA Dashboard', 1, dirname(__FILE__), array( $this, 'pageController') );
-			}
-				
-			if (function_exists('add_options_page')) {
-	
-				add_options_page('OWA Options', 'OWA', 8, basename(__FILE__), array($this, 'options_page') );
-			}
-    	}
 	}
 	
 	/**
@@ -345,6 +323,12 @@ class owa_wp_plugin extends owa_wp_module {
 		$this->cmds[] = sprintf("owa_cmds.push(['setPageTitle', '%s' ]);", $this->getPageTitle() );
 	}
 	
+	function setUserName() {
+		
+		$current_user = wp_get_current_user();
+		$this->cmds[] = sprintf("owa_cmds.push(['setUserName', '%s' ]);", $current_user->user_login );
+	}
+	
 	/**
 	 * Determines the type of WordPress page
 	 *
@@ -431,10 +415,10 @@ class owa_wp_plugin extends owa_wp_module {
 				$owa->setSiteId( md5( get_option( 'siteurl' ) ) );
 				$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
 				$owa->setSetting( 'base', 'link_template', '%s&%s' );
-				$owa->setSetting( 'base', 'main_url', '../wp-admin/index.php?page=owa' );
-				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/index.php?page=owa' );
-				$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/index.php?owa_specialAction' );
-				$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/index.php?owa_apiAction' );
+				$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
+				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
+				$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/admin.php?owa_specialAction' );
+				$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
 				$owa->setSetting( 'base', 'is_embedded', true );
 				
 				
@@ -565,10 +549,16 @@ class owa_wp_plugin extends owa_wp_module {
 			}
 		}
 		
-		// dont log requests for admin interface pages.
-		if ( function_exists( ' is_admin' ) && is_admin() ) {
+		// dont log requests for admin interface pages
+		if ( ! $this->getOption( 'trackAdminPages') && function_exists( ' is_admin' ) && is_admin() ) {
 			
 			return;
+		}
+		
+		// set user name in tracking for names users with wp-admin accounts
+		if ( $this->getOption( 'trackNamedUsers') ) {
+			
+			$this->setUserName();
 		}
 	
 		
@@ -894,7 +884,7 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			'trackDomstreams'				=> array(
 			
-				'default_value'							=> true,
+				'default_value'							=> false,
 				'field'									=> array(
 					'type'									=> 'boolean',
 					'title'									=> 'Track Domstreams',
@@ -918,37 +908,97 @@ class owa_wp_plugin extends owa_wp_module {
 					'label_for'								=> 'Track RSSS/ATOM Feeds',
 					'error_message'							=> 'You must select On or Off.'		
 				)				
+			),
+			
+			'trackNamedUsers'				=> array(
+			
+				'default_value'							=> true,
+				'field'									=> array(
+					'type'									=> 'boolean',
+					'title'									=> 'Track Named Users',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'tracking',
+					'description'							=> 'Track names and email addresses of WordPress users.',
+					'label_for'								=> 'Track named users',
+					'error_message'							=> 'You must select On or Off.'		
+				)				
+			),
+			
+			'trackAdminPages'				=> array(
+			
+				'default_value'							=> false,
+				'field'									=> array(
+					'type'									=> 'boolean',
+					'title'									=> 'Track WP Admin pages (/wp-admin...)',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'tracking',
+					'description'							=> 'Track WordPress admin interface pages',
+					'label_for'								=> 'Track WP admin pages',
+					'error_message'							=> 'You must select On or Off.'		
+				)				
 			)
+			
+			//trackAdminPages
+
 		);
 	}
 
 	public function registerSettingsPages() {
 		
-		$pages = array();
 		
-		$pages['owa-wordpress'] = array(
-			
-			'parent_slug'					=> 'owa-wordpress',
-			'is_top_level'					=> true,
-			'top_level_menu_title'			=> 'OWA',
-			'title'							=> 'Open Web Analytics',
-			'menu_title'					=> 'Tracking Settings',
-			'required_capability'			=> 'manage_options',
-			'menu_slug'						=> 'owa-wordpress-settings',
-			'description'					=> 'Settings for Open Web Analytics.',
-			'sections'						=> array(
-				'general'						=> array(
-					'id'							=> 'general',
-					'title'							=> 'General',
-					'description'					=> 'The following settings control Open Web Analytics.'
-				),
-			'tracking'						=> array(
-					'id'							=> 'tracking',
-					'title'							=> 'Tracking',
-					'description'					=> 'The following settings control tracking of visitors.'
+		
+		$pages = array(
+		
+			'owa-wordpress'			=> array(
+				
+				'parent_slug'					=> 'owa-wordpress',
+				'is_top_level'					=> true,
+				'top_level_menu_title'			=> 'OWA',
+				'title'							=> 'Open Web Analytics',
+				'menu_title'					=> 'Tracking Settings',
+				'required_capability'			=> 'manage_options',
+				'menu_slug'						=> 'owa-wordpress-settings',
+				'description'					=> 'Settings for Open Web Analytics.',
+				'sections'						=> array(
+					'general'						=> array(
+						'id'							=> 'general',
+						'title'							=> 'General',
+						'description'					=> 'The following settings control Open Web Analytics.'
+					),
+					'tracking'						=> array(
+						'id'							=> 'tracking',
+						'title'							=> 'Tracking',
+						'description'					=> 'The following settings control tracking of visitors.'
+					)
 				)
 			)
 		);
+		
+		if ( $this->isOwaAvailable() ) {
+			
+			$pages['owa-analytics']	= array(
+				
+				'parent_slug'					=> 'owa-wordpress',
+				'title'							=> 'OWA Analytics',
+				'menu_title'					=> 'Analytics',
+				'required_capability'			=> 'manage_options',
+				'menu_slug'						=> 'owa-analytics',
+				'description'					=> 'OWA Analytics dashboard.',
+				'render_callback'				=> array( $this, 'pageController')
+			);
+			
+			$pages['owa-configuration']	= array(
+				
+				'parent_slug'					=> 'owa-wordpress',
+				'title'							=> 'OWA Instance Configuration',
+				'menu_title'					=> 'Instance Configuration',
+				'required_capability'			=> 'manage_options',
+				'menu_slug'						=> 'owa-configuration',
+				'description'					=> 'Instance Configuration for Open Web Analytics.',
+				'render_callback'				=> array( $this, 'options_page')
+			);
+		
+		}
 		
 		return $pages;
 	}
