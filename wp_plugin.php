@@ -109,6 +109,21 @@ class owa_wp_plugin extends owa_wp_module {
 		}
 	}
 	
+	/**
+	 * Singelton
+	 */
+	static function getInstance() {
+		
+		static $o;
+	
+		if ( ! isset( $o ) ) {
+			
+			$o = new owa_wp_plugin();
+		}
+		
+		return $o;
+	}
+	
 	private function initOptions() {
 		
 		// get user defaults from option page
@@ -148,54 +163,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		$this->options[ $key ] = $value;
 	}
-	
-	/**
-	 * Singelton
-	 */
-	static function getInstance() {
 		
-		static $o;
-	
-		if ( ! isset( $o ) ) {
-			
-			$o = new owa_wp_plugin();
-		}
-		
-		return $o;
-	}
-	
-	/**
-	 * Callback for reporting dashboard/pages 
-	 */
-	function pageController() {
-		
-		if ( $this->isOwaAvailable() ) {
-		
-			$owa = $this->getOwaInstance();	
-			echo $owa->handleRequest();
-		}
-	}
-	
-	/**
-	 * Callback for OWA settings page
-	 */
-	function options_page() {
-	
-		$owa = $this->getOwaInstance();
-		
-		$params = array();
-		
-		$params['do'] = owa_coreAPI::getRequestParam( 'do' );
-		
-		if ( ! $params['do'] ) {
-			
-			$params['do'] = 'base.optionsGeneral';		
-		}
-	
-		echo $owa->handleRequest($params);
-		
-	}
-	
 	/**
 	 * Hooks for tracking WordPress Admin actions
 	 */
@@ -207,80 +175,43 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if ( $this->isOwaAvailable() ) {
 		
-			// New Comment
-			add_action( 'comment_post', array( $this, 'trackCommentAction' ), 10, 2);
-			// Comment Edit
-			add_action( 'transition_comment_status', array( $this, 'trackCommentEditAction' ), 10, 3);
-			// User Registration
-			add_action( 'user_register', array( $this, 'trackUserRegistrationAction' ) );
-			// user login
-			add_action( 'wp_login', array( $this, 'trackUserLoginAction' ) );
-			// User Profile Update
-			add_action( 'profile_update', array( $this, 'trackUserProfileUpdateAction' ), 10, 2);
-			// Password Reset
-			add_action( 'password_reset', array( $this, 'trackPasswordResetAction' ) );
-			// Trackback
-			add_action( 'trackback_post', array( $this, 'trackTrackbackAction' ) );
-			// New Attachment
-			add_action( 'add_attachment', array( $this, 'trackAttachmentCreatedAction' ) );
-			// Attachment Edit
-			add_action( 'edit_attachment', array( $this, 'trackAttachmentEditAction' ) );
-			// Post Edit
-			add_action( 'transition_post_status', array( $this, 'trackPostAction') , 10, 3);
-			// New Blog (WPMU)
-			add_action( 'wpmu_new_blog', array( $this, 'trackNewBlogAction') , 10, 5);
 			
+			if ( $this->getOption( 'trackAdminActions' ) ) {
+				
+				// New Comment
+				add_action( 'comment_post', array( $this, 'trackCommentAction' ), 10, 2);
+				// Comment Edit
+				add_action( 'transition_comment_status', array( $this, 'trackCommentEditAction' ), 10, 3);
+				// User Registration
+				add_action( 'user_register', array( $this, 'trackUserRegistrationAction' ) );
+				// user login
+				add_action( 'wp_login', array( $this, 'trackUserLoginAction' ) );
+				// User Profile Update
+				add_action( 'profile_update', array( $this, 'trackUserProfileUpdateAction' ), 10, 2);
+				// Password Reset
+				add_action( 'password_reset', array( $this, 'trackPasswordResetAction' ) );
+				// Trackback
+				add_action( 'trackback_post', array( $this, 'trackTrackbackAction' ) );
+				// New Attachment
+				add_action( 'add_attachment', array( $this, 'trackAttachmentCreatedAction' ) );
+				// Attachment Edit
+				add_action( 'edit_attachment', array( $this, 'trackAttachmentEditAction' ) );
+				// Post Edit
+				add_action( 'transition_post_status', array( $this, 'trackPostAction') , 10, 3);
+				// New Blog (WPMU)
+				add_action( 'wpmu_new_blog', array( $this, 'trackNewBlogAction') , 10, 5);
+			}
 			
 			// track feeds
-			add_action('init', array( $this, 'addFeedTrackingQueryParams'));
-			add_action( 'template_redirect', array( $this, 'trackFeedRequest'), 1 );
 			
+			if ( $this->getOption( 'trackFeeds' ) ) {
+			
+				add_action('init', array( $this, 'addFeedTrackingQueryParams'));
+				add_action( 'template_redirect', array( $this, 'trackFeedRequest'), 1 );
+			}
 		}
 		
-		// These hooks do NOT rely on OWA being accessable via PHP
-		
-	}
-	
-	/**
-	 * OWA Schema and setting installation
-	 *
-	 */
-	function install() {
-	
-		define('OWA_INSTALLING', true);
-		
-		$params = array();
-		//$params['do_not_fetch_config_from_db'] = true;
-	
-		$owa = $this->getOwaInstance($params);
-		$owa->setSetting('base', 'cache_objects', false);	
-		$public_url =  get_bloginfo('wpurl').'/wp-content/plugins/owa/';
-		
-		$install_params = array('site_id' => md5(get_option('siteurl')), 
-								'name' => get_bloginfo('name'),
-								'domain' => get_option('siteurl'), 
-								'description' => get_bloginfo('description'),
-								'action' => 'base.installEmbedded',
-								'db_type' => 'mysql',
-								'db_name' => DB_NAME,
-								'db_host' => DB_HOST,
-								'db_user' => DB_USER,
-								'db_password' => DB_PASSWORD,
-								'public_url' =>  $public_url
-								);
-		
-		$owa->handleRequest($install_params);
-	}
-	
-	function handleSpecialActionRequest() {
-
-		$owa = $this->getOwaInstance();
-		
-		owa_coreAPI::debug("hello from WP special action handler");
-		
-		return $owa->handleSpecialActionRequest();
-	}
-	
+	}	
 	
 	// Add query vars to WordPress
 	function addFeedTrackingQueryParams() {
@@ -398,131 +329,7 @@ class owa_wp_plugin extends owa_wp_module {
 		return true;
 	}
 	
-	// gets an instance of your OWA as a php object
-	function getOwaInstance() {
-		
-		static $owa;
-		
-		if( empty( $owa ) ) {
-		
-			if ( $this->isOwaAvailable() ) {
-				
-				require_once('owa_env.php');
-				require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
-				
-				// create owa instance w/ config
-				$owa = new owa_php();
-				$owa->setSiteId( md5( get_option( 'siteurl' ) ) );
-				$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
-				$owa->setSetting( 'base', 'link_template', '%s&%s' );
-				$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
-				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
-				$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/admin.php?owa_specialAction' );
-				$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
-				$owa->setSetting( 'base', 'is_embedded', true );
-				
-				
-				// register allowedSitesList filter
-				$dispatch = owa_coreAPI::getEventDispatch();
-				// alternative auth method, sets auth status, role, and allowed sites list.
-				$dispatch->attachFilter('auth_status', 'owa_wp_plugin::wpAuthUser', 0);	
-			}
-		}
-		
-		return $owa;
-	}
-	
-	/**
-	 * OWA Authenication filter
-	 *
-	 * Uses WordPress priviledge system to determine OWA authentication levels.
-	 *
-	 * @return boolean
-	 */
-	static function wpAuthUser($auth_status) {
-
-		$current_user = wp_get_current_user();
-		
-	    if ( $current_user instanceof WP_User ) { 
-	    	// logged in, authenticated
-	    	$cu = owa_coreAPI::getCurrentUser();
-	    	
-	    	$cu->setAuthStatus(true);
-	    	
-	    	if (isset($current_user->user_login)) {
-				$cu->setUserData('user_id', $current_user->user_login);
-				owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
-			}
 			
-			if (isset($current_user->user_email)) {	
-				$cu->setUserData('email_address', $current_user->user_email);
-			}
-			
-			if (isset($current_user->first_name)) {
-				$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
-				$cu->setRole( owa_wp_plugin::translateAuthRole( $current_user->roles ) );
-			}
-			
-			owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
-			owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
-			
-			// fetch the list of allowed blogs from WP
-			$domains = array();
-			$allowedBlogs = get_blogs_of_user($current_user->ID);
-		
-			foreach ( $allowedBlogs as $blog) {
-				$domains[] = $blog->siteurl;		
-			}
-			
-			// check to see if we are installing before trying to load sites
-			// other wise you run into a race condition as config file
-			// might not be created.
-			if (! defined('OWA_INSTALLING') ) {
-				// load assigned sites list by domain
-	    		$cu->loadAssignedSitesByDomain($domains);
-	    	}
-	    	
-			$cu->setInitialized();
-	    
-	    	return true;
-	    
-	    } else {
-	    	// not logged in to WP and therefor not authenticated
-	    	return false;
-	    }	
-	}
-	
-	/**
-	 * Translate WordPress to OWA Authentication Roles
-	 *
-	 * @param $roles	array	array of WP roles
-	 * @return	string
-	 */ 
-	static function translateAuthRole( $roles ) {
-		
-		if (!empty($roles)) {
-		
-			if (in_array('administrator', $roles)) {
-				$owa_role = 'admin';
-			} elseif (in_array('editor', $roles)) {
-				$owa_role = 'viewer';
-			} elseif (in_array('author', $roles)) {
-				$owa_role = 'viewer';
-			} elseif (in_array('contributor', $roles)) {
-				$owa_role = 'viewer';
-			} elseif (in_array('subscriber', $roles)) {
-				$owa_role = 'everyone';
-			} else {
-				$owa_role = 'everyone';
-			}
-			
-		} else {
-			$owa_role = 'everyone';
-		}
-		
-		return $owa_role;
-	}
-	
 	/**
 	 * Insert Tracking Tag
 	 *
@@ -825,7 +632,6 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if ( is_feed() ) {
 		
-			
 			$owa = $this->getOwaInstance();
 	
 			if( $owa->getSetting( 'base', 'log_feedreaders') ) {
@@ -863,14 +669,44 @@ class owa_wp_plugin extends owa_wp_module {
 				)				
 			),
 			
+			'siteId'				=> array(
+			
+				'default_value'							=> true,
+				'field'									=> array(
+					'type'									=> 'text',
+					'title'									=> 'Website ID',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'general',
+					'description'							=> 'The ID of the website being tracked.',
+					'label_for'								=> 'Tracked website ID',
+					'length'								=> 65,
+					'error_message'							=> ''		
+				)				
+			),
+			
+			'apiKey'				=> array(
+			
+				'default_value'							=> true,
+				'field'									=> array(
+					'type'									=> 'text',
+					'title'									=> 'API Key',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'general',
+					'description'							=> 'API key for accessing your OWA instance.',
+					'label_for'								=> 'OWA API Key',
+					'length'								=> 65,
+					'error_message'							=> ''		
+				)				
+			),
+
 			// site ID
-			// track admin actions
+			// 
 			// 
 	
 			
 			'trackClicks'				=> array(
 			
-				'default_value'							=> true,
+				'default_value'							=> '',
 				'field'									=> array(
 					'type'									=> 'boolean',
 					'title'									=> 'Track Clicks',
@@ -936,16 +772,26 @@ class owa_wp_plugin extends owa_wp_module {
 					'label_for'								=> 'Track WP admin pages',
 					'error_message'							=> 'You must select On or Off.'		
 				)				
-			)
+			),
 			
-			//trackAdminPages
+			'trackAdminActions'				=> array(
+			
+				'default_value'							=> false,
+				'field'									=> array(
+					'type'									=> 'boolean',
+					'title'									=> 'Track WP Admin Actions',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'tracking',
+					'description'							=> 'Track WordPress admin actions such as login, new posts, edits, etc.',
+					'label_for'								=> 'Track WP admin actions',
+					'error_message'							=> 'You must select On or Off.'		
+				)				
+			)
 
 		);
 	}
 
 	public function registerSettingsPages() {
-		
-		
 		
 		$pages = array(
 		
@@ -963,12 +809,12 @@ class owa_wp_plugin extends owa_wp_module {
 					'general'						=> array(
 						'id'							=> 'general',
 						'title'							=> 'General',
-						'description'					=> 'The following settings control Open Web Analytics.'
+						'description'					=> 'These settings control the integration between Open Web Analytics and WordPress.'
 					),
 					'tracking'						=> array(
 						'id'							=> 'tracking',
 						'title'							=> 'Tracking',
-						'description'					=> 'The following settings control tracking of visitors.'
+						'description'					=> 'These settings control how Open Web Analytics will track your WordPress website.'
 					)
 				)
 			)
@@ -1002,9 +848,196 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		return $pages;
 	}
-
-
 	
+	/////////////////////// Methods that require OWA on server ////////////////////////////
+	
+	// gets an instance of your OWA as a php object
+	function getOwaInstance() {
+		
+		static $owa;
+		
+		if( empty( $owa ) ) {
+		
+			if ( $this->isOwaAvailable() ) {
+				
+				require_once('owa_env.php');
+				require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
+				
+				// create owa instance w/ config
+				$owa = new owa_php();
+				$owa->setSiteId( md5( get_option( 'siteurl' ) ) );
+				$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
+				$owa->setSetting( 'base', 'link_template', '%s&%s' );
+				$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
+				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
+				$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/admin.php?owa_specialAction' );
+				$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
+				$owa->setSetting( 'base', 'is_embedded', true );
+				
+				
+				// register allowedSitesList filter
+				$dispatch = owa_coreAPI::getEventDispatch();
+				// alternative auth method, sets auth status, role, and allowed sites list.
+				$dispatch->attachFilter('auth_status', 'owa_wp_plugin::wpAuthUser', 0);	
+			}
+		}
+		
+		return $owa;
+	}
+	
+	/**
+	 * Callback for reporting dashboard/pages 
+	 */
+	function pageController( $params = array() ) {
+		
+		if ( $this->isOwaAvailable() ) {
+		
+			$owa = $this->getOwaInstance();	
+			
+			echo $owa->handleRequest( $params );
+		}
+	}
+	
+	/**
+	 * Callback for OWA settings page
+	 */
+	function options_page() {
+	
+		$this->pageController( array('do' => 'base.optionsGeneral') );
+	}
+	
+	/**
+	 * OWA Schema and setting installation
+	 *
+	 */
+	function install() {
+	
+		define('OWA_INSTALLING', true);
+		
+		$params = array();
+		//$params['do_not_fetch_config_from_db'] = true;
+	
+		$owa = $this->getOwaInstance($params);
+		$owa->setSetting('base', 'cache_objects', false);	
+		$public_url =  get_bloginfo('wpurl').'/wp-content/plugins/owa/';
+		
+		$install_params = array('site_id' => md5(get_option('siteurl')), 
+								'name' => get_bloginfo('name'),
+								'domain' => get_option('siteurl'), 
+								'description' => get_bloginfo('description'),
+								'action' => 'base.installEmbedded',
+								'db_type' => 'mysql',
+								'db_name' => DB_NAME,
+								'db_host' => DB_HOST,
+								'db_user' => DB_USER,
+								'db_password' => DB_PASSWORD,
+								'public_url' =>  $public_url
+								);
+		
+		$owa->handleRequest($install_params);
+	}
+	
+	function handleSpecialActionRequest() {
+
+		$owa = $this->getOwaInstance();
+		
+		owa_coreAPI::debug("hello from WP special action handler");
+		
+		return $owa->handleSpecialActionRequest();
+	}
+
+
+	/**
+	 * OWA Authenication filter
+	 *
+	 * Uses WordPress priviledge system to determine OWA authentication levels.
+	 *
+	 * @return boolean
+	 */
+	static function wpAuthUser($auth_status) {
+
+		$current_user = wp_get_current_user();
+		
+	    if ( $current_user instanceof WP_User ) { 
+	    	// logged in, authenticated
+	    	$cu = owa_coreAPI::getCurrentUser();
+	    	
+	    	$cu->setAuthStatus(true);
+	    	
+	    	if (isset($current_user->user_login)) {
+				$cu->setUserData('user_id', $current_user->user_login);
+				owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
+			}
+			
+			if (isset($current_user->user_email)) {	
+				$cu->setUserData('email_address', $current_user->user_email);
+			}
+			
+			if (isset($current_user->first_name)) {
+				$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
+				$cu->setRole( owa_wp_plugin::translateAuthRole( $current_user->roles ) );
+			}
+			
+			owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
+			owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
+			
+			// fetch the list of allowed blogs from WP
+			$domains = array();
+			$allowedBlogs = get_blogs_of_user($current_user->ID);
+		
+			foreach ( $allowedBlogs as $blog) {
+				$domains[] = $blog->siteurl;		
+			}
+			
+			// check to see if we are installing before trying to load sites
+			// other wise you run into a race condition as config file
+			// might not be created.
+			if (! defined('OWA_INSTALLING') ) {
+				// load assigned sites list by domain
+	    		$cu->loadAssignedSitesByDomain($domains);
+	    	}
+	    	
+			$cu->setInitialized();
+	    
+	    	return true;
+	    
+	    } else {
+	    	// not logged in to WP and therefor not authenticated
+	    	return false;
+	    }	
+	}
+	
+	/**
+	 * Translate WordPress to OWA Authentication Roles
+	 *
+	 * @param $roles	array	array of WP roles
+	 * @return	string
+	 */ 
+	static function translateAuthRole( $roles ) {
+		
+		if (!empty($roles)) {
+		
+			if (in_array('administrator', $roles)) {
+				$owa_role = 'admin';
+			} elseif (in_array('editor', $roles)) {
+				$owa_role = 'viewer';
+			} elseif (in_array('author', $roles)) {
+				$owa_role = 'viewer';
+			} elseif (in_array('contributor', $roles)) {
+				$owa_role = 'viewer';
+			} elseif (in_array('subscriber', $roles)) {
+				$owa_role = 'everyone';
+			} else {
+				$owa_role = 'everyone';
+			}
+			
+		} else {
+			$owa_role = 'everyone';
+		}
+		
+		return $owa_role;
+	}
+
 }
 
 class owa_wp_module {
@@ -1888,11 +1921,19 @@ class owa_wp_settings_field_text extends owa_wp_settings_field {
 			//$value = pp_api::getDefaultOption( $this->package, $this->module, $attrs['id'] );
 		}
 		
+		$size = $attrs['length'];
+		
+		if ( ! $size ) {
+			
+			$size = 30;
+		}
+		
 		echo sprintf(
-			'<input name="%s" id="%s" value="%s" type="text" /> ', 
+			'<input name="%s" id="%s" value="%s" type="text" size="%s" /> ', 
 			esc_attr( $attrs['name'] ), 
 			esc_attr( $attrs['dom_id'] ),
-			esc_attr( $value ) 
+			esc_attr( $value ),
+			$size 
 		);
 		
 		echo sprintf('<p class="description">%s</p>', $attrs['description']);
