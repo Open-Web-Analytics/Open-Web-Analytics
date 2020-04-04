@@ -671,7 +671,7 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			'siteId'				=> array(
 			
-				'default_value'							=> true,
+				'default_value'							=> '',
 				'field'									=> array(
 					'type'									=> 'text',
 					'title'									=> 'Website ID',
@@ -679,14 +679,14 @@ class owa_wp_plugin extends owa_wp_module {
 					'section'								=> 'general',
 					'description'							=> 'The ID of the website being tracked.',
 					'label_for'								=> 'Tracked website ID',
-					'length'								=> 65,
+					'length'								=> 70,
 					'error_message'							=> ''		
 				)				
 			),
 			
 			'apiKey'				=> array(
 			
-				'default_value'							=> true,
+				'default_value'							=> '',
 				'field'									=> array(
 					'type'									=> 'text',
 					'title'									=> 'API Key',
@@ -694,10 +694,26 @@ class owa_wp_plugin extends owa_wp_module {
 					'section'								=> 'general',
 					'description'							=> 'API key for accessing your OWA instance.',
 					'label_for'								=> 'OWA API Key',
-					'length'								=> 65,
+					'length'								=> 70,
 					'error_message'							=> ''		
 				)				
 			),
+			
+			'OwaEndpoint'			=> array(
+			
+				'default_value'							=> '',
+				'field'									=> array(
+					'type'									=> 'url',
+					'title'									=> 'OWA Endpoint',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'general',
+					'description'							=> 'The URL of your OWA instance. (i.e. http://www.mydomain.com/path/to/owa/)',
+					'label_for'								=> 'OWA Endpoint',
+					'length'								=> 70,
+					'error_message'							=> ''		
+				)				
+			),
+
 
 			// site ID
 			// 
@@ -1510,6 +1526,8 @@ class owa_wp_settingsPage {
 		$types['select'] = 'owa_wp_settings_field_select';
 		
 		$types['textarea'] = 'owa_wp_settings_field_textarea';
+		
+		$types['url'] = 'owa_wp_settings_field_url';
 
 		
 		return $types;
@@ -1945,6 +1963,91 @@ class owa_wp_settings_field_text extends owa_wp_settings_field {
 	}
 }
 
+class owa_wp_settings_field_url extends owa_wp_settings_field {
+
+	public function render( $attrs ) {
+	
+		$value = $this->options[ $attrs['id'] ];
+				
+		$size = $attrs['length'];
+		
+		if ( ! $size ) {
+			
+			$size = 60;
+		}
+		
+		echo sprintf(
+			'<input name="%s" id="%s" value="%s" type="text" size="%s" /> ', 
+			esc_attr( $attrs['name'] ), 
+			esc_attr( $attrs['dom_id'] ),
+			esc_attr( $value ),
+			$size 
+		);
+		
+		echo sprintf('<p class="description">%s</p>', $attrs['description']);
+	}	
+	
+	public function sanitize( $value ) {
+		
+		$value = trim( $value );
+		
+		$value = $url = filter_var( $value, FILTER_SANITIZE_URL );
+
+/*
+		if ( ! strpos( $value, '/', -1 ) ) {
+			
+			$value .= '/'; 
+		}
+*/
+			
+		return $value;
+	}
+	
+	public function isValid( $value ) {
+		
+	
+		if ( substr( $value, -4 ) === '.php' ) {
+			
+			$this->addError( 
+		    	$this->get('dom_id'), 
+				sprintf(
+					'%s %s',
+					$this->get( 'label_for' ),
+					owa_wp_util::localize( 'URL should be the base directory of your OWA instance, not a file endpoint.' ) ) );
+					
+			return false;
+		}
+		
+		if ( ! substr( $value, 0, 4 ) === "http" ) {
+			
+			$this->addError( 
+	    	$this->get('dom_id'), 
+			sprintf(
+				'%s %s',
+				$this->get( 'label_for' ),
+				owa_wp_util::localize( 'URL scheme required. (i.e. http:// or https://)' ) ) );
+			
+			return false;
+		}
+			
+		if ( filter_var( $value, FILTER_VALIDATE_URL ) ) {
+			
+			return true;	
+			
+		} else {
+			
+			// not a valid url
+			$this->addError( 
+			    	$this->get('dom_id'), 
+					sprintf(
+						'%s %s',
+						$this->get( 'label_for' ),
+						owa_wp_util::localize( 'Not a valid URL' ) ) );
+		}		
+	}
+	
+}
+
 class owa_wp_settings_field_textarea extends owa_wp_settings_field {
 
 	public function render( $attrs ) {
@@ -1996,7 +2099,7 @@ class owa_wp_settings_field_commaseparatedlist extends owa_wp_settings_field_tex
 				sprintf(
 					'%s %s',
 					$this->get( 'label_for' ),
-					photopress_util::localize( 'can only contain a list of numbers separated by commas.' ) 
+					owa_wp_util::localize( 'can only contain a list of numbers separated by commas.' ) 
 				)
 			);
 		}
