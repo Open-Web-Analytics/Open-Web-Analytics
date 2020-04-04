@@ -939,6 +939,7 @@ class owa_coreAPI {
         endif;
 
         $view = owa_coreAPI::moduleFactory($viewfile, 'View');
+      
         $view->setData($data);
         return $view->assembleView($data);
 
@@ -1038,13 +1039,13 @@ class owa_coreAPI {
      *
      * @return Object
      */
-    public static function validationFactory($class_file) {
+    public static function validationFactory($class_file, $conf = array()) {
 
         if (!class_exists('owa_validation')):
             require_once(OWA_BASE_CLASS_DIR.'validation.php');
         endif;
 
-        return owa_lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, array(), 'Validation');
+        return owa_lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
 
     }
 
