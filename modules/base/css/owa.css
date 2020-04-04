@@ -4,7 +4,7 @@ body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; pa
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 2px 2px 2px;}
 legend {font-size:16px;font-weight:bold;}
-fieldset{margin: 7px; border:1px solid #cccccc;}
+fieldset{margin: 7px; padding: 20px; border:1px solid #cccccc;}
 div {margin:0;}
 
 .owa a {
@@ -73,8 +73,9 @@ div {margin:0;}
     border: 1px solid #efefef;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
-    margin-top: 50px;
+    margin: 25px 0px 0px 0px;
     text-decoration: none;
+    cursor: pointer;
 
 }
 .owa-button:hover {

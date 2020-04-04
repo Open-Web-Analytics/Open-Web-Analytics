@@ -265,9 +265,9 @@
 
     <?php echo $this->createNonceFormField('base.optionsUpdate');?>
 
-    <BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
     <input type="hidden" name="<?php echo $this->getNs();?>module" value="base">
-    <BUTTON type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsReset">Reset Base Module Configuration to Default Values</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="<?php echo $this->getNs();?>action" value="base.optionsReset">Reset Configuration to Default Values</BUTTON>
 
 </form>
 </div>

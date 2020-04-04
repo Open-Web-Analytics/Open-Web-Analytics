@@ -21,21 +21,18 @@
             <input type="hidden" name="<?php echo $this->getNs();?>domain" value="<?php $this->out( $site['domain'] );?>">
             <TD><?php $this->out( $site['domain'] );?></TD>
             <?php else:?>
-            <TD>
-
-                <select name="<?php echo $this->getNs();?>protocol">
-                    <option value="http://">http://</option>
-                    <option value="https://">https://</option>
-                </select>
-  
+            <TD>  
                 <input type="text" name="<?php echo $this->getNs();?>domain" size="52" maxlength="70" value="<?php $this->out( @$site['domain'] );?>"><BR>
+                Example: http://some.domain.com<BR>
                 <span class="validation_error"><?php $this->out( @$validation_errors['domain'] );?></span>
             </TD>
             <?php endif;?>
         </TR>
         <TR>
             <TH>Site Name:</TH>
-            <TD><input type="text" name="<?php echo $this->getNs();?>name" size="52" maxlength="70" value="<?php $this->out( @$site['name'] );?>"></TD>
+            <TD><input type="text" name="<?php echo $this->getNs();?>name" size="52" maxlength="70" value="<?php $this->out( @$site['name'] );?>"><BR>
+				Example: The Best Website            
+            </TD>
         </TR>
         <TR>
             <TH>Description:</TH>
@@ -50,7 +47,7 @@
     <BR>
     <?php echo $this->createNonceFormField($action);?>
     <input type="hidden" name="<?php echo $this->getNs();?>action" value="<?php $this->out( $action, false );?>">
-    <input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Profile">
+    <input class="owa-button" type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Profile">
 
     </form>
 
@@ -104,7 +101,7 @@
         <input type="hidden" name="<?php echo $this->getNs();?>siteId" value="<?php $this->out( @$site['site_id'] );?>">
         <input type="hidden" name="<?php echo $this->getNs();?>module" value="base">
         <input type="hidden" name="<?php echo $this->getNs();?>action" value="base.sitesEditSettings">
-        <input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Settings">
+        <input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Settings" class="owa-button">
     </fieldset>
 </form>
 <form method="post" name="owa-allowedusersform">
@@ -121,7 +118,7 @@
             <input type="hidden" name="<?php echo $this->getNs();?>siteId" value="<?php $this->out( @$site['site_id'] );?>">
             <input type="hidden" name="<?php echo $this->getNs();?>module" value="base">
             <input type="hidden" name="<?php echo $this->getNs();?>action" value="base.sitesEditAllowedUsers">
-            <input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Users">
+            <input type="submit" name="<?php echo $this->getNs();?>submit_btn" value="Save Users" class="owa-button">
     </fieldset>
 
 </form>
