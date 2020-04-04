@@ -30,11 +30,6 @@
  
  class owa_subStringMatchValidation extends owa_validation {
 
-     function __construct() {
-
-         return parent::__construct();
-     }
-
      function validate() {
 
          $value = $this->getValues();

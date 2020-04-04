@@ -30,11 +30,6 @@
  
  class owa_subStringPositionValidation extends owa_validation {
      
-     function __construct() {
-         
-         return parent::__construct();
-     }
-     
      function validate() {
          
          $value = $this->getValues();
@@ -45,7 +40,7 @@
          
          $operator = $this->getConfig('operator');
          $position = $this->getConfig('position');
-         
+         $verb = '';
          switch ($operator) {
              
              case "=":
@@ -54,6 +49,7 @@
                      ;
                  } else {
                      $this->hasError();
+                     $verb = 'was not';
                  }
                      
                          
@@ -63,19 +59,18 @@
                  
                  if ($pos === $position) {
                      $this->hasError();
+                     $verb = 'was';
                  }
              
                  break;
          }
         
-        $error = $this->getErrorMsg();
-        
-        if (empty($error)) {
-            $error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $substring, $pos));
+        // check to see if an error msg is passed from the controller
+        if ( ! $this->getErrorMsg() ) {
+            // if not set this default msg.
+            $this->setErrorMessage(sprintf('The string "%s" %s found within the value at position %d', $substring, $verb, $pos));
         }         
-        
-         
-         
+       
      }
      
  }

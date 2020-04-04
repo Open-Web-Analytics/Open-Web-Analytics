@@ -29,12 +29,7 @@
  */
  
  class owa_entityExistsValidation extends owa_validation {
-     
-     function __construct() {
-         
-         return parent::__construct();
-     }
-     
+          
      function validate() {
          
          $entity = owa_coreAPI::entityFactory($this->getConfig('entity'));
@@ -52,12 +47,7 @@
          if (empty($id)) {
              $this->hasError();
          }    
-                    
-         return;
-         
      }
-          
  }
- 
  
 ?>

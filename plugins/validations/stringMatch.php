@@ -30,12 +30,6 @@
  
  class owa_stringMatchValidation extends owa_validation {
 
-     function __construct() {
-
-         return parent::__construct();
-     }
-
-
      function validate() {
 
          $values_array = $this->getValues();
@@ -48,15 +42,12 @@
              $this->setErrorMessage('Strings do not match.');
          }
 
-        // validation logic
+         // validation logic
          if ($string1 === $string2) {
              ;
          } else {
              $this->hasError();
          }
-
-         return;
-
      }
 
  }

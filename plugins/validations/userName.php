@@ -30,11 +30,6 @@
  
  class owa_userNameValidation extends owa_validation {
 
-     function __construct() {
-
-         return parent::__construct();
-     }
-
      function validate() {
 
          $error = $this->getErrorMsg();

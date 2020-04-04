@@ -30,11 +30,6 @@
  
  class owa_stringLengthValidation extends owa_validation {
 
-     function __construct() {
-
-         return parent::__construct();
-     }
-
      function validate() {
 
          $value = $this->getValues();
@@ -52,34 +47,33 @@
 
              case '<':
                  if (strlen($value) >= $length) {
+                    
                     $this->hasError();
                 }
                  break;
 
              case '>':
                  if (strlen($value) <= $length) {
+                    
                     $this->hasError();
                 }
                  break;
 
              case '<=':
                  if (strlen($value) > $length) {
+                    
                     $this->hasError();
                 }
                  break;
 
              case '>=':
                  if (strlen($value) < $length) {
+                    
                     $this->hasError();
                 }
                  break;
-
          }
-
-         return;
-
      }
-
  }
  
  

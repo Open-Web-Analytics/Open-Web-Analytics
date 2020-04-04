@@ -29,12 +29,7 @@
  */
  
  class owa_requiredValidation extends owa_validation {
-     
-     function __construct() {
-         
-         return parent::__construct();
-     }
-     
+          
      function validate() {
          
          $value = $this->getValues();
@@ -42,7 +37,7 @@
          $error = $this->getErrorMsg();
          
          if (empty($error)) {
-             $this->setErrorMessage('Required field was empty.');
+             $this->setErrorMessage( $this->getName().' is required.');
          }
          
          if (empty($value)):

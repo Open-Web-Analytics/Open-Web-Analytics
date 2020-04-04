@@ -29,7 +29,9 @@
  */
  
  class owa_validation {
-
+ 	 
+ 	 // name of param being validated.
+ 	 var $name;
      // hold config
      var $conf;
 
@@ -44,12 +46,28 @@
 
      function __construct($conf = array()) {
 
-         if (array_key_exists('errorMsgTemplate', $conf)):
+         if (array_key_exists('errorMsgTemplate', $conf)) {
              $this->errorMsgTemplate = $conf['errorMsgTemplate'];
-         endif;
+         }
+         
+         if (array_key_exists('errorMsg', $conf)) {
+             $this->setErrorMessage( $conf['errorMsg'] );
+         }
+         
+         $this->conf = $conf;
 
      }
-
+	 
+	 function setName( $name ) {
+		 
+	 	$this->name = $name;	 
+	 }
+	 
+	 function getName() {
+		 
+		 return $this->name;
+	 }
+	 
      function validate() {
 
          return false;

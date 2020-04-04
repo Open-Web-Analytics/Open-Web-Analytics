@@ -67,20 +67,18 @@
      function addValidation($name, $value, $validation, $conf) {
                 
         // Construct validatation obj
-        $obj = $this->validationFactory($validation);
+        $obj = $this->validationFactory($validation, $conf);
         $obj->setValues($value);
         $obj->setConfigArray($conf);
         
-        $this->validations[] = array('name' => $name, 'obj' => $obj);
-
-        return;
-        
+        $this->setValidation( $name, $obj );
     }
     
     function setValidation($name, $obj) {
         
+        // add name to validator
+        $obj->setName($name);
         $this->validations[] = array('name' => $name, 'obj' => $obj);
-        return;
     }
     
     /**
@@ -100,20 +98,25 @@
     function doValidations() {
         
         foreach ($this->validations as $k) {
-            
+            owa_coreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
             $k['obj']->validate();
             
             if ($k['obj']->hasError === true) {
-                    
+                owa_coreAPI::debug('Validation failed.');
                 $this->hasErrors = true;
                 $this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
-                
+             
                 if ( isset( $k['obj']->conf['stopOnError'] ) && $k['obj']->conf['stopOnError'] === true ) {
+	                  
                     break;
                 }
                 
+            } else {
+	            owa_coreAPI::debug('Validation succeeded.');
             }
+			//owa_coreAPI::debug( $this->getErrorMsgs() );
         }
+          
     }
     
     /**
