@@ -115,6 +115,13 @@ class owa_controller extends owa_base {
      * @var Bool
      */
     var $is_nonce_required = false;
+    
+    /**
+     * Mode the controler is operating in
+     *
+     * @var string web_app|cli|rest_api
+     */
+    var $mode = 'web_app';
 
     /**
      * Constructor
@@ -128,11 +135,66 @@ class owa_controller extends owa_base {
 
         // set request params
         $this->params = $params;
-
+        
+        // set param validators
+		$this->validate();
+		
         // set the default view method
         $this->setViewMethod('delegate');
-    }
 
+        // clobber anything that needs clobbering by conrete class
+        $this->init();
+        
+        if ( $this->getMode() === 'cli' && ! owa_coreAPI::getSetting('base', 'cli_mode') ) {
+	    	
+			owa_coreAPI::notice("Controller not called from CLI");
+            exit;
+	    }
+    }
+    
+    function init() {
+	    
+    }
+    
+    
+    /**
+	 * Method used to set param validators by concrete class
+	 *
+	 */
+    function validate() {
+	    
+    }
+	
+	function updateAction() {
+		
+		$error_msg = 'Cannot perform action. OWA Updates required.';
+	                
+        owa_coreAPI::debug( $error_msg );
+        
+        switch ( $this->getMode() ) {
+            
+            case 'cli':
+            	
+            	$this->set('error_msg', $error_msg );
+            	$this->setView('base.genericCliView');
+            	$this->set( 'msgs', $error_msg );
+            	return $this->data;
+            	break;
+            	
+            case 'web_app':
+            	
+            	$data = array();
+                $data['view_method'] = 'redirect';
+                $data['action'] = 'base.updates';
+                return $data;
+                
+            	break;
+            	
+            case 'rest_api':
+            
+            	break;
+        }
+	}
     /**
      * Handles request from caller
      *
@@ -146,29 +208,25 @@ class owa_controller extends owa_base {
         if ($this->is_admin === true) {
             // do not intercept if its the updatesApply action or a re-install else updates will never apply
             $do = $this->getParam('do');
+             
             if ($do != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 
                 if (owa_coreAPI::isUpdateRequired()) {
-                    $this->e->debug('Updates Required. Redirecting action.');
-                    $data = array();
-                    $data['view_method'] = 'redirect';
-                    $data['action'] = 'base.updates';
-                    return $data;
-                }
+	            	
+	            	return $this->updateAction();    
+	            }
             }
         }
-
-
-
-
-
+       
         /* CHECK USER FOR CAPABILITIES */
-        if (!$this->checkCapabilityAndAuthenticateUser($this->getRequiredCapability())) {
+        if ( ! $this->checkCapabilityAndAuthenticateUser( $this->getRequiredCapability() ) ) {
+            
             return $this->data;
         }
 
         /* Check validity of nonce */
         if ($this->is_nonce_required == true) {
+	        
             $nonce = $this->getParam('nonce');
 
             if (!$nonce || !$this->verifyNonce($nonce)) {
@@ -202,12 +260,16 @@ class owa_controller extends owa_base {
         if (!empty($this->v)) {
             // if so do the validations required
             $this->v->doValidations();
+    
             //check for errors
             if ($this->v->hasErrors === true) {
                 //print_r($this->v);
                 // if errors, do the errorAction instead of the normal action
                 $this->set('validation_errors', $this->getValidationErrorMsgs());
-                return $this->finishActionCall($this->errorAction());
+              
+                $this->errorAction();
+                
+                return $this->data;
             }
         }
 
@@ -230,9 +292,19 @@ class owa_controller extends owa_base {
             $this->post();
             return $actionResult;
         } else {
+	        // set output realted params like view, etc.
+	        $this->success();
             $this->post();
             return $this->data;
         }
+    }
+    
+    /**
+	 * set output realted params like view, etc.
+	 * called after action because older style controllers might set these details within action()
+	 */
+    function success() {
+	    
     }
 
     /**
@@ -437,9 +509,6 @@ class owa_controller extends owa_base {
         if (array_key_exists('params', $this->data)) {
             unset($this->data['params']);
         }
-        if (array_key_exists('site_id', $this->data)) {
-        //    unset($this->data['site_id']);
-        }
     }
 
     function setPagination($pagination, $name = 'pagination') {
@@ -452,11 +521,31 @@ class owa_controller extends owa_base {
 
         $this->data[$name] = $value;
     }
-
+	
+	/**
+	 * Sets the type of controler
+	 * @depricated
+	 * @todo remove this 
+	 */
     function setControllerType($string) {
 
         $this->type = $string;
 
+    }
+    
+    /**
+	 * Sets th Mode of the controller
+	 *
+	 * @param $mode string	webapp|cli|api
+	 */
+    public function setMode( $mode ) {
+	    
+	    $this->mode = $mode;
+    }
+    
+    public function getMode() {
+	    
+	    return $this->mode;
     }
 
     function mergeParams($array) {
@@ -524,8 +613,10 @@ class owa_controller extends owa_base {
             }
             $additionalMessage = $siteIdMsg;
         }
+        $msg = $this->getMsg(2003);
+        $msg['message'] .= $additionalMessage;
         $this->setView('base.error');
-        $this->set('error_msg', $this->getMsg(2003).' '.$additionalMessage);
+        $this->set('error_msg', $msg);
     }
 
     function notAuthenticatedAction() {
@@ -568,10 +659,12 @@ class owa_controller extends owa_base {
      */
     protected function getSitesAllowedForCurrentUser() {
     owa_coreAPI::debug('get Sites Allowed for user');
+   
         $currentUser = owa_coreAPI::getCurrentUser();
 
         if ( $currentUser->isAnonymousUser() || $currentUser->isAdmin() ) {
             $result = array();
+           
             $relations = owa_coreAPI::getSitesList();
 
             foreach ($relations as $siteRow) {
@@ -580,7 +673,7 @@ class owa_controller extends owa_base {
                 $site->load($siteRow['id']);
                 $result[$siteRow['site_id']] = $site;
             }
-
+ 
             return $result;
 
         } else {

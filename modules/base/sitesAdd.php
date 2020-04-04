@@ -64,35 +64,25 @@ class owa_sitesAddView extends owa_view {
  */
 
 class owa_sitesAddController extends owa_adminController {
-
-    function __construct($params) {
-
-        parent::__construct($params);
-
-        $this->setRequiredCapability('edit_sites');
-
-        // Config for the domain validation
-        $domain_conf = array('substring' => 'http', 'position' => 0, 'operator' => '!=', 'errorMsgTemplate' => 'Please remove the "http://" from your beginning of your domain.');
-
-        // Add validations to the run
-        $this->addValidation('domain', $this->params['domain'], 'subStringPosition', $domain_conf);
-        $this->addValidation('domain', $this->params['domain'], 'required');
-
-        // Check user name exists
-        $v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
-        $v2->setConfig('entity', 'base.site');
-        $v2->setConfig('column', 'domain');
-        $v2->setValues($this->getParam('protocol').$this->getParam('domain'));
-        $v2->setErrorMessage($this->getMsg(3206));
-        $this->setValidation('domain', $v2);
-
+	
+	function __construct( $params ) {
+		
+		$this->setRequiredCapability('edit_sites');
+		
+		return parent::__construct( $params );
+	}
+	
+    function init() {
+	    
+	    $this->setMode( 'web_app' );
         // require nonce for this action
         $this->setNonceRequired();
+       
     }
 
     function action() {
 
-        $this->params['domain'] = $this->params['protocol'].$this->params['domain'];
+        $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
 
         $sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
 
@@ -101,8 +91,40 @@ class owa_sitesAddController extends owa_adminController {
                             $this->getParam( 'description' ),
                             $this->getParam( 'site_family' )
         );
+        
+        owa_coreAPI::notice("Site added successfully. site_id: $ret");
+    }
+    
+    function validate() {
+	    
+	    // Config for the domain validation
+        $domain_conf = array(
+        	'substring' => 'http', 
+        	'position' => 0, 
+        	'operator' => '=', 
+        	'errorMsg' => 'Please add the "http://" or "https://" to the beginning of your domain.'
+        );
 
-        $this->setRedirectAction('base.sites');
+        // Add validations to the run
+        $this->addValidation('domain', $this->getParam('domain'), 'subStringPosition', $domain_conf);
+        
+        $this->addValidation('domain', $this->getParam('domain'), 'required', array('stopOnError'	=> true));
+
+        // Check user name exists
+        $v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
+        $v2->setConfig('entity', 'base.site');
+        $v2->setConfig('column', 'domain');
+        $v2->setValues($this->getParam('protocol').$this->getParam('domain'));
+     
+        $msg = $this->getMsg(3206);
+      
+        $v2->setErrorMessage( $msg);
+        $this->setValidation('domain', $v2);
+    }
+    
+    function success() {
+	    
+	    $this->setRedirectAction('base.sites');
         $this->set('status_code', 3202);
     }
 
@@ -115,6 +137,5 @@ class owa_sitesAddController extends owa_adminController {
     }
 
 }
-
 
 ?>

@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'cliController.php');
+require_once(OWA_BASE_MODULE_DIR.'sitesAdd.php');
 
 /**
  * Add Site Controller
@@ -30,29 +30,25 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * @since        owa 1.4.1
  */
 
-class owa_sitesAddCliController extends owa_cliController {
+class owa_sitesAddCliController extends owa_sitesAddController {
     
-    function __construct($params) {
-    
-        $this->setRequiredCapability('edit_modules');
-        return parent::__construct($params);
+    function init() {
+		
+		$this->setMode( 'cli' );
+	}
+	
+	function errorAction() {
+	
+        $this->setView('base.genericCli');
     }
+    
+    function success() {
+	   
+	    $this->setView('base.genericCliView');
+	    $site_id = $this->getParam('site_id');
+	    $this->set('status_msg', "Site added successfully. site_id: $site_id");
 
-    function action() {
-        
-        $sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
-        
-        $ret = $sm->createNewSite( $this->getParam( 'domain' ), 
-                            $this->getParam( 'name' ), 
-                            $this->getParam( 'description' ), 
-                            $this->getParam( 'site_family' )
-        );
-        
-        if ( $ret ) {
-            owa_coreAPI::notice("Site added successfully. site_id: $ret");
-        }
-    }
-    
+    }    
 }
 
 ?>

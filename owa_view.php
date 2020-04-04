@@ -230,6 +230,7 @@ class owa_view extends owa_base {
 
         // assign validation errors
         if (!empty($this->data['validation_errors'])) {
+	        
             $this->t->set('validation_errors', $this->data['validation_errors']);
         }
 
@@ -784,14 +785,16 @@ class owa_adminPageView extends owa_view {
 
 class owa_cliView extends owa_view {
 
-    function __construct() {
-
+    function __construct( $params ) {
+	   	
+		parent::__construct($params);
     }
 
     function render() {
-
+	
         $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('cli.php');
+        $this->body->set_template('msgsCli.php');
+        $this->body->set('validation_errors', $this->get('validation_errors'));
     }
 
 
