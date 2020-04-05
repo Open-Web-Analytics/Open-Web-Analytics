@@ -42,7 +42,7 @@ class owa_passwordResetRequestController extends owa_controller {
             'errorMsg'  => $this->getMsg(3010)
         ];
 
-        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityExists', $siteEntityConf);
+        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityExists', $useEmailAddressEntityConf);
     }
 
     function action() {

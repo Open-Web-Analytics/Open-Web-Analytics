@@ -109,18 +109,23 @@ class owa_userManager extends owa_base {
      */
     public function getPasswordValidationRules($password)
     {
-        $passwordRequiredValidation = owa_coreAPI::validationFactory('required');
-        $passwordRequiredValidation->setValues($password);
-
-        $passwordLengthValidation = owa_coreAPI::validationFactory('stringLength');
-        $passwordLengthValidation->setValues($password);
-        $passwordLengthValidation->setConfig('operator', '>=');
-        $passwordLengthValidation->setConfig('length', 6);
-        $passwordLengthValidation->setErrorMessage("Your password must be at least 6 characters in length.");
-
         return [
-            'password_required' => $passwordRequiredValidation,
-            'password_length' => $passwordLengthValidation,
+            [
+                'name'          => 'password_required',
+                'validation'    => 'required',
+                'value'         => $password,
+                'config'        => [],
+            ],
+            [
+                'name'          => 'password_length',
+                'validation'    => 'stringLength',
+                'value'         => $password,
+                'config'        => [
+                    'operator'  => '>=',
+                    'length'    => 6,
+                    'errorMsg'  => 'Your password must be at least 6 characters in length.',
+                ],
+            ],
         ];
     }
 }
