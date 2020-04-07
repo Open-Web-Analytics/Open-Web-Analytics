@@ -55,7 +55,9 @@ class owa_requestContainer {
 
         // php's server variables
         $this->server = $_SERVER;
-
+        owa_coreAPI::debug( $_GET );
+        owa_coreAPI::debug('---');
+        owa_coreAPI::debug( $_POST );
         // files
         if (!empty($_FILES)) {
             $this->files = $_FILES;
@@ -117,49 +119,57 @@ class owa_requestContainer {
             $this->state->setInitialState( $k, $owa_cookie );
         }
 
-        // create request params from GET or POST or CLI args
+        // create request params and type
         $params = array();
+		
+		if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
+				
+				$this->request_type = $_SERVER['REQUEST_METHOD'];
+				
+			if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
+			
+				parse_str( file_get_contents("php://input"), $post_vars );
+				
+				$params = $post_vars;
+				
+			} else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
+				
+				$params = $_GET;
+				
+			} else if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+				
+				// merge in POST vars. GET and POST can occure on the same request.		
+				$params = array_merge( $_GET, $_POST);
+			}
+			
+			$this->current_url = owa_lib::get_current_url();
+			
+		} else {
+			
+			// CLI Request
+			if (array_key_exists( 'argv', $_SERVER ) ) {
+				
+				$this->cli_args = $_SERVER['argv'];
 
-        // use GET vars as the base for the request
-        if ( isset( $_GET ) && ! empty( $_GET ) ) {
-            // get params from _GET
-            $params = $_GET;
-
-            $this->request_type = 'get';
-        }
-
-        // merge in POST vars. GET and POST can occure on the same request.
-        if ( isset( $_POST ) && ! empty( $_POST ) ) {
-            // get params from _GET
-            $params = array_merge( $params, $_POST);
-
-            $this->request_type = 'post';
-        }
-
-        // look for command line arguments in the 'argv' index.
-        if ( ! $this->request_type && isset( $_SERVER['argv'] ) ) {
-
-            $this->cli_args = $_SERVER['argv'];
-
-            // parse arguments into key value pairs
-            for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
-                $it = explode( "=", $this->cli_args[$i] );
-
-                if ( isset( $it[1] ) ) {
-                       $params[ $it[0] ] = $it[1];
-                   } else {
-                       $params[ $it[0] ] = '';
-                   }
-               }
-
-            $this->request_type = 'cli';
-        }
-
-        if ( $this->request_type != 'cli' ) {
-
-            $this->current_url = owa_lib::get_current_url();
-        }
-
+	            // parse arguments into key value pairs
+	            for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
+	                
+	                $it = explode( "=", $this->cli_args[$i] );
+	
+	                if ( isset( $it[1] ) ) {
+	                    
+	                    $params[ $it[0] ] = $it[1];
+	                
+	                } else {
+	                       
+	                    $params[ $it[0] ] = '';
+	                }
+	            }
+	
+	            $this->request_type = 'cli';
+			}
+		}
+		
         // Clean Input arrays
         if ( $params ) {
 
@@ -308,7 +318,7 @@ class owa_requestContainer {
 
     public function getRequestType() {
 
-        return $this->request_type;
+        return strtoupper( $this->request_type );
     }
 
 }

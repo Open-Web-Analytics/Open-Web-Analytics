@@ -145,6 +145,7 @@ class owa_controller extends owa_base {
         // clobber anything that needs clobbering by conrete class
         $this->init();
         
+        // @todo this isn't needed is we move to an explicit cli controller map
         if ( $this->getMode() === 'cli' && ! owa_coreAPI::getSetting('base', 'cli_mode') ) {
 	    	
 			owa_coreAPI::notice("Controller not called from CLI");
@@ -176,9 +177,9 @@ class owa_controller extends owa_base {
             case 'cli':
             	
             	$this->set('error_msg', $error_msg );
-            	$this->setView('base.genericCliView');
+            	$this->setView('base.genericCli');
             	$this->set( 'msgs', $error_msg );
-            	return $this->data;
+            	
             	break;
             	
             case 'web_app':
@@ -186,14 +187,18 @@ class owa_controller extends owa_base {
             	$data = array();
                 $data['view_method'] = 'redirect';
                 $data['action'] = 'base.updates';
-                return $data;
-                
+                    
             	break;
             	
             case 'rest_api':
             
+            	$this->set('error_msg', $error_msg );
+            	$this->setView('base.restApi');
+            
             	break;
         }
+        
+        return $this->data;
 	}
     /**
      * Handles request from caller
@@ -208,10 +213,10 @@ class owa_controller extends owa_base {
         if ($this->is_admin === true) {
             // do not intercept if its the updatesApply action or a re-install else updates will never apply
             $do = $this->getParam('do');
-             
+            
             if ($do != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 
-                if (owa_coreAPI::isUpdateRequired()) {
+                if ( owa_coreAPI::isUpdateRequired() ) {
 	            	
 	            	return $this->updateAction();    
 	            }

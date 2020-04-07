@@ -44,10 +44,10 @@ class owa_sitesAddCliController extends owa_sitesAddController {
     
     function success() {
 	   
-	    $this->setView('base.genericCliView');
+	    $this->setView('base.genericCli');
 	    $site_id = $this->getParam('site_id');
 	    $this->set('status_msg', "Site added successfully. site_id: $site_id");
-
+		
     }    
 }
 

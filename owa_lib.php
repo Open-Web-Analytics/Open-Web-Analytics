@@ -1383,6 +1383,14 @@ class owa_lib {
         // if it makes it through the checks then it's not private.
         return false;
     }
+    
+    public static function keyExistsNotEmpty( $key, $array ) {
+	    
+	    if ( array_key_exists($key, $array) && ! empty( $array[ $key ] ) )  {
+		    
+		    return true;
+	    }
+    } 
 }
 
 ?>
