@@ -59,7 +59,7 @@ class owa_siteManager extends owa_base {
             $ret = $site->create();
 
             if ($ret) {
-                return $site_id;
+                return $site;
             }
 
         } else {

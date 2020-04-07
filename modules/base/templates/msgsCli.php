@@ -2,30 +2,19 @@
 	
 if ( isset($msgs) && ! empty($msgs) ) { 
 	
-	owa_coreAPI::notice( $msgs );
-
-	
+	owa_coreAPI::notice( json_encode( $msgs, JSON_PRETTY_PRINT ) );
 }
 
-if( ! empty( $status_msg ) ) {
+if( isset( $status_msg ) && ! empty( $status_msg ) ) {
 
 	owa_coreAPI::notice( $status_msg );
 
 }
 
-if ( isset($error_msg) && !isset($validation_errors)) {
-
-    owa_coreAPI::notice( $error_msg );
+if ( isset( $error ) && ! empty( $error) ) {
+	
+	owa_coreAPI::notice("Command failed. There were some errors:". "\n" . json_encode( $error, JSON_PRETTY_PRINT ) );
 }
 
-if ( isset( $validation_errors ) && ! empty( $validation_errors ) ) {
-
-    owa_coreAPI::notice('The command parameters had some validation errors:');
-   
-    foreach ($validation_errors as $validation_error) {
-	    
-	        owa_coreAPI::notice( $validation_error );
-    }
-}
 
 ?>

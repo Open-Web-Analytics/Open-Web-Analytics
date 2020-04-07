@@ -46,13 +46,18 @@ class owa_baseModule extends owa_module {
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
         $this->required_schema_version = 9;
-
-        // create event queues
+        
+        return parent::__construct();
+    }
+    
+    function init() {
+	    
+	    // create event queues
 
         // register queue type implementations
-        $this->registerImplementation('event_queue_types', 'file', 'owa_fileEventQueue', OWA_MODULES_DIR.'base/classes/fileEventQueue.php');
-        $this->registerImplementation('event_queue_types', 'database', 'owa_dbEventQueue', OWA_MODULES_DIR.'base/classes/dbEventQueue.php');
-        $this->registerImplementation('event_queue_types', 'http', 'owa_httpEventQueue', OWA_MODULES_DIR.'base/classes/httpEventQueue.php');
+        $this->registerImplementation('event_queue_types', 'file', 'owa_fileEventQueue', 'classes/fileEventQueue.php');
+        $this->registerImplementation('event_queue_types', 'database', 'owa_dbEventQueue', 'classes/dbEventQueue.php');
+        $this->registerImplementation('event_queue_types', 'http', 'owa_httpEventQueue', 'classes/httpEventQueue.php');
 
         // register named queues
         $this->registerEventQueue( 'incoming_tracking_events', array(
@@ -72,8 +77,9 @@ class owa_baseModule extends owa_module {
         ));
 
         $this->setupTrackingProperties();
+        
+        $this->registerRestApiRoute( 'v1', 'siteProfile', 'POST', 'owa_addSiteRestController', 'controllers/addSiteRestController.php' );
 
-        return parent::__construct();
     }
 
     /**
@@ -668,6 +674,18 @@ class owa_baseModule extends owa_module {
         $this->registerApiMethod('listSiteProfiles',
                 array( $this, 'listSiteProfiles'),
                 array(),
+                '',
+                'edit_sites'
+        );
+        
+        $this->registerApiMethod('AddSiteProfile',
+                array( $this, 'addSiteProfile'),
+                array(
+                	'domain',
+                	'name',
+                	'description',
+                	'site_family'
+                ),
                 '',
                 'edit_sites'
         );
