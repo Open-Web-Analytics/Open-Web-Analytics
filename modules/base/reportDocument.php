@@ -52,6 +52,19 @@ class owa_reportDocumentController extends owa_reportController {
         }
 
         $this->setTitle('Page Detail: ');
+
+        $rs = owa_coreAPI::executeApiCommand([
+            'do'                => 'getDocumentVisits',
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
+            'documentId'        => $d->get('id'),
+            'siteId'            => $this->getParam('siteId'),
+            'resultsPerPage'    => 10,
+            'page'              => $this->getParam('page'),
+        ]);
+
+        $this->set('visits', $rs);
+
         $this->set('document', $d);
         $this->set('metrics', 'visits,pageViews');
         $this->set('resultsPerPage', 30);
@@ -92,6 +105,7 @@ class owa_reportDocumentView extends owa_view {
         $this->body->set('document', $this->get('document'));
         $this->body->set('dimension_properties', $this->get('document'));
         $this->body->set('dimension_template', 'item_document.php');
+        $this->body->set('visits', $this->get('visits'));
         $this->body->set_template('report_document.tpl');
     }
 }

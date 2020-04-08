@@ -604,6 +604,13 @@ class owa_baseModule extends owa_module {
                 'view_reports'
         );
 
+        $this->registerApiMethod('getDocumentVisits',
+            [$this, 'getDocumentVisits'],
+            ['startDate', 'endDate', 'documentId', 'siteId', 'resultsPerPage', 'page', 'format'],
+            '',
+            'view_reports'
+        );
+
         $this->registerApiMethod('getClickstream',
                 array($this, 'getClickstream'),
                 array( 'sessionId', 'resultsPerPage', 'page','format'),
@@ -2827,6 +2834,74 @@ class owa_baseModule extends owa_module {
         }
 
         $db->orderBy('timestamp', 'DESC');
+
+        // pass limit to rs object if one exists
+        $rs->setLimit($resultsPerPage);
+
+        // pass page to rs object if one exists
+        $rs->setPage($page);
+
+        $results = $rs->generate($db);
+        $rs->resultsRows = $results;
+
+        return $rs->formatResults($format);
+
+    }
+
+    function getDocumentVisits($startDate = '', $endDate = '', $documentId = '', $siteId = '', $resultsPerPage = 20, $page = 1, $format = '') {
+
+        $rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+        $db = owa_coreAPI::dbSingleton();
+
+        $req = owa_coreAPI::entityFactory('base.request');
+        $s = owa_coreAPI::entityFactory('base.session');
+        $h = owa_coreAPI::entityFactory('base.host');
+        $l = owa_coreAPI::entityFactory('base.location_dim');
+        $ua = owa_coreAPI::entityFactory('base.ua');
+        $d = owa_coreAPI::entityFactory('base.document');
+        $v = owa_coreAPI::entityFactory('base.visitor');
+        $r = owa_coreAPI::entityFactory('base.referer');
+        $sr = owa_coreAPI::entityFactory('base.source_dim');
+        $st = owa_coreAPI::entityFactory('base.search_term_dim');
+
+        $db->selectFrom($req->getTableName(), 'request');
+
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $l->getTableName(), 'location', 'request.location_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $s->getTableName(), 'session', 'request.session_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), 'host', 'request.host_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), 'ua', 'request.ua_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), 'document', 'request.document_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), 'visitor', 'request.visitor_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), 'referer', 'request.referer_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'request.source_id');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, $st->getTableName(), 'search_term', 'request.referring_search_term_id');
+
+        $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
+
+        $db->selectColumn('host.host as host_host');
+        $db->selectColumn('location.city as location_city, location.country as location_country');
+        $db->selectColumn('ua.browser_type as browser_type');
+        $db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
+        $db->selectColumn('visitor.user_email as visitor_user_email');
+        $db->selectColumn('source.source_domain as source');
+        $db->selectColumn('referer.url as referer_url, referer.page_title as referer_page_title, referer.snippet as referer_snippet');
+        $db->selectColumn('search_term.terms as search_term');
+
+        if ($siteId) {
+            $db->where('request.site_id', $siteId);
+        }
+
+        if ($documentId) {
+            $db->where('request.document_id', $documentId);
+        }
+
+        if ($startDate && $endDate) {
+            $db->where('request.yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
+        }
+
+        $db->groupBy('request.session_id');
+
+        $db->orderBy('request.timestamp', 'DESC');
 
         // pass limit to rs object if one exists
         $rs->setLimit($resultsPerPage);
