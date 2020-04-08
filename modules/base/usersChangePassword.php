@@ -39,13 +39,15 @@ class owa_usersChangePasswordController extends owa_controller {
     public function validate()
     {
         $this->addValidation('password_match', [$this->getParam('password'), $this->getParam('password2')], 'stringMatch', ['errorMsg' => 'Your passwords must match.']);
+        $this->addValidation('password_required', $this->getParam('password'), 'required');
 
-        $userManager = owa_coreApi::supportClassFactory('base', 'userManager');
-        $validations = $userManager->getPasswordValidationRules($this->getParam('password'));
+        $passwordLengthConf = [
+            'operator'  => '>=',
+            'length'    => 6,
+            'errorMsg'  => 'Your password must be at least 6 characters in length.',
+        ];
 
-        foreach ($validations as $validation) {
-            $this->addValidation($validation['name'], $validation['value'], $validation['validation'], $validation['config']);
-        }
+        $this->addValidation('password_length', $this->getParam('password'), 'required', $passwordLengthConf);
     }
 
     function action() {
