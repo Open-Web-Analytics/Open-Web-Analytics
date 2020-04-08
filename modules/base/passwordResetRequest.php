@@ -32,21 +32,17 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
 
 class owa_passwordResetRequestController extends owa_controller {
 
-    function __construct($params) {
+    public function validate()
+    {
+        $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress', ['stopOnError' => true]);
 
-        parent::__construct($params);
+        $useEmailAddressEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'email_address',
+            'errorMsg'  => $this->getMsg(3010)
+        ];
 
-        $v0 = owa_coreAPI::validationFactory('emailAddress');
-        $v0->setValues( $this->getParam( 'email_address' ) );
-        $v0->setConfig( 'stopOnError', true );
-        $this->setValidation( 'email_address', $v0 );
-
-        $v1 = owa_coreAPI::validationFactory('entityExists');
-        $v1->setConfig('entity', 'base.user');
-        $v1->setConfig('column', 'email_address');
-        $v1->setValues(trim($this->getParam('email_address')));
-        $v1->setErrorMessage($this->getMsg(3010));
-        $this->setValidation('email_address', $v1);
+        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityExists', $useEmailAddressEntityConf);
     }
 
     function action() {

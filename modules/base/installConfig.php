@@ -39,50 +39,38 @@ class owa_installConfigController extends owa_installController {
         // require nonce
         $this->setNonceRequired();
 
+    }
+
+    public function validate()
+    {
         //required params
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($this->getParam('db_host'));
-        $v1->setErrorMessage("Database host is required.");
-        $this->setValidation('db_host', $v1);
-
-        $v2 = owa_coreAPI::validationFactory('required');
-        $v2->setValues($this->getParam('db_name'));
-        $v2->setErrorMessage("Database name is required.");
-        $this->setValidation('db_name', $v2);
-
-        $v3 = owa_coreAPI::validationFactory('required');
-        $v3->setValues($this->getParam('db_user'));
-        $v3->setErrorMessage("Database user is required.");
-        $this->setValidation('db_user', $v3);
-
-        $v4 = owa_coreAPI::validationFactory('required');
-        $v4->setValues($this->getParam('db_password'));
-        $v4->setErrorMessage("Database password is required.");
-        $this->setValidation('db_password', $v4);
-
-        $v7 = owa_coreAPI::validationFactory('required');
-        $v7->setValues($this->getParam('db_type'));
-        $v7->setErrorMessage("Database type is required.");
-        $this->setValidation('db_type', $v7);
+        $this->addValidation('db_host', $this->getParam('db_host'), 'required', ['errorMsg' => 'Database host is required.']);
+        $this->addValidation('db_name', $this->getParam('db_name'), 'required', ['errorMsg' => 'Database name is required.']);
+        $this->addValidation('db_user', $this->getParam('db_user'), 'required', ['errorMsg' => 'Database user is required.']);
+        $this->addValidation('db_password', $this->getParam('db_password'), 'required', ['errorMsg' => 'Database password is required.']);
+        $this->addValidation('db_type', $this->getParam('db_type'), 'required', ['errorMsg' => 'Database type is required.']);
 
         // Config for the public_url validation
-        $v5 = owa_coreAPI::validationFactory('subStringMatch');
-        $v5->setConfig('match', '/');
-        $v5->setConfig('length', 1);
-        $v5->setValues($this->getParam('public_url'));
-        $v5->setConfig('position', -1);
-        $v5->setConfig('operator', '=');
-        $v5->setErrorMessage("Your URL of OWA's base directory must end with a slash.");
-        $this->setValidation('public_url', $v5);
+        $publicUrlConf = [
+            'substring' => 'http',
+            'match'     => '/',
+            'length'    => -1,
+            'position'  => -1,
+            'operator'  => '=',
+            'errorMsg'  => 'Your URL of OWA\'s base directory must end with a slash.'
+        ];
+
+        $this->addValidation('public_url', $this->getParam('public_url'), 'subStringMatch', $publicUrlConf);
 
         // Config for the domain validation
-        $v6 = owa_coreAPI::validationFactory('subStringPosition');
-        $v6->setConfig('substring', 'http');
-        $v6->setValues($this->getParam('public_url'));
-        $v6->setConfig('position', 0);
-        $v6->setConfig('operator', '=');
-        $v6->setErrorMessage("Please add http:// or https:// to the beginning of your public url.");
-        $this->setValidation('public_url', $v6);
+        $domainConf = [
+            'substring' => 'http',
+            'position'  => 0,
+            'operator'  => '=',
+            'errorMsg'  => 'Please add http:// or https:// to the beginning of your public url.'
+        ];
+
+        $this->addValidation('public_url', $this->getParam('public_url'), 'subStringPosition', $domainConf);
     }
 
     function action() {

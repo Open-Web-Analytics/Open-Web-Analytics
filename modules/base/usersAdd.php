@@ -38,24 +38,29 @@ class owa_usersAddController extends owa_adminController {
 
         $this->setRequiredCapability('edit_users');
         $this->setNonceRequired();
+    }
 
+    public function validate()
+    {
         // Check for user with the same email address
         // this is needed or else the change password feature will not know which account
         // to chane the password for.
-        $v1 = owa_coreAPI::validationFactory('entityDoesNotExist');
-        $v1->setConfig('entity', 'base.user');
-        $v1->setConfig('column', 'email_address');
-        $v1->setValues(trim($this->getParam('email_address')));
-        $v1->setErrorMessage($this->getMsg(3009));
-        $this->setValidation('email_address', $v1);
+        $userEmailAddressEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'email_address',
+            'errorMsg'  => $this->getMsg(3009)
+        ];
+
+        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityDoesNotExist', $userEmailAddressEntityConf);
 
         // Check user name.
-        $v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
-        $v2->setConfig('entity', 'base.user');
-        $v2->setConfig('column', 'user_id');
-        $v2->setValues(trim($this->getParam('user_id')));
-        $v2->setErrorMessage($this->getMsg(3001));
-        $this->setValidation('user_id', $v2);
+        $userEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'user_id',
+            'errorMsg'  => $this->getMsg(3001)
+        ];
+
+        $this->addValidation('user_id', $this->getParam('user_id'), 'entityDoesNotExist', $userEntityConf);
     }
 
     function action() {
