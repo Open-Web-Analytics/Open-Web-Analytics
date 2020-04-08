@@ -771,7 +771,7 @@ class owa_coreAPI {
         $service = owa_coreAPI::serviceSingleton();
         
 		// Lookup controler for REST API route.
-		if ( owa_coreAPI::getSetting( 'base', 'rest_api_mode' ) ) {
+		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
 			
 			owa_coreAPI::debug('Generating REST API route controller...');
 			
