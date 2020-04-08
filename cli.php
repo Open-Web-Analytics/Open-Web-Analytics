@@ -62,7 +62,8 @@ $owa = new owa_caller;
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // setting CLI mode to true
-    $owa->setSetting('base', 'cli_mode', true);
+    //$owa->setSetting('base', 'cli_mode', true);
+    $owa->setSetting('base', 'request_mode', 'cli');
     // setting user auth
     $owa->setCurrentUser('admin', 'cli-user');
     // run controller or view and echo page content

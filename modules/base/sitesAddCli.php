@@ -17,6 +17,7 @@
 //
 
 require_once(OWA_BASE_MODULE_DIR.'sitesAdd.php');
+require_once(OWA_DIR.'owa_view.php');
 
 /**
  * Add Site Controller
@@ -32,23 +33,26 @@ require_once(OWA_BASE_MODULE_DIR.'sitesAdd.php');
 
 class owa_sitesAddCliController extends owa_sitesAddController {
     
-    function init() {
-		
-		$this->setMode( 'cli' );
-	}
-	
 	function errorAction() {
 	
-        $this->setView('base.genericCli');
+        $this->setView('base.cli');
     }
     
     function success() {
 	   
-	    $this->setView('base.genericCli');
-	    $site_id = $this->getParam('site_id');
-	    $this->set('status_msg', "Site added successfully. site_id: $site_id");
-		
+	    $this->setView('base.sitesAddCli');
     }    
+}
+
+
+
+class owa_sitesAddCliView extends owa_cliView {
+	
+	function render() {
+		
+		$this->body->set('status_msg', "Site added successfully.");
+	    $this->setResponseData( $this->get('site') ); 
+	}
 }
 
 ?>

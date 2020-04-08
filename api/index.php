@@ -33,10 +33,11 @@ define('OWA_RESTAPI', true);
 
 // invoke OWA
 $owa = new owa_php;
+$owa->setSetting('base', 'request_mode', 'rest_api');
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	
-	$owa->setSetting('base', 'rest_api_mode', true);
+	//$owa->setSetting('base', 'rest_api_mode', true);
 	
 	$s = owa_coreAPI::serviceSingleton();
 

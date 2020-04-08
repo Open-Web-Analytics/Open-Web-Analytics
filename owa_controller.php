@@ -115,13 +115,6 @@ class owa_controller extends owa_base {
      * @var Bool
      */
     var $is_nonce_required = false;
-    
-    /**
-     * Mode the controler is operating in
-     *
-     * @var string web_app|cli|rest_api
-     */
-    var $mode = 'web_app';
 
     /**
      * Constructor
@@ -143,18 +136,17 @@ class owa_controller extends owa_base {
         $this->setViewMethod('delegate');
 
         // clobber anything that needs clobbering by conrete class
-        $this->init();
-        
-        // @todo this isn't needed is we move to an explicit cli controller map
-        if ( $this->getMode() === 'cli' && ! owa_coreAPI::getSetting('base', 'cli_mode') ) {
-	    	
-			owa_coreAPI::notice("Controller not called from CLI");
-            exit;
-	    }
+        $this->init();   
     }
     
+    /**
+	 * Abstract method for setting any controller configuration.
+	 * Fires after constructor but before doAction.
+	 *
+	 */
     function init() {
 	    
+	    return false;
     }
     
     
@@ -228,18 +220,20 @@ class owa_controller extends owa_base {
             
             return $this->data;
         }
-
+		
         /* Check validity of nonce */
-        if ($this->is_nonce_required == true) {
+        if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' ) {
 	        
-            $nonce = $this->getParam('nonce');
-
-            if (!$nonce || !$this->verifyNonce($nonce)) {
-                $this->e->debug('Nonce is not valid.');
-                return $this->finishActionCall($this->notAuthenticatedAction());
-            }
-        }
-
+	        if ($this->is_nonce_required == true) {
+		        
+	            $nonce = $this->getParam('nonce');
+	
+	            if (!$nonce || !$this->verifyNonce($nonce)) {
+	                $this->e->debug('Nonce is not valid.');
+	                return $this->finishActionCall($this->notAuthenticatedAction());
+	            }
+	        }
+		}
         // TODO: These sets need to be removed and added to pre(), action() or post() methods
         // in various concrete controller classes as they screw up things when
         // redirecting from one controller to another.
@@ -538,19 +532,9 @@ class owa_controller extends owa_base {
 
     }
     
-    /**
-	 * Sets th Mode of the controller
-	 *
-	 * @param $mode string	webapp|cli|api
-	 */
-    public function setMode( $mode ) {
-	    
-	    $this->mode = $mode;
-    }
-    
     public function getMode() {
 	    
-	    return $this->mode;
+	    return owa_coreAPI::getSetting( 'base', 'request_mode' );
     }
 
     function mergeParams($array) {

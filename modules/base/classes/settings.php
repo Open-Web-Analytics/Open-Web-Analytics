@@ -714,7 +714,8 @@
                 'logo_image_path'                    => 'base/i/owa-logo-100w.png',
                 'use_64bit_hash'                    => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
-                'archive_old_events'                => true // used by event queues to archive processed events.
+                'archive_old_events'                => true, // used by event queues to archive processed events.
+                'request_mode'						=> 'web_app'
             )
         );
 

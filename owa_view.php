@@ -870,6 +870,9 @@ class owa_cliView extends owa_view {
     
     function pre() {
 	    
+	    $this->t->set_template('wrapper_blank.tpl');
+        $this->body->set_template('msgsCli.php');
+	    
 	    $error = array();
 	    
 	    // set error msgs
@@ -894,15 +897,6 @@ class owa_cliView extends owa_view {
 	    
 	    $this->body->set( 'response_data', $data );
     }
-
-    function render() {
-	
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('msgsCli.php');
-        $this->body->set('validation_errors', $this->get('validation_errors'));
-    }
-
-
 }
 
 ?>

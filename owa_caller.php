@@ -75,7 +75,7 @@ class owa_caller extends owa_base {
         // Log version debug
         $this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
-            owa_coreAPI::debug( 'Request URL: '.$_SERVER['REQUEST_URI'] );
+            owa_coreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
         }
         
         if ( array_key_exists('HTTP_USER_AGENT', $_SERVER ) ) {
@@ -85,11 +85,7 @@ class owa_caller extends owa_base {
         if ( array_key_exists('HTTP_HOST', $_SERVER ) ) {
             owa_coreAPI::debug( 'Host: '.$_SERVER['HTTP_HOST'] );
         }
-        //owa_coreAPI::debug('cookie domain in caller: '. owa_coreAPI::getSetting('base', 'cookie_domain'));
-        // Backtrace. handy for debugging who called OWA    
-        //$bt = debug_backtrace();
-        //$this->e->debug($bt[4]);         
-        
+             
         // load config values from DB
         // Applies config from db or cache
         // check here is needed for installs when the configuration table does not exist.

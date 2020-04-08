@@ -34,8 +34,10 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 // define entry point cnstant
 define('OWA_API', true);
+
 // invoke OWA
 $owa = new owa_php;
+$owa->setSetting('base', 'request_mode', 'api');
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
