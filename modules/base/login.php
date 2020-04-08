@@ -21,16 +21,9 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
 
 class owa_loginController extends owa_controller {
 
-
-    function __construct( $params ) {
-
-        parent::__construct($params);
-
-        $v0 = owa_coreAPI::validationFactory('userName');
-        $v0->setValues( $this->getParam( 'user_id' ) );
-        $v0->setConfig( 'stopOnError', true );
-        $this->setValidation( 'user_id', $v0 );
-
+    public function validate()
+    {
+        $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError' => true]);
     }
 
     function action() {

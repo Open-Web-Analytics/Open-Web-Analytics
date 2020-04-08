@@ -46,17 +46,21 @@ class owa_changeUserPasswordCliController extends owa_cliController
 
         $this->setRequiredCapability('edit_settings');
 
-        // Add validations to the run
-        $userRequired = owa_coreAPI::validationFactory('required');
-        $userRequired->setValues($this->getParam('user'));
-        $this->setValidation('user_required', $userRequired);
-
         $this->_userManager = owa_coreApi::supportClassFactory('base', 'userManager');
-        $rules = $this->_userManager->getPasswordValidationRules($this->getParam('password'));
+    }
 
-        foreach ($rules as $key => $rule) {
-            $this->setValidation($key, $rule);
-        }
+    public function validate()
+    {
+        $this->addValidation('user_required', $this->getParam('user'), 'required');
+        $this->addValidation('password_required', $this->getParam('password'), 'required');
+
+        $passwordLengthConf = [
+            'operator'  => '>=',
+            'length'    => 6,
+            'errorMsg'  => 'Your password must be at least 6 characters in length.',
+        ];
+
+        $this->addValidation('password_length', $this->getParam('password'), 'required', $passwordLengthConf);
     }
 
     /**
