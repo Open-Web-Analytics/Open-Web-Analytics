@@ -18,6 +18,7 @@
                 <div class="owa_reportSectionContent">
                     <div class="section_header">Visitors</div>
                     <?php include('report_latest_visits.tpl')?>
+                    <?php echo $this->makePaginationFromResultSet($visits, ['do' => 'base.reportDocument', 'pageUrl' => $document->get('url')], true);?>
                 </div>
             </td>
 
