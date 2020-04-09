@@ -115,6 +115,7 @@ class owa_sitesAddController extends owa_adminController {
         $this->addValidation('domain', $this->getParam('domain'), 'required', array('stopOnError'	=> true));
 
         $siteEntityConf = [
+
              'entity'    => 'base.site',
              'column'    => 'domain',
              'errorMsg'  => $this->getMsg(3206)
