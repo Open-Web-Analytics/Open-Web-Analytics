@@ -59,7 +59,7 @@ class owa_reportDocumentController extends owa_reportController {
             'endDate'           => $this->getParam('endDate'),
             'documentId'        => $d->get('id'),
             'siteId'            => $this->getParam('siteId'),
-            'resultsPerPage'    => 3,
+            'resultsPerPage'    => 10,
             'page'              => $this->getParam('page'),
         ]);
 
