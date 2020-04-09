@@ -45,7 +45,7 @@ class owa_cliController extends owa_adminController {
      */
     function __construct($params) {
 
-        if (owa_coreAPI::getSetting('base', 'cli_mode')) {
+        if (owa_coreAPI::getSetting('base', 'request_mode') === 'cli') {
 
             return parent::__construct($params);
 
