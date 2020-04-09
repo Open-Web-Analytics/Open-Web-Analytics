@@ -116,12 +116,12 @@ class owa_sitesAddController extends owa_adminController {
 
         $siteEntityConf = [
 
-            'entity'    => 'base.site',
-            'column'    => 'domain',
-            'errorMsg'  => $this->getMsg(3206)
-        ];
+             'entity'    => 'base.site',
+             'column'    => 'domain',
+             'errorMsg'  => $this->getMsg(3206)
+         ];
 
-        $this->addValidation('domain', $this->getParam('protocol').$this->getParam('domain'), 'entityDoesNotExist', $siteEntityConf);
+         $this->addValidation('domain', $this->getParam('protocol').$this->getParam('domain'), 'entityDoesNotExist', $siteEntityConf);
     }
     
     function success() {
