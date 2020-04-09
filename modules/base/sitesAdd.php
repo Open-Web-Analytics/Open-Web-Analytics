@@ -74,10 +74,8 @@ class owa_sitesAddController extends owa_adminController {
 	
     function init() {
 	    
-	    $this->setMode( 'web_app' );
-        // require nonce for this action
         $this->setNonceRequired();
-       
+      
     }
 
     function action() {
@@ -86,13 +84,19 @@ class owa_sitesAddController extends owa_adminController {
 
         $sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
 
-        $ret = $sm->createNewSite( $this->getParam( 'domain' ),
+        $site = $sm->createNewSite( $this->getParam( 'domain' ),
                             $this->getParam( 'name' ),
                             $this->getParam( 'description' ),
                             $this->getParam( 'site_family' )
         );
         
-        owa_coreAPI::notice("Site added successfully. site_id: $ret");
+        if ( $site ) {
+	        
+	    	owa_coreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );    
+        }
+        
+        $this->set( 'site', $site->_getProperties() );
+        
     }
     
     function validate() {
@@ -111,12 +115,13 @@ class owa_sitesAddController extends owa_adminController {
         $this->addValidation('domain', $this->getParam('domain'), 'required', array('stopOnError'	=> true));
 
         $siteEntityConf = [
-            'entity'    => 'base.site',
-            'column'    => 'domain',
-            'errorMsg'  => $this->getMsg(3206)
-        ];
 
-        $this->addValidation('domain', $this->getParam('protocol').$this->getParam('domain'), 'entityDoesNotExist', $siteEntityConf);
+             'entity'    => 'base.site',
+             'column'    => 'domain',
+             'errorMsg'  => $this->getMsg(3206)
+         ];
+
+         $this->addValidation('domain', $this->getParam('protocol').$this->getParam('domain'), 'entityDoesNotExist', $siteEntityConf);
     }
     
     function success() {

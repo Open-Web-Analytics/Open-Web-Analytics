@@ -16,33 +16,34 @@
 // $Id$
 //
 
-include_once('owa_env.php');
+include_once('../owa_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
 
 /**
  * REST API
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2010 Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2020 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.3.0
- * @link        http://wiki.openwebanalytics.com/index.php?title=REST_API
+ * @since       owa 1.6.7
  */
 
 // define entry point cnstant
-define('OWA_API', true);
+define('OWA_RESTAPI', true);
 
 // invoke OWA
 $owa = new owa_php;
-$owa->setSetting('base', 'request_mode', 'api');
+$owa->setSetting('base', 'request_mode', 'rest_api');
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+	
+	//$owa->setSetting('base', 'rest_api_mode', true);
+	
+	$s = owa_coreAPI::serviceSingleton();
 
+	
     // run api command and echo page content
-    echo $owa->handleRequest('', 'base.apiRequest');
+    echo $owa->handleRequest();
 } else {
     // unload owa
     $owa->restInPeace();

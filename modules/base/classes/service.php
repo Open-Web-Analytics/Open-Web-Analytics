@@ -50,6 +50,7 @@ class owa_service extends owa_base {
     var $browscap;
     var $geolocation;
     var $formatters = array();
+    var $restApiRoutes = array();
 
     function __construct() {
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
@@ -264,6 +265,30 @@ class owa_service extends owa_base {
     function getRequest() {
 
         return $this->request;
+    }
+    
+    function getRestApiRoute( $version, $route_name, $request_method ) {
+	    
+	    if ( array_key_exists( $version, $this->restApiRoutes ) ) {
+		    
+		    if ( array_key_exists( $route_name, $this->restApiRoutes[ $version ] ) ) {
+			    
+			    if ( array_key_exists( $request_method, $this->restApiRoutes[ $version ][ $route_name ] ) ) {
+		    
+		    		return $this->restApiRoutes[ $version ][ $route_name ][ $request_method ] ;
+		    	}
+		    }
+		}
+    }
+    
+    function setRestApiRoute( $version, $route_name, $request_method, $value ) {
+	    
+	    $this->restApiRoutes[$version][ $route_name ][ $request_method ] = $value;
+    }
+    
+    function getAllRestApiRoutes() {
+	    
+	    return $this->restApiRoutes;
     }
 
     function getState() {

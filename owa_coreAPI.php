@@ -766,20 +766,57 @@ class owa_coreAPI {
      * @param $action string
      *
      */
-    public static function performAction($action, $params = array()) {
+    public static function performAction( $action, $params = array() ) {
 
-        // Load action from service map
         $service = owa_coreAPI::serviceSingleton();
-        $action_map = $service->getMapValue('actions', $action );
+        
+		// Lookup controler for REST API route.
+		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+			
+			owa_coreAPI::debug('Generating REST API route controller...');
+			
+			if ( owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
+			
+				$request_method = $service->request->getRequestType();
+				
+				$route = $service->getRestApiRoute($params['version'], $action, $request_method );
+				owa_coreAPI::debug($route);
+				if ( $route ) {
+					
+					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
+				
+				} else {
+					
+					owa_coreAPI::debug('No REST API route found');
+					return;	
+				}
 
-        // create the controller object
-        if ( $action_map ) {
-            $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
-        } else {
-            // attempt to use old style convention
-            $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
-        }
-
+			} else {
+				
+				owa_coreAPI::debug('Could not generate controller because no version param was on request.');
+				return;
+			}
+			
+		} else {
+			
+			// Load action controller from service map which uses the 'module.action' convention	
+			$action_map = $service->getMapValue('actions', $action );
+				
+			// create the controller object
+	        if ( $action_map ) {
+		        
+	            $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
+	        
+	        } else {
+	        
+	            // attempt to use old style convention
+	            $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+	        }
+	
+			
+		}
+		
+        
         if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
 
             owa_coreAPI::debug("No controller is associated with $action.");
