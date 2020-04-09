@@ -49,15 +49,15 @@ class owa_reportVisitsController extends owa_reportController {
             $endDate = $this->getParam('date');
         }
 
-        $rs = owa_coreAPI::executeApiCommand(array(
-
-            'do'            => 'getLatestVisits',
-            'visitorId'        => $visitorId,
+        $rs = owa_coreAPI::executeApiCommand([
+            'do'            => 'getVisits',
+            'visitorId'     => $visitorId,
             'siteId'        => $this->getParam('siteId'),
-            'page'            => $this->getParam('page'),
-            'startDate'        => $startDate,
-            'endDate'        => $endDate,
-            'format'        => '' ) );
+            'page'          => $this->getParam('page'),
+            'startDate'     => $startDate,
+            'endDate'       => $endDate,
+            'format'        => ''
+        ]);
 
         $this->set('visits', $rs);
         $this->set('visitor', $v);

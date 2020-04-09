@@ -48,16 +48,15 @@ class owa_reportDashboardController extends owa_reportController {
         //print_r($rs);
         $this->set('actions', $rs);
 
-        $rs = owa_coreAPI::executeApiCommand(array(
-
-            'do'                => 'getLatestVisits',
+        $rs = owa_coreAPI::executeApiCommand([
+            'do'                => 'getVisits',
             'siteId'            => $this->getParam('siteId'),
-            'page'                => $this->getParam('page'),
-            'startDate'            => $this->getParam('startDate'),
-            'endDate'            => $this->getParam('endDate'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
             'period'            => $this->getParam('period'),
             'resultsPerPage'    => 10
-        ));
+        ]);
 
         $this->set('latest_visits', $rs);
 

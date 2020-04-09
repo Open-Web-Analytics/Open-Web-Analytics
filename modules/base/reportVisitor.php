@@ -44,17 +44,16 @@ class owa_reportVisitorController extends owa_reportController {
         $v = owa_coreAPI::entityFactory('base.visitor');
         $v->load($visitorId);
 
-        $lv = owa_coreAPI::executeApiCommand(array(
-
-            'do'                => 'getLatestVisits',
+        $lv = owa_coreAPI::executeApiCommand([
+            'do'                => 'getVisits',
             'siteId'            => $this->getParam('siteId'),
-            'page'                => $this->getParam('page'),
-            'startDate'            => $this->getParam('startDate'),
-            'endDate'            => $this->getParam('endDate'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
             'period'            => $this->getParam('period'),
-            'visitorId'            => $v->get('id'),
+            'visitorId'         => $v->get('id'),
             'resultsPerPage'    => 10
-        ));
+        ]);
 
         $this->set('visits', $lv);
         $this->set('visitor_label', $v->getVisitorName());

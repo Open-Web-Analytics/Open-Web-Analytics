@@ -35,15 +35,15 @@ class owa_reportVisitorsController extends owa_reportController {
 
     function action() {
 
-        $rs = owa_coreAPI::executeApiCommand(array(
-            
-            'do'                => 'getLatestVisits',
+        $rs = owa_coreAPI::executeApiCommand([
+            'do'                => 'getVisits',
             'siteId'            => $this->getParam('siteId'),
-            'page'                => $this->getParam('page'),
-            'startDate'            => $this->getParam('startDate'),
-            'endDate'            => $this->getParam('endDate'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
             'period'            => $this->getParam('period'),
-            'resultsPerPage'    => 10 ) );
+            'resultsPerPage'    => 10
+        ]);
         
         $this->set('latest_visits', $rs);
         

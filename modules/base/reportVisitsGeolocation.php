@@ -45,14 +45,15 @@ class owa_reportVisitsGeolocationController extends owa_reportController {
             $this->set('site_description', $s->get('description'));
         }
 
-        $rs = owa_coreAPI::executeApiCommand(array(
-                'do'                => 'getLatestVisits',
-                'siteId'            => $this->getParam('siteId'),
-                'page'                => $this->getParam('page'),
-                'startDate'            => $this->getParam('startDate'),
-                'endDate'            => $this->getParam('endDate'),
-                'period'            => $this->getParam('period'),
-                'resultsPerPage'    => 200 ) );
+        $rs = owa_coreAPI::executeApiCommand([
+            'do'                => 'getVisits',
+            'siteId'            => $this->getParam('siteId'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
+            'period'            => $this->getParam('period'),
+            'resultsPerPage'    => 200
+        ]);
 
         $this->set('latest_visits', $rs);
         $this->set('site_id', $site_id);
