@@ -55,9 +55,7 @@ class owa_requestContainer {
 
         // php's server variables
         $this->server = $_SERVER;
-        owa_coreAPI::debug( $_GET );
-        owa_coreAPI::debug('---');
-        owa_coreAPI::debug( $_POST );
+      
         // files
         if (!empty($_FILES)) {
             $this->files = $_FILES;
