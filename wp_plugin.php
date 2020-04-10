@@ -1295,7 +1295,7 @@ class owa_wp_module {
 	 */
 	public function getOptionsKey() {
 		
-		//return photopress_util::getModuleOptionKey( $this->package_name, $this->module_name );
+		//return owa_wp_util::getModuleOptionKey( $this->package_name, $this->module_name );
 	}
 	
 	public function registerController( $action_name, $class, $path ) {
@@ -1463,7 +1463,7 @@ class owa_wp_settingsPage {
 	
 	public $name;
 	
-	public $option_group_name; // photopress-package-module-groupname
+	public $option_group_name; // owa-package-module-groupname
 	
 	public $fields;
 	
@@ -2252,9 +2252,9 @@ class owa_wp_settings_field_integer extends owa_wp_settings_field_text {
 				sprintf(
 					'%s %s %s %s %s.',
 					$this->get('label_for'),
-					photopress_util::localize('must be a number between'),
+					owa_wp_util::localize('must be a number between'),
 					$this->get('min_value'),
-					photopress_util::localize('and'),
+					owa_wp_util::localize('and'),
 					$this->get('max_value')
 				)
 			);
@@ -2320,7 +2320,7 @@ class owa_wp_settings_field_boolean extends owa_wp_settings_field {
 			return true;
 		} else {
 		
-			$this->addError( $this->get('dom_id'), $this->get('label_for') . ' ' . photopress_util::localize( 'field must be On or Off.' ) );
+			$this->addError( $this->get('dom_id'), $this->get('label_for') . ' ' . owa_wp_util::localize( 'field must be On or Off.' ) );
 		}
 
 	}
@@ -2389,7 +2389,7 @@ class owa_wp_settings_section {
 			'description'	=> ''
 		);
 		
-		$this->properties = photopress_util::setDefaultParams( $defaults, $params );
+		$this->properties = owa_wp_util::setDefaultParams( $defaults, $params );
 	}
 	
 	public function get( $key ) {
