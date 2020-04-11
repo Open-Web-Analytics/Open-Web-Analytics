@@ -571,6 +571,7 @@ class owa_baseModule extends owa_module {
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
         $this->registerCliCommand('update-referral', 'base.crawlReferralCli');
+        $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
     }
 
     /**
