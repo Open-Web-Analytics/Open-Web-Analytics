@@ -246,9 +246,15 @@ class owa_http {
 
         preg_match('/<title[^>]*>(.*?)<\/title>/', $this->response, $matches);
 
-        $this->e->debug("referer title extract: ". print_r($matches[1], true));
+        $title = null;
 
-           return $matches[1];
+        if ($matches && count($matches) > 0 && isset($matches[1])) {
+            $title = $matches[1];
+        }
+
+        $this->e->debug("referer title extract: ". print_r($title, true));
+
+        return $title;
     }
 
      function strip_selected_tags($str, $tags = array(), $stripContent = false) {
