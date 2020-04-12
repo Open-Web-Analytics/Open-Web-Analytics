@@ -82,7 +82,7 @@
             'metrics'           => 'visits,pageViews',
             'dimensions'        => 'visitorId',
             'sort'              => 'visits-',
-            'resultsPerPage'    => 100,
+            'resultsPerPage'    => 15,
             'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
             'format'            => 'json'
         ], true);?>';
