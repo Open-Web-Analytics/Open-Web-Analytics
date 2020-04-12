@@ -599,7 +599,7 @@ class owa_baseModule extends owa_module {
 
         $this->registerApiMethod('getVisits',
                 [$this, 'getVisits'],
-                ['startDate', 'endDate', 'visitorId', 'documentId', 'siteId', 'resultsPerPage', 'page', 'format'],
+                ['startDate', 'endDate', 'visitorId', 'siteId', 'resultsPerPage', 'page', 'format'],
                 '',
                 'view_reports'
         );
@@ -2777,7 +2777,7 @@ class owa_baseModule extends owa_module {
         }
     }
 
-    function getVisits($startDate = '', $endDate = '', $visitorId = '', $documentId = '', $siteId = '', $resultsPerPage = 20, $page = 1, $format = '') {
+    function getVisits($startDate = '', $endDate = '', $visitorId = '', $siteId = '', $resultsPerPage = 20, $page = 1, $format = '') {
 
         $rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
         $db = owa_coreAPI::dbSingleton();
@@ -2803,11 +2803,6 @@ class owa_baseModule extends owa_module {
         $db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'session.source_id');
         $db->join(OWA_SQL_JOIN_LEFT_OUTER, $st->getTableName(), 'search_term', 'session.referring_search_term_id');
 
-        if ($documentId) {
-            $req = owa_coreAPI::entityFactory('base.request');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $req->getTableName(), 'request', 'session.id', 'request.session_id');
-        }
-
         $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
 
         $db->selectColumn('host.host as host_host');
@@ -2829,11 +2824,6 @@ class owa_baseModule extends owa_module {
 
         if ($startDate && $endDate) {
             $db->where('session.yyyymmdd', array('start' => $startDate, 'end' => $endDate), 'BETWEEN');
-        }
-
-        if ($documentId) {
-            $db->where('request.document_id', $documentId);
-            $db->groupBy('request.session_id');
         }
 
         $db->orderBy('session.timestamp', 'DESC');
