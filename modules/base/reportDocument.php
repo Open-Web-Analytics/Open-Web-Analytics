@@ -53,18 +53,6 @@ class owa_reportDocumentController extends owa_reportController {
 
         $this->setTitle('Page Detail: ');
 
-        $rs = owa_coreAPI::executeApiCommand([
-            'do'                => 'getVisits',
-            'startDate'         => $this->getParam('startDate'),
-            'endDate'           => $this->getParam('endDate'),
-            'documentId'        => $d->get('id'),
-            'siteId'            => $this->getParam('siteId'),
-            'resultsPerPage'    => 10,
-            'page'              => $this->getParam('page'),
-        ]);
-
-        $this->set('visits', $rs);
-
         $this->set('document', $d);
         $this->set('metrics', 'visits,pageViews');
         $this->set('resultsPerPage', 30);

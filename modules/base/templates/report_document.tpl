@@ -17,8 +17,7 @@
 
                 <div class="owa_reportSectionContent">
                     <div class="section_header">Visitors</div>
-                    <?php include('report_latest_visits.tpl')?>
-                    <?php echo $this->makePaginationFromResultSet($visits, ['do' => 'base.reportDocument', 'pageUrl' => $document->get('url')], true);?>
+                    <div id="pagevisitors"></div>
                 </div>
             </td>
 
@@ -78,6 +77,21 @@
         prshre.addLinkToColumn('priorPagePath', link, ['priorPagePath']);
         prshre.asyncQueue.push(['refreshGrid']);
         prshre.load(prurl);
+
+        var vrurl = '<?php echo $this->makeApiLink(['do' => 'getResultSet',
+            'metrics'           => 'visits,pageViews',
+            'dimensions'        => 'visitorId',
+            'sort'              => 'visits-',
+            'resultsPerPage'    => 100,
+            'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
+            'format'            => 'json'
+        ], true);?>';
+
+        var vrshre = new OWA.resultSetExplorer('pagevisitors');
+        var link = '<?php echo $this->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';
+        vrshre.addLinkToColumn('visitorId', link, ['visitorId']);
+        vrshre.asyncQueue.push(['refreshGrid']);
+        vrshre.load(vrurl);
 </script>
 
 <?php require_once('js_report_templates.php');?>
