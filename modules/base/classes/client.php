@@ -797,28 +797,35 @@ class owa_client extends owa_caller {
 
     private function isRefererSearchEngine( $uri ) {
 
-        if ( isset( $uri['host'] ) ) {
-            $host = $uri['host'];
-        } else {
-            return;
+        if ( !isset( $uri['host'] ) ) {
+            return null;
         }
 
-        foreach ( $this->organicSearchEngines as $engine ) {
+        $host = $uri['host'];
 
+        $searchEngine = [];
+
+        foreach ( $this->organicSearchEngines as $engine ) {
             $domain = $engine['d'];
+
+            if (strpos($host, $domain) === false) {
+                continue;
+            }
+
             $query_param = $engine['q'];
             $term = '';
 
-            if ( isset ($uri['query_params'][$query_param] ) ) {
+            if (isset($uri['query_params'][$query_param])) {
                 $term = $uri['query_params'][$query_param];
             }
 
-            if ( strpos($host, $domain) ) {
-                owa_coreAPI::debug( 'Found search engine: %s with query param %s:, query term: %s', $domain, $query_param, $term);
+            owa_coreAPI::debug( 'Found search engine: %s with query param %s:, query term: %s', $domain, $query_param, $term);
 
-                return array('d' => $domain, 'q' => $query_param, 't' => $term );
-            }
+            $searchEngine = ['d' => $domain, 'q' => $query_param, 't' => $term];
+            break;
         }
+
+        return $searchEngine;
     }
 
     function setCampaignCookie($values) {
