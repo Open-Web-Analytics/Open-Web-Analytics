@@ -55,6 +55,8 @@ class owa_domstreamHandlers extends owa_observer {
             $ds->set( 'page_url', $event->get('page_url') );
             $ds->set( 'events', $event->get('stream_events') );
             $ds->set( 'duration', $event->get('duration') );
+            $ds->set( 'page_width', $event->get('page_width') );
+            $ds->set( 'page_height', $event->get('page_height') );
 
             $ret = $ds->create();
 
