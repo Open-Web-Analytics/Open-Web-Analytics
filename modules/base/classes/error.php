@@ -91,9 +91,11 @@ class owa_error {
     }
 
     function createDevelopmentHandler() {
-
+		
+		$this->logPhpErrors();
+		
         // set log level to debug
-        owa_coreAPI::setSetting('base', 'error_log_level', self::OWA_LOG_DEBUG );
+        owa_coreAPI::setSetting('base', 'error_log_level', self::OWA_LOG_ALL );
         // make file logger
         $this->make_file_logger();
         // if the CLI is in use, makea console logger.
@@ -101,10 +103,7 @@ class owa_error {
 
             $this->make_console_logger();
         }
-
-
-        $this->logPhpErrors();
-
+        
         set_exception_handler( array($this, 'logException') );
 
     }
@@ -223,11 +222,11 @@ class owa_error {
 
     function logPhpErrors() {
 
-        error_reporting( E_ALL );
+        error_reporting( -1 );
         ini_set('display_errors', 'On');
-        set_error_handler( array( $this, "handlePhpError" ) );
         ini_set("log_errors", 1);
         ini_set("error_log", owa_coreAPI::getSetting('base', 'error_log_file') );
+        set_error_handler( array( $this, "handlePhpError" ) );
     }
 
     /**

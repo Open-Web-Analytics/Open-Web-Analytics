@@ -769,57 +769,29 @@ class owa_coreAPI {
     public static function performAction( $action, $params = array() ) {
 
         $service = owa_coreAPI::serviceSingleton();
+			
+		// Load action controller from service map which uses the 'module.action' convention	
+		$action_map = $service->getMapValue('actions', $action );
+			
+		// create the controller object
+        if ( $action_map ) {
+	        
+            $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
         
-		// Lookup controler for REST API route.
-		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
-			
-			owa_coreAPI::debug('Generating REST API route controller...');
-			
-			if ( owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
-			
-				$request_method = $service->request->getRequestType();
-				
-				$route = $service->getRestApiRoute($params['version'], $action, $request_method );
-				owa_coreAPI::debug($route);
-				if ( $route ) {
-					
-					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
-				
-				} else {
-					
-					owa_coreAPI::debug('No REST API route found');
-					return;	
-				}
-
-			} else {
-				
-				owa_coreAPI::debug('Could not generate controller because no version param was on request.');
-				return;
-			}
-			
-		} else {
-			
-			// Load action controller from service map which uses the 'module.action' convention	
-			$action_map = $service->getMapValue('actions', $action );
-				
-			// create the controller object
-	        if ( $action_map ) {
-		        
-	            $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
-	        
-	        } else {
-	        
-	            // attempt to use old style convention
-	            $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
-	        }
-	
-			
-		}
+        } else {
+        
+            // attempt to use old style convention
+            $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+        }
 		
-        
-        if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
+		return owa_coreAPI::runController( $controller );        
+    }
+    
+    public static function runController( $controller ) {
+	    
+	    if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
 
-            owa_coreAPI::debug("No controller is associated with $action.");
+            owa_coreAPI::debug("Class is not a controller. no doAction method found.");
             return;
         }
 
@@ -1250,7 +1222,41 @@ class owa_coreAPI {
                 }
             }
         }
+		
+		
+		// REST API Requests
+		// Lookup controler for REST API route.
+		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+			
+			owa_coreAPI::debug('Generating REST API route controller...');
+			
+			if ( owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
+			
+				$request_method = $service->request->getRequestType();
+				
+				$route = $service->getRestApiRoute($params['version'], $action, $request_method );
+				owa_coreAPI::debug($route);
+				if ( $route ) {
+					
+					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
+					return owa_coreAPI::runController( $controller );
+				
+				} else {
+					
+					owa_coreAPI::debug('No REST API route found');
+					return;	
+				}
 
+			} else {
+				
+				owa_coreAPI::debug('Could not generate controller because no version param was on request.');
+				return;
+			}
+			
+		} 
+		
+		
+		
         $init = true;
         owa_coreAPI::debug('About to perform action: '.$action);
         return owa_coreAPI::performAction($action, $params);
@@ -1721,6 +1727,24 @@ class owa_coreAPI {
 
         $ed = owa_coreAPI::getEventDispatch();
         return $ed->filter( $filter_name, $value );
+    }
+    
+    public static function loadEntitiesFromArray( $items, $entity_name ) {
+	    
+	    $set = [];
+	    
+	    if ( $items ) {
+		    
+		    foreach ($items as $item ) {
+			    self::debug($item);
+			    $entity = owa_coreAPI::entityFactory( $entity_name );
+			    $entity->setProperties( $item );
+			    $set[] = $entity;
+			    
+		    }
+	    }
+	    
+	    return $set;
     }
 
 }

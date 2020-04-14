@@ -110,7 +110,7 @@
 
             <select multiple="multiple" size="10" name="<?php echo $this->getNs();?>allowed_users[]" >
                 <?php foreach ($users as $user):?>
-                <option <?php if( $edit && $siteEntity->isUserAssigned($user['id']) ): echo 'SELECTED="SELECTED"'; endif;?> value="<?php echo $user['id'];?>"><?php echo $user['user_id']. ' / '.$user['real_name']. ' ('.$user['role'].')';?></option>
+                <option <?php if( $edit && $siteEntity->isUserAssigned($user['id']) ): echo 'SELECTED="SELECTED" style="background-color:#90ee90"'; endif;?> value="<?php echo $user['id'];?>"><?php echo $user['user_id']. ' / '.$user['real_name']. ' ('.$user['role'].')';?></option>
                 <?php endforeach;?>
             </select>
             <br>

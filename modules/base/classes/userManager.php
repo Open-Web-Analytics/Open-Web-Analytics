@@ -58,7 +58,7 @@ class owa_userManager extends owa_base {
         );
 
         if ( $ret ) {
-            return $u->get('temp_passkey');
+            return $u;
         } else {
             return false;
         }

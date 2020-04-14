@@ -45,8 +45,17 @@ class owa_usersController extends owa_adminController {
         $db->selectFrom('owa_user');
         $db->selectColumn("*");
         $users = $db->getAllRows();
+        
+        // remove this after switch to REST API in Admin Interface
         $this->set('users', $users);
-        $this->setView('base.options');
+        
+        $user_objs = owa_coreAPI::loadEntitiesFromArray( $users, 'base.user');
+        $this->set('users_objs', $user_objs );
+    }
+    
+    function success() {
+	    
+	    $this->setView('base.options');
         $this->setSubview('base.users');
     }
 }

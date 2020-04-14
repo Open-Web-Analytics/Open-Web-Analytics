@@ -108,6 +108,24 @@ class owa_entity {
         return $properties;    
     }
     
+    function getProperties( $drop_keys = [] ) {
+	    
+	    $properties = $this->_getProperties();
+	    
+	    if ( $drop_keys ) {
+		    
+		    foreach ($drop_keys as $key) {
+			    
+			    if (array_key_exists($key, $properties)) {
+				    
+				    unset($properties[$key]);
+			    }
+		    }
+	    }
+	    
+	    return $properties;
+    }
+    
     /** 
      * Return Array or string of column names used for SQL queries - e.g. like " tablename.fieldname as namespace.fieldname" 
      *  
