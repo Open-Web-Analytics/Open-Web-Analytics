@@ -45,7 +45,12 @@ class owa_sitesController extends owa_reportController {
         $s = owa_coreAPI::entityFactory('base.site');
         $sites = $this->getSitesAllowedForCurrentUser();    
         $this->set('tracked_sites', $sites);
-        $this->setSubview('base.sites');
+        
+    }
+    
+    function success() {
+	    
+	    $this->setSubview('base.sites');
         $this->setView('base.report');
         $this->set('title', 'Sites Roster');
         $this->hideReportingNavigation();

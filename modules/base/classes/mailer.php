@@ -48,7 +48,7 @@ class owa_mailer extends owa_base {
         parent::__construct();
         
         $this->mailer = new PHPMailer();
-
+		
         if ( owa_coreAPI::getSetting( 'base', 'mailer-from' ) ) {
             $this->mailer->setFrom(owa_coreAPI::getSetting( 'base', 'mailer-from' ), owa_coreAPI::getSetting( 'base', 'mailer-fromName' ));
         }
@@ -81,7 +81,7 @@ class owa_mailer extends owa_base {
     }
     
     function sendMail() {
-    
+ 
         if( ! $this->mailer->send() ) {
             return $this->e->debug(sprintf("Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $this->mailer->ErrorInfo));
             

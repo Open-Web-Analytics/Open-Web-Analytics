@@ -78,8 +78,12 @@ class owa_baseModule extends owa_module {
 
         $this->setupTrackingProperties();
         
-        $this->registerRestApiRoute( 'v1', 'siteProfile', 'POST', 'owa_addSiteRestController', 'controllers/addSiteRestController.php' );
-
+        $this->registerRestApiRoute( 'v1', 'sites', 'GET', 'owa_sitesRestController', 'controllers/sitesRestController.php' );
+        $this->registerRestApiRoute( 'v1', 'sites', 'POST', 'owa_addSiteRestController', 'controllers/addSiteRestController.php' );
+        $this->registerRestApiRoute( 'v1', 'users', 'GET', 'owa_usersRestController', 'controllers/usersRestController.php' );
+        $this->registerRestApiRoute( 'v1', 'users', 'POST', 'owa_addUserRestController', 'controllers/addUserRestController.php' );
+		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'owa_deleteUserRestController', 'controllers/deleteUserRestController.php' );
+		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'owa_siteAddAllowedUserRestController', 'controllers/siteAddAllowedUserRestController.php' );
     }
 
     /**

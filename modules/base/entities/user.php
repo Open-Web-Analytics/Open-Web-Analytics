@@ -115,6 +115,17 @@ class owa_user extends owa_entity {
             return false;
         }
     }
+    
+     /**
+     * @return boolean
+     */
+    public function isDefaultUser() {
+	    
+	    if ( $this->get('id') === 1 ) {
+		    
+		    return true;
+	    }
+    }
 }
 
 ?>
