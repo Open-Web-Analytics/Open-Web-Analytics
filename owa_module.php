@@ -977,7 +977,7 @@ abstract class owa_module extends owa_base {
      * @param    $file           string    the module path to the file housing the class
      *
      */
-    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $file ) {
+    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $file, $params = [] ) {
 		
 		if ( $file ) {
 		
@@ -986,7 +986,7 @@ abstract class owa_module extends owa_base {
 		
 		$s = owa_coreAPI::serviceSingleton();
 		
-		$s->setRestApiRoute( $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file ) );
+		$s->setRestApiRoute( $this->name, $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file, 'params' => $params ) );
     }
 
     function registerCliCommand($command, $class) {

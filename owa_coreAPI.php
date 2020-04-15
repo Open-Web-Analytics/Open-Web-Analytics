@@ -1230,14 +1230,14 @@ class owa_coreAPI {
 			
 			owa_coreAPI::debug('Generating REST API route controller...');
 			
-			if ( owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
+			if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
 			
 				$request_method = $service->request->getRequestType();
 				
-				$route = $service->getRestApiRoute($params['version'], $action, $request_method );
+				$route = $service->getRestApiRoute($params['module'], $params['version'], $action, $request_method );
 				owa_coreAPI::debug($route);
 				if ( $route ) {
-					
+					$params['rest_route'] = $route;
 					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
 					return owa_coreAPI::runController( $controller );
 				
@@ -1736,7 +1736,7 @@ class owa_coreAPI {
 	    if ( $items ) {
 		    
 		    foreach ($items as $item ) {
-			    self::debug($item);
+			    
 			    $entity = owa_coreAPI::entityFactory( $entity_name );
 			    $entity->setProperties( $item );
 			    $set[] = $entity;

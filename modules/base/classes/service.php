@@ -267,23 +267,26 @@ class owa_service extends owa_base {
         return $this->request;
     }
     
-    function getRestApiRoute( $version, $route_name, $request_method ) {
+    function getRestApiRoute( $module, $version, $route_name, $request_method ) {
 	    
-	    if ( array_key_exists( $version, $this->restApiRoutes ) ) {
+	    if ( array_key_exists( $module, $this->restApiRoutes ) ) {
+
+	    	if ( array_key_exists( $version, $this->restApiRoutes[$module] ) ) {
 		    
-		    if ( array_key_exists( $route_name, $this->restApiRoutes[ $version ] ) ) {
+			    if ( array_key_exists( $route_name, $this->restApiRoutes[$module][ $version ] ) ) {
 			    
-			    if ( array_key_exists( $request_method, $this->restApiRoutes[ $version ][ $route_name ] ) ) {
+			    	if ( array_key_exists( $request_method, $this->restApiRoutes[$module][ $version ][ $route_name ] ) ) {
 		    
-		    		return $this->restApiRoutes[ $version ][ $route_name ][ $request_method ] ;
-		    	}
-		    }
+		    			return $this->restApiRoutes[$module][ $version ][ $route_name ][ $request_method ] ;
+		    		}
+		    	}	
+			}
 		}
     }
     
-    function setRestApiRoute( $version, $route_name, $request_method, $value ) {
+    function setRestApiRoute( $module, $version, $route_name, $request_method, $value ) {
 	    
-	    $this->restApiRoutes[$version][ $route_name ][ $request_method ] = $value;
+	    $this->restApiRoutes[$module][$version][ $route_name ][ $request_method ] = $value;
     }
     
     function getAllRestApiRoutes() {
