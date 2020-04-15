@@ -92,7 +92,9 @@
     var aurl = '<?php
 
                     echo $this->makeApiLink(array(
-                        'do'            => 'getResultSet',
+                        'module'	=> 'base',
+	    				'version'	=>'v1',
+	    				'do' => 'reports',
                         'metrics'        => $metrics,
                         'dimensions'     => 'date',
                         'sort'             => 'date',
@@ -110,7 +112,9 @@
     OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('rsh', rsh);
 
 (function() {
-    var tcurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+    var tcurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
+	    											'version'	=>'v1',
+	    											'do' => 'reports',
                                                     'metrics' => 'pageViews',
                                                     'dimensions' => 'pageTitle,pageUrl',
                                                     'sort' => 'pageViews-',
@@ -129,7 +133,9 @@
 })();
 
 (function() {
-    var traurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+    var traurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
+	    											'version'	=>'v1',
+	    											'do' => 'reports',
                                                     'metrics' => 'visits',
                                                     'dimensions' => 'referralPageTitle,referralPageUrl',
                                                     'sort' => 'visits-',
@@ -151,7 +157,9 @@
 
 (function() {
     var aturl = '<?php echo $this->makeApiLink(array(
-        'do' => 'getResultSet',
+        'module'	=> 'base',
+	    'version'	=>'v1',
+	    'do' => 'reports',
         'metrics' => 'actions',
         'dimensions' => 'date',
         'sort' => 'date',
@@ -169,7 +177,10 @@
 })();
 
 (function() {
-    var vmurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+    var vmurl = '<?php echo $this->makeApiLink(array(
+	    															'module'	=> 'base',
+	    															'version'	=>'v1',
+	    															'do' => 'reports',
                                                                     'metrics' => 'visits',
                                                                     'dimensions' => 'medium',
                                                                     'sort' => 'visits-',
@@ -185,7 +196,9 @@
 })();
 
 (function() {
-    var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+    var aurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
+	    											'version'	=>'v1',
+	    											'do' => 'reports',
                                                     'metrics' => 'repeatVisitors,newVisitors',
                                                     'dimensions' => '',
                                                     'sort' => 'visits',

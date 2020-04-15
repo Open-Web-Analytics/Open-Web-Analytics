@@ -50,7 +50,7 @@
 <script>
 //OWA.setSetting('debug', true);
 
-var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                 'metrics' => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
                                                 'dimensions' => 'date',
                                                 'sort' => 'date',
@@ -65,7 +65,7 @@ OWA.items.rsh.asyncQueue.push(['renderTemplate','#headline-template', {data: OWA
 OWA.items.rsh.load(aurl);
 
 var topproductsurl = '<?php echo $this->makeApiLink(array(
-                                                'do' => 'getResultSet',
+                                                'do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                 'metrics' => 'lineItemQuantity,lineItemRevenue',
                                                 'dimensions' => 'productName',
                                                 'sort' => 'lineItemRevenue-',
@@ -82,7 +82,7 @@ OWA.items.topproducts.asyncQueue.push(['refreshGrid']);
 OWA.items.topproducts.load(topproductsurl);
 
 var topsourcesurl = '<?php echo $this->makeApiLink(array(
-                                                'do' => 'getResultSet',
+                                                'do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                 'metrics' => 'transactionRevenue',
                                                 'dimensions' => 'source,medium',
                                                 'sort' => 'transactionRevenue-',

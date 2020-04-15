@@ -33,7 +33,7 @@
     var tab = new OWA.report.tab('tab_<?php $this->out($k, false);?>');
     tab.setLabel('<?php $this->out($tab['tab_label']);?>');    
     // create trend and aggregate data resultSetExplorer objects
-    var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+    var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                                 'metrics' => $tab['metrics'], 
                                                                 'dimensions' => 'date', 
                                                                 'sort' => 'date',
@@ -53,7 +53,7 @@
     // add rse to tab
     tab.addRse('trend', trend);
     // dimensonal data object
-    var dimurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+    var dimurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                                 'metrics' => $tab['metrics'], 
                                                                 'dimensions' => $dimensions, 
                                                                 'sort' => $tab['sort'],

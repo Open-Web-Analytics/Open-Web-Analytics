@@ -81,7 +81,9 @@ for (step in funnel_json) {
     var name = 'entrances_step_' + funnel_json[step]['step_number'] ;
     OWA.items[name] = new OWA.resultSetExplorer(name);
     OWA.items[name].setDataLoadUrl(
-        OWA.items[name].makeApiRequestUrl( 'getResultSet',{
+        OWA.items[name].makeApiRequestUrl( 'reports',{
+            module: 'base',
+            version: 'v1',
             metrics: 'visitors',
             dimensions: 'priorPagePath',
             sort: 'visitors-',
@@ -106,7 +108,9 @@ for (step in funnel_json) {
     var name = 'exits_step_' + funnel_json[step]['step_number'] ;
     OWA.items[name] = new OWA.resultSetExplorer(name);
     OWA.items[name].setDataLoadUrl(
-        OWA.items[name].makeApiRequestUrl( 'getResultSet',{
+        OWA.items[name].makeApiRequestUrl( 'reports',{
+            module: 'base',
+            version: 'v1',
             metrics: 'visitors',
             dimensions: 'pagePath',
             sort: 'visitors-',

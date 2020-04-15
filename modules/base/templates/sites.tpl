@@ -44,7 +44,7 @@
                     <div id="trend-metrics-<?php echo $site->get('site_id'); ?>"></div>
                     <script>
                         var aurl = '<?php echo $this->makeApiLink(array(
-                                            'do'            => 'getResultSet',
+                                            'do'            => 'reports', 'module' => 'base', 'version' => 'v1',
                                             'metrics'        => 'visits,pageViews,bounceRate',
                                             'dimensions'     => 'date',
                                             'sort'             => 'date',

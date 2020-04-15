@@ -47,7 +47,7 @@
 
 
 <script>
-        var trurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+        var trurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                       'metrics' => 'visits',
                                                       'dimensions' => 'pagePath,pageTitle',
                                                       'sort' => 'visits-',
@@ -61,7 +61,7 @@
         trshre.asyncQueue.push(['refreshGrid']);
         trshre.load(trurl);
 
-        var prurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+        var prurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                       'metrics' => 'visits',
                                                       'dimensions' => 'priorPagePath,priorPageTitle',
                                                       'sort' => 'visits-',

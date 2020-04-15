@@ -26,7 +26,7 @@
 <script>
 //OWA.setSetting('debug', true);
 
-var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                 'metrics' => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
                                                 'dimensions' => 'date',
                                                 'sort' => 'date',
@@ -41,7 +41,7 @@ OWA.items.rsh.asyncQueue.push(['renderTemplate','#headline-template', {data: OWA
 OWA.items.rsh.load(aurl);
 
 var transactionsurl = '<?php echo $this->makeApiLink(array(
-                                                'do' => 'getResultSet',
+                                                'do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                 'metrics' => 'transactionRevenue,shippingRevenue,taxRevenue',
                                                 'dimensions' => 'timestamp,transactionId',
                                                 'sort' => 'timestamp-',
