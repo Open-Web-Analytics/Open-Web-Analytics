@@ -32,7 +32,7 @@
 class owa_base_010_update extends owa_update {
 
     var $schema_version = 10;
-    var $is_cli_mode_required = true;
+    var $is_cli_mode_required = false;
 
     function up() {
 
