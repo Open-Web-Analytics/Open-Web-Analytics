@@ -176,9 +176,10 @@ class owa_controller extends owa_base {
             	
             case 'web_app':
             	
-            	$data = array();
-                $data['view_method'] = 'redirect';
-                $data['action'] = 'base.updates';
+            	// reset data 
+            	$this->data = array();
+            	//redirect browser to update page
+            	$this->setRedirectAction( 'base.updates' );
                     
             	break;
             	
