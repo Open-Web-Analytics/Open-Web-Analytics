@@ -9,7 +9,7 @@
     
     <div class="propertyList">
         <?php foreach($clickstream->resultsRows as $s): ?>
-        <dt><?php $this->out(sprintf('%02d', $s['hour']));?>:<?php $this->out(sprintf('%02d', $s['minute']));?>:<?php $this->out(sprintf('%02d', $s['second']));?></dt>
+        <dt><?php $this->out(date("H:i:s",$s['timestamp']));?></dt>
         <dd>
             <a href="<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => urlencode( $s['url'] ) ), true );?>"><span><?php echo $s['uri'];?></span></a>
         </dd>
