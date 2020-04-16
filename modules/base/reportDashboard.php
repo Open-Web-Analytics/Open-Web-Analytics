@@ -48,6 +48,7 @@ class owa_reportDashboardController extends owa_reportController {
         //print_r($rs);
         $this->set('actions', $rs);
 
+/*
         $rs = owa_coreAPI::executeApiCommand(array(
 
             'do'                => 'getLatestVisits',
@@ -58,6 +59,22 @@ class owa_reportDashboardController extends owa_reportController {
             'period'            => $this->getParam('period'),
             'resultsPerPage'    => 10
         ));
+*/
+		$rs = owa_coreAPI::executeApiCommand(array(
+			
+			'request_method'	=> 'GET',
+			'module'			=> 'base',
+			'version'			=> 'v1',
+            'do'                => 'reports',
+            'report_name'		=> 'latest_visits',
+            'siteId'            => $this->getParam('siteId'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
+            'period'            => $this->getParam('period'),
+            'resultsPerPage'    => 10
+        ));
+
 
         $this->set('latest_visits', $rs);
 
