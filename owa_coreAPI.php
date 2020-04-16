@@ -1564,12 +1564,6 @@ class owa_coreAPI {
 
         $t = new owa_template();
 
-        if (owa_coreAPI::getSetting('base', 'is_embedded')) {
-
-            // needed to override the endpoint used by the js tracker
-            $options['apiEndpoint'] = owa_coreAPI::getSetting('base', 'api_url');
-        }
-
         $t->set( 'site_id', $site_id );
         $cmds = owa_coreAPI::filter( 'tracker_tag_cmds', array() );
         $t->set( 'cmds', $cmds );

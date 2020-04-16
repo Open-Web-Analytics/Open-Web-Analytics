@@ -554,13 +554,18 @@ class owa_template extends Template {
         return $this->makeLink($params, $add_state, $url, $xml);
 
     }
+    
+    function getApiKey() {
+	    
+	    $cu = owa_coreAPI::getCurrentUser();
+		return $cu->getUserData('api_key');
+    }
 
     function makeApiLink($params = array(), $add_state = false) {
 		
 		$rest_routes = ['reports', 'users', 'sites'];
 		
-		$cu = owa_coreAPI::getCurrentUser();
-		$key = $cu->getUserData('api_key');
+		$key = $this->getApiKey();
 		
 		if (in_array($params['do'], $rest_routes)) {
 			
