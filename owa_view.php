@@ -765,8 +765,13 @@ class owa_restApiView extends owa_view {
             $type = 'json';
         }
 
-	   // set header
-	 	owa_lib::setContentTypeHeader( $type );
+	   // set header if the request is from the API endpoint. Could be an internal request.
+	   
+	   if ( owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+		   
+			owa_lib::setContentTypeHeader( $type );		   
+	   }
+
 	   
 		// Generate GUID for response   
 	    $request = owa_coreAPI::getRequest();

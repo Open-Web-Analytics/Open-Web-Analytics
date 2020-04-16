@@ -526,7 +526,24 @@ class owa_coreAPI {
     }
 
     public static function executeApiCommand($map) {
-
+		
+		// carve out for REST API backwards compatability during migration
+		if ( array_key_exists('version', $map) ) {
+			
+			$route = self::lookupRestRoute( $map['request_method'], $map['module'], $map['version'], $map['do']);
+			
+			if ( $route ) {
+				
+				//$params['rest_route'] = $route;
+				$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $map );					
+				$response = self::runController( $controller );
+				
+				$response = json_decode($response);
+				owa_coreAPI::debug( $response );
+				return $response->data;
+			}
+		}
+		
         if (!array_key_exists('do', $map)) {
             echo ("API Command missing from request.");
             owa_coreAPI::debug('API Command missing from request. Aborting.');
@@ -1233,9 +1250,8 @@ class owa_coreAPI {
 			if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
 			
 				$request_method = $service->request->getRequestType();
+				$route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
 				
-				$route = $service->getRestApiRoute($params['module'], $params['version'], $action, $request_method );
-				owa_coreAPI::debug($route);
 				if ( $route ) {
 					$params['rest_route'] = $route;
 					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
@@ -1261,6 +1277,21 @@ class owa_coreAPI {
         owa_coreAPI::debug('About to perform action: '.$action);
         return owa_coreAPI::performAction($action, $params);
 
+    }
+    
+    public static function lookupRestRoute( $request_method, $module, $version, $do ) {
+	    
+	    if ( ! empty( $request_method ) 
+	    	&& ! empty( $version )
+	    	&& ! empty( $do )
+	    	&& ! empty( $module ) 
+	    ){
+		    
+		    $service = owa_coreAPI::serviceSingleton();
+		    $route = $service->getRestApiRoute($module, $version, $do, $request_method );
+			owa_coreAPI::debug($route);
+		    return $route;
+	    }
     }
 
     public static function isUpdateRequired() {
