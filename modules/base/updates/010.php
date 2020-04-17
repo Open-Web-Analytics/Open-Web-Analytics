@@ -65,13 +65,13 @@ class owa_base_010_update extends owa_update {
             'page_height',
         ];
 
-        // add columns to owa_domstream
+        // Removing columns from owa_domstream
         foreach ( $domstreams_columns as $domstreams_column ) {
             $ret = $domstream->dropColumn( $domstreams_column );
             if ( $ret === true ) {
-                $this->e->notice( "$domstreams_column added to owa_domstream" );
+                $this->e->notice( "$domstreams_column removed from owa_domstream" );
             } else {
-                $this->e->notice( "Adding $domstreams_column to owa_domstream failed." );
+                $this->e->notice( "Removing $domstreams_column from owa_domstream failed." );
                 return false;
             }
         }
