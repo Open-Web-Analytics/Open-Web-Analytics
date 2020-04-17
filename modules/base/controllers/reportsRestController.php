@@ -49,7 +49,7 @@ class owa_reportsRestController extends owa_reportController {
 			
 				case 'latest_visits':
 					
-					$this->addValidation('siteId', $this->getParam('siteId'), 'required', [] );
+					//$this->addValidation('siteId', $this->getParam('siteId'), 'required', [] );
 					break;
 					
 				case 'latest_actions':
