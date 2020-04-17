@@ -458,6 +458,17 @@ class owa_template extends Template {
 
         return $all_params;
     }
+    
+    function getLinkStateParam( $key ) {
+	    
+	    $params = $this->getAllStateParams();
+	    
+	    if (array_key_exists($key, $params)) {
+		    
+		   return $params[ $key ];		    
+	    }
+
+    }
 
 
     /**
