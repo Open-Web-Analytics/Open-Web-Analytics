@@ -539,7 +539,7 @@ class owa_coreAPI {
 				$response = self::runController( $controller );
 				
 				$response = json_decode($response);
-				owa_coreAPI::debug( $response );
+				
 				return $response->data;
 			}
 		}
