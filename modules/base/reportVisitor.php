@@ -46,7 +46,11 @@ class owa_reportVisitorController extends owa_reportController {
 
         $lv = owa_coreAPI::executeApiCommand(array(
 
-            'do'                => 'getLatestVisits',
+            'request_method'	=> 'GET',
+			'module'			=> 'base',
+			'version'			=> 'v1',
+            'do'                => 'reports',
+            'report_name'		=> 'latest_visits',
             'siteId'            => $this->getParam('siteId'),
             'page'                => $this->getParam('page'),
             'startDate'            => $this->getParam('startDate'),

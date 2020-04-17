@@ -83,7 +83,7 @@
                                                                                 ),true);?>';
 
                         OWA.items.topvisitors = new OWA.resultSetExplorer('top-visitors');
-                        OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s')); ?>', ['visitorId']);
+                        OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s'), true); ?>', ['visitorId']);
                         OWA.items.topvisitors.asyncQueue.push(['refreshGrid']);
                         OWA.items.topvisitors.load(tvurl);
 

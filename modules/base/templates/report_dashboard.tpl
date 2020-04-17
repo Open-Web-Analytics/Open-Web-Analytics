@@ -32,26 +32,14 @@
         </TD>
         <TD style="width:50%" valign="top">
 
-            <?php if ($actions->getDataRows()):?>
+            <?php //if ($actions) { ?>
             <div class="owa_reportSectionContent" style="min-width:200px; height:;">
                 <div class="section_header">Actions</div>
 
-                <div id="actions-trend" style="width:200px;height:;"></div>
+                <div id="actions-trend" style="width:;height:;"></div>
 
 
-                <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td valign="top">
-                        <?php foreach($actions->getDataRows() as $k => $row):?>
-                            <div class="owa_metricInfobox" style="width:150px;">
-                                <p class="owa_metricInfoboxLabel"><?php echo $row['actionName']['value'];?></p>
-                                <p class="owa_metricInfoboxLargeNumber"><?php echo $row['actions']['value'];?></p>
-                            </div>
-                        <?php endforeach;?>
-                        </td>
-                    </tr>
-                </table>
-
+                
 
                 <div class="owa_genericHorizontalList owa_moreLinks">
                     <UL>
@@ -62,7 +50,7 @@
                 </div>
                 <div class="clear"></div>
             </div>
-            <?php endif;?>
+            <?php //} ?>
 
             <div class="owa_reportSectionContent">
                 <div class="owa_reportSectionHeader">Traffic Sources</div>
@@ -110,7 +98,21 @@
 
     rsh.load(aurl);
     OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('rsh', rsh);
-
+	
+	var burl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
+                                                              'metrics' => 'actions', 
+                                                              'dimensions' => 'actionGroup,actionName,actionLabel', 
+                                                              'sort' => 'actions-', 
+                                                              'resultsPerPage' => 5,
+                                                              'format' => 'json'), true);?>';
+ 
+	var bsh = new OWA.resultSetExplorer('actions-trend');
+	bsh.options.grid.showRowNumbers = false;
+	bsh.addLinkToColumn('actionGroup', '<?php echo $this->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
+	bsh.asyncQueue.push(['refreshGrid']);
+	bsh.load(burl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('bsh', bsh);
+	
 (function() {
     var tcurl = '<?php echo $this->makeApiLink(array('module'	=> 'base',
 	    											'version'	=>'v1',

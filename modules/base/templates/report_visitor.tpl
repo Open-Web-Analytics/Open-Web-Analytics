@@ -23,18 +23,30 @@
                 </div>
             </td>
             <td valign="top">
-                <div class="owa_reportSectionContent" style="min-width:300px;">
+                <div class="owa_reportSectionContent" style="min-width:;">
                     <div class="owa_reportSectionHeader">Latest Actions</div>
-
-                    <?php echo $this->getLatestActions($this->get('startDate'),
-                                                       $this->get('endDate'),
-                                                       $this->get('siteId'),
-                                                       $this->get('visitor_id'),
-                                                       '',
-                                                       '300px'); ?>
+						<div id="latest-actions"></div>
                 </div>
             </td>
         </TR>
 </table>
 
 
+<script>
+	
+var burl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
+                                                          'metrics' => 'actions', 
+                                                          'dimensions' => 'actionGroup,actionName,actionLabel', 
+                                                          'constraints' => 'visitorId=='.$this->get('visitor_id'),
+                                                          'sort' => 'actions-', 
+                                                          'resultsPerPage' => 5,
+                                                          'format' => 'json'), true);?>';
+	
+var bsh = new OWA.resultSetExplorer('latest-actions');
+	bsh.options.grid.showRowNumbers = false;
+	bsh.addLinkToColumn('actionGroup', '<?php echo $this->makeLink(array('do' => 'base.reportActionGroup', 'actionGroup' => '%s'), true);?>', ['actionGroup']);
+	bsh.asyncQueue.push(['refreshGrid']);
+	bsh.load(burl);
+	OWA.items['<?php echo $dom_id;?>'].registerResultSetExplorer('bsh', bsh);
+
+</script>
