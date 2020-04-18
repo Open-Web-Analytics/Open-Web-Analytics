@@ -8,7 +8,7 @@
 <div class="owa_reportSectionContent">  
     
     <div class="propertyList">
-        <?php foreach($clickstream->resultsRows as $s): ?>
+        <?php foreach($clickstream->resultsRows as $s): $s = (array) $s;?>
         <dt><?php echo $s['hour'];?>:<?php echo $s['minute'];?>:<?php echo $s['second'];?></dt>
         <dd>
             <a href="<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'pageUrl' => urlencode( $s['url'] ) ), true );?>"><span><?php echo $s['uri'];?></span></a>

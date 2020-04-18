@@ -38,11 +38,15 @@ class owa_reportTransactionDetailController extends owa_reportController {
         $transactionId = $this->getParam('transactionId');
 
         $trans_detail = owa_coreAPI::executeAPICommand(array(
-                'do'            => 'getTransactionDetail',
-                'transactionId'    => $transactionId,
-                'format'        => 'php'
+	        
+	        	'request_method' 	=> 'GET',
+	        	'module'			=> 'base',
+	        	'version'			=> 'v1',
+                'do'            	=> 'reports',
+                'report_name'		=> 'transaction',
+                'transactionId'    => $transactionId
         ));
-
+		$trans_detail = (array) $trans_detail;
         $this->set('trans_detail', $trans_detail);
         $this->setSubview('base.reportTransactionDetail');
         $this->setTitle('Transaction Detail for: ', $transaction_id);

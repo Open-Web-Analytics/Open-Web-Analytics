@@ -36,7 +36,7 @@
 	
 var burl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                           'metrics' => 'actions', 
-                                                          'dimensions' => 'actionGroup,actionName,actionLabel', 
+                                                          'dimensions' => 'actionGroup,actionName', 
                                                           'constraints' => 'visitorId=='.$this->get('visitor_id'),
                                                           'sort' => 'actions-', 
                                                           'resultsPerPage' => 5,

@@ -101,7 +101,7 @@
 	
 	var burl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                               'metrics' => 'actions', 
-                                                              'dimensions' => 'actionGroup,actionName,actionLabel', 
+                                                              'dimensions' => 'actionGroup,actionName', 
                                                               'sort' => 'actions-', 
                                                               'resultsPerPage' => 5,
                                                               'format' => 'json'), true);?>';

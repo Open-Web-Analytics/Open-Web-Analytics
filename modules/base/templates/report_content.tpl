@@ -68,7 +68,7 @@
 <script>
 //OWA.setSetting('debug', true);
 
-var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                 'metrics' => 'visits,pageViews,bounceRate',
                                                 'dimensions' => 'date',
                                                 'sort' => 'date',
@@ -82,7 +82,7 @@ OWA.items.rsh.asyncQueue.push(['makeMetricBoxes', 'trend-metrics']);
 OWA.items.rsh.asyncQueue.push(['renderTemplate','#content-headline-template', {data: OWA.items.rsh}, 'replace', 'content-headline']);
 OWA.items.rsh.load(aurl);
 
-var toppagesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+var toppagesurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                 'metrics' => 'visits',
                                                 'dimensions' => 'pageTitle,pageUrl',
                                                 'sort' => 'visits-',
@@ -96,7 +96,7 @@ OWA.items.toppages.options.grid.excludeColumns = ['pageUrl'];
 OWA.items.toppages.asyncQueue.push(['refreshGrid']);
 OWA.items.toppages.load(toppagesurl);
 
-var toppagetypesurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+var toppagetypesurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                 'metrics' => 'visits',
                                                 'dimensions' => 'pageType',
                                                 'sort' => 'visits-',
