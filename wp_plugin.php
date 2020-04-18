@@ -888,7 +888,8 @@ class owa_wp_plugin extends owa_wp_module {
 				$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
 				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
 				$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/admin.php?owa_specialAction' );
-				$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
+				//$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
+				$owa->setSetting( 'base', 'rest_api_url', $owa->getSetting( 'base', 'rest_api_url' ).'?');
 				$owa->setSetting( 'base', 'is_embedded', true );
 				
 				
@@ -987,6 +988,7 @@ class owa_wp_plugin extends owa_wp_module {
 	    	if (isset($current_user->user_login)) {
 				$cu->setUserData('user_id', $current_user->user_login);
 				owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
+				$cu->load( $current_user->user_login );
 			}
 			
 			if (isset($current_user->user_email)) {	

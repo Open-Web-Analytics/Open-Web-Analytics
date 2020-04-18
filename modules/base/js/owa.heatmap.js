@@ -208,7 +208,11 @@ OWA.heatmap.prototype = {
 
         var p = unescape(OWA.state.getStateFromCookie('overlay'));
         var params = JSON.parse(p);
-        params.action = 'getDomClicks';
+        //params.action = 'getDomClicks';
+        params.module = 'base';
+        params.version = 'v1';
+        params.do = 'reports';
+        params.report_name = 'clicks';
         params.resultsPerPage = this.options.rowsPerFetch;
         params.format = 'jsonp';
 
@@ -236,7 +240,7 @@ OWA.heatmap.prototype = {
 
         if (data) {
             //OWA.debug('setClicks says data is defined');
-            this.clicks = data;
+            this.clicks = data.data;
 
             //set more flag
             if (data.more === true && data.more != null) {

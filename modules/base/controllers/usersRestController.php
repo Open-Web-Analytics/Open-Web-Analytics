@@ -37,7 +37,7 @@ class owa_usersRestView extends owa_restApiView {
     function render() {
         
         $users = $this->get('users_objs');
-        owa_coreAPI::debug($users);
+       
         $users_sanitized = [];
         
         if ( $users ) {

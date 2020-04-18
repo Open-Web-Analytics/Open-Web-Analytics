@@ -15,6 +15,11 @@ if ( isset( $response_data ) ) {
 	$_response['data'] = $response_data;
 }
 
-echo json_encode( $_response );
+if ( isset( $callback ) && ! empty( $callback) ) {
+	
+	echo sprintf("%s(%s);", $callback, json_encode( $_response ) );	
+} else {
 
+	echo json_encode( $_response );
+}
 ?>

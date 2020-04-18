@@ -1594,12 +1594,24 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function makeResultSetUrls() {
 
         $urls = array();
-        // get api url
-        $api_url = owa_coreAPI::getSetting('base', 'api_url');
+        
         // get base query params
         $query_params = $this->query_params;
-        // add api command
-        $query_params['do'] = 'getResultSet';
+        
+        if ( owa_coreAPI::getSetting('base', 'request_mode' ) === 'rest_api' ) {
+	   		
+	   		 $api_url = owa_coreAPI::getSetting('base', 'rest_api_url');     
+	   		 $query_params['do'] = 'reports';
+	   		 $query_params['module'] = 'base';
+	   		 $query_params['version'] = 'v1';
+	   		 $query_params['apiKey'] = owa_coreAPI::getCurrentUser()->getUserData('api_key');
+        } else {
+	        $api_url = owa_coreAPI::getSetting('base', 'api_url');
+			// add api command
+			$query_params['do'] = 'getResultSet';
+		}
+        
+      
         //add format
         if ($this->format) {
             $query_params['format'] = $this->format;

@@ -8,7 +8,7 @@
     <div style="clear:both;"></div>
     <script>
         
-        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                                     'metrics' => $metrics, 
                                                                     'dimensions' => 'date', 
                                                                     'sort' => 'date',
@@ -39,7 +39,7 @@
                 <?php if ($goal_metrics): ?>
                 <script>
                 
-                var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                                   'metrics' => $goal_metrics, 
                                                                   'format' => 'json'), true);?>';
                                                                   

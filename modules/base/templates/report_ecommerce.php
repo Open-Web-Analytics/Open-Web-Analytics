@@ -8,7 +8,7 @@
     <div style="clear:both;"></div>
     <script>
 
-        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                     'metrics' => $metrics,
                                                                     'dimensions' => 'date',
                                                                     'sort' => 'date',
@@ -38,7 +38,7 @@
                 <div style="min-width:250px;" id="productNameExplorer"></div>
                 <script>
 
-                var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                   'metrics' => 'lineItemRevenue',
                                                                   'dimensions' => 'productName',
                                                                   'sort' => 'lineItemRevenue-',
@@ -57,7 +57,7 @@
                 <div class="section_header">Sales Sources</div>
                 <div style="min-width:300px;" id="sourceExplorer"></div>
                 <script>
-                var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+                var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                               'metrics' => 'transactions,transactionRevenue',
                                                               'dimensions' => 'source',
                                                               'sort' => 'transactionsRevenue-',
