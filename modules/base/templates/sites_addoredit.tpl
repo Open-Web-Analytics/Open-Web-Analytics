@@ -61,7 +61,7 @@
 
         <div class="setting" id="p3p_policy">
             <div class="title">P3P Compact Privacy Policy</div>
-            <div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="http://www.p3pwriter.com/LRN_111.asp">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
+            <div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="https://www.w3.org/P3P/">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
             <div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[p3p_policy]" value="<?php $this->out( @$config['p3p_policy'] );?>"></div>
         </div>
 
