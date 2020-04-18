@@ -37,7 +37,7 @@ class owa_sitesEditAllowedUsersController extends owa_sitesEditSettingsControlle
         $site_id = $this->getParam( 'siteId' );
         $siteEntity = owa_coreAPI::entityFactory( 'base.site' );
         $siteEntity->load( $siteEntity->generateId( $site_id ) );
-        //print_r($this->getParam( 'allowed_users' ));die('no');
+        owa_coreAPI::debug( $siteEntity->_getProperties());
         if ($this->getParam( 'allowed_users' ) ) {
             $siteEntity->updateAssignedUserIds($this->getParam( 'allowed_users' ));
         }

@@ -68,7 +68,7 @@
         <th>Item Revenue</th>
     </tr>
 
-    <?php foreach ($trans_detail['line_items'] as $li): ?>
+    <?php foreach ($trans_detail['line_items'] as $li): $li = (array) $li; ?>
     <tr>
         <td><?php $this->out( $li['product_name'] ); ?> (<?php $this->out( $li['category'] ); ?>)</td>
         <td><?php $this->out( $li['sku'] ); ?></td>

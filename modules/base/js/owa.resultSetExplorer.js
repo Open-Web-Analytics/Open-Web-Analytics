@@ -504,8 +504,17 @@ OWA.resultSetExplorer.prototype = {
 
         // this applies data to a special resultSet object that
         // has some helper methods.
-        this.resultSet = new OWA.resultSet(rs);
-
+		
+		//check needed to handle new REST API response object which puts the resultSet in it's 'data' prop.
+        if (rs.hasOwnProperty('data')) {
+	    	
+	    	this.resultSet = new OWA.resultSet(rs.data);    
+	        
+        } else {
+			
+			this.resultSet = new OWA.resultSet(rs);	        
+        }
+		
         this.applyLinks();
 
         // notify listeners of new data

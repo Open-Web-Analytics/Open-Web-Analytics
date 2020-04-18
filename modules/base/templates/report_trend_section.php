@@ -8,7 +8,7 @@
     <div style="clear:both;"></div>
     <script>
 
-        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                     'metrics' => $metrics,
                                                                     'dimensions' => 'date',
                                                                     'sort' => 'date',

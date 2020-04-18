@@ -504,11 +504,41 @@ class owa_controller extends owa_base {
 
         $this->set('view_method', 'redirect');
         $this->set('do', $do);
+		
+		$new_data = [
+			
+			'do' 			=> $do,
+			'view_method'	=> 'redirect'
+		];
+		
+/*
+		if ( array_key_exists('status_code', $this->data) && ! empty($this->data['status_code'] ) ) {
+			
+			$new_data['status_code'] = $this->data['status_code'];
+		}
+		
+		if ( array_key_exists('error_code', $this->data) && ! empty($this->data['error_code'] ) ) {
+			
+			$new_data['error_code'] = $this->data['error_code'];
+		}
+*/
+		
+		foreach ($this->data as $k => $param) {
+			
+			if ( ! is_array( $param ) || ! is_object($param) ) {
+				
+				$new_data[$k] = $param;
+			}
+		}
+		owa_coreAPI::debug('setredirectAction');
+		owa_coreAPI::debug( $new_data);
+		$this->data = $new_data;		
 
         // need to remove these unsets once they are no longer set in the main doAction method
         if (array_key_exists('params', $this->data)) {
             unset($this->data['params']);
         }
+
     }
 
     function setPagination($pagination, $name = 'pagination') {
@@ -610,9 +640,16 @@ class owa_controller extends owa_base {
     }
 
     function notAuthenticatedAction() {
-
-        $this->setRedirectAction('base.loginForm');
-        $this->set('go', urlencode(owa_lib::get_current_url()));
+		
+		if (owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+			
+			$this->setView('base.restApi');
+			$this->set('error_msg', ['headline'	=> 'Not authenticated.', 'msg' => 'Check API key or permissions for this user.'] );
+			http_response_code(401);	
+		} else {
+	        $this->setRedirectAction('base.loginForm');
+			$this->set('go', urlencode(owa_lib::get_current_url()));
+		}
     }
 
     function verifyNonce($nonce) {
@@ -648,7 +685,6 @@ class owa_controller extends owa_base {
      * @return array
      */
     protected function getSitesAllowedForCurrentUser() {
-    owa_coreAPI::debug('get Sites Allowed for user');
    
         $currentUser = owa_coreAPI::getCurrentUser();
 
@@ -667,6 +703,7 @@ class owa_controller extends owa_base {
             return $result;
 
         } else {
+	        
             return $currentUser->getAssignedSites();
         }
     }

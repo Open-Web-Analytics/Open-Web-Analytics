@@ -119,16 +119,16 @@ class owa_requestContainer {
 
         // create request params and type
         $params = array();
-		
+		owa_coreAPI::debug('request container says params are:');
 		if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
 				
 				$this->request_type = $_SERVER['REQUEST_METHOD'];
 				
 			if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
 			
-				parse_str( file_get_contents("php://input"), $post_vars );
-				
-				$params = $post_vars;
+				parse_str( trim(file_get_contents("php://input") ), $post_vars );
+				owa_coreAPI::debug($post_vars);
+				$params = array_merge( $_GET, $post_vars);
 				
 			} else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
 				
@@ -141,6 +141,8 @@ class owa_requestContainer {
 			}
 			
 			$this->current_url = owa_lib::get_current_url();
+			
+			owa_coreAPI::debug($params);
 			
 		} else {
 			

@@ -4,7 +4,7 @@
 
     <script>
     //OWA.setSetting('debug', true);
-    var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+    var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                     'metrics' => 'uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration',
                                                     'dimensions' => 'date',
                                                     'sort' => 'date',
@@ -53,7 +53,7 @@
                     <div id="top-browsers"></div>
                     <script>
 
-                        var bturl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+                        var bturl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                                 'metrics' => 'visits',
                                                                                 'dimensions' => 'browserType',
                                                                                 'sort' => 'visits-',
@@ -74,7 +74,7 @@
                     <div id="top-visitors"></div>
                     <script>
 
-                        var tvurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+                        var tvurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                                                 'metrics' => 'visits,pageViews',
                                                                                 'dimensions' => 'visitorId',
                                                                                 'sort' => 'visits-',
@@ -83,7 +83,7 @@
                                                                                 ),true);?>';
 
                         OWA.items.topvisitors = new OWA.resultSetExplorer('top-visitors');
-                        OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s')); ?>', ['visitorId']);
+                        OWA.items.topvisitors.addLinkToColumn('visitorId', '<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitorId' => '%s'), true); ?>', ['visitorId']);
                         OWA.items.topvisitors.asyncQueue.push(['refreshGrid']);
                         OWA.items.topvisitors.load(tvurl);
 

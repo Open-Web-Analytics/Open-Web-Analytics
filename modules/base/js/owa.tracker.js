@@ -332,7 +332,8 @@ OWA.tracker.prototype = {
         {d: 'mynet', q: 'q'},
         {d: 'ekolay', q: 'q'},
         {d: 'rambler', q: 'query'},
-        {d: 'rambler', q: 'words'}
+        {d: 'rambler', q: 'words'},
+        {d: 'duckduckgo', q: 'q'},
     ],
     /**
      * GET params parsed from URL

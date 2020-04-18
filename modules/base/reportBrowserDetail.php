@@ -39,7 +39,7 @@ class owa_reportBrowserDetailController extends owa_reportController {
         $this->set('dimension_properties', array('browser_family' => $browser));
         $this->set('dimension_template', 'dimension_browser.php');
         $this->setSubview('base.reportDimension');
-        $this->setTitle('Browser Detail:');
+        $this->setTitle('Browser Detail: '. $browser);
         $this->set('metrics', 'visits,pageViews,bounces');
         $this->set('dimensions', 'browserVersion');
         $this->set('sort', 'visits-');

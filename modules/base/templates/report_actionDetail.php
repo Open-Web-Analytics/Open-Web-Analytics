@@ -48,7 +48,7 @@
 
         if (ui.index === 0) {
 
-            var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+            var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                           'metrics' => 'actions,actionsValue',
                                                           'dimensions' => 'actionLabel',
                                                           'sort' => 'actions-',
@@ -63,7 +63,7 @@
 
         if (ui.index === 1) {
 
-            var aurl2 = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+            var aurl2 = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                           'metrics' => 'actions,actionsValue',
                                                           'dimensions' => 'date',
                                                           'sort' => 'date-',
