@@ -218,7 +218,7 @@ class owa_reportsRestController extends owa_reportController {
             $db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), 'referer', 'referer_id');
             $db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'source_id');
 
-            $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
+            $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
 
             $db->selectColumn('host.host as host_host');
             $db->selectColumn('location.city as location_city, location.country as location_country');
@@ -375,7 +375,7 @@ class owa_reportsRestController extends owa_reportController {
         $results = $rs->generate($db);
         $rs->resultsRows = $results;
 
-        return $rs->formatResults($format);
+        return $rs;
     }
     
     /**
