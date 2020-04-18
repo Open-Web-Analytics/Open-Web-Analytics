@@ -50,7 +50,7 @@
 
 
 <script>
-        var trurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+        var trurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                       'metrics' => 'visits',
                                                       'dimensions' => 'pagePath,pageTitle',
                                                       'sort' => 'visits-',
@@ -64,7 +64,7 @@
         trshre.asyncQueue.push(['refreshGrid']);
         trshre.load(trurl);
 
-        var prurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet',
+        var prurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                       'metrics' => 'visits',
                                                       'dimensions' => 'priorPagePath,priorPageTitle',
                                                       'sort' => 'visits-',
@@ -79,13 +79,13 @@
         prshre.load(prurl);
 
         var vrurl = '<?php echo $this->makeApiLink(['do' => 'getResultSet',
-            'metrics'           => 'visits,pageViews',
-            'dimensions'        => 'visitorId',
-            'sort'              => 'visits-',
-            'resultsPerPage'    => 15,
-            'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
-            'format'            => 'json'
-        ], true);?>';
+                                                        'metrics'           => 'visits,pageViews',
+                                                        'dimensions'        => 'visitorId',
+                                                        'sort'              => 'visits-',
+                                                        'resultsPerPage'    => 15,
+                                                        'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
+                                                        'format'            => 'json'
+                                                    ], true);?>';
 
         var vrshre = new OWA.resultSetExplorer('pagevisitors');
         var link = '<?php echo $this->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';

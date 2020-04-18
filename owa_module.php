@@ -217,6 +217,11 @@ abstract class owa_module extends owa_base {
      * @var boolean
      */
     var $update_from_cli_required;
+    
+    /**
+	 * Filesystem path of the module's directory
+	 */
+    var $path;
 
     /**
      * Constructor
@@ -224,9 +229,16 @@ abstract class owa_module extends owa_base {
      *
      */
     function __construct() {
-
+		
+		$this->path = OWA_MODULES_DIR . $this->name . '/';
+		
         parent::__construct();
-
+		
+		/**
+		 * Initial registration calls
+		 */
+		$this->init();
+		
         /**
          * Register Filters
          */
@@ -266,6 +278,11 @@ abstract class owa_module extends owa_base {
         $this->_registerEventProcessors();
         $this->_registerEntities();
 
+    }
+    
+    function init() {
+	    
+	    return false;
     }
 
     /**
@@ -935,18 +952,41 @@ abstract class owa_module extends owa_base {
 
 
     /**
-     * Registers an Action Controller
+     * Registers a Web Action and ontroller Implementation
      *
      * @param    $action_name    string    the name of the action used as the value in the 'do' url param
      * @param    $class_name     string    the name of the controller class
      * @param    $file            string    the path to the file housing the class
      *
      */
-    protected function registerAction( $action_name, $class_name, $file = '' ) {
+    protected function registerAction( $action_name, $class_name, $file ) {
 
-        $s = owa_coreAPI::serviceSingleton();
-        $s->setMapValue( 'actions', $action_name, array( 'class_name' => $class_name, 'file' => $file ) );
+       $this->registerImplementation( 'actions', $action_name, $class_name, $file  );
 
+    }
+    
+    /**
+     * Registers a REST API Action and Controller Implementation
+     *
+     * Routes are unique to the version/action/request_method combination
+     *
+     * @param	 $version		 string	   the version namespace of the route
+     * @param    $route__name    string    the name of the action used as the value in the 'do' param of the request
+     * @param	 $request_method string	   the HTTP request method.
+     * @param    $class_name     string    the class name of the controller
+     * @param    $file           string    the module path to the file housing the class
+     *
+     */
+    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $file, $params = [] ) {
+		
+		if ( $file ) {
+		
+			$file = $this->path . $file;				
+		}
+		
+		$s = owa_coreAPI::serviceSingleton();
+		
+		$s->setRestApiRoute( $this->name, $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file, 'params' => $params ) );
     }
 
     function registerCliCommand($command, $class) {
@@ -970,11 +1010,28 @@ abstract class owa_module extends owa_base {
         $this->api_methods[$api_method_name] = $map;
     }
 
-    function registerImplementation($type, $name, $class_name, $file) {
+    /**
+     * Registers a Component Implementation
+     *
+     * Allows a module to register a specific implementation of a module component. This method stores
+     * the mapping of where an implementation of a specific type and key is located withing the module. 
+     * This is used to store maps for things like controllers, event queues, etc. 
+     *
+     * Implemntations can be overridden by other modules if they share the same key so consider using 
+     * modules namespacing for the key (i.e. module_name.key) to avoid conflicts.
+     *
+     * @param    $type	string	the type/category of implementation		actions|event_queues
+     * @param    $key  string	the key name of the specific implmentation
+     * @param    $class_name     string    the name of the class
+     * @param    $file           string    the partial path to the file housing the class withing the module dir
+     *
+     */
+    function registerImplementation($type, $key, $class_name, $file) {
 
         $s = owa_coreAPI::serviceSingleton();
+        $file = $this->path . $file;
         $class_info = array($class_name, $file);
-        $s->setMapValue($type, $name, $class_info);
+        $s->setMapValue($type, $key, $class_info);
     }
 
     function registerBackgroundJob($name, $command, $cron_tab, $max_processes = 1) {

@@ -34,29 +34,21 @@ class owa_reportDashboardController extends owa_reportController {
 
     function action() {
 
-        // action counts
-        $params = array('period'       => $this->get('period'),
-                        'startDate'      => $this->get('startDate'),
-                        'endDate'      => $this->get('endDate'),
-                        'metrics'       => 'actions',
-                        'dimensions'  => 'actionName',
-                        'siteId'       => $this->getParam('siteId'),
-                        'do'          => 'getResultSet'
-                        );
+		$rs = owa_coreAPI::executeApiCommand(array(
 
-        $rs = owa_coreAPI::executeApiCommand($params);
-        //print_r($rs);
-        $this->set('actions', $rs);
-
-        $rs = owa_coreAPI::executeApiCommand([
-            'do'                => 'getVisits',
+			'request_method'	=> 'GET',
+			'module'			=> 'base',
+			'version'			=> 'v1',
+            'do'                => 'reports',
+            'report_name'		=> 'latest_visits',
             'siteId'            => $this->getParam('siteId'),
             'page'              => $this->getParam('page'),
             'startDate'         => $this->getParam('startDate'),
             'endDate'           => $this->getParam('endDate'),
             'period'            => $this->getParam('period'),
             'resultsPerPage'    => 10
-        ]);
+        ));
+
 
         $this->set('latest_visits', $rs);
 

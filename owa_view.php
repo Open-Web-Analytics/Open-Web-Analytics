@@ -180,7 +180,9 @@ class owa_view extends owa_base {
             // Load subview
             $this->loadSubView($this->data['subview']);
         endif;
-
+		
+		$this->pre();
+		
         // construct main view.  This might set some properties of the subview.
         if (method_exists($this, 'render')) {
             $this->render($this->data);
@@ -189,19 +191,19 @@ class owa_view extends owa_base {
             $this->construct($this->data);
         }
         //array of errors usually used for field validations
-        if (array_key_exists('validation_errors', $this->data)):
+        if (array_key_exists('validation_errors', $this->data)) {
             $this->body->set('validation_errors', $this->data['validation_errors']);
-        endif;
+       }
 
         // pagination
-        if (array_key_exists('pagination', $this->data)):
+        if (array_key_exists('pagination', $this->data)) {
             $this->body->set('pagination', $this->data['pagination']);
-        endif;
+        }
 
         //$this->_setLinkState();
 
         // assemble subview
-        if (!empty($this->data['subview'])):
+        if (!empty($this->data['subview'])) {
 
             // set view name in template. used for navigation.
             $this->subview->body->caller_params['view'] = $this->data['subview'];
@@ -210,14 +212,14 @@ class owa_view extends owa_base {
             $this->subview->body->set('validation_errors', $this->get('validation_errors'));
 
             // pagination
-            if (array_key_exists('pagination', $this->data)):
+            if (array_key_exists('pagination', $this->data)) {
                 $this->subview->body->set('pagination', $this->data['pagination']);
-            endif;
+            }
 
-            if (array_key_exists('params', $this->data)):
+            if (array_key_exists('params', $this->data)) {
                 $this->subview->body->set('params', $this->data['params']);
                 $this->subview->body->set('do', $this->data['params']['do']);
-            endif;
+            }
 
             // Load subview
             $this->renderSubView($this->data);
@@ -226,7 +228,7 @@ class owa_view extends owa_base {
             $this->body->set('subview', $this->subview_rendered);
 
 
-        endif;
+        }
 
         // assign validation errors
         if (!empty($this->data['validation_errors'])) {
@@ -263,7 +265,16 @@ class owa_view extends owa_base {
             return $this->t->fetch();
         }
     }
-
+    
+	/**
+     * Abstract pre render hook
+     *
+     */
+	function pre() {
+		
+		return false;
+	}
+	
     /**
      * Abstract Alternative rendering method reuires the setting of $this->postProcessView to fire
      *
@@ -709,6 +720,96 @@ class owa_adminView extends owa_view {
     }
 }
 
+/**
+ * Rest API view
+ *
+ * This view assembles the response to REST API requests
+ */
+class owa_restApiView extends owa_view {
+	
+	
+	
+	function __construct() {
+	 	
+	 	parent::__construct();
+	 	
+	 	// load templates
+        $this->t->set_template('wrapper_blank.tpl');
+        
+        $this->body->set_template('restApiResponse.php');
+	 	
+	 	
+	 	
+    }
+    
+    /**
+	 * Used to set values of the response that we do not want the
+	 * abstract view to worry about or have ot deal with.
+	 *
+	 */
+    function pre() {
+	   
+	   // look for jsonp callback
+        $callback = $this->get('jsonpCallback');
+
+        // if not found look on the request scope.
+        if ( ! $callback ) {
+            $callback = owa_coreAPI::getRequestParam('jsonpCallback');
+        }
+
+        if ( $callback ) {
+            $this->body->set('callback', $callback);
+            $type = 'jsonp';
+        } else {
+            
+            $type = 'json';
+        }
+
+	   // set header if the request is from the API endpoint. Could be an internal request.
+	   
+	   if ( owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+		   
+			owa_lib::setContentTypeHeader( $type );		   
+	   }
+
+	   
+		// Generate GUID for response   
+	    $request = owa_coreAPI::getRequest();
+
+        $this->body->set('request_id', $request->guid );
+	    	    
+	    $error = array();
+	    
+	    // set error msgs
+        if ( array_key_exists( 'error_msg', $this->data ) ) {
+	        
+            $error[] = $this->data['error_msg'];
+        }
+        
+        if ( array_key_exists( 'validation_errors', $this->data ) ) {
+	        
+            $error[] = $this->data['validation_errors'];
+        }
+        
+        $http_response = array(
+	        
+	        'status_code'	=> http_response_code()
+        );
+        
+        $this->body->set('http_response', $http_response);
+        $this->body->set('data', '');
+        $this->body->set('error', $error);
+    }
+    
+    /**
+	 * Sets the data payload of the response
+	 */
+    function setResponseData( $data ) {
+	    
+	    $this->body->set( 'response_data', $data );
+    }
+}
+
 class owa_jsonView extends owa_view {
 
     function __construct() {
@@ -789,15 +890,36 @@ class owa_cliView extends owa_view {
 	   	
 		parent::__construct($params);
     }
-
-    function render() {
-	
-        $this->t->set_template('wrapper_blank.tpl');
+    
+    function pre() {
+	    
+	    $this->t->set_template('wrapper_blank.tpl');
         $this->body->set_template('msgsCli.php');
-        $this->body->set('validation_errors', $this->get('validation_errors'));
+	    
+	    $error = array();
+	    
+	    // set error msgs
+        if ( array_key_exists( 'error_msg', $this->data ) ) {
+	        
+            $error[] = $this->data['error_msg'];
+        }
+        
+        if ( array_key_exists( 'validation_errors', $this->data ) ) {
+	        
+            $error[] = $this->data['validation_errors'];
+        }
+        
+		$this->body->set('response_data', '');
+		$this->body->set('error', $error);
     }
-
-
+    
+    /**
+	 * Sets the data payload of the response
+	 */
+    function setResponseData( $data ) {
+	    
+	    $this->body->set( 'response_data', $data );
+    }
 }
 
 ?>

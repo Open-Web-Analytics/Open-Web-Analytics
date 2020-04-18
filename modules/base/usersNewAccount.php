@@ -49,6 +49,7 @@ class owa_usersNewAccountController extends owa_controller {
         $data['subject'] = 'OWA User Account Setup';
         $data['view'] = 'base.usersNewAccount';
         $data['view_method'] = 'email';
+        $data['name'] = $event->get('real_name');
 
         return $data;
     }
@@ -83,7 +84,7 @@ class owa_usersNewAccountView extends owa_mailView {
         $this->body->set('key', $data['temp_passkey']);
         // mailer specific
         $this->setMailSubject($data['subject']);
-        $this->addMailToAddress($data['email_address'], @$data['name']);
+        $this->addMailToAddress($data['email_address'], $this->get('name'));
 
     }
 }

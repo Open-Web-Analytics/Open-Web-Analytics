@@ -36,6 +36,9 @@ define('OWA_WP_PATH', plugin_dir_path( __FILE__ ) );
 // Hook package creation
 add_action('plugins_loaded', array( 'owa_wp_plugin', 'getInstance'), 10 );
 
+// Installation hook
+register_activation_hook(__FILE__, array('owa_wp_plugin', 'install') );
+
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -101,10 +104,6 @@ class owa_wp_plugin extends owa_wp_module {
 				// Create a new tracked site in OWA.
 				// @todo move this to REST API call when it's ready.
 				add_action('wpmu_new_blog', array($this, 'createTrackedSiteForNewBlog'), 10, 6);
-				
-				// Installation hook
-				register_activation_hook(__FILE__, 'owa_install');
-				
 			}
 		}
 	}
@@ -370,7 +369,7 @@ class owa_wp_plugin extends owa_wp_module {
 	
 		
 		// get instance of OWA
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		
 		// set any cmds
 		$this->setPageType();
@@ -440,7 +439,7 @@ class owa_wp_plugin extends owa_wp_module {
 	// create a new tracked site.
 	function createTrackedSiteForNewBlog($blog_id, $user_id, $domain, $path, $site_id, $meta) {
 	
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
 		$sm->createNewSite( $domain, $domain, '', ''); 
 	}
@@ -451,7 +450,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackNewBlogAction( $blog_id, $user_id, $domain, $path, $site_id ) {
 	
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$owa->trackAction('WordPress', 'Blog Created', $domain);
 	}
 	
@@ -466,7 +465,7 @@ class owa_wp_plugin extends owa_wp_module {
 			return;
 		}
 		
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$label = $post->post_title;
 		$owa->trackAction( 'WordPress', $post->post_type.' edited', $label );
 	}
@@ -507,7 +506,7 @@ class owa_wp_plugin extends owa_wp_module {
 		if ( $action_name ) {	
 		
 
-			$owa = $this->getOwaInstance();
+			$owa = self::getOwaInstance();
 			owa_coreAPI::debug(sprintf("new: %s, old: %s, post: %s", $new_status, $old_status, print_r($post, true)));
 			$label = $post->post_title;
 			
@@ -520,7 +519,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackAttachmentEditAction( $post_id ) {
 	
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$post = get_post( $post_id );
 		$label = $post->post_title;
 		$owa->trackAction('WordPress', 'Attachment Edit', $label);
@@ -531,7 +530,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackAttachmentCreatedAction( $post_id ) {
 	
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$post = get_post($post_id);
 		$label = $post->post_title;
 		$owa->trackAction('WordPress', 'Attachment Created', $label);
@@ -542,7 +541,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackUserRegistrationAction( $user_id ) {
 		
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$user = get_userdata($user_id);
 		if (!empty($user->first_name) && !empty($user->last_name)) {
 			$label = $user->first_name.' '.$user->last_name;	
@@ -558,7 +557,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackUserLoginAction( $user_id ) {
 	
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$label = $user_id;
 		$owa->trackAction('WordPress', 'User Login', $label);
 	}
@@ -568,7 +567,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackUserProfileUpdateAction( $user_id, $old_user_data = '' ) {
 	
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$user = get_userdata($user_id);
 		if (!empty($user->first_name) && !empty($user->last_name)) {
 			$label = $user->first_name.' '.$user->last_name;	
@@ -584,7 +583,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackPasswordResetAction( $user ) {
 		
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$label = $user->display_name;
 		$owa->trackAction('WordPress', 'User Password Reset', $label);
 	}
@@ -594,7 +593,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function trackTrackbackAction( $comment_id ) {
 		
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		$label = $comment_id;
 		$owa->trackAction('WordPress', 'Trackback', $label);
 	}
@@ -603,7 +602,7 @@ class owa_wp_plugin extends owa_wp_module {
 
 		if ( $comment_data === 'approved' || $comment_data === 1 ) {
 	
-			$owa = $this->getOwaInstance();
+			$owa = self::getOwaInstance();
 			$label = '';
 			$owa->trackAction('WordPress', 'comment', $label);
 		}
@@ -622,7 +621,7 @@ class owa_wp_plugin extends owa_wp_module {
 				$label = '';
 			}
 			
-			$owa = $this->getOwaInstance();
+			$owa = self::getOwaInstance();
 			$owa->trackAction('WordPress', 'comment', $label);
 		}
 	}
@@ -632,7 +631,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if ( is_feed() ) {
 		
-			$owa = $this->getOwaInstance();
+			$owa = self::getOwaInstance();
 	
 			if( $owa->getSetting( 'base', 'log_feedreaders') ) {
 				
@@ -668,6 +667,7 @@ class owa_wp_plugin extends owa_wp_module {
 					'error_message'							=> 'You must select On or Off.'		
 				)				
 			),
+/*
 			
 			'siteId'				=> array(
 			
@@ -713,6 +713,7 @@ class owa_wp_plugin extends owa_wp_module {
 					'error_message'							=> ''		
 				)				
 			),
+*/
 
 
 			// site ID
@@ -868,13 +869,13 @@ class owa_wp_plugin extends owa_wp_module {
 	/////////////////////// Methods that require OWA on server ////////////////////////////
 	
 	// gets an instance of your OWA as a php object
-	function getOwaInstance() {
+	public static function getOwaInstance() {
 		
 		static $owa;
 		
 		if( empty( $owa ) ) {
 		
-			if ( $this->isOwaAvailable() ) {
+			
 				
 				require_once('owa_env.php');
 				require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
@@ -887,7 +888,8 @@ class owa_wp_plugin extends owa_wp_module {
 				$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
 				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
 				$owa->setSetting( 'base', 'action_url', get_bloginfo('url').'/admin.php?owa_specialAction' );
-				$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
+				//$owa->setSetting( 'base', 'api_url', get_bloginfo('url').'/admin.php?owa_apiAction' );
+				$owa->setSetting( 'base', 'rest_api_url', $owa->getSetting( 'base', 'rest_api_url' ).'?');
 				$owa->setSetting( 'base', 'is_embedded', true );
 				
 				
@@ -895,7 +897,7 @@ class owa_wp_plugin extends owa_wp_module {
 				$dispatch = owa_coreAPI::getEventDispatch();
 				// alternative auth method, sets auth status, role, and allowed sites list.
 				$dispatch->attachFilter('auth_status', 'owa_wp_plugin::wpAuthUser', 0);	
-			}
+			
 		}
 		
 		return $owa;
@@ -908,7 +910,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if ( $this->isOwaAvailable() ) {
 		
-			$owa = $this->getOwaInstance();	
+			$owa = self::getOwaInstance();	
 			
 			echo $owa->handleRequest( $params );
 		}
@@ -926,14 +928,17 @@ class owa_wp_plugin extends owa_wp_module {
 	 * OWA Schema and setting installation
 	 *
 	 */
-	function install() {
+	public static function install() {
+		
 	
 		define('OWA_INSTALLING', true);
+		
+		//owa_coreAPI::notice('Starting Embedded Install...');	
 		
 		$params = array();
 		//$params['do_not_fetch_config_from_db'] = true;
 	
-		$owa = $this->getOwaInstance($params);
+		$owa = self::getOwaInstance($params);
 		$owa->setSetting('base', 'cache_objects', false);	
 		$public_url =  get_bloginfo('wpurl').'/wp-content/plugins/owa/';
 		
@@ -955,7 +960,7 @@ class owa_wp_plugin extends owa_wp_module {
 	
 	function handleSpecialActionRequest() {
 
-		$owa = $this->getOwaInstance();
+		$owa = self::getOwaInstance();
 		
 		owa_coreAPI::debug("hello from WP special action handler");
 		
@@ -983,6 +988,7 @@ class owa_wp_plugin extends owa_wp_module {
 	    	if (isset($current_user->user_login)) {
 				$cu->setUserData('user_id', $current_user->user_login);
 				owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
+				$cu->load( $current_user->user_login );
 			}
 			
 			if (isset($current_user->user_email)) {	
@@ -1291,7 +1297,7 @@ class owa_wp_module {
 	 */
 	public function getOptionsKey() {
 		
-		//return photopress_util::getModuleOptionKey( $this->package_name, $this->module_name );
+		//return owa_wp_util::getModuleOptionKey( $this->package_name, $this->module_name );
 	}
 	
 	public function registerController( $action_name, $class, $path ) {
@@ -1459,7 +1465,7 @@ class owa_wp_settingsPage {
 	
 	public $name;
 	
-	public $option_group_name; // photopress-package-module-groupname
+	public $option_group_name; // owa-package-module-groupname
 	
 	public $fields;
 	
@@ -2248,9 +2254,9 @@ class owa_wp_settings_field_integer extends owa_wp_settings_field_text {
 				sprintf(
 					'%s %s %s %s %s.',
 					$this->get('label_for'),
-					photopress_util::localize('must be a number between'),
+					owa_wp_util::localize('must be a number between'),
 					$this->get('min_value'),
-					photopress_util::localize('and'),
+					owa_wp_util::localize('and'),
 					$this->get('max_value')
 				)
 			);
@@ -2316,7 +2322,7 @@ class owa_wp_settings_field_boolean extends owa_wp_settings_field {
 			return true;
 		} else {
 		
-			$this->addError( $this->get('dom_id'), $this->get('label_for') . ' ' . photopress_util::localize( 'field must be On or Off.' ) );
+			$this->addError( $this->get('dom_id'), $this->get('label_for') . ' ' . owa_wp_util::localize( 'field must be On or Off.' ) );
 		}
 
 	}
@@ -2385,7 +2391,7 @@ class owa_wp_settings_section {
 			'description'	=> ''
 		);
 		
-		$this->properties = photopress_util::setDefaultParams( $defaults, $params );
+		$this->properties = owa_wp_util::setDefaultParams( $defaults, $params );
 	}
 	
 	public function get( $key ) {

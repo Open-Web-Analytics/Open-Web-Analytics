@@ -1,6 +1,7 @@
 <?php if(!empty($visits)):?>
 <table style="width:100%;">
-    <?php foreach($visits->resultsRows as $row): ?>
+    <?php foreach($visits->resultsRows as $row): 
+	    $row = (array) $row;?>
         <TR>
         <?php include('row_visitSummary.tpl'); ?>
         </TR>

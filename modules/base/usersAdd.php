@@ -38,24 +38,36 @@ class owa_usersAddController extends owa_adminController {
 
         $this->setRequiredCapability('edit_users');
         $this->setNonceRequired();
+    }
 
+    public function validate() {
+	    
+	    $this->addValidation('email_address', $this->getParam('email_address'), 'required', array('stopOnError'	=> true));
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
+	    $this->addValidation('role', $this->getParam('role'), 'required', array('stopOnError'	=> true));
+	    
+	    $roles = owa_coreAPI::getAllRoles();
+	    $this->addValidation('role', $this->getParam('role'), 'inArray', array('possible_values' => $roles, 'stopOnError' => true) );
+	    
         // Check for user with the same email address
         // this is needed or else the change password feature will not know which account
         // to chane the password for.
-        $v1 = owa_coreAPI::validationFactory('entityDoesNotExist');
-        $v1->setConfig('entity', 'base.user');
-        $v1->setConfig('column', 'email_address');
-        $v1->setValues(trim($this->getParam('email_address')));
-        $v1->setErrorMessage($this->getMsg(3009));
-        $this->setValidation('email_address', $v1);
+        $userEmailAddressEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'email_address',
+            'errorMsg'  => $this->getMsg(3009)
+        ];
+
+        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityDoesNotExist', $userEmailAddressEntityConf);
 
         // Check user name.
-        $v2 = owa_coreAPI::validationFactory('entityDoesNotExist');
-        $v2->setConfig('entity', 'base.user');
-        $v2->setConfig('column', 'user_id');
-        $v2->setValues(trim($this->getParam('user_id')));
-        $v2->setErrorMessage($this->getMsg(3001));
-        $this->setValidation('user_id', $v2);
+        $userEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'user_id',
+            'errorMsg'  => $this->getMsg(3001)
+        ];
+
+        $this->addValidation('user_id', $this->getParam('user_id'), 'entityDoesNotExist', $userEntityConf);
     }
 
     function action() {
@@ -68,18 +80,38 @@ class owa_usersAddController extends owa_adminController {
                               'role'            => $this->params['role'],
                               'email_address'     => trim($this->params['email_address']));
 
-        $temp_passkey = $userManager->createNewUser($user_params);
+        $u = $userManager->createNewUser($user_params);
+        
+        $u_properties = [];
+        
+        if ( $u ) {
 
-        // log account creation event to event queue
+	        $u_properties = [
+		        
+		        'user_id'	=> $u->get('user_id'),
+		        'email_address' => $u->get( 'email_address'),
+		        'real_name'		=>	$u->get( 'real_name' ),
+		        'api_key'		=>	$u->get('api_key'),
+		        'role'			=>	$u->get('role')
+	        ];  
+		}
+        
+        // assign user to view for use by CLI and REST controllers that may
+        // extend this
+        $this->set('user', $u_properties );
+		
+		// add temp passkey for use in sending emails.
+		$u_properties['temp_passkey'] = $u->get('temp_passkey');
+		
+        // post account creation event to event queue for
+        // downstream email observers/handlers
         $ed = owa_coreAPI::getEventDispatch();
-        $ed->log(array( 'user_id'     => $this->params['user_id'],
-                        'real_name' => $this->params['real_name'],
-                        'role'         => $this->params['role'],
-                        'email_address' => $this->params['email_address'],
-                        'temp_passkey' => $temp_passkey),
-                        'base.new_user_account');
-
-        $this->setRedirectAction('base.users');
+        $ed->log( $u_properties, 'base.new_user_account' );
+	}
+    
+    function success() {
+		
+		$this->setRedirectAction('base.users');
         $this->set('status_code', 3000);
     }
 

@@ -38,21 +38,21 @@ class owa_sitesEditController extends owa_adminController {
 
         $this->setRequiredCapability('edit_sites');
         $this->setNonceRequired();
+    }
 
-        // validations
+    public function validate()
+    {
+        // check that siteId is present
+        $this->addValidation('siteId', $this->getParam('siteId'), 'required');
 
-        // check that user_id is present
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($this->getParam('siteId'));
-        $this->setValidation('siteId', $v1);
+        // Check site exists
+        $siteEntityConf = [
+            'entity'    => 'base.site',
+            'column'    => 'site_id',
+            'errorMsg'  => $this->getMsg(3208)
+        ];
 
-        // Check user name exists
-        $v2 = owa_coreAPI::validationFactory('entityExists');
-        $v2->setConfig('entity', 'base.site');
-        $v2->setConfig('column', 'site_id');
-        $v2->setValues($this->getParam('siteId'));
-        $v2->setErrorMessage($this->getMsg(3208));
-        $this->setValidation('siteId', $v2);
+        $this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', $siteEntityConf);
     }
 
     function action() {

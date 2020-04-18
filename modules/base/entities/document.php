@@ -46,6 +46,19 @@ class owa_document extends owa_entity {
         $this->properties['page_type']->setDataType(OWA_DTD_VARCHAR255);
         $this->setCachable();
     }
+
+    public function crawlDocument()
+    {
+        $crawler = new owa_http();
+        $res = $crawler->getRequest($this->get('url'));
+        owa_coreAPI::debug('http request response: '.print_r($res, true));
+
+        $title = trim($crawler->extract_title());
+
+        if ($title) {
+            $this->set('page_title', owa_lib::utf8Encode($title));
+        }
+    }
 }
 
 ?>

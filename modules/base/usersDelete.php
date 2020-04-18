@@ -38,6 +38,12 @@ class owa_usersDeleteController extends owa_adminController {
         $this->setNonceRequired();
         return parent::__construct($params);
     }
+    
+    function validate() {
+	    
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'isNotCurrentUser');
+    }
 
     function action() {
 
@@ -45,8 +51,11 @@ class owa_usersDeleteController extends owa_adminController {
 
         // add check here to ensure that this is not the default user....
         $userManager->deleteUser($this->getParam('user_id'));
-
-        $this->setRedirectAction('base.users');
+    }
+    
+    function success() {
+	    
+	    $this->setRedirectAction('base.users');
         $this->set('status_code', 3004);
     }
 }

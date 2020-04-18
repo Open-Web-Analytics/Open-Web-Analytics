@@ -39,68 +39,61 @@ class owa_optionsGoalEditController extends owa_adminController {
         $this->type = 'options';
         $this->setRequiredCapability('edit_settings');
         $this->setNonceRequired();
+
         $goal = $this->getParam('goal');
+
+        foreach ($goal['details']['funnel_steps'] as $num => $step) {
+            $check = owa_lib::array_values_assoc($step);
+            if (!empty($check)) {
+                $step['step_number'] = $num;
+                $this->params['goal']['details']['funnel_steps'][$num] = $step;
+            } else {
+                // remove the array as it only contains empty values.
+                // this can happen when the use adds a step but does not fill in any
+                // values.
+                unset( $this->params['goal']['details']['funnel_steps'][$num] );
+            }
+        }
+    }
+
+    public function validate()
+    {
+        $goal = $this->getParam('goal');
+
         // check that goal number is present
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($goal['goal_number']);
-        $this->setValidation('goal_number', $v1);
+        $this->addValidation('goal_number', $goal['goal_number'], 'required');
 
         // check that goal status is present
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($goal['goal_status']);
-        $this->setValidation('goal_status', $v1);
+        $this->addValidation('goal_status', $goal['goal_status'], 'required');
 
         // check that goal status is present
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($goal['goal_group']);
-        $this->setValidation('goal_group', $v1);
+        $this->addValidation('goal_group', $goal['goal_group'], 'required');
 
         // check that goal type is present
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($goal['goal_type']);
-        $this->setValidation('goal_type', $v1);
+        $this->addValidation('goal_type', $goal['goal_type'], 'required');
 
         if ($goal['goal_type'] === 'url_destination') {
             // check that match_type is present
-            $v1 = owa_coreAPI::validationFactory('required');
-            $v1->setValues($goal['details']['match_type']);
-            $this->setValidation('match_type', $v1);
+            $this->addValidation('match_type', $goal['details']['match_type'], 'required');
 
             // check that goal_url is present
-            $v1 = owa_coreAPI::validationFactory('required');
-            $v1->setValues($goal['details']['goal_url']);
-            $this->setValidation('goal_url', $v1);
+            $this->addValidation('goal_url', $goal['details']['goal_url'], 'required');
         }
 
-        $steps = $goal['details']['funnel_steps'];
+        if (isset($goal['details']['funnel_steps'])) {
+            return;
+        }
 
-         if ( isset( $goal['details']['funnel_steps'] ) ) {
-
-             foreach ( $goal['details']['funnel_steps'] as $num => $step) {
-
-                if (!empty($step['name']) || !empty($step['url'])) {
-                    // check that step name is present
-                    $v1 = owa_coreAPI::validationFactory('required');
-                    $v1->setValues($step['name']);
-                    $this->setValidation('step_name_'.$num, $v1);
-
-                    // check that step url is present
-                    $v1 = owa_coreAPI::validationFactory('required');
-                    $v1->setValues($step['url']);
-                    $this->setValidation('step_url_'.$num, $v1);
-                }
-
-                $check = owa_lib::array_values_assoc($step);
-                if (!empty($check)) {
-                    $step['step_number'] = $num;
-                    $this->params['goal']['details']['funnel_steps'][$num] = $step;
-                } else {
-                    // remove the array as it only contains empty values.
-                    // this can happen when the use adds a step but does not fill in any
-                    // values.
-                    unset( $this->params['goal']['details']['funnel_steps'][$num] );
-                }
+        foreach ($goal['details']['funnel_steps'] as $num => $step) {
+            if (empty($step['name']) || empty($step['url'])) {
+                return;
             }
+
+            // check that step name is present
+            $this->addValidation('step_name_'.$num, $step['name'], 'required');
+
+            // check that step url is present
+            $this->addValidation('step_url_'.$num, $step['url'], 'required');
         }
     }
 

@@ -38,19 +38,21 @@ class owa_usersEditController extends owa_adminController {
 
         $this->setRequiredCapability('edit_users');
         $this->setNonceRequired();
+    }
 
+    public function validate()
+    {
         // check that user_id is present
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($this->getParam('user_id'));
-        $this->setValidation('user_id', $v1);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required');
 
         // Check user name exists
-        $v2 = owa_coreAPI::validationFactory('entityExists');
-        $v2->setConfig('entity', 'base.user');
-        $v2->setConfig('column', 'user_id');
-        $v2->setValues($this->getParam('user_id'));
-        $v2->setErrorMessage($this->getMsg(3001));
-        $this->setValidation('user_id', $v2);
+        $userEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'user_id',
+            'errorMsg'  => $this->getMsg(3001)
+        ];
+
+        $this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', $userEntityConf);
     }
 
     function action() {

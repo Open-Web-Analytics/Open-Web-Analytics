@@ -458,6 +458,17 @@ class owa_template extends Template {
 
         return $all_params;
     }
+    
+    function getLinkStateParam( $key ) {
+	    
+	    $params = $this->getAllStateParams();
+	    
+	    if (array_key_exists($key, $params)) {
+		    
+		   return $params[ $key ];		    
+	    }
+
+    }
 
 
     /**
@@ -554,11 +565,44 @@ class owa_template extends Template {
         return $this->makeLink($params, $add_state, $url, $xml);
 
     }
+    
+    function getApiKey() {
+	    
+	    $cu = owa_coreAPI::getCurrentUser();
+		return $cu->getUserData('api_key');
+    }
 
     function makeApiLink($params = array(), $add_state = false) {
+		
+		$rest_routes = ['reports', 'users', 'sites'];
+		
+		$key = $this->getApiKey();
+		
+		if (in_array($params['do'], $rest_routes)) {
+			
+			$params['apiKey'] = $key;
+			$url = $this->config['rest_api_url'];
+			
+		} else {
 
-
-        $url = $this->config['api_url'];
+			if ( $params['do'] === 'getResultSet' ) {
+				
+				$url = $this->config['rest_api_url'];
+				$params['do'] = 'reports';
+				$params['module'] = 'base';
+				$params['version'] = 'v1';
+				
+				
+				owa_coreAPI::debug('api key is: '. $key);
+				owa_coreAPI::debug( $cu );
+				$params['apiKey'] = $key;
+								
+			} else {
+				
+				$url = $this->config['api_url'];
+			}
+		}
+        
 
         return $this->makeLink($params, $add_state, $url);
 

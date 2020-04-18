@@ -9,7 +9,7 @@
                 <div style="min-width:250px;" id="actionsByNameExplorer"></div>
                 <script>
                 
-                var aurl = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                                   'metrics' => 'actions', 
                                                                   'dimensions' => 'actionGroup,actionName', 
                                                                   'sort' => 'actions-', 
@@ -30,7 +30,7 @@
                 <div class="section_header">Actions By Group</div>
                 <div style="min-width:300px;" id="actionsByGroupExplorer"></div>
                 <script>
-                var url = '<?php echo $this->makeApiLink(array('do' => 'getResultSet', 
+                var url = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                               'metrics' => 'actions', 
                                                               'dimensions' => 'actionGroup', 
                                                               'sort' => 'actions-', 

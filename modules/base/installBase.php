@@ -20,7 +20,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 /**
  * base Schema Installation Controller
- * 
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
@@ -38,41 +38,32 @@ class owa_installBaseController extends owa_installController {
 
         // require nonce
         $this->setNonceRequired();
+    }
 
-        // validations
-        $v1 = owa_coreAPI::validationFactory('required');
-        $v1->setValues($this->getParam('domain'));
-        $v1->setErrorMessage($this->getMsg(3309));
-        $this->setValidation('domain', $v1);
+    public function validate()
+    {
+        $this->addValidation('domain', $this->getParam('domain'), 'required', ['errorMsg' => $this->getMsg(3309)]);
+        $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['errorMsg' => $this->getMsg(3310)]);
+        $this->addValidation('password', $this->getParam('password'), 'required', ['errorMsg' => $this->getMsg(3310)]);
 
-        // validations
-        $v2 = owa_coreAPI::validationFactory('required');
-        $v2->setValues($this->getParam('email_address'));
-        $v2->setErrorMessage($this->getMsg(3310));
-        $this->setValidation('email_address', $v2);
+        $domainConf = [
+            'substring' => 'http',
+            'position'  => 0,
+            'operator'  => '!=',
+            'errorMsg'  => $this->getMsg(3208)
+        ];
 
-        // validations
-        $v5 = owa_coreAPI::validationFactory('required');
-        $v5->setValues($this->getParam('password'));
-        $v5->setErrorMessage($this->getMsg(3310));
-        $this->setValidation('password', $v5);
+        $this->addValidation('domain', $this->getParam('domain'), 'subStringPosition', $domainConf);
 
-        // Check entity exists
-        $v3 = owa_coreAPI::validationFactory('entityDoesNotExist');
-        $v3->setConfig('entity', 'base.site');
-        $v3->setConfig('column', 'domain');
-        $v3->setValues($this->getParam('protocol').$this->getParam('domain'));
-        $v3->setErrorMessage($this->getMsg(3206));
-        $this->setValidation('domain', $v3);
+        $domainEntityConf = [
+            'entity'    => 'base.site',
+            'column'    => 'domain',
+            'errorMsg'  => $this->getMsg(3206),
+        ];
 
-        // Config for the domain validation
-        $v4 = owa_coreAPI::validationFactory('subStringPosition');
-        $v4->setConfig('substring', 'http');
-        $v4->setValues($this->getParam('domain'));
-        $v4->setConfig('position', 0);
-        $v4->setConfig('operator', '!=');
-        $v4->setErrorMessage($this->getMsg(3208));
-        $this->setValidation('domain', $v4);
+        $domainValue = $this->getParam('protocol').$this->getParam('domain');
+
+        $this->addValidation('domain', $domainValue, 'entityDoesNotExist', $domainEntityConf);
     }
 
     function action() {

@@ -115,13 +115,6 @@ class owa_controller extends owa_base {
      * @var Bool
      */
     var $is_nonce_required = false;
-    
-    /**
-     * Mode the controler is operating in
-     *
-     * @var string web_app|cli|rest_api
-     */
-    var $mode = 'web_app';
 
     /**
      * Constructor
@@ -143,17 +136,17 @@ class owa_controller extends owa_base {
         $this->setViewMethod('delegate');
 
         // clobber anything that needs clobbering by conrete class
-        $this->init();
-        
-        if ( $this->getMode() === 'cli' && ! owa_coreAPI::getSetting('base', 'cli_mode') ) {
-	    	
-			owa_coreAPI::notice("Controller not called from CLI");
-            exit;
-	    }
+        $this->init();   
     }
     
+    /**
+	 * Abstract method for setting any controller configuration.
+	 * Fires after constructor but before doAction.
+	 *
+	 */
     function init() {
 	    
+	    return false;
     }
     
     
@@ -176,9 +169,9 @@ class owa_controller extends owa_base {
             case 'cli':
             	
             	$this->set('error_msg', $error_msg );
-            	$this->setView('base.genericCliView');
+            	$this->setView('base.genericCli');
             	$this->set( 'msgs', $error_msg );
-            	return $this->data;
+            	
             	break;
             	
             case 'web_app':
@@ -186,14 +179,18 @@ class owa_controller extends owa_base {
             	$data = array();
                 $data['view_method'] = 'redirect';
                 $data['action'] = 'base.updates';
-                return $data;
-                
+                    
             	break;
             	
             case 'rest_api':
             
+            	$this->set('error_msg', $error_msg );
+            	$this->setView('base.restApi');
+            
             	break;
         }
+        
+        return $this->data;
 	}
     /**
      * Handles request from caller
@@ -208,10 +205,10 @@ class owa_controller extends owa_base {
         if ($this->is_admin === true) {
             // do not intercept if its the updatesApply action or a re-install else updates will never apply
             $do = $this->getParam('do');
-             
+            
             if ($do != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 
-                if (owa_coreAPI::isUpdateRequired()) {
+                if ( owa_coreAPI::isUpdateRequired() ) {
 	            	
 	            	return $this->updateAction();    
 	            }
@@ -223,18 +220,20 @@ class owa_controller extends owa_base {
             
             return $this->data;
         }
-
+		
         /* Check validity of nonce */
-        if ($this->is_nonce_required == true) {
+        if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' ) {
 	        
-            $nonce = $this->getParam('nonce');
-
-            if (!$nonce || !$this->verifyNonce($nonce)) {
-                $this->e->debug('Nonce is not valid.');
-                return $this->finishActionCall($this->notAuthenticatedAction());
-            }
-        }
-
+	        if ($this->is_nonce_required == true) {
+		        
+	            $nonce = $this->getParam('nonce');
+	
+	            if (!$nonce || !$this->verifyNonce($nonce)) {
+	                $this->e->debug('Nonce is not valid.');
+	                return $this->finishActionCall($this->notAuthenticatedAction());
+	            }
+	        }
+		}
         // TODO: These sets need to be removed and added to pre(), action() or post() methods
         // in various concrete controller classes as they screw up things when
         // redirecting from one controller to another.
@@ -504,11 +503,41 @@ class owa_controller extends owa_base {
 
         $this->set('view_method', 'redirect');
         $this->set('do', $do);
+		
+		$new_data = [
+			
+			'do' 			=> $do,
+			'view_method'	=> 'redirect'
+		];
+		
+/*
+		if ( array_key_exists('status_code', $this->data) && ! empty($this->data['status_code'] ) ) {
+			
+			$new_data['status_code'] = $this->data['status_code'];
+		}
+		
+		if ( array_key_exists('error_code', $this->data) && ! empty($this->data['error_code'] ) ) {
+			
+			$new_data['error_code'] = $this->data['error_code'];
+		}
+*/
+		
+		foreach ($this->data as $k => $param) {
+			
+			if ( ! is_array( $param ) || ! is_object($param) ) {
+				
+				$new_data[$k] = $param;
+			}
+		}
+		owa_coreAPI::debug('setredirectAction');
+		owa_coreAPI::debug( $new_data);
+		$this->data = $new_data;		
 
         // need to remove these unsets once they are no longer set in the main doAction method
         if (array_key_exists('params', $this->data)) {
             unset($this->data['params']);
         }
+
     }
 
     function setPagination($pagination, $name = 'pagination') {
@@ -533,19 +562,9 @@ class owa_controller extends owa_base {
 
     }
     
-    /**
-	 * Sets th Mode of the controller
-	 *
-	 * @param $mode string	webapp|cli|api
-	 */
-    public function setMode( $mode ) {
-	    
-	    $this->mode = $mode;
-    }
-    
     public function getMode() {
 	    
-	    return $this->mode;
+	    return owa_coreAPI::getSetting( 'base', 'request_mode' );
     }
 
     function mergeParams($array) {
@@ -620,9 +639,16 @@ class owa_controller extends owa_base {
     }
 
     function notAuthenticatedAction() {
-
-        $this->setRedirectAction('base.loginForm');
-        $this->set('go', urlencode(owa_lib::get_current_url()));
+		
+		if (owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+			
+			$this->setView('base.restApi');
+			$this->set('error_msg', ['headline'	=> 'Not authenticated.', 'msg' => 'Check API key or permissions for this user.'] );
+			http_response_code(401);	
+		} else {
+	        $this->setRedirectAction('base.loginForm');
+			$this->set('go', urlencode(owa_lib::get_current_url()));
+		}
     }
 
     function verifyNonce($nonce) {
@@ -658,7 +684,6 @@ class owa_controller extends owa_base {
      * @return array
      */
     protected function getSitesAllowedForCurrentUser() {
-    owa_coreAPI::debug('get Sites Allowed for user');
    
         $currentUser = owa_coreAPI::getCurrentUser();
 
@@ -677,6 +702,7 @@ class owa_controller extends owa_base {
             return $result;
 
         } else {
+	        
             return $currentUser->getAssignedSites();
         }
     }

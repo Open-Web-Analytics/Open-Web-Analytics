@@ -244,11 +244,17 @@ class owa_http {
 
     function extract_title() {
 
-        preg_match('~(</head>|<body>|(<title>\s*(.*?)\s*</title>))~i', $this->response, $m);
+        preg_match('/<title[^>]*>(.*?)<\/title>/', $this->response, $matches);
 
-        $this->e->debug("referer title extract: ". print_r($m, true));
+        $title = null;
 
-           return $m[3];
+        if ($matches && count($matches) > 0 && isset($matches[1])) {
+            $title = $matches[1];
+        }
+
+        $this->e->debug("referer title extract: ". print_r($title, true));
+
+        return $title;
     }
 
      function strip_selected_tags($str, $tags = array(), $stripContent = false) {

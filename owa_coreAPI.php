@@ -526,7 +526,24 @@ class owa_coreAPI {
     }
 
     public static function executeApiCommand($map) {
-
+		
+		// carve out for REST API backwards compatability during migration
+		if ( array_key_exists('version', $map) ) {
+			
+			$route = self::lookupRestRoute( $map['request_method'], $map['module'], $map['version'], $map['do']);
+			
+			if ( $route ) {
+				
+				//$params['rest_route'] = $route;
+				$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $map );					
+				$response = self::runController( $controller );
+				
+				$response = json_decode($response);
+				
+				return $response->data;
+			}
+		}
+		
         if (!array_key_exists('do', $map)) {
             echo ("API Command missing from request.");
             owa_coreAPI::debug('API Command missing from request. Aborting.');
@@ -766,23 +783,32 @@ class owa_coreAPI {
      * @param $action string
      *
      */
-    public static function performAction($action, $params = array()) {
+    public static function performAction( $action, $params = array() ) {
 
-        // Load action from service map
         $service = owa_coreAPI::serviceSingleton();
-        $action_map = $service->getMapValue('actions', $action );
-
-        // create the controller object
+			
+		// Load action controller from service map which uses the 'module.action' convention	
+		$action_map = $service->getMapValue('actions', $action );
+			
+		// create the controller object
         if ( $action_map ) {
+	        
             $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
+        
         } else {
+        
             // attempt to use old style convention
             $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
         }
+		
+		return owa_coreAPI::runController( $controller );        
+    }
+    
+    public static function runController( $controller ) {
+	    
+	    if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
 
-        if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
-
-            owa_coreAPI::debug("No controller is associated with $action.");
+            owa_coreAPI::debug("Class is not a controller. no doAction method found.");
             return;
         }
 
@@ -1213,11 +1239,59 @@ class owa_coreAPI {
                 }
             }
         }
+		
+		
+		// REST API Requests
+		// Lookup controler for REST API route.
+		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+			
+			owa_coreAPI::debug('Generating REST API route controller...');
+			
+			if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
+			
+				$request_method = $service->request->getRequestType();
+				$route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
+				
+				if ( $route ) {
+					$params['rest_route'] = $route;
+					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
+					return owa_coreAPI::runController( $controller );
+				
+				} else {
+					
+					owa_coreAPI::debug('No REST API route found');
+					return;	
+				}
 
+			} else {
+				
+				owa_coreAPI::debug('Could not generate controller because no version param was on request.');
+				return;
+			}
+			
+		} 
+		
+		
+		
         $init = true;
         owa_coreAPI::debug('About to perform action: '.$action);
         return owa_coreAPI::performAction($action, $params);
 
+    }
+    
+    public static function lookupRestRoute( $request_method, $module, $version, $do ) {
+	    
+	    if ( ! empty( $request_method ) 
+	    	&& ! empty( $version )
+	    	&& ! empty( $do )
+	    	&& ! empty( $module ) 
+	    ){
+		    
+		    $service = owa_coreAPI::serviceSingleton();
+		    $route = $service->getRestApiRoute($module, $version, $do, $request_method );
+			owa_coreAPI::debug($route);
+		    return $route;
+	    }
     }
 
     public static function isUpdateRequired() {
@@ -1521,12 +1595,6 @@ class owa_coreAPI {
 
         $t = new owa_template();
 
-        if (owa_coreAPI::getSetting('base', 'is_embedded')) {
-
-            // needed to override the endpoint used by the js tracker
-            $options['apiEndpoint'] = owa_coreAPI::getSetting('base', 'api_url');
-        }
-
         $t->set( 'site_id', $site_id );
         $cmds = owa_coreAPI::filter( 'tracker_tag_cmds', array() );
         $t->set( 'cmds', $cmds );
@@ -1684,6 +1752,24 @@ class owa_coreAPI {
 
         $ed = owa_coreAPI::getEventDispatch();
         return $ed->filter( $filter_name, $value );
+    }
+    
+    public static function loadEntitiesFromArray( $items, $entity_name ) {
+	    
+	    $set = [];
+	    
+	    if ( $items ) {
+		    
+		    foreach ($items as $item ) {
+			    
+			    $entity = owa_coreAPI::entityFactory( $entity_name );
+			    $entity->setProperties( $item );
+			    $set[] = $entity;
+			    
+		    }
+	    }
+	    
+	    return $set;
     }
 
 }
