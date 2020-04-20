@@ -189,7 +189,8 @@ OWA.pieChart.prototype = {
             series: {
                 pie: {
                     show: true,
-                    //showLabel: true,
+                    showLabel: true
+/*
                     label: {
                         show: true,
                         background: {
@@ -203,11 +204,12 @@ OWA.pieChart.prototype = {
                         //formatter: function(label, slice){ return '<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+label+'<br/>'+Math.round(slice.percent)+'%</div>';}
 
                     }
+*/
                 }
             },
 
             legend: {
-                show: true,
+                show: false,
                 position: "ne",
                 margin: [-160,50]
             },

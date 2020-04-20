@@ -19,11 +19,7 @@
                 </div>
             </div>
 
-            <div class="owa_reportSectionContent">
-                <div class="owa_reportSectionHeader">Visitor Types</div>
-                <div id="visitor-types" style="width:250px;margin-top:-10px;"></div>
-            </div>
-
+           
             <div class="owa_reportSectionContent">
                 <div class="section_header">Latest Visits</div>
                 <?php include('report_latest_visits.tpl')?>
@@ -51,12 +47,22 @@
                 <div class="clear"></div>
             </div>
             <?php //} ?>
-
-            <div class="owa_reportSectionContent">
+			<table width="100%">
+				<TR>
+					<TD>
+			 <span class="owa_reportSectionContent">
+                <div class="owa_reportSectionHeader">Visitor Types</div>
+                <div id="visitor-types" style="width:250px;margin-top:-10px;"></div>
+            </span>
+					</TD>
+					<TD>
+            <span class="owa_reportSectionContent" >
                 <div class="owa_reportSectionHeader">Traffic Sources</div>
                 <div id="visitor-mediums" style="width:250px;margin-top:-10px;"></div>
-            </div>
-
+            </span>
+					</TD>
+				</TR>
+			</table>
             <div class="owa_reportSectionContent">
                 <div class="owa_reportSectionHeader">Top Referrers</div>
 
