@@ -52,13 +52,13 @@
 					<TD>
 			 <span class="owa_reportSectionContent">
                 <div class="owa_reportSectionHeader">Visitor Types</div>
-                <div id="visitor-types" style="width:250px;margin-top:-10px;"></div>
+                <div id="visitor-types" class="owa_piechart"></div>
             </span>
 					</TD>
 					<TD>
-            <span class="owa_reportSectionContent" >
+            <span class="owa_reportSectionContent">
                 <div class="owa_reportSectionHeader">Traffic Sources</div>
-                <div id="visitor-mediums" style="width:250px;margin-top:-10px;"></div>
+                <div id="visitor-mediums" class="owa_piechart"></div>
             </span>
 					</TD>
 				</TR>

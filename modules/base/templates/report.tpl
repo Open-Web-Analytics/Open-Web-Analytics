@@ -38,7 +38,7 @@ jQuery(document).ready(function(){
         <TR>
             <?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
             <TD valign="top" class="owa_reportLeftNavColumn">
-                <div class="">
+                <div>
                     <div id="owa_reportNavPanel">
                         <?php echo $this->makeNavigationMenu($top_level_report_nav, $currentSiteId, $params['do']);?>
                     </div>

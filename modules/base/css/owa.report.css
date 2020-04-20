@@ -239,6 +239,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 	
 }
 
+.owa_piechart {
+	
+	width:250px;
+	margin-top:-10px;
+}
+
 .owa_visitInfobox {
     color:#9f9f9f;
     background-color: #505050;

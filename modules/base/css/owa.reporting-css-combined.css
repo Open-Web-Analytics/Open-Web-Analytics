@@ -1,4 +1,4 @@
-/* OWA owa.reporting-css package file created Mon, 20 Apr 20 11:04:40 -0700 */ 
+/* OWA owa.reporting-css package file created Mon, 20 Apr 20 15:24:54 -0700 */ 
 
 /* Start of jqueryui */ 
 
@@ -1610,6 +1610,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa_admin_nav_topmenu_toggle {
 	width:15px;height:20px;
 	
+}
+
+.owa_piechart {
+	
+	width:250px;
+	margin-top:-10px;
 }
 
 .owa_visitInfobox {
