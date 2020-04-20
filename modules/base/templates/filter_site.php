@@ -2,7 +2,7 @@
     
     <div style="float:left;">
         <span>Web Site:</span>
-        <SELECT name="owa_reportSiteFilterSelect" id="owa_reportSiteFilterSelect" style="width:auto;height:auto;">
+        <SELECT name="owa_reportSiteFilterSelect" id="owa_reportSiteFilterSelect" style="height:auto;">
         <?php  foreach ($sites as $site ):?>
             <OPTION VALUE="<?php $this->out($site->get('site_id'), false);?>" <?php if ($params['siteId'] === $site->get('site_id')):?>selected="selected" selected <?php endif; ?>><?php $this->out( $site->get('name') );?></OPTION>
         <?php endforeach;?>

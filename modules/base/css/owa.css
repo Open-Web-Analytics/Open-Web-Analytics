@@ -35,7 +35,7 @@ div {margin:0;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
-#owa_header {border-bottom: 3px solid orange; background-color:#FFFFFF; padding:4px; font-weight:bold; line-height:55px;}
+#owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
 .owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
 .owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
 .owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
@@ -47,14 +47,25 @@ div {margin:0;}
     float: left;
     width: 9em;
     display: block;
-    border: 0.1em solid #efefef;
+    border: 0 solid #efefef;
     text-decoration: none;
     text-align: center;
+    
 }
 
 .owa_navigation li a:hover {
+	border-bottom: 2px solid orange;
+   
+}
 
-    border-color: orange;
+.owa_current{
+	
+	background-color: #e6e6e6;
+}
+
+.owa_nav_icon {
+	padding-right:10px;
+	opacity: 0.60;
 }
 
 /* FORMS */
