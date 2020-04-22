@@ -1,4 +1,4 @@
-/* OWA owa.reporting package file created Wed, 15 Apr 20 10:52:53 -0700 */ 
+/* OWA owa.reporting package file created Sun, 19 Apr 20 19:47:24 -0700 */ 
 
 /* Start of lazy-load */ 
 
@@ -3002,7 +3002,7 @@ var that=this;var data=[];var count=0;if(this.options.dimension.length>0){if(res
 for(var i=0;i<=iterations-1;i++){var item={label:resultSet.resultsRows[i][dimension].value,data:resultSet.resultsRows[i][metric].value*1};data.push(item);count=count+resultSet.resultsRows[i][metric].value;}
 if(resultSet.resultsRows.length>iterations){var others=resultSet.aggregates[metric]-count;data.push({label:'others',data:others});}}else{jQuery('#'+that.dom_id).append("No data is available for this time period");jQuery('#'+that.dom_id).css('height','50px');}}else{if(!jQuery.isEmptyObject(resultSet.aggregates)){var metrics=this.options.metrics;for(var ii=0;ii<=metrics.length-1;ii++){var value=resultSet.aggregates[metrics[ii]].value*1;data.push({label:resultSet.getMetricLabel(metrics[ii]),data:value});}}else{jQuery('#'+that.dom_id).append("No data is available for this time period");jQuery('#'+that.dom_id).css('height','50px');}}
 if(!this.init){this.setupPieChart();}
-var flot_options={series:{pie:{show:true,label:{show:true,background:{color:'#ffffff',opacity:'.7'},radius:1,formatter:function(label,slice){return'<div style="font-size:x-small;text-align:center;padding:2px;color:'+slice.color+';">'+Math.round(slice.percent)+'%</div>';}}}},legend:{show:true,position:"ne",margin:[-160,50]},colors:["#6BAED6","#FD8D3C","#dba255","#919733"]};OWA.debug(JSON.stringify(data));jQuery.plot(jQuery(selector),data,flot_options);this.init=true;},getContainerWidth:function(){var that=this;if(this.getOption('autoSizeWidth')){return jQuery("#"+that.dom_id).width();}else{return this.option.width;}},getContainerHeight:function(){var that=this;var h=jQuery("#"+that.dom_id).height();return h;}}
+var flot_options={series:{pie:{show:true,showLabel:true}},legend:{show:false,position:"ne",margin:[-160,50]},colors:["#6BAED6","#FD8D3C","#dba255","#919733"]};OWA.debug(JSON.stringify(data));jQuery.plot(jQuery(selector),data,flot_options);this.init=true;},getContainerWidth:function(){var that=this;if(this.getOption('autoSizeWidth')){return jQuery("#"+that.dom_id).width();}else{return this.option.width;}},getContainerHeight:function(){var that=this;var h=jQuery("#"+that.dom_id).height();return h;}}
 
 /* End of owa.pieChart */ 
 

@@ -2180,17 +2180,17 @@ class owa_baseModule extends owa_module {
 
     function registerNavigation() {
 
-        $this->addNavigationSubGroup('Dashboard', 'base.reportDashboard', 'Dashboard', 1);
+        $this->addNavigationSubGroup('Dashboard', 'base.reportDashboard', 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
         //Ecommerce
-        $this->addNavigationSubGroup('Ecommerce', 'base.reportEcommerce', 'Ecommerce', 5, 'view_reports_ecommerce');
+        $this->addNavigationSubGroup('Ecommerce', 'base.reportEcommerce', 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
         $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportRevenue', 'Revenue', 2);
         $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportTransactions', 'Transactions', 3);
         $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportVisitsToPurchase', 'Visits To Purchase', 4);
         $this->addNavigationLinkInSubGroup('Ecommerce', 'base.reportDaysToPurchase', 'Days To Purchase', 5);
 
         //Content
-        $this->addNavigationSubGroup('Content', 'base.reportContent', 'Content', 4);
+        $this->addNavigationSubGroup('Content', 'base.reportContent', 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
         $this->addNavigationLinkInSubGroup( 'Content', 'base.reportPages', 'Top Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', 'base.reportPageTypes', 'Page Types', 2);
         $this->addNavigationLinkInSubGroup( 'Content', 'base.reportFeeds', 'Feeds', 7);
@@ -2199,11 +2199,11 @@ class owa_baseModule extends owa_module {
 
 
         //Actions
-        $this->addNavigationSubGroup('Action Tracking', 'base.reportActionTracking', 'Action Tracking', 1);
+        $this->addNavigationSubGroup('Action Tracking', 'base.reportActionTracking', 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
         $this->addNavigationLinkInSubGroup('Action Tracking', 'base.reportActionGroups', 'Action Groups', 2);
 
         //Visitors
-        $this->addNavigationSubGroup( 'Visitors', 'base.reportVisitors', 'Visitors', 3);
+        $this->addNavigationSubGroup( 'Visitors', 'base.reportVisitors', 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
         $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportGeolocation', 'Geo-location', 1);
         $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportHosts', 'Domains', 2);
         $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportVisitorsLoyalty', 'Visitor Loyalty', 3);
@@ -2213,7 +2213,7 @@ class owa_baseModule extends owa_module {
         $this->addNavigationLinkInSubGroup( 'Visitors', 'base.reportOs', 'Operating Systems', 7);
 
         //Traffic
-        $this->addNavigationSubGroup('Traffic', 'base.reportTraffic', 'Traffic', 2);
+        $this->addNavigationSubGroup('Traffic', 'base.reportTraffic', 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
         $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportKeywords', 'Search Terms', 1);
         $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAnchortext', 'Inbound Link Text', 2);
         $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportSearchEngines', 'Search Engines', 3);
@@ -2225,7 +2225,7 @@ class owa_baseModule extends owa_module {
         $this->addNavigationLinkInSubGroup( 'Traffic', 'base.reportAttributionHistory', 'Attribution History', 8);
 
         //Goals
-        $this->addNavigationSubGroup('Goals', 'base.reportGoals', 'Goals', 5);
+        $this->addNavigationSubGroup('Goals', 'base.reportGoals', 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
         $this->addNavigationLinkInSubGroup( 'Goals', 'base.reportGoalFunnel', 'Funnel Visualization', 1);
 
     }
@@ -2362,6 +2362,12 @@ class owa_baseModule extends owa_module {
                     'chosen'     => array(
                                             'path'    => OWA_MODULES_DIR.'base/css/chosen.css'
                                         ),
+/*
+                    'font-awesome'     => array(
+                                            'path'    => OWA_MODULES_DIR.'base/css/fa-all.min.css'
+                                        ),
+*/
+
                     'owa.css'     => array(
                                             'path'    => OWA_MODULES_DIR.'base/css/owa.css'
                                         ),
@@ -2370,7 +2376,7 @@ class owa_baseModule extends owa_module {
                                         ),
                     'owa.report.css'     => array(
                                             'path'    => OWA_MODULES_DIR.'base/css/owa.report.css'
-                                        ),
+                                        )
             )
         );
 

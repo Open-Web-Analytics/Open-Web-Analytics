@@ -52,7 +52,7 @@ class owa_reportView extends owa_view {
 
         unset($this->report_params['guid']);
         unset($this->report_params['caller']);
-
+		$this->t->set('params', $this->report_params);
         $this->body->set('params', $this->report_params);
         $this->subview->body->set('params', $this->report_params);
 
@@ -131,6 +131,7 @@ $this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
         $this->setCss("base/css/owa.admin.css");
         $this->setCss("base/css/owa.report.css");
 */
+		$this->setCss("base/css/font-awesome/css/all.min.css");
         $this->setCss("base/css/owa.reporting-css-combined.css");
         $additionalCss = $this->c->get('base','additionalCss');
         if (is_array($additionalCss)) {

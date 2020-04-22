@@ -452,8 +452,8 @@ abstract class owa_module extends owa_base {
      * @param string $priviledge
      * @param string $groupName
      */
-    public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {
-        $this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
+    public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = '') {
+        $this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge, $icon_class);
     }
 
     /**
@@ -1232,11 +1232,12 @@ abstract class owa_module extends owa_base {
      * @param string $priviledge
      * @return array
      */
-    private function getLinkStruct($ref,$anchortext,$order,$priviledge) {
+    private function getLinkStruct($ref,$anchortext,$order,$priviledge, $icon_class = '') {
         return array('ref' => $ref,
                     'anchortext' => $anchortext,
                     'order' => $order,
-                    'priviledge' => $priviledge);
+                    'priviledge' => $priviledge,
+                    'icon_class' => $icon_class);
     }
 
     protected function registerEventQueue( $name, $map ) {

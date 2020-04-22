@@ -9,11 +9,24 @@ OWA.items['<?php echo $dom_id;?>'].properties = <?php echo $this->makeJson($para
 <?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
 // Bind event handlers
 jQuery(document).ready(function(){   
-
+	
+	
+	if (  jQuery('.owa_current').next('.owa_admin_nav_subgroup').length ) {
+		
+		jQuery('.owa_current').next('.owa_admin_nav_subgroup').toggle();
+		 jQuery('.owa_current').children('.owa_admin_nav_topmenu_toggle').toggleClass('fa-caret-right fa-caret-down');
+	}
+	
     // report side navigaion panels - toggle
     jQuery('.owa_admin_nav_topmenu_toggle').click(function () {
-      jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle(); 
+	    
+	    if ( jQuery(this).parent().siblings('.owa_admin_nav_subgroup').length ) { 
+			 jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle();
+			 jQuery(this).toggleClass('fa-caret-right fa-caret-down');
+		}
+		
     });
+    
 });
 <?php endif;?>
 </script>
@@ -25,9 +38,9 @@ jQuery(document).ready(function(){
         <TR>
             <?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
             <TD valign="top" class="owa_reportLeftNavColumn">
-                <div class="reportSectionContainer">
+                <div>
                     <div id="owa_reportNavPanel">
-                        <?php echo $this->makeNavigationMenu($top_level_report_nav, $currentSiteId);?>
+                        <?php echo $this->makeNavigationMenu($top_level_report_nav, $currentSiteId, $params['do']);?>
                     </div>
                 </div>
             </TD>
