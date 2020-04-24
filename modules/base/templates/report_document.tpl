@@ -78,7 +78,7 @@
         prshre.asyncQueue.push(['refreshGrid']);
         prshre.load(prurl);
 
-        var vrurl = '<?php echo $this->makeApiLink(['do' => 'getResultSet',
+        var vrurl = '<?php echo $this->makeApiLink(['do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                         'metrics'           => 'visits,pageViews',
                                                         'dimensions'        => 'visitorId',
                                                         'sort'              => 'visits-',
