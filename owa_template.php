@@ -460,7 +460,7 @@ class owa_template extends Template {
     }
     
     function getLinkStateParam( $key ) {
-	    
+	 
 	    $params = $this->getAllStateParams();
 	    
 	    if (array_key_exists($key, $params)) {
@@ -833,14 +833,14 @@ class owa_template extends Template {
         }
     }
 
-    function makeNavigationMenu($links, $currentSiteId) {
+    function makeNavigationMenu($links, $currentSiteId, $current_action = '') {
 
         if (!empty($links) && !empty($currentSiteId)) {
 
             $t = new owa_template;
             $t->set('links', $links);
             $t->set('currentSiteId', $currentSiteId);
-
+			$t->set('params', array('do' => $current_action ));
             $t->caller_params['link_state'] = $this->caller_params['link_state'];
             $t->set_template('report_nav.tpl');
             return $t->fetch();

@@ -120,7 +120,7 @@ class owa_domstreamModule extends owa_module {
         $rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
         $db = owa_coreAPI::dbSingleton();
         $db->selectFrom('owa_domstream');
-        $db->selectColumn("domstream_guid, max(timestamp) as timestamp, page_url, duration");
+        $db->selectColumn("domstream_guid, max(timestamp) as timestamp, page_url, duration, id as domstream_id");
         //$db->selectColumn('id');
         $db->selectColumn('document_id');
         $db->groupby('domstream_guid');

@@ -87,6 +87,10 @@ class owa_domstream extends owa_factTable {
         // needed?
         $this->properties['page_url'] = new owa_dbColumn;
         $this->properties['page_url']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['page_width'] = new owa_dbColumn;
+        $this->properties['page_width']->setDataType(OWA_DTD_INT);
+        $this->properties['page_height'] = new owa_dbColumn;
+        $this->properties['page_height']->setDataType(OWA_DTD_INT);
     }
 }
 

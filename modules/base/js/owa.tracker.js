@@ -2302,6 +2302,11 @@ OWA.tracker.prototype = {
             domstream.set( 'duration', this.getElapsedTime());
             domstream.set( 'stream_events', JSON.stringify(this.event_queue));
             domstream.set( 'stream_length', this.event_queue.length );
+
+            var viewport = this.getViewportDimensions();
+            domstream.set('page_width', viewport.width);
+            domstream.set('page_height', viewport.height);
+
             // clear event queue now instead of waiting for new trackevent
             // which might be delayed if using an ifram to POST data
             this.event_queue = [];

@@ -30,7 +30,7 @@
             <TD class="data_cell">
                 <a href="<?php $api_url = owa_coreAPI::getSetting('base', 'api_url'); echo $this->makeLink(array(
                         'do' => 'base.overlayLauncher',
-                        'document_id' => $ds['document_id'],
+                        'domstream_id' => $ds['domstream_id'],
                         'overlay_params' => base64_encode(
                                 $this->makeParamString(
                                     array(
@@ -38,7 +38,7 @@
                                         'api_url' => trim( owa_coreAPI::getSetting( 'base', 'api_url' ) ),
                                         'domstream_guid' => $ds['domstream_guid']),
                                     true,
-                                    'json'))));?>" target="_blank">Play</a>
+                                    'json'))));?>">Play</a>
             </TD>
         </TR>
         <?php endforeach; ?>
