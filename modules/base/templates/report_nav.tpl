@@ -6,7 +6,7 @@
         <LI>
             <div class="owa_admin_nav_topmenu">
 
-                <div class="owa_admin_nav_topmenu_item <?php if ($l['ref'] === $params['do'] || in_array( $params['do'], array_column($l['subgroup'], 'ref'))) { echo ' owa_current';} ?>">
+                <div class="owa_admin_nav_topmenu_item <?php if ($l['ref'] === $params['do'] || ( array_key_exists('subgroup', $l) && in_array( $params['do'], array_column($l['subgroup'], 'ref')))) { echo ' owa_current';} ?>">
                     <span class="owa_admin_nav_topmenu_toggle 
                     
                     <?php 

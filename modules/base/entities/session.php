@@ -349,14 +349,16 @@ class owa_session extends owa_factTable {
 
             'first_page_id'     => array(
 
-                'type'             => '',
-                'dtd'            => OWA_DTD_BIGINT
+                'type'             => 'foreign_key',
+                'dtd'            => OWA_DTD_BIGINT,
+                'linked_entity'	=> 'base.document'
             ),
 
             'last_page_id'     => array(
 
-                'type'             => '',
-                'dtd'            => OWA_DTD_BIGINT
+                'type'             => 'foreign_key',
+                'dtd'            => OWA_DTD_BIGINT,
+                'linked_entity'	=> 'base.document'
             ),
 
             //drop?
