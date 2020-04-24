@@ -35,7 +35,7 @@ class owa_reportDashboardController extends owa_reportController {
     function action() {
 
 		$rs = owa_coreAPI::executeApiCommand(array(
-			
+
 			'request_method'	=> 'GET',
 			'module'			=> 'base',
 			'version'			=> 'v1',

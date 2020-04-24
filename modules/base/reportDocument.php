@@ -52,6 +52,7 @@ class owa_reportDocumentController extends owa_reportController {
         }
 
         $this->setTitle('Page Detail: ');
+
         $this->set('document', $d);
         $this->set('metrics', 'visits,pageViews');
         $this->set('resultsPerPage', 30);

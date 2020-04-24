@@ -46,12 +46,11 @@ class owa_baseModule extends owa_module {
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
         $this->required_schema_version = 10;
-        
         return parent::__construct();
     }
-    
+
     function init() {
-	    
+
 	    // create event queues
 
         // register queue type implementations
@@ -77,7 +76,7 @@ class owa_baseModule extends owa_module {
         ));
 
         $this->setupTrackingProperties();
-        
+
     }
 
     /**

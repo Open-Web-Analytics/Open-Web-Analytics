@@ -18,6 +18,18 @@
                 </div>
 
                 <div class="owa_reportSectionContent">
+                    <div class="section_header">Visitors</div>
+                    <div id="pagevisitors"></div>
+                </div>
+            </TD>
+
+            <TD width="50%" valign="top">
+                <div class="owa_reportSectionContent">
+                    <div class="owa_reportSectionHeader">Next Pages Viewed</div>
+                    <div id="nextpages"></div>
+                </div>
+
+                <div class="owa_reportSectionContent">
                     <div class="owa_reportSectionHeader">Related Reports:</div>
 
                     <P>
@@ -31,13 +43,6 @@
                     <P>
                         <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomClicks', 'document_id' => $document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
                     </P>
-                </div>
-            </TD>
-            <div class="owa_reportSectionContent">
-
-            <TD width="50%" valign="top">
-                <div class="owa_reportSectionHeader">Next Pages Viewed</div>
-                    <div id="nextpages"></div>
                 </div>
             </TD>
         </TR>
@@ -74,6 +79,20 @@
         prshre.addLinkToColumn('priorPagePath', link, ['priorPagePath']);
         prshre.asyncQueue.push(['refreshGrid']);
         prshre.load(prurl);
+
+        var vrurl = '<?php echo $this->makeApiLink(['do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                    'metrics'           => 'visits,pageViews',
+                                                    'dimensions'        => 'visitorId',
+                                                    'sort'              => 'visits-',
+                                                    'resultsPerPage'    => 15,
+                                                    'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
+                                                    'format'            => 'json'], true);?>';
+
+        var vrshre = new OWA.resultSetExplorer('pagevisitors');
+        var link = '<?php echo $this->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';
+        vrshre.addLinkToColumn('visitorId', link, ['visitorId']);
+        vrshre.asyncQueue.push(['refreshGrid']);
+        vrshre.load(vrurl);
 </script>
 
 <?php require_once('js_report_templates.php');?>
