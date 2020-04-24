@@ -8,8 +8,10 @@
 
 <div class="owa_reportSectionContent">
     <table style="width:100%;">
-        <tr>
-            <td width="50%" valign="top">
+        <TR>
+
+            <TD width="50%" valign="top">
+
                 <div class="owa_reportSectionContent">
                     <div class="owa_reportSectionHeader">Prior Pages Viewed</div>
                     <div id="priorpages"></div>
@@ -19,9 +21,9 @@
                     <div class="section_header">Visitors</div>
                     <div id="pagevisitors"></div>
                 </div>
-            </td>
+            </TD>
 
-            <td width="50%" valign="top">
+            <TD width="50%" valign="top">
                 <div class="owa_reportSectionContent">
                     <div class="owa_reportSectionHeader">Next Pages Viewed</div>
                     <div id="nextpages"></div>
@@ -30,19 +32,19 @@
                 <div class="owa_reportSectionContent">
                     <div class="owa_reportSectionHeader">Related Reports:</div>
 
-                    <p>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document->get('id'), 'overlay_params' => base64_encode($this->makeParamString(array('action' => 'loadHeatmap', 'api_url' => owa_coreAPI::getSetting('base', 'api_url'), 'document_id' => $document->get('id') ), true, 'json'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
-                    </p>
+                    <P>
+                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document->get('id'), 'overlay_params' => base64_encode($this->makeParamString(array('action' => 'loadHeatmap', 'api_url' => owa_coreAPI::getSetting('base', 'rest_api_url'), 'apiKey' => $this->getApiKey(), 'document_id' => $document->get('id') ), true, 'json'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
+                    </P>
 
-                    <p>
+                    <P>
                         <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams', 'document_id' => $document->get('id')), true);?>">Domstreams</a></span> - mouse movement recordings.
-                    </p>
+                    </P>
 
-                    <p>
+                    <P>
                         <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDomClicks', 'document_id' => $document->get('id')), true);?>">Dom Clicks</a></span> - analysis of dom clicks.
-                    </p>
+                    </P>
                 </div>
-            </td>
+            </TD>
         </TR>
     </table>
 </div>
@@ -79,13 +81,12 @@
         prshre.load(prurl);
 
         var vrurl = '<?php echo $this->makeApiLink(['do' => 'reports', 'module' => 'base', 'version' => 'v1',
-                                                        'metrics'           => 'visits,pageViews',
-                                                        'dimensions'        => 'visitorId',
-                                                        'sort'              => 'visits-',
-                                                        'resultsPerPage'    => 15,
-                                                        'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
-                                                        'format'            => 'json'
-                                                    ], true);?>';
+                                                    'metrics'           => 'visits,pageViews',
+                                                    'dimensions'        => 'visitorId',
+                                                    'sort'              => 'visits-',
+                                                    'resultsPerPage'    => 15,
+                                                    'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
+                                                    'format'            => 'json'], true);?>';
 
         var vrshre = new OWA.resultSetExplorer('pagevisitors');
         var link = '<?php echo $this->makeLink(['do' => 'base.reportVisitor', 'visitorId' => '%s'], true);?>';
