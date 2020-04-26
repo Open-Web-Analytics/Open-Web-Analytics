@@ -37,10 +37,10 @@ class owa_overlayLauncherController extends owa_controller {
         $this->setView('base.overlayLauncher');
                 
         // load entity for document id to get URL
-        $d = owa_coreAPI::entityFactory('base.domstream');
-        $d->load($this->getParam('domstream_id'));
+        $d = owa_coreAPI::entityFactory('base.document');
+        $d->load($this->getParam('document_id'));
 
-        $url = trim( $d->get( 'page_url' ) );
+        $url = trim( $d->get( 'url' ) );
 
         if ( strpos( $url, '#' ) ) {
             $parts = explode( '#', $url );
@@ -49,7 +49,7 @@ class owa_overlayLauncherController extends owa_controller {
 
         $url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
 
-        $this->set('domstream', $d->_getProperties());
+        $this->redirectBrowserToUrl($url); 
         $this->set('url', $url);
     }
 }
