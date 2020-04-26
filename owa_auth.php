@@ -111,13 +111,14 @@ class owa_auth extends owa_base {
      * @param string $necessary_role
      */
     function authenticateUser() {
-
+		
+		$apiKey = owa_coreAPI::getRequestParam('apiKey') ?: owa_coreAPI::getServerParam( 'HTTP_X_API_KEY' );
         // check existing auth status first in case someone else took care of this already.
         if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
             $ret = true;
-        } elseif (owa_coreAPI::getRequestParam('apiKey')) {
+        } elseif ( $apiKey ) {
             // auth user by api key
-            $ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
+            $ret = $this->authByApiKey( $apiKey );
         } elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
             // auth user by temporary passkey. used in forgot password situations
             $ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
