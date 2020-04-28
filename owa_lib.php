@@ -1261,7 +1261,10 @@ class owa_lib {
     //- "0" (0 as a string)
     public static function isEmpty($value) {
 
-        return empty($value) && ! is_numeric($value);
+        if ( empty( $value ) && ! is_numeric( $value ) ) {
+	        
+	        return true;
+        }
     }
 
     public static function isIpAddressValid( $ip = '' ) {

@@ -34,23 +34,32 @@ class owa_overlayLauncherController extends owa_controller {
 
     function action() {
 
-        $this->setView('base.overlayLauncher');
+        
+        $entity = '';
+        $id = '';
+        
+        if ($this->get('document_id')) {
+	        
+	        $entity = 'base.document';
+	        $url_param = 'url';
+	        $id = $this->get('document_id');
+	        
                 
-        // load entity for document id to get URL
-        $d = owa_coreAPI::entityFactory('base.document');
-        $d->load($this->getParam('document_id'));
-
-        $url = trim( $d->get( 'url' ) );
-
-        if ( strpos( $url, '#' ) ) {
-            $parts = explode( '#', $url );
-            $url = $parts[0];
-        }
-
-        $url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
-
-        $this->redirectBrowserToUrl($url); 
-        $this->set('url', $url);
+	        $d = owa_coreAPI::entityFactory( $entity );
+			$d->load( $id );
+	
+	        $url = trim( $d->get( $url_param ) );
+	
+	        if ( strpos( $url, '#' ) ) {
+	            $parts = explode( '#', $url );
+	            $url = $parts[0];
+	        }
+	
+	        $url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
+			
+			$this->redirectBrowserToUrl($url); 
+			$this->set('url', $url);
+		}
     }
 }
 
@@ -70,14 +79,10 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_overlayLauncherView extends owa_view {
-
-    function setTheme() {
-        $this->t->set_template('player_overlay.tpl');
-        return;
-    }
-
+ 
     function render() {
         // Assign Data to templates
+         $this->t->set_template('player_overlay.tpl');
         $this->t->set('domstream', $this->get('domstream'));
         $this->t->set('url', $this->get('url'));
     }
