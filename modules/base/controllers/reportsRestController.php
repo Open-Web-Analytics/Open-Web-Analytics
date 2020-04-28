@@ -167,7 +167,8 @@ class owa_reportsRestController extends owa_reportController {
 
         //site_id
         if ( $this->get('siteId') ) {
-            $rsm->setSiteId( $this->get(' siteId' ) );
+	
+            $rsm->setSiteId( $this->get('siteId' ) );
         }
 
         // set sort order

@@ -219,41 +219,13 @@ class owa_caller extends owa_base {
                         
     }
     
-    function handleSpecialActionRequest() {
-        
-        if(isset($_GET['owa_specialAction'])):
-            $this->e->debug("special action received");
-            echo $this->handleRequestFromUrl();
-            $this->e->debug("special action complete");
-            exit;
-        elseif(isset($_GET['owa_logAction'])):
-            $this->e->debug("log action received");
-            $this->config['delay_first_hit'] = false;
-            $this->c->set('base', 'delay_first_hit', false);
-            echo $this->logEventFromUrl();
-            exit;
-        elseif(isset($_GET['owa_apiAction'])):
-            $this->e->debug("api action received");
-            define('OWA_API', true);
-            // lookup method class
-            echo $this->handleRequest('', 'base.apiRequest');
-            exit;
-        else:
-            owa_coreAPI::debug('hello from special action request method in caller. no action to do.');
-            return;
-        endif;
-
-    }
-    
     function __destruct() {
         
         $this->end_time = owa_lib::microtime_float();
         $total_time = $this->end_time - $this->start_time;
         $this->e->debug(sprintf('Total session time: %s',$total_time));
-        $this->e->debug("goodbye from OWA");
+        $this->e->debug("Goodbye from OWA");
         owa_coreAPI::profileDisplay();
-        
-        return;
     }
         
     function setSetting($module, $name, $value) {

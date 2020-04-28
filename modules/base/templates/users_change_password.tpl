@@ -17,6 +17,9 @@
                 <INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $this->getNs();?>password"><BR><BR>
                 <div class="inline_h2">Re-type your Password</div>
                 <INPUT class="owa_largeFormField" type="password" size="20" name="<?php echo $this->getNs();?>password2"><BR><BR>
+                <?php if ( $is_embedded ) {?>
+		        <input type="hidden" name="<?php echo $this->getNs();?>is_embedded" value="<?php echo $is_embedded;?>">                
+                <?php } ?>
                 <input type="hidden" name="<?php echo $this->getNs();?>k" value="<?php echo $key;?>">
                 <input name="<?php echo $this->getNs();?>action" value="base.usersChangePassword" type="hidden">
                 <INPUT class="owa_largeFormField" type="submit" size="" name="<?php echo $this->getNs();?>submit_btn" value="Save Your New Password">
