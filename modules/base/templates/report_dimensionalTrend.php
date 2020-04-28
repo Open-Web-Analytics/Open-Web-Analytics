@@ -53,10 +53,12 @@
     // add rse to tab
     tab.addRse('trend', trend);
     // dimensonal data object
-    var dimurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
+    var dimurl = '<?php $_sort = $sort ?: $tag['sort'];
+	    
+	    echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
                                                                 'metrics' => $tab['metrics'], 
                                                                 'dimensions' => $dimensions, 
-                                                                'sort' => $tab['sort'],
+                                                                'sort' => $_sort,
                                                                 'resultsPerPage' => $resultsPerPage,
                                                                 'format' => 'json',
                                                                 'constraints' => $constraints
