@@ -51,14 +51,21 @@ class owa_usersChangePasswordController extends owa_controller {
     }
 
     function action() {
-
-        $auth = &owa_auth::get_instance();
+		
+		// needed for old style embedded install migration
+		if ( $this->getParam('is_embedded') ) {
+			
+			owa_coreAPI::setSetting('base', 'is_embedded', true);
+		}
+		
+		
+        $auth = owa_auth::get_instance();
         $status = $auth->authenticateUserTempPasskey($this->params['k']);
 
         // log to event queue
         if ($status === true) {
             $ed = owa_coreAPI::getEventDispatch();
-            $new_password = array('key' => $this->params['k'], 'password' => $this->params['password'], 'ip' => $_SERVER['REMOTE_ADDR']);
+            $new_password = array('key' => $this->params['k'], 'password' => $this->params['password'], 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id'));
             $ed->log($new_password, 'base.set_password');
             $auth->deleteCredentials();
             $this->setRedirectAction('base.loginForm');

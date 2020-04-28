@@ -37,7 +37,7 @@ define('OWA_WP_PATH', plugin_dir_path( __FILE__ ) );
 add_action('plugins_loaded', array( 'owa_wp_plugin', 'getInstance'), 10 );
 
 // Installation hook
-register_activation_hook(__FILE__, array('owa_wp_plugin', 'install') );
+//register_activation_hook(__FILE__, array('owa_wp_plugin', 'install') );
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1158,12 +1158,44 @@ class owa_wp_plugin extends owa_wp_module {
 	 */
 	function pageController( $params = array() ) {
 		
-		if ( $this->isOwaAvailable() ) {
+		$url = $this->getOption('owaEndpoint');
 		
-			$owa = self::getOwaInstance();	
+		if ( $this->isOwaAvailable() ) {
 			
-			echo $owa->handleRequest( $params );
+			// load OWA
+			$owa = $this->getOwaInstance();
+			// get current user ID to see if it's the admin user
+			$cu = owa_coreAPI::getCurrentUser();
+			$user_id = $cu->getUserData('user_id');
+			
+			if ( $user_id ) {
+				
+				$email = $cu->getUserData('email_address');
+				$password = $cu->getUserData('password');
+				$temp_passkey = $cu->getUserData('temp_passkey');
+				
+				// display a bug that lets the user know what their OWA user name and email address are so they can login.
+				echo sprintf('<div class="notice notice-info is-dismissible"><p>Your OWA user id is: <B><em>%s</em></b>. Password reset email is <b><em>%s</em></b></p></div><BR>', $user_id, $email);
+				
+				// This part is for prompting old embedded install users to set a password so that they can login to OWA endpoints directly.
+				// check to see if this is the auto-created admin user and if they have been migrated or not. 
+				// migration is basically a password reset.
+				if ( $email && $temp_passkey &&   $user_id === 'admin' && ! $owa->getSetting('base', 'is_embedded_admin_user_password_reset') ) {
+					
+					// if they haven't been migrated then show a notice
+					$msg = sprintf('<div class="notice update-nag is-dismissible"><p>You must login to OWA in order to view analytics from within WordPress. Login using the OWA user id: <B><em>%s</em></b> after you reset your password below or via the CLI.</p></div>', $user_id);
+		
+		
+					echo $msg;
+					// send them to the password entry page directly.
+					$url .= sprintf('?%sdo=base.usersPasswordEntry&%sk=%s&owa_is_embedded=1', $owa->getSetting('base', 'ns'), $owa->getSetting('base', 'ns'), $temp_passkey);
+					
+				}
+			}
 		}
+		
+		// insert iframe of OWA endpoint						
+		echo sprintf('<iframe id="owa_wp_analytics" src="%s" style="display: block; width: 100%%; height:100vh;border: none; overflow-y: hidden; overflow-x: hidden;" height="100%%" >', $url);
 	}
 	
 	/**
@@ -2034,7 +2066,7 @@ class owa_wp_settingsPage {
 	
 	public function displayErrorNotices() {
 	
-    	settings_errors( 'your-settings-error-slug' );
+    	settings_errors();
 	}
 }
 
