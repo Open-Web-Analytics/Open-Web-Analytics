@@ -50,7 +50,14 @@ class owa_usersSetPasswordController extends owa_controller {
         $u = $userManager->updateUserPassword([
             'temp_passkey' => $event->get('key'),
             'password' => $event->get('password'),
+            'user_id'  => $event->get('user_id')
         ]);
+        // needed for migration away from old embedded install model
+        owa_coreAPI::debug('setting migration flag...'. owa_coreAPI::getSetting('base', 'is_embedded') );
+        if ( $u && owa_coreAPI::getSetting('base', 'is_embedded') ) {
+				owa_coreAPI::debug('setting migration flag...');	        
+	        	owa_coreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
+		}
 
         if ($u !== false) {
             $data['view'] = 'base.usersSetPassword';
@@ -58,8 +65,10 @@ class owa_usersSetPasswordController extends owa_controller {
             $data['ip'] = $event->get('ip');
             $data['subject'] = 'Password Change Complete';
             $data['email_address'] = $u->get('email_address');
+            
+           
         }
-
+        
         return $data;
     }
 
