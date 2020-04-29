@@ -763,10 +763,11 @@ OWA.tracker.prototype = {
     logEvent : function (properties, block, callback) {
 
         if (this.active) {
-
+			
             var url = this._assembleRequestUrl(properties);
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {
+            	
                 //this.cdPost( this.prepareRequestData( properties ) );
                 var data = this.prepareRequestData( properties );
                 this.cdPost( data );
@@ -1423,9 +1424,9 @@ OWA.tracker.prototype = {
 
             if (event != undefined) {
                 this.event_queue.push(event.getProperties());
-                //console.debug("Now logging %s for: %d", event.get('event_type'), now);
+                console.debug("Now logging %s for: %d", event.get('event_type'), now);
             } else {
-                //console.debug("No event properties to log");
+                console.debug("No event properties to log");
             }
 
         }
@@ -2289,7 +2290,7 @@ OWA.tracker.prototype = {
     logDomStream : function() {
 
         var domstream = new OWA.event;
-
+		
         if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
 
             // make an domstream_id if one does not exist. needed for upstream processing

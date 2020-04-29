@@ -44,7 +44,9 @@ class owa_usersPasswordEntryController extends owa_controller {
 
         $this->set('key', $this->getParam('k'));
         $this->setView('base.usersPasswordEntry');
-        return;
+        
+        // needed for old style embedded install migration
+         $this->set('is_embedded', $this->getParam('is_embedded'));
     }
 
 
@@ -74,9 +76,11 @@ class owa_usersPasswordEntryView extends owa_view {
     function render($data) {
 
         $this->t->set_template('wrapper_public.tpl');
+        $this->t->set('page_title', 'OWA Password Entry'); 
         $this->body->set_template('users_change_password.tpl');
         $this->body->set('headline', $this->getMsg(3005));
         $this->body->set('key', $this->get('key'));
+        $this->body->set('is_embedded', $this->get('is_embedded'));
     }
 }
 

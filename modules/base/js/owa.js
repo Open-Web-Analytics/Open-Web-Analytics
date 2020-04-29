@@ -137,7 +137,7 @@
     },
     
     getApiEndpoint : function() {
-        return this.config['api_endpoint'] || this.getSetting('baseUrl') + 'api.php';
+        return this.config['rest_api_endpoint'] || this.getSetting('baseUrl') + 'api/';
     },
     
     loadHeatmap: function(p) {

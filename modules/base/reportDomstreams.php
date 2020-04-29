@@ -39,7 +39,7 @@ class owa_reportDomstreamsController extends owa_reportController {
 
         // get period
         $p = $this->getPeriod();
-
+		
         // check for limits
         if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
             $doc = owa_coreAPI::entityFactory('base.document');
@@ -63,20 +63,19 @@ class owa_reportDomstreamsController extends owa_reportController {
         }
 
         $ds = owa_coreAPI::executeApiCommand(array(
-
-            'do'                => 'getDomstreams',
+			'module'			=> 'domstream',
+			'version'			=> 'v1',
+            'do'                => 'domstreams',
+            'request_method'	=> 'GET',
             'startDate'         => $p->getStartDate()->getYyyymmdd(),
             'endDate'            => $p->getEndDate()->getYyyymmdd(),
             'document_id'        => $document_id,
             'siteId'            => $this->getParam('siteId'),
             'page'                => $this->getParam('page'),
-            'resultsPerPage'    => 50,
-            'format'            => $this->getParam('format')
+            'resultsPerPage'    => 50
         ));
-
-        $this->set('domstreams', $ds);
-        //print_r($ds);
-
+ 
+		 $this->set('domstreams', $ds);
         // set view stuff
         $this->setSubview('base.reportDomstreams');
 

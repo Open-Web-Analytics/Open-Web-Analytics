@@ -21,6 +21,12 @@ require_once(OWA_DIR.'owa_reportController.php');
  */
 class owa_reportsRestController extends owa_reportController {
 	
+	function __construct($params) {
+		
+        parent::__construct($params);
+        $this->setRequiredCapability('view_reports');
+    }
+	
 	function validate() {
 		
 		// if no report name is specified do these validations necesary for generic resultSet.
@@ -161,7 +167,8 @@ class owa_reportsRestController extends owa_reportController {
 
         //site_id
         if ( $this->get('siteId') ) {
-            $rsm->setSiteId( $this->get(' siteId' ) );
+	
+            $rsm->setSiteId( $this->get('siteId' ) );
         }
 
         // set sort order
