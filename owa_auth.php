@@ -123,15 +123,15 @@ class owa_auth extends owa_base {
         } elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
             // auth user by temporary passkey. used in forgot password situations
             $ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
-            owa_coreAPI::debug('User authenticated via temporary passkey.');
+             owa_coreAPI::debug('User authenticated via temporary passkey.');
         } elseif (owa_coreAPI::getRequestParam('user_id') && owa_coreAPI::getRequestParam('password')) {
             // auth user by login form input
             $ret = $this->authByInput(owa_coreAPI::getRequestParam('user_id'), owa_coreAPI::getRequestParam('password'));
-            owa_coreAPI::debug('User authenticated via form input.');
+             owa_coreAPI::debug('User authenticated via form input.');
         } elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
             // auth user by cookies
             $ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
-            owa_coreAPI::debug('User authenticated via cookies.');
+             owa_coreAPI::debug('User authenticated via cookies.');
             // bump expiration time
             //owa_coreAPI::setState('p', '', owa_coreAPI::getStateParam('p'));
         } else {
