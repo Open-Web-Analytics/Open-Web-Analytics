@@ -573,7 +573,7 @@ class owa_template extends Template {
     }
 
     function makeApiLink($params = array(), $add_state = false) {
-      	
+
         $url = $this->config['rest_api_url'];
       
         return $this->makeLink($params, $add_state, $url);
