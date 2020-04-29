@@ -378,7 +378,7 @@ class owa_wp_plugin extends owa_wp_module {
 	
 	function setTrackDomstreamsCmd() {
 		
-		$this->cmds[] = "owa_cmds.push( ['trackDomstreams'] );";
+		$this->cmds[] = "owa_cmds.push( ['trackDomStream'] );";
 	}
 	
 	function cmdsToString() {
