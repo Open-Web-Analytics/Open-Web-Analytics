@@ -1173,24 +1173,10 @@ class owa_wp_plugin extends owa_wp_module {
 				$email = $cu->getUserData('email_address');
 				$password = $cu->getUserData('password');
 				$temp_passkey = $cu->getUserData('temp_passkey');
-				
+				$reset_url = $url . sprintf('?%sdo=base.usersPasswordEntry&%sk=%s&owa_is_embedded=1', $owa->getSetting('base', 'ns'), $owa->getSetting('base', 'ns'), $temp_passkey);
 				// display a bug that lets the user know what their OWA user name and email address are so they can login.
-				echo sprintf('<div class="notice notice-info is-dismissible"><p>Your OWA user id is: <B><em>%s</em></b>. Password reset email is <b><em>%s</em></b></p></div><BR>', $user_id, $email);
+				echo sprintf('<div class="notice notice-info is-dismissible"><p>Your OWA user id is: <B><em>%s</em></b>. Password reset email is <b><em>%s</em></b>. You may need to <a href="%s">reset your OWA password here</a> to login.</p></div><BR>', $user_id, $email, $reset_url);
 				
-				// This part is for prompting old embedded install users to set a password so that they can login to OWA endpoints directly.
-				// check to see if this is the auto-created admin user and if they have been migrated or not. 
-				// migration is basically a password reset.
-				if ( $email && $temp_passkey &&   $user_id === 'admin' && ! $owa->getSetting('base', 'is_embedded_admin_user_password_reset') ) {
-					
-					// if they haven't been migrated then show a notice
-					$msg = sprintf('<div class="notice update-nag is-dismissible"><p>You must login to OWA in order to view analytics from within WordPress. Login using the OWA user id: <B><em>%s</em></b> after you reset your password below or via the CLI.</p></div>', $user_id);
-		
-		
-					echo $msg;
-					// send them to the password entry page directly.
-					$url .= sprintf('?%sdo=base.usersPasswordEntry&%sk=%s&owa_is_embedded=1', $owa->getSetting('base', 'ns'), $owa->getSetting('base', 'ns'), $temp_passkey);
-					
-				}
 			}
 		}
 		
