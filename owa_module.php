@@ -986,7 +986,7 @@ abstract class owa_module extends owa_base {
 		
 		$s = owa_coreAPI::serviceSingleton();
 		
-		$s->setRestApiRoute( $this->name, $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file, 'params' => $params ) );
+		$s->setRestApiRoute( $this->name, $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file, 'conf' => $params ) );
     }
 
     function registerCliCommand($command, $class) {

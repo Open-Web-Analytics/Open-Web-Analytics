@@ -1604,12 +1604,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 	   		 $query_params['do'] = 'reports';
 	   		 $query_params['module'] = 'base';
 	   		 $query_params['version'] = 'v1';
-	   		 $query_params['apiKey'] = owa_coreAPI::getCurrentUser()->getUserData('api_key');
-        } else {
-	        $api_url = owa_coreAPI::getSetting('base', 'api_url');
-			// add api command
-			$query_params['do'] = 'getResultSet';
-		}
+        }
         
       
         //add format

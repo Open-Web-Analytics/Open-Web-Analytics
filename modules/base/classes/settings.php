@@ -770,7 +770,6 @@
         $this->set('base','images_url', $modules_url);
         $this->set('base','images_absolute_url',$modules_url);
         $this->set('base','log_url',$public_url.'log.php');
-        $this->set('base','api_url',$public_url.'api.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 
         $this->set('base', 'error_log_file', OWA_DATA_DIR . 'logs/errors_'. owa_coreAPI::generateInstanceSpecificHash() .'.txt');

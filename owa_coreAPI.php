@@ -1245,6 +1245,25 @@ class owa_coreAPI {
 		// Lookup controler for REST API route.
 		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
 			
+			// check for rewriten rest params and set module, version, and do params from that
+			$rest_params = self::getRequestParam('rest_params');
+			
+			if ( $rest_params ) {
+			
+				$rest_params = explode('/', $rest_params); 
+				self::debug( 'exploding raw REST params:');
+				self::debug( $rest_params );
+			
+				if ( count( $rest_params ) >= 3 ) {
+					
+					$params['module'] = $rest_params[0];
+					$params['version'] = $rest_params[1];
+					$params['do'] = $rest_params[2];
+					$action = $params['do'];
+				}				
+			}
+			
+			
 			owa_coreAPI::debug('Generating REST API route controller...');
 			
 			if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
@@ -1253,6 +1272,20 @@ class owa_coreAPI {
 				$route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
 				
 				if ( $route ) {
+					
+					// set the remainer of the rewritten rest params
+					
+					if ( $rest_params ) {
+						
+						// slice off the first three params which have already been set
+						$rest_params = array_slice($rest_params, 3); 
+						
+						foreach ( $rest_params as $k => $v) {
+							
+							$params[ $route['conf'][ 'params_order' ][$k] ] = $rest_params[ $k ];
+						}
+					}
+					
 					$params['rest_route'] = $route;
 					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
 					return owa_coreAPI::runController( $controller );

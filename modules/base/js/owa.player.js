@@ -59,8 +59,8 @@ OWA.player.prototype = {
     },
 
     load : function(data) {
-
-        this.stream = data;
+		
+        this.stream = data.data;
         // count the events in the queue
         this.queue_count = this.stream.events.length;
     },
@@ -72,7 +72,10 @@ OWA.player.prototype = {
 
         var p = unescape(OWA.state.getStateFromCookie('overlay'));
         var params = JSON.parse(p);
-        params.action = 'getDomstream';
+        params.action = 'domstreams';
+        params.module = 'domstream';
+        params.version = 'v1';
+        
         //alert(params.action);
         //alert(unescape(JSON.stringify(params)));
         //closure
@@ -160,9 +163,13 @@ OWA.player.prototype = {
 
         // change control static color
            jQuery('#owa_overlay_start').removeClass('active');
-        if (!this.timer) return false;
-          clearInterval(this.timer);
-          this.setStatus('Ready.');
+        if (!this.timer) {
+	        return false;
+	    }
+        
+        clearInterval(this.timer);
+        
+        this.setStatus('Ready.');
 
     },
 

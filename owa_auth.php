@@ -111,22 +111,28 @@ class owa_auth extends owa_base {
      * @param string $necessary_role
      */
     function authenticateUser() {
-
+		
+		$apiKey = owa_coreAPI::getRequestParam('apiKey') ?: owa_coreAPI::getServerParam( 'HTTP_X_API_KEY' );
         // check existing auth status first in case someone else took care of this already.
         if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
+	        owa_coreAPI::debug('User is already authenticated.');
             $ret = true;
-        } elseif (owa_coreAPI::getRequestParam('apiKey')) {
+        } elseif ( $apiKey ) {
             // auth user by api key
-            $ret = $this->authByApiKey(owa_coreAPI::getRequestParam('apiKey'));
+            $ret = $this->authByApiKey( $apiKey );
+            owa_coreAPI::debug('User authenticated via api key.');
         } elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
             // auth user by temporary passkey. used in forgot password situations
             $ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
+             owa_coreAPI::debug('User authenticated via temporary passkey.');
         } elseif (owa_coreAPI::getRequestParam('user_id') && owa_coreAPI::getRequestParam('password')) {
             // auth user by login form input
             $ret = $this->authByInput(owa_coreAPI::getRequestParam('user_id'), owa_coreAPI::getRequestParam('password'));
+             owa_coreAPI::debug('User authenticated via form input.');
         } elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
             // auth user by cookies
             $ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
+             owa_coreAPI::debug('User authenticated via cookies.');
             // bump expiration time
             //owa_coreAPI::setState('p', '', owa_coreAPI::getStateParam('p'));
         } else {
