@@ -568,7 +568,7 @@ class owa_baseModule extends owa_module {
         $this->registerRestApiRoute( 'v1', 'sites', 'POST', 'owa_addSiteRestController', 'controllers/addSiteRestController.php' );
         $this->registerRestApiRoute( 'v1', 'users', 'GET', 'owa_usersRestController', 'controllers/usersRestController.php' );
         $this->registerRestApiRoute( 'v1', 'users', 'POST', 'owa_addUserRestController', 'controllers/addUserRestController.php' );
-		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'owa_deleteUserRestController', 'controllers/deleteUserRestController.php' );
+		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'owa_deleteUserRestController', 'controllers/deleteUserRestController.php', [ 'params_order' => ['user_id'] ] );
 		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'owa_siteAddAllowedUserRestController', 'controllers/siteAddAllowedUserRestController.php' );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'owa_reportsRestController', 'controllers/reportsRestController.php', [ 'params_order' => ['report_name'] ] );
     }
