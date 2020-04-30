@@ -378,7 +378,7 @@ class owa_wp_plugin extends owa_wp_module {
 	
 	function setTrackDomstreamsCmd() {
 		
-		$this->cmds[] = "owa_cmds.push( ['trackDomstreams'] );";
+		$this->cmds[] = "owa_cmds.push( ['trackDomStream'] );";
 	}
 	
 	function cmdsToString() {
@@ -421,8 +421,7 @@ class owa_wp_plugin extends owa_wp_module {
 				return;
 			}
 		}
-		
-		
+				
 		// Don't log if the page request is a preview - Wordpress 2.x or greater
 		if ( function_exists( 'is_preview' ) ) {
 			
@@ -982,7 +981,21 @@ class owa_wp_plugin extends owa_wp_module {
 					'length'									=> 70,
 					'error_message'							=> ''		
 				)				
-			)
+			),
+			
+			'debug'				=> array(
+			
+				'default_value'							=> false,
+				'field'									=> array(
+					'type'									=> 'boolean',
+					'title'									=> 'Debug Mode',
+					'page_name'								=> 'owa-wordpress',
+					'section'								=> 'advanced',
+					'description'							=> 'Outputs debug notices to log file and browser console.',
+					'label_for'								=> 'Debug Mode',
+					'error_message'							=> 'You must select On or Off.'		
+				)				
+			),
 
 		);
 	
