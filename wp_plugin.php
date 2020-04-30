@@ -2065,7 +2065,7 @@ class owa_wp_settingsPage {
 	
 	public function displayErrorNotices() {
 	
-    	settings_errors();
+    	settings_errors( $this->page_slug );
 	}
 }
 

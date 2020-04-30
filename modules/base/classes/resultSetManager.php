@@ -101,6 +101,7 @@ class owa_resultSetManager extends owa_base {
     var $errors = array();
     var $formatters = array();
     var $segment;
+    var $pagination;
 
     function __construct($db = '') {
 

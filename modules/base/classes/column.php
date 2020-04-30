@@ -36,7 +36,7 @@ class owa_dbColumn {
 
      var $data_type;
 
-     var $foriegn_key;
+     var $foreign_key;
 
      var $is_primary_key = false;
 
