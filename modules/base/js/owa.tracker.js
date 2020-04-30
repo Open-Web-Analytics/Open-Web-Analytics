@@ -184,10 +184,6 @@ OWA.commandQueue.prototype = {
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.2.1
  */
 OWA.tracker = function( options ) {
 
@@ -202,7 +198,7 @@ OWA.tracker = function( options ) {
     OWA.registerStateStore('b', '', '', 'json');
 
     // Configuration options
-    this.options = {
+    this.options = OWA.applyFilters('tracker.default_options', {
         logClicks: true,
         logPage: true,
         logMovement: false,
@@ -229,7 +225,7 @@ OWA.tracker = function( options ) {
         maxCustomVars: 5,
         getRequestCharacterLimit: 2000
 
-    };
+    });
 
     // Endpoint URL of log service. needed for backwards compatability with old tags
     var endpoint = window.owa_baseUrl || OWA.config.baseUrl ;
@@ -258,7 +254,8 @@ OWA.tracker = function( options ) {
 
     // check to se if an overlay session is active
     this.checkForOverlaySession();
-
+	
+	OWA.doAction('tracker.init');
 }
 
 OWA.tracker.prototype = {
@@ -764,6 +761,7 @@ OWA.tracker.prototype = {
 
         if (this.active) {
 			
+			properties = OWA.applyFilters('tracker.log_event_properties', properties);
             var url = this._assembleRequestUrl(properties);
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {
@@ -1424,9 +1422,9 @@ OWA.tracker.prototype = {
 
             if (event != undefined) {
                 this.event_queue.push(event.getProperties());
-                console.debug("Now logging %s for: %d", event.get('event_type'), now);
+                OWA.debug("Now logging %s for: %d", event.get('event_type'), now);
             } else {
-                console.debug("No event properties to log");
+                OWA.debug("No event properties to log");
             }
 
         }

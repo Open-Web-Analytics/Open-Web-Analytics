@@ -1,12 +1,17 @@
     var OWA = {
 
     items: {},
+    hooks: {
+	    actions: {},
+	    filters: {}
+    },
     loadedJsLibs: {},
     overlay: '',
     config: {
         ns: 'owa_',
         baseUrl: '',
-        hashCookiesToDomain: true
+        hashCookiesToDomain: true,
+        debug: false
     },
     state: {},
     overlayActive: false,
@@ -133,7 +138,7 @@
     },
     
     setApiEndpoint : function (endpoint) {
-        this.config['api_endpoint'] = endpoint;
+        this.config['rest_api_endpoint'] = endpoint;
     },
     
     getApiEndpoint : function() {
@@ -190,8 +195,134 @@
                 
         OWA.util.eraseCookie(OWA.getSetting('ns') + 'overlay', document.domain);
         OWA.overlayActive = false;
-    }
+    },
+    
+    /**
+	 * Add a new Filter callback
+	 *
+	 * @param tag The tag specified by applyFilters
+	 * @param callback The callback function to call
+	 * @param priority Priority of filter to apply.
+	 */
+    addFilter : function( tag, callback, priority ) {
+		
+		if( "undefined" === typeof priority ) {
+	        
+	        priority = 10;
+	    }
+	
+	    // Make tag if it doesn't already exist
+	    this.hooks.filters[ tag ] = this.hooks.filters[ tag ] || [];
+	    this.hooks.filters[ tag ].push( { priority: priority, callback: callback } );  
+    },
+    
+    addAction : function( tag, callback, priority ) {
+	    
+	    OWA.debug('Adding Action callback for: ' + tag);
+	    
+	    if( typeof priority === "undefined" ) {
+	        priority = 10;
+	    }
+	
+	    // Make tag if it doesn't already exist
+	    this.hooks.actions[ tag ] = this.hooks.actions[ tag ] || [];
+		this.hooks.actions[ tag ].push( { priority: priority, callback: callback } );
+	},
+	
+	applyFilters : function( tag, value, options ) {
+		
+		OWA.debug('Filtering ' + tag + ' with value:');
+		OWA.debug(value);
+		
+		var filters = [];
+		
+	    if( "undefined" !== typeof this.hooks.filters[ tag ] && this.hooks.filters[ tag ].length > 0 ) {
+			OWA.debug('Applying filters for ' + tag);
+	        this.hooks.filters[ tag ].forEach( function( hook ) {
+				
+	            filters[ hook.priority ] = filters[ hook.priority ] || [];
+	            filters[ hook.priority ].push( hook.callback );
+	        } );
+	
+	        filters.forEach( function( hooks ) {
+	
+	            hooks.forEach( function( callback ) {
+	                value = callback( value, options );
+	                
+	                OWA.debug('Filter returned value: ');
+	                OWA.debug(value);
+	            } );
+	
+	        } );
+	    }
+	
+	    return value;
+	},
+	
+	/**
+	 * trigger action callbacks
+	 *
+	 * @param tag A registered tag
+	 * @options Optional object to pass to the callbacks
+	 */
+	doAction : function( tag, options ) {
+		
+		OWA.debug('Doing Action: ' + tag);
+		
+		var actions = [];
 
+	    if( "undefined" !== typeof this.hooks.actions[ tag ]  && this.hooks.actions[ tag ].length > 0 ) {
+			OWA.debug(this.hooks.actions[ tag ]);
+	        this.hooks.actions[ tag ].forEach( function( hook ) {
+	
+	            actions[ hook.priority ] = actions[ hook.priority ] || [];
+	            actions[ hook.priority ].push( hook.callback );
+	
+	        } );
+	
+	        actions.forEach( function( hooks ) {
+				OWA.debug('Executing Action callabck for: ' + tag);
+	            hooks.forEach( function( callback ) {
+	                callback( options );
+	            } );
+	
+	        } );
+	    }
+	},
+	
+	removeAction : function( tag, callback ) {
+		
+		this.hooks.actions[ tag ] = this.hooks.actions[ tag ] || [];
+
+	    this.hooks.actions[ tag ].forEach( function( filter, i ) {
+		    
+	        if( filter.callback === callback ) {
+	            this.hooks.actions[ tag ].splice(i, 1);
+	        }
+	        
+	    });
+	},
+	
+	/**
+	 * Remove a Filter callback
+	 *
+	 * Must be the exact same callback signature.
+	 * Warning: Anonymous functions can not be removed.
+	 * @param tag The tag specified by applyFilters
+	 * @param callback The callback function to remove
+	 */
+	removeFilter : function( tag, callabck ) {
+		
+		this.hooks.filters[ tag ] = this.hooks.filters[ tag ] || [];
+	
+	    this.hooks.filters[ tag ].forEach( function( filter, i ) {
+		    
+	        if( filter.callback === callback ) {
+	            this.hooks.filters[ tag ].splice(i, 1);
+	        }
+	        
+	    });
+	}
 
 }
 
