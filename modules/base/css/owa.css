@@ -53,6 +53,17 @@ div {margin:0;}
     
 }
 
+#updates {
+	
+	background-color: #ffffff;
+	padding: 20px;
+}
+
+#updates p {
+	
+	font-size: 14px;
+}
+
 .owa_navigation li a:hover {
 	border-bottom: 2px solid orange;
    

@@ -126,7 +126,7 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			// Track admin actions if OWA is available as a library
 			if( $this->isOwaAvailable() ) {
-
+				
 				
 				// @todo find a way for these methods to POST these to the OWA instance instead of via OWA's PHP Tracker
 				$this->defineActionHooks();
@@ -134,9 +134,21 @@ class owa_wp_plugin extends owa_wp_module {
 				// Create a new tracked site in OWA.
 				// @todo move this to REST API call when it's ready.
 				add_action('wpmu_new_blog', array($this, 'createTrackedSiteForNewBlog'), 10, 6);
+				
+				$owa = self::getOwaInstance();
+			
+				if ( owa_coreAPI::isUpdateRequired() ) {
+					
+					add_action('admin_notices', array($this, 'updateNag') );
+				}	
 			}
 		}
 
+	}
+		
+	function updateNag() {
+		
+		echo '<BR><div class="update-nag "><p>'. '<B>Open Web Analytics</b> updates are required before tracking can continue. <a href="/wp-admin/admin.php?page=owa-analytics">Please update now!</a></p></div>';
 	}
 	
 	private function isProperWordPressRequest() {
@@ -1132,12 +1144,12 @@ class owa_wp_plugin extends owa_wp_module {
 				// create owa instance w/ config
 				$owa = new owa_php();
 				$owa->setSiteId( self::generateSiteId() );
-				$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
-				$owa->setSetting( 'base', 'link_template', '%s&%s' );
-				$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
-				$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
+				//$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
+				//$owa->setSetting( 'base', 'link_template', '%s&%s' );
+				//$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
+				//$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
 				
-				$owa->setSetting( 'base', 'rest_api_url', $owa->getSetting( 'base', 'rest_api_url' ).'?');
+				//$owa->setSetting( 'base', 'rest_api_url', $owa->getSetting( 'base', 'rest_api_url' ).'?');
 				$owa->setSetting( 'base', 'is_embedded', true );
 				
 				$current_user = wp_get_current_user();
@@ -2566,7 +2578,7 @@ class owa_wp_settings_field_select extends owa_wp_settings_field {
 			}
 		} else {
 			
-			$opts = '<option>No options are available.</option>';
+			$opts = '<option value="">No options are available.</option>';
 		}
 		
 		echo sprintf(

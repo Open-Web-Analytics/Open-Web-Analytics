@@ -1,4 +1,4 @@
-<div style="width:800px; margin: 0px auto -1px auto;">
+<div id="updates" style="width:800px; margin: 0px auto 20px auto;">
     <div class="" style="text-align:center;">
         <h1>Open Web Analytics Updater</h1>
     </div>
