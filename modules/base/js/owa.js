@@ -199,10 +199,12 @@
     
     /**
 	 * Add a new Filter callback
+	 * Note: filter functions must return the value variable.
 	 *
-	 * @param tag The tag specified by applyFilters
-	 * @param callback The callback function to call
-	 * @param priority Priority of filter to apply.
+	 * @param	tag			string	 	The tag that will be called by applyFilters
+	 * @param	callback	function	The callback function to call
+	 * @param	priority 	int			Priority of filter to apply.
+	 * @return	value		mixed		the value to return.	
 	 */
     addFilter : function( tag, callback, priority ) {
 		
@@ -216,6 +218,14 @@
 	    this.hooks.filters[ tag ].push( { priority: priority, callback: callback } );  
     },
     
+    /**
+	 * Add a new Action callback
+	 *
+	 * @param	tag			string	 	The tag that will be called by doAction
+	 * @param	callback	function	The callback function to call
+	 * @param	priority 	int			Priority of filter to apply.
+	 */
+
     addAction : function( tag, callback, priority ) {
 	    
 	    OWA.debug('Adding Action callback for: ' + tag);
@@ -229,6 +239,13 @@
 		this.hooks.actions[ tag ].push( { priority: priority, callback: callback } );
 	},
 	
+	/**
+	 * trigger filter callbacks
+	 *
+	 * @param 	tag			string			filter name
+	 * @param	value		mixed			the value being filtered
+	 * @param	options		object||array	Optional object to pass to the callbacks
+	 */
 	applyFilters : function( tag, value, options ) {
 		
 		OWA.debug('Filtering ' + tag + ' with value:');
@@ -262,8 +279,8 @@
 	/**
 	 * trigger action callbacks
 	 *
-	 * @param tag A registered tag
-	 * @options Optional object to pass to the callbacks
+	 * @param 	tag		 string			A registered tag
+	 * @param	options	 object||array	Optional object to pass to the callbacks
 	 */
 	doAction : function( tag, options ) {
 		
@@ -290,6 +307,14 @@
 	    }
 	},
 	
+	/**
+	 * Remove an Action callback
+	 *
+	 * Must be the exact same callback signature.
+	 * Note: Anonymous functions can not be removed.
+	 * @param tag		The tag specified by applyFilters
+	 * @param callback	The callback function to remove
+	 */
 	removeAction : function( tag, callback ) {
 		
 		this.hooks.actions[ tag ] = this.hooks.actions[ tag ] || [];
@@ -307,9 +332,9 @@
 	 * Remove a Filter callback
 	 *
 	 * Must be the exact same callback signature.
-	 * Warning: Anonymous functions can not be removed.
-	 * @param tag The tag specified by applyFilters
-	 * @param callback The callback function to remove
+	 * Note: Anonymous functions can not be removed.
+	 * @param tag		The tag specified by applyFilters
+	 * @param callback	The callback function to remove
 	 */
 	removeFilter : function( tag, callabck ) {
 		
