@@ -154,7 +154,7 @@ class owa_browscap extends owa_base {
 
         foreach ( $robots as $k => $robot ) {
 
-            $match = strpos( $this->ua, $robot );
+            $match = strpos( strtolower( $this->ua ), $robot );
 
             if ( $match ) {
 
