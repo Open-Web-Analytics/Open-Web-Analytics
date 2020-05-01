@@ -538,7 +538,19 @@
       * @return array
       */
      private function getDefaultSettingsArray() {
-
+	 	 
+	 	 if (isset($_SERVER['SERVER_NAME'])) {
+		 	 
+		 	 $mailer_domain = $_SERVER['SERVER_NAME'];
+	 	 } else {
+		 	 
+		 	 if ( defined( 'PUBLIC_URL' ) ) {
+			 	 
+			 	 $parts = parse_url( PUBLIC_URL );
+			 	 $mailer_domain = $parts['host'];
+		 	 }
+	 	 }
+	 	 
          return array(
              'base' => array(
                 'ns'                                => 'owa_',
@@ -631,7 +643,7 @@
                 'wiki_url'                            => 'http://wiki.openwebanalytics.com',
                 'password_length'                    => 4,
                 'modules'                            => array('base'),
-                'mailer-from'                        => 'owa@' . $_SERVER['SERVER_NAME'], // Set default address, because sending from root@localhost wont work
+                'mailer-from'                        => 'owa@' . $mailer_domain, // Set default address, because sending from root@localhost wont work
                 'mailer-fromName'                    => 'OWA Mailer',
                 'mailer-host'                        => '',
                 'mailer-port'                        => '',
