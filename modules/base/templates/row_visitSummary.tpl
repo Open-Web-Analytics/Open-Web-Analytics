@@ -54,7 +54,7 @@
                 <TD class="owa_visitInfoboxItem">
 
                     <?php $this->renderKpiInfobox(
-	                        '<i class=" '. $this->choose_browser_icon($row['browser_type']) . '"></i>',
+	                        '<i title="'. $row['browser_type'] .'" class=" '. $this->choose_browser_icon($row['browser_type']) . '"></i>',
                         'Browser Type',
                         $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
                         'visitSummaryKpi'
