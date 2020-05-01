@@ -83,6 +83,7 @@ class owa_crawlReferralCliController extends owa_cliController
         $db->selectFrom($ref->getTableName());
         $db->selectColumn('id');
         $db->where('url', '(none)', '!=');
+        $db->where('is_searchengine', 1, '!=');
 
         $referrals = $db->getAllRows();
 
