@@ -198,40 +198,29 @@ class owa_template extends Template {
      * @param unknown_type $browser_type
      * @return unknown
      */
-    function choose_browser_icon($browser_type, $height= '32', $width='') {
-
-        $default_location = 'base/i/browsers/128x128/';
-
-        $icons = array(
-
-            'internet explorer'    =>  $default_location . 'ie.png',
-            'opera mini'        =>    $default_location . 'opera.png',
-            'unknown browser'    =>    $default_location . 'default.png'
-
-        );
-
-        $file = $default_location . strtolower( $browser_type ) . '.png' ;
-
-        if ( file_exists( OWA_MODULES_DIR . $file ) ) {
-
-            $file = $file;
-
-        } else if ( isset( $icons[ strtolower($browser_type) ] ) ) {
-
-            $file = $icons[ strtolower($browser_type) ];
-
-        } else {
-
-            $file = $icons['unknown browser'];
-        }
-
-        return sprintf( '<img alt="%s" align="baseline" src="%s" width="%s" height="%s">',
-                        $browser_type,
-                        $this->makeImageLink( $file ),
-                        $width,
-                        $height
-        );
-
+    function choose_browser_icon($browser_type) {
+		
+		$bicons = [
+			
+			'chrome'				=> 'fab fa-chrome',
+			'safari'				=> 'fab fa-safari',
+			'firefox'				=> 'fab fa-firefox-browser',
+			'internet explorer'		=> 'fab fa-internet-explorer',
+			'ie'					=> 'fab fa-internet-explorer',
+			'opera'					=> 'fab fa-opera',
+			'edge'					=> 'fab fa-edge'
+		];
+		
+		foreach ( $bicons as $k => $v ) {
+			
+			if ( strpos(strtolower($browser_type), $k) !== false ) {
+				
+				return $bicons[ $k ];
+			}
+		}
+		
+		return 'fas fa-window-maximize';
+		
     }
 
     function getBrowserIcon($browser_family, $size = '128x128', $module = 'base') {
@@ -917,12 +906,8 @@ class owa_template extends Template {
     function getAvatarImage($email) {
 
         if (false != $email && $email !== '(not set)') {
-            $url = sprintf("https://www.gravatar.com/avatar/%s?s=30", md5($email));
-        } else {
-            $url = $this->makeImageLink('base/i/default_user_50x50.png');
+            return sprintf("https://www.gravatar.com/avatar/%s?s=30", md5($email));
         }
-
-        return $url;
     }
 
     function displayMetricInfobox($params = array()) {

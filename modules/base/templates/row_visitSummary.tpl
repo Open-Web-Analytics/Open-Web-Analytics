@@ -9,10 +9,27 @@
                     <table class="owa_userInfobox">
                         <TD valign="top">
 
-                            <?php if ($row['session_is_new_visitor'] == true): ?>
-                             <img src="<?php echo $this->makeImageLink('base/i/icon_new.png');?>" alt="New Visitor"><BR>
-                            <?php endif;?>
-                            <img class="owa_avatar" src="<?php echo $this->getAvatarImage($row['visitor_user_email']);?>" width="30" height="30">
+                            <?php 
+	                            
+	                        if ($row['session_is_new_visitor'] == true) {
+	             		    
+	             		        echo '<i class="owa_avatar fas fa-user-plus fa-2x"></i>';
+                            
+                            } else { 
+	                            
+	                            $avatar = $this->getAvatarImage($row['visitor_user_email']);
+	                            if ( $avatar ) {
+		                    		
+		                    		echo '<img class="owa_avatar" src="'. $avatar.'" width="30" height="30">';        
+		                            
+	                            } else {
+		                            
+		                            echo '<i class="owa_avatar fas fa-user fa-2x"></i>';
+	                            }
+	                            
+                            }
+                            
+                            ?>
                         </TD>
                         <TD valign="top" class="owa_userLabel" style="width:auto;">
 
@@ -37,7 +54,7 @@
                 <TD class="owa_visitInfoboxItem">
 
                     <?php $this->renderKpiInfobox(
-                        $this->choose_browser_icon($row['browser_type']),
+	                        '<i class=" '. $this->choose_browser_icon($row['browser_type']) . '"></i>',
                         'Browser Type',
                         $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
                         'visitSummaryKpi'

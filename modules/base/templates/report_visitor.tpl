@@ -1,6 +1,24 @@
 <div>
     <div style="display: table-cell; vertical-align: middle">
-        <span><img class="owa_avatar" style="vertical-align:middle;" src="<?php $this->out( $this->getAvatarImage( $this->get('visitor_avatar_id') ) );?>" /></span>
+        <span>
+        
+         <?php            
+                
+            $avatar = $this->getAvatarImage($row['visitor_user_email']);
+            
+            if ( $avatar ) {
+        		
+        		echo '<img class="owa_avatar" src="'. $avatar.'" style="vertical-align:middle;">';        
+                
+            } else {
+                
+                echo '<i class="owa_avatar fas fa-user fa-3x"></i>';
+            }
+            
+        
+            ?>
+        
+        </span>
         <span class="inline_h2"><?php $this->out( $visitor_label );?></span>
     </div>
     <BR>
