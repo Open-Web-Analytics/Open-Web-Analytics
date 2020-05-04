@@ -16,8 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'widget.php');
-
 /**
  * OWA News Widget Controller
  * 
@@ -30,7 +28,7 @@ require_once(OWA_BASE_CLASS_DIR.'widget.php');
  * @since        owa 1.0.0
  */
 
-class owa_widgetOwaNewsController extends owa_widgetController {
+class owa_widgetOwaNewsController extends owa_controller {
 
     function __construct($params) {
     
