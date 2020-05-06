@@ -682,6 +682,19 @@ class owa_baseModule extends owa_module {
                 'column'        => 'visitor_id'
 
             ));
+            
+            $this->registerMetricDefinition(array(
+                'name'            => 'visitors',
+                'label'            => 'Visitors',
+                'description'    => 'The total number of visitors.',
+                'group'            => 'Site Usage',
+                'entity'        => $factEntity,
+                'metric_type'    => 'count',
+                'data_type'        => 'integer',
+                'column'        => 'visitor_id'
+
+            ));
+
         }
 
         // visits
@@ -712,6 +725,7 @@ class owa_baseModule extends owa_module {
 
                 ));
 
+/*
         $this->registerMetric(
             'visitors',
             array(
@@ -723,7 +737,7 @@ class owa_baseModule extends owa_module {
             'The total number of visitors',
             'Site Usage'
         );
-
+*/
         $this->registerMetric(
             'newVisitors',
             'base.newVisitors',
@@ -732,6 +746,7 @@ class owa_baseModule extends owa_module {
             'The total number of new visitors',
             'Site Usage'
         );
+
 
         $this->registerMetric(
             'repeatVisitors',
@@ -2020,17 +2035,6 @@ class owa_baseModule extends owa_module {
             'Visits To Purchase',
             'ecommerce',
             'The number of visits before the transaction occurred.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'visitsToTransaction',
-            'base.commerce_transaction_fact',
-            'num_prior_sessions',
-            'Visits To Purchase',
-            'ecommerce',
-            'The number of visits prior to an e-commerce transaction.',
             '',
             true
         );

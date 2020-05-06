@@ -147,7 +147,8 @@ class owa_browscap extends owa_base {
             'wget',
             'search',
             'slurp',
-            'robot'
+            'robot',
+            'WordPress.com mShots'
         );
 
         $match = false;
