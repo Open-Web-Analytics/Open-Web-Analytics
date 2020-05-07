@@ -1266,17 +1266,6 @@ class owa_baseModule extends owa_module {
             'The name of the site.'
         );
 
-        /*
-        $this->registerDimension(
-            'siteId',
-            'base.site',
-            'site_id',
-            'Site ID',
-            'site',
-            'The ID of the site.'
-        );
-        */
-
         $this->registerDimension(
             'siteId',
             'base.feed_request',
