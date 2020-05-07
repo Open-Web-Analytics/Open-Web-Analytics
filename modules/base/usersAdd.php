@@ -44,6 +44,7 @@ class owa_usersAddController extends owa_adminController {
 	    
 	    $this->addValidation('email_address', $this->getParam('email_address'), 'required', array('stopOnError'	=> true));
 	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'userName', array('stopOnError'	=> true));
 	    $this->addValidation('role', $this->getParam('role'), 'required', array('stopOnError'	=> true));
 	    
 	    $roles = owa_coreAPI::getAllRoles();
