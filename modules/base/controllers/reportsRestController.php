@@ -201,48 +201,8 @@ class owa_reportsRestController extends owa_reportController {
     }
 
 	function report_visit() {
-		
-        if ( $this->get('sessionId') ) {
 
-            $rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
-            $db = owa_coreAPI::dbSingleton();
-
-            $s = owa_coreAPI::entityFactory('base.session');
-            $h = owa_coreAPI::entityFactory('base.host');
-            $l = owa_coreAPI::entityFactory('base.location_dim');
-            $ua = owa_coreAPI::entityFactory('base.ua');
-            $d = owa_coreAPI::entityFactory('base.document');
-            $v = owa_coreAPI::entityFactory('base.visitor');
-            $r = owa_coreAPI::entityFactory('base.referer');
-            $sr = owa_coreAPI::entityFactory('base.source_dim');
-            $db->selectFrom($s->getTableName(), 'session');
-
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $l->getTableName(), 'location', 'location_id');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $h->getTableName(), 'host', 'host_id');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $ua->getTableName(), 'ua', 'ua_id');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $d->getTableName(), 'document', 'first_page_id');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $v->getTableName(), 'visitor', 'visitor_id');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $r->getTableName(), 'referer', 'referer_id');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'source_id');
-
-            $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
-
-            $db->selectColumn('host.host as host_host');
-            $db->selectColumn('location.city as location_city, location.country as location_country');
-            $db->selectColumn('ua.browser_type as browser_type');
-            $db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
-            $db->selectColumn('visitor.user_email as visitor_user_email');
-            $db->selectColumn('source.source_domain as source');
-            $db->selectColumn('referer.url as referer_url, referer.page_title as referer_page_title, referer.snippet as referer_snippet');
-
-            $db->where( 'session.id', $this->get( 'sessionId' ) );
-
-            $results = $rs->generate( $db );
-            $rs->resultsRows = $results;
-
-            return $rs;
-
-        }
+		return $this->report_latest_visits();
     }
     
     function report_latest_visits() {
@@ -271,11 +231,11 @@ class owa_reportsRestController extends owa_reportController {
         $db->join(OWA_SQL_JOIN_LEFT_OUTER, $sr->getTableName(), 'source', 'source_id');
         $db->join(OWA_SQL_JOIN_LEFT_OUTER, $st->getTableName(), 'search_term', 'referring_search_term_id');
 
-        $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium');
+        $db->selectColumn('session.timestamp as session_timestamp, session.is_new_visitor as session_is_new_visitor, session.num_prior_sessions as session_num_prior_visits, session.num_pageviews as session_num_pageviews, session.last_req as session_last_req, session.id as session_id, session.user_name as session_user_name, session.site_id as site_id, session.visitor_id as visitor_id, session.medium as medium, session.ip_address as ip_address');
 
         $db->selectColumn('host.host as host_host');
         $db->selectColumn('location.city as location_city, location.country as location_country');
-        $db->selectColumn('ua.browser_type as browser_type');
+        $db->selectColumn('ua.browser_type as browser_type, ua.ua as browser_user_agent');
         $db->selectColumn('document.url as document_url, document.page_title as document_page_title, document.page_type as document_page_type');
         $db->selectColumn('visitor.user_email as visitor_user_email');
         $db->selectColumn('source.source_domain as source');
@@ -284,6 +244,11 @@ class owa_reportsRestController extends owa_reportController {
 
         if ( $this->get('visitorId') ) {
             $db->where('visitor_id', $this->get('visitorId'));
+        }
+        
+        if ( $this->get( 'sessionId' ) ) {
+	        
+	        $db->where( 'session.id', $this->get( 'sessionId' ) );
         }
 
         if ( $this->get('siteId') ) {

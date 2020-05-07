@@ -1,7 +1,7 @@
 <TD>
     <div class="owa_visitInfobox" style="width:auto;">
 
-        <p class="owa_visitInfoboxTitle"><?php echo date("D M j G:i:s T",$row['session_timestamp']);?> &raquo; <?php echo $row['host_host'];?></p>
+        <p class="owa_visitInfoboxTitle"><?php echo date("D M j G:i:s T",$row['session_timestamp']);?> &raquo; <?php echo $row['host_host']; if (! empty($row['ip_address']) ) { echo ' ('.$row['ip_address'].')';}?></p>
 
         <table class="owa_visitInfoboxItemContainer" cellspacing="0" width="100%">
             <TR>
@@ -54,7 +54,7 @@
                 <TD class="owa_visitInfoboxItem">
 
                     <?php $this->renderKpiInfobox(
-	                        '<i title="'. $row['browser_type'] .'" class=" '. $this->choose_browser_icon($row['browser_type']) . '"></i>',
+	                        '<i title="'. $row['browser_user_agent'] .'" class=" '. $this->choose_browser_icon($row['browser_type']) . '"></i>',
                         'Browser Type',
                         $this->makeLink(array('session_id' => $row['session_id'], 'do' => 'base.reportVisit'), true),
                         'visitSummaryKpi'
