@@ -43,6 +43,8 @@ class owa_installBaseController extends owa_installController {
     public function validate()
     {
         $this->addValidation('domain', $this->getParam('domain'), 'required', ['errorMsg' => $this->getMsg(3309)]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'userName', array('stopOnError'	=> true));
         $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('password', $this->getParam('password'), 'required', ['errorMsg' => $this->getMsg(3310)]);
 
