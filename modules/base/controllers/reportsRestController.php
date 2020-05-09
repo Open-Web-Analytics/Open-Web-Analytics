@@ -469,9 +469,13 @@ function report_clicks() {
         }
 
         if ( $this->get('startDate') && $this->get('endDate') ) {
-            $db->where('yyyymmdd', array( 'start' => $this->get('startDate'), 'end' => $this->get('endDate') ), 'BETWEEN');
+            
+            $startDate = $this->get('startDate');
+            $endDate = $this->get('endDate');
         }
-
+		
+		$db->where('yyyymmdd', array( 'start' => $startDate, 'end' => $endDate ), 'BETWEEN');
+		
         // pass limit to rs object if one exists
         $rs->setLimit($resultsPerPage);
 

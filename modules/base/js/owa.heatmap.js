@@ -243,11 +243,11 @@ OWA.heatmap.prototype = {
             this.clicks = data.data;
 
             //set more flag
-            if (data.more === true && data.more != null) {
+            if (data.data.more === true && data.data.more != null) {
                 OWA.debug("plotClickData says more flag was set to true");
                 this.setMore(true);
                 //set next page
-                this.setNextPage(data.page);
+                this.setNextPage(data.data.page);
             } else {
                 OWA.debug("plotClickData says more flag was set to false");
                 this.setMore(false);
