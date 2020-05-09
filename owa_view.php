@@ -769,7 +769,10 @@ class owa_restApiView extends owa_view {
 	   
 	   if ( owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
 		   
-			owa_lib::setContentTypeHeader( $type );		   
+			owa_lib::setContentTypeHeader( $type );
+			
+			// set cahce-control header to avid downstream caching.
+			header("Cache-Control: max-age=0");		   
 	   }
 
 	   
