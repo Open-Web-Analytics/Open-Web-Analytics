@@ -189,11 +189,6 @@ class owa_wp_plugin extends owa_wp_module {
 			$this->options = array_merge($this->options, $user_defaults);
 		}
 		
-		
-		// needed for backwards compatability of old style embedded installs.
-		// must go after user default merge
-		$this->setEmbeddedOptions(); 
-		
 		// fetch plugin options from DB and combine them with defaults.
 		$options = get_option( 'owa_wp' );
 		//echo 'options from DB: '. print_r( $options, true );
@@ -201,6 +196,10 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			$this->options = array_merge($this->options, $options);
 		}
+		
+		// needed for backwards compatability of old style embedded installs.
+		// must go after user default merge
+		$this->setEmbeddedOptions(); 
 	}
 	
 	/**
@@ -410,7 +409,9 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if ( $this->getOption( 'owaPath' ) ) {
 			
-			return true;			
+			$owa = owa_wp_plugin::getOwaInstance();
+			
+			return $owa->isOwaInstalled();		
 		}
 
 	}
@@ -799,7 +800,7 @@ class owa_wp_plugin extends owa_wp_module {
 	// backward compatability for old style embedded installs.
 	private function setEmbeddedOptions() {
 		
-		// check for presense of OWA in same directory.
+		// check for presence of OWA in same directory.
 		// used by isOwaAvailable method.
 		$path =  plugin_dir_path(__FILE__) ;
 		
@@ -814,8 +815,13 @@ class owa_wp_plugin extends owa_wp_module {
 			$this->setOption('trackAdminActions', true);
 			
 			$owa = self::getOwaInstance();
-			$cu = owa_coreAPI::getCurrentUser();
-			$this->setOption('apiKey', $cu->getUserData('api_key') );
+			
+			if ( ! $this->getOption('apiKey') ) {
+				
+				$cu = owa_coreAPI::getCurrentUser();
+				$this->setOption('apiKey', $cu->getUserData('api_key') );
+			}
+			
 			$this->setOption('owaEndpoint', $owa->getSetting('base', 'public_url') );
 			
 			// set site iD, if not already set from the DB	
@@ -1143,29 +1149,29 @@ class owa_wp_plugin extends owa_wp_module {
 				
 				// create owa instance w/ config
 				$owa = new owa_php();
-				$owa->setSiteId( self::generateSiteId() );
-				//$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
-				//$owa->setSetting( 'base', 'link_template', '%s&%s' );
-				//$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
-				//$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
 				
-				//$owa->setSetting( 'base', 'rest_api_url', $owa->getSetting( 'base', 'rest_api_url' ).'?');
-				$owa->setSetting( 'base', 'is_embedded', true );
+				if ( $owa->isOwaInstalled() ) {
 				
-				$current_user = wp_get_current_user();
-				owa_coreAPI::debug( 'get owa instance curent user obj' );
-				owa_coreAPI::debug( 'WordPrerss login: '.$current_user->user_login );
-				if ( $current_user->user_login ) {
-					owa_coreAPI::debug('loading OWA current user');
-					$cu = owa_coreAPI::getCurrentUser();
-					$cu->load( $current_user->user_login ); 
+					$owa->setSiteId( self::generateSiteId() );
+	
+					$owa->setSetting( 'base', 'is_embedded', true );
+				
+					$current_user = wp_get_current_user();
+					owa_coreAPI::debug( 'get owa instance curent user obj' );
+					owa_coreAPI::debug( 'WordPress login: '.$current_user->user_login );
+					if ( $current_user->user_login ) {
+						
+						
+						owa_coreAPI::debug('loading OWA current user');
+						$cu = owa_coreAPI::getCurrentUser();
+						$cu->load( $current_user->user_login ); 
+					}
+					
+					// register allowedSitesList filter
+					$dispatch = owa_coreAPI::getEventDispatch();
+					// alternative auth method, sets auth status, role, and allowed sites list.
+					$dispatch->attachFilter('auth_status', 'owa_wp_plugin::wpAuthUser', 0);	
 				}
-				
-				// register allowedSitesList filter
-				$dispatch = owa_coreAPI::getEventDispatch();
-				// alternative auth method, sets auth status, role, and allowed sites list.
-				$dispatch->attachFilter('auth_status', 'owa_wp_plugin::wpAuthUser', 0);	
-			
 		}
 		
 		return $owa;
