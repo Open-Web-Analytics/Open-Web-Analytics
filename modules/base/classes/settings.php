@@ -640,7 +640,7 @@
                 'timezone'                            => 'America/Los_Angeles',
                 'log_dom_stream_percentage'            => 50,
                 'owa_wiki_link_template'            => 'http://wiki.openwebanalytics.com/index.php?title=%s',
-                'wiki_url'                            => 'http://wiki.openwebanalytics.com',
+                'wiki_url'                            => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
                 'password_length'                    => 4,
                 'modules'                            => array('base'),
                 'mailer-from'                        => 'owa@' . $mailer_domain, // Set default address, because sending from root@localhost wont work
