@@ -1,13 +1,13 @@
 <h2>Configuration Settings</h2>
 <p>
-We could not locate OWA's <code>owa-config.php</code> configuration file. You can use the form below to create the file but this may not work on all hosts. If file generation fails, you can just create it manually by renaming <code>owa-config-dist.php</code> to <code>owa-config.php</code> and filling in your database information and public URL.
+We could not locate OWA's <code>owa-config.php</code> configuration file. You can use the form below to create the file but this may not work on all hosts. If file generation fails, you can  create the config file manually by renaming <code>owa-config-dist.php</code> to <code>owa-config.php</code> and filling in your database information and public URL.
 </p>
 <div id="configSettings">
     <form method="POST">
 
-        <h3>Web URL of OWA</h3>
+        <h3>Public URL</h3>
         <p class="form-row">
-            <span class="form-label">URL of OWA:</span>
+            <span class="form-label">Public URL:</span>
             <span class="form-field">
                 <input type="text"size="50" name="<?php echo $this->getNs();?>public_url" value="<?php echo $public_url;?>">
             </span>
@@ -38,7 +38,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
             <span class="form-field">
                 <input type="text"size="30" name="<?php echo $this->getNs();?>db_port" value="<?php echo ($config['db_port'] ? $config['db_port'] : 3306);?>">
             </span>
-            <span class="form-instructions">This optional setting is used to change the port for your database. OWA will use the default port 3306 if you leave this empty.</span>
+            <span class="form-instructions">(optional) The port of your database. Will default to port 3306 if you leave this empty.</span>
         </p>
 
         <p class="form-row">
