@@ -49,7 +49,10 @@ class owa_trackingEventHelpers {
 
         foreach ( $this->environmentals as $k => $v ) {
             // loop and execute call backs.
-            $event->set( $k, call_user_func( $this->environmentals[ $k ][ 'default_value' ][0] ) );
+            if (! $event->get( $k ) ) {
+	            
+            	$event->set( $k, call_user_func( $this->environmentals[ $k ][ 'default_value' ][0] ) );
+            }
         }
 
     }
