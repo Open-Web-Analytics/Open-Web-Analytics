@@ -853,7 +853,7 @@ class owa_coreAPI {
 
         // debug
         owa_coreAPI::debug("logging event $event_type");
-
+		
         if (owa_coreAPI::getSetting('base', 'error_log_level') > 9) {
             owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
         }
@@ -872,10 +872,17 @@ class owa_coreAPI {
         $service = owa_coreAPI::serviceSingleton();
         
         $ua = '';
-        if (array_key_exists( 'HTTP_USER_AGENT', $message)) {
+        if ( array_key_exists( 'HTTP_USER_AGENT', $message ) ) {
 	        
 	        $ua = $message['HTTP_USER_AGENT'];
         }
+        
+        if ( is_object($message) ) {
+	        
+	        $ua = $message->get('HTTP_USER_AGENT');
+        }
+
+        
         
         $bcap = $service->getBrowscap( $ua );
         owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);

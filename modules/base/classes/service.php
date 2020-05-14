@@ -97,7 +97,7 @@ class owa_service extends owa_base {
 
         if (empty($this->browscap)) {
 	        
-	        if (! $ua ) {
+	        if ( ! $ua ) {
 		        
 		        $ua = $this->request->getServerParam('HTTP_USER_AGENT');
 	        }
