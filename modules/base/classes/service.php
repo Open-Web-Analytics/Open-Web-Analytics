@@ -93,10 +93,16 @@ class owa_service extends owa_base {
         $this->browscap = $b;
     }
 
-    function getBrowscap() {
+    function getBrowscap( $ua = '') {
 
         if (empty($this->browscap)) {
-            $this->browscap = owa_coreAPI::supportClassFactory('base', 'browscap', $this->request->getServerParam('HTTP_USER_AGENT'));
+	        
+	        if (! $ua ) {
+		        
+		        $ua = $this->request->getServerParam('HTTP_USER_AGENT');
+	        }
+	        
+            $this->browscap = owa_coreAPI::supportClassFactory('base', 'browscap', $ua);
         }
 
         return $this->browscap;
