@@ -1157,14 +1157,32 @@ class owa_wp_plugin extends owa_wp_module {
 					$owa->setSetting( 'base', 'is_embedded', true );
 				
 					$current_user = wp_get_current_user();
-					owa_coreAPI::debug( 'get owa instance curent user obj' );
 					owa_coreAPI::debug( 'WordPress login: '.$current_user->user_login );
 					if ( $current_user->user_login ) {
 						
+						// check to see if user exists in OWA.
+						$user = owa_coreApi::entityFactory('base.user');
+						$user->load($current_user->user_login, 'user_id');
 						
-						owa_coreAPI::debug('loading OWA current user');
-						$cu = owa_coreAPI::getCurrentUser();
-						$cu->load( $current_user->user_login ); 
+						if (! $user->get('id') ) {
+							
+							// if not create it
+							$user->createNewUser(
+								$current_user->user_login, 
+								owa_wp_plugin::translateAuthRole( $current_user->roles ), 
+								$password = '', 
+								$current_user->user_email, 
+								$current_user->first_name.' '.$current_user->last_name
+							);
+							
+						} else {
+							
+							// or load from db
+							owa_coreAPI::debug('loading OWA current user');
+							$cu = owa_coreAPI::getCurrentUser();
+							$cu->load( $current_user->user_login );	
+						}
+						
 					}
 					
 					// register allowedSitesList filter
