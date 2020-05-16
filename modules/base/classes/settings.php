@@ -556,7 +556,7 @@
                 'ns'                                => 'owa_',
                 'visitor_param'                        => 'v',
                 'session_param'                        => 's',
-                'site_session_param'                => 'ss',
+                'site_session_param'                => 'ss', //sdk
                 'last_request_param'                => 'last_req',
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
@@ -566,7 +566,7 @@
                 'referer_param'                        => 'referer',
                 'site_id'                            => '',
                 'configuration_id'                    => '1',
-                'session_length'                    => 1800,
+                'session_length'                    => 1800, //sdk
                 'requests_table'                    => 'request',
                 'sessions_table'                    => 'session',
                 'referers_table'                    => 'referer',
@@ -677,7 +677,7 @@
                 'default_page'                        => '', // move to site settings
                 'default_cache_expiration_period'    => 604800,
                 'nonce_expiration_period'            => 7200,
-                'max_prior_campaigns'                => 5,
+                'max_prior_campaigns'                => 5, //sdk
                 'default_reporting_period'            => 'last_seven_days',
                 'campaign_params'                    => array(
                         'campaign'        => 'owa_campaign',
@@ -686,8 +686,8 @@
                         'search_terms'    => 'owa_search_terms',
                         'ad'            => 'owa_ad',
                         'ad_type'        => 'owa_ad_type'),
-                'trafficAttributionMode'            => 'direct',
-                'campaignAttributionWindow'            => 60,
+                'trafficAttributionMode'            => 'direct', //sdk
+                'campaignAttributionWindow'            => 60, //sdk
                  //list of capabilities that require access to the site
                  'capabilitiesThatRequireSiteAccess' => array(
                      'view_reports',
@@ -720,7 +720,7 @@
                 'disabledEndpoints'                    => array(),
                 'disableAllEndpoints'                => false,
                 'processQueuesJobSchedule'            => '10 * * * *',
-                'maxCustomVars'                        => 5,
+                'maxCustomVars'                        => 5, //sdk
                 'update_session_user_name'            => true, // updates the session with latest user_name value
                 'log_owa_user_names'                => true,  // logs the OWA user name as the user_name property on events
                 'logo_image_path'                    => 'base/i/owa-logo-100w.png',
