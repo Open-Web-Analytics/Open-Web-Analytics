@@ -79,13 +79,13 @@ flush();
 ob_end_flush();
 
 // Create instance of OWA
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa.php');
 $config = array(
 
     'tracking_mode' => true
 );
 
-$owa = new owa_php( $config );
+$owa = new owa( $config );
 
 // check to see if this endpoint is enabled.
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
