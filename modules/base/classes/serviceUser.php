@@ -230,8 +230,19 @@ class owa_serviceUser extends owa_base {
      */
     private function loadAssignedSites() {
         owa_coreAPI::debug('loading assigned sites');
-        if ( ! $this->user->get( 'id' ) ) {
-             throw new Exception('no user object loaded!');
+        
+        try {
+	        
+		    if ( ! $this->user->get( 'id' ) ) {
+	             throw new Exception('no user object loaded!');
+	        }    
+	        
+        }
+        
+        catch( Exception $e ) {
+			
+			owa_coreAPI::debug('Handled exception: '. $e->getMessage() );
+	        
         }
 
         $site_ids = array();
