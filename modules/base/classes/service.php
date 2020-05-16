@@ -110,28 +110,49 @@ class owa_service extends owa_base {
 
     function _loadModules() {
 
+        $present_modules = owa_coreAPI::getPresentModules();
         $am = owa_coreAPI::getActiveModules();
 
         foreach ($am as $k => $v) {
-
-            $m = owa_coreAPI::moduleClassFactory($v);
-
-            $this->addModule($m);
-
-            // check for schema updates
-            $check = $m->isSchemaCurrent();
-
-            if ($check != true) {
-                $this->markModuleAsNeedingUpdate($m->name);
-            }
+			
+			if ( in_array( $v, $present_modules ) ) {
+	            $m = owa_coreAPI::moduleClassFactory($v);
+	
+	            $this->addModule($m);
+	
+	            // check for schema updates
+	            $check = $m->isSchemaCurrent();
+	
+	            if ($check != true) {
+	                $this->markModuleAsNeedingUpdate($m->name);
+	            }
+			}
         }
 
         // set schema update flag
         if (!empty($this->modules_needing_updates)) {
             $this->setUpdateRequired();
         }
+    }
+    
+    function checkForRequiredUpdates() {
+	    owa_coreAPI::debug( owa_coreAPI::configSingleton() );
+	    $am = owa_coreAPI::getActiveModules();
+	    
+	    foreach ($am as $k => $v) {
+		    
+            // check for schema updates
+            $check = $this->modules[ $v ]->isSchemaCurrent();
 
-        return;
+            if ($check != true) {
+                $this->markModuleAsNeedingUpdate($this->modules[ $v ]->name);
+            }
+        }
+        
+        // set schema update flag
+        if (!empty($this->modules_needing_updates)) {
+            $this->setUpdateRequired();
+        }
     }
 
 

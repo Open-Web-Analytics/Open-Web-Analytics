@@ -769,6 +769,22 @@ class owa_coreAPI {
         return $active_modules;
 
     }
+    
+    public static function getPresentModules() {
+	    $path = OWA_DIR.'modules';
+	    // Check directory exists or not
+		if( file_exists($path) && is_dir($path)) {
+        	// Scan the files in this directory
+			$result = scandir($path);
+        
+			// Filter out the current (.) and parent (..) directories
+			$files = array_diff($result, array('.', '..', 'index.php'));
+			owa_coreAPI::debug('Modules present are: ');
+			owa_coreAPI::debug( $files );
+			
+			return $files;
+		}
+    }
 
     public static function getModulesNeedingUpdates() {
 
