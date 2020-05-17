@@ -18,6 +18,7 @@
 
 include_once('../owa_env.php');
 require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa_lib.php');
 
 /**
  * REST API
@@ -30,6 +31,8 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 
 // define entry point cnstant
 define('OWA_RESTAPI', true);
+
+owa_lib::addCorsHeaders();
 
 // invoke OWA
 $owa = new owa_php;

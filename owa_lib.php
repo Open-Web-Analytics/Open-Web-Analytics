@@ -568,6 +568,26 @@ class owa_lib {
         header ('HTTP/1.0 302 Found');
     }
 
+    public static function addCorsHeaders()
+    {
+        // Loop through sites and add cors headers
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] == '') {
+            return;
+        }
+
+        foreach (owa_coreAPI::getSitesList() as $allowedOrigin) {
+            if ($allowedOrigin !== $_SERVER['HTTP_ORIGIN']) {
+                continue;
+            }
+
+            header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+            header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, METHOD');
+            header('Access-Control-Max-Age: 1000');
+            header('Access-Control-Allow-Headers: Content-Type');
+            break;
+        }
+    }
+
     public static function makeLinkQueryString($query_params) {
 
         $new_query_params = array();
