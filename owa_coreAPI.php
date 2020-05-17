@@ -52,23 +52,36 @@ class owa_coreAPI {
 
     public static function setupStorageEngine($type) {
 
-        if (!class_exists('owa_db')) {
+        if ( ! class_exists( 'owa_db' ) ) {
+	        
             require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
         }
+		
+		if ( $type ) {
+        	$connection_class = "owa_db_" . $type;
 
-        if ($type) {
-
-        $connection_class = "owa_db_" . $type;
-
-            if (!class_exists($connection_class)) {
+            if ( ! class_exists( $connection_class ) ) {
+	            
                 $connection_class_path = OWA_PLUGIN_DIR.'db/' . $connection_class . ".php";
+				
+				if ( file_exists( $connection_class_path ) ) {
+					
+	                 if ( ! require_once( $connection_class_path ) ) {
+	                     
+	                     owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
+	                     
+	                     return false;
+	                }
+	                
+				} else {
+					
+					owa_coreAPI::error("$type database connection class file not found.");
+				}
+			}
 
-                 if (!require_once($connection_class_path)) {
-                     owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
-                     return false;
-                }
-            }
-
+        } else {
+	        
+	        owa_coreAPI::error("$type is not a supported database.");
         }
 
          return true;
