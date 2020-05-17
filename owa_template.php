@@ -627,23 +627,6 @@ class owa_template extends Template {
         return owa_coreAPI::performAction($do, $final_params);
     }
 
-    function getInpageWidget($do, $params = array()) {
-
-        return owa_template::getWidget($do, $params, 'inpage');
-
-    }
-
-    function getSparkline($metric, $metric_col, $period = '', $height = 25, $width = 250, $map = array(), $add_state = true) {
-
-        $map['metric'] = $metric;
-        $map['metric_col'] = $metric_col;
-        $map['period'] = $period;
-        $map['height'] = $height;
-        $map['width'] = $width;
-        return owa_template::getWidget('base.widgetSparkline', $map, false, $add_state);
-
-    }
-
     function makeJson($array) {
 
         $reserved_words = owa_coreAPI::getSetting('base', 'reserved_words');

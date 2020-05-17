@@ -727,7 +727,8 @@
                 'use_64bit_hash'                    => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.
-                'request_mode'						=> 'web_app'
+                'request_mode'						=> 'web_app',
+                'db_supported_types'				=> ['mysql', 'postgresql']
             )
         );
 
@@ -778,7 +779,7 @@
         $this->set('base','main_absolute_url', $main_url);
         $modules_url = $public_url.'modules/';
         $this->set('base','modules_url', $modules_url);
-        $this->set('base','action_url',$public_url.'action.php');
+        //$this->set('base','action_url',$public_url.'action.php');
         $this->set('base','images_url', $modules_url);
         $this->set('base','images_absolute_url',$modules_url);
         $this->set('base','log_url',$public_url.'log.php');
