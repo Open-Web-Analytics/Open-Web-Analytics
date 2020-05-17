@@ -97,40 +97,18 @@ class owa_reportView extends owa_view {
         $this->_setLinkState( $link_state );
 
         // set Js libs to be loaded
-        /*
-$this->setJs('lazy-load', 'base/js/includes/lazyload-2.0.min.js', '2.0');
-        $this->setJs("json2", "base/js/includes/json2.js");
-        $this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js', '1.6.4');
-        $this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery')); // needed anymore?
-        $this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js", '1.8.12', array('jquery'));
-        $this->setJs("jquery-ui-selectmenu", "base/js/includes/jquery/jquery.ui.selectmenu.js", '1.8.1', array('jquery-ui'));
-        $this->setJs("chosen", "base/js/includes/jquery/chosen.jquery.min.js", '0.9.7', array('jquery'));
-        $this->setJs("sparkline", "base/js/includes/jquery/jquery.sparkline.min.js", '', array('jquery'));
-        $this->setJs('jqgrid','base/js/includes/jquery/jquery.jqGrid.min.js');
-        $this->setJs('excanvas','base/js/includes/excanvas.compiled.js', '', '', true);
-        $this->setJs('flot','base/js/includes/jquery/flot_v0.7/jquery.flot.min.js');
-        $this->setJs('flot-resize','base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js');
-        $this->setJs('flot-pie','base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js');
-        $this->setJs('jqote','base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
-        $this->setJs("owa", "base/js/owa.js");
-        $this->setJs("owa.report", 'base/js/owa.report.js', '', array('owa', 'jquery'));
-        $this->setJs("owa.resultSetExplorer", "base/js/owa.resultSetExplorer.js", '', array('owa', 'jquery', 'jquery-ui'));
-        $this->setJs("owa.sparkline", "base/js/owa.sparkline.js", '', array('owa', 'jquery', 'sparkline'));
-        $this->setJs("owa.areaChart", "base/js/owa.areachart.js", '', array('owa', 'jquery', 'owa.resultSetExplorer', 'flot'));
-        $this->setJs("owa.pieChart", "base/js/owa.piechart.js", '', array('owa', 'jquery', 'owa.resultSetExplorer', 'flot'));
-        $this->setJs("owa.kpibox", "base/js/owa.kpibox.js", '', array('owa', 'jquery', 'owa.resultSetExplorer', 'jqote'));
-
-*/
         $this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
+        
         // css libs to be loaded
+        
         /*
-$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
+		$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
         $this->setCss('base/css/jquery.ui.selectmenu.css');
         $this->setCss('base/css/ui.jqgrid.css');
         $this->setCss('base/css/chosen/chosen.css');
         $this->setCss("base/css/owa.admin.css");
         $this->setCss("base/css/owa.report.css");
-*/
+		*/
 		$this->setCss("base/css/font-awesome/css/all.min.css");
         $this->setCss("base/css/owa.reporting-css-combined.css");
         $additionalCss = $this->c->get('base','additionalCss');
