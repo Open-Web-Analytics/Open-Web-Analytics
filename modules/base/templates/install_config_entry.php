@@ -19,7 +19,9 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
             <span class="form-label">Database Type:</span>
             <span class="form-field">
                 <select name="<?php echo $this->getNs();?>db_type">
-                    <option value="mysql">Mysql</option>
+	                <?php foreach ( $this->config['db_supported_types'] as $db_type => $db_label ): ?>
+                    <option value="<?php $this->out( $db_type );?>"><?php $this->out( $db_label );?></option>
+                    <?php endforeach;?>
                 </select>
             </span>
             <span class="form-instructions">This is the type of database you are going to use.</span>

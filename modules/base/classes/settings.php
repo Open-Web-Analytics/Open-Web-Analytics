@@ -728,7 +728,7 @@
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.
                 'request_mode'						=> 'web_app',
-                'db_supported_types'				=> ['mysql', 'postgresql']
+                'db_supported_types'				=> ['mysql' => 'MySQL']
             )
         );
 
