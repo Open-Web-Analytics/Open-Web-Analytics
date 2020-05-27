@@ -61,7 +61,7 @@ define('OWA_AUTH_SALT', 'RtVJ4FDL0S9tl3FemKMjzRMeMTTh5ly5');
  * Don't forget the slash at the end.
  */
  
-define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com');  
+define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
 
 /** 
  * OWA ERROR HANDLER
