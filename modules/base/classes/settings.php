@@ -56,13 +56,14 @@
       */
      function __construct() {
 
-         // create configuration object
+         // include/load config file
+         $this->loadConfigFile();
+
+	 // create configuration object
          $this->config = owa_coreAPI::entityFactory('base.configuration');
          // load the default settings
          $this->config->set('settings', $this->getDefaultSettingsArray());
 
-         // include/load config file
-         $this->loadConfigFile();
          // apply config constants
          $this->applyConfigConstants();
          // setup directory paths
@@ -75,10 +76,6 @@
          //if ($this->isConfigFilePresent()) {
          //    $this->load($this->get('base', 'configuration_id'));
          //}
-
-         // include storage engine class so that DTD constants get loaded
-         owa_coreAPI::setupStorageEngine($this->get('base','db_type'));
-
      }
 
      public function setTimezone() {
