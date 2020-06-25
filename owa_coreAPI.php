@@ -471,8 +471,7 @@ class owa_coreAPI {
         /* SETUP STORAGE ENGINE */
 
         // Must be called before any entities are created
-
-        if (defined('OWA_DB_TYPE') && !defined('OWA_DTD_INT')) {
+        if (!defined('OWA_DTD_INT')) {
             owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
         }
 
