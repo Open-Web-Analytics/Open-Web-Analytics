@@ -108,7 +108,7 @@ class owa_coreAPI {
         $ret = owa_coreAPI::setupStorageEngine($db_type);
 
          if (!$ret) {
-             owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+             owa_coreAPI::error(sprintf('Failed to intialise db of type %s. Exiting.', $db_type));
              return;
         } else {
             $connection_class = 'owa_db_'.$db_type;
