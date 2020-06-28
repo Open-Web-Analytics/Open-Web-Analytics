@@ -34,10 +34,10 @@ class owa_configuration extends owa_entity {
 
         $this->setTableName('configuration');
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['settings'] = new owa_dbColumn;
-        $this->properties['settings']->setDataType(OWA_DTD_BLOB);
+        $this->properties['settings']->setDataType('OWA_DTD_BLOB');
         $this->setCachable();
     }
 }

@@ -36,15 +36,13 @@ class owa_search_term_dim extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['terms'] = new owa_dbColumn;
-        $this->properties['terms']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['terms']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['term_count'] = new owa_dbColumn;
-        $this->properties['term_count']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['term_count']->setDataType('OWA_DTD_VARCHAR255');
     }
 }
-
-
 
 ?>

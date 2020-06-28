@@ -36,14 +36,14 @@ class owa_ua extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['ua'] = new owa_dbColumn;
-        $this->properties['ua']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['ua']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['browser_type'] = new owa_dbColumn;
-        $this->properties['browser_type']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['browser_type']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['browser'] = new owa_dbColumn;
-        $this->properties['browser']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['browser']->setDataType('OWA_DTD_VARCHAR255');
 
     }
 }

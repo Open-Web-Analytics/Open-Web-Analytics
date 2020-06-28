@@ -36,25 +36,19 @@ class owa_exit extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['url'] = new owa_dbColumn;
-        $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['url']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['site_name'] = new owa_dbColumn;
-        $this->properties['site_name']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['site_name']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['site'] = new owa_dbColumn;
-        $this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['site']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['anchortext'] = new owa_dbColumn;
-        $this->properties['anchortext']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['anchortext']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['page_title'] = new owa_dbColumn;
-        $this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
-
+        $this->properties['page_title']->setDataType('OWA_DTD_VARCHAR255');
     }
-
-
-
 }
-
-
 
 ?>

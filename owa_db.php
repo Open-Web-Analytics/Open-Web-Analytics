@@ -421,7 +421,7 @@ class owa_db extends owa_base {
             endif;
         }
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-        $this->_setSql(sprintf(OWA_SQL_INSERT_ROW, $this->_sqlParams['table'], $sql_cols, $sql_values));
+        $this->_setSql(sprintf(constant('OWA_SQL_INSERT_ROW'), $this->_sqlParams['table'], $sql_cols, $sql_values));
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         $ret = $this->_query();
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
@@ -508,14 +508,14 @@ class owa_db extends owa_base {
             $i++;
         }
 
-        $this->_setSql(sprintf(OWA_SQL_UPDATE_ROW, $this->_sqlParams['table'], $set, $this->_makeWhereClause()));
+        $this->_setSql(sprintf(constant('OWA_SQL_UPDATE_ROW'), $this->_sqlParams['table'], $set, $this->_makeWhereClause()));
 
         return $this->_query();
     }
 
     function _deleteQuery() {
 
-        $this->_setSql(sprintf(OWA_SQL_DELETE_ROW, $this->_sqlParams['table'], $this->_makeWhereClause()));
+        $this->_setSql(sprintf(constant('OWA_SQL_DELETE_ROW'), $this->_sqlParams['table'], $this->_makeWhereClause()));
 
         return $this->_query();
     }
@@ -582,11 +582,11 @@ class owa_db extends owa_base {
                         break;
 
                     case '=~':
-                        $constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s '%s'",$v['name'], constant('OWA_SQL_REGEXP'), $this->prepare( $v['value'] ) );
                         break;
 
                     case '!~':
-                        $constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s '%s'",$v['name'], constant('OWA_SQL_NOTREGEXP'), $this->prepare( $v['value'] ) );
                         break;
 
                     case '=@':
@@ -939,7 +939,7 @@ class owa_db extends owa_base {
      */
     function dropTable($table_name) {
 
-        return $this->query(sprintf(OWA_SQL_DROP_TABLE, $table_name));
+        return $this->query(sprintf(constant('OWA_SQL_DROP_TABLE'), $table_name));
 
     }
 
@@ -949,7 +949,7 @@ class owa_db extends owa_base {
      */
     function alterTableType($table_name, $engine) {
 
-        return $this->query(sprintf(OWA_SQL_ALTER_TABLE_TYPE, $table_name, $engine));
+        return $this->query(sprintf(constant('OWA_SQL_ALTER_TABLE_TYPE'), $table_name, $engine));
 
     }
 
@@ -960,7 +960,7 @@ class owa_db extends owa_base {
      */
     function renameTable($table_name, $new_table_name) {
 
-        return $this->query(sprintf(OWA_SQL_RENAME_TABLE, $table_name, $new_table_name));
+        return $this->query(sprintf(constant('OWA_SQL_RENAME_TABLE'), $table_name, $new_table_name));
     }
 
     /**
@@ -969,7 +969,7 @@ class owa_db extends owa_base {
      */
     function renameColumn($table_name, $old, $new, $defs) {
 
-        return $this->query(sprintf(OWA_SQL_RENAME_COLUMN, $table_name, $old, $new, $defs));
+        return $this->query(sprintf(constant('OWA_SQL_RENAME_COLUMN'), $table_name, $old, $new, $defs));
     }
 
 
@@ -979,7 +979,7 @@ class owa_db extends owa_base {
      */
     function addColumn($table_name, $column_name, $column_definition) {
 
-        return $this->query(sprintf(OWA_SQL_ADD_COLUMN, $table_name, $column_name, $column_definition));
+        return $this->query(sprintf(constant('OWA_SQL_ADD_COLUMN'), $table_name, $column_name, $column_definition));
     }
 
     /**
@@ -988,7 +988,7 @@ class owa_db extends owa_base {
      */
     function dropColumn($table_name, $column_name) {
 
-        return $this->query(sprintf(OWA_SQL_DROP_COLUMN, $table_name, $column_name));
+        return $this->query(sprintf(constant('OWA_SQL_DROP_COLUMN'), $table_name, $column_name));
 
     }
 
@@ -998,7 +998,7 @@ class owa_db extends owa_base {
      */
     function modifyColumn($table_name, $column_name, $column_definition) {
 
-        return $this->query(sprintf(OWA_SQL_MODIFY_COLUMN, $table_name, $column_name, $column_definition));
+        return $this->query(sprintf(constant('OWA_SQL_MODIFY_COLUMN'), $table_name, $column_name, $column_definition));
     }
 
     /**
@@ -1007,7 +1007,7 @@ class owa_db extends owa_base {
      */
     function addIndex($table_name, $column_name, $index_definition = '') {
 
-        return $this->query(sprintf(OWA_SQL_ADD_INDEX, $table_name, $column_name, $index_definition));
+        return $this->query(sprintf(constant('OWA_SQL_ADD_INDEX'), $table_name, $column_name, $index_definition));
     }
 
     /**
@@ -1016,7 +1016,7 @@ class owa_db extends owa_base {
      */
     function dropIndex($table_name, $column_name) {
 
-        return $this->query(sprintf(OWA_SQL_DROP_INDEX, $column_name, $table_name));
+        return $this->query(sprintf(constant('OWA_SQL_DROP_INDEX'), $column_name, $table_name));
     }
 
     /**
@@ -1062,29 +1062,29 @@ class owa_db extends owa_base {
         switch ($options['table_type']) {
 
             case "disk":
-                $table_type = OWA_DTD_TABLE_TYPE_DISK;
+                $table_type = constant('OWA_DTD_TABLE_TYPE_DISK');
                 break;
             case "memory":
-                $table_type = OWA_DTD_TABLE_TYPE_MEMORY;
+                $table_type = constant('OWA_DTD_TABLE_TYPE_MEMORY');
                 break;
             default:
-                $table_type = OWA_DTD_TABLE_TYPE_DEFAULT;
+                $table_type = constant('OWA_DTD_TABLE_TYPE_DEFAULT');
 
         }
 
-        $table_options .= sprintf(OWA_DTD_TABLE_TYPE, $table_type);
+        $table_options .= sprintf(constant('OWA_DTD_TABLE_TYPE'), $table_type);
 
         // character encoding type
 
         // just in case the propoerties is not i nthe array, add a default value.
         if (!array_key_exists('character_encoding', $options)) {
 
-            $options['character_encoding'] = OWA_DTD_CHARACTER_ENCODING_UTF8;
+            $options['character_encoding'] = constant('OWA_DTD_CHARACTER_ENCODING_UTF8');
         }
 
-        $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
+        $table_options .= sprintf(' ' . constant('OWA_DTD_TABLE_CHARACTER_ENCODING'), $options['character_encoding']);
 
-        return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));
+        return $this->query(sprintf(constant('OWA_SQL_CREATE_TABLE'), $entity->getTableName(), $columns, $table_options));
     }
 
 
@@ -1095,7 +1095,7 @@ class owa_db extends owa_base {
      */
     function beginTransaction() {
 
-        return $this->query(OWA_SQL_BEGIN_TRANSACTION);
+        return $this->query(constant('OWA_SQL_BEGIN_TRANSACTION'));
     }
 
     /**
@@ -1104,37 +1104,37 @@ class owa_db extends owa_base {
      */
     function endTransaction() {
 
-        return $this->query(OWA_SQL_END_TRANSACTION);
+        return $this->query(constant('OWA_SQL_END_TRANSACTION'));
     }
 
     function count($column_name) {
 
-        return sprintf(OWA_SQL_COUNT, $column_name);
+        return sprintf(constant('OWA_SQL_COUNT'), $column_name);
     }
 
     function sum($column_name) {
 
-        return sprintf(OWA_SQL_SUM, $column_name);
+        return sprintf(constant('OWA_SQL_SUM'), $column_name);
     }
 
     function distinct($column_name) {
 
-        return sprintf(OWA_SQL_DISTINCT, $column_name);
+        return sprintf(constant('OWA_SQL_DISTINCT'), $column_name);
     }
 
     function division($numerator, $denominator) {
 
-        return sprintf(OWA_SQL_DIVISION, $numerator, $denominator);
+        return sprintf(constant('OWA_SQL_DIVISION'), $numerator, $denominator);
     }
 
     function round($value) {
 
-        return sprintf(OWA_SQL_ROUND, $value);
+        return sprintf(constant('OWA_SQL_ROUND'), $value);
     }
 
     function average($value) {
 
-        return sprintf(OWA_SQL_AVERAGE, $value);
+        return sprintf(constant('OWA_SQL_AVERAGE'), $value);
     }
 
     function getAffectedRows() {

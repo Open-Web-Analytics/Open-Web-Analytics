@@ -36,12 +36,12 @@ class owa_ad_dim extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['name'] = new owa_dbColumn;
-        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['name']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['type'] = new owa_dbColumn;
-        $this->properties['type']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['type']->setDataType('OWA_DTD_VARCHAR255');
     }
 }
 

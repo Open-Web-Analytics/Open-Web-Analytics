@@ -37,46 +37,46 @@ class owa_visitor extends owa_entity {
 
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
 
         //drop
         $this->properties['user_name'] = new owa_dbColumn;
-        $this->properties['user_name']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['user_name']->setDataType('OWA_DTD_VARCHAR255');
 
         //drop
         $this->properties['user_email'] = new owa_dbColumn;
-        $this->properties['user_email']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['user_email']->setDataType('OWA_DTD_VARCHAR255');
 
         $this->properties['first_session_id'] = new owa_dbColumn;
-        $this->properties['first_session_id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['first_session_id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['first_session_year'] = new owa_dbColumn;
-        $this->properties['first_session_year']->setDataType(OWA_DTD_INT);
+        $this->properties['first_session_year']->setDataType('OWA_DTD_INT');
         $this->properties['first_session_month'] = new owa_dbColumn;
-        $this->properties['first_session_month']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['first_session_month']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['first_session_day'] = new owa_dbColumn;
-        $this->properties['first_session_day']->setDataType(OWA_DTD_INT);
+        $this->properties['first_session_day']->setDataType('OWA_DTD_INT');
         $this->properties['first_session_dayofyear'] = new owa_dbColumn;
-        $this->properties['first_session_dayofyear']->setDataType(OWA_DTD_INT);
+        $this->properties['first_session_dayofyear']->setDataType('OWA_DTD_INT');
         $this->properties['first_session_timestamp'] = new owa_dbColumn;
-        $this->properties['first_session_timestamp']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['first_session_timestamp']->setDataType('OWA_DTD_BIGINT');
         $this->properties['first_session_yyyymmdd'] = new owa_dbColumn;
-        $this->properties['first_session_yyyymmdd']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['first_session_yyyymmdd']->setDataType('OWA_DTD_BIGINT');
         $this->properties['last_session_id'] = new owa_dbColumn;
-        $this->properties['last_session_id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['last_session_id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['last_session_year'] = new owa_dbColumn;
-        $this->properties['last_session_year']->setDataType(OWA_DTD_INT);
+        $this->properties['last_session_year']->setDataType('OWA_DTD_INT');
         $this->properties['last_session_month'] = new owa_dbColumn;
-        $this->properties['last_session_month']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['last_session_month']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['last_session_day'] = new owa_dbColumn;
-        $this->properties['last_session_day']->setDataType(OWA_DTD_INT);
+        $this->properties['last_session_day']->setDataType('OWA_DTD_INT');
         $this->properties['last_session_dayofyear'] = new owa_dbColumn;
-        $this->properties['last_session_dayofyear']->setDataType(OWA_DTD_INT);
+        $this->properties['last_session_dayofyear']->setDataType('OWA_DTD_INT');
 
         //drop
         $num_prior_sessions =  new owa_dbColumn;
         $num_prior_sessions->setName('num_prior_sessions');
-        $num_prior_sessions->setDataType(OWA_DTD_INT);
+        $num_prior_sessions->setDataType('OWA_DTD_INT');
         $this->setProperty($num_prior_sessions);
     }
 
@@ -98,7 +98,5 @@ class owa_visitor extends owa_entity {
         return $eq->filter( 'visitor_avatar_id', $this->get( 'user_email' ) );
     }
 }
-
-
 
 ?>

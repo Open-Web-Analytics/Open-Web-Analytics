@@ -92,26 +92,26 @@ class owa_dbColumn {
 
          $definition = '';
 
-         $definition .= $this->get('data_type');
+         $definition .= constant( $this->get('data_type') );
 
         // Check for auto increment
         if ($this->get('auto_increment') == true):
-            $definition .= ' '.OWA_DTD_AUTO_INCREMENT;
+            $definition .= ' '. constant('OWA_DTD_AUTO_INCREMENT');
         endif;
 
         // Check for auto Not null
         if ($this->get('is_not_null') == true):
-            $definition .= ' '.OWA_DTD_NOT_NULL;
+            $definition .= ' ' . constant('OWA_DTD_NOT_NULL');
         endif;
 
         // Check for unique
         if ($this->get('is_unique') == true):
-            $definition .= ' '.OWA_DTD_UNIQUE;
+            $definition .= ' ' . constant('OWA_DTD_UNIQUE');
         endif;
 
         // check for primary key
         if ($this->get('is_primary_key') == true):
-            $definition .= ' '.OWA_DTD_PRIMARY_KEY;
+            $definition .= ' ' . constant('OWA_DTD_PRIMARY_KEY');
             //$definition .= sprintf(", INDEX (%s)", $this->get('name'));
         endif;
 

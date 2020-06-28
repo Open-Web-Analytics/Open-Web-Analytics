@@ -34,16 +34,16 @@ class owa_document extends owa_entity {
 
         $this->setTableName('document');
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['url'] = new owa_dbColumn;
-        $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['url']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['uri'] = new owa_dbColumn;
-        $this->properties['uri']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['uri']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['page_title'] = new owa_dbColumn;
-        $this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['page_title']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['page_type'] = new owa_dbColumn;
-        $this->properties['page_type']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['page_type']->setDataType('OWA_DTD_VARCHAR255');
         $this->setCachable();
     }
 

@@ -40,20 +40,20 @@ class owa_site extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['site_id'] = new owa_dbColumn;
-        $this->properties['site_id']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['site_id']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['domain'] = new owa_dbColumn;
-        $this->properties['domain']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['domain']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['name'] = new owa_dbColumn;
-        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['name']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['description'] = new owa_dbColumn;
-        $this->properties['description']->setDataType(OWA_DTD_TEXT);
+        $this->properties['description']->setDataType('OWA_DTD_TEXT');
         $this->properties['site_family'] = new owa_dbColumn;
-        $this->properties['site_family']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['site_family']->setDataType('OWA_DTD_VARCHAR255');
         $this->properties['settings'] = new owa_dbColumn;
-        $this->properties['settings']->setDataType(OWA_DTD_BLOB);
+        $this->properties['settings']->setDataType('OWA_DTD_BLOB');
     }
 
     function generateSiteId($domain) {

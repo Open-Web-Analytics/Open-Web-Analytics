@@ -36,10 +36,10 @@ class owa_source_dim extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setDataType('OWA_DTD_BIGINT');
         $this->properties['id']->setPrimaryKey();
         $this->properties['source_domain'] = new owa_dbColumn;
-        $this->properties['source_domain']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['source_domain']->setDataType('OWA_DTD_VARCHAR255');
     }
 }
 
