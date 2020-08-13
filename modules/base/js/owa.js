@@ -1,4 +1,11 @@
-    var OWA = {
+/**
+ * OWA Global Object 
+ *	
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
+ */
+var OWA = {
 
     items: {},
     hooks: {
