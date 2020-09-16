@@ -1135,7 +1135,7 @@ class owa_coreAPI {
         return;
     }
 
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '') {
 
         if ( $domain ) {
             // sanitizes the domain
