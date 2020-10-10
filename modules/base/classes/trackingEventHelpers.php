@@ -594,6 +594,8 @@ class owa_trackingEventHelpers {
 
             // Do the host lookup
             $ip_address = $event->get( 'ip_address' );
+            
+            $remote_host = '';
 
             // Do the host lookup
 
@@ -610,7 +612,9 @@ class owa_trackingEventHelpers {
 
                 $remote_host = @gethostbyaddr( $ip_address );
             }
+            
             owa_coreAPI::debug(print_r($remote_host, true));
+            
             if ( $remote_host
                  && $remote_host != $ip_address
                  && $remote_host != 'unknown'
