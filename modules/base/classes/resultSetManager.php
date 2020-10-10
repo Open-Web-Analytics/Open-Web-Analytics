@@ -1599,13 +1599,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         // get base query params
         $query_params = $this->query_params;
         
-        if ( owa_coreAPI::getSetting('base', 'request_mode' ) === 'rest_api' ) {
+        //if ( owa_coreAPI::getSetting('base', 'request_mode' ) === 'rest_api' ) {
 	   		
 	   		 $api_url = owa_coreAPI::getSetting('base', 'rest_api_url');     
 	   		 $query_params['do'] = 'reports';
 	   		 $query_params['module'] = 'base';
 	   		 $query_params['version'] = 'v1';
-        }
+       // }
         
       
         //add format
