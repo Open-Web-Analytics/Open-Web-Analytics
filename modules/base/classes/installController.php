@@ -51,8 +51,8 @@ class owa_installController extends owa_controller {
     function pre() {
 
         if (owa_coreAPI::getSetting('base', 'install_complete')) {
-            owa_coreAPI::debug('Install complete redirecting to base.installDetected');
-            return $this->redirectBrowser('base.installDetected', false);
+            owa_coreAPI::debug('Install is already complete. redirecting to public url');
+            return $this->redirectBrowserToUrl( owa_coreAPI::getSetting('base', 'public_url') );
         }
 
         return;

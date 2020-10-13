@@ -199,10 +199,6 @@
             $this->set('base', 'error_handler', OWA_ERROR_HANDLER);
         }
 
-        if (defined('OWA_CONFIG_DO_NOT_FETCH_FROM_DB')) {
-            $this->set('base', 'do_not_fetch_config_from_db', OWA_CONFIG_DO_NOT_FETCH_FROM_DB);
-        }
-
         if (defined('OWA_PUBLIC_URL')) {
             $this->set('base', 'public_url', OWA_PUBLIC_URL);
         }
@@ -620,7 +616,6 @@
                 'geolocation_lookup'                => true,
                 'geolocation_service'                => '',
                 'report_wrapper'                    => 'wrapper_default.tpl',
-                'do_not_fetch_config_from_db'        => false,
                 'announce_visitors'                    => false,
                 'public_url'                        => '',
                 'base_url'                            => '',

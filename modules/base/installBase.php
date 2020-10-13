@@ -39,9 +39,11 @@ class owa_installBaseController extends owa_installController {
         // require nonce
         $this->setNonceRequired();
     }
-
-    public function validate()
-    {
+    
+    public function validate() {
+	    
+	    // Do not add any validations here that require DB lookups
+	    
         $this->addValidation('domain', $this->getParam('domain'), 'required', ['errorMsg' => $this->getMsg(3309)]);
         $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
 	    $this->addValidation('user_id', $this->getParam('user_id'), 'userName', array('stopOnError'	=> true));
@@ -56,16 +58,6 @@ class owa_installBaseController extends owa_installController {
         ];
 
         $this->addValidation('domain', $this->getParam('domain'), 'subStringPosition', $domainConf);
-
-        $domainEntityConf = [
-            'entity'    => 'base.site',
-            'column'    => 'domain',
-            'errorMsg'  => $this->getMsg(3206),
-        ];
-
-        $domainValue = $this->getParam('protocol').$this->getParam('domain');
-
-        $this->addValidation('domain', $domainValue, 'entityDoesNotExist', $domainEntityConf);
     }
 
     function action() {
