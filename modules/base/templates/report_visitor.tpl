@@ -31,23 +31,21 @@
 <div style="clear:both;"></div>
 
 
-<table width="100%">
-        <TR>
-            <td valign="top">
-                <div class="owa_reportSectionContent" style="min-width:500px;">
-                    <div class="owa_reportSectionHeader">Latest Visits</div>
-                    <?php include('report_latest_visits.tpl')?>
-                    <?php echo $this->makePaginationFromResultSet($visits, array('do' => 'base.reportVisitors'), true);?>
-                </div>
-            </td>
-            <td valign="top">
-                <div class="owa_reportSectionContent" style="min-width:;">
-                    <div class="owa_reportSectionHeader">Latest Actions</div>
-						<div id="latest-actions"></div>
-                </div>
-            </td>
-        </TR>
-</table>
+<div class="owa-two-columns">
+  <div>
+    <div class="owa_reportSectionContent" style="min-width:500px;">
+      <div class="owa_reportSectionHeader">Latest Visits</div>
+      <?php include('report_latest_visits.tpl')?>
+      <?php echo $this->makePaginationFromResultSet($visits, array('do' => 'base.reportVisitors'), true);?>
+    </div>
+  </div>
+  <div>
+    <div class="owa_reportSectionContent" style="min-width:;">
+      <div class="owa_reportSectionHeader">Latest Actions</div>
+      <div id="latest-actions"></div>
+    </div>
+  </div>
+</div>
 
 
 <script>

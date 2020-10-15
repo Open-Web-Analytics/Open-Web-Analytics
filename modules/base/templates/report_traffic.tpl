@@ -4,90 +4,80 @@
 <div class="owa_reportSectionContent">
     <div id="visits-headline" class="owa_reportSectionHeader"></div>
 
-    <table style="width:100%;margin-top:-15px;">
-        <TR>
-            <TD valign="top" style="width:50%;">
-                <div id="traffic-sources" style="width:250px;"></div>
-            </TD>
-
-            <TD valign="top" style="width:50%;">
-                <div id="trend-metrics"></div>
-            </TD>
-
-        </TR>
-    </table>
+    <div class="owa-two-columns">
+      <div><div id="traffic-sources" ></div></div>
+      <div><div id="trend-metrics"></div></div>
+    </div>
 </div>
 
-<table style="width:auto;margin-top:;">
-    <tr>
-        <td valign="top" style="width:50%;">
+<div class="owa-two-columns">
+  <div>
 
-        <div class="owa_reportSectionContent">
+    <div class="owa_reportSectionContent">
 
-            <div class="owa_reportSectionContent" style="min-width:350px;">
-                <div class="owa_reportSectionHeader">Top Sources</div>
+      <div class="owa_reportSectionContent" style="min-width:350px;">
+        <div class="owa_reportSectionHeader">Top Sources</div>
 
-                <div id="top-sources"></div>
-                <div class="owa_genericHorizonalList owa_moreLinks">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportSources'), true);?>">View Full Report &raquo;</a>
-                        </LI>
-                    </UL>
-                </div>
-            </div>
+        <div id="top-sources"></div>
+        <div class="owa_genericHorizonalList owa_moreLinks">
+          <UL>
+            <LI>
+              <a href="<?php echo $this->makeLink(array('do' => 'base.reportSources'), true);?>">View Full Report &raquo;</a>
+            </LI>
+          </UL>
+        </div>
+      </div>
 
-            <div class="owa_reportSectionContent" style="min-width:350px;">
-                <div class="owa_reportSectionHeader">Top Keywords</div>
+      <div class="owa_reportSectionContent" style="min-width:350px;">
+        <div class="owa_reportSectionHeader">Top Keywords</div>
 
-                <div id="top-keywords"></div>
-                <div class="owa_genericHorizonalList owa_moreLinks">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'), true);?>">View Full Report &raquo;</a>
-                        </LI>
-                    </UL>
-                </div>
-            </div>
+        <div id="top-keywords"></div>
+        <div class="owa_genericHorizonalList owa_moreLinks">
+          <UL>
+            <LI>
+              <a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'), true);?>">View Full Report &raquo;</a>
+            </LI>
+          </UL>
+        </div>
+      </div>
 
-        </td>
+    </div>
 
-        <td valign="top" style="width:50%;">
+    <div>
 
-            <div class="owa_reportSectionContent" style="min-width:350px;">
-                <div class="owa_reportSectionHeader">Top Referrals</div>
-                <div id="top-referrals"></div>
-                <div class="owa_genericHorizonalList owa_moreLinks">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
-                        </LI>
-                    </UL>
-                </div>
-            </div>
+      <div class="owa_reportSectionContent" style="min-width:350px;">
+        <div class="owa_reportSectionHeader">Top Referrals</div>
+        <div id="top-referrals"></div>
+        <div class="owa_genericHorizonalList owa_moreLinks">
+          <UL>
+            <LI>
+              <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
+            </LI>
+          </UL>
+        </div>
+      </div>
 
-            <div class="owa_reportSectionHeader">Related Reports</div>
-                <div class="relatedReports">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
-                        </LI>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
-                        </LI>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
-                        </LI>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
-                        </LI>
-                    </UL>
-                </div>
-            </div>
+      <div class="owa_reportSectionHeader">Related Reports</div>
+      <div class="relatedReports">
+        <UL>
+          <LI>
+            <a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
+          </LI>
+          <LI>
+            <a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
+          </LI>
+          <LI>
+            <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
+          </LI>
+          <LI>
+            <a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
+          </LI>
+        </UL>
+      </div>
+    </div>
 
-        </td>
-    </tr>
-</table>
+  </div>
+</div>
 
 
 

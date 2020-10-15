@@ -7,6 +7,46 @@ legend {font-size:16px;font-weight:bold;}
 fieldset{margin: 7px; padding: 20px; border:1px solid #cccccc;}
 div {margin:0;}
 
+/* Main layout */
+div.owa-main-layout {
+  display: flex;
+}
+div.owa_reportLeftNavColumn {
+  display: none;
+}
+
+/* this 835 is also used in wrapper_default mobileQuery match */
+@media screen and (min-width: 835px) {
+  div.owa_reportLeftNavColumn {
+    flex: 0 0 auto;
+    display: block;
+  }
+}
+div.owa_reportMainColumn {
+  flex: 1 0 320px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+@media screen and (min-width: 600px) {
+  div.owa-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 2rem;
+  }
+  div.owa-two-columns.ratio-3-2 {
+    grid-template-columns: 3fr minmax(10rem, 2fr);
+  }
+  div.owa-two-columns.ratio-3-1 {
+    grid-template-columns: 3fr minmax(10rem, 1fr);
+  }
+}
+
+
+
+/* Links */
+
 .owa a {
     color: #21759B;
 }
@@ -25,6 +65,75 @@ div {margin:0;}
 .yellow {background-color:yellow;}
 .green {background-color:green; color:#ffffff;}
 
+
+/* MOBILE MENUS */
+/*
+ * On mobile, Javascript takes the top and side navs and puts them in a new container div .owa-mobile-menu
+ */
+#owa-mobile-menu-button {
+  display:block;
+  line-height: 2rem;
+  background: #eee;
+  border: solid 1px #ddd;
+  text-align:center;
+  z-index: 3;
+  top: 1rem;
+  right: 1rem;
+  position: fixed;
+  padding: 0.25rem 1rem;
+  text-decoration: none;
+}
+.owa-mobile-menu {
+  box-sizing: border-box;
+  transition: all 0.3s;
+  background: white;
+  padding: 1rem;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  overflow: auto;
+}
+/* .owa-mobile-menu-closed and .owa-mobile-menu-open get applied to the body tag by Javascript */
+.owa-mobile-menu-closed .owa-mobile-menu {
+  transform: translateX(-100vw);
+  opacity: 0;
+}
+.owa-mobile-menu-open .owa-mobile-menu {
+  transform: none;
+  opacity: 1;
+}
+/* Prevent the body from scrolling, or page width from changing while the menu is open */
+body.owa-mobile-menu-open {
+  position: fixed;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/* Un-do styling elsewhere */
+.owa-mobile-menu {
+  line-height: 1.4;
+}
+.owa .owa-mobile-menu .user-greeting,
+.owa-mobile-menu .owa_navigation,
+.owa-mobile-menu .owa_navigation ul,
+.owa-mobile-menu .owa_navigation li,
+.owa-mobile-menu .owa_navigation a {
+  float: none;
+  display: block;
+}
+.owa-mobile-menu .owa_navigation a {
+  width: 100%;
+}
+.owa-mobile-menu .owa_admin_nav_topmenu_item {
+  height: auto;
+}
+.owa-mobile-menu .owa_navigation li a:hover {
+	border-bottom: none;
+}
+
 /* NAVIGATION */
 #sub_nav {padding:5px; background-color:#cccccc; width=100%; }
 .top_level_nav{font-size:20px;}
@@ -41,16 +150,20 @@ div {margin:0;}
 .owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
 .owa_navigation li {text-decoration: none; float:left; margin: 2px;}
 .owa_navigation li a {
-    background: url() #fff bottom left repeat-x;
+    background: #fff;
     height: 2em;
     line-height: 2em;
     float: left;
-    width: 9em;
+    padding: 0 1rem;
     display: block;
     border: 0 solid #efefef;
     text-decoration: none;
     text-align: center;
-    
+}
+@media screen and (min-width: 1213px) {
+  .owa_navigation li a {
+      width: 9em;
+  }
 }
 
 #updates {

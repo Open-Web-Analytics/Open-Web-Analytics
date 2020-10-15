@@ -1,85 +1,76 @@
 <div class="owa_reportSectionContent" style="width:auto;">
-<div class="owa_reportSectionHeader">Site Metrics</div>
+  <div class="owa_reportSectionHeader">Site Metrics</div>
 
-    <div id="trend-chart" style="height:125px;"></div><BR>
-    <div id="trend-metrics" style="width:auto;"></div>
+  <div id="trend-chart" style="height:125px;"></div><BR>
+  <div id="trend-metrics" style="width:auto;"></div>
 
 </div>
 <div class="clear"></div>
-<table style="padding:0px;width:auto;">
-    <TR>
-        <TD style="width:50%" valign="top">
+<div class="owa-two-columns">
+  <div>
+    <div class="owa_reportSectionContent">
+      <div class="owa_reportSectionHeader">Top Content</div>
 
-            <div class="owa_reportSectionContent">
-                <div class="owa_reportSectionHeader">Top Content</div>
-
-                <div id="top-pages" style="min-width:350px"></div>
-                <div class="owa_moreLinks">
-                    <a href="<?php echo $this->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
-                </div>
-            </div>
-
-           
-            <div class="owa_reportSectionContent">
-                <div class="section_header">Latest Visits</div>
-                <?php include('report_latest_visits.tpl')?>
-            </div>
-
-        </TD>
-        <TD style="width:50%" valign="top">
-
-            <?php //if ($actions) { ?>
-            <div class="owa_reportSectionContent" style="min-width:200px; height:;">
-                <div class="section_header">Actions</div>
-
-                <div id="actions-trend" style="width:;height:;"></div>
+      <div id="top-pages" style="min-width:350px"></div>
+      <div class="owa_moreLinks">
+        <a href="<?php echo $this->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
+      </div>
+    </div>
 
 
-                
+    <div class="owa_reportSectionContent">
+      <div class="section_header">Latest Visits</div>
+      <?php include('report_latest_visits.tpl')?>
+    </div>
 
-                <div class="owa_genericHorizontalList owa_moreLinks">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">View Full Report &raquo;</a>
-                        </LI>
-                    </UL>
-                </div>
-                <div class="clear"></div>
-            </div>
-            <?php //} ?>
-			<table width="100%">
-				<TR>
-					<TD>
-			 <span class="owa_reportSectionContent">
-                <div class="owa_reportSectionHeader">Visitor Types</div>
-                <div id="visitor-types" class="owa_piechart"></div>
-            </span>
-					</TD>
-					<TD>
-            <span class="owa_reportSectionContent">
-                <div class="owa_reportSectionHeader">Traffic Sources</div>
-                <div id="visitor-mediums" class="owa_piechart"></div>
-            </span>
-					</TD>
-				</TR>
-			</table>
-            <div class="owa_reportSectionContent">
-                <div class="owa_reportSectionHeader">Top Referrers</div>
+  </div>
 
-                <div id="top-referers" style="min-width:350px"></div>
-                <div class="owa_moreLinks">
-                    <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
-                </div>
-                <div id="test"></div>
-            </div>
+  <div>
+    <div class="owa_reportSectionContent" style="min-width:200px;">
+      <div class="section_header">Actions</div>
 
-            <div class="owa_reportSectionContent">
-                <div class="section_header">OWA News</div>
-                <?php echo $this->getWidget('base.widgetOwaNews','',false);?>
-            </div>
-        </TD>
-    </TR>
-</table>
+      <div id="actions-trend"></div>
+
+      <div class="owa_genericHorizontalList owa_moreLinks">
+        <UL>
+          <LI>
+            <a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">View Full Report &raquo;</a>
+          </LI>
+        </UL>
+      </div>
+      <div class="clear"></div>
+    </div>
+
+    <div class="owa-two-columns">
+      <div>
+        <span class="owa_reportSectionContent">
+          <div class="owa_reportSectionHeader">Visitor Types</div>
+          <div id="visitor-types" class="owa_piechart"></div>
+        </span>
+      </div>
+      <div>
+        <span class="owa_reportSectionContent">
+          <div class="owa_reportSectionHeader">Traffic Sources</div>
+          <div id="visitor-mediums" class="owa_piechart"></div>
+        </span>
+      </div>
+    </div>
+    <div class="owa_reportSectionContent">
+      <div class="owa_reportSectionHeader">Top Referrers</div>
+
+      <div id="top-referers" style="min-width:350px"></div>
+      <div class="owa_moreLinks">
+        <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">View Full Report &raquo;</a>
+      </div>
+      <div id="test"></div>
+    </div>
+
+    <div class="owa_reportSectionContent">
+      <div class="section_header">OWA News</div>
+      <?php echo $this->getWidget('base.widgetOwaNews','',false);?>
+    </div>
+  </div>
+</div>
 
 <script>
 

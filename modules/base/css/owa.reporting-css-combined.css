@@ -1023,7 +1023,7 @@ button.ui-button::-moz-focus-inner { border: 0; padding: 0; } /* reset extra pad
 
 /* HTML ENTITIES*/
 
-body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:12px;}
+body {border-color:#cccccc; font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:12px;}
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 2px 2px 2px;}
 legend {font-size:16px;font-weight:bold;}
@@ -1057,23 +1057,27 @@ div {margin:0;}
 .nav_links ul {clear: both;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
-.host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
+.host_app_nav { vertical-align:middle;font-size:18px;padding:4px;}
 #owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
 .owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
 .owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
 .owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
 .owa_navigation li {text-decoration: none; float:left; margin: 2px;}
 .owa_navigation li a {
-    background: url() #fff bottom left repeat-x;
+    background: #fff;
     height: 2em;
     line-height: 2em;
     float: left;
-    width: 9em;
+    padding: 0 1rem;
     display: block;
     border: 0 solid #efefef;
     text-decoration: none;
     text-align: center;
-    
+}
+@media screen and (min-width: 1213px) {
+  .owa_navigation li a {
+      width: 9em;
+  }
 }
 
 .owa_navigation li a:hover {
@@ -1093,7 +1097,6 @@ div {margin:0;}
 
 /* FORMS */
 .form-row {border-bottom:1px solid #efefef;padding:10px; float:none;}
-.form-label {width:;}
 .form-field {position: relative; left: 120px;}
 .form-value {position: absolute; left: 380px; font-weight: bold;}
 .form-instructions {position: relative; left: 150px; font-size:12px; color: #9f9f9f;}
@@ -1161,8 +1164,8 @@ div {margin:0;}
 .indented_header_row {padding:0px 0px 0px 20px;}
 #layout_panels {border:1px solid #999999;border-collapse: collapse; width:100%; vertical-align:top;}
 .layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
-#panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
-td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
+#panel {border-collapse: collapse; border:0px;padding:10px; vertical-align:top;}
+td#panel {margin: 0px; padding-top:0px;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
@@ -1173,7 +1176,6 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 /* WIZARD */
 
-.owa_wizard {}
 .owa_wizardNextText {text-align:left; font-size:20px;}
 
 /* FORMATING */
@@ -1192,15 +1194,14 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .legend_link {color:#999999;font-size:12px;font-weight:normal;}
 .legend_link a {text-decoration:underline;}
 .centered_buttons {margin-left:auto;margin-right:auto;}
-.snippet_text {color:;font-size:12px;}
+.snippet_text {font-size:12px;}
 .snippet_text a {color:#999999;}
 .snippet_anchor {font-size:14px;font-weight:bold;}
 .visit_box_stat {width:42px;}
 .nav_bar{text-decoration:none;}
 .id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
-.code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:10px;}
+.code {padding:7px;margin:0px 30px 0px 30px; border: 1px dashed blue; font-size:10px;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
-.visible {display:;}
 .invisible {display:none;}
 
 .owa .error, .owa .status {
@@ -1210,7 +1211,6 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding: 20px 10px 20px 20px;
     background-color: #FF4040;
     font-size: 14px;
-    font-weight:;
     -moz-border-radius:5px 5px 5px 5px;
     -moz-box-shadow:2px 2px 2px 1px #9f9f9f;
     border-radius:5px 5px 5px 5px;
@@ -1335,15 +1335,11 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding: 7px 7px 7px 7px;
     border:0px;
 }
-.owa .genericHorizontalList {}
 .owa .genericHorizontalList ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
 .owa .genericHorizontalList li {text-decoration: none; float:left; margin: 0px; padding:0px 5px 0px 5px;}
 .owa .genericHorizontalList li a {
 
-    height:;
-    line-height:;
     float: left;
-    width: ;
     display: block;
     text-decoration: none;
     text-align: center;
@@ -1354,7 +1350,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     border-bottom: 2px solid orange;
 }
 
-.owa .user-greating {
+.owa .user-greeting {
 
     color: #9f9f9f;
     font-weight: normal;
@@ -1391,7 +1387,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     font-size: 20px;
 }
 
-.owa_reportContainer {width:auto; background-color: ; height:;}
+.owa_reportContainer {width:auto;}
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
 .owa_reportSectionHeader, .section_header {
     width:auto;
@@ -1413,18 +1409,33 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 }
 
 .reportSectionContainer {
-    margin: 20px;
-    padding: 20px;
+    margin: 0.25rem;
+    padding: 0.5rem;
     background-color: #ffffff;
-   
-    
+}
+@media screen and (min-width: 600px) {
+  .reportSectionContainer {
+      margin: 20px;
+      padding: 20px;
+  }
 }
 
 .owa_reportSectionContent {
-    margin: 0 10px 0 10px;
-    padding:0px 7px 7px 0px;
     background-color: #ffffff;
     width:auto;
+    overflow:auto;
+}
+/* not sure this helps with anything.
+@media screen and (min-width: 600px) {
+  .owa_reportSectionContent {
+    margin: 0 10px 0 10px;
+    padding: 0 7px 7px 0;
+  }
+}
+*/
+/* Sometimes these are nested, e.g. traffic report*/
+.owa_reportSectionContent .owa_reportSectionContent {
+  overflow: hidden;
 }
 
 #owa_reportHeader {
@@ -1484,7 +1495,6 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .col_item_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999;}
 .col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
 .data_cell {text-align:center; vertical-align:center;}
-.item_cell {}
 
 .owa_reportHeaderControls {background-color:#ffffff; border-bottom: 1px solid #a0a0a0;height:60px;margin-bottom:20px;}
 
@@ -1502,7 +1512,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding:5px;
 }
 
-#owa_reportSiteFilter {text-align:; width:100%; }
+#owa_reportSiteFilter {width:100%; }
 #owa_reportSiteFilterSelect {font-size: 12px; width:200px; margin: 0px 20px; 0px 0px;}
 #owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline; }
 
@@ -1520,14 +1530,9 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 #owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
 .owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
 
-#owa_reportNavPanel {}
-#report_top_level_nav_ul {width:;}
-
 .owa_reportLeftNavColumn {width:200px; margin-right:0px; border-right: 0px solid #cccccc;}
 .owa_reportLeftNavColumn a {
     text-decoration: none;
-    color:;
-
 }
 
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
@@ -1589,7 +1594,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
 .owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}
 .owa_admin_nav_topmenu {
-    padding:;
     border:0px solid #cccccc;
     
     
@@ -1604,9 +1608,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     padding:3px 3px 3px 10px;
     font-size: 12px;
 }
-.owa_admin_nav_topmenu_container {}
-.owa_admin_nav_topmenu_item {background-color:;height:25px; vertical-align: middle; font-weight: ; padding: 10px;font-size:16px;  }
-.owa_admin_nav_topmenu_item_text {}
+.owa_admin_nav_topmenu_item {height:25px; vertical-align: middle; padding: 10px;font-size:16px;  }
 .owa_admin_nav_topmenu_toggle {
 	width:15px;height:20px;
 	
@@ -1745,7 +1747,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa_nextPageControl:hover, .owa_previousPageControl:hover{
     color: orange;
-    padding:;
     border: 1px solid orange;
 }
 
@@ -1868,14 +1869,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
     font-size:18px;
     font-weight: bold;
-    color:;
     padding-bottom:5px;
 }
 
 .owa .funnel .funnelStepUrl {
 
     font-size:12px;
-    font-weight:;
     color: #707070;
     padding-bottom:5px;
 }
@@ -1884,7 +1883,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
     font-size:26px;
     font-weight: bold;
-    color:;
     padding:10px 0px 10px 0px;
 }
 
@@ -2003,10 +2001,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .dimensionPicker .select-button {
-
     font-size: 10px;
-    height:;
-
 }
 
 .dimensionPicker .dimensionListItem:hover {
@@ -2030,6 +2025,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     padding: 0px;
     margin-bottom:3px;
     background-color: #fafafa;
+    /* Force block formatting context, otherwise it causes an ancestor
+     * overflow:auto to allow for vertical space that is not needed, i.e. adds
+     * annoying vertical scroll bars. Probably related to vertical margins
+     * and/or floats used within the container. */
+    overflow: hidden;
 
 }
 
@@ -2043,10 +2043,8 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .explorerTopControls li {
-
     list-style: none;
     text-decoration: none;
-    width:;
 }
 
 .constraintPickerContainer .builder {

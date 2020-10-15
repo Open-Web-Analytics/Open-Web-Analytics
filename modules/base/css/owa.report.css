@@ -40,11 +40,15 @@
 }
 
 .reportSectionContainer {
-    margin: 20px;
-    padding: 20px;
+    margin: 0.25rem;
+    padding: 0.5rem;
     background-color: #ffffff;
-   
-    
+}
+@media screen and (min-width: 600px) {
+  .reportSectionContainer {
+      margin: 20px;
+      padding: 20px;
+  }
 }
 
 .owa_reportSectionContent {

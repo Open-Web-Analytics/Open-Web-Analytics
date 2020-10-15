@@ -8,33 +8,21 @@
                 <TD>
                     <table class="owa_userInfobox">
                         <TD valign="top">
-
                             <?php 
-	                            
-	                        if ($row['session_is_new_visitor'] == true) {
-	             		    
-	             		        echo '<i class="owa_avatar fas fa-user-plus fa-2x"></i>';
-                            
-                            } else { 
-	                            
-	                            $avatar = $this->getAvatarImage($row['visitor_user_email']);
-	                            if ( $avatar ) {
-		                    		
-		                    		echo '<img class="owa_avatar" src="'. $avatar.'" width="30" height="30">';        
-		                            
-	                            } else {
-		                            
-		                            echo '<i class="owa_avatar fas fa-user fa-2x"></i>';
-	                            }
-	                            
-                            }
-                            
+	                            if ($row['session_is_new_visitor'] == true) {
+                                echo '<i class="owa_avatar fas fa-user-plus fa-2x"></i>';
+                              } else { 
+                                $avatar = $this->getAvatarImage($row['visitor_user_email']);
+                                if ( $avatar ) {
+                                  echo '<img class="owa_avatar" src="'. $avatar.'" width="30" height="30">';        
+                                } else {
+                                  echo '<i class="owa_avatar fas fa-user fa-2x"></i>';
+                                }
+                              }
                             ?>
                         </TD>
                         <TD valign="top" class="owa_userLabel" style="width:auto;">
-
                             <span class="inline_h4">
-
                             <?php
                             if ( $this->isValueSet( $row[ 'session_user_name' ] ) ) {
                                 $this->out( $row[ 'session_user_name' ] );

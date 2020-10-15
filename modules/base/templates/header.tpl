@@ -17,7 +17,7 @@
         </UL>
     </span>
     <?php $cu = $this->getCurrentUser(); ?>
-    <span class="user-greating" style="">
+    <span class="user-greeting" >
         Hi, <?php $this->out( $cu->getUserData('user_id') );?> ! &bull;
         <?php if ( ! owa_coreAPI::getSetting( 'base', 'is_embedded' ) ):?>
 
