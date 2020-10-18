@@ -1023,7 +1023,7 @@ OWA.util =  {
 	        
 	        script.onload = function() {
 	            
-	            callback();
+	            callback && callback();
 	        };
 	    }
 	    
@@ -2119,3 +2119,5 @@ OWA.util =  {
     }
     
 };
+
+window.OWA = OWA;

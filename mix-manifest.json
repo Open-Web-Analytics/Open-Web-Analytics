@@ -1,7 +1,8 @@
 {
-    "/js/owa.reporting.js": "/js/owa.reporting.js",
     "/modules/base/js/owa.tracker.js": "/modules/base/js/owa.tracker.js",
-    "/css/owa.reporting-combined.css": "/css/owa.reporting-combined.css",
+    "/modules/css/owa.css": "/modules/css/owa.css",
+    "/modules/css/owa.reporting-combined.css": "/modules/css/owa.reporting-combined.css",
+    "/modules/js/owa.reporting.js": "/modules/js/owa.reporting.js",
     "/css/owa.reporting-combined-libs.css": "/css/owa.reporting-combined-libs.css",
-    "/js/owa.reporting-libs.js": "/js/owa.reporting-libs.js"
+    "/modules/js/owa.reporting-libs.js": "/modules/js/owa.reporting-libs.js"
 }

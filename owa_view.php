@@ -123,7 +123,7 @@ class owa_view extends owa_base {
         $this->t = new owa_template();
         $this->body = new owa_template($this->module);
         $this->setTheme();
-        $this->setCss("base/css/owa.css");
+        $this->setCss("css/owa.css");
     }
 
     /**
@@ -715,6 +715,7 @@ class owa_adminView extends owa_view {
     }
 
     function post() {
+        // xxx what does this mean - calling setJs with CSS resources? fixme
         $this->setJs('owa.css');
         $this->setJs('owa.admin.css');
     }

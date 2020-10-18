@@ -19,9 +19,11 @@ mix
     'modules/base/js/owa.js',
     'modules/base/js/owa.tracker.js'
   ], 'modules/base/js/owa.tracker.js')
+  // Compile the basic owa.css only.
+  .sass('modules/base/sass/owa.scss', 'modules/css/owa.css')
   // Compile the CSS for reporting.
   // SASS is used for OWA specific CSS
-  .sass('modules/base/sass/owa.reporting-combined.scss', 'css/owa.reporting-combined.css')
+  .sass('modules/base/sass/owa.reporting-combined.scss', 'modules/css/owa.reporting-combined.css')
   // Pre-minified and packaged CSS is combined into a libs CSS package.
   .combine([
     'modules/base/css/jquery-ui.css',
@@ -41,10 +43,10 @@ mix
     'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js',
     'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js',
     'modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js',
-  ], 'js/owa.reporting-libs.js')
+    'modules/base/js/includes/jquery/chosen.jquery.min.js',
+  ], 'modules/js/owa.reporting-libs.js')
   // Compile OWA-specific JS
   .js([
-    'modules/base/js/includes/jquery/chosen.jquery.js',
     'modules/base/js/owa.js',
     'modules/base/js/owa.report.js',
     'modules/base/js/owa.resultSetExplorer.js',
@@ -52,7 +54,7 @@ mix
     'modules/base/js/owa.areachart.js',
     'modules/base/js/owa.piechart.js',
     'modules/base/js/owa.kpibox.js',
-  ], 'js/owa.reporting.js')
+  ], 'modules/js/owa.reporting.js')
   .options({ processCssUrls: false })
 ;
 
