@@ -1,6 +1,6 @@
 /* HTML ENTITIES*/
 
-body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:12px;}
+body {border-color:#cccccc;  font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:12px;}
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 2px 2px 2px;}
 legend {font-size:16px;font-weight:bold;}
@@ -135,7 +135,7 @@ body.owa-mobile-menu-open {
 }
 
 /* NAVIGATION */
-#sub_nav {padding:5px; background-color:#cccccc; width=100%; }
+#sub_nav {padding:5px; background-color:#cccccc; width:100%; }
 .top_level_nav{font-size:20px;}
 .nav_links {list-style:none; margin:0px; padding:0px; }
 .nav_links li {float: left; padding:4px 20px 4px 20px;}
@@ -143,7 +143,7 @@ body.owa-mobile-menu-open {
 .nav_links ul {clear: both;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
-.host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
+.host_app_nav { vertical-align:middle;font-size:18px;padding:4px;}
 #owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
 .owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
 .owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
@@ -194,7 +194,6 @@ body.owa-mobile-menu-open {
 
 /* FORMS */
 .form-row {border-bottom:1px solid #efefef;padding:10px; float:none;}
-.form-label {width:;}
 .form-field {position: relative; left: 120px;}
 .form-value {position: absolute; left: 380px; font-weight: bold;}
 .form-instructions {position: relative; left: 150px; font-size:12px; color: #9f9f9f;}
@@ -236,7 +235,6 @@ body.owa-mobile-menu-open {
     width: auto;
     display: block;
     border: 0.1em solid #efefef;
-    color: ;
     text-decoration: none;
     text-align: center;
     padding:0px 2px 0px 2px;
@@ -262,8 +260,8 @@ body.owa-mobile-menu-open {
 .indented_header_row {padding:0px 0px 0px 20px;}
 #layout_panels {border:1px solid #999999;border-collapse: collapse; width:100%; vertical-align:top;}
 .layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
-#panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
-td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
+#panel {border-collapse: collapse; border:0px;padding:10px; vertical-align:top;}
+td#panel {margin: 0px; padding-top:0px;border-collapse: collapse;border:0px;}
 .layout_subview {margin: 0px; padding:0px;border-collapse: collapse; font-size: 16px; line-height: normal;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
@@ -293,15 +291,15 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .legend_link {color:#999999;font-size:12px;font-weight:normal;}
 .legend_link a {text-decoration:underline;}
 .centered_buttons {margin-left:auto;margin-right:auto;}
-.snippet_text {color:;font-size:12px;}
+.snippet_text {font-size:12px;}
 .snippet_text a {color:#999999;}
 .snippet_anchor {font-size:14px;font-weight:bold;}
 .visit_box_stat {width:42px;}
 .nav_bar{text-decoration:none;}
 .id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
-.code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:10px;}
+.code {padding:7px;margin:0px 30px 0px 30px; border: 1px dashed blue; font-size:10px;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
-.visible {display:;}
+//.visible {}
 .invisible {display:none;}
 
 .owa .error, .owa .status {
@@ -332,7 +330,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 /* LAYOUT */
 #admin_nav{font-size:12px;}
 #keywords{width:400px;}
-#side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
+#side_bar {width:auto; border-right: 0px solid #000000; padding: 5px;  font-size: 12px;}
 #login_box {
     -moz-border-radius:10px 10px 10px 10px;
     border-radius:10px 10px 10px 10px;

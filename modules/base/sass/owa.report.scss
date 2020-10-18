@@ -18,7 +18,7 @@
     font-size: 20px;
 }
 
-.owa_reportContainer {width:auto; background-color: ; height:;}
+.owa_reportContainer {width:auto;}
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
 .owa_reportSectionHeader, .section_header {
     width:auto;
@@ -26,7 +26,6 @@
     padding-bottom:10px;
     margin: 10px 0 10px 0;
     font-size: 18px;
-    font-weight: ;
     color: #666666;
     border-top: 3px solid #cccccc;
 }
@@ -133,13 +132,13 @@
     padding:5px;
 }
 
-#owa_reportSiteFilter {text-align:; width:100%; }
-#owa_reportSiteFilterSelect {font-size: 12px; width:200px; margin: 0px 20px; 0px 0px;}
+#owa_reportSiteFilter { width:100%; }
+#owa_reportSiteFilterSelect {font-size: 12px; width:200px; margin: 0px 20px 0px 0px;}
 #owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline; }
 
 .owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
 .owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
-.owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
+.owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-Up.svg.png); background-repeat: no-repeat; background-position: center;}
 /*.owa_reportPeriod {text-align: right;}*/
 #owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
 
@@ -151,13 +150,12 @@
 #owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
 .owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
 
-#owa_reportNavPanel {}
-#report_top_level_nav_ul {width:;}
+// #owa_reportNavPanel {}
+//#report_top_level_nav_ul {}
 
 .owa_reportLeftNavColumn {width:200px; margin-right:0px; border-right: 0px solid #cccccc;}
 .owa_reportLeftNavColumn a {
     text-decoration: none;
-    color:;
 
 }
 
@@ -220,10 +218,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
 .owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}
 .owa_admin_nav_topmenu {
-    padding:;
     border:0px solid #cccccc;
-    
-    
 }
 
 .owa_admin_nav_subgroup {
@@ -231,12 +226,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 	padding-left:45px;
 }
 .owa_admin_nav_subgroup_item {
-	
     padding:3px 3px 3px 10px;
     font-size: 12px;
 }
 .owa_admin_nav_topmenu_container {}
-.owa_admin_nav_topmenu_item {background-color:;height:25px; vertical-align: middle; font-weight: ; padding: 10px;font-size:16px;  }
+.owa_admin_nav_topmenu_item {height:25px; vertical-align: middle;  padding: 10px;font-size:16px;  }
 .owa_admin_nav_topmenu_item_text {}
 .owa_admin_nav_topmenu_toggle {
 	width:15px;height:20px;
@@ -376,7 +370,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa_nextPageControl:hover, .owa_previousPageControl:hover{
     color: orange;
-    padding:;
     border: 1px solid orange;
 }
 
@@ -499,14 +492,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
     font-size:18px;
     font-weight: bold;
-    color:;
     padding-bottom:5px;
 }
 
 .owa .funnel .funnelStepUrl {
 
     font-size:12px;
-    font-weight:;
     color: #707070;
     padding-bottom:5px;
 }
@@ -515,7 +506,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
     font-size:26px;
     font-weight: bold;
-    color:;
     padding:10px 0px 10px 0px;
 }
 
@@ -636,7 +626,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .dimensionPicker .select-button {
 
     font-size: 10px;
-    height:;
 
 }
 
@@ -677,7 +666,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
     list-style: none;
     text-decoration: none;
-    width:;
 }
 
 .constraintPickerContainer .builder {

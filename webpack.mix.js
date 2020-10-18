@@ -18,7 +18,7 @@ mix
     'css/owa.reporting-combined.css')
   .combine([
     'modules/base/css/jquery-ui.css',
-    'modules/base/css/jquery-ui.selectmenu.css',
+    'modules/base/css/jquery.ui.selectmenu.css',
     'modules/base/css/ui.jqgrid.css',
   ], 'css/owa.reporting-combined-libs.css');
 // mix.combine(files, destination);
