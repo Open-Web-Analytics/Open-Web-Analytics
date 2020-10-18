@@ -1,4 +1,7 @@
 {
+    "/js/owa.reporting.js": "/js/owa.reporting.js",
+    "/modules/base/js/owa.tracker.js": "/modules/base/js/owa.tracker.js",
+    "/css/owa.reporting-combined.css": "/css/owa.reporting-combined.css",
     "/css/owa.reporting-combined-libs.css": "/css/owa.reporting-combined-libs.css",
-    "/css/owa.reporting-combined.css": "/css/owa.reporting-combined.css"
+    "/js/owa.reporting-libs.js": "/js/owa.reporting-libs.js"
 }

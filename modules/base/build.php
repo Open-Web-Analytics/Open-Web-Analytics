@@ -42,10 +42,12 @@ class owa_buildController extends owa_cliController {
 
     function action() {
 
+        // Build all packages, unless a particular one is specified in the parameters.
         $packages = owa_coreAPI::getBuildPackages();
-
         if ( $this->getParam('package') ) {
-
+            if (!isset($packages[$this->getParam('package')])) {
+                throw new \Exception("Unknown package. Known packages: " . implode(', ', array_keys($packages)));
+            }
             $packages = array($packages[$this->getParam('package')]);
         }
 

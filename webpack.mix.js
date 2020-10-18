@@ -14,14 +14,47 @@ let mix = require('laravel-mix');
 //mix.js('src/app.js', 'dist/').sass('src/app.scss', 'dist/');
 //
 mix
-  .sass('modules/base/sass/owa.reporting-combined.scss',
-    'css/owa.reporting-combined.css')
+  // Compile the JS for the tracker.
+  .js([
+    'modules/base/js/owa.js',
+    'modules/base/js/owa.tracker.js'
+  ], 'modules/base/js/owa.tracker.js')
+  // Compile the CSS for reporting.
+  // SASS is used for OWA specific CSS
+  .sass('modules/base/sass/owa.reporting-combined.scss', 'css/owa.reporting-combined.css')
+  // Pre-minified and packaged CSS is combined into a libs CSS package.
   .combine([
     'modules/base/css/jquery-ui.css',
     'modules/base/css/jquery.ui.selectmenu.css',
     'modules/base/css/ui.jqgrid.css',
-  ], 'css/owa.reporting-combined-libs.css');
-// mix.combine(files, destination);
+  ], 'css/owa.reporting-combined-libs.css')
+  // Compile the JS for reporting.
+  // Pre-minified and packaged JS is combined into a libs CSS package.
+  .combine([
+    'modules/base/js/includes/jquery/jquery-1.6.4.min.js',
+    'modules/base/js/includes/jquery/jquery.sprintf.js',
+    'modules/base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js',
+    'modules/base/js/includes/jquery/jquery.ui.selectmenu.js',
+    'modules/base/js/includes/jquery/jquery.sparkline.min.js',
+    'modules/base/js/includes/jquery/jquery.jqGrid.min.js',
+    'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.min.js',
+    'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js',
+    'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js',
+    'modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js',
+  ], 'js/owa.reporting-libs.js')
+  // Compile OWA-specific JS
+  .js([
+    'modules/base/js/includes/jquery/chosen.jquery.js',
+    'modules/base/js/owa.js',
+    'modules/base/js/owa.report.js',
+    'modules/base/js/owa.resultSetExplorer.js',
+    'modules/base/js/owa.sparkline.js',
+    'modules/base/js/owa.areachart.js',
+    'modules/base/js/owa.piechart.js',
+    'modules/base/js/owa.kpibox.js',
+  ], 'js/owa.reporting.js')
+  .options({ processCssUrls: false })
+;
 
 // Full API
 // mix.js(src, output);

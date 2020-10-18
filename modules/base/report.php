@@ -97,7 +97,8 @@ class owa_reportView extends owa_view {
         $this->_setLinkState( $link_state );
 
         // set Js libs to be loaded
-        $this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
+        $this->setJs('owa.reporting-libs', 'js/owa.reporting-libs.js');
+        $this->setJs('owa.reporting', 'js/owa.reporting.js');
         
         // css libs to be loaded
         
