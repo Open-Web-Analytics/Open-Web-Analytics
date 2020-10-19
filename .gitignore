@@ -1,2 +1,9 @@
+# Library code brought in by composer
 /vendor/
-node_modules/
+# Library code only needed in development environments brought in by node
+/node_modules/
+# Actual config with real credentials should never be version controlled.
+/owa-config.php
+# Exclude the data dir except for the index.php files.
+/owa-data/
+!/owa-data/*/index.php

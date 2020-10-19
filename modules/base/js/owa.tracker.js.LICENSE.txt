@@ -1,4 +1,18 @@
-/*! For license information please see owa.tracker.js.LICENSE.txt */
+/**
+ * Javascript Tracker Object
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
+ */
+
+/**
+ * OWA Generic Event Object
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
+ */
 
 /**
  * OWA Global Object 

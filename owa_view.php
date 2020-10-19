@@ -886,8 +886,8 @@ class owa_adminPageView extends owa_view {
 
         $this->setJs('owa.reporting-libs', 'js/owa.reporting-libs.js');
         $this->setJs('owa.reporting', 'js/owa.reporting.js');
-        $this->setCss("css/owa.reporting-combined.css");
-        $this->setCss("css/owa.reporting-combined-libs.css");
+        $this->setCss("base/css/owa.reporting-combined.css");
+        $this->setCss("base/css/owa.reporting-combined-libs.css");
     }
 }
 

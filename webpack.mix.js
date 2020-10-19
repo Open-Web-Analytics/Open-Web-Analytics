@@ -11,49 +11,54 @@ let mix = require('laravel-mix');
  |
  */
 
-//mix.js('src/app.js', 'dist/').sass('src/app.scss', 'dist/');
-//
 mix
-  // Compile the JS for the tracker.
+  // Compile the JS for the tracker to modules/base/js/owa.tracker.js
   .js([
-    'modules/base/js/owa.js',
-    'modules/base/js/owa.tracker.js'
+    'modules/base/js-src/owa.js',
+    'modules/base/js-src/owa.tracker.js'
   ], 'modules/base/js/owa.tracker.js')
   // Compile the basic owa.css only.
-  .sass('modules/base/sass/owa.scss', 'modules/css/owa.css')
+  .sass('modules/base/sass/owa.scss', 'modules/base/css/owa.css')
   // Compile the CSS for reporting.
   // SASS is used for OWA specific CSS
-  .sass('modules/base/sass/owa.reporting-combined.scss', 'modules/css/owa.reporting-combined.css')
+  .sass('modules/base/sass/owa.reporting-combined.scss',
+        'modules/base/css/owa.reporting-combined.css')
   // Pre-minified and packaged CSS is combined into a libs CSS package.
   .combine([
     'modules/base/css/jquery-ui.css',
     'modules/base/css/jquery.ui.selectmenu.css',
     'modules/base/css/ui.jqgrid.css',
-  ], 'css/owa.reporting-combined-libs.css')
+  ], 'modules/base/css/owa.reporting-combined-libs.css')
   // Compile the JS for reporting.
   // Pre-minified and packaged JS is combined into a libs CSS package.
   .combine([
-    'modules/base/js/includes/jquery/jquery-1.6.4.min.js',
-    'modules/base/js/includes/jquery/jquery.sprintf.js',
-    'modules/base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js',
-    'modules/base/js/includes/jquery/jquery.ui.selectmenu.js',
-    'modules/base/js/includes/jquery/jquery.sparkline.min.js',
-    'modules/base/js/includes/jquery/jquery.jqGrid.min.js',
-    'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.min.js',
-    'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js',
-    'modules/base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js',
-    'modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js',
-    'modules/base/js/includes/jquery/chosen.jquery.min.js',
+    'modules/base/js-src/includes/jquery/jquery-1.6.4.min.js',
+    'modules/base/js-src/includes/jquery/jquery.sprintf.js',
+    'modules/base/js-src/includes/jquery/jquery-ui-1.8.12.custom.min.js',
+    'modules/base/js-src/includes/jquery/jquery.ui.selectmenu.js',
+    'modules/base/js-src/includes/jquery/jquery.sparkline.min.js',
+    'modules/base/js-src/includes/jquery/jquery.jqGrid.min.js',
+    'modules/base/js-src/includes/jquery/flot_v0.7/jquery.flot.min.js',
+    'modules/base/js-src/includes/jquery/flot_v0.7/jquery.flot.resize.min.js',
+    'modules/base/js-src/includes/jquery/flot_v0.7/jquery.flot.pie.min.js',
+    'modules/base/js-src/includes/jquery/jQote2/jquery.jqote2.min.js',
+    'modules/base/js-src/includes/jquery/chosen.jquery.min.js',
   ], 'modules/js/owa.reporting-libs.js')
+  // For the sake of maintaining separation between source and distribution files
+  // we copy some libraries that are accessed by the client, e.g. OWA.requireJs()
+  .copy('modules/base/js-src/includes/jquery/jquery-ui-1.8.12.custom.min.js',
+        'modules/base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js')
+  .copy('modules/base/js-src/includes/jquery/jQote2/jquery.jqote2.min.js',
+        'modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js')
   // Compile OWA-specific JS
   .js([
-    'modules/base/js/owa.js',
-    'modules/base/js/owa.report.js',
-    'modules/base/js/owa.resultSetExplorer.js',
-    'modules/base/js/owa.sparkline.js',
-    'modules/base/js/owa.areachart.js',
-    'modules/base/js/owa.piechart.js',
-    'modules/base/js/owa.kpibox.js',
+    'modules/base/js-src/owa.js',
+    'modules/base/js-src/owa.report.js',
+    'modules/base/js-src/owa.resultSetExplorer.js',
+    'modules/base/js-src/owa.sparkline.js',
+    'modules/base/js-src/owa.areachart.js',
+    'modules/base/js-src/owa.piechart.js',
+    'modules/base/js-src/owa.kpibox.js',
   ], 'modules/js/owa.reporting.js')
   .options({ processCssUrls: false })
 ;
