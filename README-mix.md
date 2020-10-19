@@ -85,13 +85,13 @@ DONE  Compiled successfully in 14396ms
               /modules/base/css/owa.reporting-combined-libs.css     36 KiB          [emitted]
    /modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js   1.88 KiB          [emitted]
 /modules/base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js    204 KiB          [emitted]
-                                /modules/base/js/owa.tracker.js   55.5 KiB       0  [emitted]  /modules/base/js/owa.tracker
+                   /modules/base/js/owa.tracker-combined-min.js   55.5 KiB       0  [emitted]  /modules/base/js/owa.tracker
                     /modules/base/js/owa.tracker.js.LICENSE.txt  738 bytes          [emitted]
                               /modules/js/owa.reporting-libs.js    563 KiB          [emitted]
                                    /modules/js/owa.reporting.js   65.9 KiB       1  [emitted]  /modules/js/owa.reporting
                        /modules/js/owa.reporting.js.LICENSE.txt   1.48 KiB          [emitted]
-                                       modules/base/css/owa.css   7.83 KiB       0  [emitted]  /modules/base/js/owa.tracker
-                    modules/base/css/owa.reporting-combined.css   26.2 KiB       0  [emitted]  /modules/base/js/owa.tracker
+                                       modules/base/css/owa.css   7.83 KiB       0  [emitted]  /modules/base/js/owa.tracker-combined-min.js
+                    modules/base/css/owa.reporting-combined.css   26.2 KiB       0  [emitted]  /modules/base/js/owa.tracker-combined-min.js
 ```
 
 

@@ -25,11 +25,12 @@
     </div>
 
     <script>
+    <!-- @todo this should be moved to a .js file -->
       window.addEventListener('DOMContentLoaded', e => {
         const header = document.getElementById('owa_header');
         const headerNav = header.querySelector('.owa_navigation');
         const sideNav = document.querySelector('.owa_admin_nav');
-        const sideNavContainer = sideNav.parentNode;
+        const sideNavContainer = sideNav ? sideNav.parentNode : null;
         const mobileMenu = document.createElement('div');
         const userGreeting = header.querySelector('.user-greeting');
         const headerLogo = header.querySelector('.owa_logo');
@@ -46,7 +47,7 @@
             // Need to create mobile menu.
             mobileMenu.appendChild(userGreeting);
             mobileMenu.appendChild(headerNav);
-            mobileMenu.appendChild(sideNav);
+            sideNav && mobileMenu.appendChild(sideNav);
             header.appendChild(mobileMenu);
             header.appendChild(mobileMenuButton);
           }
@@ -54,7 +55,7 @@
             // Need to destroy mobile menu.
             headerLogo.insertAdjacentElement('afterend', headerNav);
             headerNav.insertAdjacentElement('afterend', userGreeting);
-            sideNavContainer.insertAdjacentElement('afterbegin', sideNav);
+            sideNavContainer && sideNavContainer.insertAdjacentElement('afterbegin', sideNav);
             mobileMenu.remove();
             mobileMenuButton.remove();
           }

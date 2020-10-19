@@ -12,11 +12,11 @@ let mix = require('laravel-mix');
  */
 
 mix
-  // Compile the JS for the tracker to modules/base/js/owa.tracker.js
+  // Compile the JS for the tracker to modules/base/js/owa.tracker-combined-min.js
   .js([
     'modules/base/js-src/owa.js',
     'modules/base/js-src/owa.tracker.js'
-  ], 'modules/base/js/owa.tracker.js')
+  ], 'modules/base/js/owa.tracker-combined-min.js')
   // Compile the basic owa.css only.
   .sass('modules/base/sass/owa.scss', 'modules/base/css/owa.css')
   // Compile the CSS for reporting.
