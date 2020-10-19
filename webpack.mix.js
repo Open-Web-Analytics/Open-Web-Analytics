@@ -17,18 +17,19 @@ mix
     'modules/base/js-src/owa.js',
     'modules/base/js-src/owa.tracker.js'
   ], 'modules/base/js/owa.tracker-combined-min.js')
-  // Compile the basic owa.css only.
-  .sass('modules/base/sass/owa.scss', 'modules/base/css/owa.css')
+  // Compile the basic owa.css only (where is this used?)
+  .sass('modules/base/sass/owa.scss', 'modules/css/owa.css')
   // Compile the CSS for reporting.
   // SASS is used for OWA specific CSS
   .sass('modules/base/sass/owa.reporting-combined.scss',
-        'modules/base/css/owa.reporting-combined.css')
+        'modules/css/owa.reporting-combined.css')
   // Pre-minified and packaged CSS is combined into a libs CSS package.
   .combine([
     'modules/base/css/jquery-ui.css',
     'modules/base/css/jquery.ui.selectmenu.css',
     'modules/base/css/ui.jqgrid.css',
-  ], 'modules/base/css/owa.reporting-combined-libs.css')
+  ], 'modules/reporting-combined-libs.css')
+  // @todo modules/base/css/owa.overlay.css is a project CSS file that is conditionally loaded by JS. It should probably be moved to sass and the paths updated.
   // Compile the JS for reporting.
   // Pre-minified and packaged JS is combined into a libs CSS package.
   .combine([
@@ -59,7 +60,7 @@ mix
     'modules/base/js-src/owa.areachart.js',
     'modules/base/js-src/owa.piechart.js',
     'modules/base/js-src/owa.kpibox.js',
-  ], 'modules/js/owa.reporting.js')
+  ], 'modules/base/js/owa.reporting.js')
   .options({ processCssUrls: false })
 ;
 

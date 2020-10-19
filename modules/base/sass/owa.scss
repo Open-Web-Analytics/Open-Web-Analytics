@@ -29,7 +29,19 @@ div.owa_reportMainColumn {
   overflow: auto;
 }
 
+// Layout component: .owa-two-columns.
+// Default/mobile: no layout.
+// When screen is wide enough for nested 2 cols, use those
+// When screen wide enough for full 2 cols, use that.
 @media screen and (min-width: 600px) {
+  // Nested cols.
+  div.owa-two-columns div.owa-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 2rem;
+  }
+}
+@media screen and (min-width: 1200px) {
   div.owa-two-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
