@@ -17,7 +17,7 @@
 //
 
 if(!class_exists('owa_observer')) {
-    require_once(OWA_BASE_DIR.'owa_observer.php');
+    require_once(OWA_BASE_DIR.'/owa_observer.php');
 }
 
 /**
