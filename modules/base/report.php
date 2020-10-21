@@ -52,7 +52,7 @@ class owa_reportView extends owa_view {
 
         unset($this->report_params['guid']);
         unset($this->report_params['caller']);
-		$this->t->set('params', $this->report_params);
+        $this->t->set('params', $this->report_params);
         $this->body->set('params', $this->report_params);
         $this->subview->body->set('params', $this->report_params);
 
@@ -97,25 +97,18 @@ class owa_reportView extends owa_view {
         $this->_setLinkState( $link_state );
 
         // set Js libs to be loaded
-        $this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
-        
+        $this->setJs('owa.reporting-libs', 'js/owa.reporting-libs.js');
+        $this->setJs('owa.reporting', 'js/owa.reporting.js');
+
         // css libs to be loaded
-        
-        /*
-		$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
-        $this->setCss('base/css/jquery.ui.selectmenu.css');
-        $this->setCss('base/css/ui.jqgrid.css');
-        $this->setCss('base/css/chosen/chosen.css');
-        $this->setCss("base/css/owa.admin.css");
-        $this->setCss("base/css/owa.report.css");
-		*/
-		$this->setCss("base/css/font-awesome/css/all.min.css");
-        $this->setCss("base/css/owa.reporting-css-combined.css");
+        $this->setCss("base/css/font-awesome/css/all.min.css");
+        $this->setCss("css/owa.reporting-combined-libs.css");
+        $this->setCss("css/owa.reporting-combined.css");
         $additionalCss = $this->c->get('base','additionalCss');
         if (is_array($additionalCss)) {
-            foreach ($additionalCss as $css) {
-                $this->setCss($css);
-            }
+          foreach ($additionalCss as $css) {
+            $this->setCss($css);
+          }
         }
     }
 

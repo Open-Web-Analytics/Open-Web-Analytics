@@ -7,63 +7,57 @@
 <div class="clear"></div>
 <BR>
 
-<table style="width:100%;margin-top:;">
-    <tr>
-        <td valign="top" style="width:50%;">
-
-        <div class="owa_reportSectionContent">
+<div class="owa-two-columns ratio-3-1">
+  <div class="owa_reportSectionContent">
 
 
-            <div class="owa_reportSectionContent" style="min-width:350px;">
-                <div class="owa_reportSectionHeader">Top Pages</div>
+    <div class="owa_reportSectionContent" style="min-width:350px;">
+      <div class="owa_reportSectionHeader">Top Pages</div>
 
-                <div id="top-pages"></div>
-                <div class="owa_genericHorizonalList owa_moreLinks">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
-                        </LI>
-                    </UL>
-                </div>
-            </div>
+      <div id="top-pages"></div>
+      <div class="owa_genericHorizonalList owa_moreLinks">
+        <UL>
+          <LI>
+            <a href="<?php echo $this->makeLink(array('do' => 'base.reportPages'), true);?>">View Full Report &raquo;</a>
+          </LI>
+        </UL>
+      </div>
+    </div>
 
-        </td>
+  </div>
 
-        <td valign="top" style="width:50%;">
-            <div class="owa_reportSectionHeader">Content Reports</div>
-                <div class="relatedReports">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'), true);?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
-                        </LI>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">Actions</a></span> - See which actions your user performed.
-                        </LI>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
-                        </LI>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'), true);?>">Feeds</a></span> - See trends for feed subscribers and usage.
-                        </LI>
-                    </UL>
-                </div>
-            </div>
+  <div>
+    <div class="owa_reportSectionHeader">Content Reports</div>
+    <div class="relatedReports">
+      <UL>
+        <LI>
+          <a href="<?php echo $this->makeLink(array('do' => 'base.reportDomstreams'), true);?>">Domstream Recordings</a></span> - See user mouse movement and keypress recordings.
+        </LI>
+        <LI>
+          <a href="<?php echo $this->makeLink(array('do' => 'base.reportActionTracking'), true);?>">Actions</a></span> - See which actions your user performed.
+        </LI>
+        <LI>
+          <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">Entry & Exits</a></span> - See which web pages user entered and exited on.
+        </LI>
+        <LI>
+          <a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'), true);?>">Feeds</a></span> - See trends for feed subscribers and usage.
+        </LI>
+      </UL>
+    </div>
+  </div>
 
-            <div class="owa_reportSectionContent" style="min-width:350px;">
-                <div class="owa_reportSectionHeader">Top Page Types</div>
-                <div id="top-pagetypes" style="width:auto;margin-top:-10px;"></div>
-                <div class="owa_genericHorizonalList owa_moreLinks">
-                    <UL>
-                        <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportPageTypes'), true);?>">View Full Report &raquo;</a>
-                        </LI>
-                    </UL>
-                </div>
-            </div>
-
-        </td>
-    </tr>
-</table>
+  <div class="owa_reportSectionContent" style="min-width:350px;">
+    <div class="owa_reportSectionHeader">Top Page Types</div>
+    <div id="top-pagetypes" style="width:auto;margin-top:-10px;"></div>
+    <div class="owa_genericHorizonalList owa_moreLinks">
+      <UL>
+        <LI>
+          <a href="<?php echo $this->makeLink(array('do' => 'base.reportPageTypes'), true);?>">View Full Report &raquo;</a>
+        </LI>
+      </UL>
+    </div>
+  </div>
+</div>
 
 <script>
 //OWA.setSetting('debug', true);

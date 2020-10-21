@@ -1,0 +1,10 @@
+{
+    "/modules/base/js/owa.reporting.js": "/modules/base/js/owa.reporting.js",
+    "/modules/base/js/owa.tracker-combined-min.js": "/modules/base/js/owa.tracker-combined-min.js",
+    "/modules/css/owa.css": "/modules/css/owa.css",
+    "/modules/css/owa.reporting-combined.css": "/modules/css/owa.reporting-combined.css",
+    "/modules/reporting-combined-libs.css": "/modules/reporting-combined-libs.css",
+    "/modules/js/owa.reporting-libs.js": "/modules/js/owa.reporting-libs.js",
+    "/modules/base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js": "/modules/base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js",
+    "/modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js": "/modules/base/js/includes/jquery/jQote2/jquery.jqote2.min.js"
+}

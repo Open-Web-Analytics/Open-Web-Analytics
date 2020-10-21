@@ -1,0 +1,31 @@
+{
+  "name": "owa",
+  "version": "1.0.0",
+  "description": "Open Web Analytics",
+  "main": "index.js",
+  "scripts": {
+    "development": "cross-env NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --no-progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "dev": "npm run development",
+    "watch": "npm run development -- --watch",
+    "prod": "npm run production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artfulrobot/Open-Web-Analytics.git"
+  },
+  "author": "",
+  "license": "GPL-2.0-only",
+  "bugs": {
+    "url": "https://github.com/artfulrobot/Open-Web-Analytics/issues"
+  },
+  "homepage": "https://github.com/artfulrobot/Open-Web-Analytics#readme",
+  "devDependencies": {
+    "cross-env": "^7.0.2",
+    "laravel-mix": "^5.0.7",
+    "node-sass": "^4.14.1",
+    "resolve-url-loader": "^3.1.0",
+    "sass-loader": "^8.0.2",
+    "vue-template-compiler": "^2.6.12"
+  }
+}

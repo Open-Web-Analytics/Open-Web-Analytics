@@ -33,37 +33,35 @@ jQuery(document).ready(function(){
 
 <div id="<?php echo $dom_id;?>" class="owa_reportContainer">
 
-    <table width="100%" cellpadding="0" cellspacing="0">
+    <div class="owa-main-layout">
 
-        <TR>
-            <?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
-            <TD valign="top" class="owa_reportLeftNavColumn">
-                <div>
-                    <div id="owa_reportNavPanel">
-                        <?php echo $this->makeNavigationMenu($top_level_report_nav, $currentSiteId, $params['do']);?>
-                    </div>
+        <?php if ( ! $this->get( 'hideReportingNavigation' ) ):?>
+        <div class="owa_reportLeftNavColumn">
+            <div>
+                <div id="owa_reportNavPanel">
+                    <?php echo $this->makeNavigationMenu($top_level_report_nav, $currentSiteId, $params['do']);?>
                 </div>
-            </TD>
+            </div>
+        </div>
+        <?php endif;?>
+        <div class="owa_reportMainColumn">
+
+            <?php if ( ! $this->get( 'hideSitesFilter' ) ):?>
+            <div class="reportSectionContainer reportSiteFilter" style="margin-bottom:20px;">
+            <?php include('filter_site.php');?>
+            </div>
             <?php endif;?>
-            <TD valign="top" width="*">
+            <div class="reportSectionContainer">
+                <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
+                <div id="liveViewSwitch" style="width:auto;float:right; padding-right:30px;"></div>
+                <div class="owa_reportTitle"><?php echo $title;?><span class="titleSuffix"><?php echo $this->get('titleSuffix');?></span></div>
 
-                <?php if ( ! $this->get( 'hideSitesFilter' ) ):?>
-                <div class="reportSectionContainer reportSiteFilter" style="margin-bottom:20px;">
-                <?php include('filter_site.php');?>
-                </div>
-                <?php endif;?>
-                <div class="reportSectionContainer">
-                    <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
-                    <div id="liveViewSwitch" style="width:auto;float:right; padding-right:30px;"></div>
-                    <div class="owa_reportTitle"><?php echo $title;?><span class="titleSuffix"><?php echo $this->get('titleSuffix');?></span></div>
+                <div class="clear"></div>
+                <?php echo $subview;?>
 
-                    <div class="clear"></div>
-                    <?php echo $subview;?>
-
-                </div>
-            </TD>
-        </TR>
-    </table>
+            </div>
+        </div>
+    </div>
 </div>
 <script>
 OWA.items['<?php echo $dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl');

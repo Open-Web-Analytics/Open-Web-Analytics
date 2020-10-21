@@ -123,7 +123,7 @@ class owa_view extends owa_base {
         $this->t = new owa_template();
         $this->body = new owa_template($this->module);
         $this->setTheme();
-        $this->setCss("base/css/owa.css");
+        $this->setCss("css/owa.css");
     }
 
     /**
@@ -715,6 +715,7 @@ class owa_adminView extends owa_view {
     }
 
     function post() {
+        // xxx what does this mean - calling setJs with CSS resources? fixme
         $this->setJs('owa.css');
         $this->setJs('owa.admin.css');
     }
@@ -882,8 +883,11 @@ class owa_adminPageView extends owa_view {
         $this->body->set('title', $this->get('title'));
         $this->body->set('titleSuffix', $this->get('titleSuffix'));
         $this->body->set_template('genericAdminPage.php');
-        $this->setJs('owa.reporting', 'base/js/owa.reporting-combined-min.js');
-        $this->setCss("base/css/owa.reporting-css-combined.css");
+
+        $this->setJs('owa.reporting-libs', 'js/owa.reporting-libs.js');
+        $this->setJs('owa.reporting', 'js/owa.reporting.js');
+        $this->setCss("css/owa.reporting-combined.css");
+        $this->setCss("css/owa.reporting-combined-libs.css");
     }
 }
 

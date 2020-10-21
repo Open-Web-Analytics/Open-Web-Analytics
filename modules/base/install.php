@@ -48,7 +48,7 @@ class owa_installView extends owa_view {
         // load body template
         $this->body->set_template('install.tpl');
 
-        $this->setCss("base/css/owa.css");
+        $this->setCss("css/owa.css");
         $this->body->set('headline', 'Welcome to the Open Web Analytics Installation Wizard');
         $this->body->set('step', $data['subview']);
         $this->setJs("owa", "base/js/owa.js");

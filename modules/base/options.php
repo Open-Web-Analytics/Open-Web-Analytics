@@ -63,7 +63,7 @@ class owa_optionsView extends owa_view {
         $this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery')); // needed anymore?
         $this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js", '1.8.12', array('jquery'));
         $this->setJs("owa", "base/js/owa.js");
-        $this->setCss('base/css/owa.admin.css');
+        $this->setCss('css/owa.admin.css');
     }
 }
 

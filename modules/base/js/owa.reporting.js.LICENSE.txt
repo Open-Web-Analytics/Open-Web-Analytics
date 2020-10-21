@@ -1,0 +1,46 @@
+/**
+ * OWA Global Object 
+ *	
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
+ */
+
+/**
+ * OWA Sparkline Implementation
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @web            <a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
+ * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.3.0
+ */
+
+/**
+ * Result Set Explorer Library
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @web            <a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
+ * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.3.0
+ */
+
+/**
+ * Result Set Object
+ * 
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @web            <a href="http://www.openwebanalytcs.com">Open Web Analytics</a>
+ * @copyright   Copyright &copy; 2006-2010 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.5.0
+ */
