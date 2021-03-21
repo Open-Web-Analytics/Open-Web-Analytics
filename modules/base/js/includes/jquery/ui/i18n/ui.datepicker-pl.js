@@ -12,7 +12,7 @@ jQuery(function($){
         'Lip','Sie','Wrz','Pa','Lis','Gru'],
         monthStatus: 'Pokaż inny miesiąc', yearStatus: 'Pokaż inny rok',
         weekHeader: 'Tydz', weekStatus: 'Tydzień roku',
-        dayNames: ['Niedziela','Poniedzialek','Wtorek','Środa','Czwartek','Piątek','Sobota'],
+        dayNames: ['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'],
         dayNamesShort: ['Nie','Pn','Wt','Śr','Czw','Pt','So'],
         dayNamesMin: ['N','Pn','Wt','Śr','Cz','Pt','So'],
         dayStatus: 'Ustaw DD jako pierwszy dzień tygodnia', dateStatus: 'Wybierz D, M d',
