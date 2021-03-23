@@ -24,23 +24,23 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$          
+ * @since        owa 1.4.0
  */
 
 class owa_source_dim extends owa_entity {
-	
-	function __construct() {
-		
-		$this->setTableName('source_dim');
-		$this->setCachable();
-		// properties
-		$this->properties['id'] = new owa_dbColumn;
-		$this->properties['id']->setDataType(OWA_DTD_BIGINT);
-		$this->properties['id']->setPrimaryKey();
-		$this->properties['source_domain'] = new owa_dbColumn;
-		$this->properties['source_domain']->setDataType(OWA_DTD_VARCHAR255);
-	}
+    
+    function __construct() {
+        
+        $this->setTableName('source_dim');
+        $this->setCachable();
+        // properties
+        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setPrimaryKey();
+        $this->properties['source_domain'] = new owa_dbColumn;
+        $this->properties['source_domain']->setDataType(OWA_DTD_VARCHAR255);
+    }
 }
 
 ?>

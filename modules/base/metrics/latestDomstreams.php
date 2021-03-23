@@ -24,34 +24,34 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_latestDomstreams extends owa_metric {
-	
-	function owa_latestDomstreams($params = null) {
-		
-		return owa_latestDomstreams::__construct($params);
-	}
-	
-	function __construct($params = null) {
-		
-		return parent::__construct($params);
-	}
-	
-	function calculate() {
-		
-		$this->db->selectFrom('owa_domstream');
-		$this->db->selectColumn("id, timestamp, page_url, duration");
-		$this->db->selectColumn($this->setLabel('id', 'Domstream ID'));
-		$this->db->selectColumn($this->setLabel('page_url', 'Page URL'));
-		$this->db->selectColumn($this->setLabel('duration', 'Duration'));
-		$this->db->selectColumn($this->setLabel('timestamp', 'Timestamp'));
-		$this->db->orderBy('timestamp', 'DESC');
-	}
-	
-	
+
+    function owa_latestDomstreams($params = null) {
+
+        return owa_latestDomstreams::__construct($params);
+    }
+
+    function __construct($params = null) {
+
+        return parent::__construct($params);
+    }
+
+    function calculate() {
+
+        $this->db->selectFrom('owa_domstream');
+        $this->db->selectColumn("id, timestamp, page_url, duration");
+        $this->db->selectColumn($this->setLabel('id', 'Domstream ID'));
+        $this->db->selectColumn($this->setLabel('page_url', 'Page URL'));
+        $this->db->selectColumn($this->setLabel('duration', 'Duration'));
+        $this->db->selectColumn($this->setLabel('timestamp', 'Timestamp'));
+        $this->db->orderBy('timestamp', 'DESC');
+    }
+
+
 }
 
 

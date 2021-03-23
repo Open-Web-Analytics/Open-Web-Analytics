@@ -27,32 +27,33 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersNewAccountController extends owa_controller {
-	
-	function __construct($params) {
-		return parent::__construct($params);
-		
-	}
-	
-	function action() {
-		
-		$event = $this->getParam('event');
-		
-		// return email view
-		$data['user_id']= $event->get('user_id');
-		$data['email_address']= $event->get('email_address');
-		$data['temp_passkey'] = $event->get('temp_passkey');
-		$data['subject'] = 'OWA User Account Setup';
-		$data['view'] = 'base.usersNewAccount';
-		$data['view_method'] = 'email';
-		
-		return $data;
-	}
-	
+
+    function __construct($params) {
+        return parent::__construct($params);
+
+    }
+
+    function action() {
+
+        $event = $this->getParam('event');
+
+        // return email view
+        $data['user_id']= $event->get('user_id');
+        $data['email_address']= $event->get('email_address');
+        $data['temp_passkey'] = $event->get('temp_passkey');
+        $data['subject'] = 'OWA User Account Setup';
+        $data['view'] = 'base.usersNewAccount';
+        $data['view_method'] = 'email';
+        $data['name'] = $event->get('real_name');
+
+        return $data;
+    }
+
 }
 
 
@@ -64,28 +65,28 @@ class owa_usersNewAccountController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersNewAccountView extends owa_mailView {
-		
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-		
-		$this->t->set_template('wrapper_email.tpl');
-		$this->body->set_template('users_new_account_email.tpl');
-		$this->body->set('user_id', $data['user_id']);
-		$this->body->set('key', $data['temp_passkey']);
-		// mailer specific
-		$this->setMailSubject($data['subject']);
-		$this->addMailToAddress($data['email_address'], @$data['name']);
-			
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        $this->t->set_template('wrapper_email.tpl');
+        $this->body->set_template('users_new_account_email.tpl');
+        $this->body->set('user_id', $data['user_id']);
+        $this->body->set('key', $data['temp_passkey']);
+        // mailer specific
+        $this->setMailSubject($data['subject']);
+        $this->addMailToAddress($data['email_address'], $this->get('name'));
+
+    }
 }
 
 ?>

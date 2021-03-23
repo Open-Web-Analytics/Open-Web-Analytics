@@ -27,24 +27,24 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_notifyNewSessionPlainTextView extends owa_view {
-	
-	function __construct() {
-	
-		return parent::__construct();
-	}
-		
-	function render($data) {
-		
-		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('new_session_email_plain_text.tpl');
-		$this->body->set('site', $data['site']);
-		$this->body->set('session', $data['session']);	
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        $this->t->set_template('wrapper_blank.tpl');
+        $this->body->set_template('new_session_email_plain_text.tpl');
+        $this->body->set('site', $data['site']);
+        $this->body->set('session', $data['session']);
+    }
 }
 
 ?>

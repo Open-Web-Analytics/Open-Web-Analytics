@@ -4,20 +4,20 @@ body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; pa
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 2px 2px 2px;}
 legend {font-size:16px;font-weight:bold;}
-fieldset{margin: 7px; border:1px solid #cccccc;}
+fieldset{margin: 7px; padding: 20px; border:1px solid #cccccc;}
 div {margin:0;}
 
 .owa a {
-	color: #21759B;
+    color: #21759B;
 }
 
 .owa a:hover {
-	color: orange;
+    color: orange;
 }
 
 .owa .section {
-	background-color:#ffffff;
-	margin:20px;
+    background-color:#ffffff;
+    margin:20px;
 }
 
 /* COLORS */
@@ -35,26 +35,48 @@ div {margin:0;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
-#owa_header {border-bottom: 3px solid orange; background-color:#FFFFFF; padding:4px; font-weight:bold; line-height:55px;}
+#owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
 .owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
 .owa_navigation {float:left;vertical-align:middle;padding-top:10px;}
 .owa_navigation ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:0px;}
 .owa_navigation li {text-decoration: none; float:left; margin: 2px;}
 .owa_navigation li a {
-	background: url() #fff bottom left repeat-x;
-	height: 2em;
-	line-height: 2em;
-	float: left;
-	width: 9em;
-	display: block;
-	border: 0.1em solid #efefef;
-	text-decoration: none;
-	text-align: center;
+    background: url() #fff bottom left repeat-x;
+    height: 2em;
+    line-height: 2em;
+    float: left;
+    width: 9em;
+    display: block;
+    border: 0 solid #efefef;
+    text-decoration: none;
+    text-align: center;
+    
+}
+
+#updates {
+	
+	background-color: #ffffff;
+	padding: 20px;
+}
+
+#updates p {
+	
+	font-size: 14px;
 }
 
 .owa_navigation li a:hover {
+	border-bottom: 2px solid orange;
+   
+}
+
+.owa_current{
 	
-	border-color: orange;
+	background-color: #e6e6e6;
+}
+
+.owa_nav_icon {
+	padding-right:10px;
+	opacity: 0.60;
 }
 
 /* FORMS */
@@ -64,46 +86,47 @@ div {margin:0;}
 .form-value {position: absolute; left: 380px; font-weight: bold;}
 .form-instructions {position: relative; left: 150px; font-size:12px; color: #9f9f9f;}
 .owa-button {
-	border-radius:4px; 
-	background-color:orange; 
-	padding:15px 30px 15px 30px; 
-	color:#ffffff; 
-	font-size:18px;
-	font-weight:bold;
-	border: 1px solid #efefef;
-	-moz-border-radius: 3px; 
-	-webkit-border-radius: 3px;	
-	margin-top: 50px;
-	text-decoration: none;
-	
+    border-radius:4px;
+    background-color:orange;
+    padding:15px 30px 15px 30px;
+    color:#ffffff;
+    font-size:18px;
+    font-weight:bold;
+    border: 1px solid #efefef;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    margin: 25px 0px 0px 0px;
+    text-decoration: none;
+    cursor: pointer;
+
 }
 .owa-button:hover {
-	color: #000000;
-	border-color: #9f9f9f;
-	-moz-box-shadow:2px 2px 2px #999;
+    color: #000000;
+    border-color: #9f9f9f;
+    -moz-box-shadow:2px 2px 2px #999;
     box-shadow:2px 2px 2px #999;
     -webkit-box-shadow:2px 2px 2px #999;
 }
 
 .owa-button a  {
-	text-decoration: none;
+    text-decoration: none;
 }
 
 .owa_pagination {float:left; overflow: hidden;}
 .owa_pagination ul {list-style: none; padding: 0; margin: 0;}
 .owa_pagination li {text-decoration: none; float:left; margin: 2px;}
 .owa_pagination li {
-	background: url() #fff bottom left repeat-x;
-	height:2em;
-	line-height:2em;
-	float: left;
-	width: auto;
-	display: block;
-	border: 0.1em solid #efefef;
-	color: ;
-	text-decoration: none;
-	text-align: center;
-	padding:0px 2px 0px 2px;
+    background: url() #fff bottom left repeat-x;
+    height:2em;
+    line-height:2em;
+    float: left;
+    width: auto;
+    display: block;
+    border: 0.1em solid #efefef;
+    color: ;
+    text-decoration: none;
+    text-align: center;
+    padding:0px 2px 0px 2px;
 }
 
 .owa_headerServiceMsg {border: 1px solid #efefef;border-left: 8px solid yellow; height: 25px; width: auto; padding:10px}
@@ -117,7 +140,7 @@ div {margin:0;}
 .inline_h3 {font-size:16px;}
 .inline_h4 {font-size:14px;}
 .headline {font-size:20px; background-color:orange;color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
-.panel_headline {font-size:18px; background-color:#FFF8DC;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
+.panel_headline {font-size:18px; background-color:#efefef;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
 
 /* DATA TABLES */
@@ -128,7 +151,7 @@ div {margin:0;}
 .layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
 td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
-.layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
+.layout_subview {margin: 0px; padding:0px;border-collapse: collapse; font-size: 16px; line-height: normal;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
 #nav_left {width:240px; padding:10px}
@@ -150,7 +173,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_visitSummaryRightCol {padding-left:15px;width:auto; vertical-align: top;}
 .visit_icon {width:40px;}
 .visit_summary {width:100%;}
-.date_box {padding:4px;	border:solid 1px #999999;margin:2px;}
+.date_box {padding:4px;    border:solid 1px #999999;margin:2px;}
 .pages_box {padding:5px; border:solid 2px #999999; margin:0px 0px 0px 0px; text-align:center;}
 .large_number {font-size:24px; font-weight:bold;}
 .info_text {color:#999999;font-size:12px;}
@@ -161,7 +184,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .snippet_text a {color:#999999;}
 .snippet_anchor {font-size:14px;font-weight:bold;}
 .visit_box_stat {width:42px;}
-.nav_bar{text-decoration:none;}		
+.nav_bar{text-decoration:none;}
 .id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
 .code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:10px;}
 .top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
@@ -169,25 +192,18 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .invisible {display:none;}
 
 .owa .error, .owa .status {
-	color: #ffffff; 
-	border: 2px solid #FF0000; 
-	margin:20px 40px 20px 40px; 
-	padding: 20px 10px 20px 20px; 
-	background-color: #FF4040; 
-	font-size: 14px; 
-	font-weight:;
-	-moz-border-radius:5px 5px 5px 5px;
-	-moz-box-shadow:2px 2px 2px 1px #9f9f9f;
-	border-radius:5px 5px 5px 5px;
-	box-shadow:2px 2px 2px 1px #9f9f9f;
-	-webkit-border-radius:5px 5px 5px 5px;
-	-webkit-box-shadow:2px 2px 2px 1px #9f9f9f;
+    color: #ffffff;
+    border: 2px solid #FF0000;
+    margin:20px 40px 20px 40px;
+    padding: 20px 10px 20px 20px;
+    background-color: #FF4040;
+    font-size: 14px; 
 }
 
 .owa .status {
-	background-color: #71ad2b;
-	border-color: #519600;
-	color: #FFFFFF;
+    background-color: #71ad2b;
+    border-color: #519600;
+    color: #FFFFFF;
 }
 
 .tiny_icon{width:10px;padding-left:0px;}
@@ -201,14 +217,14 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .setting .field {padding: 2px 0 2px 0;}
 
 /* LAYOUT */
-#admin_nav{font-size:12px;}	
+#admin_nav{font-size:12px;}
 #keywords{width:400px;}
 #side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
 #login_box {
-	-moz-border-radius:10px 10px 10px 10px;
-	border-radius:10px 10px 10px 10px;
-	-webkit-border-radius:10px 10px 10px 10px;
-	background-color: #494444;
+    -moz-border-radius:10px 10px 10px 10px;
+    border-radius:10px 10px 10px 10px;
+    -webkit-border-radius:10px 10px 10px 10px;
+    background-color: #494444;
 }
 
 /* ROUNDER CORNERS */
@@ -251,21 +267,21 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
   background:#494444;}
 
 .owa div.goal-detail {
-	display: none;
-	padding:20px;
+    display: none;
+    padding:20px;
 }
 
 .owa span.optional {
-	
-	font-size: 10px;
-	color: #9f9f9f;
+
+    font-size: 10px;
+    color: #9f9f9f;
 }
 
 .owa .formInstructions {
-	font-size: 10px;
-	color: #505050;
-	
-	font-weight: normal;
+    font-size: 10px;
+    color: #505050;
+
+    font-weight: normal;
 }
 
 .noedit {color: #999;}

@@ -24,41 +24,32 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
  
  class owa_stringMatchValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	
- 	function validate() {
- 		
- 		$values_array = $this->getValues();
- 		$string1 = $values_array[0];
- 		$string2 = $values_array[1];
- 		
- 		$error = $this->getErrorMsg();
- 		
- 		if (empty($error)) {
- 			$this->setErrorMessage('Strings do not match.');
- 		}
 
-		// validation logic 
- 		if ($string1 === $string2) {
- 			;
- 		} else {
- 			$this->hasError();
- 		}
- 		 		
- 		return;
- 		
- 	}
- 	
+     function validate() {
+
+         $values_array = $this->getValues();
+         $string1 = $values_array[0];
+         $string2 = $values_array[1];
+
+         $error = $this->getErrorMsg();
+
+         if (empty($error)) {
+             $this->setErrorMessage('Strings do not match.');
+         }
+
+         // validation logic
+         if ($string1 === $string2) {
+             ;
+         } else {
+             $this->hasError();
+         }
+     }
+
  }
  
  

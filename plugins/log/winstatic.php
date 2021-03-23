@@ -35,7 +35,7 @@ require_once(OWA_BASE_DIR.'/owa_error.php');
  * @example winstatic.php     Using the window handler.
  */
 class Log_winstatic extends Log {
-	
+
 
     /**
      * The name of the output window.
@@ -83,10 +83,10 @@ class Log_winstatic extends Log {
      * @param int    $level    Log messages up to and including this level.
      * @access public
      */
-    function Log_winstatic($name, $ident = '', $conf = array(),
+    function __construct($name, $ident = '', $conf = array(),
                           $level = PEAR_LOG_DEBUG)
     {
-    	
+
         $this->_id = md5(microtime());
         $this->_name = $name;
         $this->_ident = $ident;
@@ -133,7 +133,7 @@ class Log_winstatic extends Log {
             } else {
                 $identHeader = '';
             }
-			
+
             $this->debug .= <<< END_OF_SCRIPT
 <script language="JavaScript">
 $win = window.open('', '{$this->_name}', 'toolbar=no,scrollbars,width=600,height=400');
@@ -244,7 +244,7 @@ END_OF_SCRIPT;
         if (!$this->_isMasked($priority)) {
             return false;
         }
-		
+
         /* Extract the string representation of the message. */
         $message = $this->_extractMessage($message);
 

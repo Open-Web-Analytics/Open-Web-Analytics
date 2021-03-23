@@ -26,30 +26,30 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$          
+ * @since        owa 1.4.0
  */
 
 class owa_reportSourcesController extends owa_reportController {
-		
-	function action() {
-			
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Sources');
-		$this->set('dimensions', 'source,medium');
-		$this->set('sort', 'visits');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'source', 
-				'template' 		=> array(
-						'do' 		=> 'base.reportSourceDetail', 
-						'source' 	=> '%s'), 
-				'valueColumns' 	=> 'source'
-		));
-				
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.');	
-	}
+        
+    function action() {
+            
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Sources');
+        $this->set('dimensions', 'source,medium');
+        $this->set('sort', 'visits');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array(
+                'linkColumn'     => 'source', 
+                'template'         => array(
+                        'do'         => 'base.reportSourceDetail', 
+                        'source'     => '%s'), 
+                'valueColumns'     => 'source'
+        ));
+                
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all sources.');    
+    }
 }
 
 ?>

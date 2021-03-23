@@ -28,48 +28,48 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  * @depricated
- * @todo		remove
+ * @todo        remove
  */
 
 class owa_reportVisitorsRosterController extends owa_reportController {
-		
-	function __construct($params) {
-	
-		$this->priviledge_level = 'viewer';
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		
-		$db = owa_coreAPI::dbSingleton();
-		
-		$db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
-		$db->selectFrom('owa_session', 'session');
-		$db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
-	
-		$db->where('site_id', $this->getParam('site_id'));
-		
-		// make new timeperiod of a day
-		$period = owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
-		$start = $period->getStartDate();
-		$end = $period->getEndDate();
-		//print_r($period);
-		// set new period so lables show up right.
-		$db->where('first_session_timestamp', 
-				   array('start' => $start->getTimestamp(), 'end' => $end->getTimestamp()), 
-				   'BETWEEN');
-		
-		$ret = $db->getAllRows();
-	
-		$this->set('visitors', $ret);	
-		$this->setSubview('base.reportVisitorsRoster');
-		$this->setTitle('New Visitors from', $period->getStartDate()->label);		
-	}
-	
+
+    function __construct($params) {
+
+        $this->priviledge_level = 'viewer';
+        return parent::__construct($params);
+    }
+
+    function action() {
+
+
+        $db = owa_coreAPI::dbSingleton();
+
+        $db->selectColumn("distinct session.visitor_id as visitor_id, visitor.user_name, visitor.user_email");
+        $db->selectFrom('owa_session', 'session');
+        $db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_visitor', 'visitor', 'visitor_id', 'visitor.id');
+
+        $db->where('site_id', $this->getParam('site_id'));
+
+        // make new timeperiod of a day
+        $period = owa_coreAPI::makeTimePeriod('day', array('startDate' => $this->getParam('first_session')));
+        $start = $period->getStartDate();
+        $end = $period->getEndDate();
+        //print_r($period);
+        // set new period so lables show up right.
+        $db->where('first_session_timestamp',
+                   array('start' => $start->getTimestamp(), 'end' => $end->getTimestamp()),
+                   'BETWEEN');
+
+        $ret = $db->getAllRows();
+
+        $this->set('visitors', $ret);
+        $this->setSubview('base.reportVisitorsRoster');
+        $this->setTitle('New Visitors from', $period->getStartDate()->label);
+    }
+
 }
 
 /**
@@ -80,18 +80,18 @@ class owa_reportVisitorsRosterController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitorsRosterView extends owa_view {
-		
-	function render($data) {
-		
-		$this->body->set_template('report_visitors_roster.tpl');	
-		$this->body->set('headline', 'Visitors');
-		$this->body->set('visitors', $data['visitors']);
-	}
+
+    function render($data) {
+
+        $this->body->set_template('report_visitors_roster.tpl');
+        $this->body->set('headline', 'Visitors');
+        $this->body->set('visitors', $data['visitors']);
+    }
 }
 
 ?>

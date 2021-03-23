@@ -29,29 +29,29 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_pixelView extends owa_view {
-	
-	function render($data) {
-		
-		// Set Page title
-		$this->t->set_template('wrapper_blank.tpl');
-		
-		// load body template
-		$this->body->set_template('pixel.tpl');
-		
-		$this->body->set('img', sprintf(
-		  '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
-		  71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
-		));
-		
-		
-		header('Content-type: image/gif', true);
-		
-	}	
+
+    function render($data) {
+
+        // Set Page title
+        $this->t->set_template('wrapper_blank.tpl');
+
+        // load body template
+        $this->body->set_template('pixel.tpl');
+
+        $this->body->set('img', sprintf(
+          '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',
+          71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
+        ));
+
+
+        header('Content-type: image/gif', true);
+
+    }
 }
 
 ?>

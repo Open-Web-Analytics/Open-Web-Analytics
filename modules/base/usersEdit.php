@@ -26,61 +26,63 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersEditController extends owa_adminController {
-		
-	function __construct($params) {
-	
-		parent::__construct($params);
-		
-		$this->setRequiredCapability('edit_users');
-		$this->setNonceRequired();
-		
-		// check that user_id is present
-		$v1 = owa_coreAPI::validationFactory('required');
-		$v1->setValues($this->getParam('user_id'));
-		$this->setValidation('user_id', $v1);
-		
-		// Check user name exists
-		$v2 = owa_coreAPI::validationFactory('entityExists');
-		$v2->setConfig('entity', 'base.user');
-		$v2->setConfig('column', 'user_id');
-		$v2->setValues($this->getParam('user_id'));
-		$v2->setErrorMessage($this->getMsg(3001));
-		$this->setValidation('user_id', $v2);	
-	}
-	
-	function action() {
-		
-		// This needs form validation in a bad way.
-		
-		$u = owa_coreAPI::entityFactory('base.user');
-		$u->getByColumn('user_id', $this->getParam('user_id'));
-		$u->set('email_address', $this->getParam('email_address'));
-		$u->set('real_name', $this->getParam('real_name'));
-		
-		// never change the role of the admin user
-		if (!$u->isOWAAdmin()) {
-			$u->set('role', $this->getParam('role'));
-		}
-		
-		
-		$u->update();
-		$this->set('status_code', 3003);
-		$this->setRedirectAction('base.users');
-	}
-	
-	function errorAction() {
-		
-		$this->setView('base.options');
-		$this->setSubview('base.usersProfile');
-		$this->set('error_code', 3311);
-		$this->set('user', $this->params);
-	}
-	
+
+    function __construct($params) {
+
+        parent::__construct($params);
+
+        $this->setRequiredCapability('edit_users');
+        $this->setNonceRequired();
+    }
+
+    public function validate()
+    {
+        // check that user_id is present
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required');
+
+        // Check user name exists
+        $userEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'user_id',
+            'errorMsg'  => $this->getMsg(3001)
+        ];
+
+        $this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', $userEntityConf);
+    }
+
+    function action() {
+
+        // This needs form validation in a bad way.
+
+        $u = owa_coreAPI::entityFactory('base.user');
+        $u->getByColumn('user_id', $this->getParam('user_id'));
+        $u->set('email_address', $this->getParam('email_address'));
+
+        // never change the role of the admin user
+        if (!$u->isOWAAdmin()) {
+            $u->set('real_name', $this->getParam('real_name'));
+            $u->set('role', $this->getParam('role'));
+        }
+
+
+        $u->update();
+        $this->set('status_code', 3003);
+        $this->setRedirectAction('base.users');
+    }
+
+    function errorAction() {
+
+        $this->setView('base.options');
+        $this->setSubview('base.usersProfile');
+        $this->set('error_code', 3311);
+        $this->set('user', $this->params);
+    }
+
 }
 
 

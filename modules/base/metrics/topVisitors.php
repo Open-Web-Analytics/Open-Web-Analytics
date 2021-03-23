@@ -24,48 +24,48 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_topVisitors extends owa_metric {
-	
-	function owa_topVisitors($params = null) {
-				
-		return owa_topVisitors::__construct($params = null);
-		
-	}
-	
-	function __construct($params = null) {
-	
-		parent::__construct($params);
-	}
-	
-	function calculate() {
-		
-		$this->db->selectColumn("count(visitor_id) as count, visitor_id as vis_id, user_name, user_email");					
-		$this->db->selectFrom('owa_session');
-		$this->db->groupBy('vis_id');
-		$this->db->orderBy('count', $this->getOrder());
-		
-		$ret = $this->db->getAllRows();
 
-		return $ret;
-				
-	}
-	
-	function paginationCount() {
-	
-		$this->db->selectColumn("count(distinct visitor_id) as count");					
-		$this->db->selectFrom('owa_session');
-		
-		$ret = $this->db->getOneRow();
+    function owa_topVisitors($params = null) {
 
-		return $ret['count'];
-	
-	}
-	
-	
+        return owa_topVisitors::__construct($params = null);
+
+    }
+
+    function __construct($params = null) {
+
+        parent::__construct($params);
+    }
+
+    function calculate() {
+
+        $this->db->selectColumn("count(visitor_id) as count, visitor_id as vis_id, user_name, user_email");
+        $this->db->selectFrom('owa_session');
+        $this->db->groupBy('vis_id');
+        $this->db->orderBy('count', $this->getOrder());
+
+        $ret = $this->db->getAllRows();
+
+        return $ret;
+
+    }
+
+    function paginationCount() {
+
+        $this->db->selectColumn("count(distinct visitor_id) as count");
+        $this->db->selectFrom('owa_session');
+
+        $ret = $this->db->getOneRow();
+
+        return $ret['count'];
+
+    }
+
+
 }
 
 

@@ -26,36 +26,40 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportAttributionHistoryController extends owa_reportController {
-	
-	function action() {
-			
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Attribution History');
-		
-		$this->set('dimensions', 'latestAttributions');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 25);
-	
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all mediums/source.');
 
-		$this->set('gridFormatters', array('latestAttributions' =>
-				"function(value) {
-					if (value) {
-						table = jQuery('#attributionCell').jqote(JSON.parse(value), '*');
-						return table;
-					} else {
-						return '(none)';
-					}
-				}
-				"
-		));	
-	}
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Attribution History');
+
+        $this->set('dimensions', 'latestAttributions');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 25);
+
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from all mediums/source.');
+
+        $this->set('gridFormatters', array('latestAttributions' =>
+                "function(value) {
+                    if (value) {
+                        if (typeof value !== 'object') {
+                            value = JSON.parse(value);
+                        }
+                    
+                        table = jQuery('#attributionCell').jqote(value, '*');
+                        return table;
+                    } else {
+                        return '(none)';
+                    }
+                }
+                "
+        ));
+    }
 }
 
 

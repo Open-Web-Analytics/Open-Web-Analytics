@@ -26,30 +26,30 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportReferringSitesController extends owa_reportController {
-	
-	function action() {
-		
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Referrals');
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'referralPageTitle,referralPageUrl');
-		$this->set('excludeColumns', "'referralPageUrl'");
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'referralPageTitle', 
-				'template' 		=> array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'), 
-				'valueColumns' 	=> 'referralPageUrl'));
-		$this->set('constraints', 'medium==referral');
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
-		$this->set('gridTitle', 'Top Referrals');		
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Referrals');
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimensions', 'referralPageTitle,referralPageUrl');
+        $this->set('excludeColumns', "'referralPageUrl'");
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array(
+                'linkColumn'     => 'referralPageTitle',
+                'template'         => array('do' => 'base.reportReferralDetail', 'referralPageUrl' => '%s'),
+                'valueColumns'     => 'referralPageUrl'));
+        $this->set('constraints', 'medium==referral');
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from referrals.');
+        $this->set('gridTitle', 'Top Referrals');
+    }
 }
 
 ?>

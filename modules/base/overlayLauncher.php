@@ -26,35 +26,65 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_overlayLauncherController extends owa_controller {
+
+    function action() {
+
+        
+        $entity = '';
+        $id = '';
+        
+        if ($this->get('document_id')) {
+	        
+	        $entity = 'base.document';
+	        $url_param = 'url';
+	        $id = $this->get('document_id');
+	        
+                
+	        $d = owa_coreAPI::entityFactory( $entity );
+			$d->load( $id );
 	
-	function action() {
-		
-		// setup overlay cookiestate
-		//owa_coreAPI::setState('overlay', '', urldecode($this->getParam('overlay_params')), 'cookie');
-		
-		
-				
-		// load entity for document id to get URL
-		$d = owa_coreAPI::entityFactory('base.document');
-		$d->load($this->getParam('document_id'));
-		
-		$url = trim( $d->get( 'url' ) );
-		
-		if ( strpos( $url, '#' ) ) {
-			$parts = explode( '#', $url );
-			$url = $parts[0];
+	        $url = trim( $d->get( $url_param ) );
+	
+	        if ( strpos( $url, '#' ) ) {
+	            $parts = explode( '#', $url );
+	            $url = $parts[0];
+	        }
+	
+	        $url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
+			
+			$this->redirectBrowserToUrl($url); 
+			$this->set('url', $url);
 		}
-		
-		$url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
-	//$url = $url.'#owa_overlay.' . trim( urlencode( $this->getParam( 'overlay_params' ) ) );
-		// redirect browser
-		$this->redirectBrowserToUrl($url);	
-	}
+    }
 }
 
+
+require_once(OWA_BASE_DIR.'/owa_view.php');
+
+/**
+ * Overlay Launcher Controller View
+ *
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ * @category    owa
+ * @package     owa
+ * @version        $Revision$
+ * @since        owa 1.6.8
+ */
+
+class owa_overlayLauncherView extends owa_view {
+ 
+    function render() {
+        // Assign Data to templates
+         $this->t->set_template('player_overlay.tpl');
+        $this->t->set('domstream', $this->get('domstream'));
+        $this->t->set('url', $this->get('url'));
+    }
+}
 ?>

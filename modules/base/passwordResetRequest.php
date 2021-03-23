@@ -26,50 +26,47 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_passwordResetRequestController extends owa_controller {
-	
-	function __construct($params) {
-		
-		parent::__construct($params);
-		
-		$v0 = owa_coreAPI::validationFactory('emailAddress');
-		$v0->setValues( $this->getParam( 'email_address' ) );
-		$v0->setConfig( 'stopOnError', true );
-		$this->setValidation( 'email_address', $v0 );
-		
-		$v1 = owa_coreAPI::validationFactory('entityExists');
-		$v1->setConfig('entity', 'base.user');
-		$v1->setConfig('column', 'email_address');
-		$v1->setValues(trim($this->getParam('email_address')));
-		$v1->setErrorMessage($this->getMsg(3010));
-		$this->setValidation('email_address', $v1);
-	}
-	
-	function action() {
-				
-		// Log password reset request to event queue
-		$ed = owa_coreAPI::getEventDispatch();
-		
-		$event = $ed->makeEvent( 'base.reset_password' );
-		$event->set('email_address', $this->getParam( 'email_address' ) );
-		$ed->notify( $event );	
-	
-		// return view
-		$this->setView('base.passwordResetForm');
-		$email_address = trim($this->getParam('email_address'));
-		$msg = $this->getMsg(2000, $email_address);
-		$this->set('status_msg', $msg);
-	}
-	
-	function errorAction() {
-	
-		$this->setView('base.passwordResetForm');
-		$this->set('error_msg', $this->getMsg(2001, $this->getParam('email_address')));
-	}
+
+    public function validate()
+    {
+        $this->addValidation('email_address', $this->getParam('email_address'), 'emailAddress', ['stopOnError' => true]);
+
+        $useEmailAddressEntityConf = [
+            'entity'    => 'base.user',
+            'column'    => 'email_address',
+            'errorMsg'  => $this->getMsg(3010)
+        ];
+
+        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityExists', $useEmailAddressEntityConf);
+    }
+
+    function action() {
+
+        // Log password reset request to event queue
+        $ed = owa_coreAPI::getEventDispatch();
+
+        $event = $ed->makeEvent( 'base.reset_password' );
+        $event->set('email_address', $this->getParam( 'email_address' ) );
+        $ed->notify( $event );
+
+        // return view
+        $this->setView('base.passwordResetForm');
+        $email_address = trim($this->getParam('email_address'));
+        $msg = $this->getMsg(2000, ['message' => $email_address]);
+        $this->set('status_msg', $msg);
+    }
+
+    function errorAction() {
+
+        $this->setView('base.passwordResetForm');
+        $email_address = trim($this->getParam('email_address'));
+        $this->set('error_msg', $this->getMsg(2001, ['message' => $email_address]));
+    }
 }
 
 ?>

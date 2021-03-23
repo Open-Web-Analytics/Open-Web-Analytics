@@ -28,26 +28,26 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_exampleSettingsController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		parent::__construct($params);
-		$this->type = 'options';
-		$this->setRequiredCapability('edit_settings');
-	}
-	
-	function action() {
-					
-		// add data to container
-		$this->setView('base.options');
-		$this->setSubview('base.exampleSettings');
-	}
-	
+
+    function __construct($params) {
+
+        parent::__construct($params);
+        $this->type = 'options';
+        $this->setRequiredCapability('edit_settings');
+    }
+
+    function action() {
+
+        // add data to container
+        $this->setView('base.options');
+        $this->setSubview('base.exampleSettings');
+    }
+
 }
 
 /**
@@ -58,27 +58,27 @@ class owa_exampleSettingsController extends owa_adminController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_exampleSettingsView extends owa_view {
-	
-	function __construct($params) {
-		//set page type
-		$this->_setPageType('Administration Page');		
-		return parent::__construct($params);
-	}
-	
-	function render($data) {
-		
-		// load template
-		$this->body->setTemplateFile('hello', 'example_settings.php');
-		// assign headline
-		$this->body->set('headline', 'Example Settings Page');
-	}
-	
-	
+
+    function __construct($params) {
+        //set page type
+        $this->_setPageType('Administration Page');
+        return parent::__construct($params);
+    }
+
+    function render($data) {
+
+        // load template
+        $this->body->setTemplateFile('hello', 'example_settings.php');
+        // assign headline
+        $this->body->set('headline', 'Example Settings Page');
+    }
+
+
 }
 
 

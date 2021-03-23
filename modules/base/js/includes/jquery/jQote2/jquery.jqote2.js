@@ -10,53 +10,53 @@
  * Version: 0.9.2
  */
 (function($) {
-	var ARR = '[object Array]',
-		FUNC = '[object Function]',
-		STR = '[object String]';
+    var ARR = '[object Array]',
+        FUNC = '[object Function]',
+        STR = '[object String]';
 
     var n = 0,
-		tag = '%',
-	    type_of = Object.prototype.toString;
+        tag = '%',
+        type_of = Object.prototype.toString;
 
     $.fn.extend({
-		jqote: function(data, t) {
-			var data = type_of.call(data) === ARR ? data : [data],
-				dom = '';
+        jqote: function(data, t) {
+            var data = type_of.call(data) === ARR ? data : [data],
+                dom = '';
 
-			this.each(function(i) {
-				var f = ( fn = $.jqotecache[this.jqote] ) ? fn : $.jqotec(this, t || tag);
+            this.each(function(i) {
+                var f = ( fn = $.jqotecache[this.jqote] ) ? fn : $.jqotec(this, t || tag);
 
-				for ( var j=0; j < data.length; j++ )
-					dom += f.call(data[j], i, j, data, f);
-			});
+                for ( var j=0; j < data.length; j++ )
+                    dom += f.call(data[j], i, j, data, f);
+            });
 
-			return dom;
-		},
+            return dom;
+        },
 
-		jqoteapp: function(elem, data, t) {
+        jqoteapp: function(elem, data, t) {
             var dom = $.jqote(elem, data, t);
 
-			return this.each(function() {
-				$(this).append(dom);
-			});
-		},
+            return this.each(function() {
+                $(this).append(dom);
+            });
+        },
 
-		jqotepre: function(elem, data, t) {
+        jqotepre: function(elem, data, t) {
             var dom = $.jqote(elem, data, t);
 
-			return this.each(function() {
-				$(this).prepend(dom);
-			});
-		},
+            return this.each(function() {
+                $(this).prepend(dom);
+            });
+        },
 
-		jqotesub: function(elem, data, t) {
+        jqotesub: function(elem, data, t) {
             var dom = $.jqote(elem, data, t);
 
-			return this.each(function() {
-				$(this).html(dom);
-			});
-		}
-	});
+            return this.each(function() {
+                $(this).html(dom);
+            });
+        }
+    });
 
     $.extend({
         jqote: function(elem, data, t) {

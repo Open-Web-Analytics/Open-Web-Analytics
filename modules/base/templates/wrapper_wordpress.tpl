@@ -1,7 +1,7 @@
 <div class="owa">
 
 <?php include($this->setTemplate('head.tpl'));?>
-	
+
 <?php include($this->setTemplate('header.tpl'));?>
 
 <?php include($this->setTemplate('msgs.tpl'));?>

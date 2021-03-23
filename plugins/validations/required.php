@@ -24,34 +24,29 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
  
  class owa_requiredValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	function validate() {
- 		
- 		$value = $this->getValues();
- 		
- 		$error = $this->getErrorMsg();
- 		
- 		if (empty($error)) {
- 			$this->setErrorMessage('Required field was empty.');
- 		}
- 		
- 		if (empty($value)):
- 			$this->hasError();
- 		endif;
- 		
- 		return;
- 	}
- 	
+          
+     function validate() {
+         
+         $value = $this->getValues();
+         
+         $error = $this->getErrorMsg();
+         
+         if (empty($error)) {
+             $this->setErrorMessage( $this->getName().' is required.');
+         }
+         
+         if (empty($value)):
+             $this->hasError();
+         endif;
+         
+         return;
+     }
+     
  }
  
  

@@ -1,0 +1,95 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=lf
+
+#
+## These files are binary and should be left untouched
+#
+
+# (binary is a macro for -text -diff)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.pyc binary
+*.pdf binary
+
+# source code
+*.php text filter=spabs
+*.css text filter=spabs
+*.sass text filter=spabs
+*.scss text filter=spabs
+*.less text filter=spabs
+*.styl text filter=spabs
+*.js text filter=spabs
+*.coffee text filter=spabs
+*.json text filter=spabs
+*.htm text filter=spabs
+*.html text filter=spabs
+*.xml text filter=spabs
+*.svg text filter=spabs
+*.txt text filter=spabs
+*.ini text filter=spabs
+*.inc text filter=spabs
+*.pl text filter=spabs
+*.rb text filter=spabs
+*.py text filter=spabs
+*.scm text filter=spabs
+*.sql text filter=spabs
+*.sh text filter=spabs
+*.bat text filter=spabs
+
+# templates
+*.ejs text filter=spabs
+*.hbt text filter=spabs
+*.jade text filter=spabs
+*.haml text filter=spabs
+*.hbs text filter=spabs
+*.dot text filter=spabs
+*.tmpl text filter=spabs
+*.tpl text filter=spabs
+*.phtml text filter=spabs
+
+# server config
+.htaccess text filter=spabs
+
+# git config
+.gitattributes text filter=spabs
+.gitignore text filter=spabs
+.gitconfig text filter=spabs
+
+# code analysis config
+.jshintrc text filter=spabs
+.jscsrc text filter=spabs
+.jshintignore text filter=spabs
+.csslintrc text filter=spabs
+
+# misc config
+*.yaml text filter=spabs
+*.yml text filter=spabs
+.editorconfig text filter=spabs
+
+# build config
+*.npmignore text filter=spabs
+*.bowerrc text filter=spabs
+
+# Heroku
+Procfile text filter=spabs
+.slugignore text filter=spabs
+
+# Documentation
+*.md text filter=spabs
+LICENSE text filter=spabs
+AUTHORS text filter=spabs

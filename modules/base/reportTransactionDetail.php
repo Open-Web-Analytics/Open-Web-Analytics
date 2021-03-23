@@ -27,27 +27,31 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_reportTransactionDetailController extends owa_reportController {
-	
-	function action() {
-			
-		$transactionId = $this->getParam('transactionId');
-		
-		$trans_detail = owa_coreAPI::executeAPICommand(array(
-				'do'			=> 'getTransactionDetail',
-				'transactionId'	=> $transactionId,
-				'format'		=> 'php'
-		));
-		
-		$this->set('trans_detail', $trans_detail);
-		$this->setSubview('base.reportTransactionDetail');
-		$this->setTitle('Transaction Detail for: ', $transaction_id);
-	}
-	
+
+    function action() {
+
+        $transactionId = $this->getParam('transactionId');
+
+        $trans_detail = owa_coreAPI::executeAPICommand(array(
+	        
+	        	'request_method' 	=> 'GET',
+	        	'module'			=> 'base',
+	        	'version'			=> 'v1',
+                'do'            	=> 'reports',
+                'report_name'		=> 'transaction',
+                'transactionId'    => $transactionId
+        ));
+		$trans_detail = (array) $trans_detail;
+        $this->set('trans_detail', $trans_detail);
+        $this->setSubview('base.reportTransactionDetail');
+        $this->setTitle('Transaction Detail for: ', $transaction_id);
+    }
+
 }
 
 /**
@@ -58,17 +62,17 @@ class owa_reportTransactionDetailController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportTransactionDetailView extends owa_view {
-		
-	function render() {
-		
-		$this->body->set( 'trans_detail', $this->get( 'trans_detail' ) );
-		$this->body->set_template( 'report_transaction_detail.php' );
-	}
+
+    function render() {
+
+        $this->body->set( 'trans_detail', $this->get( 'trans_detail' ) );
+        $this->body->set_template( 'report_transaction_detail.php' );
+    }
 
 }
 

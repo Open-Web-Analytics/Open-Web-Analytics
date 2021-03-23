@@ -24,38 +24,33 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
  
  class owa_userNameValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	function validate() {
- 		
- 		$error = $this->getErrorMsg();
- 		
- 		if (empty($error)) {
- 			$this->setErrorMessage('The user name contains illegal characters.');
- 		}
 
- 		$u = $this->getValues();
- 		
- 		$illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
- 		
- 		foreach ( $illegals as $k => $char ) {
-	 		
-	 		if ( strpos( $u, $char ) ) {
-		 		
-		 		$this->hasError();
-		 		break;	
-	 		}
- 		}
- 	}	 	
+     function validate() {
+
+         $error = $this->getErrorMsg();
+
+         if (empty($error)) {
+             $this->setErrorMessage('The user name contains illegal characters.');
+         }
+
+         $u = $this->getValues();
+
+         $illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
+
+         foreach ( $illegals as $k => $char ) {
+
+             if ( strpos( $u, $char ) ) {
+
+                 $this->hasError();
+                 break;
+             }
+         }
+     }
  }
  
 ?>

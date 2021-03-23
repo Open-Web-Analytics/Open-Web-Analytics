@@ -30,31 +30,39 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitController extends owa_reportController {
-	
-	function action() {
-				
-		$visit = owa_coreAPI::executeApiCommand(array(
-				'do'		=> 'getVisitDetail',
-				'sessionId'	=> $this->getParam('session_id') ) );
 
-		//setup Metrics
-		$rs = owa_coreAPI::executeApiCommand(array(
-				'do'		=> 'getClickstream',
-				'sessionId'	=> $this->getParam('session_id') ) );
+    function action() {
 
-		$this->set('clickstream', $rs);
-		$this->set('visit', $visit);
-		$this->set('session_id', $this->getParam('session_id'));
-		$this->setView('base.report');
-		$this->setSubview('base.reportVisit');
-		$this->setTitle('Visit Clickstream');
-	}
-}	
+        $visit = owa_coreAPI::executeApiCommand(array(
+                'request_method'	=> 'GET',
+	        	'module'			=> 'base',
+	        	'version'			=> 'v1',
+                'do'        		=> 'reports',
+                'report_name'		=> 'visit',
+                'sessionId'    => $this->getParam('session_id') ) );
+
+        //setup Metrics
+        $rs = owa_coreAPI::executeApiCommand(array(
+	        	'request_method'	=> 'GET',
+	        	'module'			=> 'base',
+	        	'version'			=> 'v1',
+                'do'        		=> 'reports',
+                'report_name'		=> 'clickstream',
+                'sessionId'    		=> $this->getParam('session_id') ) );
+
+        $this->set('clickstream', $rs);
+        $this->set('visit', $visit);
+        $this->set('session_id', $this->getParam('session_id'));
+        $this->setView('base.report');
+        $this->setSubview('base.reportVisit');
+        $this->setTitle('Visit Clickstream');
+    }
+}
 
 /**
  * Visit Report View
@@ -64,20 +72,20 @@ class owa_reportVisitController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportVisitView extends owa_view {
-	
-	function render() {
-		
-		// Assign data to templates
-		$this->body->set_template('report_visit.tpl');	
-		$this->body->set('session_id', $this->get('session_id'));
-		$this->body->set('visits', $this->get('visit'));
-		$this->body->set('clickstream', $this->get('clickstream'));
-	}
+
+    function render() {
+
+        // Assign data to templates
+        $this->body->set_template('report_visit.tpl');
+        $this->body->set('session_id', $this->get('session_id'));
+        $this->body->set('visits', $this->get('visit'));
+        $this->body->set('clickstream', $this->get('clickstream'));
+    }
 }
 
 ?>

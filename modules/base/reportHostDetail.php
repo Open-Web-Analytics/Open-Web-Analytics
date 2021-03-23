@@ -27,24 +27,24 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportHostDetailController extends owa_reportController {
-	
-	function action() {
-		
-		$hostName = $this->getParam('hostName');
-		
-		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Host Detail: ', $hostName);
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimension', 'hostName');
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.');
-		$this->set('constraints', 'hostName=='.urlencode($hostName));	
-	}
+
+    function action() {
+
+        $hostName = $this->getParam('hostName');
+
+        $this->setSubview('base.reportDimensionDetail');
+        $this->setTitle('Host Detail: ', $hostName);
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimension', 'hostName');
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this host.');
+        $this->set('constraints', 'hostName=='.urlencode($hostName));
+    }
 }
 
 ?>

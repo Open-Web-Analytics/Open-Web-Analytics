@@ -24,43 +24,43 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 
 class owa_base_003_update extends owa_update {
 
-	function up() {
-		
-		$db = owa_coreAPI::dbSingleton();
-		$s = owa_coreAPI::serviceSingleton();
-		
-		$entities = $s->modules[$this->module_name]->getEntities();
-		
-		foreach ($entities as $k => $v) {
-		
-			$ret = $db->alterTableType($this->c->get('base', 'ns').$v, 'InnoDB');
-			
-			if ($ret == true):
-				$this->e->notice(sprintf('Changed Table %s to InnoDB', $v));
-			else:
-				$this->e->notice(sprintf('Change to Table %s failed', $v));
-				return false;
-			endif;
-		
-		}
-		
-		
-		return true;
-		
-		
-	}
-	
-	function down() {
-	
-		return false;
-	}
+    function up() {
+
+        $db = owa_coreAPI::dbSingleton();
+        $s = owa_coreAPI::serviceSingleton();
+
+        $entities = $s->modules[$this->module_name]->getEntities();
+
+        foreach ($entities as $k => $v) {
+
+            $ret = $db->alterTableType($this->c->get('base', 'ns').$v, 'InnoDB');
+
+            if ($ret == true):
+                $this->e->notice(sprintf('Changed Table %s to InnoDB', $v));
+            else:
+                $this->e->notice(sprintf('Change to Table %s failed', $v));
+                return false;
+            endif;
+
+        }
+
+
+        return true;
+
+
+    }
+
+    function down() {
+
+        return false;
+    }
 
 }
 

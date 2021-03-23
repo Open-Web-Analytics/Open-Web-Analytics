@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'widget.php');
-require_once(OWA_BASE_DIR.'/owa_news.php');
-
 /**
  * OWA News Widget Controller
  * 
@@ -27,41 +24,43 @@ require_once(OWA_BASE_DIR.'/owa_news.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
-class owa_widgetOwaNewsController extends owa_widgetController {
+class owa_widgetOwaNewsController extends owa_controller {
 
-	function __construct($params) {
-	
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		$this->set('title', 'OWA News');
-		
-		//$data['params'] = $this->params;
-		
-		//Fetch latest OWA news
-		$rss = new owa_news;
-		//print_r($this->config);
-		$news = $rss->Get($this->config['owa_rss_url']);
-		$this->set('news', $news);
-		$this->setView('base.widgetOwaNews');
-	}
-	
+    function __construct($params) {
+    
+        return parent::__construct($params);
+    }
+    
+    function action() {
+        
+        $this->set('title', 'OWA News');
+        
+        //$data['params'] = $this->params;
+        
+        //Fetch latest OWA news
+        $crawler = new owa_http();
+        $response = $crawler->getRequest($this->config['owa_news_url']);
+
+        $news = json_decode($response);
+
+        $this->set('news', $news);
+        $this->setView('base.widgetOwaNews');
+    }
+    
 }
 
 class owa_widgetOwaNewsView extends owa_view {
 
-	function render($data) {
+    function render($data) {
 
-		$this->t->set_template('wrapper_blank.tpl');		
-		$this->body->set_template('news.tpl');
-		$this->body->set('news', $data['news']);
-	}
+        $this->t->set_template('wrapper_blank.tpl');        
+        $this->body->set_template('news.tpl');
+        $this->body->set('news', $data['news']);
+    }
 
 }
 

@@ -17,7 +17,7 @@
 //
 
 include_once('owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa.php');
 
 /**
  * Install Page Wrapper Script
@@ -27,33 +27,33 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 // Initialize owa
 //define('OWA_ERROR_HANDLER', 'development');
 define('OWA_CACHE_OBJECTS', false);
 define('OWA_INSTALLING', true);
-$owa = new owa_php();
+$owa = new owa();
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-	// need third param here so that seting is not persisted.
-	$owa->setSetting('base','main_url', 'install.php');
-	// run controller, echo page content
-	$do = owa_coreAPI::getRequestParam('do'); 
-	$params = array();
-	if (empty($do)) {
-		
-		$params['do'] = 'base.installStart';
-	}
-	
-	// run controller or view and echo page content
-	echo $owa->handleRequest($params);
+    // need third param here so that seting is not persisted.
+    $owa->setSetting('base','main_url', 'install.php');
+    // run controller, echo page content
+    $do = owa_coreAPI::getRequestParam('do');
+    $params = array();
+    if (empty($do)) {
+
+        $params['do'] = 'base.installStart';
+    }
+
+    // run controller or view and echo page content
+    echo $owa->handleRequest($params);
 
 } else {
-	// unload owa
-	$owa->restInPeace();
+    // unload owa
+    $owa->restInPeace();
 }
 
 ?>

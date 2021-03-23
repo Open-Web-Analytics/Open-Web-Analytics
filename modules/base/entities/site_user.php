@@ -24,20 +24,20 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_site_user extends owa_entity {
-	
-	public function __construct() {	
-		$this->setTableName('site_user');		
-		$this->setProperty( new owa_dbColumn( 'site_id' , OWA_DTD_BIGINT ) );
-		$this->setProperty( new owa_dbColumn( 'user_id' , OWA_DTD_INT ) );
-	}
-	
-	
-	
+
+    public function __construct() {
+        $this->setTableName('site_user');
+        $this->setProperty( new owa_dbColumn( 'site_id' , OWA_DTD_BIGINT ) );
+        $this->setProperty( new owa_dbColumn( 'user_id' , OWA_DTD_INT ) );
+    }
+
+
+
 }
 
 ?>

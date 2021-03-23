@@ -26,45 +26,45 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_optionsUpdateController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_settings');
-		$this->setNonceRequired();
-		return parent::__construct($params);
-	
-	}
 
-	function action() {
-		
-		$c = owa_coreAPI::configSingleton();
-		
-		$config_values = $this->get('config');
-		
-		if (!empty($config_values)) {
-			
-			foreach ($config_values as $k => $v) {
-			
-				list($module, $name) = explode('.', $k);
-				
-				if ( $module && $name ) {
-					$c->persistSetting($module, $name, $v);	
-				}
-			}
-			
-			$c->save();
-			owa_coreAPI::notice("Configuration changes saved to database.");
-			$this->setStatusCode(2500);	
-		}
-		
-		$this->setRedirectAction('base.optionsGeneral');
-	}
-	
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_settings');
+        $this->setNonceRequired();
+        return parent::__construct($params);
+
+    }
+
+    function action() {
+
+        $c = owa_coreAPI::configSingleton();
+
+        $config_values = $this->get('config');
+
+        if (!empty($config_values)) {
+
+            foreach ($config_values as $k => $v) {
+
+                list($module, $name) = explode('.', $k);
+
+                if ( $module && $name ) {
+                    $c->persistSetting($module, $name, $v);
+                }
+            }
+
+            $c->save();
+            owa_coreAPI::notice("Configuration changes saved to database.");
+            $this->setStatusCode(2500);
+        }
+
+        $this->setRedirectAction('base.optionsGeneral');
+    }
+
 }
 
 

@@ -26,25 +26,25 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_sitesDeleteController extends owa_adminController {
-	
-	function __construct($params) {
-		parent::__construct($params);
-		$this->setRequiredCapability('edit_sites');
-		$this->setNonceRequired();
-	}
-	
-	function action() {
-		
-		$site = owa_coreAPI::entityFactory('base.site');
-		$site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
-		$this->setRedirectAction('base.sites');
-		$this->set('status_code', 3204); 
-	}
+
+    function __construct($params) {
+        parent::__construct($params);
+        $this->setRequiredCapability('edit_sites');
+        $this->setNonceRequired();
+    }
+
+    function action() {
+
+        $site = owa_coreAPI::entityFactory('base.site');
+        $site->delete( $site->generateId( $this->getParam( 'siteId' ) ) );
+        $this->setRedirectAction('base.sites');
+        $this->set('status_code', 3204);
+    }
 }
 
 ?>

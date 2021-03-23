@@ -26,24 +26,24 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportKeywordDetailController extends owa_reportController {
-	
-	function action() {
-		
-		$searchTerm = $this->getParam('referralSearchTerms');
-		
-		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Search Term Detail: ', $searchTerm);
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimension', 'referralSearchTerms');
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.');
-		$this->set('constraints', 'referralSearchTerms=='.urlencode($searchTerm));	
-	}
+
+    function action() {
+
+        $searchTerm = $this->getParam('referralSearchTerms');
+
+        $this->setSubview('base.reportDimensionDetail');
+        $this->setTitle('Search Term Detail: ', $searchTerm);
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimension', 'referralSearchTerms');
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search term.');
+        $this->set('constraints', 'referralSearchTerms=='.urlencode($searchTerm));
+    }
 }
 
 ?>

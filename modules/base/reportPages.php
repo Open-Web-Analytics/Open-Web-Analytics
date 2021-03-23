@@ -26,30 +26,30 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportPagesController extends owa_reportController {
-	
-	function action() {
-			
-		$this->setSubview('base.reportSimpleDimensional');
-		$this->setTitle('Web Pages');
-		$this->set('metrics', 'pageViews,visits,uniquePageViews');
-		// add ametrics override setting
-		$this->set('dimensions', 'pagePath,pageTitle,pageType,pageUrl');
-		$this->set('excludeColumns', "'pageUrl'");
-		$this->set('sort', 'pageViews-');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'pagePath', 
-				'template' 		=> array('do' => 'base.reportDocument', 'pageUrl' => '%s'), 
-				'valueColumns' 	=> 'pageUrl'));
-		$this->set('trendChartMetric', 'pageViews');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.');
-		$this->set('gridTitle', 'Top Pages');		
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportSimpleDimensional');
+        $this->setTitle('Web Pages');
+        $this->set('metrics', 'pageViews,visits,uniquePageViews');
+        // add ametrics override setting
+        $this->set('dimensions', 'pagePath,pageTitle,pageType,pageUrl');
+        $this->set('excludeColumns', "'pageUrl'");
+        $this->set('sort', 'pageViews-');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array(
+                'linkColumn'     => 'pagePath',
+                'template'         => array('do' => 'base.reportDocument', 'pageUrl' => '%s'),
+                'valueColumns'     => 'pageUrl'));
+        $this->set('trendChartMetric', 'pageViews');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for <*= this.d.resultSet.aggregates.uniquePageViews.value *> unique pages.');
+        $this->set('gridTitle', 'Top Pages');
+    }
 }
 
 ?>

@@ -27,34 +27,34 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_optionsGoalEntryController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		parent::__construct($params);
-		$this->type = 'options';
-		$this->setRequiredCapability('edit_settings');
-	}
-	
-	function action() {
-		
-		$number = $this->getParam( 'goal_number' );
-		$siteId = $this->get('siteId');
-		$gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
-		$goal = $gm->getGoal( $number );
-		$goal_groups = $gm->getAllGoalGroupLabels();
-		$this->set( 'goal_groups', $goal_groups );
-		$this->set( 'goal', $goal );
-		$this->set('goal_number', $number);
-		$this->set('siteId', $this->getParam( 'siteId' ) );
-		$this->setView('base.options');
-		$this->setSubView('base.optionsGoalEntry');
-		
-	}
+
+    function __construct($params) {
+
+        parent::__construct($params);
+        $this->type = 'options';
+        $this->setRequiredCapability('edit_settings');
+    }
+
+    function action() {
+
+        $number = $this->getParam( 'goal_number' );
+        $siteId = $this->get('siteId');
+        $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $goal = $gm->getGoal( $number );
+        $goal_groups = $gm->getAllGoalGroupLabels();
+        $this->set( 'goal_groups', $goal_groups );
+        $this->set( 'goal', $goal );
+        $this->set('goal_number', $number);
+        $this->set('siteId', $this->getParam( 'siteId' ) );
+        $this->setView('base.options');
+        $this->setSubView('base.optionsGoalEntry');
+
+    }
 }
 
 /**
@@ -65,23 +65,23 @@ class owa_optionsGoalEntryController extends owa_adminController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_optionsGoalEntryView extends owa_view {
-		
-	function render() {
-		
-		$this->body->set_template( 'options_goal_entry.php' );
-		$this->body->set( 'headline', 'Edit Goal');
-		$this->body->set( 'goal', $this->get( 'goal' ) );
-		$this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
-		$this->body->set( 'goal_number', $this->get( 'goal_number' ) );
-		$this->body->set( 'siteId', $this->get( 'siteId' ) );
-		$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js');
-		$this->setJs('jqote', 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
-	}
+
+    function render() {
+
+        $this->body->set_template( 'options_goal_entry.php' );
+        $this->body->set( 'headline', 'Edit Goal');
+        $this->body->set( 'goal', $this->get( 'goal' ) );
+        $this->body->set( 'goal_groups', $this->get( 'goal_groups' ) );
+        $this->body->set( 'goal_number', $this->get( 'goal_number' ) );
+        $this->body->set( 'siteId', $this->get( 'siteId' ) );
+        $this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js');
+        $this->setJs('jqote', 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js');
+    }
 }
 
 ?>

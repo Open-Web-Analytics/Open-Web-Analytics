@@ -26,29 +26,29 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_moduleDeactivateController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_modules');
-		
-		return parent::__construct($params);
-	
-	}
 
-	function action() {
-		
-		$s = owa_coreAPI::serviceSingleton();
-		$m = $s->getModule($this->getParam('module'));
-		$m->deactivate();
-		$this->setRedirectAction('base.optionsModules');
-		$this->setStatusCode(2502);	
-	}
-	
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_modules');
+
+        return parent::__construct($params);
+
+    }
+
+    function action() {
+
+        $s = owa_coreAPI::serviceSingleton();
+        $m = $s->getModule($this->getParam('module'));
+        $m->deactivate();
+        $this->setRedirectAction('base.optionsModules');
+        $this->setStatusCode(2502);
+    }
+
 }
 
 ?>

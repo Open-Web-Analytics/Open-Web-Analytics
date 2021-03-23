@@ -27,33 +27,33 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_optionsGeneralController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		parent::__construct($params);
-		$this->type = 'options';
-		$this->setRequiredCapability('edit_settings');
-		return;
-	}
-	
-	function action() {
-		
-		$this->data['configuration'] = $this->c->fetch('base');
-			
-		// add data to container
-		$this->data['view'] = 'base.options';
-		$this->data['subview'] = 'base.optionsGeneral';
-		$this->data['view_method'] = 'delegate';
-		
-		return $this->data;
-	
-	}
-	
+
+    function __construct($params) {
+
+        parent::__construct($params);
+        $this->type = 'options';
+        $this->setRequiredCapability('edit_settings');
+
+    }
+
+    function action() {
+
+        $this->set( 'configuration',  $this->c->fetch('base') );
+
+        // add data to container
+        $this->setView( 'base.options' );
+        $this->data['subview'] = 'base.optionsGeneral';
+        $this->data['view_method'] = 'delegate';
+
+        return $this->data;
+
+    }
+
 }
 
 /**
@@ -64,23 +64,23 @@ class owa_optionsGeneralController extends owa_adminController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_optionsGeneralView extends owa_view {
-		
-	function render($data) {
-		
-		// load template
-		$this->body->set_template('options_general.tpl');
-		// fetch admin links from all modules
-		$this->body->set('headline', 'General Configuration Options');
-		
-		//print_r($data['config']);
-		// assign config data
-		$this->body->set('config', $data['configuration']);
-	}
+
+    function render($data) {
+
+        // load template
+        $this->body->set_template('options_general.tpl');
+        // fetch admin links from all modules
+        $this->body->set('headline', 'General Configuration Options');
+
+        //print_r($data['config']);
+        // assign config data
+        $this->body->set( 'config', $this->get( 'configuration' ) ) ;
+    }
 }
 
 ?>

@@ -26,22 +26,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_lineItemQuantity extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('lineItemQuantity');
-		$this->setLabel('Quantity');
-		$this->setEntity('base.commerce_line_item_fact');
-		$this->setColumn('quantity');
-		$this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
-		$this->setDataType('integer');
-		return parent::__construct();
-	}
+    function __construct() {
+
+        $this->setName('lineItemQuantity');
+        $this->setLabel('Quantity');
+        $this->setEntity('base.commerce_line_item_fact');
+        $this->setColumn('quantity');
+        $this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
+        $this->setDataType('integer');
+        return parent::__construct();
+    }
 }
 
 ?>

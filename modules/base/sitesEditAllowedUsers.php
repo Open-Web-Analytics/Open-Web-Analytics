@@ -25,33 +25,33 @@ require_once(OWA_BASE_MODULE_DIR.'/sitesEditSettings.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 class owa_sitesEditAllowedUsersController extends owa_sitesEditSettingsController {
-	
-	
-	
-	function action() {
 
-		$site_id = $this->getParam( 'siteId' );
-		$siteEntity = owa_coreAPI::entityFactory( 'base.site' );
-		$siteEntity->load( $siteEntity->generateId( $site_id ) );
-		//print_r($this->getParam( 'allowed_users' ));die('no');
-		if ($this->getParam( 'allowed_users' ) ) {
-			$siteEntity->updateAssignedUserIds($this->getParam( 'allowed_users' ));
-		}
-		else {
-			$siteEntity->updateAssignedUserIds( array() );
-		}
-		//set variables for view
-		$this->set('siteId', $site_id);
-		$this->set('edit', true);
-		$this->setStatusCode( 3201 );	
-		$this->setRedirectAction( 'base.sitesProfile' );
-		
-	}
-	
+
+
+    function action() {
+
+        $site_id = $this->getParam( 'siteId' );
+        $siteEntity = owa_coreAPI::entityFactory( 'base.site' );
+        $siteEntity->load( $siteEntity->generateId( $site_id ) );
+        owa_coreAPI::debug( $siteEntity->_getProperties());
+        if ($this->getParam( 'allowed_users' ) ) {
+            $siteEntity->updateAssignedUserIds($this->getParam( 'allowed_users' ));
+        }
+        else {
+            $siteEntity->updateAssignedUserIds( array() );
+        }
+        //set variables for view
+        $this->set('siteId', $site_id);
+        $this->set('edit', true);
+        $this->setStatusCode( 3201 );
+        $this->setRedirectAction( 'base.sitesProfile' );
+
+    }
+
 }
 
 ?>

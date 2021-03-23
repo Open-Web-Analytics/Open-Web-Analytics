@@ -26,26 +26,26 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$          
+ * @since        owa 1.3.0
  */
 
 class owa_reportSearchEngineDetailController extends owa_reportController {
-			
-	function action() {
-				
-		$searchEngine = $this->getParam('referralWebSite');
-		
-		$this->setSubview('base.reportDimensionDetail');
-		$this->setTitle('Search Engine: ', $searchEngine);
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'referralWebSite');
-		$this->set('sort', 'visits');
-		$this->set('resultsPerPage', 30);
-		$this->set('constraints', 'medium==organic-search,referralWebSite=='.urlencode( $searchEngine ) );
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.');	
-	}
+            
+    function action() {
+                
+        $searchEngine = $this->getParam('referralWebSite');
+        
+        $this->setSubview('base.reportDimensionDetail');
+        $this->setTitle('Search Engine: ', $searchEngine);
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimensions', 'referralWebSite');
+        $this->set('sort', 'visits');
+        $this->set('resultsPerPage', 30);
+        $this->set('constraints', 'medium==organic-search,referralWebSite=='.urlencode( $searchEngine ) );
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from this search engine.');    
+    }
 }
 
 ?>

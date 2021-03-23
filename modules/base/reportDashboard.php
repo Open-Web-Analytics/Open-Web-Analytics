@@ -26,55 +26,46 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportDashboardController extends owa_reportController {
-	
-	function action() {
-				
-		// action counts	
-		$params = array('period' 	  => $this->get('period'),
-						'startDate'	  => $this->get('startDate'),
-						'endDate'	  => $this->get('endDate'),
-						'metrics' 	  => 'actions',
-						'dimensions'  => 'actionName',
-						'siteId' 	  => $this->getParam('siteId'),
-						'do'		  => 'getResultSet'
-						);
-						
-		$rs = owa_coreAPI::executeApiCommand($params);	
-		//print_r($rs);			
-		$this->set('actions', $rs);
-		
+
+    function action() {
+
 		$rs = owa_coreAPI::executeApiCommand(array(
-			
-			'do'				=> 'getLatestVisits',
-			'siteId'			=> $this->getParam('siteId'),
-			'page'				=> $this->getParam('page'),
-			'startDate'			=> $this->getParam('startDate'),
-			'endDate'			=> $this->getParam('endDate'),
-			'period'			=> $this->getParam('period'),
-			'resultsPerPage'	=> 10
-		));
-		
-		$this->set('latest_visits', $rs);
-	
-		// set view stuff
-		$this->setSubview('base.reportDashboard');
-		$this->setTitle('Dashboard');
-		
-		$metrics = 'visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration';
-		
-		if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
-			$metrics .= ',transactions,transactionRevenue';	
-		}
-		
-		$this->set('metrics', $metrics);	
-	}
+
+			'request_method'	=> 'GET',
+			'module'			=> 'base',
+			'version'			=> 'v1',
+            'do'                => 'reports',
+            'report_name'		=> 'latest_visits',
+            'siteId'            => $this->getParam('siteId'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $this->getParam('startDate'),
+            'endDate'           => $this->getParam('endDate'),
+            'period'            => $this->getParam('period'),
+            'resultsPerPage'    => 10
+        ));
+
+
+        $this->set('latest_visits', $rs);
+
+        // set view stuff
+        $this->setSubview('base.reportDashboard');
+        $this->setTitle('Dashboard');
+
+        $metrics = 'visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration';
+
+        if ( owa_coreAPI::getSiteSetting( $this->getParam('siteId'), 'enableEcommerceReporting') ) {
+            $metrics .= ',transactions,transactionRevenue';
+        }
+
+        $this->set('metrics', $metrics);
+    }
 }
-		
+
 require_once(OWA_BASE_DIR.'/owa_view.php');
 
 /**
@@ -85,21 +76,21 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportDashboardView extends owa_view {
-	
-	function render() {
-		
-		$this->body->set_template('report_dashboard.tpl');
-		$this->body->set('summary', $this->get('summary'));			
-		$this->body->set('site_trend', $this->get('site_trend'));
-		$this->body->set('visits', $this->get('latest_visits'));
-		$this->body->set('actions', $this->get('actions'));
-		$this->body->set('metrics', $this->get('metrics'));
-	}
+
+    function render() {
+
+        $this->body->set_template('report_dashboard.tpl');
+        $this->body->set('summary', $this->get('summary'));
+        $this->body->set('site_trend', $this->get('site_trend'));
+        $this->body->set('visits', $this->get('latest_visits'));
+        $this->body->set('actions', $this->get('actions'));
+        $this->body->set('metrics', $this->get('metrics'));
+    }
 }
 
 ?>

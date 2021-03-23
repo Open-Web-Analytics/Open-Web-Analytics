@@ -27,16 +27,16 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_passwordResetFormController extends owa_controller {
-	
-	function action() {
-		
-		$this->setView('base.passwordResetForm');
-	}
+
+    function action() {
+
+        $this->setView('base.passwordResetForm');
+    }
 }
 
 
@@ -48,24 +48,24 @@ class owa_passwordResetFormController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_passwordResetFormView extends owa_view {
-		
-	function __construct() {
-		
-		return parent::__construct();
-	}
-	
-	function render($data) {
-	
-		$this->setTitle('Password Reset');
-		$this->t->set_template('wrapper_public.tpl');
-		$this->body->set_template('users_password_reset_request.tpl');
-	}
-	
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function render($data) {
+
+        $this->setTitle('Password Reset');
+        $this->t->set_template('wrapper_public.tpl');
+        $this->body->set_template('users_password_reset_request.tpl');
+    }
+
 }
 
 ?>

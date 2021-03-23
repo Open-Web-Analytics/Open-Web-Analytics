@@ -26,47 +26,47 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.1
+ * @version        $Revision$
+ * @since        owa 1.4.1
  */
 
 class owa_siteManager extends owa_base {
-	
-	function __construct() {
-		
-		return parent::__construct();
-	}
-		
-	function createNewSite( $domain, $name = '', $description = '', $site_family = '' ) {
-	
-		$site_id = md5( $domain );
-		$site = owa_coreAPI::entityFactory( 'base.site' );
-		$id = $site->generateId( $site_id );
-		$site->load( $id );
-		
-		if ( ! $name ) {
-			$name = $domain;
-		}
-		
-		if ( ! $site->wasPersisted() ) {
-	
-			$site->set('id', $id );
-			$site->set('site_id', $site_id );
-			$site->set('name', $name );
-			$site->set('domain', $domain );
-			$site->set('description', $description);
-			$site->set('site_family', $site_family);
-			$ret = $site->create();
-			
-			if ($ret) {
-				return $site_id;
-			}
-			
-		} else {
-			
-			owa_coreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
-		}
-	}
+
+    function __construct() {
+
+        return parent::__construct();
+    }
+
+    function createNewSite( $domain, $name = '', $description = '', $site_family = '' ) {
+
+        $site_id = md5( $domain );
+        $site = owa_coreAPI::entityFactory( 'base.site' );
+        $id = $site->generateId( $site_id );
+        $site->load( $id );
+
+        if ( ! $name ) {
+            $name = $domain;
+        }
+
+        if ( ! $site->wasPersisted() ) {
+
+            $site->set('id', $id );
+            $site->set('site_id', $site_id );
+            $site->set('name', $name );
+            $site->set('domain', $domain );
+            $site->set('description', $description);
+            $site->set('site_family', $site_family);
+            $ret = $site->create();
+
+            if ($ret) {
+                return $site;
+            }
+
+        } else {
+
+            owa_coreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
+        }
+    }
 }
 
 ?>

@@ -26,29 +26,38 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_usersDeleteController extends owa_adminController {
-	
-	function __construct($params) {
-	
-		$this->setRequiredCapability('edit_users');
-		$this->setNonceRequired();
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		$userManager = owa_coreApi::supportClassFactory('base', 'userManager');	
-		
-		// add check here to ensure that this is not the default user....
-		$userManager->deleteUser($this->getParam('user_id'));
-				
-		$this->setRedirectAction('base.users');
-		$this->set('status_code', 3004);
-	}
+
+    function __construct($params) {
+
+        $this->setRequiredCapability('edit_users');
+        $this->setNonceRequired();
+        return parent::__construct($params);
+    }
+    
+    function validate() {
+	    
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
+	    $this->addValidation('user_id', $this->getParam('user_id'), 'isNotCurrentUser');
+    }
+
+    function action() {
+
+        $userManager = owa_coreApi::supportClassFactory('base', 'userManager');
+
+        // add check here to ensure that this is not the default user....
+        $userManager->deleteUser($this->getParam('user_id'));
+    }
+    
+    function success() {
+	    
+	    $this->setRedirectAction('base.users');
+        $this->set('status_code', 3004);
+    }
 }
 
 ?>

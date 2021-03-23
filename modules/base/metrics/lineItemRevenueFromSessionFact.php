@@ -27,22 +27,22 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$          
+ * @since        owa 1.4.0
  */
 
 class owa_lineItemRevenueFromSessionFact extends owa_metric {
 
-	function __construct() {
-	
-		$this->setName('lineItemRevenue');
-		$this->setLabel('Item Revenue');
-		$this->setEntity('base.session');
-		$this->setColumn('commerce_items_revenue');
-		$this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
-		$this->setDataType('currency');
-		return parent::__construct();
-	}
+    function __construct() {
+    
+        $this->setName('lineItemRevenue');
+        $this->setLabel('Item Revenue');
+        $this->setEntity('base.session');
+        $this->setColumn('commerce_items_revenue');
+        $this->setSelect(sprintf("SUM(%s)", $this->getColumn()));
+        $this->setDataType('currency');
+        return parent::__construct();
+    }
 }
 
 ?>

@@ -27,62 +27,61 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.2.1
+ * @version        $Revision$
+ * @since        owa 1.2.1
  */
 
 class owa_reportDomstreamsController extends owa_reportController {
 
-	function action() {
+    function action() {
+
+        $document_id = '';
+
+        // get period
+        $p = $this->getPeriod();
 		
-		$document_id = '';
-		
-		// get period		
-		$p = $this->getPeriod();
-				
-		// check for limits
-		if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
-			$doc = owa_coreAPI::entityFactory('base.document');
-			
-			if ($this->getParam('pageUrl')) {
-				$doc->getByColumn('url', $this->getParam('pageUrl'));
-			} elseif ($this->getParam('pagePath')) {
-				$doc->getByColumn('uri', $this->getParam('pagePath'));	
-			} else {
-				$doc->load($this->getParam('document_id'));
-			}
-			
-			$document_id = $doc->get('id');
-			
-			$this->setTitle('Domstream Recordings: ', $doc->get('url'));
-			$this->set('document', $doc->_getProperties());
-			$this->set('item_properties', $doc);
-		} else {
-			// latest domstream report
-			$this->setTitle('Latest Domstreams');
-		}
-		
-		$ds = owa_coreAPI::executeApiCommand(array(
-			
-			'do'				=> 'getDomstreams',
-			'startDate' 		=> $p->getStartDate()->getYyyymmdd(),
-			'endDate'			=> $p->getEndDate()->getYyyymmdd(),
-			'document_id'		=> $document_id,
-			'siteId'			=> $this->getParam('siteId'),
-			'page'				=> $this->getParam('page'),
-			'resultsPerPage'	=> 50,
-			'format'			=> $this->getParam('format')
-		));
-		
-		$this->set('domstreams', $ds);
-		//print_r($ds);
-		
-		// set view stuff
-		$this->setSubview('base.reportDomstreams');
-		
-							
-	}
-	
+        // check for limits
+        if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
+            $doc = owa_coreAPI::entityFactory('base.document');
+
+            if ($this->getParam('pageUrl')) {
+                $doc->getByColumn('url', $this->getParam('pageUrl'));
+            } elseif ($this->getParam('pagePath')) {
+                $doc->getByColumn('uri', $this->getParam('pagePath'));
+            } else {
+                $doc->load($this->getParam('document_id'));
+            }
+
+            $document_id = $doc->get('id');
+
+            $this->setTitle('Domstream Recordings: ', $doc->get('url'));
+            $this->set('document', $doc->_getProperties());
+            $this->set('item_properties', $doc);
+        } else {
+            // latest domstream report
+            $this->setTitle('Latest Domstreams');
+        }
+
+        $ds = owa_coreAPI::executeApiCommand(array(
+			'module'			=> 'domstream',
+			'version'			=> 'v1',
+            'do'                => 'domstreams',
+            'request_method'	=> 'GET',
+            'startDate'         => $p->getStartDate()->getYyyymmdd(),
+            'endDate'            => $p->getEndDate()->getYyyymmdd(),
+            'document_id'        => $document_id,
+            'siteId'            => $this->getParam('siteId'),
+            'page'                => $this->getParam('page'),
+            'resultsPerPage'    => 50
+        ));
+ 
+		 $this->set('domstreams', $ds);
+        // set view stuff
+        $this->setSubview('base.reportDomstreams');
+
+
+    }
+
 }
 
 /**
@@ -93,20 +92,20 @@ class owa_reportDomstreamsController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.2.1
+ * @version        $Revision$
+ * @since        owa 1.2.1
  */
 
 class owa_reportDomstreamsView extends owa_view {
 
-	function render() {
-		
-		$this->body->set('domstreams', $this->get('domstreams'));
-		$this->body->set_template('report_domstreams.tpl');
-		$doc = $this->get('document');
-		$this->body->set('document', $doc);
-		$this->body->set('properties', $this->get('item_properties'));
-	}
+    function render() {
+
+        $this->body->set('domstreams', $this->get('domstreams'));
+        $this->body->set_template('report_domstreams.tpl');
+        $doc = $this->get('document');
+        $this->body->set('document', $doc);
+        $this->body->set('properties', $this->get('item_properties'));
+    }
 
 }
 

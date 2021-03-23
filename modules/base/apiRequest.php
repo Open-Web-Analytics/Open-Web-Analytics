@@ -27,64 +27,93 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_apiRequestController extends owa_controller {
-		
-	function __construct($params) {
-		
-		return parent::__construct($params);
-	}
-	
-	function getRequiredCapability() {
-	
-		$s = owa_coreAPI::serviceSingleton();
-			// lookup method class
-		$do = $s->getApiMethodClass($this->getParam('do'));
 
-		if ($do) {
-		
-			// check for capability
-			if (array_key_exists('required_capability', $do)) {
-				return $do['required_capability'];
-			}
-		}
-	}
-	
-	function doAction() {
-		
-					
-		/* CHECK USER FOR CAPABILITIES */
-		if ( ! $this->checkCapabilityAndAuthenticateUser( $this->getRequiredCapability() ) ) {
-		
-			return $this->data;
-		}
-		
-		/* PERFORM PRE ACTION */
-		// often used by abstract descendant controllers to set various things
-		$this->pre();
-		/* PERFORM MAIN ACTION */
-	   	return $this->finishActionCall($this->action());			
-	}
-	
-	function action() {
-		
-		$map = owa_coreAPI::getRequest()->getAllOwaParams();
-		echo owa_coreAPI::executeApiCommand($map);
-	}
-	
-	function notAuthenticatedAction() {
-		
-		$this->setErrorMsg('Authentication failed.');
-		$this->setView('base.apiError');
-	}
-	
-	function authenticatedButNotCapableAction($additionalMessage = '') {
-		$this->setErrorMsg('Thus user is not capable to perform this api method.');
-		$this->setView('base.apiError');
-	}
+    function __construct($params) {
+
+        return parent::__construct($params);
+    }
+
+    function getRequiredCapability() {
+
+        $s = owa_coreAPI::serviceSingleton();
+            // lookup method class
+        $do = $s->getApiMethodClass($this->getParam('do'));
+
+        if ($do) {
+
+            // check for capability
+            if (array_key_exists('required_capability', $do)) {
+                return $do['required_capability'];
+            }
+        }
+    }
+
+    function doAction() {
+
+
+        /* CHECK USER FOR CAPABILITIES */
+        if ( ! $this->checkCapabilityAndAuthenticateUser( $this->getRequiredCapability() ) ) {
+
+            return $this->data;
+        }
+
+        /* PERFORM PRE ACTION */
+        // often used by abstract descendant controllers to set various things
+        $this->pre();
+        /* PERFORM MAIN ACTION */
+           return $this->finishActionCall($this->action());
+    }
+
+    function action() {
+
+        //determine output format, json is default.
+        $format = $this->getParam('format');
+
+        if ( ! $format ) {
+
+            $format = 'json';
+        }
+
+        // set content type of reponse
+        owa_lib::setContentTypeHeader($format);
+
+        $map = owa_coreAPI::getRequest()->getAllOwaParams();
+        $output = owa_coreAPI::executeApiCommand($map);
+
+        // assign to a view for output
+        if ( $format === 'json' || $format === 'jsonp') {
+
+            $this->setView( 'base.json' );
+            $this->set( 'json', $output );
+            $this->set( 'format', $format );
+
+            if ( $format ==='jsonp' ) {
+
+                $this->set('jsonpCallback', $this->getParam('jsonpCallback') );
+            }
+
+        } else {
+            //@todo move this to a generic raw output view.
+            echo $output;
+        }
+
+    }
+
+    function notAuthenticatedAction() {
+
+        $this->setErrorMsg('Authentication failed.');
+        $this->setView('base.apiError');
+    }
+
+    function authenticatedButNotCapableAction($additionalMessage = '') {
+        $this->setErrorMsg('Thus user is not capable to perform this api method.');
+        $this->setView('base.apiError');
+    }
 }
 
 /**
@@ -95,18 +124,18 @@ class owa_apiRequestController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.5.0
+ * @version        $Revision$
+ * @since        owa 1.5.0
  */
 
 class owa_apiErrorView extends owa_view {
 
-	function render() {
-		
-		$this->t->set_template('wrapper_blank.tpl');
-		$this->body->set_template('apiError.php');
-		$this->body->set( 'error_msg', $this->get( 'error_msg' ) );
-	}
+    function render() {
+
+        $this->t->set_template('wrapper_blank.tpl');
+        $this->body->set_template('apiError.php');
+        $this->body->set( 'error_msg', $this->get( 'error_msg' ) );
+    }
 }
 
 ?>

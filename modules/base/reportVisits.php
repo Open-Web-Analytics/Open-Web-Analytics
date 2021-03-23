@@ -27,45 +27,49 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_reportVisitsController extends owa_reportController {
-		
-	function action() {
-		
-		$visitorId = $this->getParam('visitorId');
-		
-		if (!$visitorId) {
-			$visitorId = $this->getParam('visitor_id');
-		}
-		
-		$v = owa_coreAPI::entityFactory('base.visitor');
-		$v->load($visitorId);
-		
-		if ($this->getParam('date')) {
-			$startDate = $this->getParam('date');
-			$endDate = $this->getParam('date');
-		}
-				
-		$rs = owa_coreAPI::executeApiCommand(array(
-			
-			'do'			=> 'getLatestVisits',
-			'visitorId'		=> $visitorId,
-			'siteId'		=> $this->getParam('siteId'),
-			'page'			=> $this->getParam('page'),
-			'startDate'		=> $startDate,
-			'endDate'		=> $endDate,		
-			'format'		=> '' ) );
-		
-		$this->set('visits', $rs);
-		$this->set('visitor', $v);
-		$this->set('visitor_id', $visitorId);
-		$this->setView('base.report');
-		$this->setSubview('base.reportVisits');
-		$this->setTitle('Visit History For: ', $v->getVisitorName());	
-	}
+
+    function action() {
+
+        $visitorId = $this->getParam('visitorId');
+
+        if (!$visitorId) {
+            $visitorId = $this->getParam('visitor_id');
+        }
+
+        $v = owa_coreAPI::entityFactory('base.visitor');
+        $v->load($visitorId);
+
+        if ($this->getParam('date')) {
+            $startDate = $this->getParam('date');
+            $endDate = $this->getParam('date');
+        }
+
+        $rs = owa_coreAPI::executeApiCommand(array(
+
+            'request_method'	=> 'GET',
+            'module'			=> 'base',
+            'version'			=> 'v1',
+            'do'                => 'reports',
+            'report_name'		=> 'latest_visits',
+            'siteId'            => $this->getParam('siteId'),
+            'page'              => $this->getParam('page'),
+            'startDate'         => $startDate,
+            'endDate'           => $endDate,
+            'period'            => $this->getParam('period')
+        ));
+
+        $this->set('visits', $rs);
+        $this->set('visitor', $v);
+        $this->set('visitor_id', $visitorId);
+        $this->setView('base.report');
+        $this->setSubview('base.reportVisits');
+        $this->setTitle('Visit History For: ', $v->getVisitorName());
+    }
 }
 
 /**
@@ -76,19 +80,19 @@ class owa_reportVisitsController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.3.0
+ * @version        $Revision$
+ * @since        owa 1.3.0
  */
 
 class owa_reportVisitsView extends owa_view {
-			
-	function render() {
-		
-		$this->body->set_template('report_visits.php');	
-		$this->body->set('visitor_id', $this->get('visitor_id'));
-		$this->body->set('visits', $this->get('visits'));
-		$this->body->set('visitor', $this->get('visitor'));
-	}
+
+    function render() {
+
+        $this->body->set_template('report_visits.php');
+        $this->body->set('visitor_id', $this->get('visitor_id'));
+        $this->body->set('visits', $this->get('visits'));
+        $this->body->set('visitor', $this->get('visitor'));
+    }
 }
 
 ?>

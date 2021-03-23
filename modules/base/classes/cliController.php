@@ -28,35 +28,35 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 
 class owa_cliController extends owa_adminController {
-	
-	var $is_admin = true;
-	
-	/**
-	 * Constructor
-	 *
-	 * @param array $params
-	 * @return owa_controller
-	 */
-	function __construct($params) {
-		
-		if (owa_coreAPI::getSetting('base', 'cli_mode')) {
-		
-			return parent::__construct($params);
-			
-		} else {
-		
-			owa_coreAPI::notice("Controller not called from CLI");
-			exit;
-		}
-	}
-	
-		
+
+    var $is_admin = true;
+
+    /**
+     * Constructor
+     *
+     * @param array $params
+     * @return owa_controller
+     */
+    function __construct($params) {
+
+        if ( owa_coreAPI::getSetting('base', 'request_mode') === 'cli' ) {
+
+            return parent::__construct($params);
+
+        } else {
+
+            owa_coreAPI::notice("Controller not called from CLI");
+            exit;
+        }
+    }
+
+
 }
 
 ?>

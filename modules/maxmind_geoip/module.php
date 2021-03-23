@@ -26,55 +26,55 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.4.0
+ * @version        $Revision$
+ * @since        owa 1.4.0
  */
 
 class owa_maxmind_geoipModule extends owa_module {
-	
-	var $method;
-	
-	function __construct() {
-		
-		$this->name = 'maxmind_geoip';
-		$this->display_name = 'Maxmind GeoIP';
-		$this->group = 'geoip';
-		$this->author = 'Peter Adams';
-		$this->version = '1.0';
-		$this->description = 'Performs Maxmind Geo-IP lookups.';
-		$this->config_required = false;
-		$this->required_schema_version = 1;
-		
-		$mode = owa_coreAPI::getSetting('maxmind_geoip', 'lookup_method');
-		
-		switch ( $mode ) {
-			
-			case "geoip_city_isp_org_web_service":
-				$method = 'getLocationFromWebService';
-				break;
-				
-			case "city_lite_db":
-				$method = 'getLocation';
-				break;
-				
-			default:
-				$method = 'getLocation';
-		}
-		
-		$this->method = $method;
-		
-		// needed so default filters will not fun
-		owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
-		
-		
-		return parent::__construct();
-	}
-	
-	function registerFilters() {
-		
-		if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
-		
-			$this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
-		}
-	}
+
+    var $method;
+
+    function __construct() {
+
+        $this->name = 'maxmind_geoip';
+        $this->display_name = 'Maxmind GeoIP';
+        $this->group = 'geoip';
+        $this->author = 'Peter Adams';
+        $this->version = '1.0';
+        $this->description = 'Performs Maxmind Geo-IP lookups.';
+        $this->config_required = false;
+        $this->required_schema_version = 1;
+
+        $mode = owa_coreAPI::getSetting('maxmind_geoip', 'lookup_method');
+
+        switch ( $mode ) {
+
+            case "geoip_city_isp_org_web_service":
+                $method = 'getLocationFromWebService';
+                break;
+
+            case "city_lite_db":
+                $method = 'getLocation';
+                break;
+
+            default:
+                $method = 'getLocation';
+        }
+
+        $this->method = $method;
+
+        // needed so default filters will not fun
+        owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
+
+
+        return parent::__construct();
+    }
+
+    function registerFilters() {
+
+        if ( owa_coreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
+
+            $this->registerFilter('geolocation', 'maxmind', $this->method, 0, 'classes');
+        }
+    }
 }

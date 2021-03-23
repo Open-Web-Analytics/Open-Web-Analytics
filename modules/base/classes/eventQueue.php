@@ -24,73 +24,73 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 
 class owa_eventQueue  {
 
-	var $queue_name;
-	
-	function __construct( $map = array() ) {
-		
-		if ( ! isset( $map['queue_name'] ) ) {
-			$this->queue_name = 'somequeue';
-		} else {
-			$this->queue_name = $map['queue_name'];	
-		}
-	}
-	
-	// deprecated
-	function addToQueue( $event ) {
-		
-		return $this->sendMessage( $event );
-	}
-	
-	function processQueue() {
-		
-		return false;
-	}
-	
-	function connect() {
-		
-		return true;
-	}
-	
-	function disconnect() {
-		
-		return true;
-	}
-	
-	function sendMessage( $event) {
-		
-		return false;
-	}
-	
-	function receiveMessage() {
-		
-		return false;
-	}
-	
-	function deleteMessage( $id ) {
-		
-		return true;
-	}
-	
-	function prepareMessage( $msg ) {
-		
-		return serialize( $msg );
-	}
-	
-	function decodeMessage ( $msg ) {
-		
-		return unserialize( $msg );
-	}
-	
-	function pruneArchive ( $interval ) {
-		
-		return false;
-	}
+    var $queue_name;
+    
+    function __construct( $map = array() ) {
+        
+        if ( ! isset( $map['queue_name'] ) ) {
+            $this->queue_name = 'somequeue';
+        } else {
+            $this->queue_name = $map['queue_name'];    
+        }
+    }
+    
+    // deprecated
+    function addToQueue( $event ) {
+        
+        return $this->sendMessage( $event );
+    }
+    
+    function processQueue() {
+        
+        return false;
+    }
+    
+    function connect() {
+        
+        return true;
+    }
+    
+    function disconnect() {
+        
+        return true;
+    }
+    
+    function sendMessage( $event) {
+        
+        return false;
+    }
+    
+    function receiveMessage() {
+        
+        return false;
+    }
+    
+    function deleteMessage( $id ) {
+        
+        return true;
+    }
+    
+    function prepareMessage( $msg ) {
+        
+        return serialize( $msg );
+    }
+    
+    function decodeMessage ( $msg ) {
+        
+        return unserialize( $msg );
+    }
+    
+    function pruneArchive ( $interval ) {
+        
+        return false;
+    }
 }
 
 ?>

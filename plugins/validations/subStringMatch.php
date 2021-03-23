@@ -24,50 +24,45 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
  
  class owa_subStringMatchValidation extends owa_validation {
- 	
- 	function __construct() {
- 		
- 		return parent::__construct();
- 	}
- 	
- 	function validate() {
- 		
- 		$value = $this->getValues();
- 		$length = strlen($this->getConfig('match'));
- 		$str = substr($value, $this->getConfig('position'), $length);
- 		
- 		switch ($this->getConfig('operator')) {
- 			
- 			case "=":
- 				
- 				if ($str != $this->getConfig('match')) {
- 					$this->hasError();
- 					//print $str;
- 				}
- 				
- 			break;
- 			
- 			case "!=":
- 				
- 				if ($str === $this->getConfig('match')) {
- 					$this->hasError();
- 				}
- 			
- 			break;
- 		}
-		
-		$error = $this->getErrorMsg();
-		
-		if (empty($error)) {
-			$error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $this->getConfig('match'), $this->getConfig('position')));
-		} 		
- 	}
- 	
+
+     function validate() {
+
+         $value = $this->getValues();
+         $length = strlen($this->getConfig('match'));
+         $str = substr($value, $this->getConfig('position'), $length);
+
+         switch ($this->getConfig('operator')) {
+
+             case "=":
+
+                 if ($str != $this->getConfig('match')) {
+                     $this->hasError();
+                     //print $str;
+                 }
+
+             break;
+
+             case "!=":
+
+                 if ($str === $this->getConfig('match')) {
+                     $this->hasError();
+                 }
+
+             break;
+         }
+
+        $error = $this->getErrorMsg();
+
+        if (empty($error)) {
+            $error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $this->getConfig('match'), $this->getConfig('position')));
+        }
+     }
+
  }
  
  

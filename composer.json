@@ -1,0 +1,22 @@
+{
+    "name": "open-web-analytics/open-web-analytics",
+    "description": "The open source analytics framework.",
+    "keywords": ["open-web-analytics","owa","web-analytics","analytics"],
+    "homepage": "https://www.openwebanalytics.com",
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "The OWA Team",
+            "email": "hello@openwebanalytics.com"
+        }
+    ],
+    
+    "config": {
+        "sort-packages": true
+    },
+    
+    
+    "require": {
+    "ua-parser/uap-php": "~3.9.7"
+    }
+}

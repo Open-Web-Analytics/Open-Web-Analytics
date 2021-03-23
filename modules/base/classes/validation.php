@@ -24,110 +24,128 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
  
  class owa_validation {
- 	
- 	// hold config
- 	var $conf;
- 	
- 	// hold values to validate
- 	var $values;
- 	
- 	var $hasError;
- 	
- 	var $errorMsg;
- 	
- 	var $errorMsgTemplate;
- 	
- 	function __construct($conf = array()) {
- 	
- 		if (array_key_exists('errorMsgTemplate', $conf)):
- 			$this->errorMsgTemplate = $conf['errorMsgTemplate'];
- 		endif;
- 	
- 	}
- 	
- 	function validate() {
- 		
- 		return false;
- 	}
- 	
- 	function getErrorMsg() {
- 		
- 		return $this->errorMsg;
- 	}
- 	
- 	function setErrorMsgTemplate($string) {
- 		
- 		$this->errorMsgTemplate = $string;
- 		
- 		return;
- 	}
- 	
- 	// depricated
- 	function setErrorMsg($msg) {
- 		
- 		$this->errorMsg = $msg;
- 		$this->hasError = true;
- 		
- 		return;
- 		
- 	}
- 	
- 	function setErrorMessage($msg) {
- 		$this->errorMsg = $msg;	
- 	}
- 	
- 	function isValid() {
- 		
- 		if ($this->hasError == true):
- 			return false;
- 		else:
- 			return true;
- 		endif;
- 	}
- 	
- 	function setConfig($name, $value) {
- 		
- 		$this->conf[$name] = $value;
- 		return;
- 	}
- 	
- 	function setConfigArray($array) {
- 		
- 		$this->conf = $array;
- 		return;
- 	}
- 	
- 	function getConfig($name) {
- 		
- 		if (isset( $this->conf[$name] ) ) {
- 			return $this->conf[$name];
- 		}
- 	}
- 	
- 	function setValues($values) {
- 		
- 		$this->values = $values;
- 		return;
- 	}
- 	
- 	function getValues() {
- 	
- 		return $this->values;
- 		
- 	}
- 	
- 	function hasError() {
- 		
- 		$this->hasError = true;
- 		return;
- 	}
- 	
- 	
+ 	 
+ 	 // name of param being validated.
+ 	 var $name;
+     // hold config
+     var $conf;
+
+     // hold values to validate
+     var $values;
+
+     var $hasError;
+
+     var $errorMsg;
+
+     var $errorMsgTemplate;
+
+     function __construct($conf = array()) {
+
+         if (array_key_exists('errorMsgTemplate', $conf)) {
+             $this->errorMsgTemplate = $conf['errorMsgTemplate'];
+         }
+         
+         if (array_key_exists('errorMsg', $conf)) {
+             $this->setErrorMessage( $conf['errorMsg'] );
+         }
+         
+         $this->conf = $conf;
+
+     }
+	 
+	 function setName( $name ) {
+		 
+	 	$this->name = $name;	 
+	 }
+	 
+	 function getName() {
+		 
+		 return $this->name;
+	 }
+	 
+     function validate() {
+
+         return false;
+     }
+
+     function getErrorMsg() {
+
+         return $this->errorMsg;
+     }
+
+     function setErrorMsgTemplate($string) {
+
+         $this->errorMsgTemplate = $string;
+
+         return;
+     }
+
+     // depricated
+     function setErrorMsg($msg) {
+
+         $this->errorMsg = $msg;
+         $this->hasError = true;
+
+         return;
+
+     }
+
+     function setErrorMessage($msg) {
+         $this->errorMsg = $msg;
+     }
+
+     function isValid() {
+
+         if ($this->hasError == true):
+             return false;
+         else:
+             return true;
+         endif;
+     }
+
+     function setConfig($name, $value) {
+
+         $this->conf[$name] = $value;
+         return;
+     }
+
+     function setConfigArray($array) {
+
+         $this->conf = $array;
+         return;
+     }
+
+     function getConfig($name) {
+
+         if (isset( $this->conf[$name] ) ) {
+             return $this->conf[$name];
+         }
+     }
+
+     function setValues($values) {
+
+         $this->values = $values;
+         return;
+     }
+
+     function getValues() {
+
+         return $this->values;
+
+     }
+
+     function hasError() {
+
+         $this->hasError = true;
+         return;
+     }
+
+
  }
  
 ?>

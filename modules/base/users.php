@@ -28,27 +28,36 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 class owa_usersController extends owa_adminController {
-		
-	function __construct($params) {
-		
-		$this->setRequiredCapability('edit_users');
-		return parent::__construct($params);
-	}
-	
-	function action() {
-		
-		$db = owa_coreAPI::dbSingleton();
-		$db->selectFrom('owa_user');
-		$db->selectColumn("*");
-		$users = $db->getAllRows();
-		$this->set('users', $users);
-		$this->setView('base.options');
-		$this->setSubview('base.users');
-	}
+        
+    function __construct($params) {
+        
+        $this->setRequiredCapability('edit_users');
+        return parent::__construct($params);
+    }
+    
+    function action() {
+        
+        $db = owa_coreAPI::dbSingleton();
+        $db->selectFrom('owa_user');
+        $db->selectColumn("*");
+        $users = $db->getAllRows();
+        
+        // remove this after switch to REST API in Admin Interface
+        $this->set('users', $users);
+        
+        $user_objs = owa_coreAPI::loadEntitiesFromArray( $users, 'base.user');
+        $this->set('users_objs', $user_objs );
+    }
+    
+    function success() {
+	    
+	    $this->setView('base.options');
+        $this->setSubview('base.users');
+    }
 }
 
 
@@ -60,19 +69,19 @@ class owa_usersController extends owa_adminController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$          
+ * @since        owa 1.0.0
  */
 class owa_usersView extends owa_view {
-		
-	function render() {
-		
-		//page title
-		$this->t->set('page_title', 'User Roster');
-		$this->body->set_template('users.tpl');
-		$this->body->set('headline', 'User Roster');
-		$this->body->set('users', $this->get('users'));
-	}
+        
+    function render() {
+        
+        //page title
+        $this->t->set('page_title', 'User Roster');
+        $this->body->set_template('users.tpl');
+        $this->body->set('headline', 'User Roster');
+        $this->body->set('users', $this->get('users'));
+    }
 }
 
 ?>

@@ -26,29 +26,29 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version		$Revision$	      
- * @since		owa 1.0.0
+ * @version        $Revision$
+ * @since        owa 1.0.0
  */
 
 class owa_reportSearchEnginesController extends owa_reportController {
-			
-	function action() {
-				
-		$this->setSubview('base.reportDimension');
-		$this->setTitle('Search Engines');
-		$this->set('metrics', 'visits,pageViews,bounces');
-		$this->set('dimensions', 'referralWebSite');
-		$this->set('sort', 'visits-');
-		$this->set('resultsPerPage', 30);
-		$this->set('dimensionLink', array(
-				'linkColumn' 	=> 'referralWebSite', 
-				'template' 		=> array('do' => 'base.reportSearchEngineDetail', 'referralWebSite' => '%s'), 
-				'valueColumns' 	=> 'referralWebSite'));
-		$this->set('constraints', 'medium==organic-search');
-		$this->set('trendChartMetric', 'visits');
-		$this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.');
-		$this->set('gridTitle', 'Top Search Engines');		
-	}
+
+    function action() {
+
+        $this->setSubview('base.reportDimension');
+        $this->setTitle('Search Engines');
+        $this->set('metrics', 'visits,pageViews,bounces');
+        $this->set('dimensions', 'referralWebSite');
+        $this->set('sort', 'visits-');
+        $this->set('resultsPerPage', 30);
+        $this->set('dimensionLink', array(
+                'linkColumn'     => 'referralWebSite',
+                'template'         => array('do' => 'base.reportSearchEngineDetail', 'referralWebSite' => '%s'),
+                'valueColumns'     => 'referralWebSite'));
+        $this->set('constraints', 'medium==organic-search');
+        $this->set('trendChartMetric', 'visits');
+        $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.visits.formatted_value *> visits from search engines.');
+        $this->set('gridTitle', 'Top Search Engines');
+    }
 }
 
 ?>
