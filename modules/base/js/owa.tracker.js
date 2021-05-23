@@ -94,10 +94,15 @@ OWA.commandQueue.prototype = {
 
             this.pause();
         }
+	    
+	if ( method === "unpause-owa") {
+
+            this.unpause();
+        }
 
         // check to see if the command queue has been paused
         // used to stop tracking
-        if ( ! this.is_paused ) {
+        if ( ! this.is_paused && method !== "unpause-owa") {
 
             // is OWATracker created?
             if ( typeof window[obj_name] == "undefined" ) {
@@ -106,11 +111,6 @@ OWA.commandQueue.prototype = {
             }
 
             window[obj_name][method].apply(window[obj_name], args);
-        }
-
-        if ( method === "unpause-owa") {
-
-            this.unpause();
         }
 
         if ( callback && ( typeof callback == 'function') ) {
