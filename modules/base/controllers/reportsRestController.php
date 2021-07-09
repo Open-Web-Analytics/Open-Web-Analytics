@@ -1,5 +1,5 @@
 <?php
-require_once ( OWA_VENDOR_DIR . 'autoload.php' );
+
 require_once(OWA_DIR.'owa_reportController.php');
 
 /**
