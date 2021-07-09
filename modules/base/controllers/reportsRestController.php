@@ -1,5 +1,5 @@
 <?php
-
+require_once ( OWA_VENDOR_DIR . 'autoload.php' );
 require_once(OWA_DIR.'owa_reportController.php');
 
 /**
@@ -420,6 +420,27 @@ class owa_reportsRestController extends owa_reportController {
         $results = $rs->generate($db);
 
         return $rs;
+    }
+
+    function report_transaction()
+    {
+        $db = owa_coreAPI::dbSingleton();
+        $db->selectFrom('owa_commerce_transaction_fact');
+        $db->selectColumn("*");
+        $db->where('order_id', $this->get('transactionId'));
+
+        $transaction = $db->getOneRow();
+        unset($db);
+        
+        $db = owa_coreAPI::dbSingleton();
+        $db->selectFrom('owa_commerce_line_item_fact');
+        $db->selectColumn("*");
+        $db->where('order_id', $this->get('transactionId'));
+
+        $transaction['line_items'] = $db->getAllRows();
+        unset($db);
+        
+        return $transaction;
     }
 
 function report_clicks() {
