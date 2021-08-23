@@ -45,14 +45,19 @@ class owa_trackingEventHelpers {
         }
     }
 
+/*
     public function setEnvironmentals( $event ) {
 
         foreach ( $this->environmentals as $k => $v ) {
             // loop and execute call backs.
-            $event->set( $k, call_user_func( $this->environmentals[ $k ][ 'default_value' ][0] ) );
+            if (! $event->get( $k ) ) {
+	            
+            	$event->set( $k, call_user_func( $this->environmentals[ $k ][ 'default_value' ][0] ) );
+            }
         }
 
     }
+*/
 
     public function registerCallbacks( $items, $priority = 0 ) {
 
@@ -228,9 +233,13 @@ class owa_trackingEventHelpers {
         return owa_coreAPI::getServerParam('REMOTE_HOST');
     }
 
-    static function userAgentDefault() {
-
-        return owa_coreAPI::getServerParam('HTTP_USER_AGENT');
+    static function userAgentDefault( $ua = '') {
+		
+		if (! $ua ) {
+			
+			$ua = owa_coreAPI::getServerParam('HTTP_USER_AGENT');
+		}
+        return $ua;
     }
 
     static function httpHostDefault() {
@@ -585,6 +594,8 @@ class owa_trackingEventHelpers {
 
             // Do the host lookup
             $ip_address = $event->get( 'ip_address' );
+            
+            $remote_host = '';
 
             // Do the host lookup
 
@@ -601,7 +612,9 @@ class owa_trackingEventHelpers {
 
                 $remote_host = @gethostbyaddr( $ip_address );
             }
+            
             owa_coreAPI::debug(print_r($remote_host, true));
+            
             if ( $remote_host
                  && $remote_host != $ip_address
                  && $remote_host != 'unknown'

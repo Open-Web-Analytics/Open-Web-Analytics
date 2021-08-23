@@ -17,7 +17,7 @@
 //
 
 require_once('owa_env.php');
-require_once(OWA_DIR.'owa_php.php');
+require_once(OWA_DIR.'owa.php');
 
 /**
  * Main Admin Page Wrapper Script
@@ -32,7 +32,7 @@ require_once(OWA_DIR.'owa_php.php');
  */
 
 // Initialize owa admin
-$owa = new owa_php;
+$owa = new owa;
 
 if (!$owa->isOwaInstalled()) {
     // redirect to install

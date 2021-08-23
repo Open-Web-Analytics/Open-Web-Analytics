@@ -332,31 +332,6 @@ class owa_client extends owa_caller {
     }
 
     /**
-     * Logs tracking event from url params taken from request scope.
-     * Takes event type from url.
-     *
-     * @return unknown
-     */
-    function logEventFromUrl($manage_state = false) {
-
-        // keeps php executing even if the client closes the connection
-        ignore_user_abort(true);
-        $service = owa_coreAPI::serviceSingleton();
-        $service->request->decodeRequestParams();
-        $event = owa_coreAPI::supportClassFactory('base', 'event');
-        $event->setEventType(owa_coreAPI::getRequestParam('event_type'));
-        $event->setProperties($service->request->getAllOwaParams());
-
-        // check for third party cookie mode.
-        $mode = owa_coreAPI::getRequestParam('thirdParty');
-        if ( $mode ) {
-            return $this->trackEvent($event);
-        } else {
-            return owa_coreAPI::logEvent($event->getEventType(), $event);
-        }
-    }
-
-    /**
      * Logs tracking event
      *
      * This function fires a tracking event that will be processed and then dispatched

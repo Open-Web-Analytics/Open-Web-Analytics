@@ -17,7 +17,7 @@
 //
 
 include_once('owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa.php');
 
 /**
  * Install Page Wrapper Script
@@ -35,7 +35,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
 //define('OWA_ERROR_HANDLER', 'development');
 define('OWA_CACHE_OBJECTS', false);
 define('OWA_INSTALLING', true);
-$owa = new owa_php();
+$owa = new owa();
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // need third param here so that seting is not persisted.

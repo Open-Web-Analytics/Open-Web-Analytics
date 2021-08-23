@@ -19,7 +19,17 @@
         <?php foreach ($validation_errors as $validation_error): ?>
         <li>
             <?php if (isset($validation_error['headline'])) : ?><b><?php $this->out( $validation_error['headline'] ); ?>!</b><?php endif; ?>
-            <?php if (isset($validation_error['message'])) : $this->out( $validation_error['message'] ); endif; ?>
+            <?php 
+	            
+	            if (isset($validation_error['message'])) {
+	            
+	            	$this->out( $validation_error['message'] ); 
+	             
+	             } else {
+		             // backwards compatabilitiy wth old style msgs used by validators
+		             $this->out( $validation_error );
+	             }
+	        ?>
         </li>
         <?php endforeach;?>
     </ul>

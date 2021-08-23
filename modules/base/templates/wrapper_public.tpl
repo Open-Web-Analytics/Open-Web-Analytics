@@ -3,7 +3,7 @@
 
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-        <title><?php echo $page_title;?> - Open Web Analytics</title>
+        <title><?php if (isset($page_title)) { $this->out( $page_title . ' - '); } ?>Open Web Analytics</title>
         <?php include($this->getTemplatePath('base','head.tpl'));?>
     </head>
 
@@ -27,7 +27,7 @@
 
             <BR><BR><BR><BR>
             <div style="text-align:center">
-                <span class="inline_h4"><a href="http://www.openwebanalytics.com">Web Analytics</a> powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a> - v: <?php echo OWA_VERSION;?></span>
+                <span class="inline_h4"><a href="http://www.openwebanalytics.com">Web Analytics</a> powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a>.</span>
             </div>
         </div>
 

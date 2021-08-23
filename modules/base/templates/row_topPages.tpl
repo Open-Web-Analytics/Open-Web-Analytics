@@ -1,2 +1,0 @@
-<TD class="item_cell"><a href="<?php echo $this->makeLink(array('do' => 'base.reportDocument', 'document_id' => $row['document_id']), true);?>"><?php echo $this->truncate($row['page_title'], 100, '...');?></a> (<?php echo $row['page_type'];?>)</TD>
-<TD class="data_cell"><?php echo $row['count']?></TD>

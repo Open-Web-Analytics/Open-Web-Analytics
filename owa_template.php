@@ -627,23 +627,6 @@ class owa_template extends Template {
         return owa_coreAPI::performAction($do, $final_params);
     }
 
-    function getInpageWidget($do, $params = array()) {
-
-        return owa_template::getWidget($do, $params, 'inpage');
-
-    }
-
-    function getSparkline($metric, $metric_col, $period = '', $height = 25, $width = 250, $map = array(), $add_state = true) {
-
-        $map['metric'] = $metric;
-        $map['metric_col'] = $metric_col;
-        $map['period'] = $period;
-        $map['height'] = $height;
-        $map['width'] = $width;
-        return owa_template::getWidget('base.widgetSparkline', $map, false, $add_state);
-
-    }
-
     function makeJson($array) {
 
         $reserved_words = owa_coreAPI::getSetting('base', 'reserved_words');
@@ -1004,30 +987,6 @@ class owa_template extends Template {
     function getCurrentUser() {
 
         return owa_coreAPI::getCurrentUser();
-    }
-
-    function getLatestActions( $startDate, $endDate, $siteId, $visitorId = '', $sessionId = '', $width = '300px', $resultsPerPage = 25, $page = 1 ) {
-
-        $la = owa_coreAPI::executeApiCommand(array(
-
-            'do'                => 'getLatestActions',
-            'siteId'            => $siteId,
-            'page'                => $page,
-            'startDate'            => $startDate,
-            'endDate'            => $endDate,
-            'visitorId'            => $visitorId,
-            'sessionId'            => $sessionId,
-            'resultsPerPage'    => $resultsPerPage
-        ));
-
-
-        $items = $la->getResultsRows();
-
-        $t = new owa_template;
-        $t->set('items', $items);
-        $t->set('width', $width);
-        $t->set_template('widget_latestActions.php');
-        return $t->fetch();
     }
 
     public function getSiteThumbnail( $domain, $width = '200' ) {

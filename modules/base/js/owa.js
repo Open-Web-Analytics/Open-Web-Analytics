@@ -1,4 +1,11 @@
-    var OWA = {
+/**
+ * OWA Global Object 
+ *	
+ * @author      Peter Adams <peter@openwebanalytics.com>
+ * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
+ * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
+ */
+var OWA = {
 
     items: {},
     hooks: {
@@ -998,12 +1005,49 @@ OWA.util =  {
     
     loadScript: function (url, callback){
 
-           return LazyLoad.js(url, callback);
+       var script = document.createElement("script");
+	   script.type = "text/javascript";
+	
+	    if (script.readyState) {  //IE
+		    
+	        script.onreadystatechange = function(){
+		        
+	            if (script.readyState == "loaded" || script.readyState == "complete") {
+		            
+	                script.onreadystatechange = null;
+	                callback();
+	            }
+	        };
+	        
+	    } else {  //Others
+	        
+	        script.onload = function() {
+	            
+	            callback();
+	        };
+	    }
+	    
+	    script.src = url;
+		document.getElementsByTagName("head")[0].appendChild(script);
+    
     },
 
     loadCss: function (url, callback){
 
-        return LazyLoad.css(url, callback);
+        // Create new link Element 
+        var link = document.createElement('link');  
+  
+        // set the attributes for link element 
+        link.rel = 'stylesheet';  
+      
+        link.type = 'text/css'; 
+      
+        link.href = url;  
+  
+        // Get HTML head element to append  
+        // link element to it  
+        document.getElementsByTagName('HEAD')[0].appendChild(link); 
+
     },
     
     parseCookieString: function parseQuery(v) {

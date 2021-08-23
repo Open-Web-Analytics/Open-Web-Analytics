@@ -2233,13 +2233,7 @@ class owa_baseModule extends owa_module {
             'output_dir'    => OWA_MODULES_DIR.'base/js/',
             'type'            => 'js',
             'files'            => array(
-                    'json2'         => array(
-                                            'path'             => OWA_MODULES_DIR.'base/js/includes/json2.js',
-                                            'compression'    => 'minify'
-                                        ),
-                    'lazyload'        => array(
-                                            'path'            =>    OWA_MODULES_DIR.'base/js/includes/lazyload-2.0.min.js'
-                                        ),
+
                     'owa'            => array(
                                             'path'            =>    OWA_MODULES_DIR.'base/js/owa.js',
                                             'compression'    => 'minify'
@@ -2258,12 +2252,7 @@ class owa_baseModule extends owa_module {
             'output_dir'    => OWA_MODULES_DIR.'base/js/',
             'type'            => 'js',
             'files'            => array(
-                    'lazy-load'             => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/lazyload-2.0.min.js'
-                                                ),
-                    'json2'                 => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/json2.js'
-                                                ),
+	            
                     'jquery'                => array(
                                                     'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery-1.6.4.min.js'
                                                 ),
@@ -2287,9 +2276,6 @@ class owa_baseModule extends owa_module {
                                                 ),
                     'jqgrid'                 => array(
                                                     'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery.jqGrid.min.js'
-                                                ),
-                    'excanvas'                 => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/excanvas.compiled.js'
                                                 ),
                     'flot'                    => array(
                                                     'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.min.js'

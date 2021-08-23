@@ -32,6 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
  * @since        owa 1.0.0
  */
 
+ // keep php executing even if the client closes the connection
 ignore_user_abort(true);
 
 // turn off gzip compression
@@ -78,19 +79,26 @@ flush();
 ob_end_flush();
 
 // Create instance of OWA
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa.php');
 $config = array(
 
     'tracking_mode' => true
 );
 
-$owa = new owa_php( $config );
+$owa = new owa( $config );
 
 // check to see if this endpoint is enabled.
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-    $owa->e->debug('Logging new tracking event from request.');
-    $owa->logEventFromUrl();
+    $owa->e->debug('Logging new tracking event...');
+    
+    $service = owa_coreAPI::serviceSingleton();
+    $service->request->decodeRequestParams();
+    $event = owa_coreAPI::supportClassFactory('base', 'event');
+    $event->setEventType(owa_coreAPI::getRequestParam('event_type'));
+    $event->setProperties($service->request->getAllOwaParams());
+
+    owa_coreAPI::logEvent($event->getEventType(), $event);
 
 } else {
     // unload owa

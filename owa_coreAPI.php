@@ -52,23 +52,36 @@ class owa_coreAPI {
 
     public static function setupStorageEngine($type) {
 
-        if (!class_exists('owa_db')) {
+        if ( ! class_exists( 'owa_db' ) ) {
+	        
             require_once(OWA_BASE_CLASSES_DIR.'owa_db.php');
         }
+		
+		if ( $type ) {
+        	$connection_class = "owa_db_" . $type;
 
-        if ($type) {
-
-        $connection_class = "owa_db_" . $type;
-
-            if (!class_exists($connection_class)) {
+            if ( ! class_exists( $connection_class ) ) {
+	            
                 $connection_class_path = OWA_PLUGIN_DIR.'db/' . $connection_class . ".php";
+				
+				if ( file_exists( $connection_class_path ) ) {
+					
+	                 if ( ! require_once( $connection_class_path ) ) {
+	                     
+	                     owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
+	                     
+	                     return false;
+	                }
+	                
+				} else {
+					
+					owa_coreAPI::error("$type database connection class file not found.");
+				}
+			}
 
-                 if (!require_once($connection_class_path)) {
-                     owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
-                     return false;
-                }
-            }
-
+        } else {
+	        
+	        owa_coreAPI::error("$type is not a supported database.");
         }
 
          return true;
@@ -95,7 +108,7 @@ class owa_coreAPI {
         $ret = owa_coreAPI::setupStorageEngine($db_type);
 
          if (!$ret) {
-             owa_coreAPI::error(sprintf('Cannot locate proper db class at %s. Exiting.', $connection_class_path));
+             owa_coreAPI::error(sprintf('Failed to intialise db of type %s. Exiting.', $db_type));
              return;
         } else {
             $connection_class = 'owa_db_'.$db_type;
@@ -769,6 +782,22 @@ class owa_coreAPI {
         return $active_modules;
 
     }
+    
+    public static function getPresentModules() {
+	    $path = OWA_DIR.'modules';
+	    // Check directory exists or not
+		if( file_exists($path) && is_dir($path)) {
+        	// Scan the files in this directory
+			$result = scandir($path);
+        
+			// Filter out the current (.) and parent (..) directories
+			$files = array_diff($result, array('.', '..', 'index.php'));
+			owa_coreAPI::debug('Modules present are: ');
+			owa_coreAPI::debug( $files );
+			
+			return $files;
+		}
+    }
 
     public static function getModulesNeedingUpdates() {
 
@@ -849,65 +878,71 @@ class owa_coreAPI {
      * @param object $message
      * @return boolean
      */
-    public static function logEvent($event_type, $message = '') {
+    public static function logEvent( $event_type, $message = '') {
 
-        // debug
-        owa_coreAPI::debug("logging event $event_type");
-
-        if (owa_coreAPI::getSetting('base', 'error_log_level') > 9) {
-            owa_coreAPI::debug("PHP Server Global: ".print_r($_SERVER, true));
-        }
-
+        owa_coreAPI::debug("Logging new event $event_type");
+		
         // Check to see if named users should be logged
         if (owa_coreAPI::getSetting('base', 'log_named_users') != true) {
             $cu = owa_coreAPI::getCurrentUser();
             $cu_user_id = $cu->getUserData('user_id');
 
-            if(!empty($cu_user_id)) {
+            if( ! empty( $cu_user_id ) ) {
+	            
                 return false;
             }
         }
 
-        // do not log if the request is robotic
-        $service = owa_coreAPI::serviceSingleton();
-        $bcap = $service->getBrowscap();
-        owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);
-        if (!owa_coreAPI::getSetting('base', 'log_robots')) {
-
-            if ($bcap->robotCheck()) {
-                owa_coreAPI::debug("ABORTING: request appears to be from a robot");
-                owa_coreAPI::setRequestParam('is_robot', true);
-                return;
-            }
-            owa_coreAPI::profile(__CLASS__, __FUNCTION__, __LINE__);
-        }
-
-        // form event if one was not passed
+		// backwads compatability with old style messages
+		// @todo is this needed anymore?
         $class= 'owa_event';
-        if (!($message instanceof $class)) {
-            $event = owa_coreAPI::supportClassFactory('base', 'event');
-            $event->setProperties($message);
-            $event->setEventType($event_type);
+        
+        if ( ! ( $message instanceof $class ) ) {
+	        
+            $event = owa_coreAPI::supportClassFactory( 'base', 'event' );
+            $event->setProperties( $message );
+            $event->setEventType( $event_type );
+            
         } else {
+	        
             $event = $message;
         }
-
-        // STAGE 1 - set environmental properties from SERVER
+        
+        $service = owa_coreAPI::serviceSingleton();
+        
+        // Tracking Event processing STAGE 1
+        // sets any necessary environmental properties from SERVER global
         $teh = owa_coreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
-
-        // Filter XSS exploits from event properties
-        //$event->cleanProperties();
-
+		
         // do not log if the do not log property is set on the event.
         if ($event->get('do_not_log')) {
             return false;
         }
+        
+        // do not log if the request is robotic
+        owa_coreAPI::debug("Testing to see if event was generated by a robot");
+        owa_coreAPI::debug("User Agent: ". $message->get('HTTP_USER_AGENT') );
+        
+        $bcap = $service->getBrowscap( $message->get('HTTP_USER_AGENT') );
+       
+        if ( ! owa_coreAPI::getSetting('base', 'log_robots') ) {
+
+            if ( $bcap->robotCheck() ) {
+	            
+                owa_coreAPI::debug("ABORTING: request appears to be from a robot");
+                owa_coreAPI::setRequestParam('is_robot', true);
+                
+                return;
+            }
+        }
 
         // check to see if IP should be excluded
         if ( owa_coreAPI::isIpAddressExcluded( $event->get('ip_address') ) ) {
+	        
             owa_coreAPI::debug("Not logging event. IP address found in exclusion list.");
+            
             return false;
         }
 
@@ -923,7 +958,11 @@ class owa_coreAPI {
 
             // lookup which event processor to use to process this event type
             $processor_action = owa_coreAPI::getEventProcessor( $event->getEventType() );
-            return owa_coreAPI::handleRequest( array( 'event' => $event ), $processor_action );
+           
+			owa_coreAPI::debug('About to perform action: '.$processor_action);
+			owa_coreAPI::debug($event);
+			
+			return owa_coreAPI::performAction( $processor_action, array( 'event' => $event ) );
         }
     }
 
@@ -1096,7 +1135,7 @@ class owa_coreAPI {
         return;
     }
 
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '') {
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '') {
 
         if ( $domain ) {
             // sanitizes the domain
@@ -1747,8 +1786,10 @@ class owa_coreAPI {
 
         // do not log if ip address is on the do not log list
         $ips = owa_coreAPI::getSetting( 'base', 'excluded_ips' );
-        owa_coreAPI::debug('excluded ips: '.$ips);
+        
         if ( $ips ) {
+	        
+	        owa_coreAPI::debug('Excluded ip address list: '.$ips);
 
             $ips = trim( $ips );
 

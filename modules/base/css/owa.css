@@ -140,7 +140,7 @@ div {margin:0;}
 .inline_h3 {font-size:16px;}
 .inline_h4 {font-size:14px;}
 .headline {font-size:20px; background-color:orange;color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
-.panel_headline {font-size:18px; background-color:#FFF8DC;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
+.panel_headline {font-size:18px; background-color:#efefef;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
 
 /* DATA TABLES */
@@ -151,7 +151,7 @@ div {margin:0;}
 .layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
 td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
-.layout_subview {margin: 0px; padding:0px;border-collapse: collapse;}
+.layout_subview {margin: 0px; padding:0px;border-collapse: collapse; font-size: 16px; line-height: normal;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
 #nav_left {width:240px; padding:10px}
@@ -197,14 +197,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     margin:20px 40px 20px 40px;
     padding: 20px 10px 20px 20px;
     background-color: #FF4040;
-    font-size: 14px;
-    font-weight:;
-    -moz-border-radius:5px 5px 5px 5px;
-    -moz-box-shadow:2px 2px 2px 1px #9f9f9f;
-    border-radius:5px 5px 5px 5px;
-    box-shadow:2px 2px 2px 1px #9f9f9f;
-    -webkit-border-radius:5px 5px 5px 5px;
-    -webkit-box-shadow:2px 2px 2px 1px #9f9f9f;
+    font-size: 14px; 
 }
 
 .owa .status {

@@ -6,7 +6,7 @@
 
     <form method="POST">
 
-    <table class="management" style="width:auto;">
+    <table class="management">
         <?php if ($edit == true):?>
         <TR>
             <TH>Site ID:</TH>
@@ -30,8 +30,8 @@
         </TR>
         <TR>
             <TH>Site Name:</TH>
-            <TD><input type="text" name="<?php echo $this->getNs();?>name" size="52" maxlength="70" value="<?php $this->out( @$site['name'] );?>"><BR>
-				Example: The Best Website            
+            <TD><input type="text" name="<?php echo $this->getNs();?>name" size="52" maxlength="70" value="<?php $this->out( @$site['name'] );?>">
+				<span class="form-instructions">Example: My Website</span>            
             </TD>
         </TR>
         <TR>

@@ -20,7 +20,7 @@ ignore_user_abort(true);
 set_time_limit(180);
 
 include_once('owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_BASE_DIR.'/owa.php');
 
 /**
  * Remote Event Queue Endpoint
@@ -34,7 +34,7 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since        owa 1.3.0
  */
 
-$owa = new owa_php();
+$owa = new owa();
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 

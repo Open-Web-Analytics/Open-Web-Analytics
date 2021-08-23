@@ -68,7 +68,7 @@ class owa_caller extends owa_base {
         $this->start_time = owa_lib::microtime_float();
         
         /* SETUP CONFIGURATION AND ERROR LOGGER */
-        
+       
         // Parent Constructor. Sets default config entity and error logger
         parent::__construct();
         
@@ -89,14 +89,10 @@ class owa_caller extends owa_base {
         // load config values from DB
         // Applies config from db or cache
         // check here is needed for installs when the configuration table does not exist.
-        
-        if (!defined('OWA_INSTALLING')) {
-            if ($this->c->get('base', 'do_not_fetch_config_from_db') != true) {
-                if ($this->c->isConfigFilePresent())  {
-                    $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
-                }
-            }
-        }
+               
+        if ($this->c->isConfigFilePresent())  {
+            $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
+        }   
         
         // set timezone once config is loaded from DB.
         $this->c->setTimezone();

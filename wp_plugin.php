@@ -189,11 +189,6 @@ class owa_wp_plugin extends owa_wp_module {
 			$this->options = array_merge($this->options, $user_defaults);
 		}
 		
-		
-		// needed for backwards compatability of old style embedded installs.
-		// must go after user default merge
-		$this->setEmbeddedOptions(); 
-		
 		// fetch plugin options from DB and combine them with defaults.
 		$options = get_option( 'owa_wp' );
 		//echo 'options from DB: '. print_r( $options, true );
@@ -201,6 +196,10 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			$this->options = array_merge($this->options, $options);
 		}
+		
+		// needed for backwards compatability of old style embedded installs.
+		// must go after user default merge
+		$this->setEmbeddedOptions(); 
 	}
 	
 	/**
@@ -410,7 +409,9 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if ( $this->getOption( 'owaPath' ) ) {
 			
-			return true;			
+			$owa = owa_wp_plugin::getOwaInstance();
+			
+			return $owa->isOwaInstalled();		
 		}
 
 	}
@@ -799,7 +800,7 @@ class owa_wp_plugin extends owa_wp_module {
 	// backward compatability for old style embedded installs.
 	private function setEmbeddedOptions() {
 		
-		// check for presense of OWA in same directory.
+		// check for presence of OWA in same directory.
 		// used by isOwaAvailable method.
 		$path =  plugin_dir_path(__FILE__) ;
 		
@@ -814,8 +815,13 @@ class owa_wp_plugin extends owa_wp_module {
 			$this->setOption('trackAdminActions', true);
 			
 			$owa = self::getOwaInstance();
-			$cu = owa_coreAPI::getCurrentUser();
-			$this->setOption('apiKey', $cu->getUserData('api_key') );
+			
+			if ( ! $this->getOption('apiKey') ) {
+				
+				$cu = owa_coreAPI::getCurrentUser();
+				$this->setOption('apiKey', $cu->getUserData('api_key') );
+			}
+			
 			$this->setOption('owaEndpoint', $owa->getSetting('base', 'public_url') );
 			
 			// set site iD, if not already set from the DB	
@@ -1138,34 +1144,47 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		if( empty( $owa ) ) {
 				
-				require_once('owa_env.php');
-				require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
-				
-				// create owa instance w/ config
-				$owa = new owa_php();
-				$owa->setSiteId( self::generateSiteId() );
-				//$owa->setSetting( 'base', 'report_wrapper', 'wrapper_wordpress.tpl' );
-				//$owa->setSetting( 'base', 'link_template', '%s&%s' );
-				//$owa->setSetting( 'base', 'main_url', '../wp-admin/admin.php?page=owa-analytics' );
-				//$owa->setSetting( 'base', 'main_absolute_url', get_bloginfo('url').'/wp-admin/admin.php?page=owa-analytics' );
-				
-				//$owa->setSetting( 'base', 'rest_api_url', $owa->getSetting( 'base', 'rest_api_url' ).'?');
-				$owa->setSetting( 'base', 'is_embedded', true );
-				
-				$current_user = wp_get_current_user();
-				owa_coreAPI::debug( 'get owa instance curent user obj' );
-				owa_coreAPI::debug( 'WordPrerss login: '.$current_user->user_login );
-				if ( $current_user->user_login ) {
-					owa_coreAPI::debug('loading OWA current user');
-					$cu = owa_coreAPI::getCurrentUser();
-					$cu->load( $current_user->user_login ); 
-				}
-				
-				// register allowedSitesList filter
-				$dispatch = owa_coreAPI::getEventDispatch();
-				// alternative auth method, sets auth status, role, and allowed sites list.
-				$dispatch->attachFilter('auth_status', 'owa_wp_plugin::wpAuthUser', 0);	
+			require_once('owa_env.php');
+			require_once(OWA_BASE_CLASSES_DIR.'owa_php.php');
 			
+			// create owa instance w/ config
+			$owa = new owa_php();
+			
+			if ( $owa->isOwaInstalled() ) {
+			
+				$owa->setSiteId( self::generateSiteId() );
+
+				$owa->setSetting( 'base', 'is_embedded', true );
+			
+				$current_user = wp_get_current_user();
+				owa_coreAPI::debug( 'WordPress login: '.$current_user->user_login );
+				if ( $current_user->user_login ) {
+					
+					// check to see if user exists in OWA.
+					$user = owa_coreApi::entityFactory('base.user');
+					$user->load($current_user->user_login, 'user_id');
+					
+					if (! $user->get('id') ) {
+						
+						// if not create it
+						$user->createNewUser(
+							$current_user->user_login, 
+							owa_wp_plugin::translateAuthRole( $current_user->roles ), 
+							$password = '', 
+							$current_user->user_email, 
+							$current_user->first_name.' '.$current_user->last_name
+						);
+						
+					} else {
+						
+						// or load from db
+						owa_coreAPI::debug('loading OWA current user');
+						$cu = owa_coreAPI::getCurrentUser();
+						$cu->load( $current_user->user_login );	
+					}
+					
+				}
+			}
 		}
 		
 		return $owa;
@@ -1208,100 +1227,7 @@ class owa_wp_plugin extends owa_wp_module {
 		// insert iframe of OWA endpoint						
 		echo sprintf('<iframe id="owa_wp_analytics" src="%s" style="display: block; width: 100%%; height:100vh;border: none; overflow-y: hidden; overflow-x: hidden;" height="100%%" >', $url);
 	}
-	
-	/**
-	 * OWA Schema and setting installation
-	 *
-	 */
-	public static function install() {
 		
-		define('OWA_INSTALLING', true);
-		
-		$owa = self::getOwaInstance($params);
-		
-		if ( $owa ) {
-			
-			owa_coreAPI::notice( 'Starting Embedded Install...' );
-			$owa->setSetting( 'base', 'cache_objects', false );	
-			$public_url = plugin_dir_url( __FILE__ );
-			$install_params = array('site_id' 		=> md5(get_option('siteurl')), 
-									'name' 	  		=> get_bloginfo('name'),
-									'domain' 		=> get_option('siteurl'), 
-									'description' 	=> get_bloginfo('description'),
-									'action' 		=> 'base.installEmbedded',
-									'db_type' 		=> 'mysql',
-									'db_name' 		=> DB_NAME,
-									'db_host' 		=> DB_HOST,
-									'db_user' 		=> DB_USER,
-									'db_password' 	=> DB_PASSWORD,
-									'public_url' 	=> $public_url
-									);
-			
-			$owa->handleRequest($install_params);
-		}
-	}
-
-	/**
-	 * OWA Authenication filter
-	 *
-	 * Uses WordPress priviledge system to determine OWA authentication levels.
-	 *
-	 * @return boolean
-	 */
-	static function wpAuthUser($auth_status) {
-
-		$current_user = wp_get_current_user();
-		
-	    if ( $current_user instanceof WP_User ) { 
-	    	// logged in, authenticated
-	    	$cu = owa_coreAPI::getCurrentUser();
-	    	
-	    	$cu->setAuthStatus(true);
-	    	
-	    	if (isset($current_user->user_login)) {
-				$cu->setUserData('user_id', $current_user->user_login);
-				owa_coreAPI::debug("Wordpress User_id: ".$current_user->user_login);
-				$cu->load( $current_user->user_login );
-			}
-			
-			if (isset($current_user->user_email)) {	
-				$cu->setUserData('email_address', $current_user->user_email);
-			}
-			
-			if (isset($current_user->first_name)) {
-				$cu->setUserData('real_name', $current_user->first_name.' '.$current_user->last_name);
-				$cu->setRole( owa_wp_plugin::translateAuthRole( $current_user->roles ) );
-			}
-			
-			owa_coreAPI::debug("Wordpress User Role: ".print_r($current_user->roles, true));
-			owa_coreAPI::debug("Wordpress Translated OWA User Role: ".$cu->getRole());
-			
-			// fetch the list of allowed blogs from WP
-			$domains = array();
-			$allowedBlogs = get_blogs_of_user($current_user->ID);
-		
-			foreach ( $allowedBlogs as $blog) {
-				$domains[] = $blog->siteurl;		
-			}
-			
-			// check to see if we are installing before trying to load sites
-			// other wise you run into a race condition as config file
-			// might not be created.
-			if (! defined('OWA_INSTALLING') ) {
-				// load assigned sites list by domain
-	    		$cu->loadAssignedSitesByDomain($domains);
-	    	}
-	    	
-			$cu->setInitialized();
-	    
-	    	return true;
-	    
-	    } else {
-	    	// not logged in to WP and therefor not authenticated
-	    	return false;
-	    }	
-	}
-	
 	/**
 	 * Translate WordPress to OWA Authentication Roles
 	 *

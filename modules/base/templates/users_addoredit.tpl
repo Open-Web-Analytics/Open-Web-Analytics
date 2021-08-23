@@ -4,7 +4,7 @@
 
     <legend>User Profile</legend>
 
-    <TABLE class="form">
+    <TABLE class="management">
 
         <form method="POST">
         <TR>
@@ -53,7 +53,7 @@
                 <input type="hidden" name="<?php echo $this->getNs();?>id" value="<?php $this->out( @$user['id'] );?>">
                 <?php echo $this->createNonceFormField($action);?>
                 <input type="hidden" name="<?php echo $this->getNs();?>action" value="<?php echo $action;?>">
-                <input type="submit" value="Save" name="<?php echo $this->getNs();?>save_button">
+                <input class="owa-button" type="submit" value="Save" name="<?php echo $this->getNs();?>save_button">
             </TD>
         </TR>
         </form>
