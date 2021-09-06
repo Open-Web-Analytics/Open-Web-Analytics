@@ -1,4 +1,4 @@
-/* OWA owa.tracker package file created Thu, 13 Aug 20 11:20:45 -0700 */ 
+/* OWA owa.tracker package file created Sun, 05 Sep 21 18:19:47 -0700 */ 
 
 /* Start of owa */ 
 
@@ -30,7 +30,7 @@ return nsObj;},getScript:function(file,path){jQuery.getScript(path+file);return;
 else var expires="";document.cookie=name+"="+value+expires+"; path=/";},setCookie:function(name,value,days,path,domain,secure){var date=new Date();date.setTime(date.getTime()+(days*24*60*60*1000));document.cookie=name+"="+escape(value)+
 ((days)?"; expires="+date.toGMTString():"")+
 ((path)?"; path="+path:"")+
-((domain)?"; domain="+domain:"")+
+((domain)?"; domain="+domain:"")+'; SameSite=Lax'+
 ((secure)?"; secure":"");},readAllCookies:function(){OWA.debug('Reading all cookies...');var jar={};var ca=document.cookie.split(';');if(ca){OWA.debug(document.cookie);for(var i=0;i<ca.length;i++){var cat=OWA.util.trim(ca[i]);var pos=OWA.util.strpos(cat,'=');var key=cat.substring(0,pos);var value=cat.substring(pos+1,cat.length);if(!jar.hasOwnProperty(key)){jar[key]=[];}
 jar[key].push(value);}
 OWA.debug(JSON.stringify(jar));return jar;}},readCookie:function(name){OWA.debug('Attempting to read cookie: %s',name);var jar=OWA.util.readAllCookies();if(jar){if(jar.hasOwnProperty(name)){return jar[name];}else{return'';}}},eraseCookie:function(name,domain){OWA.debug(document.cookie);if(!domain){domain=OWA.getSetting('cookie_domain')||document.domain;}
