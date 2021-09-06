@@ -727,8 +727,6 @@ class owa_adminView extends owa_view {
  */
 class owa_restApiView extends owa_view {
 	
-	
-	
 	function __construct() {
 	 	
 	 	parent::__construct();
@@ -737,9 +735,6 @@ class owa_restApiView extends owa_view {
         $this->t->set_template('wrapper_blank.tpl');
         
         $this->body->set_template('restApiResponse.php');
-	 	
-	 	
-	 	
     }
     
     /**
@@ -772,7 +767,10 @@ class owa_restApiView extends owa_view {
 			owa_lib::setContentTypeHeader( $type );
 			
 			// set cahce-control header to avid downstream caching.
-			header("Cache-Control: max-age=0");		   
+			header("Cache-Control: max-age=0");		  
+			
+			// add CORS request headers
+			$this->addCorsHeaders(); 
 	   }
 
 	   
@@ -810,6 +808,36 @@ class owa_restApiView extends owa_view {
     function setResponseData( $data ) {
 	    
 	    $this->body->set( 'response_data', $data );
+    }
+    
+    function addCorsHeaders() {
+	    
+	    $s = owa_coreAPI::serviceSingleton();
+	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');
+	    
+	    // check for ORGIN header and bail if not found.
+        if ( ! isset( $HTTP_ORIGIN ) || $HTTP_ORIGIN == '') {
+	       
+            return;
+        }
+
+        // Loop through sites list and add cors headers if the ORGIN header is present on the request
+        foreach ( owa_coreAPI::getSitesList() as $allowedOrigin ) {
+        	
+        	if ( $allowedOrigin !== $HTTP_ORIGIN ) {
+	        	
+            	continue;
+            }
+			
+			// send back the allowed orgin
+            header( 'Access-Control-Allow-Origin: ' . $HTTP_ORIGIN );
+            
+            // needed to allow cookie content to become available to the DOM.
+            header( "Access-Control-Allow-Credentials: true" );
+            
+            // stop the loop
+            break;
+        }
     }
 }
 

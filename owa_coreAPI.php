@@ -1135,7 +1135,7 @@ class owa_coreAPI {
         return;
     }
 
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '') {
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false) {
 
         if ( $domain ) {
             // sanitizes the domain
@@ -1158,12 +1158,10 @@ class owa_coreAPI {
         if (!owa_coreAPI::getSetting('base', 'cookie_persistence')) {
             $expires = 0;
         }
-
-        // set compact privacy header
-        header(sprintf('P3P: CP="%s"', owa_coreAPI::getSetting('base', 'p3p_policy')));
+		
         //owa_coreAPI::debug('time: '.$expires);
-        setcookie($cookie_name, $cookie_value, $expires, $path, $domain);
-        return;
+        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
+        
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
@@ -1284,6 +1282,16 @@ class owa_coreAPI {
 		// Lookup controler for REST API route.
 		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
 			
+			// get request method
+			$request_method = $service->request->getRequestType();
+			
+			// check to see if this is a CORS pre-flight Request
+			if ($request_method == 'OPTIONS') {
+				
+				$controller = owa_lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );					
+				return owa_coreAPI::runController( $controller );
+			}
+			
 			// check for rewriten rest params and set module, version, and do params from that
 			$rest_params = self::getRequestParam('rest_params');
 			
@@ -1307,7 +1315,6 @@ class owa_coreAPI {
 			
 			if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
 			
-				$request_method = $service->request->getRequestType();
 				$route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
 				
 				if ( $route ) {
