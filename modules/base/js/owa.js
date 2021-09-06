@@ -910,6 +910,7 @@ OWA.util =  {
         ((days) ? "; expires=" + date.toGMTString() : "") +
         ((path) ? "; path=" + path : "") +
         ((domain) ? "; domain=" + domain : "") +
+        '; SameSite=Lax' +
         ((secure) ? "; secure" : "");
     },
     
