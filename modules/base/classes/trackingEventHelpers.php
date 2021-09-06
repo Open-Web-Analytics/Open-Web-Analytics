@@ -314,6 +314,11 @@ class owa_trackingEventHelpers {
                 array_pop($ip);
                 $ip = implode('.', $ip);
                 $ip .= '.0';
+            }elseif ($ip && strpos($ip, ':')) {
+                $ip = explode(':', $ip, 4);
+                array_pop($ip);
+                $ip = implode(':', $ip);
+                $ip .= '::';
             }
         }
 
