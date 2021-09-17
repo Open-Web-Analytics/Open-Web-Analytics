@@ -415,27 +415,39 @@ class owa_lib {
 
         return $periods[$period]['label'];
     }
-
+	
+	public static function isHttps() {
+		
+		// check for https
+		
+        if( 
+        	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' ) 
+        	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
+        	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
+        	|| ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
+        	|| ( ( isset( $_SERVER['HTTP_ORIGIN'] ) && substr( $_SERVER['HTTP_ORIGIN'], 0, 5 ) === 'https' ) )
+			|| ( ( isset( $_SERVER['HTTP_REFERER'] ) && substr( $_SERVER['HTTP_REFERER'], 0, 5 ) === 'https' ) )
+		) {
+			return true;
+		}
+	}
+	
     /**
      * Assembles the current URL from request params
      *
      * @return string
      */
     public static function get_current_url() {
-
-        $url = 'http';
-
-        // check for https
-        if( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on') {
-            $url.= 's';
-        } elseif ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) {
-            $url.= 's';
-        } elseif ( isset( $_SERVER['HTTP_ORIGIN'] ) && substr( $_SERVER['HTTP_ORIGIN'], 0, 5 ) === 'https' ) {
-            $url.= 's';
-        } elseif ( isset( $_SERVER['HTTP_REFERER'] ) && substr( $_SERVER['HTTP_REFERER'], 0, 5 ) === 'https' ) {
-            $url.= 's';
-        }
-
+		
+		if ( self::isHttps() ) {
+			
+			$url = 'https';
+			
+		} else {
+			
+			$url = 'http';	
+		}
+        
         if ( isset( $_SERVER['HTTP_HOST'] ) ) {
             // contains port number
             $domain = $_SERVER['HTTP_HOST'];

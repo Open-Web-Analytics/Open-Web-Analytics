@@ -204,7 +204,7 @@ class owa_requestContainer {
         $this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 
         // set https flag
-        if( isset($_SERVER['HTTPS'] ) ) {
+        if( owa_lib::isHttps() ) {
             $this->is_https = true;
         }
     }
