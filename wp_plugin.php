@@ -157,7 +157,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		$url = network_admin_url( 'plugin-install.php?tab=search&type=term&s=Open+Web+Analytics&plugin-search-input=Search+Plugins' );
     
-		$template = '<BR><div class="update-nag "><p><b>This version of the Open Web Analytics plugin is now deprecated!</b> Please install the <a href="%s">new official OWA Integration Plugin</a> from the WordPress repository before upgrading OWA any further. <a href="https://github.com/Open-Web-Analytics/owa-wordpress-plugin/wiki/Migrating-from-the-Old-Bundled-Plugin">Learn more here!</a></p></div>';
+		$template = '<BR><div class="notice notice-error "><p><b>This version of the Open Web Analytics plugin is now deprecated!</b> Please install the <a href="%s">new official OWA Integration Plugin</a> from the WordPress repository before upgrading OWA any further. <a href="https://github.com/Open-Web-Analytics/owa-wordpress-plugin/wiki/Migrating-from-the-Old-Bundled-Plugin">Learn more here!</a></p></div>';
 		
 		echo sprintf($template, $url);
 		
