@@ -50,9 +50,10 @@ if (ob_get_level() == 0) {
 // removing any content encoding like gzip etc.
 header('Content-encoding: none', true);
 
+owa_lib::addCorsHeaders();
+
 //check to se if request is a POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
     // redirect to blank.php
     owa_lib::redirectBrowser( str_replace('log.php', 'blank.php', owa_lib::get_current_url() ) );
     // necessary or else buffer is not actually flushed
@@ -81,28 +82,25 @@ ob_end_flush();
 // Create instance of OWA
 require_once(OWA_BASE_DIR.'/owa.php');
 $config = array(
-
     'tracking_mode' => true
 );
 
 $owa = new owa( $config );
 
 // check to see if this endpoint is enabled.
-if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
-
-    $owa->e->debug('Logging new tracking event...');
-    
-    $service = owa_coreAPI::serviceSingleton();
-    $service->request->decodeRequestParams();
-    $event = owa_coreAPI::supportClassFactory('base', 'event');
-    $event->setEventType(owa_coreAPI::getRequestParam('event_type'));
-    $event->setProperties($service->request->getAllOwaParams());
-
-    owa_coreAPI::logEvent($event->getEventType(), $event);
-
-} else {
+if (!$owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     // unload owa
     $owa->restInPeace();
 }
+
+$owa->e->debug('Logging new tracking event...');
+
+$service = owa_coreAPI::serviceSingleton();
+$service->request->decodeRequestParams();
+$event = owa_coreAPI::supportClassFactory('base', 'event');
+$event->setEventType(owa_coreAPI::getRequestParam('event_type'));
+$event->setProperties($service->request->getAllOwaParams());
+
+owa_coreAPI::logEvent($event->getEventType(), $event);
 
 ?>
