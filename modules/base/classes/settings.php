@@ -739,7 +739,7 @@
          $base_url = '';
          $proto  = "http";
 
-        if(isset($_SERVER['HTTPS'])) {
+        if( owa_lib::isHttps() ) {
             $proto .= 's';
         }
         if(isset($_SERVER['SERVER_NAME'])) {
