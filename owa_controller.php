@@ -319,7 +319,7 @@ class owa_controller extends owa_base {
     // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the 
     // earliest it can happen. The u and p params will only be present if the user has logged in.
     protected function checkCapabilityAndAuthenticateUser($capability) {
-        if ( ( !empty($capability) && ! owa_coreAPI::isEveryoneCapable( $capability ) ) || ( owa_coreAPI::getStateParam('u') || owa_coreAPI::getStateParam('p') ) ) {
+        if ( ( !empty($capability) && ! owa_coreAPI::isEveryoneCapable( $capability ) ) || ( owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p') ) ) {
             /* PERFORM AUTHENTICATION */
             $auth = owa_auth::get_instance();
             if (!owa_coreAPI::isCurrentUserAuthenticated()) {
