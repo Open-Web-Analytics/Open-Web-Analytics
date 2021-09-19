@@ -23,7 +23,7 @@ This repository installs the OWA Server and Javascript tracking client which can
 
 ## Requirements and Installation
 
-See the [technical requirements] before you install OWA Server. A step by step [installation] guide will walk you through how to install OWA.
+See the [technical requirements](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Technical-Requirements) before you install OWA Server. A step by step [installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Installation) guide will walk you through how to install OWA.
 
 ## Documentation
 See the wiki for documentation about the OWA Server and the Javascript Tracker client.
