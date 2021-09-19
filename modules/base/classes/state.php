@@ -206,6 +206,8 @@ class owa_state {
         if ( ! $value && isset( $this->initial_state[$store] ) ) {
             $possible_values = $this->initial_state[$store];
         } else {
+	        //owa_coreAPI::debug( $this->initial_state );
+	        owa_coreAPI::debug("NO state store: $store found");
             return;
         }
 
