@@ -10,20 +10,11 @@ Author URI: http://www.openwebanalytics.com
 */
 
 //
-// Open Web Analytics - An Open Source Web Analytics Framework
+// THIS PLUGIN IS NOW DEPRECATED.
+// See: https://github.com/Open-Web-Analytics/owa-wordpress-plugin/wiki/Migrating-from-the-Old-Bundled-Plugin
 //
-// Copyright 2008 Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
+
+
 
 // if this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
