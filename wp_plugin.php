@@ -150,7 +150,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 	function updateNag() {
 		
-		echo '<BR><div class="update-nag "><p>'. '<b>Open Web Analytics</b> updates are required before tracking can continue. <a href="/wp-admin/admin.php?page=owa-analytics">Please update now!</a></p></div>';
+		echo '<BR><div class="notice notice-error "><p>'. '<b>Open Web Analytics</b> updates are required before tracking can continue. <a href="/wp-admin/admin.php?page=owa-analytics">Please update now!</a></p></div>';
 	}
 	
 	function migrateNag() {
