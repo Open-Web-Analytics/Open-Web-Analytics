@@ -1,4 +1,4 @@
-/* OWA owa.tracker package file created Sun, 05 Sep 21 18:19:47 -0700 */ 
+/* OWA owa.tracker package file created Sun, 19 Sep 21 17:59:34 -0700 */ 
 
 /* Start of owa */ 
 
@@ -100,9 +100,9 @@ OWA.event.prototype={get:function(name){if(this.properties.hasOwnProperty(name))
 OWA.commandQueue=function(){OWA.debug('Command Queue object created');var asyncCmds=[];var is_paused=false;}
 OWA.commandQueue.prototype={push:function(cmd,callback){var args=Array.prototype.slice.call(cmd,1);var obj_name='';var method='';var check=OWA.util.strpos(cmd[0],'.');if(!check){obj_name='OWATracker';method=cmd[0];}else{var parts=cmd[0].split('.');obj_name=parts[0];method=parts[1];}
 OWA.debug('cmd queue object name %s',obj_name);OWA.debug('cmd queue object method name %s',method);if(method==="pause-owa"){this.pause();}
-if(!this.is_paused){if(typeof window[obj_name]=="undefined"){OWA.debug('making global object named: %s',obj_name);window[obj_name]=new OWA.tracker({globalObjectName:obj_name});}
-window[obj_name][method].apply(window[obj_name],args);}
 if(method==="unpause-owa"){this.unpause();}
+if(!this.is_paused&&method!=="unpause-owa"){if(typeof window[obj_name]=="undefined"){OWA.debug('making global object named: %s',obj_name);window[obj_name]=new OWA.tracker({globalObjectName:obj_name});}
+window[obj_name][method].apply(window[obj_name],args);}
 if(callback&&(typeof callback=='function')){callback();}},loadCmds:function(cmds){this.asyncCmds=cmds;},process:function(){var that=this;var callback=function(){if(that.asyncCmds.length>0){that.process();}}
 this.push(this.asyncCmds.shift(),callback);},pause:function(){this.is_paused=true;OWA.debug('Pausing Command Queue');},unpause:function(){this.is_paused=false;OWA.debug('Un-pausing Command Queue');}};OWA.tracker=function(options){this.startTime=this.getTimestamp();OWA.registerStateStore('v',364,'','assoc');OWA.registerStateStore('s',364,'','assoc');OWA.registerStateStore('c',60,'','json');OWA.registerStateStore('b','','','json');this.options=OWA.applyFilters('tracker.default_options',{logClicks:true,logPage:true,logMovement:false,encodeProperties:false,movementInterval:100,logDomStreamPercentage:100,domstreamLoggingInterval:3000,domstreamEventThreshold:10,maxPriorCampaigns:5,campaignAttributionWindow:60,trafficAttributionMode:'direct',sessionLength:1800,thirdParty:false,cookie_domain:false,campaignKeys:[{public:'owa_medium',private:'md',full:'medium'},{public:'owa_campaign',private:'cn',full:'campaign'},{public:'owa_source',private:'sr',full:'source'},{public:'owa_search_terms',private:'tr',full:'search_terms'},{public:'owa_ad',private:'ad',full:'ad'},{public:'owa_ad_type',private:'at',full:'ad_type'}],logger_endpoint:'',api_endpoint:'',maxCustomVars:5,getRequestCharacterLimit:2000});var endpoint=window.owa_baseUrl||OWA.config.baseUrl;if(endpoint){this.setEndpoint(endpoint);}else{OWA.debug('no global endpoint url found.');}
 this.endpoint=OWA.config.baseUrl;this.active=true;if(options){for(var opt in options){this.options[opt]=options[opt];}}
