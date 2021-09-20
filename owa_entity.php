@@ -267,7 +267,7 @@ class owa_entity {
         $status = $db->executeQuery();
         
         // Add to Cache
-        if ($status == true) {
+        if ($status) {
             $this->addToCache();
         }
         
