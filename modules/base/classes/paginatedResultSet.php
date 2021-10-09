@@ -34,26 +34,57 @@ class owa_paginatedResultSet {
      * to see if there are any changes.
      */
     var $guid;
-
+	
+	/**
+     * Time period of the results
+     * @object
+     */
     var $timePeriod;
+    
     var $resultsPerPage = 25;
-    var $resultsTotal;
+    
+    /**
+     * The total number of result rows available
+     * in the database
+     */
+    var $resultsTotal = 0;
+    
+    /**
+     * The total number of result rows
+     * contained in this result set
+     */
     var $resultsReturned;
-    var $resultsRows = array();
+    
     var $sortColumn;
+    
     var $sortOrder;
 
     /**
      * Aggregate values for metrics
      */
-    var $aggregates = array();
-
-    var $rows;
-
+    var $aggregates = [];
+	
+	/**
+     * Data set rows
+     */
+	var $resultsRows = [];
+	
+	/**
+     * Labels for metrics and dimensions
+     */
     var $labels;
-
+	
+	/**
+     * Convienence flag set when there are 
+     * additional pages of results 
+     */
     var $more;
+    
     var $page = 1;
+    
+    /**
+     * Total number of pages of results available
+     */
     var $total_pages;
 
     /**
@@ -81,18 +112,21 @@ class owa_paginatedResultSet {
      * The list of related dimensions that can be added to the result set
      *
      */
-    var $relatedDimensions = array();
+    var $relatedDimensions = [];
 
     /**
      * The list of related metrics that can be added to the result set
      *
      */
-    var $relatedMetrics = array();
-
-    var $results_count = 0;
-    var $offset = 0;
-    var $limit;
-    var $query_limit;
+    var $relatedMetrics = [];
+    
+    /**
+     * The list of params that make up the query
+     *
+     */ 
+    var $queryParams;
+    
+    var $errors;
 
 
     function __construct() {
@@ -102,7 +136,6 @@ class owa_paginatedResultSet {
     function setLimit($limit) {
 
         $this->resultsPerPage = $limit;
-        $this->limit = $limit;
     }
 
     function setPage($page) {
@@ -117,19 +150,18 @@ class owa_paginatedResultSet {
 
     function calculateOffset() {
 
-        $this->offset = $this->limit * ($this->page - 1);
-        return $this->offset;
+        return $this->resultsPerPage * ($this->page - 1);
     }
 
-    function countResults($results) {
+    function countResults( $results ) {
 
-        $this->resultsTotal = count($results);
-        $this->results_count = count($results);
+        $this->resultsTotal = count( $results );
 
-        if ($this->limit) {
-            $this->total_pages = ceil(($this->results_count + $this->offset) / $this->limit);
-
-            if ($this->results_count <= $this->limit) {
+        if ($this->resultsPerPage) {
+	        
+            $this->total_pages = ceil( ( $this->resultsTotal + $this->calculateOffset() ) / $this->resultsPerPage );
+		
+            if ( $this->resultsTotal <= $this->resultsPerPage ) {
             // no more pages
             } else {
                 // more pages
@@ -141,40 +173,143 @@ class owa_paginatedResultSet {
 
     function getRowCount() {
 
-        return $this->results_count;
+        return $this->resultsTotal;
+    }
+    
+    function setQueryParams( $params ) {
+	    
+	    $this->queryParams = $params;
     }
 
-    function generate($dao, $method = 'getAllRows') {
+    function generate( $results, $query_params, $options = []) {
+		
+		$defaults = [
+			
+			'resultsPerPage'	=> 10,
+			'page'				=> 1
+		];
+		
+        if ( ! empty( $results ) ) {
+	        
+	        $options = owa_lib::setDefaultParams( $defaults, $options );
+			
+			$this->setPage( $options['page'] );
+		
+			$this->setLimit( $options['resultsPerPage'] );
+        
+            $this->countResults( $results );
 
-        if (!empty($this->limit)) {
-            // query for more than we need
-            owa_coreAPI::debug('applying limit of: '.$this->limit);
-            $dao->limit($this->limit * 10);
-        }
-
-        if (!empty($this->page)) {
-
-            $dao->offset($this->calculateOffset());
-        } else {
-            $this->page = 1;
-        }
-
-        $results = $dao->$method();
-        if (!empty($results)) {
-            $this->countResults($results);
-
-            if ($this->resultsPerPage) {
-                $this->rows = array_slice($results, 0, $this->limit);
+            if ( $this->resultsPerPage ) {
+        
+                $this->resultsRows = array_slice($results, 0, $this->resultsPerPage);
+                
             } else {
-                $this->rows = $results;
+        
+                $this->resultsRows = $results;
             }
 
-            $this->resultsReturned = count($this->rows);
-        } else {
-            $this->rows = array();
+            $this->resultsReturned = count( $this->resultsRows );
+        } 
+        
+        // add REST request urls
+        $this->setResultSetUrls( $query_params );
+        
+        // geenrated a unique hash of the results
+		$this->createResultSetHash();
+
+        return $this->resultsRows;
+    }
+    
+    /**
+	 * Constructs REST API request urls for the result set 
+	 * (base, self, next and previous, etc.)
+	 */
+    function setResultSetUrls( $query_params ) {
+		
+		//owa_coreAPI::debug('result set urls query params: ' . $query_params);
+		
+        $urls = [];
+        
+        // base url
+		$api_url = owa_coreAPI::getSetting('base', 'rest_api_url'); 
+		$this->base_url = $api_url;
+		
+		// add query params
+		$query_params['do'] 		= 'reports';
+		$query_params['module'] 	= 'base';
+		$query_params['version'] 	= 'v1';
+		$query_params['apiKey']	= owa_coreAPI::getCurrentUserApiKey();
+		
+        // add current page if any
+        if ( $this->page ) {
+	        
+            $query_params['page'] = $this->page;
+        }
+        
+        // add limit
+        if ($this->resultsPerPage) {
+            $query_params['resultsPerPage'] = $this->resultsPerPage;
         }
 
-        return $this->rows;
+        // build url for this result set
+        $link_template = owa_coreAPI::getSetting('base', 'link_template');
+        
+        $q = $this->buildQueryString($query_params);
+        
+        $urls['self'] = sprintf($link_template, $api_url, $q);
+        
+        $this->self = $urls['self'];
+
+		// build url for next page of result set
+        if ( $this->more ) {
+	        
+	        $next_query_params = $query_params;
+	        
+	        if ($this->page) {
+		        
+	            $next_query_params['page'] = $query_params['page'] + 1;
+	            
+	        } else {
+		        
+	            $next_query_params['page'] = 2;
+	        }
+	
+	        $nq = $this->buildQueryString($next_query_params);
+	        
+	        $urls['next'] = sprintf($link_template, $api_url, $nq);
+
+            $this->next = $urls['next'];
+        }
+		
+		// build previous url if page is greater than 2
+        if ( $this->page >=2 ) {
+	        
+	        $previous_query_params = $query_params;
+            
+            $previous_query_params['page'] = $query_params['page'] - 1;
+            
+            $pq = $this->buildQueryString($previous_query_params);
+            
+            $urls['previous'] = sprintf($link_template, $api_url, $pq);
+            
+            $this->previous = $urls['previous'];
+        }
+        
+        // add query params array to result set
+        $this->setQueryParams( $query_params );
+    }
+    
+    function buildQueryString($params, $seperator = '&') {
+
+        $new = array();
+        //get namespace
+        $ns = owa_coreAPI::getSetting('base', 'ns');
+        foreach ($params as $k => $v) {
+
+            $new[$ns.$k] = $v;
+        }
+
+        return http_build_query($new,'', $seperator);
     }
 
     function getResultSetAsArray() {
@@ -182,8 +317,8 @@ class owa_paginatedResultSet {
         $set = array();
 
         $set['labels'] = $this->labels;
-        $set['rows'] = $this->rows;
-        $set['count'] = $this->results_count;
+        $set['resultsRows'] = $this->resultsRows;
+        $set['count'] = $this->resultsTotal;
         $set['page'] = $this->page;
         $set['total_pages'] = $this->total_pages;
         $set['more'] = $this->more;

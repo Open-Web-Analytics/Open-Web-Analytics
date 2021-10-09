@@ -205,35 +205,34 @@ OWA.heatmap.prototype = {
      * Fetches data via ajax request
      */
     fetchData: function(page) {
-
-        var p = unescape(OWA.state.getStateFromCookie('overlay'));
-        var params = JSON.parse(p);
-        //params.action = 'getDomClicks';
-        params.module = 'base';
-        params.version = 'v1';
-        params.do = 'reports';
-        params.report_name = 'clicks';
-        params.resultsPerPage = this.options.rowsPerFetch;
-        params.format = 'jsonp';
-
-        // add page number if one was passed in
-        if (page) {
-            OWA.debug("fetchData will fetch page %s", page);
-            params.page = page;
+		
+        OWA.debug("fetchData will fetch page %s", page);
+ 
+        if ( page != 1 ) {
+	        // get the next url from the last result set
+	        var url = this.clicks.next;
+	        
+        } else {
+	        // get data urlr from overlay cookie
+	        var p = unescape( OWA.state.getStateFromCookie('overlay') );
+			var params = JSON.parse( p );
+	        var url = params.api_url;
         }
-
+        
+        OWA.debug( 'fetch data using api url: ' + url);
+        
         //closure
         var that = this;
-
+        
         jQuery.ajax({
-            url: OWA.getApiEndpoint(),
-            data: OWA.util.nsParams(params),
+            url: url,
+           
             dataType: 'jsonp',
             jsonp: 'owa_jsonpCallback',
             success: function(data) {
                 that.plotClickData(data);
             }
-        });
+        });    
     },
 
     plotClickData: function(data) {
@@ -266,7 +265,7 @@ OWA.heatmap.prototype = {
 
     getClicks: function() {
         //OWA.debug("getClicks is logging %s", this.clicks['page']);
-        return this.clicks.rows;
+        return this.clicks.resultsRows;
     },
 
     /**

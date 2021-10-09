@@ -284,6 +284,13 @@ class owa_coreAPI {
         $cu = owa_coreAPI::getCurrentUser();
         return $cu->isAuthenticated();
     }
+    
+    public static function getCurrentUserApiKey() {
+
+        $cu = owa_coreAPI::getCurrentUser();
+        return $cu->getApiKey();
+    }
+    
     /**
      * @return owa_service
      */
@@ -453,11 +460,9 @@ class owa_coreAPI {
     public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 
         $obj = owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
-        $obj->module = $module;
+        //$obj->module = $module;
 
         return $obj;
-
-
     }
 
     /**
@@ -548,6 +553,10 @@ class owa_coreAPI {
 			if ( $route ) {
 				
 				//$params['rest_route'] = $route;
+				owa_coreAPI::debug('API params: ');
+				owa_coreAPI::debug($map);
+				owa_coreAPI::debug('API route: ');
+				owa_coreAPI::debug($route);
 				$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $map );					
 				$response = self::runController( $controller );
 				

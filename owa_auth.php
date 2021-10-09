@@ -490,6 +490,26 @@ class owa_auth extends owa_base {
 
         return $credential;
     }
+    
+    function generateSignature( $requestUrl, $apiKey ) {
+	    
+	    $date = date( 'Ymd' );
+	    
+	    return base64_encode( hash('sha256', 'OWASIGNATURE' . $apiKey . $requestUrl . $date . AUTH_KEY ) );
+    }
+    
+    function isSignatureValid( $signature, $apiKey, $requestUrl, $date ) {
+	    
+	    $signature = base64_decode( $signature );
+	    
+	    $computed_sgnature = $this->generateSignature( $requestUrl, $apiKey );
+	    
+	    if ( $signature === $computed_signature ) {
+		    
+		    return true;
+	    }
+	    
+    }
 
 }
 

@@ -30,10 +30,42 @@
                 </div>
 
                 <div class="owa_reportSectionContent">
-                    <div class="owa_reportSectionHeader">Related Reports:</div>
+                    <div class="owa_reportSectionHeader">More analytics for this Page:</div>
 
                     <P>
-                        <span class="inline_h3"><a href="<?php echo $this->makeLink(array('do' => 'base.overlayLauncher', 'document_id' =>$document->get('id'), 'overlay_params' => base64_encode($this->makeParamString(array('action' => 'loadHeatmap', 'api_url' => owa_coreAPI::getSetting('base', 'rest_api_url'), 'document_id' => $document->get('id') ), true, 'json'))));?>" target="_blank">Heatmap Overlay</a></span> (Firefox 3.5+ required)
+                        <span class="inline_h3"><a href="<?php 
+	                        echo ( 
+	                        	$this->makeLink(
+		                        	[
+			                        	'do' => 'base.overlayLauncher', 
+				                        'document_id' =>$document->get('id'), 
+					                    'overlay_params' => base64_encode(
+											$this->makeParamString(
+							                    
+								                [
+								                    'action' 		=> 'loadHeatmap', 
+									                'api_url' 		=> $this->makeApiLink(
+									                	
+										                [
+										                	'document_id' 	=> $document->get('id'),
+														    'module' 		=> 'base',
+														    'version'		=> 'v1',
+														    'do'			=> 'reports',
+														    'report_name'	=> 'clicks'    	
+									                	], 
+										                true, 
+											            true
+									                ), 
+										            
+											        'document_id' 	=> $document->get('id')
+												], 
+												false, 
+												'json'
+											)
+										)
+									]
+								)
+							);?>" target="_blank">Heatmap Overlay</a></span> - click visualization map.
                     </P>
 
                     <P>

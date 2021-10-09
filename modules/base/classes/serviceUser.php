@@ -111,6 +111,11 @@ class owa_serviceUser extends owa_base {
     function getRole() {
         return $this->user->get('role');
     }
+    
+    function getApiKey() {
+	    
+	    return $this->user->get('api_key');
+    }
 
     /**
      * Sets role and related capabilities

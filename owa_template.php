@@ -557,15 +557,37 @@ class owa_template extends Template {
     
     function getApiKey() {
 	    
-	    
-		return;
+		return owa_coreAPI::getCurrentUserApiKey();
     }
 
-    function makeApiLink($params = array(), $add_state = false) {
+    function makeApiLink($params = array(), $add_state = false, $add_apiKey = false) {
 
         $url = $this->config['rest_api_url'];
+        
+        if ( $add_apiKey ) {
+	        
+	        $params['apiKey'] = $this->getApiKey();
+        }
       
-        return $this->makeLink($params, $add_state, $url);
+        $link = $this->makeLink($params, $add_state, $url);
+        
+        if ( $add_apiKey ) {
+	     	
+	    	return $this->signRequestUrl( $link, $this->getApiKey() );
+	    	
+	    } else {
+        
+        	return $link;
+        }
+    }
+    
+    function signRequestUrl( $url, $apiKey ) {
+	    
+	    return $url;
+	    
+	    $auth = &owa_auth::get_instance();
+	    
+	    return $auth->generateSignature( $url, $apiKey );
     }
 
 

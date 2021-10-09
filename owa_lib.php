@@ -520,7 +520,7 @@ class owa_lib {
         }
 
         if (!class_exists($class)) {
-                throw new Exception('Class '.$class.' not existend!');
+                throw new Exception('Class '.$class.' does not exist!');
         }
         return new $class($constructorArguments);
     }
@@ -530,11 +530,12 @@ class owa_lib {
         if ( ! class_exists( $class_name ) ) {
 
             if ( ! file_exists( $file_path ) ) {
-                throw new Exception("Factory cannot make $class_name becasue $file_path does not exist!");
+                
+                throw new Exception("Factory cannot make $class_name because $file_path does not exist!");
+            
             } else {
-
+            
                    require_once( $file_path );
-
             }
   
         }
@@ -1406,6 +1407,14 @@ class owa_lib {
 		    return true;
 	    }
     } 
+    
+    public static function setDefaultParams( $defaults, $params ) {
+	    
+	    if ( is_array( $defaults ) && is_array( $params ) ) {
+	    
+	    	return array_merge( $defaults, array_filter( $params) );
+	    }
+    }
 }
 
 ?>
