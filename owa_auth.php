@@ -113,6 +113,7 @@ class owa_auth extends owa_base {
     function authenticateUser() {
 		
 		$apiKey = owa_coreAPI::getRequestParam('apiKey') ?: owa_coreAPI::getServerParam( 'HTTP_X_API_KEY' );
+	
         // check existing auth status first in case someone else took care of this already.
         if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
 	        owa_coreAPI::debug('User is already authenticated.');
@@ -152,6 +153,20 @@ class owa_auth extends owa_base {
         $key = owa_sanitize::cleanMd5( $key );
 
         if ( $key ) {
+	        
+	        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' ); 
+	        
+	        $url = owa_coreAPI::getCurrentUrl();
+	        owa_coreAPI::debug('request url' . $url);
+	        
+	        if ( $this->isSignatureValid( $signature, $key, $url ) ) {
+		        
+		        owa_coreAPI::debug('signature valid');
+		        
+	        } else {
+		        owa_coreAPI::debug('signature not valid');
+		        
+	        }
 
             // fetch user object from the db
             $this->u = owa_coreAPI::entityFactory('base.user');
@@ -495,14 +510,26 @@ class owa_auth extends owa_base {
 	    
 	    $date = date( 'Ymd' );
 	    
-	    return base64_encode( hash('sha256', 'OWASIGNATURE' . $apiKey . $requestUrl . $date . AUTH_KEY ) );
+	    return base64_encode( hash('sha256', 'OWASIGNATURE' . $apiKey . $requestUrl . $date . OWA_AUTH_KEY ) );
     }
     
-    function isSignatureValid( $signature, $apiKey, $requestUrl, $date ) {
+    function isSignatureValid( $signature, $apiKey, $requestUrl ) {
 	    
-	    $signature = base64_decode( $signature );
+	    $requestUrl = owa_lib::removeQueryParamFromUrl( $requestUrl, 'owa_jsonpCallback' );
+		$requestUrl = owa_lib::removeQueryParamFromUrl( $requestUrl, '_' );
+		
 	    
-	    $computed_sgnature = $this->generateSignature( $requestUrl, $apiKey );
+	    if ( strpos( $requestUrl, 'owa_signature' ) ) {
+		    
+		    $requestUrl = owa_lib::removeQueryParamFromUrl( $requestUrl, 'owa_signature' );
+	    }
+	    
+	    
+	    owa_coreAPI::debug('url w/ no sig: ' . $requestUrl );
+	    
+	    //$signature = base64_decode( $signature );
+	    
+	    $computed_signature = $this->generateSignature( $requestUrl, $apiKey );
 	    
 	    if ( $signature === $computed_signature ) {
 		    

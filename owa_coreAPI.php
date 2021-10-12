@@ -1794,6 +1794,7 @@ class owa_coreAPI {
     }
 
     public static function getCurrentUrl() {
+	    
         $r = owa_coreAPI::requestContainerSingleton();
         return $r->getCurrentUrl();
     }
@@ -1860,6 +1861,17 @@ class owa_coreAPI {
 	    }
 	    
 	    return $set;
+    }
+    
+    public static function signRequestUrl( $url, $apiKey ) {
+	    
+	    $auth = owa_auth::get_instance();
+	    
+	    $signature = $auth->generateSignature( $url, $apiKey );
+	    
+	    $url .= '&owa_signature=' . $signature;
+	    
+	    return $url;
     }
 
 }

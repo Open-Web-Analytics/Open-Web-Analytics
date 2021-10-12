@@ -1403,7 +1403,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         
         } else {
 	        
-	        return $this->limit;
+	        return 0;
         } 
     }
 
@@ -1432,7 +1432,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 	            
                 $this->resultSet->aggregates = array_merge( $this->applyMetaDataToSingleResultRow( $results ), $this->resultSet->aggregates );
             }
-
+			
+			$dresults = [];
             // setup dimensional query if dimensions were specificed in query
             if ( ! empty( $this->dimensions ) ) {
 				
@@ -1459,16 +1460,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             }
                         }
                     }
-                }
-                
-                // query for dimensional results
-                $results = $this->computeDimensionalRows( $bm );
+                    
+                    
+                    // query for dimensional results
+                $dresults = $this->computeDimensionalRows( $bm );
                 
                 // paginate the results
-                $results = $this->applyMetaDataToResults( $results );
+                $dresults = $this->applyMetaDataToResults( $dresults );
+                    
+                }
+                
+                
             
                 // generate dimensonal results
-                $this->resultSet->generate( $results, $this->query_params, [
+                $this->resultSet->generate( $dresults, $this->query_params, [
 	                
 	                'resultsPerPage' => $this->getlimit(),
 	                'page'			 => $this->getPage()
@@ -1548,18 +1553,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         $results = $this->db->getAllRows();
         
-        $this->resultSet->countResults( $results );
-        
-        if ( $this->limit ) {
-        
-        	$this->resultSet->resultsRows = array_slice($results, 0, $this->limit);
-        } else {
-        
-        	$this->resultSet->resultsRows = $results;
-        }
-               
         // generate dimensonal results
-        $this->resultSet->generate( $this->resultSet->resultsRows, $this->query_params, [
+        $this->resultSet->generate( $results, $this->query_params, [
 	                
 	                'resultsPerPage' => $this->getlimit(),
 	                'page'	=> $this->getPage()

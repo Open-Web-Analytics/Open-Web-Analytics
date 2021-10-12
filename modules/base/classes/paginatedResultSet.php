@@ -153,8 +153,10 @@ class owa_paginatedResultSet {
         return $this->resultsPerPage * ($this->page - 1);
     }
 
-    function countResults( $results ) {
-
+    function countResults( $results = [] ) {
+		
+		$results = $results ?: [];
+		
         $this->resultsTotal = count( $results );
 
         if ($this->resultsPerPage) {
@@ -199,9 +201,9 @@ class owa_paginatedResultSet {
         
             $this->countResults( $results );
 
-            if ( $this->resultsPerPage ) {
+            if ( $options['resultsPerPage'] ) {
         
-                $this->resultsRows = array_slice($results, 0, $this->resultsPerPage);
+                $this->resultsRows = array_slice($results, 0, $options['resultsPerPage'], true);
                 
             } else {
         
@@ -232,13 +234,14 @@ class owa_paginatedResultSet {
         
         // base url
 		$api_url = owa_coreAPI::getSetting('base', 'rest_api_url'); 
+		$apiKey = owa_coreAPI::getCurrentUserApiKey();
 		$this->base_url = $api_url;
 		
 		// add query params
 		$query_params['do'] 		= 'reports';
 		$query_params['module'] 	= 'base';
 		$query_params['version'] 	= 'v1';
-		$query_params['apiKey']	= owa_coreAPI::getCurrentUserApiKey();
+		$query_params['apiKey']	= $apiKey;
 		
         // add current page if any
         if ( $this->page ) {
@@ -257,6 +260,7 @@ class owa_paginatedResultSet {
         $q = $this->buildQueryString($query_params);
         
         $urls['self'] = sprintf($link_template, $api_url, $q);
+        $urls['self'] = owa_coreAPI::signRequestUrl( $urls['self'], $apiKey );
         
         $this->self = $urls['self'];
 
@@ -277,6 +281,7 @@ class owa_paginatedResultSet {
 	        $nq = $this->buildQueryString($next_query_params);
 	        
 	        $urls['next'] = sprintf($link_template, $api_url, $nq);
+	        $urls['next'] = owa_coreAPI::signRequestUrl( $urls['next'], $apiKey );
 
             $this->next = $urls['next'];
         }
@@ -291,6 +296,7 @@ class owa_paginatedResultSet {
             $pq = $this->buildQueryString($previous_query_params);
             
             $urls['previous'] = sprintf($link_template, $api_url, $pq);
+            $urls['previous'] = owa_coreAPI::signRequestUrl( $urls['previous'], $apiKey );
             
             $this->previous = $urls['previous'];
         }
@@ -311,7 +317,7 @@ class owa_paginatedResultSet {
 
         return http_build_query($new,'', $seperator);
     }
-
+    
     function getResultSetAsArray() {
 
         $set = array();

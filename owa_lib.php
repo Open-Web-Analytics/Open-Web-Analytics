@@ -1334,6 +1334,12 @@ class owa_lib {
 
           return $p['scheme'].$p['user'].$p['pass'].$p['host'].$p['port'].$p['path'].$p['query'].$p['fragment'];
     }
+    
+    public static function removeQueryParamFromUrl( $url, $key ) {
+	    
+	    $url = preg_replace('/([?&])'.$key.'=[^&]+(&|$)/','$1',$url);
+	    return rtrim( $url, '&');
+    }
 
     public static function moveFile( $oldfile, $newfile ) {
 

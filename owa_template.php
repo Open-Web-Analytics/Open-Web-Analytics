@@ -583,11 +583,7 @@ class owa_template extends Template {
     
     function signRequestUrl( $url, $apiKey ) {
 	    
-	    return $url;
-	    
-	    $auth = &owa_auth::get_instance();
-	    
-	    return $auth->generateSignature( $url, $apiKey );
+	    return owa_coreAPI::signRequestUrl( $url, $apiKey );
     }
 
 
