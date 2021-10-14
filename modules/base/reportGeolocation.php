@@ -38,7 +38,7 @@ class owa_reportGeolocationController extends owa_reportController {
         $this->setTitle('Visitor Geolocation');
         //$this->set('metrics', 'visits,pageViews,bounces');
         $this->set('dimensions', 'country,countryCode');
-        $this->set('sort', 'visits');
+        $this->set('sort', 'visits-');
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
                 'linkColumn'     => 'country',
