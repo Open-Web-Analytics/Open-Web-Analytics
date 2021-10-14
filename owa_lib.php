@@ -1421,6 +1421,15 @@ class owa_lib {
 	    	return array_merge( $defaults, array_filter( $params) );
 	    }
     }
+    
+    public static function inDebug() {
+	    
+	    if ( ( defined( 'OWA_DEBUG') &&  OWA_DEBUG === true ) ||
+	    	 ( defined( 'OWA_DEVELOPMENT_HANDLER') && OWA_DEVELOPMENT_HANDLER === 'development' ) 
+		){
+			return true;
+		}	    	 
+    }
 }
 
 ?>

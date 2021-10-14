@@ -154,33 +154,45 @@ class owa_auth extends owa_base {
 
         if ( $key ) {
 	        
-	        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' ); 
-	        
-	        $url = owa_coreAPI::getCurrentUrl();
-	        owa_coreAPI::debug('request url' . $url);
-	        
-	        if ( $this->isSignatureValid( $signature, $key, $url ) ) {
+	        // check signature of request 
+	        if ( ! owa_lib::inDebug() && owa_coreAPI::getRequestParam( 'version' ) === 'v2' ) {
+		    	
+		    	//get current request url
+		    	$url = owa_coreAPI::getCurrentUrl();
+				owa_coreAPI::debug('request url' . $url);
+		    	
+		    	//get signatureparam  of request
+		        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' ); 
+		         
+		        // check if signature is exists and is valid
+		        if ( ! $signature || ! $this->isSignatureValid( $signature, $key, $url ) ) {
+			        
+			       owa_coreAPI::debug('signature missing from request or not valid.');
+			       return false;
+		        }
 		        
-		        owa_coreAPI::debug('signature valid');
-		        
-	        } else {
-		        owa_coreAPI::debug('signature not valid');
-		        
-	        }
-
+			} else {
+				
+				owa_coreAPI::debug('skipping signature check in debug/development mode.');
+			}
+			
             // fetch user object from the db
-            $this->u = owa_coreAPI::entityFactory('base.user');
-            $this->u->load($key, 'api_key');
+            $this->u = owa_coreAPI::entityFactory( 'base.user' );
+            $this->u->load( $key, 'api_key' );
 
-            if ($this->u->get('user_id')) {
+            if ( $this->u->get( 'user_id' ) ) {
                 // get current user
                 $cu = owa_coreAPI::getCurrentUser();
+                
                 // set as new current user in service layer
-                $cu->loadNewUserByObject($this->u);
-                $cu->setAuthStatus(true);
+                $cu->loadNewUserByObject( $this->u );
+                $cu->setAuthStatus( true );
                 $this->_is_user = true;
+                
                 return true;
+                
             } else {
+	            
                 return false;
             }
 
