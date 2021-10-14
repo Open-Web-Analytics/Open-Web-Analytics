@@ -76,7 +76,14 @@ class owa_mailer extends owa_base {
                 
                 $this->mailer->Username = owa_coreAPI::getSetting( 'base', 'mailer-username');
                 $this->mailer->Password = owa_coreAPI::getSetting( 'base', 'mailer-password');
-            }        
+            }   
+            
+            // https://github.com/Open-Web-Analytics/Open-Web-Analytics/tree/master/includes/PHPMailer-6.1.4
+            if ( owa_coreAPI::getSetting( 'base', 'mailer-options' ) ) {                
+            
+                $this->mailer->SMTPOptions = owa_coreAPI::getSetting( 'base', 'mailer-options' );                
+                
+            }     
         }
     }
     
