@@ -71,7 +71,7 @@ class owa_service extends owa_base {
             $this->_loadModules();
             $this->_loadFilters();
             $this->_loadEntities();
-            $this->_loadMetrics();
+            if (defined('OWA_DB_TYPE')) $this->_loadMetrics();
             $this->_loadDimensions();
             $this->_loadFormatters();
             $this->_loadApiMethods();

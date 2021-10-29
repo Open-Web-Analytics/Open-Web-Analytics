@@ -39,30 +39,34 @@ class owa_user extends owa_entity {
         $this->setCachable();
         // properties
         $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_SERIAL);
         $this->properties['user_id'] = new owa_dbColumn;
-        $this->properties['user_id']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['user_id']->setPrimaryKey();
         $this->properties['password'] = new owa_dbColumn;
-        $this->properties['password']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['role'] = new owa_dbColumn;
-        $this->properties['role']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['real_name'] = new owa_dbColumn;
-        $this->properties['real_name']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['email_address'] = new owa_dbColumn;
-        $this->properties['email_address']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['temp_passkey'] = new owa_dbColumn;
-        $this->properties['temp_passkey']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['creation_date'] = new owa_dbColumn;
-        $this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
         $this->properties['last_update_date'] = new owa_dbColumn;
-        $this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
         
         $apiKey = new owa_dbColumn;
         $apiKey->setName('api_key');
-        $apiKey->setDataType(OWA_DTD_VARCHAR255);
+        
+        if (defined('OWA_DB_TYPE')) {
+            $this->properties['id']->setDataType(OWA_DTD_SERIAL);
+            $this->properties['user_id']->setDataType(OWA_DTD_VARCHAR255);
+            $this->properties['password']->setDataType(OWA_DTD_VARCHAR255);
+            $this->properties['role']->setDataType(OWA_DTD_VARCHAR255);
+            $this->properties['real_name']->setDataType(OWA_DTD_VARCHAR255);
+            $this->properties['email_address']->setDataType(OWA_DTD_VARCHAR255);
+            $this->properties['temp_passkey']->setDataType(OWA_DTD_VARCHAR255);
+            $this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
+            $this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);        
+            $apiKey->setDataType(OWA_DTD_VARCHAR255);
+        }
+        
         $this->setProperty($apiKey);
-
+	    
     }
     
     function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {

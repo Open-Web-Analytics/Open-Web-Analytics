@@ -476,17 +476,9 @@ class owa_coreAPI {
         /* SETUP STORAGE ENGINE */
 
         // Must be called before any entities are created
-
         if (!defined('OWA_DTD_INT')) {
-            if (defined('OWA_DB_TYPE')) {
-                owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
-            } else {
-                owa_coreAPI::setupStorageEngine('mysql');
-            }
-
+            owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
         }
-
-
 
         if (!class_exists('owa_entity')):
             require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');
