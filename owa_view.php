@@ -383,6 +383,7 @@ class owa_view extends owa_base {
     function setCss($path, $version = null, $deps = array(), $ie_only = false) {
 
         if ( ! $version ) {
+	        
             $version = OWA_VERSION;
         }
 
@@ -400,6 +401,7 @@ class owa_view extends owa_base {
     function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
 
         if (empty($version)) {
+	        
             $version = OWA_VERSION;
         }
 
@@ -427,20 +429,15 @@ class owa_view extends owa_base {
         }
 
         $this->body->set('js_includes', $js_libs);
-
-        return;
-
     }
 
     /**
      * Sets flag to tell view to render the JS inline as <SCRIPT> blocks
-     * TODO: not yet implemented
+     * @todo not yet implemented
      */
     function renderJsInline() {
 
         $this->renderJsInLine = true;
-
-        return;
     }
 
 
@@ -449,7 +446,7 @@ class owa_view extends owa_base {
      *
      * @param string $level
      */
-    function _setPriviledgeLevel($level) {
+    function _setPriviledgeLevel( $level ) {
 
         $this->priviledge_level = $level;
 
@@ -461,7 +458,7 @@ class owa_view extends owa_base {
      *
      * @param string $page_type
      */
-    function _setPageType($page_type) {
+    function _setPageType( $page_type ) {
 
         $this->page_type = $page_type;
 
@@ -470,55 +467,74 @@ class owa_view extends owa_base {
 
 
     /**
-     * Sets properties that are needed to maintain state across most
-     * report and widget requests. This is used by many template functions.
+     * Sets properties that are needed to maintain state in links to  
+     * reports. This is used by many template functions.
      *
      */
     function _setLinkState( $p = array() ) {
 
-        // array of params to check
+        // if an array is not passed them just use params
         if ( ! $p ) {
-            $p = $this->get('params');
+	        
+            $p = $this->get( 'params' );
         }
+        
         // control array - will check for these params. If they exist it will return.
-        $sp = array(
+        $sp = [
+	        
             'period' => null,
             'startDate' => null,
             'endDate' => null,
             'siteId' => null,
             'startTime' => null,
             'endTime' => null
-                );
+        ];
+                
+        // merge in any stte keys passed from the controller.        
+        $state_keys = $this->get('state_keys') ?: [];
+        
+        foreach ( $state_keys as $k) {
+	        
+	        $sp[$k] = null;
+        }
 
-        // result array
+        // final result array
         $link_params = array();
-
+		
+		// load the state array with values
         if ( ! empty( $p ) ) {
 
             $link_params = array_intersect_key($p, $sp);
         }
-
-        // needed for forwards compatability with
-        if ( array_key_exists('site_id', $link_params ) && ! array_key_exists('siteId', $link_params) ) {
+        
+        // needed for backward compatability with old use of site_id key name
+        // @todo research if this is still required.
+        if ( array_key_exists( 'site_id', $link_params ) && ! array_key_exists( 'siteId', $link_params ) ) {
+	        
             $link_params['siteId'] = $link_params['site_id'];
         }
-
+		
+		// pass link stte to the various templates
         $this->t->caller_params['link_state'] =  $link_params;
+        
         $this->body->caller_params['link_state'] =  $link_params;
 
-        if(!empty($this->subview)) {
-            $this->subview->body->caller_params['link_state'] =  $link_params;
+        if( ! empty( $this->subview ) ) {
+	        
+            $this->subview->body->caller_params[ 'link_state' ] =  $link_params;
         }
     }
 
-    function get($name) {
+    function get( $name ) {
 
-        if (array_key_exists($name, $this->data)) {
-            return $this->data[$name];
+        if ( array_key_exists( $name, $this->data ) ) {
+	        
+            return $this->data[ $name ];
+            
         } else {
+	        
             return false;
         }
-
     }
 
     function set($name, $value) {

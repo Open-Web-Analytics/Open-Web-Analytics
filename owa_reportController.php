@@ -32,7 +32,13 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 
 
 class owa_reportController extends owa_adminController {
-
+	
+	/**
+	 * An array of request param keys that 
+	 * should be passed downstream as state
+	 */
+	var $state_keys = [];
+	
     /**
      * Constructor
      *
@@ -53,7 +59,6 @@ class owa_reportController extends owa_adminController {
 
         $this->setParam( 'siteId', $siteId );
     }
-
 
     /**
      * Pre Action
@@ -81,9 +86,11 @@ class owa_reportController extends owa_adminController {
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
         $nav = owa_coreAPI::getGroupNavigation('Reports');
+        
         // setup tabs
         $siteId = $this->get('siteId');
-        if ($siteId) {
+        
+        if ( $siteId ) {
             $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
 
             $tabs = array();
@@ -137,25 +144,28 @@ class owa_reportController extends owa_adminController {
             $this->set('tabs', $tabs);
             $this->set('tabs_json', json_encode($tabs));
 
-
-
             if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
 
                 unset($nav['Ecommerce']);
             }
         }
 
-        //$this->body->set('sub_nav', owa_coreAPI::getNavigation($this->get('nav_tab'), 'sub_nav'));
-
-
         $this->set('top_level_report_nav', $nav);
-
-
     }
 
     function post() {
-
-        return;
+		
+		// pass the state_keys var to views
+        $this->set( 'state_keys', $this->state_keys );
+    }
+    
+    /**
+	 * Used to designate a request param as state for 
+     * use by downstream views and templates
+     */
+    function addState( $param_name ) {
+	    
+	    $this->state_keys[] = $param_name;
     }
 
     function setTitle($title, $suffix = '') {
