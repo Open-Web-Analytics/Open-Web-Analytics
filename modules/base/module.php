@@ -699,45 +699,31 @@ class owa_baseModule extends owa_module {
 
         // visits
 
+        // owa_session uses a different column name and has it's own metric registration above.
+        $this->registerMetricDefinition(array(
+            'name'            => 'visits',
+            'label'            => 'Visits',
+            'description'    => 'The total number of visits/sessions.',
+            'group'            => 'Site Usage',
+            'entity'        => 'base.session',
+            'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+            'data_type'        => 'integer', // 'integer', 'currency'
+            'column'        => 'id'
 
-            // owa_session uses a different column name and has it's own metric registration above.
-                $this->registerMetricDefinition(array(
-                    'name'            => 'visits',
-                    'label'            => 'Visits',
-                    'description'    => 'The total number of visits/sessions.',
-                    'group'            => 'Site Usage',
-                    'entity'        => 'base.session',
-                    'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-                    'data_type'        => 'integer', // 'integrer', 'currency'
-                    'column'        => 'id'
+        ));
 
-                ));
+        $this->registerMetricDefinition(array(
+            'name'            => 'visits',
+            'label'            => 'Visits',
+            'description'    => 'The total number of visits/sessions.',
+            'group'            => 'Site Usage',
+            'entity'        => 'base.request',
+            'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+            'data_type'        => 'integer', // 'integer', 'currency'
+            'column'        => 'session_id'
 
-                $this->registerMetricDefinition(array(
-                    'name'            => 'visits',
-                    'label'            => 'Visits',
-                    'description'    => 'The total number of visits/sessions.',
-                    'group'            => 'Site Usage',
-                    'entity'        => 'base.request',
-                    'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-                    'data_type'        => 'integer', // 'integrer', 'currency'
-                    'column'        => 'session_id'
+        ));
 
-                ));
-
-/*
-        $this->registerMetric(
-            'visitors',
-            array(
-                'base.visitors',
-                'base.visitorsFromRequestFact'
-            ),
-            '',
-            'Visitors',
-            'The total number of visitors',
-            'Site Usage'
-        );
-*/
         $this->registerMetric(
             'newVisitors',
             'base.newVisitors',
@@ -746,7 +732,6 @@ class owa_baseModule extends owa_module {
             'The total number of new visitors',
             'Site Usage'
         );
-
 
         $this->registerMetric(
             'repeatVisitors',
