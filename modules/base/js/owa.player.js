@@ -72,18 +72,14 @@ OWA.player.prototype = {
 
         var p = unescape(OWA.state.getStateFromCookie('overlay'));
         var params = JSON.parse(p);
-        params.action = 'domstreams';
-        params.module = 'domstream';
-        params.version = 'v1';
+        var url = params.api_url;
         
-        //alert(params.action);
-        //alert(unescape(JSON.stringify(params)));
         //closure
         var that = this;
 
         jQuery.ajax({
-            url:  OWA.getApiEndpoint(),
-            data: OWA.util.nsParams(params),
+            url:  url,
+        
             dataType: 'jsonp',
             jsonp: 'owa_jsonpCallback',
             success: function(data) {

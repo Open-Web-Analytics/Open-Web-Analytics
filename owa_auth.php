@@ -155,11 +155,11 @@ class owa_auth extends owa_base {
         if ( $key ) {
 	        
 	        // check signature of request 
-	        if ( ! owa_lib::inDebug() && owa_coreAPI::getRequestParam( 'version' ) === 'v2' ) {
+	        if ( ! owa_lib::inDebug() && owa_coreAPI::getRequestParam( 'version' ) === 'v1' ) {
 		    	
 		    	//get current request url
 		    	$url = owa_coreAPI::getCurrentUrl();
-				owa_coreAPI::debug('request url' . $url);
+				//owa_coreAPI::debug('request url' . $url);
 		    	
 		    	//get signatureparam  of request
 		        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' ); 
@@ -537,7 +537,7 @@ class owa_auth extends owa_base {
 	    }
 	    
 	    
-	    owa_coreAPI::debug('url w/ no sig: ' . $requestUrl );
+	    //owa_coreAPI::debug('url w/ no sig: ' . $requestUrl );
 	    
 	    //$signature = base64_decode( $signature );
 	    
@@ -545,11 +545,15 @@ class owa_auth extends owa_base {
 	    
 	    if ( $signature === $computed_signature ) {
 		    
+		    owa_coreAPI::debug('API request signature is valid.' );
 		    return true;
+		    
+	    } else {
+		    
+		    owa_coreAPI::debug('API request signature failed validation.' );
+		    return false;
 	    }
-	    
     }
-
 }
 
 ?>

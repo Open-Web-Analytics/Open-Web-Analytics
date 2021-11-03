@@ -1425,7 +1425,7 @@ class owa_lib {
     public static function inDebug() {
 	    
 	    if ( ( defined( 'OWA_DEBUG') &&  OWA_DEBUG === true ) ||
-	    	 ( defined( 'OWA_DEVELOPMENT_HANDLER') && OWA_DEVELOPMENT_HANDLER === 'development' ) 
+	    	 ( defined( 'OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development' ) 
 		){
 			return true;
 		}	    	 

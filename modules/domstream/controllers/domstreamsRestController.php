@@ -7,6 +7,7 @@
  */
 
 require_once(OWA_DIR.'owa_adminController.php');
+require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**
  * Domstreams Controller
