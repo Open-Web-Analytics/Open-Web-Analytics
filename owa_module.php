@@ -277,6 +277,7 @@ abstract class owa_module extends owa_base {
         $this->_registerEventHandlers();
         $this->_registerEventProcessors();
         $this->_registerEntities();
+        $this->registerActions();
 
     }
     
@@ -960,8 +961,9 @@ abstract class owa_module extends owa_base {
      *
      */
     protected function registerAction( $action_name, $class_name, $file ) {
-
-       $this->registerImplementation( 'actions', $action_name, $class_name, $file  );
+		
+		$s = owa_coreAPI::serviceSingleton();
+    	$s->setMapValue( 'actions', $action_name, ['class_name' => $class_name, 'file' => OWA_BASE_MODULE_DIR . $file ] );
 
     }
     

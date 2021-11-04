@@ -830,7 +830,7 @@ class owa_coreAPI {
 			
 		// create the controller object
         if ( $action_map ) {
-	        
+	    
             $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
         
         } else {

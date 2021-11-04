@@ -533,6 +533,11 @@ class owa_baseModule extends owa_module {
         // event procesing daemon jobs
         $this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
     }
+    
+    function registerActions() {
+
+        $this->registerAction( 'base.resetSecretsCli', 'owa_resetSecretsCliController', 'controllers/resetSecretsCli.php' );
+    }
 
     /**
      * Register CLI Commands
@@ -555,6 +560,7 @@ class owa_baseModule extends owa_module {
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
         $this->registerCliCommand('update-referral', 'base.crawlReferralCli');
         $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
+        $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
     }
 
     /**
