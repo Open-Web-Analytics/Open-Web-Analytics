@@ -155,7 +155,7 @@ class owa_auth extends owa_base {
         if ( $key ) {
 	        
 	        // check signature of request 
-	        if ( ! owa_lib::inDebug() && owa_coreAPI::getRequestParam( 'version' ) === 'v1' ) {
+	        if ( ! owa_lib::inRestDebug() ) {
 		    	
 		    	//get current request url
 		    	$url = owa_coreAPI::getCurrentUrl();
@@ -163,6 +163,8 @@ class owa_auth extends owa_base {
 		    	
 		    	//get signatureparam  of request
 		        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' ); 
+		        
+		        owa_coreAPI::debug('Signature: ' . $signature );
 		         
 		        // check if signature is exists and is valid
 		        if ( ! $signature || ! $this->isSignatureValid( $signature, $key, $url ) ) {
@@ -520,7 +522,17 @@ class owa_auth extends owa_base {
     
     function generateSignature( $requestUrl, $apiKey ) {
 	    
-	    $date = date( 'Ymd' );
+	    // get the current time zone
+		$tz = date_default_timezone_get();
+		
+		// switch to UTC for signature check
+		date_default_timezone_set('UTC');
+		
+		// generate date
+	    $date = date( 'Ymd', time() );
+	   	
+	   	// switch time zone back to prior setting 
+	    date_default_timezone_set($tz);
 	    
 	    return base64_encode( hash('sha256', 'OWASIGNATURE' . $apiKey . $requestUrl . $date . OWA_AUTH_KEY ) );
     }
@@ -542,6 +554,8 @@ class owa_auth extends owa_base {
 	    //$signature = base64_decode( $signature );
 	    
 	    $computed_signature = $this->generateSignature( $requestUrl, $apiKey );
+	    owa_coreAPI::debug( 'computed signature: ' . $computed_signature );
+	    owa_coreAPI::debug( 'request url: ' . $requestUrl );
 	    
 	    if ( $signature === $computed_signature ) {
 		    

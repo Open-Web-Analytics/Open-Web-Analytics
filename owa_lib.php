@@ -1430,6 +1430,15 @@ class owa_lib {
 			return true;
 		}	    	 
     }
+    
+     public static function inRestDebug() {
+	    
+	    if ( ( defined( 'OWA_REST_DEBUG') &&  OWA_REST_DEBUG === true ) ){
+			
+			return true;
+		}	    	 
+    }
+
 }
 
 ?>
