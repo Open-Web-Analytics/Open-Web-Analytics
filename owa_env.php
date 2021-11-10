@@ -43,7 +43,7 @@ define('OWA_HTTPCLIENT_DIR', OWA_INCLUDE_DIR.'httpclient-2016-05-02/');
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
 define('OWA_CONF_DIR', OWA_DIR.'conf/');
 define('OWA_THEMES_DIR', OWA_DIR.'themes/');
-define('OWA_VERSION', 'master');
+define('OWA_VERSION', '1.7.3');
 define('OWA_VENDOR_DIR', OWA_DIR.'vendor/');
 
 ?>
