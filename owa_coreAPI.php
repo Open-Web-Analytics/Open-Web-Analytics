@@ -897,7 +897,7 @@ class owa_coreAPI {
             $cu_user_id = $cu->getUserData('user_id');
 
             if( ! empty( $cu_user_id ) ) {
-	            
+				owa_coreAPI::debug("Not logging named user.");            
                 return false;
             }
         }
