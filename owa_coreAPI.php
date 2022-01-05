@@ -337,6 +337,46 @@ class owa_coreAPI {
 
         return $cache;
     }
+    
+    public static function implementationFactory( $group, $implementation_name ) {
+      
+        // get implementation
+        $s = owa_coreAPI::serviceSingleton();
+    
+        $mapValue = $s->getMapValue( $group, $implementation_name );
+		
+        if ( $mapValue && is_array( $mapValue ) ) {
+	        
+	        // new style map format
+	        if ( array_key_exists('class_name', $mapValue ) ) {
+		        
+		        $class_name = $mapValue['class_name'];
+		       		            
+		        if ( array_key_exists('file', $mapValue ) ) {
+			        
+			        $file = $mapValue['file'];
+		        }
+		        
+		        if ( array_key_exists('params', $mapValue ) ) {
+			        
+			        $params = $mapValue['params'];
+		        }
+		        
+	        } else {
+				// old style compatability
+	        	list( $class_name, $file, $params ) = $mapValue;
+            }
+
+            //owa_coreAPI::debug(print_r($implementation, true));
+            return owa_lib::simpleFactory( $class_name, $file, $params );
+
+        } else {
+
+            throw new Exception("No implementation by the name $implementation_name found in group $group.");
+        }
+        
+    }
+
 
     public static function requestContainerSingleton() {
 

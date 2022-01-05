@@ -85,7 +85,7 @@ class owa_fileCache extends owa_cache {
 
     }
 
-    function putItemToCacheStore($collection, $id) {
+    function putItemToCacheStore( $collection, $id, $value ) {
 
         if ( $this->acquire_lock() ) {
             $this->makeCacheCollectionDir($collection);
@@ -99,7 +99,7 @@ class owa_fileCache extends owa_cache {
 
             $temp_cache_file = tempnam($collection_dir, 'tmp_'.$id);
 
-            $data = $this->cache_file_header.base64_encode(serialize($this->cache[$collection][$id])).$this->cache_file_footer;
+            $data = $this->cache_file_header.base64_encode(serialize($value)).$this->cache_file_footer;
 
 
             // open the temp cache file for writing

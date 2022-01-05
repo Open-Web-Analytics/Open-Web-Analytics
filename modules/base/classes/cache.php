@@ -40,6 +40,8 @@ class owa_cache {
     var $global_collections = array();
     var $collection_expiration_periods = array();
     var $e;
+    var $warm;
+    var $cold;
 
     /**
      * Constructor
@@ -49,16 +51,27 @@ class owa_cache {
      * @param $cache_dir string
      */
     function __construct($cache_dir = '') {
+	    
+	    $cache_type = owa_coreAPI::getSetting('base', 'cacheType');
+	    
+	    // this is here before this class seems to load before modules can register implementations...
+	    $s = owa_coreAPI::serviceSingleton();
+	    $s->setMapValue('object_cache_types', 'memory', ['owa_memoryCache', OWA_BASE_CLASS_DIR.'memoryCache.php', [] ] );
+	    
+	    
+        $this->warm = owa_coreAPI::implementationFactory( 'object_cache_types', 'memory' );
         
         $this->e = owa_coreAPI::errorSingleton();
     }
-        
-    function set($collection, $key, $value, $expires = '') {
+            
+    function set( $collection, $key, $value, $expires = '' ) {
     
         $hkey = $this->hash($key);
         owa_coreAPI::debug('set key: '.$key);
         owa_coreAPI::debug('set hkey: '.$hkey);
-        $this->cache[$collection][$hkey] = $value;
+        //$this->cache[$collection][$hkey] = $value;
+        $this->warm->set( $collection, $hkey, $value );
+        
         $this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['added']++;        
         $this->dirty_objs[$collection][$hkey] = $hkey;
@@ -68,10 +81,11 @@ class owa_cache {
             
     }
     
-    function replace($collection, $key, $value) {
+    function replace( $collection, $key, $value ) {
     
         $hkey = $this->hash($key);
-        $this->cache[$collection][$hkey] = $value;
+        //$this->cache[$collection][$hkey] = $value;
+        $this->warm->set( $collection, $hkey, $value );
         $this->debug(sprintf('Replacing Object in Cache - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['replaced']++;
         
@@ -93,19 +107,28 @@ class owa_cache {
         
     }
     
-    function get($collection, $key) {
+    function get( $collection, $key ) {
         
         $id = $this->hash($key);
-        // check warm cache and return
-        if (isset($this->cache[$collection][$id])) {
+        
+        // check warm cache
+        $obj = $this->warm->get( $collection, $id );
+        
+        // if in warm cahce n=increment stats
+        if ( $obj ) {
+	        
             $this->debug(sprintf('CACHE HIT (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));    
             $this->statistics['warm']++;
-        //load from cache file    
+               
         } else {
         
+        	// else load from cold cache 
             $item = $this->getItemFromCacheStore($collection, $id);
+            
             if ($item) {
-                $this->cache[$collection][$id] = $item;
+	            //put in warm cache
+                //$this->cache[$collection][$id] = $item;
+                $this->warm->set( $collection, $id, $item );
                 $this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
                 $this->statistics['cold']++;
             } else {
@@ -114,18 +137,15 @@ class owa_cache {
             }
         }
         
-        if (isset($this->cache[$collection][$id])) {
-            return $this->cache[$collection][$id];    
-        } else {
-            return false;
-        }
-        
+        // always return from warm cache
+        return $this->warm->get( $collection, $id );
     }
     
     function remove($collection, $key) {
     
         $id = $this->hash($key);
-        unset($this->cache[$collection][$id]);
+        //unset($this->cache[$collection][$id]);
+        $this->warm->remove( $collection, $id );
         return $this->removeItemFromCacheStore($collection, $id);
         
     }
@@ -144,7 +164,8 @@ class owa_cache {
             foreach ($this->dirty_objs as $collection => $ids) {
                 
                 foreach ($ids as $id) {
-                    $this->putItemToCacheStore($collection, $id);
+	                
+                    $this->putItemToCacheStore($collection, $id, $this->warm->get( $collection, $id ) );
                 }    
             }
             
@@ -157,12 +178,14 @@ class owa_cache {
      * Store specific implementation of getting an object from the cold cache store
      */
     function getItemFromCacheStore($collection, $id) {
+	    
         return false;
     }
     /**
      * Store specific implementation of putting an object to the cold cache store
      */
-    function putItemToCacheStore($collection, $id) {
+    function putItemToCacheStore( $collection, $id, $value ) {
+	    
         return false;
     }
     
@@ -170,6 +193,7 @@ class owa_cache {
      * Store specific implementation of removing an object to the cold cache store
      */
     function removeItemFromCacheStore($collection, $id) {
+	    
         return false;
     }
     

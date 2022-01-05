@@ -1028,11 +1028,11 @@ abstract class owa_module extends owa_base {
      * @param    $file           string    the partial path to the file housing the class withing the module dir
      *
      */
-    function registerImplementation($type, $key, $class_name, $file) {
+    function registerImplementation($type, $key, $class_name, $file, $params = []) {
 
         $s = owa_coreAPI::serviceSingleton();
         $file = $this->path . $file;
-        $class_info = array($class_name, $file);
+        $class_info = array($class_name, $file, $params);
         $s->setMapValue($type, $key, $class_info);
     }
 
