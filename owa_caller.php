@@ -59,7 +59,7 @@ class owa_caller extends owa_base {
      * @return owa_caller
      */
     function __construct($config = array()) {
-        
+        ini_set('display_errors', 'On');
         if (empty($config)) {
             $config = array();
         }
@@ -73,7 +73,7 @@ class owa_caller extends owa_base {
         parent::__construct();
         
         // Log version debug
-        $this->e->debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
+        owa_coreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
             owa_coreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
         }
@@ -107,7 +107,7 @@ class owa_caller extends owa_base {
         
         $this->c->applyModuleOverrides('base', $config);
         
-        $this->e->debug('Caller configuration overrides applied.');
+        owa_coreAPI::debug('Caller configuration overrides applied.');
         
         /* SET ERROR HANDLER */
 
@@ -219,8 +219,8 @@ class owa_caller extends owa_base {
         
         $this->end_time = owa_lib::microtime_float();
         $total_time = $this->end_time - $this->start_time;
-        $this->e->debug(sprintf('Total session time: %s',$total_time));
-        $this->e->debug("Goodbye from OWA");
+        owa_coreAPI::debug(sprintf('Total session time: %s',$total_time));
+        owa_coreAPI::debug("Goodbye from OWA");
         owa_coreAPI::profileDisplay();
     }
         

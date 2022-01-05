@@ -28,7 +28,7 @@
  * @since        owa 1.0.0
  */
 
-abstract class owa_module extends owa_base {
+abstract class owa_module {
 
     /**
      * Name of module
@@ -222,6 +222,7 @@ abstract class owa_module extends owa_base {
 	 * Filesystem path of the module's directory
 	 */
     var $path;
+    
 
     /**
      * Constructor
@@ -232,7 +233,7 @@ abstract class owa_module extends owa_base {
 		
 		$this->path = OWA_MODULES_DIR . $this->name . '/';
 		
-        parent::__construct();
+        //parent::__construct();
 		
 		/**
 		 * Initial registration calls
@@ -530,7 +531,7 @@ abstract class owa_module extends owa_base {
      */
     function install() {
 
-        $this->e->notice('Starting installation of module: '.$this->name);
+        owa_coreAPI::notice('Starting installation of module: '.$this->name);
 
         $errors = '';
 
@@ -540,11 +541,11 @@ abstract class owa_module extends owa_base {
             foreach ($this->entities as $k => $v) {
 
                 $entity = owa_coreAPI::entityFactory($this->name.'.'.$v);
-                //$this->e->debug("about to  execute createtable");
+                //owa_coreAPI::debug("about to  execute createtable");
                 $status = $entity->createTable();
 
                 if ($status != true) {
-                    $this->e->notice("Entity Installation Failed.");
+                    owa_coreAPI::notice("Entity Installation Failed.");
                     $errors = true;
                     //return false;
                 }
@@ -558,21 +559,24 @@ abstract class owa_module extends owa_base {
             // run post install hook
             $ret = $this->postInstall();
 
-            if ($ret == true):
-                $this->e->notice("Post install proceadure was a success.");;
-            else:
-                $this->e->notice("Post install proceadure failed.");
-            endif;
+            if ($ret == true) {
+	            
+                owa_coreAPI::notice("Post install procedure was a success.");
+                
+            } else {
+	            
+                owa_coreAPI::notice("Post install procedure failed.");
+            }
 
             // save schema version to configuration
-            $this->c->persistSetting($this->name, 'schema_version', $this->getRequiredSchemaVersion());
+            owa_coreAPI::persistSetting( $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
             //activate the module and save the configuration
             $this->activate();
-            $this->e->notice("Installation complete.");
+            owa_coreAPI::notice("Installation complete.");
             return true;
 
         } else {
-            $this->e->notice("Installation failed.");
+            owa_coreAPI::notice("Installation failed.");
             return false;
         }
 
@@ -602,7 +606,7 @@ abstract class owa_module extends owa_base {
         $files = owa_lib::listDir(OWA_DIR.'modules'.'/'.$this->name.'/'.'updates', false);
         //print_r($files);
 
-        $current_schema_version = $this->c->get($this->name, 'schema_version');
+        $current_schema_version = owa_coreAPI::getSetting($this->name, 'schema_version');
 
         // extract sequence
         foreach ($files as $k => $v) {
@@ -640,16 +644,16 @@ abstract class owa_module extends owa_base {
 
         foreach ($this->updates as $k => $obj) {
 
-            $this->e->notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
+            owa_coreAPI::notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
 
             $ret = $obj->apply();
 
-            if ($ret == true):
-                $this->e->notice("Update Suceeded");
-            else:
-                $this->e->notice("Update Failed");
+            if ($ret == true) {
+                owa_coreAPI::notice("Update Succeeded");
+            } else {
+                owa_coreAPI::notice("Update Failed");
                 return false;
-            endif;
+            }
         }
 
         return true;
@@ -669,16 +673,11 @@ abstract class owa_module extends owa_base {
      *
      */
     function activate() {
-
-        //if ($this->name != 'base'):
-
-            $this->c->persistSetting($this->name, 'is_active', true);
-            $this->c->save();
-            $this->e->notice("Module $this->name activated");
-
-        //endif;
-
-        return;
+	
+		$ret = owa_coreAPI::persistSetting( $this->name, 'is_active', true );
+        owa_coreAPI::notice("Module $this->name activated");
+        
+        return $ret;    
     }
 
     /**
@@ -688,14 +687,10 @@ abstract class owa_module extends owa_base {
      */
     function deactivate() {
 
-        if ($this->name != 'base'):
+        if ($this->name != 'base') {
 
-            $this->c->persistSetting($this->name, 'is_active', false);
-            $this->c->save();
-
-        endif;
-
-        return;
+            owa_coreAPI::persistSetting( $this->name, 'is_active', false );
+    	}
     }
 
     /**
@@ -767,8 +762,8 @@ abstract class owa_module extends owa_base {
      * which class to use to process a particular event
      */
     function addEventProcessor($event_type, $processor) {
+	    
         $this->event_processors[$event_type] = $processor;
-        return;
     }
 
     function registerMetric($metric_name, $classes, $params = array(), $label = '', $description = '', $group = '') {

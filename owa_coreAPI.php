@@ -311,28 +311,13 @@ class owa_coreAPI {
         return $s;
     }
 
-    public static function cacheSingleton($params = array()) {
+    public static function cacheSingleton( $params = [] ) {
 
         static $cache;
 
-        if ( !isset ( $cache ) ) {
-            $cache_type = owa_coreAPI::getSetting('base', 'cacheType');
-
-            switch ($cache_type) {
-
-                case "memcached":
-                    $implementation = array('owa_memcachedCache', OWA_BASE_CLASS_DIR.'memcachedCache.php');
-                    break;
-                default:
-                    $implementation = array('owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php');
-
-            }
-
-            if ( ! class_exists( $implementation[0] ) ) {
-                require_once( $implementation[1] );
-            }
-            // make this plugable
-            $cache = new $implementation[0];
+        if ( empty ( $cache ) ) {
+	        
+            $cache = owa_lib::simpleFactory( 'owa_cache', OWA_BASE_CLASS_DIR.'cache.php', $params );
         }
 
         return $cache;

@@ -12,6 +12,8 @@
 
 class owa_cacheType {
 	
+	var $collection_expiration_periods = [];
+	
 	/**
      * Store specific implementation of getting an object from the cold cache store
      */
@@ -58,6 +60,21 @@ class owa_cacheType {
     
         return false;    
     }	
+    
+    function setCollectionExpirationPeriod($collection_name, $seconds) {
+    
+        $this->collection_expiration_periods[$collection_name] = $seconds;
+    }
+    
+    function getCollectionExpirationPeriod($collection_name) {
+        
+        // for some reason an 'array_key_exists' check does not work here. using isset instead.
+        if (isset($this->collection_expiration_periods[$collection_name])) {
+            return $this->collection_expiration_periods[$collection_name];
+        } else {
+            return false;
+        }
+    }
 }
 
 ?>

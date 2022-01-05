@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'cache.php');
+require_once( OWA_BASE_CLASS_DIR . 'cacheType.php' );
 
 /**
  * File Based Cache Class
@@ -30,15 +30,17 @@ require_once(OWA_BASE_CLASS_DIR.'cache.php');
  * @since        owa 1.4.0
  */
 
-class owa_fileCache extends owa_cache {
+class owa_fileCache extends owa_cacheType {
 
     var $cache_dir;
+    var $cache_id = 1;
     var $lock_file_name = 'cache.lock';
     var $cache_file_header = '<?php\n/*';
     var $cache_file_footer = '*/\n?>';
     var $file_perms = 0750;
     var $dir_perms = 0750;
     var $mutex;
+  
 
     /**
      * Constructor
@@ -47,37 +49,42 @@ class owa_fileCache extends owa_cache {
      *
      * @param $cache_dir string
      */
-    function __construct($cache_dir = '') {
+    function __construct( $params ) {
 
-        if ($cache_dir) {
-            $this->cache_dir = $cache_dir;
+        if ( array_key_exists( 'cache_dir', $params ) && $params['cache_dir'] ) {
+	        
+            $this->cache_dir = $params['cache_dir'];
+            
         } else {
+	        
             $this->cache_dir = OWA_CACHE_DIR;
         }
-
-        return parent::__construct();
+        
+        if ( array_key_exists( 'cache_id', $params ) && $params['cache_id'] ) {
+	        
+	    	$this->cache_id = $params['cache_id'];
+	    }
     }
 
-    function getItemFromCacheStore($collection, $id) {
+    function get( $collection, $id ) {
 
         $cache_file = $this->makeCollectionDirPath($collection).$id.'.php';
-        $this->debug("check cache file: ".$cache_file);
+        owa_coreAPI::debug("check cache file: ".$cache_file);
 
         // if no cache file then return false
         if (!file_exists($cache_file)) {
-            $this->debug(sprintf('Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
+            owa_coreAPI::debug(sprintf('Cache File not found for Collection: %s, id: %s, file: %s', $collection, $id, $cache_file));
             return false;
 
         // cache object has expired
         } elseif ((filectime($cache_file) + $this->getCollectionExpirationPeriod($collection)) < time()) {
-            $this->debug("time: ".time());
-            $this->debug("ctime: ".filectime($cache_file));
-            $this->debug("diff: ".(time() - filectime($cache_file)));
-            $this->debug("exp period: ".$this->getCollectionExpirationPeriod($collection));
+            owa_coreAPI::debug("time: ".time());
+            owa_coreAPI::debug("ctime: ".filectime($cache_file));
+            owa_coreAPI::debug("diff: ".(time() - filectime($cache_file)));
+            owa_coreAPI::debug("exp period: ".$this->getCollectionExpirationPeriod($collection));
             $this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
-            $this->debug(sprintf('Cache Object has expired for Collection: %s, id: %s', $collection, $id));
-            return false;
-
+            owa_coreAPI::debug(sprintf('Cache Object has expired for Collection: %s, id: %s', $collection, $id));
+           
         // load from cache file
         } else {
             return unserialize(base64_decode(substr(@ file_get_contents($cache_file), strlen($this->cache_file_header), -strlen($this->cache_file_footer))));
@@ -85,11 +92,11 @@ class owa_fileCache extends owa_cache {
 
     }
 
-    function putItemToCacheStore( $collection, $id, $value ) {
+    function set( $collection, $id, $value ) {
 
         if ( $this->acquire_lock() ) {
             $this->makeCacheCollectionDir($collection);
-            $this->debug(' writing file for: '.$collection.$id);
+            owa_coreAPI::debug(' writing file for: '.$collection.$id);
             // create collection dir
             $collection_dir = $this->makeCollectionDirPath($collection);
             // asemble cache file name
@@ -106,7 +113,7 @@ class owa_fileCache extends owa_cache {
             $tcf_handle = @fopen($temp_cache_file, 'w');
 
             if ( false === $tcf_handle ) {
-                $this->debug('could not acquire temp file handler');
+                owa_coreAPI::debug('could not acquire temp file handler');
             } else {
 
                 fputs($tcf_handle, $data);
@@ -116,35 +123,31 @@ class owa_fileCache extends owa_cache {
                 if (!@ rename($temp_cache_file, $cache_file)) {
 
                     if (!@ copy($temp_cache_file, $cache_file)) {
-                        $this->debug('could not rename or copy temp file to cache file');
+                        owa_coreAPI::debug('could not rename or copy temp file to cache file');
                     } else {
                         @ unlink($temp_cache_file);
-                        $this->debug('removing temp cache file');
+                        owa_coreAPI::debug('removing temp cache file');
                     }
                 }
 
                 @ chmod($cache_file, $this->file_perms);
-                $this->debug('changing file permissions on cache file');
+                owa_coreAPI::debug('changing file permissions on cache file');
             }
 
             $this->release_lock();
         } else {
-            $this->debug("could not persist item to cache due to failure acquiring lock.");
+            owa_coreAPI::debug("could not persist item to cache due to failure acquiring lock.");
         }
     }
 
-    function removeItemFromCacheStore($collection, $id) {
+    function remove( $collection, $id ) {
 
         return $this->removeCacheFile($this->makeCollectionDirPath($collection).$id.'.php');
     }
 
     function makeCollectionDirPath($collection) {
 
-        if (!in_array($collection, $this->global_collections)) {
-            return $this->cache_dir.$this->cache_id.'/'.$collection.'/';
-        } else {
-            return $this->cache_dir.$collection.'/';
-        }
+        return $this->cache_dir.$this->cache_id.'/'.$collection.'/';
     }
 
     function makeCacheCollectionDir($collection) {
@@ -182,11 +185,11 @@ class owa_fileCache extends owa_cache {
         // Remove the cache file
         if (file_exists($cache_file)) {
             @ unlink($cache_file);
-            $this->debug('Cache File Removed: '.$cache_file);
+            owa_coreAPI::debug('Cache File Removed: '.$cache_file);
             $this->statistics['removed']++;
             return true;
         } else {
-            $this->debug('Cache File does not exist: '.$cache_file);
+            owa_coreAPI::debug('Cache File does not exist: '.$cache_file);
             return false;
         }
     }
@@ -246,7 +249,7 @@ class owa_fileCache extends owa_cache {
 
     function readDir($dir) {
 
-        $this->debug( "Reading cache file list from: ". $dir );
+        owa_coreAPI::debug( "Reading cache file list from: ". $dir );
 
         $data = array();
 
