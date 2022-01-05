@@ -657,7 +657,7 @@
                 'ws_timeout'                        => 10,
                 'is_active'                            => true,
                 'per_site_visitors'                    => false, // remove
-                'cache_objects'                        => true,
+                'cache_objects'                        => false,
                 'log_named_users'                    => true,
                 'log_visitor_pii'                    => true,
                 'excluded_ips'                        => '',
@@ -739,7 +739,7 @@
          $base_url = '';
          $proto  = "http";
 
-        if( owa_lib::isHttps() ) {
+        if(isset($_SERVER['HTTPS'])) {
             $proto .= 's';
         }
         if(isset($_SERVER['SERVER_NAME'])) {

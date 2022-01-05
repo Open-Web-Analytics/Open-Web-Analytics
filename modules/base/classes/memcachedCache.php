@@ -34,7 +34,7 @@ if ( ! class_exists( 'memcached' ) ) {
  * @since        owa 1.4.0
  */
 
-class owa_memcachedCache extends owa_cache {
+class owa_memcachedCache extends owa_cacheType {
 
     var $mc;
 
@@ -77,7 +77,7 @@ class owa_memcachedCache extends owa_cache {
         return $key;
     }
 
-    function getItemFromCacheStore($collection, $id) {
+    function get( $collection, $id ) {
         $key = $this->makeKey( array( $collection, $id ) );
         $item = $this->mc->get( $key );
 
@@ -90,10 +90,10 @@ class owa_memcachedCache extends owa_cache {
 
     }
 
-    function putItemToCacheStore($collection, $id) {
+    function set( $collection, $id, $value ) {
 
         $key = $this->makeKey( array( $collection, $id ) );
-        $item = $this->cache[$collection][$id];
+        $item = $value;
         $expiration = $this->getCollectionExpirationPeriod( $collection );
         $ret = $this->mc->replace( $key, $item, $expiration );
 
@@ -113,10 +113,10 @@ class owa_memcachedCache extends owa_cache {
         }
     }
 
-    function removeItemFromCacheStore($collection, $id) {
+    function remove( $collection, $id ) {
 
         $key = $this->makeKey( array( $collection, $id ) );
-        $item = $this->cache[$collection][$id];
+        
         $ret = $this->mc->delete($key);
 
         if ($ret) {

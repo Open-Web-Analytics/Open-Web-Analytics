@@ -267,7 +267,7 @@ class owa_entity {
         $status = $db->executeQuery();
         
         // Add to Cache
-        if ($status) {
+        if ($status == true) {
             $this->addToCache();
         }
         
@@ -506,10 +506,10 @@ class owa_entity {
     
     function isCachable() {
         
-        if (owa_coreAPI::getSetting('base', 'cache_objects')) {
+        //if (owa_coreAPI::getSetting('base', 'cache_objects')) {
             if (array_key_exists('cacheable', $this->_tableProperties)) {
                 return $this->_tableProperties['cacheable'];
-            }
+            //}
         } else {
             return false;
         }
