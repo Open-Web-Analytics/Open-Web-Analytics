@@ -59,7 +59,7 @@ class owa_caller extends owa_base {
      * @return owa_caller
      */
     function __construct($config = array()) {
-        ini_set('display_errors', 'On');
+       
         if (empty($config)) {
             $config = array();
         }
