@@ -16,9 +16,10 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'cache.php');
+require_once(OWA_BASE_CLASS_DIR.'cacheType.php');
 
 if ( ! class_exists( 'memcached' ) ) {
+	
     require_once( OWA_INCLUDE_DIR . 'memcached-client.php' );
 }
 
@@ -28,15 +29,12 @@ if ( ! class_exists( 'memcached' ) ) {
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 - 2011 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.4.0
  */
 
 class owa_memcachedCache extends owa_cacheType {
 
     var $mc;
+   
 
     /**
      * Constructor
@@ -45,20 +43,18 @@ class owa_memcachedCache extends owa_cacheType {
      *
      * @param $cache_dir string
      */
-    function __construct() {
-
-        $servers = owa_coreAPI::getSetting( 'base', 'memcachedServers' );
-        if ( ! $servers ) {
-            owa_coreAPI::notice('No memcached servers found in configuration settings.');
-            return;
-        }
-        $persistant = owa_coreAPI::getSetting( 'base', 'memcachedPersistantConnections' );
-        $error_mode = owa_coreAPI::getSetting( 'base', 'error_handler' );
-        if ( $error_mode === 'development' ) {
-            $debug = true;
-        } else {
-            $debug = false;
-        }
+    function __construct( $conf ) {
+		
+		if ( array_key_exists( 'cache_id', $conf ) ) {
+			
+			$this->cache_id = $conf['cache_id'];
+		}
+		
+        $servers = owa_coreAPI::getSetting( 'memcachedCache', 'memcachedServers' );
+        
+        $persistant = owa_coreAPI::getSetting( 'memcachedCache', 'memcachedPersistantConnections' );
+       
+        $debug = owa_lib::inDebug();
 
         $this->mc = new owa_memcachedClient(array(
                 'servers' => $servers,
@@ -70,7 +66,8 @@ class owa_memcachedCache extends owa_cacheType {
         return parent::__construct();
     }
 
-    function makeKey($values) {
+    function makeKey( $values ) {
+	    
         $key  = 'owa-';
         $key .= $this->cache_id . '-';
         $key .= implode('-', $values);
@@ -82,10 +79,10 @@ class owa_memcachedCache extends owa_cacheType {
         $item = $this->mc->get( $key );
 
         if ($item) {
-            $this->debug("$key retrieved from memcache.");
+            owa_coreAPI::debug("$key retrieved from memcache.");
             return $item;
         } else {
-            $this->debug("$key was not found in memcache.");
+            owa_coreAPI::debug("$key was not found in memcache.");
         }
 
     }
@@ -98,16 +95,16 @@ class owa_memcachedCache extends owa_cacheType {
         $ret = $this->mc->replace( $key, $item, $expiration );
 
         if ( $ret ) {
-            $this->debug( "$key successfully replaced in memcache." );
+            owa_coreAPI::debug( "$key successfully replaced in memcache." );
             return true;
 
         } else {
             $ret = $this->mc->add( $key, $item );
             if ( $ret ) {
-                $this->debug( "$key successfully added to memcache." );
+                owa_coreAPI::debug( "$key successfully added to memcache." );
                 return true;
             } else {
-                $this->debug( "$key not added/replaced in memcache." );
+                owa_coreAPI::debug( "$key not added/replaced in memcache." );
                 return false;
             }
         }
@@ -120,9 +117,9 @@ class owa_memcachedCache extends owa_cacheType {
         $ret = $this->mc->delete($key);
 
         if ($ret) {
-            $this->debug( "$key successfully deleted from memcache." );
+            owa_coreAPI::debug( "$key successfully deleted from memcache." );
         } else {
-            $this->debug( "$key not deleted from memcache.");
+            owa_coreAPI::debug( "$key not deleted from memcache.");
         }
     }
 

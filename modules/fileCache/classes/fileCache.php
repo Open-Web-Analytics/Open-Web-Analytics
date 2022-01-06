@@ -33,7 +33,6 @@ require_once( OWA_BASE_CLASS_DIR . 'cacheType.php' );
 class owa_fileCache extends owa_cacheType {
 
     var $cache_dir;
-    var $cache_id = 1;
     var $lock_file_name = 'cache.lock';
     var $cache_file_header = '<?php\n/*';
     var $cache_file_footer = '*/\n?>';

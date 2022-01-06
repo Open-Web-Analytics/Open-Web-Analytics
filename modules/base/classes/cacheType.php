@@ -13,6 +13,7 @@
 class owa_cacheType {
 	
 	var $collection_expiration_periods = [];
+	var $cache_id = 1;
 	
 	/**
      * Store specific implementation of getting an object from the cold cache store
