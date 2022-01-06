@@ -59,16 +59,12 @@ class owa_caller extends owa_base {
      * @param array $config
      * @return owa_caller
      */
-    function __construct($config = array()) {
+    function __construct( $config = [] ) {
       
-
-        if ( defined( 'OWA_DEBUG') && OWA_DEBUG ) {
+		/* PHP ERROR LOGGING */
+        if ( owa_lib::inDebug() ) {
 	        
 	        owa_error::phpErrorSettings();
-        }
-       
-        if (empty($config)) {
-            $config = array();
         }
         
         // Start time
@@ -81,6 +77,7 @@ class owa_caller extends owa_base {
         
         // Log version debug
         owa_coreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
+        
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
             owa_coreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
         }
@@ -97,13 +94,13 @@ class owa_caller extends owa_base {
         // Applies config from db or cache
         // check here is needed for installs when the configuration table does not exist.
                
-        if ($this->c->isConfigFilePresent())  {
+        if ( $this->c->isConfigFilePresent() )  {
+            
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
         }   
         
         // set timezone once config is loaded from DB.
-        $this->c->setTimezone();
-             
+        $this->c->setTimezone(); 
 
         /* APPLY CALLER CONFIGURATION OVERRIDES */
         
@@ -111,27 +108,13 @@ class owa_caller extends owa_base {
         // must come after user overides are applied 
         // This will apply configuration overirdes that are specified by the calling application.
         // This is usually used by plugins to setup integration specific configuration values.
-        
-        $this->c->applyModuleOverrides('base', $config);
-        
-        owa_coreAPI::debug('Caller configuration overrides applied.');
+	    $this->overloadConfig( $config );	
         
         /* SET ERROR HANDLER */
 
         // Sets the correct mode of the error logger now that final config values are in place
         // This will flush buffered msgs that were thrown up untill this point
         $this->e->setHandler($this->c->get('base', 'error_handler'));
-        
-        /* PHP ERROR LOGGING */
-        
-        /*
-        if (defined('OWA_LOG_PHP_ERRORS')) {
-            
-            $this->e->logPhpErrors();
-        }
-        
-        set_exception_handler( array($this->e, 'logException') );
-        */
             
         /* LOAD SERVICE LAYER */
         $this->service = owa_coreAPI::serviceSingleton();
@@ -293,6 +276,31 @@ class owa_caller extends owa_base {
             }
         }
     }
+    
+    /**
+	 * Used by owa_caller to override default config with values based to the caller.
+	 *
+	 */
+    private function overloadConfig( $config ) {
+	    
+	    if ( ! empty( $config ) ) {
+	     
+		    if ( array_key_exists( 'base', $config ) ) {
+		     
+			     foreach ($config as $module => $values ) {
+				     
+				     $this->c->applyModuleOverrides( $module, $values );
+			     }
+			     
+			} else {
+				 
+				 $this->c->applyModuleOverrides('base', $config);
+			}
+			
+			owa_coreAPI::debug('Configuration overrides applied.');
+		}
+    }
+
     
     function restInPeace() {
     
