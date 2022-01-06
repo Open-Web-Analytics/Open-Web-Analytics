@@ -21,6 +21,7 @@ require_once(OWA_BASE_DIR.'/owa_base.php');
 require_once(OWA_BASE_DIR.'/owa_requestContainer.php');
 require_once(OWA_BASE_DIR.'/owa_auth.php');
 require_once(OWA_BASE_DIR.'/owa_coreAPI.php');
+require_once(OWA_BASE_CLASS_DIR.'error.php');
 
 /**
  * Abstract Caller class used to build application specific invocation classes
@@ -59,6 +60,12 @@ class owa_caller extends owa_base {
      * @return owa_caller
      */
     function __construct($config = array()) {
+      
+
+        if ( defined( 'OWA_DEBUG') && OWA_DEBUG ) {
+	        
+	        owa_error::phpErrorSettings();
+        }
        
         if (empty($config)) {
             $config = array();
