@@ -57,7 +57,6 @@ class owa_cache {
 	    // this is here before this class seems to load before modules can register implementations...
 	    $s = owa_coreAPI::serviceSingleton();
 	    $s->setMapValue('object_cache_types', 'memory', ['owa_memoryCache', OWA_BASE_CLASS_DIR.'memoryCache.php', [] ] );
-	    //$s->setMapValue('object_cache_types', 'file', ['owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php', [] ] );
 	    
 	    $this->cache_conf = [
 		    
@@ -277,7 +276,7 @@ class owa_cache {
     }
     
     function hash($id) {
-    
+    	
         return md5($id);
     }
     

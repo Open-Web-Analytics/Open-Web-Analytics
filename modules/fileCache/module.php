@@ -34,6 +34,7 @@ class owa_fileCacheModule extends owa_module {
     
     function init() {
 	    
+	    $this->registerImplementation('object_cache_types', 'file', 'owa_fileCache', 'classes/fileCache.php');
 	    owa_coreAPI::setSetting('base', 'cache_objects', true);
     }
 }

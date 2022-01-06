@@ -58,10 +58,6 @@ class owa_baseModule extends owa_module {
         $this->registerImplementation('event_queue_types', 'database', 'owa_dbEventQueue', 'classes/dbEventQueue.php');
         $this->registerImplementation('event_queue_types', 'http', 'owa_httpEventQueue', 'classes/httpEventQueue.php');
         
-        // regsiter object cache types
-        $this->registerImplementation('object_cache_types', 'memory', 'owa_memoryCache', 'classes/memoryCache.php');
-		$this->registerImplementation('object_cache_types', 'file', 'owa_fileCache', 'classes/fileCache.php');
-
         // register named queues
         $this->registerEventQueue( 'incoming_tracking_events', array(
 
