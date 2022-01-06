@@ -57,7 +57,7 @@ class owa_cache {
 	    // this is here before this class seems to load before modules can register implementations...
 	    $s = owa_coreAPI::serviceSingleton();
 	    $s->setMapValue('object_cache_types', 'memory', ['owa_memoryCache', OWA_BASE_CLASS_DIR.'memoryCache.php', [] ] );
-	    $s->setMapValue('object_cache_types', 'file', ['owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php', [] ] );
+	    //$s->setMapValue('object_cache_types', 'file', ['owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php', [] ] );
 	    
 	    $this->cache_conf = [
 		    
@@ -90,6 +90,7 @@ class owa_cache {
 	    if (! $this->cold ) {
 		    
 		    $this->createColdCache();
+		    owa_coreAPI::debug('created cold cache');
 	    }
 	    
 	    return $this->cold;
@@ -185,7 +186,7 @@ class owa_cache {
         $cold = $this->getColdCache();
         
         if ( $cold ) {
-	        
+	        $this->statistics['removed']++;
 	    	return $cold->remove( $collection, $id );   
         }
     }
@@ -202,7 +203,6 @@ class owa_cache {
 	        if (!empty($this->dirty_objs)) {
 	            
 	            $this->debug('Dirty Objects: '.print_r($this->dirty_objs, true));
-	            $this->debug("starting to persist cache...");
 	            
 	            // persist dirty objects
 	            foreach ($this->dirty_objs as $collection => $ids) {
@@ -266,7 +266,7 @@ class owa_cache {
     
     function __destruct() {
         
-        //$this->persistCache();
+        $this->persistCache();
         $this->debug( $this->getStats() );
         $this->persistStats();
     }

@@ -288,7 +288,7 @@ class owa_entity {
         if($this->isCachable()) {
             $cache = owa_coreAPI::cacheSingleton();
             $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
-            $cache->set($this->getTableName(), $col.$this->get('id'), $this, $this->getCacheExpirationPeriod());
+            $cache->set($this->getTableName(), $col.$this->get( $col ), $this, $this->getCacheExpirationPeriod());
         }
     }
     

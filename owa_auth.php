@@ -210,7 +210,7 @@ class owa_auth extends owa_base {
         // set credentials
         $this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
         $this->credentials['password'] = $password;
-
+		owa_coreAPI::debug('auth by cookies');
         // lookup user if not already done.
         if ($this->_is_user == false) {
 
@@ -417,6 +417,8 @@ class owa_auth extends owa_base {
     function getUser() {
 
         // fetch user object from the db
+        owa_coreAPI::debug('auth get user: '. $this->credentials['user_id'] );
+        
         $this->u = owa_coreAPI::entityFactory('base.user');
         $this->u->getByColumn('user_id', $this->credentials['user_id']);
     }

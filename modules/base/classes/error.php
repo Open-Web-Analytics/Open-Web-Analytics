@@ -222,11 +222,16 @@ class owa_error {
 
     function logPhpErrors() {
 
-        error_reporting( -1 );
+        self::phpErrorSettings();
+        set_error_handler( array( $this, "handlePhpError" ) );
+    }
+    
+    static function phpErrorSettings() {
+	    
+	    error_reporting( -1 );
         ini_set('display_errors', 'On');
         ini_set("log_errors", 1);
         ini_set("error_log", owa_coreAPI::getSetting('base', 'error_log_file') );
-        set_error_handler( array( $this, "handlePhpError" ) );
     }
 
     /**

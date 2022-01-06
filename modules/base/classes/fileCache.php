@@ -186,7 +186,6 @@ class owa_fileCache extends owa_cacheType {
         if (file_exists($cache_file)) {
             @ unlink($cache_file);
             owa_coreAPI::debug('Cache File Removed: '.$cache_file);
-            $this->statistics['removed']++;
             return true;
         } else {
             owa_coreAPI::debug('Cache File does not exist: '.$cache_file);

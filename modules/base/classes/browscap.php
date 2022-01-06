@@ -86,17 +86,21 @@ class owa_browscap extends owa_base {
 
     function lookup( $user_agent ) {
 
-        $cache_obj = null;
+        $cap = null;
 
-        if ( owa_coreAPI::getSetting('base','cache_objects') ) {
-
-            owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );
-
-            $cache_obj = $this->cache->get( 'browscap', $this->ua );
-        }
-
-        if ( ! $cache_obj ) {
-
+        owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );
+		owa_coreAPI::debug('looking in cache for browscap');
+		
+		// check cache
+        $cap = $this->cache->get( 'browscap', $this->ua );
+        
+        if ( $cap ) {
+	        
+	        return $cap;
+	        
+        } else {
+	        
+        	// load parser
             $custom_db = owa_coreAPI::getSetting('base','ua-regexes');
 
             if ( $custom_db ) {
@@ -104,29 +108,29 @@ class owa_browscap extends owa_base {
                 $parser = Parser::create($custom_db);
 
             } else {
+	            
                 $parser = Parser::create();
             }
 
             $cap = $parser->parse( $this->ua );
 
-        } else {
-
-            $cap = $cache_obj;
-        }
-        if ( ! empty( $cap ) ) {
-
-            if ( owa_coreAPI::getSetting('base', 'cache_objects') ) {
-
-                $family = $cap->ua->family;
-
-                if (  $family != 'Default Browser' ) {
-
-                    $this->cache->set( 'browscap', $this->ua, $cap, $this->cacheExpiration );
-                }
-            }
-        }
-
-        return $cap;
+                
+	        if ( $cap ) {
+	
+	            if ( owa_coreAPI::getSetting('base', 'cache_objects') ) {
+	
+	                $family = $cap->ua->family;
+	
+	                if (  $family != 'Default Browser' ) {
+	
+	                    $this->cache->set( 'browscap', $this->ua, $cap, $this->cacheExpiration );
+	                }
+	            }
+	            
+	            return $cap;
+	        }
+	
+	    }
     }
 
     function robotRegexCheck() {
