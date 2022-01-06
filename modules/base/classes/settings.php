@@ -232,6 +232,7 @@
         }
 
      }
+      
      /**
       * Ovverrides settings - used in some controllers (@see owa_caller )
       * @param string $module
@@ -711,7 +712,7 @@
                 'currencyISO3'                        => 'USD',   // move to site settings
                 'memcachedServers'                    => array(),
                 'memcachedPersisantConnections'        => true,
-                'cacheType'                            => 'file',
+                'cacheType'                            => '', // file, memory, memcache
                 'disabledEndpoints'                    => array(),
                 'disableAllEndpoints'                => false,
                 'processQueuesJobSchedule'            => '10 * * * *',
