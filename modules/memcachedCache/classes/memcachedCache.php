@@ -35,7 +35,6 @@ class owa_memcachedCache extends owa_cacheType {
 
     var $mc;
    
-
     /**
      * Constructor
      *
@@ -43,7 +42,7 @@ class owa_memcachedCache extends owa_cacheType {
      *
      * @param $cache_dir string
      */
-    function __construct( $conf ) {
+    function __construct( $conf = [] ) {
 		
 		if ( array_key_exists( 'cache_id', $conf ) ) {
 			
@@ -75,6 +74,7 @@ class owa_memcachedCache extends owa_cacheType {
     }
 
     function get( $collection, $id ) {
+	    
         $key = $this->makeKey( array( $collection, $id ) );
         $item = $this->mc->get( $key );
 

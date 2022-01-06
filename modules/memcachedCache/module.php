@@ -34,6 +34,7 @@ class owa_memcachedCacheModule extends owa_module {
     
     function init() {
 	    
+/*
 	    $this->registerImplementation('object_cache_types', 'memcached', 'owa_memcachedCache', 'classes/memcachedCache.php');
 	    
 	    if ( owa_coreAPI::getSetting( 'memcachedCache', 'memcachedServers' ) ) {
@@ -45,5 +46,8 @@ class owa_memcachedCacheModule extends owa_module {
 		    
 		    owa_coreAPI::notice('No memcached servers found in configuration settings.');
 	    }
+*/
     }
 }
+
+?>

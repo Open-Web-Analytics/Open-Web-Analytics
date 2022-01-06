@@ -39,3 +39,5 @@ class owa_fileCacheModule extends owa_module {
 	    owa_coreAPI::setSetting('base', 'cacheType', 'file');
     }
 }
+
+?>
