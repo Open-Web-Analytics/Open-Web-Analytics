@@ -80,6 +80,7 @@ class owa_cache {
 	    	if ( $cache_type ) {
 	    	
 				$this->cold = owa_coreAPI::implementationFactory( 'object_cache_types', $cache_type, $this->cache_conf );
+				owa_coreAPI::debug( 'CACHE: created cold cache of type: ' . $cache_type );
 			}
 		}
     }
@@ -89,7 +90,6 @@ class owa_cache {
 	    if (! $this->cold ) {
 		    
 		    $this->createColdCache();
-		    owa_coreAPI::debug('created cold cache');
 	    }
 	    
 	    return $this->cold;
@@ -148,7 +148,7 @@ class owa_cache {
         // if in warm cahce n=increment stats
         if ( $obj ) {
 	        
-            $this->debug(sprintf('CACHE HIT (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));    
+            $this->debug(sprintf('CACHE: Hit (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));    
             $this->statistics['warm']++;
             return $obj;
                
@@ -165,14 +165,14 @@ class owa_cache {
 		            //put in warm cache
 	                //$this->cache[$collection][$id] = $item;
 	                $this->warm->set( $collection, $id, $item );
-	                $this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
+	                $this->debug(sprintf('CACHE: Hit (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
 	                $this->statistics['cold']++;
 	                return $this->warm->get( $collection, $id );
 	            }
 	        }
 	    }    
 	    
-	    $this->debug( sprintf( 'CACHE MISS - object not found for Collection: %s, id: %s', $collection, $id ) );
+	    $this->debug( sprintf( 'CACHE: Miss - object not found for Collection: %s, id: %s', $collection, $id ) );
 	    $this->statistics['miss']++; 
     }
     
