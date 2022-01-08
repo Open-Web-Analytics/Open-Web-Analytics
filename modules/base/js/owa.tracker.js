@@ -136,8 +136,10 @@ OWA.commandQueue.prototype = {
         }
         
         // give the first item in the queue & the callback to the handler
-        this.push(this.asyncCmds.shift(), callback);
-        
+        if (this.asyncCmds.length > 0) {
+	        
+        	this.push(this.asyncCmds.shift(), callback);
+        }
      
         /*
         for (var i=0; i < this.asyncCmds.length;i++) {
