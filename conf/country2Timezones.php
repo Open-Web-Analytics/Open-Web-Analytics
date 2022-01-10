@@ -257,7 +257,7 @@ $timezones = array(
         0           => "Asia/Hong_Kong"),
      
      "TR"   => array(
-        0           => "Asia/Istanbul"),
+        0           => "Europe/Istanbul"),
      
      "IL"   => array(
         0           => "Asia/Jerusalem"),
