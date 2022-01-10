@@ -15,11 +15,10 @@
 //
 // $Id$
 //
-require_once(OWA_PHPMAILER_DIR.'PHPMailer.php');
-require_once(OWA_PHPMAILER_DIR.'SMTP.php');
-require_once(OWA_PHPMAILER_DIR.'Exception.php');
 
 use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 /**
  * phpmailer wrapper class
@@ -33,7 +32,7 @@ use PHPMailer\PHPMailer\PHPMailer;
  * @since        owa 1.0.0
  */
 
-class owa_mailer extends owa_base {
+class owa_mailer {
         
     var $mailer;
 
@@ -44,17 +43,21 @@ class owa_mailer extends owa_base {
      * @throws \PHPMailer\PHPMailer\Exception
      */
     function __construct() {
-    
-        parent::__construct();
         
-        $this->mailer = new PHPMailer();
+        $this->mailer = new PHPMailer( true );
 		
         if ( owa_coreAPI::getSetting( 'base', 'mailer-from' ) ) {
+	        
             $this->mailer->setFrom(owa_coreAPI::getSetting( 'base', 'mailer-from' ), owa_coreAPI::getSetting( 'base', 'mailer-fromName' ));
         }
 
         if ( owa_coreAPI::getSetting( 'base', 'mailer-use-smtp' ) ) {
-        
+        	
+        	if ( owa_lib::inDebug() ) {
+	        	
+	        	$this->mailer->SMTPDebug = SMTP::DEBUG_SERVER; 
+        	}
+        	
             $this->mailer->IsSMTP(); // telling the class to use SMTP
             
             if ( owa_coreAPI::getSetting( 'base', 'mailer-host' ) ) {
