@@ -62,7 +62,9 @@ class owa_maxmind_geoipModule extends owa_module {
         }
 
         $this->method = $method;
-
+		
+		// turn on geo-location
+		owa_coreAPI::setSetting( 'base', 'geolocation_lookup', true );
         // needed so default filters will not fun
         owa_coreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 

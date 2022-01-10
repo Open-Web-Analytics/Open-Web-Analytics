@@ -614,7 +614,7 @@
                 'plugin_dir'                        => OWA_BASE_DIR . '/plugins/',
                 'module_dir'                        => OWA_BASE_DIR . '/modules',
                 'public_path'                        => '',
-                'geolocation_lookup'                => true,
+                'geolocation_lookup'                => false,
                 'geolocation_service'                => '',
                 'report_wrapper'                    => 'wrapper_default.tpl',
                 'announce_visitors'                    => false,
