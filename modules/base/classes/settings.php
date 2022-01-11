@@ -63,8 +63,13 @@
 
          // include/load config file
          $this->loadConfigFile();
+         
+         // set mailer domain (must be after config file is loaded)
+         $this->setMailerDomain();
+         
          // apply config constants
          $this->applyConfigConstants();
+         
          // setup directory paths
          $this->setupPaths();
 
@@ -529,16 +534,13 @@
          return $config2->fetch('base');
 
      }
-
-
-     /**
-      * @return array
-      */
-     private function getDefaultSettingsArray() {
-	 	 
-	 	 if (isset($_SERVER['SERVER_NAME'])) {
+     
+     function setMailerDomain() {
+	     
+	     if ( isset( $_SERVER[ 'SERVER_NAME' ] ) ) {
 		 	 
 		 	 $mailer_domain = $_SERVER['SERVER_NAME'];
+	 	 
 	 	 } else {
 		 	 
 		 	 if ( defined( 'PUBLIC_URL' ) ) {
@@ -547,6 +549,15 @@
 			 	 $mailer_domain = $parts['host'];
 		 	 }
 	 	 }
+	 	 
+	 	 return 'owa@' .$mailer_domain;
+     }
+
+
+     /**
+      * @return array
+      */
+     private function getDefaultSettingsArray() {
 	 	 
          return array(
              'base' => array(
@@ -639,7 +650,7 @@
                 'wiki_url'                            => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
                 'password_length'                    => 4,
                 'modules'                            => array('base'),
-                'mailer-from'                        => 'owa@' . $mailer_domain, // Set default address, because sending from root@localhost wont work
+                'mailer-from'                        => '',  // Set default address, because sending from root@localhost wont work
                 'mailer-fromName'                    => 'OWA Mailer',
                 'mailer-host'                        => '',
                 'mailer-port'                        => '',
