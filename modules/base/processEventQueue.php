@@ -84,15 +84,17 @@ class owa_processEventQueueController extends owa_cliController {
                         owa_coreAPI::debug( 'Event returned: '.print_r( $event, true ) );
 
                         if ( $event ) {
-
+							
+							owa_coreAPI::debug('received event from queue');
+								
                             // process event if needed
                             // lookup which event processor to use to process this event type
                             $processor_action = owa_coreAPI::getEventProcessor( $event->getEventType() );
 
                             if ( $processor_action ) {
-
+								owa_coreAPI::debug("event directly handled");
                                 // processor handles it's own event dispatching, so just return
-                                return owa_coreAPI::handleRequest( array( 'event' => $event ), $processor_action );
+                                $ret = owa_coreAPI::handleRequest( [ 'event' => $event ], $processor_action );
 
                             } else {
 
@@ -108,8 +110,9 @@ class owa_processEventQueueController extends owa_cliController {
 
                         } else {
                             // if no event, stop the loop
-                            $more = false;
                             owa_coreAPI::notice("No more events to process.");
+                            $more = false;
+                            
                         }
                     }
 
