@@ -327,7 +327,7 @@ class owa_sanitize {
             )
         );
 
-        return str_replace('&amp;', '&', $url);
+        return trim(str_replace('&amp;', '&', $url));
     }
 
     public static function cleanUserId ( $user_id ) {

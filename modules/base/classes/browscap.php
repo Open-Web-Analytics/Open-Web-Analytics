@@ -16,8 +16,6 @@
 // $Id$
 //
 
-//require_once( OWA_UAPARSER_LIB );
-require_once ( OWA_VENDOR_DIR . 'autoload.php' );
 use UAParser\Parser;
 
 /**
@@ -74,7 +72,7 @@ class owa_browscap extends owa_base {
 
         //lookup UA
         $this->browser = $this->lookup( $this->ua );
-        $this->e->debug('Browser Name : '. $this->getUaFamilyVersion() );
+        owa_coreAPI::debug('Browser Name : '. $this->getUaFamilyVersion() );
 
     }
 

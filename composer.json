@@ -18,6 +18,7 @@
     
     "require": {
     	"ua-parser/uap-php": "~3.9.7",
-    	"phpmailer/phpmailer": "^6.5"
+    	"phpmailer/phpmailer": "^6.5",
+    	"guzzlehttp/guzzle": "^7.0"
     }
 }

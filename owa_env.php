@@ -27,6 +27,7 @@
  * @version        $Revision$
  * @since        owa 1.0.0
  */
+  
 if (!defined('OWA_PATH')) {
     define('OWA_PATH', dirname(__FILE__));
 }
@@ -38,12 +39,12 @@ define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules/base/');
 define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'classes/');
 define('OWA_INCLUDE_DIR', OWA_DIR.'includes/');
 define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.13.1');
-define('OWA_PHPMAILER_DIR', OWA_INCLUDE_DIR.'PHPMailer-6.1.4/src/');
-define('OWA_HTTPCLIENT_DIR', OWA_INCLUDE_DIR.'httpclient-2016-05-02/');
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
 define('OWA_CONF_DIR', OWA_DIR.'conf/');
 define('OWA_THEMES_DIR', OWA_DIR.'themes/');
 define('OWA_VERSION', 'master');
 define('OWA_VENDOR_DIR', OWA_DIR.'vendor/');
+
+require_once ( OWA_VENDOR_DIR . 'autoload.php' );
 
 ?>

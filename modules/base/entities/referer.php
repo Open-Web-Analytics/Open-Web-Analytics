@@ -64,8 +64,7 @@ class owa_referer extends owa_entity {
 
         $crawler = new owa_http;
         $res = $crawler->getRequest($this->get('url'));
-        owa_coreAPI::debug('http request response: '.print_r($res, true));
-
+        
         $title = trim($crawler->extract_title());
 
         if ($title) {

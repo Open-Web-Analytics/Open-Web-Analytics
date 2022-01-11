@@ -16,6 +16,9 @@
 // $Id$
 //
 
+require_once ( OWA_BASE_DIR. '/owa_httpRequest.php' );
+
+
 /**
  * OWA News Widget Controller
  * 
