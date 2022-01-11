@@ -22,8 +22,10 @@ if ( ! class_exists( 'owa_eventQueue' ) ) {
 if ( ! class_exists( 'owa_event' ) ) {
     require_once(OWA_BASE_CLASS_DIR.'event.php');
 }
-require_once(OWA_PEARLOG_DIR . '/Log.php');
-require_once(OWA_PEARLOG_DIR . '/Log/file.php');
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
 
 /**
  * File based Event Queue Implementation
@@ -106,12 +108,34 @@ class owa_fileEventQueue extends owa_eventQueue {
     function makeQueue() {
 
         //make file queue
-        $conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-        //$this->queue = &Log::singleton('async_queue', $this->event_file, 'async_event_queue', $conf);
-        $this->queue = Log::singleton('file', $this->event_file, $this->queue_name, $conf);
-        $this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s';
+        //$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
+        
+        //$this->queue = Log::singleton('file', $this->event_file, $this->queue_name, $conf);
+        //$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s';
         // not sure why this is needed but it is.
-        $this->queue->_filename    = $this->event_file;
+        //$this->queue->_filename    = $this->event_file;
+        
+        
+        
+        //////
+        $this->queue = new Logger( $this->queue_name );
+        
+        $pid = getmypid();
+        $dt = "H:i:s Y-m-d";
+        $template = "%datetime%|*|$this->queue_name|*|$pid|*|%message%\n";
+        
+        $formatter = new LineFormatter($template, $dt, true, true);
+        
+        $stream = new StreamHandler( $this->event_file, Logger::NOTICE );
+        
+		$stream->setFormatter($formatter);
+		
+		// add stream handler to logger
+		$this->queue->pushHandler($stream);
+        
+        
+        
+        
     }
 
     function openFile( $file ) {
@@ -179,10 +203,11 @@ class owa_fileEventQueue extends owa_eventQueue {
     function sendMessage($event) {
 
         if ( ! $this->queue ) {
+	        
             $this->makeQueue();
         }
 
-        $this->queue->log( urlencode( serialize( $event ) ) );
+        $this->queue->notice( urlencode( serialize( $event ) ) );
     }
 
 
@@ -211,8 +236,8 @@ class owa_fileEventQueue extends owa_eventQueue {
             if ( ! feof( $this->currentProcessingFileHandle ) ) {
 
                 // Parse the row
-                //owa_coreAPI::debug('returning buffer: '. print_r( $buffer, true));
-                //owa_coreAPI::debug('returning buffer: '. print_r( $buffer, true));
+                owa_coreAPI::debug('returning buffer: '. print_r( $buffer, true));
+               
                 $event = $this->parse_log_row( $buffer );
                 //owa_coreAPI::debug('returning event: '. print_r( $event, true));
                 $event->wasReceived();
@@ -299,7 +324,8 @@ class owa_fileEventQueue extends owa_eventQueue {
     }
 
     function deleteFile( $path ) {
-
+	    
+		owa_coreAPI::debug('About to deleting file: ' . $path);
         return unlink( $path );
     }
 
@@ -320,7 +346,8 @@ class owa_fileEventQueue extends owa_eventQueue {
     }
 
     function archiveProcessedFile( $file ) {
-
+		
+		owa_coreAPI::debug('Archiving file: ' . $file);
         $new_file_path = $this->archive_path . basename( $file );
         $ret = owa_lib::moveFile( $file, $new_file_path );
     }
