@@ -236,16 +236,13 @@ class owa_http {
 		
         try {
 	        
-	        $request = new Request('GET', $url  );
+	        $request = new Request('GET', trim( $url )  );
 	        $this->response = $this->http->send( $request, [
 		        
 		        'allow_redirects' => true,
-		        'exceptions' => false,
 		        'headers' => [
+			        
 					'User-Agent' => owa_coreAPI::getSetting('base', 'owa_user_agent')
-					
-				
-					
 				]
 	        ]);
 	        
