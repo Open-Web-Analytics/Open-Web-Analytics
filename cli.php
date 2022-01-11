@@ -66,12 +66,12 @@ if (empty($params)) {
 
 // Initialize owa
 $owa = new owa_caller;
-
+$owa->setSetting('base', 'request_mode', 'cli');
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // setting CLI mode to true
     //$owa->setSetting('base', 'cli_mode', true);
-    $owa->setSetting('base', 'request_mode', 'cli');
+    
     // setting user auth
     $owa->setCurrentUser('admin', 'cli-user');
     // run controller or view and echo page content
@@ -86,11 +86,11 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
             $params['do'] = $cmd;
             echo $owa->handleRequest($params);
         } else {
-            echo "Invalid command name.";
+            owa_coreAPI::notice( "Invalid command name.");
         }
 
     } else {
-        echo "Missing a command argument.";
+        owa_coreAPI::notice("Missing a command argument.");
     }
 
 } else {
