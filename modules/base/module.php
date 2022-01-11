@@ -2445,7 +2445,11 @@ class owa_baseModule extends owa_module {
 
         // Nofifcation handler
         if ( owa_coreAPI::getSetting( 'base', 'announce_visitors' )
-            && owa_coreAPI::getSetting( 'base', 'notice_email' ) ) {
+            && owa_coreAPI::getSetting( 'base', 'notice_email' ) 
+            //&& ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' )
+            && ! defined('OWA_CLI')
+            
+        ) {
 
             $this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
         }
