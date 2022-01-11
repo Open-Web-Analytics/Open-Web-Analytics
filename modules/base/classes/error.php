@@ -303,7 +303,7 @@ class owa_error {
     
     function getDateTimestamp() {
 	    
-	    return date("H:i:s Y-m-d");
+	    return "H:i:s Y-m-d";
     }
     
     function getLineFormat() {
