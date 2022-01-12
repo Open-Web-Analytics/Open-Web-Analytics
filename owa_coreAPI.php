@@ -1427,37 +1427,16 @@ class owa_coreAPI {
         }
         return $sites;
     }
-
+	
+	
     public static function profile($that = '', $function = '', $line = '', $msg = '') {
 
-        if (defined('OWA_PROFILER')) {
-            if (OWA_PROFILER === true) {
-
-                static $profiler;
-
-                if (!class_exists('PhpQuickProfiler')) {
-                    require_once(OWA_INCLUDE_DIR.'pqp/classes/PhpQuickProfiler.php');
-                }
-
-                if (empty($profiler)) {
-                    $profiler = new PhpQuickProfiler(PhpQuickProfiler::getMicroTime(), OWA_INCLUDE_DIR.'pqp/');
-                }
-
-                $class = get_class($that);
-                Console::logSpeed($class."::$function - Line: $line - Msg: $msg");
-                Console::logMemory($that, $class. "::$function - Line: $line");
-
-                return $profiler;
-            }
-        }
+        return;    
     }
 
     public static function profileDisplay() {
-        $p = owa_coreAPI::profile();
-        if ($p) {
-            $p->display();
-        }
-
+        
+		return;
     }
 
     public static function getEventDispatch() {
