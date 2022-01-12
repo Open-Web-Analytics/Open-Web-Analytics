@@ -195,13 +195,6 @@ abstract class owa_module {
     var $api_methods = array();
 
     /**
-     * Background Jobs
-     *
-     * @var array
-     */
-    var $background_jobs = array();
-
-    /**
      * Controllers
      *
      * @var array
@@ -264,11 +257,6 @@ abstract class owa_module {
          * Register API Methods
          */
         $this->registerApiMethods();
-
-        /**
-         * Register Background Jobs
-         */
-        $this->registerBackgroundJobs();
 
         /**
          * Register Build Packages
@@ -1031,17 +1019,6 @@ abstract class owa_module {
         $s->setMapValue($type, $key, $class_info);
     }
 
-    function registerBackgroundJob($name, $command, $cron_tab, $max_processes = 1) {
-
-        $job = array('name'                =>    $name,
-                     'cron_tab'            =>    $cron_tab,
-                     'command'            =>    $command,
-                     'max_processes'    =>    $max_processes);
-
-        $s = owa_coreAPI::serviceSingleton();
-        $s->setMapValue('background_jobs', $name, $job);
-    }
-
     /**
      * Register Environmental Tracking Properties
      *
@@ -1152,17 +1129,6 @@ abstract class owa_module {
      * and should be redefined in a concrete module class.
      */
     function registerFilters() {
-
-        return false;
-    }
-
-    /**
-     * Abstract method for registering individual Filter Methods
-     *
-     * This method is called by a module's constructor
-     * and should be redefined in a concrete module class.
-     */
-    function registerBackgroundJobs() {
 
         return false;
     }

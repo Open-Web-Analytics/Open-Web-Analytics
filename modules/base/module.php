@@ -521,18 +521,6 @@ class owa_baseModule extends owa_module {
 
         return $cmds;
     }
-
-    /**
-     * Register Background jobs
-     *
-     * The following lines register background jobs used by the
-     * background daemon.
-     */
-    function registerBackgroundJobs() {
-
-        // event procesing daemon jobs
-        $this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
-    }
     
     function registerActions() {
 
