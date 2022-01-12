@@ -38,7 +38,6 @@ define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
 define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules/base/');
 define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'classes/');
 define('OWA_INCLUDE_DIR', OWA_DIR.'includes/');
-define('OWA_PEARLOG_DIR', OWA_INCLUDE_DIR.'Log-1.13.1');
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
 define('OWA_CONF_DIR', OWA_DIR.'conf/');
 define('OWA_THEMES_DIR', OWA_DIR.'themes/');

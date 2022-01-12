@@ -188,22 +188,6 @@ class owa_lib {
     }
 
     /**
-     * Error Handler
-     *
-     * @param string $msg
-     * @access public
-     * @depricated
-     */
-    function errorHandler($msg) {
-        require_once(OWA_PEARLOG_DIR . '/Log.php');
-        $conf = array('mode' => 0755, 'timeFormat' => '%X %x');
-        $error_logger = &Log::singleton('file', $this->config['error_log_file'], 'ident', $conf);
-        $this->error_logger->_lineFormat = '[%3$s]';
-
-        return;
-    }
-
-    /**
      * Information array for Months in the year.
      *
      * @return array
