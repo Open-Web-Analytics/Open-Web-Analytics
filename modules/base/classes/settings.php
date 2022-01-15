@@ -646,7 +646,6 @@
                 'log_clicks'                        => true,
                 'timezone'                            => 'America/Los_Angeles',
                 'log_dom_stream_percentage'            => 50,
-                'owa_wiki_link_template'            => 'http://wiki.openwebanalytics.com/index.php?title=%s',
                 'wiki_url'                            => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
                 'password_length'                    => 4,
                 'modules'                            => array('base'),
