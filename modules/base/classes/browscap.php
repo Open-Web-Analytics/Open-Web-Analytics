@@ -157,11 +157,11 @@ class owa_browscap extends owa_base {
 
         foreach ( $robots as $k => $robot ) {
 
-            $match = strpos( strtolower( $this->ua ), $robot );
+            $match = stripos( $this->ua , $robot );
 
             if ( $match ) {
 
-                owa_coreAPI::debug('Robot detect string found.');
+                owa_coreAPI::debug('Robot detect string found: ' . $robot );
 
                 break;
             }
