@@ -1,3 +1,4 @@
 /vendor/
 /owa-data/
 owa-config.php
+node_modules/
