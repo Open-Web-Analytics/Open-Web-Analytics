@@ -1,4 +1,4 @@
-"use strict";(self.webpackChunkowa=self.webpackChunkowa||[]).push([[18],{136:(t,e,s)=>{s.r(e),s.d(e,{Heatmap:()=>a});var o=s(755);
+"use strict";(self.webpackChunkowa=self.webpackChunkowa||[]).push([[18],{804:(t,e,s)=>{s.r(e),s.d(e,{Heatmap:()=>a});var o=s(755);
 /**
  * Javascript Heatmap Library
  * 

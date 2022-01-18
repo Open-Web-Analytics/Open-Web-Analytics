@@ -1,4 +1,4 @@
-"use strict";(self.webpackChunkowa=self.webpackChunkowa||[]).push([[200],{980:(e,t,a)=>{a.r(t),a.d(t,{Player:()=>o});var s=a(755);
+"use strict";(self.webpackChunkowa=self.webpackChunkowa||[]).push([[200],{993:(e,t,a)=>{a.r(t),a.d(t,{Player:()=>o});var s=a(755);
 /**
  * Domstream Player
  * 

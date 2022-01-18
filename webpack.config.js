@@ -1,6 +1,6 @@
 const path = require('path');
 const dist_path = '/modules/base/dist';
-const reporting_src_path = __dirname + '/modules/base/js/src/reporting/v1/';
+const reporting_src_path = __dirname + '/modules/base/src/reporting/v1/';
 const terser = require('terser');
 const WebpackConcatPlugin = require('webpack-concat-files-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
@@ -11,7 +11,7 @@ module.exports = {
     
 	    'owa.tracker.js': [
 		    
-	    	path.resolve(__dirname, '/modules/base/js/src/tracker/tracker-dom.js')
+	    	path.resolve(__dirname, '/modules/base/src/tracker/tracker-dom.js')
 	    ],
 	    
 	},
