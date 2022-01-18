@@ -9,22 +9,15 @@ labels: bug
 
 - [ ] I followed the [installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Installation) or [update](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Updating) guide
 - [ ] [I read the troubleshooting guide in the wiki](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Troubleshooting) 
+- [ ] I have attached http headers, console/shell errors, or debug from OWA's error log file.
 
-**Affected Version(s)**: x.y.z
+**OWA Version**: x.y.z
 
 **PHP Version**: 7.x FPM
 
 **Webserver**: Apache/Nginx
 
 **Browser**: Chrome 80.x.x
-
-**Installation Type**
-
-<!-- Please write the version behind your installation type if you are using an plugin -->
-
-- [ ] Wordpress x.y.z
-- [ ] Mediawiki x.y.z
-- [ ] Standalone
 
 **Description**  
 <!-- A clear and concise description of the problem. -->
