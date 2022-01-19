@@ -1,7 +1,12 @@
 name: Package Release
 on:
-  release:
-    types: [published]
+	workflow_dispatch:
+		inputs:
+	      input:
+	        description: "Test"
+	        required: false
+	        default: "World"
+  
 jobs:
   tag:
     name: New release
