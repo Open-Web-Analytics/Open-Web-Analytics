@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         ref: master
-    #- uses: actions/checkout@v2
+    # create a release branch and bump version in appropriate files.
     - name: Create release branch
       run: |
         git config user.name github-actions
@@ -36,21 +36,24 @@ jobs:
         git -C ./ commit -m "Updating version string."
         echo Pushing change into Branch
         git -C ./ push --set-upstream origin release-${{ env.VERSION }}
-    - name: Composer (php-actions)
+    # install the composer vendor directory
+    - name: Install Composer Dependancies
       uses: php-actions/composer@v1
-    - name: npm 
+    # setup node and build js/asset bundles
+    - name: Setup Node/npm 
       uses: actions/setup-node@v2
       with:
         node-version: '12'
-    - name: Build
+    - name: Build Javascript/Asset Packages
       run: |
         npm install
         npm run build
-    
-    - name: tarball generation
+    # Generate a release tarball excluding files that are not needed in a distro
+    - name: Generate Release Tarball
       run: |
         tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
-    - name: create release
+    #create a draft release on github and attach tarball as asset
+    - name: Create Draft Github Release
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -65,7 +68,7 @@ jobs:
             - Second Change
         draft: true
         prerelease: false
-    - name: Upload Release Asset
+    - name: Upload Tarball to Github Release
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       env:
