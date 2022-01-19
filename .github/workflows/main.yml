@@ -1,0 +1,41 @@
+name: Package Release
+on:
+  release:
+    types: [draft]
+jobs:
+  tag:
+    name: New release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: 1.7.4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        ref: master
+    - name: Composer (php-actions)
+      uses: php-actions/composer@v1
+    - name: npm 
+      uses: actions/setup-node@v2
+      with:
+            node-version: '12'
+    - name: Build
+      run: |
+        npm install
+        npm run build
+    - name: create release branch
+      run: |
+        git -C checkout -b release-${{ env.VERSION }}
+        echo changing version string in owa_env.php
+        sed -i "" "s/master/${{ env.VERSION}}/g" ./owa_env.php
+        cat ./owa_env.php
+        echo Committing local changes
+        git -C ./ status
+        git -C ./ add owa_env.php
+        git -C ./ commit -m "Updating version string."
+        echo Pushing change into Branch
+        git -C ./ push --set-upstream origin release-${{ env.VERSION }}
+    - name: tarball generation
+      run: |
+        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package.lock' --exclude='./package.json' --exclude='./webpack.conf.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
+        ls -la
