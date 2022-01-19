@@ -6,7 +6,6 @@ on:
         description: test
         required: false
         default: 'test input'
-				
 jobs:
   tag:
     name: New release
@@ -23,7 +22,7 @@ jobs:
     - name: npm 
       uses: actions/setup-node@v2
       with:
-            node-version: '12'
+        node-version: '12'
     - name: Build
       run: |
         npm install
