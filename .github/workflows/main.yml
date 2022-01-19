@@ -1,11 +1,11 @@
 name: Package Release
 on: 
-	workflow_dispatch:
-		inputs:
-			name:
-				description: test
-				required: false
-				default: 'test input'
+  workflow_dispatch:
+    inputs:
+      name:
+        description: test
+        required: false
+        default: 'test input'
 				
 jobs:
   tag:
