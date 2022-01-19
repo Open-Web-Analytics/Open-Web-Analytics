@@ -26,10 +26,11 @@ jobs:
         sed -i "s/master/${{ env.VERSION }}/g" owa_env.php
         sed -i 's/"version": "1.0.0",/"version": "${{ env.VERSION }}",/g' package.json
         cat ./owa_env.php
+        cat ./package.json
         echo Committing local changes
         git -C ./ status
         git -C ./ add owa_env.php
-        git -C ./ package.json
+        git -C ./ add package.json
         git -C ./ commit -m "Updating version string."
         echo Pushing change into Branch
         git -C ./ push --set-upstream origin release-${{ env.VERSION }}
