@@ -1,7 +1,7 @@
 name: Package Release
 on:
   release:
-    types: [draft]
+    types: [unpublished]
 jobs:
   tag:
     name: New release
