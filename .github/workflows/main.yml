@@ -45,8 +45,8 @@ jobs:
     - name: tarball generation
       run: |
         tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package.lock' --exclude='./package.json' --exclude='./webpack.conf.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
-     - name: Create Release
-       uses: actions/create-release@v1
+    - name: Create Release
+    - uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
