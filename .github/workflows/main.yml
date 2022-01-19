@@ -44,5 +44,4 @@ jobs:
     
     - name: tarball generation
       run: |
-        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package.lock' --exclude='./package.json' --exclude='./webpack.conf.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
-        ls -la
+        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package.lock' --exclude='./package.json' --exclude='./webpack.conf.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
