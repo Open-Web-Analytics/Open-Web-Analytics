@@ -31,7 +31,7 @@ jobs:
       run: |
         git -C ./ checkout -b release-${{ env.VERSION }}
         echo changing version string in owa_env.php
-        sed -i "" "s/master/${{ env.VERSION }}/g" owa_env.php
+        sed -i s/master/${{ env.VERSION }}/g" owa_env.php
         cat ./owa_env.php
         echo Committing local changes
         git -C ./ status
