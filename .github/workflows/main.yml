@@ -51,15 +51,15 @@ jobs:
     - name: create release
       id: create_release
       uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          commitish: release-${{ env.VERSION }}
-          tag_name: ${{ env.VERSION }}-beta
-          release_name: Release ${{ env.VERSION }}-beta
-          body: |
-            Changes in this Release
-            - First Change
-            - Second Change
-          draft: true
-          prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        commitish: release-${{ env.VERSION }}
+        tag_name: ${{ env.VERSION }}-test
+        release_name: Release ${{ env.VERSION }}-test
+         body: |
+          Changes in this Release
+          - First Change
+          - Second Change
+        draft: true
+        prerelease: false
