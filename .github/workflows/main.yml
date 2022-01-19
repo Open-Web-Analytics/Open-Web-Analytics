@@ -2,16 +2,16 @@ name: Package Release
 on: 
   workflow_dispatch:
     inputs:
-      name:
-        description: test
-        required: false
-        default: 'test input'
+      version:
+        description: The version name of the release (e.g. 1.1.5)
+        required: true
+        default: ''
 jobs:
   tag:
     name: New release
     runs-on: ubuntu-latest
     env:
-      VERSION: 1.7.4
+      VERSION: ${{ github.event.inputs.version }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
