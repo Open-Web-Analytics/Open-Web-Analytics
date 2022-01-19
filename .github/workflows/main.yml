@@ -57,9 +57,10 @@ jobs:
         commitish: release-${{ env.VERSION }}
         tag_name: ${{ env.VERSION }}-test
         release_name: Release ${{ env.VERSION }}-test
-         body: |
-          Changes in this Release
-          - First Change
-          - Second Change
+        body: |
+           Changes in this Release
+            - First Change
+            - Second Change
         draft: true
         prerelease: false
+        
