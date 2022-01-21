@@ -1,9 +1,28 @@
 AddHandler application/x-httpd-php .tpl
 
 <IfModule mod_rewrite.c>
+
 RewriteEngine On
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule api/(.*)$ api/index.php?owa_rest_params=$1 [QSA,NC,L]
+
+
+# Rewrites for new tracker location (../base/js/owa.tracker-combined-min.js) to new location (../base/dist/owa.tracker.js)
+# need to properly sniff the protocol or else you could get a CSP error in the browser under https
+
+RewriteCond %{REQUEST_URI} (.*)/modules/base/js/owa.tracker-combined-min.js$
+RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
+RewriteCond %{HTTPS} =on [OR]
+RewriteCond %{REQUEST_SCHEME} =https
+RewriteRule owa.tracker-combined-min.js$ https://%{HTTP_HOST}%1/modules/base/dist/owa.tracker.js [NC,R=301,L]
+
+RewriteCond %{REQUEST_URI} (.*)/modules/base/js/owa.tracker-combined-min.js$
+RewriteCond %{HTTP:X-Forwarded-Proto} =http [OR]
+RewriteCond %{HTTPS} =off [OR]
+RewriteCond %{REQUEST_SCHEME} =http
+RewriteRule owa.tracker-combined-min.js$ http://%{HTTP_HOST}%1/modules/base/dist/owa.tracker.js [NC,R=301,L]
+
 </IfModule>
 
