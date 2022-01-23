@@ -69,6 +69,8 @@ class Util {
 
     static setCookie( name, value, days, path, domain, secure ) {
         
+        secure = Util.isHttps();
+        
         var date = new Date();
         date.setTime(date.getTime()+(days*24*60*60*1000));
         
@@ -1397,6 +1399,11 @@ class Util {
         }
         
         return true;
+    }
+    
+    static isHttps() {
+	    
+	    return (document.location.protocol == 'https:');
     }
 }
 

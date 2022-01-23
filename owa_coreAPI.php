@@ -1166,7 +1166,6 @@ class owa_coreAPI {
 
         $e = owa_coreAPI::errorSingleton();
         $e->notice($msg);
-        return;
     }
 
     public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false) {
@@ -1174,7 +1173,9 @@ class owa_coreAPI {
         if ( $domain ) {
             // sanitizes the domain
             $domain = owa_lib::sanitizeCookieDomain( $domain );
+            
         } else {
+	        
             $domain = owa_coreAPI::getSetting('base', 'cookie_domain');
         }
         if (is_array($cookie_value)) {
@@ -1190,12 +1191,31 @@ class owa_coreAPI {
 
         // makes cookie to session cookie only
         if (!owa_coreAPI::getSetting('base', 'cookie_persistence')) {
+	        
             $expires = 0;
         }
 		
-        //owa_coreAPI::debug('time: '.$expires);
-        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
-        
+		$secure = owa_lib::isHttps();
+	
+        // PHP 7.3 has a different function signature.
+        // @todo refactor usage to clean up once php 7.3 is min requirment.
+        if (PHP_VERSION_ID < 70300) {
+	        
+	        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);   
+	        
+	    } else {
+		    	
+			$options = [
+		        
+		        'expires' 	=> $expires,
+                'path' 		=> '/',
+                'samesite' 	=> 'Lax',
+                'domain' 	=> $domain,
+                'secure' 	=> $secure
+	        ];
+	        
+	        setcookie($cookie_name, $cookie_value, $options); 
+	    }
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
