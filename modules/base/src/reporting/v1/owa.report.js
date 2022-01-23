@@ -466,21 +466,8 @@ OWA.report.timePeriodControl = function( dom_id, options ) {
                         this.formatYyyymmdd(this.getEndDate(), '/')
                 );
 
-    if ( ! OWA.isJsLoaded( 'jquery-ui') ) {
+    this.setupDomElements();
     
-        OWA.requireJs( 
-            'jquery-ui', 
-            OWA.getOption('modules_url') + 'base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js', 
-            OWA.requireJs(
-                'jqote', 
-                OWA.getOption('modules_url') + 'base/js/includes/jquery/jQote2/jquery.jqote2.min.js',
-                this.setupDomElements()
-            )
-        );
-        
-    } else {
-        this.setupDomElements();
-    }
 };
 
 OWA.report.timePeriodControl.prototype = {
