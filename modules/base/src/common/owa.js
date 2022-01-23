@@ -19,7 +19,6 @@ class OWA {
 		    filters: {}
 	    };
 	    
-	    this.loadedJsLibs = {};
 	    this.overlay = '';
 	    this.config = {
 	        ns: 'owa_',
@@ -60,22 +59,6 @@ class OWA {
         return string;
     }
     
-    requireJs(name, url, callback) {
-        
-        if ( ! this.isJsLoaded( name ) ) {
-            Util.loadScript( url, callback );
-        }
-        
-        this.loadedJsLibs[name] = url;
-    }
-    
-    isJsLoaded( name ) {
-    
-        if ( this.loadedJsLibs.hasOwnProperty( name ) ) {
-            return true;
-        }
-    }
-
     initializeStateManager() {
         
         if ( ! this.state.hasOwnProperty('init') ) {
