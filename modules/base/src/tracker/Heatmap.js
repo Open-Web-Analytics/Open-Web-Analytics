@@ -7,7 +7,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  */
  
-//import { OWA_instance as OWA } from './owa.js'; 
+import { OWA_instance } from '../common/owa.js'; 
 import * as jQuery from 'jquery';
 
 class Heatmap {
@@ -293,7 +293,8 @@ class Heatmap {
     }
 
     getRgbFromAlpha(alpha) {
-
+		
+		var tmp = 0;
         var rgb = {'r': null, 'g': null, 'b': null};
 
         // set colors based on current alpha value
