@@ -39,6 +39,7 @@ class owa_entity {
     var $_tableProperties = array();
     var $wasPersisted;
     var $cache;
+    var $dirty = [];
     
     function init() {
         
@@ -200,13 +201,37 @@ class owa_entity {
     function set($name, $value, $filter = true) {
         
         if ( array_key_exists( $name, $this->properties ) ) {
+	        
+	        $existing_value = $this->get( $name );
+            
             $method = $name.'SetFilter';
+            
             if ( $filter && method_exists( $this, $method ) ) {
-                $this->properties[$name]->setValue( $this->$method( $value ) );
-            } else {
-                $this->properties[$name]->setValue( $value );
+	            
+	            $value = $this->$method( $value );
+            }    
+            
+            $this->properties[$name]->setValue( $value );
+            
+            if ( $existing_value != $value ) {
+	            
+	            $this->markDirty( $name, $value );
             }
+            
         }
+    }
+    
+    function markDirty( $name, $value ) {
+	    
+	    $this->dirty[$name] = $value;
+    }
+    
+    function isDirty() {
+	    
+	    if ( ! empty( $this->dirty ) ) {
+		    
+		    return true;
+	    }
     }
     
     // depricated
