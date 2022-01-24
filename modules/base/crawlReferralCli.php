@@ -69,7 +69,10 @@ class owa_crawlReferralCliController extends owa_cliController
         $r = owa_coreAPI::entityFactory('base.referer');
         $r->load($id);
         $r->crawlReferer();
-        $r->update();
+        
+        if ( $r->isDirty() ) {
+        	$r->update();
+		}
     }
 
     public function updateAllReferrer()
