@@ -76,6 +76,13 @@ class owa_referer extends owa_entity {
         if ($se == true) {
             return;
         }
+        
+        $medium = $this->get('medium');
+        
+        if ( $medium === 'organic-search' || $medium === 'social-network' ) {
+	        
+	        return;
+        }
 
         //Extract anchortext and page snippet but not if it's a search engine...
         $snippet = $crawler->extract_anchor_snippet($this->get('url'));
