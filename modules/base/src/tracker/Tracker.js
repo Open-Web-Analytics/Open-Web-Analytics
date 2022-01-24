@@ -86,7 +86,13 @@ class OWATracker  {
 	        {d: 'rambler', q: 'query'},
 	        {d: 'rambler', q: 'words'},
 	        {d: 'duckduckgo', q: 'q'},
-	    ],
+	    ];
+	    
+	    this.socialNetworks = [
+		    
+		    'facebook', 'twitter', 'pinterest', 'instagram', 'linkedin', 't.co'
+	    ];
+	    
 	    /**
 	     * GET params parsed from URL
 	     */
@@ -1532,19 +1538,32 @@ class OWATracker  {
         var session_referer = '(none)';
 
         if ( ref ) {
+	        
             var uri = new Uri( ref );
 
             // check for external referer
-
             if ( document.domain != uri.getHost() ) {
 
                 medium = 'referral';
                 session_referer = ref;
                 source = Util.stripWwwFromDomain( uri.getHost() );
+                
+                // check for search engine
                 var engine = this.isRefererSearchEngine( uri );
+                
                 if ( engine ) {
+                    
                     medium = 'organic-search';
                     search_terms = engine.t || '(not provided)';
+                    
+                } else {
+                	// check for social network
+	                var social = this.isRefererSocialNetwork( uri );
+	                
+	                if ( social ) {
+		                
+	                    medium = 'social-network';
+	                }
                 }
             }
         }
@@ -1559,6 +1578,22 @@ class OWATracker  {
     setCampaignCookie( values ) {
 	    
         OWA.setState( 'c', 'attribs', values, '', 'json', this.options.campaignAttributionWindow );
+    }
+    
+    isRefererSocialNetwork( uri ) {
+	    
+	    for ( var i = 0, n = this.socialNetworks.length; i < n; i++ ) {
+		    
+		    var domain = this.socialNetworks[i];
+		    var host = uri.getHost();
+		    
+		    if ( Util.strpos(host, domain) ) {
+			    
+                OWA.debug( 'Found social network: %s', domain);
+
+                return domain;
+            }
+		}
     }
 
     isRefererSearchEngine( uri ) {
