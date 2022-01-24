@@ -186,7 +186,7 @@ class owa_entity {
             //if ( ! empty( $array[$v] ) ) {
             if ( array_key_exists( $v, $array ) ) {
                 if ( ! empty( $this->properties ) ) {
-                    $this->set($v, $array[$v], $apply_filters);
+                    $this->set($v, $array[$v], $apply_filters, false);
                 }
             }
         }
@@ -198,7 +198,7 @@ class owa_entity {
         
     }
     
-    function set($name, $value, $filter = true) {
+    function set($name, $value, $filter = true, $mark_dirty = true ) {
         
         if ( array_key_exists( $name, $this->properties ) ) {
 	        
