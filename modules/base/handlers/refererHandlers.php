@@ -103,7 +103,14 @@ class owa_refererHandlers extends owa_observer {
 		        if ( $medium != $r->get( 'medium' ) ) {
 			        
 			        $r->set( 'medium', $medium );
+			        
+			        if ( $medium === 'organic-search' ) {
+
+		                $r->set('is_searchengine', true);
+		            }
+		            
 			        $r->save();
+			        
 			        owa_coreAPI::debug("Updating Referrer medium to be: $medium");
 		        }
 			}
