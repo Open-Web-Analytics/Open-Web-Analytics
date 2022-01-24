@@ -735,6 +735,7 @@
                 'archive_old_events'                => true, // used by event queues to archive processed events.
                 'request_mode'						=> 'web_app',
                 'useStaticConfigOnly'				=> false,
+                'allow_slowly_changing_dimensions'	=> true,
                 'db_supported_types'				=> ['mysql' => 'MySQL']
             )
         );

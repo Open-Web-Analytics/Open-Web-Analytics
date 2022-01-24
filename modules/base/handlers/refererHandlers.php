@@ -55,6 +55,8 @@ class owa_refererHandlers extends owa_observer {
         $r = owa_coreAPI::entityFactory('base.referer');
 
         $r->load( $event->get( 'referer_id' ) );
+        
+        $medium = $event->get('medium');
 
         if ( ! $r->wasPersisted() ) {
 
@@ -68,8 +70,6 @@ class owa_refererHandlers extends owa_observer {
 
             $r->set( 'site', $url['host'] );
 
-            $medium = $event->get('medium');
-
             if ( $medium === 'organic-search' ) {
 
                 $r->set('is_searchengine', true);
@@ -79,7 +79,8 @@ class owa_refererHandlers extends owa_observer {
             $r->set('page_title', '(not set)');
 
             // Crawl and analyze refering page
-            if ($medium != 'organic-search' ) {
+            if ( $medium != 'organic-search' || $medium != 'social-network' ) {
+	            
                 $r->crawlReferer();
             }
 
@@ -93,6 +94,20 @@ class owa_refererHandlers extends owa_observer {
             }
 
         } else {
+	        
+	        // check and update medium if it's new
+	        // @todo make this check for a "allow_slowly_changing_dimensions" setting flag
+	        
+	        if ( owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions') ) {
+		        
+		        if ( $medium != $r->get( 'medium' ) ) {
+			        
+			        $r->set( 'medium', $medium );
+			        $r->save();
+			        owa_coreAPI::debug("Updating Referrer medium to be: $medium");
+		        }
+			}
+			
             owa_coreAPI::debug('Not Persisting. Referrer already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
