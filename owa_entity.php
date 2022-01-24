@@ -294,6 +294,7 @@ class owa_entity {
         // Add to Cache
         if ($status == true) {
             $this->addToCache();
+            $this->dirty = [];
         }
         
         return $status;
@@ -306,6 +307,7 @@ class owa_entity {
         } else {
             return $this->create();
         }
+        
     }
     
     function addToCache($col = 'id') {
@@ -353,6 +355,7 @@ class owa_entity {
         // Add to Cache
         if ($status === true) {
             $this->addToCache();
+            $this->dirty = [];
         }
         
         return $status;
@@ -389,6 +392,7 @@ class owa_entity {
         // Add to Cache
         if ($status == true) {
             $this->addToCache();
+            $this->dirty = [];
         }
         
         return $status;
