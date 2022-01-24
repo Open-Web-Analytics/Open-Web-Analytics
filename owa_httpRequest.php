@@ -158,6 +158,14 @@ class owa_http {
 
         // Search the page for a specific anchor
         $this->extract_anchor($link);
+        
+        if (array_key_exists( 'anchor_text', $this->anchor_info ) ) {
+	        
+	        return $this->anchor_info['anchor_text'];
+        } else {
+	        
+	        return;
+        }
 
         if(!empty($this->anchor_info['anchor_tag'])) {
 
