@@ -106,7 +106,7 @@ class owa_http {
 		    	// $match[2] = link address
 				// $match[3] = link text	
 		          
-				if (isset($match[3] && $link === $match[3] ) ) {
+				if ($match[3] && $link === $match[3]  ) {
             		$this->anchor_info =  array('anchor_tag' => match[0], 'anchor_text' => owa_lib::inputFilter($match[3]));
 					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
 				}
