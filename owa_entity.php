@@ -213,7 +213,7 @@ class owa_entity {
             
             $this->properties[$name]->setValue( $value );
             
-            if ( $existing_value != $value ) {
+            if ( $mark_dirty && $existing_value != $value ) {
 	            
 	            $this->markDirty( $name, $value );
             }
