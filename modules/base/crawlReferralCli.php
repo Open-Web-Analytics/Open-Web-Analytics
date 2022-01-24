@@ -71,7 +71,9 @@ class owa_crawlReferralCliController extends owa_cliController
         $r->crawlReferer();
         
         if ( $r->isDirty() ) {
-        	$r->update();
+	        owa_coreAPI::debug('dirty columns:');
+	        owa_coreAPI::debug( $r->dirty );
+        	$r->save();
 		}
     }
 
