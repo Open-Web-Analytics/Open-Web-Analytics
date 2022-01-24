@@ -95,6 +95,25 @@ class owa_http {
      * @param string $link
      */
     function extract_anchor($link) {
+	    
+	    $regex = '/<a\s[^>]*href\s*=\s*([\"\']??)(http|https[^\\1 >]*?)\\1[^>]*>s*(.*)<\/a>/simU';
+	    
+	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
+		   
+		    owa_coreAPI::debug( 'TEST Found anchor info: ' . print_r( $matches, true ) );
+		    
+		    foreach($matches as $match) {
+		    	// $match[2] = link address
+				// $match[3] = link text	
+		          
+				if (isset($match[3] && $link === $match[3] ) ) {
+            		$this->anchor_info =  array('anchor_tag' => match[0], 'anchor_text' => owa_lib::inputFilter($match[3]));
+					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+				}
+			}
+		}
+	    
+	    return;
 
         $matches = '';
         $regex = '/<a[^>]*href=\"%s\"[^>]*>(.*?)<\/a>/i';
