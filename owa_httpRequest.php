@@ -273,7 +273,7 @@ class owa_http {
 		    $r = $e->getRequest();
 		  	$res = null;
 		  	
-		  	if ( $e->hasResponse() ) {
+		  	if ( method_exists( $e, 'hasResponse' ) && $e->hasResponse() ) {
 			  	
 			  	$res = $e->getResponse();
 		  	}
