@@ -94,136 +94,45 @@ class owa_http {
      *
      * @param string $link
      */
-    function extract_anchor($link) {
+    function extractAnchors() {
 	    
 	    $regex = '/<a\s[^>]*href\s*=\s*([\"\']??)(http|https[^\\1 >]*?)\\1[^>]*>s*(.*)<\/a>/simU';
 	    
 	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
 		   
-		    owa_coreAPI::debug( 'TEST Found anchor info: ' . print_r( $matches, true ) );
+		    owa_coreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
 		    
-		    foreach($matches as $match) {
-		    	// $match[2] = link address
-				// $match[3] = link text	
-		          
-				if ($match[3] && $link === $match[3]  ) {
-            		$this->anchor_info =  array('anchor_tag' => match[0], 'anchor_text' => owa_lib::inputFilter(  owa_sanitize::stripAllTags( $match[3] ) ));
-					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
-				}
+		    return $matches
+		}
+    }
+    
+    function extractAnchorText( $url ) {
+	    
+	    $anchors = $this->extractAnchors();
+	    
+	    $anchortext = '';
+	    
+	    foreach( $anchors as $match) {
+	    	// match[0] = full matching <a> tag
+	    	// $match[2] = link address
+			// $match[3] = link text	
+	        
+	        //strip any HTML tags (i.e. img, span, etc)
+	        if ( $match[3] ) {
+		        
+	        	$match[3] = trim( owa_sanitize::stripAllTags( $match[3] ) );
+	        }
+	        
+	        // if anything is left as anchortext then use that
+			if ( $match[3] && $url === $match[2] ) {
+				
+				$anchortext = $match[3];
+        		
+				owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+				
+				return owa_lib::inputFilter( $anchotext );
 			}
 		}
-	    
-	    return;
-
-        $matches = '';
-        $regex = '/<a[^>]*href=\"%s\"[^>]*>(.*?)<\/a>/i';
-
-        //$escaped_link = str_replace(array("/", "?"), array("\/", "\?"), $link);
-
-        $pattern = trim(sprintf($regex, preg_quote($link, '/')));
-        $search = preg_match($pattern, $this->getResponseBody(), $matches);
-        //owa_coreAPI::debug('pattern: '.$pattern);
-        //owa_coreAPI::debug('link: '.$link);
-
-
-        if (empty($matches)) {
-            if (substr($link, -1) === '/') {
-                $link = substr($link, 0, -1);
-                $pattern = trim(sprintf($regex, preg_quote($link, '/')));
-                $search = preg_match($pattern, $this->getResponseBody(), $matches);
-                //owa_coreAPI::debug('pattern: '.$pattern);
-                //owa_coreAPI::debug('link: '.$link);
-            }
-        }
-
-        owa_coreAPI::debug('ref search: '.$search);
-        //owa_coreAPI::debug('ref matches: '.print_r($this->results, true));
-        //owa_coreAPI::debug('ref matches: '.print_r($matches, true));
-        if (isset($matches[0])) {
-            $this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => owa_lib::inputFilter($matches[0]));
-            owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
-        }
-    }
-
-    /**
-     * Creates a text snippet of the portion of page where the
-     * specific link is found.
-     *
-     * Takes fully qualified URL for the link to search for.
-     *
-     * @param string $link
-     * @return string
-     */
-    function extract_anchor_snippet($link){
-
-        // Search the page for a specific anchor
-        $this->extract_anchor($link);
-        
-        if (array_key_exists( 'anchor_text', $this->anchor_info ) ) {
-	        
-	        return $this->anchor_info['anchor_text'];
-        } else {
-	        
-	        return;
-        }
-
-        if(!empty($this->anchor_info['anchor_tag'])) {
-
-            // drop certain HTML entitities and their content
-            $nohtml = $this->strip_selected_tags(
-                    $this->getResponseBody(),
-                    array('title',
-                          'head',
-                          'script',
-                          'object',
-                          'style',
-                          'meta',
-                          'link',
-                          'rdf:'),
-                    true);
-
-            //owa_coreAPI::debug('Refering page content after certain html entities were dropped: '.$this->results);
-
-            // calc len of the anchor text
-            $atext_len = strlen($this->anchor_info['anchor_tag']);
-
-            // find position within document of the anchor text
-            $start = strpos($nohtml, $this->anchor_info['anchor_tag']);
-
-            if ($start < $this->snip_len) {
-                $part1_start_pos = 0;
-                $part1_snip_len = $start;
-            } else {
-                $part1_start_pos = $start;
-                $part1_snip_len = $this->snip_len;
-            }
-
-            $replace_items = array("\r\n", "\n\n", "\t", "\r", "\n");
-            // Create first segment of snippet
-            $first_part = substr($nohtml, 0, $part1_start_pos);
-            $first_part = str_replace($replace_items, '', $first_part);
-            $first_part = strip_tags(owa_lib::inputFilter($first_part));
-            //$part1 = trim(substr($nohtml, $part1_start_pos, $part1_snip_len));
-            $part1 = substr($first_part,-$part1_snip_len, $part1_snip_len);
-
-            //$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
-            //$part1 = owa_lib::inputFilter($part1);
-            // Create second segment of snippet
-            $part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len+300));
-            $part2 = str_replace($replace_items, '', $part2);
-            $part2 = substr(strip_tags(owa_lib::inputFilter($part2)),0, $this->snip_len);
-
-            // Put humpty dumpy back together again and create actual snippet
-            $snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.owa_lib::inputFilter($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
-
-        } else {
-
-            $snippet = '';
-
-        }
-
-        return $snippet;
-
     }
 
     function extract_title() {
@@ -238,7 +147,7 @@ class owa_http {
 
         owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
 
-        return $title;
+        return trim($title);
     }
 
     function strip_selected_tags($str, $tags = array(), $stripContent = false) {
