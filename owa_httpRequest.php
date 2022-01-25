@@ -102,7 +102,7 @@ class owa_http {
 		   
 		    owa_coreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
 		    
-		    return $matches
+		    return $matches;
 		}
     }
     
@@ -112,7 +112,8 @@ class owa_http {
 	    
 	    $anchortext = '';
 	    
-	    foreach( $anchors as $match) {
+	    foreach( $anchors as $match ) {
+		    
 	    	// match[0] = full matching <a> tag
 	    	// $match[2] = link address
 			// $match[3] = link text	
