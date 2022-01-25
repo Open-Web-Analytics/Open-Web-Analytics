@@ -133,7 +133,7 @@ class owa_http {
 	        		
 					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
 					
-					return owa_lib::inputFilter( $anchotext );
+					return owa_lib::inputFilter( $anchortext );
 				}
 			}
 		}
