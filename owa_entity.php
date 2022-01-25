@@ -209,15 +209,17 @@ class owa_entity {
             if ( $filter && method_exists( $this, $method ) ) {
 	            
 	            $value = $this->$method( $value );
-            }    
+            } 
             
-            $this->properties[$name]->setValue( $value );
+            if ( $value ) {   
             
-            if ( $mark_dirty && $existing_value != $value ) {
+	            $this->properties[$name]->setValue( $value );
 	            
-	            $this->markDirty( $name, $value );
-            }
-            
+	            if ( $mark_dirty && $existing_value != $value ) {
+		            
+		            $this->markDirty( $name, $value );
+	            }
+	        }
         }
     }
     
