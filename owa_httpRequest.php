@@ -112,26 +112,29 @@ class owa_http {
 	    
 	    $anchortext = '';
 	    
-	    foreach( $anchors as $match ) {
+	    if ( $anchors ) {
 		    
-	    	// match[0] = full matching <a> tag
-	    	// $match[2] = link address
-			// $match[3] = link text	
-	        
-	        //strip any HTML tags (i.e. img, span, etc)
-	        if ( $match[3] ) {
+		    foreach( $anchors as $match ) {
+			    
+		    	// match[0] = full matching <a> tag
+		    	// $match[2] = link address
+				// $match[3] = link text	
 		        
-	        	$match[3] = trim( owa_sanitize::stripAllTags( $match[3] ) );
-	        }
-	        
-	        // if anything is left as anchortext then use that
-			if ( $match[3] && $url === $match[2] ) {
-				
-				$anchortext = $match[3];
-        		
-				owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
-				
-				return owa_lib::inputFilter( $anchotext );
+		        //strip any HTML tags (i.e. img, span, etc)
+		        if ( $match[3] ) {
+			        
+		        	$match[3] = trim( owa_sanitize::stripAllTags( $match[3] ) );
+		        }
+		        
+		        // if anything is left as anchortext then use that
+				if ( $match[3] && $url === $match[2] ) {
+					
+					$anchortext = $match[3];
+	        		
+					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+					
+					return owa_lib::inputFilter( $anchotext );
+				}
 			}
 		}
     }
