@@ -1069,7 +1069,16 @@ class owa_lib {
             return $string;
         } else {
             if (function_exists('iconv')) {
-                return iconv(mb_detect_encoding( $string ),'UTF-8//TRANSLIT', $string);
+	            
+	            if ( function_exists( 'mb_detect_encoding' ) ) {
+		            
+		            return iconv(mb_detect_encoding( $string ),'UTF-8//TRANSLIT', $string);
+		            
+		        } else {
+			        
+			    	return iconv('UTF-8','UTF-8//TRANSLIT', $string);    
+		        }
+	             
             } else {
                 // at least worth a try
                 return utf8_encode($string);
