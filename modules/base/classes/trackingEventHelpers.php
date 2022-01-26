@@ -450,7 +450,285 @@ class owa_trackingEventHelpers {
 
             return $page_parse['path'] ;
         }
+    } 
+    
+    static function deriveMedium( $medium, $event ) {
+	    
+	    // respect what was already set by the tracker
+	    if ( $medium ) {
+		    
+		    return $medium;
+	    }
+
+	    if ( $event->get( 'session_referer' ) ) {
+	    		    
+		    // check for referrer url
+		    $ref = $event->get('session_referer');
+		    
+		    if ( $ref ) {
+			    
+			    // parse the referrer url
+	            $uri = self::parse_url( $ref );
+	
+	            $host = $uri['host'];
+	            
+                $medium = 'referral';
+                
+                // check if referral is a search engine
+                $engine = self::isSearchEngine( $host );
+               
+                if ( $engine ) {
+                    
+                    $medium = 'organic-search';
+                }
+                
+                if ( ! $engine ) {
+	                
+	                // check if referral is a social network
+	                $network = self::issocialNetwork( $host );
+	                
+	                if ( $network ) {
+		                
+		                $medium = 'social-network';
+	                }
+                }
+	        }
+	        
+	        return $medium;
+	    }
     }
+    
+    /**
+     *  Use this function to parse out the url and query array element from
+     *  a url.
+     */
+    public static function parse_url( $url ) {
+
+        $url = parse_url($url);
+
+        if ( isset( $url['query'] ) ) {
+            $var = $url['query'];
+
+            $var  = html_entity_decode($var);
+            $var  = explode('&', $var);
+            $arr  = array();
+
+              foreach( $var as $val ) {
+
+                if ( strpos($val, '=') ) {
+                    $x = explode('=', $val);
+
+                    if ( isset( $x[1] ) ) {
+                        $arr[$x[0]] = urldecode($x[1]);
+                    }
+                } else {
+                    $arr[$val] = '';
+                }
+               }
+              unset($val, $x, $var);
+
+              $url['query_params'] = $arr;
+
+        }
+
+          return $url;
+    }
+
+    
+    static function deriveSource( $source, $event ) {
+	    
+	    // respect what was already set by the tracker
+	    if ( $source ) {
+		    
+		    return $source;
+	    }
+
+	    
+	    if ( $event->get( 'session_referer' ) ) {
+			
+			$ref = $event->get( 'session_referer' );
+			$uri = self::parse_url( $ref );
+			
+			$host = $uri['host'];
+			
+			if ($host) {
+			
+				$source = self::stripWwwFromDomain( $host );
+				return $source;
+			}
+		}
+    }
+    
+    static function stripWWWFromDomain( $domain ) {
+
+        $done = false;
+        $part = substr( $domain, 0, 5 );
+        if ($part === '.www.') {
+            //strip .www.
+            $domain = substr( $domain, 5);
+            // add back the leading period
+            $domain = '.'.$domain;
+            $done = true;
+        }
+
+        if ( ! $done ) {
+            $part = substr( $domain, 0, 4 );
+            if ($part === 'www.') {
+                //strip .www.
+                $domain = substr( $domain, 4);
+                $done = true;
+            }
+
+        }
+
+        return $domain;
+    }
+    
+    static function isSearchEngine( $host ) {
+		
+        if ( ! $host ) {
+	        
+            return;
+        }
+
+        $searchEngine = [];
+        
+        $organicSearchEngines = self::getSearchEngineList();
+
+        foreach ( $organicSearchEngines as $engine ) {
+            
+            $domain = $engine['d'];
+
+            if ( strpos( $host, $domain ) ) {
+                
+                owa_coreAPI::debug( 'Found search engine: '. $domain);
+                
+                return true;
+            }
+        }
+    }
+    
+    static function extractSearchTerm( $term, $event ) {
+	    
+	    if ( $term ) {
+			    
+			return $term;
+		}
+		    
+	    if ( $event->get( 'session_referer' ) ) {
+	    
+		    // check for referrer url
+		    $ref = $event->get( 'session_referer' );
+		    
+		    $uri = self::parse_url( $ref );
+		    owa_coreAPI::debug($uri);
+		    // check for query params, search engine might have sent them under https
+		    if ( array_key_exists('query_params', $uri) && ! empty( $uri['query_params'] ) ) {
+		    
+	            $host = $uri['host'];
+			    
+			    $organicSearchEngines = self::getSearchEngineList();
+			    
+			    foreach ( $organicSearchEngines as $engine ) {
+				    
+		            $domain = $engine['d'];
+		
+		            if ( strpos( $host, $domain) ) {
+			            
+			            $query_param = $engine['q'];
+			            $term = '';
+			
+			            if (isset($uri['query_params'][$query_param])) {
+				            
+			                $term = $uri['query_params'][$query_param];
+			                owa_coreAPI::debug( 'Found search term: ' . $term);
+			                			                
+			            } else {
+				            
+				            $term = '(not provided)';
+			            }
+			            // need urldecode here ot clean up the "+" characters in the term
+			            return trim( urldecode( strtolower( $term ) ) );
+		            }
+		        }
+		    }  
+	    }
+    }
+    
+    static function isSocialNetwork( $host ) {
+	    
+	    $social_networks = self::getSocialNetworkList();
+
+        foreach ( $social_networks as $network ) {
+            
+            if ( strpos( $host, $network ) ) {
+                
+                owa_coreAPI::debug( 'Found social network: %s', $network);
+                
+                return true;
+            }
+        }
+    }
+    
+    static function getSearchEngineList() {
+	    
+	    return [
+	        
+	        ['d' => 'google', 'q' => 'q'],
+            ['d' => 'yahoo', 'q' => 'p'],
+            ['d' => 'msn', 'q' => 'q'],
+            ['d' => 'bing', 'q' => 'q'],
+            ['d' => 'images.google', 'q' => 'q'],
+            ['d' => 'images.search.yahoo.com', 'q' => 'p'],
+            ['d' => 'aol', 'q' => 'query'],
+            ['d' => 'aol', 'q' => 'encquery'],
+            ['d' => 'aol', 'q' => 'q'],
+            ['d' => 'lycos', 'q' => 'query'],
+            ['d' => 'ask', 'q' => 'q'],
+            ['d' => 'altavista', 'q' => 'q'],
+            ['d' => 'netscape', 'q' => 'query'],
+            ['d' => 'cnn', 'q' => 'query'],
+            ['d' => 'about', 'q' => 'terms'],
+            ['d' => 'mamma', 'q' => 'q'],
+            ['d' => 'daum', 'q' => 'q'],
+            ['d' => 'eniro', 'q' => 'search_word'],
+            ['d' => 'naver', 'q' => 'query'],
+            ['d' => 'pchome', 'q' => 'q'],
+            ['d' => 'alltheweb', 'q' => 'q'],
+            ['d' => 'voila', 'q' => 'rdata'],
+            ['d' => 'virgilio', 'q' => 'qs'],
+            ['d' => 'live', 'q' => 'q'],
+            ['d' => 'baidu', 'q' => 'wd'],
+            ['d' => 'alice', 'q' => 'qs'],
+            ['d' => 'yandex', 'q' => 'text'],
+            ['d' => 'najdi', 'q' => 'q'],
+            ['d' => 'mama', 'q' => 'query'],
+            ['d' => 'seznam', 'q' => 'q'],
+            ['d' => 'search', 'q' => 'q'],
+            ['d' => 'wp', 'q' => 'szukaj'],
+            ['d' => 'onet', 'q' => 'qt'],
+            ['d' => 'szukacz', 'q' => 'q'],
+            ['d' => 'yam', 'q' => 'k'],
+            ['d' => 'kvasir', 'q' => 'q'],
+            ['d' => 'sesam', 'q' => 'q'],
+            ['d' => 'ozu', 'q' => 'q'],
+            ['d' => 'terra', 'q' => 'query'],
+            ['d' => 'mynet', 'q' => 'q'],
+            ['d' => 'ekolay', 'q' => 'q'],
+            ['d' => 'rambler', 'q' => 'query'],
+            ['d' => 'rambler', 'q' => 'words'],
+            ['d' => 'duckduckgo', 'q' => 'q']
+        ];
+    }
+    
+    static function getSocialNetworkList() {
+	    
+	    return [
+		    
+		    'facebook', 'twitter', 'pinterest', 'instagram', 'linkedin', 't.co'
+	    ];
+    }
+
 
     /**
      * Filter function Strips a URL of certain defined session or tracking params
@@ -701,6 +979,7 @@ class owa_trackingEventHelpers {
     }
 
     static function resolveEntryPage( $is_entry_page, $event ) {
+	    
         return $event->get('is_new_session') ? true : false;
     }
 

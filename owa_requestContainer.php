@@ -278,7 +278,7 @@ class owa_requestContainer {
                 array_walk_recursive($v, array($this, 'arrayUrlDecode'));
                 $params[$k] = $v;
             } else {
-                $params[$k] = urldecode($v);
+                $params[$k] = rawurldecode($v);
             }
         }
 
@@ -293,7 +293,8 @@ class owa_requestContainer {
     }
 
     function arrayUrlDecode(&$val, $index) {
-        urldecode($val);
+        
+        rawurldecode($val);
     }
 
     function getOwaCookie($name) {

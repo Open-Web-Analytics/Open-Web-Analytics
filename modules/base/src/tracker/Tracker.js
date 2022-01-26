@@ -40,59 +40,7 @@ class OWATracker  {
 	    this.isTrafficAttributed =  false;
 	    this.linkedStateSet =  false;
 	    this.hashCookiesToDomain =  true;
-	    this.organicSearchEngines =  [
-	        {d: 'google', q: 'q'},
-	        {d: 'yahoo', q: 'p'},
-	        {d: 'yahoo', q: 'q'},
-	        {d: 'msn', q: 'q'},
-	        {d: 'bing', q: 'q'},
-	        {d: 'images.google', q: 'q'},
-	        {d: 'images.search.yahoo.com', q: 'p'},
-	        {d: 'aol', q: 'query'},
-	        {d: 'aol', q: 'encquery'},
-	        {d: 'aol', q: 'q'},
-	        {d: 'lycos', q: 'query'},
-	        {d: 'ask', q: 'q'},
-	        {d: 'altavista', q: 'q'},
-	        {d: 'netscape', q: 'query'},
-	        {d: 'cnn', q: 'query'},
-	        {d: 'about', q: 'terms'},
-	        {d: 'mamma', q: 'q'},
-	        {d: 'daum', q: 'q'},
-	        {d: 'eniro', q: 'search_word'},
-	        {d: 'naver', q: 'query'},
-	        {d: 'pchome', q: 'q'},
-	        {d: 'alltheweb', q: 'q'},
-	        {d: 'voila', q: 'rdata'},
-	        {d: 'virgilio', q: 'qs'},
-	        {d: 'live', q: 'q'},
-	        {d: 'baidu', q: 'wd'},
-	        {d: 'alice', q: 'qs'},
-	        {d: 'yandex', q: 'text'},
-	        {d: 'najdi', q: 'q'},
-	        {d: 'mama', q: 'query'},
-	        {d: 'seznam', q: 'q'},
-	        {d: 'search', q: 'q'},
-	        {d: 'wp', q: 'szukaj'},
-	        {d: 'onet', q: 'qt'},
-	        {d: 'szukacz', q: 'q'},
-	        {d: 'yam', q: 'k'},
-	        {d: 'kvasir', q: 'q'},
-	        {d: 'sesam', q: 'q'},
-	        {d: 'ozu', q: 'q'},
-	        {d: 'terra', q: 'query'},
-	        {d: 'mynet', q: 'q'},
-	        {d: 'ekolay', q: 'q'},
-	        {d: 'rambler', q: 'query'},
-	        {d: 'rambler', q: 'words'},
-	        {d: 'duckduckgo', q: 'q'},
-	    ];
-	    
-	    this.socialNetworks = [
-		    
-		    'facebook', 'twitter', 'pinterest', 'instagram', 'linkedin', 't.co'
-	    ];
-	    
+	    	    
 	    /**
 	     * GET params parsed from URL
 	     */
@@ -1321,7 +1269,8 @@ class OWATracker  {
         var campaign_params = {};
 
         for (var i = 0, n = campaignKeys.length; i < n; i++) {
-
+			
+			// anytime we see a campaign param on the URL its a new campaign.
             if ( this.urlParams.hasOwnProperty(campaignKeys[i].public) ) {
 
                 campaign_params[campaignKeys[i].private] = this.urlParams[campaignKeys[i].public];
@@ -1492,9 +1441,12 @@ class OWATracker  {
         } else {
             // infer the attribution from the referer
             // if the request is the start of a new session
+            
             if ( this.isNewSessionFlag === true ) {
+	            var ref = document.referrer;
+	            OWA.setState( 's', 'referer', ref );
                 OWA.debug( 'Infering traffic attribution.' );
-                this.inferTrafficAttribution();
+               
             }
         }
 
@@ -1510,6 +1462,7 @@ class OWATracker  {
         }
 
         // set sesion referer
+        // @todo move this logic to service side. not really needed in tracker as we already send HTTTP_REFERER
         var session_referer = OWA.getState('s', 'referer');
         if ( session_referer ) {
 
@@ -1529,50 +1482,7 @@ class OWATracker  {
         }
     }
 
-    inferTrafficAttribution() {
 
-        var ref = document.referrer;
-        var medium = 'direct';
-        var source = '(none)';
-        var search_terms = '(none)';
-        var session_referer = '(none)';
-
-        if ( ref ) {
-	        
-            var uri = new Uri( ref );
-
-            // check for external referer
-            if ( document.domain != uri.getHost() ) {
-
-                medium = 'referral';
-                session_referer = ref;
-                source = Util.stripWwwFromDomain( uri.getHost() );
-                
-                // check for search engine
-                var engine = this.isRefererSearchEngine( uri );
-                
-                if ( engine ) {
-                    
-                    medium = 'organic-search';
-                    search_terms = engine.t || '(not provided)';
-                    
-                } else {
-                	// check for social network
-	                var social = this.isRefererSocialNetwork( uri );
-	                
-	                if ( social ) {
-		                
-	                    medium = 'social-network';
-	                }
-                }
-            }
-        }
-
-        OWA.setState( 's', 'referer', session_referer );
-        OWA.setState( 's', 'medium', medium );
-        OWA.setState( 's', 'source', source );
-        OWA.setState( 's', 'search_terms', search_terms );
-    }
 
 
     setCampaignCookie( values ) {
@@ -1580,47 +1490,13 @@ class OWATracker  {
         OWA.setState( 'c', 'attribs', values, '', 'json', this.options.campaignAttributionWindow );
     }
     
-    isRefererSocialNetwork( uri ) {
-	    
-	    for ( var i = 0, n = this.socialNetworks.length; i < n; i++ ) {
-		    
-		    var domain = this.socialNetworks[i];
-		    var host = uri.getHost();
-		    
-		    if ( Util.strpos(host, domain) ) {
-			    
-                OWA.debug( 'Found social network: %s', domain);
 
-                return domain;
-            }
-		}
-    }
-
-    isRefererSearchEngine( uri ) {
-
-        for ( var i = 0, n = this.organicSearchEngines.length; i < n; i++ ) {
-
-            var domain = this.organicSearchEngines[i].d;
-            var query_param = this.organicSearchEngines[i].q
-            var host = uri.getHost();
-            var term = uri.getQueryParam(query_param);
-
-            if ( Util.strpos(host, domain) ) {
-                OWA.debug( 'Found search engine: %s with query param %s:, query term: %s', domain, query_param, term);
-
-                return {d: domain, q: query_param, t: term };
-            }
-        }
-    }
-
+    /**
+	 * DEPRICATED. Functionality moved to server side.
+	 */
     addOrganicSearchEngine( domain, query_param, prepend) {
 
-        var engine = {d: domain, q: query_param};
-        if (prepend) {
-            this.organicSearchEngines.unshift(engine);
-        } else {
-                this.organicSearchEngines.push(engine);
-        }
+        return;
     }
 
     addTransaction( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {

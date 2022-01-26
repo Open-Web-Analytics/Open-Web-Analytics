@@ -979,7 +979,7 @@ class owa_coreAPI {
             
             return false;
         }
-
+        
         // queue for later or process event straight away
         if ( owa_coreAPI::getSetting( 'base', 'queue_events' ) ||
              owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
