@@ -597,7 +597,7 @@ class owa_trackingEventHelpers {
 
         foreach ( $organicSearchEngines as $engine ) {
             
-            $domain = $engine['d'];
+            $domain = $engine['domain'];
 
             if ( strpos( $host, $domain ) ) {
                 
@@ -631,11 +631,11 @@ class owa_trackingEventHelpers {
 			    
 			    foreach ( $organicSearchEngines as $engine ) {
 				    
-		            $domain = $engine['d'];
+		            $domain = $engine['domain'];
 		
 		            if ( strpos( $host, $domain) ) {
 			            
-			            $query_param = $engine['q'];
+			            $query_param = $engine['query_param'];
 			            $term = '';
 			
 			            if (isset($uri['query_params'][$query_param])) {
@@ -661,9 +661,9 @@ class owa_trackingEventHelpers {
 
         foreach ( $social_networks as $network ) {
             
-            if ( strpos( $host, $network ) ) {
+            if ( strpos( $host, $network['domain'] ) ) {
                 
-                owa_coreAPI::debug( 'Found social network: %s', $network);
+                owa_coreAPI::debug( 'Found social network: %s', $network['domain'] );
                 
                 return true;
             }
@@ -672,61 +672,12 @@ class owa_trackingEventHelpers {
     
     static function getSearchEngineList() {
 	    
-	    return [
-	        
-	        ['d' => 'google', 'q' => 'q'],
-            ['d' => 'yahoo', 'q' => 'p'],
-            ['d' => 'msn', 'q' => 'q'],
-            ['d' => 'bing', 'q' => 'q'],
-            ['d' => 'images.google', 'q' => 'q'],
-            ['d' => 'images.search.yahoo.com', 'q' => 'p'],
-            ['d' => 'aol', 'q' => 'query'],
-            ['d' => 'aol', 'q' => 'encquery'],
-            ['d' => 'aol', 'q' => 'q'],
-            ['d' => 'lycos', 'q' => 'query'],
-            ['d' => 'ask', 'q' => 'q'],
-            ['d' => 'altavista', 'q' => 'q'],
-            ['d' => 'netscape', 'q' => 'query'],
-            ['d' => 'cnn', 'q' => 'query'],
-            ['d' => 'about', 'q' => 'terms'],
-            ['d' => 'mamma', 'q' => 'q'],
-            ['d' => 'daum', 'q' => 'q'],
-            ['d' => 'eniro', 'q' => 'search_word'],
-            ['d' => 'naver', 'q' => 'query'],
-            ['d' => 'pchome', 'q' => 'q'],
-            ['d' => 'alltheweb', 'q' => 'q'],
-            ['d' => 'voila', 'q' => 'rdata'],
-            ['d' => 'virgilio', 'q' => 'qs'],
-            ['d' => 'live', 'q' => 'q'],
-            ['d' => 'baidu', 'q' => 'wd'],
-            ['d' => 'alice', 'q' => 'qs'],
-            ['d' => 'yandex', 'q' => 'text'],
-            ['d' => 'najdi', 'q' => 'q'],
-            ['d' => 'mama', 'q' => 'query'],
-            ['d' => 'seznam', 'q' => 'q'],
-            ['d' => 'search', 'q' => 'q'],
-            ['d' => 'wp', 'q' => 'szukaj'],
-            ['d' => 'onet', 'q' => 'qt'],
-            ['d' => 'szukacz', 'q' => 'q'],
-            ['d' => 'yam', 'q' => 'k'],
-            ['d' => 'kvasir', 'q' => 'q'],
-            ['d' => 'sesam', 'q' => 'q'],
-            ['d' => 'ozu', 'q' => 'q'],
-            ['d' => 'terra', 'q' => 'query'],
-            ['d' => 'mynet', 'q' => 'q'],
-            ['d' => 'ekolay', 'q' => 'q'],
-            ['d' => 'rambler', 'q' => 'query'],
-            ['d' => 'rambler', 'q' => 'words'],
-            ['d' => 'duckduckgo', 'q' => 'q']
-        ];
+	    return include( OWA_CONF_DIR . 'searchengines.php');
     }
     
     static function getSocialNetworkList() {
 	    
-	    return [
-		    
-		    'facebook', 'twitter', 'pinterest', 'instagram', 'linkedin', 't.co'
-	    ];
+	    return include( OWA_CONF_DIR . 'socialnetworks.php');
     }
 
 
