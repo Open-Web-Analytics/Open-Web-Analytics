@@ -672,12 +672,30 @@ class owa_trackingEventHelpers {
     
     static function getSearchEngineList() {
 	    
-	    return include( OWA_CONF_DIR . 'searchengines.php');
+	    $se = include( OWA_CONF_DIR . 'searchengines.php');
+	    
+	    if ( file_exists( OWA_DIR . 'owa-data/searchengines.php') ) {
+		    
+		    $ses = include( OWA_DIR . 'owa-data/searchengines.php' );
+		    
+		    $se = array_merge( $se, $ses );
+	    }
+	    
+	    return owa_coreAPI::filter( 'tracking.organic_search_engine_registry', $se );
     }
     
     static function getSocialNetworkList() {
 	    
-	    return include( OWA_CONF_DIR . 'socialnetworks.php');
+	    $sn = include( OWA_CONF_DIR . 'socialnetworks.php');
+	    
+	    if ( file_exists( OWA_DIR . 'owa-data/socialnetworks.php') ) {
+		    
+		    $sns = include( OWA_DIR . 'owa-data/socialnetworks.php' );
+		    
+		    $sn = array_merge( $sn, $sns );
+	    }
+	    
+	    return owa_coreAPI::filter( 'tracking.social_network_registry', $sn );
     }
 
 
