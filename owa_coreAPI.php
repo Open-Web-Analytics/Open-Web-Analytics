@@ -1849,6 +1849,36 @@ class owa_coreAPI {
             }
         }
     }
+    
+    static function loadConf( $file_name, $filter_name = '' ) {
+	    
+	    $conf_file = OWA_CONF_DIR . $file_name;
+	    
+	    if ( file_exists( $conf_file ) ) {
+	    
+	    	$conf = include( $conf_file);
+	    }
+	    
+	    $sup_file = OWA_DATA_DIR .  $file_name;
+	    
+	    if ( file_exists( $sup_file ) ) {
+		    
+		    $sup_conf = include( $sup_file );
+		    
+		    if ( is_array( $sup_conf) ) {
+		    
+		    	$conf = array_merge( $conf, $sup_conf );
+		    }
+	    }
+	    
+	    // see generic filter name for filtering the final conf array
+	    if ( ! $filter_name ) {
+		    
+		    $filter_name = 'conf.' . $file_name;
+	    }
+	    
+	    return owa_coreAPI::filter( $filter_name, $conf );
+    }
 
     /**
      * Attaches an event handler to the event queue

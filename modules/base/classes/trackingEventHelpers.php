@@ -672,32 +672,13 @@ class owa_trackingEventHelpers {
     
     static function getSearchEngineList() {
 	    
-	    $se = include( OWA_CONF_DIR . 'searchengines.php');
-	    
-	    if ( file_exists( OWA_DIR . 'owa-data/searchengines.php') ) {
-		    
-		    $ses = include( OWA_DIR . 'owa-data/searchengines.php' );
-		    
-		    $se = array_merge( $se, $ses );
-	    }
-	    
-	    return owa_coreAPI::filter( 'tracking.organic_search_engine_registry', $se );
+	    return coreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
     }
     
     static function getSocialNetworkList() {
 	    
-	    $sn = include( OWA_CONF_DIR . 'socialnetworks.php');
-	    
-	    if ( file_exists( OWA_DIR . 'owa-data/socialnetworks.php') ) {
-		    
-		    $sns = include( OWA_DIR . 'owa-data/socialnetworks.php' );
-		    
-		    $sn = array_merge( $sn, $sns );
-	    }
-	    
-	    return owa_coreAPI::filter( 'tracking.social_network_registry', $sn );
+	    return coreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
     }
-
 
     /**
      * Filter function Strips a URL of certain defined session or tracking params
