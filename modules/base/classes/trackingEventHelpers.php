@@ -672,12 +672,12 @@ class owa_trackingEventHelpers {
     
     static function getSearchEngineList() {
 	    
-	    return coreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
+	    return owa_coreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
     }
     
     static function getSocialNetworkList() {
 	    
-	    return coreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
+	    return owa_coreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
     }
 
     /**
@@ -820,7 +820,7 @@ class owa_trackingEventHelpers {
     static function resolveFullHost( $full_host, $event ) {
 
         // See if host is already resolved
-        if ( $event->get('REMOTE_HOST') === '(not set)'
+        if ( ( ! $event->get('REMOTE_HOST') || $event->get('REMOTE_HOST') === '(not set)' )
              && $event->get( 'ip_address' )
              && owa_coreAPI::getSetting('base', 'resolve_hosts')
         ) {
@@ -842,7 +842,7 @@ class owa_trackingEventHelpers {
                  }
 
             } else {
-
+				
                 $remote_host = @gethostbyaddr( $ip_address );
             }
             
