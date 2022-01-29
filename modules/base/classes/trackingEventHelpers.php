@@ -592,44 +592,42 @@ class owa_trackingEventHelpers {
     static function resolveFullHost( $full_host, $event ) {
 
         // See if host is already resolved
-        if ( $event->get('REMOTE_HOST') === '(not set)'
-             && $event->get( 'ip_address' )
-             && owa_coreAPI::getSetting('base', 'resolve_hosts')
+        if ( 
+        		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' ) 
+				&& $event->get( 'ip_address' )
+				&& owa_coreAPI::getSetting('base', 'resolve_hosts')
         ) {
-
-            // Do the host lookup
+			
+			$remote_host = '';
+            // get ip address
             $ip_address = $event->get( 'ip_address' );
             
-            $remote_host = '';
+            if ( filter_var( $ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE, FILTER_FLAG_NO_RES_RANGE ) ) {
+	            
+	            // valid v4 or v6 IP address
+	            
+	            if ( filter_var( $ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+		            
+		            // is v6 format
+		            $result = @dns_get_record( $ip_address, DNS_AAAA );
 
-            // Do the host lookup
-
-            if ( ! strpos( $ip_address, '.' ) ) {
-
-                 $result = @dns_get_record($host_name,DNS_AAAA);
-
-                 if ( is_array( $result ) && isset( $result[0] ) && isset( $result[0]['host'] ) ) {
-
-                     $remote_host = $result[0]['host'];
-                 }
-
-            } else {
-
-                $remote_host = @gethostbyaddr( $ip_address );
-            }
+	                if ( is_array( $result ) && isset( $result[0] ) && isset( $result[0]['host'] ) ) {
+	
+	                    $remote_host = $result[0]['host'];
+	                }
+		            
+	            } else {
+		            
+		            // must be v4.
+		            $remote_host = @gethostbyaddr( $ip_address );
+	            }
+	        }
             
-            owa_coreAPI::debug(print_r($remote_host, true));
-            
-            if ( $remote_host
-                 && $remote_host != $ip_address
-                 && $remote_host != 'unknown'
-            ) {
+            // if we get a host back that is not an ip address or unknown
+            if ( $remote_host && $remote_host != $ip_address && $remote_host != 'unknown' ) {
 
                 return $remote_host;
             }
-        } else {
-
-            return $event->get('REMOTE_HOST');
         }
     }
 
