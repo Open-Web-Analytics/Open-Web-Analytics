@@ -450,6 +450,234 @@ class owa_trackingEventHelpers {
 
             return $page_parse['path'] ;
         }
+    } 
+    
+    static function deriveMedium( $medium, $event ) {
+	    
+	    // respect what was already set by the tracker
+	    if ( $medium ) {
+		    
+		    return $medium;
+	    }
+
+	    if ( $event->get( 'session_referer' ) ) {
+	    		    
+		    // check for referrer url
+		    $ref = $event->get('session_referer');
+		    
+		    if ( $ref ) {
+			    
+			    // parse the referrer url
+	            $uri = self::parse_url( $ref );
+	
+	            $host = $uri['host'];
+	            
+                $medium = 'referral';
+                
+                // check if referral is a search engine
+                $engine = self::isSearchEngine( $host );
+               
+                if ( $engine ) {
+                    
+                    $medium = 'organic-search';
+                }
+                
+                if ( ! $engine ) {
+	                
+	                // check if referral is a social network
+	                $network = self::issocialNetwork( $host );
+	                
+	                if ( $network ) {
+		                
+		                $medium = 'social-network';
+	                }
+                }
+	        }
+	        
+	        return $medium;
+	    }
+    }
+    
+    /**
+     *  Use this function to parse out the url and query array element from
+     *  a url.
+     */
+    public static function parse_url( $url ) {
+
+        $url = parse_url($url);
+
+        if ( isset( $url['query'] ) ) {
+            $var = $url['query'];
+
+            $var  = html_entity_decode($var);
+            $var  = explode('&', $var);
+            $arr  = array();
+
+              foreach( $var as $val ) {
+
+                if ( strpos($val, '=') ) {
+                    $x = explode('=', $val);
+
+                    if ( isset( $x[1] ) ) {
+                        $arr[$x[0]] = urldecode($x[1]);
+                    }
+                } else {
+                    $arr[$val] = '';
+                }
+               }
+              unset($val, $x, $var);
+
+              $url['query_params'] = $arr;
+
+        }
+
+          return $url;
+    }
+
+    
+    static function deriveSource( $source, $event ) {
+	    
+	    // respect what was already set by the tracker
+	    if ( $source ) {
+		    
+		    return $source;
+	    }
+
+	    
+	    if ( $event->get( 'session_referer' ) ) {
+			
+			$ref = $event->get( 'session_referer' );
+			$uri = self::parse_url( $ref );
+			
+			$host = $uri['host'];
+			
+			if ($host) {
+			
+				$source = self::stripWwwFromDomain( $host );
+				return $source;
+			}
+		}
+    }
+    
+    static function stripWWWFromDomain( $domain ) {
+
+        $done = false;
+        $part = substr( $domain, 0, 5 );
+        if ($part === '.www.') {
+            //strip .www.
+            $domain = substr( $domain, 5);
+            // add back the leading period
+            $domain = '.'.$domain;
+            $done = true;
+        }
+
+        if ( ! $done ) {
+            $part = substr( $domain, 0, 4 );
+            if ($part === 'www.') {
+                //strip .www.
+                $domain = substr( $domain, 4);
+                $done = true;
+            }
+
+        }
+
+        return $domain;
+    }
+    
+    static function isSearchEngine( $host ) {
+		
+        if ( ! $host ) {
+	        
+            return;
+        }
+
+        $searchEngine = [];
+        
+        $organicSearchEngines = self::getSearchEngineList();
+
+        foreach ( $organicSearchEngines as $engine ) {
+            
+            $domain = $engine['domain'];
+
+            if ( strpos( $host, $domain ) ) {
+                
+                owa_coreAPI::debug( 'Found search engine: '. $domain);
+                
+                return true;
+            }
+        }
+    }
+    
+    static function extractSearchTerm( $term, $event ) {
+	    
+	    if ( $term ) {
+			    
+			return $term;
+		}
+		    
+	    if ( $event->get( 'session_referer' ) ) {
+	    
+		    // check for referrer url
+		    $ref = $event->get( 'session_referer' );
+		    
+		    $uri = self::parse_url( $ref );
+		    owa_coreAPI::debug($uri);
+		    // check for query params, search engine might have sent them under https
+		    if ( array_key_exists('query_params', $uri) && ! empty( $uri['query_params'] ) ) {
+		    
+	            $host = $uri['host'];
+			    
+			    $organicSearchEngines = self::getSearchEngineList();
+			    
+			    foreach ( $organicSearchEngines as $engine ) {
+				    
+		            $domain = $engine['domain'];
+		
+		            if ( strpos( $host, $domain) ) {
+			            
+			            $query_param = $engine['query_param'];
+			            $term = '';
+			
+			            if (isset($uri['query_params'][$query_param])) {
+				            
+			                $term = $uri['query_params'][$query_param];
+			                owa_coreAPI::debug( 'Found search term: ' . $term);
+			                			                
+			            } else {
+				            
+				            $term = '(not provided)';
+			            }
+			            // need urldecode here ot clean up the "+" characters in the term
+			            return trim( urldecode( strtolower( $term ) ) );
+		            }
+		        }
+		    }  
+	    }
+    }
+    
+    static function isSocialNetwork( $host ) {
+	    
+	    $social_networks = self::getSocialNetworkList();
+
+        foreach ( $social_networks as $network ) {
+            
+            if ( strpos( $host, $network['domain'] ) ) {
+                
+                owa_coreAPI::debug( 'Found social network: %s', $network['domain'] );
+                
+                return true;
+            }
+        }
+    }
+    
+    static function getSearchEngineList() {
+	    
+	    return owa_coreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
+    }
+    
+    static function getSocialNetworkList() {
+	    
+	    return owa_coreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
     }
 
     /**
@@ -591,11 +819,11 @@ class owa_trackingEventHelpers {
      */
     static function resolveFullHost( $full_host, $event ) {
 
-        // See if host is already resolved
         if ( 
         		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' ) 
 				&& $event->get( 'ip_address' )
 				&& owa_coreAPI::getSetting('base', 'resolve_hosts')
+
         ) {
 			
 			$remote_host = '';
@@ -622,7 +850,7 @@ class owa_trackingEventHelpers {
 		            $remote_host = @gethostbyaddr( $ip_address );
 	            }
 	        }
-            
+ 
             // if we get a host back that is not an ip address or unknown
             if ( $remote_host && $remote_host != $ip_address && $remote_host != 'unknown' ) {
 
@@ -699,6 +927,7 @@ class owa_trackingEventHelpers {
     }
 
     static function resolveEntryPage( $is_entry_page, $event ) {
+	    
         return $event->get('is_new_session') ? true : false;
     }
 

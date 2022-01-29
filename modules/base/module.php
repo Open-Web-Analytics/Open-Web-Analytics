@@ -225,30 +225,32 @@ class owa_baseModule extends owa_module {
                 'data_type'                        => 'url',
                 'callbacks'                        => array( 'owa_trackingEventHelpers::makeUrlCanonical' )
             ),
-
-            'source'                        => array(
-                'required'                        => true,
-                'data_type'                        => 'string',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                'default_value'                    => '(not set)'
-            ),
-
-            'medium'                        => array(
-                'required'                        => true,
-                'data_type'                        => 'string',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                'default_value'                    => '(not set)'
-            ),
-
+            
             'session_referer'                => array(
                 'required'                        => false,
                 'data_type'                        => 'url',
                 'callbacks'                        => array()
             ),
+			// must come after session_referer	
+            'source'                        => array(
+                'required'                        => true,
+                'data_type'                        => 'string',
+                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString', 'owa_trackingEventHelpers::deriveSource' ),
+                'default_value'                    => '(not set)'
+            ),
+			// must come after session_referer	
+            'medium'                        => array(
+                'required'                        => true,
+                'data_type'                        => 'string',
+                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString', 'owa_trackingEventHelpers::deriveMedium' ),
+                'default_value'                    => 'direct'
+            ),
+			
+			// must come after session_referer
             // @todo investigate if this should be a required property so that a proper join can occur.
             'search_terms'                    => array(
-                'required'                        => false,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::setSearchTerms' ),
+                'required'                        => true,
+                'callbacks'                        => array( 'owa_trackingEventHelpers::extractSearchTerm' ),
                 'default_value'                    => '(not set)'
 
             ),

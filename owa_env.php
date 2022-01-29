@@ -32,6 +32,7 @@ if (!defined('OWA_PATH')) {
     define('OWA_PATH', dirname(__FILE__));
 }
 define('OWA_DIR', OWA_PATH . '/');
+define('OWA_DATA_DIR', OWA_DIR . 'owa-data/');
 define('OWA_MODULES_DIR', OWA_DIR.'modules/');
 define('OWA_BASE_DIR', OWA_PATH); // depricated
 define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
