@@ -277,7 +277,7 @@ class owa_cache {
     
     function hash($id) {
     	
-        return md5($id);
+        return md5( $id . OWA_AUTH_KEY );
     }
     
     function debug($msg) {

@@ -34,8 +34,8 @@ class owa_fileCache extends owa_cacheType {
 
     var $cache_dir;
     var $lock_file_name = 'cache.lock';
-    var $cache_file_header = '<?php\n/*';
-    var $cache_file_footer = '*/\n?>';
+    var $cache_file_header = "<?php \n /*";
+    var $cache_file_footer = "*/ \n ?>";
     var $file_perms = 0750;
     var $dir_perms = 0750;
     var $mutex;
@@ -282,7 +282,7 @@ class owa_fileCache extends owa_cacheType {
         if (!empty($files)) {
 
             foreach ($files as $file) {
-                $this->debug("About to unlink cache file: ".$file);
+                owa_coreAPI::debug("About to unlink cache file: ".$file);
                 unlink($file);
             }
 

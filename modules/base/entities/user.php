@@ -36,7 +36,7 @@ class owa_user extends owa_entity {
     function __construct() {
     
         $this->setTableName('user');
-        $this->setCachable();
+        
         // properties
         $this->properties['id'] = new owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_SERIAL);
