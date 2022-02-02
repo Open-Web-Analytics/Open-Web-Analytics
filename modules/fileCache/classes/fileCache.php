@@ -221,6 +221,8 @@ class owa_fileCache extends owa_cacheType {
                 }
             }
         }
+        
+        return true;
     }
 
     function setCacheDir($dir) {
