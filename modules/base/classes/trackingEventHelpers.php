@@ -255,6 +255,7 @@ class owa_trackingEventHelpers {
     static function ipAddressDefault() {
 
         $ip = '';
+        $chosen_ip = '';
 
         // array of SERVER params that could possibly contain the IP address
         // ordered by probability of relevant match
@@ -274,7 +275,8 @@ class owa_trackingEventHelpers {
             if ( owa_coreAPI::getServerParam( $param ) ) {
 
                  $ip = owa_coreAPI::getServerParam( $param );
-                 owa_coreAPI::debug("ip address found in $param");
+                 owa_coreAPI::debug("ip address $ip found in $param");
+                 
                  break;
              }
         }
@@ -290,39 +292,40 @@ class owa_trackingEventHelpers {
 
                  $candidate_ip = trim( $candidate_ip );
 
-                 if ( owa_lib::isValidIp( $candidate_ip ) && ! owa_lib::isPrivateIp( $candidate_ip ) ) {
+                 if ( owa_lib::isNotPrivateIp( $candidate_ip ) ) {
 
-                     $ip = $candidate_ip;
+                     $chosen_ip = $candidate_ip;
+                     owa_coreAPI::debug("Candidate IP address $candidate_ip was chosen.");
 
                      break;
+                     
+                 } else {
+	                 
+	                 owa_coreAPI::debug("Candidate IP address $candidate_ip was private.");
                  }
              }
-
-             // if still no valid public IP then just use the first one found
-             if ( strpos( $ip, ',' ) ) {
-
-                 $ip = trim( $candidate_ips[0] ) ;
-             }
-
+             
+         } else {
+	         
+	         if ( owa_lib::isNotPrivateIp( $ip ) ) {
+		     	
+		     	$chosen_ip = $ip;
+		     	owa_coreAPI::debug("IP address $ip was chosen.");
+		     	
+		     } else {
+			     
+			     owa_coreAPI::debug("IP address $ip was private.");
+		     }
          }
 
-         // Anonymize IP if needed.
-         if ( owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
-             if ( $ip && strpos( $ip , '.' ) ) {
-
-                $ip = explode( '.', $ip );
-                array_pop($ip);
-                $ip = implode('.', $ip);
-                $ip .= '.0';
-            }elseif ($ip && strpos($ip, ':')) {
-                $ip = explode(':', $ip, 4);
-                array_pop($ip);
-                $ip = implode(':', $ip);
-                $ip .= '::';
-            }
+        // Anonymize IP if needed.
+        if ( $chosen_ip && owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+			
+			$chosen_ip = owa_lib::anonymizeIp( $chosen_ip );
+			owa_coreAPI::debug("IP address was anonymized.");
         }
 
-         return $ip;
+        return $chosen_ip;
     }
 
     static function timestampDefault() {
@@ -830,11 +833,11 @@ class owa_trackingEventHelpers {
             // get ip address
             $ip_address = $event->get( 'ip_address' );
             
-            if ( filter_var( $ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE, FILTER_FLAG_NO_RES_RANGE ) ) {
+            if ( owa_lib::isNotPrivateIp( $ip_address ) ) {
 	            
 	            // valid v4 or v6 IP address
 	            
-	            if ( filter_var( $ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+	            if ( owa_lib::isValidIpv6( $ip_address ) ) {
 		            
 		            // is v6 format
 		            $result = @dns_get_record( $ip_address, DNS_AAAA );
