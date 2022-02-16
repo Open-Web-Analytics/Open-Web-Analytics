@@ -52,10 +52,10 @@ class owa_domstreamsRestController extends owa_adminController {
         $rsm->db->groupby('domstream_guid');        
         
         // get domstreams for a particular document/page
-        if ($this->get('document_id')) {
+        if ($this->get('pageUrl')) {
 	        
-            $rsm->db->where('document_id', $this->get('document_id'));
-            $rsm->setQueryStringParam('document_id', $document_id);
+            $rsm->db->where('page_url', $this->get('pageUrl'));
+            $rsm->setQueryStringParam('pageUrl', $this->get('pageUrl') );
         }
 		
 		$rsm->db->orderBy('timestamp', 'DESC');

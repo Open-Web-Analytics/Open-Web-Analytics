@@ -43,16 +43,18 @@ class owa_reportDomstreamsController extends owa_reportController {
         // check for limits
         if ($this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath')) {
             $doc = owa_coreAPI::entityFactory('base.document');
-
-            if ($this->getParam('pageUrl')) {
+			
+			if ( $this->get( 'document_id' ) ) {
+				
+				$doc->load($this->getParam('document_id'));
+			} elseif ($this->getParam('pageUrl')) {
                 $doc->getByColumn('url', $this->getParam('pageUrl'));
             } elseif ($this->getParam('pagePath')) {
                 $doc->getByColumn('uri', $this->getParam('pagePath'));
-            } else {
-                $doc->load($this->getParam('document_id'));
-            }
-
+            } 
+            
             $document_id = $doc->get('id');
+            $pageUrl = $doc->get('url');
 
             $this->setTitle('Domstream Recordings: ', $doc->get('url'));
             $this->set('document', $doc->_getProperties());
@@ -69,7 +71,7 @@ class owa_reportDomstreamsController extends owa_reportController {
             'request_method'	=> 'GET',
             'startDate'         => $p->getStartDate()->getYyyymmdd(),
             'endDate'            => $p->getEndDate()->getYyyymmdd(),
-            'document_id'        => $document_id,
+            'pageUrl'        => $pageUrl,
             'siteId'            => $this->getParam('siteId'),
             'page'                => $this->getParam('page'),
             'resultsPerPage'    => 50

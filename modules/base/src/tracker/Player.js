@@ -7,8 +7,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  */
 
-//import { OWA_instance as OWA } from './owa.js';
-//import { Util } from './Util.js';
+import { OWA_instance } from '../common/owa.js';
 import * as jQuery from 'jquery';
 
 class Player {
@@ -23,14 +22,6 @@ class Player {
 	    this.lock = false;
 		OWA_instance.debug('hello from player');
 	    OWA_instance.registerStateStore('overlay', '', '', 'json');
-	    //OWA_instance.state.load('overlay');
-	
-	    //Util.loadScript(OWA_instance.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
-	    //Util.loadScript(OWA_instance.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery.jgrowl_minimized.js', function(){});
-	    //Util.loadCss(OWA_instance.getSetting('baseUrl')+'/modules/base/css/jquery.jgrowl.css', function(){});
-	    //Util.loadCss(OWA_instance.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-	    
-	
 	}
 	
 	init() {
