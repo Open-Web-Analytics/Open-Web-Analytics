@@ -301,8 +301,12 @@ class Player {
             var accessor_msg = event.dom_element_tag;
         }
 
-        // Try to get node by coordinates using native browser API
+        // Try to get node by coordinates using native browser API.
+        // Need to hide overlay in case click target is under it, otherwise elementFromPoint
+        // will return OWA overlay instead of the real target.
+        jQuery("#owa_overlay").hide();
         var node = document.elementFromPoint(event.click_x, event.click_y);
+        jQuery("#owa_overlay").show();
         if (node) {
             node.click();
         } else {
