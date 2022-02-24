@@ -74,8 +74,19 @@ class Player {
 
 
     moveCursor(x, y) {
+        var that = this;
         this.block();
-        jQuery('#owa-cursor').animate({top: y +'px', left: x +'px'}, { queue:true, duration:100}, 'swing', this.unblock());
+        jQuery('#owa-cursor').animate(
+            {top: y +'px', left: x +'px'},
+            {
+                queue: true,
+                duration: 100,
+                complete: function () {
+                    that.unblock();
+                }
+            },
+            'swing'
+        );
         //console.log("Moving to X: %s Y: %s", x, y);
         this.setStatus("Mouse Movement to: "+x+", "+y);
     }
