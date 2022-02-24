@@ -9,6 +9,7 @@
 
 import { OWA_instance } from '../common/owa.js';
 import * as jQuery from 'jquery';
+import * as jGrowl from 'jgrowl';
 
 class Player {
 
