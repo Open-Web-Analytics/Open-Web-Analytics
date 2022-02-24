@@ -301,16 +301,24 @@ class Player {
             var accessor_msg = event.dom_element_tag;
         }
 
+        // Try to get node by coordinates using native browser API
+        var node = document.elementFromPoint(event.click_x, event.click_y);
+        if (node) {
+            node.click();
+        } else {
+            // Otherwise fallback to getting node by its id or name
+            if (accessor) {
+                jQuery(accessor).click();
+                jQuery(accessor).focus();
+            }
+        }
+
         var d = new Date();
         var id = 'owa-click-marker' + '_' + d.getTime()+1;
         var marker = '<div id="'+id+'" class="owa-click-marker"></div>';
         jQuery('body').append(marker);
         jQuery('#'+id).css({'position': 'absolute','left': event.click_x +'px', 'top': event.click_y +'px', 'z-index' : 89});
 
-        if (accessor) {
-            jQuery(accessor).click();
-            jQuery(accessor).focus();
-        }
         //jQuery('#owa-latest-click').slideToggle('normal');
         //console.log("Clicking: %s", accessor);
         //this.setStatus("Clicking: "+accessor);
