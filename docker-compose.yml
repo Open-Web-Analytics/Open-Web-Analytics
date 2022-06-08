@@ -1,0 +1,35 @@
+version: '3.1'
+
+services:
+  owa:
+    image: owa:test
+    networks:
+      - net-oaw
+
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: owa
+      MYSQL_DATABASE: owa
+      MYSQL_USER=owa
+      MYSQL_PASSWORD=owa
+    networks:
+      - net-oaw
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+    networks:
+      - net-oaw
+
+networks:
+  net-oaw:
+    driver: bridge
+
+docker run --name my-mysql -e MYSQL_ROOT_PASSWORD=owa -e MYSQL_DATABASE=owa -e MYSQL_USER=owa -e MYSQL_PASSORD=owa -p 3306:306 -v $HOME/mysql-data:/var/lib/mysql -d mysql:8.0
