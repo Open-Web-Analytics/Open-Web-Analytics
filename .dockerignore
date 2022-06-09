@@ -1,0 +1,12 @@
+.github/
+.git/
+.idea/
+.dockerignore
+.gitattributes
+.gitconfig
+.gitignore
+*.md
+LICENCE
+docker-compose.yml
+Dockerfile
+entrypoint.sh
