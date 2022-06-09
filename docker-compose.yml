@@ -1,35 +1,28 @@
 version: '3.1'
 
 services:
-  owa:
-    image: owa:test
+  open-web-analytics:
+    build: . # Or open-web-analytics:latest
+    volumes:
+      - ./owa-config-dist.php:/var/www/html/owa-config.php
+    links:
+      - db
+    ports:
+      - "8080:80"
     networks:
-      - net-oaw
+      - open-web-analytics_network
 
   db:
     image: mysql
-    command: --default-authentication-plugin=mysql_native_password
     restart: always
-    ports:
-      - 3306:3306
     environment:
-      MYSQL_ROOT_PASSWORD: owa
-      MYSQL_DATABASE: owa
-      MYSQL_USER=owa
-      MYSQL_PASSWORD=owa
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: open-web-analytics
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     networks:
-      - net-oaw
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8081:8080
-    networks:
-      - net-oaw
+      - open-web-analytics_network
 
 networks:
-  net-oaw:
+  open-web-analytics_network:
     driver: bridge
-
-docker run --name my-mysql -e MYSQL_ROOT_PASSWORD=owa -e MYSQL_DATABASE=owa -e MYSQL_USER=owa -e MYSQL_PASSORD=owa -p 3306:306 -v $HOME/mysql-data:/var/lib/mysql -d mysql:8.0
