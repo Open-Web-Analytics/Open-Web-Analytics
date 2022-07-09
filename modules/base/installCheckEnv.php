@@ -86,6 +86,33 @@ class owa_installCheckEnvController extends owa_installController {
 
             }
         }
+        
+        // check to ensure tha the vendors dir exist
+        if (! is_dir( OWA_VENDOR_DIR ) ) {
+	        
+	        $errors['vendors_dir'] = [
+		        
+		        'name'	=> 'Vendors Directory',
+		        'value'	=> 'missing',
+		        'msg'	=> "The vendors directory is missing. Please run 'composer install' from the top level OWA directory."
+	        ];
+	        
+	        $bad_environment = true;
+        }
+        
+        // check to ensure tha the vendors dir exist
+        if ( ! is_dir( OWA_BASE_MODULE_DIR .'dist' ) ) {
+	        
+	        $errors['base_dist_dir'] = [
+		        
+		        'name'	=> 'dist Directory',
+		        'value'	=> 'missing',
+		        'msg'	=> "The base module dist directory is missing. Please run 'npm build' from the top level OWA directory."
+	        ];
+	        
+	        $bad_environment = true;
+        }
+
 
         // Check for config file and then test the db connection
         if ($this->c->isConfigFilePresent()) {
