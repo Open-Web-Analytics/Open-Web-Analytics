@@ -45,6 +45,9 @@ define('OWA_THEMES_DIR', OWA_DIR.'themes/');
 define('OWA_VERSION', 'master');
 define('OWA_VENDOR_DIR', OWA_DIR.'vendor/');
 
-require_once ( OWA_VENDOR_DIR . 'autoload.php' );
+if ( file_exists( OWA_VENDOR_DIR . 'autoload.php' ) ) {
+	
+	require_once ( OWA_VENDOR_DIR . 'autoload.php' );
+}
 
 ?>
