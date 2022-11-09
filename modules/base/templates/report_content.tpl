@@ -73,6 +73,7 @@ var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => '
                                                 'dimensions' => 'date',
                                                 'sort' => 'date',
                                                 'format' => 'json',
+                                                'resultsPerPage' => 365,
                                                 'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 
 OWA.items.rsh = new OWA.resultSetExplorer('trend-chart');

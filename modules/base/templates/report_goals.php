@@ -13,6 +13,7 @@
                                                                     'dimensions' => 'date', 
                                                                     'sort' => 'date',
                                                                     'format' => 'json',
+                                                                    'resultsPerPage' => 365,
                                                                     'constraints' => $constraints
                                                                     ),true);?>';
                                                                       

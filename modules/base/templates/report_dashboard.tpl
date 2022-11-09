@@ -92,6 +92,7 @@
                         'metrics'        => $metrics,
                         'dimensions'     => 'date',
                         'sort'             => 'date',
+                        'resultsPerPage' => 365,
                         'format'         => 'json'
                     ), true);
                 ?>';
