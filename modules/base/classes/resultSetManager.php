@@ -99,6 +99,8 @@ class owa_resultSetManager extends owa_base {
     var $formatters = array();
     var $segment;
     var $pagination;
+    var $resolution = 'day';
+    var $timePeriod;
     
 
     function __construct($db = '') {
@@ -601,7 +603,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * Retrieves dimension given a name and associated fact table entity.
      *
-     * @param $name string the name of the dimenson
+     * @param $name string the name of the dimension
      * @param $entity    object    the entity object
      * @return array
      */
@@ -706,7 +708,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             $formula = str_replace($child, '__'.$child, $formula);
                         }
 
-                        // now replace the names with seldct statements.
+                        // now replace the names with select statements.
                         foreach ($child_metrics as $child) {
                             $child_metric = $this->getMetricImplementation( $child );
                             $select = $child_metric->getSelect();
@@ -801,48 +803,74 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->params['period'] = $value;
         }
     }
+    
+    function setTimeResolution( $value ) {
+      
+      $map = [
+        'day',
+        'month',
+        'year'
+      ];
+      
+      if ( in_array( $value, $map ) ) {
+        
+        $this->resolution = $value;
+      }
+    }
+    
+    function getTimeResolution() {
+      
+      return $this->resolution;
+    }
 
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
+      
+      $map = false;
+      
+      if ($startDate && $endDate) {
+      
+          $period_name = 'date_range';
+          $map = array('startDate' => $startDate, 'endDate' => $endDate);
+          $dimension_name = 'date';
+          $format = 'yyyymmdd';
+      
+      } elseif ($startTime && $endTime) {
+      
+          $period_name = 'time_range';
+          $map = array('startTime' => $startTime, 'endTime' => $endTime);
+          $dimension_name = 'timestamp';
+          $format = 'timestamp';
+      
+      } else {
+      
+          owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
+          $dimension_name = 'date';
+          $format = 'yyyymmdd';
+      }
 
-        $map = false;
-
-        if ($startDate && $endDate) {
-            $period_name = 'date_range';
-            $map = array('startDate' => $startDate, 'endDate' => $endDate);
-            $dimension_name = 'date';
-            $format = 'yyyymmdd';
-        } elseif ($startTime && $endTime) {
-            $period_name = 'time_range';
-            $map = array('startTime' => $startTime, 'endTime' => $endTime);
-            $dimension_name = 'timestamp';
-            $format = 'timestamp';
-        } else {
-            owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
-            $dimension_name = 'date';
-            $format = 'yyyymmdd';
-        }
-
-        // add to query params array for use in URL construction
-        if ($map) {
-            $this->query_params = array_merge($map, $this->query_params);
-        } else {
-            $this->query_params['period'] = $period_name;
-        }
+      // add to query params array for use in URL construction
+      if ($map) {
+          $this->query_params = array_merge($map, $this->query_params);
+      } else {
+          $this->query_params['period'] = $period_name;
+      }
         
-        if ( $period_name ) {
+      if ( $period_name ) {
 
-	        $p = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-	
-	        $p->set($period_name, $map);
-	
-	        $this->setPeriod($p);
-	
-	        $start = $p->startDate->get($format);
-	        $end = $p->endDate->get($format);
-	
-	        $this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
-		}
+        // create timePeriod class
+        $this->timePeriod = owa_coreAPI::supportClassFactory('base', 'timePeriod');
 
+        $this->timePeriod->set($period_name, $map);
+        
+        // needed?
+        $this->setPeriod($this->timePeriod);
+
+        $start = $this->timePeriod->startDate->get($format);
+        $end = $this->timePeriod->endDate->get($format);
+      
+        // set time period constraint for query
+        $this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
+  		}
     }
 
     function setStartDate($date) {
@@ -1373,14 +1401,40 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->resultSet->setPage( $this->page );
         }
         
-        if ( ! empty( $this->limit ) ) {
+        // if there is a limit set then respect the limit and try to paginate the results by over querying
+        if ( $this->getLimit() ) {
 	        
             // query for more than we need
-            owa_coreAPI::debug('applying limit of: ' . $this->limit );
+            owa_coreAPI::debug('applying limit of: ' . $this->getLimit() );
             
-            $this->db->limit($this->limit * 10);
+            $this->db->limit( $this->getLimit() * 10 );
+            
+        } else {
+          
+          // assume it's a date/time range query and use range resolution as limit
+          switch ( $this->getTimeResolution() ) {
+            
+            case "day":
+              $this->setLimit( $this->timePeriod->getDaysDifference() );
+              break;
+              
+            case "month":
+              $this->setLimit( $this->timePeriod->getMonthsDifference() );
+              break;
+              
+            case "year":
+              $this->setLimit( $this->timePeriod->getYearsDifference() );
+              break;
+            
+            default:
+              
+              break;
+              
+          }
+          
+          $this->db->limit( $this->getLimit() );
         }
-
+        
         if ( ! empty( $this->page ) ) {
 
             $this->db->offset( $this->calculateOffset() );
@@ -1434,7 +1488,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             }
 			
 			$dresults = [];
-            // setup dimensional query if dimensions were specificed in query
+            // setup dimensional query if dimensions were specified in query
             if ( ! empty( $this->dimensions ) ) {
 				
 				// Apply sorts
@@ -1469,10 +1523,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $dresults = $this->applyMetaDataToResults( $dresults );
                     
                 }
-                
-                
-            
-                // generate dimensonal results
+
+                // generate dimensional results
                 $this->resultSet->generate( $dresults, $this->query_params, [
 	                
 	                'resultsPerPage' => $this->getlimit(),
@@ -1534,7 +1586,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 	        $this->resultSet->setPeriodInfo($this->params['period']->getAllInfo());
 		}
         
-		// add any erorrs that should be returned in the result set
+		// add any errors that should be returned in the result set
         $this->resultSet->errors = $this->errors;  
         
         if ( ! empty( $this->limit ) ) {
@@ -1553,7 +1605,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         $results = $this->db->getAllRows();
         
-        // generate dimensonal results
+        // generate dimensional results
         $this->resultSet->generate( $results, $this->query_params, [
 	                
 	                'resultsPerPage' => $this->getlimit(),
