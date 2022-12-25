@@ -30,7 +30,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @since        owa 1.0.0
  */
 
-class owa_optionsView extends owa_view {
+class owa_optionsView extends owa_adminPageView {
 
     function __construct() {
 
@@ -59,10 +59,11 @@ class owa_optionsView extends owa_view {
 
         // Assign config data
         $this->body->set('config', $this->config);
-        $this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js', '1.6.4');
-        $this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery')); // needed anymore?
-        $this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js", '1.8.12', array('jquery'));
-        $this->setJs("owa", "base/js/owa.js");
+        //$this->setJs('jquery', 'base/js/includes/jquery/jquery-1.6.4.min.js', '1.6.4');
+        //$this->setJs("sprintf", "base/js/includes/jquery/jquery.sprintf.js", '', array('jquery')); // needed anymore?
+        //$this->setJs("jquery-ui", "base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js", '1.8.12', array('jquery'));
+        //$this->setJs("owa", "base/js/owa.js");
+        //$this->setJs('owa.reporting', 'base/dist/owa.reporting-combined-min.js');
         $this->setCss('base/css/owa.admin.css');
     }
 }
