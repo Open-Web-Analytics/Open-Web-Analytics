@@ -521,7 +521,7 @@
 		 	 }
 	 	 }
 	 	 
-	 	 return 'owa@' .$mailer_domain;
+	 	 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
      }
 
 
@@ -621,7 +621,7 @@
                 'password_length'                    => 4,
                 'modules'                            => array('base'),
                 'mailer-from'                        => '',  // Set default address, because sending from root@localhost wont work
-                'mailer-fromName'                    => 'OWA Mailer',
+                'mailer-fromName'                    => 'OWA Server',
                 'mailer-host'                        => '',
                 'mailer-port'                        => '',
                 'mailer-use-smtp'                    => false,
