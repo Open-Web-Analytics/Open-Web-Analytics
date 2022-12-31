@@ -990,8 +990,13 @@ class owa_lib {
         }
     }
 
-    public static function hash( $hash_type = 'md5', $data, $salt = '' ) {
-
+    public static function hash( $hash_type, $data, $salt = '' ) {
+        
+        if ( ! $hash_type ) {
+            
+            $hash_type = 'md5';
+        }
+        
         return hash_hmac( $hash_type, $data, $salt );
     }
 
