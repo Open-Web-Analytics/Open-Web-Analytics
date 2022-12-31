@@ -50,7 +50,7 @@ class owa_client extends owa_caller {
     public function __construct($config = null) {
 
         parent::__construct($config);
-        owa_coreAPI::notice("Use of owa_client class is depricated and will be removed shortly. Functionality has been moved to OWA's PHP SDK.");
+        owa_coreAPI::notice("Use of owa_client class is depricated. Re-implement your tracker using OWA's PHP SDK.");
         $this->pageview_event = $this->makeEvent();
         $this->pageview_event->setEventType('base.page_request');
         // Set the page url from environmental vars
