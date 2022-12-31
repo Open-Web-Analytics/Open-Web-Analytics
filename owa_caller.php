@@ -94,7 +94,7 @@ class owa_caller extends owa_base {
         // Applies config from db or cache
         // check here is needed for installs when the configuration table does not exist.
                
-        if ( $this->c->isConfigFilePresent() && ! owa_coreAPI::getSetting('base', 'useStaticConfigOnly') )  {
+        if ( $this->c->isConfigFilePresent() && ! owa_coreAPI::getSetting('base', 'useStaticConfigOnly') && ! defined( 'OWA_INSTALLING' ) )  {
             
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
         }   
