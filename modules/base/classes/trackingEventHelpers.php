@@ -602,7 +602,7 @@ class owa_trackingEventHelpers {
             
             $domain = $engine['domain'];
 
-            if ( strpos( $host, $domain ) ) {
+            if ( stripos( $host, $domain ) !== false ) {
                 
                 owa_coreAPI::debug( 'Found search engine: '. $domain);
                 
@@ -636,7 +636,7 @@ class owa_trackingEventHelpers {
 				    
 		            $domain = $engine['domain'];
 		
-		            if ( strpos( $host, $domain) ) {
+		            if ( stripos( $host, $domain ) !== false ) {
 			            
 			            $query_param = $engine['query_param'];
 			            $term = '';
@@ -664,7 +664,7 @@ class owa_trackingEventHelpers {
 
         foreach ( $social_networks as $network ) {
             
-            if ( strpos( $host, $network['domain'] ) ) {
+            if ( stripos( $host, $network['domain'] ) !== false ) {
                 
                 owa_coreAPI::debug( 'Found social network: %s', $network['domain'] );
                 
