@@ -884,7 +884,7 @@ abstract class owa_module {
      *          as opposed to being housed in a related table.
      */
     function registerDimension(
-            $dim_name, $entity_names, $column, $label = '', $family,
+            $dim_name, $entity_names, $column, $label, $family,
             $description = '', $foreign_key_name = '',
             $denormalized = false, $data_type = 'string') {
 
