@@ -140,7 +140,7 @@ class owa_db extends owa_base {
                                          'name' => $db_name,
                                          'open_new_connection' => $open_new_connection,
                                          'persistant' => $persistant);
-
+                                                                          
         return parent::__construct();
     }
 
