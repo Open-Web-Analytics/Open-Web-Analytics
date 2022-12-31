@@ -134,8 +134,6 @@ class owa_auth extends owa_base {
             // auth user by cookies
             $ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
              owa_coreAPI::debug('User authenticated via cookies.');
-            // bump expiration time
-            //owa_coreAPI::setState('p', '', owa_coreAPI::getStateParam('p'));
         } else {
             $ret = false;
             owa_coreAPI::debug("Could not find any credentials to authenticate with.");
