@@ -33,11 +33,6 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 
 class owa_installCheckEnvController extends owa_installController {
 
-    function __construct($params) {
-
-        return parent::__construct($params);
-    }
-
     function action() {
 
         $errors = array();
@@ -172,7 +167,7 @@ class owa_installCheckEnvView extends owa_view {
         $this->body->set('errors', $this->get('errors'));
         // load body template
         $this->body->set_template('install_check_env.tpl');
-        $this->setJs("owa", "base/js/owa.js");
+        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }
 

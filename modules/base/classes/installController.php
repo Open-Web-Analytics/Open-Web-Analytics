@@ -34,130 +34,58 @@ require_once(OWA_DIR.'owa_controller.php');
 class owa_installController extends owa_controller {
 
     var $is_installer = true;
+    var $im;
 
-    function __construct($params) {
-
+    function __construct( $params ) {
+        
+        
         // needed just in case a re-install happens and updates are also needed.
-        // tells the controller to skip the updates redirect
+        // tells the controller to skip the updates redirect. Also tells the main owa_caller 
+        // class not to load the config from the DB which doesn't exist during the install.
         if (!defined('OWA_INSTALLING')) {
             define('OWA_INSTALLING', true);
         }
-
-        //$this->c->setSetting('base', 'cache_objects', false);
-
-        return parent::__construct($params);
+        
+        $this->setRequiredCapability('install_schema');
+          
+        $this->im = owa_coreAPI::supportClassFactory('base', 'installManager');
+        
+        return parent::__construct( $params );
     }
 
     function pre() {
 
-        if (owa_coreAPI::getSetting('base', 'install_complete')) {
-            owa_coreAPI::debug('Install is already complete. redirecting to public url');
-            return $this->redirectBrowserToUrl( owa_coreAPI::getSetting('base', 'public_url') );
+        if ( $this->isInstallComplete() ) {
+            
+            owa_coreAPI::debug( 'Install is already complete. redirecting to public url' );
+            return $this->redirectBrowserToUrl( owa_coreAPI::getSetting( 'base', 'public_url' ) );
         }
-
-        return;
     }
 
     function installSchema() {
-
-        $service = owa_coreAPI::serviceSingleton();
-        $base = $service->getModule('base');
-        $status = $base->install();
-        return $status;
-
+        
+        return $this->im->installSchema();
     }
 
-    function createAdminUser($user_id, $email_address, $password = '') {
+    function createAdminUser( $user_id, $email_address, $password = '' ) {
 
-        //create user entity
-        $u = owa_coreAPI::entityFactory('base.user');
-        // check to see if an admin user already exists
-        $u->getByColumn('role', 'admin');
-        $id_check = $u->get('id');
-        // if not then proceed
-        if (empty($id_check)) {
-
-            //Check to see if user name already exists
-            $u->getByColumn('user_id', $user_id);
-
-            $id = $u->get('id');
-
-            // Set user object Params
-            if (empty($id)) {
-
-                // create random passsword if none provided.
-                if ( ! $password ) {
-                    $password = $u->generateRandomPassword();
-                }
-                $ret = $u->createNewUser($user_id, owa_user::ADMIN_USER_ROLE, $password, $email_address, owa_user::ADMIN_USER_REAL_NAME);
-                owa_coreAPI::debug("Admin user created successfully.");
-                return $password;
-
-            } else {
-                owa_coreAPI::debug($this->getMsgAsString(3306));
-            }
-        } else {
-            owa_coreAPI::debug("Admin user already exists.");
-        }
-
+        return $this->im->createAdminUser( $user_id, $email_address, $password );
     }
 
-    function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
-
-        if (!$name) {
-            $name = $domain;
-        }
-
-        $site = owa_coreAPI::entityFactory('base.site');
-
-        if (!$site_id) {
-            $site_id = $site->generateSiteId($domain);
-        }
-
-
-        // Check to see if default site already exists
-        $this->e->notice('Checking for existence of default site.');
-
-        // create site_id....how???
-        $site->getByColumn('site_id', $site_id);
-        $id = $site->get('id');
-
-        if(empty($id)) {
-            // Create default site
-            $site->set('id', $site->generateId($site_id));
-            $site->set('site_id', $site_id);
-            $site->set('name', $name);
-            $site->set('description', $description);
-            $site->set('domain', $domain);
-            $site->set('site_family', $site_family);
-            $site_status = $site->create();
-
-            if ($site_status == true) {
-                $this->e->notice('Created default site.');
-            } else {
-                $this->e->notice('Creation of default site failed.');
-            }
-
-        } else {
-            $this->e->notice(sprintf("Default site already exists (id = %s). nothing to do here.", $id));
-        }
-
-        return $site->get('site_id');
+    function createDefaultSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+        
+        return $this->im->createDefaultSite( $domain, $name, $description, $site_family, $site_id );
     }
 
     function checkDbConnection() {
-
-        // Check DB connection status
-        $db = owa_coreAPI::dbSingleton();
-        $db->connect();
-        if ($db->connection_status === true) {
-            return true;
-        } else {
-            return false;
-        }
-
+        
+        return $this->im->checkDbConnection(); 
     }
-
+    
+    function isInstallComplete() {
+	    
+	    return $this->im->isInstallComplete();
+    }
 }
 
 ?>
