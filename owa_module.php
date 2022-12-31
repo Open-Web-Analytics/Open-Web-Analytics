@@ -418,21 +418,6 @@ abstract class owa_module {
     }
 
     /**
-     * Registers Group Link with a particular View
-     * @DEPRICATED - use addNavigationSubGroup and addNavigationLinkInSubGroup
-     */
-    function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'view_reports') {
-
-        if (!empty($subgroup)):
-            $this->addNavigationLinkInSubGroup($subgroup,$ref, $anchortext, $order = 0, $priviledge ,$group);
-        else:
-            $this->addNavigationSubGroup($anchortext,$ref, $anchortext, $order = 0, $priviledge ,$group);
-        endif;
-
-        return;
-    }
-
-    /**
      * Adds a new Subgroup in the navigation
      *
      * @param string $subgroupName
