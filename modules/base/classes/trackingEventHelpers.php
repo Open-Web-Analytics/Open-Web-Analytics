@@ -488,7 +488,7 @@ class owa_trackingEventHelpers {
                 if ( ! $engine ) {
 	                
 	                // check if referral is a social network
-	                $network = self::issocialNetwork( $host );
+	                $network = self::isSocialNetwork( $host );
 	                
 	                if ( $network ) {
 		                
