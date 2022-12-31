@@ -1535,6 +1535,11 @@ class owa_coreAPI {
 
         return $nonce;
     }
+    
+    public static function createRestApiNonce( $version, $module, $do ) {
+        
+        return self::createNonce( $version . $module . $do );
+    }
 
     public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
 

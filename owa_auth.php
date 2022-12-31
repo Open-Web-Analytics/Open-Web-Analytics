@@ -70,6 +70,8 @@ class owa_auth extends owa_base {
     var $params;
 
     var $check_for_credentials = false;
+    
+    var $auth_method;
 
     /**
      * Auth class Singleton
@@ -118,22 +120,31 @@ class owa_auth extends owa_base {
         if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
 	        owa_coreAPI::debug('User is already authenticated.');
             $ret = true;
-        } elseif ( $apiKey ) {
-            // auth user by api key
-            $ret = $this->authByApiKey( $apiKey );
-            owa_coreAPI::debug('User authenticated via api key.');
+        
         } elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
             // auth user by temporary passkey. used in forgot password situations
+            $this->setAuthMethod( 'temp_key');
             $ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
              owa_coreAPI::debug('User authenticated via temporary passkey.');
+    
         } elseif (owa_coreAPI::getRequestParam('user_id') && owa_coreAPI::getRequestParam('password')) {
             // auth user by login form input
+            $this->setAuthMethod( 'login_form');
             $ret = $this->authByInput(owa_coreAPI::getRequestParam('user_id'), owa_coreAPI::getRequestParam('password'));
              owa_coreAPI::debug('User authenticated via form input.');
+    
+        } elseif ( $apiKey ) {
+            // auth user by api key
+            $this->setAuthMethod( 'api_key');
+            $ret = $this->authByApiKey( $apiKey );
+            owa_coreAPI::debug('User authenticated via api key.');
+    
         } elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
             // auth user by cookies
+            $this->setAuthMethod( 'cookies');
             $ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
              owa_coreAPI::debug('User authenticated via cookies.');
+            
         } else {
             $ret = false;
             owa_coreAPI::debug("Could not find any credentials to authenticate with.");
@@ -552,6 +563,18 @@ class owa_auth extends owa_base {
 		    owa_coreAPI::debug('API request signature failed validation.' );
 		    return false;
 	    }
+    }
+    
+    // sets the method by which the user was authenticated
+    // @method  string
+    private function setAuthMethod( $method ) {
+        
+        $this->auth_method = $method;
+    }
+    
+    public function getAuthMethod() {
+        
+        return $this->auth_method;
     }
 }
 

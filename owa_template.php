@@ -567,6 +567,10 @@ class owa_template extends Template {
         if ( $add_apiKey ) {
 	        
 	        $params['apiKey'] = $this->getApiKey();
+            
+        } else {
+            
+            $params['nonce'] = owa_coreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
         }
       
         $link = $this->makeLink($params, $add_state, $url);
