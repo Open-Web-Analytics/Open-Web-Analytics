@@ -559,9 +559,13 @@ class owa_db extends owa_base {
             return $this->_makeConstraintClause('HAVING', $params);
         }
     }
-
-    function _makeConstraintClause($type = 'WHERE', $params) {
-
+    
+    /**
+     *  Generates the SQL constraint string
+     *  @type string    'WHERE' || 'HAVING'
+     */
+    function _makeConstraintClause( $type, $params ) {
+         
         if ( ! empty( $params ) ) {
 
             $count = count( $params );
