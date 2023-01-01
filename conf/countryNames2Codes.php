@@ -1,5 +1,5 @@
 <?php
-$countryName2Code = array( 
+$countryName2Code = array(
     "afghanistan"                    => 'AF',
     "Åland islands"                    => 'AX',
     "albania"                        => 'AL',

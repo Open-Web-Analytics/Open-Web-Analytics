@@ -27,7 +27,7 @@ require_once(OWA_BASE_DIR.'/owa_controller.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -58,7 +58,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -70,7 +70,7 @@ class owa_notifyNewSessionView extends owa_mailView {
         $this->body->set_template( 'new_session_email.tpl' );
         $this->body->set( 'site', $this->get( 'site' ) );
         $this->body->set( 'session', $this->get( 'session' ) );
-        $this->setMailSubject( $this->get('subject') );    
+        $this->setMailSubject( $this->get('subject') );
         $this->addMailToAddress( $this->get('email_address') );
     }
 }

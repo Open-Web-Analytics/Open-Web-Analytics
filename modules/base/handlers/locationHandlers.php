@@ -18,7 +18,7 @@
 
 if(!class_exists('owa_observer')) {
     require_once(OWA_DIR.'owa_observer.php');
-}    
+}
 require_once(OWA_DIR.'owa_lib.php');
 
 /**
@@ -29,7 +29,7 @@ require_once(OWA_DIR.'owa_lib.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.0
  */
 
@@ -60,7 +60,7 @@ class owa_locationHandlers extends owa_observer {
             // load the geo properties from the geo service.
             } else {
                 $location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                owa_coreAPI::debug('geolocation: ' .print_r($location, true));            
+                owa_coreAPI::debug('geolocation: ' .print_r($location, true));
                 //set properties of the session
                 $event->set('country', $location->getCountry());
                 $event->set('city', $location->getCity());
@@ -78,7 +78,7 @@ class owa_locationHandlers extends owa_observer {
             }
             
             $h->getByPk('id', $location_id );
-            $id = $h->get('id'); 
+            $id = $h->get('id');
             
             if (!$id) {
                 
@@ -92,7 +92,7 @@ class owa_locationHandlers extends owa_observer {
                 $h->set('longitude', $event->get('longitude'));
                 $h->set('country_code', $event->get('country_code'));
                 $h->set('state', $event->get('state'));
-                $h->set('id', $location_id); 
+                $h->set('id', $location_id);
                 $ret = $h->create();
                 
                 if ( $ret ) {
@@ -111,7 +111,7 @@ class owa_locationHandlers extends owa_observer {
             owa_coreAPI::notice('Not persisting location dimension. Location id or ip address missing from event.');
             
             return OWA_EHS_EVENT_HANDLED;
-        }    
+        }
     }
     
     function lookupCountryCodeFromName($name) {

@@ -254,7 +254,7 @@ class Services_JSON
         return $this->_encode($var);
     }
     /**
-    * PRIVATE CODE that does the work of encodes an arbitrary variable into JSON format 
+    * PRIVATE CODE that does the work of encodes an arbitrary variable into JSON format
     *
     * @param    mixed   $var    any number, boolean, string, array, or object to be encoded.
     *                           see argument 1 to Services_JSON() above for array-parsing behavior.
@@ -264,7 +264,7 @@ class Services_JSON
     * @return   mixed   JSON string representation of input var or an error if a problem occurs
     * @access   public
     */
-    function _encode($var) 
+    function _encode($var)
     {
          
         switch (gettype($var)) {

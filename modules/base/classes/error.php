@@ -16,6 +16,9 @@
 // $Id$
 //
 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
 
 /**
  * Error Class
@@ -41,12 +44,12 @@ class owa_error {
     const OWA_LOG_EMERG = 16;
 
     /**
-     * logger instances
+     * logger instance
      *
      * @var array
      */
-
-    var $loggers = array();
+    var $loggger;
+    
     /**
      * Buffered Msgs
      *
@@ -54,18 +57,29 @@ class owa_error {
      */
     var $bmsgs;
 
-    var $hasChildren = false;
-
     var $init = false;
-
-    var $c;
 
     /**
      * Constructor
      *
      */
     function __construct() {
-
+		
+		$this->logger = new Logger('errors');
+		
+/*
+		if ( owa_lib::inDebug() ) {
+			
+			$this->createDevelopmentHandler();
+			
+		} else {
+			
+			$this->createProductionHandler();
+		}
+*/
+		
+		//$this->init = true;
+        //$this->logBufferedMsgs();
     }
 
     function __destruct() {
@@ -94,78 +108,72 @@ class owa_error {
 		
 		$this->logPhpErrors();
 		
-        // set log level to debug
-        owa_coreAPI::setSetting('base', 'error_log_level', self::OWA_LOG_ALL );
         // make file logger
         $this->make_file_logger();
-        // if the CLI is in use, makea console logger.
+        
+        // if the CLI is in use, also make a console logger
         if ( defined('OWA_CLI') ) {
 
             $this->make_console_logger();
         }
         
-        set_exception_handler( array($this, 'logException') );
+        set_exception_handler( [ $this, 'logException' ] );
 
     }
 
     function createProductionHandler() {
 
-        // if the level is not changes from the defaul, set log level to notices and above
-        if (owa_coreAPI::getSetting( 'base', 'error_log_level') < 1 ) {
-
-            owa_coreAPI::setSetting('base', 'error_log_level', self::OWA_LOG_NOTICE );
-        }
         // make file logger
         $this->make_file_logger();
-        // if the CLI is in use, makea console logger.
+        
+        // if the CLI is in use, also make a console logger
         if ( defined('OWA_CLI') ) {
 
             $this->make_console_logger();
         }
     }
 
-
     function debug($message) {
 
-        return $this->log($message, self::OWA_LOG_DEBUG);
+        return $this->log($message, 'debug');
     }
 
     function info($message) {
 
-        return $this->log($message, self::OWA_LOG_INFO);
+        return $this->log($message, 'info');
     }
 
     function notice($message) {
 
-        return $this->log($message, self::OWA_LOG_NOTICE);
+        return $this->log($message, 'notice');
     }
 
     function warning($message) {
 
-        return $this->log($message, self::OWA_LOG_WARNING);
+        return $this->log($message, 'warning');
     }
 
     function err($message) {
 
-        return $this->log($message, self::OWA_LOG_ERR);
+        return $this->log($message, 'error');
     }
 
     function crit($message) {
 
-        return $this->log($message, self::OWA_LOG_CRIT);
+        return $this->log($message, 'critical');
     }
 
     function alert($message) {
 
-        return $this->log($message, self::OWA_LOG_ALERT);
+        return $this->log($message, 'alert');
     }
 
     function emerg($message) {
 
-        return $this->log($message, self::OWA_LOG_EMERG);
+        return $this->log($message, 'emergency');
     }
 
-    function log( $err, $priority = 0 ) {
+    function log( $err, $priority = 'notice' ) {
 
 
         if ( $this->init) {
@@ -176,6 +184,58 @@ class owa_error {
             // buffer msgs untill the global config object has been loaded
             // and a proper logger can be setup
             return $this->bufferMsg($err, $priority);
+        }
+    }
+    
+    function logMsg( $msg, $priority ) {
+
+        if ( is_object( $msg ) || is_array( $msg ) ) {
+
+            $msg = print_r( $msg, true );
+        }
+        
+        switch ( $priority ) {
+	        
+	        case 'debug':
+	        	
+	        	$this->logger->debug( $msg );
+	        	
+	        	break;
+	        	
+	        case 'info':
+	        	
+	        	$this->logger->info( $msg );
+	        	break;
+	        	
+	        case 'notice':
+	        
+	        	$this->logger->notice( $msg );
+	        	break;
+	        	
+	        case 'warning':
+	        	
+	        	$this->logger->warning( $msg );
+	        	break;
+	        	
+	        case 'error':
+	        	
+	        	$this->logger->error( $msg );
+	        	break;
+	        	
+	        case 'critical':
+	        
+	        	$this->logger->critical( $msg );
+	        	break;
+	        	
+	        case 'alert':
+	        	
+	        	$this->logger->alert( $msg );
+	        	break;
+	        	
+	        case 'emergency':
+	        	
+	        	$this->logger->emergency( $msg );
+	        	break;
         }
     }
 
@@ -203,9 +263,53 @@ class owa_error {
      *
      */
     function make_console_logger() {
-
-        $conf = array('name' => 'console_log');
-        $this->loggers['console'] = owa_coreAPI::supportClassFactory( 'base', 'logConsole', $conf );
+		
+		// define standard out
+		if ( ! defined( 'STDOUT' ) ) {
+	       
+	       define('STDOUT', fopen("php://stdout", "w") );
+    	}
+       
+       // determine log level
+       $level = $this->getLogLevel();
+              
+       // create a stream
+       $stream = new StreamHandler(STDOUT, $level);
+       
+       // create a formatter
+       $dt = $this->getDateTimestamp();
+       
+       $template = $this->getLineFormat();
+	  
+	   $formatter = new LineFormatter($template, $dt, true, true);
+        
+	   $stream->setFormatter( $formatter );
+	   
+	   // add the stream hadnler to the logger
+       $this->logger->pushHandler( $stream );
+    }
+    
+    function getLogLevel() {
+	    
+	   $level = Logger::NOTICE;
+       
+       if ( owa_lib::inDebug() ) {
+	       
+	       $level = Logger::DEBUG;
+       }
+       
+       return $level;
+    }
+    
+    function getDateTimestamp() {
+	    
+	    return "H:i:s Y-m-d";
+    }
+    
+    function getLineFormat() {
+	    
+	    $pid = getmypid();
+	    return "[%datetime%] [$pid] [%level_name%] %message% %context% %extra%\n";
     }
 
     /**
@@ -214,19 +318,39 @@ class owa_error {
      */
     function make_file_logger() {
 
+		// create a formatter
+		$dt = $this->getDateTimestamp();
+        
+		$template = $this->getLineFormat();
+		
+		$formatter = new LineFormatter($template, $dt, true, true);
+        
+        // determine log level
+        $level = $this->getLogLevel();
+        
+        // create stream handler
         $path = owa_coreAPI::getSetting('base', 'error_log_file');
-        //instantiate a a log file
-        $conf = array('name' => 'debug_log', 'file_path' => $path);
-        $this->loggers['file'] = owa_coreAPI::supportClassFactory( 'base', 'logFile', $conf );
+        
+        $stream = new StreamHandler($path, $level);
+        
+		$stream->setFormatter($formatter);
+		
+		// add stream handler to logger
+		$this->logger->pushHandler($stream);
     }
 
     function logPhpErrors() {
 
-        error_reporting( -1 );
+        self::phpErrorSettings();
+        set_error_handler( [ $this, "handlePhpError" ] );
+    }
+    
+    static function phpErrorSettings() {
+	    
+	    error_reporting( -1 );
         ini_set('display_errors', 'On');
         ini_set("log_errors", 1);
         ini_set("error_log", owa_coreAPI::getSetting('base', 'error_log_file') );
-        set_error_handler( array( $this, "handlePhpError" ) );
     }
 
     /**
@@ -238,13 +362,10 @@ class owa_error {
      * @param string $linenum
      * @param string $vars
      */
-    function handlePhpError($errno = null, $errmsg, $filename, $linenum, $vars) {
+    function handlePhpError($errno, $errmsg, $filename = '', $linenum = '') {
 
         $dt = date("Y-m-d H:i:s (T)");
-
-        // set of errors for which a var trace will be saved
-        //$user_errors = array(E_USER_ERROR, E_USER_WARNING, E_USER_NOTICE, E_STRICT);
-
+        
         $err = "<errorentry>\n";
         $err .= "\t<datetime>" . $dt . "</datetime>\n";
         $err .= "\t<errornum>" . $errno . "</errornum>\n";
@@ -252,33 +373,9 @@ class owa_error {
         $err .= "\t<scriptname>" . $filename . "</scriptname>\n";
         $err .= "\t<scriptlinenum>" . $linenum . "</scriptlinenum>\n";
 
-        //if (in_array($errno, $user_errors)) {
-        //    $err .= "\t<vartrace>" . wddx_serialize_value($vars, "Variables") . "</vartrace>\n";
-        //}
-
         $err .= "</errorentry>\n\n";
 
         $this->debug( $err );
-    }
-
-    function logMsg( $msg, $priority ) {
-
-        if ( is_object( $msg ) || is_array( $msg ) ) {
-
-            $msg = print_r( $msg, true );
-        }
-
-        // check error priority before logging.
-        if ( owa_coreAPI::getSetting('base', 'error_log_level') <= $priority ) {
-
-            $dt = date("H:i:s Y-m-d");
-            $pid = getmypid();
-            foreach ( $this->loggers as $logger ) {
-
-                $message = sprintf("%s %s [%s] %s \n", $dt, $pid, $logger->name, $msg);
-                $logger->append( $message );
-            }
-        }
     }
 
     function backtrace() {

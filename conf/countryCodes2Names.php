@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  * ISO-3166-1 http://en.wikipedia.org/wiki/ISO_3166-1
  */

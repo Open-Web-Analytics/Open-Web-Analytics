@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
  
@@ -88,7 +88,7 @@
      */
     function validationFactory($class_file, $conf = array()) {
         
-        return owa_coreAPI::validationFactory($class_file, $conf);        
+        return owa_coreAPI::validationFactory($class_file, $conf);
     }
     
     /**

@@ -29,7 +29,7 @@ foreach ($cmds as $cmd) {
 (function() {
     var _owa = document.createElement('script'); _owa.type = 'text/javascript'; _owa.async = true;
     owa_baseUrl = ('https:' == document.location.protocol ? window.owa_baseSecUrl || owa_baseUrl.replace(/http:/, 'https:') : owa_baseUrl );
-    _owa.src = owa_baseUrl + 'modules/base/js/owa.tracker-combined-min.js';
+    _owa.src = owa_baseUrl + 'modules/base/dist/owa.tracker.js';
     var _owa_s = document.getElementsByTagName('script')[0]; _owa_s.parentNode.insertBefore(_owa, _owa_s);
 }());
 <?php if ( isset($options) && ! $this->getValue( 'no_script_wrapper', $options ) ) { ?>

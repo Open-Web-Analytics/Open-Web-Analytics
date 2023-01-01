@@ -32,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
  */
 
 class owa_installDefaultsEntryController extends owa_installController {
-
+    
     function action() {
 
         $this->setView('base.install');
@@ -62,7 +62,7 @@ class owa_installDefaultsEntryView extends owa_view {
         $this->body->set('defaults', $this->get('defaults'));
         // load body template
         $this->body->set_template('install_defaults_entry.php');
-        $this->setJs("owa", "base/js/owa.js");
+        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }
 

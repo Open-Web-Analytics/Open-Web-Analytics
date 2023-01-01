@@ -1,4 +1,4 @@
-<?php 
+<?php
 $timezones = array(
 
     "US"    => array(
@@ -257,7 +257,7 @@ $timezones = array(
         0           => "Asia/Hong_Kong"),
      
      "TR"   => array(
-        0           => "Asia/Istanbul"),
+        0           => "Europe/Istanbul"),
      
      "IL"   => array(
         0           => "Asia/Jerusalem"),
@@ -787,4 +787,4 @@ $timezones = array(
     "PF"   => array(
         0        => "Pacific/Marquesas")
 );
-?> 
+?>

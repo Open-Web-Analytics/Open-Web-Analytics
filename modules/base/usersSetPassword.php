@@ -55,7 +55,7 @@ class owa_usersSetPasswordController extends owa_controller {
         // needed for migration away from old embedded install model
         owa_coreAPI::debug('setting migration flag...'. owa_coreAPI::getSetting('base', 'is_embedded') );
         if ( $u && owa_coreAPI::getSetting('base', 'is_embedded') ) {
-				owa_coreAPI::debug('setting migration flag...');	        
+				owa_coreAPI::debug('setting migration flag...');	
 	        	owa_coreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
 		}
 

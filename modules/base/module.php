@@ -42,10 +42,10 @@ class owa_baseModule extends owa_module {
         $this->display_name = 'Open Web Analytics';
         $this->group = 'Base';
         $this->author = 'Peter Adams';
-        $this->version = 10;
+        $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 10;
+        $this->required_schema_version = 11;
         return parent::__construct();
     }
 
@@ -57,7 +57,7 @@ class owa_baseModule extends owa_module {
         $this->registerImplementation('event_queue_types', 'file', 'owa_fileEventQueue', 'classes/fileEventQueue.php');
         $this->registerImplementation('event_queue_types', 'database', 'owa_dbEventQueue', 'classes/dbEventQueue.php');
         $this->registerImplementation('event_queue_types', 'http', 'owa_httpEventQueue', 'classes/httpEventQueue.php');
-
+        
         // register named queues
         $this->registerEventQueue( 'incoming_tracking_events', array(
 
@@ -225,30 +225,32 @@ class owa_baseModule extends owa_module {
                 'data_type'                        => 'url',
                 'callbacks'                        => array( 'owa_trackingEventHelpers::makeUrlCanonical' )
             ),
-
-            'source'                        => array(
-                'required'                        => true,
-                'data_type'                        => 'string',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                'default_value'                    => '(not set)'
-            ),
-
-            'medium'                        => array(
-                'required'                        => true,
-                'data_type'                        => 'string',
-                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                'default_value'                    => '(not set)'
-            ),
-
+            
             'session_referer'                => array(
                 'required'                        => false,
                 'data_type'                        => 'url',
                 'callbacks'                        => array()
             ),
+			// must come after session_referer	
+            'source'                        => array(
+                'required'                        => true,
+                'data_type'                        => 'string',
+                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString', 'owa_trackingEventHelpers::deriveSource' ),
+                'default_value'                    => '(not set)'
+            ),
+			// must come after session_referer	
+            'medium'                        => array(
+                'required'                        => true,
+                'data_type'                        => 'string',
+                'callbacks'                        => array( 'owa_trackingEventHelpers::lowercaseString', 'owa_trackingEventHelpers::deriveMedium' ),
+                'default_value'                    => 'direct'
+            ),
+			
+			// must come after session_referer
             // @todo investigate if this should be a required property so that a proper join can occur.
             'search_terms'                    => array(
-                'required'                        => false,
-                'callbacks'                        => array( 'owa_trackingEventHelpers::setSearchTerms' ),
+                'required'                        => true,
+                'callbacks'                        => array( 'owa_trackingEventHelpers::extractSearchTerm' ),
                 'default_value'                    => '(not set)'
 
             ),
@@ -521,17 +523,10 @@ class owa_baseModule extends owa_module {
 
         return $cmds;
     }
+    
+    function registerActions() {
 
-    /**
-     * Register Background jobs
-     *
-     * The following lines register background jobs used by the
-     * background daemon.
-     */
-    function registerBackgroundJobs() {
-
-        // event procesing daemon jobs
-        $this->registerBackgroundJob('process_event_queue', 'cli.php cmd=processEventQueue', owa_coreAPI::getSetting('base', 'processQueuesJobSchedule'), 10);
+        $this->registerAction( 'base.resetSecretsCli', 'owa_resetSecretsCliController', 'controllers/resetSecretsCli.php' );
     }
 
     /**
@@ -555,6 +550,7 @@ class owa_baseModule extends owa_module {
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
         $this->registerCliCommand('update-referral', 'base.crawlReferralCli');
         $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
+        $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
     }
 
     /**
@@ -699,45 +695,31 @@ class owa_baseModule extends owa_module {
 
         // visits
 
+        // owa_session uses a different column name and has it's own metric registration above.
+        $this->registerMetricDefinition(array(
+            'name'            => 'visits',
+            'label'            => 'Visits',
+            'description'    => 'The total number of visits/sessions.',
+            'group'            => 'Site Usage',
+            'entity'        => 'base.session',
+            'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+            'data_type'        => 'integer', // 'integer', 'currency'
+            'column'        => 'id'
 
-            // owa_session uses a different column name and has it's own metric registration above.
-                $this->registerMetricDefinition(array(
-                    'name'            => 'visits',
-                    'label'            => 'Visits',
-                    'description'    => 'The total number of visits/sessions.',
-                    'group'            => 'Site Usage',
-                    'entity'        => 'base.session',
-                    'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-                    'data_type'        => 'integer', // 'integrer', 'currency'
-                    'column'        => 'id'
+        ));
 
-                ));
+        $this->registerMetricDefinition(array(
+            'name'            => 'visits',
+            'label'            => 'Visits',
+            'description'    => 'The total number of visits/sessions.',
+            'group'            => 'Site Usage',
+            'entity'        => 'base.request',
+            'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
+            'data_type'        => 'integer', // 'integer', 'currency'
+            'column'        => 'session_id'
 
-                $this->registerMetricDefinition(array(
-                    'name'            => 'visits',
-                    'label'            => 'Visits',
-                    'description'    => 'The total number of visits/sessions.',
-                    'group'            => 'Site Usage',
-                    'entity'        => 'base.request',
-                    'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-                    'data_type'        => 'integer', // 'integrer', 'currency'
-                    'column'        => 'session_id'
+        ));
 
-                ));
-
-/*
-        $this->registerMetric(
-            'visitors',
-            array(
-                'base.visitors',
-                'base.visitorsFromRequestFact'
-            ),
-            '',
-            'Visitors',
-            'The total number of visitors',
-            'Site Usage'
-        );
-*/
         $this->registerMetric(
             'newVisitors',
             'base.newVisitors',
@@ -746,7 +728,6 @@ class owa_baseModule extends owa_module {
             'The total number of new visitors',
             'Site Usage'
         );
-
 
         $this->registerMetric(
             'repeatVisitors',
@@ -2229,101 +2210,6 @@ class owa_baseModule extends owa_module {
     function registerBuildPackages() {
 
         $package = array(
-            'name'            => 'owa.tracker',
-            'output_dir'    => OWA_MODULES_DIR.'base/js/',
-            'type'            => 'js',
-            'files'            => array(
-
-                    'owa'            => array(
-                                            'path'            =>    OWA_MODULES_DIR.'base/js/owa.js',
-                                            'compression'    => 'minify'
-                                        ),
-                    'owa.tracker'     => array(
-                                            'path'            => OWA_MODULES_DIR.'base/js/owa.tracker.js',
-                                            'compression'    => 'minify'
-                                        )
-            )
-        );
-
-        $this->registerBuildPackage( $package );
-
-        $package = array(
-            'name'            => 'owa.reporting',
-            'output_dir'    => OWA_MODULES_DIR.'base/js/',
-            'type'            => 'js',
-            'files'            => array(
-	            
-                    'jquery'                => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery-1.6.4.min.js'
-                                                ),
-                    'sprintf'                => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery.sprintf.js'
-
-                                                ), // needed?
-                    'jquery-ui'             => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery-ui-1.8.12.custom.min.js'
-                                                ),
-                    'jquery-ui-selectmenu'     => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery.ui.selectmenu.js'
-
-                                                ),
-                    'chosen'                 => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/chosen.jquery.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'sparkline'             => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery.sparkline.min.js'
-                                                ),
-                    'jqgrid'                 => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jquery.jqGrid.min.js'
-                                                ),
-                    'flot'                    => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.min.js'
-                                                ),
-                    'flot-resize'            => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.resize.min.js'
-                                                ),
-                    'flot-pie'                => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/flot_v0.7/jquery.flot.pie.min.js'
-                                                ),
-                    'jqote'                    => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/includes/jquery/jQote2/jquery.jqote2.min.js'
-                                                ),
-                    'owa'                    => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'owa.report'            => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.report.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'owa.resultSetExplorer' => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.resultSetExplorer.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'owa.sparkline'            => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.sparkline.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'owa.areaChart'            => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.areachart.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'owa.pieChart'            => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.piechart.js',
-                                                    'compression'    => 'minify'
-                                                ),
-                    'owa.kpibox'            => array(
-                                                    'path'            => OWA_MODULES_DIR.'base/js/owa.kpibox.js',
-                                                    'compression'    => 'minify'
-                                                )
-                )
-        );
-
-        $this->registerBuildPackage( $package );
-
-
-        $package = array(
             'name'            => 'owa.reporting-css',
             'output_dir'    => OWA_MODULES_DIR.'base/css/',
             'type'            => 'css',
@@ -2454,7 +2340,11 @@ class owa_baseModule extends owa_module {
 
         // Nofifcation handler
         if ( owa_coreAPI::getSetting( 'base', 'announce_visitors' )
-            && owa_coreAPI::getSetting( 'base', 'notice_email' ) ) {
+            && owa_coreAPI::getSetting( 'base', 'notice_email' )
+            //&& ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' )
+            && ! defined('OWA_CLI')
+            
+        ) {
 
             $this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
         }

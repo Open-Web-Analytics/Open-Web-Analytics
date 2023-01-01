@@ -53,7 +53,7 @@ class Template {
     /**
      * Constructor
      *
-     * @access public 
+     * @access public
      */
     function __construct() {
         

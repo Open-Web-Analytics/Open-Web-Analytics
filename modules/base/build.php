@@ -16,7 +16,6 @@
 // $Id$
 //
 
-require (OWA_INCLUDE_DIR.'jsmin-1.1.1.php');
 require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 /**
@@ -61,9 +60,8 @@ class owa_buildController extends owa_cliController {
                     $con .= "/* Start of $name */ \n\n";
                     $content = file_get_contents( $file_info['path'] );
                     if (isset($file_info['compression']) && $file_info['compression'] === 'minify') {
-                        owa_coreAPI::debug("Minimizing Javascript in: " . $file_info['path'] );
-                        $content = JSMin::minify($content);
-                        $isMin = true;
+	                    
+                        owa_coreAPI::debug("DEPRECATED (use webpack): Not minimizing Javascript in: " . $file_info['path'] );
                     }
                     $con .= $content . "\n\n";
                     $con .= "/* End of $name */ \n\n";

@@ -7,6 +7,7 @@
  */
 
 require_once(OWA_DIR.'owa_adminController.php');
+require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**
  * Domstreams Controller
@@ -48,13 +49,13 @@ class owa_domstreamsRestController extends owa_adminController {
       
         $rsm->db->selectColumn('document_id');
        
-        $rsm->db->groupby('domstream_guid');        
+        $rsm->db->groupby('domstream_guid');
         
         // get domstreams for a particular document/page
-        if ($this->get('document_id')) {
+        if ($this->get('pageUrl')) {
 	        
-            $rsm->db->where('document_id', $this->get('document_id'));
-            $rsm->setQueryStringParam('document_id', $document_id);
+            $rsm->db->where('page_url', $this->get('pageUrl'));
+            $rsm->setQueryStringParam('pageUrl', $this->get('pageUrl') );
         }
 		
 		$rsm->db->orderBy('timestamp', 'DESC');
@@ -73,7 +74,7 @@ class owa_domstreamsRestController extends owa_adminController {
         );
         
 		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 50;    
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 50;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination

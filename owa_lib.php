@@ -3,33 +3,13 @@
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
-// Copyright 2006 Peter Adams. All rights reserved.
+// Copyright Peter Adams. All rights reserved.
 //
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
-//require_once 'owa_env.php';
-
-//require_once(OWA_BASE_CLASS_DIR.'settings.php');
 
 /**
  * Utility Functions
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
  */
 class owa_lib {
 
@@ -185,22 +165,6 @@ class owa_lib {
                 'second'             => date("s", $timestamp),
                 'timestamp'            => $timestamp
             );
-    }
-
-    /**
-     * Error Handler
-     *
-     * @param string $msg
-     * @access public
-     * @depricated
-     */
-    function errorHandler($msg) {
-        require_once(OWA_PEARLOG_DIR . '/Log.php');
-        $conf = array('mode' => 0755, 'timeFormat' => '%X %x');
-        $error_logger = &Log::singleton('file', $this->config['error_log_file'], 'ident', $conf);
-        $this->error_logger->_lineFormat = '[%3$s]';
-
-        return;
     }
 
     /**
@@ -420,8 +384,8 @@ class owa_lib {
 		
 		// check for https
 		
-        if( 
-        	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' ) 
+        if(
+        	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
         	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
         	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
         	|| ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
@@ -1002,7 +966,7 @@ class owa_lib {
             $res = $str;
           endif;
    
-      return $res; 
+      return $res;
     }
 
     /**
@@ -1026,8 +990,13 @@ class owa_lib {
         }
     }
 
-    public static function hash( $hash_type = 'md5', $data, $salt = '' ) {
-
+    public static function hash( $hash_type, $data, $salt = '' ) {
+        
+        if ( ! $hash_type ) {
+            
+            $hash_type = 'md5';
+        }
+        
         return hash_hmac( $hash_type, $data, $salt );
     }
 
@@ -1085,7 +1054,16 @@ class owa_lib {
             return $string;
         } else {
             if (function_exists('iconv')) {
-                return iconv('UTF-8','UTF-8//TRANSLIT', $string);
+	            
+	            if ( function_exists( 'mb_detect_encoding' ) ) {
+		            
+		            return iconv(mb_detect_encoding( $string ),'UTF-8//TRANSLIT', $string);
+		            
+		        } else {
+			        
+			    	return iconv('UTF-8','UTF-8//TRANSLIT', $string);
+		        }
+	             
             } else {
                 // at least worth a try
                 return utf8_encode($string);
@@ -1360,50 +1338,46 @@ class owa_lib {
             }
         }
     }
+    
+    public static function anonymizeIp( $ip_address ) {
+	    
+	    $ipv4NetMask = "255.255.255.0";
+	    $ipv6NetMask = "ffff:ffff:ffff:ffff:0000:0000:0000:0000";
+	    
+	    $packed_address = inet_pton( $ip_address);
+
+        if ( strlen( $packed_address ) == 4 ) {
+	        
+            return inet_ntop( inet_pton( $ip_address ) & inet_pton( $ipv4NetMask ) );
+            
+        } elseif ( strlen( $packed_address ) == 16 ) {
+	        
+            return inet_ntop( inet_pton( $ip_address ) & inet_pton( $ipv6NetMask ) );
+        }
+    }
+    
+    public static function isIpv6SupportEnabled() {
+	    
+		if ( defined( 'AF_INET6' ) ) {
+			
+			return true;
+		}
+    }
 
     public static function isValidIp( $ip_address ) {
-
-        // if valid ip address
-        if ( ! empty( $ip_address )
-            && ip2long( $ip_address ) != -1
-            && ip2long( $ip_address ) != false
-        ) {
-
-            return true;
-        }
-
+		
+		return filter_var( $ip_address, FILTER_VALIDATE_IP, [] );
     }
 
     // check to see if the IP address falls within known private IP ranges
-    public static function isPrivateIp( $ip_address ) {
+    public static function isNotPrivateIp( $ip_address ) {
 
-        $ip = ip2long( $ip_address);
-
-        $private_ip_ranges = array (
-            array('0.0.0.0','2.255.255.255'),
-            array('10.0.0.0','10.255.255.255'),
-            array('127.0.0.0','127.255.255.255'),
-            array('169.254.0.0','169.254.255.255'),
-            array('172.16.0.0','172.31.255.255'),
-            array('192.0.2.0','192.0.2.255'),
-            array('192.168.0.0','192.168.255.255'),
-            array('255.255.255.0','255.255.255.255')
-        );
-
-        //check to see if it falls within a known private range
-        foreach ( $private_ip_ranges as $range ) {
-
-            $min = ip2long( $range[0] );
-            $max = ip2long( $range[1] );
-
-            if ( ( $ip >= $min ) && ( $ip <= $max ) ) {
-
-                return true;
-            }
-        }
-
-        // if it makes it through the checks then it's not private.
-        return false;
+		return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ] );
+    }
+    
+    public static function isValidIpv6( $ip_address ) {
+	    
+	    return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_IPV6 ] );
     }
     
     public static function keyExistsNotEmpty( $key, $array ) {
@@ -1412,7 +1386,7 @@ class owa_lib {
 		    
 		    return true;
 	    }
-    } 
+    }
     
     public static function setDefaultParams( $defaults, $params ) {
 	    
@@ -1425,11 +1399,20 @@ class owa_lib {
     public static function inDebug() {
 	    
 	    if ( ( defined( 'OWA_DEBUG') &&  OWA_DEBUG === true ) ||
-	    	 ( defined( 'OWA_DEVELOPMENT_HANDLER') && OWA_DEVELOPMENT_HANDLER === 'development' ) 
+	    	 ( defined( 'OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development' )
 		){
 			return true;
-		}	    	 
+		}	    	
     }
+    
+     public static function inRestDebug() {
+	    
+	    if ( ( defined( 'OWA_REST_DEBUG') &&  OWA_REST_DEBUG === true ) ){
+			
+			return true;
+		}	    	
+    }
+
 }
 
 ?>

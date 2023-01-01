@@ -108,7 +108,7 @@ class owa_coreAPI {
         $ret = owa_coreAPI::setupStorageEngine($db_type);
 
          if (!$ret) {
-             owa_coreAPI::error(sprintf('Failed to intialise db of type %s. Exiting.', $db_type));
+             owa_coreAPI::error(sprintf('Failed to initialize db type %s. Exiting.', $db_type));
              return;
         } else {
             $connection_class = 'owa_db_'.$db_type;
@@ -311,32 +311,57 @@ class owa_coreAPI {
         return $s;
     }
 
-    public static function cacheSingleton($params = array()) {
+    public static function cacheSingleton( $params = [] ) {
 
         static $cache;
 
-        if ( !isset ( $cache ) ) {
-            $cache_type = owa_coreAPI::getSetting('base', 'cacheType');
-
-            switch ($cache_type) {
-
-                case "memcached":
-                    $implementation = array('owa_memcachedCache', OWA_BASE_CLASS_DIR.'memcachedCache.php');
-                    break;
-                default:
-                    $implementation = array('owa_fileCache', OWA_BASE_CLASS_DIR.'fileCache.php');
-
-            }
-
-            if ( ! class_exists( $implementation[0] ) ) {
-                require_once( $implementation[1] );
-            }
-            // make this plugable
-            $cache = new $implementation[0];
+        if ( empty ( $cache ) ) {
+	        
+            $cache = owa_lib::simpleFactory( 'owa_cache', OWA_BASE_CLASS_DIR.'cache.php', $params );
         }
 
         return $cache;
     }
+    
+    public static function implementationFactory( $group, $implementation_name ) {
+      
+        // get implementation
+        $s = owa_coreAPI::serviceSingleton();
+    
+        $mapValue = $s->getMapValue( $group, $implementation_name );
+		
+        if ( $mapValue && is_array( $mapValue ) ) {
+	        
+	        // new style map format
+	        if ( array_key_exists('class_name', $mapValue ) ) {
+		        
+		        $class_name = $mapValue['class_name'];
+		       		            
+		        if ( array_key_exists('file', $mapValue ) ) {
+			        
+			        $file = $mapValue['file'];
+		        }
+		        
+		        if ( array_key_exists('params', $mapValue ) ) {
+			        
+			        $params = $mapValue['params'];
+		        }
+		        
+	        } else {
+				// old style compatability
+	        	list( $class_name, $file, $params ) = $mapValue;
+            }
+
+            //owa_coreAPI::debug(print_r($implementation, true));
+            return owa_lib::simpleFactory( $class_name, $file, $params );
+
+        } else {
+
+            throw new Exception("No implementation by the name $implementation_name found in group $group.");
+        }
+        
+    }
+
 
     public static function requestContainerSingleton() {
 
@@ -481,7 +506,8 @@ class owa_coreAPI {
             if (defined('OWA_DB_TYPE')) {
                 owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
             } else {
-                owa_coreAPI::setupStorageEngine('mysql');
+                //owa_coreAPI::setupStorageEngine('mysql');
+                self::error("OWA_DB_TYPE constant has not been set for some reason.");
             }
 
         }
@@ -830,7 +856,7 @@ class owa_coreAPI {
 			
 		// create the controller object
         if ( $action_map ) {
-	        
+	    
             $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
         
         } else {
@@ -839,7 +865,7 @@ class owa_coreAPI {
             $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
         }
 		
-		return owa_coreAPI::runController( $controller );        
+		return owa_coreAPI::runController( $controller );
     }
     
     public static function runController( $controller ) {
@@ -897,7 +923,7 @@ class owa_coreAPI {
             $cu_user_id = $cu->getUserData('user_id');
 
             if( ! empty( $cu_user_id ) ) {
-	            
+				owa_coreAPI::debug("Not logging named user.");
                 return false;
             }
         }
@@ -954,7 +980,7 @@ class owa_coreAPI {
             
             return false;
         }
-
+        
         // queue for later or process event straight away
         if ( owa_coreAPI::getSetting( 'base', 'queue_events' ) ||
              owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
@@ -1141,7 +1167,6 @@ class owa_coreAPI {
 
         $e = owa_coreAPI::errorSingleton();
         $e->notice($msg);
-        return;
     }
 
     public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false) {
@@ -1149,7 +1174,9 @@ class owa_coreAPI {
         if ( $domain ) {
             // sanitizes the domain
             $domain = owa_lib::sanitizeCookieDomain( $domain );
+            
         } else {
+	        
             $domain = owa_coreAPI::getSetting('base', 'cookie_domain');
         }
         if (is_array($cookie_value)) {
@@ -1165,12 +1192,31 @@ class owa_coreAPI {
 
         // makes cookie to session cookie only
         if (!owa_coreAPI::getSetting('base', 'cookie_persistence')) {
+	        
             $expires = 0;
         }
 		
-        //owa_coreAPI::debug('time: '.$expires);
-        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
-        
+		$secure = owa_lib::isHttps();
+	
+        // PHP 7.3 has a different function signature.
+        // @todo refactor usage to clean up once php 7.3 is min requirment.
+        if (PHP_VERSION_ID < 70300) {
+	        
+	        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
+	        
+	    } else {
+		    	
+			$options = [
+		        
+		        'expires' 	=> $expires,
+                'path' 		=> '/',
+                'samesite' 	=> 'Lax',
+                'domain' 	=> $domain,
+                'secure' 	=> $secure
+	        ];
+	        
+	        setcookie($cookie_name, $cookie_value, $options);
+	    }
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
@@ -1306,7 +1352,7 @@ class owa_coreAPI {
 			
 			if ( $rest_params ) {
 			
-				$rest_params = explode('/', $rest_params); 
+				$rest_params = explode('/', $rest_params);
 				self::debug( 'exploding raw REST params:');
 				self::debug( $rest_params );
 			
@@ -1333,7 +1379,7 @@ class owa_coreAPI {
 					if ( $rest_params ) {
 						
 						// slice off the first three params which have already been set
-						$rest_params = array_slice($rest_params, 3); 
+						$rest_params = array_slice($rest_params, 3);
 						
 						foreach ( $rest_params as $k => $v) {
 							
@@ -1357,7 +1403,7 @@ class owa_coreAPI {
 				return;
 			}
 			
-		} 
+		}
 		
 		
 		
@@ -1369,10 +1415,10 @@ class owa_coreAPI {
     
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
 	    
-	    if ( ! empty( $request_method ) 
+	    if ( ! empty( $request_method )
 	    	&& ! empty( $version )
 	    	&& ! empty( $do )
-	    	&& ! empty( $module ) 
+	    	&& ! empty( $module )
 	    ){
 		    
 		    $service = owa_coreAPI::serviceSingleton();
@@ -1402,37 +1448,16 @@ class owa_coreAPI {
         }
         return $sites;
     }
-
+	
+	
     public static function profile($that = '', $function = '', $line = '', $msg = '') {
 
-        if (defined('OWA_PROFILER')) {
-            if (OWA_PROFILER === true) {
-
-                static $profiler;
-
-                if (!class_exists('PhpQuickProfiler')) {
-                    require_once(OWA_INCLUDE_DIR.'pqp/classes/PhpQuickProfiler.php');
-                }
-
-                if (empty($profiler)) {
-                    $profiler = new PhpQuickProfiler(PhpQuickProfiler::getMicroTime(), OWA_INCLUDE_DIR.'pqp/');
-                }
-
-                $class = get_class($that);
-                Console::logSpeed($class."::$function - Line: $line - Msg: $msg");
-                Console::logMemory($that, $class. "::$function - Line: $line");
-
-                return $profiler;
-            }
-        }
+        return;
     }
 
     public static function profileDisplay() {
-        $p = owa_coreAPI::profile();
-        if ($p) {
-            $p->display();
-        }
-
+        
+		return;
     }
 
     public static function getEventDispatch() {
@@ -1510,6 +1535,11 @@ class owa_coreAPI {
         $nonce = substr( owa_coreAPI::saltedHash($full_nonce, 'nonce'), -12, 10);
 
         return $nonce;
+    }
+    
+    public static function createRestApiNonce( $version, $module, $do ) {
+        
+        return self::createNonce( $version . $module . $do );
     }
 
     public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
@@ -1824,6 +1854,36 @@ class owa_coreAPI {
                 }
             }
         }
+    }
+    
+    static function loadConf( $file_name, $filter_name = '' ) {
+	    
+	    $conf_file = OWA_CONF_DIR . $file_name;
+	    
+	    if ( file_exists( $conf_file ) ) {
+	    
+	    	$conf = include( $conf_file);
+	    }
+	    
+	    $sup_file = OWA_DATA_DIR .  $file_name;
+	    
+	    if ( file_exists( $sup_file ) ) {
+		    
+		    $sup_conf = include( $sup_file );
+		    
+		    if ( is_array( $sup_conf) ) {
+		    
+		    	$conf = array_merge( $conf, $sup_conf );
+		    }
+	    }
+	    
+	    // see generic filter name for filtering the final conf array
+	    if ( ! $filter_name ) {
+		    
+		    $filter_name = 'conf.' . $file_name;
+	    }
+	    
+	    return owa_coreAPI::filter( $filter_name, $conf );
     }
 
     /**

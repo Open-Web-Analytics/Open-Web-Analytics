@@ -28,7 +28,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -43,7 +43,7 @@ class owa_sitesController extends owa_reportController {
     function action() {
     
         $s = owa_coreAPI::entityFactory('base.site');
-        $sites = $this->getSitesAllowedForCurrentUser();    
+        $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('tracked_sites', $sites);
         
     }
@@ -67,7 +67,7 @@ class owa_sitesController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 

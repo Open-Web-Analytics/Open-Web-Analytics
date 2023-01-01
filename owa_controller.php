@@ -136,7 +136,7 @@ class owa_controller extends owa_base {
         $this->setViewMethod('delegate');
 
         // clobber anything that needs clobbering by conrete class
-        $this->init();   
+        $this->init();
     }
     
     /**
@@ -176,7 +176,7 @@ class owa_controller extends owa_base {
             	
             case 'web_app':
             	
-            	// reset data 
+            	// reset data
             	$this->data = array();
             	//redirect browser to update page
             	$this->setRedirectAction( 'base.updates' );
@@ -211,7 +211,7 @@ class owa_controller extends owa_base {
 
                 if ( owa_coreAPI::isUpdateRequired() ) {
 	            	
-	            	return $this->updateAction();    
+	            	return $this->updateAction();
 	            }
             }
         }
@@ -223,6 +223,8 @@ class owa_controller extends owa_base {
         }
 		
         /* Check validity of nonce */
+        
+        // certain web app controllers require nonce verification
         if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' ) {
 	        
 	        if ($this->is_nonce_required == true) {
@@ -235,6 +237,26 @@ class owa_controller extends owa_base {
 	            }
 	        }
 		}
+        
+        // if the rest api is originating within the web app then we always need to check for a nonce
+        // The only way to tell if that's the case is to check if the request was auth'd using "cookies"
+        if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+            
+            $auth = owa_auth::get_instance();
+            
+            if ( $auth->getAuthMethod() === 'cookies' ) {
+                
+                $nonce = $this->getParam('nonce');
+                owa_coreAPI::debug( "REST API Nonce: $nonce");
+                owa_coreAPI::debug( $this->get('version') . $this->get('module') . $this->get('do') );
+                if ( ! $nonce || ! $this->verifyNonce( $nonce, $this->get('version') . $this->get('module') . $this->get('do') ) ) {
+                
+                    $this->e->debug('Nonce is missing or invalid.');
+                    return $this->finishActionCall($this->notAuthenticatedAction());
+                }
+            }
+        }
+        
         // TODO: These sets need to be removed and added to pre(), action() or post() methods
         // in various concrete controller classes as they screw up things when
         // redirecting from one controller to another.
@@ -315,8 +337,8 @@ class owa_controller extends owa_base {
      * @return boolean
      */
      
-    // second conditional is needed to force an authentication even when capability is added to "everyone" role. 
-    // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the 
+    // second conditional is needed to force an authentication even when capability is added to "everyone" role.
+    // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the
     // earliest it can happen. The u and p params will only be present if the user has logged in.
     protected function checkCapabilityAndAuthenticateUser($capability) {
         if ( ( !empty($capability) && ! owa_coreAPI::isEveryoneCapable( $capability ) ) || ( owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p') ) ) {
@@ -559,7 +581,7 @@ class owa_controller extends owa_base {
 	/**
 	 * Sets the type of controler
 	 * @depricated
-	 * @todo remove this 
+	 * @todo remove this
 	 */
     function setControllerType($string) {
 
@@ -648,7 +670,7 @@ class owa_controller extends owa_base {
 		if (owa_coreAPI::getSetting('base', 'request_mode') === 'rest_api') {
 			
 			$this->setView('base.restApi');
-			$this->set('error_msg', ['headline'	=> 'Not authenticated.', 'msg' => 'Check API key or permissions for this user.'] );
+			$this->set('error_msg', ['headline'	=> 'Not authenticated.', 'msg' => 'Check API credentials or permissions for this user.'] );
 			http_response_code(401);	
 		} else {
 	        $this->setRedirectAction('base.loginForm');
@@ -656,13 +678,9 @@ class owa_controller extends owa_base {
 		}
     }
 
-    function verifyNonce($nonce) {
-
-        $action = $this->getParam('do');
-
-        if (!$action) {
-            $action = $this->getParam('action');
-        }
+    function verifyNonce($nonce, $action = '') {
+            
+        $action = $action ?: $this->getParam('do') ?: $this->getParam('action');
 
         $matching_nonce = owa_coreAPI::createNonce($action);
         owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");

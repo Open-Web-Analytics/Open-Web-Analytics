@@ -75,8 +75,8 @@ class owa_paginatedResultSet {
     var $labels;
 	
 	/**
-     * Convienence flag set when there are 
-     * additional pages of results 
+     * Convienence flag set when there are
+     * additional pages of results
      */
     var $more;
     
@@ -123,7 +123,7 @@ class owa_paginatedResultSet {
     /**
      * The list of params that make up the query
      *
-     */ 
+     */
     var $queryParams;
     
     var $errors;
@@ -211,7 +211,7 @@ class owa_paginatedResultSet {
             }
 
             $this->resultsReturned = count( $this->resultsRows );
-        } 
+        }
         
         // add REST request urls
         $this->setResultSetUrls( $query_params );
@@ -223,7 +223,7 @@ class owa_paginatedResultSet {
     }
     
     /**
-	 * Constructs REST API request urls for the result set 
+	 * Constructs REST API request urls for the result set
 	 * (base, self, next and previous, etc.)
 	 */
     function setResultSetUrls( $query_params ) {
@@ -231,17 +231,31 @@ class owa_paginatedResultSet {
 		//owa_coreAPI::debug('result set urls query params: ' . $query_params);
 		
         $urls = [];
-        
+        $auth = owa_auth::get_instance();
         // base url
-		$api_url = owa_coreAPI::getSetting('base', 'rest_api_url'); 
-		$apiKey = owa_coreAPI::getCurrentUserApiKey();
+        $apiKey = '';
+        
+        // if the REST API request was authorized with an apiKey then
+        // we need to add that to the urls.		
+        if ( $auth->getAuthMethod() === 'api_key' ) {
+            $apiKey = owa_coreAPI::getCurrentUserApiKey();
+        }
+        
+        $api_url = owa_coreAPI::getSetting('base', 'rest_api_url');
+		
 		$this->base_url = $api_url;
 		
 		// add query params
 		$query_params['do'] 		= 'reports';
 		$query_params['module'] 	= 'base';
 		$query_params['version'] 	= 'v1';
-		$query_params['apiKey']	= $apiKey;
+        $query_params['apiKey']	= $apiKey;
+        
+        // if the REST API request was authorized using cookies then
+        // we need to add a nonce to the urls
+        if ( $auth->getAuthMethod() === 'cookies' ) {
+            $query_params['nonce'] = owa_coreAPI::createRestApiNonce( $query_params['version'], $query_params['module'], $query_params['do'] );
+        }
 		
         // add current page if any
         if ( $this->page ) {
@@ -260,8 +274,13 @@ class owa_paginatedResultSet {
         $q = $this->buildQueryString($query_params);
         
         $urls['self'] = sprintf($link_template, $api_url, $q);
-        $urls['self'] = owa_coreAPI::signRequestUrl( $urls['self'], $apiKey );
         
+        // if there's an apiKey then we need to sign the request
+        if ( $apiKey ) {
+        
+            $urls['self'] = owa_coreAPI::signRequestUrl( $urls['self'], $apiKey );
+        }
+            
         $this->self = $urls['self'];
 
 		// build url for next page of result set
@@ -281,8 +300,11 @@ class owa_paginatedResultSet {
 	        $nq = $this->buildQueryString($next_query_params);
 	        
 	        $urls['next'] = sprintf($link_template, $api_url, $nq);
-	        $urls['next'] = owa_coreAPI::signRequestUrl( $urls['next'], $apiKey );
-
+            
+            if ( $apiKey ) {
+	           $urls['next'] = owa_coreAPI::signRequestUrl( $urls['next'], $apiKey );
+            }
+            
             $this->next = $urls['next'];
         }
 		
@@ -296,7 +318,10 @@ class owa_paginatedResultSet {
             $pq = $this->buildQueryString($previous_query_params);
             
             $urls['previous'] = sprintf($link_template, $api_url, $pq);
-            $urls['previous'] = owa_coreAPI::signRequestUrl( $urls['previous'], $apiKey );
+            
+            if ( $apiKey ) {
+                $urls['previous'] = owa_coreAPI::signRequestUrl( $urls['previous'], $apiKey );
+            }
             
             $this->previous = $urls['previous'];
         }
@@ -311,8 +336,10 @@ class owa_paginatedResultSet {
         //get namespace
         $ns = owa_coreAPI::getSetting('base', 'ns');
         foreach ($params as $k => $v) {
-
-            $new[$ns.$k] = $v;
+            
+            if ($v) {
+                $new[$ns.$k] = $v;
+            }
         }
 
         return http_build_query($new,'', $seperator);

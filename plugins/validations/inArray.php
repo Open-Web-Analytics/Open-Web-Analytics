@@ -46,8 +46,8 @@
 	        
             $error = $this->setErrorMessage( sprintf(
             	
-            	'"%s" is not not a possible value. Choices are: %s', 
-            	$value, 
+            	'"%s" is not not a possible value. Choices are: %s',
+            	$value,
             	implode( ' | ', $possible_values )
             	 
             ) );

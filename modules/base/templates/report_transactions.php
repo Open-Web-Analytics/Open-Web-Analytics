@@ -26,7 +26,7 @@
 <script>
 //OWA.setSetting('debug', true);
 
-var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
+var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
                                                 'metrics' => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
                                                 'dimensions' => 'date',
                                                 'sort' => 'date',
@@ -66,6 +66,6 @@ OWA.items.transactions.load(transactionsurl);
 <script type="text/x-jqote-template" id="headline-template">
 <![CDATA[
     There were <*= this.data.resultSet.aggregates.transactions.formatted_value *> <* if (this.data.resultSet.aggregates.transactions.value > 1) {this.label = 'transactions';} else {this.label = 'transaction';} *> <*= this.label *> generating <*= this.data.resultSet.aggregates.transactionRevenue.formatted_value *>.
-]]> 
+]]>
 </script>
 

@@ -65,8 +65,9 @@ class owa_userAgentHandlers extends owa_observer {
 
                 $old = $ua->get('browser_type');
                 $new = $event->get('browser_type');
-
+				
                 if ( $new != $old && $new != 'Default Browser') {
+	                owa_coreAPI::debug("updating ua: $new old: $old");
                     $ua->set('browser_type', $new);
                     $ua->set('browser', $event->get('browser') );
                     $ret = $ua->save();

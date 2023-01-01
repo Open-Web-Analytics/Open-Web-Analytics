@@ -68,7 +68,7 @@ class owa_optionsGeneralController extends owa_adminController {
  * @since        owa 1.0.0
  */
 
-class owa_optionsGeneralView extends owa_view {
+class owa_optionsGeneralView extends owa_adminPageView {
 
     function render($data) {
 

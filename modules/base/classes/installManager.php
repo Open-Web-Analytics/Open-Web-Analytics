@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -133,6 +133,83 @@ class owa_installManager extends owa_base {
             return true;
         } else {
             return false;
+        }
+    }
+    
+    function isInstallComplete() {
+        
+        // is config file present?
+        $c = owa_coreAPI::configSingleton();
+        if ( ! $c->isConfigFileLoaded() ) {
+            
+            return false;
+        }
+        
+        // can DB connection be made?
+        $db = owa_coreAPI::dbSingleton();
+        if ( ! $db->connect() ) {
+            
+            return false;
+        }
+        
+        // is base schema installed?
+        if ( ! $this->isBaseSchemaInstalled() ) {
+            
+            return false;
+        } else {
+            
+            owa_coreAPI::debug('base schema install check passed.');
+        }
+        
+        // load config from DB
+        $c->load( $this->c->get( 'base', 'configuration_id' ) );
+        
+        // is the install flag set
+        if ( ! owa_coreAPI::getSetting('base', 'install_complete') ) {
+            
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Check to see if schema is installed
+     *
+     * @return boolean
+     */
+    function isBaseSchemaInstalled() {
+        
+        $base_module_tables = ['user'];
+        $tables_missing = [];
+        
+        $db = owa_coreAPI::dbSingleton();
+       
+        // test for base tables
+        foreach ( $base_module_tables as $table ) {
+            
+            owa_coreAPI::debug('Testing for existence of table: '. $table);
+            
+            $check = $db->get_results(sprintf(OWA_SQL_SHOW_TABLE, owa_coreAPI::getSetting('base', 'ns') . $table ) );
+           
+            // if a table is missing add it to this array
+            if (empty($check)) {
+            
+                $tables_missing[] = $table;
+                
+                owa_coreAPI::debug('Did not find table: '. $table);
+            }
+        }
+    
+        if ( $tables_missing ) {
+           
+            owa_coreAPI::debug(sprintf("Base Schema is missing tables: %s", print_r($tables_missing, true)));
+    
+            return false;
+            
+        } else {
+            
+            return true;
         }
     }
 }

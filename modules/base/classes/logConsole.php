@@ -37,7 +37,7 @@ class owa_logConsole {
             define('STDOUT', fopen("php://stdout", "w") );
         }
         
-        fwrite( STDOUT, $msg );    
+        fwrite( STDOUT, $msg );
         
     }
 

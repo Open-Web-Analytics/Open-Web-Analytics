@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -36,7 +36,7 @@ class owa_user extends owa_entity {
     function __construct() {
     
         $this->setTableName('user');
-        $this->setCachable();
+        
         // properties
         $this->properties['id'] = new owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_SERIAL);
@@ -90,7 +90,7 @@ class owa_user extends owa_entity {
         return md5($seed.time().rand());
     }
     
-    function generateRandomPassword() {    
+    function generateRandomPassword() {
         return substr(owa_lib::encryptPassword(microtime()),0,6);
     }
     
@@ -99,7 +99,7 @@ class owa_user extends owa_entity {
      */
     public function isOWAAdmin() {
         if ( $this->get('real_name') == self::ADMIN_USER_REAL_NAME ) {
-            return true; 
+            return true;
         } else {
             return false;
         }
@@ -110,7 +110,7 @@ class owa_user extends owa_entity {
      */
     public function isAdmin() {
         if ( $this->get('role') == self::ADMIN_USER_ROLE ) {
-            return true; 
+            return true;
         } else {
             return false;
         }

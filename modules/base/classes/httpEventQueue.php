@@ -26,7 +26,7 @@ require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -79,7 +79,7 @@ class owa_httpEventQueue extends owa_eventQueue {
               owa_coreAPI::debug("out: $out");
               return true;
           }
-    }    
+    }
 }
 
 ?>
