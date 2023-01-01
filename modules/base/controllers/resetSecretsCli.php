@@ -82,12 +82,12 @@ class owa_resetSecretsCliController extends owa_cliController {
 			        	// write new line
 			        	fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, owa_coreAPI::secureRandomString(64) ) );	
 	                    
-	                    $replaced = true;  
-	                    $mod = true; 
+	                    $replaced = true;
+	                    $mod = true;
 	                    //skip the restof the loop as we already found the match
 	                    continue;
 	                    
-		        	} 
+		        	}
 		        	
 	        	}
 	        	

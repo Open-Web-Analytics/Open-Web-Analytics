@@ -51,7 +51,7 @@ class owa_reportDomstreamsController extends owa_reportController {
                 $doc->getByColumn('url', $this->getParam('pageUrl'));
             } elseif ($this->getParam('pagePath')) {
                 $doc->getByColumn('uri', $this->getParam('pagePath'));
-            } 
+            }
             
             $document_id = $doc->get('id');
             $pageUrl = $doc->get('url');

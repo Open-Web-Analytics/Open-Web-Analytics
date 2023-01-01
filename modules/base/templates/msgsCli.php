@@ -1,6 +1,6 @@
-<?php 
+<?php
 	
-if ( isset($msgs) && ! empty($msgs) ) { 
+if ( isset($msgs) && ! empty($msgs) ) {
 	
 	owa_coreAPI::notice( json_encode( $msgs, JSON_PRETTY_PRINT ) );
 }

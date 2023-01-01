@@ -11,12 +11,12 @@
     &nbsp
     <span class="genericHorizontalList" style="font-size:12px;float:left;vertical-align:middle;">
     <ul>
-        <?php if (owa_coreAPI::isCurrentUserCapable("edit_settings")):?> 
+        <?php if (owa_coreAPI::isCurrentUserCapable("edit_settings")):?>
         <LI>
-            <a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $params['siteId'], 'edit' => true ) );?>">Settings</a>    
+            <a href="<?php echo $this->makeLink( array('do' => 'base.sitesProfile', 'siteId' => $params['siteId'], 'edit' => true ) );?>">Settings</a>
         </LI>
         <LI>
-            <a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $params['siteId'] ) );?>">Goals</a>    
+            <a href="<?php echo $this->makeLink( array('do' => 'base.optionsGoals', 'siteId' => $params['siteId'] ) );?>">Goals</a>
         </LI>
          <?php endif;?>
     </ul>

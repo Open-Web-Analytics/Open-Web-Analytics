@@ -40,7 +40,7 @@ class owa_memcachedCacheModule extends owa_module {
 	    if ( owa_coreAPI::getSetting( 'memcachedCache', 'memcachedServers' ) ) {
 		    
 			owa_coreAPI::setSetting('base', 'cache_objects', true);
-			owa_coreAPI::setSetting('base', 'cacheType', 'memcached'); 
+			owa_coreAPI::setSetting('base', 'cacheType', 'memcached');
 			   
 	    } else {
 		    

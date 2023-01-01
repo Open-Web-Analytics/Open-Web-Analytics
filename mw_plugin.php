@@ -24,7 +24,7 @@ if ( ! defined( 'MEDIAWIKI' ) ) {
 require_once( dirname( __FILE__ )  . '/' . 'owa_env.php' );
 require_once( OWA_BASE_CLASSES_DIR . 'owa_mw.php' );
 
-/** 
+/**
  * OWA MW EXTENSION SPECIFIC CONFIGURATION VARIABLES
  * To alter these, set them in your localsettings.php file AFTER you
  * include/require the extension.
@@ -36,15 +36,15 @@ require_once( OWA_BASE_CLASSES_DIR . 'owa_mw.php' );
 $wgOwaSiteId = false;
 
 // $wgOwaEnableSpecialPage enables/disables OWA's special page.
-// Use this to deactivate and hide the special page 
+// Use this to deactivate and hide the special page
 $wgOwaEnableSpecialPage = true;
 
-// $wgOwaThirdPartyCookies enables third party cookie mode for 
+// $wgOwaThirdPartyCookies enables third party cookie mode for
 // OWA's javascript tracker. This is rarely a good idea and will
 // have data quality ramifications.
 $wgOwaThirdPartyCookies = false;
 
-// $wgOwaCookieDomain contain the domain that OWA's javascript tracker 
+// $wgOwaCookieDomain contain the domain that OWA's javascript tracker
 // will use to write it's cookies.
 $wgOwaCookieDomain = false;
 
@@ -110,10 +110,10 @@ function owa_registerSpecialPage( &$aSpecialPages ) {
  * Hook for OWA special actions
  *
  * This uses mediawiki's 'unknown action' hook to trigger OWA's special action handler.
- * This is setup by adding 'action=owa' to the URLs for special actions. There is 
+ * This is setup by adding 'action=owa' to the URLs for special actions. There is
  * probably a better way to do this so that the OWA namespace is preserved.
  *
- * @TODO figure out how to register this method to be triggered only when 'action=owa' instead of 
+ * @TODO figure out how to register this method to be triggered only when 'action=owa' instead of
  *         for all unknown mediawiki actions.
  * @param object $specialPage
  * @url http://www.mediawiki.org/wiki/Manual:MediaWiki_hooks/UnknownAction
@@ -383,7 +383,7 @@ function owa_newArticleAction(&$article, &$user, $text, $summary, $minoredit, $w
     return owa_trackAction( 'Article Created', $label );
 }
 
-function owa_editArticleAction($article, &$user, $text, $summary, 
+function owa_editArticleAction($article, &$user, $text, $summary,
         $minoredit, $watchthis, $sectionanchor, &$flags, $revision,
         &$status, $baseRevId, &$redirect = '') {
 
@@ -485,12 +485,12 @@ function owa_getLanguage() {
     }
 
     return $code;
-}  
+}
 
 /**
  * OWA Special Page Class
  *
- * Enables OWA to be accessed through a Mediawiki special page. 
+ * Enables OWA to be accessed through a Mediawiki special page.
  */
 class SpecialOwa extends SpecialPage {
 
@@ -504,7 +504,7 @@ class SpecialOwa extends SpecialPage {
         global $wgRequest, $wgOut, $wgUser, $wgSitename, $wgScriptPath, $wgScript, $wgServer,
                $wgDBtype, $wgDBname, $wgDBserver, $wgDBuser, $wgDBpassword;
 
-        //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.        
+        //must be called after setHeaders for some reason or elsethe wgUser object is not yet populated.
         $this->setHeaders();
         
         if ($this->userCanExecute($wgUser)) {
@@ -577,7 +577,7 @@ class SpecialOwa extends SpecialPage {
         }
 
         return true;
-    }    
+    }
 }
 
 ?>

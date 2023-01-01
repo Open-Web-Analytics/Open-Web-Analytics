@@ -60,7 +60,7 @@
 	 
 	 function setName( $name ) {
 		 
-	 	$this->name = $name;	 
+	 	$this->name = $name;	
 	 }
 	 
 	 function getName() {

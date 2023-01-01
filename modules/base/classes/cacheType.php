@@ -59,7 +59,7 @@ class owa_cacheType {
      */
     function flush() {
     
-        return false;    
+        return false;
     }	
     
     function setCollectionExpirationPeriod($collection_name, $seconds) {

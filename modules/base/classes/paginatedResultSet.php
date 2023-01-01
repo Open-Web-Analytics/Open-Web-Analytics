@@ -75,8 +75,8 @@ class owa_paginatedResultSet {
     var $labels;
 	
 	/**
-     * Convienence flag set when there are 
-     * additional pages of results 
+     * Convienence flag set when there are
+     * additional pages of results
      */
     var $more;
     
@@ -123,7 +123,7 @@ class owa_paginatedResultSet {
     /**
      * The list of params that make up the query
      *
-     */ 
+     */
     var $queryParams;
     
     var $errors;
@@ -211,7 +211,7 @@ class owa_paginatedResultSet {
             }
 
             $this->resultsReturned = count( $this->resultsRows );
-        } 
+        }
         
         // add REST request urls
         $this->setResultSetUrls( $query_params );
@@ -223,7 +223,7 @@ class owa_paginatedResultSet {
     }
     
     /**
-	 * Constructs REST API request urls for the result set 
+	 * Constructs REST API request urls for the result set
 	 * (base, self, next and previous, etc.)
 	 */
     function setResultSetUrls( $query_params ) {
@@ -231,9 +231,9 @@ class owa_paginatedResultSet {
 		//owa_coreAPI::debug('result set urls query params: ' . $query_params);
 		
         $urls = [];
-        $auth = owa_auth::get_instance();        
+        $auth = owa_auth::get_instance();
         // base url
-        $apiKey = '';    
+        $apiKey = '';
         
         // if the REST API request was authorized with an apiKey then
         // we need to add that to the urls.		
@@ -241,7 +241,7 @@ class owa_paginatedResultSet {
             $apiKey = owa_coreAPI::getCurrentUserApiKey();
         }
         
-        $api_url = owa_coreAPI::getSetting('base', 'rest_api_url'); 
+        $api_url = owa_coreAPI::getSetting('base', 'rest_api_url');
 		
 		$this->base_url = $api_url;
 		
@@ -249,7 +249,7 @@ class owa_paginatedResultSet {
 		$query_params['do'] 		= 'reports';
 		$query_params['module'] 	= 'base';
 		$query_params['version'] 	= 'v1';
-        $query_params['apiKey']	= $apiKey;            
+        $query_params['apiKey']	= $apiKey;
         
         // if the REST API request was authorized using cookies then
         // we need to add a nonce to the urls

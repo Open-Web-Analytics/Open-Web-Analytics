@@ -136,7 +136,7 @@ class owa_controller extends owa_base {
         $this->setViewMethod('delegate');
 
         // clobber anything that needs clobbering by conrete class
-        $this->init();   
+        $this->init();
     }
     
     /**
@@ -176,7 +176,7 @@ class owa_controller extends owa_base {
             	
             case 'web_app':
             	
-            	// reset data 
+            	// reset data
             	$this->data = array();
             	//redirect browser to update page
             	$this->setRedirectAction( 'base.updates' );
@@ -211,7 +211,7 @@ class owa_controller extends owa_base {
 
                 if ( owa_coreAPI::isUpdateRequired() ) {
 	            	
-	            	return $this->updateAction();    
+	            	return $this->updateAction();
 	            }
             }
         }
@@ -337,8 +337,8 @@ class owa_controller extends owa_base {
      * @return boolean
      */
      
-    // second conditional is needed to force an authentication even when capability is added to "everyone" role. 
-    // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the 
+    // second conditional is needed to force an authentication even when capability is added to "everyone" role.
+    // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the
     // earliest it can happen. The u and p params will only be present if the user has logged in.
     protected function checkCapabilityAndAuthenticateUser($capability) {
         if ( ( !empty($capability) && ! owa_coreAPI::isEveryoneCapable( $capability ) ) || ( owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p') ) ) {
@@ -581,7 +581,7 @@ class owa_controller extends owa_base {
 	/**
 	 * Sets the type of controler
 	 * @depricated
-	 * @todo remove this 
+	 * @todo remove this
 	 */
     function setControllerType($string) {
 
@@ -680,7 +680,7 @@ class owa_controller extends owa_base {
 
     function verifyNonce($nonce, $action = '') {
             
-        $action = $action ?: $this->getParam('do') ?: $this->getParam('action'); 
+        $action = $action ?: $this->getParam('do') ?: $this->getParam('action');
 
         $matching_nonce = owa_coreAPI::createNonce($action);
         owa_coreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");

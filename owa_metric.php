@@ -27,7 +27,7 @@ require_once(OWA_BASE_CLASS_DIR.'timePeriod.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 class owa_metric extends owa_base {
@@ -61,7 +61,7 @@ class owa_metric extends owa_base {
     var $labels = array();
     
     /**
-     * Page results     
+     * Page results
      *
      * @var boolean
      */
@@ -92,7 +92,7 @@ class owa_metric extends owa_base {
     
     var $column;
     
-    var $is_calculated = false;    
+    var $is_calculated = false;
     
     var $is_aggregate;
     
@@ -171,7 +171,7 @@ class owa_metric extends owa_base {
         
         $count = $this->calculatePaginationCount();
         $this->pagination->total_count = $count;
-        return $this->pagination->getPagination(); 
+        return $this->pagination->getPagination();
     
     }
     
@@ -260,7 +260,7 @@ class owa_metric extends owa_base {
                     break;
                 
                 case 'distinct_count':
-                    $statement = $db->count( $db->distinct( $this->getColumn() ) );                
+                    $statement = $db->count( $db->distinct( $this->getColumn() ) );
                     break;
                 
                 case 'sum':
@@ -268,7 +268,7 @@ class owa_metric extends owa_base {
                     break;
             }
             
-            return array( $statement, $this->getName() );    
+            return array( $statement, $this->getName() );
         }
         
     }

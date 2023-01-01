@@ -28,7 +28,7 @@ endif;
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -88,7 +88,7 @@ class owa_entity {
             
             // add the full configured col to entity property list
             $this->setProperty( $col );
-        } 
+        }
     }
     
     
@@ -106,7 +106,7 @@ class owa_entity {
                 
         }
 
-        return $properties;    
+        return $properties;
     }
     
     function getProperties( $drop_keys = [] ) {
@@ -127,13 +127,13 @@ class owa_entity {
 	    return $properties;
     }
     
-    /** 
-     * Return Array or string of column names used for SQL queries - e.g. like " tablename.fieldname as namespace.fieldname" 
-     *  
-     * @param boolean $return_as_string  If false array is returned 
-     * @param string $as_namespace  Optional namespace for fields  
-     * @param boolean $table_namespace 
-     */ 
+    /**
+     * Return Array or string of column names used for SQL queries - e.g. like " tablename.fieldname as namespace.fieldname"
+     *
+     * @param boolean $return_as_string  If false array is returned
+     * @param string $as_namespace  Optional namespace for fields
+     * @param boolean $table_namespace
+     */
     public function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
         
         if (!empty($this->properties)) {
@@ -148,13 +148,13 @@ class owa_entity {
         $ns = '';
         $as = '';
         
-        if (!empty($table_namespace)):    
+        if (!empty($table_namespace)):
             $ns = $table.'.';
         endif;
                 
         foreach ($all_cols as $k => $v) {
             
-            if (!empty($as_namespace)):     
+            if (!empty($as_namespace)):
                 $as =  ' AS '.$as_namespace.$k;
             endif;
             
@@ -164,11 +164,11 @@ class owa_entity {
         // add implode as string here
         
         if ($return_as_string == true):
-            $new_cols = implode(', ', $new_cols);    
+            $new_cols = implode(', ', $new_cols);
         endif;
         
         //print_r($new_cols);
-        return $new_cols; 
+        return $new_cols;
         
     }
     
@@ -209,9 +209,9 @@ class owa_entity {
             if ( $filter && method_exists( $this, $method ) ) {
 	            
 	            $value = $this->$method( $value );
-            } 
+            }
             
-            if ( $value ) {   
+            if ( $value ) {
             
 	            $this->properties[$name]->setValue( $value );
 	            
@@ -262,17 +262,17 @@ class owa_entity {
             }
         }
         
-        return array('table_type' => 'disk');        
+        return array('table_type' => 'disk');
     
     }
     
     /**
      * Persist new object
      *
-     */ 
-    function create() {    
+     */
+    function create() {
         
-        $db = owa_coreAPI::dbSingleton();        
+        $db = owa_coreAPI::dbSingleton();
         $all_cols = $this->getColumns();
         
         $db->insertInto($this->getTableName());
@@ -325,9 +325,9 @@ class owa_entity {
      * Update all properties of an Existing object
      *
      */
-    function update($where = '') {    
+    function update($where = '') {
         
-        $db = owa_coreAPI::dbSingleton();    
+        $db = owa_coreAPI::dbSingleton();
         $db->updateTable($this->getTableName());
         
         // get column list
@@ -341,7 +341,7 @@ class owa_entity {
             
             if ($this->get($v, false)) {
                 $db->set($v, $this->get($v, false));
-            }    
+            }
         }
         
         if(empty($where)):
@@ -373,7 +373,7 @@ class owa_entity {
      */
     function partialUpdate($named_properties, $where) {
         
-        $db = owa_coreAPI::dbSingleton();        
+        $db = owa_coreAPI::dbSingleton();
         $db->updateTable($this->getTableName());
         
         foreach ($named_properties as $v) {
@@ -405,16 +405,16 @@ class owa_entity {
      * Delete Object
      *
      */
-    function delete($value = '', $col = 'id') {    
+    function delete($value = '', $col = 'id') {
         
-        $db = owa_coreAPI::dbSingleton();    
+        $db = owa_coreAPI::dbSingleton();
         $db->deleteFrom($this->getTableName());
         
         if (empty($value)) {
             $value = $this->get('id');
         }
         
-        $db->where($col, $value);    
+        $db->where($col, $value);
 
         $status = $db->executeQuery();
     
@@ -424,7 +424,7 @@ class owa_entity {
                 owa_coreAPI::debug('about to remove from cache');
                 $cache = owa_coreAPI::cacheSingleton();
                 $cache->remove($this->getTableName(), $col.$value);
-            }            
+            }
         }
         
         return $status;
@@ -459,7 +459,7 @@ class owa_entity {
             $cache = owa_coreAPI::cacheSingleton();
             $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
             $cache_obj = $cache->get($this->getTableName(), $col.$value);
-        }        
+        }
             
         if (!empty($cache_obj)) {
         
@@ -472,7 +472,7 @@ class owa_entity {
             $db = owa_coreAPI::dbSingleton();
             $db->selectFrom($this->getTableName());
             $db->selectColumn('*');
-            owa_coreAPI::debug("Col: $col, value: $value");    
+            owa_coreAPI::debug("Col: $col, value: $value");
             $db->where($col, $value);
             $properties = $db->getOneRow();
             
@@ -480,11 +480,11 @@ class owa_entity {
                 
                 $this->setProperties($properties);
                 $this->wasPersisted = true;
-                // add to cache            
+                // add to cache
                 $this->addToCache($col);
-                owa_coreAPI::debug('entity loaded from db');        
+                owa_coreAPI::debug('entity loaded from db');
             }
-        } 
+        }
     }
 
     function getTableName() {
@@ -513,7 +513,7 @@ class owa_entity {
 
         $this->_tableProperties['alias'] = $name;
         $this->_tableProperties['name'] = $namespace.$name;
-    }    
+    }
     
     /**
      * Sets the entity as cachable for some period of time
@@ -638,13 +638,13 @@ class owa_entity {
             return true;
         else:
             return false;
-        endif;        
+        endif;
         
     }
     
     function modifyColumn($column_name) {
     
-        $def = $this->getColumnDefinition($column_name);        
+        $def = $this->getColumnDefinition($column_name);
         $db = owa_coreAPI::dbSingleton();
         $status = $db->modifyColumn($this->getTableName(), $column_name, $def);
         
@@ -652,7 +652,7 @@ class owa_entity {
             return true;
         else:
             return false;
-        endif;        
+        endif;
     
     
     }
@@ -672,7 +672,7 @@ class owa_entity {
             return true;
         else:
             return false;
-        endif;        
+        endif;
         
     }
     
@@ -685,7 +685,7 @@ class owa_entity {
             return true;
         else:
             return false;
-        endif;        
+        endif;
         return;
     }
     

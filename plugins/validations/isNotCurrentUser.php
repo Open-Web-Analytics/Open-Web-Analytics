@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
  
@@ -45,7 +45,7 @@ class owa_isNotCurrentUserValidation extends owa_validation {
 		 if ( ! $this->getErrorMsg() ) {
             // if not set this default msg.
             $this->setErrorMessage(sprintf('The user ID "%s" is the current user.', $value));
-    	}         
+    	}
        
    	}
      

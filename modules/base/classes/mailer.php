@@ -28,7 +28,7 @@ use PHPMailer\PHPMailer\Exception;
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -55,7 +55,7 @@ class owa_mailer {
         	
         	if ( owa_lib::inDebug() ) {
 	        	
-	        	$this->mailer->SMTPDebug = SMTP::DEBUG_SERVER; 
+	        	$this->mailer->SMTPDebug = SMTP::DEBUG_SERVER;
         	}
         	
             $this->mailer->IsSMTP(); // telling the class to use SMTP
@@ -79,7 +79,7 @@ class owa_mailer {
                 
                 $this->mailer->Username = owa_coreAPI::getSetting( 'base', 'mailer-username');
                 $this->mailer->Password = owa_coreAPI::getSetting( 'base', 'mailer-password');
-            }        
+            }
         }
     }
     

@@ -36,7 +36,7 @@ class owa_memoryCache extends owa_cacheType {
 
     function get( $collection, $id ) {
 	    
-	    if ( $this->isCached( $collection, $id ) ) { 
+	    if ( $this->isCached( $collection, $id ) ) {
 			
 			return $this->cache[ $collection ][ $id ];
 	    }
@@ -49,7 +49,7 @@ class owa_memoryCache extends owa_cacheType {
 
     function remove( $collection, $id ) {
         
-        if ( $this->isCached( $collection, $id ) ) { 
+        if ( $this->isCached( $collection, $id ) ) {
 			
 			unset( $this->cache[ $collection ][ $id ] );
 			

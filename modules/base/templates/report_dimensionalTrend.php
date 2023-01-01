@@ -8,7 +8,7 @@
         <div id="tab_<?php $this->out($k); ?>">
             
                 <div id="<?php $this->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if( $this->get( 'pie' ) ) {echo 'float:right';}?>"></div>
-                <?php if ( $this->get('pie' ) ): ?>    
+                <?php if ( $this->get('pie' ) ): ?>
                 <div id="pie" style="min-width:300px;"></div>
                 <?php endif;?>
                 <div class="spacer" style="clear:both; height:20px;"></div>
@@ -23,7 +23,7 @@
 
 <script type="text/javascript">
         
-    // add tabs    
+    // add tabs
     
     <?php foreach ($tabs as $k => $tab): ?>
     
@@ -31,11 +31,11 @@
     
     
     var tab = new OWA.report.tab('tab_<?php $this->out($k, false);?>');
-    tab.setLabel('<?php $this->out($tab['tab_label']);?>');    
+    tab.setLabel('<?php $this->out($tab['tab_label']);?>');
     // create trend and aggregate data resultSetExplorer objects
-    var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
-                                                                'metrics' => $tab['metrics'], 
-                                                                'dimensions' => 'date', 
+    var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                'metrics' => $tab['metrics'],
+                                                                'dimensions' => 'date',
                                                                 'sort' => 'date',
                                                                 'format' => 'json',
                                                                 'constraints' => $constraints
@@ -55,9 +55,9 @@
     // dimensonal data object
     var dimurl = '<?php $_sort = $sort ?: $tag['sort'];
 	    
-	    echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
-                                                                'metrics' => $tab['metrics'], 
-                                                                'dimensions' => $dimensions, 
+	    echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                'metrics' => $tab['metrics'],
+                                                                'dimensions' => $dimensions,
                                                                 'sort' => $_sort,
                                                                 'resultsPerPage' => $resultsPerPage,
                                                                 'format' => 'json',
@@ -68,7 +68,7 @@
     dim.setDataLoadUrl(dimurl);
     <?php if (!empty($dimensionLink)):?>
     var link = '<?php echo $this->makeLink($dimensionLink['template'], true);?>';
-    var values = <?php if (is_array($dimensionLink['valueColumns'])) { 
+    var values = <?php if (is_array($dimensionLink['valueColumns'])) {
                     $values = "[";
                     $i = 0;
                     $count = count($dimensionLink['valueColumns']);
@@ -80,7 +80,7 @@
                         $i++;
                     }
                     $values .= "]";
-                    echo $values; 
+                    echo $values;
                 } else {
                     echo "['".$dimensionLink['valueColumns']."']";
                 }

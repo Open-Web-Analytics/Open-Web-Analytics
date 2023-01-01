@@ -1,4 +1,4 @@
-<?php 
+<?php
 $timezones = array(
 
     "US"    => array(
@@ -787,4 +787,4 @@ $timezones = array(
     "PF"   => array(
         0        => "Pacific/Marquesas")
 );
-?> 
+?>

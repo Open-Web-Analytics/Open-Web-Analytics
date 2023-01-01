@@ -27,7 +27,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.0
  */
 
@@ -42,8 +42,8 @@ class owa_reportProductSkusController extends owa_reportController {
         $this->set('dimensions', $dim_name);
         $this->set('sort', 'lineItemQuantity-');
         $this->set('resultsPerPage', 30);
-        $this->set('dimensionLink', array('linkColumn' => $dim_name, 
-                                                'template' => array('do' => 'base.reportProductSkuDetail', $dim_name => '%s'), 
+        $this->set('dimensionLink', array('linkColumn' => $dim_name,
+                                                'template' => array('do' => 'base.reportProductSkuDetail', $dim_name => '%s'),
                                                 'valueColumns' => $dim_name));
         $this->set('trendChartMetric', 'lineItemQuantity');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.lineItemQuantity.formatted_value *> products sold across all SKUs.');

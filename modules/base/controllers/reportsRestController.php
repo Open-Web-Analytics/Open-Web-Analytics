@@ -274,7 +274,7 @@ class owa_reportsRestController extends owa_reportController {
 
         $rsm->db->orderBy('timestamp', 'DESC');
 
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 20; 
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 20;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination
@@ -282,7 +282,7 @@ class owa_reportsRestController extends owa_reportController {
         $rsm->setPage( $this->get('page') );
 		
 		// fetch results
-		$rs = $rsm->queryResults();       
+		$rs = $rsm->queryResults();
 
         return $rs;
     }
@@ -329,7 +329,7 @@ class owa_reportsRestController extends owa_reportController {
         );
         
 		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;    
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination
@@ -361,7 +361,7 @@ class owa_reportsRestController extends owa_reportController {
         $rsm->db->orderBy('timestamp','DESC');
 
         // set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;    
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination
@@ -429,7 +429,7 @@ class owa_reportsRestController extends owa_reportController {
         );
         
 		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 25;    
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 25;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination
@@ -516,7 +516,7 @@ function report_clicks() {
         );
         
 		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;    
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 100;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination

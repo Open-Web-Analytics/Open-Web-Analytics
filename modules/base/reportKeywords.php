@@ -26,7 +26,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -42,8 +42,8 @@ class owa_reportKeywordsController extends owa_reportController {
         $this->set('sort', 'visits-');
         $this->set('resultsPerPage', 30);
         $this->set('dimensionLink', array(
-                'linkColumn'     => 'referralSearchTerms', 
-                'template'         => array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'), 
+                'linkColumn'     => 'referralSearchTerms',
+                'template'         => array('do' => 'base.reportKeywordDetail', 'referralSearchTerms' => '%s'),
                 'valueColumns'     => 'referralSearchTerms'));
         $this->set('constraints', 'medium==organic-search');
         $this->set('trendChartMetric', 'visits');

@@ -28,7 +28,7 @@ require_once( OWA_BASE_CLASSES_DIR . 'owa_caller.php' );
  *
  * Abstract Client Class for use in php based applications
  *
- * @deprecated 
+ * @deprecated
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0

@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -104,9 +104,9 @@ class owa_cache {
         $this->warm->set( $collection, $hkey, $value );
         
         $this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
-        $this->statistics['added']++;        
+        $this->statistics['added']++;
         $this->dirty_objs[$collection][$hkey] = $hkey;
-        $this->dirty_collections[$collection] = true; 
+        $this->dirty_collections[$collection] = true;
         $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['dirty']++;
             
@@ -124,13 +124,13 @@ class owa_cache {
         if (!empty($this->dirty_objs[$collection])) {
             if(!in_array($hkey, $this->dirty_objs[$collection])) {
                 $this->dirty_objs[$collection][] = $hkey;
-                $this->dirty_collections[$collection] = true; 
+                $this->dirty_collections[$collection] = true;
                 $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
                 $this->statistics['dirty']++;
             }
         } else {
             $this->dirty_objs[$collection][] = $hkey;
-            $this->dirty_collections[$collection] = true; 
+            $this->dirty_collections[$collection] = true;
             $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
             $this->statistics['dirty']++;
         }
@@ -148,13 +148,13 @@ class owa_cache {
         // if in warm cahce n=increment stats
         if ( $obj ) {
 	        
-            $this->debug(sprintf('CACHE: Hit (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));    
+            $this->debug(sprintf('CACHE: Hit (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));
             $this->statistics['warm']++;
             return $obj;
                
         } else {
         
-        	// else load from cold cache 
+        	// else load from cold cache
         	$cold = $this->getColdCache();
         	
         	if ( $cold ) {
@@ -170,10 +170,10 @@ class owa_cache {
 	                return $this->warm->get( $collection, $id );
 	            }
 	        }
-	    }    
+	    }
 	    
 	    $this->debug( sprintf( 'CACHE: Miss - object not found for Collection: %s, id: %s', $collection, $id ) );
-	    $this->statistics['miss']++; 
+	    $this->statistics['miss']++;
     }
     
     function remove($collection, $key) {
@@ -186,7 +186,7 @@ class owa_cache {
         
         if ( $cold ) {
 	        $this->statistics['removed']++;
-	    	return $cold->remove( $collection, $id );   
+	    	return $cold->remove( $collection, $id );
         }
     }
     
@@ -210,7 +210,7 @@ class owa_cache {
 		                
 	                    $cold->set( $collection, $id, $this->warm->get( $collection, $id ) );
 	                    $this->statistics['persisted']++;
-	                }    
+	                }
 	            }
 	            
 	        } else {
@@ -233,13 +233,13 @@ class owa_cache {
         
         if ( $cold ) {
     	
- 	       return $cold->flush();  
- 	    }  
+ 	       return $cold->flush();
+ 	    }
     }
     
     function getStats() {
     
-        return sprintf("Cache Statistics: 
+        return sprintf("Cache Statistics:
                           Total Hits: %s (Warm/Cold: %s/%s)
                           Total Miss: %s
                           Total Added to Cache: %s

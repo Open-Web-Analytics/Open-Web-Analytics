@@ -274,9 +274,9 @@ class owa_error {
        $level = $this->getLogLevel();
               
        // create a stream
-       $stream = new StreamHandler(STDOUT, $level); 
+       $stream = new StreamHandler(STDOUT, $level);
        
-       // create a formatter 
+       // create a formatter
        $dt = $this->getDateTimestamp();
        
        $template = $this->getLineFormat();

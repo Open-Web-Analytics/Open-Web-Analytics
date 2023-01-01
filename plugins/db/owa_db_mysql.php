@@ -17,7 +17,7 @@
 //
 
 
-define('OWA_DTD_BIGINT', 'BIGINT'); 
+define('OWA_DTD_BIGINT', 'BIGINT');
 define('OWA_DTD_INT', 'INT');
 define('OWA_DTD_TINYINT', 'TINYINT(1)');
 define('OWA_DTD_TINYINT2', 'TINYINT(2)');
@@ -35,13 +35,13 @@ define('OWA_DTD_INDEX', 'KEY');
 define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT');
 define('OWA_DTD_NOT_NULL', 'NOT NULL');
 define('OWA_DTD_UNIQUE', 'PRIMARY KEY(%s)');
-define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');   
+define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');
 define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s');
-define('OWA_SQL_RENAME_COLUMN', 'ALTER TABLE %s CHANGE %s %s %s'); 
-define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s'); 
-define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s'); 
-define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE IF NOT EXISTS %s (%s) %s'); 
-define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');  
+define('OWA_SQL_RENAME_COLUMN', 'ALTER TABLE %s CHANGE %s %s %s');
+define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s');
+define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s');
+define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE IF NOT EXISTS %s (%s) %s');
+define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');
 define('OWA_SQL_SHOW_TABLE', "show tables like '%s'");
 define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)');
 define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s %s');

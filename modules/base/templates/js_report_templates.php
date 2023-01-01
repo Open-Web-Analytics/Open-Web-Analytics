@@ -14,7 +14,7 @@
 
 <TD class="<*= this.result_type *>cell"><*= this.value *></TD>
 
-]]> 
+]]>
 </script>
 
 <script type="text/x-jqote-template" id="table-row">
@@ -22,7 +22,7 @@
 <TR>
 <*= this.columns*>
 </TR>
-]]> 
+]]>
 </script>
 
 <script type="text/x-jqote-template" id="simpleTable-outer">

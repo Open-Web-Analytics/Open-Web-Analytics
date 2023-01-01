@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -358,90 +358,90 @@ class owa_timePeriod {
     }
 
     // Function used to take two date strings, and returns an associative array
-    // with different formats for the difference between the dates. 
+    // with different formats for the difference between the dates.
     // based on function by: tchapin at gmail dot com
-    // -------------------- 
-    // Variables: 
-    // StartDateString (String - MM/DD/YYYY) 
-    // EndDateString (String - MM/DD/YYYY) 
-    // -------------------- 
-    // Example: $DateDiffAry = GetDateDifference('01/09/2008', '02/11/2009'); 
-    // print_r($DateDiffAry); 
-    // -------------------- 
-    // Returns Something Like: 
-    /*    
-    Array 
-    ( 
-        [YearsSince] => 1.0931506849315 
-        [MonthsSince] => 13.117808219178 
-        [DaysSince] => 399 
-        [HoursSince] => 9576 
-        [MinutesSince] => 574560 
-        [SecondsSince] => 34473600 
-        [NiceString] => 1 year, 1 month, and 2 days 
-        [NiceString2] => Years: 1, Months: 1, Days: 2 
-    ) 
-    */ 
-    function getDateDifference($StartDateString=NULL, $EndDateString=NULL) { 
-        $ReturnArray = array(); 
+    // --------------------
+    // Variables:
+    // StartDateString (String - MM/DD/YYYY)
+    // EndDateString (String - MM/DD/YYYY)
+    // --------------------
+    // Example: $DateDiffAry = GetDateDifference('01/09/2008', '02/11/2009');
+    // print_r($DateDiffAry);
+    // --------------------
+    // Returns Something Like:
+    /*
+    Array
+    (
+        [YearsSince] => 1.0931506849315
+        [MonthsSince] => 13.117808219178
+        [DaysSince] => 399
+        [HoursSince] => 9576
+        [MinutesSince] => 574560
+        [SecondsSince] => 34473600
+        [NiceString] => 1 year, 1 month, and 2 days
+        [NiceString2] => Years: 1, Months: 1, Days: 2
+    )
+    */
+    function getDateDifference($StartDateString=NULL, $EndDateString=NULL) {
+        $ReturnArray = array();
         
-        $SDSplit = sscanf($StartDateString,'%4d%2d%2d'); 
-        $StartDate = mktime(0,0,0,$SDSplit[1],$SDSplit[2],$SDSplit[0]); 
+        $SDSplit = sscanf($StartDateString,'%4d%2d%2d');
+        $StartDate = mktime(0,0,0,$SDSplit[1],$SDSplit[2],$SDSplit[0]);
         
-        $EDSplit = sscanf($EndDateString,'%4d%2d%2d'); 
-        $EndDate = mktime(0,0,0,$EDSplit[1],$EDSplit[2],$EDSplit[0]); 
+        $EDSplit = sscanf($EndDateString,'%4d%2d%2d');
+        $EndDate = mktime(0,0,0,$EDSplit[1],$EDSplit[2],$EDSplit[0]);
         
-        $DateDifference = $EndDate-$StartDate; 
+        $DateDifference = $EndDate-$StartDate;
         
-        $ReturnArray['YearsSince'] = $DateDifference/60/60/24/365; 
-        $ReturnArray['MonthsSince'] = $DateDifference/60/60/24/365*12; 
-        $ReturnArray['DaysSince'] = $DateDifference/60/60/24; 
-        $ReturnArray['HoursSince'] = $DateDifference/60/60; 
-        $ReturnArray['MinutesSince'] = $DateDifference/60; 
-        $ReturnArray['SecondsSince'] = $DateDifference; 
+        $ReturnArray['YearsSince'] = $DateDifference/60/60/24/365;
+        $ReturnArray['MonthsSince'] = $DateDifference/60/60/24/365*12;
+        $ReturnArray['DaysSince'] = $DateDifference/60/60/24;
+        $ReturnArray['HoursSince'] = $DateDifference/60/60;
+        $ReturnArray['MinutesSince'] = $DateDifference/60;
+        $ReturnArray['SecondsSince'] = $DateDifference;
 
-        $y1 = date("Y", $StartDate); 
-        $m1 = date("m", $StartDate); 
-        $d1 = date("d", $StartDate); 
-        $y2 = date("Y", $EndDate); 
-        $m2 = date("m", $EndDate); 
-        $d2 = date("d", $EndDate); 
+        $y1 = date("Y", $StartDate);
+        $m1 = date("m", $StartDate);
+        $d1 = date("d", $StartDate);
+        $y2 = date("Y", $EndDate);
+        $m2 = date("m", $EndDate);
+        $d2 = date("d", $EndDate);
         
-        $diff = ''; 
-        $diff2 = ''; 
-        if (($EndDate - $StartDate)<=0) { 
-            // Start date is before or equal to end date! 
-            $diff = "0 days"; 
-            $diff2 = "Days: 0"; 
-        } else { 
+        $diff = '';
+        $diff2 = '';
+        if (($EndDate - $StartDate)<=0) {
+            // Start date is before or equal to end date!
+            $diff = "0 days";
+            $diff2 = "Days: 0";
+        } else {
 
-            $y = $y2 - $y1; 
-            $m = $m2 - $m1; 
-            $d = $d2 - $d1; 
-            $daysInMonth = date("t",$StartDate); 
-            if ($d<0) {$m--;$d=$daysInMonth+$d;} 
-            if ($m<0) {$y--;$m=12+$m;} 
-            $daysInMonth = date("t",$m2); 
+            $y = $y2 - $y1;
+            $m = $m2 - $m1;
+            $d = $d2 - $d1;
+            $daysInMonth = date("t",$StartDate);
+            if ($d<0) {$m--;$d=$daysInMonth+$d;}
+            if ($m<0) {$y--;$m=12+$m;}
+            $daysInMonth = date("t",$m2);
             
-            // Nicestring ("1 year, 1 month, and 5 days") 
-            if ($y>0) $diff .= $y==1 ? "1 year" : "$y years"; 
-            if ($y>0 && $m>0) $diff .= ", "; 
-            if ($m>0) $diff .= $m==1? "1 month" : "$m months"; 
-            if (($m>0||$y>0) && $d>0) $diff .= ", and "; 
-            if ($d>0) $diff .= $d==1 ? "1 day" : "$d days"; 
+            // Nicestring ("1 year, 1 month, and 5 days")
+            if ($y>0) $diff .= $y==1 ? "1 year" : "$y years";
+            if ($y>0 && $m>0) $diff .= ", ";
+            if ($m>0) $diff .= $m==1? "1 month" : "$m months";
+            if (($m>0||$y>0) && $d>0) $diff .= ", and ";
+            if ($d>0) $diff .= $d==1 ? "1 day" : "$d days";
             
-            // Nicestring 2 ("Years: 1, Months: 1, Days: 1") 
-            if ($y>0) $diff2 .= $y==1 ? "Years: 1" : "Years: $y"; 
-            if ($y>0 && $m>0) $diff2 .= ", "; 
-            if ($m>0) $diff2 .= $m==1? "Months: 1" : "Months: $m"; 
-            if (($m>0||$y>0) && $d>0) $diff2 .= ", "; 
-            if ($d>0) $diff2 .= $d==1 ? "Days: 1" : "Days: $d"; 
+            // Nicestring 2 ("Years: 1, Months: 1, Days: 1")
+            if ($y>0) $diff2 .= $y==1 ? "Years: 1" : "Years: $y";
+            if ($y>0 && $m>0) $diff2 .= ", ";
+            if ($m>0) $diff2 .= $m==1? "Months: 1" : "Months: $m";
+            if (($m>0||$y>0) && $d>0) $diff2 .= ", ";
+            if ($d>0) $diff2 .= $d==1 ? "Days: 1" : "Days: $d";
             
         }
         
-        $ReturnArray['NiceString'] = $diff; 
-        $ReturnArray['NiceString2'] = $diff2; 
-        return $ReturnArray; 
+        $ReturnArray['NiceString'] = $diff;
+        $ReturnArray['NiceString2'] = $diff2;
+        return $ReturnArray;
     }
 }
 

@@ -163,7 +163,7 @@ class owa_auth extends owa_base {
 
         if ( $key ) {
 	        
-	        // check signature of request 
+	        // check signature of request
 	        if ( ! owa_lib::inRestDebug() ) {
 		    	
 		    	//get current request url
@@ -171,7 +171,7 @@ class owa_auth extends owa_base {
 				//owa_coreAPI::debug('request url' . $url);
 		    	
 		    	//get signatureparam  of request
-		        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' ); 
+		        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' );
 		        
 		        owa_coreAPI::debug('Signature: ' . $signature );
 		         
@@ -379,7 +379,7 @@ class owa_auth extends owa_base {
         owa_coreAPI::debug('saving user credentials to cookies');
         
         owa_coreAPI::createCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10 );
-        owa_coreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2 ); 
+        owa_coreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2 );
     }
 
     /**
@@ -527,7 +527,7 @@ class owa_auth extends owa_base {
 		// generate date
 	    $date = date( 'Ymd', time() );
 	   	
-	   	// switch time zone back to prior setting 
+	   	// switch time zone back to prior setting
 	    date_default_timezone_set($tz);
 	    
 	    return base64_encode( hash('sha256', 'OWASIGNATURE' . $apiKey . $requestUrl . $date . OWA_AUTH_KEY ) );

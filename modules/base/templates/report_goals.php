@@ -3,14 +3,14 @@
     <div id="trend-chart"></div>
 
     
-    <div id="trend-title" class="owa_reportHeadline"></div>    
+    <div id="trend-title" class="owa_reportHeadline"></div>
     <div id="trend-metrics" style="height:auto;width:auto;<?php if(isset($pie)) {echo 'float:right';}?>"></div>
     <div style="clear:both;"></div>
     <script>
         
-        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
-                                                                    'metrics' => $metrics, 
-                                                                    'dimensions' => 'date', 
+        var trendurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                    'metrics' => $metrics,
+                                                                    'dimensions' => 'date',
                                                                     'sort' => 'date',
                                                                     'format' => 'json',
                                                                     'constraints' => $constraints
@@ -39,8 +39,8 @@
                 <?php if ($goal_metrics): ?>
                 <script>
                 
-                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1', 
-                                                                  'metrics' => $goal_metrics, 
+                var aurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'module' => 'base', 'version' => 'v1',
+                                                                  'metrics' => $goal_metrics,
                                                                   'format' => 'json'), true);?>';
                                                                   
                 rsh = new OWA.resultSetExplorer('goalMetrics');

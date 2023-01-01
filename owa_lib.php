@@ -384,8 +384,8 @@ class owa_lib {
 		
 		// check for https
 		
-        if( 
-        	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' ) 
+        if(
+        	( isset( $_SERVER['HTTPS'] ) && strtolower( $_SERVER['HTTPS'] ) == 'on' )
         	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) )
         	|| ( ( isset( $_SERVER['HTTP_X_FORWARDED_PORT'] ) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 ) )
         	|| ( ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == 443 ) )
@@ -966,7 +966,7 @@ class owa_lib {
             $res = $str;
           endif;
    
-      return $res; 
+      return $res;
     }
 
     /**
@@ -1061,7 +1061,7 @@ class owa_lib {
 		            
 		        } else {
 			        
-			    	return iconv('UTF-8','UTF-8//TRANSLIT', $string);    
+			    	return iconv('UTF-8','UTF-8//TRANSLIT', $string);
 		        }
 	             
             } else {
@@ -1386,7 +1386,7 @@ class owa_lib {
 		    
 		    return true;
 	    }
-    } 
+    }
     
     public static function setDefaultParams( $defaults, $params ) {
 	    
@@ -1399,10 +1399,10 @@ class owa_lib {
     public static function inDebug() {
 	    
 	    if ( ( defined( 'OWA_DEBUG') &&  OWA_DEBUG === true ) ||
-	    	 ( defined( 'OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development' ) 
+	    	 ( defined( 'OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development' )
 		){
 			return true;
-		}	    	 
+		}	    	
     }
     
      public static function inRestDebug() {
@@ -1410,7 +1410,7 @@ class owa_lib {
 	    if ( ( defined( 'OWA_REST_DEBUG') &&  OWA_REST_DEBUG === true ) ){
 			
 			return true;
-		}	    	 
+		}	    	
     }
 
 }

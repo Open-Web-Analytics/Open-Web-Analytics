@@ -27,7 +27,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -66,7 +66,7 @@ class owa_reportVisitorsController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -75,7 +75,7 @@ class owa_reportVisitorsView extends owa_view {
     function render($data) {
             
         $this->body->set_template('report_visitors.tpl');
-        $this->body->set('visits', $this->get('latest_visits'));        
+        $this->body->set('visits', $this->get('latest_visits'));
     }
 }
 

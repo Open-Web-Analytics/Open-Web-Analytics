@@ -34,7 +34,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
 class owa_reportController extends owa_adminController {
 	
 	/**
-	 * An array of request param keys that 
+	 * An array of request param keys that
 	 * should be passed downstream as state
 	 */
 	var $state_keys = [];
@@ -160,7 +160,7 @@ class owa_reportController extends owa_adminController {
     }
     
     /**
-	 * Used to designate a request param as state for 
+	 * Used to designate a request param as state for
      * use by downstream views and templates
      */
     function addState( $param_name ) {

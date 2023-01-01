@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.3.0
  */
 
@@ -42,7 +42,7 @@ class owa_calculatedMetric extends owa_metric {
     function getChildMetrics() {
         
         return $this->child_metrics;
-    }    
+    }
     
     function setFormula($string) {
         
@@ -52,7 +52,7 @@ class owa_calculatedMetric extends owa_metric {
     function getFormula() {
     
         return $this->formula;
-    }    
+    }
 }
 
 ?>

@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
  
@@ -69,7 +69,7 @@
         if ( ! $this->getErrorMsg() ) {
             // if not set this default msg.
             $this->setErrorMessage(sprintf('The string "%s" %s found within the value at position %d', $substring, $verb, $pos));
-        }         
+        }
        
      }
      

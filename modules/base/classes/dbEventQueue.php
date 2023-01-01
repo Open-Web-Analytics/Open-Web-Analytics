@@ -27,7 +27,7 @@ if ( ! class_exists( 'owa_eventQueue' ) ) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.0
  */
 
@@ -38,7 +38,7 @@ class owa_dbEventQueue extends owa_eventQueue {
         
     function __construct( $map = array() ) {
     
-        return parent::__construct( $map );    
+        return parent::__construct( $map );
     }
     
     function connect() {
@@ -98,7 +98,7 @@ class owa_dbEventQueue extends owa_eventQueue {
             $event->wasReceived();
             
             return $event;
-        }    
+        }
     }
     
     function deleteMessage( $id ) {
@@ -116,7 +116,7 @@ class owa_dbEventQueue extends owa_eventQueue {
             $qi->set( 'handled_timestamp', $this->makeTimestamp() );
             $qi->save();
         } else {
-            owa_coreAPI::notice("Could not find/delete queue item id: $item_id");        
+            owa_coreAPI::notice("Could not find/delete queue item id: $item_id");
         }
     }
     
@@ -147,7 +147,7 @@ class owa_dbEventQueue extends owa_eventQueue {
             } else {
                 return $entities[0];
             }
-        }        
+        }
     }
     
     function flushHandledEvents() {
