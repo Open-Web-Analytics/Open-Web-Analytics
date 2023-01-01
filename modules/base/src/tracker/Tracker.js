@@ -619,16 +619,16 @@ class OWATracker  {
                         if ( Util.is_object( properties[param][i] ) ) {
                             for ( var o_param in properties[param][i] ) {
 
-                                data[ Util.sprintf( OWA.getSetting('ns') + '%s[%s][%s]', param, i, o_param ) ] = Util.urlEncode( properties[ param ][ i ][ o_param ] );
+                                data[ Util.sprintf( OWA.getSetting('ns') + '%s[%s][%s]', param, i, o_param ) ] =  properties[ param ][ i ][ o_param ];
                             }
                         } else {
                             // what the heck is it then. assume string
-                            data[ Util.sprintf(OWA.getSetting('ns') + '%s[%s]', param, i) ] = Util.urlEncode( properties[ param ][ i ] );
+                            data[ Util.sprintf(OWA.getSetting('ns') + '%s[%s]', param, i) ] = properties[ param ][ i ];
                         }
                     }
                 // assume it's a string
                 } else {
-                    data[ Util.sprintf(OWA.getSetting('ns') + '%s', param) ] = Util.urlEncode( properties[ param ] );
+                    data[ Util.sprintf(OWA.getSetting('ns') + '%s', param) ] = properties[ param ];
                 }
             }
         }

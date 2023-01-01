@@ -9,6 +9,7 @@
 
 import { OWA_instance } from '../common/owa.js';
 import * as jQuery from 'jquery';
+import * as jGrowl from 'jgrowl';
 
 class Player {
 
@@ -74,8 +75,19 @@ class Player {
 
 
     moveCursor(x, y) {
+        var that = this;
         this.block();
-        jQuery('#owa-cursor').animate({top: y +'px', left: x +'px'}, { queue:true, duration:100}, 'swing', this.unblock());
+        jQuery('#owa-cursor').animate(
+            {top: y +'px', left: x +'px'},
+            {
+                queue: true,
+                duration: 100,
+                complete: function () {
+                    that.unblock();
+                }
+            },
+            'swing'
+        );
         //console.log("Moving to X: %s Y: %s", x, y);
         this.setStatus("Mouse Movement to: "+x+", "+y);
     }
@@ -290,16 +302,28 @@ class Player {
             var accessor_msg = event.dom_element_tag;
         }
 
+        // Try to get node by coordinates using native browser API.
+        // Need to hide overlay in case click target is under it, otherwise elementFromPoint
+        // will return OWA overlay instead of the real target.
+        jQuery("#owa_overlay").hide();
+        var node = document.elementFromPoint(event.click_x, event.click_y);
+        jQuery("#owa_overlay").show();
+        if (node) {
+            node.click();
+        } else {
+            // Otherwise fallback to getting node by its id or name
+            if (accessor) {
+                jQuery(accessor).click();
+                jQuery(accessor).focus();
+            }
+        }
+
         var d = new Date();
         var id = 'owa-click-marker' + '_' + d.getTime()+1;
         var marker = '<div id="'+id+'" class="owa-click-marker"></div>';
         jQuery('body').append(marker);
         jQuery('#'+id).css({'position': 'absolute','left': event.click_x +'px', 'top': event.click_y +'px', 'z-index' : 89});
 
-        if (accessor) {
-            jQuery(accessor).click();
-            jQuery(accessor).focus();
-        }
         //jQuery('#owa-latest-click').slideToggle('normal');
         //console.log("Clicking: %s", accessor);
         //this.setStatus("Clicking: "+accessor);
