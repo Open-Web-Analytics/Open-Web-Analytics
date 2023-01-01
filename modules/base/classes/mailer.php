@@ -79,7 +79,13 @@ class owa_mailer {
                 
                 $this->mailer->Username = owa_coreAPI::getSetting( 'base', 'mailer-username');
                 $this->mailer->Password = owa_coreAPI::getSetting( 'base', 'mailer-password');
-            }
+            }   
+            
+            // set mailer SMTP options if they exist
+            if ( owa_coreAPI::getSetting( 'base', 'mailer-options' ) ) {                
+            
+                $this->mailer->SMTPOptions = owa_coreAPI::getSetting( 'base', 'mailer-options' );
+            }     
         }
     }
     
