@@ -1074,14 +1074,14 @@ class memcached
          return;
       }
       
-      $r = array( $f ); 
-      $w = NULL; 
+      $r = array( $f );
+      $w = NULL;
       $e = NULL;
       $n = stream_select( $r, $w, $e, 0, 0 );
       while ($n == 1 && !feof($f)) {
          fread($f, 1024);
-         $r= array( $f ); 
-         $w = NULL; 
+         $r= array( $f );
+         $w = NULL;
          $e = NULL;
          $n = stream_select( $r, $w, $e, 0, 0 );
       }

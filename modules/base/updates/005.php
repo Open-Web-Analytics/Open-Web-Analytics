@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -44,7 +44,7 @@ class owa_base_005_update extends owa_update {
             $db = owa_coreAPI::dbSingleton();
             $db->addColumn($table, 'yyyymmdd', 'INT');
             $db->addIndex($table, 'yyyymmdd');
-            $ret = $db->query("update $table set yyyymmdd = 
+            $ret = $db->query("update $table set yyyymmdd =
                         concat(cast(year as CHAR), lpad(CAST(month AS CHAR), 2, '0'), lpad(CAST(day AS CHAR), 2, '0')) ");
 
             if ($ret == true) {
@@ -71,7 +71,7 @@ class owa_base_005_update extends owa_update {
             return false;
         }
 
-        $ret = $db->query("update owa_visitor set first_session_yyyymmdd = 
+        $ret = $db->query("update owa_visitor set first_session_yyyymmdd =
                         concat(cast(first_session_year as CHAR), lpad(CAST(first_session_month AS CHAR), 2, '0'), lpad(CAST(first_session_day AS CHAR), 2, '0')) ");
 
         if (!$ret) {
@@ -198,12 +198,12 @@ class owa_base_005_update extends owa_update {
         // migrate search terms to new table
         $ret = $db->query(
             "INSERT INTO
-                owa_search_term_dim (id, terms, term_count) 
-            SELECT 
-                distinct(CRC32(LOWER(query_terms))) as id, 
-                query_terms as terms, 
-                length(query_terms) + 1 - length(replace(query_terms,' ','')) as term_count 
-            FROM 
+                owa_search_term_dim (id, terms, term_count)
+            SELECT
+                distinct(CRC32(LOWER(query_terms))) as id,
+                query_terms as terms,
+                length(query_terms) + 1 - length(replace(query_terms,' ','')) as term_count
+            FROM
                 owa_referer
             WHERE
                 query_terms != ''"
@@ -216,10 +216,10 @@ class owa_base_005_update extends owa_update {
 
         //populate search term foreign key in session table
         $ret = $db->query(
-            "UPDATE 
+            "UPDATE
                 owa_session as session, owa_referer as referer
             SET
-                session.referring_search_term_id = (CRC32(LOWER(referer.query_terms))) 
+                session.referring_search_term_id = (CRC32(LOWER(referer.query_terms)))
             WHERE
                 session.referer_id = referer.id and
                 session.referer_id != 0 AND
@@ -233,7 +233,7 @@ class owa_base_005_update extends owa_update {
 
         //populate search source in session table
         $ret = $db->query(
-            "UPDATE 
+            "UPDATE
                 owa_session as session
             SET
                 session.source = 'organic-search'
@@ -248,7 +248,7 @@ class owa_base_005_update extends owa_update {
 
         //populate search source in session table
         $ret = $db->query(
-            "UPDATE 
+            "UPDATE
                 owa_session as session
             SET
                 session.source = 'referral'

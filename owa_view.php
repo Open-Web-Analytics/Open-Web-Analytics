@@ -467,7 +467,7 @@ class owa_view extends owa_base {
 
 
     /**
-     * Sets properties that are needed to maintain state in links to  
+     * Sets properties that are needed to maintain state in links to
      * reports. This is used by many template functions.
      *
      */
@@ -490,7 +490,7 @@ class owa_view extends owa_base {
             'endTime' => null
         ];
                 
-        // merge in any stte keys passed from the controller.        
+        // merge in any stte keys passed from the controller.
         $state_keys = $this->get('state_keys') ?: [];
         
         foreach ( $state_keys as $k) {
@@ -783,14 +783,14 @@ class owa_restApiView extends owa_view {
 			owa_lib::setContentTypeHeader( $type );
 			
 			// set cahce-control header to avid downstream caching.
-			header("Cache-Control: max-age=0");		  
+			header("Cache-Control: max-age=0");		
 			
 			// add CORS request headers
-			$this->addCorsHeaders(); 
+			$this->addCorsHeaders();
 	   }
 
 	   
-		// Generate GUID for response   
+		// Generate GUID for response
 	    $request = owa_coreAPI::getRequest();
 
         $this->body->set('request_id', $request->guid );

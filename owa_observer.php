@@ -54,7 +54,7 @@ class owa_observer extends owa_base {
      *                              log event notifications.
      *
      * @access public
-     */  
+     */
     function __construct() {
         $this->id = md5(microtime());
     }

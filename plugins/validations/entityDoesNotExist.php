@@ -44,7 +44,7 @@
 			 
 			$this->setErrorMessage('No entity value to check.');
 			$this->hasError();
-		}	 
+		}	
          
          $error = $this->getErrorMsg();
 

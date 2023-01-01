@@ -453,7 +453,7 @@ class owa_trackingEventHelpers {
 
             return $page_parse['path'] ;
         }
-    } 
+    }
     
     static function deriveMedium( $medium, $event ) {
 	    
@@ -654,7 +654,7 @@ class owa_trackingEventHelpers {
 			            return trim( urldecode( strtolower( $term ) ) );
 		            }
 		        }
-		    }  
+		    }
 	    }
     }
     
@@ -822,8 +822,8 @@ class owa_trackingEventHelpers {
      */
     static function resolveFullHost( $full_host, $event ) {
 
-        if ( 
-        		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' ) 
+        if (
+        		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' )
 				&& $event->get( 'ip_address' )
 				&& owa_coreAPI::getSetting('base', 'resolve_hosts')
 

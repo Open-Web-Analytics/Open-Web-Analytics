@@ -18,7 +18,7 @@
 
 if(!class_exists('owa_observer')) {
     require_once(OWA_DIR.'owa_observer.php');
-}    
+}
 
 /**
  * Action Event handlers
@@ -28,7 +28,7 @@ if(!class_exists('owa_observer')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.3.0
  */
 
@@ -49,8 +49,8 @@ class owa_actionHandler extends owa_observer {
         if ( ! $a->wasPersisted() ) {
             
             $a->setProperties( $event->getProperties() );
-            // Set Primary Key 
-            $a->set( 'id', $event->get('guid') ); 
+            // Set Primary Key
+            $a->set( 'id', $event->get('guid') );
             $a->set('action_name', strtolower(trim($event->get('action_name'))));
             $a->set('action_group', strtolower(trim($event->get('action_group'))));
             $a->set('action_label', strtolower(trim($event->get('action_label'))));
@@ -59,10 +59,10 @@ class owa_actionHandler extends owa_observer {
             $ret = $a->create();
             
             if ( $ret ) {
-                // Tell others that "track.action" has been logged 
-                $eq = owa_coreAPI::getEventDispatch(); 
-                $nevent = $eq->makeEvent($event->getEventType().'_logged'); 
-                $nevent->setProperties($event->getProperties()); 
+                // Tell others that "track.action" has been logged
+                $eq = owa_coreAPI::getEventDispatch();
+                $nevent = $eq->makeEvent($event->getEventType().'_logged');
+                $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);
             
                 return OWA_EHS_EVENT_HANDLED;

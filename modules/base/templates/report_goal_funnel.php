@@ -144,7 +144,7 @@ No Funnel has been configured for this goal.
 <script>
 // jquery binding for select list
 // Bind event handlers
-jQuery(document).ready(function(){   
+jQuery(document).ready(function(){
 
     jQuery('#goalChooser').change(function() {
             var num = jQuery("#goalChooser option:selected").val();

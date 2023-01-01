@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -40,7 +40,7 @@ class owa_installController extends owa_controller {
         
         
         // needed just in case a re-install happens and updates are also needed.
-        // tells the controller to skip the updates redirect. Also tells the main owa_caller 
+        // tells the controller to skip the updates redirect. Also tells the main owa_caller
         // class not to load the config from the DB which doesn't exist during the install.
         if (!defined('OWA_INSTALLING')) {
             define('OWA_INSTALLING', true);
@@ -79,7 +79,7 @@ class owa_installController extends owa_controller {
 
     function checkDbConnection() {
         
-        return $this->im->checkDbConnection(); 
+        return $this->im->checkDbConnection();
     }
     
     function isInstallComplete() {

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /*
 Plugin Name: Open Web Analytics
@@ -21,7 +21,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-// Define the plugin path constant 
+// Define the plugin path constant
 define('OWA_WP_PATH', plugin_dir_path( __FILE__ ) );
 
 // Hook package creation
@@ -68,7 +68,7 @@ class owa_wp_plugin extends owa_wp_module {
 		// load parent constructor
 		$params = array();
 		$params['module_name'] = 'owa-wordpress';
-		parent::__construct( $params ); 
+		parent::__construct( $params );
 	}
 	
 	/**
@@ -203,7 +203,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 		// needed for backwards compatability of old style embedded installs.
 		// must go after user default merge
-		$this->setEmbeddedOptions(); 
+		$this->setEmbeddedOptions();
 	}
 	
 	/**
@@ -233,7 +233,7 @@ class owa_wp_plugin extends owa_wp_module {
 	function defineActionHooks() {
 		
 		
-		// These hooks rely on accessing OWA server-side 
+		// These hooks rely on accessing OWA server-side
 		// as a PHP object. 	
 		
 		if ( $this->getOption( 'trackAdminActions' ) ) {
@@ -274,10 +274,10 @@ class owa_wp_plugin extends owa_wp_module {
 	// Add query vars to WordPress
 	function addFeedTrackingQueryParams() {
 		
-		global $wp; 
+		global $wp;
 		
 		// feed tracking param
-		$wp->add_query_var('owa_sid'); 
+		$wp->add_query_var('owa_sid');
 		
 	}
 	
@@ -521,7 +521,7 @@ class owa_wp_plugin extends owa_wp_module {
 		(function() {var _owa = document.createElement('script'); _owa.type = 'text/javascript'; _owa.async = true;
 		owa_baseUrl = ('https:' == document.location.protocol ? window.owa_baseSecUrl || owa_baseUrl.replace(/http:/, 'https:') : owa_baseUrl );
 		_owa.src = owa_baseUrl + 'modules/base/js/owa.tracker-combined-min.js';
-		var _owa_s = document.getElementsByTagName('script')[0]; _owa_s.parentNode.insertBefore(_owa, _owa_s);}()); 
+		var _owa_s = document.getElementsByTagName('script')[0]; _owa_s.parentNode.insertBefore(_owa, _owa_s);}());
 		
 		\n ";
 		
@@ -558,7 +558,7 @@ class owa_wp_plugin extends owa_wp_module {
 						   'owa_medium',
 						   $this->getOption( 'feed_tracking_medium' ),
 						   $this->getOption( 'feed_subscription_param' ),
-						   $_GET[ $this->getOption( 'feed_subscription_param' ) ] 
+						   $_GET[ $this->getOption( 'feed_subscription_param' ) ]
 			);
 		}
 	}
@@ -579,7 +579,7 @@ class owa_wp_plugin extends owa_wp_module {
 		
 			$newbinfo = $binfo . "&amp;" . $this->getOption('feed_subscription_param') . "=" . $guid;
 		
-		} else { 
+		} else {
 			
 			$newbinfo = $binfo;
 		}
@@ -592,7 +592,7 @@ class owa_wp_plugin extends owa_wp_module {
 	
 		$owa = self::getOwaInstance();
 		$sm = owa_coreAPI::supportClassFactory( 'base', 'siteManager' );
-		$sm->createNewSite( $domain, $domain, '', ''); 
+		$sm->createNewSite( $domain, $domain, '', '');
 	}
 	
 	
@@ -641,7 +641,7 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			return;
 		
-		} 
+		}
 		
 		// set action label
 		if ( $new_status === 'publish' && $old_status != 'publish' ) {
@@ -765,7 +765,7 @@ class owa_wp_plugin extends owa_wp_module {
 			
 			if (isset($comment->comment_author)) {
 				
-				$label = $comment->comment_author; 
+				$label = $comment->comment_author;
 			
 			} else {
 			
@@ -1172,10 +1172,10 @@ class owa_wp_plugin extends owa_wp_module {
 						
 						// if not create it
 						$user->createNewUser(
-							$current_user->user_login, 
-							owa_wp_plugin::translateAuthRole( $current_user->roles ), 
-							$password = '', 
-							$current_user->user_email, 
+							$current_user->user_login,
+							owa_wp_plugin::translateAuthRole( $current_user->roles ),
+							$password = '',
+							$current_user->user_email,
 							$current_user->first_name.' '.$current_user->last_name
 						);
 						
@@ -1202,7 +1202,7 @@ class owa_wp_plugin extends owa_wp_module {
 	}
 	
 	/**
-	 * Callback for reporting dashboard/pages 
+	 * Callback for reporting dashboard/pages
 	 */
 	function pageController( $params = array() ) {
 		
@@ -1237,7 +1237,7 @@ class owa_wp_plugin extends owa_wp_module {
 	 *
 	 * @param $roles	array	array of WP roles
 	 * @return	string
-	 */ 
+	 */
 	static function translateAuthRole( $roles ) {
 		
 		if (!empty($roles)) {
@@ -1325,7 +1325,7 @@ class owa_wp_module {
 	 */
 	public function initSettingsPage() {
 		
-		// check for prior initialization as I'm not sure if the WP hook admin_init or admin_menu 
+		// check for prior initialization as I'm not sure if the WP hook admin_init or admin_menu
 		// gets called first.
 		if ( ! $this->settings_pages ) {			
 			
@@ -1382,27 +1382,27 @@ class owa_wp_module {
 				
 				if ( $page->get('is_top_level') ) {
 					
-					add_menu_page( 
-						$page->get('title'), 
-						$page->get('top_level_menu_title'), 
-						$page->get('required_capability'), 
-						$page->get('parent_slug'), 
-						$callback, 
-						$page->get('menu-icon'), 
-						2 
+					add_menu_page(
+						$page->get('title'),
+						$page->get('top_level_menu_title'),
+						$page->get('required_capability'),
+						$page->get('parent_slug'),
+						$callback,
+						$page->get('menu-icon'),
+						2
 					);
 					
 					$menu_slug = $page->get('parent_slug');
 				}
 				
 				// register the page with WordPress admin navigation.
-				add_submenu_page( 
-					$page->get('parent_slug'), 
-					$page->get('title'), 
-					$page->get('menu_title'), 
+				add_submenu_page(
+					$page->get('parent_slug'),
+					$page->get('title'),
+					$page->get('menu_title'),
 					$page->get('required_capability'),
 					$menu_slug,
-					$callback 
+					$callback
 				);			
 			}
 		}
@@ -1438,7 +1438,7 @@ class owa_wp_module {
 			// hook settings fields into WordPress		
 			if ( $this->settings ) {
 				
-				// we need ot init the settings page objects here 
+				// we need ot init the settings page objects here
 				// as they are needed by two the callbacks to seperate WordPress Hooks admin_init and admin_menu.
 				//$this->initSettingsPage();
 				
@@ -1492,7 +1492,7 @@ class owa_wp_module {
 	}
 	
 	/**
-	 * Get Options Key 
+	 * Get Options Key
 	 *
 	 * Gets the key under which options for the module should be persisted.
 	 *
@@ -1531,7 +1531,7 @@ class owa_wp_module {
 		//$options[ $this->getOptionsKey() ] = $this->options;
 		return $this->options;
 		//return $options;
-	} 
+	}
 	
 	/**
 	 * Register all of the hooks related to the module
@@ -1747,7 +1747,7 @@ class owa_wp_settingsPage {
 		if (array_key_exists( $key, $this->properties ) ) {
 			
 			return $this->properties[ $key ];
-		} 
+		}
 	}
 	
 	public function generatePageSlug() {
@@ -1814,7 +1814,7 @@ class owa_wp_settingsPage {
 	public function registerSection( $params ) {
 		
 		// todo: add in a class type lookup here to use a custom section object
-		// so that we can do custom rendering of section HTML if we 
+		// so that we can do custom rendering of section HTML if we
 		// ever need to.
 		// $section = somemaplookup( $params['type']);
 		
@@ -1835,7 +1835,7 @@ class owa_wp_settingsPage {
 	public function registerField( $key, $params ) {
 		
 		// Add to params array
-		// We need to pack params because ultimately add_settings_field 
+		// We need to pack params because ultimately add_settings_field
 		// can only pass an array to the callback function that renders
 		// the field. Sux. wish it would accept an object...
 			
@@ -1859,14 +1859,14 @@ class owa_wp_settingsPage {
 				owa_wp_util::addFilter( $field->get( 'id' ) . '_field_value_label', $callback, 10, 1 );
 			}
 			// add setting to wordpress settings api
-			add_settings_field( 
-				$key, 
-				$field->get( 'title' ), 
-				array( $field, 'render'), 
-				$this->page_slug, 
-				$field->get( 'section' ), 
-				$field->getProperties() 
-			); 
+			add_settings_field(
+				$key,
+				$field->get( 'title' ),
+				array( $field, 'render'),
+				$this->page_slug,
+				$field->get( 'section' ),
+				$field->getProperties()
+			);
 		} else {
 			
 			error_log("No field of type {$params['type']} registered.");
@@ -1952,7 +1952,7 @@ class owa_wp_settingsPage {
 	    echo '</div>';
 	    
 	    echo'   <script>
-					jQuery(function() { 
+					jQuery(function() {
 					
 						jQuery( ".owa_wp_admin_tabs" ).tabs({
 							 
@@ -2079,9 +2079,9 @@ class owa_wp_settings_field {
 	
 	public function setName( ) {
 		
-		return sprintf( 
-			'%s[%s]', 
-			'owa_wp', 
+		return sprintf(
+			'%s[%s]',
+			'owa_wp',
 			$this->id
 		);
 	}
@@ -2093,9 +2093,9 @@ class owa_wp_settings_field {
 	
 	public function setDomId( ) {
 		
-		return sprintf( 
-			'%s_%s', 
-			'owa_wp', 
+		return sprintf(
+			'%s_%s',
+			'owa_wp',
 			$this->id
 		);
 	}	
@@ -2161,11 +2161,11 @@ class owa_wp_settings_field_text extends owa_wp_settings_field {
 			
 		
 		echo sprintf(
-			'<input name="%s" id="%s" value="%s" type="text" size="%s" /> ', 
-			esc_attr( $attrs['name'] ), 
+			'<input name="%s" id="%s" value="%s" type="text" size="%s" /> ',
+			esc_attr( $attrs['name'] ),
 			esc_attr( $attrs['dom_id'] ),
 			esc_attr( $value ),
-			$size 
+			$size
 		);
 		
 		echo sprintf('<p class="description">%s</p>', $attrs['description']);
@@ -2191,11 +2191,11 @@ class owa_wp_settings_field_url extends owa_wp_settings_field {
 		}
 		
 		echo sprintf(
-			'<input name="%s" id="%s" value="%s" type="text" size="%s" /> ', 
-			esc_attr( $attrs['name'] ), 
+			'<input name="%s" id="%s" value="%s" type="text" size="%s" /> ',
+			esc_attr( $attrs['name'] ),
 			esc_attr( $attrs['dom_id'] ),
 			esc_attr( $value ),
-			$size 
+			$size
 		);
 		
 		echo sprintf('<p class="description">%s</p>', $attrs['description']);
@@ -2210,7 +2210,7 @@ class owa_wp_settings_field_url extends owa_wp_settings_field {
 /*
 		if ( ! strpos( $value, '/', -1 ) ) {
 			
-			$value .= '/'; 
+			$value .= '/';
 		}
 */
 			
@@ -2222,8 +2222,8 @@ class owa_wp_settings_field_url extends owa_wp_settings_field {
 	
 		if ( substr( $value, -4 ) === '.php' ) {
 			
-			$this->addError( 
-		    	$this->get('dom_id'), 
+			$this->addError(
+		    	$this->get('dom_id'),
 				sprintf(
 					'%s %s',
 					$this->get( 'label_for' ),
@@ -2234,8 +2234,8 @@ class owa_wp_settings_field_url extends owa_wp_settings_field {
 		
 		if ( ! substr( $value, 0, 4 ) === "http" ) {
 			
-			$this->addError( 
-	    	$this->get('dom_id'), 
+			$this->addError(
+	    	$this->get('dom_id'),
 			sprintf(
 				'%s %s',
 				$this->get( 'label_for' ),
@@ -2251,8 +2251,8 @@ class owa_wp_settings_field_url extends owa_wp_settings_field {
 		} else {
 			
 			// not a valid url
-			$this->addError( 
-			    	$this->get('dom_id'), 
+			$this->addError(
+			    	$this->get('dom_id'),
 					sprintf(
 						'%s %s',
 						$this->get( 'label_for' ),
@@ -2269,11 +2269,11 @@ class owa_wp_settings_field_textarea extends owa_wp_settings_field {
 		$value = $this->options[ $attrs['id'] ];
 		
 		echo sprintf(
-			'<textarea name="%s" rows="%s" cols="%s" />%s</textarea> ', 
-			esc_attr( $attrs['name'] ), 
+			'<textarea name="%s" rows="%s" cols="%s" />%s</textarea> ',
+			esc_attr( $attrs['name'] ),
 			esc_attr( $attrs['rows'] ),
 			esc_attr( $attrs['cols'] ),
-			esc_attr( $value ) 
+			esc_attr( $value )
 		);
 		
 		echo sprintf('<p class="description">%s</p>', $attrs['description']);
@@ -2292,7 +2292,7 @@ class owa_wp_settings_field_commaseparatedlist extends owa_wp_settings_field_tex
 	public function sanitize( $value ) {
 		
 		$value = trim( $value );
-		$value = str_replace(' ', '', $value ); 
+		$value = str_replace(' ', '', $value );
 		$value = trim( $value, ',');
 		
 		return $value;
@@ -2308,12 +2308,12 @@ class owa_wp_settings_field_commaseparatedlist extends owa_wp_settings_field_tex
 		
 		} else {
 		
-		    $this->addError( 
-		    	$this->get('dom_id'), 
+		    $this->addError(
+		    	$this->get('dom_id'),
 				sprintf(
 					'%s %s',
 					$this->get( 'label_for' ),
-					owa_wp_util::localize( 'can only contain a list of numbers separated by commas.' ) 
+					owa_wp_util::localize( 'can only contain a list of numbers separated by commas.' )
 				)
 			);
 		}
@@ -2347,7 +2347,7 @@ class owa_wp_settings_field_onoffarray extends owa_wp_settings_field {
 			if ( in_array( trim( $k ), array_keys( $values ), true ) && $values[ trim( $k ) ] == true ) {
 				
 				$check = true;
-			} 
+			}
 				
 			$on_checked = '';
 			$off_checked = '';
@@ -2366,20 +2366,20 @@ class owa_wp_settings_field_onoffarray extends owa_wp_settings_field {
 			//$dvalue_label = apply_filters( $this->get('id').'_field_value_label', $ovalue );
 			
 			echo sprintf(
-				'<p>%s: <label for="%s_on"><input class="" name="%s[%s]" id="%s_on" value="1" type="radio" %s> On</label>&nbsp; &nbsp; ', 
+				'<p>%s: <label for="%s_on"><input class="" name="%s[%s]" id="%s_on" value="1" type="radio" %s> On</label>&nbsp; &nbsp; ',
 				$label,
 				esc_attr( $attrs['dom_id'] ),
-				esc_attr( $attrs['name'] ), 
+				esc_attr( $attrs['name'] ),
 				esc_attr( $k ),
 				esc_attr( $attrs['dom_id'] ),
 				$on_checked
 			);
 			
 			echo sprintf(
-				'<label for="%s_off"><input class="" name="%s[%s]" id="%s" value="0" type="radio" %s> Off</label></p>', 
+				'<label for="%s_off"><input class="" name="%s[%s]" id="%s" value="0" type="radio" %s> Off</label></p>',
 				
 				esc_attr( $attrs['dom_id'] ),
-				esc_attr( $attrs['name'] ), 
+				esc_attr( $attrs['name'] ),
 				esc_attr( $k ),
 				esc_attr( $attrs['dom_id'] ),
 				$off_checked
@@ -2413,7 +2413,7 @@ class owa_wp_settings_field_booleanarray extends owa_wp_settings_field {
 		foreach ( $defaults as $dvalue ) {
 			
 			$checked = '';
-			$check = in_array( trim($dvalue), $values, true ); 
+			$check = in_array( trim($dvalue), $values, true );
 				
 			if ( $check ) {
 				
@@ -2425,8 +2425,8 @@ class owa_wp_settings_field_booleanarray extends owa_wp_settings_field {
 			$dvalue_label = apply_filters( $this->get('id').'_field_value_label', $dvalue );
 			
 			echo sprintf(
-				'<p><input name="%s[]" id="%s" value="%s" type="checkbox" %s> %s</p>', 
-				esc_attr( $attrs['name'] ), 
+				'<p><input name="%s[]" id="%s" value="%s" type="checkbox" %s> %s</p>',
+				esc_attr( $attrs['name'] ),
 				esc_attr( $attrs['dom_id'] ),
 				esc_attr( $dvalue ),
 				$checked,
@@ -2457,8 +2457,8 @@ class owa_wp_settings_field_integer extends owa_wp_settings_field_text {
 			
 		} else {
 		
-			$this->addError( 
-				$this->get('dom_id'), 
+			$this->addError(
+				$this->get('dom_id'),
 				sprintf(
 					'%s %s %s %s %s.',
 					$this->get('label_for'),
@@ -2512,10 +2512,10 @@ class owa_wp_settings_field_select extends owa_wp_settings_field {
 		}
 		
 		echo sprintf(
-			'<select id="%s" name="%s">%s</select>', 
+			'<select id="%s" name="%s">%s</select>',
 			
 			esc_attr( $attrs['dom_id'] ),
-			esc_attr( $attrs['name'] ), 
+			esc_attr( $attrs['name'] ),
 			$opts
 		);
 		
@@ -2568,18 +2568,18 @@ class owa_wp_settings_field_boolean extends owa_wp_settings_field {
 		}
 		
 		echo sprintf(
-			'<label for="%s_on"><input class="" name="%s" id="%s_on" value="1" type="radio" %s> On</label>&nbsp; &nbsp; ', 
+			'<label for="%s_on"><input class="" name="%s" id="%s_on" value="1" type="radio" %s> On</label>&nbsp; &nbsp; ',
 			
 			esc_attr( $attrs['dom_id'] ),
-			esc_attr( $attrs['name'] ), 
+			esc_attr( $attrs['name'] ),
 			esc_attr( $attrs['dom_id'] ),
 			$on_checked
 		);
 		
 		echo sprintf(
-			'<label for="%s_off"><input class="" name="%s" id="%s" value="0" type="radio" %s> Off</label>', 
+			'<label for="%s_off"><input class="" name="%s" id="%s" value="0" type="radio" %s> Off</label>',
 			esc_attr( $attrs['dom_id'] ),
-			esc_attr( $attrs['name'] ), 
+			esc_attr( $attrs['name'] ),
 			esc_attr( $attrs['dom_id'] ),
 			$off_checked
 		);
@@ -2618,7 +2618,7 @@ class owa_wp_settings_section {
 	//
 	 // Renders the html of the section header
 	 //
-	 // Callback function for 
+	 // Callback function for
 	 //
 	 // wordpress passes a single array here that contains ID, etc..
 	 //

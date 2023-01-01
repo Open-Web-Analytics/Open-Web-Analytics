@@ -31,7 +31,7 @@ require_once(OWA_BASE_CLASS_DIR.'error.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 class owa_caller extends owa_base {
@@ -97,15 +97,15 @@ class owa_caller extends owa_base {
         if ( $this->c->isConfigFilePresent() && ! owa_coreAPI::getSetting('base', 'useStaticConfigOnly') && ! defined( 'OWA_INSTALLING' ) )  {
             
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
-        }   
+        }
         
         // set timezone once config is loaded from DB.
-        $this->c->setTimezone(); 
+        $this->c->setTimezone();
 
         /* APPLY CALLER CONFIGURATION OVERRIDES */
         
         // overrides all default and user config values except defined in the config file
-        // must come after user overides are applied 
+        // must come after user overides are applied
         // This will apply configuration overirdes that are specified by the calling application.
         // This is usually used by plugins to setup integration specific configuration values.
 	    $this->overloadConfig( $config );	
@@ -119,7 +119,7 @@ class owa_caller extends owa_base {
         /* LOAD SERVICE LAYER */
         $this->service = owa_coreAPI::serviceSingleton();
         // initialize framework
-        $this->service->initializeFramework();    
+        $this->service->initializeFramework();
         // notify handlers of 'init' action
         $dispatch = owa_coreAPI::getEventDispatch();
         $dispatch->notify($dispatch->makeEvent('init'));
@@ -132,7 +132,7 @@ class owa_caller extends owa_base {
         }
         
         // re-fetch the array now that overrides have been applied.
-        // needed for backwards compatability 
+        // needed for backwards compatability
         $this->config = $this->c->fetch('base');
         
         /* SETUP REQUEST Params */
@@ -158,7 +158,7 @@ class owa_caller extends owa_base {
      * Option keys include: 'do_not_log_pageview', 'do_not_log_clicks', 'do_not_log_domstream'
      *
      * @param     $echo        bool     if true the function will echo. if false the tracker is returned asa string.
-     * @param    $options    array    an key value pair option array 
+     * @param    $options    array    an key value pair option array
      * @return     $tag         string    the tracker javascript.
      */
     function placeHelperPageTags($echo = true, $options = array()) {

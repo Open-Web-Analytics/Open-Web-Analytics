@@ -383,7 +383,7 @@
             $id = $config->get('id');
 
             if (!empty($id)) {
-                // if it does just update                
+                // if it does just update
                 $status = $config->update();
 
             // else create the object
@@ -394,7 +394,7 @@
             }
             
         } else {
-            // update the config 
+            // update the config
             $config->set('settings', serialize($this->db_settings));
             $config->set('id', $this->get('base', 'configuration_id'));
             $status = $config->update();

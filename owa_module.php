@@ -650,7 +650,7 @@ abstract class owa_module {
 		$ret = owa_coreAPI::persistSetting( $this->name, 'is_active', true );
         owa_coreAPI::notice("Module $this->name activated");
         
-        return $ret;    
+        return $ret;
     }
 
     /**
@@ -984,10 +984,10 @@ abstract class owa_module {
      * Registers a Component Implementation
      *
      * Allows a module to register a specific implementation of a module component. This method stores
-     * the mapping of where an implementation of a specific type and key is located withing the module. 
-     * This is used to store maps for things like controllers, event queues, etc. 
+     * the mapping of where an implementation of a specific type and key is located withing the module.
+     * This is used to store maps for things like controllers, event queues, etc.
      *
-     * Implemntations can be overridden by other modules if they share the same key so consider using 
+     * Implemntations can be overridden by other modules if they share the same key so consider using
      * modules namespacing for the key (i.e. module_name.key) to avoid conflicts.
      *
      * @param    $type	string	the type/category of implementation		actions|event_queues

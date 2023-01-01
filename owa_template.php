@@ -184,7 +184,7 @@ class owa_template extends Template {
      */
     function truncate ($str, $length=10, $trailing='...')  {
 
-      return owa_lib::truncate ($str, $length, $trailing); 
+      return owa_lib::truncate ($str, $length, $trailing);
     }
 
     function get_month_label($month) {
@@ -454,7 +454,7 @@ class owa_template extends Template {
 	    
 	    if (array_key_exists($key, $params)) {
 		    
-		   return $params[ $key ];		    
+		   return $params[ $key ];		
 	    }
 
     }

@@ -27,7 +27,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.0
  */
 
@@ -39,7 +39,7 @@ class owa_reportEcommerceController extends owa_reportController {
      * @param array $params
      * @return
      */
-    function __construct($params) {        
+    function __construct($params) {
         return parent::__construct($params);
         $this->setRequiredCapability('view_reports_ecommerce');
     }
@@ -50,7 +50,7 @@ class owa_reportEcommerceController extends owa_reportController {
         $this->setTitle('Ecommerce');
         $this->set('metrics', 'visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction');
         $this->set('sort', 'actions');
-        $this->set('resultsPerPage', 30);        
+        $this->set('resultsPerPage', 30);
         $this->set('trendChartMetric', 'transactions');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.transactions.formatted_value *> transactions completed.');
     }
@@ -64,7 +64,7 @@ class owa_reportEcommerceController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.3.0
  */
 

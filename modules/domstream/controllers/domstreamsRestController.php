@@ -49,7 +49,7 @@ class owa_domstreamsRestController extends owa_adminController {
       
         $rsm->db->selectColumn('document_id');
        
-        $rsm->db->groupby('domstream_guid');        
+        $rsm->db->groupby('domstream_guid');
         
         // get domstreams for a particular document/page
         if ($this->get('pageUrl')) {
@@ -74,7 +74,7 @@ class owa_domstreamsRestController extends owa_adminController {
         );
         
 		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 50;    
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 50;
         $rsm->setLimit( $resultsPerPage );
 		
 		// set pagination

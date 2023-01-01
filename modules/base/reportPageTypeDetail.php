@@ -26,7 +26,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.3.0
  */
 
@@ -43,7 +43,7 @@ class owa_reportPageTypeDetailController extends owa_reportController {
         $this->set('sort', 'pageViews-');
         $this->set('trendChartMetric', 'pageViews');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.pageViews.formatted_value *> page views for this page type.');
-        $this->set('gridTitle', 'Top Page Types');        
+        $this->set('gridTitle', 'Top Page Types');
     }
 }
 

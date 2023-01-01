@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -241,7 +241,7 @@ class owa_serviceUser extends owa_base {
 	        
 		    if ( ! $this->user->get( 'id' ) ) {
 	             throw new Exception('no user object loaded!');
-	        }    
+	        }
 	        
         }
         

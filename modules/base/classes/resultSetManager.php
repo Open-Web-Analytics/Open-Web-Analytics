@@ -1458,7 +1458,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         } else {
 	        
 	        return 0;
-        } 
+        }
     }
 
    	/**
@@ -1587,7 +1587,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		}
         
 		// add any errors that should be returned in the result set
-        $this->resultSet->errors = $this->errors;  
+        $this->resultSet->errors = $this->errors;
         
         if ( ! empty( $this->limit ) ) {
 	        

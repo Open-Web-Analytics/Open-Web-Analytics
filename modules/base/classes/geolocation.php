@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.3.0
  */
 
@@ -50,7 +50,7 @@ class owa_geolocation {
         
         if (empty($this->properties) || $refresh === true) {
             
-            $geo = array('ip_address'     => $ip_address, 
+            $geo = array('ip_address'     => $ip_address,
                          'city'         =>  '',
                          'country'         =>  '',
                          'state'        =>  '',
@@ -85,7 +85,7 @@ class owa_geolocation {
     function setProperty($name, $value) {
         
         $this->properties[$name] = $value;
-    }    
+    }
     
     function getCity() {
         

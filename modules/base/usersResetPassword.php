@@ -28,7 +28,7 @@ require_once(OWA_BASE_DIR.'/owa_auth.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -58,7 +58,7 @@ class owa_usersResetPasswordController extends owa_controller {
             
         } else {
         
-            $this->e->debug( "could not update password in db." );    
+            $this->e->debug( "could not update password in db." );
         }
     }
     
@@ -72,7 +72,7 @@ class owa_usersResetPasswordController extends owa_controller {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -83,8 +83,8 @@ class owa_usersResetPasswordView extends owa_mailView {
         $this->t->set_template('wrapper_email.tpl');
         $this->body->set_template('users_reset_password_email.tpl');
         $this->body->set('key', $this->get('key'));
-        $this->setMailSubject('Your New OWA Password');    
-        $this->addMailToAddress($this->get('email_address'));     
+        $this->setMailSubject('Your New OWA Password');
+        $this->addMailToAddress($this->get('email_address'));
     }
 }
 

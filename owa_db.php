@@ -199,7 +199,7 @@ class owa_db extends owa_base {
     function _timerStart() {
 
       $mtime = microtime();
-      //$mtime = explode(' ', $mtime); 
+      //$mtime = explode(' ', $mtime);
       //$this->_start_time = $mtime[1].substr(round($mtime[0], 4), 1);
     $this->_start_time = microtime();
     return;

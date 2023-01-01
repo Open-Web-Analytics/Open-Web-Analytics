@@ -864,7 +864,7 @@ class owa_coreAPI {
             $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
         }
 		
-		return owa_coreAPI::runController( $controller );        
+		return owa_coreAPI::runController( $controller );
     }
     
     public static function runController( $controller ) {
@@ -922,7 +922,7 @@ class owa_coreAPI {
             $cu_user_id = $cu->getUserData('user_id');
 
             if( ! empty( $cu_user_id ) ) {
-				owa_coreAPI::debug("Not logging named user.");            
+				owa_coreAPI::debug("Not logging named user.");
                 return false;
             }
         }
@@ -1201,7 +1201,7 @@ class owa_coreAPI {
         // @todo refactor usage to clean up once php 7.3 is min requirment.
         if (PHP_VERSION_ID < 70300) {
 	        
-	        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);   
+	        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
 	        
 	    } else {
 		    	
@@ -1214,7 +1214,7 @@ class owa_coreAPI {
                 'secure' 	=> $secure
 	        ];
 	        
-	        setcookie($cookie_name, $cookie_value, $options); 
+	        setcookie($cookie_name, $cookie_value, $options);
 	    }
     }
 
@@ -1351,7 +1351,7 @@ class owa_coreAPI {
 			
 			if ( $rest_params ) {
 			
-				$rest_params = explode('/', $rest_params); 
+				$rest_params = explode('/', $rest_params);
 				self::debug( 'exploding raw REST params:');
 				self::debug( $rest_params );
 			
@@ -1378,7 +1378,7 @@ class owa_coreAPI {
 					if ( $rest_params ) {
 						
 						// slice off the first three params which have already been set
-						$rest_params = array_slice($rest_params, 3); 
+						$rest_params = array_slice($rest_params, 3);
 						
 						foreach ( $rest_params as $k => $v) {
 							
@@ -1402,7 +1402,7 @@ class owa_coreAPI {
 				return;
 			}
 			
-		} 
+		}
 		
 		
 		
@@ -1414,10 +1414,10 @@ class owa_coreAPI {
     
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
 	    
-	    if ( ! empty( $request_method ) 
+	    if ( ! empty( $request_method )
 	    	&& ! empty( $version )
 	    	&& ! empty( $do )
-	    	&& ! empty( $module ) 
+	    	&& ! empty( $module )
 	    ){
 		    
 		    $service = owa_coreAPI::serviceSingleton();
@@ -1451,7 +1451,7 @@ class owa_coreAPI {
 	
     public static function profile($that = '', $function = '', $line = '', $msg = '') {
 
-        return;    
+        return;
     }
 
     public static function profileDisplay() {
