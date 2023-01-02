@@ -45,7 +45,11 @@ return [
     ['domain' => 'ekolay', 'query_param' => 'q'],
     ['domain' => 'rambler', 'query_param' => 'query'],
     ['domain' => 'rambler', 'query_param' => 'words'],
-    ['domain' => 'duckduckgo', 'query_param' => 'q']
+    ['domain' => 'duckduckgo', 'query_param' => 'q'],
+    ['domain' => 'search.brave.com', 'query_param' => 'q'],
+    ['domain' => 'com.google.android.googlequicksearchbox', 'query_param' => 'q']
+    
+    
 ];
 
 
