@@ -448,8 +448,15 @@
             $values = $this->default_config; 
         }
          $values[$module][$key] = $value;
-
-         $this->config->set('settings', $values);
+        
+        if ( $this->config ) {
+            
+            $this->config->set('settings', $values);
+        
+        } else {
+        
+            $this->default_config = $values;
+        }
      }
 
 
