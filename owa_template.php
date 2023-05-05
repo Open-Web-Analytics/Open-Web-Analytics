@@ -272,6 +272,37 @@ class owa_template extends Template {
         return $get;
 
     }
+    
+    function displayNavigationMenu( $menu_name, $addState = true, $options = [] ) {
+        
+        if ( $menu_name ) {
+            
+            $defaults = [
+                
+                'class'                 => 'navigation',
+                'container_element'     => 'nav'
+            ];
+            
+            $options = owa_lib::setDefaultParams( $defaults, $options );
+            
+            $nav = owa_coreAPI::getGroupNavigation( $menu_name );
+            
+            if ( $nav ) {
+                
+                $items = $this->makeNavigation( $nav, $menu_name . '_menu', $class );
+                
+                $menu = sprintf( '<%s class="%s">%s</%s>', $options['container_element'], $options['class'], $items, $options['container_element'] );
+                
+                $this->out( $menu, false );
+                
+            } else {
+                
+                $this->out('There is no menu by that name.');
+            }
+            
+            $this->out( $menu );
+        }
+    }
 
     /**
      * Makes navigation links by checking whether or not the view
@@ -283,27 +314,23 @@ class owa_template extends Template {
 
         $ul = sprintf('<UL id="%s" class="%s">', $id, $class);
 
-        if (!empty($nav)):
+        if ( ! empty( $nav ) ) {
 
             $navigation = $ul;
 
             foreach($nav as $k => $v) {
 
-                $navigation .= sprintf($li_template, $li_class,    $this->makeLink(array('do' => $v['ref']), true), $v['anchortext']);
-
+                $navigation .= sprintf($li_template, $li_class, $this->makeLink(array('do' => $v['ref']), true), $v['anchortext']);
             }
 
             $navigation .= '</UL>';
 
             return $navigation;
-        else:
-            return false;
-        endif;
-
+        }
     }
 
     function makeTwoLevelNav($links) {
-        print_r($links);
+        
         $navigation = '<UL id="report_top_level_nav_ul">';
 
         foreach($links as $k => $v) {
@@ -669,8 +696,8 @@ class owa_template extends Template {
             if (in_array($k, array_keys($reserved_words))) {
                 $k = $reserved_words[$k];
             }
-
-            $json .= sprintf('%s: "%s", ', $k, $v);
+            
+            $json .= sprintf('%s: "%s", ', $k, owa_sanitize::escapeForDisplay( $v ) ) ;
 
         }
 
