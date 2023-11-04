@@ -689,6 +689,9 @@ class owa_trackingEventHelpers {
      * @return string
      */
     static function makeUrlCanonical( $url, $event ) {
+	if(is_null($url)){
+	    return $url;
+	}
 
         $site_id = $event->getSiteId();
 
