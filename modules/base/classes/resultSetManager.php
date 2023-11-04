@@ -955,7 +955,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     function numberFormatter($value) {
-
+	if(is_null($value)){
+            return $value;
+        }
         return number_format($value);
     }
 
