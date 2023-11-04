@@ -689,6 +689,9 @@ class owa_trackingEventHelpers {
      * @return string
      */
     static function makeUrlCanonical( $url, $event ) {
+	if(is_null($url)){
+	    return $url;
+	}
 
         $site_id = $event->getSiteId();
 
@@ -811,6 +814,9 @@ class owa_trackingEventHelpers {
     }
 
     static function utfEncodeProperty( $string, $event ) {
+	if(is_null($string)){
+            return $string;
+        }
 
         return owa_lib::utf8Encode( trim( $string ) );
     }
@@ -1007,6 +1013,9 @@ class owa_trackingEventHelpers {
     }
 
     static function lowercaseString ( $string, $event ) {
+	if(is_null($string)){
+            return($string);
+        }
 
         return strtolower( trim( $string ) );
     }
