@@ -1007,6 +1007,9 @@ class owa_trackingEventHelpers {
     }
 
     static function lowercaseString ( $string, $event ) {
+	if(is_null($string)){
+            return($string);
+        }
 
         return strtolower( trim( $string ) );
     }
