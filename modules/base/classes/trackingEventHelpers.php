@@ -811,6 +811,9 @@ class owa_trackingEventHelpers {
     }
 
     static function utfEncodeProperty( $string, $event ) {
+	if(is_null($string)){
+            return $string;
+        }
 
         return owa_lib::utf8Encode( trim( $string ) );
     }
