@@ -32,6 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  */
 
 class owa_reportView extends owa_view {
+    var $report_params;
 
     function render($data) {
 
