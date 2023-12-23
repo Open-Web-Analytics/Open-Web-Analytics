@@ -59,6 +59,8 @@ class owa_template extends Template {
 
     var $period;
 
+    var $time_now;
+
     /**
      * Params passed by calling caller
      *
