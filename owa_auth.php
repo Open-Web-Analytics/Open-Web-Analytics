@@ -73,6 +73,8 @@ class owa_auth extends owa_base {
     
     var $auth_method;
 
+    var $eq;
+
     /**
      * Auth class Singleton
      *
