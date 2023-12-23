@@ -1230,7 +1230,7 @@ class owa_coreAPI {
         return $service->request->state->registerStore( $name, $expiration, $length, $format, $type, $cdh_required );
     }
 
-    public static function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
+    public static function setState($store, $name, $value, $store_type = '', $is_perminent = '') {
 
         $service = owa_coreAPI::serviceSingleton();
         return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
