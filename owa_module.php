@@ -215,7 +215,8 @@ abstract class owa_module {
 	 * Filesystem path of the module's directory
 	 */
     var $path;
-    
+
+	var $config_required;
 
     /**
      * Constructor
