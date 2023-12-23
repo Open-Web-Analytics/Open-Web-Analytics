@@ -201,6 +201,9 @@ class owa_template extends Template {
      * @return unknown
      */
     function choose_browser_icon($browser_type) {
+	    if(is_null($browser_type)){
+		    $browser_type = 'null';
+	    }
 		
 		$bicons = [
 			
