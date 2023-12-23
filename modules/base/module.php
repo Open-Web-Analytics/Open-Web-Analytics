@@ -31,7 +31,6 @@ require_once(OWA_BASE_DIR.'/owa_module.php');
  */
 
 class owa_baseModule extends owa_module {
-	var $config_required;
 
     /**
      * Constructor
