@@ -196,25 +196,28 @@ class owa_db_mysql extends owa_db {
 
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
-        $result = mysqli_query( $this->connection, $sql );
-
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-        // Log Errors
-
-        if ( mysqli_errno( $this->connection ) ) {
-
-            $this->e->debug(
-                sprintf(
-                    'A MySQL error ocured. Error: (%s) %s. Query: %s',
-                    mysqli_errno( $this->connection ),
-                    htmlspecialchars( mysqli_error( $this->connection ) ),
-                    $sql
-                )
-            );
+       try {
+        $result = @mysqli_query( $this->connection, $sql );
+    
+            owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+            // Log Errors
+    
+            if ( mysqli_errno( $this->connection ) ) {
+    
+                $this->e->debug(
+                    sprintf(
+                        'A MySQL error ocured. Error: (%s) %s. Query: %s',
+                        mysqli_errno( $this->connection ),
+                        htmlspecialchars( mysqli_error( $this->connection ) ),
+                        $sql
+                    )
+                );
+            }
+    
+            owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        } catch(\Exception $e) {
+            $result = false;
         }
-
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-
         $this->new_result = $result;
 
         return $this->new_result;
