@@ -917,7 +917,7 @@ class owa_jsonResultsView extends owa_view {
 
 class owa_adminPageView extends owa_view {
 
-    function render() {
+    function render($data) {
 
         // Set Page title
         $this->t->set('page_title', $this->get('title'));
