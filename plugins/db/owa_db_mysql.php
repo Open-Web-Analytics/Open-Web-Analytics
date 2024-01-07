@@ -217,6 +217,13 @@ class owa_db_mysql extends owa_db {
             owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         } catch(\Exception $e) {
             $result = false;
+           $this->e->debug(
++                    sprintf(
++                        'An exception occurred while running the database query. Exception: %s. Query: %s',
+                         htmlspecialchars($e->getMessage()),
++                        $sql
++                    )
++                );
         }
         $this->new_result = $result;
 
