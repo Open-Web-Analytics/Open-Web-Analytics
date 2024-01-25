@@ -272,11 +272,11 @@ class owa_timePeriod {
                 break;
             
             case "same_week_last_year":
-				$end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']-1) + 
-				((6 - $nowDate->get('day_of_week'))  3600  24);
-				$start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']-1) - 
-				($nowDate->get('day_of_week')  3600  24);
-				break;
+		$end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']-1) +
+                ((6 - $nowDate->get('day_of_week')) * 3600 * 24);
+                $start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']-1) -
+                ($nowDate->get('day_of_week') * 3600 * 24);
+                break;
 
             case "all_time":
                 $end = time();
