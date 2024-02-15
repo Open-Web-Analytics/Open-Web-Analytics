@@ -278,7 +278,7 @@ class owa_requestContainer {
                 array_walk_recursive($v, array($this, 'arrayUrlDecode'));
                 $params[$k] = $v;
             } else {
-                $params[$k] = rawurldecode($v);
+                $params[$k] = is_null($v)?$v:rawurldecode($v);
             }
         }
 

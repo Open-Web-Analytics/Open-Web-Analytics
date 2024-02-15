@@ -284,6 +284,9 @@ class owa_db_mysql extends owa_db {
      * @return string
      */
     function prepare( $string ) {
+        if(is_null($string)){
+            return $string;
+        }
 
         if ($this->connection_status == false) {
               $this->connect();
