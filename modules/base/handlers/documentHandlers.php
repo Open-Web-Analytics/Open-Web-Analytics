@@ -45,6 +45,7 @@ class owa_documentHandlers extends owa_observer {
         if ( $event->get( 'document_id' ) || $event->get( 'page_url' ) ) {
 
             // create entity
+            /* @var owa_document $d */
             $d = owa_coreAPI::entityFactory( 'base.document' );
 
             // get document id from event
@@ -90,6 +91,23 @@ class owa_documentHandlers extends owa_observer {
                 }
 
             } else {
+                $updated = false;
+
+                $pageTitle = $event->get('page_title');
+                if ($d->get('page_title') !== $pageTitle) {
+                    $d->set('page_title', $pageTitle);
+                    $updated = true;
+                }
+
+                $pageType = $event->get('page_type');
+                if ($d->get('page_type') !== $pageType) {
+                    $d->set('page_type', $pageType);
+                    $updated = true;
+                }
+
+                if ($updated) {
+                    $d->save();
+                }
 
                 owa_coreAPI::debug('Not logging Document, already exists');
                 return OWA_EHS_EVENT_HANDLED;
@@ -102,6 +120,5 @@ class owa_documentHandlers extends owa_observer {
             return OWA_EHS_EVENT_HANDLED;
         }
     }
-}
 
-?>
+}
