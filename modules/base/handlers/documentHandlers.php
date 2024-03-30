@@ -91,7 +91,7 @@ class owa_documentHandlers extends owa_observer {
                 }
 
             } else {
-                if (defined('ALLOW_DOCUMENT_UPDATING') && ALLOW_DOCUMENT_UPDATING === true) {
+                if (owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions')) {
                     $updated = false;
 
                     $pageTitle = $event->get('page_title');

@@ -99,12 +99,4 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  
 //define('OWA_CONFIGURATION_ID', '1');
 
-/**
- * DOCUMENT UPDATING
- *
- * Allow the page titles and types of the tracked sites to be updated
- */
-//define('ALLOW_DOCUMENT_UPDATING', true);
-
-
 ?>
