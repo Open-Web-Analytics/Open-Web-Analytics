@@ -91,7 +91,9 @@ class owa_documentHandlers extends owa_observer {
                 }
 
             } else {
-                if (owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions')) {
+                if (owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions') &&
+                    in_array(get_class($d), owa_coreAPI::getSetting('base', 'slowly_changing_dimension_entities'))
+                ) {
                     $updated = false;
 
                     $pageTitle = $event->get('page_title');
