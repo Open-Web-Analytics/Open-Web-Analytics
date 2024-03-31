@@ -99,5 +99,4 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  
 //define('OWA_CONFIGURATION_ID', '1');
 
-
 ?>

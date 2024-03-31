@@ -406,9 +406,9 @@
       *
       * @param string $module the name of the module
       * @param string $key the configuration key
-      * @return unknown
+      * @return mixed
       */
-     function get($module, $key) {
+     function get(string $module, string $key) {
         
         if ( $this->config ) {
             
@@ -726,6 +726,7 @@
                 'request_mode'						=> 'web_app',
                 'useStaticConfigOnly'				=> false,
                 'allow_slowly_changing_dimensions'	=> true,
+                'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
