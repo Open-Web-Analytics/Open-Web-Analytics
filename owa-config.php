@@ -63,7 +63,13 @@ define('OWA_AUTH_SALT', 'RtVJ4FDL0S9tl3FemKMjzRMeMTTh5ly5');
  */
  
 // define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
-define('OWA_PUBLIC_URL', 'https://tl-analytics-pr-3.herokuapp.com/') 
+
+if(getenv("environment") == "review") {
+ $stage_url = getenv("HEROKU_APP_DEFAULT_DOMAIN_NAME") . '/'
+ define('OWA_PUBLIC_URL', $stage_url) 
+} else {
+ define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
+}
 
 /** 
  * OWA ERROR HANDLER
