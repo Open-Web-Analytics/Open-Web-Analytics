@@ -65,7 +65,7 @@ define('OWA_AUTH_SALT', 'RtVJ4FDL0S9tl3FemKMjzRMeMTTh5ly5');
 // define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
 
 if(getenv("environment") == "review") {
- $stage_url = getenv("HEROKU_APP_DEFAULT_DOMAIN_NAME") . '/'
+ $stage_url = getenv("HEROKU_APP_DEFAULT_DOMAIN_NAME") . '/';
  define('OWA_PUBLIC_URL', $stage_url) 
 } else {
  define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
