@@ -43,6 +43,7 @@ define('OWA_DB_HOST', $url["host"]); // host name of the server housing the data
 define('OWA_DB_USER', $url["user"]); // database user
 define('OWA_DB_PORT', '3306'); // port of database
 define('OWA_DB_PASSWORD', $url["pass"]); // database user's password
+define('OWA_DEBUG',true);
 
 /**
  * AUTHENTICATION KEYS AND SALTS
