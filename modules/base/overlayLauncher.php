@@ -26,7 +26,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -57,7 +57,7 @@ class owa_overlayLauncherController extends owa_controller {
 	
 	        $url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
 			
-			$this->redirectBrowserToUrl($url); 
+			$this->redirectBrowserToUrl($url);
 			$this->set('url', $url);
 		}
     }

@@ -35,6 +35,7 @@ class owa_moduleDeactivateController extends owa_adminController {
     function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');
+        $this->setNonceRequired();
 
         return parent::__construct($params);
 

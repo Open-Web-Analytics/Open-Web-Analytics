@@ -31,10 +31,21 @@
             <TD class="data_cell">
                 <a class="play" data-overlay="<?php echo trim( base64_encode(
                                 $this->makeParamString(
-                                    array(
+                                    [
                                         'action' => 'loadPlayer',
-                                        'domstream_guid' => $ds['domstream_guid']
-                                        ),
+                                        'domstream_guid' => $ds['domstream_guid'],
+	                                    'api_url' 		=> $this->makeApiLink(
+									                	
+										                [
+										                	'domstream_guid' => $ds['domstream_guid'],
+														    'module' 		=> 'domstream',
+														    'version'		=> 'v1',
+														    'do'			=> 'domstreams'	
+									                	], 
+										                true, 
+											            true
+									                ), 
+                                    ],
                                     true,
                                     'json')), '\u0000' );?>" 
                                     

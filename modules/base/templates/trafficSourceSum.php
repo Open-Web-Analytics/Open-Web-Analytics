@@ -7,13 +7,13 @@
         <?php if ( isset( $row['source'] ) && $row['source'] != '(none)' ): ?>
         <dt>Source:</dt>
         <dd>
-            <a href="<?php $this->out( $this->makeLink( 
+            <a href="<?php $this->out( $this->makeLink(
             array(
-                'do' => 'base.reportSourceDetail', 
-                'source' => urlencode($row['source']), 
+                'do' => 'base.reportSourceDetail',
+                'source' => urlencode($row['source']),
                 'site_id' => $this->get('site_id')
                 ),
-            true 
+            true
         ) );?>">
         <?php $this->out( $row['source']);?>
             </a>
@@ -25,13 +25,13 @@
         
         <dt>Search Term:</dt>
         <dd>
-            <a href="<?php $this->out( $this->makeLink( 
+            <a href="<?php $this->out( $this->makeLink(
             array(
-                'do' => 'base.reportKeywordDetail', 
-                'referralSearchTerms' => urlencode($row['search_term']), 
+                'do' => 'base.reportKeywordDetail',
+                'referralSearchTerms' => urlencode($row['search_term']),
                 'site_id' => $this->get('site_id')
                 ),
-            true 
+            true
         ) );?>">
                 <?php $this->out( $row['search_term'] );?>
             </a>
@@ -48,9 +48,9 @@
             </a>
         </span>
         
-        <?php if ( ! empty( $row['referer_snippet'] ) ):?>            
+        <?php if ( ! empty( $row['referer_snippet'] ) ):?>
         <br><span class="snippet_text"><?php echo $row['referer_snippet'];?></span>
         <?php endif;?>
-    </div>                    
+    </div>
     <?php endif;?>
 </div>

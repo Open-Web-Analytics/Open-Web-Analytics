@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -49,7 +49,7 @@ class owa_clickBrowserTypes extends owa_metric {
                                     ua.id,
                                     ua.ua as ua,
                                     ua.browser_type");
-        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER,'owa_ua', 'ua', 'ua_id', 'ua.id');    
+        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER,'owa_ua', 'ua', 'ua_id', 'ua.id');
         $this->db->groupBy('ua.browser_type');
         $this->db->orderBy('count');
         

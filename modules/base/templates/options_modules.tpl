@@ -27,9 +27,9 @@
         <TD class="">
         <?php if ($v['name'] != 'base'): ?>
         <?php if (isset($v['status']) && $v['status'] == 'active'): ?>
-            <a href="<?php echo $this->makeLink(array('do' => 'base.moduleDeactivate', 'module' => $v['name']));?>">Deactivate</a>
+            <a href="<?php echo $this->makeLink( array('do' => 'base.moduleDeactivate', 'module' => $v['name']), false, false, false, true );?>">Deactivate</a>
         <?php else: ?>
-            <a href="<?php echo $this->makeLink(array('do' => 'base.moduleActivate', 'module' => $v['name']));?>">Activate</a>
+            <a href="<?php echo $this->makeLink( array('do' => 'base.moduleActivate', 'module' => $v['name']), false, false, false, true );?>">Activate</a>
         <?php endif; ?>
         <?php endif;?>
 

@@ -8,7 +8,7 @@
                 <select name="<?php echo $this->getNs();?>protocol">
                     <option value="http://">http://</option>
                     <option value="https://">https://</option>
-                </select> 
+                </select>
                 <input type="text"size="30" name="<?php echo $this->getNs();?>domain" value="<?php $this->out( $defaults['domain'] );?>">
             </span>
             <span class="form-instructions">This is the domain of the site to track.</span>

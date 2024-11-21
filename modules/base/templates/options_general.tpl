@@ -5,7 +5,7 @@
 <form method="post" name="owa_options">
 
     <fieldset name="owa-options" class="options">
-    <legend>Request Processing Options</legend>
+    <legend>Tracking Request Processing</legend>
 
     <div class="setting" id="resolve_hosts">
         <div class="title">Resolve Host Names</div>
@@ -14,17 +14,6 @@
             <select name="<?php echo $this->getNs();?>config[base.resolve_hosts]">
                 <option value="0" <?php if ($config['resolve_hosts'] == false):?>SELECTED<?php endif;?>>Off</option>
                 <option value="1" <?php if ($config['resolve_hosts'] == true):?>SELECTED<?php endif;?>>On</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="setting" id="log_feedreaders">
-        <div class="title">Log Requests From Feed Readers</div>
-        <div class="description">Controls the logging of page requests made by Feed Readers. This setting must be enabled in order to compile statistics about your site's feeds.</div>
-        <div class="field">
-            <select name="<?php echo $this->getNs();?>config[base.log_feedreaders]">
-                <option value="0" <?php if ($config['log_feedreaders'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
-                <option value="1" <?php if ($config['log_feedreaders'] == true):?>SELECTED<?php endif;?>>On</OPTION>
             </select>
         </div>
     </div>
@@ -83,12 +72,6 @@
         </div>
     </div>
 
-    <div class="setting" id="p3p_policy">
-        <div class="title">P3P Compact Privacy Policy</div>
-        <div class="description">This setting controls the P3P compact privacy policy that is returned to the browser when OWA sets cookies. Click <a href="https://www.w3.org/P3P/">here</a> for more information on compact privacy policies and choosing the right one for your web site.</div>
-        <div class="field"><input type="text" size="50" name="<?php echo $this->getNs();?>config[base.p3p_policy]" value="<?php $this->out( $config['p3p_policy'] );?>"></div>
-    </div>
-
     <div class="setting" id="url_params">
         <div class="title">URL Parameters</div>
         <div class="description">This setting controls the URL parameters that OWA should ignore when processing requests. This is useful for avoiding duplicate URLs due to the use of tracking or others state parameters in your URLs. Parameter names should be separated by comma.</div>
@@ -124,84 +107,7 @@
     
     
     <BR>
-    
-    <fieldset name="owa-geolocation-options" class="options">
-
-        <legend>Geo-location</legend>
-
-        <div class="setting" id="geolocation_lookup">
-            <div class="title">Perform Geo-location Lookup</div>
-            <div class="description">Lookup the geographic location of visitors.</div>
-            <div class="field">
-                <select name="<?php echo $this->getNs();?>config[base.geolocation_lookup]">
-                    <option value="0" <?php if ($config['geolocation_lookup'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
-                    <option value="1" <?php if ($config['geolocation_lookup'] == true):?>SELECTED<?php endif;?>>On</OPTION>
-                </select>
-            </div>
-        </div>
-
-    </fieldset>
-
-    <BR>
-
-    <fieldset name="owa-feed-options" class="options">
-        <legend>Feed Tracking</legend>
-
-        <div class="setting" id="feeds">
-            <div class="title">Feed Link Tracking</div>
-            <div class="description">Adds tracking parameters to RSS or Atom feeds links. This provides a way to track how many visitors come from your feeds.</div>
-            <div class="field">
-                <select name="<?php echo $this->getNs();?>config[base.track_feed_links]">
-
-                    <option value="0" <?php if ($config['track_feed_links'] == false):?>SELECTED<?php endif;?>>Off</OPTION>
-                    <option value="1" <?php if ($config['track_feed_links'] == true):?>SELECTED<?php endif;?>>On</OPTION>
-                </select>
-            </div>
-        </div>
-
-    </fieldset>
-
-    <BR>
-
-    <fieldset name="owa-event-options" class="options">
-        <legend>Event Queueing</legend>
-
-        <div class="setting" id="async_log_dir">
-            <div class="title">Event Log File Directory</div>
-            <div class="description">This is the file system path of the file that OWA will write queued events to when Event Queuing mode is turned on. (e.g. /path/to/owa/log/file.txt)</div>
-            <div class="field"><input type="text" size="80" name="<?php echo $this->getNs();?>config[base.async_log_dir]" value="<?php $this->out( $config['async_log_dir'] );?>"></div>
-        </div>
-
-    </fieldset>
-
-    <BR>
-    
-
-    <fieldset name="owa-cache-options" class="options">
-        <legend>Object Cache</legend>
-
-        <div class="setting" id="object_cache">
-            <div class="title">Cache Control</div>
-            <div class="description">Enables and disables object caching. This will improve performance under high load conditions. The object cache can be turned on/off via your config file.
-</div>
-            <div class="field">
-            Status: <?php if ($config['cache_objects'] == true):?><B>ON</B><?php else:?><B>OFF</B><?php endif;?> </div>
-        </div>
-
-        <div class="setting" id="object_cache_flush">
-            <div class="title">Flush Cache</div>
-            <div class="description">Flushes the object cache</div>
-            <div class="field">
-
-                <a href="<?php echo $this->makeLink(array('do' => 'base.optionsFlushCache')); ?>">Flush Cache Now</a>
-            </div>
-        </div>
-
-
-    </fieldset>
-
-    <BR>
-
+        
     <fieldset name="owa-reporting-options" class="options">
 
         <legend>Reporting</legend>
@@ -230,6 +136,8 @@
                 require_once(OWA_DIR.'conf/countryCodes2Names.php');
                 $selected_already = false;
                 $selected = '';
+                ksort($timezones);
+                //print_r($timezones);
                 foreach( $timezones as $country => $zones){
 
                     if (isset($countryCode2Name[$country])) {

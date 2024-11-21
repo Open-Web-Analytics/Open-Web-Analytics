@@ -33,12 +33,11 @@ require_once(OWA_BASE_CLASS_DIR.'installController.php');
 class owa_installConfigController extends owa_installController {
 
     function __construct($params) {
-
+    
         parent::__construct($params);
 
         // require nonce
         $this->setNonceRequired();
-
     }
 
     public function validate()
@@ -121,16 +120,10 @@ class owa_installConfigController extends owa_installController {
             $this->c->createConfigFile($this->params);
             $this->setRedirectAction('base.installDefaultsEntry');
         }
-
-        // Check socket connection
-
-        // Check permissions on log directory
-
-
-        return;
     }
 
     function errorAction() {
+        
         $this->set('config', $this->params);
         $this->setView('base.install');
         $this->setSubview('base.installConfigEntry');

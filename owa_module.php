@@ -28,7 +28,7 @@
  * @since        owa 1.0.0
  */
 
-abstract class owa_module extends owa_base {
+abstract class owa_module {
 
     /**
      * Name of module
@@ -195,13 +195,6 @@ abstract class owa_module extends owa_base {
     var $api_methods = array();
 
     /**
-     * Background Jobs
-     *
-     * @var array
-     */
-    var $background_jobs = array();
-
-    /**
      * Controllers
      *
      * @var array
@@ -223,6 +216,8 @@ abstract class owa_module extends owa_base {
 	 */
     var $path;
 
+	var $config_required;
+
     /**
      * Constructor
      *
@@ -232,7 +227,7 @@ abstract class owa_module extends owa_base {
 		
 		$this->path = OWA_MODULES_DIR . $this->name . '/';
 		
-        parent::__construct();
+        //parent::__construct();
 		
 		/**
 		 * Initial registration calls
@@ -265,11 +260,6 @@ abstract class owa_module extends owa_base {
         $this->registerApiMethods();
 
         /**
-         * Register Background Jobs
-         */
-        $this->registerBackgroundJobs();
-
-        /**
          * Register Build Packages
          */
         $this->registerBuildPackages();
@@ -277,6 +267,7 @@ abstract class owa_module extends owa_base {
         $this->_registerEventHandlers();
         $this->_registerEventProcessors();
         $this->_registerEntities();
+        $this->registerActions();
 
     }
     
@@ -428,21 +419,6 @@ abstract class owa_module extends owa_base {
     }
 
     /**
-     * Registers Group Link with a particular View
-     * @DEPRICATED - use addNavigationSubGroup and addNavigationLinkInSubGroup
-     */
-    function addNavigationLink($group, $subgroup = '', $ref, $anchortext, $order = 0, $priviledge = 'view_reports') {
-
-        if (!empty($subgroup)):
-            $this->addNavigationLinkInSubGroup($subgroup,$ref, $anchortext, $order = 0, $priviledge ,$group);
-        else:
-            $this->addNavigationSubGroup($anchortext,$ref, $anchortext, $order = 0, $priviledge ,$group);
-        endif;
-
-        return;
-    }
-
-    /**
      * Adds a new Subgroup in the navigation
      *
      * @param string $subgroupName
@@ -529,7 +505,7 @@ abstract class owa_module extends owa_base {
      */
     function install() {
 
-        $this->e->notice('Starting installation of module: '.$this->name);
+        owa_coreAPI::notice('Starting installation of module: '.$this->name);
 
         $errors = '';
 
@@ -539,11 +515,11 @@ abstract class owa_module extends owa_base {
             foreach ($this->entities as $k => $v) {
 
                 $entity = owa_coreAPI::entityFactory($this->name.'.'.$v);
-                //$this->e->debug("about to  execute createtable");
+                //owa_coreAPI::debug("about to  execute createtable");
                 $status = $entity->createTable();
 
                 if ($status != true) {
-                    $this->e->notice("Entity Installation Failed.");
+                    owa_coreAPI::notice("Entity Installation Failed.");
                     $errors = true;
                     //return false;
                 }
@@ -557,21 +533,24 @@ abstract class owa_module extends owa_base {
             // run post install hook
             $ret = $this->postInstall();
 
-            if ($ret == true):
-                $this->e->notice("Post install proceadure was a success.");;
-            else:
-                $this->e->notice("Post install proceadure failed.");
-            endif;
+            if ($ret == true) {
+	            
+                owa_coreAPI::notice("Post install procedure was a success.");
+                
+            } else {
+	            
+                owa_coreAPI::notice("Post install procedure failed.");
+            }
 
             // save schema version to configuration
-            $this->c->persistSetting($this->name, 'schema_version', $this->getRequiredSchemaVersion());
+            owa_coreAPI::persistSetting( $this->name, 'schema_version', $this->getRequiredSchemaVersion() );
             //activate the module and save the configuration
             $this->activate();
-            $this->e->notice("Installation complete.");
+            owa_coreAPI::notice("Installation complete.");
             return true;
 
         } else {
-            $this->e->notice("Installation failed.");
+            owa_coreAPI::notice("Installation failed.");
             return false;
         }
 
@@ -601,7 +580,7 @@ abstract class owa_module extends owa_base {
         $files = owa_lib::listDir(OWA_DIR.'modules'.'/'.$this->name.'/'.'updates', false);
         //print_r($files);
 
-        $current_schema_version = $this->c->get($this->name, 'schema_version');
+        $current_schema_version = owa_coreAPI::getSetting($this->name, 'schema_version');
 
         // extract sequence
         foreach ($files as $k => $v) {
@@ -639,16 +618,16 @@ abstract class owa_module extends owa_base {
 
         foreach ($this->updates as $k => $obj) {
 
-            $this->e->notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
+            owa_coreAPI::notice(sprintf("Applying Update %d (%s)", $k, get_class($obj)));
 
             $ret = $obj->apply();
 
-            if ($ret == true):
-                $this->e->notice("Update Suceeded");
-            else:
-                $this->e->notice("Update Failed");
+            if ($ret == true) {
+                owa_coreAPI::notice("Update Succeeded");
+            } else {
+                owa_coreAPI::notice("Update Failed");
                 return false;
-            endif;
+            }
         }
 
         return true;
@@ -668,16 +647,11 @@ abstract class owa_module extends owa_base {
      *
      */
     function activate() {
-
-        //if ($this->name != 'base'):
-
-            $this->c->persistSetting($this->name, 'is_active', true);
-            $this->c->save();
-            $this->e->notice("Module $this->name activated");
-
-        //endif;
-
-        return;
+	
+		$ret = owa_coreAPI::persistSetting( $this->name, 'is_active', true );
+        owa_coreAPI::notice("Module $this->name activated");
+        
+        return $ret;
     }
 
     /**
@@ -687,14 +661,10 @@ abstract class owa_module extends owa_base {
      */
     function deactivate() {
 
-        if ($this->name != 'base'):
+        if ($this->name != 'base') {
 
-            $this->c->persistSetting($this->name, 'is_active', false);
-            $this->c->save();
-
-        endif;
-
-        return;
+            owa_coreAPI::persistSetting( $this->name, 'is_active', false );
+    	}
     }
 
     /**
@@ -766,8 +736,8 @@ abstract class owa_module extends owa_base {
      * which class to use to process a particular event
      */
     function addEventProcessor($event_type, $processor) {
+	    
         $this->event_processors[$event_type] = $processor;
-        return;
     }
 
     function registerMetric($metric_name, $classes, $params = array(), $label = '', $description = '', $group = '') {
@@ -915,7 +885,7 @@ abstract class owa_module extends owa_base {
      *          as opposed to being housed in a related table.
      */
     function registerDimension(
-            $dim_name, $entity_names, $column, $label = '', $family,
+            $dim_name, $entity_names, $column, $label, $family,
             $description = '', $foreign_key_name = '',
             $denormalized = false, $data_type = 'string') {
 
@@ -960,8 +930,9 @@ abstract class owa_module extends owa_base {
      *
      */
     protected function registerAction( $action_name, $class_name, $file ) {
-
-       $this->registerImplementation( 'actions', $action_name, $class_name, $file  );
+		
+		$s = owa_coreAPI::serviceSingleton();
+    	$s->setMapValue( 'actions', $action_name, ['class_name' => $class_name, 'file' => OWA_BASE_MODULE_DIR . $file ] );
 
     }
     
@@ -1014,10 +985,10 @@ abstract class owa_module extends owa_base {
      * Registers a Component Implementation
      *
      * Allows a module to register a specific implementation of a module component. This method stores
-     * the mapping of where an implementation of a specific type and key is located withing the module. 
-     * This is used to store maps for things like controllers, event queues, etc. 
+     * the mapping of where an implementation of a specific type and key is located withing the module.
+     * This is used to store maps for things like controllers, event queues, etc.
      *
-     * Implemntations can be overridden by other modules if they share the same key so consider using 
+     * Implemntations can be overridden by other modules if they share the same key so consider using
      * modules namespacing for the key (i.e. module_name.key) to avoid conflicts.
      *
      * @param    $type	string	the type/category of implementation		actions|event_queues
@@ -1026,23 +997,12 @@ abstract class owa_module extends owa_base {
      * @param    $file           string    the partial path to the file housing the class withing the module dir
      *
      */
-    function registerImplementation($type, $key, $class_name, $file) {
+    function registerImplementation($type, $key, $class_name, $file, $params = []) {
 
         $s = owa_coreAPI::serviceSingleton();
         $file = $this->path . $file;
-        $class_info = array($class_name, $file);
+        $class_info = array($class_name, $file, $params);
         $s->setMapValue($type, $key, $class_info);
-    }
-
-    function registerBackgroundJob($name, $command, $cron_tab, $max_processes = 1) {
-
-        $job = array('name'                =>    $name,
-                     'cron_tab'            =>    $cron_tab,
-                     'command'            =>    $command,
-                     'max_processes'    =>    $max_processes);
-
-        $s = owa_coreAPI::serviceSingleton();
-        $s->setMapValue('background_jobs', $name, $job);
     }
 
     /**
@@ -1155,17 +1115,6 @@ abstract class owa_module extends owa_base {
      * and should be redefined in a concrete module class.
      */
     function registerFilters() {
-
-        return false;
-    }
-
-    /**
-     * Abstract method for registering individual Filter Methods
-     *
-     * This method is called by a module's constructor
-     * and should be redefined in a concrete module class.
-     */
-    function registerBackgroundJobs() {
 
         return false;
     }

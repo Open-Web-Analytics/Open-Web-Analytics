@@ -1,0 +1,10 @@
+{
+    
+    "require": {
+        "guzzlehttp/guzzle": "7.5.*",
+        "monolog/monolog": "2.8.*",
+        "phpmailer/phpmailer": "6.7.*",
+        "ua-parser/uap-php": "3.9.*"
+    }
+    
+}

@@ -16,6 +16,9 @@
 // $Id$
 //
 
+require_once ( OWA_BASE_DIR. '/owa_httpRequest.php' );
+
+
 /**
  * OWA News Widget Controller
  * 
@@ -24,7 +27,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -57,7 +60,7 @@ class owa_widgetOwaNewsView extends owa_view {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_blank.tpl');        
+        $this->t->set_template('wrapper_blank.tpl');
         $this->body->set_template('news.tpl');
         $this->body->set('news', $data['news']);
     }

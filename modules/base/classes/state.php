@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -93,7 +93,7 @@ class owa_state {
         }
     }
 
-    function setState($store, $name = '', $value, $store_type = '', $is_perminent = false) {
+    function setState($store, $name, $value, $store_type = '', $is_perminent = false) {
 
         owa_coreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
 
@@ -141,7 +141,7 @@ class owa_state {
         }
     }
 
-    function set($store, $name = '', $value, $store_type = '', $is_perminent = false) {
+    function set($store, $name, $value, $store_type = '', $is_perminent = false) {
 
         if ( ! isset($this->stores[$store] ) ) {
             $this->loadState($store);
@@ -206,6 +206,8 @@ class owa_state {
         if ( ! $value && isset( $this->initial_state[$store] ) ) {
             $possible_values = $this->initial_state[$store];
         } else {
+	        //owa_coreAPI::debug( $this->initial_state );
+	        owa_coreAPI::debug("NO state store: $store found");
             return;
         }
 

@@ -7,6 +7,7 @@
  */
 
 require_once(OWA_DIR.'owa_adminController.php');
+require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
 
 /**
  * Domstreams Controller
@@ -31,42 +32,60 @@ class owa_domstreamsRestController extends owa_adminController {
 	
     function action() {
 		
+		
+		// this should really be broken out into its own REST endpoint and not bundled here as it's an entirely
+		// different database query
 		if ( $this->get( 'domstream_guid' ) ) {
+			
             return $this->getDomstream( $this->get( 'domstream_guid' ) );
         }
-		
-        $rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
-        $db = owa_coreAPI::dbSingleton();
-        $db->selectFrom('owa_domstream');
-        $db->selectColumn("domstream_guid, max(timestamp) as timestamp, page_url, duration, id as domstream_id, page_height, page_width");
-        //$db->selectColumn('id');
-        $db->selectColumn('document_id');
-        $db->groupby('domstream_guid');
-        //$db->selectColumn('events');
-        $db->where('yyyymmdd', array('start' => $this->get('startDate'), 'end' => $this->get('endDate')), 'BETWEEN');
-        if ($this->get('document_id')) {
-            $db->where('document_id', $this->get('document_id'));
+		 
+        // get resultSet Manager instance
+		$rsm = new owa_resultSetManager;
+ 
+        $rsm->db->selectFrom('owa_domstream');
+       
+        $rsm->db->selectColumn("domstream_guid, max(timestamp) as timestamp, page_url, duration, id as domstream_id, page_height, page_width");
+      
+        $rsm->db->selectColumn('document_id');
+       
+        $rsm->db->groupby('domstream_guid');
+        
+        // get domstreams for a particular document/page
+        if ($this->get('pageUrl')) {
+	        
+            $rsm->db->where('page_url', $this->get('pageUrl'));
+            $rsm->setQueryStringParam('pageUrl', $this->get('pageUrl') );
         }
-
-        if ( $this->get( 'siteId' ) ) {
-            
-            $db->where( 'site_id', $this->get('siteId') );
-        }
-
-        $db->orderBy('timestamp', 'DESC');
 		
-		$resultsPerPage = $this->get('resultsPerPage') ?: 50;
-        // pass limit to rs object if one exists
-        $rs->setLimit($resultsPerPage);
+		$rsm->db->orderBy('timestamp', 'DESC');
+        
+        //$rsm->setSiteId( $this->get('siteId') );
+        $rsm->db->where('site_id',  $this->get('siteId') );
+		$rsm->setQueryStringParam('siteId', $this->get('siteId') );
+        
+		 // set time period
+        $rsm->setTimePeriod(
+        	$this->get( 'period' ),
+            $this->get('startDate'),
+            $this->get('endDate'),
+            $this->get('startTime'),
+            $this->get('endTime')
+        );
+        
+		// set limit
+        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 50;
+        $rsm->setLimit( $resultsPerPage );
 		
-		$page = $this->get('page') ?: 1;
-        // pass page to rs object if one exists
-        $rs->setPage($page);
-
-        $results = $rs->generate($db);
-
+		// set pagination
+        $page = $this->get( 'page' ) ?: 1;
+        $rsm->setPage( $this->get('page') );
+		
+		// fetch results
+		$rs = $rsm->queryResults();
+		
         $rs->setLabels(array('id' => 'Domstream ID', 'page_url' => 'Page Url', 'duration' => 'Duration', 'timestamp' => 'Timestamp'));
-		$rs->resultsRows = $results;
+	
         
         $this->set('response', $rs);
         

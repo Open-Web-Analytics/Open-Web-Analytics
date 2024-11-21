@@ -1,0 +1,33 @@
+{
+  "name": "owa",
+  "version": "1.0.0",
+  "description": "Open Web Analytics is an open source alternative to commercial web analytics tools such as Google Analytics. This software allows you to stay in control of the data you collect about the user of your websites or applications.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack-cli --mode production && npm run copyTracker",
+    "start": "webpack-cli --mode development --watch",
+    "copyTracker": "shx cp modules/base/dist/owa.tracker.js modules/base/js/owa.tracker-combined-min.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Open-Web-Analytics/Open-Web-Analytics.git"
+  },
+  "keywords": [],
+  "author": "OWA Team <hello@openwebanalytics.com>",
+  "license": "GPL-2.0-only",
+  "bugs": {
+    "url": "https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues"
+  },
+  "homepage": "https://github.com/Open-Web-Analytics/Open-Web-Analytics#readme",
+  "dependencies": {
+    "jgrowl": "^1.4.8",
+    "jquery": "^3.6.0",
+    "webpack": "^5.66.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-concat-files-plugin": "^0.5.2"
+  },
+  "devDependencies": {
+    "shx": "^0.3.4"
+  }
+}

@@ -44,6 +44,7 @@ class owa_reportVisitController extends owa_reportController {
 	        	'version'			=> 'v1',
                 'do'        		=> 'reports',
                 'report_name'		=> 'visit',
+                'siteId'            => $this->getParam('siteId'),
                 'sessionId'    => $this->getParam('session_id') ) );
 
         //setup Metrics
@@ -53,6 +54,7 @@ class owa_reportVisitController extends owa_reportController {
 	        	'version'			=> 'v1',
                 'do'        		=> 'reports',
                 'report_name'		=> 'clickstream',
+                'siteId'            => $this->getParam('siteId'),
                 'sessionId'    		=> $this->getParam('session_id') ) );
 
         $this->set('clickstream', $rs);

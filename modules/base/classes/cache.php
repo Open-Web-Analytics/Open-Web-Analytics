@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -32,14 +32,17 @@
 class owa_cache {
 
     var $cache;
-    var $statistics = array('warm' => 0, 'cold' => 0, 'miss' => 0, 'replaced' => 0, 'added' => 0, 'removed' => 0, 'dirty' => 0);
+    var $statistics = array('warm' => 0, 'cold' => 0, 'miss' => 0, 'replaced' => 0, 'added' => 0, 'removed' => 0, 'dirty' => 0, 'persisted' => 0);
     var $cache_id = 1; // default cache id
     var $collections;
     var $dirty_collections;
     var $dirty_objs = array();
     var $global_collections = array();
-    var $collection_expiration_periods = array();
+    var $collection_expiration_periods = [];
     var $e;
+    var $warm;
+    var $cold;
+    var $cache_conf;
 
     /**
      * Constructor
@@ -48,30 +51,72 @@ class owa_cache {
      *
      * @param $cache_dir string
      */
-    function __construct($cache_dir = '') {
+    function __construct( $cache_dir = '') {
+	    
+	    
+	    // this is here before this class seems to load before modules can register implementations...
+	    $s = owa_coreAPI::serviceSingleton();
+	    $s->setMapValue('object_cache_types', 'memory', ['owa_memoryCache', OWA_BASE_CLASS_DIR.'memoryCache.php', [] ] );
+	    
+	    $this->cache_conf = [
+		    
+		    'cache_id' => $this->cache_id
+	    ];
+	    
+	    
+        $this->warm = owa_coreAPI::implementationFactory( 'object_cache_types', 'memory', $this->cache_conf );
         
-        $this->e = owa_coreAPI::errorSingleton();
+        //$this->createColdCache();
+        
+        //$this->e = owa_coreAPI::errorSingleton();
     }
-        
-    function set($collection, $key, $value, $expires = '') {
+    
+    function createColdCache() {
+	    
+	    if ( owa_coreAPI::getSetting( 'base', 'cache_objects' ) ) {
+	    
+	    	$cache_type = owa_coreAPI::getSetting('base', 'cacheType');
+	    	
+	    	if ( $cache_type ) {
+	    	
+				$this->cold = owa_coreAPI::implementationFactory( 'object_cache_types', $cache_type, $this->cache_conf );
+				owa_coreAPI::debug( 'CACHE: created cold cache of type: ' . $cache_type );
+			}
+		}
+    }
+      
+    function getColdCache() {
+	    
+	    if (! $this->cold ) {
+		    
+		    $this->createColdCache();
+	    }
+	    
+	    return $this->cold;
+    }
+            
+    function set( $collection, $key, $value, $expires = '' ) {
     
         $hkey = $this->hash($key);
         owa_coreAPI::debug('set key: '.$key);
         owa_coreAPI::debug('set hkey: '.$hkey);
-        $this->cache[$collection][$hkey] = $value;
+        //$this->cache[$collection][$hkey] = $value;
+        $this->warm->set( $collection, $hkey, $value );
+        
         $this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
-        $this->statistics['added']++;        
+        $this->statistics['added']++;
         $this->dirty_objs[$collection][$hkey] = $hkey;
-        $this->dirty_collections[$collection] = true; 
+        $this->dirty_collections[$collection] = true;
         $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['dirty']++;
             
     }
     
-    function replace($collection, $key, $value) {
+    function replace( $collection, $key, $value ) {
     
         $hkey = $this->hash($key);
-        $this->cache[$collection][$hkey] = $value;
+        //$this->cache[$collection][$hkey] = $value;
+        $this->warm->set( $collection, $hkey, $value );
         $this->debug(sprintf('Replacing Object in Cache - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['replaced']++;
         
@@ -79,13 +124,13 @@ class owa_cache {
         if (!empty($this->dirty_objs[$collection])) {
             if(!in_array($hkey, $this->dirty_objs[$collection])) {
                 $this->dirty_objs[$collection][] = $hkey;
-                $this->dirty_collections[$collection] = true; 
+                $this->dirty_collections[$collection] = true;
                 $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
                 $this->statistics['dirty']++;
             }
         } else {
             $this->dirty_objs[$collection][] = $hkey;
-            $this->dirty_collections[$collection] = true; 
+            $this->dirty_collections[$collection] = true;
             $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
             $this->statistics['dirty']++;
         }
@@ -93,101 +138,113 @@ class owa_cache {
         
     }
     
-    function get($collection, $key) {
+    function get( $collection, $key ) {
         
         $id = $this->hash($key);
-        // check warm cache and return
-        if (isset($this->cache[$collection][$id])) {
-            $this->debug(sprintf('CACHE HIT (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));    
+        
+        // check warm cache
+        $obj = $this->warm->get( $collection, $id );
+        
+        // if in warm cahce n=increment stats
+        if ( $obj ) {
+	        
+            $this->debug(sprintf('CACHE: Hit (Warm) - Retrieved Object from Cache - Collection: %s, id: %s', $collection, $id));
             $this->statistics['warm']++;
-        //load from cache file    
+            return $obj;
+               
         } else {
         
-            $item = $this->getItemFromCacheStore($collection, $id);
-            if ($item) {
-                $this->cache[$collection][$id] = $item;
-                $this->debug(sprintf('CACHE HIT (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
-                $this->statistics['cold']++;
-            } else {
-                $this->debug( sprintf( 'CACHE MISS - object not found for Collection: %s, id: %s', $collection, $id ) );
-                $this->statistics['miss']++;
-            }
-        }
-        
-        if (isset($this->cache[$collection][$id])) {
-            return $this->cache[$collection][$id];    
-        } else {
-            return false;
-        }
-        
+        	// else load from cold cache
+        	$cold = $this->getColdCache();
+        	
+        	if ( $cold ) {
+	        	
+            	$item = $cold->get( $collection, $id );
+            
+	            if ($item) {
+		            //put in warm cache
+	                //$this->cache[$collection][$id] = $item;
+	                $this->warm->set( $collection, $id, $item );
+	                $this->debug(sprintf('CACHE: Hit (Cold) - Retrieved Object from Cache File - Collection: %s, id: %s', $collection, $id));
+	                $this->statistics['cold']++;
+	                return $this->warm->get( $collection, $id );
+	            }
+	        }
+	    }
+	    
+	    $this->debug( sprintf( 'CACHE: Miss - object not found for Collection: %s, id: %s', $collection, $id ) );
+	    $this->statistics['miss']++;
     }
     
     function remove($collection, $key) {
     
         $id = $this->hash($key);
-        unset($this->cache[$collection][$id]);
-        return $this->removeItemFromCacheStore($collection, $id);
+        //unset($this->cache[$collection][$id]);
+        $this->warm->remove( $collection, $id );
         
+        $cold = $this->getColdCache();
+        
+        if ( $cold ) {
+	        $this->statistics['removed']++;
+	    	return $cold->remove( $collection, $id );
+        }
     }
     
     function persistCache() {
         
         $this->debug("starting to persist cache...");
         
-        // check for dirty objects
-        if (!empty($this->dirty_objs)) {
-            
-            $this->debug('Dirty Objects: '.print_r($this->dirty_objs, true));
-            $this->debug("starting to persist cache...");
-            
-            // persist dirty objects
-            foreach ($this->dirty_objs as $collection => $ids) {
-                
-                foreach ($ids as $id) {
-                    $this->putItemToCacheStore($collection, $id);
-                }    
-            }
-            
-        } else {
-            $this->debug("There seem to be no dirty objects in the cache to persist.");
-        }
+        $cold = $this->getColdCache();
+        
+        if ( $cold ) {
+        
+	        // check for dirty objects
+	        if (!empty($this->dirty_objs)) {
+	            
+	            $this->debug('Dirty Objects: '.print_r($this->dirty_objs, true));
+	            
+	            // persist dirty objects
+	            foreach ($this->dirty_objs as $collection => $ids) {
+	                
+	                foreach ($ids as $id) {
+		                
+	                    $cold->set( $collection, $id, $this->warm->get( $collection, $id ) );
+	                    $this->statistics['persisted']++;
+	                }
+	            }
+	            
+	        } else {
+	            $this->debug("There seem to be no dirty objects in the cache to persist.");
+	        }
+	    } else {
+		    
+		    $this->debug("There is no cold cache to persist to.");
+	    }
     }
     
-    /**
-     * Store specific implementation of getting an object from the cold cache store
-     */
-    function getItemFromCacheStore($collection, $id) {
-        return false;
-    }
-    /**
-     * Store specific implementation of putting an object to the cold cache store
-     */
-    function putItemToCacheStore($collection, $id) {
-        return false;
-    }
-    
-    /**
-     * Store specific implementation of removing an object to the cold cache store
-     */
-    function removeItemFromCacheStore($collection, $id) {
-        return false;
-    }
+
     
     /**
      * Store specific implementation of flushing the cold cache store
      */
     function flush() {
-    
-        return false;    
+    	
+    	$cold = $this->getColdCache();
+        
+        if ( $cold ) {
+    	
+ 	       return $cold->flush();
+ 	    }
     }
     
     function getStats() {
     
-        return sprintf("Cache Statistics: 
+        return sprintf("Cache Statistics:
                           Total Hits: %s (Warm/Cold: %s/%s)
                           Total Miss: %s
                           Total Added to Cache: %s
                           Total Replaced: %s
+                          Total Dirty: %s
                           Total Persisted: %s
                           Total Removed: %s",
                           $this->statistics['warm'] + $this->statistics['cold'],
@@ -197,6 +254,7 @@ class owa_cache {
                           $this->statistics['added'],
                           $this->statistics['replaced'],
                           $this->statistics['dirty'],
+                          $this->statistics['persisted'],
                           $this->statistics['removed']);
     }
     
@@ -208,7 +266,7 @@ class owa_cache {
     function __destruct() {
         
         $this->persistCache();
-        $this->debug($this->getStats());
+        $this->debug( $this->getStats() );
         $this->persistStats();
     }
     
@@ -218,8 +276,8 @@ class owa_cache {
     }
     
     function hash($id) {
-    
-        return md5($id);
+    	
+        return md5( $id . OWA_AUTH_KEY );
     }
     
     function debug($msg) {
@@ -233,17 +291,22 @@ class owa_cache {
     }
         
     function setCollectionExpirationPeriod($collection_name, $seconds) {
-    
-        $this->collection_expiration_periods[$collection_name] = $seconds;
+    	
+    	$cold = $this->getColdCache();
+        
+        if ( $cold ) {
+    		
+    		$cold->setCollectionExpirationPeriod($collection_name, $seconds);
+        }
     }
     
     function getCollectionExpirationPeriod($collection_name) {
         
-        // for some reason an 'array_key_exists' check does not work here. using isset instead.
-        if (isset($this->collection_expiration_periods[$collection_name])) {
-            return $this->collection_expiration_periods[$collection_name];
-        } else {
-            return false;
+        $cold = $this->getColdCache();
+        
+        if ( $cold ) {
+	        
+        	$cold->getCollectionExpirationPeriod($collection_name);
         }
     }
     

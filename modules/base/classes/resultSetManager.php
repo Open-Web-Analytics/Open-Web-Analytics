@@ -16,9 +16,6 @@
 // $Id$
 //
 
-require_once(OWA_BASE_CLASS_DIR.'pagination.php');
-require_once(OWA_BASE_CLASS_DIR.'timePeriod.php');
-require_once(OWA_DIR.'owa_template.php');
 
 /**
  * Result Set Manager
@@ -80,7 +77,7 @@ class owa_resultSetManager extends owa_base {
     var $denormalizedDimensions = array();
 
     var $_default_offset = 0;
-    var $page;
+    var $page = 1;
     var $limit;
     var $order;
     var $format;
@@ -102,6 +99,9 @@ class owa_resultSetManager extends owa_base {
     var $formatters = array();
     var $segment;
     var $pagination;
+    var $resolution = 'day';
+    var $timePeriod;
+    
 
     function __construct($db = '') {
 
@@ -118,6 +118,8 @@ class owa_resultSetManager extends owa_base {
             'integer'         => array($this, 'numberFormatter'),
             'currency'        => array($this, 'formatCurrency')
         );
+        
+        $this->resultSet = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 
         return parent::__construct();
     }
@@ -173,7 +175,11 @@ class owa_resultSetManager extends owa_base {
             return $this->parseConstraintsString($string);
         }
     }
-
+	
+	/**
+     * Transforms a comma separated string of constraints into array
+     * The string format is used in REST API calls.
+     */
     function parseConstraintsString($string) {
 
         $constraints = explode(',', $string);
@@ -222,7 +228,10 @@ class owa_resultSetManager extends owa_base {
             $this->applyConstraint($constraint, $db, $entity);
         }
     }
-
+	
+	/**
+     * Generate constraint clause using metrics and dimensions
+     */
     function applyConstraint( $constraint, $db = '', $entity= '') {
 
         if ( ! $entity ) {
@@ -594,7 +603,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * Retrieves dimension given a name and associated fact table entity.
      *
-     * @param $name string the name of the dimenson
+     * @param $name string the name of the dimension
      * @param $entity    object    the entity object
      * @return array
      */
@@ -699,7 +708,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             $formula = str_replace($child, '__'.$child, $formula);
                         }
 
-                        // now replace the names with seldct statements.
+                        // now replace the names with select statements.
                         foreach ($child_metrics as $child) {
                             $child_metric = $this->getMetricImplementation( $child );
                             $select = $child_metric->getSelect();
@@ -794,46 +803,74 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->params['period'] = $value;
         }
     }
+    
+    function setTimeResolution( $value ) {
+      
+      $map = [
+        'day',
+        'month',
+        'year'
+      ];
+      
+      if ( in_array( $value, $map ) ) {
+        
+        $this->resolution = $value;
+      }
+    }
+    
+    function getTimeResolution() {
+      
+      return $this->resolution;
+    }
 
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
+      
+      $map = false;
+      
+      if ($startDate && $endDate) {
+      
+          $period_name = 'date_range';
+          $map = array('startDate' => $startDate, 'endDate' => $endDate);
+          $dimension_name = 'date';
+          $format = 'yyyymmdd';
+      
+      } elseif ($startTime && $endTime) {
+      
+          $period_name = 'time_range';
+          $map = array('startTime' => $startTime, 'endTime' => $endTime);
+          $dimension_name = 'timestamp';
+          $format = 'timestamp';
+      
+      } else {
+      
+          owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
+          $dimension_name = 'date';
+          $format = 'yyyymmdd';
+      }
 
-        $map = false;
+      // add to query params array for use in URL construction
+      if ($map) {
+          $this->query_params = array_merge($map, $this->query_params);
+      } else {
+          $this->query_params['period'] = $period_name;
+      }
+        
+      if ( $period_name ) {
 
-        if ($startDate && $endDate) {
-            $period_name = 'date_range';
-            $map = array('startDate' => $startDate, 'endDate' => $endDate);
-            $dimension_name = 'date';
-            $format = 'yyyymmdd';
-        } elseif ($startTime && $endTime) {
-            $period_name = 'time_range';
-            $map = array('startTime' => $startTime, 'endTime' => $endTime);
-            $dimension_name = 'timestamp';
-            $format = 'timestamp';
-        } else {
-            owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
-            $dimension_name = 'date';
-            $format = 'yyyymmdd';
-        }
+        // create timePeriod class
+        $this->timePeriod = owa_coreAPI::supportClassFactory('base', 'timePeriod');
 
-        // add to query params array for use in URL construction
-        if ($map) {
-            $this->query_params = array_merge($map, $this->query_params);
-        } else {
-            $this->query_params['period'] = $period_name;
-        }
+        $this->timePeriod->set($period_name, $map);
+        
+        // needed?
+        $this->setPeriod($this->timePeriod);
 
-        $p = owa_coreAPI::supportClassFactory('base', 'timePeriod');
-
-        $p->set($period_name, $map);
-
-        $this->setPeriod($p);
-
-        $start = $p->startDate->get($format);
-        $end = $p->endDate->get($format);
-
+        $start = $this->timePeriod->startDate->get($format);
+        $end = $this->timePeriod->endDate->get($format);
+      
+        // set time period constraint for query
         $this->setConstraint($dimension_name, array('start' => $start, 'end' => $end), 'BETWEEN');
-
-
+  		}
     }
 
     function setStartDate($date) {
@@ -849,13 +886,16 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function applyMetaDataToResults($results) {
+    function applyMetaDataToResults( $results ) {
 
         $new_rows = array();
+        
+        if ( $results ) {
 
-        foreach ($results as $row) {
-
-            $new_rows[] = $this->applyMetaDataToSingleResultRow($row);
+	        foreach ($results as $row) {
+	
+	            $new_rows[] = $this->applyMetaDataToSingleResultRow( $row );
+	        }
         }
 
         return $new_rows;
@@ -915,7 +955,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     function numberFormatter($value) {
-
+	if(is_null($value)){
+            return $value;
+        }
         return number_format($value);
     }
 
@@ -995,6 +1037,11 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function getLimit() {
 
         return $this->limit;
+    }
+    
+    function getPage() {
+
+        return $this->page;
     }
 
     /**
@@ -1210,8 +1257,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $this->getCalculatedMetricByName($metric_name);
         }
     }
-
-    function applySelects() {
+	
+	// generates select statment from metrics
+    function applyMetrics() {
         //print_r($this->metrics);
         foreach($this->metrics as $k => $metric_name) {
 
@@ -1293,129 +1341,280 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $this->errors[] = $msg;
         owa_coreAPI::debug($msg);
     }
+    
+    function computeAggregates( $bm ) {
+	    
+	    // creates join statements to dim tables from dimension.
+        $this->applyJoins();
+        
+        // generates where clause based on metrics and dimensions
+        $this->applyConstraints();
+        
+        // generates select statement from metrics
+        $this->applyMetrics();
 
-    /**
-     * Generates a result set for the metric
+        // generates from clause or a subselect if segment is specified
+        if ( $this->segment ) {
+            
+            $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+        
+        } else {
+        
+            $this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+        }
+
+        // generate aggregate results
+        $results = $this->db->getOneRow();
+        
+        return $results;
+    }
+    
+    function computeDimensionalRows( $bm ) {
+	    
+	    // creates join statements to dim tables from dimension.
+        $this->applyJoins();
+        
+        // apply dimensional SQL
+        $this->applyDimensions();
+
+        $this->applyMetrics();
+        
+        $this->applyConstraints();
+
+        // set from table
+        if ( $this->segment ) {
+            
+            $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+            
+        } else {
+            
+            $this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
+        }
+
+        // pass limit and page to result set object if one exists
+        // needed??
+        if ( ! empty( $this->limit ) ) {
+            
+            $this->resultSet->setLimit( $this->limit );
+        }
+       
+        if ( ! empty( $this->page ) ) {
+            
+            $this->resultSet->setPage( $this->page );
+        }
+        
+        // if there is a limit set then respect the limit and try to paginate the results by over querying
+        if ( $this->getLimit() ) {
+	        
+            // query for more than we need
+            owa_coreAPI::debug('applying limit of: ' . $this->getLimit() );
+            
+            $this->db->limit( $this->getLimit() * 10 );
+            
+        } else {
+          
+          // assume it's a date/time range query and use range resolution as limit
+          switch ( $this->getTimeResolution() ) {
+            
+            case "day":
+              $this->setLimit( $this->timePeriod->getDaysDifference() );
+              break;
+              
+            case "month":
+              $this->setLimit( $this->timePeriod->getMonthsDifference() );
+              break;
+              
+            case "year":
+              $this->setLimit( $this->timePeriod->getYearsDifference() );
+              break;
+            
+            default:
+              
+              break;
+              
+          }
+          
+          $this->db->limit( $this->getLimit() );
+        }
+        
+        if ( ! empty( $this->page ) ) {
+
+            $this->db->offset( $this->calculateOffset() );
+            
+        } else {
+	        
+            $this->page = 1;
+        }
+
+        $results = $this->db->getAllRows();
+        
+        return $results;
+    }
+    
+    function calculateOffset() {
+		
+		if ( $this->page > 1 ) {
+		
+        	return $this->limit * ( $this->page - 1 );
+        
+        } else {
+	        
+	        return 0;
+        }
+    }
+
+   	/**
+     * Generates a reporting result set using metrics and dimension
      *
+     * @return paginatedResultSet obj
      */
     function getResults() {
-
-        // get paginated result set object
-        $rs = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
-
+		
+		// determin the best fact table ot use forthe query based on
+		// the metrics and dimensions requested
         $bm = $this->chooseBaseEntity();
 
-        if ($bm) {
+        if ( $bm ) {
 
             $bname = $bm->getName();
 
-            owa_coreAPI::debug("Using $bname as base entity for making result set.");
-
-            // set constraints
-            $this->applyJoins();
-            owa_coreAPI::debug('about to apply constraints');
-            $this->applyConstraints();
-            owa_coreAPI::debug('about to apply selects');
-            $this->applySelects();
-
-            // set from table
-            if ( $this->segment ) {
-                $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
-            } else {
-                $this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
-            }
+            owa_coreAPI::debug("Using $bname as fact table entity for this result set.");
 
             // generate aggregate results
-            $results = $this->db->getOneRow();
+            $results = $this->computeAggregates( $bm );
+            
             // merge into result set
-            if ($results) {
-                $rs->aggregates = array_merge($this->applyMetaDataToSingleResultRow($results), $rs->aggregates);
+            if ( $results ) {
+	            
+                $this->resultSet->aggregates = array_merge( $this->applyMetaDataToSingleResultRow( $results ), $this->resultSet->aggregates );
             }
-
-            // setup dimensional query
-            if (!empty($this->dimensions)) {
-
-                $this->applyJoins();
-                // apply dimensional SQL
-                $this->applyDimensions();
-
-                $this->applySelects();
-
-                // set from table
-                if ( $this->segment ) {
-                    $this->db->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
-                } else {
-                    $this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
-                }
-
-                // pass limit to db object if one exists
-                if (!empty($this->limit)) {
-                    $rs->setLimit($this->limit);
-                }
-                // pass limit to db object if one exists
-                if (!empty($this->page)) {
-                    $rs->setPage($this->page);
-                }
-
-                $this->applyConstraints();
-
-                if (array_key_exists('orderby', $this->params)) {
+			
+			$dresults = [];
+            // setup dimensional query if dimensions were specified in query
+            if ( ! empty( $this->dimensions ) ) {
+				
+				// Apply sorts
+                if ( array_key_exists( 'orderby', $this->params ) ) {
+                
                     $sorts = $this->params['orderby'];
+                    
                     // apply sort by
                     if ($sorts) {
+	                    
                         $this->applySorts();
+                    
                         foreach ($sorts as $sort) {
                             //$this->db->orderBy($sort[0], $sort[1]);
-                            $rs->sortColumn = $sort[0];
+                            $this->resultSet->sortColumn = $sort[0];
+                            
                             if (isset($sort[1])){
-                                $rs->sortOrder = strtolower($sort[1]);
+	                            
+                                $this->resultSet->sortOrder = strtolower($sort[1]);
                             } else {
-                                $rs->sortOrder = 'asc';
+	                            
+                                $this->resultSet->sortOrder = 'asc';
                             }
                         }
                     }
+                    
+                    
+                    // query for dimensional results
+                $dresults = $this->computeDimensionalRows( $bm );
+                
+                // paginate the results
+                $dresults = $this->applyMetaDataToResults( $dresults );
+                    
                 }
 
-                // add labels
-                $rs->setLabels($this->getLabels());
-
-                // generate dimensonal results
-                $results = $rs->generate($this->db);
-
-                $rs->resultsRows = $this->applyMetaDataToResults($results);
+                // generate dimensional results
+                $this->resultSet->generate( $dresults, $this->query_params, [
+	                
+	                'resultsPerPage' => $this->getlimit(),
+	                'page'			 => $this->getPage()
+                ] );
+                
             }
 
             // add labels
-            $rs->setLabels($this->getLabels());
+            $this->resultSet->setLabels( $this->getLabels() );
 
             // add period info
+            $this->resultSet->setPeriodInfo( $this->params['period']->getAllInfo() );
+              
+            $this->resultSet = $this->computeCalculatedMetrics( $this->resultSet );
+        }
+		
+		// set any metric/dimension combination errors
+        $this->resultSet->errors = $this->errors;
+		
+		// set related dimensions
+        $this->resultSet->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
+        
+        // set related metrics
+        $this->resultSet->setRelatedMetrics( $this->getAllRelatedMetrics( $bm ) );
 
-            $rs->setPeriodInfo($this->params['period']->getAllInfo());
+        return $this->resultSet;
+    }
+    
+  	/**
+     * Generates a data result set using DB object directly
+     *
+     * @return paginatedResultSet obj
+     */
+    function queryResults() {
 
-            $rs = $this->computeCalculatedMetrics($rs);
-
-            // add urls
-            $urls = $this->makeResultSetUrls();
-            $rs->self = $urls['self'];
-
-            if ($rs->more) {
-
-                $rs->next = $urls['next'];
+        // get paginated result set object
+	
+        if (array_key_exists('orderby', $this->params)) {
+            $sorts = $this->params['orderby'];
+            // apply sort by
+            if ($sorts) {
+                $this->applySorts();
+                foreach ($sorts as $sort) {
+                    //$this->db->orderBy($sort[0], $sort[1]);
+                    $this->resultSet->sortColumn = $sort[0];
+                    if (isset($sort[1])){
+                        $this->resultSet->sortOrder = strtolower($sort[1]);
+                    } else {
+                        $this->resultSet->sortOrder = 'asc';
+                    }
+                }
             }
-
-            if ($this->page >=2) {
-                $rs->previous = $urls['previous'];
-            }
-
-            $rs->createResultSetHash();
         }
 
-        $rs->errors = $this->errors;
+        // add period info
+        if (array_key_exists('period', $this->params) && ! empty( $this->params['period'])) {
+	       
+	        $this->resultSet->setPeriodInfo($this->params['period']->getAllInfo());
+		}
+        
+		// add any errors that should be returned in the result set
+        $this->resultSet->errors = $this->errors;
+        
+        if ( ! empty( $this->limit ) ) {
+	        
+            // query for more than we need
+            owa_coreAPI::debug('applying limit of: ' . $this->limit );
+            
+            $this->db->limit( $this->limit * 10 );
+        }
 
-        $rs->setRelatedDimensions( $this->getAllRelatedDimensions( $bm ) );
-        $rs->setRelatedMetrics( $this->getAllRelatedMetrics( $bm ) );
+        if ( ! empty( $this->page ) ) {
 
-        return $rs;
+            $this->db->offset( $this->calculateOffset() );
+            
+        }
+
+        $results = $this->db->getAllRows();
+        
+        // generate dimensional results
+        $this->resultSet->generate( $results, $this->query_params, [
+	                
+	                'resultsPerPage' => $this->getlimit(),
+	                'page'	=> $this->getPage()
+                ] );
+		
+        return $this->resultSet;
     }
 
     function generateSegmentQuery( $base_entity ) {
@@ -1585,89 +1784,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     }
 
-
-
     function setQueryStringParam($name, $string) {
 
             $this->query_params[$name] = $string;
-    }
-
-    function makeResultSetUrls() {
-
-        $urls = array();
-        
-        // get base query params
-        $query_params = $this->query_params;
-        
-        if ( owa_coreAPI::getSetting('base', 'request_mode' ) === 'rest_api' ) {
-	   		
-	   		 $api_url = owa_coreAPI::getSetting('base', 'rest_api_url');     
-	   		 $query_params['do'] = 'reports';
-	   		 $query_params['module'] = 'base';
-	   		 $query_params['version'] = 'v1';
-        }
-        
-      
-        //add format
-        if ($this->format) {
-            $query_params['format'] = $this->format;
-        } else {
-            $query_params['format'] = 'json';
-        }
-        // add current page if any
-        if ($this->page) {
-            $query_params['page'] = $this->page;
-        }
-        // add limit
-        if ($this->limit) {
-            $query_params['resultsPerPage'] = $this->limit;
-        }
-
-        // build url for this result set
-        $link_template = owa_coreAPI::getSetting('base', 'link_template');
-        $q = $this->buildQueryString($query_params);
-        $urls['self'] = sprintf($link_template, $api_url, $q);
-
-        // build url for next page of result set
-        $next_query_params = $query_params;
-        if ($this->page) {
-            $next_query_params['page'] = $query_params['page'] + 1;
-        } else {
-            $next_query_params['page'] = 2;
-        }
-
-        $nq = $this->buildQueryString($next_query_params);
-        $urls['next'] = sprintf($link_template, $api_url, $nq);
-
-        // build previous url if page is greater than 2
-        if ($this->page >= 2) {
-            $previous_query_params = $query_params;
-            $previous_query_params['page'] = $query_params['page'] - 1;
-            $pq = $this->buildQueryString($previous_query_params);
-            $urls['previous'] = sprintf($link_template, $api_url, $pq);
-        }
-
-        $base_query_params = $this->query_params;
-        $base_query_params['format'] = $this->format;
-
-        // build pagination url template for use in constructing
-        $q = $this->buildQueryString($base_query_params);
-        $url['base_url'] = sprintf($link_template, $api_url, $q);
-
-        return $urls;
-    }
-
-    function buildQueryString($params, $seperator = '&') {
-
-        $new = array();
-        //get namespace
-        $ns = owa_coreAPI::getSetting('base', 'ns');
-        foreach ($params as $k => $v) {
-
-            $new[$ns.$k] = $v;
-        }
-
-        return http_build_query($new,'', $seperator);
     }
 
     function getAllRelatedDimensions($entity) {

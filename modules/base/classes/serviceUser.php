@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -68,7 +68,7 @@ class owa_serviceUser extends owa_base {
                 throw new Exception('No valid userid given!');
             //}
         }
-
+		 
         // if there is a user_id load the user object and other properties.
         $this->user->load($user_id, 'user_id');
         $this->initInternalProperties();
@@ -81,6 +81,7 @@ class owa_serviceUser extends owa_base {
      * @param $user_obj    object    owa_user object
      */
     function loadNewUserByObject($user_obj) {
+	    
         $this->user = $user_obj;
         $this->initInternalProperties();
     }
@@ -110,6 +111,11 @@ class owa_serviceUser extends owa_base {
 
     function getRole() {
         return $this->user->get('role');
+    }
+    
+    function getApiKey() {
+	    
+	    return $this->user->get('api_key');
     }
 
     /**
@@ -235,7 +241,7 @@ class owa_serviceUser extends owa_base {
 	        
 		    if ( ! $this->user->get( 'id' ) ) {
 	             throw new Exception('no user object loaded!');
-	        }    
+	        }
 	        
         }
         
@@ -260,6 +266,7 @@ class owa_serviceUser extends owa_base {
     }
 
     public function setInitialized() {
+	    
         $this->isInitialized = true;
     }
 
@@ -313,9 +320,9 @@ class owa_serviceUser extends owa_base {
     public function isAnonymousUser() {
 
         if ( ! $this->user->get('user_id') || $this->getRole() === 'everyone') {
+	        
             return true;
-        } else {
-            return false;
+            
         }
     }
 }

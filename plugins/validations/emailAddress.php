@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
  
@@ -40,11 +40,11 @@
 
          $email = $this->getValues();
         
-        if ( ! filter_var ( $email, FILTER_VALIDATE_EMAIL ) ) { 
+        if ( ! filter_var ( $email, FILTER_VALIDATE_EMAIL ) ) {
                  
              $this->hasError();
-         }    
-     }         
+         }
+     }
  }
  
 ?>

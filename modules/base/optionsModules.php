@@ -115,7 +115,7 @@ class owa_optionsModulesView extends owa_view {
 
     function __construct($params) {
 
-        //set priviledge level
+        //set privilege level
         $this->_setPriviledgeLevel('admin');
         //set page type
         $this->_setPageType('Administration Page');

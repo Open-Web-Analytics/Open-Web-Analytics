@@ -94,7 +94,7 @@ class owa_usersAddController extends owa_adminController {
 		        'real_name'		=>	$u->get( 'real_name' ),
 		        'api_key'		=>	$u->get('api_key'),
 		        'role'			=>	$u->get('role')
-	        ];  
+	        ];
 		}
         
         // assign user to view for use by CLI and REST controllers that may

@@ -1,0 +1,80 @@
+name: Release Packager
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version name of the release (e.g. 1.1.5)
+        required: true
+        default: ''
+jobs:
+  tag:
+    name: Generate new release package
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        ref: master
+    # create a release branch and bump version in appropriate files.
+    - name: Create release branch
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git -C ./ checkout -b release-${{ env.VERSION }}
+        echo changing version string in owa_env.php
+        sed -i "s/master/${{ env.VERSION }}/g" owa_env.php
+        echo changing version string in package.json
+        sed -i 's/"version": "1.0.0",/"version": "${{ env.VERSION }}",/g' package.json
+        cat ./owa_env.php
+        cat ./package.json
+        echo Committing local changes
+        git -C ./ status
+        git -C ./ add owa_env.php
+        git -C ./ add package.json
+        git -C ./ commit -m "Updating version string."
+        echo Pushing change into Branch
+        git -C ./ push --set-upstream origin release-${{ env.VERSION }}
+    # install the composer vendor directory
+    - name: Install Composer Dependancies
+      uses: php-actions/composer@v1
+    # setup node and build js/asset bundles
+    - name: Setup Node/npm 
+      uses: actions/setup-node@v2
+      with:
+        node-version: '12'
+    - name: Build Javascript/Asset Packages
+      run: |
+        npm install
+        npm run build
+    # Generate a release tarball excluding files that are not needed in a distro
+    - name: Generate Release Tarball
+      run: |
+        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
+    #create a draft release on github and attach tarball as asset
+    - name: Create Draft Github Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        commitish: release-${{ env.VERSION }}
+        tag_name: ${{ env.VERSION }}
+        release_name: Release ${{ env.VERSION }}
+        body: |
+           Changes in this Release
+            - First Change
+            - Second Change
+        draft: true
+        prerelease: false
+    - name: Upload Tarball to Github Release
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: ./owa_${{ env.VERSION}}_packaged.tar
+        asset_name: owa_${{ env.VERSION}}_packaged.tar
+        asset_content_type: application/tar

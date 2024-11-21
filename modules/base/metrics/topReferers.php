@@ -24,7 +24,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -53,10 +53,10 @@ class owa_topReferers extends owa_metric {
                                     refering_anchortext,
                                     is_searchengine");
                                     
-        $this->db->selectFrom('owa_session', 'session');    
-        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');        
-        $this->db->groupBy('referer.url');        
-        $this->db->orderBy('count', $this->getOrder());    
+        $this->db->selectFrom('owa_session', 'session');
+        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');
+        $this->db->groupBy('referer.url');
+        $this->db->orderBy('count', $this->getOrder());
         $this->db->where('is_searchengine', 1, '!=');
         
         $ret = $this->db->getAllRows();
@@ -69,8 +69,8 @@ class owa_topReferers extends owa_metric {
     
         $this->db->selectColumn("count(distinct referer.id) as count");
                                     
-        $this->db->selectFrom('owa_session', 'session');    
-        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');            
+        $this->db->selectFrom('owa_session', 'session');
+        $this->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_referer', 'referer', 'referer_id', 'referer.id');
         $this->db->where('is_searchengine', 1, '!=');
         
         $ret = $this->db->getOneRow();

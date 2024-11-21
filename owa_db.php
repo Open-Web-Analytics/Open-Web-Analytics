@@ -140,7 +140,7 @@ class owa_db extends owa_base {
                                          'name' => $db_name,
                                          'open_new_connection' => $open_new_connection,
                                          'persistant' => $persistant);
-
+                                                                          
         return parent::__construct();
     }
 
@@ -199,7 +199,7 @@ class owa_db extends owa_base {
     function _timerStart() {
 
       $mtime = microtime();
-      //$mtime = explode(' ', $mtime); 
+      //$mtime = explode(' ', $mtime);
       //$this->_start_time = $mtime[1].substr(round($mtime[0], 4), 1);
     $this->_start_time = microtime();
     return;
@@ -559,9 +559,13 @@ class owa_db extends owa_base {
             return $this->_makeConstraintClause('HAVING', $params);
         }
     }
-
-    function _makeConstraintClause($type = 'WHERE', $params) {
-
+    
+    /**
+     *  Generates the SQL constraint string
+     *  @type string    'WHERE' || 'HAVING'
+     */
+    function _makeConstraintClause( $type, $params ) {
+         
         if ( ! empty( $params ) ) {
 
             $count = count( $params );

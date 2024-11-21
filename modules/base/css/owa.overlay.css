@@ -56,11 +56,21 @@ body > div.jGrowl.center {
     width:5px;
     height:5px;
     z-index:999997;
+
+    /* This is needed to prevent document.elementFromPoint from
+     * returning marker node instead of real click target.
+     */
+    pointer-events: none;
 }
 
 #owa-cursor {
     position:absolute;
     z-index:999998;
+
+    /* This is needed to prevent document.elementFromPoint from
+     * returning marker node instead of real click target.
+     */
+    pointer-events: none;
 }
 
 #owa-overlay-status {

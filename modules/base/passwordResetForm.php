@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -41,7 +41,7 @@ class owa_passwordResetFormController extends owa_controller {
 
 
 /**
- * Password Reset Request View 
+ * Password Reset Request View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>

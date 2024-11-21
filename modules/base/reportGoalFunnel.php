@@ -62,16 +62,20 @@ class owa_reportGoalFunnelController extends owa_reportController {
             //print $required_step_constraints;
             // get total visits
             $total_visitors_rs = owa_coreAPI::executeApiCommand(array(
+	            
+	            	'request_method'	=> 'GET',
+					'module'			=> 'base',
+					'version'			=> 'v1',
+		            'do'                => 'reports',
                     'period'       => $this->get('period'),
                     'startDate'      => $this->get('startDate'),
                     'endDate'      => $this->get('endDate'),
                     'constraints' => $required_step_constraints,
                     'metrics'       => 'visitors',
-                    'do'          => 'getResultSet',
                     'siteId'      => $this->getParam( 'siteId' )
             ));
             //print_r($total_visitors_rs);
-            $total_visitors = $total_visitors_rs->getAggregateMetric( 'visitors' );
+            $total_visitors = $total_visitors_rs->aggregates->visitors;
             //print "Total visits: $total_visitors";
 
             $this->set( 'total_visitors',  $total_visitors);
@@ -82,16 +86,20 @@ class owa_reportGoalFunnelController extends owa_reportController {
             foreach ( $funnel as $k => $step ) {
                 $operator = '==';
                 $rs = owa_coreAPI::executeApiCommand(array(
+	                
+	                	'request_method'	=> 'GET',
+						'module'			=> 'base',
+						'version'			=> 'v1',
+			            'do'                => 'reports',
                         'period'       => $this->get('period'),
                         'startDate'      => $this->get('startDate'),
                         'endDate'      => $this->get('endDate'),
                         'metrics'       => 'visitors',
                         'constraints' => 'pagePath'.$operator.$step['url'],
-                        'do'          => 'getResultSet',
                         'siteId'      => $this->getParam( 'siteId' )
                 ));
 
-                $visitors = $rs->getAggregateMetric('visitors') ? $rs->getAggregateMetric('visitors'): 0;
+                $visitors = $rs->aggregates->visitors ? $$rs->aggregates->visitors : 0;
                 $funnel[$k]['visitors'] = $visitors;
 
                 // backfill check in case there are more visitors to this step than were at prior step.

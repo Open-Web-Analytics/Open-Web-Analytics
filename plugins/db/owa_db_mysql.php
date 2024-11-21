@@ -17,7 +17,7 @@
 //
 
 
-define('OWA_DTD_BIGINT', 'BIGINT'); 
+define('OWA_DTD_BIGINT', 'BIGINT');
 define('OWA_DTD_INT', 'INT');
 define('OWA_DTD_TINYINT', 'TINYINT(1)');
 define('OWA_DTD_TINYINT2', 'TINYINT(2)');
@@ -35,13 +35,14 @@ define('OWA_DTD_INDEX', 'KEY');
 define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT');
 define('OWA_DTD_NOT_NULL', 'NOT NULL');
 define('OWA_DTD_UNIQUE', 'PRIMARY KEY(%s)');
-define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');   
+define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s');
 define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s');
-define('OWA_SQL_RENAME_COLUMN', 'ALTER TABLE %s CHANGE %s %s %s'); 
-define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s'); 
-define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s'); 
-define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE IF NOT EXISTS %s (%s) %s'); 
-define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');  
+define('OWA_SQL_RENAME_COLUMN', 'ALTER TABLE %s CHANGE %s %s %s');
+define('OWA_SQL_MODIFY_COLUMN', 'ALTER TABLE %s MODIFY %s %s');
+define('OWA_SQL_RENAME_TABLE', 'ALTER TABLE %s RENAME %s');
+define('OWA_SQL_CREATE_TABLE', 'CREATE TABLE IF NOT EXISTS %s (%s) %s');
+define('OWA_SQL_DROP_TABLE', 'DROP TABLE IF EXISTS %s');
+define('OWA_SQL_SHOW_TABLE', "show tables like '%s'");
 define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)');
 define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s %s');
 define('OWA_SQL_DELETE_ROW', "DELETE from %s %s");
@@ -108,17 +109,32 @@ class owa_db_mysql extends owa_db {
             } else {
                 $port = 3306;
             }
+            
+            $socket = null;
+            $client_flags = defined( 'OWA_MYSQL_CLIENT_FLAGS' ) ? OWA_MYSQL_CLIENT_FLAGS : 0;
+            
+            /*
+             * Set the MySQLi error reporting off.
+             * This is needed due to the default value change from `MYSQLI_REPORT_OFF`
+             * to `MYSQLI_REPORT_ERROR|MYSQLI_REPORT_STRICT` in PHP 8.1.
+             */
+            mysqli_report( MYSQLI_REPORT_OFF );
+            
+            $this->connection = mysqli_init();
 
             // get a connection
-            $this->connection = mysqli_connect(
+            mysqli_real_connect(
+                $this->connection,
                 $host,
                 $this->getConnectionParam('user'),
                 $this->getConnectionParam('password'),
                 $this->getConnectionParam('name'),
-                $port
+                $port,
+                $socket,
+                $client_flags
             );
 
-            // explicitng set the character set as UTF-8
+            // explicitly set the character set as UTF-8
             if (function_exists('mysqli_set_charset')) {
 
                 mysqli_set_charset($this->connection, 'utf8' );
@@ -180,7 +196,7 @@ class owa_db_mysql extends owa_db {
 
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
-        $result = @mysqli_query( $this->connection, $sql );
+        $result = mysqli_query( $this->connection, $sql );
 
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         // Log Errors
@@ -256,7 +272,7 @@ class owa_db_mysql extends owa_db {
         $this->query($sql);
 
         //print_r($this->result);
-        $row = @mysqli_fetch_assoc($this->new_result);
+        $row = mysqli_fetch_assoc($this->new_result);
 
         return $row;
     }
@@ -268,6 +284,9 @@ class owa_db_mysql extends owa_db {
      * @return string
      */
     function prepare( $string ) {
+        if(is_null($string)){
+            return $string;
+        }
 
         if ($this->connection_status == false) {
               $this->connect();

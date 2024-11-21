@@ -27,7 +27,7 @@ require_once(OWA_DIR.'owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.1
  */
 
@@ -41,7 +41,7 @@ class owa_sitesAddCliController extends owa_sitesAddController {
     function success() {
 	   
 	    $this->setView('base.sitesAddCli');
-    }    
+    }
 }
 
 
@@ -51,7 +51,7 @@ class owa_sitesAddCliView extends owa_cliView {
 	function render() {
 		
 		$this->body->set('status_msg', "Site added successfully.");
-	    $this->setResponseData( $this->get('site') ); 
+	    $this->setResponseData( $this->get('site') );
 	}
 }
 

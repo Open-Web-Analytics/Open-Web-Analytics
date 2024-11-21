@@ -27,7 +27,7 @@ require_once(OWA_BASE_DIR.'/owa_reportController.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 
@@ -38,7 +38,7 @@ class owa_reportTrafficController extends owa_reportController {
         // view stuff
         $this->setView('base.report');
         $this->setSubview('base.reportTraffic');
-        $this->setTitle('Traffic Sources');    
+        $this->setTitle('Traffic Sources');
     }
 }
 
@@ -50,7 +50,7 @@ class owa_reportTrafficController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 

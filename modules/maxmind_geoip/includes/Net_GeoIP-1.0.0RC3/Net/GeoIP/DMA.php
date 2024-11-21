@@ -304,7 +304,7 @@ class Net_GeoIP_DMA
      * 
      * @return int DMA code, or false if not found.
      */
-    public static function getDMACode($metro)    
+    public static function getDMACode($metro)
     {
         if (self::$dmaMap === null) {
             self::initialize();

@@ -204,7 +204,7 @@ class owa_requestContainer {
         $this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
 
         // set https flag
-        if( isset($_SERVER['HTTPS'] ) ) {
+        if( owa_lib::isHttps() ) {
             $this->is_https = true;
         }
     }
@@ -278,7 +278,7 @@ class owa_requestContainer {
                 array_walk_recursive($v, array($this, 'arrayUrlDecode'));
                 $params[$k] = $v;
             } else {
-                $params[$k] = urldecode($v);
+                $params[$k] = is_null($v)?$v:rawurldecode($v);
             }
         }
 
@@ -293,7 +293,8 @@ class owa_requestContainer {
     }
 
     function arrayUrlDecode(&$val, $index) {
-        urldecode($val);
+        
+        rawurldecode($val);
     }
 
     function getOwaCookie($name) {

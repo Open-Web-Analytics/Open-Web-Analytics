@@ -16,11 +16,11 @@
 // $Id$
 //
 
-if(!class_exists('Snoopy')) {
-    require_once(OWA_INCLUDE_DIR.'/Snoopy.class.php');
-}
-
-require_once(OWA_HTTPCLIENT_DIR.'http.php');
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ClientException;
 
 /**
  * Wrapper for Snoopy http request class
@@ -70,11 +70,7 @@ class owa_http {
      *
      * @var array
      */
-    var $anchor_info;
-
-    var $crawler;
-
-    var $testcrawler;
+    var $anchor_info = [];
 
     var $http;
 
@@ -85,166 +81,67 @@ class owa_http {
     var $request_headers;
 
     function __construct() {
-
-        $c = owa_coreAPI::configSingleton();
-        $this->config = $c->fetch('base');
-        $this->e = owa_coreAPI::errorSingleton();
-        $this->crawler = new Snoopy;
-        // do not allow snoopy to follow links
-        $this->crawler->maxredirs = 5;
-        $this->crawler->agent = owa_coreAPI::getSetting('base', 'owa_user_agent');
-        //$this->crawler->agent = "Firefox";
-        //owa_coreAPI::debug('hello from owa_http constructor');
-        return;
+	    
+	    $this->http = new Client( [
+		    
+		    'timeout'  => 5.0,
+		    'connect_timeout'  => 5.0
+	    ] );
 
     }
-
-    function fetch($uri) {
-        //owa_coreAPI::debug('hello from owa_http fetch');
-        return $this->crawler->fetch($uri);
-    }
-
-    function testFetch($url) {
-
-        $http= new http_class;
-        owa_coreAPI::debug('hello owa_http testfetch method');
-        /* Connection timeout */
-        $http->timeout=0;
-        /* Data transfer timeout */
-        $http->data_timeout=0;
-        /* Output debugging information about the progress of the connection */
-        $http->debug=1;
-        $http->user_agent = owa_coreAPI::getSetting('base', 'owa_user_agent');
-        $http->follow_redirect=1;
-        $http->redirection_limit=5;
-        $http->exclude_address="";
-        $http->prefer_curl=0;
-        $arguments = array();
-        $error=$http->GetRequestArguments($url,$arguments);
-        $error=$http->Open($arguments);
-
-        //for(;;)
-        //        {
-                    $error=$http->ReadReplyBody($body,50000);
-                    if($error!="" || strlen($body)==0)
-                    owa_coreAPI::debug(HtmlSpecialChars($body));
-        //        }
-
-    }
-
     /**
      * Searches a fetched html document for the anchor of a specific url
      *
      * @param string $link
      */
-    function extract_anchor($link) {
-
-        $matches = '';
-        $regex = '/<a[^>]*href=\"%s\"[^>]*>(.*?)<\/a>/i';
-
-        //$escaped_link = str_replace(array("/", "?"), array("\/", "\?"), $link);
-
-        $pattern = trim(sprintf($regex, preg_quote($link, '/')));
-        $search = preg_match($pattern, $this->response, $matches);
-        //$this->e->debug('pattern: '.$pattern);
-        //$this->e->debug('link: '.$link);
-
-
-        if (empty($matches)) {
-            if (substr($link, -1) === '/') {
-                $link = substr($link, 0, -1);
-                $pattern = trim(sprintf($regex, preg_quote($link, '/')));
-                $search = preg_match($pattern, $this->response, $matches);
-                //$this->e->debug('pattern: '.$pattern);
-                //$this->e->debug('link: '.$link);
-            }
-        }
-
-        $this->e->debug('ref search: '.$search);
-        //$this->e->debug('ref matches: '.print_r($this->results, true));
-        //$this->e->debug('ref matches: '.print_r($matches, true));
-        if (isset($matches[0])) {
-            $this->anchor_info =  array('anchor_tag' => $matches[0], 'anchor_text' => owa_lib::inputFilter($matches[0]));
-            $this->e->debug('Anchor info: '.print_r($this->anchor_info, true));
-        }
+    function extractAnchors() {
+	    
+	    $regex = '/<a\s[^>]*href\s*=\s*([\"\']??)(http|https[^\\1 >]*?)\\1[^>]*>s*(.*)<\/a>/simU';
+	    
+	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
+		   
+		    owa_coreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
+		    
+		    return $matches;
+		}
     }
-
-    /**
-     * Creates a text snippet of the portion of page where the
-     * specific link is found.
-     *
-     * Takes fully qualified URL for the link to search for.
-     *
-     * @param string $link
-     * @return string
-     */
-    function extract_anchor_snippet($link){
-
-        // Search the page for a specific anchor
-        $this->extract_anchor($link);
-
-        if(!empty($this->anchor_info['anchor_tag'])) {
-
-            // drop certain HTML entitities and their content
-            $nohtml = $this->strip_selected_tags(
-                    $this->response,
-                    array('title',
-                          'head',
-                          'script',
-                          'object',
-                          'style',
-                          'meta',
-                          'link',
-                          'rdf:'),
-                    true);
-
-            //$this->e->debug('Refering page content after certain html entities were dropped: '.$this->results);
-
-            // calc len of the anchor text
-            $atext_len = strlen($this->anchor_info['anchor_tag']);
-
-            // find position within document of the anchor text
-            $start = strpos($nohtml, $this->anchor_info['anchor_tag']);
-
-            if ($start < $this->snip_len) {
-                $part1_start_pos = 0;
-                $part1_snip_len = $start;
-            } else {
-                $part1_start_pos = $start;
-                $part1_snip_len = $this->snip_len;
-            }
-
-            $replace_items = array("\r\n", "\n\n", "\t", "\r", "\n");
-            // Create first segment of snippet
-            $first_part = substr($nohtml, 0, $part1_start_pos);
-            $first_part = str_replace($replace_items, '', $first_part);
-            $first_part = strip_tags(owa_lib::inputFilter($first_part));
-            //$part1 = trim(substr($nohtml, $part1_start_pos, $part1_snip_len));
-            $part1 = substr($first_part,-$part1_snip_len, $part1_snip_len);
-
-            //$part1 = str_replace(array('\r\n', '\n\n', '\t', '\r', '\n'), '', $part1);
-            //$part1 = owa_lib::inputFilter($part1);
-            // Create second segment of snippet
-            $part2 = trim(substr($nohtml, $start + $atext_len, $this->snip_len+300));
-            $part2 = str_replace($replace_items, '', $part2);
-            $part2 = substr(strip_tags(owa_lib::inputFilter($part2)),0, $this->snip_len);
-
-            // Put humpty dumpy back together again and create actual snippet
-            $snippet =  $this->snip_str.$part1.' <span class="snippet_anchor">'.owa_lib::inputFilter($this->anchor_info['anchor_tag']).'</span> '.$part2.$this->snip_str;
-
-        } else {
-
-            $snippet = '';
-
-        }
-
-        return $snippet;
-
+    
+    function extractAnchorText( $url ) {
+	    
+	    $anchors = $this->extractAnchors();
+	    
+	    $anchortext = '';
+	    
+	    if ( $anchors ) {
+		    
+		    foreach( $anchors as $match ) {
+			    
+		    	// match[0] = full matching <a> tag
+		    	// $match[2] = link address
+				// $match[3] = link text	
+		        
+		        //strip any HTML tags (i.e. img, span, etc)
+		        if ( $match[3] ) {
+			        
+		        	$match[3] = trim( owa_sanitize::stripAllTags( $match[3] ) );
+		        }
+		        
+		        // if anything is left as anchortext then use that
+				if ( $match[3] && $url === $match[2] ) {
+					
+					$anchortext = $match[3];
+	        		
+					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+					
+					return owa_lib::inputFilter( $anchortext );
+				}
+			}
+		}
     }
 
     function extract_title() {
 
-        preg_match('/<title[^>]*>(.*?)<\/title>/', $this->response, $matches);
+        preg_match('/<title[^>]*>(.*?)<\/title>/', $this->getResponseBody(), $matches);
 
         $title = null;
 
@@ -252,12 +149,12 @@ class owa_http {
             $title = $matches[1];
         }
 
-        $this->e->debug("referer title extract: ". print_r($title, true));
+        owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
 
-        return $title;
+        return trim($title);
     }
 
-     function strip_selected_tags($str, $tags = array(), $stripContent = false) {
+    function strip_selected_tags($str, $tags = array(), $stripContent = false) {
 
        foreach ($tags as $k => $tag){
        
@@ -271,73 +168,69 @@ class owa_http {
        return $str;
    }
    
-   function SetupHTTP()
-    {
-        if(!IsSet($this->http))
-        {
-            $this->http = new http_class;
-            $this->http->follow_redirect = 1;
-            $this->http->debug = 0;
-            $this->http->debug_response_body = 0;
-            $this->http->html_debug = 1;
-            $this->http->user_agent =  owa_coreAPI::getSetting('base', 'owa_user_agent');
-            $this->http->timeout = 3;
-            $this->http->data_timeout = 3;
+   function getRequest($url, $arguments = '') {
+		
+		$this->response = '';
+		
+		owa_coreAPI::debug("GET: $url");
+		
+        try {
+	        
+	        $request = new Request('GET', trim( $url )  );
+	        $this->response = $this->http->send( $request, [
+		        
+		        'allow_redirects' => [
+				    'max'             => 5,
+				    'strict'          => false,
+				    'referer'         => false,
+				    'protocols'       => ['http', 'https'],
+				    'track_redirects' => false
+				],
+		        'headers' => [
+			        
+					'User-Agent' => owa_coreAPI::getSetting('base', 'owa_user_agent')
+				]
+	        ]);
+	        
+	        owa_coreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
+        }
+        
+        catch( \GuzzleHttp\Exception\RequestException | \GuzzleHttp\Exception\ConnectException | \GuzzleHttp\Exception\ClientException $e ) {
+		     
+		    $r = $e->getRequest();
+		  	$res = null;
+		  	
+		  	if ( method_exists( $e, 'hasResponse' ) && $e->hasResponse() ) {
+			  	
+			  	$res = $e->getResponse();
+		  	}
+		  	
+		  	owa_coreAPI::debug( print_r($r, true ) );
+			owa_coreAPI::debug( print_r($res, true ) );
+	    }
+	    
+
+        if ( $this->response ) {
+	        
+	        return $this->getResponseBody();
         }
     }
-
-    function OpenRequest($arguments, &$headers)
-    {
-        if(strlen($this->error=$this->http->Open($arguments)))
-            return(0);
-        if(strlen($this->error=$this->http->SendRequest($arguments))
-        || strlen($this->error=$this->http->ReadReplyHeaders($headers)))
-        {
-            $this->http->Close();
-            return(0);
-        }
-        if($this->http->response_status!=200)
-        {
-            $this->error = 'the HTTP request returned the status '.$this->http->response_status;
-            $this->http->Close();
-            return(0);
-        }
-        return(1);
+    
+   function getResponseStatusCode() {
+	    
+	    if ( $this->response ) {
+		 
+		    return $this->response->getStatusCode();
+		}
     }
-
-    function GetRequestResponse(&$response)
-    {
-        for($response = ''; ; )
-        {
-            if(strlen($this->error=$this->http->ReadReplyBody($body, 500000)))
-            {
-                $this->http->Close();
-                return(0);
-            }
-            if(strlen($body)==0)
-                break;
-            $response .= $body;
-
-        }
-        $this->http->Close();
-        owa_coreAPI::debug('http response code: '.$this->http->response_status);
-        return($response);
+    
+   function getResponseBody() {
+	    
+	      if ( $this->response ) {
+		 
+		    return $this->response->getBody();
+		}
     }
-
-    function getRequest($url, $arguments = '', $response = '') {
-
-        $this->SetupHTTP();
-
-        $this->http->GetRequestArguments($url, $arguments);
-        $arguments['RequestMethod']='GET';
-        if(!$this->OpenRequest($arguments, $headers)) {
-                return(0);
-        }
-        $this->response = $this->GetRequestResponse($response);
-        return($this->response);
-    }
-
 }
-
 
 ?>

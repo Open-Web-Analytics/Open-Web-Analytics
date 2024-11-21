@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -14,11 +14,7 @@
 // limitations under the License.
 //
 // $Id$
-// 
-
-require_once('owa_env.php');
-require_once(OWA_DIR.'owa_caller.php');
-require_once(OWA_BASE_CLASS_DIR.'cliController.php');
+//
 
 /**
  * OWA Comand Line Interface (CLI)
@@ -32,38 +28,50 @@ require_once(OWA_BASE_CLASS_DIR.'cliController.php');
  * @since        owa 1.2.1
  */
 
-define('OWA_CLI', true);
+// Ensure we are being called as a CLI process before any other processing.
+define('OWA_CLI', (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)));
 
-if (!empty($_POST)) {
+if (!OWA_CLI)
+{
+    // Fail with 404 if called over HTTP so it looks like the script
+    // just doesn't exist.
+    if (isset($_SERVER['SERVER_PROTOCOL'])) {
+        header("$_SERVER[SERVER_PROTOCOL] 404 Not Found");
+    }
     exit();
-} elseif (!empty($_GET)) {
-    exit();
-} elseif (!empty($argv)) {
-    $params = array();
-    // get params from the command line args
-    // $argv is a php super global variable
+}
 
-       for ($i=1; $i<count($argv);$i++)
-       {
-           $it = explode("=",$argv[$i]);
-           $params[$it[0]] = $it[1];
-       }
-     unset($params['action']);
-     unset($params['do']);
+require_once('owa_env.php');
+require_once(OWA_DIR.'owa_caller.php');
+require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
-} else {
-    // No params found
-    exit();
+$params = [];
+// get params from the command line args
+// $argv is a php super global variable
+for ($i=1; $i<count($argv); $i++)
+{
+    $it = explode("=",$argv[$i]);
+    if (count($it) !== 2) {
+        fwrite(STDERR, "Invalid argument '{$argv[$i]}'. Syntax is key=value\n");
+        exit(1);
+    }
+    $params[$it[0]] = $it[1];
+}
+unset($params['action']);
+unset($params['do']);
+if (empty($params)) {
+    fwrite(STDERR, "Arguments required\n");
+    exit(1);
 }
 
 // Initialize owa
 $owa = new owa_caller;
-
+$owa->setSetting('base', 'request_mode', 'cli');
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // setting CLI mode to true
     //$owa->setSetting('base', 'cli_mode', true);
-    $owa->setSetting('base', 'request_mode', 'cli');
+    
     // setting user auth
     $owa->setCurrentUser('admin', 'cli-user');
     // run controller or view and echo page content
@@ -78,11 +86,11 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
             $params['do'] = $cmd;
             echo $owa->handleRequest($params);
         } else {
-            echo "Invalid command name.";
+            owa_coreAPI::notice( "Invalid command name.");
         }
 
     } else {
-        echo "Missing a command argument.";
+        owa_coreAPI::notice("Missing a command argument.");
     }
 
 } else {

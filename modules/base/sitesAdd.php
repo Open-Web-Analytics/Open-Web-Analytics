@@ -92,7 +92,7 @@ class owa_sitesAddController extends owa_adminController {
         
         if ( $site ) {
 	        
-	    	owa_coreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );    
+	    	owa_coreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
         }
         
         $this->set( 'site', $site->_getProperties() );
@@ -103,9 +103,9 @@ class owa_sitesAddController extends owa_adminController {
 	    
 	    // Config for the domain validation
         $domain_conf = array(
-        	'substring' => 'http', 
-        	'position' => 0, 
-        	'operator' => '=', 
+        	'substring' => 'http',
+        	'position' => 0,
+        	'operator' => '=',
         	'errorMsg' => 'Please add the "http://" or "https://" to the beginning of your domain.'
         );
 

@@ -101,6 +101,7 @@ var toppagetypesurl = '<?php echo $this->makeApiLink(array('do' => 'reports', 'm
                                                 'dimensions' => 'pageType',
                                                 'sort' => 'visits-',
                                                 'format' => 'json',
+                                                'resultsPerPage' => 25,
                                                 'constraints' => urlencode($this->substituteValue('siteId==%s,','siteId'))), true);?>';
 
 OWA.items.toppagetypes = new OWA.resultSetExplorer('top-pagetypes');

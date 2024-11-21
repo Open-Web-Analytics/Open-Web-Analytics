@@ -31,7 +31,7 @@
 /**
  * DATABASE CONFIGURATION
  *
- * Connection info for databases that will be used by OWA. 
+ * Connection info for databases that will be used by OWA.
  *
  */
 
@@ -47,27 +47,27 @@ define('OWA_DB_PASSWORD', 'yourdbpasswordgoeshere'); // database user's password
  *
  * Change these to different unique phrases.
  */
-define('OWA_NONCE_KEY', 'yournoncekeygoeshere');  
+define('OWA_NONCE_KEY', 'yournoncekeygoeshere');
 define('OWA_NONCE_SALT', 'yournoncesaltgoeshere');
 define('OWA_AUTH_KEY', 'yourauthkeygoeshere');
 define('OWA_AUTH_SALT', 'yourauthsaltgoeshere');
 
-/** 
+/**
  * PUBLIC URL
  *
- * Define the URL of OWA's base directory e.g. http://www.domain.com/path/to/owa/ 
+ * Define the URL of OWA's base directory e.g. http://www.domain.com/path/to/owa/
  * Don't forget the slash at the end.
  */
  
-define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');  
+define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
-/** 
+/**
  * OWA ERROR HANDLER
  *
- * Overide OWA error handler. This should be done through the admin GUI, but 
- * can be handy during install or development. 
+ * Overide OWA error handler. This should be done through the admin GUI, but
+ * can be handy during install or development.
  * 
- * Choices are: 
+ * Choices are:
  *
  * 'production' - will log only critical errors to a log file.
  * 'development' - logs al sorts of useful debug to log file.
@@ -75,7 +75,7 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_ERROR_HANDLER', 'development');
 
-/** 
+/**
  * LOG PHP ERRORS
  *
  * Log all php errors to OWA's error log file. Only do this to debug.
@@ -83,10 +83,10 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_LOG_PHP_ERRORS', true);
  
-/** 
+/**
  * OBJECT CACHING
  *
- * Override setting to cache objects. Caching will increase performance. 
+ * Override setting to cache objects. Caching will increase performance.
  */
 
 //define('OWA_CACHE_OBJECTS', true);
@@ -98,6 +98,5 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  */
  
 //define('OWA_CONFIGURATION_ID', '1');
-
 
 ?>

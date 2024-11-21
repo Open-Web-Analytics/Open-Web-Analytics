@@ -18,7 +18,7 @@
 
 if(!class_exists('owa_observer')) {
     require_once(OWA_BASE_DIR.'owa_observer.php');
-}    
+}
 
 /**
  * Click Event Handler
@@ -28,7 +28,7 @@ if(!class_exists('owa_observer')) {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.0.0
  */
 class owa_notifyHandlers extends owa_observer {

@@ -21,7 +21,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
 
 
 class owa_installStartController extends owa_installController {
-
+    
     function action() {
 
         $this->setView('base.install');
@@ -49,7 +49,7 @@ class owa_installStartView extends owa_view {
         $this->t->set('page_title', 'OWA Installation Start');
         // fetch admin links from all modules
         $this->body->set('headline', 'Get Started...');
-        $this->setJs("owa", "base/js/owa.js");
+        $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }
 

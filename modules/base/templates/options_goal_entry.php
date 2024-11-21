@@ -239,10 +239,10 @@ function renderStep(step) {
 <td class="">
 
 
-<input type="checkbox" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][is_required]" value="true" 
-<* if ( this.is_required ) { *> 
-CHECKED 
-<* } *> 
+<input type="checkbox" size="20" name="owa_goal[details][funnel_steps][<*= this.step_number *>][is_required]" value="true"
+<* if ( this.is_required ) { *>
+CHECKED
+<* } *>
 >
 
 </td>

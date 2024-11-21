@@ -318,18 +318,6 @@ class owa_event {
 
     }
 
-    function setSiteSessionState($site_id, $name, $value, $store_type = 'cookie') {
-
-        $store_name = owa_coreAPI::getSetting('base', 'site_session_param').'_'.$site_id;
-        return owa_coreAPI::setState($store_name, $name, $value, $store_type, true);
-    }
-
-    function deleteSiteSessionState($site_id, $store_type = 'cookie') {
-
-        $store_name = owa_coreAPI::getSetting('base', 'site_session_param').'_'.$site_id;
-        return owa_coreAPI::clearState($store_name);
-    }
-
     function getProperties() {
 
         return $this->properties;

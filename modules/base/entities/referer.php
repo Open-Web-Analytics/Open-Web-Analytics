@@ -56,47 +56,40 @@ class owa_referer extends owa_entity {
         $this->properties['is_searchengine']->setDataType(OWA_DTD_TINYINT);
     }
 
-    public function crawlReferer()
-    {
-        if (!owa_coreAPI::getSetting( 'base', 'fetch_refering_page_info')) {
-            return;
-        }
-
-        $crawler = new owa_http;
-        $res = $crawler->getRequest($this->get('url'));
-        owa_coreAPI::debug('http request response: '.print_r($res, true));
-
-        $title = trim($crawler->extract_title());
-
-        if ($title) {
-            $this->set('page_title', owa_lib::utf8Encode($title));
-        }
-
-        $se = $this->get('is_searchengine');
-
-        if ($se == true) {
-            return;
-        }
-
-        //Extract anchortext and page snippet but not if it's a search engine...
-        $snippet = $crawler->extract_anchor_snippet($this->get('url'));
-
-        if ($snippet) {
-            if (function_exists('iconv')) {
-                $snippet = iconv('UTF-8','UTF-8//TRANSLIT',$snippet);
-            }
-            $this->set('snippet', $snippet);
-        }
-
-        if (!$crawler->anchor_info) {
-            return;
-        }
-
-        $anchortext = $crawler->anchor_info['anchor_text'];
-
-        if ($anchortext) {
-            $this->set('refering_anchortext', owa_lib::utf8Encode($anchortext));
-        }
+    public function crawlReferer() {
+	    
+	    if ( owa_coreAPI::getSetting( 'base', 'fetch_refering_page_info')) {
+	    
+		    // never crawl search engines or social netowrks.
+		    $medium = $this->get('medium');
+	        
+	        if ( $medium === 'organic-search' || $this->get('is_searchengine') || $medium === 'social-network' ) {
+		        
+		        return;
+	        }
+		   
+	        $crawler = new owa_http;
+	        $res = $crawler->getRequest($this->get('url'));
+	        
+	        // extract title
+	        $title = $crawler->extract_title();
+	
+	        if ($title) {
+		        
+	            $this->set( 'page_title', owa_lib::utf8Encode( $title ) );
+	        }
+	
+	        //Extract anchortext and page snippet but not if it's a search engine...
+	        $anchortext = $crawler->extractAnchorText( $this->get('url') );
+	
+	        if ( $anchortext ) {
+		        
+		        $anchortext = owa_lib::utf8Encode($anchortext );
+		        
+				$this->set( 'snippet', $anchortext );
+				$this->set( 'refering_anchortext', $anchortext );
+	        }
+	    }
     }
 }
 

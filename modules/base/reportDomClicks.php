@@ -27,7 +27,7 @@ require_once(OWA_BASE_DIR.'/owa_view.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.0
  */
 
@@ -35,7 +35,7 @@ class owa_reportDomClicksController extends owa_reportController {
     
     function action() {
         
-        $d = owa_coreAPI::entityFactory('base.document');    
+        $d = owa_coreAPI::entityFactory('base.document');
         
         if ($this->getParam('pageUrl')) {
             $pageUrl = $this->getParam('pageUrl');
@@ -64,7 +64,7 @@ class owa_reportDomClicksController extends owa_reportController {
         $this->setSubview('base.reportDomClicks');
         $this->set('metrics', 'domClicks');
         $this->set('sort', 'domClicks');
-        $this->set('resultsPerPage', 30);        
+        $this->set('resultsPerPage', 30);
         $this->set('trendChartMetric', 'domClicks');
         $this->set('trendTitle', 'There were <*= this.d.resultSet.aggregates.domClicks.formatted_value *> dom clicks for this web page.');
     }
@@ -78,7 +78,7 @@ class owa_reportDomClicksController extends owa_reportController {
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$          
+ * @version        $Revision$
  * @since        owa 1.4.0
  */
 
