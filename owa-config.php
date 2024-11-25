@@ -43,6 +43,7 @@ define('OWA_DB_HOST', $url["host"]); // host name of the server housing the data
 define('OWA_DB_USER', $url["user"]); // database user
 define('OWA_DB_PORT', '3306'); // port of database
 define('OWA_DB_PASSWORD', $url["pass"]); // database user's password
+define('OWA_DEBUG',true);
 
 /**
  * AUTHENTICATION KEYS AND SALTS
@@ -61,7 +62,17 @@ define('OWA_AUTH_SALT', 'RtVJ4FDL0S9tl3FemKMjzRMeMTTh5ly5');
  * Don't forget the slash at the end.
  */
  
-define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
+// define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
+// $environment = getenv("environment");
+// if(getenv("environment") == "review") {
+//  $stage_url = getenv("HEROKU_APP_DEFAULT_DOMAIN_NAME") . '/';
+//  define('OWA_PUBLIC_URL', $stage_url); 
+// } else {
+//  define('OWA_PUBLIC_URL', 'https://owa.tliveinc.com/');  
+// }
+
+$heroku_url = getenv("HEROKU_APP_DEFAULT_DOMAIN_NAME") . '/';
+define('OWA_PUBLIC_URL', $heroku_url); 
 
 /** 
  * OWA ERROR HANDLER
