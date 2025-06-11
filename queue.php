@@ -47,10 +47,20 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
         $dispatch = owa_coreAPI::getEventDispatch();
         $event = $dispatch->makeEvent();
+        
         $event->loadFromArray($raw_event);
-
+        
         $owa->e->debug(print_r($event,true));
-        $dispatch->asyncNotify($event);
+        
+        // get event type
+        $type = $event->getEventType();
+        //check against wl
+        $allowed_event_types = $owa->getSetting('base', 'allowed_queued_event_types');
+        
+        if (in_array($type, $allowed_event_types)) {
+            
+            $dispatch->asyncNotify($event);    
+        }
     }
 
 } else {
