@@ -16,6 +16,13 @@
 // $Id$
 //
 
+// this is pre-config default. It is not used unitl after configuration is done.
+defined('OWA_DTD_VARCHAR255') or define('OWA_DTD_VARCHAR255', 'VARCHAR(255)');
+defined('OWA_DTD_BOOLEAN') or define('OWA_DTD_BOOLEAN', 'TINYINT(1)');
+defined('OWA_DTD_INT') or define('OWA_DTD_INT', 'INT');
+defined('OWA_DTD_TINYINT2') or define('OWA_DTD_TINYINT2', 'TINYINT(2)');
+defined('OWA_DTD_VARCHAR10') or define('OWA_DTD_VARCHAR10', 'VARCHAR(10)');
+
 /**
  * Abstract Fact Table Entity Class
  *
@@ -29,7 +36,7 @@
  * @version        $Revision$
  * @since        owa 1.5.0
  */
- 
+
 class owa_factTable extends owa_entity {
      
      function __construct() {
