@@ -86,9 +86,8 @@ class owa_sanitize {
         if ( $string ) {
             // revert special chars, some values are saved encoded in the database eg. page title
             $string = html_entity_decode($string, $quotes);
+            return htmlentities($string, $quotes, $encoding);
         }
-        
-        return htmlentities($string, $quotes, $encoding);
     }
 
 
