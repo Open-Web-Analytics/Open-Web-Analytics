@@ -82,10 +82,12 @@ class owa_sanitize {
             //use mode to ocnvert both single and double quotes.
             $quotes = ENT_QUOTES;
         }
-
-        // revert special chars, some values are saved encoded in the database eg. page title
-        $string = html_entity_decode($string, $quotes);
-
+        
+        if ( $string ) {
+            // revert special chars, some values are saved encoded in the database eg. page title
+            $string = html_entity_decode($string, $quotes);
+        }
+        
         return htmlentities($string, $quotes, $encoding);
     }
 
