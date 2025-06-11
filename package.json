@@ -1,6 +1,6 @@
 {
   "name": "owa",
-  "version": "1.0.0",
+  "version": "1.7.9",
   "description": "Open Web Analytics is an open source alternative to commercial web analytics tools such as Google Analytics. This software allows you to stay in control of the data you collect about the user of your websites or applications.",
   "main": "index.js",
   "scripts": {
