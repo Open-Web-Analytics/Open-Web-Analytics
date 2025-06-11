@@ -713,7 +713,7 @@
                 'memcachedServers'                    => array(),
                 'memcachedPersisantConnections'        => true,
                 'cacheType'                            => '', // file, memory, memcache
-                'disabledEndpoints'                    => array(),
+                'disabledEndpoints'                    => array('queue.php'),
                 'disableAllEndpoints'                => false,
                 'processQueuesJobSchedule'            => '10 * * * *',
                 'maxCustomVars'                        => 5, //sdk

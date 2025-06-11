@@ -270,9 +270,12 @@ class owa_caller extends owa_base {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
             $disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
-            
+            owa_coreAPI::debug('Disabled endpoints:');
+            owa_coreAPI::debug($disabled_endpoints);
             if ( ! in_array( $file_name, $disabled_endpoints ) ) {
                 return true;
+            } else {
+                owa_coreAPI::debug('This endpoint is disabled.');
             }
         }
     }
