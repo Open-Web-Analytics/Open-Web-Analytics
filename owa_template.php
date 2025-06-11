@@ -827,6 +827,9 @@ class owa_template extends Template {
         if ($value) {
 
             return sprintf($string,$value);
+        } else {
+            
+            return '';
         }
     }
 
