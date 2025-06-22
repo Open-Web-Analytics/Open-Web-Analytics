@@ -17,7 +17,7 @@
 //
 
 include_once('../owa_env.php');
-require_once(OWA_BASE_DIR.'/owa_php.php');
+require_once(OWA_DIR.'/owa.php');
 
 /**
  * REST API
@@ -28,11 +28,17 @@ require_once(OWA_BASE_DIR.'/owa_php.php');
  * @since       owa 1.6.7
  */
 
-// define entry point cnstant
+// define entry point constant
 define('OWA_RESTAPI', true);
 
 // invoke OWA
-$owa = new owa_php;
+
+$config = [
+
+    'instance_role' => 'rest_api'
+];
+
+$owa = new owa( $config );
 $owa->setSetting('base', 'request_mode', 'rest_api');
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
@@ -43,7 +49,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
 	
     // run api command and echo page content
-    echo $owa->handleRequest();
+    echo $owa->handleRestRequest();
 } else {
     // unload owa
     $owa->restInPeace();

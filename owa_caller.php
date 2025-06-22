@@ -205,6 +205,16 @@ class owa_caller extends owa_base {
                         
     }
     
+    /**
+     * Handles OWA internal page/action requests
+     *
+     * @return unknown
+     */
+    function handleRestRequest() {
+        
+        return owa_coreAPI::handleRestRequest();
+    }
+    
     function __destruct() {
         
         $this->end_time = owa_lib::microtime_float();

@@ -35,7 +35,15 @@ require_once(OWA_BASE_DIR.'/owa.php');
 //define('OWA_ERROR_HANDLER', 'development');
 define('OWA_CACHE_OBJECTS', false);
 define('OWA_INSTALLING', true);
-$owa = new owa();
+
+$config = [
+
+    'instance_role' => 'installer'
+];
+
+$owa = new owa( $config );
+
+$owa = new owa( $config );
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // need third param here so that seting is not persisted.

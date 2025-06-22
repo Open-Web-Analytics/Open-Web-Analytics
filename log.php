@@ -82,7 +82,8 @@ ob_end_flush();
 require_once(OWA_BASE_DIR.'/owa.php');
 $config = array(
 
-    'tracking_mode' => true
+    'tracking_mode' => true,
+    'instance_role' => 'logger'
 );
 
 $owa = new owa( $config );

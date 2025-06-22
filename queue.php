@@ -34,7 +34,12 @@ require_once(OWA_BASE_DIR.'/owa.php');
  * @since        owa 1.3.0
  */
 
-$owa = new owa();
+$config = [
+ 
+     'instance_role' => 'logger_queue'
+ ];
+
+$owa = new owa( $config );
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
