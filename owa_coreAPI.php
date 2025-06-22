@@ -905,7 +905,7 @@ class owa_coreAPI {
     }
 
     /**
-     * Logs an event to the event queue
+     * Logs a tracking event to the event queue
      *
      * take an owa_event object as a message.
      *
@@ -917,6 +917,13 @@ class owa_coreAPI {
 
         owa_coreAPI::debug("Logging new event $event_type");
 		
+        // Check to ensure that the event is in fact a tracking event
+        if ( ! in_array( $event_type, owa_coreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+            
+            owa_coreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
+            return false;
+        }
+        
         // Check to see if named users should be logged
         if (owa_coreAPI::getSetting('base', 'log_named_users') != true) {
             $cu = owa_coreAPI::getCurrentUser();
@@ -927,8 +934,8 @@ class owa_coreAPI {
                 return false;
             }
         }
-
-		// backwads compatability with old style messages
+        
+		// backwards compatibility with old style messages
 		// @todo is this needed anymore?
         $class= 'owa_event';
         

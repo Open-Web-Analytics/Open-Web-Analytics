@@ -729,6 +729,15 @@
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
+                'instance_mode'                     => '',
+                'tracking_event_types'              => [
+                    'dom.click', 
+                    'ecommerce.transaction', 
+                    'base.page_request', 
+                    'dom.stream', 
+                    'base.feed_request', 
+                    'track.action' 
+                ],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
         );
