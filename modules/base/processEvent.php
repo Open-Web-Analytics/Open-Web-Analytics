@@ -112,12 +112,18 @@ class owa_processEventController extends owa_controller {
     }
 
     function post() {
-
+        
         return $this->addToEventQueue();
     }
 
     function addToEventQueue() {
-
+        
+        if ( ! $this->isTrackingEvent() ) {
+            
+            owa_coreAPI::debug("Not dispatching event. This is not a valid tracking event type.");
+            return;
+        }
+        
         if ( ! $this->event->get( 'do_not_log' ) ) {
 
             //filter event
@@ -129,6 +135,14 @@ class owa_processEventController extends owa_controller {
         } else {
 
             owa_coreAPI::debug("Not dispatching event due to 'do not log' flag being set.");
+        }
+    }
+    
+    function isTrackingEvent() {
+        
+        if ( in_array( $this->event->getEventType(), owa_coreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+            
+            return true;
         }
     }
 }

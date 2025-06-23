@@ -1345,7 +1345,7 @@ class owa_coreAPI {
         owa_coreAPI::debug('About to perform action: '.$action);
         return owa_coreAPI::performAction($action, $params);
 
-    }
+    }    
     
     /**
      * Handles REST endpoint requests
@@ -1358,6 +1358,7 @@ class owa_coreAPI {
         
         $params = $service->request->getAllOwaParams();
         
+        owa_coreAPI::debug('Handling REST request with params: '. print_r($params, true));
         
         $action = owa_coreAPI::getRequestParam('do');
         
