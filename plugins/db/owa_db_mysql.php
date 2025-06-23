@@ -218,12 +218,12 @@ class owa_db_mysql extends owa_db {
         } catch(\Exception $e) {
             $result = false;
            $this->e->debug(
-+                    sprintf(
-+                        'An exception occurred while running the database query. Exception: %s. Query: %s',
+                    sprintf(
+                        'An exception occurred while running the database query. Exception: %s. Query: %s',
                          htmlspecialchars($e->getMessage()),
-+                        $sql
-+                    )
-+                );
+                        $sql
+                    )
+                );
         }
         $this->new_result = $result;
 
