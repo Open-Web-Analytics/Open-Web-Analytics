@@ -38,18 +38,8 @@ add_action('plugins_loaded', array( 'owa_wp_plugin', 'getInstance'), 10 );
  * OWA WordPress Plugin Class
  *
  */
-class owa_wp_plugin extends owa_wp_module {
-	
-	// cmd array
-	var $cmds = array();
-	// plugin options
-	var $options = array(
+class owa_wp_plugin {
 		
-		'track_feed_links'			=> true,
-		'feed_tracking_medium' 		=> 'feed',
-		'feed_subscription_param' 	=> 'owa_sid'
-	);
-	
 	/**
 	 * Constructor
 	 *
@@ -59,16 +49,6 @@ class owa_wp_plugin extends owa_wp_module {
 		// needed???
 		ob_start();
 		
-		// bail if this isn't a request type that OWA needs ot be loaded on.
-		if ( ! $this->isProperWordPressRequest() ) {
-			
-			return;
-		}
-				
-		// load parent constructor
-		$params = array();
-		$params['module_name'] = 'owa-wordpress';
-		parent::__construct( $params );
 	}
 	
 	/**
