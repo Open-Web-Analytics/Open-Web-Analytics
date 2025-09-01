@@ -90,6 +90,43 @@ class owa_sanitize {
         }
     }
 
+    /**
+     * Strip SQL keywords and punctuation to prevent SQL injection.
+     *
+     * @param string $input String to sanitize
+     * @return string Sanitized string
+     * @access public
+     * @static
+     */
+    public static function stripSql( $input = '' ) {
+   
+        if ( ! $input ) {
+            return $input;
+        }
+    
+        // Decode any encoded characters to reveal obfuscated SQL keywords.
+        $decoded = urldecode( $input );
+        $decoded = html_entity_decode( $decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+       
+        // Remove common SQL command keywords.
+        $sql_keywords = array(
+            'select', 'insert', 'update', 'delete', 'drop', 'union', 'create',
+            'alter', 'truncate', 'replace', 'merge', 'call', 'exec'
+        );
+        $pattern = '/\\b(' . implode( '|', $sql_keywords ) . ')\\b/i';
+        $decoded = preg_replace( $pattern, '', $decoded );
+        
+        // Remove commas and parentheses except for our allowed values.
+        $allowed_values = ['(not set)', '(unknown)'];
+        if ( ! in_array( $input, $allowed_values ) ) {
+            $decoded = str_replace( array( ',', '(', ')' ), '', $decoded );              
+        }
+        
+        // Remove any encoded commas or parentheses that may remain.
+        $decoded = preg_replace( '/%2C|%28|%29|&#40;|&#41;|&#44;/i', '', $decoded );
+    
+        return $decoded;
+    }
 
     /**
      * Strip Whitespace
@@ -327,8 +364,9 @@ class owa_sanitize {
                 'backslash'     => false
             )
         );
-
-        return trim(str_replace('&amp;', '&', $url));
+        if ( $url ){
+            return trim(str_replace('&amp;', '&', $url));
+        }
     }
 
     public static function cleanUserId ( $user_id ) {

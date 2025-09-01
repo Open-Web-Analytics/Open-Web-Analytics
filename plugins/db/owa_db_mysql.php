@@ -297,7 +297,7 @@ class owa_db_mysql extends owa_db {
         if(is_null($string)){
             return $string;
         }
-
+        $string = owa_sanitize::stripSql( $string );
         if ($this->connection_status == false) {
               $this->connect();
           }
