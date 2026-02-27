@@ -353,7 +353,8 @@ class owa_db extends owa_base {
 
         $this->limit(1);
         $ret = $this->_selectQuery();
-        return is_null($ret)?null:$ret[0];
+        return (is_array($ret) && isset($ret[0])) ? $ret[0] : null;
+        //return is_null($ret)?null:$ret[0];
     }
 
     function _setSql($sql) {
