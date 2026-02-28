@@ -4,8 +4,11 @@
         
          <?php            
                 
-            $avatar = $this->getAvatarImage($row['visitor_user_email']);
-            
+            $avatar = '';
+            if ( isset($row) && is_array( $row ) && array_key_exists('visitor_user_email', $row) ) {
+                
+                $this->getAvatarImage($row['visitor_user_email']);
+            }
             if ( $avatar ) {
         		
         		echo '<img class="owa_avatar" src="'. $avatar.'" style="vertical-align:middle;">';        
