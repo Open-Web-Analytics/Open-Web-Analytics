@@ -337,7 +337,7 @@ class owa_entity {
         // Control loop
         foreach ($all_cols as $k => $v){
         
-            // drop column is it is marked as auto-incement as DB will take care of that.
+            // drop column is it is marked as auto-increment as DB will take care of that.
             
             if ($this->get($v, false)) {
                 $db->set($v, $this->get($v, false));

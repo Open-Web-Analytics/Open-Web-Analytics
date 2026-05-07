@@ -215,7 +215,8 @@ abstract class owa_module {
 	 * Filesystem path of the module's directory
 	 */
     var $path;
-    
+
+	var $config_required;
 
     /**
      * Constructor
@@ -734,9 +735,17 @@ abstract class owa_module {
      * Adds an event processor class to the processor array. This is used to determin
      * which class to use to process a particular event
      */
-    function addEventProcessor($event_type, $processor) {
+    function addEventProcessor($event_types, $processor) {
+        
+        if ( is_string( $event_types ) ) {
+            
+            $event_types = [ $event_types ];
+        }
+        
+        foreach( $event_types as $event_type) {
 	    
-        $this->event_processors[$event_type] = $processor;
+            $this->event_processors[$event_type] = $processor;
+        }
     }
 
     function registerMetric($metric_name, $classes, $params = array(), $label = '', $description = '', $group = '') {

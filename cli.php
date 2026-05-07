@@ -42,7 +42,7 @@ if (!OWA_CLI)
 }
 
 require_once('owa_env.php');
-require_once(OWA_DIR.'owa_caller.php');
+require_once(OWA_DIR.'owa.php');
 require_once(OWA_BASE_CLASS_DIR.'cliController.php');
 
 $params = [];
@@ -65,7 +65,13 @@ if (empty($params)) {
 }
 
 // Initialize owa
-$owa = new owa_caller;
+$config = [
+
+    'instance_role' => 'admin_cli'
+];
+
+$owa = new owa( $config );
+
 $owa->setSetting('base', 'request_mode', 'cli');
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 

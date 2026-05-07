@@ -2356,8 +2356,11 @@ class owa_baseModule extends owa_module {
     }
 
     function _registerEventProcessors() {
-
-        $this->addEventProcessor('base.page_request', 'base.processRequest');
+        
+        
+        $this->addEventProcessor( owa_coreAPI::getSetting( 'base', 'tracking_event_types' ) , 'base.processRequest');
+        
+        // @todo still needed?
         $this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
     }
 

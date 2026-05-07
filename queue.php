@@ -34,7 +34,12 @@ require_once(OWA_BASE_DIR.'/owa.php');
  * @since        owa 1.3.0
  */
 
-$owa = new owa();
+$config = [
+ 
+     'instance_role' => 'logger_queue'
+ ];
+
+$owa = new owa( $config );
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
@@ -47,10 +52,20 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
         $dispatch = owa_coreAPI::getEventDispatch();
         $event = $dispatch->makeEvent();
+        
         $event->loadFromArray($raw_event);
-
+        
         $owa->e->debug(print_r($event,true));
-        $dispatch->asyncNotify($event);
+        
+        // get event type
+        $type = $event->getEventType();
+        //check against wl
+        $allowed_event_types = $owa->getSetting('base', 'allowed_queued_event_types');
+        
+        if (in_array($type, $allowed_event_types)) {
+            
+            $dispatch->asyncNotify($event);    
+        }
     }
 
 } else {

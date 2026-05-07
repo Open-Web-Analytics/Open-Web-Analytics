@@ -17,7 +17,7 @@
 //
 
 require_once(OWA_BASE_DIR.'/owa_base.php');
-
+require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
 /**
  * Database Connection Class
  * 
@@ -353,7 +353,8 @@ class owa_db extends owa_base {
 
         $this->limit(1);
         $ret = $this->_selectQuery();
-        return $ret[0];
+        return (is_array($ret) && isset($ret[0])) ? $ret[0] : null;
+        //return is_null($ret)?null:$ret[0];
     }
 
     function _setSql($sql) {
@@ -443,7 +444,7 @@ class owa_db extends owa_base {
             // Add as
             if (!empty($v['as'])):
 
-                $cols .= ' as '.$v['as'];
+                $cols .= ' as '.$this->prepare( $v['as']);
 
             endif;
 
@@ -503,7 +504,7 @@ class owa_db extends owa_base {
 
             endif;
 
-            $set .= $v['name'] .' = \'' . $this->prepare($v['value']) . '\'';
+            $set .= $this->prepare( $v['name'] ) .' = \'' . $this->prepare($v['value']) . '\'';
 
             $i++;
         }
@@ -574,35 +575,35 @@ class owa_db extends owa_base {
             $constraint = $type.' ';
 
             foreach ($params as $k => $v) {
-
+                owa_coreAPI::debug($v);
                 switch (strtolower($v['operator'])) {
-
+                
                     case '==':
-                        $constraint .= sprintf("%s = '%s'",$v['name'], $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s = '%s'", $this->prepare( $v['name'] ), $this->prepare( $v['value'] ) );
                         break;
 
                     case 'between':
-                        $constraint .= sprintf("%s BETWEEN '%s' AND '%s'", $v['name'], $this->prepare( $v['value']['start'] ), $this->prepare( $v['value']['end'] ) );
+                        $constraint .= sprintf("%s BETWEEN '%s' AND '%s'", $this->prepare( $v['name'] ), $this->prepare( $v['value']['start'] ), $this->prepare( $v['value']['end'] ) );
                         break;
 
                     case '=~':
-                        $constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_REGEXP, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s '%s'", $this->prepare( $v['name'] ), OWA_SQL_REGEXP, $this->prepare( $v['value'] ) );
                         break;
 
                     case '!~':
-                        $constraint .= sprintf("%s %s '%s'",$v['name'], OWA_SQL_NOTREGEXP, $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s '%s'",$this->prepare( $v['name'] ), OWA_SQL_NOTREGEXP, $this->prepare( $v['value'] ) );
                         break;
 
                     case '=@':
-                        $constraint .= sprintf("LOCATE('%s', %s) > 0",$v['value'], $this->prepare( $v['name'] ) );
+                        $constraint .= sprintf("LOCATE('%s', %s) > 0",$this->prepare( $v['value'] ), $this->prepare( $v['name'] ) );
                         break;
 
                     case '!@':
-                        $constraint .= sprintf("LOCATE('%s', %s) = 0",$v['value'], $this->prepare( $v['name'] ) );
+                        $constraint .= sprintf("LOCATE('%s', %s) = 0",$this->prepare( $v['value'] ), $this->prepare( $v['name'] ) );
                         break;
 
                     default:
-                        $constraint .= sprintf("%s %s '%s'",$v['name'], $v['operator'], $this->prepare( $v['value'] ) );
+                        $constraint .= sprintf("%s %s '%s'",$this->prepare( $v['name'] ), $v['operator'], $this->prepare( $v['value'] ) );
                         break;
                 }
 
@@ -641,7 +642,7 @@ class owa_db extends owa_base {
 
     function prepare ( $string ) {
 
-        return $string;
+        return owa_sanitize::stripSql( $string );
     }
 
     function _makeJoinClause() {

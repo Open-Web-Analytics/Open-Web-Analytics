@@ -406,9 +406,9 @@
       *
       * @param string $module the name of the module
       * @param string $key the configuration key
-      * @return unknown
+      * @return mixed
       */
-     function get($module, $key) {
+     function get(string $module, string $key) {
         
         if ( $this->config ) {
             
@@ -652,6 +652,7 @@
                 'use_remote_event_queue'            => true,
                 'remote_event_queue_type'            => 'http',
                 'remote_event_queue_endpoint'        => '',
+                'allowed_queued_event_types'        => [],
                 'cookie_domain'                        => false,
                 'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
                 'ws_timeout'                        => 10,
@@ -713,7 +714,7 @@
                 'memcachedServers'                    => array(),
                 'memcachedPersisantConnections'        => true,
                 'cacheType'                            => '', // file, memory, memcache
-                'disabledEndpoints'                    => array(),
+                'disabledEndpoints'                    => array('queue.php'),
                 'disableAllEndpoints'                => false,
                 'processQueuesJobSchedule'            => '10 * * * *',
                 'maxCustomVars'                        => 5, //sdk
@@ -726,7 +727,17 @@
                 'request_mode'						=> 'web_app',
                 'useStaticConfigOnly'				=> false,
                 'allow_slowly_changing_dimensions'	=> true,
+                'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
+                'instance_mode'                     => '',
+                'tracking_event_types'              => [
+                    'dom.click', 
+                    'ecommerce.transaction', 
+                    'base.page_request', 
+                    'dom.stream', 
+                    'base.feed_request', 
+                    'track.action' 
+                ],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
         );

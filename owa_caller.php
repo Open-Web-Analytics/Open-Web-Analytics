@@ -205,6 +205,16 @@ class owa_caller extends owa_base {
                         
     }
     
+    /**
+     * Handles OWA internal page/action requests
+     *
+     * @return unknown
+     */
+    function handleRestRequest() {
+        
+        return owa_coreAPI::handleRestRequest();
+    }
+    
     function __destruct() {
         
         $this->end_time = owa_lib::microtime_float();
@@ -270,9 +280,12 @@ class owa_caller extends owa_base {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
             $disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
-            
+            owa_coreAPI::debug('Disabled endpoints:');
+            owa_coreAPI::debug($disabled_endpoints);
             if ( ! in_array( $file_name, $disabled_endpoints ) ) {
                 return true;
+            } else {
+                owa_coreAPI::debug('This endpoint is disabled.');
             }
         }
     }

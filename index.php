@@ -32,7 +32,13 @@ require_once(OWA_DIR.'owa.php');
  */
 
 // Initialize owa admin
-$owa = new owa;
+
+$config = [
+
+    'instance_role' => 'admin_web'
+];
+
+$owa = new owa( $config );
 
 if (!$owa->isOwaInstalled()) {
     // redirect to install
@@ -40,9 +46,18 @@ if (!$owa->isOwaInstalled()) {
 }
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
-
+    
+    $params = [];
+    
+    $do = owa_coreAPI::getRequestParam('do');
+    
+    if ( ! $do ) {
+    
+        $params['do'] = $owa->getSetting('base', 'start_page');
+    }
     // run controller or view and echo page content
-    echo $owa->handleRequestFromURL();
+    echo $owa->handleRequest( $params );
+    
 } else {
 
     // unload owa

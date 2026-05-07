@@ -101,6 +101,7 @@ class owa_resultSetManager extends owa_base {
     var $pagination;
     var $resolution = 'day';
     var $timePeriod;
+    var $all_columns = [];
     
 
     function __construct($db = '') {

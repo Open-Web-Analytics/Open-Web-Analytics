@@ -905,7 +905,7 @@ class owa_coreAPI {
     }
 
     /**
-     * Logs an event to the event queue
+     * Logs a tracking event to the event queue
      *
      * take an owa_event object as a message.
      *
@@ -917,6 +917,13 @@ class owa_coreAPI {
 
         owa_coreAPI::debug("Logging new event $event_type");
 		
+        // Check to ensure that the event is in fact a tracking event
+        if ( ! in_array( $event_type, owa_coreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+            
+            owa_coreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
+            return false;
+        }
+        
         // Check to see if named users should be logged
         if (owa_coreAPI::getSetting('base', 'log_named_users') != true) {
             $cu = owa_coreAPI::getCurrentUser();
@@ -927,8 +934,8 @@ class owa_coreAPI {
                 return false;
             }
         }
-
-		// backwads compatability with old style messages
+        
+		// backwards compatibility with old style messages
 		// @todo is this needed anymore?
         $class= 'owa_event';
         
@@ -1230,7 +1237,7 @@ class owa_coreAPI {
         return $service->request->state->registerStore( $name, $expiration, $length, $format, $type, $cdh_required );
     }
 
-    public static function setState($store, $name = '', $value, $store_type = '', $is_perminent = '') {
+    public static function setState($store, $name, $value, $store_type = '', $is_perminent = '') {
 
         $service = owa_coreAPI::serviceSingleton();
         return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
@@ -1266,12 +1273,14 @@ class owa_coreAPI {
         $service = owa_coreAPI::serviceSingleton();
         $processor = $service->getMapValue('event_processors', $event_type);
 
-        if (empty($processor)) {
+        if ( $processor ) {
 
-            $processor = 'base.processEvent';
+            return $processor;
+        
+        } else {
+            
+            owa_coreAPI::debug("no event processor found for $event_type");
         }
-
-        return $processor;
     }
 
     /**
@@ -1313,7 +1322,7 @@ class owa_coreAPI {
         }
 
         // backwards compatability with old style view/controler scheme
-        // still needed??
+        // @todo still needed??
         if (array_key_exists('view', $params)) {
             // its a view request so the only data is in whats in the params
             $init = true;
@@ -1326,91 +1335,113 @@ class owa_coreAPI {
                 $action = owa_coreAPI::getRequestParam('do');
 
                 if (empty($action)) {
-                    $action = owa_coreAPI::getSetting('base', 'start_page');
-                    $params['do'] = $action;
+                    owa_coreAPI::debug('no action specified on request params');
+                    return; 
                 }
             }
         }
-		
-		
-		// REST API Requests
-		// Lookup controler for REST API route.
-		if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
-			
-			// get request method
-			$request_method = $service->request->getRequestType();
-			
-			// check to see if this is a CORS pre-flight Request
-			if ($request_method == 'OPTIONS') {
-				
-				$controller = owa_lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );					
-				return owa_coreAPI::runController( $controller );
-			}
-			
-			// check for rewriten rest params and set module, version, and do params from that
-			$rest_params = self::getRequestParam('rest_params');
-			
-			if ( $rest_params ) {
-			
-				$rest_params = explode('/', $rest_params);
-				self::debug( 'exploding raw REST params:');
-				self::debug( $rest_params );
-			
-				if ( count( $rest_params ) >= 3 ) {
-					
-					$params['module'] = $rest_params[0];
-					$params['version'] = $rest_params[1];
-					$params['do'] = $rest_params[2];
-					$action = $params['do'];
-				}				
-			}
-			
-			
-			owa_coreAPI::debug('Generating REST API route controller...');
-			
-			if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
-			
-				$route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
-				
-				if ( $route ) {
-					
-					// set the remainer of the rewritten rest params
-					
-					if ( $rest_params ) {
-						
-						// slice off the first three params which have already been set
-						$rest_params = array_slice($rest_params, 3);
-						
-						foreach ( $rest_params as $k => $v) {
-							
-							$params[ $route['conf'][ 'params_order' ][$k] ] = $rest_params[ $k ];
-						}
-					}
-					
-					$params['rest_route'] = $route;
-					$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
-					return owa_coreAPI::runController( $controller );
-				
-				} else {
-					
-					owa_coreAPI::debug('No REST API route found');
-					return;	
-				}
-
-			} else {
-				
-				owa_coreAPI::debug('Could not generate controller because no version param was on request.');
-				return;
-			}
-			
-		}
-		
-		
 		
         $init = true;
         owa_coreAPI::debug('About to perform action: '.$action);
         return owa_coreAPI::performAction($action, $params);
 
+    }    
+    
+    /**
+     * Handles REST endpoint requests
+     *
+     * @return unknown
+     */
+    public static function handleRestRequest() {
+        
+        $service = owa_coreAPI::serviceSingleton();
+        
+        $params = $service->request->getAllOwaParams();
+        
+        owa_coreAPI::debug('Handling REST request with params: '. print_r($params, true));
+        
+        $action = owa_coreAPI::getRequestParam('do');
+        
+        if ( ! $action ) {
+            
+            owa_coreAPI::debug('no action specified on REST request params');
+            return; 
+        }
+             
+        // REST API Requests
+        // Lookup controller for REST API route.
+        if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+            
+            // get request method
+            $request_method = $service->request->getRequestType();
+            
+            // check to see if this is a CORS pre-flight Request
+            if ($request_method == 'OPTIONS') {
+                
+                $controller = owa_lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );					
+                return owa_coreAPI::runController( $controller );
+            }
+            
+            // check for rewriten rest params and set module, version, and do params from that
+            $rest_params = self::getRequestParam('rest_params');
+            
+            if ( $rest_params ) {
+            
+                $rest_params = explode('/', $rest_params);
+                self::debug( 'exploding raw REST params:');
+                self::debug( $rest_params );
+            
+                if ( count( $rest_params ) >= 3 ) {
+                    
+                    $params['module'] = $rest_params[0];
+                    $params['version'] = $rest_params[1];
+                    $params['do'] = $rest_params[2];
+                    $action = $params['do'];
+                }				
+            }
+            
+            
+            owa_coreAPI::debug('Generating REST API route controller...');
+            
+            if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
+            
+                $route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
+                
+                if ( $route ) {
+                    
+                    // set the remainer of the rewritten rest params
+                    
+                    if ( $rest_params ) {
+                        
+                        // slice off the first three params which have already been set
+                        $rest_params = array_slice($rest_params, 3);
+                        
+                        foreach ( $rest_params as $k => $v) {
+                            
+                            $params[ $route['conf'][ 'params_order' ][$k] ] = $rest_params[ $k ];
+                        }
+                    }
+                    
+                    $params['rest_route'] = $route;
+                    $controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
+                    return owa_coreAPI::runController( $controller );
+                
+                } else {
+                    
+                    owa_coreAPI::debug('No REST API route found');
+                    return;	
+                }
+        
+            } else {
+                
+                owa_coreAPI::debug('Could not generate controller because no version param was on request.');
+                return;
+            }
+            
+        } else {
+            
+            owa_coreAPI::debug('This is not a REST API request.');
+        }
     }
     
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
