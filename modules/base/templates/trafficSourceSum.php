@@ -43,13 +43,13 @@
     <?php if ( $row['medium'] === 'referral' ):?>
     <div style="line-height:120%; width:inherit; padding-left:20px; padding-top:15px;">
         <span class="inline_h4">
-            <a href="<?php echo $row['referer_url'];?>">
-                <?php if (!empty($row['referer_page_title'])):?><?php echo $this->truncate($row['referer_page_title'], 80, '…');?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '…');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '…');?><?php endif;?>
+            <a href="<?php $this->out( $row['referer_url'] );?>">
+                <?php if (!empty($row['referer_page_title'])):?><?php $this->out( $this->truncate($row['referer_page_title'], 80, '…') );?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '…');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '…');?><?php endif;?>
             </a>
         </span>
         
         <?php if ( ! empty( $row['referer_snippet'] ) ):?>
-        <br><span class="snippet_text"><?php echo $row['referer_snippet'];?></span>
+        <br><span class="snippet_text"><?php $this->out( $row['referer_snippet'] );?></span>
         <?php endif;?>
     </div>
     <?php endif;?>
