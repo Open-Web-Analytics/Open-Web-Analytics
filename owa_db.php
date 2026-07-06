@@ -740,7 +740,7 @@ class owa_db extends owa_base {
 
         $sorts = $this->_fetchSqlParams('orderby');
         //print_r($sorts);
-        if (!empty($sorts)):
+        if (!empty($sorts)) {
 
             $order = $this->_fetchSqlParams('order');
 
@@ -749,9 +749,14 @@ class owa_db extends owa_base {
             $count = count($sorts);
             foreach ($sorts as $sort) {
 
-                // needed for backwards compatability.
+                // needed for backwards compatibility.
                 if (!isset($sort[1])) {
                     $sort[1] = $order;
+                }
+                
+                if ( ! $this->isValidSortDirectionValue( $sort[1] ) ) {
+                    
+                    $sort[1] = $this->getDefaultSortDirection();
                 }
 
                 $sort_string .= sprintf("%s %s",$sort[0], $sort[1]);
@@ -764,11 +769,10 @@ class owa_db extends owa_base {
 
             return sprintf("ORDER BY %s", $sort_string);
 
-        else:
+        } else {
+         
             return;
-        endif;
-
-
+        }
     }
 
     function _makeLimitClause() {
@@ -1145,6 +1149,16 @@ class owa_db extends owa_base {
     function getAffectedRows() {
 
         return false;
+    }
+    
+    function isValidSortDirectionValue( $value ) {
+        
+        return in_array( strtolower( $value ), [ strtolower( OWA_SQL_DESCENDING ), strtolower( OWA_SQL_ASCENDING) ] ); 
+    }
+    
+    function getDefaultSortDirection() {
+        
+        return OWA_SQL_DESCENDING;
     }
 }
 
