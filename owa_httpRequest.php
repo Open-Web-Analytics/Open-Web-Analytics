@@ -151,7 +151,7 @@ class owa_http {
 
         owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
 
-        return trim($title);
+        return owa_lib::inputFilter( trim( $title ) );
     }
 
     function strip_selected_tags($str, $tags = array(), $stripContent = false) {
