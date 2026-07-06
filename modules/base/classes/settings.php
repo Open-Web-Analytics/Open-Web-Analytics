@@ -833,25 +833,25 @@
         foreach ($configFileTemplate as $line_num => $line) {
             switch (substr($line,0,20)) {
                 case "define('OWA_DB_TYPE'":
-                    fwrite($handle, str_replace("yourdbtypegoeshere", $config_values['db_type'], $line));
+                    fwrite($handle, str_replace("yourdbtypegoeshere", addcslashes( $config_values['db_type'], "\\'" ), $line));
                     break;
                 case "define('OWA_DB_NAME'":
-                    fwrite($handle, str_replace("yourdbnamegoeshere", $config_values['db_name'], $line));
+                    fwrite($handle, str_replace("yourdbnamegoeshere", addcslashes( $config_values['db_name'], "\\'" ), $line));
                     break;
                 case "define('OWA_DB_USER'":
-                    fwrite($handle, str_replace("yourdbusergoeshere", $config_values['db_user'], $line));
+                    fwrite($handle, str_replace("yourdbusergoeshere", addcslashes( $config_values['db_user'], "\\'" ), $line));
                     break;
                 case "define('OWA_DB_PASSW":
-                    fwrite($handle, str_replace("yourdbpasswordgoeshere", $config_values['db_password'], $line));
+                    fwrite($handle, str_replace("yourdbpasswordgoeshere", addcslashes( $config_values['db_password'], "\\'" ), $line));
                     break;
                 case "define('OWA_DB_HOST'":
-                    fwrite($handle, str_replace("yourdbhostgoeshere", $config_values['db_host'], $line));
+                    fwrite($handle, str_replace("yourdbhostgoeshere", addcslashes( $config_values['db_host'], "\\'" ), $line));
                     break;
                 case "define('OWA_DB_PORT'":
-                    fwrite($handle, str_replace("3306", $config_values['db_port'], $line));
+                    fwrite($handle, str_replace("3306", addcslashes( $config_values['db_port'], "\\'" ), $line));
                     break;
                 case "define('OWA_PUBLIC_U":
-                    fwrite($handle, str_replace("http://domain/path/to/owa/", $config_values['public_url'], $line));
+                    fwrite($handle, str_replace("http://domain/path/to/owa/", addcslashes( $config_values['public_url'], "\\'" ), $line));
                     break;
                 case "define('OWA_NONCE_KE":
                     fwrite($handle, str_replace("yournoncekeygoeshere", owa_coreAPI::secureRandomString(64), $line));
