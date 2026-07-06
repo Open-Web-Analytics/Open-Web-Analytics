@@ -1,4 +1,4 @@
-<div class="propertyList" style="background-image: url('<?php echo $this->makeImageLink('base/i/referer_icon.gif');?>');background-repeat: no-repeat; padding:5px 5px 5px 35px; background-position:0px 5px;">
+<div class="propertyList" style="background-image: url('<?php $this->out( $this->makeImageLink('base/i/referer_icon.gif') );?>');background-repeat: no-repeat; padding:5px 5px 5px 35px; background-position:0px 5px;">
     <dl>
     
         <dt>Medium:</dt>
@@ -44,7 +44,7 @@
     <div style="line-height:120%; width:inherit; padding-left:20px; padding-top:15px;">
         <span class="inline_h4">
             <a href="<?php $this->out( $row['referer_url'] );?>">
-                <?php if (!empty($row['referer_page_title'])):?><?php $this->out( $this->truncate($row['referer_page_title'], 80, '…') );?></span></a><BR><span class="externalUrl"><?php echo $this->truncate($row['referer_url'], 80, '…');?><?php else:?><?php echo $this->truncate($row['referer_url'], 80, '…');?><?php endif;?>
+                <?php if (!empty($row['referer_page_title'])):?><?php $this->out( $this->truncate($row['referer_page_title'], 80, '…') );?></span></a><BR><span class="externalUrl"><?php $this->out( $this->truncate($row['referer_url'], 80, '…') );?><?php else:?><?php $this->out( $this->truncate($row['referer_url'], 80, '…') );?><?php endif;?>
             </a>
         </span>
         
