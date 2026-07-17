@@ -6,7 +6,7 @@
  * Website: http://www.openwebanalytics.con
  */
 
-require_once(OWA_DIR.'owa_adminController.php');
+require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
 
 /**
  * Add Site allowed User REST Controller
@@ -14,7 +14,13 @@ require_once(OWA_DIR.'owa_adminController.php');
  * Adds a new allowed user to a site.
  * 
  */
-class owa_siteAddAllowedUserRestController extends owa_adminController {
+class owa_siteAddAllowedUserRestController extends owa_cliController {
+
+    function __construct($params) {
+    
+        parent::__construct($params);
+        $this->setRequiredCapability('edit_sites');
+    }
 
 	function validate() {
 		
