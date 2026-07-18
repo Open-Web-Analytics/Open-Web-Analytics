@@ -1,5 +1,6 @@
 <?php
 
+
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -27,6 +28,11 @@
  * @version        $Revision$
  * @since        owa 1.0.0
  */
+
+// during installation-phase these constants are not yet set, thus, use
+// "useful" defaults here. During initialization this will be configured.
+defined('OWA_DTD_BIGINT') or define('OWA_DTD_BIGINT', 'BIGINT'); 
+defined('OWA_DTD_BLOB') or define('OWA_DTD_BLOB', 'BLOB');
 
 class owa_configuration extends owa_entity {
 

@@ -18,6 +18,10 @@
 
 require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
 
+// 
+defined('OWA_DTD_TINYINT4') or define('OWA_DTD_TINYINT4', 'TINYINT(4)');
+
+
 /**
  * Session Entity
  * 

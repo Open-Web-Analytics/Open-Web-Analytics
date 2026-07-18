@@ -18,6 +18,8 @@
 
 require_once( OWA_BASE_CLASS_DIR . 'factTable.php');
 
+defined('OWA_DTD_TINYINT') or define('OWA_DTD_TINYINT', 'TINYINT(1)');
+
 /**
  * page Request Entity
  * 
