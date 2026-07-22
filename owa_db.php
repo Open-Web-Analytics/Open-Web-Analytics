@@ -32,6 +32,27 @@ require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
 class owa_db extends owa_base {
 
     /**
+     * Whitelist of operators the query builder is allowed to interpolate
+     * into a WHERE/HAVING clause. The operator is emitted UNQUOTED, so any
+     * value that reaches _makeConstraintClause() outside this set would be
+     * a SQL-injection primitive.
+     *
+     * Set matches the Data Access API docs (==, !=, >, >=, <, <=, =~, !~,
+     * =@, !@) plus the bare '=' default used by internal PHP callers and
+     * 'between' used by internal range constraints. '<>' is NOT included:
+     * the docs use '!=' as the canonical not-equals and no caller emits
+     * '<>'.
+     */
+    const ALLOWED_OPERATORS = [
+        '=', '==',
+        '!=',
+        '>', '>=', '<', '<=',
+        'between',
+        '=~', '!~',
+        '=@', '!@',
+    ];
+
+    /**
      * Database Connection
      *
      * @var object
@@ -576,8 +597,18 @@ class owa_db extends owa_base {
 
             foreach ($params as $k => $v) {
                 owa_coreAPI::debug($v);
-                switch (strtolower($v['operator'])) {
-                
+
+                $op = strtolower( $v['operator'] );
+
+                if ( ! in_array( $op, self::ALLOWED_OPERATORS, true ) ) {
+                    owa_coreAPI::debug( sprintf( 'Refusing constraint with disallowed operator: %s', $v['operator'] ) );
+                    // still bump the counter so the AND-join positions stay correct
+                    $i++;
+                    continue;
+                }
+
+                switch ( $op ) {
+
                     case '==':
                         $constraint .= sprintf("%s = '%s'", $this->prepare( $v['name'] ), $this->prepare( $v['value'] ) );
                         break;
@@ -603,7 +634,9 @@ class owa_db extends owa_base {
                         break;
 
                     default:
-                        $constraint .= sprintf("%s %s '%s'",$this->prepare( $v['name'] ), $v['operator'], $this->prepare( $v['value'] ) );
+                        // $op has already been validated against ALLOWED_OPERATORS,
+                        // so this covers '=', '!=', '>', '>=', '<', '<='.
+                        $constraint .= sprintf("%s %s '%s'",$this->prepare( $v['name'] ), $op, $this->prepare( $v['value'] ) );
                         break;
                 }
 

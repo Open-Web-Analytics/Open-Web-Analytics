@@ -53,6 +53,13 @@ class owa_optionsUpdateController extends owa_adminController {
                 list($module, $name) = explode('.', $k);
 
                 if ( $module && $name ) {
+
+                    if ( self::isSensitiveSettingKey( $module, $name ) ) {
+
+                        owa_coreAPI::notice( sprintf( 'Refusing to persist restricted setting %s.%s via options form.', $module, $name ) );
+                        continue;
+                    }
+
                     $c->persistSetting($module, $name, $v);
                 }
             }
@@ -63,6 +70,48 @@ class owa_optionsUpdateController extends owa_adminController {
         }
 
         $this->setRedirectAction('base.optionsGeneral');
+    }
+
+    /**
+     * Restrict which settings the web options form is allowed to persist.
+     *
+     * These keys either name filesystem paths / stream targets that feed the
+     * error logger and template loader, or hold credentials and directory
+     * roots that must only ever be set via the config file or the installer.
+     * Allowing them to be overwritten by an authenticated web request is an
+     * RCE primitive (see error_log_file + report_wrapper chain).
+     */
+    private static function isSensitiveSettingKey( $module, $key ) {
+
+        static $denylist = [
+            'base' => [
+                'error_log_file'        => true,
+                'async_error_log_file'  => true,
+                'async_log_file'        => true,
+                'async_log_dir'         => true,
+                'async_lock_file'       => true,
+                'report_wrapper'        => true,
+                'db_type'               => true,
+                'db_host'               => true,
+                'db_port'               => true,
+                'db_name'               => true,
+                'db_user'               => true,
+                'db_password'           => true,
+                'db_class_dir'          => true,
+                'plugin_dir'            => true,
+                'module_dir'            => true,
+                'templates_dir'         => true,
+                'public_path'           => true,
+                'configuration_id'      => true,
+                'schema_version'        => true,
+                'install_complete'      => true,
+                'is_active'             => true,
+                'search_engines.ini'    => true,
+                'query_strings.ini'     => true,
+            ],
+        ];
+
+        return isset( $denylist[ $module ][ $key ] );
     }
 
 }

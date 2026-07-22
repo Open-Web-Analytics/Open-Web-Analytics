@@ -144,6 +144,18 @@ class owa_template extends Template {
             owa_coreAPI::error('No template file was specified.');
             return false;
         else:
+            // Normalize the requested filename before it is used in any
+            // filesystem lookup or logged in an error message. Template
+            // names may only contain a safe basename character set; a
+            // path-containing or exotic value would be attacker-controlled
+            // config (see report_wrapper RCE chain).
+            $file = self::sanitizeTemplateName( $file );
+
+            if ( $file === '' ) {
+                owa_coreAPI::error('Invalid template file name.');
+                return false;
+            }
+
             // check module's local modification template Directory
             if (file_exists($this->module_local_template_dir.$file)):
                 $this->file = $this->module_local_template_dir.$file;
@@ -161,9 +173,27 @@ class owa_template extends Template {
                 $this->e->err(sprintf('%s was not found in any template directory.', $file));
                 return false;
             endif;
-        
+
             return true;
         endif;
+    }
+
+    /**
+     * Reduce a template name to a safe basename. Strips any path component
+     * and any character outside [A-Za-z0-9._-]. This neutralizes payloads
+     * that rely on quoted-printable escapes, angle brackets, question marks,
+     * or backticks surviving into an error-log line.
+     */
+    public static function sanitizeTemplateName( $file ) {
+
+        if ( ! is_string( $file ) ) {
+            return '';
+        }
+
+        $file = basename( $file );
+        $file = preg_replace( '/[^A-Za-z0-9._\-]/', '', $file );
+
+        return (string) $file;
     }
     
     function setTemplateFile($module, $file) {

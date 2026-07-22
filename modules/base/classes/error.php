@@ -320,23 +320,52 @@ class owa_error {
 
 		// create a formatter
 		$dt = $this->getDateTimestamp();
-        
+
 		$template = $this->getLineFormat();
-		
+
 		$formatter = new LineFormatter($template, $dt, true, true);
-        
+
         // determine log level
         $level = $this->getLogLevel();
-        
+
         // create stream handler
         $path = owa_coreAPI::getSetting('base', 'error_log_file');
-        
+
+        if ( ! self::isSafeLogPath( $path ) ) {
+            // refuse to open the handler rather than write to an attacker-controlled sink
+            error_log( sprintf( 'OWA: refusing unsafe error_log_file value (%s); file logger disabled.', $path ) );
+            return;
+        }
+
         $stream = new StreamHandler($path, $level);
-        
+
 		$stream->setFormatter($formatter);
-		
+
 		// add stream handler to logger
 		$this->logger->pushHandler($stream);
+    }
+
+    /**
+     * Reject PHP stream wrappers (php://, data://, phar://, expect://, etc.)
+     * as log destinations. A quoted-printable / base64 filter wrapper can be
+     * abused to decode an attacker-controlled log line into an executable
+     * PHP file under the docroot.
+     *
+     * A plain absolute or relative filesystem path is allowed; anything with
+     * a `scheme://` prefix is rejected.
+     */
+    public static function isSafeLogPath( $path ) {
+
+        if ( ! is_string( $path ) || $path === '' ) {
+            return false;
+        }
+
+        // any URL-style stream wrapper is disallowed
+        if ( preg_match( '#^[A-Za-z][A-Za-z0-9+.\-]*://#', $path ) ) {
+            return false;
+        }
+
+        return true;
     }
 
     function logPhpErrors() {
@@ -346,11 +375,16 @@ class owa_error {
     }
     
     static function phpErrorSettings() {
-	    
+
 	    error_reporting( -1 );
         ini_set('display_errors', 'On');
         ini_set("log_errors", 1);
-        ini_set("error_log", owa_coreAPI::getSetting('base', 'error_log_file') );
+
+        $path = owa_coreAPI::getSetting('base', 'error_log_file');
+
+        if ( self::isSafeLogPath( $path ) ) {
+            ini_set("error_log", $path );
+        }
     }
 
     /**

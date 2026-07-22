@@ -300,7 +300,16 @@ class owa_view extends owa_base {
      */
     function setTheme() {
 
-        $this->t->set_template($this->config['report_wrapper']);
+        // report_wrapper is a config-file / settings value; reduce it to a
+        // safe basename before handing it to the template loader so that a
+        // poisoned setting cannot inject exotic content into log output.
+        $wrapper = owa_template::sanitizeTemplateName( $this->config['report_wrapper'] );
+
+        if ( $wrapper === '' ) {
+            $wrapper = 'wrapper_default.tpl';
+        }
+
+        $this->t->set_template( $wrapper );
 
         return;
     }

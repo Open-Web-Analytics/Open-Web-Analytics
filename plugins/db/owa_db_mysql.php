@@ -290,6 +290,16 @@ class owa_db_mysql extends owa_db {
     /**
      * Prepares and escapes string
      *
+     * SQL-injection safety here is provided by mysqli_real_escape_string on
+     * the live connection. Do NOT layer value-content filters (comma/paren
+     * stripping, keyword removal) on top: this method is invoked for every
+     * bound value, including serialized configuration blobs, and mutating
+     * the byte content would silently corrupt length-prefixed data
+     * (serialize(), JSON, etc.).
+     *
+     * Value-content sanitization for untrusted request fields belongs at
+     * the request-container / controller layer, not here.
+     *
      * @param string $string
      * @return string
      */
@@ -297,7 +307,6 @@ class owa_db_mysql extends owa_db {
         if(is_null($string)){
             return $string;
         }
-        $string = owa_sanitize::stripSql( $string );
         if ($this->connection_status == false) {
               $this->connect();
           }
