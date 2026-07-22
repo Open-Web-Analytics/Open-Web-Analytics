@@ -693,7 +693,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             foreach ($sorts as $sort) {
 
-                $sort_col = $sort[0];
+                $sort_col = null;
 
                 if ( $this->isMetric( $sort[0] ) ) {
                     $sort_metric = $this->getMetricImplementation($sort[0]);
@@ -717,7 +717,22 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                         }
 
                         $sort_col = $formula;
+                    } else {
+
+                        $select = $sort_metric->getSelect();
+                        $sort_col = $select[0];
                     }
+                } elseif ( $this->isDimension( $sort[0] ) ) {
+
+                    $dim = $this->lookupDimension( $sort[0], $this->baseEntity );
+                    if ( ! empty( $dim['column'] ) ) {
+                        $sort_col = $dim['column'];
+                    }
+                }
+
+                if ( $sort_col === null ) {
+                    $this->addError( $sort[0] . " is not a valid column to sort on" );
+                    continue;
                 }
 
                 $this->db->orderBy($sort_col, $sort[1]);

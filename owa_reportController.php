@@ -89,11 +89,11 @@ class owa_reportController extends owa_adminController {
         
         // setup tabs
         $siteId = $this->get('siteId');
-        
+        $tabs = array();
+
         if ( $siteId ) {
             $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
 
-            $tabs = array();
             $site_usage = array(
                     'tab_label'        => 'Site Usage',
                     'metrics'        => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
@@ -141,15 +141,14 @@ class owa_reportController extends owa_adminController {
                 }
             }
 
-            $this->set('tabs', $tabs);
-            $this->set('tabs_json', json_encode($tabs));
-
             if ( ! owa_coreAPI::getSiteSetting( $this->getParam( 'siteId' ), 'enableEcommerceReporting' ) ) {
 
                 unset($nav['Ecommerce']);
             }
         }
 
+        $this->set('tabs', $tabs);
+        $this->set('tabs_json', json_encode($tabs));
         $this->set('top_level_report_nav', $nav);
     }
 

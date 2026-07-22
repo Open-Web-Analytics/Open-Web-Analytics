@@ -70,16 +70,16 @@
                 <div class="relatedReports">
                     <UL>
                         <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'));?>">Search Engines</a></span> - See which search engines your visitors are coming from.
+                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportSearchEngines'), true);?>">Search Engines</a></span> - See which search engines your visitors are coming from.
                         </LI>
                         <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'));?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
+                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportKeywords'), true);?>">Keywords</a></span> - See what keywords your visitor are using to find your web site.
                         </LI>
                         <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'));?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
+                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportReferringSites'), true);?>">Referring Web Sites</a></span> - See which web sites are linking to your web site.
                         </LI>
                         <LI>
-                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'));?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
+                            <a href="<?php echo $this->makeLink(array('do' => 'base.reportAnchortext'), true);?>">Inbound Link Text</a></span> - See what words Referring Web Sites use to describe your web site.
                         </LI>
                     </UL>
                 </div>
