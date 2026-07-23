@@ -74,4 +74,35 @@ describe('OWATracker event assembly', () => {
         tracker.trackTransaction();
         expect(captured).toHaveLength(0);
     });
+
+    test('clickEventHandler assembles a dom.click event from a DOM target', () => {
+        // logClicksAsTheyHappen makes the handler hand the click to trackEvent.
+        tracker.setOption('logClicksAsTheyHappen', true);
+
+        // Build a real DOM target (jsdom) and a synthetic click event.
+        const link = document.createElement('a');
+        link.id = 'buy-now';
+        link.setAttribute('name', 'buy');
+        link.className = 'btn';
+        link.textContent = 'Buy Now';
+        document.body.appendChild(link);
+        const event = { target: link, pageX: 12, pageY: 34 };
+
+        tracker.clickEventHandler(event);
+
+        expect(captured).toHaveLength(1);
+        const e = captured[0];
+        expect(e.get('event_type')).toBe('dom.click');
+        // dom_element_tag: an early lowercased set() is overwritten by the
+        // getDomElementProperties() merge, so the raw uppercase tagName wins.
+        expect(e.get('dom_element_tag')).toBe('A');
+        expect(e.get('dom_element_id')).toBe('buy-now');
+        expect(e.get('dom_element_name')).toBe('buy');
+        expect(e.get('dom_element_class')).toBe('btn');
+        // Coordinates are captured as strings.
+        expect(e.get('click_x')).toBe('12');
+        expect(e.get('click_y')).toBe('34');
+
+        document.body.removeChild(link);
+    });
 });
