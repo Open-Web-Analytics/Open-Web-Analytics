@@ -28,6 +28,8 @@
     "webpack-concat-files-plugin": "^0.5.2"
   },
   "devDependencies": {
-    "shx": "^0.3.4"
+    "shx": "^0.3.4",
+    "terser": "^5.49.0",
+    "terser-webpack-plugin": "^5.6.1"
   }
 }
