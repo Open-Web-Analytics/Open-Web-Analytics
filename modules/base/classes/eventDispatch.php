@@ -133,12 +133,32 @@ class owa_eventDispatch {
 
     function attachFilter($filter_name, $observer, $priority = 10) {
 
+        // Do not attach the same observer to a filter twice. filter() chains
+        // each listener's output into the next listener's input, so a duplicate
+        // observer would run its transform more than once on the same value
+        // (e.g. an id derivation getting hashed repeatedly). Registration of the
+        // tracking-property filters happens once per logEvent(), so without this
+        // guard a process that logs multiple events accumulates duplicates.
+        if ( isset( $this->listenersByFilterType[$filter_name] ) ) {
+
+            foreach ( $this->listenersByFilterType[$filter_name] as $existing_ids ) {
+
+                foreach ( $existing_ids as $existing_id ) {
+
+                    if ( $this->listeners[$existing_id] === $observer ) {
+
+                        return;
+                    }
+                }
+            }
+        }
+
         $id = owa_lib::generateRandomUid();
-        
+
         $this->listenersByFilterType[$filter_name][$priority][] = $id;
 
         $this->listeners[$id] = $observer;
-               
+
     }
 
     /**

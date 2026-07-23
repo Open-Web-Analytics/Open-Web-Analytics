@@ -59,22 +59,43 @@ class owa_trackingEventHelpers {
     }
 */
 
+    /**
+     * @var array<string, bool> guard against re-registering the same property
+     * derivation filter. setTrackerProperties() runs on every logEvent() (3x
+     * per event: environmental/regular/derived maps), but those maps are static
+     * config, so a given (property, callback) filter must be attached only ONCE
+     * per process. Re-attaching chains the derivation into itself: because
+     * eventDispatch::filter() feeds each listener's output into the next, a
+     * derived dimension id (generateDimensionId) would get setStringGuid()'d
+     * once per copy, corrupting the fact row's FK columns on the 2nd+ event of
+     * any process that logs more than one (queue/batch workers, CLI, tests).
+     */
+    private $registeredCallbacks = array();
+
     public function registerCallbacks( $items, $priority = 0 ) {
 
         foreach ($items as $name => $item ) {
 
             if ( isset( $item['callbacks'] ) && ! empty($item['callbacks'] ) ) {
 
-                if ( is_array(  $item['callbacks'] ) ) {
+                $callbacks = is_array( $item['callbacks'] )
+                    ? $item['callbacks']
+                    : array( $item['callbacks'] );
 
+                foreach ( $callbacks as $callback ) {
 
-                    foreach ($item['callbacks'] as $callback ) {
+                    // Attach each property filter at most once per process.
+                    $key = $name . '|' . ( is_array( $callback )
+                        ? implode( '::', $callback )
+                        : (string) $callback );
 
-                        owa_coreAPI::registerFilter( $name, $callback,'', $priority);
+                    if ( isset( $this->registeredCallbacks[ $key ] ) ) {
+                        continue;
                     }
-                } else {
 
-                    owa_coreAPI::registerFilter( $name, $item['callbacks'],'', $priority);
+                    $this->registeredCallbacks[ $key ] = true;
+
+                    owa_coreAPI::registerFilter( $name, $callback, $priority );
                 }
             }
         }

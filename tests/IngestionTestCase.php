@@ -41,27 +41,10 @@ abstract class IngestionTestCase extends TestCase
     /** @var bool whether setServerUserAgent() overrode the server UA this test */
     private $serverUaOverridden = false;
 
-    /**
-     * @var array<string, mixed>|null pristine event-dispatch filter table,
-     * snapshotted before ANY event was fired in this process.
-     */
-    private static $pristineFilters = null;
-
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
             $this->markTestSkipped('OWA database not reachable; skipping ingestion test.');
-        }
-
-        // Snapshot the dispatcher's filter table exactly once, the first time an
-        // ingestion test runs — i.e. after OWA has booted but before any event
-        // has been fired. This is the "one event per process" state production
-        // always logs in. resetDerivationFilters() restores it so a test can
-        // reproduce that clean state regardless of how many events earlier tests
-        // fired in the same PHP process (see resetDerivationFilters).
-        if (self::$pristineFilters === null) {
-            $eq = owa_coreAPI::getEventDispatch();
-            self::$pristineFilters = $eq->listenersByFilterType;
         }
     }
 
@@ -111,31 +94,6 @@ abstract class IngestionTestCase extends TestCase
     protected function setServerTime(int $timestamp): void
     {
         owa_coreAPI::requestContainerSingleton()->timestamp = $timestamp;
-    }
-
-    /**
-     * Restore the event-dispatch filter table to its pristine, pre-first-event
-     * state so the NEXT fireEvent() behaves as the first event in the process.
-     *
-     * Why this is needed: owa_trackingEventHelpers::setTrackerProperties() calls
-     * registerCallbacks() on every logEvent(), re-attaching the property
-     * derivation filters (generateDimensionId, generateLocationId, ...) each
-     * time. eventDispatch::filter() chains every registered listener's output
-     * into the next, so on the Nth event a derived dimension FK is hashed N
-     * times and no longer equals the id its handler wrote the dimension row at
-     * (a latent bug that only bites processes logging >1 event: the test suite,
-     * queue/batch workers). Production logs exactly one event per process, so
-     * its FKs are always correct.
-     *
-     * Tests that assert on the fact row's derived FK columns (rather than on
-     * dimension content) MUST call this immediately before fireEvent() so the
-     * FK matches production. Tests that anchor on content don't need it.
-     */
-    protected function resetDerivationFilters(): void
-    {
-        if (self::$pristineFilters !== null) {
-            owa_coreAPI::getEventDispatch()->listenersByFilterType = self::$pristineFilters;
-        }
     }
 
     /**

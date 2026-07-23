@@ -13,17 +13,15 @@ require_once __DIR__ . '/IngestionTestCase.php';
  * AT those rows. A refactor that created the dimensions but wired a FK to the
  * wrong id (or left it null) would pass DimensionIngestionTest and fail here.
  *
- * WHY resetDerivationFilters() FIRST:
- * The fact's derived dimension FKs are only correct for the FIRST event logged
- * in a PHP process. owa_trackingEventHelpers::setTrackerProperties() re-attaches
- * the generateDimensionId derivation filter on EVERY logEvent(), and
+ * This test also guards the over-hash fix: setTrackerProperties() used to
+ * re-attach the generateDimensionId derivation filter on EVERY logEvent(), and
  * eventDispatch::filter() chains each listener's output into the next, so on the
- * Nth event a FK is hashed N times (setStringGuid(setStringGuid(...))) and no
- * longer equals the id the handler wrote the dimension row at. (That is why
- * DimensionIngestionTest anchors on content, not FK.) resetDerivationFilters()
- * restores the dispatcher's pristine, pre-first-event filter table so this fire
- * behaves exactly as the single event a production process logs — making the
- * FK columns trustworthy no matter how many events earlier tests fired.
+ * Nth event of a process a FK was hashed N times and no longer equalled the id
+ * the handler wrote the dimension row at. That is now fixed at the source
+ * (registerCallbacks() attaches each property filter once per process, and
+ * attachFilter() rejects duplicate observers), so the FK columns are trustworthy
+ * regardless of how many events earlier tests fired in this process. If the fix
+ * regresses, this test fails with a dangling/wrong FK.
  *
  * The assertions FOLLOW each FK to the row it references and check that row's
  * content, rather than looking a row up by content and comparing ids: some
@@ -55,10 +53,6 @@ final class DimensionAssociationTest extends IngestionTestCase
         $this->trackForCleanup('base.ua', $user_agent, 'ua');
         $this->trackForCleanup('base.referer', $referer, 'url');
         $this->trackForCleanup('base.visitor', $visitor_id, 'id');
-
-        // Make this fire behave as the first event in the process, so the fact's
-        // derived FK columns are not over-hashed (see class docblock).
-        $this->resetDerivationFilters();
 
         $result = $this->fireEvent('base.page_request', [
             'guid'            => $guid,
