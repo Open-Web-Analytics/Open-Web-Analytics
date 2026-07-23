@@ -8,6 +8,7 @@ reporting safety net for the Phase 3 jQuery migration:
 | Build integrity | `tests/js/reporting/BundleIntegrity.test.js` | yes (Jest) | the reporting bundle is built from the expected inputs, in the right order |
 | jsdom load | `tests/js/reporting/BundleLoad.test.js` | yes (Jest) | the bundle executes and the OWA objects construct outside a browser |
 | **Real render (this dir)** | `tests/e2e/reporting-dashboard.spec.js` | **no — manual/local** | Flot charts, jqGrid tables, and chosen select menus actually paint on a live logged-in dashboard |
+| **Overlay render (this dir)** | `tests/e2e/overlay-heatmap.spec.js` | **no — manual/local** | the heatmap overlay's control panel + canvas build via jQuery **3.x** on the tracker path (the overlay's biggest untested jQuery surface) |
 
 The jsdom layers cannot paint; these Playwright tests drive headless Chromium
 against a live OWA dashboard and pin the pre-migration render (jQuery **1.6.4**)
@@ -61,3 +62,19 @@ OWA_E2E_BASE_URL=https://your-host/owa/index.php npm run test:e2e
 The credentials are throwaway values for a **local fixture user on the test
 schema** — never a production account. The identifiers are constants shared with
 `fixtures.js` (the source of truth is the PHP seeder).
+
+## Overlay test (`overlay-heatmap.spec.js`)
+
+The heatmap/player overlay does **not** render on an OWA page — in production
+the report page links to `base.overlayLauncher`, which redirects the browser to
+the *tracked* page with a `#owa_overlay.<params>` anchor. On that page the
+tracker bundle (already on jQuery **3.x**) decodes the anchor and builds the
+overlay DOM. `overlay_harness.html` stands in for that tracked page: it loads
+the real `dist/owa.tracker.js` **same-origin** with this install and carries the
+anchor, so the tracker's `checkForOverlaySession()` → `startOverlaySession()` →
+dynamic-import of `Heatmap.js` runs exactly as in production.
+
+This test needs **no DB seeding** — it drives the client-side render only (the
+subsequent click-data JSONP fetch is not asserted). It shares the same
+`OWA_E2E_BASE_URL` / public-URL target as the dashboard tests because the
+harness must be served from under that install's webroot.
