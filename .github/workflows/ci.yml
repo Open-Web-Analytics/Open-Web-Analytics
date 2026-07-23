@@ -51,5 +51,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Tracker JS unit tests (Jest)
+      # Build the reporting bundle so the reporting build-integrity / jsdom
+      # load tests (tests/js/reporting/*) run for real instead of skipping.
+      - name: Build JS bundles
+        run: npm run build
+
+      - name: JS unit tests (Jest — tracker + reporting bundle)
         run: npm test

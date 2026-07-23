@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test:e2e": "playwright test --config=playwright.config.js",
+    "test:e2e:seed": "php tests/e2e/seed_reporting_fixtures.php seed",
+    "test:e2e:teardown": "php tests/e2e/seed_reporting_fixtures.php teardown",
     "build": "webpack-cli --mode production && npm run copyTracker",
     "start": "webpack-cli --mode development --watch",
     "copyTracker": "shx cp modules/base/dist/owa.tracker.js modules/base/js/owa.tracker-combined-min.js"
@@ -30,6 +33,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
+    "@playwright/test": "^1.61.1",
     "babel-jest": "^30.4.1",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
