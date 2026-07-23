@@ -603,7 +603,8 @@ class owa_controller extends owa_base {
     /**
      * redirects borwser to a particular view
      *
-     * @param unknown_type $data
+     * @param string $action
+     * @param bool $pass_params
      */
     function redirectBrowser($action, $pass_params = true) {
 

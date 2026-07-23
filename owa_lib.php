@@ -565,10 +565,10 @@ class owa_lib {
     /**
      * module specific factory
      *
-     * @param unknown_type $modulefile
-     * @param unknown_type $class_suffix
-     * @param unknown_type $params
-     * @return unknown
+     * @param string $modulefile
+     * @param string $class_suffix
+     * @param mixed $params
+     * @return mixed
      * @deprecated
      */
     public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {

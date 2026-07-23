@@ -144,7 +144,7 @@ abstract class owa_module {
     /**
      * Required Schema Version
      *
-     * @var array
+     * @var int
      */
     var $required_schema_version;
 
@@ -345,8 +345,11 @@ abstract class owa_module {
     /**
      * Hooks a function to a filter
      *
-     * @param array $event_name
-     * @param string $handler_name
+     * @param string $filter_name
+     * @param string|object $handler_name
+     * @param string $method
+     * @param int $priority
+     * @param string $dir
      * @return void
      */
     function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
@@ -1022,13 +1025,13 @@ abstract class owa_module {
      * and should be added to all tracking tracking events as they are recieved.
      *
      *
-     * @var $type            string    the type of tracking property environmental|regular|derived
+     * @param string $type the type of tracking property environmental|regular|derived
      *
      *         environmental = properties that are only dependant on the PHP SERVER environment.
      *        regular       = properties that are set by clients
      *        derived          = properties that are derived from or dependant on other properties
      *
-     * @var    $properties     array     an associative array of tracking properties
+     * @param array $properties an associative array of tracking properties
      *
      * Example:
      *

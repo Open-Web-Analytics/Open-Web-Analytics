@@ -328,7 +328,7 @@ class owa_view extends owa_base {
     /**
      * Assembles subview
      *
-     * @param array $data
+     * @param string $subview
      */
     function loadSubView($subview) {
 
