@@ -291,11 +291,6 @@ parameters:
 			path: owa_lib.php
 
 		-
-			message: "#^Function money_format not found\\.$#"
-			count: 1
-			path: owa_lib.php
-
-		-
 			message: "#^Method owa_lib\\:\\:setStringGuid\\(\\) should return int but return statement is missing\\.$#"
 			count: 1
 			path: owa_lib.php
@@ -361,11 +356,6 @@ parameters:
 			path: owa_view.php
 
 		-
-			message: "#^Instantiated class Services_JSON not found\\.$#"
-			count: 1
-			path: owa_view.php
-
-		-
 			message: "#^Instantiated class owa_mailer not found\\.$#"
 			count: 1
 			path: owa_view.php
@@ -387,5 +377,5 @@ parameters:
 
 		-
 			message: "#^Result of method owa_view\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
-			count: 6
+			count: 5
 			path: owa_view.php

@@ -32,6 +32,9 @@ endif;
  * @since        owa 1.0.0
  */
 
+// TODO: replace with explicit property declarations; entities set columns as
+// dynamic properties (deprecated in PHP 8.2).
+#[\AllowDynamicProperties]
 class owa_entity {
 
     var $name;

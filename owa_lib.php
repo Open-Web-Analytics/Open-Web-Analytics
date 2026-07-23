@@ -1065,8 +1065,8 @@ class owa_lib {
 		        }
 	             
             } else {
-                // at least worth a try
-                return utf8_encode($string);
+                // at least worth a try (utf8_encode() removed/deprecated; mbstring equivalent)
+                return mb_convert_encoding($string, 'UTF-8', 'ISO-8859-1');
             }
         }
     }
@@ -1127,8 +1127,9 @@ class owa_lib {
 
         } else {
 
-            setlocale( LC_MONETARY, $local );
-            return money_format( '%.' . 2 . 'n',$value );
+            // Fallback for hosts without intl. money_format() was removed in
+            // PHP 8.0, so format the amount directly instead.
+            return $currency . ' ' . number_format( $value, 2 );
         }
     }
 

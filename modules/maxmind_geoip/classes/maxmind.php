@@ -154,32 +154,32 @@ class owa_maxmind extends owa_location {
 
             if ( isset( $record['city']['names'][ $lang ] ) ) {
 
-                $location_map['city']             = utf8_encode( strtolower( trim( $record['city']['names'][ $lang ] ) ) );
+                $location_map['city']             = mb_convert_encoding( strtolower( trim( $record['city']['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
             }
 
             if ( isset( $record['continent']['code'] ) ) {
 
-                $location_map['continent']        = utf8_encode( strtolower( trim( $record['continent']['code'] ) ) );
+                $location_map['continent']        = mb_convert_encoding( strtolower( trim( $record['continent']['code'] ) ), 'UTF-8', 'ISO-8859-1' );
             }
 
             if ( isset( $record['continent']['names'][ $lang ] ) ) {
 
-                $location_map['continent_code'] = utf8_encode( strtolower( trim( $record['continent']['names'][ $lang ] ) ) );
+                $location_map['continent_code'] = mb_convert_encoding( strtolower( trim( $record['continent']['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
             }
 
             if ( isset( $record['subdivisions'][0]['names'][ $lang ]  ) ) {
 
-                $location_map['state']             = utf8_encode( strtolower( trim( $record['subdivisions'][0]['names'][ $lang ] ) ) );
+                $location_map['state']             = mb_convert_encoding( strtolower( trim( $record['subdivisions'][0]['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
                }
 
                if ( isset( $record['subdivisions'][0]['iso_code'] ) ) {
 
-                   $location_map['state_code']     = utf8_encode( strtolower( trim( $record['subdivisions'][0]['iso_code'] ) ) );
+                   $location_map['state_code']     = mb_convert_encoding( strtolower( trim( $record['subdivisions'][0]['iso_code'] ) ), 'UTF-8', 'ISO-8859-1' );
                }
 
                if ( isset( $record['country']['names'][ $lang ] ) ) {
 
-                   $location_map['country']         = utf8_encode( strtolower( trim( $record['country']['names'][ $lang ] ) ) );
+                   $location_map['country']         = mb_convert_encoding( strtolower( trim( $record['country']['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
             }
 
             if ( isset( $record['country']['iso_code'] ) ) {
