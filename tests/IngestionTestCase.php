@@ -32,6 +32,15 @@ abstract class IngestionTestCase extends TestCase
     /** @var array<string, array<int, string>>|null cached beacon contract fixture */
     private static $contracts = null;
 
+    /** @var object|null the event object most recently fired via fireEvent() */
+    private $lastEvent = null;
+
+    /** @var string|null saved server HTTP_USER_AGENT to restore in tearDown */
+    private $savedServerUa = null;
+
+    /** @var bool whether setServerUserAgent() overrode the server UA this test */
+    private $serverUaOverridden = false;
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
@@ -51,6 +60,16 @@ abstract class IngestionTestCase extends TestCase
             }
         }
         $this->cleanup = [];
+
+        // Restore any server-side UA override so it can't leak into the next
+        // test (the browscap object is memoized on the service singleton for
+        // the whole process — see setServerUserAgent).
+        if ($this->serverUaOverridden) {
+            owa_coreAPI::requestContainerSingleton()->server['HTTP_USER_AGENT'] = $this->savedServerUa;
+            owa_coreAPI::serviceSingleton()->setBrowscap(null);
+            $this->serverUaOverridden = false;
+            $this->savedServerUa      = null;
+        }
     }
 
     /**
@@ -75,6 +94,31 @@ abstract class IngestionTestCase extends TestCase
     protected function setServerTime(int $timestamp): void
     {
         owa_coreAPI::requestContainerSingleton()->timestamp = $timestamp;
+    }
+
+    /**
+     * Drive the SERVER-SIDE user-agent the ingestion pipeline sees.
+     *
+     * The `os` (and `ua_family`, robot, etc.) property is derived by browscap
+     * (the ua-parser library) from the user-agent — but resolveOs reads that UA
+     * from the request container's HTTP_USER_AGENT *server param*, NOT from the
+     * event's HTTP_USER_AGENT property, and the parsed browscap object is
+     * memoized on the service singleton for the whole process. So a test that
+     * wants a realistic os to resolve must set the server param here (which also
+     * clears the memoized browscap so the next lookup re-parses). tearDown
+     * restores the original UA and resets browscap so this can't bleed into
+     * another test in the same process.
+     */
+    protected function setServerUserAgent(string $ua): void
+    {
+        $rc = owa_coreAPI::requestContainerSingleton();
+        if (!$this->serverUaOverridden) {
+            $this->savedServerUa      = $rc->server['HTTP_USER_AGENT'] ?? null;
+            $this->serverUaOverridden = true;
+        }
+        $rc->server['HTTP_USER_AGENT'] = $ua;
+        // Drop the memoized browscap so the next getBrowscap() re-parses this UA.
+        owa_coreAPI::serviceSingleton()->setBrowscap(null);
     }
 
     /**
@@ -124,7 +168,22 @@ abstract class IngestionTestCase extends TestCase
         $event->setEventType($event_type);
         $event->setProperties($props);
 
+        // logEvent mutates the event in place, running every property callback
+        // (defaults, derivations, filters). Keep a handle so a test can read the
+        // server-DERIVED property values (e.g. the `source` inferred from the
+        // referrer) for content-based dimension lookups/cleanup.
+        $this->lastEvent = $event;
+
         return owa_coreAPI::logEvent($event_type, $event);
+    }
+
+    /**
+     * The event most recently fired via fireEvent(), after logEvent() has run
+     * its property callbacks. Use this to read server-derived property values.
+     */
+    protected function lastEvent()
+    {
+        return $this->lastEvent;
     }
 
     /**

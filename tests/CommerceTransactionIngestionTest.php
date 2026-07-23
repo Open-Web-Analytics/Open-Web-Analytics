@@ -22,10 +22,23 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
 {
     public function testTransactionPersistsTransactionAndLineItemRows(): void
     {
+        // The transaction beacon is the one place the buyer's location arrives
+        // on the wire (country/city/state), so it is the honest home for a
+        // location_dim assertion. Guard that those really are contracted fields.
+        $this->assertFieldsInContract('ecommerce.transaction', ['country', 'city', 'state']);
+
         $site_id  = md5('owa-test-site');
         // Unique order id so the PK (generateId(order_id)) is unique per run.
         $order_id = 'owatest-order-' . uniqid('', true);
         $sku      = 'SKU-1';
+
+        // Unique country so the derived location_dim row is authored by THIS
+        // transaction. resolveCountry() honours a manually-supplied country
+        // before ever consulting the geo module, and generateLocationId() keys
+        // the location_dim row on country — so this works with geo inactive and
+        // gives us a unique row to assert and clean up (rather than the shared
+        // '(not set)' default a pageview lands on here).
+        $country = 'OWAtestland ' . $order_id;
 
         // Compute the PKs the handler will use, for load-back and cleanup.
         $txn_entity = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
@@ -34,6 +47,7 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
         $li_pk      = $li_entity->generateId($order_id . $sku);
         $this->trackForCleanup('base.commerce_transaction_fact', $txn_pk, 'id');
         $this->trackForCleanup('base.commerce_line_item_fact', $li_pk, 'id');
+        $this->trackForCleanup('base.location_dim', $country, 'country');
 
         $result = $this->fireEvent('ecommerce.transaction', [
             'guid'            => $this->uniqueGuid(),
@@ -45,6 +59,9 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
             'ct_total'        => 42.50,
             'ct_tax'          => 2.50,
             'ct_shipping'     => 5.00,
+            'country'         => $country,
+            'city'            => 'Testville',
+            'state'           => 'TS',
             'ct_line_items'   => [[
                 'li_order_id'     => $order_id,
                 'li_sku'          => $sku,
@@ -80,5 +97,13 @@ final class CommerceTransactionIngestionTest extends IngestionTestCase
         $this->assertEquals(2, $li->get('quantity'));
         $this->assertEquals(2000, $li->get('unit_price'));   // 20.00 * 100
         $this->assertEquals(4000, $li->get('item_revenue')); // 2 * 20.00 * 100
+
+        // location dimension: the transaction fan-out authored a real, unique
+        // location_dim row keyed on the buyer's country (not the shared
+        // '(not set)' default), proving the geo/location dimension gets logged.
+        $loc = $this->assertRowPersisted('base.location_dim', $country, 'country');
+        $this->assertSame($country, $loc->get('country'));
+        $this->assertSame('Testville', $loc->get('city'));
+        $this->assertSame('TS', $loc->get('state'));
     }
 }
