@@ -4,7 +4,7 @@
   "description": "Open Web Analytics is an open source alternative to commercial web analytics tools such as Google Analytics. This software allows you to stay in control of the data you collect about the user of your websites or applications.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build": "webpack-cli --mode production && npm run copyTracker",
     "start": "webpack-cli --mode development --watch",
     "copyTracker": "shx cp modules/base/dist/owa.tracker.js modules/base/js/owa.tracker-combined-min.js"
@@ -28,6 +28,11 @@
     "webpack-concat-files-plugin": "^0.5.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "babel-jest": "^30.4.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "shx": "^0.3.4",
     "terser": "^5.49.0",
     "terser-webpack-plugin": "^5.6.1"

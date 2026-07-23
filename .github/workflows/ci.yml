@@ -34,3 +34,22 @@ jobs:
 
       - name: Unit tests (PHPUnit)
         run: composer run-script test
+
+  js:
+    name: Tracker JS tests (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tracker JS unit tests (Jest)
+        run: npm test
