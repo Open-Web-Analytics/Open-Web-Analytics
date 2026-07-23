@@ -129,4 +129,133 @@ final class SessionIngestionTest extends IngestionTestCase
         // last_req advanced to the second request's server time.
         $this->assertEquals(1700000060, $updated->get('last_req'));
     }
+
+    /**
+     * Campaign attribution is denormalized onto the SESSION fact, not just the
+     * request fact. On a new-session campaign pageview, logSession() sweeps the
+     * event's properties onto base.session (setProperties), so the derived
+     * medium and the campaign_id FK land there, and it explicitly copies the
+     * `attribs` touch-history JSON into the latest_attributions column. This
+     * proves the session row is attributed to the campaign that opened it.
+     */
+    public function testNewSessionRecordsCampaignAttribution(): void
+    {
+        $this->assertFieldsInContract('base.page_request.campaign', [
+            'session_id', 'is_new_session', 'campaign', 'source', 'medium', 'attribs',
+        ]);
+
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        $campaign = 'sess_campaign_' . $session_id;
+        $source   = 'sess_source_' . $session_id;
+        $this->trackForCleanup('base.campaign_dim', $campaign, 'name');
+        $this->trackForCleanup('base.source_dim', $source, 'source_domain');
+
+        // The tracker emits `attribs` as a JSON array of campaign touches; the
+        // handler stores it verbatim in latest_attributions.
+        $attribs = '[{"campaign":"' . $campaign . '","source":"' . $source . '","medium":"cpc"}]';
+
+        $this->setServerTime(1700000000);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session' => true,
+            'campaign'       => $campaign,
+            'source'         => $source,
+            'medium'         => 'cpc',
+            'attribs'        => $attribs,
+        ]);
+
+        $s = $this->assertRowPersisted('base.session', $session_id, 'id');
+
+        // Beacon-supplied medium is denormalized onto the session row.
+        $this->assertSame('cpc', (string) $s->get('medium'), 'session medium not set from the campaign beacon.');
+
+        // The touch-history JSON is stored verbatim.
+        $this->assertSame(
+            $attribs,
+            (string) $s->get('latest_attributions'),
+            'session latest_attributions did not capture the campaign touch history.'
+        );
+
+        // Follow the campaign_id FK to the campaign_dim row it references and
+        // assert that row is the campaign this session was opened with. (Resolve
+        // by FK id, not content: the association-test pattern, robust to the
+        // derived-FK machinery and any duplicate content rows.)
+        $campaign_fk = (string) $s->get('campaign_id');
+        $this->assertNotSame('', $campaign_fk, 'session campaign_id FK is empty — not linked to a campaign.');
+        $camp = owa_coreAPI::entityFactory('base.campaign_dim');
+        $camp->load($campaign_fk, 'id');
+        $this->assertTrue($camp->wasPersisted(), 'session campaign_id points at a campaign_dim row that does not exist.');
+        $this->assertSame($campaign, (string) $camp->get('name'), 'session is linked to the wrong campaign.');
+    }
+
+    /**
+     * Last-touch re-attribution: in the default 'direct' attribution mode a
+     * later request in an active session that carries NEW campaign params
+     * re-attributes the session. logSessionUpdate() overwrites medium /
+     * source_id / campaign_id and refreshes latest_attributions (only when the
+     * event actually supplies them), so the session reflects the most recent
+     * campaign touch rather than the one that opened it.
+     */
+    public function testSessionUpdateReattributesToNewCampaign(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $session_id = $this->uniqueSessionId();
+        $this->trackForCleanup('base.session', $session_id, 'id');
+
+        // Request 1 at T0: opens the session under an initial campaign.
+        $campaign1 = 'sess_first_' . $session_id;
+        $source1   = 'src_first_' . $session_id;
+        $this->trackForCleanup('base.campaign_dim', $campaign1, 'name');
+        $this->trackForCleanup('base.source_dim', $source1, 'source_domain');
+
+        $this->setServerTime(1700000000);
+        $this->firePageRequest($site_id, $session_id, [
+            'is_new_session' => true,
+            'campaign'       => $campaign1,
+            'source'         => $source1,
+            'medium'         => 'email',
+        ]);
+
+        $opened = $this->assertRowPersisted('base.session', $session_id, 'id');
+        $this->assertSame('email', (string) $opened->get('medium'), 'opening session medium not set.');
+
+        // Request 2 at T0+60: same active session (no is_new_session), but a NEW
+        // campaign touch. Last-touch attribution should overwrite the session.
+        $campaign2 = 'sess_second_' . $session_id;
+        $source2   = 'src_second_' . $session_id;
+        $this->trackForCleanup('base.campaign_dim', $campaign2, 'name');
+        $this->trackForCleanup('base.source_dim', $source2, 'source_domain');
+        $attribs2 = '[{"campaign":"' . $campaign2 . '","source":"' . $source2 . '","medium":"cpc"}]';
+
+        $this->setServerTime(1700000060);
+        $this->firePageRequest($site_id, $session_id, [
+            'campaign' => $campaign2,
+            'source'   => $source2,
+            'medium'   => 'cpc',
+            'attribs'  => $attribs2,
+        ]);
+
+        $updated = owa_coreAPI::entityFactory('base.session');
+        $updated->load($session_id, 'id');
+        $this->assertTrue($updated->wasPersisted());
+
+        // Medium re-attributed to the latest touch.
+        $this->assertSame('cpc', (string) $updated->get('medium'), 'session medium was not re-attributed to the newer campaign.');
+
+        // latest_attributions refreshed to the newer touch history.
+        $this->assertSame(
+            $attribs2,
+            (string) $updated->get('latest_attributions'),
+            'session latest_attributions was not refreshed on re-attribution.'
+        );
+
+        // campaign_id FK now points at the SECOND campaign.
+        $campaign_fk = (string) $updated->get('campaign_id');
+        $camp = owa_coreAPI::entityFactory('base.campaign_dim');
+        $camp->load($campaign_fk, 'id');
+        $this->assertTrue($camp->wasPersisted(), 're-attributed campaign_id points at a missing campaign_dim row.');
+        $this->assertSame($campaign2, (string) $camp->get('name'), 'session was not re-attributed to the newer campaign.');
+    }
 }
