@@ -20,10 +20,21 @@
     
     
     "require": {
-       
+        "php": ">=8.2",
         "wikimedia/composer-merge-plugin": "^2.0"
     },
-    
+
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^1.11"
+    },
+
+    "scripts": {
+        "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l",
+        "phpstan": "phpstan analyse",
+        "test": "phpunit"
+    },
+
     "extra": {
         "merge-plugin": {
             "include": [

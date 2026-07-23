@@ -1,0 +1,21 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 1
+    paths:
+        - owa_lib.php
+        - owa_coreAPI.php
+        - owa_view.php
+        - owa_base.php
+        - owa_controller.php
+        - owa_module.php
+        - owa_entity.php
+        - owa_db.php
+    # Framework uses runtime-defined constants and dynamic class loading; keep
+    # the baseline broad so this catches *new* breakage (undefined symbols from
+    # deletions) rather than pre-existing legacy noise.
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
