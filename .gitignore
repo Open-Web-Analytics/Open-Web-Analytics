@@ -5,3 +5,5 @@ node_modules/
 modules/base/dist/
 modules/base/js/owa.tracker-combined-min.js
 /.phpunit.cache/
+/test-results/
+/playwright-report/

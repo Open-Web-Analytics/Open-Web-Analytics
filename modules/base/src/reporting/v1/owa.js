@@ -21,8 +21,7 @@ var OWA = {
         debug: false
     },
     state: {},
-    overlayActive: false,
-    
+
     // depricated
     setSetting: function(name, value) {
         return this.setOption(name, value);
@@ -135,59 +134,7 @@ var OWA = {
     getApiEndpoint : function() {
         return this.config['rest_api_endpoint'] || this.getSetting('baseUrl') + 'api/';
     },
-    
-    loadHeatmap: function(p) {
-        var that = this;
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
-        OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.heatmap.js', function(){
-            that.overlay = new OWA.heatmap();
-            //hm.setParams(p);
-            //hm.options.demoMode = true;
-            that.overlay.options.liveMode = true;
-            that.overlay.generate();
-        });    
-    },
-    
-    loadPlayer: function() {
-        var that = this;
-        OWA.debug("Loading Domstream Player");
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
-        OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.player.js', function(){
-            that.overlay = new OWA.player();    
-        });    
-    },
-    
-    startOverlaySession: function(p) {
-        
-        // set global is overlay actve flag
-        OWA.overlayActive = true;
-        //alert(JSON.stringify(p));
-        
-        if (p.hasOwnProperty('api_url')) {
-                
-            OWA.setApiEndpoint(p.api_url);
-        }
-        
-        // get param from cookie    
-        //var params = OWA.util.parseCookieStringToJson(p);
-        var params = p;
-        // evaluate the action param
-        if (params.action === 'loadHeatmap') {
-            this.loadHeatmap(p);
-        } else if (params.action === 'loadPlayer') {
-            this.loadPlayer(p);
-        }
-        
-    },
-    
-    endOverlaySession : function() {
-                
-        OWA.util.eraseCookie(OWA.getSetting('ns') + 'overlay', document.domain);
-        OWA.overlayActive = false;
-    },
-    
+
     /**
 	 * Add a new Filter callback
 	 * Note: filter functions must return the value variable.
