@@ -36,9 +36,12 @@ jobs:
         git -C ./ commit -m "Updating version string."
         echo Pushing change into Branch
         git -C ./ push --set-upstream origin release-${{ env.VERSION }}
-    # install the composer vendor directory
+    # install the composer vendor directory (production deps only — keep the
+    # test/static-analysis tooling in require-dev out of the shipped vendor/).
     - name: Install Composer Dependancies
       uses: php-actions/composer@v1
+      with:
+        dev: no
     # setup node and build js/asset bundles
     - name: Setup Node/npm 
       uses: actions/setup-node@v4
@@ -51,7 +54,7 @@ jobs:
     # Generate a release tarball excluding files that are not needed in a distro
     - name: Generate Release Tarball
       run: |
-        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
+        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./phpstan-baseline.neon' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./.phpunit.cache' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
     #create a draft release on github and attach tarball as asset
     - name: Create Draft Github Release
       id: create_release
