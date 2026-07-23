@@ -1,361 +1,415 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Call to an undefined method owa_controller\\:\\:action\\(\\)\\.$#"
+			message: '#^Call to an undefined method owa_controller\:\:action\(\)\.$#'
+			identifier: method.notFound
 			count: 1
 			path: owa_controller.php
 
 		-
-			message: "#^Call to an undefined method owa_controller\\:\\:errorAction\\(\\)\\.$#"
+			message: '#^Call to an undefined method owa_controller\:\:errorAction\(\)\.$#'
+			identifier: method.notFound
 			count: 1
 			path: owa_controller.php
 
 		-
-			message: "#^Call to static method get_instance\\(\\) on an unknown class owa_auth\\.$#"
+			message: '#^Call to static method get_instance\(\) on an unknown class owa_auth\.$#'
+			identifier: class.notFound
 			count: 2
 			path: owa_controller.php
 
 		-
-			message: "#^Call to static method get_instance\\(\\) on an unknown class owa_auth\\.$#"
+			message: '#^Call to static method get_instance\(\) on an unknown class owa_auth\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Call to static method get_instance\\(\\) on an unknown class owa_eventDispatch\\.$#"
+			message: '#^Call to static method get_instance\(\) on an unknown class owa_eventDispatch\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Constant OWA_CONF_DIR not found\\.$#"
+			message: '#^Instantiated class owa_template not found\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Instantiated class owa_template not found\\.$#"
+			message: '#^Method owa_coreAPI\:\:handleRestRequest\(\) should return unknown but return statement is missing\.$#'
+			identifier: return.missing
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Method owa_coreAPI\\:\\:handleRestRequest\\(\\) should return unknown but return statement is missing\\.$#"
+			message: '#^Method owa_coreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
+			identifier: return.missing
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Method owa_coreAPI\\:\\:logEvent\\(\\) should return bool but return statement is missing\\.$#"
+			message: '#^Method owa_coreAPI\:\:registerFilter\(\) should return bool but return statement is missing\.$#'
+			identifier: return.missing
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Method owa_coreAPI\\:\\:registerFilter\\(\\) should return bool but return statement is missing\\.$#"
+			message: '#^Undefined variable\: \$file$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Undefined variable\\: \\$file$#"
+			message: '#^Variable \$col_def might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Variable \\$col_def might not be defined\\.$#"
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: "#^Variable \\$conf might not be defined\\.$#"
+			message: '#^Variable \$conf might not be defined\.$#'
+			identifier: variable.undefined
 			count: 2
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Variable \\$file might not be defined\\.$#"
+			message: '#^Variable \$file might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Variable \\$name might not be defined\\.$#"
+			message: '#^Variable \$name might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Variable \\$params might not be defined\\.$#"
+			message: '#^Variable \$params might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Variable \\$something might not be defined\\.$#"
+			message: '#^Variable \$something might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_coreAPI.php
 
 		-
-			message: "#^Call to an undefined method owa_db\\:\\:get_results\\(\\)\\.$#"
+			message: '#^Call to an undefined method owa_db\:\:get_results\(\)\.$#'
+			identifier: method.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Call to an undefined method owa_db\\:\\:query\\(\\)\\.$#"
+			message: '#^Call to an undefined method owa_db\:\:query\(\)\.$#'
+			identifier: method.notFound
 			count: 15
 			path: owa_db.php
 
 		-
-			message: "#^Call to static method stripSql\\(\\) on an unknown class owa_sanitize\\.$#"
+			message: '#^Call to static method stripSql\(\) on an unknown class owa_sanitize\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_DTD_CHARACTER_ENCODING_UTF8 not found\\.$#"
+			message: '#^Constant OWA_DTD_CHARACTER_ENCODING_UTF8 not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_DTD_TABLE_CHARACTER_ENCODING not found\\.$#"
+			message: '#^Constant OWA_DTD_TABLE_CHARACTER_ENCODING not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_DTD_TABLE_TYPE not found\\.$#"
+			message: '#^Constant OWA_DTD_TABLE_TYPE not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_DTD_TABLE_TYPE_DEFAULT not found\\.$#"
+			message: '#^Constant OWA_DTD_TABLE_TYPE_DEFAULT not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_DTD_TABLE_TYPE_DISK not found\\.$#"
+			message: '#^Constant OWA_DTD_TABLE_TYPE_DISK not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_DTD_TABLE_TYPE_MEMORY not found\\.$#"
+			message: '#^Constant OWA_DTD_TABLE_TYPE_MEMORY not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_ADD_COLUMN not found\\.$#"
+			message: '#^Constant OWA_SQL_ADD_COLUMN not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_ADD_INDEX not found\\.$#"
+			message: '#^Constant OWA_SQL_ADD_INDEX not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_ALTER_TABLE_TYPE not found\\.$#"
+			message: '#^Constant OWA_SQL_ALTER_TABLE_TYPE not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_ASCENDING not found\\.$#"
+			message: '#^Constant OWA_SQL_ASCENDING not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_AVERAGE not found\\.$#"
+			message: '#^Constant OWA_SQL_AVERAGE not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_BEGIN_TRANSACTION not found\\.$#"
+			message: '#^Constant OWA_SQL_BEGIN_TRANSACTION not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_COUNT not found\\.$#"
+			message: '#^Constant OWA_SQL_COUNT not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_CREATE_TABLE not found\\.$#"
+			message: '#^Constant OWA_SQL_CREATE_TABLE not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DELETE_ROW not found\\.$#"
+			message: '#^Constant OWA_SQL_DELETE_ROW not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DESCENDING not found\\.$#"
+			message: '#^Constant OWA_SQL_DESCENDING not found\.$#'
+			identifier: constant.notFound
 			count: 2
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DISTINCT not found\\.$#"
+			message: '#^Constant OWA_SQL_DISTINCT not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DIVISION not found\\.$#"
+			message: '#^Constant OWA_SQL_DIVISION not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DROP_COLUMN not found\\.$#"
+			message: '#^Constant OWA_SQL_DROP_COLUMN not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DROP_INDEX not found\\.$#"
+			message: '#^Constant OWA_SQL_DROP_INDEX not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_DROP_TABLE not found\\.$#"
+			message: '#^Constant OWA_SQL_DROP_TABLE not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_END_TRANSACTION not found\\.$#"
+			message: '#^Constant OWA_SQL_END_TRANSACTION not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_INSERT_ROW not found\\.$#"
+			message: '#^Constant OWA_SQL_INSERT_ROW not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_MODIFY_COLUMN not found\\.$#"
+			message: '#^Constant OWA_SQL_MODIFY_COLUMN not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_NOTREGEXP not found\\.$#"
+			message: '#^Constant OWA_SQL_NOTREGEXP not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_REGEXP not found\\.$#"
+			message: '#^Constant OWA_SQL_REGEXP not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_RENAME_COLUMN not found\\.$#"
+			message: '#^Constant OWA_SQL_RENAME_COLUMN not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_RENAME_TABLE not found\\.$#"
+			message: '#^Constant OWA_SQL_RENAME_TABLE not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_ROUND not found\\.$#"
+			message: '#^Constant OWA_SQL_ROUND not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_SUM not found\\.$#"
+			message: '#^Constant OWA_SQL_SUM not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Constant OWA_SQL_UPDATE_ROW not found\\.$#"
+			message: '#^Constant OWA_SQL_UPDATE_ROW not found\.$#'
+			identifier: constant.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Result of method owa_base\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
+			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Variable \\$ret might not be defined\\.$#"
+			message: '#^Variable \$ret might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_db.php
 
 		-
-			message: "#^Call to an undefined method owa_entity\\:\\:getEntityPropertyList\\(\\)\\.$#"
+			message: '#^Call to an undefined method owa_entity\:\:getEntityPropertyList\(\)\.$#'
+			identifier: method.notFound
 			count: 1
 			path: owa_entity.php
 
 		-
-			message: "#^Instantiated class owa_dbColumn not found\\.$#"
+			message: '#^Instantiated class owa_dbColumn not found\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_entity.php
 
 		-
-			message: "#^Variable \\$all_cols might not be defined\\.$#"
+			message: '#^Variable \$all_cols might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_entity.php
 
 		-
-			message: "#^Variable \\$vars might not be defined\\.$#"
+			message: '#^Variable \$vars might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_entity.php
 
 		-
-			message: "#^Call to static method cleanInput\\(\\) on an unknown class owa_sanitize\\.$#"
+			message: '#^Call to static method cleanInput\(\) on an unknown class owa_sanitize\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_lib.php
 
 		-
-			message: "#^Method owa_lib\\:\\:setStringGuid\\(\\) should return int but return statement is missing\\.$#"
+			message: '#^Method owa_lib\:\:setStringGuid\(\) should return int but return statement is missing\.$#'
+			identifier: return.missing
 			count: 1
 			path: owa_lib.php
 
 		-
-			message: "#^Variable \\$state might not be defined\\.$#"
+			message: '#^Variable \$state might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_lib.php
 
 		-
-			message: "#^Constant OWA_BASE_MODULE_DIR not found\\.$#"
-			count: 1
-			path: owa_module.php
-
-		-
-			message: "#^Function exception not found\\.$#"
+			message: '#^Function exception not found\.$#'
+			identifier: function.notFound
 			count: 3
 			path: owa_module.php
 
 		-
-			message: "#^Method owa_module\\:\\:registerEventHandler\\(\\) should return bool but return statement is missing\\.$#"
+			message: '#^Method owa_module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
+			identifier: return.missing
 			count: 1
 			path: owa_module.php
 
 		-
-			message: "#^Method owa_module\\:\\:registerFilter\\(\\) should return bool but return statement is missing\\.$#"
+			message: '#^Variable \$class might not be defined\.$#'
+			identifier: variable.undefined
 			count: 1
 			path: owa_module.php
 
 		-
-			message: "#^Variable \\$class might not be defined\\.$#"
-			count: 1
-			path: owa_module.php
-
-		-
-			message: "#^Access to an undefined property owa_view\\:\\:\\$renderJsInLine\\.$#"
+			message: '#^Access to an undefined property owa_view\:\:\$renderJsInLine\.$#'
+			identifier: property.notFound
 			count: 1
 			path: owa_view.php
 
 		-
-			message: "#^Call to static method sanitizeTemplateName\\(\\) on an unknown class owa_template\\.$#"
+			message: '#^Call to static method sanitizeTemplateName\(\) on an unknown class owa_template\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_view.php
 
 		-
-			message: "#^Instantiated class owa_mailer not found\\.$#"
+			message: '#^Instantiated class owa_mailer not found\.$#'
+			identifier: class.notFound
 			count: 1
 			path: owa_view.php
 
 		-
-			message: "#^Instantiated class owa_template not found\\.$#"
+			message: '#^Instantiated class owa_template not found\.$#'
+			identifier: class.notFound
 			count: 2
 			path: owa_view.php
 
 		-
-			message: "#^Method owa_base\\:\\:__construct\\(\\) invoked with 1 parameter, 0 required\\.$#"
+			message: '#^Method owa_base\:\:__construct\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
 			count: 1
 			path: owa_view.php
 
 		-
-			message: "#^Method owa_view\\:\\:setJs\\(\\) invoked with 1 parameter, 2\\-5 required\\.$#"
+			message: '#^Method owa_view\:\:setJs\(\) invoked with 1 parameter, 2\-5 required\.$#'
+			identifier: arguments.count
 			count: 2
 			path: owa_view.php
 
 		-
-			message: "#^Result of method owa_view\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
+			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
+			identifier: staticMethod.void
 			count: 5
 			path: owa_view.php

@@ -347,7 +347,7 @@ abstract class owa_module {
      *
      * @param array $event_name
      * @param string $handler_name
-     * @return boolean
+     * @return void
      */
     function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
 
