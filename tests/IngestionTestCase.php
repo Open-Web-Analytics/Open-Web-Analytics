@@ -29,6 +29,9 @@ abstract class IngestionTestCase extends TestCase
     /** @var array<int, array{0:string,1:string,2:string}> [entityFactory, pk, load-by column] */
     private $cleanup = [];
 
+    /** @var array<string, array<int, string>>|null cached beacon contract fixture */
+    private static $contracts = null;
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
@@ -59,12 +62,48 @@ abstract class IngestionTestCase extends TestCase
     }
 
     /**
-     * A per-run unique GUID. Unique so the handler idempotency guard
-     * (load-by-guid) never short-circuits and cleanup targets exactly this row.
+     * Override OWA's authoritative server-assigned event time.
+     *
+     * OWA does not trust the client-supplied `timestamp`: the environmental
+     * `timestampDefault` filter always overwrites it with the request
+     * container's receive time (set once per process). Tests that need to
+     * order events in time (e.g. a session update, which only fires when a
+     * later request's time exceeds the session's last_req) must move this
+     * server clock forward between beacons — the client `timestamp` alone has
+     * no effect on what gets persisted.
+     */
+    protected function setServerTime(int $timestamp): void
+    {
+        owa_coreAPI::requestContainerSingleton()->timestamp = $timestamp;
+    }
+
+    /**
+     * A per-run unique GUID in the SAME format the tracker emits.
+     *
+     * This must be numeric: the tracker's Util.generateRandomGuid() builds
+     * "<unix time><6-digit rand><3-digit rand>" (a ~19-digit number) and the
+     * entity id / session_id columns are BIGINT. A non-numeric GUID is silently
+     * cast to 0 by MySQL — every row lands at id=0, PKs collide, and load/delete
+     * match the wrong row. Mirroring the real format keeps the test honest and
+     * gives each row a distinct PK. Uniqueness (time + 9 random digits) makes the
+     * handler idempotency guard a no-op and lets cleanup target exactly this row.
      */
     protected function uniqueGuid(): string
     {
-        return 'owatest_' . uniqid('', true);
+        $time   = (string) time();
+        $rand   = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $client = str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+        return $time . $rand . $client;
+    }
+
+    /**
+     * A unique, numeric session id in the tracker's GUID format. Same BIGINT
+     * requirement as uniqueGuid() — see there. Alias kept separate for
+     * readability at call sites that group requests into a session.
+     */
+    protected function uniqueSessionId(): string
+    {
+        return $this->uniqueGuid();
     }
 
     /**
@@ -86,6 +125,53 @@ abstract class IngestionTestCase extends TestCase
         $event->setProperties($props);
 
         return owa_coreAPI::logEvent($event_type, $event);
+    }
+
+    /**
+     * Load the shared beacon contract fixture (the same file the JS
+     * BeaconContract test writes/asserts). Maps event_type -> emitted property
+     * names.
+     *
+     * @return array<string, array<int, string>>
+     */
+    protected static function beaconContracts(): array
+    {
+        if (self::$contracts === null) {
+            $json = file_get_contents(__DIR__ . '/fixtures/beacon_contracts.json');
+            $data = json_decode($json, true);
+            unset($data['_comment']);
+            self::$contracts = $data;
+        }
+        return self::$contracts;
+    }
+
+    /**
+     * Anti-drift guard. Assert that every property this test feeds a handler is
+     * one the tracker actually emits for that event_type, per the shared
+     * contract fixture. If a handler starts consuming a field the tracker
+     * doesn't send (or a field gets renamed on one side only), this fails —
+     * so the PHP contract can't silently drift from the JS beacon.
+     *
+     * @param array<int, string> $consumed handler-consumed property names
+     */
+    protected function assertFieldsInContract(string $event_type, array $consumed): void
+    {
+        $contracts = self::beaconContracts();
+        $this->assertArrayHasKey(
+            $event_type,
+            $contracts,
+            "No beacon contract for {$event_type} in tests/fixtures/beacon_contracts.json."
+        );
+        $emitted = $contracts[$event_type];
+        foreach ($consumed as $field) {
+            $this->assertContains(
+                $field,
+                $emitted,
+                "Handler for {$event_type} consumes '{$field}', but the tracker "
+                . "does not emit it (see tests/fixtures/beacon_contracts.json). "
+                . "The tracker and server contract have drifted."
+            );
+        }
     }
 
     /**
