@@ -158,6 +158,61 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A search-engine referrer whose query string is present but does NOT carry
+     * the engine's configured query param yields the '(not provided)' sentinel
+     * term (the extractSearchTerm fallback), while medium is still
+     * 'organic-search'. This mirrors the real world where search engines
+     * increasingly withhold the query term (https referrals) but are still
+     * identifiable as organic search.
+     */
+    public function testSearchEngineReferrerWithoutQueryParamYieldsNotProvided(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $guid       = $this->uniqueGuid();
+        $session_id = $this->uniqueSessionId();
+        $visitor_id = $this->uniqueGuid();
+
+        $page_url   = 'https://example.com/camp-notprovided/' . $guid;
+        $user_agent = 'OWA-DimTest/1.0 (+notprovided; run=' . $guid . ')';
+        // A google referrer that has SOME query string (so extractSearchTerm
+        // enters the engine loop) but not the 'q' param it looks for.
+        $referer    = 'https://www.google.com/search?ref=' . $guid;
+
+        $this->trackForCleanup('base.request', $guid, 'id');
+        $this->trackForCleanup('base.document', $page_url, 'url');
+        $this->trackForCleanup('base.ua', $user_agent, 'ua');
+        $this->trackForCleanup('base.referer', $referer, 'url');
+
+        $result = $this->fireEvent('base.page_request', [
+            'guid'            => $guid,
+            'site_id'         => $site_id,
+            'session_id'      => $session_id,
+            'page_url'        => $page_url,
+            'HTTP_USER_AGENT' => $user_agent,
+            'is_new_session'  => true,
+            'is_new_visitor'  => true,
+            'visitor_id'      => $visitor_id,
+            'HTTP_REFERER'    => $referer,
+            'session_referer' => $referer,
+        ]);
+        $this->assertNotFalse($result, '(not provided) page_request was dropped before persistence.');
+
+        $event = $this->lastEvent();
+        // Still recognized as organic search...
+        $this->assertSame('organic-search', (string) $event->get('medium'), 'medium should still be organic-search.');
+        // ...but the term the engine withheld becomes the '(not provided)' sentinel.
+        $this->assertSame(
+            '(not provided)',
+            (string) $event->get('search_terms'),
+            'a search-engine referrer without the query param should yield (not provided).'
+        );
+
+        $this->assertRowPersisted('base.request', $guid, 'id');
+        // The sentinel is still a real search_term_dim row.
+        $this->assertRowPersisted('base.search_term_dim', '(not provided)', 'terms');
+    }
+
+    /**
      * A plain (non-search-engine, non-social) referrer derives medium
      * 'referral' — the deriveMedium default branch when a referrer is present.
      */
