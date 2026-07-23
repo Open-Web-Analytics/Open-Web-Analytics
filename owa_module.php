@@ -107,7 +107,7 @@ abstract class owa_module {
     /**
      * Array of navigation links that this module implements
      *
-     * @var unknown_type
+     * @var array
      */
     var $nav_links;
 
@@ -316,7 +316,7 @@ abstract class owa_module {
      * Must be defined by a concrete module class for any event handlers to be registered
      *
      * @access public
-     * @return array
+     * @return void
      */
     function _registerEventHandlers() {
 
@@ -396,7 +396,7 @@ abstract class owa_module {
      * Abstract method for registering administration/settings page
      *
      * @access public
-     * @return array
+     * @return void
      */
     function registerAdminPanels() {
 

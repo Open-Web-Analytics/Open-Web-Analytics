@@ -78,14 +78,14 @@ class owa_view extends owa_base {
     /**
      * Type of page
      *
-     * @var unknown_type
+     * @var string
      */
     var $page_type;
 
     /**
      * Request Params
      *
-     * @var unknown_type
+     * @var array
      */
     var $params;
 
@@ -587,7 +587,7 @@ class owa_genericTableView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
 
     }
 
@@ -669,7 +669,7 @@ class owa_sparklineJsView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
 
     }
 
@@ -701,7 +701,7 @@ class owa_mailView extends owa_view {
         // make this a service
         require_once(OWA_BASE_CLASS_DIR.'mailer.php');
         $this->po = new owa_mailer;
-        return parent::__construct();
+        parent::__construct();
     }
 
     function postProcess() {
@@ -736,7 +736,7 @@ class owa_adminView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     function post() {
@@ -870,7 +870,7 @@ class owa_jsonView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     function render() {

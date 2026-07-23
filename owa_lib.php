@@ -214,7 +214,7 @@ class owa_lib {
      * Generates the label for a date
      * @depricated
      * @param array $params
-     * @return string
+     * @return string|false
      */
     public static function getDatelabel($params) {
 
@@ -634,7 +634,7 @@ class owa_lib {
      * Create guid from string
      *
      * @param     string $string
-     * @return     integer
+     * @return     int|string|null
      * @access     private
      */
     public static function setStringGuid($string) {
@@ -650,13 +650,15 @@ class owa_lib {
                 return crc32( strtolower( $string ) );
             }
         }
+
+        return null;
     }
 
     /**
      * Add constraints into SQL where clause
      *
      * @param     array $constraints
-     * @return     string $where
+     * @return     string|null $where
      * @access     public
      * @depricated
      * @todo remove
@@ -708,12 +710,12 @@ class owa_lib {
             if (!empty($where)):
                 return $where;
             else:
-                return;
+                return null;
             endif;
 
         else:
 
-            return;
+            return null;
 
         endif;
 

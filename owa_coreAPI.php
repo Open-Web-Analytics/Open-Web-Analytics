@@ -690,7 +690,7 @@ class owa_coreAPI {
      * @param string $view
      * @param string $nav_name the name of the navigation element that you want links for
      * @param string $sortby the array value to sort the navigation array by
-     * @return array
+     * @return array|false
      */
     public static function getNavigation($view, $nav_name, $sortby ='order') {
 
@@ -977,8 +977,8 @@ class owa_coreAPI {
 	            
                 owa_coreAPI::debug("ABORTING: request appears to be from a robot");
                 owa_coreAPI::setRequestParam('is_robot', true);
-                
-                return;
+
+                return false;
             }
         }
 
@@ -1305,7 +1305,7 @@ class owa_coreAPI {
     /**
      * Handles OWA internal page/action requests
      *
-     * @return unknown
+     * @return mixed
      */
     public static function handleRequest($caller_params = null, $action = '') {
 
@@ -1352,7 +1352,7 @@ class owa_coreAPI {
     /**
      * Handles REST endpoint requests
      *
-     * @return unknown
+     * @return mixed
      */
     public static function handleRestRequest() {
         

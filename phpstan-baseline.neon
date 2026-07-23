@@ -7,6 +7,12 @@ parameters:
 			path: owa_base.php
 
 		-
+			message: '#^Iterating over an object of an unknown class unknown_type\.$#'
+			identifier: class.notFound
+			count: 1
+			path: owa_base.php
+
+		-
 			message: '#^Parameter \$array of method owa_base\:\:_setObjectValues\(\) has invalid type unknown_type\.$#'
 			identifier: class.notFound
 			count: 1
@@ -343,24 +349,6 @@ parameters:
 			path: owa_coreAPI.php
 
 		-
-			message: '#^Method owa_coreAPI\:\:handleRequest\(\) has invalid return type unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:handleRestRequest\(\) has invalid return type unknown\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_coreAPI.php
-
-		-
-			message: '#^Method owa_coreAPI\:\:handleRestRequest\(\) should return unknown but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: owa_coreAPI.php
-
-		-
 			message: '#^Method owa_coreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
@@ -637,24 +625,6 @@ parameters:
 			path: owa_db.php
 
 		-
-			message: '#^Property owa_db\:\:\$_start_time has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Property owa_db\:\:\$_total_time has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_db.php
-
-		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: owa_db.php
-
-		-
 			message: '#^Variable \$ret might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -721,6 +691,12 @@ parameters:
 			path: owa_lib.php
 
 		-
+			message: '#^Iterating over an object of an unknown class unknown_type\.$#'
+			identifier: class.notFound
+			count: 1
+			path: owa_lib.php
+
+		-
 			message: '#^Method owa_lib\:\:get_period_label\(\) has invalid return type unknown\.$#'
 			identifier: class.notFound
 			count: 1
@@ -729,12 +705,6 @@ parameters:
 		-
 			message: '#^Method owa_lib\:\:moduleRequireOnce\(\) has invalid return type unknown\.$#'
 			identifier: class.notFound
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: '#^Method owa_lib\:\:setStringGuid\(\) should return int but return statement is missing\.$#'
-			identifier: return.missing
 			count: 1
 			path: owa_lib.php
 
@@ -767,6 +737,12 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: owa_lib.php
+
+		-
+			message: '#^Access to offset mixed on an unknown class unknown_type\.$#'
+			identifier: class.notFound
+			count: 2
+			path: owa_module.php
 
 		-
 			message: '#^Call to method createTable\(\) on an unknown class unknown\.$#'
@@ -812,12 +788,6 @@ parameters:
 
 		-
 			message: '#^Property owa_module\:\:\$metrics has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_module.php
-
-		-
-			message: '#^Property owa_module\:\:\$nav_links has unknown class unknown_type as its type\.$#'
 			identifier: class.notFound
 			count: 1
 			path: owa_module.php
@@ -904,22 +874,4 @@ parameters:
 			message: '#^Property owa_view\:\:\$module has unknown class unknown_type as its type\.$#'
 			identifier: class.notFound
 			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Property owa_view\:\:\$page_type has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Property owa_view\:\:\$params has unknown class unknown_type as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: owa_view.php
-
-		-
-			message: '#^Result of method owa_view\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 5
 			path: owa_view.php

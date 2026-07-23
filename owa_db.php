@@ -120,14 +120,14 @@ class owa_db extends owa_base {
     /**
      * Microtime Start of Query
      *
-     * @var unknown_type
+     * @var float
      */
     var $_start_time;
 
     /**
      * Total Elapsed time of query
      *
-     * @var unknown_type
+     * @var string
      */
     var $_total_time;
 
@@ -162,7 +162,7 @@ class owa_db extends owa_base {
                                          'open_new_connection' => $open_new_connection,
                                          'persistant' => $persistant);
                                                                           
-        return parent::__construct();
+        parent::__construct();
     }
 
     function __destruct() {
