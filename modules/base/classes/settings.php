@@ -525,21 +525,23 @@
      }
      
      function setMailerDomain() {
-	     
+
+	     // Fall back to a valid domain: neither SERVER_NAME (CLI/cron have no
+	     // web server context) nor a usable PUBLIC_URL host is guaranteed, and
+	     // mailer-from below reads this unconditionally.
+	     $mailer_domain = 'localhost';
+
 	     if ( isset( $_SERVER[ 'SERVER_NAME' ] ) ) {
-		 	 
-		 	 $mailer_domain = $_SERVER['SERVER_NAME'];
-	 	 
-	 	 } else {
-		 	 
-		 	 if ( defined( 'PUBLIC_URL' ) ) {
-			 	 
-			 	 $parts = parse_url( PUBLIC_URL );
-			 	 $mailer_domain = $parts['host'];
-		 	 }
-	 	 }
-	 	 
-	 	 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
+
+			 $mailer_domain = $_SERVER['SERVER_NAME'];
+
+		 } elseif ( defined( 'PUBLIC_URL' ) ) {
+
+			 $parts = parse_url( PUBLIC_URL );
+			 $mailer_domain = $parts['host'] ?? 'localhost';
+		 }
+
+		 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
      }
 
 
