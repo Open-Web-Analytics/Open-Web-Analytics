@@ -255,6 +255,98 @@ final class CampaignAttributionIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A social-network referrer (no campaign params, no beacon medium) derives
+     * medium 'social-network' — the third deriveMedium branch, via
+     * isSocialNetwork() matching the referrer host against conf/socialnetworks.php.
+     */
+    public function testSocialNetworkReferrerDerivesSocialNetworkMedium(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $guid       = $this->uniqueGuid();
+        $session_id = $this->uniqueSessionId();
+        $visitor_id = $this->uniqueGuid();
+
+        $page_url   = 'https://example.com/camp-social/' . $guid;
+        $user_agent = 'OWA-DimTest/1.0 (+social; run=' . $guid . ')';
+        // A facebook referrer matches the 'facebook' social-network entry.
+        $referer    = 'https://www.facebook.com/some/post?ref=' . $guid;
+
+        $this->trackForCleanup('base.request', $guid, 'id');
+        $this->trackForCleanup('base.document', $page_url, 'url');
+        $this->trackForCleanup('base.ua', $user_agent, 'ua');
+        $this->trackForCleanup('base.referer', $referer, 'url');
+
+        $result = $this->fireEvent('base.page_request', [
+            'guid'            => $guid,
+            'site_id'         => $site_id,
+            'session_id'      => $session_id,
+            'page_url'        => $page_url,
+            'HTTP_USER_AGENT' => $user_agent,
+            'is_new_session'  => true,
+            'is_new_visitor'  => true,
+            'visitor_id'      => $visitor_id,
+            'HTTP_REFERER'    => $referer,
+            'session_referer' => $referer,
+        ]);
+        $this->assertNotFalse($result, 'social-network page_request was dropped before persistence.');
+
+        $this->assertSame(
+            'social-network',
+            (string) $this->lastEvent()->get('medium'),
+            'server did not derive medium=social-network from a social-network referrer.'
+        );
+        $this->assertRowPersisted('base.request', $guid, 'id');
+    }
+
+    /**
+     * The referer dimension row is enriched from the referrer: refererHandlers
+     * stores the referrer host in `site` and flags is_searchengine=true when the
+     * derived medium is organic-search. This complements the source/medium
+     * derivation tests by asserting the referer_dim row itself is populated.
+     */
+    public function testOrganicRefererRowIsEnrichedWithHostAndSearchEngineFlag(): void
+    {
+        $site_id    = md5('owa-test-site');
+        $guid       = $this->uniqueGuid();
+        $session_id = $this->uniqueSessionId();
+        $visitor_id = $this->uniqueGuid();
+
+        $page_url   = 'https://example.com/camp-refrow/' . $guid;
+        $user_agent = 'OWA-DimTest/1.0 (+refrow; run=' . $guid . ')';
+        $term       = 'refrow terms ' . $guid;
+        // Unique host so the referer_dim row is authored by this run, but still
+        // matches the 'bing' search-engine entry so is_searchengine is set.
+        $referer    = 'https://www.bing.com/search?q=' . rawurlencode($term) . '&run=' . $guid;
+
+        $this->trackForCleanup('base.request', $guid, 'id');
+        $this->trackForCleanup('base.document', $page_url, 'url');
+        $this->trackForCleanup('base.ua', $user_agent, 'ua');
+        $this->trackForCleanup('base.referer', $referer, 'url');
+
+        $result = $this->fireEvent('base.page_request', [
+            'guid'            => $guid,
+            'site_id'         => $site_id,
+            'session_id'      => $session_id,
+            'page_url'        => $page_url,
+            'HTTP_USER_AGENT' => $user_agent,
+            'is_new_session'  => true,
+            'is_new_visitor'  => true,
+            'visitor_id'      => $visitor_id,
+            'HTTP_REFERER'    => $referer,
+            'session_referer' => $referer,
+        ]);
+        $this->assertNotFalse($result, 'referer-row page_request was dropped before persistence.');
+
+        $this->assertSame('organic-search', (string) $this->lastEvent()->get('medium'), 'expected organic-search medium.');
+
+        // The referer_dim row (keyed on url) carries the parsed host and the
+        // search-engine flag.
+        $ref = $this->assertRowPersisted('base.referer', $referer, 'url');
+        $this->assertSame('www.bing.com', (string) $ref->get('site'), 'referer row site is not the referrer host.');
+        $this->assertEquals(1, $ref->get('is_searchengine'), 'referer row should be flagged as a search engine.');
+    }
+
+    /**
      * A new-session pageview with neither campaign params nor a referrer falls
      * to the 'direct' medium default (deriveMedium returns nothing, so the
      * property default_value applies).
