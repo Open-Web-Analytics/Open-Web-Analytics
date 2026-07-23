@@ -49,4 +49,29 @@ describe('OWATracker event assembly', () => {
         expect(captured).toHaveLength(1);
         expect(captured[0].get('event_type')).toBe('base.page_request');
     });
+
+    test('trackTransaction assembles an ecommerce.transaction event with line items', () => {
+        tracker.addTransaction('order-1', 'web', 42.5, 2.5, 5, 'stripe', 'NYC', 'NY', 'US');
+        tracker.addTransactionLineItem('order-1', 'SKU-1', 'Widget', 'widgets', 20, 2);
+        tracker.trackTransaction();
+
+        expect(captured).toHaveLength(1);
+        const e = captured[0];
+        expect(e.get('event_type')).toBe('ecommerce.transaction');
+        expect(e.get('ct_order_id')).toBe('order-1');
+        expect(e.get('ct_order_source')).toBe('web');
+        expect(e.get('ct_total')).toBe(42.5);
+        expect(e.get('ct_gateway')).toBe('stripe');
+
+        const items = e.get('ct_line_items');
+        expect(items).toHaveLength(1);
+        expect(items[0].li_sku).toBe('SKU-1');
+        expect(items[0].li_product_name).toBe('Widget');
+        expect(items[0].li_quantity).toBe(2);
+    });
+
+    test('trackTransaction without a set-up transaction sends nothing', () => {
+        tracker.trackTransaction();
+        expect(captured).toHaveLength(0);
+    });
 });
