@@ -36,19 +36,4 @@ final class OwaLibTest extends TestCase
     {
         $this->assertSame('justastring', owa_lib::assocFromString('justastring'));
     }
-
-    /**
-     * array_intersect_key is a PHP4 shim scheduled for removal in Step 3; this
-     * pins its behavior so the removal (delegating to the native builtin) is safe.
-     */
-    public function testArrayIntersectKey(): void
-    {
-        $this->assertSame(
-            ['a' => 1, 'c' => 3],
-            owa_lib::array_intersect_key(
-                ['a' => 1, 'b' => 2, 'c' => 3],
-                ['a' => 9, 'c' => 9]
-            )
-        );
-    }
 }

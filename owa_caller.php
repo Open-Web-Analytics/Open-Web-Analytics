@@ -68,7 +68,7 @@ class owa_caller extends owa_base {
         }
         
         // Start time
-        $this->start_time = owa_lib::microtime_float();
+        $this->start_time = microtime(true);
         
         /* SETUP CONFIGURATION AND ERROR LOGGER */
        
@@ -217,7 +217,7 @@ class owa_caller extends owa_base {
     
     function __destruct() {
         
-        $this->end_time = owa_lib::microtime_float();
+        $this->end_time = microtime(true);
         $total_time = $this->end_time - $this->start_time;
         owa_coreAPI::debug(sprintf('Total session time: %s',$total_time));
         owa_coreAPI::debug("Goodbye from OWA");

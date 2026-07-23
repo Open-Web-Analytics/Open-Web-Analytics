@@ -296,27 +296,7 @@ parameters:
 			path: owa_lib.php
 
 		-
-			message: "#^Undefined variable\\: \\$this$#"
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: "#^Variable \\$get might not be defined\\.$#"
-			count: 2
-			path: owa_lib.php
-
-		-
 			message: "#^Variable \\$state might not be defined\\.$#"
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: "#^Variable \\$this in empty\\(\\) is never defined\\.$#"
-			count: 1
-			path: owa_lib.php
-
-		-
-			message: "#^Variable \\$value in empty\\(\\) always exists and is not falsy\\.$#"
 			count: 1
 			path: owa_lib.php
 

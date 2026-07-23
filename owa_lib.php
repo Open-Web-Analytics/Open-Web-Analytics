@@ -81,67 +81,6 @@ class owa_lib {
         return $data_arrays;
     }
 
-    // php 4 compatible function
-    public static function array_intersect_key() {
-
-        $arrs = func_get_args();
-        $result = array_shift($arrs);
-        foreach ($arrs as $array) {
-            foreach ($result as $key => $v) {
-                if (!array_key_exists($key, $array)) {
-                    unset($result[$key]);
-                }
-            }
-        }
-        return $result;
-     }
-
-    // php4 compatible function
-    public static function array_walk_recursive(&$input, $funcname, $userdata = "")
-    {
-        if (!is_callable($funcname))
-        {
-            return false;
-        }
-        
-        if (!is_array($input))
-        {
-            return false;
-        }
-        
-        if (is_array($funcname))
-        {
-            $funcname = $funcname[0].'::'.$funcname[1];
-        }
-        
-        
-        foreach ($input AS $key => $value)
-        {
-            if (is_array($input[$key]))
-            {
-                array_walk_recursive($input[$key], $funcname, $userdata);
-            }
-            else
-            {
-                $saved_value = $value;
-                if (!empty($userdata))
-                {
-                    $funcname($value, $key, $userdata);
-                }
-                else
-                {
-                    $funcname($value, $key);
-                }
-                
-                if ($value != $saved_value)
-                {
-                    $input[$key] = $value;
-                }
-            }
-        }
-        return true;
-    }
-
     /**
      * Array of Current Time
      *
@@ -545,41 +484,6 @@ class owa_lib {
         header ('HTTP/1.0 302 Found');
     }
 
-    public static function makeLinkQueryString($query_params) {
-
-        $new_query_params = array();
-
-        //Load params passed by caller
-        if (!empty($this->caller_params)):
-            foreach ($this->caller_params as $name => $value) {
-                if (!empty($value)):
-                    $new_query_params[$name] = $value;
-                endif;
-            }
-        endif;
-
-        // Load overrides
-        if (!empty($query_params)):
-            foreach ($query_params as $name => $value) {
-                if (!empty($value)):
-                    $new_query_params[$name] = $value;
-                endif;
-            }
-        endif;
-
-        // Construct GET request
-        if (!empty($new_query_params)):
-            foreach ($new_query_params as $name => $value) {
-                if (!empty($value)):
-                    $get .= $name . "=" . $value . "&";
-                endif;
-            }
-        endif;
-
-        return $get;
-
-    }
-
     public static function getRequestParams() {
 
         $params = array();
@@ -845,15 +749,6 @@ class owa_lib {
         return $state;
 
 
-    }
-
-    /**
-      * Simple function to replicate PHP 5 behaviour
-      */
-
-    public static function microtime_float() {
-        list($usec, $sec) = explode(" ", microtime());
-        return ((float)$usec + (float)$sec);
     }
 
     /**

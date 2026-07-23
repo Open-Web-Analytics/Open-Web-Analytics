@@ -64,7 +64,7 @@ class owa_timePeriod {
             'endTime' => false
         );
 
-        $map = owa_lib::array_intersect_key($map, $m);
+        $map = array_intersect_key($map, $m);
 
 
         // set default period if necessary

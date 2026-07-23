@@ -145,22 +145,6 @@ class owa_base {
         return;
     }
 
-    /**
-     * Sets array attributes
-     *
-     * @param unknown_type $array
-     */
-    function _setArrayValues($array) {
-
-        foreach ($array as $n => $v) {
-
-                $this->params['$n'] = $v;
-
-            }
-
-        return;
-    }
-
     function __destruct() {
         owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
     }
