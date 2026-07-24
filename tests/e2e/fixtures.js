@@ -45,4 +45,18 @@ async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
     await page.waitForSelector('tr.jqgrow', { timeout: 20_000 });
 }
 
-module.exports = { FIXTURE, login, openDashboard };
+/**
+ * Navigate to a dimension report page (owa_do=base.report<Name>) and wait for
+ * the jQuery-UI tabs widget to build. Unlike the dashboard, these pages render
+ * the tabbed report layout (owa.report.createTabs -> #report-tabs.ui-tabs).
+ * Defaults to Browser Types -- a plain dimension report needing no extra params.
+ */
+async function openReport(page, { doName = 'base.reportBrowsers', period = 'last_thirty_days' } = {}) {
+    await page.goto(
+        `?owa_do=${doName}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
+        { waitUntil: 'networkidle' }
+    );
+    await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
+}
+
+module.exports = { FIXTURE, login, openDashboard, openReport };

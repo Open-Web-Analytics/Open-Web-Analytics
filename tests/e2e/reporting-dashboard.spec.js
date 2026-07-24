@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login, openDashboard } = require('./fixtures');
+const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
 
 /**
  * Phase 3.0 safety net -- real-browser characterization of the reporting UI.
@@ -225,8 +225,110 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await startCal.locator('a.ui-state-default').count()).toBeGreaterThanOrEqual(1);
     });
 
+    test('jQuery-UI buttonset enhances the auto-refresh control', async ({ page }) => {
+        // Pre-1.13-upgrade guard. owa.report.createAutoRefreshControl() wraps the
+        // On/Off radios in `.autoRefreshControl > .buttons` and calls .buttonset()
+        // -- a widget DEPRECATED in jQuery-UI 1.12 (becomes .controlgroup). Pin the
+        // rendered output so the migration to controlgroup is a conscious change:
+        // the container gets .ui-buttonset and each radio becomes a .ui-button.
+        const buttonset = page.locator('.autoRefreshControl .buttons.ui-buttonset');
+        await expect(buttonset.first()).toBeVisible();
+        expect(await buttonset.locator('.ui-button').count()).toBeGreaterThanOrEqual(2);
+    });
+
+    test('the filter/constraint builder opens with button + selectmenu widgets', async ({ page }) => {
+        // Pre-1.13-upgrade guard for the RISKIEST widgets: the result-set explorer's
+        // constraint builder uses jQuery-UI button() plus the SEPARATE vendored
+        // ui.selectmenu (Nagel fork) whose value getter/setter API differs from core
+        // jQuery-UI selectmenu (core absorbed selectmenu in 1.11). The builder is
+        // built hidden and revealed by a .toggle-button; open it and assert both
+        // widget types rendered so the selectmenu replacement can't regress silently.
+        // (The .constraintPickerContainer itself collapses to height 0 -- its
+        // .builder child is display:none until toggled -- so anchor on the visible
+        // toggle-button, not the container.)
+        const builder = page.locator('.constraintPickerContainer').first();
+        const toggle = builder.locator('> .toggle-button');
+        await expect(toggle).toBeVisible();
+
+        // The toggle button is a jQuery-UI button; clicking it reveals .builder.
+        await expect(toggle).toHaveClass(/ui-button/);
+        await toggle.click();
+        await expect(builder.locator('> .builder')).toBeVisible();
+
+        // Add / Apply are jQuery-UI buttons inside the revealed builder.
+        await expect(builder.locator('.add-button.ui-button')).toBeVisible();
+        await expect(builder.locator('.apply-button.ui-button')).toBeVisible();
+
+        // Each constraint row's <select.operator-list> is enhanced by ui.selectmenu
+        // into an a.ui-selectmenu widget (the raw <select> is hidden). At least one
+        // row exists by default.
+        expect(await page.locator('a.ui-selectmenu.operator-list').count()).toBeGreaterThanOrEqual(1);
+        // The underlying native select is hidden once selectmenu takes over.
+        const selectDisplay = await page.evaluate(() => {
+            const s = document.querySelector('select.operator-list');
+            return s ? getComputedStyle(s).display : null;
+        });
+        expect(selectDisplay).toBe('none');
+    });
+
+    test('ui.selectmenu reports the selected operator value', async ({ page }) => {
+        // Runtime guard (not just render): the constraint-apply path reads the
+        // chosen operator via .selectmenu('value') (owa.resultSetExplorer.js ~1637).
+        // The Nagel-fork getter returns the option VALUE; core jQuery-UI selectmenu's
+        // getter differs, so this pins the contract the apply handler depends on.
+        // Reveal the builder first (the select is inside it).
+        await page.locator('.constraintPickerContainer .toggle-button').first().click();
+        const value = await page.evaluate(() => {
+            const sel = jQuery('select.operator-list').first();
+            return sel.length ? sel.selectmenu('value') : null;
+        });
+        // Default selection is the first operator ("==" Exactly Matching).
+        expect(value).not.toBeNull();
+        expect(typeof value).toBe('string');
+    });
+
     test('the dashboard loads without uncaught page errors', async ({ page }) => {
         // Captured across the whole beforeEach + assertions lifecycle.
+        expect(page.__owaErrors).toEqual([]);
+    });
+});
+
+/**
+ * The jQuery-UI `tabs` widget does NOT render on the dashboard -- it only appears
+ * on dimension report pages (owa.report.createTabs -> #report-tabs.ui-tabs). These
+ * pages are the remaining pre-1.13-upgrade coverage gap: tabs({show:fn}) must
+ * become the `activate` event in 1.9+, so pin the rendered tab UI here first.
+ * Browser Types (base.reportBrowsers) is the simplest such page (metrics/dimension
+ * are hard-coded in the controller; needs only siteId + period).
+ */
+test.describe('dimension report tabs render (pre-1.13 baseline)', () => {
+
+    test.beforeEach(async ({ page }) => {
+        const errors = [];
+        page.on('pageerror', (e) => errors.push(e.message));
+        page.__owaErrors = errors;
+        await login(page);
+        await openReport(page);
+    });
+
+    test('jQuery-UI tabs build the tabbed report layout', async ({ page }) => {
+        // openReport already waited for #report-tabs.ui-tabs, so the widget built.
+        // Assert the full tab structure: the widget container, the generated nav
+        // list with at least one labeled tab, and the active tab panel.
+        const tabs = page.locator('#report-tabs.ui-tabs');
+        await expect(tabs).toBeVisible();
+
+        const navTabs = tabs.locator('.report-tabs-nav-list li a');
+        expect(await navTabs.count()).toBeGreaterThanOrEqual(1);
+        // Tab labels come from OWA.report.tab config; the first is non-empty.
+        expect((await navTabs.first().innerText()).trim().length).toBeGreaterThan(0);
+
+        // The active tab's panel is shown and carries the grid (createTabs' show
+        // callback calls tab.load(), which builds a result-set explorer grid).
+        await expect(page.locator('tr.jqgrow').first()).toBeVisible();
+    });
+
+    test('the dimension report loads without uncaught page errors', async ({ page }) => {
         expect(page.__owaErrors).toEqual([]);
     });
 });
