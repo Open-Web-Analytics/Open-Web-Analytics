@@ -46,7 +46,7 @@ OWA.report.prototype = {
         
         if (options.hasOwnProperty('label')) {
             
-            label= options.label;
+            var label= options.label;
         } else {
             selector = 'Live View: ';        
         }
@@ -126,7 +126,7 @@ OWA.report.prototype = {
         
         if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
             
-            for ( name in this.resultSetExplorers )    {
+            for ( var name in this.resultSetExplorers )    {
                 
                 if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
                     
@@ -149,7 +149,7 @@ OWA.report.prototype = {
         
         if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
             
-            for ( name in this.resultSetExplorers )    {
+            for ( var name in this.resultSetExplorers )    {
                 
                 if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
                     
@@ -190,7 +190,7 @@ OWA.report.prototype = {
         options = options || {};
         
         // override default options
-        for ( option in options ) {
+        for ( var option in options ) {
             
             if ( options.hasOwnProperty( option ) ) {
                 
@@ -318,7 +318,7 @@ OWA.report.prototype = {
         var that = this;
         
         jQuery("#report-tabs").prepend('<ul class="report-tabs-nav-list"></ul>');
-        for (tab in this.tabs) {
+        for (var tab in this.tabs) {
     
             if ( this.tabs.hasOwnProperty(tab) ) {    
                 jQuery("#report-tabs > .report-tabs-nav-list").append(OWA.util.sprintf( '<li><a href="#%s">%s</a></li>', tab, that.tabs[tab].label ) );
@@ -422,7 +422,7 @@ OWA.report.tab = function(dom_id) {
     this.isLoaded = false;
     this.load = function() {
         if ( ! this.isLoaded ) {
-            for (rse in this.resultSetExplorers) {
+            for (var rse in this.resultSetExplorers) {
                 
                 if (this.resultSetExplorers.hasOwnProperty(rse)) {
             
@@ -440,7 +440,7 @@ OWA.report.tab.prototype = {
 
     startAutoRefresh : function() {
         
-        for (rse in this.resultSetExplorers) {
+        for (var rse in this.resultSetExplorers) {
                 
             if (this.resultSetExplorers.hasOwnProperty(rse)) {
         
@@ -451,7 +451,7 @@ OWA.report.tab.prototype = {
     
     stopAutoRefresh : function() {
         
-        for (rse in this.resultSetExplorers) {
+        for (var rse in this.resultSetExplorers) {
                 
             if (this.resultSetExplorers.hasOwnProperty(rse)) {
                 

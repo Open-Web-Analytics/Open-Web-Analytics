@@ -29,7 +29,7 @@
 
 OWA.resultSet = function( attributes ) {
 
-    for (attribute in attributes) {
+    for (var attribute in attributes) {
 
         this[attribute] = attributes[attribute];
     }
@@ -64,7 +64,7 @@ OWA.resultSet.prototype = {
             for(var i=0;i<=this.resultsRows.length -1;i++) {
 
                 if (filter) {
-                    check = filter(this.resultsRows[i]);
+                    var check = filter(this.resultsRows[i]);
                     if (!check) {
                         continue;
                     }
@@ -227,6 +227,7 @@ OWA.resultSetExplorer.prototype = {
                 // loop through dims looking for the current sec. dim
                 for (var i=0; i < dims.length; i++) {
                     // if you find it replace with new one
+                    var new_dim;
                     if ( dims[i] === oldname ) {
                         new_dim = newname;
                     } else {
@@ -274,14 +275,6 @@ OWA.resultSetExplorer.prototype = {
     setView : function(name) {
 
         this.view = name;
-    },
-
-    // called after data is rendered for a view
-    // needed???
-    setCurrentView : function(name) {
-
-        jQuery(that.domSelectors[that.currentView]).toggle();
-        this.currentView = name;
     },
 
     // makesa unqiue idfor each row
@@ -721,7 +714,7 @@ OWA.resultSetExplorer.prototype = {
             for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
 
                 if (filter) {
-                    check = filter(this.resultSet.resultsRows[i]);
+                    var check = filter(this.resultSet.resultsRows[i]);
                     if (!check) {
                         continue;
                     }
@@ -816,7 +809,7 @@ OWA.resultSetExplorer.prototype = {
             // add to dom
             jQuery('#'+dom_id).html(table);
             // append rows
-            for(i=0;i<= this.resultSet.resultsRows.length -1;i++) {
+            for(var i=0;i<= this.resultSet.resultsRows.length -1;i++) {
 
                 var cells = '';
                 for (var r_item in this.resultSet.resultsRows[i]) {
@@ -847,7 +840,7 @@ OWA.resultSetExplorer.prototype = {
         url += 'owa_do=' + method;
         var count = OWA.util.countObjectProperties(options);
         var i = 1;
-        for (option in options) {
+        for (var option in options) {
 
             if (options.hasOwnProperty(option)) {
 
@@ -930,7 +923,7 @@ OWA.dimensionPicker.prototype = {
 
         if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
 
-            for (group in this.dim_list) {
+            for (var group in this.dim_list) {
 
                 if ( this.dim_list.hasOwnProperty(group) ) {
 
@@ -1515,7 +1508,7 @@ OWA.constraintBuilder.prototype = {
 
     parseConstraintString : function( str ) {
 
-        con_obj = {
+        var con_obj = {
             name:         '',
             value:        '',
             operator:     ''
@@ -1539,7 +1532,7 @@ OWA.constraintBuilder.prototype = {
 
             for( var i=0; i < a.length; i++ ) {
 
-                for ( operator in this.operators ) {
+                for ( var operator in this.operators ) {
 
                     if ( this.operators.hasOwnProperty(operator) ) {
 
@@ -1711,7 +1704,7 @@ OWA.constraintBuilder.prototype = {
 
             var n = this.relatedDimensions;
 
-            for ( metric in this.relatedMetrics ) {
+            for ( var metric in this.relatedMetrics ) {
 
                 if ( this.relatedMetrics.hasOwnProperty( metric ) ) {
                     n[metric] = this.relatedMetrics[metric];
@@ -1775,7 +1768,7 @@ OWA.constraintBuilder.prototype = {
         c += '<select name="operator-list" class="operator-list">';
 
         // build the list of operators
-        for (operator in this.operators) {
+        for (var operator in this.operators) {
 
             if ( this.operators.hasOwnProperty( operator ) ) {
 

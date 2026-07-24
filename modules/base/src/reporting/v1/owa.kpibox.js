@@ -21,7 +21,7 @@ OWA.kpiBox.prototype = {
 
     mergeOptions: function ( options ) {
 
-        for (option in options) {
+        for (var option in options) {
 
             if ( options.hasOwnProperty( option ) ) {
                 this.options[ option ] = options[ option ];

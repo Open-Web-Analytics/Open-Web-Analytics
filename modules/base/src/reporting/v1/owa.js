@@ -274,7 +274,7 @@ var OWA = {
 	 * @param tag		The tag specified by applyFilters
 	 * @param callback	The callback function to remove
 	 */
-	removeFilter : function( tag, callabck ) {
+	removeFilter : function( tag, callback ) {
 		
 		this.hooks.filters[ tag ] = this.hooks.filters[ tag ] || [];
 	
@@ -401,9 +401,9 @@ OWA.stateManager.prototype = {
                 
                 
                 if (format === 'json') {
-                    cookie_value = JSON.stringify(value);
+                    var cookie_value = JSON.stringify(value);
                 } else {
-                    cookie_value = OWA.util.assocStringFromJson(value);
+                    var cookie_value = OWA.util.assocStringFromJson(value);
                 }
             }
         
@@ -800,7 +800,7 @@ OWA.util =  {
     
         var nsObj = new Object();
         
-        for(param in obj) {  // print out the params
+        for(var param in obj) {  // print out the params
             if (obj.hasOwnProperty(param)) {
                 nsObj[OWA.config.ns+param] = obj[param];
             }
@@ -1017,7 +1017,7 @@ OWA.util =  {
     nsParams: function(obj) {
         var new_obj = new Object;
         
-        for(param in obj) {
+        for(var param in obj) {
             if (obj.hasOwnProperty(param)) {
                 new_obj[OWA.getSetting('ns') + param] = obj[param];
             }
@@ -1237,6 +1237,7 @@ OWA.util =  {
     
     loadStateJson : function(store_name) {
         var store = unescape(OWA.util.readCookie( OWA.getSetting('ns') + store_name ) );
+        var state;
         if (store) {
             state = JSON.parse(store);
         }
