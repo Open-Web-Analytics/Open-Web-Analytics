@@ -5,16 +5,14 @@
             "type": "js",
             "entry": "src/tracker/tracker-dom.js",
             "outputDir": "dist",
-            "splitVendors": "owa.vendors",
-            "provideJquery": false
+            "splitVendors": "owa.vendors"
         },
         {
             "name": "owa.reporting-combined-min.js",
             "type": "js",
             "entry": "src/reporting/v1/reporting-entry.js",
             "outputDir": "dist",
-            "splitVendors": false,
-            "provideJquery": true
+            "splitVendors": false
         },
         {
             "name": "owa.reporting-css-combined.css",

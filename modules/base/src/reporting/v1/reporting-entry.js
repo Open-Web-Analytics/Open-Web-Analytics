@@ -14,23 +14,28 @@
  *     into jquery.flot.time.js, and owa.areachart.js uses xaxis.mode:"time", so
  *     time.js MUST load before the OWA area chart or its date axis breaks.
  *
- * The VENDOR plugins still reference a bare `jQuery`/`$` (they can't be edited), so
- * those free identifiers are rewritten to require('jquery') by webpack.ProvidePlugin
- * (see webpack.config.js) -- one shared jQuery instance for the whole plugin ecosystem.
+ * The VENDOR plugins still reference a bare `jQuery`/`$` at eval time (they can't be
+ * edited), so vendor-jquery-global.js -- the FIRST import below -- publishes jQuery on
+ * window before any of them evaluate. ES modules run in source order, so that shim
+ * completes (setting window.jQuery/$) before the vendor bodies execute and their free
+ * `jQuery` references resolve to the global. This replaced webpack.ProvidePlugin, which
+ * used to rewrite those free identifiers -- so the reporting and tracker webpack configs
+ * are now a single shared config again (no per-product ProvidePlugin to scope).
  *
- * The seven OWA reporting files are now REAL ES modules (Phase 4 renovation): owa.js
- * exports the OWA namespace and the six augmenters import it and mutate the same
- * object, and every file imports jQuery explicitly (so ProvidePlugin no longer has to
- * reach them). The import graph orders owa.js before its augmenters automatically; the
- * side-effect imports below still fix the relative order of the augmenters among
- * themselves. owa.js also publishes window.OWA (see its tail) for the report templates'
- * inline <script> blocks.
+ * The seven OWA reporting files are REAL ES modules (Phase 4 renovation): owa.js exports
+ * the OWA namespace and the six augmenters import it and mutate the same object, and every
+ * file imports jQuery explicitly. The import graph orders owa.js before its augmenters
+ * automatically; the side-effect imports below still fix the relative order of the
+ * augmenters among themselves. owa.js also publishes window.OWA (see its tail) for the
+ * report templates' inline <script> blocks.
  */
 
-// jQuery + the 1.x->3.x compat bridge. jQuery itself is pulled in transitively by
-// jquery-migrate's require('jquery') (and by ProvidePlugin wherever a plugin/OWA
-// file references the free `jQuery`/`$`), so there is one shared instance; the
-// `jQuery` identifier used for the window assignment below is provided the same way.
+// FIRST: publish jQuery on window for the vendor plugins that read a free `jQuery`/`$`
+// at eval time (jquery-ui, chosen, sparkline, flot, jQote2) and for the report
+// templates' inline <script> blocks. Must precede every vendor import below.
+import './vendor-jquery-global.js';
+
+// jQuery 1.x->3.x compat bridge (requires jquery itself via its own require('jquery')).
 import 'jquery-migrate';
 
 // jQuery plugin ecosystem (order preserved from the retired concat).
@@ -55,7 +60,5 @@ import './owa.areachart.js';
 import './owa.piechart.js';
 import './owa.kpibox.js';
 
-// Expose jQuery on window for the report templates' inline <script> blocks (~32
-// bare jQuery(...) calls across the .tpl/.php templates). window.OWA (the other
-// ~166 template references) is published by owa.js itself.
-window.jQuery = window.$ = jQuery;
+// window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
+// window.OWA (the ~166 template references) is published by owa.js itself.

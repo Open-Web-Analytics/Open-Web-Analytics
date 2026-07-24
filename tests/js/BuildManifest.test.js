@@ -89,11 +89,13 @@ describe('per-module build manifest discovery', () => {
                 expect(Object.keys(cfg.entry)).toEqual([pkg.name]);
 
                 if (pkg.type === 'js') {
-                    // provideJquery -> a ProvidePlugin is attached; otherwise none.
+                    // No ProvidePlugin anywhere anymore (Phase 4): the reporting entry
+                    // publishes jQuery on window itself via its first import, so neither
+                    // JS product injects jQuery at the config level.
                     const hasProvide = (cfg.plugins || []).some(
                         (p) => p && p.constructor && p.constructor.name === 'ProvidePlugin'
                     );
-                    expect(hasProvide).toBe(!!pkg.provideJquery);
+                    expect(hasProvide).toBe(false);
                     // splitVendors:false -> no chunk splitting.
                     if (!pkg.splitVendors) {
                         expect(cfg.optimization.splitChunks).toBe(false);

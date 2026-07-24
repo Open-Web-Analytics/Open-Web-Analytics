@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
@@ -20,7 +19,7 @@ const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 // package into the right webpack config for its `type`.
 //
 // A manifest package is one of:
-//   JS  { name, type:'js', entry, outputDir, splitVendors, provideJquery }
+//   JS  { name, type:'js', entry, outputDir, splitVendors }
 //   CSS { name, type:'css', outputDir, files:[...] }
 // where entry/files/outputDir are paths RELATIVE to the module directory.
 
@@ -45,19 +44,19 @@ function jsOutput(moduleDir, pkg) {
 
 // JS package -> webpack config.
 //
-// `provideJquery` scopes webpack.ProvidePlugin to just the products that need it:
-// the reporting bundle feeds a bundled jQuery to its legacy plugins (chosen, flot)
-// and OWA's own files, which all reference a bare global `jQuery`/`$`; but the
-// TRACKER must NOT get it -- common/Util.js references a bare global `jQuery`
-// (jQuery.getScript / jQuery.param) meant to resolve to the HOST PAGE's jQuery at
-// runtime, and ProvidePlugin would instead bundle a second jQuery into the tracker
-// and break that. Because ProvidePlugin is per-config, each package stays isolated.
-//
 // `splitVendors` is either false (single self-contained file -- the reporting
 // templates load exactly one script, so vendors must NOT be split out) or a chunk
 // name (the tracker splits node_modules into a sibling vendors chunk).
+//
+// NOTE (Phase 4): there is no longer a ProvidePlugin. The reporting bundle used to
+// need one to feed its legacy vendor plugins (chosen, flot, jquery-ui, ...) a bundled
+// jQuery via the free `jQuery`/`$` globals they read at eval time; that scoped the
+// two products into separate configs. Now the reporting entry publishes jQuery on
+// window itself (its first import, vendor-jquery-global.js) before the plugins run,
+// and OWA's own files import jQuery explicitly -- so no config-level jQuery injection
+// is needed and both products share this one factory.
 function jsConfig(moduleName, moduleDir, pkg) {
-	const config = {
+	return {
 		name: `${moduleName}:${pkg.name}`,
 		entry: {
 			[pkg.name]: [path.resolve(moduleDir, pkg.entry)],
@@ -79,14 +78,6 @@ function jsConfig(moduleName, moduleDir, pkg) {
 				: false,
 		},
 	};
-
-	if (pkg.provideJquery) {
-		config.plugins = [
-			new webpack.ProvidePlugin({ $: 'jquery', jQuery: 'jquery' }),
-		];
-	}
-
-	return config;
 }
 
 // CSS package -> webpack config.

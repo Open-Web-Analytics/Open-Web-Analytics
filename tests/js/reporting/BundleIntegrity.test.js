@@ -17,16 +17,17 @@ const { execSync } = require('child_process');
  *     publishes `window.OWA`, and the six augmenters read the bare `OWA` global.
  *     Adding an import/export to any of these files would flip it to strict and
  *     break it -- this test guards that they stay non-ESM.
- *   - jQuery + `$` are supplied to every module (vendor + OWA) by
- *     webpack.ProvidePlugin, so no file needs an explicit jQuery import.
+ *   - OWA's own files import jQuery explicitly; the legacy vendor plugins that read a
+ *     free `jQuery`/`$` at eval time get it from window, published by the entry's first
+ *     import (vendor-jquery-global.js) before any vendor runs. There is no ProvidePlugin.
  *   - The bundle is emitted under the SAME filename as the old concat, and is a
  *     single self-contained file (splitChunks excludes it) so the report
  *     templates keep loading exactly one script.
  *
- * These tests pin that contract: the source graph is present, the OWA files stay
- * sloppy-mode and share OWA via the window global, the config drives it through
- * ProvidePlugin (not a concat), and the built artifact embeds the pinned vendor
- * versions in one self-contained file.
+ * These tests pin that contract: the source graph is present, the OWA files are real
+ * ES modules sharing OWA via import/export, the entry publishes jQuery on window for
+ * the vendor plugins (no ProvidePlugin), and the built artifact embeds the pinned
+ * vendor versions in one self-contained file.
  */
 describe('reporting bundle build integrity', () => {
 
@@ -125,27 +126,44 @@ describe('reporting bundle build integrity', () => {
         // The entry, output dir, and per-product flags now live in the module's
         // build.manifest.json (discovered by webpack.config.js), not inline in the
         // config. The reporting bundle is a single self-contained file (no vendor
-        // split) built with a bundled jQuery (ProvidePlugin).
+        // split); jQuery is published on window by the entry itself, so there is no
+        // provideJquery flag (ProvidePlugin was retired in Phase 4).
         expect(reportingPkg).toBeDefined();
         expect(reportingPkg.type).toBe('js');
         expect(reportingPkg.entry).toMatch(/reporting-entry\.js$/);
         expect(reportingPkg.outputDir).toBe('dist');
         expect(reportingPkg.splitVendors).toBe(false); // one self-contained file
-        expect(reportingPkg.provideJquery).toBe(true);  // bundled jQuery for the plugins
+        expect(reportingPkg.provideJquery).toBeUndefined(); // no config-level jQuery injection
     });
 
     test('the build drives the bundle through the module graph, not a concat', () => {
         const cfg = fs.readFileSync(configPath, 'utf8');
-        // ProvidePlugin is what supplies jQuery/$ to the vendor plugins that read a
-        // bare global (chosen, flot) now that they run under webpack module scope.
-        // The config wires it whenever a manifest package sets provideJquery.
-        expect(cfg).toMatch(/ProvidePlugin/);
-        expect(cfg).toMatch(/jQuery:\s*['"]jquery['"]/);
         // Packages are discovered from per-module build manifests.
         expect(cfg).toMatch(/build\.manifest\.json/);
+        // ProvidePlugin was retired in Phase 4 -- the reporting entry publishes jQuery
+        // on window itself (vendor-jquery-global.js), so the config no longer constructs
+        // one (nor requires webpack for it) and both JS products share one factory.
+        // (Match the construction/require, not any mention -- the comments name it.)
+        expect(cfg).not.toMatch(/new\s+webpack\.ProvidePlugin/);
+        expect(cfg).not.toMatch(/require\(['"]webpack['"]\)/);
         // The flat-concat toolchain is retired.
         expect(cfg).not.toMatch(/WebpackConcatPlugin/);
         expect(cfg).not.toMatch(/webpack-concat-files-plugin/);
+    });
+
+    test('the entry publishes jQuery on window before the vendor plugins', () => {
+        // Replaces ProvidePlugin: vendor-jquery-global.js is imported FIRST in the entry
+        // and assigns window.jQuery/$ so the legacy plugins' free `jQuery`/`$` resolve.
+        const shimPath = path.join(srcDir, 'vendor-jquery-global.js');
+        expect(fs.existsSync(shimPath)).toBe(true);
+        const shim = fs.readFileSync(shimPath, 'utf8');
+        expect(shim).toMatch(/import \* as jQuery from 'jquery'/);
+        expect(shim).toMatch(/window\.jQuery\s*=\s*window\.\$\s*=\s*jQuery/);
+
+        // And it is the FIRST import in the entry (must precede every vendor import).
+        const imports = fs.readFileSync(entryPath, 'utf8')
+            .split('\n').filter((l) => /^\s*import\b/.test(l));
+        expect(imports[0]).toMatch(/vendor-jquery-global\.js/);
     });
 
     describe('built artifact', () => {
