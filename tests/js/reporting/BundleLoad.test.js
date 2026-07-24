@@ -58,10 +58,12 @@ describe('reporting bundle loads under jsdom', () => {
         if (!jq) return;
         expect(typeof jq).toBe('function');
         // Post-migration baseline (Phase 3.2 flipped the reporting bundle 1.6.4 -> 3.6.0,
-        // sourced from the npm dep). jquery-migrate + the compat shim bridge the
-        // legacy plugins. $.browser is restored by the shim; assert both are live.
+        // sourced from the npm dep). jquery-migrate bridges the legacy plugins. The
+        // $.browser/$.curCSS compat shim was DELETED once every plugin went
+        // jQuery-3.x-clean (jQuery-UI -> 1.13.3, Flot -> 0.8.3), so $.browser must
+        // now be ABSENT -- assert it is gone so a shim regression fails loudly.
         expect(jq.fn.jquery).toBe('3.6.0');
-        expect(typeof jq.browser).toBe('object');
+        expect(jq.browser).toBeUndefined();
     });
 
     test('the OWA reporting namespace loads with its core members', () => {

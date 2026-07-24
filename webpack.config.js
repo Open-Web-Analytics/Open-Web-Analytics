@@ -52,12 +52,11 @@ module.exports = {
 			          	// jQuery core flipped 1.6.4 -> 3.x (Phase 3.2). Sourced from the
 			          	// npm dep (package.json: jquery ^3.6.0) rather than a vendored copy.
 			          	// jquery-migrate bridges the 1.x->3.x API removals the legacy
-			          	// plugins below still rely on (andSelf, $.attrFn, event shorthands);
-			          	// owa.jquery-compat-shim.js adds back $.browser, which migrate 3.x
-			          	// does not restore but the vendored Flot 0.7 pie plugin reads.
+			          	// plugins below still rely on (andSelf, $.attrFn, event shorthands).
+			          	// The owa.jquery-compat-shim.js ($.browser/$.curCSS) was DELETED once
+			          	// every plugin went jQuery-3.x-clean (jQuery-UI -> 1.13.3, Flot -> 0.8.3).
 			          	__dirname + '/node_modules/jquery/dist/jquery.min.js',
 			          	__dirname + '/node_modules/jquery-migrate/dist/jquery-migrate.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/owa.jquery-compat-shim.js',
 					  	// jQuery-UI 1.8.12 (vendored custom build, needed $.browser + $.curCSS
 					  	// at runtime) -> jquery-ui-dist 1.13.3 from npm (jQuery 3.x-clean,
 					  	// bundles selectmenu so the separate Nagel-fork ui.selectmenu is gone).
@@ -72,9 +71,19 @@ module.exports = {
 					  	// jqGrid 3.6.5 (1.6-era, throws on $.browser) -> free-jqgrid 4.15.5
 					  	// (maintained fork, jQuery 3.x-compatible) from the npm dep.
 					  	__dirname + '/node_modules/free-jqgrid/dist/jquery.jqgrid.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/flot_v0.7/jquery.flot.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/flot_v0.7/jquery.flot.resize.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/flot_v0.7/jquery.flot.pie.min.js',
+					  	// Flot 0.7 (vendored, read $.browser.msie in the pie plugin -- the
+					  	// LAST compat-shim consumer) -> jquery.flot 0.8.3 from npm (jQuery
+					  	// 3.x-clean, no $.browser, and ships the empty-legend `|| 0` guard
+					  	// that OWA had to hand-patch onto 0.7's pie). NOTE: 0.8 EXTRACTED
+					  	// time-axis support out of core into a separate jquery.flot.time.js
+					  	// plugin (it was built into 0.7's core); owa.areachart uses
+					  	// xaxis.mode:"time", so time.js MUST be concatenated or the area
+					  	// chart's date axis breaks. npm ships readable (non-min) files; the
+					  	// terser `after` transform below minifies the whole concat anyway.
+					  	__dirname + '/node_modules/jquery.flot/jquery.flot.js',
+					  	__dirname + '/node_modules/jquery.flot/jquery.flot.time.js',
+					  	__dirname + '/node_modules/jquery.flot/jquery.flot.resize.js',
+					  	__dirname + '/node_modules/jquery.flot/jquery.flot.pie.js',
 					  	src_path + '/reporting/v1/includes/jquery/jQote2/jquery.jqote2.min.js',
 					  	src_path + '/reporting/v1/owa.js',
 					  	src_path + '/reporting/v1/owa.report.js',

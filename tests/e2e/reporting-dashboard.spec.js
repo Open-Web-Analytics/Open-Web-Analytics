@@ -15,10 +15,11 @@ const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
  *   - chosen      -> .chzn-container enhanced select menus
  *
  * They also PIN jQuery 3.6.0 -- Phase 3.2 flipped the reporting bundle from
- * 1.6.4 to 3.x (jquery-migrate + a $.browser compat shim bridge the legacy
- * plugins; jqGrid was replaced by free-jqgrid). A future version bump fails
- * this assertion and must be a conscious, reviewed change (same discipline as
- * the bundle-integrity test).
+ * 1.6.4 to 3.x. jquery-migrate bridges the 1.x API removals; the legacy plugins
+ * were replaced with jQuery-3.x-clean versions (jqGrid -> free-jqgrid, Flot ->
+ * 0.8.3, jQuery-UI -> 1.13.3), so the interim $.browser compat shim was deleted.
+ * A future version bump fails this assertion and must be a conscious, reviewed
+ * change (same discipline as the bundle-integrity test).
  *
  * Prereq: run `php tests/e2e/seed_reporting_fixtures.php seed` first.
  */
@@ -46,8 +47,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
-        // Post-migration baseline (Phase 3.2). $.browser is restored by the compat
-        // shim so the legacy sparkline / jQuery-UI plugins still run.
+        // Post-migration baseline (Phase 3.2). Every reporting plugin is now
+        // jQuery-3.x-clean (jQuery-UI 1.13.3, Flot 0.8.3, ...), so the
+        // $.browser/$.curCSS compat shim was deleted -- jquery-migrate alone bridges.
         expect(jqv).toBe('3.6.0');
         expect(owaType).toBe('object');
     });
@@ -135,9 +137,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     test('Flot paints the chart canvases', async ({ page }) => {
-        // Flot draws each chart as a <canvas class="base"> plus a "overlay"
-        // sibling inside an OWA chart container. Assert the area chart and at
-        // least one pie chart painted (base+overlay pair each).
+        // Flot draws each chart as a <canvas class="flot-base"> plus a
+        // "flot-overlay" sibling inside an OWA chart container. (Flot 0.8 renamed
+        // these from 0.7's bare "base"/"overlay" -- Phase 3.2 Flot 0.7 -> 0.8.3.)
+        // Assert the area chart and at least one pie chart painted (base+overlay
+        // pair each).
         const areaCanvases = page.locator('.owa_areaChart canvas');
         const pieCanvases = page.locator('.owa_pieChart canvas');
         expect(await areaCanvases.count()).toBeGreaterThanOrEqual(2);
@@ -145,7 +149,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         // A painted Flot canvas has non-zero pixel dimensions.
         const dims = await page.evaluate(() => {
-            const c = document.querySelector('.owa_areaChart canvas.base');
+            const c = document.querySelector('.owa_areaChart canvas.flot-base');
             return c ? { w: c.width, h: c.height } : null;
         });
         expect(dims).not.toBeNull();
@@ -154,15 +158,17 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     test('Flot pie is drawn centered, not collapsed into a corner wedge', async ({ page }) => {
-        // Regression guard (Phase 3.2): jQuery 3.x returns undefined (not null)
-        // from $().width() on an EMPTY set, so the Flot pie plugin's legend-width
-        // read became undefined and centerLeft went NaN -- translating the pie
-        // origin to (0,0) and drawing each pie as a quarter wedge in the top-left
-        // corner. Sample the base canvas: a correctly centered pie has painted
+        // Regression guard: jQuery 3.x returns undefined (not null) from $().width()
+        // on an EMPTY set, so a Flot pie plugin that reads the legend width without
+        // a guard gets undefined -> centerLeft NaN -> the pie origin translates to
+        // (0,0) and each pie draws as a quarter wedge in the top-left corner. OWA
+        // hand-patched Flot 0.7's pie with `|| 0`; jquery.flot 0.8.3 (Phase 3.2 Flot
+        // upgrade) ships that guard upstream, so this now pins the 0.8.3 behavior.
+        // Sample the base canvas: a correctly centered pie has painted
         // (non-transparent) pixels at its center; a corner wedge leaves the center
         // empty. Also require the corner itself NOT be the only painted region.
         const probe = await page.evaluate(() => {
-            const c = document.querySelector('.owa_pieChart canvas.base');
+            const c = document.querySelector('.owa_pieChart canvas.flot-base');
             if (!c) return null;
             const ctx = c.getContext('2d');
             const at = (x, y) => ctx.getImageData(x, y, 1, 1).data[3]; // alpha

@@ -66,19 +66,22 @@ describe('reporting bundle build integrity', () => {
 
         const required = [
             // jQuery 1.x->3.x migration bridge (Phase 3.2): migrate restores the
-            // removed 1.x APIs the legacy plugins use, and the compat shim adds
-            // back $.browser (which migrate 3.x drops but the vendored Flot 0.7
-            // pie plugin still reads at runtime -- the last remaining consumer).
-            'jquery-migrate.min.js', 'owa.jquery-compat-shim.js',
+            // removed 1.x APIs the legacy plugins use (andSelf, $.attrFn, event
+            // shorthands). The owa.jquery-compat-shim.js ($.browser/$.curCSS) was
+            // DELETED once every plugin went jQuery-3.x-clean -- so it is NOT in
+            // this list; jquery-migrate alone is the bridge now.
+            'jquery-migrate.min.js',
             // reporting-UI plugin deps. Phase 3.2 replacements from npm: jqGrid
             // 3.6.5 -> free-jqgrid (jquery.jqgrid.min.js), sparkline 1.2.1 ->
             // jquery-sparkline 2.4.0 (jquery.sparkline.min.js), chosen 0.9.6 ->
             // chosen-js 1.8.7 (chosen.jquery.min.js), jQuery-UI 1.8.12 custom +
             // the separate Nagel-fork ui.selectmenu -> jquery-ui-dist 1.13.3
-            // (jquery-ui.min.js, which bundles selectmenu). jquery.sprintf.js was
-            // dropped (dead: OWA uses its own OWA.util.sprintf).
+            // (jquery-ui.min.js, which bundles selectmenu), Flot 0.7 vendored ->
+            // jquery.flot 0.8.3 (jquery.flot.js, npm ships non-min; the pie plugin
+            // is the last file below). jquery.sprintf.js was dropped (dead: OWA
+            // uses its own OWA.util.sprintf).
             'jquery-ui.min.js', 'chosen.jquery.min.js',
-            'jquery.sparkline.min.js', 'jquery.jqgrid.min.js', 'jquery.flot.min.js',
+            'jquery.sparkline.min.js', 'jquery.jqgrid.min.js', 'jquery.flot.js',
             'jquery.jqote2.min.js',
             // OWA reporting code
             'owa.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
@@ -97,7 +100,7 @@ describe('reporting bundle build integrity', () => {
         const firstOwaIdx = inputs.findIndex((f) => f === 'owa.js');
 
         expect(jqueryIdx).toBe(0);
-        // migrate + the compat shim sit between the core and the first plugin.
+        // jquery-migrate sits between the core and the first plugin.
         expect(firstPluginIdx).toBeGreaterThan(jqueryIdx);
         expect(firstOwaIdx).toBeGreaterThan(firstPluginIdx);
     });
