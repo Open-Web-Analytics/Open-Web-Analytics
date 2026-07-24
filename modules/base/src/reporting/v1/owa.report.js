@@ -3,6 +3,65 @@
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
 
+// The report period-picker's jqote2 markup. This was formerly fetched over HTTP from
+// modules/base/templates/filter_period.php -- a file that contained NO PHP, just this
+// pure client-side template, given a .php extension by convention. Inlining it here
+// drops the per-report round-trip AND removes modules_url's last runtime code-fetch
+// (it is now image-only), so the web-access allowlist needs no templates/ exception.
+const FILTER_PERIOD_TMPL =
+`<div class="timePeriodControlContainer">
+
+    <table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0">
+        <TR>
+            <TD class="owa_reportPeriodLabelText">
+
+                <span>
+                    <*=this.datelabel *>
+                </span>
+            </TD>
+
+            <TD class="owa_reportRevealControl"></TD>
+        </TR>
+    </table>
+
+    <table id="owa_reportPeriodFiltersContainer" style="display:none;" cellpadding="0" cellspacing="0">
+        <TR>
+            <TH colspan="3">
+                Enter a Date Range:
+            </TH>
+        </TR>
+        <TR>
+            <TD class="picker" valign="top">
+                <div>Start: <input type="text" id="owa_report-datepicker-start-display" size="10"></div>
+                <div id="owa_report-datepicker-start"></div>
+            <TD class="picker" valign="top">
+                <div>End: <input type="text" id="owa_report-datepicker-end-display"  size="10"></div>
+                <div id="owa_report-datepicker-end"></div>
+            </TD>
+            <TD>
+
+            </TD>
+
+            <TD valign="top">
+                Predefined Periods:<BR>
+
+                <SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
+                    <OPTION>Select...</OPTION>
+                    <* for (period in this.periods) { *>
+                    <OPTION VALUE="<*= period *>" <* if ( period === this.selectedPeriod ) { *>selected<* } *> >
+                        <*= this.periods[period] *>
+                    </OPTION>
+                    <* } *>
+                </SELECT>
+                <P><INPUT class="submit-button" type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Range"></P>
+            </TD>
+        </TR>
+        <TR>
+            <TD colspan="3"></TD>
+        </TR>
+    </table>
+</div>`;
+
 OWA.report = function(dom_id, options) {
     
     this.options = {
@@ -588,11 +647,10 @@ OWA.report.timePeriodControl.prototype = {
             datelabel:         this.label,
             selectedPeriod: this.selectedPeriod
         };
-        // fetch template from server
-        jQuery.get(OWA.getOption('modules_url') + 'base/templates/filter_period.php', function(tmpl) {
-    
+        // compile the inlined template directly into the dom (no server fetch).
+        {
             // inject into dom
-            jQuery(that.dom_id).jqoteapp(tmpl, data, '*');
+            jQuery(that.dom_id).jqoteapp(FILTER_PERIOD_TMPL, data, '*');
     
             // register show/hide controls event handler
             jQuery("#owa_reportPeriodLabelContainer").click(function() {
@@ -707,9 +765,9 @@ OWA.report.timePeriodControl.prototype = {
                 
                 var period = jQuery("#owa_reportPeriodFilter option:selected").val();
                 jQuery(that.dom_id).trigger('owa_new_fixed_time_period_set', [period]);
-             
+
             });
-            
-        });    
+
+        }
     }
 };
