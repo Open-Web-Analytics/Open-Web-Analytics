@@ -186,7 +186,13 @@ More detail and specific examples can be found in the included HTML file.
 
         function setupPie()
         {
-            legendWidth = target.children().filter('.legend').children().width();
+            // jQuery 3.x: .width() on an EMPTY set returns undefined (jQuery 1.x
+            // returned null). With the legend disabled this selection is empty, so
+            // legendWidth became undefined and `centerLeft -= legendWidth/2` below
+            // evaluated to NaN -- translating the pie origin to the canvas corner
+            // (the quarter-wedge regression). Coerce to a number so the math stays
+            // finite whether or not a legend is present.
+            legendWidth = target.children().filter('.legend').children().width() || 0;
 
             // calculate maximum radius and center point
             maxRadius =  Math.min(canvas.width,(canvas.height/options.series.pie.tilt))/2;
