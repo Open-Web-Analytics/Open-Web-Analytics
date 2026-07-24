@@ -1,10 +1,16 @@
 /**
- * OWA Global Object 
- *	
+ * OWA Global Object
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
  */
+
+// jQuery is imported explicitly (was supplied by webpack.ProvidePlugin before the
+// ESM renovation). The 'jquery' package is CommonJS, so webpack's interop makes the
+// namespace import the callable jQuery function -- same pattern as the tracker files.
+import * as jQuery from 'jquery';
+
 var OWA = {
 
     items: {},
@@ -2151,14 +2157,11 @@ OWA.util =  {
 
 };
 
-// The reporting files are bundled as a webpack module graph, but they are
-// deliberately kept as PLAIN (sloppy-mode) scripts, NOT ESM. The seven
-// files rely on sloppy-mode implicit globals (undeclared `for (x in ...)` loop
-// vars and bare `y = ...` assignments) that would throw ReferenceError under the
-// strict mode ESM forces. Adding an `import`/`export` to any of them flips the
-// whole file to strict and breaks it -- so instead of module bindings, OWA is
-// shared exactly as it was in the old flat concat: via a single browser global.
-// owa.js publishes it here (before the six augmenter modules are imported); each
-// augmenter reads the bare `OWA` identifier, which resolves to this global. The
-// report templates' inline <script> blocks depend on the same window.OWA.
+// owa.js defines the OWA namespace; the six augmenter modules extend it. It is
+// shared two ways:
+//   - export { OWA } -- the augmenters import it as a module binding (they mutate
+//     the same object: OWA.report = ... etc.).
+//   - window.OWA -- the report templates' inline <script> blocks (~166 references)
+//     read the browser global, so it stays published here.
+export { OWA };
 window.OWA = OWA;

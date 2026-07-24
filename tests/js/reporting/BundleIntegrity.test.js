@@ -58,30 +58,42 @@ describe('reporting bundle build integrity', () => {
         expect(missing).toEqual([]);
     });
 
-    test('owa.js publishes window.OWA and the OWA files stay non-ESM (sloppy mode)', () => {
-        // The contract that replaced the concat's shared scope: owa.js publishes
-        // the namespace as a browser global (window.OWA) and the augmenters read
-        // the bare `OWA` global. Crucially, NONE of the seven files may contain
-        // import/export -- ESM forces strict mode, and these legacy files rely on
-        // sloppy-mode implicit globals (undeclared for-in loop vars, bare assigns)
-        // that would throw ReferenceError under strict. An accidental import added
-        // during future refactors would silently break the reporting UI at runtime.
+    test('the OWA files are real ES modules sharing OWA via import/export', () => {
+        // The reporting files are now proper ES modules (Phase 4 renovation), replacing
+        // the earlier sloppy-mode-shared-via-window.OWA scheme. owa.js defines the
+        // namespace and `export { OWA }`; the six augmenters `import { OWA } from
+        // './owa.js'` and mutate the same object. Every file imports jQuery explicitly
+        // (was webpack.ProvidePlugin). owa.js STILL publishes window.OWA because the
+        // report templates' inline <script> blocks (~166 refs) read the browser global
+        // -- that's a template concern, separate from the module-internal sharing.
         const owaJs = fs.readFileSync(path.join(srcDir, 'owa.js'), 'utf8');
-        expect(owaJs).toMatch(/window\.OWA\s*=\s*OWA/);
+        expect(owaJs).toMatch(/export\s*\{\s*OWA\s*\}/); // owa.js exports the namespace
+        expect(owaJs).toMatch(/window\.OWA\s*=\s*OWA/);  // and keeps the template global
 
-        const withEsm = OWA_MODULES.filter((f) => {
+        // Every file imports jQuery; every AUGMENTER also imports OWA from owa.js.
+        const missingJquery = [];
+        const missingOwaImport = [];
+        for (const f of OWA_MODULES) {
             const code = fs.readFileSync(path.join(srcDir, f), 'utf8');
-            // Match top-of-line import/export statements (not the word inside code).
-            return /^\s*import\s/m.test(code) || /^\s*export\s/m.test(code);
-        });
-        expect(withEsm).toEqual([]);
+            if (!/^\s*import \* as jQuery from 'jquery'/m.test(code)) missingJquery.push(f);
+            if (f !== 'owa.js' && !/^\s*import\s*\{\s*OWA\s*\}\s*from\s*'\.\/owa\.js'/m.test(code)) {
+                missingOwaImport.push(f);
+            }
+        }
+        expect(missingJquery).toEqual([]);
+        expect(missingOwaImport).toEqual([]);
     });
 
     test('reporting-entry imports the vendor plugins in load-bearing order', () => {
         // Order matters: jquery-migrate before the plugins; flot core -> time ->
         // resize -> pie, with time.js before the OWA area chart (xaxis.mode:"time");
         // and the OWA namespace modules last. Assert the relative sequence.
-        const entry = fs.readFileSync(entryPath, 'utf8');
+        //
+        // Match only the `import ...` lines, not the whole file: the header docblock
+        // mentions module paths in prose, which would otherwise be found before the
+        // real import statements and scramble the order check.
+        const entry = fs.readFileSync(entryPath, 'utf8')
+            .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
         const orderedTokens = [
             'jquery-migrate',
             'jquery-ui-dist/jquery-ui.js',

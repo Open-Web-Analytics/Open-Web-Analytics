@@ -27,6 +27,11 @@
  * @since        owa 1.5.0
  */
 
+// OWA is defined by owa.js; this module augments it (OWA.resultSet = ... etc.). jQuery
+// was supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
 OWA.resultSet = function( attributes ) {
 
     for (var attribute in attributes) {

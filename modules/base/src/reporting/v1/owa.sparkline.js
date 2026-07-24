@@ -26,7 +26,12 @@
  * @version        $Revision$
  * @since        owa 1.3.0
  */
- 
+
+// OWA is defined by owa.js; this module augments it (OWA.sparkline = ...). jQuery was
+// supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
 OWA.sparkline = function(dom_id) {
 
     this.config = OWA.config || '';

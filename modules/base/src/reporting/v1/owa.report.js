@@ -1,3 +1,8 @@
+// OWA is defined by owa.js; this module augments it (OWA.report = ...). jQuery was
+// supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
 OWA.report = function(dom_id, options) {
     
     this.options = {

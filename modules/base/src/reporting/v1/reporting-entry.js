@@ -14,18 +14,17 @@
  *     into jquery.flot.time.js, and owa.areachart.js uses xaxis.mode:"time", so
  *     time.js MUST load before the OWA area chart or its date axis breaks.
  *
- * Every vendor plugin and every OWA file references a bare `jQuery`/`$`; those free
- * identifiers are rewritten to require('jquery') by webpack.ProvidePlugin (see
- * webpack.config.js), so there is a single shared jQuery instance and no file needs
- * an explicit jQuery import.
+ * The VENDOR plugins still reference a bare `jQuery`/`$` (they can't be edited), so
+ * those free identifiers are rewritten to require('jquery') by webpack.ProvidePlugin
+ * (see webpack.config.js) -- one shared jQuery instance for the whole plugin ecosystem.
  *
- * The seven OWA reporting files are imported here as SIDE-EFFECT modules and are
- * deliberately NOT converted to ESM: they are legacy sloppy-mode scripts full of
- * implicit globals (undeclared `for (x in ...)` loop vars, bare `y = ...` assigns)
- * that throw ReferenceError under the strict mode ESM forces. So OWA is shared the
- * way the old concat shared it -- via a browser global: owa.js publishes window.OWA
- * (see its tail), and the six augmenter files read the bare `OWA` identifier, which
- * resolves to that global. owa.js MUST be imported before the augmenters.
+ * The seven OWA reporting files are now REAL ES modules (Phase 4 renovation): owa.js
+ * exports the OWA namespace and the six augmenters import it and mutate the same
+ * object, and every file imports jQuery explicitly (so ProvidePlugin no longer has to
+ * reach them). The import graph orders owa.js before its augmenters automatically; the
+ * side-effect imports below still fix the relative order of the augmenters among
+ * themselves. owa.js also publishes window.OWA (see its tail) for the report templates'
+ * inline <script> blocks.
  */
 
 // jQuery + the 1.x->3.x compat bridge. jQuery itself is pulled in transitively by
@@ -46,8 +45,8 @@ import 'free-jqgrid/dist/jquery.jqgrid.min.js';
 // jQote2 has no npm package -> stays vendored, imported as a side-effect module.
 import './includes/jquery/jQote2/jquery.jqote2.min.js';
 
-// OWA reporting namespace: owa.js defines it (and publishes window.OWA), the other
-// six augment the same global. Import order is load-bearing -- owa.js first.
+// OWA reporting namespace: owa.js defines it (exports OWA + publishes window.OWA), the
+// other six import { OWA } and augment it. Import order is load-bearing -- owa.js first.
 import './owa.js';
 import './owa.report.js';
 import './owa.resultSetExplorer.js';
