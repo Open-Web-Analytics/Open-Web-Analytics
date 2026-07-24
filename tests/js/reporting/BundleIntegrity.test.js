@@ -3,106 +3,117 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 /**
- * Phase 3.0 safety net -- build-integrity characterization of the reporting
- * bundle (modules/base/dist/owa.reporting-combined-min.js).
+ * Build-integrity characterization of the reporting bundle
+ * (modules/base/dist/owa.reporting-combined-min.js).
  *
- * The reporting bundle is NOT a webpack module graph like the tracker; it is a
- * flat WebpackConcatPlugin concatenation of 11 vendored libs + 7 OWA files
- * (see webpack.config.js). Before the jQuery 1.6.4 -> 3.x migration touches any
- * of those inputs, these tests pin the current, working shape of the build so a
- * plugin swap or a dropped concat entry fails loudly instead of silently
- * shipping a broken reporting UI.
+ * Phase 3.3a converted the reporting bundle from a flat WebpackConcatPlugin
+ * concatenation into a REAL webpack module graph, mirroring the tracker entry:
+ *   - reporting-entry.js is the entry point; it side-effect-imports the vendor
+ *     plugins in load-bearing order, then the seven OWA files.
+ *   - The seven OWA files are kept as PLAIN (sloppy-mode) scripts, NOT ESM: they
+ *     are legacy code full of implicit globals (undeclared `for (x in ...)` loop
+ *     vars, bare `y = ...` assigns) that throw under the strict mode ESM forces.
+ *     So OWA is shared via a browser global exactly as the old concat did: owa.js
+ *     publishes `window.OWA`, and the six augmenters read the bare `OWA` global.
+ *     Adding an import/export to any of these files would flip it to strict and
+ *     break it -- this test guards that they stay non-ESM.
+ *   - jQuery + `$` are supplied to every module (vendor + OWA) by
+ *     webpack.ProvidePlugin, so no file needs an explicit jQuery import.
+ *   - The bundle is emitted under the SAME filename as the old concat, and is a
+ *     single self-contained file (splitChunks excludes it) so the report
+ *     templates keep loading exactly one script.
  *
- * The input list is derived FROM webpack.config.js (not hardcoded here) so this
- * test tracks the real build definition and cannot drift out of sync with it.
+ * These tests pin that contract: the source graph is present, the OWA files stay
+ * sloppy-mode and share OWA via the window global, the config drives it through
+ * ProvidePlugin (not a concat), and the built artifact embeds the pinned vendor
+ * versions in one self-contained file.
  */
 describe('reporting bundle build integrity', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
+    const srcDir = path.join(repoRoot, 'modules/base/src/reporting/v1');
+    const entryPath = path.join(srcDir, 'reporting-entry.js');
     const bundlePath = path.join(repoRoot, 'modules/base/dist/owa.reporting-combined-min.js');
 
-    /** Pull the reporting bundle's `src: [...]` list straight out of the webpack config. */
-    function getConfiguredInputs() {
-        const cfg = fs.readFileSync(configPath, 'utf8');
-        // Isolate the src array of the owa.reporting-combined-min.js bundle.
-        const srcBlock = cfg.match(/owa\.reporting-combined-min\.js[\s\S]*?src:\s*\[([\s\S]*?)\]/);
-        expect(srcBlock).not.toBeNull();
-        // Entries are either `src_path + '/reporting/v1/....js'` (OWA + vendored
-        // plugins under modules/base/src) or `__dirname + '/node_modules/....js'`
-        // (npm deps: jQuery core, jquery-migrate, free-jqgrid). Resolve each
-        // literal against the base its `+` prefix implies.
-        const rel = [...srcBlock[1].matchAll(/'([^']+\.js)'/g)].map((m) => m[1]);
-        expect(rel.length).toBeGreaterThan(0);
-        // src_path === <root>/modules/base/src. node_modules literals start with
-        // '/node_modules/' and resolve from the repo root instead.
-        return rel.map((r) =>
-            r.startsWith('/node_modules/')
-                ? path.join(repoRoot, r.replace(/^\//, ''))
-                : path.join(repoRoot, 'modules/base/src', r.replace(/^\//, ''))
-        );
-    }
+    // The seven hand-written OWA reporting modules. owa.js defines the namespace;
+    // the rest augment it. Order here is the ESM import order in reporting-entry.js.
+    const OWA_MODULES = [
+        'owa.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
+        'owa.areachart.js', 'owa.piechart.js', 'owa.kpibox.js',
+    ];
 
-    test('every configured bundle input file exists', () => {
-        const missing = getConfiguredInputs().filter((f) => !fs.existsSync(f));
+    test('the reporting entry point exists', () => {
+        expect(fs.existsSync(entryPath)).toBe(true);
+    });
+
+    test('every OWA reporting module exists', () => {
+        const missing = OWA_MODULES.filter((f) => !fs.existsSync(path.join(srcDir, f)));
         expect(missing).toEqual([]);
     });
 
-    /**
-     * Guards the OTHER drift direction: the config-derived list above shrinks
-     * silently if an entry is deleted, so pin the load-bearing inputs that must
-     * remain in the concat. jQuery is matched by pattern (its version/filename
-     * WILL change in the migration); the OWA reporting files and the vendored
-     * plugins are matched by name. If the migration legitimately drops one
-     * (e.g. replaces Flot), this fails and must be updated as a conscious edit.
-     */
-    test('all load-bearing inputs are still referenced in the build config', () => {
-        const configured = getConfiguredInputs().map((f) => path.basename(f));
+    test('owa.js publishes window.OWA and the OWA files stay non-ESM (sloppy mode)', () => {
+        // The contract that replaced the concat's shared scope: owa.js publishes
+        // the namespace as a browser global (window.OWA) and the augmenters read
+        // the bare `OWA` global. Crucially, NONE of the seven files may contain
+        // import/export -- ESM forces strict mode, and these legacy files rely on
+        // sloppy-mode implicit globals (undeclared for-in loop vars, bare assigns)
+        // that would throw ReferenceError under strict. An accidental import added
+        // during future refactors would silently break the reporting UI at runtime.
+        const owaJs = fs.readFileSync(path.join(srcDir, 'owa.js'), 'utf8');
+        expect(owaJs).toMatch(/window\.OWA\s*=\s*OWA/);
 
-        // exactly one jQuery core. Phase 3.2 flipped the core from the vendored
-        // jquery-1.6.4.min.js to the npm dep's jquery.min.js (jquery-migrate is a
-        // separate shim, not a core, so it must not be double-counted here).
-        expect(configured.filter((f) => /^jquery\.min\.js$/.test(f))).toHaveLength(1);
-
-        const required = [
-            // jQuery 1.x->3.x migration bridge (Phase 3.2): migrate restores the
-            // removed 1.x APIs the legacy plugins use (andSelf, $.attrFn, event
-            // shorthands). The owa.jquery-compat-shim.js ($.browser/$.curCSS) was
-            // DELETED once every plugin went jQuery-3.x-clean -- so it is NOT in
-            // this list; jquery-migrate alone is the bridge now.
-            'jquery-migrate.min.js',
-            // reporting-UI plugin deps. Phase 3.2 replacements from npm: jqGrid
-            // 3.6.5 -> free-jqgrid (jquery.jqgrid.min.js), sparkline 1.2.1 ->
-            // jquery-sparkline 2.4.0 (jquery.sparkline.min.js), chosen 0.9.6 ->
-            // chosen-js 1.8.7 (chosen.jquery.min.js), jQuery-UI 1.8.12 custom +
-            // the separate Nagel-fork ui.selectmenu -> jquery-ui-dist 1.13.3
-            // (jquery-ui.min.js, which bundles selectmenu), Flot 0.7 vendored ->
-            // jquery.flot 0.8.3 (jquery.flot.js, npm ships non-min; the pie plugin
-            // is the last file below). jquery.sprintf.js was dropped (dead: OWA
-            // uses its own OWA.util.sprintf).
-            'jquery-ui.min.js', 'chosen.jquery.min.js',
-            'jquery.sparkline.min.js', 'jquery.jqgrid.min.js', 'jquery.flot.js',
-            'jquery.jqote2.min.js',
-            // OWA reporting code
-            'owa.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
-            'owa.areachart.js', 'owa.piechart.js', 'owa.kpibox.js',
-        ];
-        const dropped = required.filter((f) => !configured.includes(f));
-        expect(dropped).toEqual([]);
+        const withEsm = OWA_MODULES.filter((f) => {
+            const code = fs.readFileSync(path.join(srcDir, f), 'utf8');
+            // Match top-of-line import/export statements (not the word inside code).
+            return /^\s*import\s/m.test(code) || /^\s*export\s/m.test(code);
+        });
+        expect(withEsm).toEqual([]);
     });
 
-    test('the concat input order leads with jQuery, then plugins, then OWA code', () => {
-        // Ordering is load-bearing for a flat concat: jQuery must precede its
-        // plugins, and every plugin must precede the OWA code that calls it.
-        const inputs = getConfiguredInputs().map((f) => path.basename(f));
-        const jqueryIdx = inputs.findIndex((f) => /^jquery\.min\.js$/.test(f));
-        const firstPluginIdx = inputs.findIndex((f) => f === 'jquery-ui.min.js');
-        const firstOwaIdx = inputs.findIndex((f) => f === 'owa.js');
+    test('reporting-entry imports the vendor plugins in load-bearing order', () => {
+        // Order matters: jquery-migrate before the plugins; flot core -> time ->
+        // resize -> pie, with time.js before the OWA area chart (xaxis.mode:"time");
+        // and the OWA namespace modules last. Assert the relative sequence.
+        const entry = fs.readFileSync(entryPath, 'utf8');
+        const orderedTokens = [
+            'jquery-migrate',
+            'jquery-ui-dist/jquery-ui.js',
+            'chosen-js/chosen.jquery.js',
+            'jquery-sparkline',
+            "'jquery.flot'",                    // flot core
+            'jquery.flot/jquery.flot.time.js',
+            'jquery.flot/jquery.flot.resize.js',
+            'jquery.flot/jquery.flot.pie.js',
+            'free-jqgrid/dist/jquery.jqgrid.min.js',
+            'jQote2/jquery.jqote2.min.js',
+            './owa.js',
+            './owa.report.js',
+            './owa.kpibox.js',
+        ];
+        let last = -1;
+        for (const tok of orderedTokens) {
+            const idx = entry.indexOf(tok);
+            expect(idx).toBeGreaterThan(-1);       // token present
+            expect(idx).toBeGreaterThan(last);     // and after the previous one
+            last = idx;
+        }
+        // time.js must precede areachart (the whole reason it is imported at all).
+        expect(entry.indexOf('jquery.flot.time.js'))
+            .toBeLessThan(entry.indexOf('./owa.areachart.js'));
+    });
 
-        expect(jqueryIdx).toBe(0);
-        // jquery-migrate sits between the core and the first plugin.
-        expect(firstPluginIdx).toBeGreaterThan(jqueryIdx);
-        expect(firstOwaIdx).toBeGreaterThan(firstPluginIdx);
+    test('the build drives the bundle through the module graph, not a concat', () => {
+        const cfg = fs.readFileSync(configPath, 'utf8');
+        // ProvidePlugin is what supplies jQuery/$ to the vendor plugins that read a
+        // bare global (chosen, flot) now that they run under webpack module scope.
+        expect(cfg).toMatch(/ProvidePlugin/);
+        expect(cfg).toMatch(/jQuery:\s*['"]jquery['"]/);
+        // reporting-entry.js is wired as a real entry.
+        expect(cfg).toMatch(/reporting-entry\.js/);
+        // The flat-concat toolchain is retired.
+        expect(cfg).not.toMatch(/WebpackConcatPlugin/);
+        expect(cfg).not.toMatch(/webpack-concat-files-plugin/);
     });
 
     describe('built artifact', () => {
@@ -124,7 +135,7 @@ describe('reporting bundle build integrity', () => {
 
         test('the bundle was produced and is non-trivial in size', () => {
             if (bundle === null) return; // toolchain unavailable
-            // Historically ~630KB; guard against a truncated/empty concat.
+            // ~900KB as a module graph; guard against a truncated/empty build.
             expect(bundle.length).toBeGreaterThan(200 * 1024);
         });
 
@@ -135,22 +146,54 @@ describe('reporting bundle build integrity', () => {
             }
         });
 
-        /**
-         * The invariant the entire Phase 3 jQuery migration hinges on. Phase 3.2
-         * flipped the reporting bundle from jQuery 1.6.4 to 3.6.0 (the version the
-         * tracker already ships -- this ends the split-brain). This test PINS 3.6.0
-         * so a future bump is a conscious, reviewed change rather than a silent one.
-         */
-        test('reporting bundle embeds jQuery 3.6.0 (post-migration baseline)', () => {
+        test('the bundle is self-contained (vendors inlined, not split out)', () => {
             if (bundle === null) return;
-            expect(bundle.includes('jQuery v3.6.0')).toBe(true);
-            // Exactly one jQuery CORE is concatenated (no accidental double-embed).
-            // The `jQuery v<n> ` banner form matches the core but NOT jquery-migrate's
-            // `jQuery Migrate v<n>` banner, so migrate is not miscounted as a core.
-            const cores = [...bundle.matchAll(/jQuery v[\d.]+ /g)];
-            expect(cores.length).toBe(1);
-            // And migrate is present (the bridge that keeps the legacy plugins alive).
-            expect(bundle.includes('jQuery Migrate v')).toBe(true);
+            // The report templates load ONLY owa.reporting-combined-min.js, so the
+            // vendor code (jQuery, jQuery-UI, flot, jqGrid, ...) must be INLINED in
+            // this one file rather than split into a sibling chunk. (The tracker's
+            // owa.vendors split is scoped away from this bundle via a separate
+            // compiler config in webpack.config.js.)
+            //
+            // Note on what does NOT work as a signal: with output.iife:false a
+            // vendors split becomes a sibling *entry* chunk loaded by its own
+            // <script>, not a runtime import(), so `__webpack_require__.e` never
+            // appears and there is no literal 'owa.vendors' reference to grep. The
+            // observable difference is that the vendor code either lives IN this
+            // file or it doesn't. A split collapses this bundle from ~900KB to ~70KB
+            // and moves every vendor fingerprint out into the sibling chunk -- so a
+            // size floor no split can clear, plus the vendor tokens being present
+            // right here, is what actually catches the regression.
+            expect(bundle.length).toBeGreaterThan(500 * 1024);
+            for (const token of ['"3.6.0"', 'jQuery UI - v1.13.3', 'flot-base']) {
+                expect(bundle.includes(token)).toBe(true);
+            }
+
+            // And no sibling reporting-vendors chunk is emitted alongside it. The
+            // dist dir legitimately holds the tracker's owa.vendors.js; anything
+            // else vendor-shaped next to the reporting bundle means it was split.
+            const distDir = path.dirname(bundlePath);
+            const strays = fs.readdirSync(distDir).filter(
+                (f) => /vendor/i.test(f) && f !== 'owa.vendors.js'
+            );
+            expect(strays).toEqual([]);
+        });
+
+        /**
+         * The vendor-version invariants the Phase 3.2 migration established, now
+         * pinned against the module-graph output. Terser strips the `jQuery v<n>`
+         * banner comment, so match the version token embedded in code instead; the
+         * jQuery-UI license banner and Flot's `flot-base` class survive minification
+         * and fingerprint the pinned plugin versions. The authoritative jQuery
+         * runtime-version check lives in BundleLoad.test.js (reads jq.fn.jquery).
+         */
+        test('reporting bundle embeds the pinned vendor versions', () => {
+            if (bundle === null) return;
+            // jQuery core 3.6.0 (post-split-brain baseline): `var C="3.6.0"`.
+            expect(bundle.includes('"3.6.0"')).toBe(true);
+            // jQuery-UI 1.13.3 (license banner is preserved by terser).
+            expect(bundle.includes('jQuery UI - v1.13.3')).toBe(true);
+            // Flot 0.8.3 renamed its canvas class base -> flot-base.
+            expect(bundle.includes('flot-base')).toBe(true);
         });
     });
 });

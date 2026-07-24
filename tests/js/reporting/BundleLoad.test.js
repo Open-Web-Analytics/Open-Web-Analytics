@@ -5,14 +5,20 @@ const path = require('path');
  * Phase 3.0 safety net -- jsdom load characterization of the reporting bundle.
  *
  * jsdom can't paint charts or run jqGrid layout, but it CAN execute the whole
- * concatenated bundle against a real window/document and prove that:
- *   - the vendored jQuery initializes and is the version we expect,
+ * bundle against a real window/document and prove that:
+ *   - jQuery initializes and is the version we expect,
  *   - the OWA reporting namespace and its core objects load and instantiate,
  *   - the objects don't rely on jQuery-3-removed APIs at load/construct time.
  *
  * This is the layer that will catch the split-brain jQuery migration breaking
  * object construction, before Playwright (which is slower and needs a live
  * page) ever runs.
+ *
+ * Phase 3.3a note: the bundle is now a webpack module graph (was a flat concat).
+ * `OWA` and `jQuery` are no longer bundle-top-level `var`s reachable from the
+ * outer function scope -- reporting-entry.js publishes them onto `window`
+ * (window.OWA / window.jQuery), which is what the report templates' inline
+ * scripts consume too. So the load harness reads them off window.
  */
 describe('reporting bundle loads under jsdom', () => {
 
@@ -34,15 +40,16 @@ describe('reporting bundle loads under jsdom', () => {
 
         const code = fs.readFileSync(bundlePath, 'utf8');
         try {
-            // `var OWA = {...}` is bundle-top-level; capture it out of the function
-            // scope onto window so the tests can reach it (mirrors a <script> tag's
-            // global, without polluting the module scope).
+            // The bundle is a webpack module graph; reporting-entry.js assigns
+            // window.OWA and window.jQuery (the same globals the report templates'
+            // inline scripts use). Run it against this test's window/document and
+            // read them back off window -- mirrors a real <script> tag.
             const run = new Function(
                 'window', 'document', 'navigator',
-                code + '\n; if (typeof OWA !== "undefined") window.__OWA = OWA;'
+                code
             );
             run(window, document, navigator);
-            OWA = window.__OWA;
+            OWA = window.OWA;
             jq = window.jQuery;
         } catch (e) {
             loadError = e;

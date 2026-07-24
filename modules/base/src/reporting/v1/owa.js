@@ -2147,5 +2147,17 @@ OWA.util =  {
         
         return true;
     }
-    
+
 };
+
+// Phase 3.3a: the reporting files are bundled as a webpack module graph now, but
+// they are deliberately kept as PLAIN (sloppy-mode) scripts, NOT ESM. The seven
+// files rely on sloppy-mode implicit globals (undeclared `for (x in ...)` loop
+// vars and bare `y = ...` assignments) that would throw ReferenceError under the
+// strict mode ESM forces. Adding an `import`/`export` to any of them flips the
+// whole file to strict and breaks it -- so instead of module bindings, OWA is
+// shared exactly as it was in the old flat concat: via a single browser global.
+// owa.js publishes it here (before the six augmenter modules are imported); each
+// augmenter reads the bare `OWA` identifier, which resolves to this global. The
+// report templates' inline <script> blocks depend on the same window.OWA.
+window.OWA = OWA;
