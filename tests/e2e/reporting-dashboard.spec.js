@@ -64,6 +64,72 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(chosen.first()).toBeVisible();
     });
 
+    test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
+        // Regression guard for a build-artifact clobber that shipped a WORKING but
+        // completely UNSTYLED control. chosen-js 1.8.7's JS emits .chosen-* markup,
+        // but the SOURCE chosen.css was left as the 0.9.6 .chzn-* stylesheet when the
+        // JS was swapped (commit 36fb9d0b hand-edited only the built CSS artifact).
+        // The next `cli.php cmd=build` regenerated the artifact from the stale source,
+        // so the served CSS had ZERO .chosen-* rules -- the widget rendered as a bare
+        // unstyled text list with no dropdown arrow. Existence/visibility (the test
+        // above) still PASSED because the markup was correct; only the applied CSS was
+        // wrong. So assert the stylesheet actually takes effect: the sprite-driven
+        // dropdown arrow paints a background image (the single clearest "the .chosen-*
+        // CSS is present and its sprite resolves" signal).
+        const arrowBg = await page.evaluate(() => {
+            const b = document.querySelector('.chosen-container .chosen-single div b');
+            return b ? getComputedStyle(b).backgroundImage : null;
+        });
+        expect(arrowBg).not.toBeNull();
+        expect(arrowBg).toContain('chosen-sprite');
+    });
+
+    test('the secondary-dimension picker enhances, opens, and drives the grid', async ({ page }) => {
+        // The data-table's "Secondary Dimension" control (OWA.dimensionPicker ->
+        // <select.dim-list> enhanced by chosen) is a tricky compound widget the
+        // chosen 0.9.6 -> 1.8.7 migration put at risk on two axes:
+        //   (1) STYLING -- same build-artifact clobber as above; the picker rendered
+        //       as an unstyled text list. Assert the opened .chosen-drop is styled
+        //       (grouped, sprite-backed search box) and the trigger carries the arrow.
+        //   (2) BEHAVIOR -- generateDimList() sets a pre-selected value with
+        //       .trigger('liszt:updated'), chosen 0.9.x's "re-sync widget to <select>"
+        //       event. chosen-js 1.x renamed it to 'chosen:updated' and ignores the
+        //       old name, so a pre-selected dimension silently failed to render.
+        //       Exercise the live path: open the widget and pick the first dimension,
+        //       which must reload the grid with an extra column.
+        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
+        await expect(picker).toBeVisible();
+
+        // The trigger's dropdown arrow is sprite-backed (styling present).
+        const arrowBg = await picker.locator('.chosen-single div b').evaluate(
+            (b) => getComputedStyle(b).backgroundImage
+        );
+        expect(arrowBg).toContain('chosen-sprite');
+
+        // Column count before selecting a secondary dimension.
+        const colsBefore = await page.locator('.ui-jqgrid-htable th[id]').count();
+
+        // Open the widget and pick the first real dimension by clicking (the real
+        // user path through chosen's own change handler).
+        await picker.click();
+        const drop = picker.locator('.chosen-drop');
+        await expect(drop).toBeVisible();
+        // The results are grouped (bold group headers) -- proves the .chosen-* CSS
+        // structure rendered, not a flat unstyled <select> fallback.
+        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
+
+        const firstResult = drop.locator('.chosen-results li.active-result').first();
+        await expect(firstResult).toBeVisible();
+        await firstResult.click();
+
+        // Selecting a secondary dimension adds it as a grid column; wait for the
+        // reloaded grid to widen. (Guards the liszt:updated -> chosen:updated fix
+        // AND the change -> changeDimension -> getNewResultSet wiring.)
+        await expect
+            .poll(() => page.locator('.ui-jqgrid-htable th[id]').count(), { timeout: 15_000 })
+            .toBeGreaterThan(colsBefore);
+    });
+
     test('jqGrid renders the seeded page-title rows', async ({ page }) => {
         // At least one grid with exactly the seeded rows. The "top pages" grid
         // has one row per seeded page title.

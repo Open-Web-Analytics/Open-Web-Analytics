@@ -989,7 +989,13 @@ jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
 
         // set select value
         if ( selected ) {
-            jQuery(selector + ' > .dim-list').val( selected ).trigger('liszt:updated');
+            // chosen-js 1.x renamed the "re-sync the widget to the <select>"
+            // event from chosen 0.9.x's `liszt:updated` to `chosen:updated`
+            // (and no longer listens for the old name at all). Without this the
+            // dimensionPicker's chosen widget silently ignores a programmatic
+            // .val(), so a pre-selected secondary/constraint dimension never
+            // renders. See the chosen 0.9.6 -> chosen-js 1.8.7 migration.
+            jQuery(selector + ' > .dim-list').val( selected ).trigger('chosen:updated');
 
         } else {
 
