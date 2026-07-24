@@ -1,13 +1,11 @@
 /**
- * Overlay (heatmap) real-render characterization -- Phase 3.2 safety net.
+ * Overlay (heatmap) real-render characterization.
  *
  * WHY THIS EXISTS
  * The heatmap/player overlay is the single largest untested jQuery-dependent
  * surface in OWA (Heatmap.js + Player.js, ~950 lines, dozens of jQuery calls).
- * It runs on the *tracker* code path, which is already on jQuery 3.x. Before
- * Phase 3.2 starts swapping the vendored reporting plugins and flipping the
- * reporting bundle's jQuery core, this test pins the fact that jQuery 3.x can
- * still build the overlay DOM at runtime.
+ * It runs on the *tracker* code path, which is on jQuery 3.x. This test pins the
+ * fact that jQuery 3.x can still build the overlay DOM at runtime.
  *
  * WHAT IT DOES
  * The overlay never renders on an OWA page -- it renders on the *tracked* page.

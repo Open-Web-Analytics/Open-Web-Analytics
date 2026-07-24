@@ -2150,8 +2150,8 @@ OWA.util =  {
 
 };
 
-// Phase 3.3a: the reporting files are bundled as a webpack module graph now, but
-// they are deliberately kept as PLAIN (sloppy-mode) scripts, NOT ESM. The seven
+// The reporting files are bundled as a webpack module graph, but they are
+// deliberately kept as PLAIN (sloppy-mode) scripts, NOT ESM. The seven
 // files rely on sloppy-mode implicit globals (undeclared `for (x in ...)` loop
 // vars and bare `y = ...` assignments) that would throw ReferenceError under the
 // strict mode ESM forces. Adding an `import`/`export` to any of them flips the

@@ -2,20 +2,20 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
 
 /**
- * Phase 3.0 safety net -- real-browser characterization of the reporting UI.
+ * Real-browser characterization of the reporting UI.
  *
  * jsdom (tests/js/reporting/*) proves the bundle loads and OWA objects
  * construct; it CANNOT paint. These tests drive headless Chromium against a
  * live, logged-in dashboard backed by the deterministic fixtures seeded by
  * tests/e2e/seed_reporting_fixtures.php, and pin the *rendered* output of the
- * three vendored jQuery plugins the migration will touch:
+ * three vendored jQuery plugins:
  *
  *   - Flot        -> <canvas> chart tiles
  *   - jqGrid      -> .ui-jqgrid tables with data rows
  *   - chosen      -> .chzn-container enhanced select menus
  *
- * They also PIN jQuery 3.6.0 -- Phase 3.2 flipped the reporting bundle from
- * 1.6.4 to 3.x. jquery-migrate bridges the 1.x API removals; the legacy plugins
+ * They also PIN jQuery 3.6.0 -- the reporting bundle is on 3.x (was 1.6.4).
+ * jquery-migrate bridges the 1.x API removals; the legacy plugins
  * were replaced with jQuery-3.x-clean versions (jqGrid -> free-jqgrid, Flot ->
  * 0.8.3, jQuery-UI -> 1.13.3), so the interim $.browser compat shim was deleted.
  * A future version bump fails this assertion and must be a conscious, reviewed
@@ -47,8 +47,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
-        // Post-migration baseline (Phase 3.2). Every reporting plugin is now
-        // jQuery-3.x-clean (jQuery-UI 1.13.3, Flot 0.8.3, ...), so the
+        // Every reporting plugin is jQuery-3.x-clean
+        // (jQuery-UI 1.13.3, Flot 0.8.3, ...), so the
         // $.browser/$.curCSS compat shim was deleted -- jquery-migrate alone bridges.
         expect(jqv).toBe('3.6.0');
         expect(owaType).toBe('object');
@@ -129,7 +129,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     test('jqGrid header columns align with their data columns', async ({ page }) => {
-        // Regression guard (Phase 3.2): the jqGrid 3.6.5 -> free-jqgrid swap left
+        // Regression guard: the jqGrid 3.6.5 -> free-jqgrid swap left
         // the combined stylesheet's table-layout:auto rules in place. free-jqgrid
         // sizes columns from a hidden template row and needs table-layout:fixed;
         // under auto the header and body tables each sized to their own content,
@@ -154,7 +154,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     test('jqGrid tables do not overflow their scroll container', async ({ page }) => {
-        // Regression guard (Phase 3.2): free-jqgrid sizes the grid tables to fill
+        // Regression guard: free-jqgrid sizes the grid tables to fill
         // their scroll containers (.ui-jqgrid-bdiv / -hdiv) exactly, but the tables
         // inherited the browser-default border-collapse:separate; border-spacing:2px.
         // Fixed layout then adds (columns + 1) * 2px past the container, so every
@@ -181,7 +181,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('Flot paints the chart canvases', async ({ page }) => {
         // Flot draws each chart as a <canvas class="flot-base"> plus a
         // "flot-overlay" sibling inside an OWA chart container. (Flot 0.8 renamed
-        // these from 0.7's bare "base"/"overlay" -- Phase 3.2 Flot 0.7 -> 0.8.3.)
+        // these from 0.7's bare "base"/"overlay".)
         // Assert the area chart and at least one pie chart painted (base+overlay
         // pair each).
         const areaCanvases = page.locator('.owa_areaChart canvas');
@@ -204,8 +204,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // on an EMPTY set, so a Flot pie plugin that reads the legend width without
         // a guard gets undefined -> centerLeft NaN -> the pie origin translates to
         // (0,0) and each pie draws as a quarter wedge in the top-left corner. OWA
-        // hand-patched Flot 0.7's pie with `|| 0`; jquery.flot 0.8.3 (Phase 3.2 Flot
-        // upgrade) ships that guard upstream, so this now pins the 0.8.3 behavior.
+        // hand-patched Flot 0.7's pie with `|| 0`; jquery.flot 0.8.3 ships that
+        // guard upstream, so this now pins the 0.8.3 behavior.
         // Sample the base canvas: a correctly centered pie has painted
         // (non-transparent) pixels at its center; a corner wedge leaves the center
         // empty. Also require the corner itself NOT be the only painted region.

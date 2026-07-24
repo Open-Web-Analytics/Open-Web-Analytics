@@ -1,7 +1,7 @@
 <?php
 /**
  * Deterministic fixture seeder for the reporting-UI end-to-end (Playwright)
- * tests -- Phase 3.0 safety net.
+ * tests.
  *
  * Creates, idempotently:
  *   - a dedicated tracked site (domain https://owa-e2e.example.test),

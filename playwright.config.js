@@ -2,7 +2,7 @@
 const { defineConfig, devices } = require('@playwright/test');
 
 /**
- * Playwright config for the Phase 3.0 reporting-UI characterization tests.
+ * Playwright config for the reporting-UI characterization tests.
  *
  * These are the real-browser half of the reporting safety net: jsdom (see
  * tests/js/reporting/*) proves the bundle loads and OWA objects construct, but

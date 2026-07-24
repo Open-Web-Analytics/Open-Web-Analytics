@@ -2204,7 +2204,7 @@ class owa_baseModule extends owa_module {
     }
 
     /*
-     * Phase 3.3b: the combined reporting stylesheet is now produced by webpack
+     * The combined reporting stylesheet is now produced by webpack
      * (reportingCssConfig in webpack.config.js), emitting the same file to the
      * same directory. The PHP-CLI build package that used to concatenate the six
      * source CSS files here has been retired, so this module no longer overrides

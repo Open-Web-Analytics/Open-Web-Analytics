@@ -6,8 +6,8 @@ const { execSync } = require('child_process');
  * Build-integrity characterization of the reporting bundle
  * (modules/base/dist/owa.reporting-combined-min.js).
  *
- * Phase 3.3a converted the reporting bundle from a flat WebpackConcatPlugin
- * concatenation into a REAL webpack module graph, mirroring the tracker entry:
+ * The reporting bundle is a REAL webpack module graph (formerly a flat
+ * WebpackConcatPlugin concatenation), mirroring the tracker entry:
  *   - reporting-entry.js is the entry point; it side-effect-imports the vendor
  *     plugins in load-bearing order, then the seven OWA files.
  *   - The seven OWA files are kept as PLAIN (sloppy-mode) scripts, NOT ESM: they
@@ -179,8 +179,8 @@ describe('reporting bundle build integrity', () => {
         });
 
         /**
-         * The vendor-version invariants the Phase 3.2 migration established, now
-         * pinned against the module-graph output. Terser strips the `jQuery v<n>`
+         * The vendor-version invariants, pinned against the module-graph output.
+         * Terser strips the `jQuery v<n>`
          * banner comment, so match the version token embedded in code instead; the
          * jQuery-UI license banner and Flot's `flot-base` class survive minification
          * and fingerprint the pinned plugin versions. The authoritative jQuery

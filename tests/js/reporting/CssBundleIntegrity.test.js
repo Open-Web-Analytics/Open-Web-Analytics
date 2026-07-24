@@ -6,8 +6,8 @@ const { execSync } = require('child_process');
  * Build-integrity characterization of the combined reporting stylesheet
  * (modules/base/css/owa.reporting-css-combined.css).
  *
- * Phase 3.3b moved this file's production from the PHP-CLI `cmd=build` controller
- * (base.build / owa_buildController, driven by base/module.php
+ * This file's production moved from the PHP-CLI `cmd=build` controller
+ * (base.build / owa_buildController, formerly driven by base/module.php
  * registerBuildPackages) to webpack (reportingCssConfig in webpack.config.js):
  *   - The six source CSS files are the webpack entry, in the SAME cascade order
  *     the PHP package used: jquery-ui, ui.jqgrid, chosen, owa, owa.admin, owa.report.
@@ -61,8 +61,8 @@ describe('reporting CSS build integrity', () => {
 
     test('the PHP-CLI build package is retired', () => {
         // registerBuildPackages() (and its owa.reporting-css package) was removed from
-        // base/module.php in 3.3b; the parent no-op stub is inherited instead. A
-        // re-introduced package would mean two build paths fighting over one file.
+        // base/module.php; the parent no-op stub is inherited instead. A re-introduced
+        // package would mean two build paths fighting over one file.
         const modulePhp = fs.readFileSync(modulePhpPath, 'utf8');
         expect(modulePhp).not.toMatch(/owa\.reporting-css/);
         expect(modulePhp).not.toMatch(/registerBuildPackage\s*\(/);

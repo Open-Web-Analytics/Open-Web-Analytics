@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Phase 3.0 safety net -- jsdom load characterization of the reporting bundle.
+ * jsdom load characterization of the reporting bundle.
  *
  * jsdom can't paint charts or run jqGrid layout, but it CAN execute the whole
  * bundle against a real window/document and prove that:
@@ -10,11 +10,10 @@ const path = require('path');
  *   - the OWA reporting namespace and its core objects load and instantiate,
  *   - the objects don't rely on jQuery-3-removed APIs at load/construct time.
  *
- * This is the layer that will catch the split-brain jQuery migration breaking
- * object construction, before Playwright (which is slower and needs a live
- * page) ever runs.
+ * This is the layer that catches object construction breaking before Playwright
+ * (which is slower and needs a live page) ever runs.
  *
- * Phase 3.3a note: the bundle is now a webpack module graph (was a flat concat).
+ * The bundle is a webpack module graph (was a flat concat).
  * `OWA` and `jQuery` are no longer bundle-top-level `var`s reachable from the
  * outer function scope -- reporting-entry.js publishes them onto `window`
  * (window.OWA / window.jQuery), which is what the report templates' inline
@@ -64,8 +63,8 @@ describe('reporting bundle loads under jsdom', () => {
     test('jQuery initializes at the pinned version', () => {
         if (!jq) return;
         expect(typeof jq).toBe('function');
-        // Post-migration baseline (Phase 3.2 flipped the reporting bundle 1.6.4 -> 3.6.0,
-        // sourced from the npm dep). jquery-migrate bridges the legacy plugins. The
+        // The reporting bundle uses jQuery 3.6.0 (sourced from the npm dep);
+        // jquery-migrate bridges the legacy plugins. The
         // $.browser/$.curCSS compat shim was DELETED once every plugin went
         // jQuery-3.x-clean (jQuery-UI -> 1.13.3, Flot -> 0.8.3), so $.browser must
         // now be ABSENT -- assert it is gone so a shim regression fails loudly.

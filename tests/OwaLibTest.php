@@ -5,8 +5,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * Characterization tests for pure helpers in owa_lib.
  *
- * These lock in CURRENT behavior so the Phase 1 cleanup (replacing PHP4 shims
- * and deprecated stdlib calls) can be verified as behavior-preserving. owa_lib
+ * These lock in CURRENT behavior so cleanup (replacing PHP4 shims and deprecated
+ * stdlib calls) can be verified as behavior-preserving. owa_lib
  * loads standalone with no framework bootstrap required.
  */
 final class OwaLibTest extends TestCase

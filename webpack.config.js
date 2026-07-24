@@ -12,9 +12,9 @@ const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 // ?version=OWA_VERSION cache-busting is preserved).
 const REPORTING_BUNDLE = 'owa.reporting-combined-min.js';
 
-// Filename of the combined reporting stylesheet (Phase 3.3b). Kept IDENTICAL to
-// the file the retired PHP-CLI `cmd=build` concat used to emit, and emitted to
-// the SAME directory (modules/base/css/) -- both matter: the two setCss() call
+// Filename of the combined reporting stylesheet. Kept IDENTICAL to the file the
+// former PHP-CLI `cmd=build` concat used to emit, and emitted to the SAME
+// directory (modules/base/css/) -- both matter: the two setCss() call
 // sites (owa_view.php:930, report.php:114) are unchanged, AND every url() in the
 // source CSS is a path relative to modules/base/css/ (images/ui-icons_*,
 // chosen-sprite.png, ../i/funnel_*), so keeping the output dir identical keeps
@@ -40,7 +40,7 @@ const minimizer = [new TerserPlugin({ extractComments: false })];
 // would instead bundle a second jQuery into the tracker and change that
 // behavior. Keeping the configs separate scopes ProvidePlugin to reporting only.
 
-// --- Tracker: unchanged from the pre-3.3a build (vendors split + no ProvidePlugin). ---
+// --- Tracker: vendors split + no ProvidePlugin. ---
 const trackerConfig = {
 	name: 'tracker',
 	entry: {
@@ -64,8 +64,7 @@ const trackerConfig = {
 	},
 };
 
-// --- Reporting: Phase 3.3a. Was a flat file-concat plugin output minified by a
-// standalone terser transform; now a real webpack module graph. ---
+// --- Reporting: a real webpack module graph (single self-contained bundle). ---
 const reportingConfig = {
 	name: 'reporting',
 	entry: {
@@ -95,19 +94,18 @@ const reportingConfig = {
 	],
 };
 
-// --- Reporting CSS: Phase 3.3b. Was concatenated by the PHP-CLI build controller
-// (base.build / owa_buildController, driven by base/module.php
-// registerBuildPackages) into modules/base/css/owa.reporting-css-combined.css;
-// now emitted by webpack. This is a THIRD config because it is CSS-only and the
-// two JS configs above must not grow a CSS pipeline they don't use.
+// --- Reporting CSS: emits modules/base/css/owa.reporting-css-combined.css,
+// formerly concatenated by the PHP-CLI build controller (base.build /
+// owa_buildController). This is a THIRD config because it is CSS-only and the two
+// JS configs above must not grow a CSS pipeline they don't use.
 //
-// The entry is the SAME six source files in the SAME order the PHP package used
-// (jquery-ui -> jqgrid -> chosen -> owa -> owa.admin -> owa.report), so ordered
-// cascade wins are preserved byte-for-source. css-loader runs with url:false so
-// every url() is left EXACTLY as authored -- combined with the css/ output dir,
-// the relative asset paths stay valid (see REPORTING_CSS note above). The output
-// is NOT minified, matching the old concat (the artifact has no -min suffix); the
-// goal here is retiring the PHP build path, not shrinking bytes.
+// The entry is the SAME six source files in the SAME order the former PHP package
+// used (jquery-ui -> jqgrid -> chosen -> owa -> owa.admin -> owa.report), so
+// ordered cascade wins are preserved byte-for-source. css-loader runs with
+// url:false so every url() is left EXACTLY as authored -- combined with the css/
+// output dir, the relative asset paths stay valid (see REPORTING_CSS note above).
+// The output is NOT minified (the artifact has no -min suffix); the goal is
+// retiring the PHP build path, not shrinking bytes.
 const reportingCssConfig = {
 	name: 'reporting-css',
 	entry: {

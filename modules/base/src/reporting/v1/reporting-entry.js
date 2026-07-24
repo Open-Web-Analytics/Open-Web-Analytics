@@ -1,8 +1,8 @@
 /**
- * Reporting bundle entry point (Phase 3.3a).
+ * Reporting bundle entry point.
  *
- * This replaces the old flat WebpackConcatPlugin concat: the reporting bundle is
- * now a real webpack module graph, emitted as owa.reporting-combined-min.js (same
+ * The reporting bundle is a real webpack module graph (formerly a flat
+ * WebpackConcatPlugin concat), emitted as owa.reporting-combined-min.js (same
  * filename as before -> zero PHP churn; report templates keep loading one file).
  *
  * IMPORT ORDER IS LOAD-BEARING. The jQuery plugin ecosystem registers onto $.fn
