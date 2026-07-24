@@ -54,9 +54,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
     test('chosen enhances the report select menus', async ({ page }) => {
         // The site filter (and period control) are <select>s upgraded by chosen
-        // into .chzn-container widgets. If chosen breaks under jQuery 3.x this
-        // count drops and the menus fall back to bare <select>s.
-        const chosen = page.locator('.chzn-container');
+        // into .chosen-container widgets (chosen-js 1.8.7 renamed the prefix from
+        // .chzn-* to .chosen-*). If chosen breaks under jQuery 3.x this count
+        // drops and the menus fall back to bare <select>s.
+        const chosen = page.locator('.chosen-container');
         expect(await chosen.count()).toBeGreaterThanOrEqual(1);
         await expect(chosen.first()).toBeVisible();
     });

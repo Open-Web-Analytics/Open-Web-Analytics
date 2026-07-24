@@ -67,13 +67,15 @@ describe('reporting bundle build integrity', () => {
         const required = [
             // jQuery 1.x->3.x migration bridge (Phase 3.2): migrate restores the
             // removed 1.x APIs the legacy plugins use, and the compat shim adds
-            // back $.browser (which migrate 3.x drops but sparkline + jQuery-UI need).
+            // back $.browser + $.curCSS (which migrate 3.x drops but jQuery-UI
+            // 1.8.12 still needs -- the last remaining consumer).
             'jquery-migrate.min.js', 'owa.jquery-compat-shim.js',
-            // vendored plugins the reporting UI depends on. jquery.sprintf.js was
-            // dropped in Phase 3.2 (dead: OWA uses its own OWA.util.sprintf, the
-            // $.sprintf plugin form is called nowhere). jqGrid 3.6.5 was replaced
-            // by free-jqgrid 4.15.5 (jquery.jqgrid.min.js) in the same phase.
-            'jquery.ui.selectmenu.js', 'chosen.jquery.js',
+            // reporting-UI plugin deps. Phase 3.2 replacements from npm: jqGrid
+            // 3.6.5 -> free-jqgrid (jquery.jqgrid.min.js), sparkline 1.2.1 ->
+            // jquery-sparkline 2.4.0 (jquery.sparkline.min.js), chosen 0.9.6 ->
+            // chosen-js 1.8.7 (chosen.jquery.min.js). jquery.sprintf.js was dropped
+            // (dead: OWA uses its own OWA.util.sprintf).
+            'jquery.ui.selectmenu.js', 'chosen.jquery.min.js',
             'jquery.sparkline.min.js', 'jquery.jqgrid.min.js', 'jquery.flot.min.js',
             'jquery.jqote2.min.js',
             // OWA reporting code

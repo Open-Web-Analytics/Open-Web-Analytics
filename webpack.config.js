@@ -60,7 +60,10 @@ module.exports = {
 					  	src_path + '/reporting/v1/includes/jquery/owa.jquery-compat-shim.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery-ui-1.8.12.custom.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery.ui.selectmenu.js',
-					  	src_path + '/reporting/v1/includes/jquery/chosen.jquery.js',
+					  	// chosen 0.9.6 (1.6-era, read $.browser; CSS prefix .chzn-*) ->
+					  	// chosen-js 1.8.7 (jQuery 3.x-clean; CSS prefix .chosen-*) from npm.
+					  	// The combined reporting CSS carries chosen-js 1.8.7's stylesheet.
+					  	__dirname + '/node_modules/chosen-js/chosen.jquery.min.js',
 					  	// jquery.sparkline 1.2.1 (1.6-era, read $.browser.msie at LOAD) ->
 					  	// jquery-sparkline 2.4.0 (jQuery 3.x-clean, same .sparkline() API) from npm.
 					  	__dirname + '/node_modules/jquery-sparkline/jquery.sparkline.min.js',

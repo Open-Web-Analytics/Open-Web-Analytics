@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/Open-Web-Analytics/Open-Web-Analytics#readme",
   "dependencies": {
+    "chosen-js": "^1.8.7",
     "free-jqgrid": "^4.15.5",
     "jgrowl": "^1.4.8",
     "jquery": "^3.6.0",
