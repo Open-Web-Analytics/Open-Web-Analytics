@@ -54,12 +54,14 @@ module.exports = {
 			          	// jquery-migrate bridges the 1.x->3.x API removals the legacy
 			          	// plugins below still rely on (andSelf, $.attrFn, event shorthands);
 			          	// owa.jquery-compat-shim.js adds back $.browser, which migrate 3.x
-			          	// does not restore but sparkline + jQuery-UI 1.8.12 need.
+			          	// does not restore but the vendored Flot 0.7 pie plugin reads.
 			          	__dirname + '/node_modules/jquery/dist/jquery.min.js',
 			          	__dirname + '/node_modules/jquery-migrate/dist/jquery-migrate.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/owa.jquery-compat-shim.js',
-					  	src_path + '/reporting/v1/includes/jquery/jquery-ui-1.8.12.custom.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/jquery.ui.selectmenu.js',
+					  	// jQuery-UI 1.8.12 (vendored custom build, needed $.browser + $.curCSS
+					  	// at runtime) -> jquery-ui-dist 1.13.3 from npm (jQuery 3.x-clean,
+					  	// bundles selectmenu so the separate Nagel-fork ui.selectmenu is gone).
+					  	__dirname + '/node_modules/jquery-ui-dist/jquery-ui.min.js',
 					  	// chosen 0.9.6 (1.6-era, read $.browser; CSS prefix .chzn-*) ->
 					  	// chosen-js 1.8.7 (jQuery 3.x-clean; CSS prefix .chosen-*) from npm.
 					  	// The combined reporting CSS carries chosen-js 1.8.7's stylesheet.

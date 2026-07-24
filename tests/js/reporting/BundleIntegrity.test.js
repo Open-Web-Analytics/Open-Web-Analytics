@@ -67,15 +67,17 @@ describe('reporting bundle build integrity', () => {
         const required = [
             // jQuery 1.x->3.x migration bridge (Phase 3.2): migrate restores the
             // removed 1.x APIs the legacy plugins use, and the compat shim adds
-            // back $.browser + $.curCSS (which migrate 3.x drops but jQuery-UI
-            // 1.8.12 still needs -- the last remaining consumer).
+            // back $.browser (which migrate 3.x drops but the vendored Flot 0.7
+            // pie plugin still reads at runtime -- the last remaining consumer).
             'jquery-migrate.min.js', 'owa.jquery-compat-shim.js',
             // reporting-UI plugin deps. Phase 3.2 replacements from npm: jqGrid
             // 3.6.5 -> free-jqgrid (jquery.jqgrid.min.js), sparkline 1.2.1 ->
             // jquery-sparkline 2.4.0 (jquery.sparkline.min.js), chosen 0.9.6 ->
-            // chosen-js 1.8.7 (chosen.jquery.min.js). jquery.sprintf.js was dropped
-            // (dead: OWA uses its own OWA.util.sprintf).
-            'jquery.ui.selectmenu.js', 'chosen.jquery.min.js',
+            // chosen-js 1.8.7 (chosen.jquery.min.js), jQuery-UI 1.8.12 custom +
+            // the separate Nagel-fork ui.selectmenu -> jquery-ui-dist 1.13.3
+            // (jquery-ui.min.js, which bundles selectmenu). jquery.sprintf.js was
+            // dropped (dead: OWA uses its own OWA.util.sprintf).
+            'jquery-ui.min.js', 'chosen.jquery.min.js',
             'jquery.sparkline.min.js', 'jquery.jqgrid.min.js', 'jquery.flot.min.js',
             'jquery.jqote2.min.js',
             // OWA reporting code
@@ -91,7 +93,7 @@ describe('reporting bundle build integrity', () => {
         // plugins, and every plugin must precede the OWA code that calls it.
         const inputs = getConfiguredInputs().map((f) => path.basename(f));
         const jqueryIdx = inputs.findIndex((f) => /^jquery\.min\.js$/.test(f));
-        const firstPluginIdx = inputs.findIndex((f) => f === 'jquery-ui-1.8.12.custom.min.js');
+        const firstPluginIdx = inputs.findIndex((f) => f === 'jquery-ui.min.js');
         const firstOwaIdx = inputs.findIndex((f) => f === 'owa.js');
 
         expect(jqueryIdx).toBe(0);

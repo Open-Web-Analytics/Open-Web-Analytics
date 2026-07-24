@@ -1592,12 +1592,13 @@ OWA.constraintBuilder.prototype = {
         }
 
         // setup the toggle button
+        // jQuery-UI 1.12 replaced button()'s icons:{primary,secondary} with a
+        // single icon + iconPosition. The old primary was just ui-icon-blank
+        // (a spacer); keep the secondary dropdown triangle on the right.
         jQuery( button_selector )
             .button({
-                icons: {
-                    primary:'ui-icon-blank',
-                    secondary:'ui-icon-triangle-1-s'
-                },
+                icon: 'ui-icon-triangle-1-s',
+                iconPosition: 'end',
                 label: OWA.l('Select...')
             })
             .click(function() {
@@ -1632,9 +1633,12 @@ OWA.constraintBuilder.prototype = {
                             .children('.dimensionPicker')
                                 .children('.dim-list').val();
 
+                    // Core jQuery-UI selectmenu (1.11+) has no 'value' method like
+                    // the old Nagel fork; it keeps the native <select> in sync, so
+                    // read the chosen operator straight off the select with .val().
                     var operator = jQuery(this)
                         .children('.constraintOperatorPicker')
-                                .children('.operator-list').selectmenu('value');
+                                .children('.operator-list').val();
 
                     var value = jQuery(this)
                         .children('.constraintValueField').val();
@@ -1772,12 +1776,16 @@ OWA.constraintBuilder.prototype = {
         c += '';
 
         jQuery(selector).append(c);
-        jQuery(selector + ' > .operator-list').selectmenu({width:200});
 
-        // set select value
+        // Core jQuery-UI selectmenu (1.11+) replaces the Nagel fork. It has no
+        // "value" setter method: set the value on the native <select> first, then
+        // enhance / refresh so the widget reflects it. width is now a style, not an
+        // option, so size the menu via width in the widget's classes option.
+        var opList = jQuery(selector + ' > .operator-list');
         if ( selected ) {
-            jQuery(selector + ' > .operator-list').selectmenu("value", selected);
+            opList.val(selected);
         }
+        opList.selectmenu({ width: 200 });
 
     }
 

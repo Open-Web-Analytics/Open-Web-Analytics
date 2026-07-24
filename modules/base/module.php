@@ -2214,11 +2214,11 @@ class owa_baseModule extends owa_module {
             'output_dir'    => OWA_MODULES_DIR.'base/css/',
             'type'            => 'css',
             'files'            => array(
+                    // jquery-ui.css is jQuery-UI 1.13.3 (npm jquery-ui-dist), which bundles
+                    // core selectmenu -- the separate Nagel-fork jquery.ui.selectmenu.css was
+                    // dropped in the Phase 3.2 upgrade.
                     'jqueryui'         => array(
                                             'path'     => OWA_MODULES_DIR.'base/css/jquery-ui.css'
-                                        ),
-                    'selectmenu'        => array(
-                                            'path'    =>    OWA_MODULES_DIR.'base/css/jquery.ui.selectmenu.css'
                                         ),
                     'jqgrid'            => array(
                                             'path'    =>    OWA_MODULES_DIR.'base/css/ui.jqgrid.css'

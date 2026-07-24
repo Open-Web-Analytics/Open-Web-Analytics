@@ -63,7 +63,11 @@ OWA.report.prototype = {
         c.push('</div>');
         
         jQuery( selector ).append( c.join(' ') );
-        jQuery( selector + ' > .autoRefreshControl > .buttons').buttonset();
+        // jQuery-UI 1.12 deprecated buttonset() in favor of controlgroup().
+        // controlgroup auto-enhances the child radio inputs via checkboxradio
+        // (its default `items`), so the On/Off radios become .ui-checkboxradio
+        // .ui-button labels inside a .ui-controlgroup container.
+        jQuery( selector + ' > .autoRefreshControl > .buttons').controlgroup();
         
         var that = this;
         
@@ -313,27 +317,47 @@ OWA.report.prototype = {
         }
         
         jQuery("#report-tabs").tabs({
-            show: function(event, ui) {
-                OWA.debug('tab selected is: %s', ui.panel.id);
-                that.tabs[ui.panel.id].load();
-                
-                // stop auto refresh of last selected tab
-                if ( that.activeTab && that.getOption('autoRefreshResultSets') ) {
-                    that.tabs[ that.activeTab ].stopAutoRefresh();
-                }
-                                
-                that.activeTab = ui.panel.id;
-                
-                // start auto refresh of  selected tab
-                if ( that.activeTab && that.getOption('autoRefreshResultSets') ) {
-                    that.tabs[ that.activeTab ].startAutoRefresh();
-                }
-
+            // jQuery-UI 1.9+ renamed the `show` option to the `activate` event.
+            // The ui payload also changed: the newly-shown panel is ui.newPanel
+            // (a jQuery object), not ui.panel. selectTab() below reads the id off
+            // whatever panel it is handed.
+            activate: function(event, ui) {
+                that.selectTab( ui.newPanel.attr('id') );
             }
         });
 
+        // 1.8's `show` fired for the initially-selected tab AT CREATION; the 1.9+
+        // `activate` event does NOT fire on init. Load the active tab explicitly so
+        // its grid still builds on first render. tabs("option","active") is the
+        // active index; map it back to the panel id.
+        var activeIdx = jQuery("#report-tabs").tabs("option", "active");
+        var activePanelId = jQuery("#report-tabs > div").eq(activeIdx).attr('id');
+        if ( activePanelId ) {
+            this.selectTab( activePanelId );
+        }
+
     },
-    
+
+    // Load a tab by its panel id and swap auto-refresh from the previously active
+    // tab to this one. Shared by createTabs' initial load and its activate handler.
+    selectTab : function( panelId ) {
+
+        OWA.debug('tab selected is: %s', panelId);
+        this.tabs[ panelId ].load();
+
+        // stop auto refresh of last selected tab
+        if ( this.activeTab && this.getOption('autoRefreshResultSets') ) {
+            this.tabs[ this.activeTab ].stopAutoRefresh();
+        }
+
+        this.activeTab = panelId;
+
+        // start auto refresh of selected tab
+        if ( this.activeTab && this.getOption('autoRefreshResultSets') ) {
+            this.tabs[ this.activeTab ].startAutoRefresh();
+        }
+    },
+
     getSiteId : function() {
         
         return this.getProperty('siteId');
