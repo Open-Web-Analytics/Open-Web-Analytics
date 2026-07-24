@@ -537,7 +537,6 @@ class owa_baseModule extends owa_module {
     function registerCliCommands() {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
-        $this->registerCliCommand('build', 'base.build');
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
@@ -2207,8 +2206,8 @@ class owa_baseModule extends owa_module {
      * The combined reporting stylesheet is now produced by webpack
      * (reportingCssConfig in webpack.config.js), emitting the same file to the
      * same directory. The PHP-CLI build package that used to concatenate the six
-     * source CSS files here has been retired, so this module no longer overrides
-     * registerBuildPackages() -- the parent owa_module no-op stub is inherited.
+     * source CSS files here has been retired along with the whole build-package
+     * machinery (the base.build CLI command + owa_buildController).
      */
 
     /**
