@@ -55,8 +55,10 @@ describe('reporting bundle build integrity', () => {
         expect(configured.filter((f) => /^jquery-[\d.]+.*\.js$/.test(f))).toHaveLength(1);
 
         const required = [
-            // vendored plugins the reporting UI depends on
-            'jquery.sprintf.js', 'jquery.ui.selectmenu.js', 'chosen.jquery.js',
+            // vendored plugins the reporting UI depends on. jquery.sprintf.js was
+            // dropped in Phase 3.2 (dead: OWA uses its own OWA.util.sprintf, the
+            // $.sprintf plugin form is called nowhere).
+            'jquery.ui.selectmenu.js', 'chosen.jquery.js',
             'jquery.sparkline.min.js', 'jquery.jqGrid.min.js', 'jquery.flot.min.js',
             'jquery.jqote2.min.js',
             // OWA reporting code
@@ -72,7 +74,7 @@ describe('reporting bundle build integrity', () => {
         // plugins, and every plugin must precede the OWA code that calls it.
         const inputs = getConfiguredInputs().map((f) => path.basename(f));
         const jqueryIdx = inputs.findIndex((f) => /^jquery-[\d.]+/.test(f));
-        const firstPluginIdx = inputs.findIndex((f) => f === 'jquery.sprintf.js');
+        const firstPluginIdx = inputs.findIndex((f) => f === 'jquery-ui-1.8.12.custom.min.js');
         const firstOwaIdx = inputs.findIndex((f) => f === 'owa.js');
 
         expect(jqueryIdx).toBe(0);

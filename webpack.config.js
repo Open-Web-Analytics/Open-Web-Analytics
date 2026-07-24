@@ -50,7 +50,6 @@ module.exports = {
 				  	src: [
 			          
 			          	src_path + '/reporting/v1/includes/jquery/jquery-1.6.4.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/jquery.sprintf.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery-ui-1.8.12.custom.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery.ui.selectmenu.js',
 					  	src_path + '/reporting/v1/includes/jquery/chosen.jquery.js',
