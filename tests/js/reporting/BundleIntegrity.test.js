@@ -32,9 +32,15 @@ describe('reporting bundle build integrity', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
+    const manifestPath = path.join(repoRoot, 'modules/base/build.manifest.json');
     const srcDir = path.join(repoRoot, 'modules/base/src/reporting/v1');
     const entryPath = path.join(srcDir, 'reporting-entry.js');
     const bundlePath = path.join(repoRoot, 'modules/base/dist/owa.reporting-combined-min.js');
+
+    // The reporting JS package as declared in base's build manifest. webpack.config.js
+    // discovers this (and the tracker + CSS packages) by scanning modules/*/build.manifest.json.
+    const reportingPkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+        .packages.find((p) => p.name === 'owa.reporting-combined-min.js');
 
     // The seven hand-written OWA reporting modules. owa.js defines the namespace;
     // the rest augment it. Order here is the ESM import order in reporting-entry.js.
@@ -103,14 +109,28 @@ describe('reporting bundle build integrity', () => {
             .toBeLessThan(entry.indexOf('./owa.areachart.js'));
     });
 
+    test('the reporting package is declared in base\'s build manifest', () => {
+        // The entry, output dir, and per-product flags now live in the module's
+        // build.manifest.json (discovered by webpack.config.js), not inline in the
+        // config. The reporting bundle is a single self-contained file (no vendor
+        // split) built with a bundled jQuery (ProvidePlugin).
+        expect(reportingPkg).toBeDefined();
+        expect(reportingPkg.type).toBe('js');
+        expect(reportingPkg.entry).toMatch(/reporting-entry\.js$/);
+        expect(reportingPkg.outputDir).toBe('dist');
+        expect(reportingPkg.splitVendors).toBe(false); // one self-contained file
+        expect(reportingPkg.provideJquery).toBe(true);  // bundled jQuery for the plugins
+    });
+
     test('the build drives the bundle through the module graph, not a concat', () => {
         const cfg = fs.readFileSync(configPath, 'utf8');
         // ProvidePlugin is what supplies jQuery/$ to the vendor plugins that read a
         // bare global (chosen, flot) now that they run under webpack module scope.
+        // The config wires it whenever a manifest package sets provideJquery.
         expect(cfg).toMatch(/ProvidePlugin/);
         expect(cfg).toMatch(/jQuery:\s*['"]jquery['"]/);
-        // reporting-entry.js is wired as a real entry.
-        expect(cfg).toMatch(/reporting-entry\.js/);
+        // Packages are discovered from per-module build manifests.
+        expect(cfg).toMatch(/build\.manifest\.json/);
         // The flat-concat toolchain is retired.
         expect(cfg).not.toMatch(/WebpackConcatPlugin/);
         expect(cfg).not.toMatch(/webpack-concat-files-plugin/);

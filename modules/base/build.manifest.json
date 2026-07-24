@@ -1,0 +1,33 @@
+{
+    "packages": [
+        {
+            "name": "owa.tracker.js",
+            "type": "js",
+            "entry": "src/tracker/tracker-dom.js",
+            "outputDir": "dist",
+            "splitVendors": "owa.vendors",
+            "provideJquery": false
+        },
+        {
+            "name": "owa.reporting-combined-min.js",
+            "type": "js",
+            "entry": "src/reporting/v1/reporting-entry.js",
+            "outputDir": "dist",
+            "splitVendors": false,
+            "provideJquery": true
+        },
+        {
+            "name": "owa.reporting-css-combined.css",
+            "type": "css",
+            "outputDir": "css",
+            "files": [
+                "css/jquery-ui.css",
+                "css/ui.jqgrid.css",
+                "css/chosen.css",
+                "css/owa.css",
+                "css/owa.admin.css",
+                "css/owa.report.css"
+            ]
+        }
+    ]
+}

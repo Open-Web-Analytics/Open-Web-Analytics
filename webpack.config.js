@@ -1,152 +1,163 @@
+const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
-const dist_path = '/modules/base/dist';
-const src_path = __dirname + '/modules/base/src';
-const css_path = __dirname + '/modules/base/css';
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 
-// Filename of the reporting bundle. Kept IDENTICAL to the previously-emitted
-// output so report templates keep loading one file and no PHP path changes (the
-// ?version=OWA_VERSION cache-busting is preserved).
-const REPORTING_BUNDLE = 'owa.reporting-combined-min.js';
+// --- Per-module asset build registration ---------------------------------
+//
+// The build products are no longer hardcoded here. Instead each module declares
+// what it builds in a `build.manifest.json` in its own directory, and this config
+// DISCOVERS them by scanning modules/*/build.manifest.json -- the direct analogue
+// of how root composer.json merges modules/*/composer.json via
+// wikimedia/composer-merge-plugin. A module self-registers its assets by dropping
+// that one file in its own dir; there is no central list to edit.
+//
+// Today only `base` ships build inputs, so exactly one manifest is found and the
+// three configs below (tracker JS, reporting JS, reporting CSS) come out of it --
+// byte-identical to when they were inline. The factories translate each manifest
+// package into the right webpack config for its `type`.
+//
+// A manifest package is one of:
+//   JS  { name, type:'js', entry, outputDir, splitVendors, provideJquery }
+//   CSS { name, type:'css', outputDir, files:[...] }
+// where entry/files/outputDir are paths RELATIVE to the module directory.
 
-// Filename of the combined reporting stylesheet. Kept IDENTICAL to the file the
-// former PHP-CLI `cmd=build` concat used to emit, and emitted to the SAME
-// directory (modules/base/css/) -- both matter: the two setCss() call
-// sites (owa_view.php:930, report.php:114) are unchanged, AND every url() in the
-// source CSS is a path relative to modules/base/css/ (images/ui-icons_*,
-// chosen-sprite.png, ../i/funnel_*), so keeping the output dir identical keeps
-// every asset reference valid without rewriting a single url().
-const REPORTING_CSS = 'owa.reporting-css-combined.css';
-
-const output = {
-	path: __dirname + dist_path, // Output to dist directory
-	chunkFilename: '[name].js',
-	iife: false,
-	filename: '[name]',
-};
+const modulesDir = path.resolve(__dirname, 'modules');
+const MANIFEST = 'build.manifest.json';
 
 const minimizer = [new TerserPlugin({ extractComments: false })];
 
-// Two independent products are built from disjoint module graphs, so they are
-// two separate compiler configs (a webpack multi-config array) rather than one
-// shared config. The critical reason they MUST stay separate: the reporting
-// bundle needs webpack.ProvidePlugin to feed a bundled jQuery to its legacy
-// plugins, but the TRACKER must NOT get ProvidePlugin -- common/Util.js
-// references a bare global `jQuery` (jQuery.getScript / jQuery.param) that is
-// meant to resolve to the *host page's* jQuery at runtime, and ProvidePlugin
-// would instead bundle a second jQuery into the tracker and change that
-// behavior. Keeping the configs separate scopes ProvidePlugin to reporting only.
+// Build the webpack `output` block shared by both JS product types. Kept exactly
+// as the two inline JS configs used it: emit `[name]` verbatim (the package name
+// IS the filename, so no PHP path churn) into the module's output dir, with
+// iife:false so a vendors split emits a sibling entry chunk rather than a runtime
+// import() (see the tracker note below).
+function jsOutput(moduleDir, pkg) {
+	return {
+		path: path.resolve(moduleDir, pkg.outputDir),
+		chunkFilename: '[name].js',
+		iife: false,
+		filename: '[name]',
+	};
+}
 
-// --- Tracker: vendors split + no ProvidePlugin. ---
-const trackerConfig = {
-	name: 'tracker',
-	entry: {
-		'owa.tracker.js': [
-			path.resolve(__dirname, src_path + '/tracker/tracker-dom.js'),
-		],
-	},
-	output,
-	optimization: {
-		minimize: true,
-		minimizer,
-		splitChunks: {
-			cacheGroups: {
-				vendor: {
-					test: /[\\/]node_modules[\\/]/,
-					name: 'owa.vendors',
-					chunks: 'all',
-				},
-			},
-		},
-	},
-};
-
-// --- Reporting: a real webpack module graph (single self-contained bundle). ---
-const reportingConfig = {
-	name: 'reporting',
-	entry: {
-		[REPORTING_BUNDLE]: [
-			path.resolve(__dirname, src_path + '/reporting/v1/reporting-entry.js'),
-		],
-	},
-	output,
-	optimization: {
-		minimize: true,
-		minimizer,
-		// The report templates load ONLY owa.reporting-combined-min.js, so the
-		// bundle must be a single self-contained file -- do NOT split vendors out.
-		splitChunks: false,
-	},
-	plugins: [
-		// The legacy jQuery plugins (chosen, flot) and OWA's own reporting files all
-		// reference a bare global `jQuery`/`$`. Under webpack module scope there is no
-		// such global, so ProvidePlugin rewrites those free identifiers to
-		// require('jquery') -- a single shared jQuery instance across the graph. This
-		// is what lets the vendor files (which we can't edit inside node_modules) and
-		// OWA's files work without an explicit jQuery import in each.
-		new webpack.ProvidePlugin({
-			$: 'jquery',
-			jQuery: 'jquery',
-		}),
-	],
-};
-
-// --- Reporting CSS: emits modules/base/css/owa.reporting-css-combined.css,
-// formerly concatenated by the PHP-CLI build controller (base.build /
-// owa_buildController). This is a THIRD config because it is CSS-only and the two
-// JS configs above must not grow a CSS pipeline they don't use.
+// JS package -> webpack config.
 //
-// The entry is the SAME six source files in the SAME order the former PHP package
-// used (jquery-ui -> jqgrid -> chosen -> owa -> owa.admin -> owa.report), so
-// ordered cascade wins are preserved byte-for-source. css-loader runs with
-// url:false so every url() is left EXACTLY as authored -- combined with the css/
-// output dir, the relative asset paths stay valid (see REPORTING_CSS note above).
-// The output is NOT minified (the artifact has no -min suffix); the goal is
-// retiring the PHP build path, not shrinking bytes.
-const reportingCssConfig = {
-	name: 'reporting-css',
-	entry: {
-		// The .js key is a throwaway: a CSS-only entry still emits a (near-empty)
-		// JS chunk, which RemoveEmptyScriptsPlugin deletes below. MiniCssExtractPlugin
-		// names the actual stylesheet via filename, keyed off this entry name.
-		[REPORTING_CSS]: [
-			path.resolve(css_path, 'jquery-ui.css'),
-			path.resolve(css_path, 'ui.jqgrid.css'),
-			path.resolve(css_path, 'chosen.css'),
-			path.resolve(css_path, 'owa.css'),
-			path.resolve(css_path, 'owa.admin.css'),
-			path.resolve(css_path, 'owa.report.css'),
-		],
-	},
-	output: {
-		path: css_path,
-	},
-	module: {
-		rules: [
-			{
-				test: /\.css$/,
-				use: [
-					MiniCssExtractPlugin.loader,
-					{
-						loader: 'css-loader',
-						// Leave every url() untouched -- do not try to resolve or
-						// inline the referenced images. The paths are relative to the
-						// css/ output dir and resolve at runtime as-is.
-						options: { url: false, import: false },
-					},
-				],
-			},
-		],
-	},
-	plugins: [
-		// A CSS-only entry still produces a stub .js file; drop it.
-		new RemoveEmptyScriptsPlugin(),
-		// Emit the combined stylesheet under the exact legacy filename.
-		new MiniCssExtractPlugin({ filename: '[name]' }),
-	],
-};
+// `provideJquery` scopes webpack.ProvidePlugin to just the products that need it:
+// the reporting bundle feeds a bundled jQuery to its legacy plugins (chosen, flot)
+// and OWA's own files, which all reference a bare global `jQuery`/`$`; but the
+// TRACKER must NOT get it -- common/Util.js references a bare global `jQuery`
+// (jQuery.getScript / jQuery.param) meant to resolve to the HOST PAGE's jQuery at
+// runtime, and ProvidePlugin would instead bundle a second jQuery into the tracker
+// and break that. Because ProvidePlugin is per-config, each package stays isolated.
+//
+// `splitVendors` is either false (single self-contained file -- the reporting
+// templates load exactly one script, so vendors must NOT be split out) or a chunk
+// name (the tracker splits node_modules into a sibling vendors chunk).
+function jsConfig(moduleName, moduleDir, pkg) {
+	const config = {
+		name: `${moduleName}:${pkg.name}`,
+		entry: {
+			[pkg.name]: [path.resolve(moduleDir, pkg.entry)],
+		},
+		output: jsOutput(moduleDir, pkg),
+		optimization: {
+			minimize: true,
+			minimizer,
+			splitChunks: pkg.splitVendors
+				? {
+						cacheGroups: {
+							vendor: {
+								test: /[\\/]node_modules[\\/]/,
+								name: pkg.splitVendors,
+								chunks: 'all',
+							},
+						},
+				  }
+				: false,
+		},
+	};
 
-module.exports = [trackerConfig, reportingConfig, reportingCssConfig];
+	if (pkg.provideJquery) {
+		config.plugins = [
+			new webpack.ProvidePlugin({ $: 'jquery', jQuery: 'jquery' }),
+		];
+	}
+
+	return config;
+}
+
+// CSS package -> webpack config.
+//
+// mini-css-extract-plugin emits the combined stylesheet under the package name
+// (`[name]`) into the module's output dir. css-loader runs with url:false so every
+// url() is left EXACTLY as authored -- combined with keeping the output dir the
+// same as the source dir, the relative asset paths (images/ui-icons_*,
+// chosen-sprite.png, ../i/*) stay valid without rewriting a single url(). The
+// `files` order is the cascade order (later files intentionally override earlier).
+// A CSS-only entry still emits a stub .js chunk, which RemoveEmptyScriptsPlugin
+// deletes. Output is NOT minified (the artifact has no -min suffix).
+function cssConfig(moduleName, moduleDir, pkg) {
+	return {
+		name: `${moduleName}:${pkg.name}`,
+		entry: {
+			[pkg.name]: pkg.files.map((f) => path.resolve(moduleDir, f)),
+		},
+		output: {
+			path: path.resolve(moduleDir, pkg.outputDir),
+		},
+		module: {
+			rules: [
+				{
+					test: /\.css$/,
+					use: [
+						MiniCssExtractPlugin.loader,
+						{ loader: 'css-loader', options: { url: false, import: false } },
+					],
+				},
+			],
+		},
+		plugins: [
+			new RemoveEmptyScriptsPlugin(),
+			new MiniCssExtractPlugin({ filename: '[name]' }),
+		],
+	};
+}
+
+function configForPackage(moduleName, moduleDir, pkg) {
+	switch (pkg.type) {
+		case 'js':
+			return jsConfig(moduleName, moduleDir, pkg);
+		case 'css':
+			return cssConfig(moduleName, moduleDir, pkg);
+		default:
+			throw new Error(
+				`${moduleName}/${MANIFEST}: unknown package type '${pkg.type}' for '${pkg.name}'`
+			);
+	}
+}
+
+// Discover every modules/*/build.manifest.json and flatten its packages into a
+// webpack multi-config array.
+function discoverConfigs() {
+	const configs = [];
+
+	for (const moduleName of fs.readdirSync(modulesDir).sort()) {
+		const moduleDir = path.join(modulesDir, moduleName);
+		const manifestPath = path.join(moduleDir, MANIFEST);
+		if (!fs.existsSync(manifestPath)) {
+			continue;
+		}
+
+		const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+		for (const pkg of manifest.packages || []) {
+			configs.push(configForPackage(moduleName, moduleDir, pkg));
+		}
+	}
+
+	return configs;
+}
+
+module.exports = discoverConfigs();

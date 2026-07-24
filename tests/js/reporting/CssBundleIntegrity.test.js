@@ -27,6 +27,7 @@ describe('reporting CSS build integrity', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
+    const manifestPath = path.join(repoRoot, 'modules/base/build.manifest.json');
     const cssDir = path.join(repoRoot, 'modules/base/css');
     const artifactPath = path.join(cssDir, 'owa.reporting-css-combined.css');
     const modulePhpPath = path.join(repoRoot, 'modules/base/module.php');
@@ -38,25 +39,32 @@ describe('reporting CSS build integrity', () => {
         'owa.css', 'owa.admin.css', 'owa.report.css',
     ];
 
+    // The reporting-css package as declared in base's build manifest.
+    const cssPkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+        .packages.find((p) => p.name === 'owa.reporting-css-combined.css');
+
     test('all six source stylesheets exist', () => {
         for (const f of CSS_SOURCES) {
             expect(fs.existsSync(path.join(cssDir, f))).toBe(true);
         }
     });
 
-    test('webpack.config.js drives the CSS through mini-css-extract, in order', () => {
+    test('the build manifest lists the six sources in cascade order', () => {
+        // The entry (source list + order) now lives in base/build.manifest.json,
+        // discovered by webpack.config.js. Order is load-bearing.
+        expect(cssPkg).toBeDefined();
+        expect(cssPkg.type).toBe('css');
+        expect(cssPkg.outputDir).toBe('css');
+        expect(cssPkg.files).toEqual(CSS_SOURCES.map((f) => `css/${f}`));
+    });
+
+    test('webpack.config.js drives the CSS through mini-css-extract with url:false', () => {
         const cfg = fs.readFileSync(configPath, 'utf8');
         // The CSS pipeline is wired.
         expect(cfg).toMatch(/MiniCssExtractPlugin/);
         expect(cfg).toMatch(/css-loader/);
         // url:false is what keeps every url() a valid relative path against css/.
         expect(cfg).toMatch(/url:\s*false/);
-        // The six sources are listed as the entry, in cascade order.
-        const idx = CSS_SOURCES.map((f) => cfg.indexOf(`'${f}'`));
-        for (let i = 0; i < idx.length; i++) {
-            expect(idx[i]).toBeGreaterThan(-1); // present
-            if (i > 0) expect(idx[i]).toBeGreaterThan(idx[i - 1]); // ordered
-        }
     });
 
     test('the PHP-CLI build package is retired', () => {
