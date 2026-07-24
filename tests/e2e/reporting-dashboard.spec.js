@@ -84,50 +84,26 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(arrowBg).toContain('chosen-sprite');
     });
 
-    test('the secondary-dimension picker enhances, opens, and drives the grid', async ({ page }) => {
+    test('the secondary-dimension picker is styled (chosen render regressions)', async ({ page }) => {
         // The data-table's "Secondary Dimension" control (OWA.dimensionPicker ->
-        // <select.dim-list> enhanced by chosen) is a tricky compound widget the
-        // chosen 0.9.6 -> 1.8.7 migration put at risk on two axes:
-        //   (1) STYLING -- same build-artifact clobber as above; the picker rendered
-        //       as an unstyled text list. Assert the opened .chosen-drop is styled
-        //       (grouped, sprite-backed search box) and the trigger carries the arrow.
-        //   (2) BEHAVIOR -- generateDimList() sets a pre-selected value with
-        //       .trigger('liszt:updated'), chosen 0.9.x's "re-sync widget to <select>"
-        //       event. chosen-js 1.x renamed it to 'chosen:updated' and ignores the
-        //       old name, so a pre-selected dimension silently failed to render.
-        //       Exercise the live path: open the widget and pick the first dimension,
-        //       which must reload the grid with an extra column.
+        // <select.dim-list> enhanced by chosen) rendered as an unstyled text list
+        // after the chosen 0.9.6 -> 1.8.7 migration (build-artifact CSS clobber).
+        // Guard the RENDER: sprite-backed trigger arrow + a grouped, styled
+        // .chosen-drop (not a flat unstyled <select> fallback). The FUNCTIONAL
+        // behavior (pick a dimension -> grid requeries correctly) is asserted in
+        // the next test.
         const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
         await expect(picker).toBeVisible();
 
-        // The trigger's dropdown arrow is sprite-backed (styling present).
         const arrowBg = await picker.locator('.chosen-single div b').evaluate(
             (b) => getComputedStyle(b).backgroundImage
         );
         expect(arrowBg).toContain('chosen-sprite');
 
-        // Column count before selecting a secondary dimension.
-        const colsBefore = await page.locator('.ui-jqgrid-htable th[id]').count();
-
-        // Open the widget and pick the first real dimension by clicking (the real
-        // user path through chosen's own change handler).
         await picker.click();
         const drop = picker.locator('.chosen-drop');
         await expect(drop).toBeVisible();
-        // The results are grouped (bold group headers) -- proves the .chosen-* CSS
-        // structure rendered, not a flat unstyled <select> fallback.
         expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
-
-        const firstResult = drop.locator('.chosen-results li.active-result').first();
-        await expect(firstResult).toBeVisible();
-        await firstResult.click();
-
-        // Selecting a secondary dimension adds it as a grid column; wait for the
-        // reloaded grid to widen. (Guards the liszt:updated -> chosen:updated fix
-        // AND the change -> changeDimension -> getNewResultSet wiring.)
-        await expect
-            .poll(() => page.locator('.ui-jqgrid-htable th[id]').count(), { timeout: 15_000 })
-            .toBeGreaterThan(colsBefore);
     });
 
     test('jqGrid renders the seeded page-title rows', async ({ page }) => {
@@ -398,15 +374,26 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 });
 
 /**
- * The jQuery-UI `tabs` widget does NOT render on the dashboard -- it only appears
- * on dimension report pages (owa.report.createTabs -> #report-tabs.ui-tabs). The
- * 1.8.12 -> 1.13.3 upgrade migrated tabs({show:fn}) to the `activate` event (the
- * old `show` option was removed in 1.9) plus an explicit initial selectTab() call
- * (activate does not fire on init the way show did), so pin the rendered tab UI.
- * Browser Types (base.reportBrowsers) is the simplest such page (metrics/dimension
- * are hard-coded in the controller; needs only siteId + period).
+ * Dimension report page (Browser Types, base.reportBrowsers) characterization.
+ *
+ * Two things only exist here, not on the dashboard:
+ *
+ *  1. The jQuery-UI `tabs` widget (owa.report.createTabs -> #report-tabs.ui-tabs).
+ *     The 1.8.12 -> 1.13.3 upgrade migrated tabs({show:fn}) to the `activate`
+ *     event (the old `show` option was removed in 1.9) plus an explicit initial
+ *     selectTab() call (activate does not fire on init the way show did), so we
+ *     pin the rendered tab UI.
+ *  2. A deterministic single-row grid: all 8 seeded pageviews use a Chrome UA, so
+ *     the Browser Types grid is exactly ONE "Chrome" row. That determinism is what
+ *     lets the FUNCTIONAL secondary-dimension / filter tests below assert real
+ *     requery outcomes (split by date -> 4 rows; filter Firefox -> 0 rows) rather
+ *     than just DOM shape. The dashboard's top-pages grid (4 rows, pageTitle) has
+ *     no such single-value column to discriminate on.
+ *
+ * Browser Types is the simplest such page (metrics/dimension are hard-coded in the
+ * controller; needs only siteId + period).
  */
-test.describe('dimension report tabs render (post-1.13 upgrade)', () => {
+test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 upgrade)', () => {
 
     test.beforeEach(async ({ page }) => {
         const errors = [];
@@ -431,6 +418,96 @@ test.describe('dimension report tabs render (post-1.13 upgrade)', () => {
         // The active tab's panel is shown and carries the grid (createTabs' initial
         // selectTab() calls tab.load(), which builds a result-set explorer grid).
         await expect(page.locator('tr.jqgrow').first()).toBeVisible();
+    });
+
+    test('selecting a secondary dimension requeries and splits the grid by that dimension', async ({ page }) => {
+        // FUNCTIONAL test (not just "a column appeared"): the Browser Types report
+        // has ONE row for the fixture data -- all 8 pageviews are Chrome (seeded
+        // UA), so the grid is a single "Chrome" row. The seeder spreads those views
+        // across FOUR distinct days (day_ago 23/16/9/2, see
+        // seed_reporting_fixtures.php), so adding "Date" as the secondary dimension
+        // must requery (owa.resultSetExplorer.changeDimension -> getNewResultSet
+        // with owa_dimensions=browserType,date) and split the one Chrome row into
+        // exactly FOUR rows (Chrome x each day), each carrying a rendered Date value.
+        // This pins the real outcome: the right dimension is added AND the server
+        // returns the correctly grouped result set -- catching a break anywhere in
+        // pick -> event -> URL rewrite -> requery -> re-render, not just DOM width.
+
+        // Baseline: single Chrome row, no Date column.
+        await expect(page.locator('tr.jqgrow')).toHaveCount(1);
+        const headsBefore = await page.locator('.ui-jqgrid-htable th').allInnerTexts();
+        expect(headsBefore.map((h) => h.trim())).not.toContain('Date');
+
+        // Pick "Date" through the real chosen click path (open, click the Date result).
+        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
+        await picker.click();
+        await picker.locator('.chosen-results li.active-result', { hasText: /^Date$/ }).first().click();
+
+        // The requery must add a "Date" column and split into one row per seeded day.
+        await expect
+            .poll(async () => (await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()),
+                { timeout: 15_000 })
+            .toContain('Date');
+        await expect(page.locator('tr.jqgrow')).toHaveCount(4);
+
+        // Every row is still a Chrome row and now carries a YYYYMMDD date value,
+        // and the four dates are DISTINCT -- i.e. the grid really grouped by date.
+        const rowText = await page.locator('tr.jqgrow').allInnerTexts();
+        expect(rowText.every((t) => t.includes('Chrome'))).toBe(true);
+        const dates = rowText.map((t) => (t.match(/\b(20\d{6})\b/) || [])[1]).filter(Boolean);
+        expect(dates).toHaveLength(4);
+        expect(new Set(dates).size).toBe(4);
+    });
+
+    test('applying a filter constraint requeries and filters the grid result set', async ({ page }) => {
+        // FUNCTIONAL test of the whole filter feature end-to-end: pick a dimension
+        // in the constraint builder, choose an operator, type a value, click Apply,
+        // and prove the grid actually requeried with that constraint
+        // (OWA.constraintBuilder -> constraint_change -> resultSetExplorer
+        // .changeConstraints -> getNewResultSet with owa_constraints=...).
+        // Deterministic against the fixture: the Browser Types grid is a single
+        // "Chrome" row (all seeded pageviews use a Chrome UA). So:
+        //   - browserType contains "Firefox" matches NOTHING  -> grid empties (0 rows)
+        //   - browserType contains "Chrome"  matches the row  -> grid keeps 1 row
+        // Asserting BOTH directions proves the filter genuinely discriminates on the
+        // constraint, not merely that Apply clears/reloads the grid.
+        const builder = page.locator('.constraintPickerContainer').first();
+        // Reveal the builder (toggle only when it's currently hidden -- a requery
+        // may leave it open, and a blind toggle would hide it again).
+        const openBuilder = async () => {
+            const panel = builder.locator('> .builder');
+            if (!(await panel.isVisible())) {
+                await builder.locator('> .toggle-button').click();
+            }
+            await expect(panel).toBeVisible();
+        };
+        await openBuilder();
+        await expect(page.locator('tr.jqgrow')).toHaveCount(1);
+
+        // Fill the single default constraint row: browserType =@ <value>.
+        const setConstraint = async (value) => {
+            await page.evaluate((val) => {
+                const row = document.querySelector('.constraintPickerContainer .builder li.constraintRow');
+                // dimension picker is a chosen widget -> set the <select> + resync
+                jQuery(row).find('.constraintDimensionPicker select.dim-list')
+                    .val('browserType').trigger('chosen:updated');
+                // operator is a jQuery-UI selectmenu kept in sync via the native <select>
+                jQuery(row).find('.constraintOperatorPicker select.operator-list').val('=@');
+                jQuery(row).find('.constraintValueField').val(val);
+            }, value);
+            await builder.locator('.apply-button').click();
+        };
+
+        // Non-matching value -> the grid must empty out.
+        await setConstraint('Firefox');
+        await expect(page.locator('tr.jqgrow')).toHaveCount(0, { timeout: 15_000 });
+
+        // Matching value -> the Chrome row must come back (proves it filtered on the
+        // constraint, not just wiped the grid). Re-open the builder (rebuilt on reload).
+        await openBuilder();
+        await setConstraint('Chrome');
+        await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
+        await expect(page.locator('tr.jqgrow').first()).toContainText('Chrome');
     });
 
     test('the dimension report loads without uncaught page errors', async ({ page }) => {
