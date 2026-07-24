@@ -973,7 +973,16 @@ OWA.dimensionPicker.prototype = {
         jQuery( container_selector ).append(c);
         // transform into select menu
 
-        jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found."});
+        // Pass an explicit width matching the <select>'s declared width:150px.
+        // chosen-js 1.x sizes its container from the <select>'s offsetWidth AT
+        // ENHANCEMENT TIME (AbstractChosen.container_width), which is 0 when the
+        // select is inside a display:none parent -- the constraint/filter builder
+        // creates its dimension pickers while its .builder is hidden, so without
+        // an explicit width the chosen container collapsed to a ~2px sliver and
+        // the dimension list was unusable. options.width bypasses the runtime
+        // measurement (chosen 0.9.x read the CSS width, so this wasn't needed
+        // before the 0.9.6 -> 1.8.7 upgrade).
+        jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found.", width: '150px'});
 
 
 jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {

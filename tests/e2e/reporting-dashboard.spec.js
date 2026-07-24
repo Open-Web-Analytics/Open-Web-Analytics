@@ -342,6 +342,38 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(selectDisplay).toBe('none');
     });
 
+    test("the filter builder's dimension picker opens at full width with a dimension list", async ({ page }) => {
+        // Regression guard (chosen 0.9.6 -> 1.8.7): the filter/constraint builder's
+        // dimension picker (OWA.dimensionPicker -> <select.dim-list> enhanced by
+        // chosen, INSIDE each constraint row) rendered as a ~2px-wide sliver -- the
+        // dimension list was there but unusable. Root cause: the builder creates its
+        // rows while its .builder is display:none, and chosen-js 1.x sizes its
+        // container from the <select>'s offsetWidth AT ENHANCEMENT TIME (0 when
+        // hidden). chosen 0.9.x read the CSS width, so this only broke on the upgrade.
+        // Fix: pass an explicit width:'150px' to .chosen(). Unlike the secondary-
+        // dimension picker (created visible), THIS one is created hidden -- so it is
+        // the specific case that regressed. Assert it opens at a real, usable width.
+        const builder = page.locator('.constraintPickerContainer').first();
+        await builder.locator('> .toggle-button').click();
+        await expect(builder.locator('> .builder')).toBeVisible();
+
+        const dimChosen = builder.locator('.constraintDimensionPicker .chosen-container').first();
+        await expect(dimChosen).toBeVisible();
+        // The enhanced container must be a real width, not the collapsed sliver.
+        const contWidth = await dimChosen.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+        expect(contWidth).toBeGreaterThanOrEqual(100);
+
+        // Open the dropdown and assert the dimension list is present, grouped, and
+        // painted at the same usable width (chosen sizes .chosen-drop off the container).
+        await dimChosen.locator('.chosen-single').click();
+        const drop = dimChosen.locator('.chosen-drop');
+        await expect(drop).toBeVisible();
+        const dropWidth = await drop.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+        expect(dropWidth).toBeGreaterThanOrEqual(100);
+        expect(await drop.locator('.chosen-results li.active-result').count()).toBeGreaterThanOrEqual(2);
+        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
+    });
+
     test('selectmenu keeps the native select in sync with the selected operator', async ({ page }) => {
         // Runtime guard (not just render): the constraint-apply path reads the
         // chosen operator (owa.resultSetExplorer.js ~1638). The old Nagel fork used
