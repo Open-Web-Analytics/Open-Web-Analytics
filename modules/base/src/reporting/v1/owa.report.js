@@ -67,6 +67,16 @@ OWA.report.prototype = {
         // controlgroup auto-enhances the child radio inputs via checkboxradio
         // (its default `items`), so the On/Off radios become .ui-checkboxradio
         // .ui-button labels inside a .ui-controlgroup container.
+        //
+        // BUT jQuery-UI 1.13's checkboxradio defaults to `icon:true`, which
+        // prepends a blank radio-dot span (.ui-checkboxradio-icon) to each label
+        // -- so the "Live View" toggle rendered as On/Off buttons WITH radio dots
+        // instead of the clean two-segment switch 1.8.12's buttonset() produced.
+        // Pre-enhance the radios with icon:false FIRST; controlgroup() then adopts
+        // the already-enhanced checkboxradios (it won't re-init them) and the dots
+        // are gone. Order matters: checkboxradio before controlgroup.
+        jQuery( selector + ' > .autoRefreshControl > .buttons > input[type=radio]')
+            .checkboxradio({ icon: false });
         jQuery( selector + ' > .autoRefreshControl > .buttons').controlgroup();
         
         var that = this;

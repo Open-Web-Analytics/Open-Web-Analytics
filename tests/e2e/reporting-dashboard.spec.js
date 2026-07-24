@@ -281,6 +281,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const group = page.locator('.autoRefreshControl .buttons.ui-controlgroup');
         await expect(group.first()).toBeVisible();
         expect(await group.locator('.ui-button').count()).toBeGreaterThanOrEqual(2);
+        // It must render as a clean On/Off SWITCH, not radios: 1.13's checkboxradio
+        // defaults to icon:true (a radio-dot span); the source pre-enhances with
+        // icon:false so no .ui-checkboxradio-icon is present. See the report-page
+        // 'Live View toggle renders as a switch' test for the full rationale.
+        expect(await group.first().locator('.ui-checkboxradio-icon').count()).toBe(0);
     });
 
     test('the filter/constraint builder opens with button + selectmenu widgets', async ({ page }) => {
@@ -508,6 +513,81 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await setConstraint('Chrome');
         await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
         await expect(page.locator('tr.jqgrow').first()).toContainText('Chrome');
+    });
+
+    test('the Live View toggle renders as a switch, not radio buttons', async ({ page }) => {
+        // Regression guard (jQuery-UI 1.8.12 -> 1.13.3): the "Live View" On/Off
+        // control (owa.report.showAutoRefreshControl) is a controlgroup of two
+        // radios enhanced into a two-segment button switch. 1.8.12's buttonset()
+        // produced clean segments; 1.13's controlgroup enhances the radios via
+        // checkboxradio, which DEFAULTS to icon:true and prepends a blank radio-dot
+        // span (.ui-checkboxradio-icon) to each label -- so the switch rendered WITH
+        // radio dots (looked like plain radio buttons). Fix pre-enhances the radios
+        // with checkboxradio({icon:false}) before controlgroup(). Assert the switch
+        // shape (2 enhanced .ui-button segments, native radios visually hidden) AND
+        // that the radio-dot icon is gone.
+        const control = page.locator('.autoRefreshControl').first();
+        await expect(control).toBeVisible();
+
+        // Two segments, both real jQuery-UI buttons inside a controlgroup.
+        await expect(control.locator('.buttons.ui-controlgroup')).toBeVisible();
+        expect(await control.locator('label.ui-button').count()).toBe(2);
+
+        // The native radios are enhanced + visually hidden (accessibility-hidden,
+        // 1px clipped) -- not shown as bare radios.
+        const radio = control.locator('input[type=radio]').first();
+        await expect(radio).toHaveClass(/ui-helper-hidden-accessible/);
+        const radioW = await radio.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+        expect(radioW).toBeLessThanOrEqual(2);
+
+        // The regression signature: NO checkboxradio radio-dot icon on the labels.
+        expect(await control.locator('.ui-checkboxradio-icon').count()).toBe(0);
+    });
+
+    test('turning Live View on polls for fresh data and off stops it', async ({ page }) => {
+        // FUNCTIONAL test of what the switch is FOR: flipping it On must start the
+        // report auto-refresh (owa.report.startAutoRefresh -> each active-tab
+        // resultSetExplorer.enableAutoRefresh -> setInterval(getNewResultSet)), which
+        // re-queries the REST reports API on a timer; flipping it Off must clear the
+        // timers so polling stops. We shorten the per-explorer interval, then COUNT
+        // real network hits to the reports API (owa_do=reports json) in each state:
+        //   Off (baseline) -> no polling; On -> repeated polls; Off again -> stops.
+        const isPoll = (u) => u.includes('/api/index.php') && /owa_do=reports/.test(u);
+        const polls = [];
+        page.on('request', (r) => { if (isPoll(r.url())) polls.push(r.url()); });
+
+        // Shorten the auto-refresh interval on the active tab's explorers so the test
+        // observes several polls quickly instead of waiting the 10s default.
+        await page.evaluate(() => {
+            let rep = null;
+            for (const k in OWA.items) {
+                const it = OWA.items[k];
+                if (it && it.tabs && it.activeTab) { rep = it; break; }
+            }
+            const tab = rep.tabs[rep.activeTab];
+            for (const n in tab.resultSetExplorers) {
+                tab.resultSetExplorers[n].autoRefreshInterval = 600;
+            }
+        });
+
+        // Baseline: switch defaults to Off -> no polling happens on its own.
+        const b0 = polls.length;
+        await page.waitForTimeout(1500);
+        expect(polls.length - b0).toBe(0);
+
+        // On -> polling starts (both active-tab explorers re-query on the timer).
+        await page.locator('label[for=autorefresh-on-button]').first().click();
+        const bOn = polls.length;
+        await page.waitForTimeout(2000);
+        expect(polls.length - bOn).toBeGreaterThanOrEqual(2);
+
+        // Off -> timers cleared, polling stops. Let any in-flight interval settle
+        // first, then assert no further polls arrive.
+        await page.locator('label[for=autorefresh-off-button]').first().click();
+        await page.waitForTimeout(400);
+        const bOff = polls.length;
+        await page.waitForTimeout(1800);
+        expect(polls.length - bOff).toBe(0);
     });
 
     test('the dimension report loads without uncaught page errors', async ({ page }) => {
