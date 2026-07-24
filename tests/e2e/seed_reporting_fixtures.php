@@ -176,41 +176,80 @@ function teardown(): array
 }
 
 /**
- * Fire $n synthetic pageviews for the fixture site through the real ingestion
- * pipeline, spread across a few pages and two sessions so the report has some
- * shape (multiple rows in the pages grid, a non-flat trend line).
+ * Fire up to $n synthetic pageviews for the fixture site through the real
+ * ingestion pipeline, spread across a few pages, two visitors, and -- crucially
+ * -- SEVERAL DAYS, so the report has real shape: multiple rows in the pages
+ * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
+ * trend charts need >1 day of data or they collapse to a single point).
+ *
+ * TIME-TRAVEL: OWA stamps every event with the request timestamp, not a value
+ * the caller sets on the event. The 'timestamp' property has a registered
+ * filter (owa_trackingEventHelpers::timestampDefault) that IGNORES whatever is
+ * on the event and returns owa_coreAPI::getRequestTimestamp() -- i.e. the
+ * requestContainer singleton's timestamp (set once to time()). Every fact-table
+ * time dimension (year/month/day/yyyymmdd/hour) is then DERIVED from that at log
+ * time (owa_trackingEventHelpers::deriveYyyymmdd et al.). So to backdate an
+ * event we must move the singleton's clock before logEvent(); setting a
+ * 'timestamp' prop alone is silently overwritten.
+ *
+ * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
+ * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
+ * as 4 single-day visits by 2 returning visitors across 4 days spanning the
+ * last_thirty_days window. $n caps how many of the plan actually fire (used by
+ * the idempotent partial-reseed path); on a fresh DB $n == 8 fires the lot.
  */
 function seedPageviews(int $n): int
 {
     $site_id = md5(E2E_SITE_DOMAIN);
-    $pages = ['/', '/pricing', '/docs', '/about'];
-    $count = 0;
+    $rc = owa_coreAPI::requestContainerSingleton();
 
-    // Two sessions so "visits" > 1. The FIRST pageview of each session carries
-    // is_new_session=true so owa_sessionHandlers::logSession() inserts an
-    // owa_session row (subsequent pageviews update it); this mirrors what the
-    // tracker sets from the session cookie. Without it, requests land but no
-    // session/visit rows exist and visit-based reports render empty.
-    $perSession = (int) ceil($n / 2);
-    for ($s = 0; $s < 2; $s++) {
+    // Two stable visitor identities so repeat-visitor reports have a returning
+    // visitor. Generated once; reused across each visitor's two sessions.
+    $visitors = [numericGuid(), numericGuid()];
+
+    // Four single-day visits spanning the 30-day window. Each visit is one
+    // session (one day) of two pageviews; the two visits per visitor land on
+    // different days so the trend line has multiple non-zero points. Every page
+    // ('/', '/pricing', '/docs', '/about') appears in exactly two pageviews.
+    $visits = [
+        ['day_ago' => 23, 'visitor' => 0, 'new_visitor' => true,  'pages' => ['/', '/pricing']],
+        ['day_ago' => 16, 'visitor' => 1, 'new_visitor' => true,  'pages' => ['/docs', '/about']],
+        ['day_ago' => 9,  'visitor' => 0, 'new_visitor' => false, 'pages' => ['/', '/pricing']],
+        ['day_ago' => 2,  'visitor' => 1, 'new_visitor' => false, 'pages' => ['/docs', '/about']],
+    ];
+
+    $count = 0;
+    foreach ($visits as $visit) {
         $session_id = numericGuid();
-        $visitor_id = numericGuid();
-        for ($i = 0; $i < $perSession && $count < $n; $i++) {
-            $page = $pages[$count % count($pages)];
-            $url  = E2E_SITE_DOMAIN . $page;
+        $visitor_id = $visitors[$visit['visitor']];
+        // Anchor the visit near midday on its day so it can't slip across a day
+        // boundary once we add the per-pageview minute offsets below.
+        $day_base = time() - ($visit['day_ago'] * 86400);
+        $day_base = $day_base - ($day_base % 86400) + 43200; // 12:00 UTC that day
+
+        foreach (array_values($visit['pages']) as $i => $page) {
+            if ($count >= $n) {
+                break 2;
+            }
+            $url     = E2E_SITE_DOMAIN . $page;
             $isFirst = ($i === 0);
+
+            // Backdate the request clock; timestampDefault() reads this and the
+            // derived time dimensions follow. Pageviews within a visit are a few
+            // minutes apart so their order (and the session duration) is sane.
+            $rc->timestamp = $day_base + ($i * 120);
 
             $props = [
                 'site_id'          => $site_id,
                 'session_id'       => $session_id,
                 'visitor_id'       => $visitor_id,
                 'is_new_session'   => $isFirst,
-                'is_new_visitor'   => $isFirst && $s === 0,
+                'is_new_visitor'   => $isFirst && $visit['new_visitor'],
                 'page_url'         => $url,
                 'page_title'       => 'E2E ' . ($page === '/' ? 'Home' : trim($page, '/')),
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'],
-                'HTTP_REFERER'     => ($isFirst && $s === 0) ? 'https://www.google.com/' : $url,
-                'ip_address'       => '203.0.113.' . (10 + $s),
+                'HTTP_REFERER'     => ($isFirst && $visit['new_visitor']) ? 'https://www.google.com/' : $url,
+                'ip_address'       => '203.0.113.' . (10 + $visit['visitor']),
                 'guid'             => numericGuid(),
             ];
 
@@ -223,6 +262,9 @@ function seedPageviews(int $n): int
             }
         }
     }
+
+    // Restore the request clock so anything later in this process sees "now".
+    $rc->timestamp = time();
     return $count;
 }
 
