@@ -1864,6 +1864,32 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-size: 12px;
 }
 
+/*
+ * free-jqgrid column-width sync (Phase 3.2 migration fix).
+ *
+ * The bundled jqGrid was swapped from 3.6.5 to free-jqgrid, but this combined
+ * stylesheet still carries jqGrid 3.6.5's rules -- which set the header/body
+ * tables to `table-layout:auto`. free-jqgrid sizes columns from a hidden
+ * template row (.jqgfirstrow) and expects a FIXED table layout; under auto,
+ * the header and body tables each sized to their own content, so a column's
+ * header cell and its data cells rendered at different widths.
+ *
+ * Force fixed layout on both tables, and border-box on every grid cell so the
+ * per-column pixel width is the TOTAL rendered width -- otherwise the extra
+ * `padding-right` on .owa_metricGridCell (content-box) widened the metric data
+ * cells past their matching header cell. With both, header and body columns
+ * line up exactly. Delete alongside the jqGrid 3.6.5 CSS when this stylesheet
+ * is regenerated from free-jqgrid's own theme.
+ */
+.ui-jqgrid .ui-jqgrid-htable,
+.ui-jqgrid .ui-jqgrid-btable {
+    table-layout: fixed;
+}
+.ui-jqgrid .ui-jqgrid-htable th,
+.ui-jqgrid .ui-jqgrid-btable td {
+    box-sizing: border-box;
+}
+
 .owa_metricGridCell {
     padding-right: 20px;
 }
