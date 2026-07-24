@@ -109,6 +109,31 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         });
     });
 
+    test('jqGrid tables do not overflow their scroll container', async ({ page }) => {
+        // Regression guard (Phase 3.2): free-jqgrid sizes the grid tables to fill
+        // their scroll containers (.ui-jqgrid-bdiv / -hdiv) exactly, but the tables
+        // inherited the browser-default border-collapse:separate; border-spacing:2px.
+        // Fixed layout then adds (columns + 1) * 2px past the container, so every
+        // grid overflowed by a few pixels and showed a small horizontal scrollbar.
+        // Collapsing border-spacing to 0 removes it. Assert no grid's body or header
+        // div scrolls horizontally.
+        const overflow = await page.evaluate(() => {
+            return [...document.querySelectorAll('.ui-jqgrid')].map((grid) => {
+                const bdiv = grid.querySelector('.ui-jqgrid-bdiv');
+                const hdiv = grid.querySelector('.ui-jqgrid-hdiv');
+                return {
+                    bdiv: bdiv ? bdiv.scrollWidth - bdiv.clientWidth : 0,
+                    hdiv: hdiv ? hdiv.scrollWidth - hdiv.clientWidth : 0,
+                };
+            });
+        });
+        expect(overflow.length).toBeGreaterThan(0);
+        overflow.forEach((o) => {
+            expect(o.bdiv).toBeLessThanOrEqual(0);
+            expect(o.hdiv).toBeLessThanOrEqual(0);
+        });
+    });
+
     test('Flot paints the chart canvases', async ({ page }) => {
         // Flot draws each chart as a <canvas class="base"> plus a "overlay"
         // sibling inside an OWA chart container. Assert the area chart and at

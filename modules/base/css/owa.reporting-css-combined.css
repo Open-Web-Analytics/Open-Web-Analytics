@@ -1880,10 +1880,18 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
  * cells past their matching header cell. With both, header and body columns
  * line up exactly. Delete alongside the jqGrid 3.6.5 CSS when this stylesheet
  * is regenerated from free-jqgrid's own theme.
+ *
+ * Also collapse border-spacing to 0: these tables inherit the browser default
+ * `border-collapse:separate; border-spacing:2px`, and free-jqgrid sizes the
+ * <colgroup> to fill the scroll container exactly. The 2px spacing then adds
+ * (columns + 1) * 2px of width beyond the container, so the table overflowed
+ * its bdiv/hdiv by a few pixels and every grid showed a small horizontal
+ * scrollbar. The 1px per-cell borders remain the column separators.
  */
 .ui-jqgrid .ui-jqgrid-htable,
 .ui-jqgrid .ui-jqgrid-btable {
     table-layout: fixed;
+    border-spacing: 0;
 }
 .ui-jqgrid .ui-jqgrid-htable th,
 .ui-jqgrid .ui-jqgrid-btable td {
