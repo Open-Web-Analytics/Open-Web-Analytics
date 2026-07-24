@@ -35,9 +35,6 @@ module.exports = defineConfig({
 
     use: {
         baseURL: BASE_URL,
-        // OWA drops beacons from robotic UAs; the tracker also keys on this
-        // string. Keep "Open Web Analytics" in it so log filters can find us.
-        userAgent: 'Open Web Analytics test harness (Playwright)',
         ignoreHTTPSErrors: true,
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
@@ -46,7 +43,18 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: {
+                ...devices['Desktop Chrome'],
+                // Append "Open Web Analytics" to the REAL Chrome UA (keep the
+                // browser UA base so Chromium still behaves normally). The site's
+                // WAF/rate-limiter allowlists that token, so the full suite's
+                // sustained load no longer trips it into intermittent 403s /
+                // failures to serve the login form. NOTE: this MUST live in the
+                // project `use` (not top-level) -- devices['Desktop Chrome']
+                // carries its own userAgent that otherwise clobbers a top-level
+                // one. Also lets server log filters identify the harness.
+                userAgent: `${devices['Desktop Chrome'].userAgent} Open Web Analytics`,
+            },
         },
     ],
 });
