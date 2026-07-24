@@ -40,9 +40,12 @@
     "@babel/preset-env": "^7.29.7",
     "@playwright/test": "^1.61.1",
     "babel-jest": "^30.4.1",
+    "css-loader": "^7.1.4",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
+    "mini-css-extract-plugin": "^2.10.2",
     "shx": "^0.3.4",
-    "terser-webpack-plugin": "^5.6.1"
+    "terser-webpack-plugin": "^5.6.1",
+    "webpack-remove-empty-scripts": "^1.1.1"
   }
 }

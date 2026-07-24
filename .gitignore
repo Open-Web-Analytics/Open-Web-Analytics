@@ -4,6 +4,7 @@ owa-config.php
 node_modules/
 modules/base/dist/
 modules/base/js/owa.tracker-combined-min.js
+modules/base/css/owa.reporting-css-combined.css
 /.phpunit.cache/
 /test-results/
 /playwright-report/
