@@ -102,6 +102,22 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(dims.h).toBeGreaterThan(0);
     });
 
+    test('sparkline paints kpi-box canvases', async ({ page }) => {
+        // OWA renders each sparkline into <p class="sparkline">; jquery-sparkline
+        // 2.4.0 (the jQuery-3.x-clean replacement for the vendored 1.2.1) draws a
+        // <canvas> inside it. Assert at least one sparkline painted a canvas.
+        const sparkCanvases = page.locator('p.sparkline canvas');
+        expect(await sparkCanvases.count()).toBeGreaterThanOrEqual(1);
+
+        const dims = await page.evaluate(() => {
+            const c = document.querySelector('p.sparkline canvas');
+            return c ? { w: c.width, h: c.height } : null;
+        });
+        expect(dims).not.toBeNull();
+        expect(dims.w).toBeGreaterThan(0);
+        expect(dims.h).toBeGreaterThan(0);
+    });
+
     test('the dashboard loads without uncaught page errors', async ({ page }) => {
         // Captured across the whole beforeEach + assertions lifecycle.
         expect(page.__owaErrors).toEqual([]);

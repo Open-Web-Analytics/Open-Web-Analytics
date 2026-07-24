@@ -11,9 +11,9 @@
  * rely on and that migrate 3.x does NOT restore:
  *
  *   1. `$.browser` -- removed in jQuery 1.9.
- *        - jquery.sparkline.min.js reads `$.browser.msie` at LOAD time (throws,
- *          killing the whole concat) if it is absent.
  *        - jquery-ui-1.8.12.custom reads `$.browser.msie` / `.version` at RUNTIME.
+ *        (jquery.sparkline 1.2.1 used to read `$.browser.msie` at LOAD time too,
+ *        but it was upgraded to jquery-sparkline 2.4.0, which no longer does.)
  *   2. `$.curCSS(elem, name)` -- a getter alias for `$.css` removed in jQuery 1.8.
  *        - jquery-ui-1.8.12.custom calls it ~19 times at RUNTIME (positioning,
  *          resizable, etc.); without it the UI widgets throw

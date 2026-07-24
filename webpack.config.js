@@ -61,7 +61,9 @@ module.exports = {
 					  	src_path + '/reporting/v1/includes/jquery/jquery-ui-1.8.12.custom.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery.ui.selectmenu.js',
 					  	src_path + '/reporting/v1/includes/jquery/chosen.jquery.js',
-					  	src_path + '/reporting/v1/includes/jquery/jquery.sparkline.min.js',
+					  	// jquery.sparkline 1.2.1 (1.6-era, read $.browser.msie at LOAD) ->
+					  	// jquery-sparkline 2.4.0 (jQuery 3.x-clean, same .sparkline() API) from npm.
+					  	__dirname + '/node_modules/jquery-sparkline/jquery.sparkline.min.js',
 					  	// jqGrid 3.6.5 (1.6-era, throws on $.browser) -> free-jqgrid 4.15.5
 					  	// (maintained fork, jQuery 3.x-compatible) from the npm dep.
 					  	__dirname + '/node_modules/free-jqgrid/dist/jquery.jqgrid.min.js',
