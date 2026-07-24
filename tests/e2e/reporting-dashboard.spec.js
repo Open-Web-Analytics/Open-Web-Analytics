@@ -119,6 +119,32 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(dims.h).toBeGreaterThan(0);
     });
 
+    test('jQuery-UI initializes the datepicker and button widgets', async ({ page }) => {
+        // Characterizes the jQuery-UI 1.8.12 widget surface BEFORE the planned
+        // 1.13.x upgrade so a regression in datepicker/button (the widgets OWA
+        // actually uses on the dashboard) fails loudly. The date range control
+        // is two jQuery-UI datepickers; OWA also enhances several .ui-button
+        // controls (paging, filter builder).
+        const startInput = page.locator('#owa_report-datepicker-start');
+        await expect(startInput).toHaveClass(/hasDatepicker/);
+        expect(await page.locator('.ui-button').count()).toBeGreaterThanOrEqual(1);
+    });
+
+    test('jQuery-UI datepicker renders a calendar when the period control opens', async ({ page }) => {
+        // Init alone can pass while the widget is broken at runtime (this is how
+        // the $.curCSS regression slipped past the load probe). OWA's date range
+        // is two INLINE jQuery-UI datepickers (rendered into <div> elements) that
+        // live hidden inside #owa_reportPeriodFiltersContainer until the user
+        // clicks the period label to reveal them. Open it and assert the calendar
+        // grid actually painted -- exercising the widget's runtime render (and,
+        // incidentally, the jQote2 template that builds the period control).
+        await page.locator('#owa_reportPeriodLabelContainer').click();
+        const startCal = page.locator('#owa_report-datepicker-start');
+        await expect(startCal).toBeVisible();
+        // A rendered inline datepicker has clickable day cells.
+        expect(await startCal.locator('a.ui-state-default').count()).toBeGreaterThanOrEqual(1);
+    });
+
     test('the dashboard loads without uncaught page errors', async ({ page }) => {
         // Captured across the whole beforeEach + assertions lifecycle.
         expect(page.__owaErrors).toEqual([]);
