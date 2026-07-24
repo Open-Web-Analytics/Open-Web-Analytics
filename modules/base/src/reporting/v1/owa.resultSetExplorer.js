@@ -1188,8 +1188,21 @@ OWA.dataGrid.prototype = {
         jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
         jQuery("#load_"+that.dom_id+"_grid").show();
         jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
-        // add data to grid
-        jQuery("#"+that.dom_id + '_grid')[0].addJSONData(resultSet);
+        // add data to grid.
+        //
+        // The grid is constructed with datatype:'local' so it never auto-fetches
+        // on init -- OWA always hand-feeds the fetched result set through
+        // addJSONData below. Under the old jqGrid 3.6.5, addJSONData always parsed
+        // its argument with the configured jsonReader. free-jqgrid's addJSONData
+        // instead picks its reader from the CURRENT datatype: 'local' uses
+        // localReader (which ignores jsonReader and reads nothing from OWA's
+        // {resultsRows:[...]} shape -> 0 rows), while 'json' uses jsonReader. So
+        // flip to 'json' for the manual parse, then restore 'local' so nothing
+        // triggers a background reload afterward.
+        var grid = jQuery("#"+that.dom_id + '_grid');
+        grid.jqGrid('setGridParam', { datatype: 'json' });
+        grid[0].addJSONData(resultSet);
+        grid.jqGrid('setGridParam', { datatype: 'local' });
         // dispay new count
         this.displayRowCount(resultSet);
     },

@@ -14,14 +14,15 @@ const { FIXTURE, login, openDashboard } = require('./fixtures');
  *   - jqGrid      -> .ui-jqgrid tables with data rows
  *   - chosen      -> .chzn-container enhanced select menus
  *
- * They also PIN jQuery 1.6.4 as the pre-migration baseline. When Phase 3.1
- * flips the reporting bundle to 3.x, the version assertion fails and must be
- * consciously updated -- turning an invisible, load-order-sensitive change
- * into an explicit, reviewed one (same discipline as the bundle-integrity test).
+ * They also PIN jQuery 3.6.0 -- Phase 3.2 flipped the reporting bundle from
+ * 1.6.4 to 3.x (jquery-migrate + a $.browser compat shim bridge the legacy
+ * plugins; jqGrid was replaced by free-jqgrid). A future version bump fails
+ * this assertion and must be a conscious, reviewed change (same discipline as
+ * the bundle-integrity test).
  *
  * Prereq: run `php tests/e2e/seed_reporting_fixtures.php seed` first.
  */
-test.describe('reporting dashboard renders (pre-migration baseline)', () => {
+test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
     // One authenticated dashboard load shared by the assertions below.
     test.beforeEach(async ({ page }) => {
@@ -42,11 +43,12 @@ test.describe('reporting dashboard renders (pre-migration baseline)', () => {
         await expect(page.locator('.ui-jqgrid').first()).toBeVisible();
     });
 
-    test('the reporting bundle initializes jQuery 1.6.4 and the OWA namespace', async ({ page }) => {
+    test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
-        // Pre-migration baseline. Flip to 3.x when Phase 3.1 lands -> update then.
-        expect(jqv).toBe('1.6.4');
+        // Post-migration baseline (Phase 3.2). $.browser is restored by the compat
+        // shim so the legacy sparkline / jQuery-UI plugins still run.
+        expect(jqv).toBe('3.6.0');
         expect(owaType).toBe('object');
     });
 

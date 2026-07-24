@@ -48,13 +48,23 @@ module.exports = {
 		        {
 		          	dest: __dirname + dist_path + '/owa.reporting-combined-min.js',
 				  	src: [
-			          
-			          	src_path + '/reporting/v1/includes/jquery/jquery-1.6.4.min.js',
+
+			          	// jQuery core flipped 1.6.4 -> 3.x (Phase 3.2). Sourced from the
+			          	// npm dep (package.json: jquery ^3.6.0) rather than a vendored copy.
+			          	// jquery-migrate bridges the 1.x->3.x API removals the legacy
+			          	// plugins below still rely on (andSelf, $.attrFn, event shorthands);
+			          	// owa.jquery-compat-shim.js adds back $.browser, which migrate 3.x
+			          	// does not restore but sparkline + jQuery-UI 1.8.12 need.
+			          	__dirname + '/node_modules/jquery/dist/jquery.min.js',
+			          	__dirname + '/node_modules/jquery-migrate/dist/jquery-migrate.min.js',
+					  	src_path + '/reporting/v1/includes/jquery/owa.jquery-compat-shim.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery-ui-1.8.12.custom.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery.ui.selectmenu.js',
 					  	src_path + '/reporting/v1/includes/jquery/chosen.jquery.js',
 					  	src_path + '/reporting/v1/includes/jquery/jquery.sparkline.min.js',
-					  	src_path + '/reporting/v1/includes/jquery/jquery.jqGrid.min.js',
+					  	// jqGrid 3.6.5 (1.6-era, throws on $.browser) -> free-jqgrid 4.15.5
+					  	// (maintained fork, jQuery 3.x-compatible) from the npm dep.
+					  	__dirname + '/node_modules/free-jqgrid/dist/jquery.jqgrid.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/flot_v0.7/jquery.flot.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/flot_v0.7/jquery.flot.resize.min.js',
 					  	src_path + '/reporting/v1/includes/jquery/flot_v0.7/jquery.flot.pie.min.js',

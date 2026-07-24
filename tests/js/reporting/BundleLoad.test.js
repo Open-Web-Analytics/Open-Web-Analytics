@@ -54,11 +54,14 @@ describe('reporting bundle loads under jsdom', () => {
         expect(loadError).toBeUndefined();
     });
 
-    test('vendored jQuery initializes at the pinned version', () => {
+    test('jQuery initializes at the pinned version', () => {
         if (!jq) return;
         expect(typeof jq).toBe('function');
-        // Pre-migration baseline. Flips to 3.x when Phase 3.1 lands -> update then.
-        expect(jq.fn.jquery).toBe('1.6.4');
+        // Post-migration baseline (Phase 3.2 flipped the reporting bundle 1.6.4 -> 3.6.0,
+        // sourced from the npm dep). jquery-migrate + the compat shim bridge the
+        // legacy plugins. $.browser is restored by the shim; assert both are live.
+        expect(jq.fn.jquery).toBe('3.6.0');
+        expect(typeof jq.browser).toBe('object');
     });
 
     test('the OWA reporting namespace loads with its core members', () => {

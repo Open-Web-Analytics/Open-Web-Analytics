@@ -11,10 +11,11 @@ reporting safety net for the Phase 3 jQuery migration:
 | **Overlay render (this dir)** | `tests/e2e/overlay-heatmap.spec.js` | **no — manual/local** | the heatmap overlay's control panel + canvas build via jQuery **3.x** on the tracker path (the overlay's biggest untested jQuery surface) |
 
 The jsdom layers cannot paint; these Playwright tests drive headless Chromium
-against a live OWA dashboard and pin the pre-migration render (jQuery **1.6.4**)
-as the baseline. When Phase 3.1 flips the reporting bundle to jQuery 3.x, the
-version assertion here (and in the build-integrity test) fails on purpose and
-must be updated as a conscious, reviewed change.
+against a live OWA dashboard. As of Phase 3.2 the reporting bundle runs on jQuery
+**3.6.0** (jquery-migrate + a `$.browser`/`$.curCSS` compat shim bridge the
+legacy 1.6/1.8-era plugins, and jqGrid 3.6.5 was replaced by free-jqgrid 4.15.5),
+so the version assertion here (and in the build-integrity test) pins 3.6.0 — a
+future bump must be a conscious, reviewed change.
 
 ## Why this isn't in CI
 

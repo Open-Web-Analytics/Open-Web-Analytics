@@ -28,11 +28,19 @@ describe('reporting bundle build integrity', () => {
         // Isolate the src array of the owa.reporting-combined-min.js bundle.
         const srcBlock = cfg.match(/owa\.reporting-combined-min\.js[\s\S]*?src:\s*\[([\s\S]*?)\]/);
         expect(srcBlock).not.toBeNull();
-        // Each entry is `src_path + '/reporting/v1/....js',`
+        // Entries are either `src_path + '/reporting/v1/....js'` (OWA + vendored
+        // plugins under modules/base/src) or `__dirname + '/node_modules/....js'`
+        // (npm deps: jQuery core, jquery-migrate, free-jqgrid). Resolve each
+        // literal against the base its `+` prefix implies.
         const rel = [...srcBlock[1].matchAll(/'([^']+\.js)'/g)].map((m) => m[1]);
         expect(rel.length).toBeGreaterThan(0);
-        // src_path === <root>/modules/base/src ; strip the leading slash on the literal.
-        return rel.map((r) => path.join(repoRoot, 'modules/base/src', r.replace(/^\//, '')));
+        // src_path === <root>/modules/base/src. node_modules literals start with
+        // '/node_modules/' and resolve from the repo root instead.
+        return rel.map((r) =>
+            r.startsWith('/node_modules/')
+                ? path.join(repoRoot, r.replace(/^\//, ''))
+                : path.join(repoRoot, 'modules/base/src', r.replace(/^\//, ''))
+        );
     }
 
     test('every configured bundle input file exists', () => {
@@ -51,15 +59,22 @@ describe('reporting bundle build integrity', () => {
     test('all load-bearing inputs are still referenced in the build config', () => {
         const configured = getConfiguredInputs().map((f) => path.basename(f));
 
-        // exactly one jQuery core, whatever its version.
-        expect(configured.filter((f) => /^jquery-[\d.]+.*\.js$/.test(f))).toHaveLength(1);
+        // exactly one jQuery core. Phase 3.2 flipped the core from the vendored
+        // jquery-1.6.4.min.js to the npm dep's jquery.min.js (jquery-migrate is a
+        // separate shim, not a core, so it must not be double-counted here).
+        expect(configured.filter((f) => /^jquery\.min\.js$/.test(f))).toHaveLength(1);
 
         const required = [
+            // jQuery 1.x->3.x migration bridge (Phase 3.2): migrate restores the
+            // removed 1.x APIs the legacy plugins use, and the compat shim adds
+            // back $.browser (which migrate 3.x drops but sparkline + jQuery-UI need).
+            'jquery-migrate.min.js', 'owa.jquery-compat-shim.js',
             // vendored plugins the reporting UI depends on. jquery.sprintf.js was
             // dropped in Phase 3.2 (dead: OWA uses its own OWA.util.sprintf, the
-            // $.sprintf plugin form is called nowhere).
+            // $.sprintf plugin form is called nowhere). jqGrid 3.6.5 was replaced
+            // by free-jqgrid 4.15.5 (jquery.jqgrid.min.js) in the same phase.
             'jquery.ui.selectmenu.js', 'chosen.jquery.js',
-            'jquery.sparkline.min.js', 'jquery.jqGrid.min.js', 'jquery.flot.min.js',
+            'jquery.sparkline.min.js', 'jquery.jqgrid.min.js', 'jquery.flot.min.js',
             'jquery.jqote2.min.js',
             // OWA reporting code
             'owa.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
@@ -73,11 +88,12 @@ describe('reporting bundle build integrity', () => {
         // Ordering is load-bearing for a flat concat: jQuery must precede its
         // plugins, and every plugin must precede the OWA code that calls it.
         const inputs = getConfiguredInputs().map((f) => path.basename(f));
-        const jqueryIdx = inputs.findIndex((f) => /^jquery-[\d.]+/.test(f));
+        const jqueryIdx = inputs.findIndex((f) => /^jquery\.min\.js$/.test(f));
         const firstPluginIdx = inputs.findIndex((f) => f === 'jquery-ui-1.8.12.custom.min.js');
         const firstOwaIdx = inputs.findIndex((f) => f === 'owa.js');
 
         expect(jqueryIdx).toBe(0);
+        // migrate + the compat shim sit between the core and the first plugin.
         expect(firstPluginIdx).toBeGreaterThan(jqueryIdx);
         expect(firstOwaIdx).toBeGreaterThan(firstPluginIdx);
     });
@@ -113,19 +129,21 @@ describe('reporting bundle build integrity', () => {
         });
 
         /**
-         * The invariant the entire Phase 3 jQuery migration hinges on: today the
-         * reporting bundle ships jQuery 1.6.4 while the tracker ships 3.x
-         * (split-brain). This test PINS the current state to 1.6.4 so the moment
-         * the migration flips it to 3.x, this fails and must be consciously
-         * updated -- turning an invisible, load-order-sensitive change into an
-         * explicit, reviewed one.
+         * The invariant the entire Phase 3 jQuery migration hinges on. Phase 3.2
+         * flipped the reporting bundle from jQuery 1.6.4 to 3.6.0 (the version the
+         * tracker already ships -- this ends the split-brain). This test PINS 3.6.0
+         * so a future bump is a conscious, reviewed change rather than a silent one.
          */
-        test('reporting bundle currently embeds jQuery 1.6.4 (pre-migration baseline)', () => {
+        test('reporting bundle embeds jQuery 3.6.0 (post-migration baseline)', () => {
             if (bundle === null) return;
-            expect(bundle.includes('jQuery v1.6.4')).toBe(true);
-            // And exactly one jQuery core is concatenated (no accidental double-embed).
+            expect(bundle.includes('jQuery v3.6.0')).toBe(true);
+            // Exactly one jQuery CORE is concatenated (no accidental double-embed).
+            // The `jQuery v<n> ` banner form matches the core but NOT jquery-migrate's
+            // `jQuery Migrate v<n>` banner, so migrate is not miscounted as a core.
             const cores = [...bundle.matchAll(/jQuery v[\d.]+ /g)];
             expect(cores.length).toBe(1);
+            // And migrate is present (the bridge that keeps the legacy plugins alive).
+            expect(bundle.includes('jQuery Migrate v')).toBe(true);
         });
     });
 });
