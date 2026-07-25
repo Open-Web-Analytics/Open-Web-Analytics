@@ -655,10 +655,14 @@ class owa_template extends Template {
 
     function makeImageLink($path, $absolute = false) {
 
+        // Server-rendered images live in the public/ asset tree (the build copies
+        // base/i/ -> public/base/i/), NOT the module source tree -- modules_url is
+        // denied by the deny-all .htaccess. images_url/images_absolute_url both
+        // resolve to public/ (settings.php setupPaths()).
         if ($absolute === true) {
-            $url = owa_coreAPI::getSetting('base', 'modules_url');
+            $url = owa_coreAPI::getSetting('base', 'images_absolute_url');
         } else {
-            $url = owa_coreAPI::getSetting('base', 'modules_url');
+            $url = owa_coreAPI::getSetting('base', 'images_url');
         }
 
         return $url.$path;

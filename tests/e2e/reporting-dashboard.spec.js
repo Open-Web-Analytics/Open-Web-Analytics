@@ -372,6 +372,27 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(value.length).toBeGreaterThan(0);
     });
 
+    test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {
+        // Regression: makeImageLink() (owa_template.php) emits the <img> src for
+        // server-rendered images (the header logo, browser/referral/document icons,
+        // etc.). It must resolve against images_url (the public/ asset tree the build
+        // copies base/i/ into), NOT modules_url -- the deny-all .htaccess blocks the
+        // whole modules/ tree, so a modules/base/i/... src is a broken (403) image.
+        // The header logo is rendered via makeImageLink on every admin page, so it is
+        // a reliable anchor. NOTE: probing the static URLs directly (access-hardening
+        // spec) does NOT catch this -- only asserting the emitted src does.
+        const logo = page.locator('.owa_logo img').first();
+        await expect(logo).toBeVisible();
+
+        const src = await logo.getAttribute('src');
+        expect(src).toContain('/public/');
+        expect(src).not.toMatch(/\/modules\//);
+
+        // And it must actually load, not 403 under the deny-all.
+        const resp = await page.request.get(src);
+        expect(resp.status()).toBeLessThan(400);
+    });
+
     test('the dashboard loads without uncaught page errors', async ({ page }) => {
         // Captured across the whole beforeEach + assertions lifecycle.
         expect(page.__owaErrors).toEqual([]);
