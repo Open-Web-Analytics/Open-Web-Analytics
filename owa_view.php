@@ -397,7 +397,9 @@ class owa_view extends owa_base {
         }
 
         $uid = $path;
-        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+        // Built stylesheets are served from the public/ asset tree, not the module
+        // source tree -- see settings.php setupPaths() (assets_url).
+        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->css[$uid]['url'] = $url;
         // build file system path just in case we need to concatenate the JS into a single file.
         $fs_path = OWA_MODULES_DIR.$path;
@@ -416,7 +418,9 @@ class owa_view extends owa_base {
 
         $uid = $name.$version;
 
-        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+        // Built scripts are served from the public/ asset tree, not the module source
+        // tree -- see settings.php setupPaths() (assets_url).
+        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->js[$uid]['url'] = $url;
 
         // build file system path just in case we need to concatenate the JS into a single file.

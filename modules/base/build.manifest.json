@@ -11,13 +11,13 @@
             "name": "owa.reporting-combined-min.js",
             "type": "js",
             "entry": "src/reporting/v1/reporting-entry.js",
-            "outputDir": "dist",
+            "outputDir": "../../public/base/dist",
             "splitVendors": false
         },
         {
             "name": "owa.reporting-css-combined.css",
             "type": "css",
-            "outputDir": "css",
+            "outputDir": "../../public/base/css",
             "files": [
                 "css/jquery-ui.css",
                 "css/ui.jqgrid.css",
@@ -25,6 +25,17 @@
                 "css/owa.css",
                 "css/owa.admin.css",
                 "css/owa.report.css"
+            ],
+            "copy": [
+                {
+                    "from": "css",
+                    "to": ".",
+                    "ignore": ["**/owa.reporting-css-combined.css", "**/index.php"]
+                },
+                {
+                    "from": "i",
+                    "to": "../i"
+                }
             ]
         }
     ]

@@ -36,7 +36,7 @@ describe('reporting bundle build integrity', () => {
     const manifestPath = path.join(repoRoot, 'modules/base/build.manifest.json');
     const srcDir = path.join(repoRoot, 'modules/base/src/reporting/v1');
     const entryPath = path.join(srcDir, 'reporting-entry.js');
-    const bundlePath = path.join(repoRoot, 'modules/base/dist/owa.reporting-combined-min.js');
+    const bundlePath = path.join(repoRoot, 'public/base/dist/owa.reporting-combined-min.js');
 
     // The reporting JS package as declared in base's build manifest. webpack.config.js
     // discovers this (and the tracker + CSS packages) by scanning modules/*/build.manifest.json.
@@ -131,7 +131,9 @@ describe('reporting bundle build integrity', () => {
         expect(reportingPkg).toBeDefined();
         expect(reportingPkg.type).toBe('js');
         expect(reportingPkg.entry).toMatch(/reporting-entry\.js$/);
-        expect(reportingPkg.outputDir).toBe('dist');
+        // Emitted into the web-facing public/ tree (moved out of the module source
+        // tree so the deny-all .htaccess can allow public/** without exposing source).
+        expect(reportingPkg.outputDir).toBe('../../public/base/dist');
         expect(reportingPkg.splitVendors).toBe(false); // one self-contained file
         expect(reportingPkg.provideJquery).toBeUndefined(); // no config-level jQuery injection
     });
@@ -218,9 +220,9 @@ describe('reporting bundle build integrity', () => {
                 expect(bundle.includes(token)).toBe(true);
             }
 
-            // And no sibling reporting-vendors chunk is emitted alongside it. The
-            // dist dir legitimately holds the tracker's owa.vendors.js; anything
-            // else vendor-shaped next to the reporting bundle means it was split.
+            // And no sibling vendors chunk is emitted alongside it. public/base/dist/
+            // holds ONLY the reporting bundle now (the tracker's owa.vendors.js stays in
+            // modules/base/dist/), so ANY vendor-shaped file here means it was split.
             const distDir = path.dirname(bundlePath);
             const strays = fs.readdirSync(distDir).filter(
                 (f) => /vendor/i.test(f) && f !== 'owa.vendors.js'

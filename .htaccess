@@ -1,5 +1,36 @@
 AddHandler application/x-httpd-php .tpl
 
+# --- Web-access allowlist (deny-all, re-allow only public endpoints + assets) -------
+#
+# The repo root IS the Apache docroot, so without this the WHOLE source tree is
+# web-served: PHP class source, owa-config.php (DB credentials), raw *.tpl, owa-data/,
+# build metadata. Invert that: deny everything, then re-allow ONLY what the browser
+# legitimately fetches. (Apache 2.4: a more-specific section's `Require` REPLACES the
+# inherited one, so each allow below overrides the top-level deny for its match.)
+<IfModule mod_authz_core.c>
+
+    # Default: nothing is served.
+    Require all denied
+
+    # Public PHP entry points, matched by BASENAME so this also covers api/index.php.
+    <FilesMatch "^(index|log|install|queue|blank|wp_plugin)\.php$">
+        Require all granted
+    </FilesMatch>
+
+    # Path-based allows, matched on REQUEST_URI. Authorization runs in the auth phase,
+    # BEFORE mod_rewrite's fixup-phase rules -- so the `api/` PREFIX must be allowed
+    # here (not just the rewritten api/index.php target) or the REST pretty-URLs 403
+    # before the rewrite ever fires. Also: the public/ built-asset tree; the tracker
+    # family pinned at modules/base/dist/ (the in-the-wild embed hardcodes that path and
+    # its chunk loader derives its base from the script URL); the legacy js/ tracker
+    # paths (301'd below, but must pass authz to reach the redirect); and base/i/
+    # images (served server-side via makeImageLink through modules_url).
+    <If "%{REQUEST_URI} =~ m#/(api/|public/|modules/base/dist/owa\.(tracker|vendors|heatmap|player)\.js$|modules/base/js/owa\.(tracker-combined-min|heatmap|vendors|player)\.js$|modules/base/i/)#">
+        Require all granted
+    </If>
+
+</IfModule>
+
 <IfModule mod_rewrite.c>
 
 RewriteEngine On

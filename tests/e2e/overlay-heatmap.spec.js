@@ -25,14 +25,30 @@
  * asserted (it simply never calls back in this harness).
  */
 
+const fs = require('fs');
+const path = require('path');
 const { test, expect } = require('@playwright/test');
 
-// The harness page, served from under the OWA webroot (tests/ is web-servable).
 // baseURL in playwright.config.js points at <install>/index.php; strip the
 // index.php entry script to reach the install root that serves the tree.
 function installRoot(baseURL) {
     return baseURL.replace(/index\.php.*$/, '');
 }
+
+// The harness HTML, read from disk and fulfilled via route interception below.
+// It USED to be fetched over HTTP from tests/e2e/, but the Phase 5 deny-all
+// .htaccess (correctly) 403s the whole tests/ tree -- test infra ships in no
+// release tarball and is not a public asset, so it must not be web-served. We
+// still need the harness to load at an OWA-origin URL, though: the tracker is
+// injected by absolute URL and webpack's auto publicPath derives the heatmap
+// import() chunk base from document.currentScript.src, so that chunk fetch is
+// same-origin and CORS-clean ONLY if the harness document itself is same-origin.
+// So we navigate to the (denied) OWA URL and fulfill the document from disk --
+// origin stays the OWA host, the real tracker + chunk still load from the live
+// server (both allowlisted, 200), and no tests/ exception is punched in the deny-all.
+const HARNESS_HTML = fs.readFileSync(
+    path.join(__dirname, 'overlay_harness.html'), 'utf8'
+);
 
 test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => {
     let pageErrors;
@@ -44,6 +60,13 @@ test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => 
         const root = installRoot(testInfo.project.use.baseURL);
         const harness = root + 'tests/e2e/overlay_harness.html'
             + '?base=' + encodeURIComponent(root);
+
+        // Serve the harness document from disk (the deny-all .htaccess 403s tests/).
+        // Only the top-level document is intercepted; the tracker + heatmap chunk it
+        // pulls in fall through to the live OWA server, same-origin.
+        await page.route(harness, (route) =>
+            route.fulfill({ contentType: 'text/html', body: HARNESS_HTML })
+        );
 
         await page.goto(harness, { waitUntil: 'load' });
     });

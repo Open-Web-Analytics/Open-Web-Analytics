@@ -624,6 +624,7 @@
                 'base_url'                            => '',
                 'action_url'                        => '',
                 'images_url'                        => '',
+                'assets_url'                        => '',
                 'reporting_url'                        => '',
                 'p3p_policy'                        => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
                 'graph_link_template'                => '%s?owa_action=graph&name=%s&%s', //action_url?...
@@ -794,6 +795,16 @@
         //$this->set('base','action_url',$public_url.'action.php');
         $this->set('base','images_url', $modules_url);
         $this->set('base','images_absolute_url',$modules_url);
+        // Built, web-facing static assets (the webpack products) live in a dedicated
+        // public/ tree, physically separated from the source they are built from so
+        // the deny-all .htaccess can allow public/** wholesale without exposing PHP
+        // source, templates, or config. setJs()/setCss() resolve against this, NOT
+        // modules_url -- which now only serves images (makeImageLink). The tracker
+        // family is the ONE exception: it stays at modules/base/dist/ because the
+        // in-the-wild embed snippet hardcodes that path and its chunk loader derives
+        // its base from the script's own URL (see .htaccess).
+        $assets_url = $public_url.'public/';
+        $this->set('base','assets_url', $assets_url);
         $this->set('base','log_url',$public_url.'log.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 

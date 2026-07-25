@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 /**
  * Build-integrity characterization of the combined reporting stylesheet
- * (modules/base/css/owa.reporting-css-combined.css).
+ * (public/base/css/owa.reporting-css-combined.css; sources in modules/base/css/).
  *
  * This file's production moved from the PHP-CLI `cmd=build` controller
  * (base.build / owa_buildController, formerly driven by base/module.php
@@ -28,8 +28,12 @@ describe('reporting CSS build integrity', () => {
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
     const manifestPath = path.join(repoRoot, 'modules/base/build.manifest.json');
-    const cssDir = path.join(repoRoot, 'modules/base/css');
-    const artifactPath = path.join(cssDir, 'owa.reporting-css-combined.css');
+    // Source stylesheets live in the module tree; the BUILT artifact + its copied
+    // url() assets are emitted into the public/ asset tree (moved out of source so the
+    // deny-all .htaccess can allow public/** without exposing anything sensitive).
+    const cssSrcDir = path.join(repoRoot, 'modules/base/css');
+    const publicCssDir = path.join(repoRoot, 'public/base/css');
+    const artifactPath = path.join(publicCssDir, 'owa.reporting-css-combined.css');
     const modulePhpPath = path.join(repoRoot, 'modules/base/module.php');
 
     // The six source stylesheets, in the cascade order the entry lists them.
@@ -45,7 +49,7 @@ describe('reporting CSS build integrity', () => {
 
     test('all six source stylesheets exist', () => {
         for (const f of CSS_SOURCES) {
-            expect(fs.existsSync(path.join(cssDir, f))).toBe(true);
+            expect(fs.existsSync(path.join(cssSrcDir, f))).toBe(true);
         }
     });
 
@@ -54,7 +58,8 @@ describe('reporting CSS build integrity', () => {
         // discovered by webpack.config.js. Order is load-bearing.
         expect(cssPkg).toBeDefined();
         expect(cssPkg.type).toBe('css');
-        expect(cssPkg.outputDir).toBe('css');
+        // Emitted into the public/ asset tree, not the module source dir.
+        expect(cssPkg.outputDir).toBe('../../public/base/css');
         expect(cssPkg.files).toEqual(CSS_SOURCES.map((f) => `css/${f}`));
     });
 
@@ -121,11 +126,29 @@ describe('reporting CSS build integrity', () => {
         test('no stray JS chunk is emitted alongside the stylesheet', () => {
             if (css === null) return;
             // A CSS-only entry produces a stub .js chunk; RemoveEmptyScriptsPlugin
-            // must delete it so css/ isn't littered with an empty script.
-            const stray = fs.readdirSync(cssDir).filter(
+            // must delete it so public/base/css/ isn't littered with an empty script.
+            const stray = fs.readdirSync(publicCssDir).filter(
                 (f) => f === 'owa.reporting-css-combined.js'
             );
             expect(stray).toEqual([]);
+        });
+
+        test('the url()-referenced assets are copied into the public tree', () => {
+            if (css === null) return;
+            // css-loader url:false leaves every url() as authored, so the CopyPlugin
+            // must mirror those assets into public/ in the SAME relative layout or they
+            // 404 at runtime: sprites + theme images beside the stylesheet, ../i/ as a
+            // sibling. Pin one of each root the combined CSS references.
+            const publicBase = path.dirname(publicCssDir); // public/base
+            const copied = [
+                'css/chosen-sprite.png',
+                'css/images/ui-icons_444444_256x240.png',
+                'css/font-awesome/css/all.min.css',
+                'css/owa.css', // dual-role: build input AND served raw to the installer
+                'i/funnel_flow.png', // owa.report.css ../i/ funnel image
+            ];
+            const missing = copied.filter((f) => !fs.existsSync(path.join(publicBase, f)));
+            expect(missing).toEqual([]);
         });
     });
 });

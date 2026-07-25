@@ -3,6 +3,7 @@ const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
+const CopyPlugin = require('copy-webpack-plugin');
 
 // --- Per-module asset build registration ---------------------------------
 //
@@ -20,8 +21,13 @@ const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 //
 // A manifest package is one of:
 //   JS  { name, type:'js', entry, outputDir, splitVendors }
-//   CSS { name, type:'css', outputDir, files:[...] }
-// where entry/files/outputDir are paths RELATIVE to the module directory.
+//   CSS { name, type:'css', outputDir, files:[...], copy:[{from,to,ignore?}] }
+// where entry/files paths and outputDir are RELATIVE to the module directory
+// (outputDir may reach outside it, e.g. ../../public/base/dist, to emit into the
+// web-facing public/ tree). `copy` (CSS only) brings the stylesheet's url()-
+// referenced assets -- sprites, theme images, fonts, and the ../i/ siblings -- into
+// the public output verbatim so url:false relative paths keep resolving; each entry's
+// from/to are relative to the module dir / the package outputDir respectively.
 
 const modulesDir = path.resolve(__dirname, 'modules');
 const MANIFEST = 'build.manifest.json';
@@ -83,14 +89,38 @@ function jsConfig(moduleName, moduleDir, pkg) {
 // CSS package -> webpack config.
 //
 // mini-css-extract-plugin emits the combined stylesheet under the package name
-// (`[name]`) into the module's output dir. css-loader runs with url:false so every
-// url() is left EXACTLY as authored -- combined with keeping the output dir the
-// same as the source dir, the relative asset paths (images/ui-icons_*,
-// chosen-sprite.png, ../i/*) stay valid without rewriting a single url(). The
-// `files` order is the cascade order (later files intentionally override earlier).
-// A CSS-only entry still emits a stub .js chunk, which RemoveEmptyScriptsPlugin
-// deletes. Output is NOT minified (the artifact has no -min suffix).
+// (`[name]`) into the package output dir (now public/base/css). css-loader runs with
+// url:false so every url() is left EXACTLY as authored; the CopyPlugin below then
+// mirrors the url()-referenced assets into the SAME relative layout under the public
+// output (css sprites/theme-images beside the stylesheet, ../i/ as a sibling), so the
+// verbatim relative paths (images/ui-icons_*, chosen-sprite.png, ../i/*) keep
+// resolving without rewriting a single url() -- the public-tree analogue of the old
+// same-dir strategy. The `files` order is the cascade order (later files
+// intentionally override earlier). A CSS-only entry still emits a stub .js chunk,
+// which RemoveEmptyScriptsPlugin deletes. Output is NOT minified (no -min suffix).
 function cssConfig(moduleName, moduleDir, pkg) {
+	const plugins = [
+		new RemoveEmptyScriptsPlugin(),
+		new MiniCssExtractPlugin({ filename: '[name]' }),
+	];
+
+	// Bring the stylesheet's url()-referenced assets into the public output verbatim.
+	// `from` is resolved against the module dir; `to` against the package output dir.
+	// A copied file that mini-css-extract also emits (the combined stylesheet itself,
+	// if `from` is the css source dir) is excluded via `ignore` in the manifest.
+	if (Array.isArray(pkg.copy) && pkg.copy.length) {
+		plugins.push(
+			new CopyPlugin({
+				patterns: pkg.copy.map((c) => ({
+					from: path.resolve(moduleDir, c.from),
+					to: c.to,
+					globOptions: c.ignore ? { ignore: c.ignore } : undefined,
+					noErrorOnMissing: true,
+				})),
+			})
+		);
+	}
+
 	return {
 		name: `${moduleName}:${pkg.name}`,
 		entry: {
@@ -110,10 +140,7 @@ function cssConfig(moduleName, moduleDir, pkg) {
 				},
 			],
 		},
-		plugins: [
-			new RemoveEmptyScriptsPlugin(),
-			new MiniCssExtractPlugin({ filename: '[name]' }),
-		],
+		plugins,
 	};
 }
 
