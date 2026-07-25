@@ -4,7 +4,7 @@
     <?php if (!empty($visitors)):?>
     <?php foreach ($visitors as $visitor):?>
     <TR>
-        <TD><img src="<?php echo $this->makeImageLink('user_icon_small.gif');?>" align="top">
+        <TD><img src="<?php echo $this->makeImageLink('base/i/user_icon_small.gif');?>" align="top">
             <a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id'], 'period' => 'all_time'));?>">
             <?if(!empty($visitor['user_name'])):
                 echo $visitor['user_name'];

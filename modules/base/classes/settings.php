@@ -793,18 +793,19 @@
         $modules_url = $public_url.'modules/';
         $this->set('base','modules_url', $modules_url);
         //$this->set('base','action_url',$public_url.'action.php');
-        $this->set('base','images_url', $modules_url);
-        $this->set('base','images_absolute_url',$modules_url);
-        // Built, web-facing static assets (the webpack products) live in a dedicated
-        // public/ tree, physically separated from the source they are built from so
-        // the deny-all .htaccess can allow public/** wholesale without exposing PHP
-        // source, templates, or config. setJs()/setCss() resolve against this, NOT
-        // modules_url -- which now only serves images (makeImageLink). The tracker
-        // family is the ONE exception: it stays at modules/base/dist/ because the
-        // in-the-wild embed snippet hardcodes that path and its chunk loader derives
+        // Built, web-facing static assets (the webpack products AND every server-side
+        // image emitted via makeImageLink) live in a dedicated public/ tree, physically
+        // separated from the source they are built from so the deny-all .htaccess can
+        // allow public/** wholesale without exposing PHP source, templates, or config.
+        // setJs()/setCss() (assets_url) and makeImageLink() (images_url) all resolve
+        // here, NOT modules_url -- which no longer serves anything to the browser. The
+        // tracker family is the ONE exception: it stays at modules/base/dist/ because
+        // the in-the-wild embed snippet hardcodes that path and its chunk loader derives
         // its base from the script's own URL (see .htaccess).
         $assets_url = $public_url.'public/';
         $this->set('base','assets_url', $assets_url);
+        $this->set('base','images_url', $assets_url);
+        $this->set('base','images_absolute_url', $assets_url);
         $this->set('base','log_url',$public_url.'log.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 

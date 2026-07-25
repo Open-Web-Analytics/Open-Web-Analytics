@@ -20,12 +20,13 @@ AddHandler application/x-httpd-php .tpl
     # Path-based allows, matched on REQUEST_URI. Authorization runs in the auth phase,
     # BEFORE mod_rewrite's fixup-phase rules -- so the `api/` PREFIX must be allowed
     # here (not just the rewritten api/index.php target) or the REST pretty-URLs 403
-    # before the rewrite ever fires. Also: the public/ built-asset tree; the tracker
-    # family pinned at modules/base/dist/ (the in-the-wild embed hardcodes that path and
-    # its chunk loader derives its base from the script URL); the legacy js/ tracker
-    # paths (301'd below, but must pass authz to reach the redirect); and base/i/
-    # images (served server-side via makeImageLink through modules_url).
-    <If "%{REQUEST_URI} =~ m#/(api/|public/|modules/base/dist/owa\.(tracker|vendors|heatmap|player)\.js$|modules/base/js/owa\.(tracker-combined-min|heatmap|vendors|player)\.js$|modules/base/i/)#">
+    # before the rewrite ever fires. Also: the public/ built-asset tree (every browser-
+    # fetched asset now lives here -- built JS/CSS AND the server-side makeImageLink
+    # images, via assets_url); the tracker family pinned at modules/base/dist/ (the
+    # in-the-wild embed hardcodes that path and its chunk loader derives its base from
+    # the script URL); and the legacy js/ tracker paths (301'd below, but must pass authz
+    # to reach the redirect). Nothing else under modules/ is served.
+    <If "%{REQUEST_URI} =~ m#/(api/|public/|modules/base/dist/owa\.(tracker|vendors|heatmap|player)\.js$|modules/base/js/owa\.(tracker-combined-min|heatmap|vendors|player)\.js$)#">
         Require all granted
     </If>
 

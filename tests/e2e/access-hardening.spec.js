@@ -48,8 +48,10 @@ const PUBLIC_PATHS = [
     'modules/base/dist/owa.tracker.js',
     'public/base/dist/owa.reporting-combined-min.js',
     'public/base/css/owa.reporting-css-combined.css',
-    // A copied CSS url() dep under public/ -- proves the whole public/ tree is served.
+    // Images under public/ -- both the copied CSS url() deps AND the server-side
+    // makeImageLink images (report icons/logos) now resolve here via images_url.
     'public/base/i/funnel_flow.png',
+    'public/base/i/user_icon_small.gif',
     // BOTH tracker locations stay reachable -- the legacy js/ path is a real second
     // copy (copyTracker) that .htaccess 301s to dist. Old embed codes depend on it.
     'modules/base/js/owa.tracker-combined-min.js',
@@ -63,6 +65,10 @@ const DENIED_PATHS = [
     'owa_coreAPI.php',                                // core class source
     'modules/base/classes/trackingEventHelpers.php',  // module class source
     'modules/base/templates/report.tpl',              // raw template
+    // Module-tree images are no longer served -- makeImageLink now resolves against
+    // public/ (images_url = assets_url), so the source-tree copy must be denied like
+    // the rest of modules/. (The public/base/i/ copy above is what's actually served.)
+    'modules/base/i/user_icon_small.gif',
     'webpack.config.js',                              // build metadata
     'package.json',                                   // build metadata
     'composer.json',                                  // build metadata
