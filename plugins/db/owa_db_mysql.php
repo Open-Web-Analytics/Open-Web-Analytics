@@ -317,7 +317,8 @@ class owa_db_mysql extends owa_db {
 
     function getAffectedRows() {
 
-        return mysqli_affected_rows();
+        // mysqli_affected_rows() has required the connection arg since PHP 8.0.
+        return mysqli_affected_rows( $this->connection );
     }
 }
 
