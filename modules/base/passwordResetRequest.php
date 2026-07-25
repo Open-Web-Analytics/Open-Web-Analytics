@@ -42,7 +42,7 @@ class owa_passwordResetRequestController extends owa_controller {
             'errorMsg'  => $this->getMsg(3010)
         ];
 
-        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityExists', $useEmailAddressEntityConf);
+        $this->addValidation('email_address', trim((string) $this->getParam('email_address')), 'entityExists', $useEmailAddressEntityConf);
     }
 
     function action() {
@@ -56,7 +56,7 @@ class owa_passwordResetRequestController extends owa_controller {
 
         // return view
         $this->setView('base.passwordResetForm');
-        $email_address = trim($this->getParam('email_address'));
+        $email_address = trim((string) $this->getParam('email_address'));
         $msg = $this->getMsg(2000, ['message' => $email_address]);
         $this->set('status_msg', $msg);
     }
@@ -64,7 +64,7 @@ class owa_passwordResetRequestController extends owa_controller {
     function errorAction() {
 
         $this->setView('base.passwordResetForm');
-        $email_address = trim($this->getParam('email_address'));
+        $email_address = trim((string) $this->getParam('email_address'));
         $this->set('error_msg', $this->getMsg(2001, ['message' => $email_address]));
     }
 }

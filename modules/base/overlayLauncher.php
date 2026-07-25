@@ -48,14 +48,14 @@ class owa_overlayLauncherController extends owa_controller {
 	        $d = owa_coreAPI::entityFactory( $entity );
 			$d->load( $id );
 	
-	        $url = trim( $d->get( $url_param ) );
+	        $url = trim( (string) $d->get( $url_param ) );
 	
 	        if ( strpos( $url, '#' ) ) {
 	            $parts = explode( '#', $url );
 	            $url = $parts[0];
 	        }
 	
-	        $url = $url.'#owa_overlay.' . trim( $this->getParam( 'overlay_params' ), '\u0000' );
+	        $url = $url.'#owa_overlay.' . trim( (string) $this->getParam( 'overlay_params' ), '\u0000' );
 			
 			$this->redirectBrowserToUrl($url);
 			$this->set('url', $url);

@@ -34,7 +34,7 @@ class owa_reportAdDetailController extends owa_reportController {
 
     function action() {
 
-        $dim_value = strtolower($this->getParam('ad'));
+        $dim_value = strtolower((string) $this->getParam('ad'));
         $this->setTitle('Ad: ', $dim_value);
         $this->set('metrics', 'visits,pageViews,bounces');
         $this->set('sort', 'visits-');

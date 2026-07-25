@@ -56,7 +56,7 @@ class owa_processEventQueueController extends owa_cliController {
 
         if ( $queues ) {
             // parse command line
-            $queues = explode( ',', $this->getParam( 'queues' ) );
+            $queues = explode( ',', (string) $this->getParam( 'queues' ) );
 
         } else {
 

@@ -89,7 +89,7 @@
                                                       'dimensions' => 'pagePath,pageTitle',
                                                       'sort' => 'visits-',
                                                       'resultsPerPage' => 15,
-                                                      'constraints'            => 'priorPageUrl=='.urlencode($dimension_properties->get('url')),
+                                                      'constraints'            => 'priorPageUrl=='.urlencode((string) $dimension_properties->get('url')),
                                                       'format' => 'json'), true);?>';
 
         var trshre = new OWA.resultSetExplorer('nextpages');
@@ -103,7 +103,7 @@
                                                       'dimensions' => 'priorPagePath,priorPageTitle',
                                                       'sort' => 'visits-',
                                                       'resultsPerPage' => 15,
-                                                      'constraints'            => urlencode('pageUrl=='.$dimension_properties->get('url')),
+                                                      'constraints'            => urlencode('pageUrl=='.(string) $dimension_properties->get('url')),
                                                       'format' => 'json'), true);?>';
 
         var prshre = new OWA.resultSetExplorer('priorpages');
@@ -117,7 +117,7 @@
                                                     'dimensions'        => 'visitorId',
                                                     'sort'              => 'visits-',
                                                     'resultsPerPage'    => 15,
-                                                    'constraints'       => urlencode('pageUrl=='.$dimension_properties->get('url')),
+                                                    'constraints'       => urlencode('pageUrl=='.(string) $dimension_properties->get('url')),
                                                     'format'            => 'json'], true);?>';
 
         var vrshre = new OWA.resultSetExplorer('pagevisitors');

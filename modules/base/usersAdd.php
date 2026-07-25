@@ -59,7 +59,7 @@ class owa_usersAddController extends owa_adminController {
             'errorMsg'  => $this->getMsg(3009)
         ];
 
-        $this->addValidation('email_address', trim($this->getParam('email_address')), 'entityDoesNotExist', $userEmailAddressEntityConf);
+        $this->addValidation('email_address', trim((string) $this->getParam('email_address')), 'entityDoesNotExist', $userEmailAddressEntityConf);
 
         // Check user name.
         $userEntityConf = [

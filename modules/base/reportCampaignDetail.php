@@ -34,7 +34,7 @@ class owa_reportCampaignDetailController extends owa_reportController {
 
     function action() {
 
-        $dim_value = strtolower($this->getParam('campaign'));
+        $dim_value = strtolower((string) $this->getParam('campaign'));
         $this->setTitle('Campaign: ', $dim_value);
         $this->set('metrics', 'visits,pageViews,bounces');
         $this->set('sort', 'visits-');

@@ -447,13 +447,13 @@ class owa_trackingEventHelpers {
 
     static function deriveSec( $sec, $event ) {
 
-        list( $msec, $sec ) = explode( " ", $event->get( 'microtime' ) );
+        list( $msec, $sec ) = explode( " ", (string) $event->get( 'microtime' ) );
         return $sec;
     }
 
     static function deriveMsec( $msec, $event ) {
 
-        list( $msec, $sec ) = explode( " ", $event->get( 'microtime' ) );
+        list( $msec, $sec ) = explode( " ", (string) $event->get( 'microtime' ) );
         return $msec;
     }
 

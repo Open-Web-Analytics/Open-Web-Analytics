@@ -49,7 +49,7 @@
                                             'dimensions'     => 'date',
                                             'sort'             => 'date',
                                             'format'         => 'json',
-                                            'constraints'    => urlencode('siteId=='.$site->get('site_id'))
+                                            'constraints'    => urlencode('siteId=='.(string) $site->get('site_id'))
                                     ), true); ?>';
 
                         var rsh = new OWA.resultSetExplorer('site-trend');

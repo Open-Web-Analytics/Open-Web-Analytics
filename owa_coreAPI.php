@@ -1077,7 +1077,7 @@ class owa_coreAPI {
         if (owa_coreAPI::getSetting('base', 'clean_query_string')):
 
             if (owa_coreAPI::getSetting('base', 'query_string_filters')):
-                $filters = str_replace(' ', '', owa_coreAPI::getSetting('base', 'query_string_filters'));
+                $filters = str_replace(' ', '', (string) owa_coreAPI::getSetting('base', 'query_string_filters'));
                 $filters = explode(',', $filters);
             else:
                 $filters = array();
@@ -1575,7 +1575,7 @@ class owa_coreAPI {
         if ( ! $cached_salts ) {
 
             $cached_salts = array();
-            $ns = strtoupper( owa_coreAPI::getSetting('base', 'ns') );
+            $ns = strtoupper( (string) owa_coreAPI::getSetting('base', 'ns') );
 
             foreach (array('NONCE', 'SECRET', 'AUTH') as $f ) {
 
