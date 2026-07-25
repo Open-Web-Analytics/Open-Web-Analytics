@@ -82,7 +82,7 @@ class owa_reportController extends owa_adminController {
         $this->setView('base.report');
         $this->setViewMethod('delegate');
 
-        $this->dom_id = str_replace('.', '-', $this->getParam('do'));
+        $this->dom_id = str_replace('.', '-', (string) $this->getParam('do'));
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
         $nav = owa_coreAPI::getGroupNavigation('Reports');

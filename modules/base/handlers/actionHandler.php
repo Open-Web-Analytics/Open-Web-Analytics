@@ -51,9 +51,9 @@ class owa_actionHandler extends owa_observer {
             $a->setProperties( $event->getProperties() );
             // Set Primary Key
             $a->set( 'id', $event->get('guid') );
-            $a->set('action_name', strtolower(trim($event->get('action_name'))));
-            $a->set('action_group', strtolower(trim($event->get('action_group'))));
-            $a->set('action_label', strtolower(trim($event->get('action_label'))));
+            $a->set('action_name', strtolower(trim((string) $event->get('action_name'))));
+            $a->set('action_group', strtolower(trim((string) $event->get('action_group'))));
+            $a->set('action_label', strtolower(trim((string) $event->get('action_label'))));
             $a->set('numeric_value', $event->get('numeric_value') * 1);
             
             $ret = $a->create();

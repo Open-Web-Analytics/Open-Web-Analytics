@@ -151,7 +151,7 @@ class owa_http {
 
         owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
 
-        return owa_lib::inputFilter( trim( $title ), ['remove_html' => true] );
+        return owa_lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
     }
 
     function strip_selected_tags($str, $tags = array(), $stripContent = false) {
@@ -225,11 +225,16 @@ class owa_http {
     }
     
    function getResponseBody() {
-	    
+
 	      if ( $this->response ) {
-		 
+
 		    return $this->response->getBody();
 		}
+
+		// Always return a string. Callers feed this straight into preg_match(),
+		// preg_match_all() and trim(), which raise a PHP 8.x deprecation (and a
+		// fatal TypeError under PHP 9) when handed null.
+		return '';
     }
 }
 
