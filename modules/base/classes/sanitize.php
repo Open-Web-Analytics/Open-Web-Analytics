@@ -369,6 +369,48 @@ class owa_sanitize {
         }
     }
 
+    /**
+     * Neutralize dangerous URL schemes for use in an href/src attribute.
+     *
+     * htmlentities() (escapeForDisplay) stops attribute breakout but leaves a
+     * scheme-based payload -- javascript:, data:, vbscript: -- intact and live
+     * in an href. Stored tracker URLs are attacker-controllable and are not
+     * re-escaped by makeUrlCanonical(), so link-emitting templates must reject
+     * unexpected schemes here, before the value reaches the attribute.
+     *
+     * Permitted: http, https, mailto, ftp, tel; scheme-relative (//host) and
+     * root/relative paths (/x, x). Anything else collapses to '#'.
+     *
+     * @param  string $url
+     * @return string        a safe href value ('#' if the scheme is rejected)
+     */
+    public static function sanitizeHref( $url ) {
+
+        $url = trim( (string) $url );
+
+        if ( $url === '' ) {
+            return '#';
+        }
+
+        // Decode entities/whitespace obfuscation so we test the real scheme.
+        // e.g. "java&#115;cript:" or "java\tscript:" must not slip through.
+        $probe = html_entity_decode( $url, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+        $probe = preg_replace( '/[\x00-\x20\x7f]+/', '', $probe );
+
+        // No scheme (relative, root-relative, scheme-relative, fragment, query).
+        if ( ! preg_match( '#^([a-z][a-z0-9+.\-]*):#i', $probe, $m ) ) {
+            return $url;
+        }
+
+        $allowed = array( 'http', 'https', 'mailto', 'ftp', 'tel' );
+
+        if ( in_array( strtolower( $m[1] ), $allowed, true ) ) {
+            return $url;
+        }
+
+        return '#';
+    }
+
     public static function cleanUserId ( $user_id ) {
 
         $illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');

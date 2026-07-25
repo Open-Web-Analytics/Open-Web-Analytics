@@ -5,7 +5,7 @@
     <div>
         <div class="title"><?php $this->out( $properties->get('page_title') );?></div>
         <div class="url">
-            <?php $this->out( $properties->get('url') );?> &nbsp; <span class="moreLink"><a href="<?php $this->out( $properties->get('url') );?>">Visit Site &raquo;</a></span>
+            <?php $this->out( $properties->get('url') );?> &nbsp; <span class="moreLink"><a href="<?php $this->safeHref( $properties->get('url') );?>">Visit Site &raquo;</a></span>
         </div>
         <div class="pagetype"><b>Page Type:</B> <?php $this->out( $properties->get('page_type') );?></div>
     </div>

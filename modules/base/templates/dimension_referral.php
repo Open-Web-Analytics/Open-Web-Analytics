@@ -13,7 +13,7 @@
         ?>
         </div>
         <div class="url">
-            <?php $this->out($properties['url']);?> &nbsp; <span class="moreLink"><a href="<?php $this->out( $properties['url'] );?>">Visit Site &raquo;</a></span>
+            <?php $this->out($properties['url']);?> &nbsp; <span class="moreLink"><a href="<?php $this->safeHref( $properties['url'] );?>">Visit Site &raquo;</a></span>
         </div>
         <div class="snippet"><?php $this->out($properties['snippet'], false);?></div>
     </div>

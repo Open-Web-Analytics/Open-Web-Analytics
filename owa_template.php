@@ -1071,6 +1071,36 @@ class owa_template extends Template {
         echo $output;
     }
 
+    /**
+     * Safely emit a tracker-sourced URL into an href/src attribute.
+     *
+     * escapeForDisplay() (what out() uses) neutralizes attribute breakout
+     * ("><script) but does NOT neutralize a scheme-based payload: a stored
+     * value of  javascript:alert(1)  or  data:text/html,...  survives
+     * htmlentities() unchanged and stays a live scheme in an href. Stored
+     * URLs are attacker-controllable (set by the tracker) and are NOT
+     * re-escaped by makeUrlCanonical(), so any template that drops a stored
+     * URL straight into href="" needs a scheme check on top of escaping.
+     *
+     * This permits only http/https/mailto/ftp (and scheme-relative "//" and
+     * root-relative "/" URLs); anything else is replaced with '#'. The
+     * returned value is then escaped exactly like out() for the breakout case.
+     *
+     * @param string $url  the URL to emit
+     * @param bool   $echo when true (default) echo the value, else return it
+     */
+    function safeHref( $url, $echo = true ) {
+
+        $safe = owa_sanitize::sanitizeHref( $url );
+        $safe = owa_sanitize::escapeForDisplay( $safe );
+
+        if ( $echo ) {
+            echo $safe;
+        }
+
+        return $safe;
+    }
+
     function formatCurrency($value) {
         return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ), owa_coreAPI::getSetting( 'base', 'currencyISO3' ) );
     }
