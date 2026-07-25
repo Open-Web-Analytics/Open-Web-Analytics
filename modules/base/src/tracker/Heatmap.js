@@ -36,7 +36,6 @@ class Heatmap {
 	        randomDataCount: 200,
 	        rowsPerFetch: 100,
 	        strokeRegions: false,
-	        svgUrl: OWA_instance.getSetting('baseUrl')+'/modules/base/i/test.svg#f1',
 	        baseUrl: '',
 	        apiUrl: ''
 	    };

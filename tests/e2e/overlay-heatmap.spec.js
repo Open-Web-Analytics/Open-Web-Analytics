@@ -52,10 +52,21 @@ const HARNESS_HTML = fs.readFileSync(
 
 test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => {
     let pageErrors;
+    let overlayCssResponses;
 
     test.beforeEach(async ({ page }, testInfo) => {
         pageErrors = [];
         page.on('pageerror', (err) => pageErrors.push(err.message));
+
+        // Record every owa.overlay.css fetch (url + status). loadHeatmap() requests it
+        // right after the dynamic import resolves -- possibly after 'load' -- so the
+        // listener must be attached BEFORE goto, and the test polls this array.
+        overlayCssResponses = [];
+        page.on('response', (r) => {
+            if (r.url().includes('owa.overlay.css')) {
+                overlayCssResponses.push({ url: r.url(), status: r.status() });
+            }
+        });
 
         const root = installRoot(testInfo.project.use.baseURL);
         const harness = root + 'tests/e2e/overlay_harness.html'
@@ -117,5 +128,21 @@ test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => 
         // Give any microtasks from the dynamic import a beat to surface errors.
         await page.waitForTimeout(500);
         expect(pageErrors, 'overlay bootstrap threw:\n' + pageErrors.join('\n')).toEqual([]);
+    });
+
+    test('the overlay stylesheet loads from public/ (not the denied module tree)', async ({ page }) => {
+        // loadHeatmap() does Util.loadCss(baseUrl + '/public/base/css/owa.overlay.css').
+        // The Phase 5 deny-all 403s modules/base/css/, so this asset MUST resolve under
+        // public/ or the overlay renders unstyled. Regression guard: the tracker/overlay
+        // code hardcodes asset paths (webpack can't rewrite a runtime-built URL string),
+        // so a stale modules/base/ path silently 403s -- caught here, not by the DOM tests.
+        // The fetch is recorded in beforeEach (listener attached before navigation); wait
+        // for the overlay to build, then assert on what was fetched.
+        await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
+        await expect.poll(() => overlayCssResponses.length, { timeout: 20_000 })
+            .toBeGreaterThan(0);
+        const cssResp = overlayCssResponses[0];
+        expect(cssResp.url).toContain('/public/base/css/owa.overlay.css');
+        expect(cssResp.status, 'overlay.css must be served, not denied').toBe(200);
     });
 });
