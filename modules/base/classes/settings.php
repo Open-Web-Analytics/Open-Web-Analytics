@@ -799,9 +799,11 @@
         // allow public/** wholesale without exposing PHP source, templates, or config.
         // setJs()/setCss() (assets_url) and makeImageLink() (images_url) all resolve
         // here, NOT modules_url -- which no longer serves anything to the browser. The
-        // tracker family is the ONE exception: it stays at modules/base/dist/ because
-        // the in-the-wild embed snippet hardcodes that path and its chunk loader derives
-        // its base from the script's own URL (see .htaccess).
+        // tracker family (owa.tracker/vendors/heatmap/player) now lives here too, under
+        // public/base/dist/; old embeds hardcoding modules/base/dist/owa.tracker.js are
+        // 301'd here, and the tracker pins its own chunk publicPath to owa_baseUrl +
+        // 'public/base/dist/' so the async chunks resolve correctly through the redirect
+        // (see .htaccess and src/tracker/tracker-dom.js).
         $assets_url = $public_url.'public/';
         $this->set('base','assets_url', $assets_url);
         $this->set('base','images_url', $assets_url);

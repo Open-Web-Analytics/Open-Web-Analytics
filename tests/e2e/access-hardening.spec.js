@@ -8,12 +8,12 @@
  * intended access policy:
  *
  *   - PUBLIC set  -> must be reachable (200/301/302). The public PHP endpoints, the
- *     built JS/CSS assets, AND BOTH tracker locations: the canonical
- *     modules/base/dist/owa.tracker.js and the legacy
- *     modules/base/js/owa.tracker-combined-min.js. The legacy js/ path no longer has a
- *     physical copy (the copyTracker duplication was dropped) -- it is 301-redirected to
- *     dist/ by .htaccess (the rewrite fires unconditionally, no -f test), and old embed
- *     snippets in the wild still point at the js/ path, so it must keep resolving.
+ *     built JS/CSS assets (now including the whole tracker family under public/), AND
+ *     the two legacy tracker ENTRY points that old embeds hardcode: the previous
+ *     modules/base/dist/owa.tracker.js and the ancient
+ *     modules/base/js/owa.tracker-combined-min.js. Neither has a physical file anymore --
+ *     both are 301-redirected to public/base/dist/owa.tracker.js by .htaccess (the
+ *     rewrites fire unconditionally, no -f test), so old embed snippets keep resolving.
  *   - DENIED set  -> must NOT be served as source (expect 403, or 404 if the allow
  *     rule makes it vanish). Source PHP, templates, config, data, build metadata.
  *
@@ -43,19 +43,22 @@ const PUBLIC_PATHS = [
     'queue.php',
     'blank.php',
     'wp_plugin.php',
-    // Built, intentionally-public assets. The reporting JS + combined CSS now live in
-    // the public/ asset tree (moved out of the source tree so the deny-all can allow
-    // public/** wholesale); the tracker family stays pinned at modules/base/dist/.
-    'modules/base/dist/owa.tracker.js',
+    // Built, intentionally-public assets, ALL now under the public/ asset tree (moved
+    // out of the source tree so the deny-all can allow public/** wholesale) -- the
+    // canonical tracker, the reporting JS, and the combined CSS.
+    'public/base/dist/owa.tracker.js',
     'public/base/dist/owa.reporting-combined-min.js',
     'public/base/css/owa.reporting-css-combined.css',
     // Images under public/ -- both the copied CSS url() deps AND the server-side
     // makeImageLink images (report icons/logos) now resolve here via images_url.
     'public/base/i/funnel_flow.png',
     'public/base/i/user_icon_small.gif',
-    // BOTH tracker locations stay reachable -- the legacy js/ path has no physical file
-    // anymore (copyTracker dropped); .htaccess 301s it to dist/. Old embed codes depend
-    // on it resolving (the redirect is the compat, not a duplicate file).
+    // The two legacy tracker ENTRY points stay reachable -- neither has a physical file
+    // anymore; .htaccess 301s both to public/base/dist/owa.tracker.js. Old embed codes
+    // in the wild point at one or the other, so both must keep resolving (the redirect
+    // is the compat, not a duplicate file). The moved tracker pins its own publicPath to
+    // public/, so its async chunks are never requested from these old locations.
+    'modules/base/dist/owa.tracker.js',
     'modules/base/js/owa.tracker-combined-min.js',
 ];
 
@@ -71,6 +74,11 @@ const DENIED_PATHS = [
     // public/ (images_url = assets_url), so the source-tree copy must be denied like
     // the rest of modules/. (The public/base/i/ copy above is what's actually served.)
     'modules/base/i/user_icon_small.gif',
+    // The tracker's async chunks used to live (and be allowlisted) at modules/base/dist/.
+    // The tracker moved to public/ and pins its publicPath there, so it never requests
+    // these from the module tree -- the allow was dropped and they must now be denied.
+    // (Only modules/base/dist/owa.tracker.js stays reachable there, as a 301 entry point.)
+    'modules/base/dist/owa.vendors.js',
     'webpack.config.js',                              // build metadata
     'package.json',                                   // build metadata
     'composer.json',                                  // build metadata

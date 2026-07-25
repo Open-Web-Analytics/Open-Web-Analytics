@@ -18,9 +18,10 @@
 
   This file stands in for that tracked page. It is served SAME-ORIGIN with the
   live OWA install (tests/ is under the webroot), so:
-    - the real modules/base/dist/owa.tracker.js loads with no CORS issues, and
-    - webpack's automatic publicPath resolves the owa.heatmap.js import chunk
-      relative to the bundle, exactly as in production.
+    - the real public/base/dist/owa.tracker.js loads with no CORS issues, and
+    - the tracker pins __webpack_public_path__ to owa_baseUrl + 'public/base/dist/'
+      (from window.owa_baseUrl set below), so the owa.heatmap.js import chunk loads
+      from public/, exactly as in production -- independent of the tracker's own URL.
 
   The test only asserts the deterministic, synchronous part of the render (the
   jQuery-built control panel + canvas). The subsequent click-data fetch is an
@@ -86,7 +87,7 @@
             var _owa = document.createElement('script');
             _owa.type = 'text/javascript';
             _owa.async = true;
-            _owa.src = window.owa_baseUrl + 'modules/base/dist/owa.tracker.js';
+            _owa.src = window.owa_baseUrl + 'public/base/dist/owa.tracker.js';
             var _owa_s = document.getElementsByTagName('script')[0];
             _owa_s.parentNode.insertBefore(_owa, _owa_s);
         }());
