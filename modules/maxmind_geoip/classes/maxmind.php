@@ -154,32 +154,32 @@ class owa_maxmind extends owa_location {
 
             if ( isset( $record['city']['names'][ $lang ] ) ) {
 
-                $location_map['city']             = mb_convert_encoding( strtolower( trim( $record['city']['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
+                $location_map['city']             = $this->latin1ToUtf8( strtolower( trim( $record['city']['names'][ $lang ] ) ) );
             }
 
             if ( isset( $record['continent']['code'] ) ) {
 
-                $location_map['continent']        = mb_convert_encoding( strtolower( trim( $record['continent']['code'] ) ), 'UTF-8', 'ISO-8859-1' );
+                $location_map['continent']        = $this->latin1ToUtf8( strtolower( trim( $record['continent']['code'] ) ) );
             }
 
             if ( isset( $record['continent']['names'][ $lang ] ) ) {
 
-                $location_map['continent_code'] = mb_convert_encoding( strtolower( trim( $record['continent']['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
+                $location_map['continent_code'] = $this->latin1ToUtf8( strtolower( trim( $record['continent']['names'][ $lang ] ) ) );
             }
 
             if ( isset( $record['subdivisions'][0]['names'][ $lang ]  ) ) {
 
-                $location_map['state']             = mb_convert_encoding( strtolower( trim( $record['subdivisions'][0]['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
+                $location_map['state']             = $this->latin1ToUtf8( strtolower( trim( $record['subdivisions'][0]['names'][ $lang ] ) ) );
                }
 
                if ( isset( $record['subdivisions'][0]['iso_code'] ) ) {
 
-                   $location_map['state_code']     = mb_convert_encoding( strtolower( trim( $record['subdivisions'][0]['iso_code'] ) ), 'UTF-8', 'ISO-8859-1' );
+                   $location_map['state_code']     = $this->latin1ToUtf8( strtolower( trim( $record['subdivisions'][0]['iso_code'] ) ) );
                }
 
                if ( isset( $record['country']['names'][ $lang ] ) ) {
 
-                   $location_map['country']         = mb_convert_encoding( strtolower( trim( $record['country']['names'][ $lang ] ) ), 'UTF-8', 'ISO-8859-1' );
+                   $location_map['country']         = $this->latin1ToUtf8( strtolower( trim( $record['country']['names'][ $lang ] ) ) );
             }
 
             if ( isset( $record['country']['iso_code'] ) ) {
@@ -204,6 +204,49 @@ class owa_maxmind extends owa_location {
         }
 
         return $location_map;
+    }
+
+    /**
+     * Convert an ISO-8859-1 (Latin-1) string to UTF-8.
+     *
+     * MaxMind name fields are Latin-1; the reporting UI expects UTF-8. This was
+     * previously done with mb_convert_encoding(), but ext-mbstring is not a
+     * production Composer requirement or polyfill (the release build installs
+     * with --no-dev), so on hosts without mbstring a GeoIP result containing any
+     * of these fields would fatal instead of returning a location. Prefer
+     * mbstring when available, then iconv, then a dependency-free byte
+     * conversion so the lookup always succeeds.
+     */
+    private function latin1ToUtf8( $string ) {
+
+        if ( $string === '' || $string === null ) {
+            return $string;
+        }
+
+        if ( function_exists( 'mb_convert_encoding' ) ) {
+            return mb_convert_encoding( $string, 'UTF-8', 'ISO-8859-1' );
+        }
+
+        if ( function_exists( 'iconv' ) ) {
+            $converted = @iconv( 'ISO-8859-1', 'UTF-8', $string );
+            if ( $converted !== false ) {
+                return $converted;
+            }
+        }
+
+        // Pure-PHP fallback: map each Latin-1 byte to its UTF-8 sequence.
+        $out = '';
+        $len = strlen( $string );
+        for ( $i = 0; $i < $len; $i++ ) {
+            $c = ord( $string[ $i ] );
+            if ( $c < 0x80 ) {
+                $out .= $string[ $i ];
+            } else {
+                $out .= chr( 0xC0 | ( $c >> 6 ) ) . chr( 0x80 | ( $c & 0x3F ) );
+            }
+        }
+
+        return $out;
     }
 
 }
