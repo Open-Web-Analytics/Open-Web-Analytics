@@ -88,4 +88,114 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->assertSame(422, $resp['status'],
             "The 'visit' report requires sessionId; omitting it should return 422.");
     }
+
+    // ------------------------------------------------------------------
+    // Canned report_name branches (each is a documented endpoint on the wiki:
+    // reports/{visit,clickstream,latest_visits,latest_actions,clicks}).
+    //
+    // These pin the CONTRACT of each canned report -- required-param validation
+    // and that a valid request returns a 201 result set -- without seeding fact
+    // rows: an empty result set is a valid success response, and the point here
+    // is the request/validation/response envelope each report guarantees, not
+    // the row math (that is the ingestion tests' job).
+    // ------------------------------------------------------------------
+
+    /**
+     * Every canned report rejects an unauthenticated caller before doing any
+     * work -- the view_reports capability gate is the same on all of them.
+     *
+     * @dataProvider cannedReportProvider
+     */
+    public function testCannedReportRejectsUnauthenticated(string $reportName, array $validParams): void
+    {
+        $resp = $this->callEndpoint(
+            'owa_reportsRestController',
+            'reportsRestController.php',
+            ['report_name' => $reportName] + $validParams
+        );
+
+        $this->assertNotAuthenticated($resp, "GET /reports/{$reportName}");
+    }
+
+    /**
+     * A valid request to each canned report returns the 201 success envelope
+     * routed through the reportsRest view.
+     *
+     * @dataProvider cannedReportProvider
+     */
+    public function testCannedReportReturnsSuccessEnvelope(string $reportName, array $validParams): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            'owa_reportsRestController',
+            'reportsRestController.php',
+            ['report_name' => $reportName] + $validParams
+        );
+
+        $this->assertSame(201, $resp['status'],
+            "A valid '{$reportName}' report should return 201.");
+        $this->assertSame('base.reportsRest', $resp['view'],
+            "A successful '{$reportName}' report routes to the reportsRest view.");
+    }
+
+    /**
+     * report_name/validParams for each documented canned report. The params are
+     * the minimum the controller's validate() switch requires (a bogus siteId /
+     * sessionId still satisfies "required" and yields an empty-but-valid set).
+     *
+     * @return array<string, array{0:string, 1:array<string,string>}>
+     */
+    public static function cannedReportProvider(): array
+    {
+        $bogusSite    = 'reports-canned-site';
+        $bogusSession = '1700000000000000001';
+        $today        = date('Ymd');
+
+        return [
+            // report_name        [ report_name, valid minimal params ]
+            'visit'          => ['visit',          ['sessionId' => $bogusSession]],
+            'clickstream'    => ['clickstream',    ['sessionId' => $bogusSession]],
+            'latest_visits'  => ['latest_visits',  ['siteId' => $bogusSite]],
+            'latest_actions' => ['latest_actions', ['siteId' => $bogusSite, 'startDate' => $today, 'endDate' => $today]],
+            // clicks accepts pageUrl OR document_id (wiki). We exercise the
+            // document_id path: it is deterministic and independent of process
+            // state. The pageUrl path routes through the 'page_url' event filter
+            // (report_clicks: $eq->filter('page_url', $url, $siteId)), which is a
+            // no-op at REST boot but mis-passes siteId where the makeUrlCanonical
+            // callback expects an event object -- a latent fatal if that filter
+            // is ever registered in the REST process. Kept out of the contract
+            // suite so the reports contract does not depend on that quirk.
+            'clicks'         => ['clicks',         ['siteId' => $bogusSite, 'document_id' => '999999999']],
+        ];
+    }
+
+    public function testLatestActionsRequiresDateRangeAndSite(): void
+    {
+        $this->authenticateAs('admin');
+
+        // latest_actions requires startDate, endDate AND siteId; omit all three.
+        $resp = $this->callEndpoint(
+            'owa_reportsRestController',
+            'reportsRestController.php',
+            ['report_name' => 'latest_actions']
+        );
+
+        $this->assertSame(422, $resp['status'],
+            "The 'latest_actions' report requires startDate/endDate/siteId; omitting them should return 422.");
+    }
+
+    public function testClickstreamRequiresSessionId(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            'owa_reportsRestController',
+            'reportsRestController.php',
+            ['report_name' => 'clickstream'] // no sessionId
+        );
+
+        $this->assertSame(422, $resp['status'],
+            "The 'clickstream' report requires sessionId; omitting it should return 422.");
+    }
 }

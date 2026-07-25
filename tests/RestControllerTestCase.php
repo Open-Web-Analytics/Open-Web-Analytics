@@ -191,10 +191,17 @@ abstract class RestControllerTestCase extends TestCase
 
     /**
      * Instantiate a controller, run doAction(), and return the raw $data array.
+     *
+     * $controllerFile is resolved relative to modules/base/controllers/ for the
+     * common case; an absolute path (e.g. a controller in another module such as
+     * domstream) is required verbatim.
      */
     protected function runControllerData(string $class, string $controllerFile, array $params): array
     {
-        require_once(OWA_BASE_MODULE_DIR . 'controllers/' . $controllerFile);
+        $path = ($controllerFile[0] === '/')
+            ? $controllerFile
+            : OWA_BASE_MODULE_DIR . 'controllers/' . $controllerFile;
+        require_once($path);
         $ctrl = new $class($params);
         $data = $ctrl->doAction();
         return is_array($data) ? $data : [];
