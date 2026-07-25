@@ -13,8 +13,8 @@ import * as jGrowl from 'jgrowl';
 
 class Player {
 
-	construct() {
-		
+	constructor() {
+
 		this.timer = null;
 	    this.queue_step = 1;
 	    this.queue_count = 0;

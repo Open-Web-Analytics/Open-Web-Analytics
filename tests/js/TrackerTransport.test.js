@@ -163,4 +163,69 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             spy.restore();
         }
     });
+
+    // Fill the queue past domstreamEventThreshold (default 10) so logDomStream()
+    // actually emits. Each entry is a click event's flattened props.
+    function seedDomStream(t, n) {
+        for (let i = 0; i < n; i++) {
+            const e = t.makeEvent();
+            e.setEventType('dom.click');
+            e.set('dom_element_tag', 'A');
+            t.addToEventQueue(e);
+        }
+    }
+
+    test('a small domstream on the GET path rides complete + encoded, not truncated', () => {
+        // Domstream packs the whole queue into stream_events = JSON.stringify(queue).
+        // When that still fits under getRequestCharacterLimit it takes the GET pixel
+        // path -- the exact path the value-encoding fix touches. The blob is riddled
+        // with '{' '"' ':' ',' and can hold '&'/'='/'#' inside captured DOM values;
+        // before the fix those rode raw and truncated the beacon. Assert the blob is
+        // percent-encoded AND that stream_length (assembled AFTER it) still arrives.
+        const spy = installImageSpy();
+        try {
+            const t = newTracker();
+            seedDomStream(t, 12);
+            t.logDomStream();
+
+            expect(spy.sent).toHaveLength(1);            // small blob -> GET pixel
+            const url = spy.sent[0];
+            expect(url).toContain('owa_event_type=dom.stream');
+            // The raw JSON must NOT appear -- it would mean unencoded structural chars.
+            expect(url).not.toContain('owa_stream_events=[{"');
+            expect(url).toContain('owa_stream_events=' + encodeURIComponent('[{'));
+            // A param assembled after the blob still reached the wire (no truncation).
+            expect(url).toContain('owa_stream_length=12');
+        } finally {
+            spy.restore();
+        }
+    });
+
+    test('a large domstream falls to cdPost with the RAW blob (POST path untouched)', () => {
+        // A queue big enough to blow past the limit routes to cdPost (POST iframe),
+        // which uses prepareRequestData -- NOT prepareRequestDataForGet -- and lets
+        // the browser encode on form submit. This path is byte-for-byte unchanged by
+        // the GET fix: the blob reaches cdPost verbatim, structural chars intact.
+        const spy = installImageSpy();
+        try {
+            const t = newTracker();
+            // Force the POST branch deterministically regardless of blob size.
+            t.setOption('getRequestCharacterLimit', 200);
+            const posted = [];
+            t.cdPost = (data) => { posted.push(data); };
+
+            seedDomStream(t, 12);
+            t.logDomStream();
+
+            expect(spy.sent).toHaveLength(0);            // never took the pixel path
+            expect(posted).toHaveLength(1);              // went out via cdPost (POST)
+            const data = posted[0];
+            expect(data['owa_event_type']).toBe('dom.stream');
+            // cdPost does NOT encode -- the '{' '"' ':' ride verbatim in the form value.
+            expect(data['owa_stream_events']).toContain('"event_type":"dom.click"');
+            expect(data['owa_stream_length']).toBe(12);
+        } finally {
+            spy.restore();
+        }
+    });
 });
