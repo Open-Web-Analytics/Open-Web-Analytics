@@ -88,7 +88,7 @@ class owa_reportVisitorsRosterView extends owa_view {
 
     function render($data) {
 
-        $this->body->set_template('report_visitors_roster.tpl');
+        $this->body->set_template('report_visitors_roster.php');
         $this->body->set('headline', 'Visitors');
         $this->body->set('visitors', $data['visitors']);
     }

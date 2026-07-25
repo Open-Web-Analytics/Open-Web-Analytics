@@ -1,6 +1,6 @@
 <div class="owa_reportSectionHeader">Visit Summary</div>
 <div class="owa_reportSectionContent">
-    <?php include('report_latest_visits.tpl');?>
+    <?php include('report_latest_visits.php');?>
 </div>
 
 <div class="owa_reportSectionHeader">Visit Clickstream</div>

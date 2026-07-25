@@ -29,7 +29,7 @@
             <td width="50%" valign="top">
                 <div class="owa_reportSectionContent" style="">
                     <div class="owa_reportSectionHeader">Latest Visits</div>
-                    <?php include('report_latest_visits.tpl')?>
+                    <?php include('report_latest_visits.php')?>
                     <?php echo $this->makePaginationFromResultSet($visits, array('do' => 'base.reportVisitors'), true);?>
                 </div>
             </td>

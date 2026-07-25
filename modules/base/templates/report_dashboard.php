@@ -22,7 +22,7 @@
            
             <div class="owa_reportSectionContent">
                 <div class="section_header">Latest Visits</div>
-                <?php include('report_latest_visits.tpl')?>
+                <?php include('report_latest_visits.php')?>
             </div>
 
         </TD>

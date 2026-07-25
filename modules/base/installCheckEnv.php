@@ -166,7 +166,7 @@ class owa_installCheckEnvView extends owa_view {
         $this->t->set('page_title', 'Server Environment Check');
         $this->body->set('errors', $this->get('errors'));
         // load body template
-        $this->body->set_template('install_check_env.tpl');
+        $this->body->set_template('install_check_env.php');
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }

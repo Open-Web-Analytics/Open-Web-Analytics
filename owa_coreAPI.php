@@ -1733,7 +1733,7 @@ class owa_coreAPI {
         $cmds = owa_coreAPI::filter( 'tracker_tag_cmds', array() );
         $t->set( 'cmds', $cmds );
         $t->set('options', $options);
-        $t->set_template('js_log_tag.tpl');
+        $t->set_template('js_log_tag.php');
         return $t->fetch();
     }
 

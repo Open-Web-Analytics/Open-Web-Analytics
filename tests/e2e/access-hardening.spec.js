@@ -69,7 +69,7 @@ const DENIED_PATHS = [
     'owa_db.php',                                     // core class source
     'owa_coreAPI.php',                                // core class source
     'modules/base/classes/trackingEventHelpers.php',  // module class source
-    'modules/base/templates/report.tpl',              // raw template
+    'modules/base/templates/report.php',              // raw template
     // Module-tree images are no longer served -- makeImageLink now resolves against
     // public/ (images_url = assets_url), so the source-tree copy must be denied like
     // the rest of modules/. (The public/base/i/ copy above is what's actually served.)

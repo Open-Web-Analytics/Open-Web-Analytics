@@ -76,7 +76,7 @@ class owa_reportView extends owa_view {
 
 
         // load body template
-        $this->body->set_template('report.tpl');
+        $this->body->set_template('report.php');
 
         // set link state used by report navigation
         $period = $this->get('period');

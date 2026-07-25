@@ -4,7 +4,7 @@
   Tracker beacon harness for the Playwright tracker safety net.
 
   This stands in for a customer's tracked page. It bootstraps the REAL built
-  public/base/dist/owa.tracker.js exactly the way js_log_tag.tpl does -- sets
+  public/base/dist/owa.tracker.js exactly the way js_log_tag.php does -- sets
   window.owa_baseUrl, pushes setSiteId + trackPageView onto owa_cmds, then injects
   the tracker script. On load the tracker drains owa_cmds and fires its 1x1 pixel
   GET beacon at <baseUrl>log.php.
@@ -51,7 +51,7 @@
             }
             window.owa_baseUrl = base;
 
-            // Bootstrap the tracker exactly like js_log_tag.tpl: queue setSiteId +
+            // Bootstrap the tracker exactly like js_log_tag.php: queue setSiteId +
             // an explicit trackPageView, then inject the built tracker. The tracker
             // drains owa_cmds on load and fires the page_request beacon.
             window.owa_cmds = window.owa_cmds || [];

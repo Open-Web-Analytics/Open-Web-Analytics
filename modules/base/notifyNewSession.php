@@ -66,8 +66,8 @@ class owa_notifyNewSessionView extends owa_mailView {
         
     function render() {
         
-        $this->t->set_template( 'wrapper_email.tpl' );
-        $this->body->set_template( 'new_session_email.tpl' );
+        $this->t->set_template( 'wrapper_email.php' );
+        $this->body->set_template( 'new_session_email.php' );
         $this->body->set( 'site', $this->get( 'site' ) );
         $this->body->set( 'session', $this->get( 'session' ) );
         $this->setMailSubject( $this->get('subject') );

@@ -872,7 +872,7 @@ class owa_template extends Template {
             $t->set('currentSiteId', $currentSiteId);
 			$t->set('params', array('do' => $current_action ));
             $t->caller_params['link_state'] = $this->caller_params['link_state'];
-            $t->set_template('report_nav.tpl');
+            $t->set_template('report_nav.php');
             return $t->fetch();
         } else {
 
@@ -890,7 +890,7 @@ class owa_template extends Template {
             $t->set('data', $data);
             $t->set('width', $width);
             $t->set('height', $height);
-            $t->set_template('chart_dom.tpl');
+            $t->set_template('chart_dom.php');
             return $t->fetch();
         } else {
 
@@ -909,7 +909,7 @@ class owa_template extends Template {
             $t->set('data', $data_string);
             $t->set('width', $width);
             $t->set('height', $height);
-            $t->set_template('sparkline_dom.tpl');
+            $t->set_template('sparkline_dom.php');
             return $t->fetch();
 
         } else {
@@ -947,7 +947,7 @@ class owa_template extends Template {
             $t->set('sort_table_class', 'tablesorter');
         }
 
-        $t->set_template('generic_table.tpl');
+        $t->set_template('generic_table.php');
 
         return $t->fetch();
 

@@ -5,7 +5,7 @@
     <head>
         <title>Open Web Analytics - <?php echo $page_title ?? '';?></title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <?php include($this->getTemplatePath('base','head.tpl'));?>
+        <?php include($this->getTemplatePath('base','head.php'));?>
     </head>
 
     <body class="<?php if ($cu->user->isOWAAdmin()) echo 'owaadmin'; ?>">
@@ -14,9 +14,9 @@
         </style>
 
         <div class="owa">
-        <?php include($this->getTemplatePath('base', 'header.tpl'));?>
+        <?php include($this->getTemplatePath('base', 'header.php'));?>
 
-        <?php include($this->getTemplatePath('base', 'msgs.tpl'));?>
+        <?php include($this->getTemplatePath('base', 'msgs.php'));?>
 
         <?php echo $body;?>
 

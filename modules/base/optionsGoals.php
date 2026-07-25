@@ -71,7 +71,7 @@ class owa_optionsGoalsView extends owa_view {
     function render($data) {
         
         // load template
-        $this->body->set_template( 'options_goals.tpl' );
+        $this->body->set_template( 'options_goals.php' );
         // fetch admin links from all modules
         $this->body->set( 'headline', 'Conversion Goals');
         $this->body->set( 'goals', $this->get( 'goals' ) );

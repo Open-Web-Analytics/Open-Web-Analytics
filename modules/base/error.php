@@ -46,11 +46,11 @@ class owa_errorView extends owa_view {
         $this->t->set('page_title', 'Error');
 
         if($this->is_subview === true):
-            $this->t->set_template('wrapper_blank.tpl');
+            $this->t->set_template('wrapper_blank.php');
         endif;
 
         // load body template
-        $this->body->set_template('generic_error.tpl');
+        $this->body->set_template('generic_error.php');
 
         return;
     }

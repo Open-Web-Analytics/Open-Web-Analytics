@@ -1,9 +1,7 @@
-AddHandler application/x-httpd-php .tpl
-
 # --- Web-access allowlist (deny-all, re-allow only public endpoints + assets) -------
 #
 # The repo root IS the Apache docroot, so without this the WHOLE source tree is
-# web-served: PHP class source, owa-config.php (DB credentials), raw *.tpl, owa-data/,
+# web-served: PHP class source, owa-config.php (DB credentials), raw templates, owa-data/,
 # build metadata. Invert that: deny everything, then re-allow ONLY what the browser
 # legitimately fetches. (Apache 2.4: a more-specific section's `Require` REPLACES the
 # inherited one, so each allow below overrides the top-level deny for its match.)

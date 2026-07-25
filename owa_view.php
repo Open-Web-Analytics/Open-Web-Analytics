@@ -306,7 +306,7 @@ class owa_view extends owa_base {
         $wrapper = owa_template::sanitizeTemplateName( $this->config['report_wrapper'] );
 
         if ( $wrapper === '' ) {
-            $wrapper = 'wrapper_default.tpl';
+            $wrapper = 'wrapper_default.php';
         }
 
         $this->t->set_template( $wrapper );
@@ -377,7 +377,7 @@ class owa_view extends owa_base {
             $this->construct($data);
         }
 
-        $this->t->set_template('wrapper_subview.tpl');
+        $this->t->set_template('wrapper_subview.php');
 
         //Assign body to main template
         $this->t->set('body', $this->body);
@@ -597,8 +597,8 @@ class owa_genericTableView extends owa_view {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('generic_table.tpl');
+        $this->t->set_template('wrapper_blank.php');
+        $this->body->set_template('generic_table.php');
 
         if (!empty($data['labels'])):
             $this->body->set('labels', $data['labels']);
@@ -680,8 +680,8 @@ class owa_sparklineJsView extends owa_view {
     function render($data) {
 
         // load template
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('sparklineJs.tpl');
+        $this->t->set_template('wrapper_blank.php');
+        $this->body->set_template('sparklineJs.php');
         // set
         $this->body->set('widget', $data['widget']);
         $this->body->set('type', $data['type']);
@@ -761,7 +761,7 @@ class owa_restApiView extends owa_view {
 	 	parent::__construct();
 	 	
 	 	// load templates
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         
         $this->body->set_template('restApiResponse.php');
     }
@@ -880,7 +880,7 @@ class owa_jsonView extends owa_view {
     function render() {
 
         // load template
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('json.php');
 
         // look for jsonp callback
@@ -910,7 +910,7 @@ class owa_jsonResultsView extends owa_view {
     function render() {
 
         // load template
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('json.php');
 
         // set
@@ -944,7 +944,7 @@ class owa_cliView extends owa_view {
     
     function pre() {
 	    
-	    $this->t->set_template('wrapper_blank.tpl');
+	    $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('msgsCli.php');
 	    
 	    $error = array();

@@ -104,10 +104,10 @@ class owa_xmlVisitsGeolocationView extends owa_view {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
 
         // load body template
-        $this->body->set_template('xml_visits_geolocation.tpl');
+        $this->body->set_template('xml_visits_geolocation.php');
         //$this->body->set_template('kml_google_sample.tpl');
         $this->body->set('visits', $this->get('latest_visits'));
         $this->body->set('site_name', $this->get('site_name'));

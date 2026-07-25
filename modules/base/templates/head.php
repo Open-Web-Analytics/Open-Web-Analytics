@@ -16,7 +16,7 @@
 <?php endif;?>
 
 <script>
-<?php include('config_dom.tpl'); ?>
+<?php include('config_dom.php'); ?>
 </script>
 
 

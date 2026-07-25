@@ -3,7 +3,7 @@
     <?php foreach($visits->resultsRows as $row): 
 	    $row = (array) $row;?>
         <TR>
-        <?php include('row_visitSummary.tpl'); ?>
+        <?php include('row_visitSummary.php'); ?>
         </TR>
     <?php endforeach; ?>
 </table>

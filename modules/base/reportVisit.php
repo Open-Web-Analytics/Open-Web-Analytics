@@ -83,7 +83,7 @@ class owa_reportVisitView extends owa_view {
     function render() {
 
         // Assign data to templates
-        $this->body->set_template('report_visit.tpl');
+        $this->body->set_template('report_visit.php');
         $this->body->set('session_id', $this->get('session_id'));
         $this->body->set('visits', $this->get('visit'));
         $this->body->set('clickstream', $this->get('clickstream'));

@@ -38,10 +38,10 @@ class owa_pixelView extends owa_view {
     function render($data) {
 
         // Set Page title
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
 
         // load body template
-        $this->body->set_template('pixel.tpl');
+        $this->body->set_template('pixel.php');
 
         $this->body->set('img', sprintf(
           '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%',

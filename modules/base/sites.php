@@ -77,7 +77,7 @@ class owa_sitesView extends owa_view {
         
         //page title
         $this->t->set('page_title', 'Sites Roster');
-        $this->body->set_template('sites.tpl');
+        $this->body->set_template('sites.php');
         $this->body->set('tracked_sites', $this->get('tracked_sites'));
     }
 }

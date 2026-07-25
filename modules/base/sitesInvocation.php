@@ -85,7 +85,7 @@ class owa_sitesInvocationView extends owa_view {
         $this->body->set('name', $name);
         $this->body->set('options', array());
         // load body template
-        $this->body->set_template('sites_invocation.tpl');
+        $this->body->set_template('sites_invocation.php');
 
         $this->body->set('site_id', $this->get('site_id'));
 

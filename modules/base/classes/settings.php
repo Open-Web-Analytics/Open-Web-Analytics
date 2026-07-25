@@ -618,7 +618,7 @@
                 'public_path'                        => '',
                 'geolocation_lookup'                => false,
                 'geolocation_service'                => '',
-                'report_wrapper'                    => 'wrapper_default.tpl',
+                'report_wrapper'                    => 'wrapper_default.php',
                 'announce_visitors'                    => false,
                 'public_url'                        => '',
                 'base_url'                            => '',

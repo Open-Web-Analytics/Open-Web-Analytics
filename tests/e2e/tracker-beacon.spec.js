@@ -8,7 +8,7 @@
  * boots in a browser and fires a tracking request. That gap is exactly what the
  * Phase 5 asset move + the __webpack_public_path__ pin could silently break: the
  * bundle 404s, or throws on boot, and no jest test would notice. This spec loads
- * the real built tracker the way js_log_tag.tpl does and asserts it puts beacons
+ * the real built tracker the way js_log_tag.php does and asserts it puts beacons
  * on the wire at <baseUrl>log.php.
  *
  * WHAT IT DOES

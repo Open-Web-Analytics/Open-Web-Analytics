@@ -4,7 +4,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
         <title><?php if (isset($page_title)) { $this->out( $page_title . ' - '); } ?>Open Web Analytics</title>
-        <?php include($this->getTemplatePath('base','head.tpl'));?>
+        <?php include($this->getTemplatePath('base','head.php'));?>
     </head>
 
     <body>
@@ -20,7 +20,7 @@
                 </table>
             </div>
             <BR>
-            <?php include($this->setTemplate('msgs.tpl'));?>
+            <?php include($this->setTemplate('msgs.php'));?>
             <BR>
             <?php if (isset($content)) { echo $content; }?>
             <?php echo $body;?>

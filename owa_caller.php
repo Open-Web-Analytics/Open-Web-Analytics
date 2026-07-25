@@ -171,7 +171,7 @@ class owa_caller extends owa_base {
             }
         
             $t = new owa_template();
-            $t->set_template('js_helper_tags.tpl');
+            $t->set_template('js_helper_tags.php');
                 
             $tracking_code = owa_coreAPI::getJsTrackerTag( $this->getSiteId(), $options );
             $t->set('tracking_code', $tracking_code);

@@ -98,7 +98,7 @@ class owa_usersProfileView extends owa_view {
         }
         //page title
         $this->t->set('page_title', 'User Profile');
-        $this->body->set_template('users_addoredit.tpl');
+        $this->body->set_template('users_addoredit.php');
         $this->body->set('roles', owa_coreAPI::getAllRoles());
 
         $this->body->set('user', $user);
