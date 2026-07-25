@@ -298,11 +298,39 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertNotCapable($result, 'activate requires edit_modules.');
     }
 
+    public function testDeactivateModuleRejectsUnprivilegedUser(): void
+    {
+        $this->authenticateAs('viewer');
+
+        $result = $this->runCommand(
+            'owa_moduleDeactivateCliController',
+            'moduleDeactivateCli.php',
+            ['module' => 'hello']
+        );
+
+        $this->assertNotCapable($result, 'deactivate requires edit_modules.');
+    }
+
+    public function testInstallModuleRejectsUnprivilegedUser(): void
+    {
+        $this->authenticateAs('viewer');
+
+        $result = $this->runCommand(
+            'owa_moduleInstallCliController',
+            'moduleInstallCli.php',
+            ['module' => 'hello']
+        );
+
+        $this->assertNotCapable($result, 'install-module requires edit_modules.');
+    }
+
     // =================================================================
     // Crawl maintenance: update-document / update-referral
-    // (cap: edit_settings). Run with an explicit id that does not exist
-    // so the crawler no-ops -- we assert the capability contract and a
-    // clean run, not network crawling.
+    // (cap: edit_settings). Contract-only: with no id these commands crawl
+    // EVERY stored document/referrer over the network (crawlDocument() does
+    // a live HTTP fetch), and with a non-existent id they load a blank row
+    // and fatal. Neither is safe to run in a test, so we assert only the
+    // capability gate, which runs before any crawling.
     // =================================================================
 
     public function testUpdateDocumentRejectsUnprivilegedUser(): void
@@ -391,6 +419,35 @@ final class CliCommandsTest extends CliControllerTestCase
         );
 
         $this->assertNotCapable($result, 'processEventQueue requires edit_modules.');
+    }
+
+    public function testProcessEventQueueRunsForAdmin(): void
+    {
+        // Target the registered 'processing' queue explicitly. Draining an
+        // empty queue is a clean no-op -- the contract is that the command
+        // connects and returns without error, not that it processes events.
+        $result = $this->runCommand(
+            'owa_processEventQueueController',
+            'processEventQueue.php',
+            ['queues' => 'processing']
+        );
+
+        $this->assertNull($result['view'],
+            'processEventQueue should drain the queue and run cleanly for an admin.');
+    }
+
+    public function testPruneEventQueueArchivesRunsForAdmin(): void
+    {
+        // pruneArchive() is a no-op stub for the database queue, so this is
+        // safe to run for real; assert the command connects and completes.
+        $result = $this->runCommand(
+            'owa_pruneEventQueueArchivesCliController',
+            'pruneEventQueueArchivesCli.php',
+            ['queues' => 'processing']
+        );
+
+        $this->assertNull($result['view'],
+            'prune-event-queue-archives should run cleanly for an admin.');
     }
 
     // =================================================================
