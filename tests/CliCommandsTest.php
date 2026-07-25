@@ -179,6 +179,32 @@ final class CliCommandsTest extends CliControllerTestCase
             'change-password without a user should fail validation.');
     }
 
+    public function testChangePasswordRejectsShortPassword(): void
+    {
+        // The length rule (>= 6 chars) is a 'stringLength' validation. It was
+        // mistyped as 'required', which ignored the length config and let any
+        // non-empty password through; assert a 5-char password is now rejected.
+        $user = $this->makeUser('viewer', 'pwshort', 'oldpass' . $this->tok);
+
+        $before = owa_coreAPI::entityFactory('base.user');
+        $before->load($user['user_id'], 'user_id');
+        $oldHash = $before->get('password');
+
+        $result = $this->runCommand(
+            'owa_changeUserPasswordCliController',
+            'changeUserPasswordCli.php',
+            ['user' => $user['user_id'], 'password' => 'short']
+        );
+
+        $this->assertSame('base.changeUserPasswordCli', $result['view'],
+            'A password shorter than 6 characters should fail validation.');
+
+        $after = owa_coreAPI::entityFactory('base.user');
+        $after->load($user['user_id'], 'user_id');
+        $this->assertSame($oldHash, $after->get('password'),
+            'A rejected short password must not rotate the stored hash.');
+    }
+
     public function testChangePasswordRejectsUnprivilegedUser(): void
     {
         $target = $this->makeUser('viewer', 'pwtarget', 'oldpass' . $this->tok);
@@ -224,7 +250,6 @@ final class CliCommandsTest extends CliControllerTestCase
         $restore = $this->snapshotHelloActive();
         try {
             // Start from deactivated so activation is observable.
-            $this->ensureHelloLoaded();
             owa_coreAPI::deactivateModule('hello');
 
             $result = $this->runCommand(
@@ -245,7 +270,6 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         $restore = $this->snapshotHelloActive();
         try {
-            $this->ensureHelloLoaded();
             owa_coreAPI::activateModule('hello');
 
             $result = $this->runCommand(
@@ -262,11 +286,35 @@ final class CliCommandsTest extends CliControllerTestCase
         }
     }
 
+    public function testDeactivateModuleWorksForNotBootLoadedModule(): void
+    {
+        // Regression: deactivateModule() resolved the module through
+        // service::getModule(), which only returns boot-loaded (active)
+        // modules and returned false otherwise -- so deactivating an already
+        // inactive module fataled with deactivate()-on-bool. It now loads a
+        // fresh instance via moduleClassFactory() like activate/install do.
+        // 'fileCache' ships inactive, so this is a harmless no-op to drive.
+        $module = 'fileCache';
+        if ((bool) owa_coreAPI::getSetting($module, 'is_active')) {
+            $this->markTestSkipped("Expected {$module} to be inactive for this regression.");
+        }
+
+        $result = $this->runCommand(
+            'owa_moduleDeactivateCliController',
+            'moduleDeactivateCli.php',
+            ['module' => $module]
+        );
+
+        $this->assertNull($result['view'],
+            'Deactivating a not-boot-loaded module should run cleanly, not fatal.');
+        $this->assertFalse((bool) owa_coreAPI::getSetting($module, 'is_active'),
+            "{$module} should remain inactive after a no-op deactivate.");
+    }
+
     public function testInstallModuleActivatesHello(): void
     {
         $restore = $this->snapshotHelloActive();
         try {
-            $this->ensureHelloLoaded();
             owa_coreAPI::deactivateModule('hello');
 
             // hello has no entities, so install-module just persists the schema
@@ -506,31 +554,11 @@ final class CliCommandsTest extends CliControllerTestCase
         $wasActive = (bool) owa_coreAPI::getSetting('hello', 'is_active');
 
         return function () use ($wasActive): void {
-            $this->ensureHelloLoaded();
             if ($wasActive) {
                 owa_coreAPI::activateModule('hello');
             } else {
                 owa_coreAPI::deactivateModule('hello');
             }
         };
-    }
-
-    /**
-     * Guarantee the hello module is registered in the service singleton.
-     *
-     * owa_coreAPI::deactivateModule() (and the deactivate command) reads the
-     * module via service::getModule(), which only returns modules that were
-     * loaded at boot -- unlike activate/install, which load fresh through
-     * moduleClassFactory(). In a normal CLI process the module you deactivate
-     * was active (hence loaded) at boot, so this precondition holds; in the
-     * single test-process boot it may not, so we register it explicitly to
-     * mirror the real-world state before driving the deactivate path.
-     */
-    private function ensureHelloLoaded(): void
-    {
-        $s = owa_coreAPI::serviceSingleton();
-        if (!$s->getModule('hello')) {
-            $s->addModule(owa_coreAPI::moduleClassFactory('hello'));
-        }
     }
 }

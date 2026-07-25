@@ -1750,8 +1750,12 @@ class owa_coreAPI {
 
         if ( $module_name ) {
 
-            $s = owa_coreAPI::serviceSingleton();
-            $m = $s->getModule($module_name);
+            // Load a fresh module instance, symmetric with activateModule() and
+            // installModule(). deactivate() only flips the persisted is_active
+            // setting on $this->name, so a boot-loaded instance is not needed --
+            // and getModule() returned false (then fataled on false->deactivate())
+            // for any module that was not already in the active/boot-loaded set.
+            $m = owa_coreAPI::moduleClassFactory($module_name);
             return $m->deactivate();
         }
     }
