@@ -26,12 +26,17 @@
     <div style="height: 600px;">
         <h1>OWA tracker test page</h1>
         <p>Synthetic tracked page for the tracker beacon Playwright test.</p>
-        <!-- A non-navigating, fragment-free click target. A real <a href="#..">
-             would set target_url to an href containing '#', and the tracker does
-             NOT url-encode GET values, so the '#' would terminate the beacon URL
-             as a fragment (truncating click_x/site_id off the wire). A button
-             keeps the click beacon complete for this transport test. -->
         <button type="button" id="tracked-btn">a tracked button</button>
+
+        <!-- A fragment/delimiter-bearing anchor. target_url will hold this href
+             verbatim, including '#' and '&'. Before the value-encoding fix the
+             tracker sent GET values raw, so the '#' terminated the beacon URL as a
+             fragment (and '&' forged a param) -- every param after target_url
+             (click_x, site_id, session_id) fell off the wire. With values
+             encodeURIComponent'd the href rides as one opaque token and the beacon
+             stays complete. preventDefault keeps the click from navigating. -->
+        <a href="#sec?a=1&b=2" id="tracked-link"
+           onclick="return false;">a tracked fragment link</a>
     </div>
 
     <script>

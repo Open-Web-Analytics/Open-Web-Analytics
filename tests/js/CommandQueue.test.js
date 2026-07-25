@@ -92,7 +92,8 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             // Proves the setSiteId command's argument survived the queue indirection
             // all the way onto the wire.
             expect(url).toContain('owa_site_id=queue-site');
-            expect(url).toContain('owa_page_url=https://site.example/queued');
+            // Values are url-encoded on the wire (the ':' / '/' become %3A / %2F).
+            expect(url).toContain('owa_page_url=' + encodeURIComponent('https://site.example/queued'));
         } finally {
             spy.restore();
         }

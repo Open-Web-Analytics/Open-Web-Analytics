@@ -61,10 +61,13 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             newTracker().trackPageView('https://site.example/p');
             const url = spy.sent[0];
             // prepareRequestData prefixes every key with the ns (owa_); the GET
-            // string is param=value& pairs (NOT url-encoded by the tracker).
+            // string is param=value& pairs whose VALUES are url-encoded (keys are
+            // not -- see the encoding regression test below). event_type/site_id
+            // contain no structural chars so they ride verbatim; the page url's
+            // ':' and '/' become %3A / %2F.
             expect(url).toContain('owa_event_type=base.page_request');
             expect(url).toContain('owa_site_id=transport-site');
-            expect(url).toContain('owa_page_url=https://site.example/p');
+            expect(url).toContain('owa_page_url=' + encodeURIComponent('https://site.example/p'));
         } finally {
             spy.restore();
         }
@@ -97,6 +100,34 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             // owa_<param>[<i>][<key>]=value -- brackets ride the wire verbatim.
             expect(url).toContain('owa_ct_line_items[0][li_sku]=SKU-1');
             expect(url).toContain('owa_ct_line_items[0][li_product_name]=Widget');
+        } finally {
+            spy.restore();
+        }
+    });
+
+    test('structural characters in a value are url-encoded, not truncated', () => {
+        // Regression for the beacon-truncation bug: values with query-structural
+        // characters used to ride the wire raw, so a '#' started a fragment (the
+        // browser dropped everything after it) and a '&'/'=' forged a new pair.
+        // A clicked link whose href held a '#' or '&' thus lost every param that
+        // came after page_url (click_x, site_id, session_id). Assert the value is
+        // percent-encoded AND that params queued after it still appear intact.
+        const spy = installImageSpy();
+        try {
+            const t = newTracker();
+            const dirty = 'https://site.example/p?a=1&b=2#frag';
+            t.trackPageView(dirty);
+
+            const url = spy.sent[0];
+            // The raw value must NOT appear (that would mean an unencoded '#'/'&').
+            expect(url).not.toContain('owa_page_url=' + dirty);
+            expect(url).toContain('owa_page_url=' + encodeURIComponent(dirty));
+            // No literal fragment or stray delimiters survive from the value.
+            expect(url).not.toContain('#frag');
+            expect(url).not.toContain('a=1&b=2');
+            // A param assembled after page_url still reaches the wire (proves the
+            // beacon wasn't truncated at the first structural char in a value).
+            expect(url).toContain('owa_site_id=transport-site');
         } finally {
             spy.restore();
         }

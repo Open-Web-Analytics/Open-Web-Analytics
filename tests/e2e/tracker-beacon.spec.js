@@ -99,6 +99,37 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(click).toMatch(/owa_click_x=\d+/);
     });
 
+    test("a clicked link whose href has '#' and '&' still sends a complete beacon", async ({ page }) => {
+        // Regression for the value-truncation bug, end to end in a real browser.
+        // The link's href ('#sec?a=1&b=2') becomes the dom.click target_url. With
+        // raw GET values the '#' made the browser drop the rest of the beacon URL
+        // as a fragment, so nothing after target_url reached the server. Now that
+        // values are url-encoded, the whole href rides as one token and the params
+        // queued after it survive -- which is exactly what we assert.
+        await page.waitForFunction(() => typeof window.OWATracker !== 'undefined', null, { timeout: 20_000 });
+        await page.evaluate(() => window.OWATracker.trackClicks());
+
+        const before = beacons.length;
+        await page.locator('#tracked-link').click();
+
+        await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
+        const click = beacons.slice(before).find((u) => u.includes('owa_event_type=dom.click'));
+        expect(click, 'no dom.click beacon was sent for the fragment link').toBeTruthy();
+
+        // The browser resolves the href to an absolute URL, so target_url ends in
+        // the encoded fragment. Its structural chars must be percent-encoded on the
+        // wire (%23 %3F %3D %26), and the literal fragment must NOT survive as an
+        // actual URL fragment on the beacon.
+        expect(click).toContain(encodeURIComponent('#sec?a=1&b=2'));
+        expect(click).not.toContain('#sec?a=1&b=2');
+        expect(new URL(click).hash, 'beacon URL was truncated at a fragment').toBe('');
+        // Params assembled AFTER target_url still made it onto the wire -- the proof
+        // the beacon was not truncated at the href's '#'.
+        expect(click).toContain('owa_dom_element_id=tracked-link');
+        expect(click).toContain('owa_site_id=e2e-tracker-harness');
+        expect(click).toMatch(/owa_click_x=\d+/);
+    });
+
     test('the tracker boots without uncaught page errors', async ({ page }) => {
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
         await page.waitForTimeout(300);

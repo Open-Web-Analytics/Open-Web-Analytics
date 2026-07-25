@@ -647,7 +647,18 @@ class OWATracker  {
             if ( properties.hasOwnProperty( param ) ) {
 
                 var kvp = '';
-                kvp = Util.sprintf('%s=%s&', param, properties[ param ] );
+                // URL-encode the VALUE only. Without this, any value containing a
+                // query-structural character truncates or corrupts the beacon: '#'
+                // starts a fragment (everything after it never leaves the browser),
+                // '&' begins a bogus new param, '=' splits the pair. A clicked link
+                // whose href held a '#' or '&' therefore lost click_x / site_id /
+                // session_id off the wire. The server expects encoded values -- it
+                // reads $_GET (PHP url-decodes) and decodeRequestParams() decodes
+                // again -- so encodeURIComponent here is the symmetric half of that
+                // contract. The KEY stays raw on purpose: the owa_* names are a fixed
+                // vocabulary and the flattened array keys (owa_foo[0][bar]) rely on
+                // PHP's $_GET bracket parsing, which encoded brackets would defeat.
+                kvp = Util.sprintf('%s=%s&', param, encodeURIComponent( properties[ param ] ) );
                 get += kvp;
             }
         }
