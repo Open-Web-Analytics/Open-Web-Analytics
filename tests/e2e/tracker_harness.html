@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Tracker beacon harness for the Playwright tracker safety net.
+
+  This stands in for a customer's tracked page. It bootstraps the REAL built
+  public/base/dist/owa.tracker.js exactly the way js_log_tag.tpl does -- sets
+  window.owa_baseUrl, pushes setSiteId + trackPageView onto owa_cmds, then injects
+  the tracker script. On load the tracker drains owa_cmds and fires its 1x1 pixel
+  GET beacon at <baseUrl>log.php.
+
+  It is served SAME-ORIGIN with the live OWA install so the tracker (and, if the
+  test exercises them, its async chunks) load with no CORS issues. The spec
+  intercepts the document from disk (the Phase 5 deny-all 403s the tests/ tree)
+  but lets the tracker + its log.php beacon fall through to the live server.
+
+  owa_baseUrl is injected via ?base=... so this file carries no hard-coded host.
+  The test asserts on the log.php request(s) this page causes -- proving the built
+  bundle actually assembles and fires a tracking beacon end to end.
+-->
+<head>
+    <meta charset="UTF-8">
+    <title>OWA tracker beacon harness</title>
+</head>
+<body>
+    <div style="height: 600px;">
+        <h1>OWA tracker test page</h1>
+        <p>Synthetic tracked page for the tracker beacon Playwright test.</p>
+        <!-- A non-navigating, fragment-free click target. A real <a href="#..">
+             would set target_url to an href containing '#', and the tracker does
+             NOT url-encode GET values, so the '#' would terminate the beacon URL
+             as a fragment (truncating click_x/site_id off the wire). A button
+             keeps the click beacon complete for this transport test. -->
+        <button type="button" id="tracked-btn">a tracked button</button>
+    </div>
+
+    <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var base = params.get('base');
+            if (!base) {
+                throw new Error('tracker_harness.html requires a ?base=<owa public url> query param');
+            }
+            if (base.charAt(base.length - 1) !== '/') {
+                base += '/';
+            }
+            window.owa_baseUrl = base;
+
+            // Bootstrap the tracker exactly like js_log_tag.tpl: queue setSiteId +
+            // an explicit trackPageView, then inject the built tracker. The tracker
+            // drains owa_cmds on load and fires the page_request beacon.
+            window.owa_cmds = window.owa_cmds || [];
+            window.owa_cmds.push(['setSiteId', 'e2e-tracker-harness']);
+            window.owa_cmds.push(['trackPageView']);
+
+            var _owa = document.createElement('script');
+            _owa.type = 'text/javascript';
+            _owa.async = true;
+            _owa.src = window.owa_baseUrl + 'public/base/dist/owa.tracker.js';
+            var _owa_s = document.getElementsByTagName('script')[0];
+            _owa_s.parentNode.insertBefore(_owa, _owa_s);
+        }());
+    </script>
+</body>
+</html>
