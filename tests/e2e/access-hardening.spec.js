@@ -10,9 +10,10 @@
  *   - PUBLIC set  -> must be reachable (200/301/302). The public PHP endpoints, the
  *     built JS/CSS assets, AND BOTH tracker locations: the canonical
  *     modules/base/dist/owa.tracker.js and the legacy
- *     modules/base/js/owa.tracker-combined-min.js (kept as a real second copy by
- *     `npm run copyTracker` and 301-redirected by .htaccess -- old embed snippets in
- *     the wild still point at the js/ path, so it must keep resolving).
+ *     modules/base/js/owa.tracker-combined-min.js. The legacy js/ path no longer has a
+ *     physical copy (the copyTracker duplication was dropped) -- it is 301-redirected to
+ *     dist/ by .htaccess (the rewrite fires unconditionally, no -f test), and old embed
+ *     snippets in the wild still point at the js/ path, so it must keep resolving.
  *   - DENIED set  -> must NOT be served as source (expect 403, or 404 if the allow
  *     rule makes it vanish). Source PHP, templates, config, data, build metadata.
  *
@@ -52,8 +53,9 @@ const PUBLIC_PATHS = [
     // makeImageLink images (report icons/logos) now resolve here via images_url.
     'public/base/i/funnel_flow.png',
     'public/base/i/user_icon_small.gif',
-    // BOTH tracker locations stay reachable -- the legacy js/ path is a real second
-    // copy (copyTracker) that .htaccess 301s to dist. Old embed codes depend on it.
+    // BOTH tracker locations stay reachable -- the legacy js/ path has no physical file
+    // anymore (copyTracker dropped); .htaccess 301s it to dist/. Old embed codes depend
+    // on it resolving (the redirect is the compat, not a duplicate file).
     'modules/base/js/owa.tracker-combined-min.js',
 ];
 
