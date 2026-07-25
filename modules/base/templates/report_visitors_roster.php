@@ -7,11 +7,11 @@
         <TD><img src="<?php echo $this->makeImageLink('base/i/user_icon_small.gif');?>" align="top">
             <a href="<?php echo $this->makeLink(array('do' => 'base.reportVisitor', 'visitor_id' => $visitor['visitor_id'], 'period' => 'all_time'));?>">
             <?if(!empty($visitor['user_name'])):
-                echo $visitor['user_name'];
+                $this->out( $visitor['user_name'] );
             elseif(!empty($visitor['user_email'])):
-                echo $visitor['user_email'];
+                $this->out( $visitor['user_email'] );
             else:
-                echo $visitor['visitor_id'];
+                $this->out( $visitor['visitor_id'] );
             endif;?>
             </a>
         </TD>

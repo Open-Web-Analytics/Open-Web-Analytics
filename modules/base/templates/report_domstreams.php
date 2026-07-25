@@ -20,8 +20,8 @@
                 <?php echo date("F j, Y, g:i a",$ds['timestamp']);?>
             </TD>
             <TD class="data_cell">
-            <a href="<?php echo $ds['page_url'];?>">
-                <?php echo $this->truncate($ds['page_url'], 150);?>
+            <a href="<?php $this->out( $ds['page_url'] );?>">
+                <?php $this->out( $this->truncate($ds['page_url'], 150) );?>
             </a>
             </TD>
 
@@ -57,8 +57,8 @@
 								            $parts = explode( '#', $ds['page_url'] );
 								            $ds['page_url'] = $parts[0];
 								        }
-	                                    
-	                                    echo $ds['page_url'];?>" 
+
+	                                    $this->out( $ds['page_url'] );?>"
                                     href="#">Play</a>
             </TD>
         </TR>

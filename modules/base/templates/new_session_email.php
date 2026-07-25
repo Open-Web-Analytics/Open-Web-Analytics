@@ -1,20 +1,20 @@
-<p>There was a new visit to site: <?php echo $site['domain'];?>.</p>
+<p>There was a new visit to site: <?php $this->out( $site['domain'] );?>.</p>
 
-<p>Visitor ID: <?php echo $session['visitor_id'];?></p>
+<p>Visitor ID: <?php $this->out( $session['visitor_id'] );?></p>
 
-<p>Username (email): <?php echo $session['user_name'];?>  (<?php if (isset($session['user_email'])) { 
-                                                                    echo $session['user_email'];
+<p>Username (email): <?php $this->out( $session['user_name'] );?>  (<?php if (isset($session['user_email'])) {
+                                                                    $this->out( $session['user_email'] );
                                                                 } else {
                                                                     echo 'not set';
                                                                 }  ?>)
 </p>
-<p>Host: <?php echo $session['host'];?></p>
+<p>Host: <?php $this->out( $session['host'] );?></p>
 
 
-<p>City/Country:  <?php echo $session['city'];?> <?php echo $session['country'];?></p>
+<p>City/Country:  <?php $this->out( $session['city'] );?> <?php $this->out( $session['country'] );?></p>
 
 
-<p>Entry page:  <?php echo $session['page_title'];?> - <?php echo $session['page_url'];?></p>
+<p>Entry page:  <?php $this->out( $session['page_title'] );?> - <?php $this->out( $session['page_url'] );?></p>
 
 
 <hr>
