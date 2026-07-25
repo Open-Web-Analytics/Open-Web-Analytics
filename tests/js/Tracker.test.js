@@ -93,9 +93,9 @@ describe('OWATracker event assembly', () => {
         expect(captured).toHaveLength(1);
         const e = captured[0];
         expect(e.get('event_type')).toBe('dom.click');
-        // dom_element_tag: an early lowercased set() is overwritten by the
-        // getDomElementProperties() merge, so the raw uppercase tagName wins.
-        expect(e.get('dom_element_tag')).toBe('A');
+        // dom_element_tag is lower-cased by getDomElementProperties() for
+        // consistent storage regardless of how the browser reports tagName.
+        expect(e.get('dom_element_tag')).toBe('a');
         expect(e.get('dom_element_id')).toBe('buy-now');
         expect(e.get('dom_element_name')).toBe('buy');
         expect(e.get('dom_element_class')).toBe('btn');

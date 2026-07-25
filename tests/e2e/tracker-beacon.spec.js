@@ -94,7 +94,8 @@ test.describe('the built tracker fires beacons on the wire', () => {
         // must ride the click beacon -- these appear AFTER target_url in the query
         // string, so their presence also proves the beacon wasn't truncated.
         expect(click).toContain('owa_dom_element_id=tracked-btn');
-        expect(click).toContain('owa_dom_element_tag=BUTTON');
+        // dom_element_tag is stored lower-cased for consistency.
+        expect(click).toContain('owa_dom_element_tag=button');
         expect(click).toContain('owa_site_id=e2e-tracker-harness');
         expect(click).toMatch(/owa_click_x=\d+/);
     });

@@ -64,7 +64,7 @@ describe('domstream capture (event_queue)', () => {
         expect(props.key_code).toBe(65);
         expect(props.dom_element_id).toBe('search-box');
         expect(props.dom_element_name).toBe('q');
-        expect(props.dom_element_tag).toBe('INPUT');
+        expect(props.dom_element_tag).toBe('input');
     });
 
     test('keypressEventHandler does NOT capture keystrokes in a password field', () => {
@@ -107,9 +107,8 @@ describe('domstream capture (event_queue)', () => {
             const props = t.event_queue[0];
             expect(props.event_type).toBe('dom.click');
             expect(props.dom_element_id).toBe('buy-now');
-            // getDomElementProperties re-sets dom_element_tag to the raw (uppercase)
-            // tagName after the strtolower set, so the merged value is uppercase.
-            expect(props.dom_element_tag).toBe('BUTTON');
+            // getDomElementProperties lower-cases the tag for consistent storage.
+            expect(props.dom_element_tag).toBe('button');
             // getCoords stringifies click coords.
             expect(props.click_x).toBe('55');
             expect(props.click_y).toBe('66');

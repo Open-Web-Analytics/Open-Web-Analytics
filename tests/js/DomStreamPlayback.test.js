@@ -92,8 +92,8 @@ describe('domstream playback (admin-side Player)', () => {
         document.body.innerHTML = '<input id="search-box" />';
         const p = new Player();
         // Two keystrokes into the same field should accumulate.
-        p.keypressEventHandler({ event_type: 'dom.keypress', key_value: 'h', dom_element_id: 'search-box', dom_element_name: 'q', dom_element_tag: 'INPUT' });
-        p.keypressEventHandler({ event_type: 'dom.keypress', key_value: 'i', dom_element_id: 'search-box', dom_element_name: 'q', dom_element_tag: 'INPUT' });
+        p.keypressEventHandler({ event_type: 'dom.keypress', key_value: 'h', dom_element_id: 'search-box', dom_element_name: 'q', dom_element_tag: 'input' });
+        p.keypressEventHandler({ event_type: 'dom.keypress', key_value: 'i', dom_element_id: 'search-box', dom_element_name: 'q', dom_element_tag: 'input' });
         expect(document.getElementById('search-box').value).toBe('hi');
     });
 
@@ -109,7 +109,7 @@ describe('domstream playback (admin-side Player)', () => {
             dom_element_id: 'buy-now',
             dom_element_name: '(not set)',
             dom_element_class: '(not set)',
-            dom_element_tag: 'BUTTON',
+            dom_element_tag: 'button',
             click_x: 10, click_y: 20,
         });
         expect(clicked).toBe(true);

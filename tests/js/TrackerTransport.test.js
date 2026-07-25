@@ -170,7 +170,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
         for (let i = 0; i < n; i++) {
             const e = t.makeEvent();
             e.setEventType('dom.click');
-            e.set('dom_element_tag', 'A');
+            e.set('dom_element_tag', 'a');
             t.addToEventQueue(e);
         }
     }

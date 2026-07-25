@@ -955,8 +955,9 @@ class OWATracker  {
     getDomElementProperties(targ) {
 
         var properties = new Object();
-        // Set properties of the owa_click object.
-        properties.dom_element_tag = targ.tagName;
+        // Set properties of the owa_click object. Lower-case the tag so dom_element_tag
+        // is stored consistently regardless of how the browser reports tagName.
+        properties.dom_element_tag = Util.strtolower(targ.tagName);
 
         if (targ.tagName == "A") {
 
@@ -1030,7 +1031,8 @@ class OWATracker  {
         }
         click.set("dom_element_class", dom_class);
 
-        click.set("dom_element_tag", Util.strtolower(targ.tagName));
+        // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
+        // whose merge() would overwrite anything set here -- so no duplicate set.
         click.set("page_url", window.location.href);
         // view port dimensions - needed for calculating relative position
         var viewport = this.getViewportDimensions();
@@ -1177,7 +1179,7 @@ class OWATracker  {
         event.set("dom_element_name", targ.name);
         event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
-        event.set("dom_element_tag", targ.tagName);
+        event.set("dom_element_tag", Util.strtolower(targ.tagName));
         //console.log("Keypress: %s %d", key_value, key_code);
         this.addToEventQueue(event);
 
