@@ -25,6 +25,11 @@ module.exports = defineConfig({
     testDir: './tests/e2e',
     // Only the browser specs; the PHP seeder shares this dir but isn't a test.
     testMatch: '**/*.spec.js',
+    // Seed the fixtures before the run and remove them after, so a normal
+    // `npm run test:e2e` leaves the DB clean -- no fixture site/user/pageviews
+    // linger in the live reporting interface. Both delegate to the PHP seeder.
+    globalSetup: require.resolve('./tests/e2e/global-setup.js'),
+    globalTeardown: require.resolve('./tests/e2e/global-teardown.js'),
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: 0,
