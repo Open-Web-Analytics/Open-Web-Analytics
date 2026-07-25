@@ -95,16 +95,19 @@ class owa_installCheckEnvController extends owa_installController {
 	        $bad_environment = true;
         }
         
-        // check to ensure tha the vendors dir exist
-        if ( ! is_dir( OWA_BASE_MODULE_DIR .'dist' ) ) {
-	        
+        // check to ensure the built asset dir exists. The webpack build now emits
+        // the tracker/reporting bundles under public/base/dist (they used to live
+        // in modules/base/dist); public/ is gitignored, so a fresh source checkout
+        // still lacks it until 'npm run build' runs.
+        if ( ! is_dir( OWA_DIR .'public/base/dist' ) ) {
+
 	        $errors['base_dist_dir'] = [
-		        
+
 		        'name'	=> 'dist Directory',
 		        'value'	=> 'missing',
-		        'msg'	=> "The base module dist directory is missing. Please run 'npm build' from the top level OWA directory."
+		        'msg'	=> "The built asset directory (public/base/dist) is missing. Please run 'npm run build' from the top level OWA directory."
 	        ];
-	        
+
 	        $bad_environment = true;
         }
 
