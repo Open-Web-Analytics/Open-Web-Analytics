@@ -81,13 +81,14 @@ $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '203.0.113.10';
 require_once($owa_root . 'owa.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
-// A new session fires base.new_session, whose notify handler builds a mailer.
-// The default derived from-address ("owa@localhost") is rejected by PHPMailer
-// (no dot in the domain) and would fatal the seed. Pin a valid, clearly
-// non-deliverable from-address for this CLI process (mirrors the test bootstrap).
-owa_coreAPI::setSetting('base', 'mailer-from', 'owa@owatest.example.com');
-// Belt-and-suspenders: don't attempt real delivery during seeding.
-owa_coreAPI::setSetting('base', 'notify_new_session', false);
+// If the live install has new-session announcements enabled (announce_visitors +
+// notice_email), seeding a fixture pageview fires base.new_session and its notify
+// handler sends mail. We deliberately DON'T suppress that: announcements are off
+// by default, so if they're on it's an operator's choice and the seed should
+// behave like any other tracked hit -- including on a localhost install with the
+// shipped 'owa@localhost' mailer-from. owa_mailer now guards an invalid From and
+// never lets a mail failure fatal the request (modules/base/classes/mailer.php),
+// so no override is needed here; the seed exercises that real path.
 
 $cmd = $argv[1] ?? 'info';
 
