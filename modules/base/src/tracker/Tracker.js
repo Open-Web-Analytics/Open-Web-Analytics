@@ -405,7 +405,14 @@ class OWATracker  {
 
     getUrlParam(name) {
 
-        this.urlParams = this.urlParams || Util.parseUrlParams();
+        // The constructor seeds this.urlParams to {} -- a truthy value -- so the
+        // old `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to
+        // the empty object and never parsed the URL, making getUrlParam return
+        // false for every query param (e.g. the ?owa_state= cross-domain linking
+        // token in checkForLinkedState). Parse when the cache is still empty.
+        if ( Util.is_object( this.urlParams ) && Object.keys( this.urlParams ).length === 0 ) {
+            this.urlParams = Util.parseUrlParams();
+        }
 
         if ( this.urlParams.hasOwnProperty( name ) ) {
             return this.urlParams[name];
