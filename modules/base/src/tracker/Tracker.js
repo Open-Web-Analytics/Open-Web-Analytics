@@ -200,13 +200,22 @@ class OWATracker  {
                         var value = Util.urldecode(pair[1]);
                         OWA.debug('pair: %s', value);
                         //OWA.debug('about to decode shared link state value: %s', value);
-                        decodedvalue = Util.decodeCookieValue(value);
+                        var decodedvalue = Util.decodeCookieValue(value);
                         //OWA.debug('decoded shared link state value: %s', JSON.stringify(decodedvalue));
                         var format = Util.getCookieValueFormat(value);
                         //OWA.debug('format of decoded shared state value: %s', format);
-                        decodedvalue.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
 
-                        OWA.replaceState( pair[0], decodedvalue, true, format );
+                        // Only restore stores that decoded to a populated object.
+                        // An empty sharable store (e.g. a visitor with no campaign
+                        // state) serializes to "" and decodes to a string/empty
+                        // value here; stamping .cdh onto that would throw in strict
+                        // mode and there is nothing worth carrying across anyway.
+                        if ( decodedvalue && typeof decodedvalue === 'object' ) {
+
+                            decodedvalue.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
+
+                            OWA.replaceState( pair[0], decodedvalue, true, format );
+                        }
                     }
                 }
             }
