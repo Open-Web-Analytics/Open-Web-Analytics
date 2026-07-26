@@ -163,3 +163,103 @@ describe('CommandQueue (owa_cmds) invocation', () => {
         expect(done).toBe(true);
     });
 });
+
+/**
+ * pause-owa / unpause-owa (the queue's stop / start controls).
+ *
+ * These are the only two queue-LEVEL commands the CommandQueue special-cases:
+ * they are matched by method name and flip is_paused rather than being
+ * dispatched to a tracker (there is no tracker method by these names). They are
+ * the documented way a site temporarily stops and resumes tracking without
+ * tearing down the tracker. The single pause/unpause test above covers the happy
+ * gate/resume path; these pin the subtler contracts a refactor could quietly
+ * break:
+ *
+ *   - a paused queue is fully inert — it doesn't even lazily create a tracker;
+ *   - commands issued while paused are DROPPED, not buffered — unpausing does not
+ *     replay them;
+ *   - pausing mid-drain halts the rest of a process() run;
+ *   - the pause/unpause method name is honored even under a dotted, named-tracker
+ *     command, so it gates the whole queue regardless of the object prefix.
+ */
+describe('CommandQueue pause-owa / unpause-owa (stop / start)', () => {
+
+    afterEach(() => {
+        delete window.OWATracker;
+        delete window.OWATracker2;
+    });
+
+    test('pause-owa as the first command does not even instantiate a tracker', () => {
+        // A paused queue is inert. pause-owa is handled before the lazy-init
+        // block, and that block is skipped while paused — so no global tracker is
+        // created (which matters: there is no OWATracker.pause-owa method to call).
+        expect(window.OWATracker).toBeUndefined();
+
+        const q = new CommandQueue();
+        q.push(['pause-owa']);
+
+        expect(q.is_paused).toBe(true);
+        expect(window.OWATracker).toBeUndefined();
+    });
+
+    test('commands issued while paused are dropped, not buffered for replay', () => {
+        const calls = [];
+        window.OWATracker = {
+            setSiteId(id) { calls.push('setSiteId:' + id); },
+            trackPageView() { calls.push('trackPageView'); },
+        };
+
+        const q = new CommandQueue();
+        q.push(['pause-owa']);
+        q.push(['setSiteId', 'while-paused']);   // suppressed
+        q.push(['trackPageView']);               // suppressed
+        expect(calls).toEqual([]);
+        // The suppressed commands were discarded, not queued onto asyncCmds...
+        expect(q.asyncCmds).toHaveLength(0);
+
+        // ...so unpausing resumes tracking but does NOT replay what was dropped.
+        q.push(['unpause-owa']);
+        expect(calls).toEqual([]);
+        q.push(['trackPageView']);
+        expect(calls).toEqual(['trackPageView']);
+    });
+
+    test('pausing mid-array halts the remainder of a process() drain', () => {
+        const calls = [];
+        window.OWATracker = {
+            setSiteId(id) { calls.push('setSiteId:' + id); },
+            trackPageView() { calls.push('trackPageView'); },
+            trackClicks() { calls.push('trackClicks'); },
+        };
+
+        const q = new CommandQueue();
+        // pause-owa sits between the first and later commands: everything after it
+        // in the drain is suppressed because the queue is now paused.
+        q.loadCmds([
+            ['setSiteId', 'drain-site'],
+            ['pause-owa'],
+            ['trackPageView'],
+            ['trackClicks'],
+        ]);
+        q.process();
+
+        expect(calls).toEqual(['setSiteId:drain-site']);
+        expect(q.is_paused).toBe(true);
+        // The whole queue was consumed by the drain even though later commands
+        // were gated out (they were shifted off and dropped, not left pending).
+        expect(q.asyncCmds).toHaveLength(0);
+    });
+
+    test('a dotted Name.pause-owa gates the whole queue and creates no tracker', () => {
+        // The queue parses the method name out of a dotted command before the
+        // pause check, so 'OWATracker2.pause-owa' pauses globally — and because a
+        // paused queue skips lazy-init, the named tracker is never created either.
+        expect(window.OWATracker2).toBeUndefined();
+
+        const q = new CommandQueue();
+        q.push(['OWATracker2.pause-owa']);
+
+        expect(q.is_paused).toBe(true);
+        expect(window.OWATracker2).toBeUndefined();
+    });
+});
