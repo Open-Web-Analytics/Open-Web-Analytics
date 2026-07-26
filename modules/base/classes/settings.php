@@ -541,6 +541,17 @@
 			 $mailer_domain = $parts['host'] ?? 'localhost';
 		 }
 
+		 // A dotless domain (e.g. bare 'localhost', or an internal hostname)
+		 // yields 'owa@localhost', which PHPMailer rejects as an invalid From.
+		 // Append '.localdomain' so the default is a valid, deliverable address
+		 // out of the box rather than relying on owa_mailer to repair it at send
+		 // time. owa_mailer::repairFromAddress applies the same rule as a
+		 // backstop for any persisted override.
+		 if ( strpos( $mailer_domain, '.' ) === false ) {
+
+			 $mailer_domain .= '.localdomain';
+		 }
+
 		 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
      }
 
