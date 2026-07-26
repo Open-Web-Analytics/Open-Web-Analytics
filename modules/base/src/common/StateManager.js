@@ -230,7 +230,7 @@ class StateManager {
             var state = this.get(store_name);
             
             if ( state && state.hasOwnProperty( key ) ) {
-                delete state['key'];
+                delete state[key];
                 this.replaceStore(store_name, state, true, this.getFormat( store_name ),  this.getExpirationDays( store_name ) );
             }
         }
