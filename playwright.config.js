@@ -24,7 +24,12 @@ const BASE_URL =
 module.exports = defineConfig({
     testDir: './tests/e2e',
     // Only the browser specs; the PHP seeder shares this dir but isn't a test.
+    // EXCLUDE the install-flow specs (install-*.spec.js): they stash the live
+    // owa-config.php and install into throwaway scratch DBs, which would break
+    // the reporting/admin specs that read the live config + live DB. Those run
+    // under playwright.install.config.js via `npm run test:e2e:install`.
     testMatch: '**/*.spec.js',
+    testIgnore: '**/install-*.spec.js',
     // Seed the fixtures before the run and remove them after, so a normal
     // `npm run test:e2e` leaves the DB clean -- no fixture site/user/pageviews
     // linger in the live reporting interface. Both delegate to the PHP seeder.

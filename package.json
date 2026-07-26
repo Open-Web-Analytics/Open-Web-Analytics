@@ -6,8 +6,12 @@
   "scripts": {
     "test": "jest",
     "test:e2e": "playwright test --config=playwright.config.js",
+    "test:e2e:install": "playwright test --config=playwright.install.config.js",
+    "test:e2e:selfhost": "playwright test --config=playwright.selfhost.config.js",
     "test:e2e:seed": "php tests/e2e/seed_reporting_fixtures.php seed",
     "test:e2e:teardown": "php tests/e2e/seed_reporting_fixtures.php teardown",
+    "test:e2e:install:doctor": "php tests/e2e/install_harness.php doctor",
+    "test:e2e:selfhost:doctor": "php tests/e2e/selfhost_harness.php doctor",
     "build": "webpack-cli --mode production",
     "start": "webpack-cli --mode development --watch"
   },

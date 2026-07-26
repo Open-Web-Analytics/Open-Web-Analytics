@@ -99,7 +99,12 @@ async function statusOf(request, url) {
     return res.status();
 }
 
-test.describe('web-access hardening policy', () => {
+// Tagged @server-config: this suite asserts REAL web-server (.htaccess) deny/allow
+// behavior. The self-hosted runner (playwright.selfhost.config.js) serves the repo
+// with `php -S`, which serves every file itself and honors no .htaccess, so it
+// grep-INVERTS this tag and skips the suite. It only runs against a real Apache/nginx
+// (the live-server runner, playwright.config.js). See that config's header.
+test.describe('web-access hardening policy @server-config', () => {
 
     for (const p of PUBLIC_PATHS) {
         test(`public: ${p} is served`, async ({ request }) => {
