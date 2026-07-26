@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Localhost cookie-domain harness.
+
+  This stands in for a customer's tracked page served from a NON-FQDN host
+  (localhost). It boots the REAL built public/base/dist/owa.tracker.js the way
+  js_log_tag.php does, queues setSiteId + trackPageView on owa_cmds, then injects
+  the tracker.
+
+  The point is NOT the beacon -- it is the state cookies the tracker writes
+  CLIENT-SIDE during trackEvent()'s manageState() (visitor 'v' / session 's'),
+  before any beacon leaves. The spec reads the browser cookie jar after the
+  tracker boots to prove whether those cookies actually persisted on a
+  single-label host.
+
+  Everything (this document + the tracker script) is fulfilled from disk by the
+  spec so the whole page runs at an http://localhost origin with no server. The
+  log.php beacon has nowhere to go and simply fails -- irrelevant to the cookie
+  write, which happens first and independently.
+
+  owa_baseUrl is injected via ?base=... so this file carries no hard-coded host.
+-->
+<head>
+    <meta charset="UTF-8">
+    <title>OWA localhost cookie harness</title>
+</head>
+<body>
+    <h1>OWA localhost cookie test page</h1>
+
+    <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var base = params.get('base');
+            if (!base) {
+                throw new Error('localhost_cookie_harness.html requires a ?base= query param');
+            }
+            if (base.charAt(base.length - 1) !== '/') {
+                base += '/';
+            }
+            window.owa_baseUrl = base;
+
+            window.owa_cmds = window.owa_cmds || [];
+            window.owa_cmds.push(['setSiteId', 'e2e-localhost-harness']);
+            window.owa_cmds.push(['trackPageView']);
+
+            var _owa = document.createElement('script');
+            _owa.type = 'text/javascript';
+            _owa.async = true;
+            _owa.src = window.owa_baseUrl + 'public/base/dist/owa.tracker.js';
+            var _owa_s = document.getElementsByTagName('script')[0];
+            _owa_s.parentNode.insertBefore(_owa, _owa_s);
+        }());
+    </script>
+</body>
+</html>
