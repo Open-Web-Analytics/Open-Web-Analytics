@@ -113,6 +113,48 @@ describe('CommandQueue (owa_cmds) invocation', () => {
         expect(window.OWATracker).toBeUndefined();
     });
 
+    test('two trackers coexist on one page with independent config; beacons route to the right one', () => {
+        // The wiki's "Using Multiple Trackers on the Same Web Page" contract:
+        // a bare command drives the default OWATracker while a dotted
+        // 'OWATracker2.*' command drives a second, independently-configured
+        // tracker -- and each one's events carry ITS OWN site id to the wire.
+        const spy = installImageSpy();
+        try {
+            expect(window.OWATracker).toBeUndefined();
+            expect(window.OWATracker2).toBeUndefined();
+
+            const q = new CommandQueue();
+            q.push(['setSiteId', 'site-A']);                                 // default tracker
+            q.push(['OWATracker2.setSiteId', 'site-B']);                     // second tracker
+            q.push(['trackPageView', 'https://a.example/on-default']);       // -> default
+            q.push(['OWATracker2.trackPageView', 'https://b.example/on-2']); // -> second
+
+            // Both trackers exist and hold their OWN, un-cross-contaminated site id.
+            expect(window.OWATracker).toBeDefined();
+            expect(window.OWATracker2).toBeDefined();
+            expect(window.OWATracker.siteId).toBe('site-A');
+            expect(window.OWATracker2.siteId).toBe('site-B');
+            expect(window.OWATracker).not.toBe(window.OWATracker2);
+
+            // Each pageview produced a beacon carrying that tracker's site id and
+            // its own page url -- proving the routing kept the two streams separate.
+            expect(spy.sent).toHaveLength(2);
+
+            const beaconA = spy.sent.find(u => u.includes('owa_site_id=site-A'));
+            const beaconB = spy.sent.find(u => u.includes('owa_site_id=site-B'));
+            expect(beaconA).toBeDefined();
+            expect(beaconB).toBeDefined();
+            // The default tracker's beacon carries the default tracker's url (and
+            // NOT site-B), and vice versa -- no cross-routing between trackers.
+            expect(beaconA).toContain('owa_page_url=' + encodeURIComponent('https://a.example/on-default'));
+            expect(beaconA).not.toContain('site-B');
+            expect(beaconB).toContain('owa_page_url=' + encodeURIComponent('https://b.example/on-2'));
+            expect(beaconB).not.toContain('site-A');
+        } finally {
+            spy.restore();
+        }
+    });
+
     test('loadCmds()+process() drains a pre-seeded array in FIFO order', () => {
         // This is the exact async-embed shape: the page fills a plain array before
         // the tracker exists; on load the tracker hands it to the queue and drains.
