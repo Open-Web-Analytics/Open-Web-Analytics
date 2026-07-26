@@ -157,4 +157,78 @@ final class CustomVariableIngestionTest extends IngestionTestCase
         $this->assertSame(strtolower($cv1_value), (string) $action->get('cv1_value'), 'cv1_value not persisted on the action fact row.');
         $this->assertSame('(not set)',            (string) $action->get('cv2_name'),  'unset cv2_name should default to (not set) on the action fact row.');
     }
+
+    /**
+     * Boundary: the number of custom-var slots the pipeline honours is capped by
+     * the base 'maxCustomVars' setting (default 5). Both the translate loop
+     * (owa_trackingEventHelpers::translateCustomVariables) and the fact-table
+     * column set (owa_factTable) are driven by that same setting, so the highest
+     * honoured slot (cv5) round-trips while the first slot beyond the cap (cv6)
+     * is silently dropped: it is never split into cv6_name/cv6_value and there is
+     * no column to hold it. This pins that cap so a change to the loop bound, or
+     * a migration that adds cv{n} columns without moving maxCustomVars in lockstep,
+     * can't drift the wire-honoured slot count unnoticed.
+     */
+    public function testCustomVarSlotsBeyondMaxAreDropped(): void
+    {
+        // Guard the premise: this test's cv5-honoured / cv6-dropped split only
+        // holds at the default cap of 5. If the setting changes, the assertions
+        // below are meaningless — fail loudly rather than pass vacuously.
+        $this->assertSame(
+            5,
+            (int) owa_coreAPI::getSetting('base', 'maxCustomVars'),
+            'This boundary test assumes the default maxCustomVars of 5.'
+        );
+
+        $site_id    = md5('owa-test-site');
+        $guid       = $this->uniqueGuid();
+        $session_id = $this->uniqueSessionId();
+        $visitor_id = $this->uniqueGuid();
+        $page_url   = 'https://example.com/cvar-boundary/' . $guid;
+        $user_agent = 'OWA-DimTest/1.0 (+cvar-boundary; run=' . $guid . ')';
+
+        // cv5 is the last honoured slot; cv6 is one past the cap.
+        $cv5_name  = 'Tier';
+        $cv5_value = 'Gold' . $guid;
+        $cv6_name  = 'Overflow';
+        $cv6_value = 'Dropped' . $guid;
+
+        $this->trackForCleanup('base.request', $guid, 'id');
+        $this->trackForCleanup('base.session', $session_id, 'id');
+        $this->trackForCleanup('base.document', $page_url, 'url');
+        $this->trackForCleanup('base.ua', $user_agent, 'ua');
+        $this->trackForCleanup('base.visitor', $visitor_id, 'id');
+
+        $result = $this->fireEvent('base.page_request', [
+            'guid'            => $guid,
+            'site_id'         => $site_id,
+            'session_id'      => $session_id,
+            'page_url'        => $page_url,
+            'HTTP_USER_AGENT' => $user_agent,
+            'is_new_session'  => true,
+            'is_new_visitor'  => true,
+            'visitor_id'      => $visitor_id,
+            'cv5'             => $cv5_name . '=' . $cv5_value,
+            'cv6'             => $cv6_name . '=' . $cv6_value,
+        ]);
+        $this->assertNotFalse($result, 'boundary custom-var page_request was dropped before persistence.');
+
+        // cv5 (within the cap) is split, lowercased, and translated on the event.
+        $event = $this->lastEvent();
+        $this->assertSame(strtolower($cv5_name),  (string) $event->get('cv5_name'),  'cv5 name did not split/lowercase.');
+        $this->assertSame(strtolower($cv5_value), (string) $event->get('cv5_value'), 'cv5 value did not split/lowercase.');
+
+        // cv6 (beyond the cap) is never translated: the loop stops at cv5, so the
+        // raw cv6 param survives untouched and no cv6_name/cv6_value is derived.
+        $this->assertFalse($event->get('cv6_name'),  'cv6 must not be split into cv6_name beyond the cap.');
+        $this->assertFalse($event->get('cv6_value'), 'cv6 must not be split into cv6_value beyond the cap.');
+
+        // On the fact row, cv5 persists; cv6 has no column at all, so the entity
+        // never carries it (get() on an unregistered property returns null).
+        $fact = $this->assertRowPersisted('base.request', $guid, 'id');
+        $this->assertSame(strtolower($cv5_name),  (string) $fact->get('cv5_name'),  'cv5_name not persisted on the fact row.');
+        $this->assertSame(strtolower($cv5_value), (string) $fact->get('cv5_value'), 'cv5_value not persisted on the fact row.');
+        $this->assertNull($fact->get('cv6_name'),  'cv6_name column must not exist / persist beyond the cap.');
+        $this->assertNull($fact->get('cv6_value'), 'cv6_value column must not exist / persist beyond the cap.');
+    }
 }
