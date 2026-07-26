@@ -67,7 +67,9 @@ module.exports = defineConfig({
     forbidOnly: !!process.env.CI,
     retries: 0,
     workers: 1,
-    reporter: process.env.CI ? 'line' : 'list',
+    // In CI keep the streaming 'line' output AND write an HTML report so a
+    // failing run has something to upload as an artifact for diagnosis.
+    reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : 'list',
     timeout: 60_000,
     expect: { timeout: 15_000 },
 
