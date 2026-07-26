@@ -18,19 +18,71 @@ const FIXTURE = {
     // The four page titles seeded (each with 2 pageviews).
     pageTitles: ['E2E Home', 'E2E pricing', 'E2E docs', 'E2E about'],
     expectedGridRows: 4,
+    // The admin-role fixture user (E2E_ADMIN_* in the seeder). The reporter
+    // above is an analyst and cannot reach any edit_* admin screen; the
+    // admin-actions suite logs in as this user instead.
+    adminUserId: 'owa-e2e-admin@example.test',
+    adminPassword: 'e2e-Admin-Pass-1!', // throwaway LOCAL fixture creds, never production
+    // The password-CHANGE fixture user (E2E_PWUSER_* in the seeder). OWA has no
+    // logged-in "change my password" form, only the emailed-passkey reset flow,
+    // so the seeder plants a KNOWN temp_passkey the test submits to the real
+    // base.usersChangePassword form. Isolated to its own user so rotating its
+    // creds can't disturb the admin/reporter logins.
+    pwUserId: 'owa-e2e-pwchange@example.test',
+    pwOldPassword: 'e2e-PwChange-Old-1!',
+    pwPasskey: '735512bd84ae1f2635e3e89fb7ecc001',
+    // Identifiers the CRUD tests CREATE then delete (mirrors E2E_NEW_* in the
+    // seeder, which teardown mops up if a test aborts mid-flow).
+    newSiteDomain: 'https://owa-e2e-created.example.test',
+    newSiteName: 'OWA E2E Created Site',
+    newUserId: 'owa-e2e-created@example.test',
+    // The always-present optional module the module-activation test toggles.
+    toggleModule: 'hello',
 };
 
 /**
- * Log in through the real OWA login form and land authenticated.
- * Leaves the page on the post-login redirect (base.sites).
+ * Log in through the real OWA login form as the given user and land
+ * authenticated. Leaves the page on the post-login redirect (base.sites).
  */
-async function login(page) {
+async function loginAs(page, userId, password) {
     await page.goto('?owa_do=base.loginForm', { waitUntil: 'networkidle' });
-    await page.fill('input[name="owa_user_id"]', FIXTURE.userId);
-    await page.fill('input[name="owa_password"]', FIXTURE.password);
+    await page.fill('input[name="owa_user_id"]', userId);
+    await page.fill('input[name="owa_password"]', password);
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
         page.click('input[name="owa_submit_btn"]'),
+    ]);
+}
+
+/** Log in as the analyst reporter fixture user. */
+async function login(page) {
+    await loginAs(page, FIXTURE.userId, FIXTURE.password);
+}
+
+/** Log in as the admin fixture user (needed for every edit_* admin screen). */
+async function adminLogin(page) {
+    await loginAs(page, FIXTURE.adminUserId, FIXTURE.adminPassword);
+}
+
+/**
+ * Log out through the real logout action and land back on the login form.
+ * base.logout clears the auth cookie/session and redirects to base.loginForm.
+ */
+async function logout(page) {
+    await page.goto('?owa_do=base.logout', { waitUntil: 'networkidle' });
+}
+
+/**
+ * Follow a nonce-guarded admin action link (Delete / Activate / Deactivate).
+ * These are rendered by makeLink(..., true) with the &owa_nonce=... already
+ * baked into the href, so the test just has to click the right anchor -- the
+ * server verifies the nonce that the page itself minted. `page` must already be
+ * on the list page that renders the link. Returns after the redirect settles.
+ */
+async function clickAndWait(page, locator) {
+    await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        locator.click(),
     ]);
 }
 
@@ -59,4 +111,13 @@ async function openReport(page, { doName = 'base.reportBrowsers', period = 'last
     await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
 }
 
-module.exports = { FIXTURE, login, openDashboard, openReport };
+module.exports = {
+    FIXTURE,
+    login,
+    loginAs,
+    adminLogin,
+    logout,
+    clickAndWait,
+    openDashboard,
+    openReport,
+};

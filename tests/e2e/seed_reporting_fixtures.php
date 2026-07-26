@@ -34,6 +34,39 @@ const E2E_USER_ROLE   = 'analyst';                // has view_reports + view_sit
 const E2E_USER_NAME   = 'OWA E2E Reporter';
 const E2E_PAGEVIEWS   = 8;                         // number of synthetic pageviews
 
+// A second fixture user with the ADMIN role, so the admin-actions e2e suite
+// (tests/e2e/admin-actions.spec.js) can drive the write flows that need
+// edit_users / edit_sites / edit_settings / edit_modules capabilities. The
+// analyst user above cannot reach any of those. Throwaway LOCAL creds only.
+const E2E_ADMIN_ID    = 'owa-e2e-admin@example.test';
+const E2E_ADMIN_PASS  = 'e2e-Admin-Pass-1!';       // local throwaway fixture creds
+const E2E_ADMIN_ROLE  = 'admin';                   // full edit_* capabilities
+const E2E_ADMIN_NAME  = 'OWA E2E Admin';
+
+// A third fixture user dedicated to the password-CHANGE flow. OWA has no
+// logged-in "change my password" form and no admin "set arbitrary password"
+// screen: a password change is only reachable by authenticating a one-time
+// temp_passkey (normally emailed via base.passwordResetForm). A headless
+// browser can't read that email, so the seeder plants a KNOWN passkey on this
+// user directly -- exactly the value usersResetPassword.php would have written
+// -- letting the admin-actions suite drive the REAL base.usersPasswordEntry ->
+// base.usersChangePassword form the same way a user clicking the emailed link
+// would. Isolated to its own user so the change (which rotates passkey +
+// password) can't disturb the admin/reporter logins. The seeder resets this
+// user's passkey + starting password on every run, so the test is re-runnable.
+const E2E_PWUSER_ID   = 'owa-e2e-pwchange@example.test';
+const E2E_PWUSER_PASS = 'e2e-PwChange-Old-1!';     // known STARTING password
+const E2E_PWUSER_KEY  = '735512bd84ae1f2635e3e89fb7ecc001'; // md5 temp_passkey the test submits
+const E2E_PWUSER_ROLE = 'analyst';
+const E2E_PWUSER_NAME = 'OWA E2E PwChange';
+
+// Identifiers the admin-actions CRUD tests CREATE at runtime (add site / add
+// user) and then delete. They are NOT seeded here; they are declared so the
+// teardown can mop them up if a CRUD test dies between the add and its delete,
+// keeping the live install clean. Kept in lockstep with tests/e2e/fixtures.js.
+const E2E_NEW_SITE_DOMAIN = 'https://owa-e2e-created.example.test';
+const E2E_NEW_USER_ID     = 'owa-e2e-created@example.test';
+
 // ---- Boot OWA in logger role (same as log.php / the ingestion tests) ---------
 $owa_root = dirname(__DIR__, 2) . '/';
 
@@ -72,11 +105,17 @@ switch ($cmd) {
 function fixtureInfo(): array
 {
     return [
-        'site_domain' => E2E_SITE_DOMAIN,
-        'site_id'     => md5(E2E_SITE_DOMAIN),
-        'user_id'     => E2E_USER_ID,
-        'password'    => E2E_USER_PASS,
-        'role'        => E2E_USER_ROLE,
+        'site_domain'    => E2E_SITE_DOMAIN,
+        'site_id'        => md5(E2E_SITE_DOMAIN),
+        'user_id'        => E2E_USER_ID,
+        'password'       => E2E_USER_PASS,
+        'role'           => E2E_USER_ROLE,
+        'admin_user_id'  => E2E_ADMIN_ID,
+        'admin_password' => E2E_ADMIN_PASS,
+        'admin_role'     => E2E_ADMIN_ROLE,
+        'pw_user_id'     => E2E_PWUSER_ID,
+        'pw_password'    => E2E_PWUSER_PASS,
+        'pw_passkey'     => E2E_PWUSER_KEY,
     ];
 }
 
@@ -99,6 +138,17 @@ function seed(): array
         $u->load(E2E_USER_ID, 'user_id');
     }
 
+    // 2a. Admin user with a known password (idempotent). No site grant needed:
+    //     the admin role's edit_* capabilities are not in
+    //     capabilitiesThatRequireSiteAccess, so the admin-actions suite can log
+    //     in and reach every options/users/sites/modules screen without one.
+    $a = owa_coreAPI::entityFactory('base.user');
+    $a->load(E2E_ADMIN_ID, 'user_id');
+    if (!$a->get('id')) {
+        $a = owa_coreAPI::entityFactory('base.user');
+        $a->createNewUser(E2E_ADMIN_ID, E2E_ADMIN_ROLE, E2E_ADMIN_PASS, E2E_ADMIN_ID, E2E_ADMIN_NAME);
+    }
+
     // 2b. Grant the user access to the fixture site. The analyst role's
     //     view_reports capability is in capabilitiesThatRequireSiteAccess, so
     //     without a base.site_user relation the login succeeds but every report
@@ -111,6 +161,24 @@ function seed(): array
         $rel->set('user_id', $u->get('id'));
         $rel->set('site_id', $s->get('id'));
         $rel->save();
+    }
+
+    // 2c. Password-change fixture user. Created if absent, then ALWAYS reset to
+    //     the known starting password + known temp_passkey so the password test
+    //     is re-runnable (a prior run's successful change rotates both). The
+    //     passkey is what the browser submits as owa_k to the real change form.
+    $pw = owa_coreAPI::entityFactory('base.user');
+    $pw->load(E2E_PWUSER_ID, 'user_id');
+    if (!$pw->get('id')) {
+        $pw = owa_coreAPI::entityFactory('base.user');
+        $pw->createNewUser(E2E_PWUSER_ID, E2E_PWUSER_ROLE, E2E_PWUSER_PASS, E2E_PWUSER_ID, E2E_PWUSER_NAME);
+        $pw = owa_coreAPI::entityFactory('base.user');
+        $pw->load(E2E_PWUSER_ID, 'user_id');
+    }
+    if ($pw->get('id')) {
+        $pw->set('password', owa_lib::encryptPassword(E2E_PWUSER_PASS));
+        $pw->set('temp_passkey', E2E_PWUSER_KEY);
+        $pw->update();
     }
 
     // 3. Pageview data so a report renders a chart + grid. Only seed if this
@@ -164,8 +232,17 @@ function teardown(): array
         }
     } catch (\Throwable $e) { $removed['owa_site_user'] = 'skip: ' . $e->getMessage(); }
 
-    // Remove the fixture user and site.
+    // Remove the fixture users (analyst + admin) and site.
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_USER_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_ADMIN_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_PWUSER_ID, 'user_id'); } catch (\Throwable $e) {}
+    // CRUD-test leftovers (only present if an add-then-delete test aborted midway).
+    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_NEW_USER_ID, 'user_id'); } catch (\Throwable $e) {}
+    try {
+        $cs = owa_coreAPI::entityFactory('base.site');
+        $cs->load(md5(E2E_NEW_SITE_DOMAIN), 'site_id');
+        if ($cs->get('id')) { $cs->delete($cs->get('id'), 'id'); }
+    } catch (\Throwable $e) {}
     try {
         $s = owa_coreAPI::entityFactory('base.site');
         $s->load($site_id, 'site_id');
