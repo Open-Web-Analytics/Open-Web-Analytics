@@ -46,7 +46,12 @@ class owa_installConfigController extends owa_installController {
         $this->addValidation('db_host', $this->getParam('db_host'), 'required', ['errorMsg' => 'Database host is required.']);
         $this->addValidation('db_name', $this->getParam('db_name'), 'required', ['errorMsg' => 'Database name is required.']);
         $this->addValidation('db_user', $this->getParam('db_user'), 'required', ['errorMsg' => 'Database user is required.']);
-        $this->addValidation('db_password', $this->getParam('db_password'), 'required', ['errorMsg' => 'Database password is required.']);
+        // NOTE: db_password is intentionally NOT required. MySQL permits accounts
+        // with an empty password (common for local/dev servers, and the CI
+        // mysql:8.0 service runs with MYSQL_ALLOW_EMPTY_PASSWORD). The real gate
+        // is the live connection check in action() below -- a bad/empty password
+        // that the server rejects fails there with a connection error, so a
+        // presence check here only blocks legitimate passwordless installs.
         $this->addValidation('db_type', $this->getParam('db_type'), 'required', ['errorMsg' => 'Database type is required.']);
 
         // Config for the public_url validation
