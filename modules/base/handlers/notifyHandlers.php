@@ -48,14 +48,23 @@ class owa_notifyHandlers extends owa_observer {
             $s->load( $s->generateId( $event->getSiteId() ) );
 
             if ( $s->wasPersisted() ) {
-        
+
                 $ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
-               
+
                 return OWA_EHS_EVENT_HANDLED;
-               
+
             } else {
-                    
-                return OWA_EHS_EVENT_FAILED;
+
+                // No site entity exists for this event's site_id, so there is
+                // no one to send the new-session announcement to. This is a
+                // permanent condition (an unknown/unregistered site never
+                // becomes registered by retrying), so treat it as handled --
+                // returning FAILED would re-queue the event onto the processing
+                // queue for a retry that can never succeed, piling up
+                // undeliverable poison-pill rows in owa_queue_item.
+                owa_coreAPI::debug( 'New session notify handled with no action: no persisted site found for site_id: ' . $event->getSiteId() );
+
+                return OWA_EHS_EVENT_HANDLED;
             }
             
         } else {
