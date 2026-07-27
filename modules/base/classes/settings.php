@@ -161,6 +161,23 @@
             $this->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
         }
 
+        /* STATIC CONFIG ONLY */
+
+        // When true, owa_caller skips the boot-time load of user settings from
+        // the owa_configuration DB table (owa_caller.php ~97). This is the ONLY
+        // place the switch can be set early enough to matter: the check runs
+        // before caller overrides (overloadConfig) are applied, so a value
+        // passed to `new owa([...])` arrives too late. Setting it here -- from a
+        // config-file define, applied in owa_settings::__construct before the
+        // caller boots -- is what actually suppresses that DB read (and the
+        // connection handshake it triggers). A pure file-queue logging node can
+        // then accept + queue tracking events with zero DB access; everything it
+        // needs must be pinned in owa-config.php since it can no longer read
+        // persisted settings from the database.
+        if (defined('OWA_USE_STATIC_CONFIG_ONLY')) {
+            $this->set('base', 'useStaticConfigOnly', OWA_USE_STATIC_CONFIG_ONLY);
+        }
+
         /* DATABASE CONFIGURATION */
 
         // This needs to come before the fetch of user overrides from the DB

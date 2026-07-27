@@ -96,7 +96,26 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *
  * Override to load an alternative user configuration
  */
- 
+
 //define('OWA_CONFIGURATION_ID', '1');
+
+/**
+ * STATIC CONFIG ONLY
+ *
+ * When true, OWA does NOT read your saved settings from the owa_configuration
+ * database table at boot. It runs on the built-in defaults plus whatever this
+ * config file defines. This suppresses the two DB queries every OWA process
+ * would otherwise issue on boot (the connection handshake and the config read),
+ * so a dedicated logging node that only queues incoming tracking events to a
+ * file can accept beacons with zero database access.
+ *
+ * ONLY enable this on a node whose job is to queue events (see the "Event
+ * Queueing" wiki page). Because saved settings are not loaded, any non-default
+ * setting such node relies on (tracked sites, the queue type, async_log_dir,
+ * etc.) must be pinned here in owa-config.php. Do NOT enable it on the instance
+ * that serves reports or the admin UI -- those need the database-backed config.
+ */
+
+//define('OWA_USE_STATIC_CONFIG_ONLY', true);
 
 ?>
