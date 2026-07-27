@@ -16,6 +16,8 @@
 // $Id$
 //
 
+defined('OWA_DTD_SERIAL') or define('OWA_DTD_SERIAL', 'SERIAL');
+
 /**
  * User Entity
  * 
