@@ -39,6 +39,12 @@ const path = require('path');
  * The whole tests/ tree is excluded from the release tarball, so this never ships.
  */
 
+// Mark this run as the self-host runner. The event-queue spec (which mutates a
+// persisted setting and drains the shared file queue) only runs when this is set,
+// so it exercises the throwaway scratch install here and skips against the live
+// site under playwright.config.js. Set before config export so every worker sees it.
+process.env.OWA_E2E_SELFHOST = '1';
+
 const HARNESS = path.join(__dirname, 'tests', 'e2e', 'selfhost_harness.php');
 
 // The base URL is defined by the harness (php -S host/port). Ask it, so the config
