@@ -661,6 +661,14 @@
                 'mailer-username'                    => '',
                 'mailer-password'                    => '',
                 'queue_events'                        => false,
+                // Retry-exhaustion caps for the processing queue. A queued event
+                // that keeps failing (e.g. a session_update whose session never
+                // persists, or an event for an unregistered site) is retried on
+                // each processEventQueue run until it exceeds EITHER of these,
+                // then marked 'broken' and retained for inspection rather than
+                // retried forever. Set either to 0 to disable that check.
+                'queue_max_retry_count'                => 25,          // attempts before giving up
+                'queue_max_retry_age'                => 86400,       // seconds (24h) since first queued
                 'event_queue_type'                    => 'file',
                 'event_secondary_queue_type'        => '',
                 'use_remote_event_queue'            => true,
