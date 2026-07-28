@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Update;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,13 +30,13 @@
  */
 
 
-class owa_base_008_update extends owa_update {
+class Update008 extends \owa_update {
 
     var $schema_version = 8;
 
 
     function up($force = false) {
-        $site = owa_coreAPI::entityFactory('base.site_user');
+        $site = \owa_coreAPI::entityFactory('base.site_user');
         $ret = $site->createTable('site_user');
         if ($ret === false ) {
             $this->e->notice('Create table site_user failed');
@@ -45,7 +47,7 @@ class owa_base_008_update extends owa_update {
     }
 
     function down() {
-        $site = owa_coreAPI::entityFactory('base.site_user');
+        $site = \owa_coreAPI::entityFactory('base.site_user');
         $ret = $site->dropTable('site_user');
         return true;
     }

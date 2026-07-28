@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Update;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -13,25 +15,25 @@
  * 
  */
 
-class owa_base_011_update extends owa_update {
+class Update011 extends \owa_update {
 
     var $schema_version = 11;
 
     function up($force = true) {
 		
-		$s = owa_coreAPI::serviceSingleton();
+		$s = \owa_coreAPI::serviceSingleton();
 		$file = OWA_MODULES_DIR . 'fileCache/classes/fileCache.php';
         $class_info = array( 'owa_fileCache', $file, [] );
         $s->setMapValue( 'object_cache_types', 'file', $class_info);
         
-        owa_coreAPI::setSetting('base', 'cache_objects', true);
-	    owa_coreAPI::setSetting('base', 'cacheType', 'file');
+        \owa_coreAPI::setSetting('base', 'cache_objects', true);
+	    \owa_coreAPI::setSetting('base', 'cacheType', 'file');
         
-        $cache = owa_coreAPI::cacheSingleton();
+        $cache = \owa_coreAPI::cacheSingleton();
         
         if ( $cache->flush() ) {
 
-            owa_coreAPI::notice('Cache Flushed');
+            \owa_coreAPI::notice('Cache Flushed');
             return true;
 
         } else {

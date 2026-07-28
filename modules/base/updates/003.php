@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Update;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,12 +31,12 @@
  */
 
 
-class owa_base_003_update extends owa_update {
+class Update003 extends \owa_update {
 
     function up() {
 
-        $db = owa_coreAPI::dbSingleton();
-        $s = owa_coreAPI::serviceSingleton();
+        $db = \owa_coreAPI::dbSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
 
         $entities = $s->modules[$this->module_name]->getEntities();
 

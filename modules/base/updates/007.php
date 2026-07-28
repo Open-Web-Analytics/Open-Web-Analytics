@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Update;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_base_007_update extends owa_update {
+class Update007 extends \owa_update {
 
     var $schema_version = 7;
     var $is_cli_mode_required = true;
@@ -162,7 +164,7 @@ class owa_base_007_update extends owa_update {
         );
 
         // custom variable columns
-        $cv_max = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+        $cv_max = \owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
         $fact_table_entities = array(
                 'base.action_fact',
                 'base.request',
@@ -190,7 +192,7 @@ class owa_base_007_update extends owa_update {
     function up($force = false) {
 
         foreach ( $this->entities as $entity => $operations) {
-            $e = owa_coreAPI::entityFactory($entity);
+            $e = \owa_coreAPI::entityFactory($entity);
             foreach ( $operations as $operation => $items ) {
                 foreach ($items as $item) {
                     $ret = $e->$operation( $item );
@@ -211,7 +213,7 @@ class owa_base_007_update extends owa_update {
 
         // convert text cols to blobs for storing serialized data
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
 
         $ret = $db->query('ALTER TABLE owa_queue_item MODIFY event BLOB');
         if ( $ret === true ) {
@@ -316,7 +318,7 @@ class owa_base_007_update extends owa_update {
 
         foreach ( $this->entities as $entity => $operations) {
 
-            $e = owa_coreAPI::entityFactory($entity);
+            $e = \owa_coreAPI::entityFactory($entity);
 
             foreach ( $operations as $operation => $items ) {
 
@@ -337,7 +339,7 @@ class owa_base_007_update extends owa_update {
         }
 
         // drop indexes
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->dropIndex( 'owa_action_fact', 'yyyymmdd' );
         $db->dropIndex( 'owa_action_fact', 'action_group' );
         $db->dropIndex( 'owa_commerce_transaction_fact', 'yyyymmdd' );

@@ -246,6 +246,20 @@ function owa_compat_class_map(): array
         'owa_userHandlers' => 'OWA\\Module\\Base\\Handler\\UserHandlers',
         'owa_visitorHandlers' => 'OWA\\Module\\Base\\Handler\\VisitorHandlers',
         'owa_visitorUpdateHandlers' => 'OWA\\Module\\Base\\Handler\\VisitorUpdateHandlers',
+
+        // modules/base/updates (Phase 6 stage 2) -> OWA\Module\Base\Update\*.
+        // Files are numeric (003.php ...); updateFactory synthesizes the legacy
+        // key 'owa_'.$module.'_'.$filename.'_update' (owa_base_003_update), so
+        // THAT exact string is the bridge key.
+        'owa_base_003_update' => 'OWA\\Module\\Base\\Update\\Update003',
+        'owa_base_004_update' => 'OWA\\Module\\Base\\Update\\Update004',
+        'owa_base_005_update' => 'OWA\\Module\\Base\\Update\\Update005',
+        'owa_base_006_update' => 'OWA\\Module\\Base\\Update\\Update006',
+        'owa_base_007_update' => 'OWA\\Module\\Base\\Update\\Update007',
+        'owa_base_008_update' => 'OWA\\Module\\Base\\Update\\Update008',
+        'owa_base_009_update' => 'OWA\\Module\\Base\\Update\\Update009',
+        'owa_base_010_update' => 'OWA\\Module\\Base\\Update\\Update010',
+        'owa_base_011_update' => 'OWA\\Module\\Base\\Update\\Update011',
     ];
 }
 

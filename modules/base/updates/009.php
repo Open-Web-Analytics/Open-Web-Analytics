@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Update;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  */
 
 
-class owa_base_009_update extends owa_update {
+class Update009 extends \owa_update {
 
     var $schema_version = 9;
 
@@ -55,10 +57,10 @@ class owa_base_009_update extends owa_update {
  * 
  * Change these to different unique phrases.
  */" . PHP_EOL.PHP_EOL;
-            $n1 = "define('OWA_NONCE_KEY', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
-            $n2 = "define('OWA_NONCE_SALT', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
-            $n3 = "define('OWA_AUTH_KEY', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
-            $n4 = "define('OWA_AUTH_SALT', '" . owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL . PHP_EOL;
+            $n1 = "define('OWA_NONCE_KEY', '" . \owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
+            $n2 = "define('OWA_NONCE_SALT', '" . \owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
+            $n3 = "define('OWA_AUTH_KEY', '" . \owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL;
+            $n4 = "define('OWA_AUTH_SALT', '" . \owa_coreAPI::secureRandomString(64) . "');" . PHP_EOL . PHP_EOL;
             $ne = "?>";
 
             $value = $n0. $n1 . $n2 . $n3 . $n4 . $ne;

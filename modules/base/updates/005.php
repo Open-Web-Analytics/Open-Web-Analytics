@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Update;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_base_005_update extends owa_update {
+class Update005 extends \owa_update {
 
     var $schema_version = 5;
     var $is_cli_mode_required = true;
@@ -41,7 +43,7 @@ class owa_base_005_update extends owa_update {
         foreach ($tables as $table) {
 
             // add yyyymmdd column to owa_session
-            $db = owa_coreAPI::dbSingleton();
+            $db = \owa_coreAPI::dbSingleton();
             $db->addColumn($table, 'yyyymmdd', 'INT');
             $db->addIndex($table, 'yyyymmdd');
             $ret = $db->query("update $table set yyyymmdd =
@@ -55,7 +57,7 @@ class owa_base_005_update extends owa_update {
             }
         }
 
-        $visitor = owa_coreAPI::entityFactory('base.visitor');
+        $visitor = \owa_coreAPI::entityFactory('base.visitor');
 
         $ret = $visitor->addColumn('num_prior_sessions');
 
@@ -79,7 +81,7 @@ class owa_base_005_update extends owa_update {
             return false;
         }
 
-        $request = owa_coreAPI::entityFactory('base.request');
+        $request = \owa_coreAPI::entityFactory('base.request');
 
         $ret = $request->addColumn('prior_document_id');
 
@@ -96,7 +98,7 @@ class owa_base_005_update extends owa_update {
         }
 
 
-        $session = owa_coreAPI::entityFactory('base.session');
+        $session = \owa_coreAPI::entityFactory('base.session');
 
         $ret = $session->addColumn('num_prior_sessions');
 
@@ -157,7 +159,7 @@ class owa_base_005_update extends owa_update {
         }
 
         // add api column
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \owa_coreAPI::entityFactory('base.user');
         $ret = $u->addColumn('api_key');
 
         if (!$ret) {
@@ -166,7 +168,7 @@ class owa_base_005_update extends owa_update {
         }
 
         // add uri column
-        $d = owa_coreAPI::entityFactory('base.document');
+        $d = \owa_coreAPI::entityFactory('base.document');
         $d->addColumn('uri');
         $ret = $db->query("update owa_document set uri = substring_index(SUBSTR(url FROM 1+ length(substring_index(url, '/', 3))), '#', 1) ");
 
@@ -175,7 +177,7 @@ class owa_base_005_update extends owa_update {
             return false;
         }
 
-        $a = owa_coreAPI::entityFactory('base.action_fact');
+        $a = \owa_coreAPI::entityFactory('base.action_fact');
         $ret = $a->createTable();
 
         if ($ret === true) {
@@ -185,7 +187,7 @@ class owa_base_005_update extends owa_update {
             return false;
         }
 
-        $st = owa_coreAPI::entityFactory('base.search_term_dim');
+        $st = \owa_coreAPI::entityFactory('base.search_term_dim');
         $ret = $st->createTable();
 
         if ($ret === true) {
@@ -271,7 +273,7 @@ class owa_base_005_update extends owa_update {
 
         foreach ($users as $user) {
 
-            $u = owa_coreAPI::entityFactory('base.user');
+            $u = \owa_coreAPI::entityFactory('base.user');
             $u->load($user['user_id'],'user_id');
 
             if (!$u->get('api_key')) {
@@ -346,31 +348,31 @@ class owa_base_005_update extends owa_update {
 
     function down() {
 
-        $visitor = owa_coreAPI::entityFactory('base.visitor');
+        $visitor = \owa_coreAPI::entityFactory('base.visitor');
         $visitor->dropColumn('num_prior_sessions');
         $visitor->dropColumn('first_session_yyyymmdd');
-        $session = owa_coreAPI::entityFactory('base.session');
+        $session = \owa_coreAPI::entityFactory('base.session');
         $session->dropColumn('yyyymmdd');
         $session->dropColumn('is_bounce');
         $session->dropColumn('referring_search_term_id');
         $session->dropColumn('days_since_first_session');
         $session->dropColumn('days_since_prior_session');
         $session->dropColumn('num_prior_sessions');
-        $request = owa_coreAPI::entityFactory('base.request');
+        $request = \owa_coreAPI::entityFactory('base.request');
         $request->dropColumn('yyyymmdd');
         $request->dropColumn('prior_document_id');
         $request->dropColumn('num_prior_sessions');
-        $click = owa_coreAPI::entityFactory('base.click');
+        $click = \owa_coreAPI::entityFactory('base.click');
         $click->dropColumn('yyyymmdd');
-        $feed_request = owa_coreAPI::entityFactory('base.feed_request');
+        $feed_request = \owa_coreAPI::entityFactory('base.feed_request');
         $feed_request->dropColumn('yyyymmdd');
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \owa_coreAPI::entityFactory('base.user');
         $u->dropColumn('api_key');
-        $u = owa_coreAPI::entityFactory('base.document');
+        $u = \owa_coreAPI::entityFactory('base.document');
         $u->dropColumn('uri');
-        $af = owa_coreAPI::entityFactory('base.action_fact');
+        $af = \owa_coreAPI::entityFactory('base.action_fact');
         $af->dropTable();
-        $st = owa_coreAPI::entityFactory('base.search_term_dim');
+        $st = \owa_coreAPI::entityFactory('base.search_term_dim');
         $st->dropTable();
 
         return true;
