@@ -751,7 +751,7 @@
                 'currencyLocal'                        => 'en_US', // move to site settings
                 'currencyISO3'                        => 'USD',   // move to site settings
                 'memcachedServers'                    => array(),
-                'memcachedPersisantConnections'        => true,
+                'memcachedPersistantConnections'    => true,
                 'cacheType'                            => '', // file, memory, memcache
                 'disabledEndpoints'                    => array('queue.php'),
                 'disableAllEndpoints'                => false,
