@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -34,19 +36,19 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.0.0
  */
 
-class owa_visitorUpdateHandlers extends owa_observer {
+class VisitorUpdateHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
 
         if ( $event->get( 'visitor_id' ) ) {
 
-            $v = owa_coreAPI::entityFactory('base.visitor');
+            $v = \owa_coreAPI::entityFactory('base.visitor');
 
             $v->load( $event->get( 'visitor_id' ) );
 
@@ -54,7 +56,7 @@ class owa_visitorUpdateHandlers extends owa_observer {
 
                 $v->set('num_prior_sessions', $this->summarizePriorSessions( $v->get('id') ) );
 
-                owa_coreAPI::debug("Updating... Visitor already exists.");
+                \owa_coreAPI::debug("Updating... Visitor already exists.");
 
                 $ret = $v->save();
 
@@ -67,14 +69,14 @@ class owa_visitorUpdateHandlers extends owa_observer {
 
         } else {
 
-            owa_coreAPI::debug("Not updating... no visitor ID present.");
+            \owa_coreAPI::debug("Not updating... no visitor ID present.");
             return OWA_EHS_EVENT_HANDLED;
         }
     }
     
     function summarizePriorSessions($id) {
 
-        $ret = owa_coreAPI::summarize(array(
+        $ret = \owa_coreAPI::summarize(array(
                 'entity'        => 'base.session',
                 'columns'        => array('num_prior_sessions' => 'max'),
                 'constraints'    => array( 'visitor_id' => $id ) ) );

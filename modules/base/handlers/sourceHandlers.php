@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,18 +34,18 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.4.0
  */
 
-class owa_sourceHandlers extends owa_observer {
+class SourceHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
 
         if ($event->get('source')) {
-            $s = owa_coreAPI::entityFactory('base.source_dim');
+            $s = \owa_coreAPI::entityFactory('base.source_dim');
 
             $new_id = $s->generateId( trim( strtolower( (string) $event->get('source') ) ) );
             $s->getByPk('id', $new_id);
@@ -63,11 +65,11 @@ class owa_sourceHandlers extends owa_observer {
 
             } else {
 
-                owa_coreAPI::debug('Not Persisting. Source already exists.');
+                \owa_coreAPI::debug('Not Persisting. Source already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
-            owa_coreAPI::debug('Noting to handle. No source properties found on event.');
+            \owa_coreAPI::debug('Noting to handle. No source properties found on event.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

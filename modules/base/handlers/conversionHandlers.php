@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,12 +34,12 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.4.0
  */
 
-class owa_conversionHandlers extends owa_observer {
+class ConversionHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
@@ -53,7 +55,7 @@ class owa_conversionHandlers extends owa_observer {
             if ( $event->get('session_id') ) {
 
                    // load session
-                $s = owa_coreAPI::entityFactory('base.session');
+                $s = \owa_coreAPI::entityFactory('base.session');
 
                 $s->load( $event->get( 'session_id' ) );
 
@@ -75,14 +77,14 @@ class owa_conversionHandlers extends owa_observer {
                             // there is a goal conversion
                             $s->set( $goal_column , true );
                             $update = true;
-                            owa_coreAPI::debug( "$goal_column was achieved." );
+                            \owa_coreAPI::debug( "$goal_column was achieved." );
                         } else {
                             // goal already happened but check to see if we need to add a value to it.
                             // happens in the case of ecommerce transaction where the value
                             // can come in a secondary request. if no value then return.
                             if ( ! $value ) {
 
-                                owa_coreAPI::debug( 'Not updating session. Goal was already achieved and in same session.' );
+                                \owa_coreAPI::debug( 'Not updating session. Goal was already achieved and in same session.' );
 
                                 return OWA_EHS_EVENT_HANDLED;
                             }
@@ -91,7 +93,7 @@ class owa_conversionHandlers extends owa_observer {
                         // Allow a value to be set if one has not be set already.
                         // this is needed to support dynamic values passed by commerce transaction events
                         if ( $value  && ! $existing_value )  {
-                            $s->set( $goal_value_column, owa_lib::prepareCurrencyValue( $value ) );
+                            $s->set( $goal_value_column, \owa_lib::prepareCurrencyValue( $value ) );
                             $update = true;
                         }
                     }
@@ -104,10 +106,10 @@ class owa_conversionHandlers extends owa_observer {
 
                             $s->set( $goal_start_column, true );
                             $update = true;
-                            owa_coreAPI::debug( "$goal_start_column was started." );
+                            \owa_coreAPI::debug( "$goal_start_column was started." );
 
                         } else {
-                            owa_coreAPI::debug( "$goal_start_column was already started." );
+                            \owa_coreAPI::debug( "$goal_start_column was already started." );
                         }
                     }
 
@@ -136,26 +138,26 @@ class owa_conversionHandlers extends owa_observer {
                         }
 
                     } else {
-                        owa_coreAPI::debug( "nothing about this conversion is worth updating." );
+                        \owa_coreAPI::debug( "nothing about this conversion is worth updating." );
 
                         return OWA_EHS_EVENT_HANDLED;
                     }
 
                 } else {
-                    owa_coreAPI::debug("Conversion processing aborted. No session could be found.");
+                    \owa_coreAPI::debug("Conversion processing aborted. No session could be found.");
 
                     return OWA_EHS_EVENT_FAILED;
                 }
 
             } else {
 
-                owa_coreAPI::notice('Not persisting conversion. Session id missing from event.');
+                \owa_coreAPI::notice('Not persisting conversion. Session id missing from event.');
 
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
-            owa_coreAPI::debug('No goal start or conversion detected.');
+            \owa_coreAPI::debug('No goal start or conversion detected.');
 
             return OWA_EHS_EVENT_HANDLED;
         }
@@ -165,7 +167,7 @@ class owa_conversionHandlers extends owa_observer {
     // metrics can be resummarized
     function dispatchNewConversionEvent($event) {
     
-        $dispatch = owa_coreAPI::getEventDispatch();
+        $dispatch = \owa_coreAPI::getEventDispatch();
         $ce = $dispatch->makeEvent( 'new_conversion' );
         $ce->set( 'session_id', $event->get( 'session_id' ) );
         $dispatch->asyncNotify( $ce );
@@ -180,9 +182,9 @@ class owa_conversionHandlers extends owa_observer {
             $siteId = $event->get('site_id');
         }
 
-        $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+        $gm = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
         $goals = $gm->getActiveGoals();
-        owa_coreAPI::debug('active goals: '.print_r($goals, true));
+        \owa_coreAPI::debug('active goals: '.print_r($goals, true));
         if (empty($goals)) {
             return;
         }
@@ -236,11 +238,11 @@ class owa_conversionHandlers extends owa_observer {
 
                     $goal_info['value'] = $goal_value;
                 } else {
-                    owa_coreAPI::debug("Goal $num not active.");
+                    \owa_coreAPI::debug("Goal $num not active.");
                 }
             }
         }
-        owa_coreAPI::debug('conversion info: '.print_r($goal_info, true));
+        \owa_coreAPI::debug('conversion info: '.print_r($goal_info, true));
         return $goal_info;
     }
     
@@ -351,38 +353,38 @@ class owa_conversionHandlers extends owa_observer {
     
     function countGoalConversions($session) {
 
-        $num = owa_coreAPI::getSetting('base', 'numGoals');
+        $num = \owa_coreAPI::getSetting('base', 'numGoals');
         $count = 0;
         for ($i = 0;$i < $num;$i++) {
             $col_name = 'goal_'.$i;
             $count = $count + $session->get($col_name);
 
         }
-        owa_coreAPI::debug('session total goal count: '.$count);
+        \owa_coreAPI::debug('session total goal count: '.$count);
         return $count;
     }
 
     function countGoalStarts($session) {
 
-        $num = owa_coreAPI::getSetting('base', 'numGoals');
+        $num = \owa_coreAPI::getSetting('base', 'numGoals');
         $count = 0;
         for ($i = 0;$i < $num;$i++) {
             $col_name = 'goal_'.$i.'_start';
             $count = $count + $session->get($col_name);
         }
-        owa_coreAPI::debug('session total goal starts: '.$count);
+        \owa_coreAPI::debug('session total goal starts: '.$count);
         return $count;
     }
     
     function sumGoalValues($session) {
 
-        $num = owa_coreAPI::getSetting('base', 'numGoals');
+        $num = \owa_coreAPI::getSetting('base', 'numGoals');
         $sum = 0;
         for ($i = 0;$i < $num;$i++) {
             $col_name = 'goal_'.$i.'_value';
             $sum = $sum + $session->get($col_name);
         }
-        owa_coreAPI::debug('session total goal value: '.$sum);
+        \owa_coreAPI::debug('session total goal value: '.$sum);
         return $sum;
     }
 }

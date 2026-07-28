@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -33,7 +35,7 @@ if ( ! class_exists('owa_observer') ) {
  * @since        owa 1.4.0
  */
 
-class owa_commerceTransactionHandlers extends owa_observer {
+class CommerceTransactionHandlers extends \owa_observer {
 
     /**
      * Notify handler method
@@ -43,8 +45,8 @@ class owa_commerceTransactionHandlers extends owa_observer {
      */
     function notify($event) {
 
-        $dispatch = owa_coreAPI::getEventDispatch();
-        $ct = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
+        $dispatch = \owa_coreAPI::getEventDispatch();
+        $ct = \owa_coreAPI::entityFactory('base.commerce_transaction_fact');
         $pk = $ct->generateId( $event->get( 'ct_order_id' ) );
         $ct->getByPk( 'id', $pk );
         $id = $ct->get('id');
@@ -63,7 +65,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
             // set the session id with original session id
             $event->set('session_id', $original_session_id);
             // load the original session
-            $s = owa_coreAPI::entityFactory( 'base.session' );
+            $s = \owa_coreAPI::entityFactory( 'base.session' );
             $s->load( $original_session_id );
 
             if ( $s->get( 'id' ) ) {
@@ -78,7 +80,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
                 $event->setNewProperties( $osession_properties );
 
             } else {
-                owa_coreAPI::debug('Cannot find original session with id: '.$original_session_id);
+                \owa_coreAPI::debug('Cannot find original session with id: '.$original_session_id);
                 return OWA_EHS_EVENT_FAILED;
             }
         }
@@ -92,7 +94,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
 
             // Generate Location Id. Location data is comming from user input NOT ip address
             if ( $event->get( 'country' ) ) {
-                $s = owa_coreAPI::serviceSingleton();
+                $s = \owa_coreAPI::serviceSingleton();
                 $location_id = $s->geolocation->generateId($event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
                 $ct->set( 'location_id', $location_id );
             }
@@ -100,9 +102,9 @@ class owa_commerceTransactionHandlers extends owa_observer {
             $ct->set( 'order_id', trim( (string) $event->get( 'ct_order_id' ) ) );
             $ct->set( 'order_source', trim( strtolower( (string) $event->get( 'ct_order_source' ) ) ) );
             $ct->set( 'gateway', trim( strtolower( (string) $event->get( 'ct_gateway' ) ) ) );
-            $ct->set( 'total_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_total' ), 2 ) ) );
-            $ct->set( 'tax_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_tax' ), 2 ) ) );
-            $ct->set( 'shipping_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_shipping' ), 2 ) ) );
+            $ct->set( 'total_revenue', \owa_lib::prepareCurrencyValue( round( $event->get( 'ct_total' ), 2 ) ) );
+            $ct->set( 'tax_revenue', \owa_lib::prepareCurrencyValue( round( $event->get( 'ct_tax' ), 2 ) ) );
+            $ct->set( 'shipping_revenue', \owa_lib::prepareCurrencyValue( round( $event->get( 'ct_shipping' ), 2 ) ) );
             $ct->set( 'days_since_first_session', $event->get('days_since_first_session') );
             $ct->set( 'num_prior_sessions', $event->get('num_prior_sessions') );
 
@@ -133,7 +135,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
             }
 
         } else {
-            owa_coreAPI::debug('Not Persisting. Transaction already exists');
+            \owa_coreAPI::debug('Not Persisting. Transaction already exists');
             // dispatch event just in case downstream handlers need to be triggered.
             $sce = $dispatch->makeEvent( $resulting_event_name );
             $sce->setProperties( $event->getProperties() );
@@ -147,7 +149,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
     
     function persistLineItem($item, $parent) {
 
-        $ct = owa_coreAPI::entityFactory('base.commerce_line_item_fact');
+        $ct = \owa_coreAPI::entityFactory('base.commerce_line_item_fact');
         $guid = $item['li_order_id'] . $item['li_sku'];
         $pk = $ct->generateId( $guid );
         $ct->getByPk( 'id', $pk );
@@ -164,10 +166,10 @@ class owa_commerceTransactionHandlers extends owa_observer {
             $ct->set( 'sku', trim( $item['li_sku'] ) );
             $ct->set( 'product_name', trim( strtolower( $item['li_product_name'] ) ) );
             $ct->set( 'category', $item['li_category'] );
-            $ct->set( 'unit_price', owa_lib::prepareCurrencyValue( round($item['li_unit_price'], 2 ) ) );
+            $ct->set( 'unit_price', \owa_lib::prepareCurrencyValue( round($item['li_unit_price'], 2 ) ) );
             $ct->set( 'quantity', round( $item['li_quantity'] ) );
             $revenue = round( $item['li_quantity'] * $item['li_unit_price'] , 2 );
-            $ct->set( 'item_revenue', owa_lib::prepareCurrencyValue( $revenue ) );
+            $ct->set( 'item_revenue', \owa_lib::prepareCurrencyValue( $revenue ) );
             $ret = $ct->create();
 
             if ($ret) {
@@ -178,7 +180,7 @@ class owa_commerceTransactionHandlers extends owa_observer {
 
         } else {
 
-            owa_coreAPI::debug('Not Persisting. line item already exists');
+            \owa_coreAPI::debug('Not Persisting. line item already exists');
             return false;
         }
     }

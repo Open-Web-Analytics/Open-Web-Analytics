@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,18 +34,18 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.0.0
  */
 
-class owa_feedRequestHandlers extends owa_observer {
+class FeedRequestHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify( $event ) {
 
         // Make entity
-        $f = owa_coreAPI::entityFactory('base.feed_request');
+        $f = \owa_coreAPI::entityFactory('base.feed_request');
 
         $f->load( $event->get('guid') );
 
@@ -62,16 +64,16 @@ class owa_feedRequestHandlers extends owa_observer {
             $f->set( 'id', $event->get('guid') );
 
             // Make ua id
-            $f->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+            $f->set('ua_id', \owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 
             // Make OS id
-            $f->set('os_id', owa_lib::setStringGuid($event->get('os')));
+            $f->set('os_id', \owa_lib::setStringGuid($event->get('os')));
 
             // Make document id
-            $f->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
+            $f->set('document_id', \owa_lib::setStringGuid($event->get('page_url')));
 
             // Generate Host id
-            $f->set('host_id', owa_lib::setStringGuid($event->get('host')));
+            $f->set('host_id', \owa_lib::setStringGuid($event->get('host')));
 
             $f->set('subscription_id', $event->get( 'feed_subscription_id' ) );
             // Persist to database
@@ -79,7 +81,7 @@ class owa_feedRequestHandlers extends owa_observer {
 
             if ( $ret ) {
 
-                $eq = owa_coreAPI::getEventDispatch();
+                $eq = \owa_coreAPI::getEventDispatch();
 
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
 
@@ -95,7 +97,7 @@ class owa_feedRequestHandlers extends owa_observer {
             }
         } else {
 
-            owa_coreAPI::debug('Not persisting. Feed request already exists.');
+            \owa_coreAPI::debug('Not persisting. Feed request already exists.');
 
             return OWA_EHS_EVENT_HANDLED;
 

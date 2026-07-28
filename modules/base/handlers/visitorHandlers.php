@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,19 +34,19 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.0.0
  */
 
-class owa_visitorHandlers extends owa_observer {
+class VisitorHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
 
         if ( $event->get( 'visitor_id' ) ) {
 
-            $v = owa_coreAPI::entityFactory('base.visitor');
+            $v = \owa_coreAPI::entityFactory('base.visitor');
 
             $v->load( $event->get( 'visitor_id' ) );
 
@@ -72,13 +74,13 @@ class owa_visitorHandlers extends owa_observer {
 
             } else {
 
-                owa_coreAPI::debug("Not updating... Visitor already exists.");
+                \owa_coreAPI::debug("Not updating... Visitor already exists.");
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
 
-            owa_coreAPI::debug("No visitor_id part of event...");
+            \owa_coreAPI::debug("No visitor_id part of event...");
             return OWA_EHS_EVENT_HANDLED;
         }
     }

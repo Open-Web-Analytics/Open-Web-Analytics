@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,27 +34,27 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.0.0
  */
 
-class owa_userAgentHandlers extends owa_observer {
+class UserAgentHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
 
         if ( $event->get('HTTP_USER_AGENT') ) {
 
-            $ua = owa_coreAPI::entityFactory('base.ua');
+            $ua = \owa_coreAPI::entityFactory('base.ua');
 
-            $ua->getByColumn('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+            $ua->getByColumn('id', \owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 
             if (!$ua->get('id')) {
 
                 $ua->setProperties($event->getProperties());
                 $ua->set('ua', $event->get('HTTP_USER_AGENT'));
-                $ua->set('id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+                $ua->set('id', \owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
                 $ret = $ua->create();
 
                 if ( $ret ) {
@@ -67,26 +69,26 @@ class owa_userAgentHandlers extends owa_observer {
                 $new = $event->get('browser_type');
 				
                 if ( $new != $old && $new != 'Default Browser') {
-	                owa_coreAPI::debug("updating ua: $new old: $old");
+	                \owa_coreAPI::debug("updating ua: $new old: $old");
                     $ua->set('browser_type', $new);
                     $ua->set('browser', $event->get('browser') );
                     $ret = $ua->save();
 
                     if ( $ret ) {
-                        owa_coreAPI::debug('Updating user agent with new browser type: '. $new);
+                        \owa_coreAPI::debug('Updating user agent with new browser type: '. $new);
                         return OWA_EHS_EVENT_HANDLED;
                     } else {
                         return OWA_EHS_EVENT_FAILED;
                     }
                 }
 
-                owa_coreAPI::debug('not logging, user agent already exists.');
+                \owa_coreAPI::debug('not logging, user agent already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
 
-            owa_coreAPI::debug('not logging, no user agent present.');
+            \owa_coreAPI::debug('not logging, no user agent present.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

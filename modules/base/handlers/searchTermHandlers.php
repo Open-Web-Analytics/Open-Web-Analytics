@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -33,12 +35,12 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.3.0
  */
 
-class owa_searchTermHandlers extends owa_observer {
+class SearchTermHandlers extends \owa_observer {
     
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
@@ -47,8 +49,8 @@ class owa_searchTermHandlers extends owa_observer {
 
         if ($terms) {
 
-            $st = owa_coreAPI::entityFactory('base.search_term_dim');
-            $st_id = owa_lib::setStringGuid($terms);
+            $st = \owa_coreAPI::entityFactory('base.search_term_dim');
+            $st_id = \owa_lib::setStringGuid($terms);
             $st->getByPk('id', $st_id);
             $id = $st->get('id');
 
@@ -68,7 +70,7 @@ class owa_searchTermHandlers extends owa_observer {
 
             } else {
 
-                owa_coreAPI::debug('Not Logging. Search term already exists.');
+                \owa_coreAPI::debug('Not Logging. Search term already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ if(!class_exists('owa_observer')) {
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_requestHandlers extends owa_observer {
+class RequestHandlers extends \owa_observer {
 
     /**
      * Notify Handler
@@ -42,7 +44,7 @@ class owa_requestHandlers extends owa_observer {
      */
     function notify($event) {
     
-        $r = owa_coreAPI::entityFactory('base.request');
+        $r = \owa_coreAPI::entityFactory('base.request');
 
         $r->load( $event->get('guid') );
 
@@ -54,7 +56,7 @@ class owa_requestHandlers extends owa_observer {
             $r->set('id', $event->get('guid'));
 
             // Make prior document id
-            $r->set('prior_document_id', owa_lib::setStringGuid($event->get('prior_page')));
+            $r->set('prior_document_id', \owa_lib::setStringGuid($event->get('prior_page')));
 
             // Generate Host id
             $r->set('num_prior_sessions', $event->get('num_prior_sessions'));
@@ -63,7 +65,7 @@ class owa_requestHandlers extends owa_observer {
 
             if ($result == true) {
 
-                $eq = owa_coreAPI::getEventDispatch();
+                $eq = \owa_coreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);
@@ -72,7 +74,7 @@ class owa_requestHandlers extends owa_observer {
                 return OWA_EHS_EVENT_FAILED;
             }
         } else {
-            owa_coreAPI::debug('Not persisting. Request already exists.');
+            \owa_coreAPI::debug('Not persisting. Request already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

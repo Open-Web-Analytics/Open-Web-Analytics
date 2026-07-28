@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,27 +34,27 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.3.0
  */
 
-class owa_osHandlers extends owa_observer {
+class OsHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify( $event ) {
 
         if ( $event->get( 'os' ) ) {
 
-            $os = owa_coreAPI::entityFactory( 'base.os' );
+            $os = \owa_coreAPI::entityFactory( 'base.os' );
 
-            $os->getByColumn( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) );
+            $os->getByColumn( 'id', \owa_lib::setStringGuid( $event->get( 'os' ) ) );
 
             if ( ! $os->get( 'id' ) ) {
 
                 $os->set( 'name', $event->get( 'os' ) );
 
-                $os->set( 'id', owa_lib::setStringGuid( $event->get( 'os' ) ) );
+                $os->set( 'id', \owa_lib::setStringGuid( $event->get( 'os' ) ) );
 
                 $ret = $os->create();
 
@@ -67,14 +69,14 @@ class owa_osHandlers extends owa_observer {
 
             } else {
 
-                owa_coreAPI::debug('Not persisting. Operating system already exists.');
+                \owa_coreAPI::debug('Not persisting. Operating system already exists.');
 
                 return OWA_EHS_EVENT_HANDLED;
             }
 
         } else {
 
-            owa_coreAPI::debug('Not persisting. Operating system not present.');
+            \owa_coreAPI::debug('Not persisting. Operating system not present.');
 
             return OWA_EHS_EVENT_HANDLED;
         }

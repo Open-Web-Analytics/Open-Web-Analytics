@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -36,12 +38,12 @@ if (!class_exists('owa_http')) {
  * @since        owa 1.0.0
  */
 
-class owa_refererHandlers extends owa_observer {
+class RefererHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
@@ -52,7 +54,7 @@ class owa_refererHandlers extends owa_observer {
         }
 
         // Make entity
-        $r = owa_coreAPI::entityFactory('base.referer');
+        $r = \owa_coreAPI::entityFactory('base.referer');
 
         $r->load( $event->get( 'referer_id' ) );
         
@@ -66,7 +68,7 @@ class owa_refererHandlers extends owa_observer {
             $r->set('url', $event->get('session_referer'));
 
             // Set site
-            $url = owa_lib::parse_url( $event->get( 'session_referer' ) );
+            $url = \owa_lib::parse_url( $event->get( 'session_referer' ) );
 
             $r->set( 'site', $url['host'] );
 
@@ -98,7 +100,7 @@ class owa_refererHandlers extends owa_observer {
 	        // check and update medium if it's new
 	        // @todo make this check for a "allow_slowly_changing_dimensions" setting flag
 	        
-	        if ( owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions') ) {
+	        if ( \owa_coreAPI::getSetting('base', 'allow_slowly_changing_dimensions') ) {
 		        
 		        if ( $medium != $r->get( 'medium' ) ) {
 			        
@@ -111,11 +113,11 @@ class owa_refererHandlers extends owa_observer {
 		            
 			        $r->save();
 			        
-			        owa_coreAPI::debug("Updating Referrer medium to be: $medium");
+			        \owa_coreAPI::debug("Updating Referrer medium to be: $medium");
 		        }
 			}
 			
-            owa_coreAPI::debug('Not Persisting. Referrer already exists.');
+            \owa_coreAPI::debug('Not Persisting. Referrer already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

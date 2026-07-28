@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,17 +34,17 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.3.0
  */
 
-class owa_actionHandler extends owa_observer {
+class ActionHandler extends \owa_observer {
     
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
         
-        $a = owa_coreAPI::entityFactory('base.action_fact');
+        $a = \owa_coreAPI::entityFactory('base.action_fact');
         
         $a->load( $event->get( 'guid' ) );
         
@@ -60,7 +62,7 @@ class owa_actionHandler extends owa_observer {
             
             if ( $ret ) {
                 // Tell others that "track.action" has been logged
-                $eq = owa_coreAPI::getEventDispatch();
+                $eq = \owa_coreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);

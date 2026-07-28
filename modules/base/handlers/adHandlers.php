@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,18 +34,18 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.4.0
  */
 
-class owa_adHandlers extends owa_observer {
+class AdHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
 
         if ($event->get('ad')) {
-            $d = owa_coreAPI::entityFactory('base.ad_dim');
+            $d = \owa_coreAPI::entityFactory('base.ad_dim');
 
             $new_id = $d->generateId( trim( strtolower( (string) $event->get( 'ad' ) ) ) );
             $d->getByPk('id', $new_id);
@@ -64,11 +66,11 @@ class owa_adHandlers extends owa_observer {
 
             } else {
 
-                owa_coreAPI::debug('Not Persisting. Ad already exists.');
+                \owa_coreAPI::debug('Not Persisting. Ad already exists.');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
-            owa_coreAPI::debug('Noting to handle. No Ad properties found on event.');
+            \owa_coreAPI::debug('Noting to handle. No Ad properties found on event.');
             return OWA_EHS_EVENT_HANDLED;
         }
 

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -27,7 +29,7 @@
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_clickHandlers extends owa_observer {
+class ClickHandlers extends \owa_observer {
 
     /**
      * Notify Handler
@@ -37,7 +39,7 @@ class owa_clickHandlers extends owa_observer {
      */
     function notify($event) {
 
-        $c = owa_coreAPI::entityFactory('base.click');
+        $c = \owa_coreAPI::entityFactory('base.click');
 
         $c->load( $event->get( 'guid' ) );
 
@@ -46,13 +48,13 @@ class owa_clickHandlers extends owa_observer {
             $c->setProperties($event->getProperties());
             $c->set('visitor_id', $event->get('visitor_id'));
             $c->set('session_id', $event->get('session_id'));
-            $c->set('ua_id', owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
+            $c->set('ua_id', \owa_lib::setStringGuid($event->get('HTTP_USER_AGENT')));
 
             // Make document id
-            $c->set('document_id', owa_lib::setStringGuid($event->get('page_url')));
+            $c->set('document_id', \owa_lib::setStringGuid($event->get('page_url')));
 
             // Make Target page id
-            $c->set('target_id', owa_lib::setStringGuid($c->get('target_url')));
+            $c->set('target_id', \owa_lib::setStringGuid($c->get('target_url')));
 
             // Make position id used for group bys
             $c->set('position', $c->get('click_x').$c->get('click_y'));
@@ -62,7 +64,7 @@ class owa_clickHandlers extends owa_observer {
             if ( $ret ) {
 
                 // Tell others that "dom.click" has been logged
-                $eq = owa_coreAPI::getEventDispatch();
+                $eq = \owa_coreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);

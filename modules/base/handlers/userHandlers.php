@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,12 +34,12 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.0.0
  */
 
-class owa_userHandlers extends owa_observer {
+class UserHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {

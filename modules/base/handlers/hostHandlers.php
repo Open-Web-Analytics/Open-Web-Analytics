@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,24 +34,24 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.0.0
  */
 
-class owa_hostHandlers extends owa_observer {
+class HostHandlers extends \owa_observer {
 
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify( $event ) {
 
         if ( ! $event->get( 'host_id' ) ) {
 
-            owa_coreAPI::notice('Not persisting host dimension. Host id missing from event.');
+            \owa_coreAPI::notice('Not persisting host dimension. Host id missing from event.');
 
             return OWA_EHS_EVENT_HANDLED;
         }
 
-        $h = owa_coreAPI::entityFactory('base.host');
+        $h = \owa_coreAPI::entityFactory('base.host');
 
         $h->getByPk( 'id', $event->get( 'host_id' ) );
 
@@ -69,7 +71,7 @@ class owa_hostHandlers extends owa_observer {
 
         } else {
 
-            owa_coreAPI::debug('Not Persisting. Host already exists.');
+            \owa_coreAPI::debug('Not Persisting. Host already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -33,19 +35,19 @@ require_once(OWA_DIR.'owa_lib.php');
  * @since        owa 1.4.0
  */
 
-class owa_locationHandlers extends owa_observer {
+class LocationHandlers extends \owa_observer {
         
     /**
      * Notify Event Handler
      *
-     * @param     unknown_type $event
+     * @param     mixed $event
      * @access     public
      */
     function notify($event) {
         
         if ( $event->get( 'location_id' ) || $event->get( 'ip_address' ) ) {
 
-            $h = owa_coreAPI::entityFactory('base.location_dim');
+            $h = \owa_coreAPI::entityFactory('base.location_dim');
             
             // look for location id on the event. This happens when
             // another event has already created it.
@@ -59,8 +61,8 @@ class owa_locationHandlers extends owa_observer {
                 $location_id = $h->generateId($key);
             // load the geo properties from the geo service.
             } else {
-                $location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                owa_coreAPI::debug('geolocation: ' .print_r($location, true));
+                $location = \owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+                \owa_coreAPI::debug('geolocation: ' .print_r($location, true));
                 //set properties of the session
                 $event->set('country', $location->getCountry());
                 $event->set('city', $location->getCity());
@@ -82,8 +84,8 @@ class owa_locationHandlers extends owa_observer {
             
             if (!$id) {
                 
-                $location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-                owa_coreAPI::debug('geolocation: ' .print_r($location, true));
+                $location = \owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+                \owa_coreAPI::debug('geolocation: ' .print_r($location, true));
                 
                 //set properties of the session
                 $h->set('country', $event->get('country'));
@@ -103,12 +105,12 @@ class owa_locationHandlers extends owa_observer {
                 
             } else {
             
-                owa_coreAPI::debug('Not Logging. Location already exists');
+                \owa_coreAPI::debug('Not Logging. Location already exists');
                 return OWA_EHS_EVENT_HANDLED;
             }
         } else {
             
-            owa_coreAPI::notice('Not persisting location dimension. Location id or ip address missing from event.');
+            \owa_coreAPI::notice('Not persisting location dimension. Location id or ip address missing from event.');
             
             return OWA_EHS_EVENT_HANDLED;
         }

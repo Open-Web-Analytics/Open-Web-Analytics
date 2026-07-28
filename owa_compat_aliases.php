@@ -220,6 +220,32 @@ function owa_compat_class_map(): array
         'owa_trackingEventHelpers' => 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers',
         'owa_userManager' => 'OWA\\Module\\Base\\Classes\\UserManager',
         'owa_validator' => 'OWA\\Module\\Base\\Classes\\Validator',
+
+        // modules/base/handlers (Phase 6 stage 2) -> OWA\Module\Base\Handler\*
+        // (all extend owa_observer; registered by short name, factory synthesizes
+        // 'owa_'.$name -> resolved here via moduleGenericFactory).
+        'owa_actionHandler' => 'OWA\\Module\\Base\\Handler\\ActionHandler',
+        'owa_adHandlers' => 'OWA\\Module\\Base\\Handler\\AdHandlers',
+        'owa_campaignHandlers' => 'OWA\\Module\\Base\\Handler\\CampaignHandlers',
+        'owa_clickHandlers' => 'OWA\\Module\\Base\\Handler\\ClickHandlers',
+        'owa_commerceTransactionHandlers' => 'OWA\\Module\\Base\\Handler\\CommerceTransactionHandlers',
+        'owa_conversionHandlers' => 'OWA\\Module\\Base\\Handler\\ConversionHandlers',
+        'owa_documentHandlers' => 'OWA\\Module\\Base\\Handler\\DocumentHandlers',
+        'owa_feedRequestHandlers' => 'OWA\\Module\\Base\\Handler\\FeedRequestHandlers',
+        'owa_hostHandlers' => 'OWA\\Module\\Base\\Handler\\HostHandlers',
+        'owa_locationHandlers' => 'OWA\\Module\\Base\\Handler\\LocationHandlers',
+        'owa_notifyHandlers' => 'OWA\\Module\\Base\\Handler\\NotifyHandlers',
+        'owa_osHandlers' => 'OWA\\Module\\Base\\Handler\\OsHandlers',
+        'owa_refererHandlers' => 'OWA\\Module\\Base\\Handler\\RefererHandlers',
+        'owa_requestHandlers' => 'OWA\\Module\\Base\\Handler\\RequestHandlers',
+        'owa_searchTermHandlers' => 'OWA\\Module\\Base\\Handler\\SearchTermHandlers',
+        'owa_sessionCommerceSummaryHandlers' => 'OWA\\Module\\Base\\Handler\\SessionCommerceSummaryHandlers',
+        'owa_sessionHandlers' => 'OWA\\Module\\Base\\Handler\\SessionHandlers',
+        'owa_sourceHandlers' => 'OWA\\Module\\Base\\Handler\\SourceHandlers',
+        'owa_userAgentHandlers' => 'OWA\\Module\\Base\\Handler\\UserAgentHandlers',
+        'owa_userHandlers' => 'OWA\\Module\\Base\\Handler\\UserHandlers',
+        'owa_visitorHandlers' => 'OWA\\Module\\Base\\Handler\\VisitorHandlers',
+        'owa_visitorUpdateHandlers' => 'OWA\\Module\\Base\\Handler\\VisitorUpdateHandlers',
     ];
 }
 

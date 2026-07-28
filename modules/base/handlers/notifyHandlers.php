@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ if(!class_exists('owa_observer')) {
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_notifyHandlers extends owa_observer {
+class NotifyHandlers extends \owa_observer {
 
     /**
      * Notify Handler
@@ -43,13 +45,13 @@ class owa_notifyHandlers extends owa_observer {
         
         if ( $event->getSiteId() ) {
             
-            $s = owa_coreAPI::entityFactory( 'base.site' );
+            $s = \owa_coreAPI::entityFactory( 'base.site' );
             
             $s->load( $s->generateId( $event->getSiteId() ) );
 
             if ( $s->wasPersisted() ) {
 
-                $ret = owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+                $ret = \owa_coreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
 
                 return OWA_EHS_EVENT_HANDLED;
 
@@ -62,7 +64,7 @@ class owa_notifyHandlers extends owa_observer {
                 // returning FAILED would re-queue the event onto the processing
                 // queue for a retry that can never succeed, piling up
                 // undeliverable poison-pill rows in owa_queue_item.
-                owa_coreAPI::debug( 'New session notify handled with no action: no persisted site found for site_id: ' . $event->getSiteId() );
+                \owa_coreAPI::debug( 'New session notify handled with no action: no persisted site found for site_id: ' . $event->getSiteId() );
 
                 return OWA_EHS_EVENT_HANDLED;
             }
