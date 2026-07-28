@@ -25,13 +25,13 @@ parameters:
 			path: modules/base/apiRequest.php
 
 		-
-			message: '#^Access to an undefined property owa_chartData\:\:\$series_label\.$#'
+			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\ChartData\:\:\$series_label\.$#'
 			identifier: property.notFound
 			count: 2
 			path: modules/base/classes/chartData.php
 
 		-
-			message: '#^Result of method owa_chartData\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Module\\Base\\Classes\\ChartData\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/chartData.php
@@ -43,19 +43,19 @@ parameters:
 			path: modules/base/classes/cliController.php
 
 		-
-			message: '#^Result of method owa_eventQueue\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/dbEventQueue.php
 
 		-
-			message: '#^Method owa_eventDispatch\:\:attachFilter\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\EventDispatch\:\:attachFilter\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/eventDispatch.php
 
 		-
-			message: '#^Method owa_eventDispatch\:\:notifyUntill\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\EventDispatch\:\:notifyUntill\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/eventDispatch.php
@@ -67,19 +67,19 @@ parameters:
 			path: modules/base/classes/eventDispatch.php
 
 		-
-			message: '#^Access to an undefined property owa_fileEventQueue\:\:\$lock_file\.$#'
+			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\FileEventQueue\:\:\$lock_file\.$#'
 			identifier: property.notFound
 			count: 5
 			path: modules/base/classes/fileEventQueue.php
 
 		-
-			message: '#^Result of method owa_eventQueue\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/fileEventQueue.php
 
 		-
-			message: '#^Result of method owa_eventQueue\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/httpEventQueue.php
@@ -97,25 +97,25 @@ parameters:
 			path: modules/base/classes/installManager.php
 
 		-
-			message: '#^Access to an undefined property owa_paginatedResultSet\:\:\$periodInfo\.$#'
+			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\PaginatedResultSet\:\:\$periodInfo\.$#'
 			identifier: property.notFound
 			count: 1
 			path: modules/base/classes/paginatedResultSet.php
 
 		-
-			message: '#^Call to an undefined method owa_paginatedResultSet\:\:resultSetToCsv\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Classes\\PaginatedResultSet\:\:resultSetToCsv\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: modules/base/classes/paginatedResultSet.php
 
 		-
-			message: '#^Access to an undefined property owa_pagination\:\:\$more_pages\.$#'
+			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\Pagination\:\:\$more_pages\.$#'
 			identifier: property.notFound
 			count: 4
 			path: modules/base/classes/pagination.php
 
 		-
-			message: '#^Access to an undefined property owa_pagination\:\:\$results_count\.$#'
+			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\Pagination\:\:\$results_count\.$#'
 			identifier: property.notFound
 			count: 3
 			path: modules/base/classes/pagination.php
@@ -127,13 +127,13 @@ parameters:
 			path: modules/base/classes/pslReader.php
 
 		-
-			message: '#^Call to an undefined method owa_resultSetManager\:\:checkForFactTableRelation\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Classes\\ResultSetManager\:\:checkForFactTableRelation\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: modules/base/classes/resultSetManager.php
 
 		-
-			message: '#^Call to an undefined method owa_resultSetManager\:\:getName\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Classes\\ResultSetManager\:\:getName\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: modules/base/classes/resultSetManager.php
@@ -151,31 +151,31 @@ parameters:
 			path: modules/base/classes/resultSetManager.php
 
 		-
-			message: '#^Method owa_sanitize\:\:escapeForDisplay\(\) should return string but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\Sanitize\:\:escapeForDisplay\(\) should return string but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/sanitize.php
 
 		-
-			message: '#^Method owa_serviceUser\:\:isSiteAccessRequiredForCapability\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\ServiceUser\:\:isSiteAccessRequiredForCapability\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/serviceUser.php
 
 		-
-			message: '#^Method owa_serviceUser\:\:isSiteAccessible\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\ServiceUser\:\:isSiteAccessible\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/serviceUser.php
 
 		-
-			message: '#^Method owa_settings\:\:isConfigFilePresent\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\Settings\:\:isConfigFilePresent\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/settings.php
 
 		-
-			message: '#^Method owa_settings\:\:set\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Classes\\Settings\:\:set\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 2
 			path: modules/base/classes/settings.php
@@ -187,7 +187,7 @@ parameters:
 			path: modules/base/classes/siteManager.php
 
 		-
-			message: '#^Access to an undefined property owa_trackingEventHelpers\:\:\$translations\.$#'
+			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\TrackingEventHelpers\:\:\$translations\.$#'
 			identifier: property.notFound
 			count: 1
 			path: modules/base/classes/trackingEventHelpers.php
@@ -217,43 +217,43 @@ parameters:
 			path: modules/base/controllers/deleteUserRestController.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/ActionFact.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/Click.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/CommerceLineItemFact.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/CommerceTransactionFact.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/Domstream.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/Request.php
 
 		-
-			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entities/Session.php
@@ -265,7 +265,7 @@ parameters:
 			path: modules/base/entities/User.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/entityInstall.php
@@ -277,7 +277,7 @@ parameters:
 			path: modules/base/error.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/flushProcessedEventsCli.php
@@ -289,7 +289,7 @@ parameters:
 			path: modules/base/install.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/installCli.php
@@ -625,7 +625,7 @@ parameters:
 			path: modules/base/moduleActivate.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/moduleActivateCli.php
@@ -637,13 +637,13 @@ parameters:
 			path: modules/base/moduleDeactivate.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/moduleDeactivateCli.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/moduleInstallCli.php
@@ -709,7 +709,7 @@ parameters:
 			path: modules/base/processEvent.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/processEventQueue.php
@@ -739,7 +739,7 @@ parameters:
 			path: modules/base/processRequest.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/pruneEventQueueArchivesCli.php
@@ -811,13 +811,13 @@ parameters:
 			path: modules/base/templates/widget_latestActions.php
 
 		-
-			message: '#^Result of method owa_update\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Update\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/updates/007.php
 
 		-
-			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/updatesApplyCli.php
@@ -937,7 +937,7 @@ parameters:
 			path: modules/maxmind_geoip/module.php
 
 		-
-			message: '#^Call to an undefined static method owa_cacheType\:\:__construct\(\)\.$#'
+			message: '#^Call to an undefined static method OWA\\Core\\CacheType\:\:__construct\(\)\.$#'
 			identifier: staticMethod.notFound
 			count: 2
 			path: modules/memcachedCache/classes/memcachedCache.php

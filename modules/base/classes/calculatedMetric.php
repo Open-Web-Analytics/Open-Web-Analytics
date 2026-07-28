@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Metric;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.3.0
  */
 
-class owa_calculatedMetric extends owa_metric {
+class CalculatedMetric extends \owa_metric {
     
     var $is_calculated = true;
     var $child_metrics = array();

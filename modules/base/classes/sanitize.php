@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@
  * @since        owa 1.3.0
  */
 
-class owa_sanitize {
+class Sanitize {
 
     /**
      * Remove Non alpha or numeric characters
@@ -182,9 +184,9 @@ class owa_sanitize {
     public static function stripAllTags( $input = '' ) {
 
         //$output = owa_sanitize::stripWhitespace( $input );
-        $output = owa_sanitize::stripScriptsAndCss( $input );
-        $output = owa_sanitize::stripImages( $output );
-        $output = owa_sanitize::stripHtml( $output );
+        $output = \owa_sanitize::stripScriptsAndCss( $input );
+        $output = \owa_sanitize::stripImages( $output );
+        $output = \owa_sanitize::stripHtml( $output );
 
         return $output;
     }
@@ -291,38 +293,38 @@ class owa_sanitize {
 
             $output = array();
             foreach ($input as $k => $v) {
-                $output[$k] = owa_sanitize::cleanInput($v, $options);
+                $output[$k] = \owa_sanitize::cleanInput($v, $options);
             }
             return $output;
 
         } else {
 
             if ($options['hidden_spaces']) {
-                $output = owa_sanitize::removeHiddenSpaces($input);
+                $output = \owa_sanitize::removeHiddenSpaces($input);
             }
 
             if ($options['remove_html']) {
-                $output = owa_sanitize::stripAllTags($output);
+                $output = \owa_sanitize::stripAllTags($output);
             }
 
             if ($options['dollar']) {
-                $output = owa_sanitize::escapeDollarSigns($output);
+                $output = \owa_sanitize::escapeDollarSigns($output);
             }
 
             if ($options['carriage']) {
-                $output = owa_sanitize::stripCarriageReturns($output);
+                $output = \owa_sanitize::stripCarriageReturns($output);
             }
 
             if ($options['unicode']) {
-                $output = owa_sanitize::escapeUnicode($output);
+                $output = \owa_sanitize::escapeUnicode($output);
             }
 
             if ($options['escape_html']) {
-                $output = owa_sanitize::escapeForDisplay($output);
+                $output = \owa_sanitize::escapeForDisplay($output);
             }
 
             if ($options['backslash']) {
-                $output = owa_sanitize::escapeBackslash($output);
+                $output = \owa_sanitize::escapeBackslash($output);
             }
 
             return $output;
@@ -352,7 +354,7 @@ class owa_sanitize {
 
     public static function cleanUrl( $url ) {
 
-        $url = owa_sanitize::cleanInput($url,
+        $url = \owa_sanitize::cleanInput($url,
             array(
                 'hidden_spaces' => true,
                 'remove_html'     => true,
@@ -413,7 +415,7 @@ class owa_sanitize {
 
     public static function cleanUserId ( $user_id ) {
 
-        $illegals = owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
+        $illegals = \owa_coreAPI::getSetting('base', 'user_id_illegal_chars');
 
          foreach ( $illegals as $k => $char ) {
 
@@ -423,7 +425,7 @@ class owa_sanitize {
              }
          }
 
-         return owa_sanitize::cleanInput($user_id, array() );
+         return \owa_sanitize::cleanInput($user_id, array() );
     }
 
     public static function cleanMd5( $md5 ) {
@@ -440,7 +442,7 @@ class owa_sanitize {
             return $md5;
         } else {
 
-            owa_coreAPI::debug("This is not a valid MD5: ".$md5 );
+            \owa_coreAPI::debug("This is not a valid MD5: ".$md5 );
             return "";
         }
     }

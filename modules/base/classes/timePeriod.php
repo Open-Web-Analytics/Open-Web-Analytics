@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_timePeriod {
+class TimePeriod {
 
     var $period;
     var $startDate;
@@ -44,13 +46,13 @@ class owa_timePeriod {
 
         //parent::__construct();
 
-        $this->startDate = owa_coreAPI::supportClassFactory('base', 'date');
-        $this->endDate = owa_coreAPI::supportClassFactory('base', 'date');
+        $this->startDate = \owa_coreAPI::supportClassFactory('base', 'date');
+        $this->endDate = \owa_coreAPI::supportClassFactory('base', 'date');
     }
 
     function getDefaultReportingPeriod() {
 
-        return owa_coreAPI::getSetting( 'base', 'default_reporting_period' );
+        return \owa_coreAPI::getSetting( 'base', 'default_reporting_period' );
     }
 
     function setFromMap( $map ) {
@@ -93,7 +95,7 @@ class owa_timePeriod {
         } else {
 
             $this->period = $this->getDefaultReportingPeriod();
-            owa_coreAPI::debug("$period is not a valid period. Defaulting to default.");
+            \owa_coreAPI::debug("$period is not a valid period. Defaulting to default.");
         }
 
         $this->_setDates( $map );
@@ -179,8 +181,8 @@ class owa_timePeriod {
 
     function _setDates($map = array()) {
 
-        $time_now = owa_lib::time_now();
-        $nowDate = owa_coreAPI::supportClassFactory('base', 'date');
+        $time_now = \owa_lib::time_now();
+        $nowDate = \owa_coreAPI::supportClassFactory('base', 'date');
         $nowDate->set(time(), 'timestamp');
         $start = '';
         $end = '';
@@ -246,7 +248,7 @@ class owa_timePeriod {
             case "last_month":
                 $month =  $time_now['month'] - 1;
                 $start = mktime(0, 0, 0, $month, 1, $time_now['year']);
-                $last = owa_coreAPI::supportClassFactory('base', 'date');
+                $last = \owa_coreAPI::supportClassFactory('base', 'date');
                 $last->set($start, 'timestamp');
                 $end = mktime(23, 59, 59, $last->get('month'), $last->get('num_days_in_month'), $last->get('year'));
                 break;
@@ -266,7 +268,7 @@ class owa_timePeriod {
                 $year = $time_now['year'] - 1;
                 $month = $time_now['month'];
                 $start = mktime(0, 0, 0, $month, 1, $year);
-                $last = owa_coreAPI::supportClassFactory('base', 'date');
+                $last = \owa_coreAPI::supportClassFactory('base', 'date');
                 $last->set($start, 'timestamp');
                 $end = mktime(23, 59, 59, $month, $last->get('num_days_in_month'), $year);
                 break;

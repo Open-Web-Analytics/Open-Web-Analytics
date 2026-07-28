@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'cacheType.php');
  * @since        owa 1.4.0
  */
 
-class owa_memoryCache extends owa_cacheType {
+class MemoryCache extends \owa_cacheType {
 
 	var $cache = [];
 

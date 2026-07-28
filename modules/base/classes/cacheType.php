@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 // Open Web Analytics - An Open Source Web Analytics Framework
 
@@ -10,7 +12,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  */
 
-class owa_cacheType {
+class CacheType {
 	
 	var $collection_expiration_periods = [];
 	var $cache_id = 1;

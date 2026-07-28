@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_cache {
+class Cache {
 
     var $cache;
     var $statistics = array('warm' => 0, 'cold' => 0, 'miss' => 0, 'replaced' => 0, 'added' => 0, 'removed' => 0, 'dirty' => 0, 'persisted' => 0);
@@ -55,7 +57,7 @@ class owa_cache {
 	    
 	    
 	    // this is here before this class seems to load before modules can register implementations...
-	    $s = owa_coreAPI::serviceSingleton();
+	    $s = \owa_coreAPI::serviceSingleton();
 	    $s->setMapValue('object_cache_types', 'memory', ['owa_memoryCache', OWA_BASE_CLASS_DIR.'memoryCache.php', [] ] );
 	    
 	    $this->cache_conf = [
@@ -64,7 +66,7 @@ class owa_cache {
 	    ];
 	    
 	    
-        $this->warm = owa_coreAPI::implementationFactory( 'object_cache_types', 'memory', $this->cache_conf );
+        $this->warm = \owa_coreAPI::implementationFactory( 'object_cache_types', 'memory', $this->cache_conf );
         
         //$this->createColdCache();
         
@@ -73,14 +75,14 @@ class owa_cache {
     
     function createColdCache() {
 	    
-	    if ( owa_coreAPI::getSetting( 'base', 'cache_objects' ) ) {
+	    if ( \owa_coreAPI::getSetting( 'base', 'cache_objects' ) ) {
 	    
-	    	$cache_type = owa_coreAPI::getSetting('base', 'cacheType');
+	    	$cache_type = \owa_coreAPI::getSetting('base', 'cacheType');
 	    	
 	    	if ( $cache_type ) {
 	    	
-				$this->cold = owa_coreAPI::implementationFactory( 'object_cache_types', $cache_type, $this->cache_conf );
-				owa_coreAPI::debug( 'CACHE: created cold cache of type: ' . $cache_type );
+				$this->cold = \owa_coreAPI::implementationFactory( 'object_cache_types', $cache_type, $this->cache_conf );
+				\owa_coreAPI::debug( 'CACHE: created cold cache of type: ' . $cache_type );
 			}
 		}
     }
@@ -98,8 +100,8 @@ class owa_cache {
     function set( $collection, $key, $value, $expires = '' ) {
     
         $hkey = $this->hash($key);
-        owa_coreAPI::debug('set key: '.$key);
-        owa_coreAPI::debug('set hkey: '.$hkey);
+        \owa_coreAPI::debug('set key: '.$key);
+        \owa_coreAPI::debug('set hkey: '.$hkey);
         //$this->cache[$collection][$hkey] = $value;
         $this->warm->set( $collection, $hkey, $value );
         
@@ -282,7 +284,7 @@ class owa_cache {
     
     function debug($msg) {
         
-        return owa_coreAPI::debug($msg);
+        return \owa_coreAPI::debug($msg);
     }
     
     function error($msg) {

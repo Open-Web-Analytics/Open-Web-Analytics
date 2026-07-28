@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'eventQueue.php');
  * @since        owa 1.0.0
  */
 
-class owa_httpEventQueue extends owa_eventQueue {
+class HttpEventQueue extends \owa_eventQueue {
     
     var $endpoint = '';
     
@@ -39,7 +41,7 @@ class owa_httpEventQueue extends owa_eventQueue {
         if ( array_key_exists( 'endpoint', $map ) ) {
             $this->endpoint = $map['endpoint'];
         } else {
-            $this->endpoint = owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint');
+            $this->endpoint = \owa_coreAPI::getSetting('base', 'remote_event_queue_endpoint');
         }
         
         return parent::__construct( $map );
@@ -76,7 +78,7 @@ class owa_httpEventQueue extends owa_eventQueue {
          
               fwrite($fp, $out);
               fclose($fp);
-              owa_coreAPI::debug("out: $out");
+              \owa_coreAPI::debug("out: $out");
               return true;
           }
     }

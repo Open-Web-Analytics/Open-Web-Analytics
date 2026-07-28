@@ -1,6 +1,8 @@
 <?php
+namespace OWA\Module\Base\Classes;
 
-class owa_trackingEventHelpers {
+
+class TrackingEventHelpers {
 
     // incoming tracking event control flow:
     // 0. create event
@@ -23,7 +25,7 @@ class owa_trackingEventHelpers {
 
         if ( ! $o ) {
 
-            $o = new owa_trackingEventHelpers();
+            $o = new \owa_trackingEventHelpers();
         }
 
         return $o;
@@ -95,7 +97,7 @@ class owa_trackingEventHelpers {
 
                     $this->registeredCallbacks[ $key ] = true;
 
-                    owa_coreAPI::registerFilter( $name, $callback, $priority );
+                    \owa_coreAPI::registerFilter( $name, $callback, $priority );
                 }
             }
         }
@@ -113,7 +115,7 @@ class owa_trackingEventHelpers {
 
         $this->registerCallbacks( $properties, 0 );
 
-        $eq = owa_coreAPI::getEventDispatch();
+        $eq = \owa_coreAPI::getEventDispatch();
 
         foreach ( $properties as $name => $property ) {
 
@@ -128,7 +130,7 @@ class owa_trackingEventHelpers {
                     $value = $event->get( $property['alternative_key'] );
                     // should we delete the original key on the event? if so:
                     //$event->delete( $name );
-                    owa_coreAPI::debug('alt key value: '.$value);
+                    \owa_coreAPI::debug('alt key value: '.$value);
                 }
             }
 
@@ -180,22 +182,22 @@ class owa_trackingEventHelpers {
                 break;
             case "string":
 
-                $var = owa_sanitize::cleanInput( $var, array('remove_html' => true) );
+                $var = \owa_sanitize::cleanInput( $var, array('remove_html' => true) );
                 break;
             case "url":
 
-                $var = owa_sanitize::cleanUrl( $var );
+                $var = \owa_sanitize::cleanUrl( $var );
                 break;
             case "json":
 
-                $var = owa_sanitize::cleanJson( $var );
+                $var = \owa_sanitize::cleanJson( $var );
                 break;
             case "boolean":
                 $var = boolval( $var );
                 break;
             default:
 
-                $var = owa_sanitize::cleanInput( $var, array('remove_html' => true) );
+                $var = \owa_sanitize::cleanInput( $var, array('remove_html' => true) );
         }
 
         return $var;
@@ -203,7 +205,7 @@ class owa_trackingEventHelpers {
 
     function addCustomVariableProperties( $properties ) {
 
-        $maxCustomVars = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+        $maxCustomVars = \owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
 
         for ($i = 1; $i <= $maxCustomVars; $i++) {
 
@@ -230,7 +232,7 @@ class owa_trackingEventHelpers {
 
     function translateCustomVariables( $event ) {
 
-        $maxCustomVars = owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+        $maxCustomVars = \owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
 
         for ($i = 1; $i <= $maxCustomVars; $i++) {
 
@@ -251,26 +253,26 @@ class owa_trackingEventHelpers {
 
     static function remoteHostDefault() {
 
-        return owa_coreAPI::getServerParam('REMOTE_HOST');
+        return \owa_coreAPI::getServerParam('REMOTE_HOST');
     }
 
     static function userAgentDefault( $ua = '') {
 		
 		if (! $ua ) {
 			
-			$ua = owa_coreAPI::getServerParam('HTTP_USER_AGENT');
+			$ua = \owa_coreAPI::getServerParam('HTTP_USER_AGENT');
 		}
         return $ua;
     }
 
     static function httpHostDefault() {
 
-        return owa_coreAPI::getServerParam('HTTP_HOST');
+        return \owa_coreAPI::getServerParam('HTTP_HOST');
     }
 
     static function languageDefault() {
 
-        return substr( owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
+        return substr( \owa_coreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
     }
 
     static function ipAddressDefault() {
@@ -293,10 +295,10 @@ class owa_trackingEventHelpers {
         // check for IP address, break when found.
         foreach ( $possible_ip_params as $param ) {
 
-            if ( owa_coreAPI::getServerParam( $param ) ) {
+            if ( \owa_coreAPI::getServerParam( $param ) ) {
 
-                 $ip = owa_coreAPI::getServerParam( $param );
-                 owa_coreAPI::debug("ip address $ip found in $param");
+                 $ip = \owa_coreAPI::getServerParam( $param );
+                 \owa_coreAPI::debug("ip address $ip found in $param");
                  
                  break;
              }
@@ -305,7 +307,7 @@ class owa_trackingEventHelpers {
          // check to see if there are multiple ips possibly passed from a poxy
          if ( strpos( $ip, ',' ) ) {
 
-             owa_coreAPI::debug('multiple ip addresses found');
+             \owa_coreAPI::debug('multiple ip addresses found');
              // evaluate each IP to make sure it's valid and that it's not a private IP
              $candidate_ips = explode( ',', $ip );
 
@@ -313,37 +315,37 @@ class owa_trackingEventHelpers {
 
                  $candidate_ip = trim( $candidate_ip );
 
-                 if ( owa_lib::isNotPrivateIp( $candidate_ip ) ) {
+                 if ( \owa_lib::isNotPrivateIp( $candidate_ip ) ) {
 
                      $chosen_ip = $candidate_ip;
-                     owa_coreAPI::debug("Candidate IP address $candidate_ip was chosen.");
+                     \owa_coreAPI::debug("Candidate IP address $candidate_ip was chosen.");
 
                      break;
                      
                  } else {
 	                 
-	                 owa_coreAPI::debug("Candidate IP address $candidate_ip was private.");
+	                 \owa_coreAPI::debug("Candidate IP address $candidate_ip was private.");
                  }
              }
              
          } else {
 	         
-	         if ( owa_lib::isNotPrivateIp( $ip ) ) {
+	         if ( \owa_lib::isNotPrivateIp( $ip ) ) {
 		     	
 		     	$chosen_ip = $ip;
-		     	owa_coreAPI::debug("IP address $ip was chosen.");
+		     	\owa_coreAPI::debug("IP address $ip was chosen.");
 		     	
 		     } else {
 			     
-			     owa_coreAPI::debug("IP address $ip was private.");
+			     \owa_coreAPI::debug("IP address $ip was private.");
 		     }
          }
 
         // Anonymize IP if needed.
-        if ( $chosen_ip && owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
+        if ( $chosen_ip && \owa_coreAPI::getSetting( 'base', 'anonymize_ips' ) ) {
 			
-			$chosen_ip = owa_lib::anonymizeIp( $chosen_ip );
-			owa_coreAPI::debug("IP address was anonymized.");
+			$chosen_ip = \owa_lib::anonymizeIp( $chosen_ip );
+			\owa_coreAPI::debug("IP address was anonymized.");
         }
 
         return $chosen_ip;
@@ -351,7 +353,7 @@ class owa_trackingEventHelpers {
 
     static function timestampDefault() {
 
-        return owa_coreAPI::getRequestTimestamp();
+        return \owa_coreAPI::getRequestTimestamp();
     }
 
     static function microtimeDefault() {
@@ -362,7 +364,7 @@ class owa_trackingEventHelpers {
     static function generateLocationId( $property_name, $event ) {
 
         if ( $event->get( 'country' ) ) {
-            $s = owa_coreAPI::serviceSingleton();
+            $s = \owa_coreAPI::serviceSingleton();
             return $s->geolocation->generateId( $event->get( 'country' ), $event->get( 'state' ), $event->get( 'city' ) );
         }
     }
@@ -371,7 +373,7 @@ class owa_trackingEventHelpers {
 
         if ( $property_value ) {
 
-            return owa_lib::setStringGuid( $property_value );
+            return \owa_lib::setStringGuid( $property_value );
         }
 
     }
@@ -625,7 +627,7 @@ class owa_trackingEventHelpers {
 
             if ( stripos( $host, $domain ) !== false ) {
                 
-                owa_coreAPI::debug( 'Found search engine: '. $domain);
+                \owa_coreAPI::debug( 'Found search engine: '. $domain);
                 
                 return true;
             }
@@ -645,7 +647,7 @@ class owa_trackingEventHelpers {
 		    $ref = $event->get( 'session_referer' );
 		    
 		    $uri = self::parse_url( $ref );
-		    owa_coreAPI::debug($uri);
+		    \owa_coreAPI::debug($uri);
 		    // check for query params, search engine might have sent them under https
 		    if ( array_key_exists('query_params', $uri) && ! empty( $uri['query_params'] ) ) {
 		    
@@ -665,7 +667,7 @@ class owa_trackingEventHelpers {
 			            if (isset($uri['query_params'][$query_param])) {
 				            
 			                $term = $uri['query_params'][$query_param];
-			                owa_coreAPI::debug( 'Found search term: ' . $term);
+			                \owa_coreAPI::debug( 'Found search term: ' . $term);
 			                			                
 			            } else {
 				            
@@ -687,7 +689,7 @@ class owa_trackingEventHelpers {
             
             if ( stripos( $host, $network['domain'] ) !== false ) {
                 
-                owa_coreAPI::debug( 'Found social network: %s', $network['domain'] );
+                \owa_coreAPI::debug( 'Found social network: %s', $network['domain'] );
                 
                 return true;
             }
@@ -696,12 +698,12 @@ class owa_trackingEventHelpers {
     
     static function getSearchEngineList() {
 	    
-	    return owa_coreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
+	    return \owa_coreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
     }
     
     static function getSocialNetworkList() {
 	    
-	    return owa_coreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
+	    return \owa_coreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
     }
 
     /**
@@ -717,16 +719,16 @@ class owa_trackingEventHelpers {
         $site_id = $event->getSiteId();
 
         if ( ! $site_id ) {
-            owa_coreAPI::debug('no site_id passed to make makeUrlCanonical. Returning URL as is.');
+            \owa_coreAPI::debug('no site_id passed to make makeUrlCanonical. Returning URL as is.');
             return $url;
         }
 
         $url = html_entity_decode( $url );
         // remove port, pass, user, and fragment
-        $url = owa_lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
+        $url = \owa_lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
 
-        owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
-        $site = owa_coreAPI::entityFactory('base.site');
+        \owa_coreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
+        $site = \owa_coreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
 
         $filter_string = $site->getSiteSetting( 'query_string_filters' );
@@ -739,7 +741,7 @@ class owa_trackingEventHelpers {
         }
 
         // merge global filters
-        $global_filters = owa_coreAPI::getSetting('base', 'query_string_filters');
+        $global_filters = \owa_coreAPI::getSetting('base', 'query_string_filters');
         if ($global_filters) {
             $global_filters = str_replace(' ', '', $global_filters);
             $global_filters = explode(',', $global_filters);
@@ -747,14 +749,14 @@ class owa_trackingEventHelpers {
         }
 
         // OWA specific params to filter
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'source');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'medium');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'campaign');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'ad_type');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'overlay');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').'state');
-        array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'source');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'medium');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'campaign');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'ad');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'ad_type');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'overlay');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').'state');
+        array_push($filters, \owa_coreAPI::getSetting('base', 'ns').\owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 
         //print_r($filters);
 
@@ -820,7 +822,7 @@ class owa_trackingEventHelpers {
                 $das = explode(',', $das);
 
                 foreach ($das as $da) {
-                    owa_coreAPI::debug("Checking URL for domain alias: $da");
+                    \owa_coreAPI::debug("Checking URL for domain alias: $da");
                     $da = trim($da);
                     if ( strpos( $url, $da ) ) {
                         $url = str_replace($da, $site_domain, $url);
@@ -839,7 +841,7 @@ class owa_trackingEventHelpers {
             return $string;
         }
 
-        return owa_lib::utf8Encode( trim( $string ) );
+        return \owa_lib::utf8Encode( trim( $string ) );
     }
 
     /**
@@ -852,7 +854,7 @@ class owa_trackingEventHelpers {
         if (
         		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' )
 				&& $event->get( 'ip_address' )
-				&& owa_coreAPI::getSetting('base', 'resolve_hosts')
+				&& \owa_coreAPI::getSetting('base', 'resolve_hosts')
 
         ) {
 			
@@ -860,11 +862,11 @@ class owa_trackingEventHelpers {
             // get ip address
             $ip_address = $event->get( 'ip_address' );
             
-            if ( owa_lib::isNotPrivateIp( $ip_address ) ) {
+            if ( \owa_lib::isNotPrivateIp( $ip_address ) ) {
 	            
 	            // valid v4 or v6 IP address
 	            
-	            if ( owa_lib::isValidIpv6( $ip_address ) ) {
+	            if ( \owa_lib::isValidIpv6( $ip_address ) ) {
 		            
 		            // is v6 format
 		            $result = @dns_get_record( $ip_address, DNS_AAAA );
@@ -903,8 +905,8 @@ class owa_trackingEventHelpers {
             } else {
 
                 // lookup the registered domain using the Public Suffix List.
-                $host = owa_coreAPI::getRegisteredDomain( $fullhost );
-                owa_coreAPI::debug("Registered domain is: $host");
+                $host = \owa_coreAPI::getRegisteredDomain( $fullhost );
+                \owa_coreAPI::debug("Registered domain is: $host");
             }
 
             return $host;
@@ -913,7 +915,7 @@ class owa_trackingEventHelpers {
 
     static function resolveBrowserType( $browser_type, $event ) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         $bcap = $service->getBrowscap();
 
@@ -930,7 +932,7 @@ class owa_trackingEventHelpers {
 
     static function resolveBrowserVersion( $version, $event ) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         $bcap = $service->getBrowscap();
 
@@ -939,7 +941,7 @@ class owa_trackingEventHelpers {
 
     static function isRobot ( $is_robot, $event ) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         $bcap = $service->getBrowscap();
 
@@ -948,7 +950,7 @@ class owa_trackingEventHelpers {
 
     static function resolveOs ( $os, $event ) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         $bcap = $service->getBrowscap();
 
@@ -968,7 +970,7 @@ class owa_trackingEventHelpers {
             return $country;
         }
 
-        $location = owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+        $location = \owa_coreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
 
         return $location->getCountry();
     }
@@ -980,7 +982,7 @@ class owa_trackingEventHelpers {
             return $city;
         }
 
-        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+        $location = \owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
         return $location->getCity();
     }
@@ -992,7 +994,7 @@ class owa_trackingEventHelpers {
             return $latitude;
         }
 
-        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+        $location = \owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
         return $location->getLatitude();
     }
@@ -1004,7 +1006,7 @@ class owa_trackingEventHelpers {
             return $longitude;
         }
 
-        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+        $location = \owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
         return $location->getLongitude();
     }
@@ -1016,7 +1018,7 @@ class owa_trackingEventHelpers {
             return $country_code;
         }
 
-        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+        $location = \owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
         return $location->getCountryCode();
     }
@@ -1028,7 +1030,7 @@ class owa_trackingEventHelpers {
             return $state;
         }
 
-        $location = owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+        $location = \owa_coreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
         return $location->getState();
     }
@@ -1050,7 +1052,7 @@ class owa_trackingEventHelpers {
 
         if ( $event->get( 'HTTP_REFERER' ) ) {
             // @todo is this parse done somewhere else already? source?
-            $referer_parse = owa_lib::parse_url( $event->get('HTTP_REFERER') );
+            $referer_parse = \owa_lib::parse_url( $event->get('HTTP_REFERER') );
 
             $http_host = $event->get( 'HTTP_HOST' );
 
@@ -1074,12 +1076,12 @@ class owa_trackingEventHelpers {
     static function setUserName( $user_name, $event ) {
 
         // record and filter personally identifiable info (PII)
-        if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+        if ( \owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 
             // set user name if one does not already exist on event
-            if ( ! $user_name && owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+            if ( ! $user_name && \owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
 
-                $cu = owa_coreAPI::getCurrentUser();
+                $cu = \owa_coreAPI::getCurrentUser();
 
                 $user_name = $cu->user->get( 'user_id' );
             }
@@ -1090,11 +1092,11 @@ class owa_trackingEventHelpers {
 
     static function setEmailAddress ( $email_address, $event ) {
 
-        if ( owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+        if ( \owa_coreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 
-            if ( ! $email_address && owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+            if ( ! $email_address && \owa_coreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
 
-                $cu = owa_coreAPI::getCurrentUser();
+                $cu = \owa_coreAPI::getCurrentUser();
 
                 $email_address = $cu->user->get( 'email_address' );
             }

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_event {
+class Event {
 
     /**
      * Event Properties
@@ -290,7 +292,7 @@ class owa_event {
      */
     function set_guid() {
 
-        return owa_lib::generateRandomUid();
+        return \owa_lib::generateRandomUid();
     }
 
     /**
@@ -341,7 +343,7 @@ class owa_event {
 
     function cleanProperties() {
 
-        return $this->setProperties(owa_lib::inputFilter($this->getProperties()));
+        return $this->setProperties(\owa_lib::inputFilter($this->getProperties()));
     }
 
     function setPageTitle($value) {
@@ -378,7 +380,7 @@ class owa_event {
 
     function getSiteSpecificGuid($site_id) {
 
-        return owa_lib::generateRandomUid();
+        return \owa_lib::generateRandomUid();
     }
 
     function getStatus() {

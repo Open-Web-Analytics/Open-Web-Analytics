@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -27,7 +29,7 @@
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_paginatedResultSet {
+class PaginatedResultSet {
 
     /**
      * Unique hash of result set used by front end
@@ -193,7 +195,7 @@ class owa_paginatedResultSet {
 		
         if ( ! empty( $results ) ) {
 	        
-	        $options = owa_lib::setDefaultParams( $defaults, $options );
+	        $options = \owa_lib::setDefaultParams( $defaults, $options );
 			
 			$this->setPage( $options['page'] );
 		
@@ -231,17 +233,17 @@ class owa_paginatedResultSet {
 		//owa_coreAPI::debug('result set urls query params: ' . $query_params);
 		
         $urls = [];
-        $auth = owa_auth::get_instance();
+        $auth = \owa_auth::get_instance();
         // base url
         $apiKey = '';
         
         // if the REST API request was authorized with an apiKey then
         // we need to add that to the urls.		
         if ( $auth->getAuthMethod() === 'api_key' ) {
-            $apiKey = owa_coreAPI::getCurrentUserApiKey();
+            $apiKey = \owa_coreAPI::getCurrentUserApiKey();
         }
         
-        $api_url = owa_coreAPI::getSetting('base', 'rest_api_url');
+        $api_url = \owa_coreAPI::getSetting('base', 'rest_api_url');
 		
 		$this->base_url = $api_url;
 		
@@ -254,7 +256,7 @@ class owa_paginatedResultSet {
         // if the REST API request was authorized using cookies then
         // we need to add a nonce to the urls
         if ( $auth->getAuthMethod() === 'cookies' ) {
-            $query_params['nonce'] = owa_coreAPI::createRestApiNonce( $query_params['version'], $query_params['module'], $query_params['do'] );
+            $query_params['nonce'] = \owa_coreAPI::createRestApiNonce( $query_params['version'], $query_params['module'], $query_params['do'] );
         }
 		
         // add current page if any
@@ -269,7 +271,7 @@ class owa_paginatedResultSet {
         }
 
         // build url for this result set
-        $link_template = owa_coreAPI::getSetting('base', 'link_template');
+        $link_template = \owa_coreAPI::getSetting('base', 'link_template');
         
         $q = $this->buildQueryString($query_params);
         
@@ -278,7 +280,7 @@ class owa_paginatedResultSet {
         // if there's an apiKey then we need to sign the request
         if ( $apiKey ) {
         
-            $urls['self'] = owa_coreAPI::signRequestUrl( $urls['self'], $apiKey );
+            $urls['self'] = \owa_coreAPI::signRequestUrl( $urls['self'], $apiKey );
         }
             
         $this->self = $urls['self'];
@@ -302,7 +304,7 @@ class owa_paginatedResultSet {
 	        $urls['next'] = sprintf($link_template, $api_url, $nq);
             
             if ( $apiKey ) {
-	           $urls['next'] = owa_coreAPI::signRequestUrl( $urls['next'], $apiKey );
+	           $urls['next'] = \owa_coreAPI::signRequestUrl( $urls['next'], $apiKey );
             }
             
             $this->next = $urls['next'];
@@ -320,7 +322,7 @@ class owa_paginatedResultSet {
             $urls['previous'] = sprintf($link_template, $api_url, $pq);
             
             if ( $apiKey ) {
-                $urls['previous'] = owa_coreAPI::signRequestUrl( $urls['previous'], $apiKey );
+                $urls['previous'] = \owa_coreAPI::signRequestUrl( $urls['previous'], $apiKey );
             }
             
             $this->previous = $urls['previous'];
@@ -334,7 +336,7 @@ class owa_paginatedResultSet {
 
         $new = array();
         //get namespace
-        $ns = owa_coreAPI::getSetting('base', 'ns');
+        $ns = \owa_coreAPI::getSetting('base', 'ns');
         foreach ($params as $k => $v) {
             
             if ($v) {
@@ -408,7 +410,7 @@ class owa_paginatedResultSet {
 
         } else {
 
-            owa_coreAPI::debug("Format '$format' is not supported.");
+            \owa_coreAPI::debug("Format '$format' is not supported.");
             return $this;
         }
     }
@@ -416,7 +418,7 @@ class owa_paginatedResultSet {
     // @todo move this to a proper xml view
     function resultSetToXml() {
 
-        $t = new owa_template;
+        $t = new \owa_template;
 
         $t->set_template('resultSetXml.php');
         $t->set('rs', $this);
@@ -446,7 +448,7 @@ class owa_paginatedResultSet {
     }
 
     function resultSetToHtml($class = 'dimensionalResultSet') {
-        $t = new owa_template;
+        $t = new \owa_template;
 
         $t->set_template('resultSetHtml.php');
         $t->set('rs', $this);
@@ -503,7 +505,7 @@ class owa_paginatedResultSet {
         if ( array_key_exists( $name, $this->aggregates ) ) {
             return $this->aggregates[$name]['value'];
         } else {
-            owa_coreAPI::debug( "No aggregate metric called $name found." );
+            \owa_coreAPI::debug( "No aggregate metric called $name found." );
         }
     }
 

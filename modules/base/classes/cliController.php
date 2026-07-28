@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -33,7 +35,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_adminController.php');
  */
 
 
-class owa_cliController extends owa_adminController {
+class Cli extends \owa_adminController {
 
     var $is_admin = true;
 
@@ -41,17 +43,17 @@ class owa_cliController extends owa_adminController {
      * Constructor
      *
      * @param array $params
-     * @return owa_controller
+     * @return \owa_controller
      */
     function __construct($params) {
 
-        if ( owa_coreAPI::getSetting('base', 'request_mode') === 'cli' ) {
+        if ( \owa_coreAPI::getSetting('base', 'request_mode') === 'cli' ) {
 
             return parent::__construct($params);
 
         } else {
 
-            owa_coreAPI::notice("Controller not called from CLI");
+            \owa_coreAPI::notice("Controller not called from CLI");
             exit;
         }
     }

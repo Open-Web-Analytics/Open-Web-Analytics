@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@
  * @since        owa 1.3.0
  */
 
-class owa_resultSetManager extends owa_base {
+class ResultSetManager extends \owa_base {
 
     /**
      * The params of the caller, either a report or graph
@@ -109,7 +111,7 @@ class owa_resultSetManager extends owa_base {
         if ($db) {
             $this->db = $db;
         } else {
-            $this->db = owa_coreAPI::dbSingleton();
+            $this->db = \owa_coreAPI::dbSingleton();
         }
 
         $this->formatters = array(
@@ -120,7 +122,7 @@ class owa_resultSetManager extends owa_base {
             'currency'        => array($this, 'formatCurrency')
         );
         
-        $this->resultSet = owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
+        $this->resultSet = \owa_coreAPI::supportClassFactory('base', 'paginatedResultSet');
 
         return parent::__construct();
     }
@@ -132,7 +134,7 @@ class owa_resultSetManager extends owa_base {
             $operator = '=';
         }
 
-        if ( ! owa_lib::isEmpty( $value ) ) {
+        if ( ! \owa_lib::isEmpty( $value ) ) {
             $this->params['constraints'][$name] = array('operator' => $operator, 'value' => $value, 'name' => $name);
         }
     }
@@ -352,7 +354,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
         }
 
-        owa_coreAPI::debug('pre-reduce set of entities to choose from: '.print_r($metric_imps, true));
+        \owa_coreAPI::debug('pre-reduce set of entities to choose from: '.print_r($metric_imps, true));
 
         $entities = array();
 
@@ -370,20 +372,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             }
         }
 
-        owa_coreAPI::debug('post-reduce set of entities to choose from: '.print_r($entities, true));
+        \owa_coreAPI::debug('post-reduce set of entities to choose from: '.print_r($entities, true));
 
         // check summary level of entities
         $niceness = array();
 
         foreach ($entities as $entity) {
 
-            $niceness[$entity] = owa_coreAPI::entityFactory($entity)->getSummaryLevel();
+            $niceness[$entity] = \owa_coreAPI::entityFactory($entity)->getSummaryLevel();
         }
 
         // sort the fact table list by summary level
         arsort($niceness);
 
-        owa_coreAPI::debug('Entities summary levels: '.print_r($niceness, true));
+        \owa_coreAPI::debug('Entities summary levels: '.print_r($niceness, true));
 
         $entity_count = count($niceness);
         $i = 1;
@@ -405,11 +407,11 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     // is the realtionship check fails then move onto the next entity.
                     if (!$check) {
                         $error = true;
-                        owa_coreAPI::debug("Segment dimension $dimension is not related to $entity_name. Moving on to next entity...");
+                        \owa_coreAPI::debug("Segment dimension $dimension is not related to $entity_name. Moving on to next entity...");
                         break;
                     } else {
                         // set related dimensions. this is needed for joins.
-                        owa_coreAPI::debug("Segment Dimension: $segment_dim is related to $entity_name.");
+                        \owa_coreAPI::debug("Segment Dimension: $segment_dim is related to $entity_name.");
                     }
                 }
             }
@@ -417,9 +419,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             //cycle through each dimension from dim list and those found in constraints.
             $dims = array_unique( array_merge( $this->dimensions, $this->getDimensionsFromConstraints() ) );
 
-            owa_coreAPI::debug(sprintf('Dimensions: %s',print_r($this->dimensions, true)));
+            \owa_coreAPI::debug(sprintf('Dimensions: %s',print_r($this->dimensions, true)));
 
-            owa_coreAPI::debug(sprintf('Checking the following dimensions for relation to %s: %s',$entity_name, print_r($dims, true)));
+            \owa_coreAPI::debug(sprintf('Checking the following dimensions for relation to %s: %s',$entity_name, print_r($dims, true)));
 
             foreach ($dims as $dimension) {
 
@@ -428,21 +430,21 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 // is the realtionship check fails then move onto the next entity.
                 if (!$check) {
                     $error = true;
-                    owa_coreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
+                    \owa_coreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
                     break;
                 } else {
                     // set related dimensions. this is needed for joins.
                     $dim_array = $this->getDimensionByEntityName($dimension, $entity_name);
 
                     $this->setRelatedDimension( $dim_array );
-                    owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
+                    \owa_coreAPI::debug("Dimension: $dimension is related to $entity_name.");
                 }
             }
 
             // is no error then everythig is related and we are good to go.
             if (!$error) {
-                owa_coreAPI::debug('optimal base entity is: '.$entity_name);
-                $this->baseEntity = owa_coreAPI::entityFactory($entity_name);
+                \owa_coreAPI::debug('optimal base entity is: '.$entity_name);
+                $this->baseEntity = \owa_coreAPI::entityFactory($entity_name);
                 return $this->baseEntity;
             }
 
@@ -493,40 +495,40 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function isDimensionRelated($dimension_name, $entity_name) {
 
-        $entity = owa_coreAPI::entityFactory($entity_name);
+        $entity = \owa_coreAPI::entityFactory($entity_name);
 
         $dimension = $this->lookupDimension($dimension_name, $entity);
 
         if ($dimension['denormalized'] === true) {
             //$this->related_dimensions[$dimension['name']] = $dimension;
-            owa_coreAPI::debug("Dimension: $dimension_name is denormalized into $entity_name");
+            \owa_coreAPI::debug("Dimension: $dimension_name is denormalized into $entity_name");
             return true;
         } else {
 
             $fk = $this->getDimensionForeignKey($dimension, $entity);
 
             if ($fk) {
-                owa_coreAPI::debug("Dimension: $dimension_name is related to $entity_name");
+                \owa_coreAPI::debug("Dimension: $dimension_name is related to $entity_name");
                 //$this->related_dimensions[$dimension['name']] = $dimension;
                 return true;
             } else {
-                owa_coreAPI::debug("Could not find a foreign key for $dimension_name in $entity_name");
+                \owa_coreAPI::debug("Could not find a foreign key for $dimension_name in $entity_name");
             }
         }
     }
 
     function getMetricEntities($metric_name) {
-        owa_coreAPI::debug("getting metric entities for $metric_name");
+        \owa_coreAPI::debug("getting metric entities for $metric_name");
 
         //get the class implementations
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $classes = $s->getMetricClasses($metric_name);
 
         $entities = array();
 
         // cycles through metric classes and get their entity names
         foreach ($classes as $name => $map) {
-            $m = owa_coreAPI::metricFactory($map['class'], $map['params']);
+            $m = \owa_coreAPI::metricFactory($map['class'], $map['params']);
 
             // check to see if this is a calculated metric
             if ($m->isCalculated()) {
@@ -571,7 +573,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $fk = array();
 
                 $fkcol = $entity->getForeignKeyColumn($dim['entity']);
-                owa_coreAPI::debug("Foreign Key check: ". print_r($fkcol, true));
+                \owa_coreAPI::debug("Foreign Key check: ". print_r($fkcol, true));
                 if ($fkcol) {
                     $fk['col'] = $fkcol;
                     $fk['entity'] = $entity;
@@ -584,20 +586,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function isDimension( $name ) {
 
-        $dims = owa_coreAPI::getAllDimensions();
+        $dims = \owa_coreAPI::getAllDimensions();
         //print_r($dims);
         return in_array( $name, array_keys( $dims ) );
     }
 
     function isMetric( $name ) {
 
-        $metrics = owa_coreAPI::getAllMetrics();
+        $metrics = \owa_coreAPI::getAllMetrics();
         return in_array( $name, array_keys( $metrics ) );
     }
 
     function getDimensionByEntityName($dim_name, $entity_name) {
 
-        $entity = owa_coreAPI::entityFactory($entity_name);
+        $entity = \owa_coreAPI::entityFactory($entity_name);
         return $this->lookupDimension($dim_name, $entity);
     }
 
@@ -611,7 +613,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function lookupDimension($name, $entity) {
 
         // check for denormalized
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         $dim = $service->getDenormalizedDimension($name, $entity->getName());
 
         if ($dim) {
@@ -627,7 +629,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $dim = $service->getDimension($name);
 
                 if ($dim) {
-                    $dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+                    $dimEntity = \owa_coreAPI::entityFactory($dim['entity']);
                     // alias needs to use fk name in case there are two joins on the
                     // same table. This is also used in addRelation method
                     $alias = $dimEntity->getTableAlias().'_via_'.$dim['foreign_key_name'];
@@ -635,7 +637,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     $dim['column'] = $alias.'.'.$dim['column'];
                 } else {
                     $msg = "$name is not a registered dimension.";
-                    owa_coreAPI::debug($msg);
+                    \owa_coreAPI::debug($msg);
                     $this->addError($msg);
                 }
 
@@ -859,7 +861,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       
       } else {
       
-          owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
+          \owa_coreAPI::debug('no start/end params passed to owa_metric::setTimePeriod');
           $dimension_name = 'date';
           $format = 'yyyymmdd';
       }
@@ -874,7 +876,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       if ( $period_name ) {
 
         // create timePeriod class
-        $this->timePeriod = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+        $this->timePeriod = \owa_coreAPI::supportClassFactory('base', 'timePeriod');
 
         $this->timePeriod->set($period_name, $map);
         
@@ -957,7 +959,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $formatter = $this->formatters[$type];
 
         } else {
-            $s = owa_coreAPI::serviceSingleton();
+            $s = \owa_coreAPI::serviceSingleton();
             $formatter = $s->getFormatter($type);
         }
 
@@ -989,10 +991,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function formatCurrency($value) {
 
-        return owa_lib::formatCurrency(
+        return \owa_lib::formatCurrency(
                 $value,
-                owa_coreAPI::getSetting( 'base', 'currencyLocal' ),
-                owa_coreAPI::getSetting( 'base', 'currencyISO3' )
+                \owa_coreAPI::getSetting( 'base', 'currencyLocal' ),
+                \owa_coreAPI::getSetting( 'base', 'currencyISO3' )
         );
     }
 
@@ -1153,7 +1155,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             if ($fk) {
 
                 // create dimension entity
-                $dimEntity = owa_coreAPI::entityFactory($dim['entity']);
+                $dimEntity = \owa_coreAPI::entityFactory($dim['entity']);
                 // get foreign key column
                 //$bm = $this->getBaseMetric();
                 //$fpk_col = $bm->entity->getProperty($fk);
@@ -1175,7 +1177,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             } else {
                 // add error result set
-                owa_coreAPI::debug(sprintf('%s metric does not have relation to dimension %s', $fk['entity']->getName(), $dim['name']));
+                \owa_coreAPI::debug(sprintf('%s metric does not have relation to dimension %s', $fk['entity']->getName(), $dim['name']));
             }
 
     }
@@ -1188,7 +1190,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $m = $this->getMetric($metric_name);
 
         if (!$m) {
-            $m = owa_coreAPI::metricFactory($metric_name);
+            $m = \owa_coreAPI::metricFactory($metric_name);
 
             if ($m) {
 
@@ -1309,7 +1311,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                         $this->db->selectColumn($select[0], $select[1]);
                         // needed so we can remove this temp metric later
                         $this->childMetrics[] = $child_name;
-                        owa_coreAPI::debug("Added $child_name to ChildMetrics array");
+                        \owa_coreAPI::debug("Added $child_name to ChildMetrics array");
                     }
                 }
             }
@@ -1355,7 +1357,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function addError($msg) {
 
         $this->errors[] = $msg;
-        owa_coreAPI::debug($msg);
+        \owa_coreAPI::debug($msg);
     }
     
     function computeAggregates( $bm ) {
@@ -1423,7 +1425,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if ( $this->getLimit() ) {
 	        
             // query for more than we need
-            owa_coreAPI::debug('applying limit of: ' . $this->getLimit() );
+            \owa_coreAPI::debug('applying limit of: ' . $this->getLimit() );
             
             $this->db->limit( $this->getLimit() * 10 );
             
@@ -1494,7 +1496,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             $bname = $bm->getName();
 
-            owa_coreAPI::debug("Using $bname as fact table entity for this result set.");
+            \owa_coreAPI::debug("Using $bname as fact table entity for this result set.");
 
             // generate aggregate results
             $results = $this->computeAggregates( $bm );
@@ -1610,7 +1612,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if ( ! empty( $this->limit ) ) {
 	        
             // query for more than we need
-            owa_coreAPI::debug('applying limit of: ' . $this->limit );
+            \owa_coreAPI::debug('applying limit of: ' . $this->limit );
             
             $this->db->limit( $this->limit * 10 );
         }
@@ -1636,12 +1638,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function generateSegmentQuery( $base_entity ) {
 
         $segment = $this->getSegment();
-        $segment_entity = owa_coreAPI::entityFactory($base_entity->getName());
+        $segment_entity = \owa_coreAPI::entityFactory($base_entity->getName());
         $segment_entity->setTableAlias( $segment_entity->getTableAlias() . '_segment');
 
         if ( $segment ) {
             // use a new data access object
-            $db = owa_coreAPI::dbFactory();
+            $db = \owa_coreAPI::dbFactory();
             $db->select( $segment_entity->getTableAlias().'.*' );
             $db->from( $segment_entity->getTableName(), $segment_entity->getTableAlias() );
 
@@ -1807,7 +1809,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function getAllRelatedDimensions($entity) {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $dims = array();
         $denormalized_dims = $s->denormalizedDimensions;
 
@@ -1847,16 +1849,16 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function getAllRelatedMetrics( $entity ) {
 
         $related_metrics = array();
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $all_metrics = $s->getAllMetrics();
         $entity_name = $entity->getName();
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $metricsByEntity = $s->getMap('metricsByEntity');
         foreach ($all_metrics as $metric_name => $implementations) {
 
             foreach ($implementations as $implementation) {
 
-                $m = owa_coreAPI::metricFactory( $implementation['class'], $implementation['params'] );
+                $m = \owa_coreAPI::metricFactory( $implementation['class'], $implementation['params'] );
 
                 if ( $m->isCalculated() ) {
 

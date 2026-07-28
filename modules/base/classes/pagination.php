@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -27,7 +29,7 @@
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_pagination extends owa_base {
+class Pagination extends \owa_base {
 
     var $page = 1;
 

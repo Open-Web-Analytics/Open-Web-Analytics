@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@
  * @since        owa 1.4.1
  */
 
-class owa_siteManager extends owa_base {
+class SiteManager extends \owa_base {
 
     function __construct() {
 
@@ -40,7 +42,7 @@ class owa_siteManager extends owa_base {
     function createNewSite( $domain, $name = '', $description = '', $site_family = '' ) {
 
         $site_id = md5( $domain );
-        $site = owa_coreAPI::entityFactory( 'base.site' );
+        $site = \owa_coreAPI::entityFactory( 'base.site' );
         $id = $site->generateId( $site_id );
         $site->load( $id );
 
@@ -64,7 +66,7 @@ class owa_siteManager extends owa_base {
 
         } else {
 
-            owa_coreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
+            \owa_coreAPI::debug("Cannot create new site. Site with id: $site_id already exists.");
         }
     }
 }

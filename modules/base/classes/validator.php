@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
  
- class owa_validator extends owa_base {
+ class Validator extends \owa_base {
      
      /**
       * Flag for whether or not a validation run produces errors
@@ -88,7 +90,7 @@
      */
     function validationFactory($class_file, $conf = array()) {
         
-        return owa_coreAPI::validationFactory($class_file, $conf);
+        return \owa_coreAPI::validationFactory($class_file, $conf);
     }
     
     /**
@@ -98,11 +100,11 @@
     function doValidations() {
         
         foreach ($this->validations as $k) {
-            owa_coreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
+            \owa_coreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
             $k['obj']->validate();
             
             if ($k['obj']->hasError === true) {
-                owa_coreAPI::debug('Validation failed.');
+                \owa_coreAPI::debug('Validation failed.');
                 $this->hasErrors = true;
                 $this->errorMsgs[$k['name']] = $k['obj']->getErrorMsg();
              
@@ -112,7 +114,7 @@
                 }
                 
             } else {
-	            owa_coreAPI::debug('Validation succeeded.');
+	            \owa_coreAPI::debug('Validation succeeded.');
             }
 			//owa_coreAPI::debug( $this->getErrorMsgs() );
         }

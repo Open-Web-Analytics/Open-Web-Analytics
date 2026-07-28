@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_update extends owa_base {
+class Update extends \owa_base {
 
     /**
      * Module Name

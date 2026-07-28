@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ use Monolog\Formatter\LineFormatter;
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_error {
+class Error {
 
     const OWA_LOG_ALL = 0;
     const OWA_LOG_DEBUG = 2;
@@ -293,7 +295,7 @@ class owa_error {
 	    
 	   $level = Logger::NOTICE;
        
-       if ( owa_lib::inDebug() ) {
+       if ( \owa_lib::inDebug() ) {
 	       
 	       $level = Logger::DEBUG;
        }
@@ -329,7 +331,7 @@ class owa_error {
         $level = $this->getLogLevel();
 
         // create stream handler
-        $path = owa_coreAPI::getSetting('base', 'error_log_file');
+        $path = \owa_coreAPI::getSetting('base', 'error_log_file');
 
         if ( ! self::isSafeLogPath( $path ) ) {
             // refuse to open the handler rather than write to an attacker-controlled sink
@@ -380,7 +382,7 @@ class owa_error {
         ini_set('display_errors', 'On');
         ini_set("log_errors", 1);
 
-        $path = owa_coreAPI::getSetting('base', 'error_log_file');
+        $path = \owa_coreAPI::getSetting('base', 'error_log_file');
 
         if ( self::isSafeLogPath( $path ) ) {
             ini_set("error_log", $path );
@@ -455,7 +457,7 @@ class owa_error {
                $server = __FILE__;
            }
            $conf = array('subject' => $subject . ' on '. $server, 'from' => 'OWA Error-logger', 'name' => 'exceptions_log');
-           $logger = owa_coreAPI::supportClassFactory('base', 'logEmail', $conf);
+           $logger = \owa_coreAPI::supportClassFactory('base', 'logEmail', $conf);
          $logger->log($body);
     }
 }

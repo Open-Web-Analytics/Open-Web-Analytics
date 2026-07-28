@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,13 +31,13 @@
  */
 
 
-class owa_geolocation {
+class Geolocation {
 
     var $properties = array();
     
     public static function getInstance() {
         
-        return new owa_geolocation();
+        return new \owa_geolocation();
     }
 
     function __construct() {
@@ -58,9 +60,9 @@ class owa_geolocation {
                          'latitude'        =>    '',
                          'longitude'    =>    '');
             
-            if ( owa_coreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
+            if ( \owa_coreAPI::getSetting( 'base', 'geolocation_lookup' ) ) {
             
-                $eq = owa_coreAPI::getEventDispatch();
+                $eq = \owa_coreAPI::getEventDispatch();
                 $geo = $eq->filter('geolocation', $geo);
             
             }
@@ -141,7 +143,7 @@ class owa_geolocation {
             $city = $this->getCity();
         }
         $id_string = trim( strtolower($country)) . trim( strtolower($state)) . trim( strtolower($city));
-        return owa_lib::setStringGuid( $id_string );
+        return \owa_lib::setStringGuid( $id_string );
         
     }
 }

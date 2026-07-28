@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -17,7 +19,7 @@
 //
 
 
-class owa_logFile {
+class LogFile {
 
     var $name = 'generic_log';
     var $file_path = '';

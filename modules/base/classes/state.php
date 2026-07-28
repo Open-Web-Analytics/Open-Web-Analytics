@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_state {
+class State {
 
     var $stores = array();
     var $stores_meta = array();
@@ -67,7 +69,7 @@ class owa_state {
 
     public function get($store, $name = '') {
 
-        owa_coreAPI::debug("Getting state - store: ".$store.' key: '.$name);
+        \owa_coreAPI::debug("Getting state - store: ".$store.' key: '.$name);
         //owa_coreAPI::debug("existing stores: ".print_r($this->stores, true));
         if ( ! isset($this->stores[$store] ) ) {
             $this->loadState($store);
@@ -95,7 +97,7 @@ class owa_state {
 
     function setState($store, $name, $value, $store_type = '', $is_perminent = false) {
 
-        owa_coreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
+        \owa_coreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
 
         // set values
         if (empty($name)) {
@@ -160,7 +162,7 @@ class owa_state {
 
         //check to see that store exists.
         if ( isset( $this->stores[ $store ] ) ) {
-            owa_coreAPI::debug('Persisting state store: '. $store . ' with: '. print_r($this->stores[ $store ], true));
+            \owa_coreAPI::debug('Persisting state store: '. $store . ' with: '. print_r($this->stores[ $store ], true));
             // transform state array into a string using proper format
             if ( is_array( $this->stores[$store] ) ) {
                 switch ( $this->stores_meta[$store]['type'] ) {
@@ -169,7 +171,7 @@ class owa_state {
 
                         // check for old style assoc format
                         if ( $this->stores_meta[$store]['format'] === 'assoc' ) {
-                            $cookie_value = owa_lib::implode_assoc('=>', '|||', $this->stores[ $store ] );
+                            $cookie_value = \owa_lib::implode_assoc('=>', '|||', $this->stores[ $store ] );
                         } else {
                             $cookie_value = json_encode( $this->stores[ $store ] );
                         }
@@ -185,11 +187,11 @@ class owa_state {
             // get expiration time
             $time = $this->stores_meta[$store]['expiration'];
             //set cookie
-            owa_coreAPI::createCookie( $store, $cookie_value, $time, "/", owa_coreAPI::getSetting( 'base', 'cookie_domain' ) );
+            \owa_coreAPI::createCookie( $store, $cookie_value, $time, "/", \owa_coreAPI::getSetting( 'base', 'cookie_domain' ) );
 
         } else {
 
-            owa_coreAPI::debug("Cannot persist state. No store registered with name $store");
+            \owa_coreAPI::debug("Cannot persist state. No store registered with name $store");
         }
     }
 
@@ -207,7 +209,7 @@ class owa_state {
             $possible_values = $this->initial_state[$store];
         } else {
 	        //owa_coreAPI::debug( $this->initial_state );
-	        owa_coreAPI::debug("NO state store: $store found");
+	        \owa_coreAPI::debug("NO state store: $store found");
             return;
         }
 
@@ -219,7 +221,7 @@ class owa_state {
             // check format of value
 
             if ( strpos( $value, "|||" ) ) {
-                $value = owa_lib::assocFromString($value);
+                $value = \owa_lib::assocFromString($value);
             } elseif ( strpos( $value, ":" ) ) {
                 $value = json_decode($value);
                 $value = (array) $value;
@@ -236,14 +238,14 @@ class owa_state {
 
                     // return as the cdh's do not match
                     if ( $cdh_from_state === $runtime_cdh ) {
-                        owa_coreAPI::debug("cdh match:  $cdh_from_state and $runtime_cdh");
+                        \owa_coreAPI::debug("cdh match:  $cdh_from_state and $runtime_cdh");
                         return $this->setState($store, $name, $value, $store_type);
                     } else {
                         // cookie domains do not match so we need to delete the cookie in the offending domain
                         // which is always likely to be a sub.domain.com and thus HTTP_HOST.
                         // if cookie is not deleted then new cookies set on .domain.com will never be seen by PHP
                         // as only the sub domain cookies are available.
-                        owa_coreAPI::debug("Not loading state store: $store. Domain hashes do not match - runtime: $runtime_cdh, cookie: $cdh_from_state");
+                        \owa_coreAPI::debug("Not loading state store: $store. Domain hashes do not match - runtime: $runtime_cdh, cookie: $cdh_from_state");
                         //owa_coreAPI::debug("deleting cookie: owa_$store");
                         //owa_coreAPI::deleteCookie($store,'/', $_SERVER['HTTP_HOST']);
                         //unset($this->initial_state[$store]);
@@ -251,14 +253,14 @@ class owa_state {
                     }
                 } else {
 
-                    owa_coreAPI::debug("Not loading state store: $store. No domain hash found.");
+                    \owa_coreAPI::debug("Not loading state store: $store. No domain hash found.");
                     return;
                 }
 
             } else {
                 // just set the state with the last value
                 if ( $k === $count - 1 ) {
-                    owa_coreAPI::debug("loading last value in initial state container for store: $store");
+                    \owa_coreAPI::debug("loading last value in initial state container for store: $store");
                     return $this->setState($store, $name, $value, $store_type);
                 }
             }
@@ -279,7 +281,7 @@ class owa_state {
 
                 if ($this->stores_meta[$store]['type'] === 'cookie') {
 
-                    return owa_coreAPI::deleteCookie($store);
+                    return \owa_coreAPI::deleteCookie($store);
                 }
 
             } else {
@@ -311,10 +313,10 @@ class owa_state {
     function getCookieDomainHash($domain = '') {
 
         if ( ! $domain ) {
-            $domain = owa_coreAPI::getSetting( 'base', 'cookie_domain' );
+            $domain = \owa_coreAPI::getSetting( 'base', 'cookie_domain' );
         }
 
-        return owa_lib::crc32AsHex($domain);
+        return \owa_lib::crc32AsHex($domain);
     }
 }
 

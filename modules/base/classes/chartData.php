@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_chartData {
+class ChartData {
 
     var $series_data = array();
     var $series_labels = array();
@@ -41,7 +43,7 @@ class owa_chartData {
 
     function owa_chartData() {
 
-        return owa_chartData::__construct();
+        return \owa_chartData::__construct();
     }
 
     function setSeries($name, $data, $label = '') {

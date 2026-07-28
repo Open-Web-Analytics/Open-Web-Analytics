@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ use UAParser\Parser;
  * @since        owa 1.0.0
  */
 
-class owa_browscap extends owa_base {
+class Browscap extends \owa_base {
 
 
     /**
@@ -45,7 +47,7 @@ class owa_browscap extends owa_base {
     /**
      * Browscap Record for current User agent
      *
-     * @var unknown_type
+     * @var mixed
      */
     var $browser;
 
@@ -66,13 +68,13 @@ class owa_browscap extends owa_base {
         $this->ua = $ua;
 
         // init cache
-        $this->cache = owa_coreAPI::cacheSingleton();
-        $this->cacheExpiration = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
+        $this->cache = \owa_coreAPI::cacheSingleton();
+        $this->cacheExpiration = \owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
         $this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 
         //lookup UA
         $this->browser = $this->lookup( $this->ua );
-        owa_coreAPI::debug('Browser Name : '. $this->getUaFamilyVersion() );
+        \owa_coreAPI::debug('Browser Name : '. $this->getUaFamilyVersion() );
 
     }
 
@@ -86,8 +88,8 @@ class owa_browscap extends owa_base {
 
         $cap = null;
 
-        owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );
-		owa_coreAPI::debug('looking in cache for browscap');
+        \owa_coreAPI::profile( $this, __FUNCTION__, __LINE__ );
+		\owa_coreAPI::debug('looking in cache for browscap');
 		
 		// check cache
         $cap = $this->cache->get( 'browscap', $this->ua );
@@ -99,7 +101,7 @@ class owa_browscap extends owa_base {
         } else {
 	        
         	// load parser
-            $custom_db = owa_coreAPI::getSetting('base','ua-regexes');
+            $custom_db = \owa_coreAPI::getSetting('base','ua-regexes');
 
             if ( $custom_db ) {
 
@@ -115,7 +117,7 @@ class owa_browscap extends owa_base {
                 
 	        if ( $cap ) {
 	
-	            if ( owa_coreAPI::getSetting('base', 'cache_objects') ) {
+	            if ( \owa_coreAPI::getSetting('base', 'cache_objects') ) {
 	
 	                $family = $cap->ua->family;
 	
@@ -161,7 +163,7 @@ class owa_browscap extends owa_base {
 
             if ( $match ) {
 
-                owa_coreAPI::debug('Robot detect string found: ' . $robot );
+                \owa_coreAPI::debug('Robot detect string found: ' . $robot );
 
                 break;
             }

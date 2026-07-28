@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,21 +34,21 @@ use PHPMailer\PHPMailer\Exception;
  * @since        owa 1.0.0
  */
 
-class owa_mailer {
+class Mailer {
         
     var $mailer;
 
     /**
      * Constructor
      *
-     * @return owa_mailer
+     * @return \owa_mailer
      * @throws \PHPMailer\PHPMailer\Exception
      */
     function __construct() {
         
         $this->mailer = new PHPMailer( true );
 
-        $from = owa_coreAPI::getSetting( 'base', 'mailer-from' );
+        $from = \owa_coreAPI::getSetting( 'base', 'mailer-from' );
 
         if ( $from ) {
 
@@ -74,60 +76,60 @@ class owa_mailer {
 
                     if ( $repaired !== $from && PHPMailer::validateAddress( $repaired ) ) {
 
-                        owa_coreAPI::debug( sprintf( "mailer-from '%s' is not a valid address; using '%s' instead. Set base.mailer-from to a valid address to silence this.", $from, $repaired ) );
+                        \owa_coreAPI::debug( sprintf( "mailer-from '%s' is not a valid address; using '%s' instead. Set base.mailer-from to a valid address to silence this.", $from, $repaired ) );
                         $from = $repaired;
                     }
                 }
 
                 if ( PHPMailer::validateAddress( $from ) ) {
 
-                    $this->mailer->setFrom( $from, owa_coreAPI::getSetting( 'base', 'mailer-fromName' ) );
+                    $this->mailer->setFrom( $from, \owa_coreAPI::getSetting( 'base', 'mailer-fromName' ) );
 
                 } else {
 
-                    owa_coreAPI::debug( sprintf( "mailer-from '%s' is not a valid address and could not be repaired; sending without an explicit From (mail may not be delivered). Set base.mailer-from to a valid address.", $from ) );
+                    \owa_coreAPI::debug( sprintf( "mailer-from '%s' is not a valid address and could not be repaired; sending without an explicit From (mail may not be delivered). Set base.mailer-from to a valid address.", $from ) );
                 }
 
             } catch ( Exception $e ) {
 
-                owa_coreAPI::debug( sprintf( "Could not set mailer From address '%s': %s", $from, $e->getMessage() ) );
+                \owa_coreAPI::debug( sprintf( "Could not set mailer From address '%s': %s", $from, $e->getMessage() ) );
             }
         }
 
-        if ( owa_coreAPI::getSetting( 'base', 'mailer-use-smtp' ) ) {
+        if ( \owa_coreAPI::getSetting( 'base', 'mailer-use-smtp' ) ) {
         	
-        	if ( owa_lib::inDebug() ) {
+        	if ( \owa_lib::inDebug() ) {
 	        	
 	        	$this->mailer->SMTPDebug = SMTP::DEBUG_SERVER;
         	}
         	
             $this->mailer->IsSMTP(); // telling the class to use SMTP
             
-            if ( owa_coreAPI::getSetting( 'base', 'mailer-host' ) ) {
+            if ( \owa_coreAPI::getSetting( 'base', 'mailer-host' ) ) {
         
-                $this->mailer->Host = owa_coreAPI::getSetting( 'base', 'mailer-host' );
+                $this->mailer->Host = \owa_coreAPI::getSetting( 'base', 'mailer-host' );
             }
             
-            if ( owa_coreAPI::getSetting( 'base', 'mailer-port' ) ) {
+            if ( \owa_coreAPI::getSetting( 'base', 'mailer-port' ) ) {
             
-                $this->mailer->Port =  owa_coreAPI::getSetting( 'base', 'mailer-port' );
+                $this->mailer->Port =  \owa_coreAPI::getSetting( 'base', 'mailer-port' );
             }
             
-            if ( owa_coreAPI::getSetting( 'base', 'mailer-smtpAuth' ) ) {
+            if ( \owa_coreAPI::getSetting( 'base', 'mailer-smtpAuth' ) ) {
                 
-                $this->mailer->SMTPAuth = owa_coreAPI::getSetting( 'base', 'mailer-smtpAuth' );
+                $this->mailer->SMTPAuth = \owa_coreAPI::getSetting( 'base', 'mailer-smtpAuth' );
             }
             
-            if ( owa_coreAPI::getSetting( 'base', 'mailer-username') && owa_coreAPI::getSetting( 'base', 'mailer-password') ) {
+            if ( \owa_coreAPI::getSetting( 'base', 'mailer-username') && \owa_coreAPI::getSetting( 'base', 'mailer-password') ) {
                 
-                $this->mailer->Username = owa_coreAPI::getSetting( 'base', 'mailer-username');
-                $this->mailer->Password = owa_coreAPI::getSetting( 'base', 'mailer-password');
+                $this->mailer->Username = \owa_coreAPI::getSetting( 'base', 'mailer-username');
+                $this->mailer->Password = \owa_coreAPI::getSetting( 'base', 'mailer-password');
             }   
             
             // set mailer SMTP options if they exist
-            if ( owa_coreAPI::getSetting( 'base', 'mailer-options' ) ) {                
+            if ( \owa_coreAPI::getSetting( 'base', 'mailer-options' ) ) {                
             
-                $this->mailer->SMTPOptions = owa_coreAPI::getSetting( 'base', 'mailer-options' );
+                $this->mailer->SMTPOptions = \owa_coreAPI::getSetting( 'base', 'mailer-options' );
             }     
         }
     }
@@ -171,15 +173,15 @@ class owa_mailer {
         try {
 
             if( ! $this->mailer->send() ) {
-                return owa_coreAPI::debug(sprintf("Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $this->mailer->ErrorInfo));
+                return \owa_coreAPI::debug(sprintf("Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $this->mailer->ErrorInfo));
 
             } else {
-                return owa_coreAPI::debug( sprintf ("Mail sent with the subject of '%s'.", $this->mailer->Subject ) );
+                return \owa_coreAPI::debug( sprintf ("Mail sent with the subject of '%s'.", $this->mailer->Subject ) );
             }
 
         } catch ( Exception $e ) {
 
-            return owa_coreAPI::debug( sprintf( "Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $e->getMessage() ) );
+            return \owa_coreAPI::debug( sprintf( "Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $e->getMessage() ) );
         }
     }
     

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@
  * @version        $Revision$
  * @since        owa 1.5.3
  */
-class owa_pslReader {
+class PslReader {
 
     var $tldTree = array();
 

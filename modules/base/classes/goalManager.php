@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@
  */
 
 
-class owa_goalManager extends owa_base {
+class GoalManager extends \owa_base {
 
     var $goals;
     var $activeGoals;
@@ -52,8 +54,8 @@ class owa_goalManager extends owa_base {
     function __construct( $site_id ) {
 
         $this->site_id = $site_id;
-        $this->numGoals = owa_coreAPI::getSetting('base', 'numGoals');
-        $this->numGoalGroups = owa_coreAPI::getSetting('base', 'numGoalGroups');
+        $this->numGoals = \owa_coreAPI::getSetting('base', 'numGoals');
+        $this->numGoalGroups = \owa_coreAPI::getSetting('base', 'numGoalGroups');
         $this->loadGoals( $site_id );
         $this->loadGoalGroupLabels ( $site_id );
     }
@@ -70,7 +72,7 @@ class owa_goalManager extends owa_base {
             $this->goal_group_labels[$i] = "Goal Group $i";
         }
 
-        $from_db = owa_coreAPI::getSiteSetting( $site_id , 'goal_groups' );
+        $from_db = \owa_coreAPI::getSiteSetting( $site_id , 'goal_groups' );
 
         if ($from_db) {
 
@@ -96,7 +98,7 @@ class owa_goalManager extends owa_base {
             );
         }
 
-        $from_db = owa_coreAPI::getSiteSetting( $site_id, 'goals' );
+        $from_db = \owa_coreAPI::getSiteSetting( $site_id, 'goals' );
 
         if ($from_db) {
 
@@ -187,12 +189,12 @@ class owa_goalManager extends owa_base {
 
         if ( $this->isDirtyGoals ) {
 
-            owa_coreAPI::persistSiteSetting( $this->site_id, 'goals', $this->goals );
+            \owa_coreAPI::persistSiteSetting( $this->site_id, 'goals', $this->goals );
         }
 
         if ( $this->isDirtyGoalGroups ) {
 
-            owa_coreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
+            \owa_coreAPI::persistSiteSetting( $this->site_id, 'goal_groups', $this->goal_group_labels );
         }
     }
 

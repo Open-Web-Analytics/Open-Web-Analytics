@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_DIR.'owa_controller.php');
  */
 
 
-class owa_installController extends owa_controller {
+class Install extends \owa_controller {
 
     var $is_installer = true;
     var $im;
@@ -48,7 +50,7 @@ class owa_installController extends owa_controller {
         
         $this->setRequiredCapability('install_schema');
           
-        $this->im = owa_coreAPI::supportClassFactory('base', 'installManager');
+        $this->im = \owa_coreAPI::supportClassFactory('base', 'installManager');
         
         return parent::__construct( $params );
     }
@@ -57,8 +59,8 @@ class owa_installController extends owa_controller {
 
         if ( $this->isInstallComplete() ) {
             
-            owa_coreAPI::debug( 'Install is already complete. redirecting to public url' );
-            return $this->redirectBrowserToUrl( owa_coreAPI::getSetting( 'base', 'public_url' ) );
+            \owa_coreAPI::debug( 'Install is already complete. redirecting to public url' );
+            return $this->redirectBrowserToUrl( \owa_coreAPI::getSetting( 'base', 'public_url' ) );
         }
     }
 

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ require_once(OWA_BASE_CLASS_DIR.'geolocation.php');
  */
 
 
-class owa_service extends owa_base {
+class Service extends \owa_base {
 
     var $init = false;
     var $request;
@@ -53,12 +55,12 @@ class owa_service extends owa_base {
     var $restApiRoutes = array();
 
     function __construct() {
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 
     }
 
     function __destruct() {
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
     }
 
     function initializeFramework() {
@@ -66,7 +68,7 @@ class owa_service extends owa_base {
         if (!$this->isInit()) {
 
             // setup request container
-            $this->request = owa_coreAPI::requestContainerSingleton();
+            $this->request = \owa_coreAPI::requestContainerSingleton();
 
             $this->_loadModules();
             $this->_loadFilters();
@@ -79,11 +81,11 @@ class owa_service extends owa_base {
             $this->setInit();
 
             // setup current user
-            $this->current_user = owa_coreAPI::supportClassFactory('base', 'serviceUser');
+            $this->current_user = \owa_coreAPI::supportClassFactory('base', 'serviceUser');
             // the 'log_users' config directive relies on this being populated
             $this->current_user->setUserData( 'user_id' ,  $this->request->state->get('u') );
             // load geolocation obj.
-            $this->geolocation = owa_geolocation::getInstance();
+            $this->geolocation = \owa_geolocation::getInstance();
         }
 
     }
@@ -102,7 +104,7 @@ class owa_service extends owa_base {
 		        $ua = $this->request->getServerParam('HTTP_USER_AGENT');
 	        }
 	        
-            $this->browscap = owa_coreAPI::supportClassFactory('base', 'browscap', $ua);
+            $this->browscap = \owa_coreAPI::supportClassFactory('base', 'browscap', $ua);
         }
 
         return $this->browscap;
@@ -110,13 +112,13 @@ class owa_service extends owa_base {
 
     function _loadModules() {
 
-        $present_modules = owa_coreAPI::getPresentModules();
-        $am = owa_coreAPI::getActiveModules();
+        $present_modules = \owa_coreAPI::getPresentModules();
+        $am = \owa_coreAPI::getActiveModules();
 
         foreach ($am as $k => $v) {
 			
 			if ( in_array( $v, $present_modules ) ) {
-	            $m = owa_coreAPI::moduleClassFactory($v);
+	            $m = \owa_coreAPI::moduleClassFactory($v);
 	
 	            $this->addModule($m);
 	
@@ -136,8 +138,8 @@ class owa_service extends owa_base {
     }
     
     function checkForRequiredUpdates() {
-	    owa_coreAPI::debug( owa_coreAPI::configSingleton() );
-	    $am = owa_coreAPI::getActiveModules();
+	    \owa_coreAPI::debug( \owa_coreAPI::configSingleton() );
+	    $am = \owa_coreAPI::getActiveModules();
 	    
 	    foreach ($am as $k => $v) {
 		    
@@ -195,7 +197,7 @@ class owa_service extends owa_base {
 
             foreach ( $implementations as $implementation ) {
 
-                $m = owa_coreAPI::metricFactory( $implementation['class'], $implementation['params']);
+                $m = \owa_coreAPI::metricFactory( $implementation['class'], $implementation['params']);
 
                 if ( ! $m->isCalculated() ) {
                     $metricsByEntityMap[ $m->getEntityName() ][ $implementation['name'] ] = $implementation;
@@ -280,11 +282,11 @@ class owa_service extends owa_base {
     }
 
     /**
-     * @return owa_serviceUser
+     * @return \owa_serviceUser
      */
     function getCurrentUser() {
         if (!$this->isInit()) {
-            throw new Exception('Current User Object could only be get if framework is initialized');
+            throw new \Exception('Current User Object could only be get if framework is initialized');
         }
         return $this->current_user;
     }

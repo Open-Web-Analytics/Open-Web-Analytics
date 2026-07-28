@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -31,7 +33,7 @@ if ( ! class_exists( 'owa_eventQueue' ) ) {
  * @since        owa 1.4.0
  */
 
-class owa_dbEventQueue extends owa_eventQueue {
+class DbEventQueue extends \owa_eventQueue {
     
     var $db;
     var $items_per_fetch = 50;
@@ -43,14 +45,14 @@ class owa_dbEventQueue extends owa_eventQueue {
     
     function connect() {
         
-        $this->db = owa_coreAPI::dbSingleton();
-        owa_coreAPI::debug('Connected to event queue.');
+        $this->db = \owa_coreAPI::dbSingleton();
+        \owa_coreAPI::debug('Connected to event queue.');
         return true;
     }
         
     function sendMessage( $event ) {
         
-        $qi = owa_coreAPI::entityFactory('base.queue_item');
+        $qi = \owa_coreAPI::entityFactory('base.queue_item');
         
         $qi->getByPk( 'id',  $event->getGuid() );
         
@@ -85,7 +87,7 @@ class owa_dbEventQueue extends owa_eventQueue {
     }
     
     function receiveMessage() {
-        owa_coreAPI::debug('getting message');
+        \owa_coreAPI::debug('getting message');
         $msg = $this->getNextItem();
         
         if ( $msg ) {
@@ -109,7 +111,7 @@ class owa_dbEventQueue extends owa_eventQueue {
         
     function markAsHandled( $item_id ) {
 
-        $qi = owa_coreAPI::entityFactory('base.queue_item');
+        $qi = \owa_coreAPI::entityFactory('base.queue_item');
         $qi->load( $item_id );
 
         if ( $qi->wasPersisted() ) {
@@ -117,7 +119,7 @@ class owa_dbEventQueue extends owa_eventQueue {
             $qi->set( 'handled_timestamp', $this->makeTimestamp() );
             $qi->save();
         } else {
-            owa_coreAPI::notice("Could not find/delete queue item id: $item_id");
+            \owa_coreAPI::notice("Could not find/delete queue item id: $item_id");
         }
     }
 
@@ -132,7 +134,7 @@ class owa_dbEventQueue extends owa_eventQueue {
      */
     function markAsBroken( $item_id, $error_msg = '' ) {
 
-        $qi = owa_coreAPI::entityFactory('base.queue_item');
+        $qi = \owa_coreAPI::entityFactory('base.queue_item');
         $qi->load( $item_id );
 
         if ( $qi->wasPersisted() ) {
@@ -142,9 +144,9 @@ class owa_dbEventQueue extends owa_eventQueue {
                 $qi->set( 'last_error_msg', $error_msg );
             }
             $qi->save();
-            owa_coreAPI::notice("Marked queue item $item_id as broken after exhausting retries.");
+            \owa_coreAPI::notice("Marked queue item $item_id as broken after exhausting retries.");
         } else {
-            owa_coreAPI::notice("Could not find/mark-broken queue item id: $item_id");
+            \owa_coreAPI::notice("Could not find/mark-broken queue item id: $item_id");
         }
     }
 
@@ -164,8 +166,8 @@ class owa_dbEventQueue extends owa_eventQueue {
      */
     function hasExhaustedRetries( $event ) {
 
-        $max_count = (int) owa_coreAPI::getSetting( 'base', 'queue_max_retry_count' );
-        $max_age   = (int) owa_coreAPI::getSetting( 'base', 'queue_max_retry_age' );
+        $max_count = (int) \owa_coreAPI::getSetting( 'base', 'queue_max_retry_count' );
+        $max_age   = (int) \owa_coreAPI::getSetting( 'base', 'queue_max_retry_age' );
 
         // getReceiveCount() reflects prior attempts: receiveMessage() calls
         // wasReceived() before the event is handed to the processor, so on the
@@ -178,7 +180,7 @@ class owa_dbEventQueue extends owa_eventQueue {
 
             // The queued row's id is the event's queue guid; read its
             // insertion_timestamp to measure elapsed time in the queue.
-            $qi = owa_coreAPI::entityFactory('base.queue_item');
+            $qi = \owa_coreAPI::entityFactory('base.queue_item');
             $qi->load( $event->getQueueGuid() );
 
             if ( $qi->wasPersisted() ) {
@@ -211,7 +213,7 @@ class owa_dbEventQueue extends owa_eventQueue {
         if ( $items ) {
             $entities = array();
             foreach ( $items as $item ) {
-                $qi = owa_coreAPI::entityFactory( 'base.queue_item' );
+                $qi = \owa_coreAPI::entityFactory( 'base.queue_item' );
                 $qi->setProperties( $item );
                 $entities[] = $qi;
             }
