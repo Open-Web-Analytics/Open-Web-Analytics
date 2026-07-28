@@ -1,3 +1,8 @@
+// OWA is defined by owa.js; this module augments it (OWA.pieChart = ...). jQuery was
+// supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
 OWA.pieChart = function( options ) {
 
     // config options
@@ -29,7 +34,7 @@ OWA.pieChart.prototype = {
 
     mergeOptions: function ( options ) {
 
-        for (option in options) {
+        for (var option in options) {
 
             if ( options.hasOwnProperty( option ) ) {
                 this.options[ option ] = options[ option ];

@@ -1,4 +1,38 @@
-AddHandler application/x-httpd-php .tpl
+# --- Web-access allowlist (deny-all, re-allow only public endpoints + assets) -------
+#
+# The repo root IS the Apache docroot, so without this the WHOLE source tree is
+# web-served: PHP class source, owa-config.php (DB credentials), raw templates, owa-data/,
+# build metadata. Invert that: deny everything, then re-allow ONLY what the browser
+# legitimately fetches. (Apache 2.4: a more-specific section's `Require` REPLACES the
+# inherited one, so each allow below overrides the top-level deny for its match.)
+<IfModule mod_authz_core.c>
+
+    # Default: nothing is served.
+    Require all denied
+
+    # Public PHP entry points, matched by BASENAME so this also covers api/index.php.
+    <FilesMatch "^(index|log|install|queue|blank|wp_plugin)\.php$">
+        Require all granted
+    </FilesMatch>
+
+    # Path-based allows, matched on REQUEST_URI. Authorization runs in the auth phase,
+    # BEFORE mod_rewrite's fixup-phase rules -- so the `api/` PREFIX must be allowed
+    # here (not just the rewritten api/index.php target) or the REST pretty-URLs 403
+    # before the rewrite ever fires. Also: the public/ built-asset tree, where EVERY
+    # browser-fetched asset now lives -- built JS/CSS (including the whole tracker family:
+    # owa.tracker/vendors/heatmap/player), AND the server-side makeImageLink images (via
+    # assets_url). The only two module-tree paths still allowed are the two legacy tracker
+    # ENTRY points that in-the-wild embeds hardcode (modules/base/dist/owa.tracker.js and
+    # modules/base/js/owa.tracker-combined-min.js); both are 301'd to public/ below, but
+    # must pass authz here first to reach the redirect. Their async chunks are NOT allowed
+    # here anymore -- the moved tracker pins its publicPath to public/base/dist/, so it
+    # never requests owa.vendors/heatmap/player from the module tree. Nothing else under
+    # modules/ is served.
+    <If "%{REQUEST_URI} =~ m#/(api/|public/|modules/base/dist/owa\.tracker\.js$|modules/base/js/owa\.tracker-combined-min\.js$)#">
+        Require all granted
+    </If>
+
+</IfModule>
 
 <IfModule mod_rewrite.c>
 
@@ -9,32 +43,41 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule api/(.*)$ api/index.php?owa_rest_params=$1 [QSA,NC,L]
 
 
-# Rewrites for new tracker location (../base/js/owa.tracker-combined-min.js) to new location (../base/dist/owa.tracker.js)
-# need to properly sniff the protocol or else you could get a CSP error in the browser under https
+# Legacy tracker locations -> canonical public/base/dist/owa.tracker.js (301).
+#
+# The tracker family moved into the public/ asset tree, so BOTH old embed entry
+# points redirect to the new canonical tracker: the ancient js/ path
+# (owa.tracker-combined-min.js) and the previous dist/ path (owa.tracker.js). Only
+# the ENTRY point needs a redirect -- the moved tracker pins __webpack_public_path__
+# to owa_baseUrl + 'public/base/dist/', so it always requests its owa.vendors/heatmap/
+# player chunks from public/ regardless of which URL loaded the tracker itself. That
+# is why the old chunk redirects are gone: nothing ever asks for them at the old path.
+# Protocol is sniffed so the redirect target scheme matches the request (a scheme
+# mismatch would trip a mixed-content/CSP error in the browser under https).
 
 RewriteCond %{REQUEST_URI} (.*)/modules/base/js/owa.tracker-combined-min.js$
 RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
 RewriteCond %{HTTPS} =on [OR]
 RewriteCond %{REQUEST_SCHEME} =https
-RewriteRule owa.tracker-combined-min.js$ https://%{HTTP_HOST}%1/modules/base/dist/owa.tracker.js [NC,R=301,L]
-
-RewriteCond %{REQUEST_URI} (.*)/modules/base/js/owa.(heatmap|vendors|player).js$
-RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
-RewriteCond %{HTTPS} =on [OR]
-RewriteCond %{REQUEST_SCHEME} =https
-RewriteRule js$ https://%{HTTP_HOST}%1/modules/base/dist/owa.%2.js [NC,R=301,L]
+RewriteRule owa.tracker-combined-min.js$ https://%{HTTP_HOST}%1/public/base/dist/owa.tracker.js [NC,R=301,L]
 
 RewriteCond %{REQUEST_URI} (.*)/modules/base/js/owa.tracker-combined-min.js$
 RewriteCond %{HTTP:X-Forwarded-Proto} =http [OR]
 RewriteCond %{HTTPS} =off [OR]
 RewriteCond %{REQUEST_SCHEME} =http
-RewriteRule owa.tracker-combined-min.js$ http://%{HTTP_HOST}%1/modules/base/dist/owa.tracker.js [NC,R=301,L]
+RewriteRule owa.tracker-combined-min.js$ http://%{HTTP_HOST}%1/public/base/dist/owa.tracker.js [NC,R=301,L]
 
-RewriteCond %{REQUEST_URI} (.*)/modules/base/js/owa.(heatmap|vendors|player).js$
+RewriteCond %{REQUEST_URI} (.*)/modules/base/dist/owa.tracker.js$
+RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
+RewriteCond %{HTTPS} =on [OR]
+RewriteCond %{REQUEST_SCHEME} =https
+RewriteRule owa.tracker.js$ https://%{HTTP_HOST}%1/public/base/dist/owa.tracker.js [NC,R=301,L]
+
+RewriteCond %{REQUEST_URI} (.*)/modules/base/dist/owa.tracker.js$
 RewriteCond %{HTTP:X-Forwarded-Proto} =http [OR]
 RewriteCond %{HTTPS} =off [OR]
 RewriteCond %{REQUEST_SCHEME} =http
-RewriteRule js$ https://%{HTTP_HOST}%1/modules/base/dist/owa.%2.js [NC,R=301,L]
+RewriteRule owa.tracker.js$ http://%{HTTP_HOST}%1/public/base/dist/owa.tracker.js [NC,R=301,L]
 
 </IfModule>
 

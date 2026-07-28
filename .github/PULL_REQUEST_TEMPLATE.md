@@ -2,7 +2,7 @@
 
 Please check if your PR fulfills the following requirements:
 - [ ] Tested the changes
-- [ ] Build (`/path/to/php cli.php cmd=build`) was run locally and any changes were pushed
+- [ ] Build (`npm run build`) was run locally and any changes were pushed
 
 
 ## Pull request type

@@ -80,8 +80,8 @@ class owa_usersResetPasswordView extends owa_mailView {
     
     function render($data) {
         
-        $this->t->set_template('wrapper_email.tpl');
-        $this->body->set_template('users_reset_password_email.tpl');
+        $this->t->set_template('wrapper_email.php');
+        $this->body->set_template('users_reset_password_email.php');
         $this->body->set('key', $this->get('key'));
         $this->setMailSubject('Your New OWA Password');
         $this->addMailToAddress($this->get('email_address'));

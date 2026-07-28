@@ -655,10 +655,14 @@ class owa_template extends Template {
 
     function makeImageLink($path, $absolute = false) {
 
+        // Server-rendered images live in the public/ asset tree (the build copies
+        // base/i/ -> public/base/i/), NOT the module source tree -- modules_url is
+        // denied by the deny-all .htaccess. images_url/images_absolute_url both
+        // resolve to public/ (settings.php setupPaths()).
         if ($absolute === true) {
-            $url = owa_coreAPI::getSetting('base', 'modules_url');
+            $url = owa_coreAPI::getSetting('base', 'images_absolute_url');
         } else {
-            $url = owa_coreAPI::getSetting('base', 'modules_url');
+            $url = owa_coreAPI::getSetting('base', 'images_url');
         }
 
         return $url.$path;
@@ -872,7 +876,7 @@ class owa_template extends Template {
             $t->set('currentSiteId', $currentSiteId);
 			$t->set('params', array('do' => $current_action ));
             $t->caller_params['link_state'] = $this->caller_params['link_state'];
-            $t->set_template('report_nav.tpl');
+            $t->set_template('report_nav.php');
             return $t->fetch();
         } else {
 
@@ -890,7 +894,7 @@ class owa_template extends Template {
             $t->set('data', $data);
             $t->set('width', $width);
             $t->set('height', $height);
-            $t->set_template('chart_dom.tpl');
+            $t->set_template('chart_dom.php');
             return $t->fetch();
         } else {
 
@@ -909,7 +913,7 @@ class owa_template extends Template {
             $t->set('data', $data_string);
             $t->set('width', $width);
             $t->set('height', $height);
-            $t->set_template('sparkline_dom.tpl');
+            $t->set_template('sparkline_dom.php');
             return $t->fetch();
 
         } else {
@@ -947,7 +951,7 @@ class owa_template extends Template {
             $t->set('sort_table_class', 'tablesorter');
         }
 
-        $t->set_template('generic_table.tpl');
+        $t->set_template('generic_table.php');
 
         return $t->fetch();
 
@@ -1065,6 +1069,36 @@ class owa_template extends Template {
         }
 
         echo $output;
+    }
+
+    /**
+     * Safely emit a tracker-sourced URL into an href/src attribute.
+     *
+     * escapeForDisplay() (what out() uses) neutralizes attribute breakout
+     * ("><script) but does NOT neutralize a scheme-based payload: a stored
+     * value of  javascript:alert(1)  or  data:text/html,...  survives
+     * htmlentities() unchanged and stays a live scheme in an href. Stored
+     * URLs are attacker-controllable (set by the tracker) and are NOT
+     * re-escaped by makeUrlCanonical(), so any template that drops a stored
+     * URL straight into href="" needs a scheme check on top of escaping.
+     *
+     * This permits only http/https/mailto/ftp (and scheme-relative "//" and
+     * root-relative "/" URLs); anything else is replaced with '#'. The
+     * returned value is then escaped exactly like out() for the breakout case.
+     *
+     * @param string $url  the URL to emit
+     * @param bool   $echo when true (default) echo the value, else return it
+     */
+    function safeHref( $url, $echo = true ) {
+
+        $safe = owa_sanitize::sanitizeHref( $url );
+        $safe = owa_sanitize::escapeForDisplay( $safe );
+
+        if ( $echo ) {
+            echo $safe;
+        }
+
+        return $safe;
     }
 
     function formatCurrency($value) {

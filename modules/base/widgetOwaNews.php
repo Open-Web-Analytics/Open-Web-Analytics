@@ -60,8 +60,8 @@ class owa_widgetOwaNewsView extends owa_view {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('news.tpl');
+        $this->t->set_template('wrapper_blank.php');
+        $this->body->set_template('news.php');
         $this->body->set('news', $data['news']);
     }
 

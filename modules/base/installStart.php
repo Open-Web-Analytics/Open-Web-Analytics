@@ -44,7 +44,7 @@ class owa_installStartView extends owa_view {
 
     function render() {
 
-        $this->body->set_template('install_start.tpl');
+        $this->body->set_template('install_start.php');
         //page title
         $this->t->set('page_title', 'OWA Installation Start');
         // fetch admin links from all modules

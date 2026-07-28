@@ -120,14 +120,14 @@ class owa_db extends owa_base {
     /**
      * Microtime Start of Query
      *
-     * @var unknown_type
+     * @var float
      */
     var $_start_time;
 
     /**
      * Total Elapsed time of query
      *
-     * @var unknown_type
+     * @var string
      */
     var $_total_time;
 
@@ -162,7 +162,7 @@ class owa_db extends owa_base {
                                          'open_new_connection' => $open_new_connection,
                                          'persistant' => $persistant);
                                                                           
-        return parent::__construct();
+        parent::__construct();
     }
 
     function __destruct() {
@@ -219,11 +219,8 @@ class owa_db extends owa_base {
      */
     function _timerStart() {
 
-      $mtime = microtime();
-      //$mtime = explode(' ', $mtime);
-      //$this->_start_time = $mtime[1].substr(round($mtime[0], 4), 1);
-    $this->_start_time = microtime();
-    return;
+        $this->_start_time = microtime(true);
+        return;
     }
 
     /**
@@ -232,12 +229,8 @@ class owa_db extends owa_base {
      */
     function _timerEnd() {
 
-        $mtime = microtime();
-        //$mtime = explode(" ", $mtime);
-        //$endtime = $mtime[1].substr(round($mtime[0], 4), 1);
-        $endtime = microtime();
-        //$this->_total_time = bcsub($endtime, $this->_start_time, 4);
-        $this->_total_time = number_format(((substr($endtime,0,9)) + (substr($endtime,-10)) - (substr($this->_start_time,0,9)) - (substr($this->_start_time,-10))),6);
+        $endtime = microtime(true);
+        $this->_total_time = number_format($endtime - $this->_start_time, 6);
 
         return;
 

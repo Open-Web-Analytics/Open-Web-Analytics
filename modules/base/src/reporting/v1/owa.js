@@ -1,10 +1,16 @@
 /**
- * OWA Global Object 
- *	
+ * OWA Global Object
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
  */
+
+// jQuery is imported explicitly (was supplied by webpack.ProvidePlugin before the
+// ESM renovation). The 'jquery' package is CommonJS, so webpack's interop makes the
+// namespace import the callable jQuery function -- same pattern as the tracker files.
+import * as jQuery from 'jquery';
+
 var OWA = {
 
     items: {},
@@ -21,8 +27,7 @@ var OWA = {
         debug: false
     },
     state: {},
-    overlayActive: false,
-    
+
     // depricated
     setSetting: function(name, value) {
         return this.setOption(name, value);
@@ -135,59 +140,7 @@ var OWA = {
     getApiEndpoint : function() {
         return this.config['rest_api_endpoint'] || this.getSetting('baseUrl') + 'api/';
     },
-    
-    loadHeatmap: function(p) {
-        var that = this;
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
-        OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.heatmap.js', function(){
-            that.overlay = new OWA.heatmap();
-            //hm.setParams(p);
-            //hm.options.demoMode = true;
-            that.overlay.options.liveMode = true;
-            that.overlay.generate();
-        });    
-    },
-    
-    loadPlayer: function() {
-        var that = this;
-        OWA.debug("Loading Domstream Player");
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
-        OWA.util.loadCss(OWA.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-        OWA.util.loadScript(OWA.getSetting('baseUrl')+'/modules/base/js/owa.player.js', function(){
-            that.overlay = new OWA.player();    
-        });    
-    },
-    
-    startOverlaySession: function(p) {
-        
-        // set global is overlay actve flag
-        OWA.overlayActive = true;
-        //alert(JSON.stringify(p));
-        
-        if (p.hasOwnProperty('api_url')) {
-                
-            OWA.setApiEndpoint(p.api_url);
-        }
-        
-        // get param from cookie    
-        //var params = OWA.util.parseCookieStringToJson(p);
-        var params = p;
-        // evaluate the action param
-        if (params.action === 'loadHeatmap') {
-            this.loadHeatmap(p);
-        } else if (params.action === 'loadPlayer') {
-            this.loadPlayer(p);
-        }
-        
-    },
-    
-    endOverlaySession : function() {
-                
-        OWA.util.eraseCookie(OWA.getSetting('ns') + 'overlay', document.domain);
-        OWA.overlayActive = false;
-    },
-    
+
     /**
 	 * Add a new Filter callback
 	 * Note: filter functions must return the value variable.
@@ -327,7 +280,7 @@ var OWA = {
 	 * @param tag		The tag specified by applyFilters
 	 * @param callback	The callback function to remove
 	 */
-	removeFilter : function( tag, callabck ) {
+	removeFilter : function( tag, callback ) {
 		
 		this.hooks.filters[ tag ] = this.hooks.filters[ tag ] || [];
 	
@@ -454,9 +407,9 @@ OWA.stateManager.prototype = {
                 
                 
                 if (format === 'json') {
-                    cookie_value = JSON.stringify(value);
+                    var cookie_value = JSON.stringify(value);
                 } else {
-                    cookie_value = OWA.util.assocStringFromJson(value);
+                    var cookie_value = OWA.util.assocStringFromJson(value);
                 }
             }
         
@@ -853,7 +806,7 @@ OWA.util =  {
     
         var nsObj = new Object();
         
-        for(param in obj) {  // print out the params
+        for(var param in obj) {  // print out the params
             if (obj.hasOwnProperty(param)) {
                 nsObj[OWA.config.ns+param] = obj[param];
             }
@@ -1070,7 +1023,7 @@ OWA.util =  {
     nsParams: function(obj) {
         var new_obj = new Object;
         
-        for(param in obj) {
+        for(var param in obj) {
             if (obj.hasOwnProperty(param)) {
                 new_obj[OWA.getSetting('ns') + param] = obj[param];
             }
@@ -1290,6 +1243,7 @@ OWA.util =  {
     
     loadStateJson : function(store_name) {
         var store = unescape(OWA.util.readCookie( OWA.getSetting('ns') + store_name ) );
+        var state;
         if (store) {
             state = JSON.parse(store);
         }
@@ -2200,5 +2154,14 @@ OWA.util =  {
         
         return true;
     }
-    
+
 };
+
+// owa.js defines the OWA namespace; the six augmenter modules extend it. It is
+// shared two ways:
+//   - export { OWA } -- the augmenters import it as a module binding (they mutate
+//     the same object: OWA.report = ... etc.).
+//   - window.OWA -- the report templates' inline <script> blocks (~166 references)
+//     read the browser global, so it stays published here.
+export { OWA };
+window.OWA = OWA;

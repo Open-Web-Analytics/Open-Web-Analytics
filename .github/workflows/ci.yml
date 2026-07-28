@@ -1,0 +1,146 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  test:
+    name: Lint, analyse & test (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, json
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Lint (php -l)
+        run: composer run-script lint
+
+      - name: Static analysis (PHPStan)
+        run: composer run-script phpstan
+
+      - name: Unit tests (PHPUnit)
+        run: composer run-script test
+
+  js:
+    name: Tracker JS tests (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Build the reporting bundle so the reporting build-integrity / jsdom
+      # load tests (tests/js/reporting/*) run for real instead of skipping.
+      - name: Build JS bundles
+        run: npm run build
+
+      - name: JS unit tests (Jest — tracker + reporting bundle)
+        run: npm test
+
+  e2e:
+    name: E2E (self-hosted, php -S + MySQL)
+    runs-on: ubuntu-latest
+    # A throwaway MySQL for the scratch install the self-hosted runner creates.
+    # The runner CREATEs/DROPs its own scratch schema on this server; nothing here
+    # is a real install, so root with an empty password is fine and matches the
+    # OWA_E2E_DB_* env below.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      # Point selfhost_harness.php at the service DB (there is no live config in
+      # CI, so it provisions everything from these). CI=true makes Playwright NOT
+      # reuse an existing php -S and use the 'line' reporter.
+      OWA_E2E_DB_HOST: 127.0.0.1
+      OWA_E2E_DB_PORT: '3306'
+      OWA_E2E_DB_USER: root
+      OWA_E2E_DB_PASSWORD: ''
+      OWA_E2E_DB_NAME: owa_e2e_selfhost
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, json, mysqli, gd
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # The tracker + reporting e2e specs load the BUILT bundles, so build them.
+      - name: Build JS bundles
+        run: npm run build
+
+      - name: Install Playwright Chromium + OS deps
+        run: npx playwright install --with-deps chromium
+
+      # STEP 1: exercise the INSTALLER itself (web wizard + CLI), each into its own
+      # scratch DB on the service, self-served by php -S. This certifies the exact
+      # install_manager::installSchema()/createAdminUser()/createDefaultSite() code
+      # that the self-hosted step below relies on to provision its own install (the
+      # web wizard's installBase and the CLI installCli both delegate to it), so a
+      # green install run proves that provisioning is sound.
+      - name: Run install-flow e2e suite (php -S)
+        env:
+          OWA_E2E_BASE_URL: http://127.0.0.1:8965/index.php
+        run: npm run test:e2e:install
+
+      # STEP 2: run the app-behavior suite (reporting / admin / tracker / cookie)
+      # against a throwaway install the selfhost harness provisions via the CLI
+      # installer + php -S. The selfhost config + harness derive their own URL
+      # (127.0.0.1:8964 by default, distinct from the install suite's 8965), so no
+      # OWA_E2E_BASE_URL is needed here; the job-level OWA_E2E_DB_* creds are shared.
+      - name: Run self-hosted e2e suite (php -S)
+        run: npm run test:e2e:selfhost
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

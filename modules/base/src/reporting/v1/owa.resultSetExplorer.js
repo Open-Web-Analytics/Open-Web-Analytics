@@ -27,9 +27,14 @@
  * @since        owa 1.5.0
  */
 
+// OWA is defined by owa.js; this module augments it (OWA.resultSet = ... etc.). jQuery
+// was supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
 OWA.resultSet = function( attributes ) {
 
-    for (attribute in attributes) {
+    for (var attribute in attributes) {
 
         this[attribute] = attributes[attribute];
     }
@@ -64,7 +69,7 @@ OWA.resultSet.prototype = {
             for(var i=0;i<=this.resultsRows.length -1;i++) {
 
                 if (filter) {
-                    check = filter(this.resultsRows[i]);
+                    var check = filter(this.resultsRows[i]);
                     if (!check) {
                         continue;
                     }
@@ -227,6 +232,7 @@ OWA.resultSetExplorer.prototype = {
                 // loop through dims looking for the current sec. dim
                 for (var i=0; i < dims.length; i++) {
                     // if you find it replace with new one
+                    var new_dim;
                     if ( dims[i] === oldname ) {
                         new_dim = newname;
                     } else {
@@ -274,14 +280,6 @@ OWA.resultSetExplorer.prototype = {
     setView : function(name) {
 
         this.view = name;
-    },
-
-    // called after data is rendered for a view
-    // needed???
-    setCurrentView : function(name) {
-
-        jQuery(that.domSelectors[that.currentView]).toggle();
-        this.currentView = name;
     },
 
     // makesa unqiue idfor each row
@@ -466,7 +464,7 @@ OWA.resultSetExplorer.prototype = {
     },
 
     showLoader: function() {
-        jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'/modules/base/i/loader.gif"></div>');
+        jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'/public/base/i/loader.gif"></div>');
     },
 
     hideLoader: function() {
@@ -721,7 +719,7 @@ OWA.resultSetExplorer.prototype = {
             for(var i=0;i<=this.resultSet.resultsRows.length -1;i++) {
 
                 if (filter) {
-                    check = filter(this.resultSet.resultsRows[i]);
+                    var check = filter(this.resultSet.resultsRows[i]);
                     if (!check) {
                         continue;
                     }
@@ -816,7 +814,7 @@ OWA.resultSetExplorer.prototype = {
             // add to dom
             jQuery('#'+dom_id).html(table);
             // append rows
-            for(i=0;i<= this.resultSet.resultsRows.length -1;i++) {
+            for(var i=0;i<= this.resultSet.resultsRows.length -1;i++) {
 
                 var cells = '';
                 for (var r_item in this.resultSet.resultsRows[i]) {
@@ -847,7 +845,7 @@ OWA.resultSetExplorer.prototype = {
         url += 'owa_do=' + method;
         var count = OWA.util.countObjectProperties(options);
         var i = 1;
-        for (option in options) {
+        for (var option in options) {
 
             if (options.hasOwnProperty(option)) {
 
@@ -930,7 +928,7 @@ OWA.dimensionPicker.prototype = {
 
         if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
 
-            for (group in this.dim_list) {
+            for (var group in this.dim_list) {
 
                 if ( this.dim_list.hasOwnProperty(group) ) {
 
@@ -973,7 +971,16 @@ OWA.dimensionPicker.prototype = {
         jQuery( container_selector ).append(c);
         // transform into select menu
 
-        jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found."});
+        // Pass an explicit width matching the <select>'s declared width:150px.
+        // chosen-js 1.x sizes its container from the <select>'s offsetWidth AT
+        // ENHANCEMENT TIME (AbstractChosen.container_width), which is 0 when the
+        // select is inside a display:none parent -- the constraint/filter builder
+        // creates its dimension pickers while its .builder is hidden, so without
+        // an explicit width the chosen container collapsed to a ~2px sliver and
+        // the dimension list was unusable. options.width bypasses the runtime
+        // measurement (chosen 0.9.x read the CSS width, so this wasn't needed
+        // before the 0.9.6 -> 1.8.7 upgrade).
+        jQuery( container_selector + ' > .dim-list' ).chosen({no_results_text: "Name not found.", width: '150px'});
 
 
 jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
@@ -989,7 +996,13 @@ jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
 
         // set select value
         if ( selected ) {
-            jQuery(selector + ' > .dim-list').val( selected ).trigger('liszt:updated');
+            // chosen-js 1.x renamed the "re-sync the widget to the <select>"
+            // event from chosen 0.9.x's `liszt:updated` to `chosen:updated`
+            // (and no longer listens for the old name at all). Without this the
+            // dimensionPicker's chosen widget silently ignores a programmatic
+            // .val(), so a pre-selected secondary/constraint dimension never
+            // renders. See the chosen 0.9.6 -> chosen-js 1.8.7 migration.
+            jQuery(selector + ' > .dim-list').val( selected ).trigger('chosen:updated');
 
         } else {
 
@@ -1188,8 +1201,21 @@ OWA.dataGrid.prototype = {
         jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
         jQuery("#load_"+that.dom_id+"_grid").show();
         jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
-        // add data to grid
-        jQuery("#"+that.dom_id + '_grid')[0].addJSONData(resultSet);
+        // add data to grid.
+        //
+        // The grid is constructed with datatype:'local' so it never auto-fetches
+        // on init -- OWA always hand-feeds the fetched result set through
+        // addJSONData below. Under the old jqGrid 3.6.5, addJSONData always parsed
+        // its argument with the configured jsonReader. free-jqgrid's addJSONData
+        // instead picks its reader from the CURRENT datatype: 'local' uses
+        // localReader (which ignores jsonReader and reads nothing from OWA's
+        // {resultsRows:[...]} shape -> 0 rows), while 'json' uses jsonReader. So
+        // flip to 'json' for the manual parse, then restore 'local' so nothing
+        // triggers a background reload afterward.
+        var grid = jQuery("#"+that.dom_id + '_grid');
+        grid.jqGrid('setGridParam', { datatype: 'json' });
+        grid[0].addJSONData(resultSet);
+        grid.jqGrid('setGridParam', { datatype: 'local' });
         // dispay new count
         this.displayRowCount(resultSet);
     },
@@ -1487,7 +1513,7 @@ OWA.constraintBuilder.prototype = {
 
     parseConstraintString : function( str ) {
 
-        con_obj = {
+        var con_obj = {
             name:         '',
             value:        '',
             operator:     ''
@@ -1511,7 +1537,7 @@ OWA.constraintBuilder.prototype = {
 
             for( var i=0; i < a.length; i++ ) {
 
-                for ( operator in this.operators ) {
+                for ( var operator in this.operators ) {
 
                     if ( this.operators.hasOwnProperty(operator) ) {
 
@@ -1579,12 +1605,13 @@ OWA.constraintBuilder.prototype = {
         }
 
         // setup the toggle button
+        // jQuery-UI 1.12 replaced button()'s icons:{primary,secondary} with a
+        // single icon + iconPosition. The old primary was just ui-icon-blank
+        // (a spacer); keep the secondary dropdown triangle on the right.
         jQuery( button_selector )
             .button({
-                icons: {
-                    primary:'ui-icon-blank',
-                    secondary:'ui-icon-triangle-1-s'
-                },
+                icon: 'ui-icon-triangle-1-s',
+                iconPosition: 'end',
                 label: OWA.l('Select...')
             })
             .click(function() {
@@ -1619,9 +1646,12 @@ OWA.constraintBuilder.prototype = {
                             .children('.dimensionPicker')
                                 .children('.dim-list').val();
 
+                    // Core jQuery-UI selectmenu (1.11+) has no 'value' method like
+                    // the old Nagel fork; it keeps the native <select> in sync, so
+                    // read the chosen operator straight off the select with .val().
                     var operator = jQuery(this)
                         .children('.constraintOperatorPicker')
-                                .children('.operator-list').selectmenu('value');
+                                .children('.operator-list').val();
 
                     var value = jQuery(this)
                         .children('.constraintValueField').val();
@@ -1679,7 +1709,7 @@ OWA.constraintBuilder.prototype = {
 
             var n = this.relatedDimensions;
 
-            for ( metric in this.relatedMetrics ) {
+            for ( var metric in this.relatedMetrics ) {
 
                 if ( this.relatedMetrics.hasOwnProperty( metric ) ) {
                     n[metric] = this.relatedMetrics[metric];
@@ -1743,7 +1773,7 @@ OWA.constraintBuilder.prototype = {
         c += '<select name="operator-list" class="operator-list">';
 
         // build the list of operators
-        for (operator in this.operators) {
+        for (var operator in this.operators) {
 
             if ( this.operators.hasOwnProperty( operator ) ) {
 
@@ -1759,12 +1789,16 @@ OWA.constraintBuilder.prototype = {
         c += '';
 
         jQuery(selector).append(c);
-        jQuery(selector + ' > .operator-list').selectmenu({width:200});
 
-        // set select value
+        // Core jQuery-UI selectmenu (1.11+) replaces the Nagel fork. It has no
+        // "value" setter method: set the value on the native <select> first, then
+        // enhance / refresh so the widget reflects it. width is now a style, not an
+        // option, so size the menu via width in the widget's classes option.
+        var opList = jQuery(selector + ' > .operator-list');
         if ( selected ) {
-            jQuery(selector + ' > .operator-list').selectmenu("value", selected);
+            opList.val(selected);
         }
+        opList.selectmenu({ width: 200 });
 
     }
 

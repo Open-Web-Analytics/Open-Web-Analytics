@@ -157,7 +157,7 @@ class OWA {
         var that = this;
         
         // load css for heatmap class
-        Util.loadCss(this.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
+        Util.loadCss(this.getSetting('baseUrl')+'/public/base/css/owa.overlay.css', function(){});
         
         // dynamic import of the Heatmap class
 	    import(/* webpackChunkName: "owa.heatmap" */ '../tracker/Heatmap.js').then( ( { Heatmap } ) => { 
@@ -175,11 +175,9 @@ class OWA {
         this.debug("about to load Domstream Player");
         
         var that = this;
-        
-        //Util.loadScript(this.getSetting('baseUrl')+'/modules/base/js/includes/jquery/jquery-1.6.4.min.js', function(){});
-        Util.loadCss(this.getSetting('baseUrl')+'/modules/base/css/owa.overlay.css', function(){});
-        //Util.loadScript(this.getSetting('baseUrl')+'/modules/base/js/owa.player.js', function(){
-	    
+
+        Util.loadCss(this.getSetting('baseUrl')+'/public/base/css/owa.overlay.css', function(){});
+
 	    // dynamic import of the Player class
 	    import(/* webpackChunkName: "owa.player" */ '../tracker/Player.js').then( ( { Player } ) => { 
 			that.debug("Loading Domstream Player");

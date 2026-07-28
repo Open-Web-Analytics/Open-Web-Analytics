@@ -95,8 +95,8 @@ class owa_usersSetPasswordView extends owa_view {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_email.tpl');
-        $this->body->set_template('users_set_password_email.tpl');
+        $this->t->set_template('wrapper_email.php');
+        $this->body->set_template('users_set_password_email.php');
         $this->body->set('ip', $data['ip']);
     }
 }

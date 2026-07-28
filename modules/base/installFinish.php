@@ -72,7 +72,7 @@ class owa_installFinishView extends owa_view {
         $this->body->set('u', $this->get('u'));
         $this->body->set('p', $this->get('p'));
         // load body template
-        $this->body->set_template('install_finish.tpl');
+        $this->body->set_template('install_finish.php');
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }

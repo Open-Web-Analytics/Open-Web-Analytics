@@ -28,6 +28,8 @@
  * @since        owa 1.0.0
  */
 
+// TODO: replace with explicit property declarations (deprecated in PHP 8.2).
+#[\AllowDynamicProperties]
 abstract class owa_module {
 
     /**
@@ -105,7 +107,7 @@ abstract class owa_module {
     /**
      * Array of navigation links that this module implements
      *
-     * @var unknown_type
+     * @var array
      */
     var $nav_links;
 
@@ -142,7 +144,7 @@ abstract class owa_module {
     /**
      * Required Schema Version
      *
-     * @var array
+     * @var int
      */
     var $required_schema_version;
 
@@ -259,11 +261,6 @@ abstract class owa_module {
          */
         $this->registerApiMethods();
 
-        /**
-         * Register Build Packages
-         */
-        $this->registerBuildPackages();
-
         $this->_registerEventHandlers();
         $this->_registerEventProcessors();
         $this->_registerEntities();
@@ -314,7 +311,7 @@ abstract class owa_module {
      * Must be defined by a concrete module class for any event handlers to be registered
      *
      * @access public
-     * @return array
+     * @return void
      */
     function _registerEventHandlers() {
 
@@ -343,9 +340,12 @@ abstract class owa_module {
     /**
      * Hooks a function to a filter
      *
-     * @param array $event_name
-     * @param string $handler_name
-     * @return boolean
+     * @param string $filter_name
+     * @param string|object $handler_name
+     * @param string $method
+     * @param int $priority
+     * @param string $dir
+     * @return void
      */
     function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
 
@@ -391,7 +391,7 @@ abstract class owa_module {
      * Abstract method for registering administration/settings page
      *
      * @access public
-     * @return array
+     * @return void
      */
     function registerAdminPanels() {
 
@@ -1020,13 +1020,13 @@ abstract class owa_module {
      * and should be added to all tracking tracking events as they are recieved.
      *
      *
-     * @var $type            string    the type of tracking property environmental|regular|derived
+     * @param string $type the type of tracking property environmental|regular|derived
      *
      *         environmental = properties that are only dependant on the PHP SERVER environment.
      *        regular       = properties that are set by clients
      *        derived          = properties that are derived from or dependant on other properties
      *
-     * @var    $properties     array     an associative array of tracking properties
+     * @param array $properties an associative array of tracking properties
      *
      * Example:
      *
@@ -1126,60 +1126,6 @@ abstract class owa_module {
 
         return false;
     }
-
-    /**
-     * Abstract method for registering package files to build
-     *
-     * This method is called by a module's constructor
-     * and should be redefined in a concrete module class.
-     */
-    function registerBuildPackages() {
-
-        return false;
-    }
-
-    /**
-     * Registers a new package of files to be built by
-     * the 'build' CLI command.
-     *
-     * $package array    the package array takes the form of
-     *
-     *         'name'            => 'mypackage'
-     *        'output_dir'    => '/path/to/output'
-     *        'files'            => array('foo' => array('path' => '/path/to/file/file.js',
-     *                                              'compression' => 'minify'))
-     */
-    protected function registerBuildPackage( $package ) {
-
-        if (! isset( $package['name'] ) ) {
-
-            throw exception('Build Package does not have a name.');
-        }
-
-        if (! isset( $package['output_dir'] ) ) {
-
-            throw exception('Build Package does not have an output directory.');
-        } else {
-            //check for trailing slash
-            $check = substr($package['output_dir'], -1, 1);
-            if ($check != '/') {
-                $package['output_dir'] = $package['output_dir'].'/';
-            }
-        }
-
-        if (! isset( $package['files'] ) ) {
-
-            throw exception('Build Package does not any files.');
-        }
-
-        // filter the pcakge in case other modules want to change something.
-        $eq = owa_coreAPI::getEventDispatch();
-        $package = $eq->filter( 'register_build_package', $package );
-
-        $s = owa_coreAPI::serviceSingleton();
-        $s->setMapValue('build_packages', $package['name'], $package);
-    }
-
 
     /**
      * Retuns internal struct array used for saving link infos

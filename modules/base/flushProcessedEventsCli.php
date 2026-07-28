@@ -30,12 +30,27 @@
 
 class owa_flushProcessedEventsCliController extends owa_cliController {
 
+    function __construct( $params ) {
+
+        $this->setRequiredCapability( 'edit_modules' );
+        return parent::__construct( $params );
+    }
+
     function action() {
 
         $this->e->notice('About to delete handled events from database event queue.');
-        $d = owa_coreAPI::getEventDispatch();
-        $q = $d->getAsyncEventQueue( 'database' );
-        $this->e->notice('Events removed: ' . $q->flushHandledEvents() );
+
+        // 'processing' is the database-backed queue (registered in
+        // base/module.php); getAsyncEventQueue() never existed on
+        // owa_eventDispatch, so the old call fataled on every invocation.
+        // getEventQueue() resolves the queue by its registered name and
+        // connect() supplies the db handle that flushHandledEvents() needs.
+        $q = owa_coreAPI::getEventQueue( 'processing' );
+
+        if ( $q->connect() ) {
+
+            $this->e->notice('Events removed: ' . $q->flushHandledEvents() );
+        }
     }
 }
 

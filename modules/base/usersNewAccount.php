@@ -78,8 +78,8 @@ class owa_usersNewAccountView extends owa_mailView {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_email.tpl');
-        $this->body->set_template('users_new_account_email.tpl');
+        $this->t->set_template('wrapper_email.php');
+        $this->body->set_template('users_new_account_email.php');
         $this->body->set('user_id', $data['user_id']);
         $this->body->set('key', $data['temp_passkey']);
         // mailer specific

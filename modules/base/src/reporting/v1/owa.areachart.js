@@ -1,3 +1,8 @@
+// OWA is defined by owa.js; this module augments it (OWA.areaChart = ...). jQuery was
+// supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
 OWA.areaChart = function( options ) {
 
     // config options
@@ -23,7 +28,7 @@ OWA.areaChart = function( options ) {
     // merge passed options with defaults.
     if ( options ) {
         
-        for (option in options) {
+        for (var option in options) {
             
             if ( options.hasOwnProperty( option ) ) {
                 this.options[ option ] = options[ option ];
@@ -152,8 +157,8 @@ OWA.areaChart.prototype = {
             
                 //create data array
                 for( var i=0; i <= resultSet.resultsRows.length -1; i++ ) {
-                    data_type_x = resultSet.resultsRows[i][x_series_name].data_type;
-                    data_type_y = resultSet.resultsRows[i][y_series_name].data_type;
+                    var data_type_x = resultSet.resultsRows[i][x_series_name].data_type;
+                    var data_type_y = resultSet.resultsRows[i][y_series_name].data_type;
                     var item =[this.formatValue(data_type_x, resultSet.resultsRows[i][x_series_name].value), this.formatValue(data_type_y, resultSet.resultsRows[i][y_series_name].value)];
                     data.push(item);
                 }

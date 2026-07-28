@@ -39,10 +39,10 @@ class owa_updatesView extends owa_view {
         //switch wrapper if OWA is not embedded
         // needed becasue this view might be rendered before anything else.
         if (isset($this->config['is_embedded']) && $this->config['is_embedded'] != true) {
-            $this->t->set_template('wrapper_public.tpl');
+            $this->t->set_template('wrapper_public.php');
         }
         
-        $this->body->set_template('updates.tpl');// This is the inner template
+        $this->body->set_template('updates.php');// This is the inner template
         $this->body->set('headline', 'Your database needs to be upgraded...');
         $this->body->set('modules', $data['modules']);
     }

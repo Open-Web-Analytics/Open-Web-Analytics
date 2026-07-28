@@ -36,7 +36,7 @@
          
          $substring = $this->getConfig('substring');
          
-         $pos = strpos($value, $substring);
+         $pos = strpos((string) $value, (string) $substring);
          
          $operator = $this->getConfig('operator');
          $position = $this->getConfig('position');

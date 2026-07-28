@@ -13,8 +13,8 @@ import * as jGrowl from 'jgrowl';
 
 class Player {
 
-	construct() {
-		
+	constructor() {
+
 		this.timer = null;
 	    this.queue_step = 1;
 	    this.queue_count = 0;
@@ -196,7 +196,7 @@ class Player {
         jQuery("#owa_overlay_hidden").hide();
 
         //add cursor
-        var cursor = '<div id="owa-cursor"><img src="'+OWA_instance.getSetting('baseUrl')+'/modules/base/i/cursor2.png"></div>';
+        var cursor = '<div id="owa-cursor"><img src="'+OWA_instance.getSetting('baseUrl')+'/public/base/i/cursor2.png"></div>';
         jQuery('body').append(cursor);
 
         jQuery('#owa_overlay_start').toggleClass('active');

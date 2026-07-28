@@ -470,9 +470,29 @@ function report_clicks() {
 
         if ( ! $this->get('document_id') ) {
 
-            $eq = owa_coreAPI::getEventDispatch();
-            $document_id = $d->generateId( $eq->filter('page_url',  urldecode( $this->get('pageUrl') ), $this->get('siteId') ) ) ;
-            
+            // Resolve pageUrl -> document_id the same way ingestion does. During
+            // tracking, the 'page_url' property is canonicalized by
+            // owa_trackingEventHelpers::makeUrlCanonical( $url, $event ) BEFORE the
+            // document_id is generated (see module.php:164 + documentHandlers::notify),
+            // so stored ids are hashes of the *canonical* URL. We must canonicalize
+            // here too, or the lookup misses every page that carried tracking params.
+            //
+            // makeUrlCanonical() is static and needs only an event object to read
+            // the site_id from ($event->getSiteId()); pass a minimal event rather
+            // than the bare siteId string (the old code passed the string straight
+            // through eventDispatch::filter(), which both skipped canonicalization
+            // when the filter was unregistered and fataled with getSiteId()-on-
+            // string when it was). Call it directly so the result is deterministic
+            // regardless of whether the tracking filters are registered in this
+            // process. There is no autoloader, so require the one class file first.
+            require_once( OWA_BASE_CLASS_DIR . 'trackingEventHelpers.php' );
+
+            $event = owa_coreAPI::supportClassFactory( 'base', 'event' );
+            $event->setSiteId( $this->get('siteId') );
+
+            $canonical_url = owa_trackingEventHelpers::makeUrlCanonical( urldecode( $this->get('pageUrl') ), $event );
+            $document_id   = $d->generateId( $canonical_url );
+
         } else {
 	        
 	        $document_id = $this->get('document_id');

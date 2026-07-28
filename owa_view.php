@@ -78,14 +78,14 @@ class owa_view extends owa_base {
     /**
      * Type of page
      *
-     * @var unknown_type
+     * @var string
      */
     var $page_type;
 
     /**
      * Request Params
      *
-     * @var unknown_type
+     * @var array
      */
     var $params;
 
@@ -306,7 +306,7 @@ class owa_view extends owa_base {
         $wrapper = owa_template::sanitizeTemplateName( $this->config['report_wrapper'] );
 
         if ( $wrapper === '' ) {
-            $wrapper = 'wrapper_default.tpl';
+            $wrapper = 'wrapper_default.php';
         }
 
         $this->t->set_template( $wrapper );
@@ -328,7 +328,7 @@ class owa_view extends owa_base {
     /**
      * Assembles subview
      *
-     * @param array $data
+     * @param string $subview
      */
     function loadSubView($subview) {
 
@@ -377,7 +377,7 @@ class owa_view extends owa_base {
             $this->construct($data);
         }
 
-        $this->t->set_template('wrapper_subview.tpl');
+        $this->t->set_template('wrapper_subview.php');
 
         //Assign body to main template
         $this->t->set('body', $this->body);
@@ -397,7 +397,9 @@ class owa_view extends owa_base {
         }
 
         $uid = $path;
-        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+        // Built stylesheets are served from the public/ asset tree, not the module
+        // source tree -- see settings.php setupPaths() (assets_url).
+        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->css[$uid]['url'] = $url;
         // build file system path just in case we need to concatenate the JS into a single file.
         $fs_path = OWA_MODULES_DIR.$path;
@@ -416,7 +418,9 @@ class owa_view extends owa_base {
 
         $uid = $name.$version;
 
-        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'modules_url').$path, $version);
+        // Built scripts are served from the public/ asset tree, not the module source
+        // tree -- see settings.php setupPaths() (assets_url).
+        $url = sprintf('%s?version=%s', owa_coreAPI::getSetting('base', 'assets_url').$path, $version);
         $this->js[$uid]['url'] = $url;
 
         // build file system path just in case we need to concatenate the JS into a single file.
@@ -587,14 +591,14 @@ class owa_genericTableView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
 
     }
 
     function render($data) {
 
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('generic_table.tpl');
+        $this->t->set_template('wrapper_blank.php');
+        $this->body->set_template('generic_table.php');
 
         if (!empty($data['labels'])):
             $this->body->set('labels', $data['labels']);
@@ -669,15 +673,15 @@ class owa_sparklineJsView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
 
     }
 
     function render($data) {
 
         // load template
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('sparklineJs.tpl');
+        $this->t->set_template('wrapper_blank.php');
+        $this->body->set_template('sparklineJs.php');
         // set
         $this->body->set('widget', $data['widget']);
         $this->body->set('type', $data['type']);
@@ -701,7 +705,7 @@ class owa_mailView extends owa_view {
         // make this a service
         require_once(OWA_BASE_CLASS_DIR.'mailer.php');
         $this->po = new owa_mailer;
-        return parent::__construct();
+        parent::__construct();
     }
 
     function postProcess() {
@@ -736,7 +740,7 @@ class owa_adminView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     function post() {
@@ -757,7 +761,7 @@ class owa_restApiView extends owa_view {
 	 	parent::__construct();
 	 	
 	 	// load templates
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         
         $this->body->set_template('restApiResponse.php');
     }
@@ -870,13 +874,13 @@ class owa_jsonView extends owa_view {
 
     function __construct() {
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     function render() {
 
         // load template
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('json.php');
 
         // look for jsonp callback
@@ -903,24 +907,14 @@ class owa_jsonView extends owa_view {
 
 class owa_jsonResultsView extends owa_view {
 
-    function __construct() {
-
-        if (!class_exists('Services_JSON')) {
-            require_once(OWA_INCLUDE_DIR.'JSON.php');
-        }
-
-        return parent::__construct();
-    }
-
     function render() {
 
         // load template
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('json.php');
 
-        $json = new Services_JSON();
         // set
-        $this->body->set('json', $json->encode($this->get('data')));
+        $this->body->set('json', json_encode($this->get('data')));
     }
 }
 
@@ -950,7 +944,7 @@ class owa_cliView extends owa_view {
     
     function pre() {
 	    
-	    $this->t->set_template('wrapper_blank.tpl');
+	    $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('msgsCli.php');
 	    
 	    $error = array();

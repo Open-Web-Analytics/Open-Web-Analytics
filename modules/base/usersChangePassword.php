@@ -47,7 +47,10 @@ class owa_usersChangePasswordController extends owa_controller {
             'errorMsg'  => 'Your password must be at least 6 characters in length.',
         ];
 
-        $this->addValidation('password_length', $this->getParam('password'), 'required', $passwordLengthConf);
+        // 'stringLength' (not 'required') is the validator that actually reads
+        // the operator/length config above; typed as 'required' the length rule
+        // silently degraded to a bare non-empty check and short passwords passed.
+        $this->addValidation('password_length', $this->getParam('password'), 'stringLength', $passwordLengthConf);
     }
 
     function action() {

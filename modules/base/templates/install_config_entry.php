@@ -30,7 +30,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
         <p class="form-row">
             <span class="form-label">Database Host:</span>
             <span class="form-field">
-                <input type="text"size="30" name="<?php echo $this->getNs();?>db_host" value="<?php echo $config['db_host'];?>">
+                <input type="text"size="30" name="<?php echo $this->getNs();?>db_host" value="<?php echo $config['db_host'] ?? '';?>">
             </span>
             <span class="form-instructions">This is the host that your database resides on. Localhost is ok.</span>
         </p>
@@ -38,7 +38,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
         <p class="form-row">
             <span class="form-label">Database Port:</span>
             <span class="form-field">
-                <input type="text"size="30" name="<?php echo $this->getNs();?>db_port" value="<?php echo ($config['db_port'] ? $config['db_port'] : 3306);?>">
+                <input type="text"size="30" name="<?php echo $this->getNs();?>db_port" value="<?php echo (!empty($config['db_port']) ? $config['db_port'] : 3306);?>">
             </span>
             <span class="form-instructions">(optional) The port of your database. Will default to port 3306 if you leave this empty.</span>
         </p>
@@ -46,7 +46,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
         <p class="form-row">
             <span class="form-label">Database Name:</span>
             <span class="form-field">
-                <input type="text"size="30" name="<?php echo $this->getNs();?>db_name" value="<?php echo $config['db_name'];?>">
+                <input type="text"size="30" name="<?php echo $this->getNs();?>db_name" value="<?php echo $config['db_name'] ?? '';?>">
             </span>
             <span class="form-instructions">This is the name of the database to install tables into.</span>
         </p>
@@ -54,7 +54,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
         <p class="form-row">
             <span class="form-label">Database User:</span>
             <span class="form-field">
-                <input type="text"size="30" name="<?php echo $this->getNs();?>db_user" value="<?php echo $config['db_user'];?>">
+                <input type="text"size="30" name="<?php echo $this->getNs();?>db_user" value="<?php echo $config['db_user'] ?? '';?>">
             </span>
             <span class="form-instructions">This is the user name to connect to the database.</span>
         </p>
@@ -62,7 +62,7 @@ We could not locate OWA's <code>owa-config.php</code> configuration file. You ca
         <p class="form-row">
             <span class="form-label">Database Password:</span>
             <span class="form-field">
-                <input type="password"size="30" name="<?php echo $this->getNs();?>db_password" value="<?php echo $config['db_password'];?>">
+                <input type="password"size="30" name="<?php echo $this->getNs();?>db_password" value="<?php echo $config['db_password'] ?? '';?>">
             </span>
             <span class="form-instructions">This is the password to connect to the database.</span>
         </p>

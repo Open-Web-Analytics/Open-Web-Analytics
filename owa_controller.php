@@ -603,7 +603,8 @@ class owa_controller extends owa_base {
     /**
      * redirects borwser to a particular view
      *
-     * @param unknown_type $data
+     * @param string $action
+     * @param bool $pass_params
      */
     function redirectBrowser($action, $pass_params = true) {
 
@@ -734,7 +735,7 @@ class owa_controller extends owa_base {
      * gets the siteid taking the site access permissions into account
      * If not a typical siteId parameter is set or user lacks permission, the first availabe site is used
      *
-     * @return string or false if no site access
+     * @return int|string|false the site id, or false if no site access
      */
     protected function getCurrentSiteId() {
 
@@ -743,7 +744,7 @@ class owa_controller extends owa_base {
     }
 
     /**
-     * @return integer or false
+     * @return int|string|false
      */
     protected function getSiteIdParameterValue() {
         if ($this->getParam('siteId') ) {

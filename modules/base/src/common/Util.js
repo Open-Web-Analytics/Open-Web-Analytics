@@ -30,32 +30,6 @@ class Util {
     
     }
     
-    // this uses a config global
-    static nsAll( obj ) {
-    
-        var nsObj = new Object();
-        
-        for(param in obj) {  // print out the params
-            if (obj.hasOwnProperty(param)) {
-                nsObj[OWA.config.ns+param] = obj[param];
-            }
-        }
-        
-        return nsObj;
-    }
-    
-    static getScript( file, path ) {
-    
-        jQuery.getScript(path + file);   
-    }
-    
-    static makeUrl( template, uri, params ) {
-	    
-        var url = this.sprintf(template, uri, jQuery.param(Util.nsAll(params)));
-        //alert(url);
-        return url;
-    }
-    
     static createCookie( name, value, days, domain ) {
 	    
         if (days) {

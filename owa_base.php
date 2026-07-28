@@ -30,6 +30,9 @@ require_once('owa_env.php');
  * @since        owa 1.0.0
  */
 
+// TODO: replace with explicit property declarations; kept for now because the
+// owa_base hierarchy relies on dynamic properties (deprecated in PHP 8.2).
+#[\AllowDynamicProperties]
 class owa_base {
 
     /**
@@ -136,22 +139,6 @@ class owa_base {
         foreach ($array as $n => $v) {
 
                 $this->$n = $v;
-
-            }
-
-        return;
-    }
-
-    /**
-     * Sets array attributes
-     *
-     * @param unknown_type $array
-     */
-    function _setArrayValues($array) {
-
-        foreach ($array as $n => $v) {
-
-                $this->params['$n'] = $v;
 
             }
 

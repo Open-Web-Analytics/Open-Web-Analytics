@@ -161,6 +161,23 @@
             $this->set('base', 'cache_objects', OWA_CACHE_OBJECTS);
         }
 
+        /* STATIC CONFIG ONLY */
+
+        // When true, owa_caller skips the boot-time load of user settings from
+        // the owa_configuration DB table (owa_caller.php ~97). This is the ONLY
+        // place the switch can be set early enough to matter: the check runs
+        // before caller overrides (overloadConfig) are applied, so a value
+        // passed to `new owa([...])` arrives too late. Setting it here -- from a
+        // config-file define, applied in owa_settings::__construct before the
+        // caller boots -- is what actually suppresses that DB read (and the
+        // connection handshake it triggers). A pure file-queue logging node can
+        // then accept + queue tracking events with zero DB access; everything it
+        // needs must be pinned in owa-config.php since it can no longer read
+        // persisted settings from the database.
+        if (defined('OWA_USE_STATIC_CONFIG_ONLY')) {
+            $this->set('base', 'useStaticConfigOnly', OWA_USE_STATIC_CONFIG_ONLY);
+        }
+
         /* DATABASE CONFIGURATION */
 
         // This needs to come before the fetch of user overrides from the DB
@@ -525,21 +542,34 @@
      }
      
      function setMailerDomain() {
-	     
+
+	     // Fall back to a valid domain: neither SERVER_NAME (CLI/cron have no
+	     // web server context) nor a usable PUBLIC_URL host is guaranteed, and
+	     // mailer-from below reads this unconditionally.
+	     $mailer_domain = 'localhost';
+
 	     if ( isset( $_SERVER[ 'SERVER_NAME' ] ) ) {
-		 	 
-		 	 $mailer_domain = $_SERVER['SERVER_NAME'];
-	 	 
-	 	 } else {
-		 	 
-		 	 if ( defined( 'PUBLIC_URL' ) ) {
-			 	 
-			 	 $parts = parse_url( PUBLIC_URL );
-			 	 $mailer_domain = $parts['host'];
-		 	 }
-	 	 }
-	 	 
-	 	 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
+
+			 $mailer_domain = $_SERVER['SERVER_NAME'];
+
+		 } elseif ( defined( 'PUBLIC_URL' ) ) {
+
+			 $parts = parse_url( PUBLIC_URL );
+			 $mailer_domain = $parts['host'] ?? 'localhost';
+		 }
+
+		 // A dotless domain (e.g. bare 'localhost', or an internal hostname)
+		 // yields 'owa@localhost', which PHPMailer rejects as an invalid From.
+		 // Append '.localdomain' so the default is a valid, deliverable address
+		 // out of the box rather than relying on owa_mailer to repair it at send
+		 // time. owa_mailer::repairFromAddress applies the same rule as a
+		 // backstop for any persisted override.
+		 if ( strpos( $mailer_domain, '.' ) === false ) {
+
+			 $mailer_domain .= '.localdomain';
+		 }
+
+		 $this->set( 'base', 'mailer-from', 'owa@' . $mailer_domain );
      }
 
 
@@ -616,12 +646,13 @@
                 'public_path'                        => '',
                 'geolocation_lookup'                => false,
                 'geolocation_service'                => '',
-                'report_wrapper'                    => 'wrapper_default.tpl',
+                'report_wrapper'                    => 'wrapper_default.php',
                 'announce_visitors'                    => false,
                 'public_url'                        => '',
                 'base_url'                            => '',
                 'action_url'                        => '',
                 'images_url'                        => '',
+                'assets_url'                        => '',
                 'reporting_url'                        => '',
                 'p3p_policy'                        => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
                 'graph_link_template'                => '%s?owa_action=graph&name=%s&%s', //action_url?...
@@ -647,6 +678,14 @@
                 'mailer-username'                    => '',
                 'mailer-password'                    => '',
                 'queue_events'                        => false,
+                // Retry-exhaustion caps for the processing queue. A queued event
+                // that keeps failing (e.g. a session_update whose session never
+                // persists, or an event for an unregistered site) is retried on
+                // each processEventQueue run until it exceeds EITHER of these,
+                // then marked 'broken' and retained for inspection rather than
+                // retried forever. Set either to 0 to disable that check.
+                'queue_max_retry_count'                => 25,          // attempts before giving up
+                'queue_max_retry_age'                => 86400,       // seconds (24h) since first queued
                 'event_queue_type'                    => 'file',
                 'event_secondary_queue_type'        => '',
                 'use_remote_event_queue'            => true,
@@ -790,8 +829,21 @@
         $modules_url = $public_url.'modules/';
         $this->set('base','modules_url', $modules_url);
         //$this->set('base','action_url',$public_url.'action.php');
-        $this->set('base','images_url', $modules_url);
-        $this->set('base','images_absolute_url',$modules_url);
+        // Built, web-facing static assets (the webpack products AND every server-side
+        // image emitted via makeImageLink) live in a dedicated public/ tree, physically
+        // separated from the source they are built from so the deny-all .htaccess can
+        // allow public/** wholesale without exposing PHP source, templates, or config.
+        // setJs()/setCss() (assets_url) and makeImageLink() (images_url) all resolve
+        // here, NOT modules_url -- which no longer serves anything to the browser. The
+        // tracker family (owa.tracker/vendors/heatmap/player) now lives here too, under
+        // public/base/dist/; old embeds hardcoding modules/base/dist/owa.tracker.js are
+        // 301'd here, and the tracker pins its own chunk publicPath to owa_baseUrl +
+        // 'public/base/dist/' so the async chunks resolve correctly through the redirect
+        // (see .htaccess and src/tracker/tracker-dom.js).
+        $assets_url = $public_url.'public/';
+        $this->set('base','assets_url', $assets_url);
+        $this->set('base','images_url', $assets_url);
+        $this->set('base','images_absolute_url', $assets_url);
         $this->set('base','log_url',$public_url.'log.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 

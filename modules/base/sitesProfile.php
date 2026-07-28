@@ -111,7 +111,7 @@ class owa_sitesProfileView extends owa_view {
         $this->body->set( 'site_id', $this->get('siteId') );
         $this->body->set( 'config', $this->get('config') );
         //print_r($this->get('config'));
-        $this->body->set_template( 'sites_addoredit.tpl' );
+        $this->body->set_template( 'sites_addoredit.php' );
     }
 
     /**

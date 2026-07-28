@@ -128,7 +128,7 @@ class owa_optionsModulesView extends owa_view {
         //$this->c->get('base', 'modules'));
 
         // load template
-        $this->body->set_template('options_modules.tpl');
+        $this->body->set_template('options_modules.php');
 
         // fetch admin links from all modules
         $this->body->set('headline', 'Modules Administration');

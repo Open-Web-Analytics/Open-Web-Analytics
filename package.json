@@ -4,10 +4,16 @@
   "description": "Open Web Analytics is an open source alternative to commercial web analytics tools such as Google Analytics. This software allows you to stay in control of the data you collect about the user of your websites or applications.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack-cli --mode production && npm run copyTracker",
-    "start": "webpack-cli --mode development --watch",
-    "copyTracker": "shx cp modules/base/dist/owa.tracker.js modules/base/js/owa.tracker-combined-min.js"
+    "test": "jest",
+    "test:e2e": "playwright test --config=playwright.config.js",
+    "test:e2e:install": "playwright test --config=playwright.install.config.js",
+    "test:e2e:selfhost": "playwright test --config=playwright.selfhost.config.js",
+    "test:e2e:seed": "php tests/e2e/seed_reporting_fixtures.php seed",
+    "test:e2e:teardown": "php tests/e2e/seed_reporting_fixtures.php teardown",
+    "test:e2e:install:doctor": "php tests/e2e/install_harness.php doctor",
+    "test:e2e:selfhost:doctor": "php tests/e2e/selfhost_harness.php doctor",
+    "build": "webpack-cli --mode production",
+    "start": "webpack-cli --mode development --watch"
   },
   "repository": {
     "type": "git",
@@ -21,13 +27,28 @@
   },
   "homepage": "https://github.com/Open-Web-Analytics/Open-Web-Analytics#readme",
   "dependencies": {
+    "chosen-js": "^1.8.7",
+    "free-jqgrid": "^4.15.5",
     "jgrowl": "^1.4.8",
     "jquery": "^3.6.0",
+    "jquery-migrate": "^3.4.1",
+    "jquery-sparkline": "^2.4.0",
+    "jquery-ui-dist": "^1.13.3",
+    "jquery.flot": "^0.8.3",
     "webpack": "^5.66.0",
-    "webpack-cli": "^4.9.1",
-    "webpack-concat-files-plugin": "^0.5.2"
+    "webpack-cli": "^4.9.1"
   },
   "devDependencies": {
-    "shx": "^0.3.4"
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@playwright/test": "^1.61.1",
+    "babel-jest": "^30.4.1",
+    "copy-webpack-plugin": "^13.0.1",
+    "css-loader": "^7.1.4",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "mini-css-extract-plugin": "^2.10.2",
+    "terser-webpack-plugin": "^5.6.1",
+    "webpack-remove-empty-scripts": "^1.1.1"
   }
 }

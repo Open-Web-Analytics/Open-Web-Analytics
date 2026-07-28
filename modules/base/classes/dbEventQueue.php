@@ -90,13 +90,14 @@ class owa_dbEventQueue extends owa_eventQueue {
         
         if ( $msg ) {
             $event = $this->decodeMessage( $msg->get('event') );
-            $event->wasReceived();
             // backwards compat. remove soon.
             $event->setOldQueueId( $msg->get('id') );
-            // incrment the count of times the event has been receieved from the queue.
-            // increment timesstamps of when last receieved
+            // increment the count of times the event has been received from the
+            // queue, and the timestamps of when it was last received. Called
+            // once per receive -- a duplicate call here previously double-counted
+            // every attempt, throwing off retry accounting.
             $event->wasReceived();
-            
+
             return $event;
         }
     }
@@ -107,10 +108,10 @@ class owa_dbEventQueue extends owa_eventQueue {
     }
         
     function markAsHandled( $item_id ) {
-        
+
         $qi = owa_coreAPI::entityFactory('base.queue_item');
         $qi->load( $item_id );
-            
+
         if ( $qi->wasPersisted() ) {
             $qi->set( 'status', 'handled' );
             $qi->set( 'handled_timestamp', $this->makeTimestamp() );
@@ -118,6 +119,79 @@ class owa_dbEventQueue extends owa_eventQueue {
         } else {
             owa_coreAPI::notice("Could not find/delete queue item id: $item_id");
         }
+    }
+
+    /**
+     * Mark a queued item as permanently broken.
+     *
+     * Used when an event has exhausted its retry budget (see
+     * hasExhaustedRetries). The row leaves the 'unhandled' working set so
+     * getNextItems() stops returning it, but is retained (not deleted) so the
+     * failure can be inspected. flushHandledEvents() only removes 'handled'
+     * rows, so a separate prune can clear broken rows later.
+     */
+    function markAsBroken( $item_id, $error_msg = '' ) {
+
+        $qi = owa_coreAPI::entityFactory('base.queue_item');
+        $qi->load( $item_id );
+
+        if ( $qi->wasPersisted() ) {
+            $qi->set( 'status', 'broken' );
+            $qi->set( 'handled_timestamp', $this->makeTimestamp() );
+            if ( $error_msg ) {
+                $qi->set( 'last_error_msg', $error_msg );
+            }
+            $qi->save();
+            owa_coreAPI::notice("Marked queue item $item_id as broken after exhausting retries.");
+        } else {
+            owa_coreAPI::notice("Could not find/mark-broken queue item id: $item_id");
+        }
+    }
+
+    /**
+     * Whether a received event has exhausted its retry budget and should be
+     * given up on (marked broken) rather than retried again.
+     *
+     * A permanently-failing event (e.g. a session_update whose session never
+     * persists, or an event for an unregistered site) would otherwise be
+     * re-queued on every run forever, accumulating in owa_queue_item. It is
+     * exhausted when it exceeds EITHER cap:
+     *   - queue_max_retry_count: number of failed receive attempts
+     *   - queue_max_retry_age:   seconds since the item was first queued
+     * Either cap set to 0 disables that check. This is checked BEFORE the
+     * current attempt is counted, so an event genuinely gets max_retry_count
+     * attempts before being marked broken.
+     */
+    function hasExhaustedRetries( $event ) {
+
+        $max_count = (int) owa_coreAPI::getSetting( 'base', 'queue_max_retry_count' );
+        $max_age   = (int) owa_coreAPI::getSetting( 'base', 'queue_max_retry_age' );
+
+        // getReceiveCount() reflects prior attempts: receiveMessage() calls
+        // wasReceived() before the event is handed to the processor, so on the
+        // Nth drain the count is N. Give up once prior attempts meet the cap.
+        if ( $max_count > 0 && $event->getReceiveCount() > $max_count ) {
+            return true;
+        }
+
+        if ( $max_age > 0 ) {
+
+            // The queued row's id is the event's queue guid; read its
+            // insertion_timestamp to measure elapsed time in the queue.
+            $qi = owa_coreAPI::entityFactory('base.queue_item');
+            $qi->load( $event->getQueueGuid() );
+
+            if ( $qi->wasPersisted() ) {
+
+                $inserted = (int) $qi->get( 'insertion_timestamp' );
+
+                if ( $inserted > 0 && ( $this->makeTimestamp() - $inserted ) > $max_age ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
     
     function getNextItems($limit = '') {

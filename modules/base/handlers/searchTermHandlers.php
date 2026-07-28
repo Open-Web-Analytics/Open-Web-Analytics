@@ -43,7 +43,7 @@ class owa_searchTermHandlers extends owa_observer {
      */
     function notify($event) {
 
-        $terms = trim(strtolower($event->get('search_terms')));
+        $terms = trim(strtolower((string) $event->get('search_terms')));
 
         if ($terms) {
 

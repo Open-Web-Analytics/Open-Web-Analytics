@@ -78,7 +78,7 @@ class owa_usersView extends owa_view {
         
         //page title
         $this->t->set('page_title', 'User Roster');
-        $this->body->set_template('users.tpl');
+        $this->body->set_template('users.php');
         $this->body->set('headline', 'User Roster');
         $this->body->set('users', $this->get('users'));
     }

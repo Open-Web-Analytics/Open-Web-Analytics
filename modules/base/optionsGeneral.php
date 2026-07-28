@@ -73,7 +73,7 @@ class owa_optionsGeneralView extends owa_adminPageView {
     function render($data) {
 
         // load template
-        $this->body->set_template('options_general.tpl');
+        $this->body->set_template('options_general.php');
         // fetch admin links from all modules
         $this->body->set('headline', 'General Configuration Options');
 

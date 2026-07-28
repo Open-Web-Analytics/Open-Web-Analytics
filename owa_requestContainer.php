@@ -28,6 +28,8 @@
  * @since        owa 1.0.0
  */
 
+// TODO: replace with explicit property declarations (deprecated in PHP 8.2).
+#[\AllowDynamicProperties]
 class owa_requestContainer {
 
     var $cli_args;

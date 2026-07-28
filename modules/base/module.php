@@ -537,7 +537,6 @@ class owa_baseModule extends owa_module {
     function registerCliCommands() {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
-        $this->registerCliCommand('build', 'base.build');
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
@@ -2203,49 +2202,13 @@ class owa_baseModule extends owa_module {
 
     }
 
-    /**
-     * Registers Package Files To be Built
-     *
+    /*
+     * The combined reporting stylesheet is now produced by webpack
+     * (reportingCssConfig in webpack.config.js), emitting the same file to the
+     * same directory. The PHP-CLI build package that used to concatenate the six
+     * source CSS files here has been retired along with the whole build-package
+     * machinery (the base.build CLI command + owa_buildController).
      */
-    function registerBuildPackages() {
-
-        $package = array(
-            'name'            => 'owa.reporting-css',
-            'output_dir'    => OWA_MODULES_DIR.'base/css/',
-            'type'            => 'css',
-            'files'            => array(
-                    'jqueryui'         => array(
-                                            'path'     => OWA_MODULES_DIR.'base/css/jquery-ui.css'
-                                        ),
-                    'selectmenu'        => array(
-                                            'path'    =>    OWA_MODULES_DIR.'base/css/jquery.ui.selectmenu.css'
-                                        ),
-                    'jqgrid'            => array(
-                                            'path'    =>    OWA_MODULES_DIR.'base/css/ui.jqgrid.css'
-                                        ),
-                    'chosen'     => array(
-                                            'path'    => OWA_MODULES_DIR.'base/css/chosen.css'
-                                        ),
-/*
-                    'font-awesome'     => array(
-                                            'path'    => OWA_MODULES_DIR.'base/css/fa-all.min.css'
-                                        ),
-*/
-
-                    'owa.css'     => array(
-                                            'path'    => OWA_MODULES_DIR.'base/css/owa.css'
-                                        ),
-                    'owa.admin.css'     => array(
-                                            'path'    => OWA_MODULES_DIR.'base/css/owa.admin.css'
-                                        ),
-                    'owa.report.css'     => array(
-                                            'path'    => OWA_MODULES_DIR.'base/css/owa.report.css'
-                                        )
-            )
-        );
-
-        $this->registerBuildPackage( $package );
-    }
 
     /**
      * Registers Event Handlers with queue queue

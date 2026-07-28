@@ -56,7 +56,7 @@ class owa_processEventQueueController extends owa_cliController {
 
         if ( $queues ) {
             // parse command line
-            $queues = explode( ',', $this->getParam( 'queues' ) );
+            $queues = explode( ',', (string) $this->getParam( 'queues' ) );
 
         } else {
 
@@ -84,28 +84,57 @@ class owa_processEventQueueController extends owa_cliController {
                         owa_coreAPI::debug( 'Event returned: '.print_r( $event, true ) );
 
                         if ( $event ) {
-							
-							owa_coreAPI::debug('received event from queue');
-								
+
+                            owa_coreAPI::debug('received event from queue');
+
+                            // Give up on an event that has exhausted its retry
+                            // budget (see dbEventQueue::hasExhaustedRetries): mark
+                            // it broken -- retained for inspection but out of the
+                            // unhandled working set -- rather than dispatching it.
+                            // Dispatching a still-failing event would re-queue it
+                            // (owa_eventDispatch::notify re-queues on failure) and
+                            // it would retry forever, accumulating in the queue.
+                            if ( $q->hasExhaustedRetries( $event ) ) {
+
+                                owa_coreAPI::notice( 'Giving up on queue item '.$event->getQueueGuid().': retries exhausted.' );
+                                $q->markAsBroken( $event->getQueueGuid(), 'Retries exhausted.' );
+                                continue;
+                            }
+
                             // process event if needed
                             // lookup which event processor to use to process this event type
                             $processor_action = owa_coreAPI::getEventProcessor( $event->getEventType() );
 
                             if ( $processor_action ) {
-								owa_coreAPI::debug("event directly handled");
-                                // processor handles it's own event dispatching, so just return
-                                $ret = owa_coreAPI::handleRequest( [ 'event' => $event ], $processor_action );
+
+                                owa_coreAPI::debug("event directly handled");
+                                // A processor runs the full request pipeline for the
+                                // event (persistence + its own internal dispatch, which
+                                // re-queues any handler failure as a fresh queue item)
+                                // and returns controller data, not an event-handling
+                                // status code. Reaching here without an exception means
+                                // the event was consumed, so remove it from the queue.
+                                owa_coreAPI::handleRequest( [ 'event' => $event ], $processor_action );
+                                $q->deleteMessage( $event->getQueueGuid() );
 
                             } else {
 
-                                // dispatch event
+                                // dispatch event to its registered handlers.
+                                // notify() re-queues the event (as unhandled, with an
+                                // incremented attempt count and a back-off) when any
+                                // handler fails, so only remove it from the queue when
+                                // it was actually handled -- otherwise the retry is
+                                // cancelled. NOTE: the guard here was historically
+                                // `if ( $ret = OWA_EHS_EVENT_HANDLED )` -- an
+                                // assignment, not a comparison, so it was always true
+                                // and every failed event was deleted after a single
+                                // attempt, defeating the retry/back-off machinery.
                                 $ret = $d->notify( $event );
-                            }
 
-                            if ( $ret  = OWA_EHS_EVENT_HANDLED ) {
-                                // delete event from queue
-                                // second param is for backwards compat. remove soon
-                                $q->deleteMessage( $event->getQueueGuid() );
+                                if ( $ret !== OWA_EHS_EVENT_FAILED ) {
+                                    // second param is for backwards compat. remove soon
+                                    $q->deleteMessage( $event->getQueueGuid() );
+                                }
                             }
 
                         } else {

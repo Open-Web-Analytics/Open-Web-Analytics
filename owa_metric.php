@@ -180,12 +180,7 @@ class owa_metric extends owa_base {
     */
     function zeroFill(&$array) {
     
-        // PHP 5 only function used here
-        if (function_exists("array_walk_recursive")) {
-            array_walk_recursive($array, array($this, 'addzero'));
-        } else {
-            owa_lib::array_walk_recursive($array, array(get_class($this).'Metric', 'addzero'));
-        }
+        array_walk_recursive($array, array($this, 'addzero'));
         
         return $array;
         

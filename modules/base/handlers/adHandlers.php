@@ -45,15 +45,15 @@ class owa_adHandlers extends owa_observer {
         if ($event->get('ad')) {
             $d = owa_coreAPI::entityFactory('base.ad_dim');
 
-            $new_id = $d->generateId( trim( strtolower( $event->get( 'ad' ) ) ) );
+            $new_id = $d->generateId( trim( strtolower( (string) $event->get( 'ad' ) ) ) );
             $d->getByPk('id', $new_id);
             $id = $d->get('id');
 
             if (!$id) {
 
                 $d->set('id', $new_id);
-                $d->set('name', trim( strtolower( $event->get('ad') ) ) );
-                $d->set('type', trim( strtolower( $event->get('ad_type') ) ) );
+                $d->set('name', trim( strtolower( (string) $event->get('ad') ) ) );
+                $d->set('type', trim( strtolower( (string) $event->get('ad_type') ) ) );
                 $ret = $d->create();
 
                 if ( $ret ) {

@@ -45,7 +45,7 @@ class owa_optionsView extends owa_view {
         $this->t->set('page_title', 'OWA Options');
 
         // load body template
-        $this->body->set_template('options.tpl');
+        $this->body->set_template('options.php');
 
         // fetch admin links from all modules
         // need api call here.

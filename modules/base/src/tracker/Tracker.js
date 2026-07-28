@@ -200,13 +200,22 @@ class OWATracker  {
                         var value = Util.urldecode(pair[1]);
                         OWA.debug('pair: %s', value);
                         //OWA.debug('about to decode shared link state value: %s', value);
-                        decodedvalue = Util.decodeCookieValue(value);
+                        var decodedvalue = Util.decodeCookieValue(value);
                         //OWA.debug('decoded shared link state value: %s', JSON.stringify(decodedvalue));
                         var format = Util.getCookieValueFormat(value);
                         //OWA.debug('format of decoded shared state value: %s', format);
-                        decodedvalue.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
 
-                        OWA.replaceState( pair[0], decodedvalue, true, format );
+                        // Only restore stores that decoded to a populated object.
+                        // An empty sharable store (e.g. a visitor with no campaign
+                        // state) serializes to "" and decodes to a string/empty
+                        // value here; stamping .cdh onto that would throw in strict
+                        // mode and there is nothing worth carrying across anyway.
+                        if ( decodedvalue && typeof decodedvalue === 'object' ) {
+
+                            decodedvalue.cdh = Util.getCookieDomainHash( this.getCookieDomain() );
+
+                            OWA.replaceState( pair[0], decodedvalue, true, format );
+                        }
                     }
                 }
             }
@@ -396,7 +405,14 @@ class OWATracker  {
 
     getUrlParam(name) {
 
-        this.urlParams = this.urlParams || Util.parseUrlParams();
+        // The constructor seeds this.urlParams to {} -- a truthy value -- so the
+        // old `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to
+        // the empty object and never parsed the URL, making getUrlParam return
+        // false for every query param (e.g. the ?owa_state= cross-domain linking
+        // token in checkForLinkedState). Parse when the cache is still empty.
+        if ( Util.is_object( this.urlParams ) && Object.keys( this.urlParams ).length === 0 ) {
+            this.urlParams = Util.parseUrlParams();
+        }
 
         if ( this.urlParams.hasOwnProperty( name ) ) {
             return this.urlParams[name];
@@ -647,7 +663,18 @@ class OWATracker  {
             if ( properties.hasOwnProperty( param ) ) {
 
                 var kvp = '';
-                kvp = Util.sprintf('%s=%s&', param, properties[ param ] );
+                // URL-encode the VALUE only. Without this, any value containing a
+                // query-structural character truncates or corrupts the beacon: '#'
+                // starts a fragment (everything after it never leaves the browser),
+                // '&' begins a bogus new param, '=' splits the pair. A clicked link
+                // whose href held a '#' or '&' therefore lost click_x / site_id /
+                // session_id off the wire. The server expects encoded values -- it
+                // reads $_GET (PHP url-decodes) and decodeRequestParams() decodes
+                // again -- so encodeURIComponent here is the symmetric half of that
+                // contract. The KEY stays raw on purpose: the owa_* names are a fixed
+                // vocabulary and the flattened array keys (owa_foo[0][bar]) rely on
+                // PHP's $_GET bracket parsing, which encoded brackets would defeat.
+                kvp = Util.sprintf('%s=%s&', param, encodeURIComponent( properties[ param ] ) );
                 get += kvp;
             }
         }
@@ -944,8 +971,9 @@ class OWATracker  {
     getDomElementProperties(targ) {
 
         var properties = new Object();
-        // Set properties of the owa_click object.
-        properties.dom_element_tag = targ.tagName;
+        // Set properties of the owa_click object. Lower-case the tag so dom_element_tag
+        // is stored consistently regardless of how the browser reports tagName.
+        properties.dom_element_tag = Util.strtolower(targ.tagName);
 
         if (targ.tagName == "A") {
 
@@ -1019,7 +1047,8 @@ class OWATracker  {
         }
         click.set("dom_element_class", dom_class);
 
-        click.set("dom_element_tag", Util.strtolower(targ.tagName));
+        // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
+        // whose merge() would overwrite anything set here -- so no duplicate set.
         click.set("page_url", window.location.href);
         // view port dimensions - needed for calculating relative position
         var viewport = this.getViewportDimensions();
@@ -1166,7 +1195,7 @@ class OWATracker  {
         event.set("dom_element_name", targ.name);
         event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
-        event.set("dom_element_tag", targ.tagName);
+        event.set("dom_element_tag", Util.strtolower(targ.tagName));
         //console.log("Keypress: %s %d", key_value, key_code);
         this.addToEventQueue(event);
 

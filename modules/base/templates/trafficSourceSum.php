@@ -43,7 +43,7 @@
     <?php if ( $row['medium'] === 'referral' ):?>
     <div style="line-height:120%; width:inherit; padding-left:20px; padding-top:15px;">
         <span class="inline_h4">
-            <a href="<?php $this->out( $row['referer_url'] );?>">
+            <a href="<?php $this->safeHref( $row['referer_url'] );?>">
                 <?php if (!empty($row['referer_page_title'])):?><?php $this->out( $this->truncate($row['referer_page_title'], 80, '…') );?></span></a><BR><span class="externalUrl"><?php $this->out( $this->truncate($row['referer_url'], 80, '…') );?><?php else:?><?php $this->out( $this->truncate($row['referer_url'], 80, '…') );?><?php endif;?>
             </a>
         </span>

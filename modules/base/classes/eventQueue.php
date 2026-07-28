@@ -73,10 +73,26 @@ class owa_eventQueue  {
     }
     
     function deleteMessage( $id ) {
-        
+
         return true;
     }
-    
+
+    // Mark a queued item as permanently broken (retries exhausted). No-op for
+    // queue types that do not persist per-item retry state (e.g. the file
+    // queue, which drains whole files and hands failures to the db queue).
+    function markAsBroken( $id, $error_msg = '' ) {
+
+        return false;
+    }
+
+    // Whether the given event has exhausted its retry budget and should stop
+    // being retried. Base implementation never exhausts; the db queue overrides
+    // this with the count/age caps from settings.
+    function hasExhaustedRetries( $event ) {
+
+        return false;
+    }
+
     function prepareMessage( $msg ) {
         
         return serialize( $msg );

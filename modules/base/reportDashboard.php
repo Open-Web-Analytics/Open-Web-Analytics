@@ -84,7 +84,7 @@ class owa_reportDashboardView extends owa_view {
 
     function render() {
 
-        $this->body->set_template('report_dashboard.tpl');
+        $this->body->set_template('report_dashboard.php');
         $this->body->set('summary', $this->get('summary'));
         $this->body->set('site_trend', $this->get('site_trend'));
         $this->body->set('visits', $this->get('latest_visits'));

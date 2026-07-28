@@ -132,7 +132,7 @@ class owa_apiErrorView extends owa_view {
 
     function render() {
 
-        $this->t->set_template('wrapper_blank.tpl');
+        $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('apiError.php');
         $this->body->set( 'error_msg', $this->get( 'error_msg' ) );
     }

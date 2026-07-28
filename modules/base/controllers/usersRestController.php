@@ -44,7 +44,7 @@ class owa_usersRestView extends owa_restApiView {
 	        
 	        foreach ( $users as $k => $user ) {
 		        
-		        $users_sanitized[ $k ] = $user->getProperties( ['temp_passkey', 'password'] );
+		        $users_sanitized[ $k ] = $user->getProperties( ['temp_passkey', 'password', 'api_key'] );
 	        }
         }
         

@@ -74,7 +74,7 @@ class owa_reportVisitorsView extends owa_view {
             
     function render($data) {
             
-        $this->body->set_template('report_visitors.tpl');
+        $this->body->set_template('report_visitors.php');
         $this->body->set('visits', $this->get('latest_visits'));
     }
 }

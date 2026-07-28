@@ -93,7 +93,7 @@ class owa_reportDocumentView extends owa_view {
         $this->body->set('document', $this->get('document'));
         $this->body->set('dimension_properties', $this->get('document'));
         $this->body->set('dimension_template', 'item_document.php');
-        $this->body->set_template('report_document.tpl');
+        $this->body->set_template('report_document.php');
     }
 }
 

@@ -60,7 +60,7 @@ class owa_reportContentView extends owa_view {
         // Assign Data to templates
 
         $this->body->set('headline', 'Content');
-        $this->body->set_template('report_content.tpl');
+        $this->body->set_template('report_content.php');
     }
 
 }

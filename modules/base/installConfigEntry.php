@@ -36,8 +36,12 @@ class owa_installConfigEntryView extends owa_view {
 
         //page title
         $this->t->set('page_title', 'Configuration File Generator');
-        // load body template
-        $this->body->set('config', $this->get('config'));
+        // load body template. On the first render there is no submitted config
+        // yet ($this->get('config') is false); default to an empty array so the
+        // template's $config['db_host'] etc. don't warn on a bool offset. When a
+        // failed installConfig re-renders this view, it sets config to $params.
+        $config = $this->get('config');
+        $this->body->set('config', is_array($config) ? $config : []);
         $this->body->set_template('install_config_entry.php');
         // prepopulate the public url based on the current url.
         $public_url = owa_lib::get_current_url();

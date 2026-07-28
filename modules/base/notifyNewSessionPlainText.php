@@ -40,8 +40,8 @@ class owa_notifyNewSessionPlainTextView extends owa_view {
 
     function render($data) {
 
-        $this->t->set_template('wrapper_blank.tpl');
-        $this->body->set_template('new_session_email_plain_text.tpl');
+        $this->t->set_template('wrapper_blank.php');
+        $this->body->set_template('new_session_email_plain_text.php');
         $this->body->set('site', $data['site']);
         $this->body->set('session', $data['session']);
     }

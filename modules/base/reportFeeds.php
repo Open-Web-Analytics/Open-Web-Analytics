@@ -75,7 +75,7 @@ class owa_reportFeedsView extends owa_view {
         $this->body->set('trendTitle', $this->get('trendTitle'));
         $this->body->set('constraints', $this->get('constraints'));
         $this->body->set('gridTitle', $this->get('gridTitle'));
-        $this->body->set_template('report_feeds.tpl');
+        $this->body->set_template('report_feeds.php');
     }
 }
 

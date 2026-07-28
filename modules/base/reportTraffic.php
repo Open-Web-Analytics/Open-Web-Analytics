@@ -60,7 +60,7 @@ class owa_reportTrafficView extends owa_view {
         
         // Assign Data to templates
         
-        $this->body->set_template('report_traffic.tpl');
+        $this->body->set_template('report_traffic.php');
     }
 }
 

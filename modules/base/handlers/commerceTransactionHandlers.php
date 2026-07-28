@@ -97,9 +97,9 @@ class owa_commerceTransactionHandlers extends owa_observer {
                 $ct->set( 'location_id', $location_id );
             }
             // set entity properties
-            $ct->set( 'order_id', trim( $event->get( 'ct_order_id' ) ) );
-            $ct->set( 'order_source', trim( strtolower( $event->get( 'ct_order_source' ) ) ) );
-            $ct->set( 'gateway', trim( strtolower( $event->get( 'ct_gateway' ) ) ) );
+            $ct->set( 'order_id', trim( (string) $event->get( 'ct_order_id' ) ) );
+            $ct->set( 'order_source', trim( strtolower( (string) $event->get( 'ct_order_source' ) ) ) );
+            $ct->set( 'gateway', trim( strtolower( (string) $event->get( 'ct_gateway' ) ) ) );
             $ct->set( 'total_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_total' ), 2 ) ) );
             $ct->set( 'tax_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_tax' ), 2 ) ) );
             $ct->set( 'shipping_revenue', owa_lib::prepareCurrencyValue( round( $event->get( 'ct_shipping' ), 2 ) ) );

@@ -40,7 +40,7 @@ class owa_sitesAddView extends owa_view {
         $this->t->set('page_title', 'Add Web Site');
         $this->body->set('headline', 'Add Web Site Profile');
         // load body template
-        $this->body->set_template('sites_addoredit.tpl');
+        $this->body->set_template('sites_addoredit.php');
 
         $this->body->set('action', 'base.sitesAdd');
 

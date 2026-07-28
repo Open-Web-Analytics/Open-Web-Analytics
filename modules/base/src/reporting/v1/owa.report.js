@@ -1,3 +1,67 @@
+// OWA is defined by owa.js; this module augments it (OWA.report = ...). jQuery was
+// supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
+import * as jQuery from 'jquery';
+import { OWA } from './owa.js';
+
+// The report period-picker's jqote2 markup. This was formerly fetched over HTTP from
+// modules/base/templates/filter_period.php -- a file that contained NO PHP, just this
+// pure client-side template, given a .php extension by convention. Inlining it here
+// drops the per-report round-trip AND removes modules_url's last runtime code-fetch
+// (it is now image-only), so the web-access allowlist needs no templates/ exception.
+const FILTER_PERIOD_TMPL =
+`<div class="timePeriodControlContainer">
+
+    <table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0">
+        <TR>
+            <TD class="owa_reportPeriodLabelText">
+
+                <span>
+                    <*=this.datelabel *>
+                </span>
+            </TD>
+
+            <TD class="owa_reportRevealControl"></TD>
+        </TR>
+    </table>
+
+    <table id="owa_reportPeriodFiltersContainer" style="display:none;" cellpadding="0" cellspacing="0">
+        <TR>
+            <TH colspan="3">
+                Enter a Date Range:
+            </TH>
+        </TR>
+        <TR>
+            <TD class="picker" valign="top">
+                <div>Start: <input type="text" id="owa_report-datepicker-start-display" size="10"></div>
+                <div id="owa_report-datepicker-start"></div>
+            <TD class="picker" valign="top">
+                <div>End: <input type="text" id="owa_report-datepicker-end-display"  size="10"></div>
+                <div id="owa_report-datepicker-end"></div>
+            </TD>
+            <TD>
+
+            </TD>
+
+            <TD valign="top">
+                Predefined Periods:<BR>
+
+                <SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
+                    <OPTION>Select...</OPTION>
+                    <* for (period in this.periods) { *>
+                    <OPTION VALUE="<*= period *>" <* if ( period === this.selectedPeriod ) { *>selected<* } *> >
+                        <*= this.periods[period] *>
+                    </OPTION>
+                    <* } *>
+                </SELECT>
+                <P><INPUT class="submit-button" type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Range"></P>
+            </TD>
+        </TR>
+        <TR>
+            <TD colspan="3"></TD>
+        </TR>
+    </table>
+</div>`;
+
 OWA.report = function(dom_id, options) {
     
     this.options = {
@@ -46,7 +110,7 @@ OWA.report.prototype = {
         
         if (options.hasOwnProperty('label')) {
             
-            label= options.label;
+            var label= options.label;
         } else {
             selector = 'Live View: ';        
         }
@@ -63,7 +127,21 @@ OWA.report.prototype = {
         c.push('</div>');
         
         jQuery( selector ).append( c.join(' ') );
-        jQuery( selector + ' > .autoRefreshControl > .buttons').buttonset();
+        // jQuery-UI 1.12 deprecated buttonset() in favor of controlgroup().
+        // controlgroup auto-enhances the child radio inputs via checkboxradio
+        // (its default `items`), so the On/Off radios become .ui-checkboxradio
+        // .ui-button labels inside a .ui-controlgroup container.
+        //
+        // BUT jQuery-UI 1.13's checkboxradio defaults to `icon:true`, which
+        // prepends a blank radio-dot span (.ui-checkboxradio-icon) to each label
+        // -- so the "Live View" toggle rendered as On/Off buttons WITH radio dots
+        // instead of the clean two-segment switch 1.8.12's buttonset() produced.
+        // Pre-enhance the radios with icon:false FIRST; controlgroup() then adopts
+        // the already-enhanced checkboxradios (it won't re-init them) and the dots
+        // are gone. Order matters: checkboxradio before controlgroup.
+        jQuery( selector + ' > .autoRefreshControl > .buttons > input[type=radio]')
+            .checkboxradio({ icon: false });
+        jQuery( selector + ' > .autoRefreshControl > .buttons').controlgroup();
         
         var that = this;
         
@@ -112,7 +190,7 @@ OWA.report.prototype = {
         
         if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
             
-            for ( name in this.resultSetExplorers )    {
+            for ( var name in this.resultSetExplorers )    {
                 
                 if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
                     
@@ -135,7 +213,7 @@ OWA.report.prototype = {
         
         if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
             
-            for ( name in this.resultSetExplorers )    {
+            for ( var name in this.resultSetExplorers )    {
                 
                 if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
                     
@@ -176,7 +254,7 @@ OWA.report.prototype = {
         options = options || {};
         
         // override default options
-        for ( option in options ) {
+        for ( var option in options ) {
             
             if ( options.hasOwnProperty( option ) ) {
                 
@@ -304,7 +382,7 @@ OWA.report.prototype = {
         var that = this;
         
         jQuery("#report-tabs").prepend('<ul class="report-tabs-nav-list"></ul>');
-        for (tab in this.tabs) {
+        for (var tab in this.tabs) {
     
             if ( this.tabs.hasOwnProperty(tab) ) {    
                 jQuery("#report-tabs > .report-tabs-nav-list").append(OWA.util.sprintf( '<li><a href="#%s">%s</a></li>', tab, that.tabs[tab].label ) );
@@ -313,27 +391,47 @@ OWA.report.prototype = {
         }
         
         jQuery("#report-tabs").tabs({
-            show: function(event, ui) {
-                OWA.debug('tab selected is: %s', ui.panel.id);
-                that.tabs[ui.panel.id].load();
-                
-                // stop auto refresh of last selected tab
-                if ( that.activeTab && that.getOption('autoRefreshResultSets') ) {
-                    that.tabs[ that.activeTab ].stopAutoRefresh();
-                }
-                                
-                that.activeTab = ui.panel.id;
-                
-                // start auto refresh of  selected tab
-                if ( that.activeTab && that.getOption('autoRefreshResultSets') ) {
-                    that.tabs[ that.activeTab ].startAutoRefresh();
-                }
-
+            // jQuery-UI 1.9+ renamed the `show` option to the `activate` event.
+            // The ui payload also changed: the newly-shown panel is ui.newPanel
+            // (a jQuery object), not ui.panel. selectTab() below reads the id off
+            // whatever panel it is handed.
+            activate: function(event, ui) {
+                that.selectTab( ui.newPanel.attr('id') );
             }
         });
 
+        // 1.8's `show` fired for the initially-selected tab AT CREATION; the 1.9+
+        // `activate` event does NOT fire on init. Load the active tab explicitly so
+        // its grid still builds on first render. tabs("option","active") is the
+        // active index; map it back to the panel id.
+        var activeIdx = jQuery("#report-tabs").tabs("option", "active");
+        var activePanelId = jQuery("#report-tabs > div").eq(activeIdx).attr('id');
+        if ( activePanelId ) {
+            this.selectTab( activePanelId );
+        }
+
     },
-    
+
+    // Load a tab by its panel id and swap auto-refresh from the previously active
+    // tab to this one. Shared by createTabs' initial load and its activate handler.
+    selectTab : function( panelId ) {
+
+        OWA.debug('tab selected is: %s', panelId);
+        this.tabs[ panelId ].load();
+
+        // stop auto refresh of last selected tab
+        if ( this.activeTab && this.getOption('autoRefreshResultSets') ) {
+            this.tabs[ this.activeTab ].stopAutoRefresh();
+        }
+
+        this.activeTab = panelId;
+
+        // start auto refresh of selected tab
+        if ( this.activeTab && this.getOption('autoRefreshResultSets') ) {
+            this.tabs[ this.activeTab ].startAutoRefresh();
+        }
+    },
+
     getSiteId : function() {
         
         return this.getProperty('siteId');
@@ -388,7 +486,7 @@ OWA.report.tab = function(dom_id) {
     this.isLoaded = false;
     this.load = function() {
         if ( ! this.isLoaded ) {
-            for (rse in this.resultSetExplorers) {
+            for (var rse in this.resultSetExplorers) {
                 
                 if (this.resultSetExplorers.hasOwnProperty(rse)) {
             
@@ -406,7 +504,7 @@ OWA.report.tab.prototype = {
 
     startAutoRefresh : function() {
         
-        for (rse in this.resultSetExplorers) {
+        for (var rse in this.resultSetExplorers) {
                 
             if (this.resultSetExplorers.hasOwnProperty(rse)) {
         
@@ -417,7 +515,7 @@ OWA.report.tab.prototype = {
     
     stopAutoRefresh : function() {
         
-        for (rse in this.resultSetExplorers) {
+        for (var rse in this.resultSetExplorers) {
                 
             if (this.resultSetExplorers.hasOwnProperty(rse)) {
                 
@@ -549,11 +647,10 @@ OWA.report.timePeriodControl.prototype = {
             datelabel:         this.label,
             selectedPeriod: this.selectedPeriod
         };
-        // fetch template from server
-        jQuery.get(OWA.getOption('modules_url') + 'base/templates/filter_period.php', function(tmpl) {
-    
+        // compile the inlined template directly into the dom (no server fetch).
+        {
             // inject into dom
-            jQuery(that.dom_id).jqoteapp(tmpl, data, '*');
+            jQuery(that.dom_id).jqoteapp(FILTER_PERIOD_TMPL, data, '*');
     
             // register show/hide controls event handler
             jQuery("#owa_reportPeriodLabelContainer").click(function() {
@@ -668,9 +765,9 @@ OWA.report.timePeriodControl.prototype = {
                 
                 var period = jQuery("#owa_reportPeriodFilter option:selected").val();
                 jQuery(that.dom_id).trigger('owa_new_fixed_time_period_set', [period]);
-             
+
             });
-            
-        });    
+
+        }
     }
 };
