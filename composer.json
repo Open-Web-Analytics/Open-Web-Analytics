@@ -27,6 +27,20 @@
         "wikimedia/composer-merge-plugin": "^2.0"
     },
 
+    "autoload": {
+        "classmap": [
+            "owa_base.php", "owa_coreAPI.php", "owa_db.php", "owa_lib.php",
+            "owa_auth.php", "owa_caller.php", "owa_controller.php",
+            "owa_adminController.php", "owa_reportController.php", "owa_entity.php",
+            "owa_httpRequest.php", "owa_install.php", "owa_location.php",
+            "owa_metric.php", "owa_module.php", "owa_observer.php",
+            "owa_requestContainer.php", "owa_template.php", "owa_view.php",
+            "modules/",
+            "plugins/",
+            "includes/"
+        ]
+    },
+
     "require-dev": {
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.5"
@@ -35,6 +49,7 @@
     "scripts": {
         "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l",
         "phpstan": "phpstan analyse --memory-limit=1G",
+        "phpstan:migration": "phpstan analyse -c phpstan-migration.neon --memory-limit=1G",
         "test": "phpunit"
     },
 

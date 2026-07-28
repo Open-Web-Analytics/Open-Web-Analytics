@@ -31,9 +31,9 @@
  class owa_settings {
 
      /**
-      * Main Settings Class
+      * Configuration entity holding the merged settings tree.
       *
-      * @var owa_settings
+      * @var owa_configuration
       */
      var $config;
 
