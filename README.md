@@ -32,13 +32,22 @@ See the wiki for documentation about the OWA Server and the Javascript Tracker c
 
 Please read the [troubleshooting](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Troubleshooting) guide before filing any issue or bug reports. Issue tickets without the necessary debug info will be closed automatically.
 
-## Development 
+## Development
 
-To contribute to the Open Web Analytics for WordPress plugin you need to:
+To contribute to OWA Server:
 
-1. Clone the repository
-2. Download and install [Composer](https://getcomposer.org/) for managing PHP dependencies.
-3. Run `composer install`
+1. Clone the repository.
+2. Install [Composer](https://getcomposer.org/) (PHP dependencies) and [Node.js/npm](https://nodejs.org/) (JavaScript build).
+3. Install dependencies and build the front-end assets:
+
+   ```bash
+   composer install
+   npm install && npm run build
+   ```
+
+   `vendor/` and the built `public/` asset tree (including the JS tracker) are not tracked in git — you must build them after cloning.
+
+See the [Development](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Development) and [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Testing) wiki pages for the full build process and test suites.
 
 
 ## Donate to this project
