@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once('owa_env.php');
+namespace OWA\Core;
 
 /**
  * OWA Base Class
@@ -33,7 +33,7 @@ require_once('owa_env.php');
 // TODO: replace with explicit property declarations; kept for now because the
 // owa_base hierarchy relies on dynamic properties (deprecated in PHP 8.2).
 #[\AllowDynamicProperties]
-class owa_base {
+class Base {
 
     /**
      * Configuration
@@ -52,14 +52,14 @@ class owa_base {
     /**
      * Configuration Entity
      *
-     * @var owa_settings  Object global configuration object
+     * @var \owa_settings  Object global configuration object
      */
     var $c;
 
     /**
      * Module that this class belongs to
      *
-     * @var unknown_type
+     * @var string
      */
     var $module;
 
@@ -72,13 +72,11 @@ class owa_base {
 
     /**
      * Base Constructor
-     *
-     * @return owa_base
      */
     function __construct() {
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
-        $this->e = owa_coreAPI::errorSingleton();
-        $this->c = owa_coreAPI::configSingleton();
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        $this->e = \owa_coreAPI::errorSingleton();
+        $this->c = \owa_coreAPI::configSingleton();
         $this->config = $this->c->fetch('base');
     }
 
@@ -132,7 +130,7 @@ class owa_base {
     /**
      * Sets object attributes
      *
-     * @param unknown_type $array
+     * @param array $array
      */
     function _setObjectValues($array) {
 
@@ -146,7 +144,7 @@ class owa_base {
     }
 
     function __destruct() {
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
     }
 
 }

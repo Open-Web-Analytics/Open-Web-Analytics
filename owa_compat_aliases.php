@@ -79,6 +79,9 @@ function owa_compat_class_map(): array
     return [
         // --- populated as classes are migrated, one entry per rename ---
 
+        // root framework classes -> OWA\Core\ (Phase 6 stage 2, roots batch)
+        'owa_base' => 'OWA\\Core\\Base',
+
         // modules/base/entities (Phase 6 stage 2)
         'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
         'owa_action_fact' => 'OWA\\Module\\Base\\Entity\\ActionFact',

@@ -97,7 +97,7 @@ parameters:
 			path: modules/base/classes/installController.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/installManager.php
@@ -145,7 +145,7 @@ parameters:
 			path: modules/base/classes/resultSetManager.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/resultSetManager.php
@@ -193,7 +193,7 @@ parameters:
 			path: modules/base/classes/settings.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/siteManager.php
@@ -205,19 +205,19 @@ parameters:
 			path: modules/base/classes/trackingEventHelpers.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/update.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/userManager.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/validator.php
@@ -1057,7 +1057,7 @@ parameters:
 			path: owa_install.php
 
 		-
-			message: '#^Result of method owa_base\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: owa_metric.php
