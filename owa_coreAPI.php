@@ -474,9 +474,8 @@ class owa_coreAPI {
 
         list($module, $class) = explode(".", $subview);
         //print_r($module.' ' . $class);
-        //owa_lib::moduleRequireOnce($module, $class);
 
-        $subview =  owa_lib::moduleFactory($subview, 'View', $params);
+        $subview =  owa_coreAPI::moduleFactory($subview, 'View', $params);
         $subview->is_subview = true;
 
         return $subview;

@@ -550,44 +550,6 @@ class owa_lib {
     }
 
     /**
-     * module specific require method
-     *
-     * @param unknown_type $module
-     * @param unknown_type $file
-     * @return unknown
-     * @deprecated
-     */
-    public static function moduleRequireOnce($module, $file) {
-
-        return require_once(OWA_BASE_DIR.'/modules/'.$module.'/'.$file.'.php');
-    }
-
-    /**
-     * module specific factory
-     *
-     * @param string $modulefile
-     * @param string $class_suffix
-     * @param mixed $params
-     * @return mixed
-     * @deprecated
-     */
-    public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
-
-        list($module, $file) = explode(".", $modulefile);
-        $class = 'owa_'.$file.$class_suffix;
-
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            owa_lib::moduleRequireOnce($module, $file);
-        endif;
-
-        $obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
-        $obj->module = $module;
-
-        return $obj;
-    }
-    
-    /**
      * redirects borwser to a particular view
      *
      * @param unknown_type $data
@@ -614,20 +576,6 @@ class owa_lib {
         $new_url = sprintf($config['link_template'], $config['main_url'], $get);
 
         owa_lib::redirectBrowser($new_url);
-    }
-
-    /**
-     * Displays a View without user authentication. Takes array of data as input
-     *
-     * @param array $data
-     * @deprecated
-     */
-    public static function displayView($data, $params = array()) {
-
-        $view =  owa_lib::moduleFactory($data['view'], 'View', $params);
-
-        return $view->assembleView($data);
-
     }
 
     /**

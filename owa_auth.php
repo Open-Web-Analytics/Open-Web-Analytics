@@ -360,19 +360,6 @@ class owa_auth extends owa_base {
     }
 
     /**
-     * Sets the initial Passkey for a new user
-     *
-     * @param string $user_id
-     * @return boolean
-     * @deprecated
-     */
-    function setInitialPasskey($user_id) {
-
-        return $this->eq->log(array('user_id' => $user_id), 'user.set_initial_passkey');
-
-    }
-
-    /**
      * Saves login credentails to persistant browser cookies
      * TODO: refactor to use state facility
      */
