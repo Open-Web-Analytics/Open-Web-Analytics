@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -34,7 +36,7 @@ use GuzzleHttp\Exception\ClientException;
  * @since        owa 1.0.0
  */
 
-class owa_http {
+class Http {
 
     /**
      * Configuration
@@ -100,7 +102,7 @@ class owa_http {
 	    
 	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
 		   
-		    owa_coreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
+		    \owa_coreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
 		    
 		    return $matches;
 		}
@@ -123,7 +125,7 @@ class owa_http {
 		        //strip any HTML tags (i.e. img, span, etc)
 		        if ( $match[3] ) {
 			        
-		        	$match[3] = trim( owa_sanitize::stripAllTags( $match[3] ) );
+		        	$match[3] = trim( \owa_sanitize::stripAllTags( $match[3] ) );
 		        }
 		        
 		        // if anything is left as anchortext then use that
@@ -131,9 +133,9 @@ class owa_http {
 					
 					$anchortext = $match[3];
 	        		
-					owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+					\owa_coreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
 					
-					return owa_lib::inputFilter( $anchortext );
+					return \owa_lib::inputFilter( $anchortext );
 				}
 			}
 		}
@@ -149,9 +151,9 @@ class owa_http {
             $title = $matches[1];
         }
 
-        owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
+        \owa_coreAPI::debug("referrer title extract: ". print_r($title, true));
 
-        return owa_lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
+        return \owa_lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
     }
 
     function strip_selected_tags($str, $tags = array(), $stripContent = false) {
@@ -172,7 +174,7 @@ class owa_http {
 		
 		$this->response = '';
 		
-		owa_coreAPI::debug("GET: $url");
+		\owa_coreAPI::debug("GET: $url");
 		
         try {
 	        
@@ -188,11 +190,11 @@ class owa_http {
 				],
 		        'headers' => [
 			        
-					'User-Agent' => owa_coreAPI::getSetting('base', 'owa_user_agent')
+					'User-Agent' => \owa_coreAPI::getSetting('base', 'owa_user_agent')
 				]
 	        ]);
 	        
-	        owa_coreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
+	        \owa_coreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
         }
         
         catch( \GuzzleHttp\Exception\RequestException | \GuzzleHttp\Exception\ConnectException | \GuzzleHttp\Exception\ClientException $e ) {
@@ -205,8 +207,8 @@ class owa_http {
 			  	$res = $e->getResponse();
 		  	}
 		  	
-		  	owa_coreAPI::debug( print_r($r, true ) );
-			owa_coreAPI::debug( print_r($res, true ) );
+		  	\owa_coreAPI::debug( print_r($r, true ) );
+			\owa_coreAPI::debug( print_r($res, true ) );
 	    }
 	    
 

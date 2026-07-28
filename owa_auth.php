@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,12 +31,12 @@ require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_auth extends owa_base {
+class Auth extends \owa_base {
 
     /**
      * User object
      *
-     * @var unknown_type
+     * @var mixed
      */
     var $u;
 
@@ -78,7 +80,7 @@ class owa_auth extends owa_base {
     /**
      * Auth class Singleton
      *
-     * @return owa_auth
+     * @return \owa_auth
      */
     public static function get_instance($plugin = '') {
 
@@ -86,7 +88,7 @@ class owa_auth extends owa_base {
 
         if (!$auth) {
 
-            $auth = new owa_auth();
+            $auth = new \owa_auth();
 
         }
 
@@ -97,16 +99,16 @@ class owa_auth extends owa_base {
     /**
      * Class Constructor
      *
-     * @return owa_auth
+     * @return \owa_auth
      */
     function __construct() {
 
         // register auth cookies
-        owa_coreAPI::registerStateStore('u', time()+3600*24*365*10, '', '', 'cookie');
-        owa_coreAPI::registerStateStore('p', time()+3600*2, '', '', 'cookie');
+        \owa_coreAPI::registerStateStore('u', time()+3600*24*365*10, '', '', 'cookie');
+        \owa_coreAPI::registerStateStore('p', time()+3600*2, '', '', 'cookie');
 
         parent::__construct();
-        $this->eq = owa_coreAPI::getEventDispatch();
+        $this->eq = \owa_coreAPI::getEventDispatch();
     }
 
     /**
@@ -116,40 +118,40 @@ class owa_auth extends owa_base {
      */
     function authenticateUser() {
 		
-		$apiKey = owa_coreAPI::getRequestParam('apiKey') ?: owa_coreAPI::getServerParam( 'HTTP_X_API_KEY' );
+		$apiKey = \owa_coreAPI::getRequestParam('apiKey') ?: \owa_coreAPI::getServerParam( 'HTTP_X_API_KEY' );
 	
         // check existing auth status first in case someone else took care of this already.
-        if (owa_coreAPI::getCurrentUser()->isAuthenticated()) {
-	        owa_coreAPI::debug('User is already authenticated.');
+        if (\owa_coreAPI::getCurrentUser()->isAuthenticated()) {
+	        \owa_coreAPI::debug('User is already authenticated.');
             $ret = true;
         
-        } elseif (owa_coreAPI::getRequestParam('pk') && owa_coreAPI::getStateParam('u')) {
+        } elseif (\owa_coreAPI::getRequestParam('pk') && \owa_coreAPI::getStateParam('u')) {
             // auth user by temporary passkey. used in forgot password situations
             $this->setAuthMethod( 'temp_key');
-            $ret = $this->authenticateUserByUrlPasskey(owa_coreAPI::getRequestParam('pk'));
-             owa_coreAPI::debug('User authenticated via temporary passkey.');
+            $ret = $this->authenticateUserByUrlPasskey(\owa_coreAPI::getRequestParam('pk'));
+             \owa_coreAPI::debug('User authenticated via temporary passkey.');
     
-        } elseif (owa_coreAPI::getRequestParam('user_id') && owa_coreAPI::getRequestParam('password')) {
+        } elseif (\owa_coreAPI::getRequestParam('user_id') && \owa_coreAPI::getRequestParam('password')) {
             // auth user by login form input
             $this->setAuthMethod( 'login_form');
-            $ret = $this->authByInput(owa_coreAPI::getRequestParam('user_id'), owa_coreAPI::getRequestParam('password'));
-             owa_coreAPI::debug('User authenticated via form input.');
+            $ret = $this->authByInput(\owa_coreAPI::getRequestParam('user_id'), \owa_coreAPI::getRequestParam('password'));
+             \owa_coreAPI::debug('User authenticated via form input.');
     
         } elseif ( $apiKey ) {
             // auth user by api key
             $this->setAuthMethod( 'api_key');
             $ret = $this->authByApiKey( $apiKey );
-            owa_coreAPI::debug('User authenticated via api key.');
+            \owa_coreAPI::debug('User authenticated via api key.');
     
-        } elseif (owa_coreAPI::getStateParam('u') && owa_coreAPI::getStateParam('p')) {
+        } elseif (\owa_coreAPI::getStateParam('u') && \owa_coreAPI::getStateParam('p')) {
             // auth user by cookies
             $this->setAuthMethod( 'cookies');
-            $ret = $this->authByCookies(owa_coreAPI::getStateParam('u'), owa_coreAPI::getStateParam('p'));
-             owa_coreAPI::debug('User authenticated via cookies.');
+            $ret = $this->authByCookies(\owa_coreAPI::getStateParam('u'), \owa_coreAPI::getStateParam('p'));
+             \owa_coreAPI::debug('User authenticated via cookies.');
             
         } else {
             $ret = false;
-            owa_coreAPI::debug("Could not find any credentials to authenticate with.");
+            \owa_coreAPI::debug("Could not find any credentials to authenticate with.");
         }
 
         // filter results for modules can add their own auth logic.
@@ -161,41 +163,41 @@ class owa_auth extends owa_base {
 
     function authByApiKey( $key ) {
 
-        $key = owa_sanitize::cleanMd5( $key );
+        $key = \owa_sanitize::cleanMd5( $key );
 
         if ( $key ) {
 	        
 	        // check signature of request
-	        if ( ! owa_lib::inRestDebug() ) {
+	        if ( ! \owa_lib::inRestDebug() ) {
 		    	
 		    	//get current request url
-		    	$url = owa_coreAPI::getCurrentUrl();
+		    	$url = \owa_coreAPI::getCurrentUrl();
 				//owa_coreAPI::debug('request url' . $url);
 		    	
 		    	//get signatureparam  of request
-		        $signature = owa_coreAPI::getRequestParam('signature') ?: owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' );
+		        $signature = \owa_coreAPI::getRequestParam('signature') ?: \owa_coreAPI::getServerParam( 'HTTP_X_SIGNATURE' );
 		        
-		        owa_coreAPI::debug('Signature: ' . $signature );
+		        \owa_coreAPI::debug('Signature: ' . $signature );
 		         
 		        // check if signature is exists and is valid
 		        if ( ! $signature || ! $this->isSignatureValid( $signature, $key, $url ) ) {
 			        
-			       owa_coreAPI::debug('signature missing from request or not valid.');
+			       \owa_coreAPI::debug('signature missing from request or not valid.');
 			       return false;
 		        }
 		        
 			} else {
 				
-				owa_coreAPI::debug('skipping signature check in debug/development mode.');
+				\owa_coreAPI::debug('skipping signature check in debug/development mode.');
 			}
 			
             // fetch user object from the db
-            $this->u = owa_coreAPI::entityFactory( 'base.user' );
+            $this->u = \owa_coreAPI::entityFactory( 'base.user' );
             $this->u->load( $key, 'api_key' );
 
             if ( $this->u->get( 'user_id' ) ) {
                 // get current user
-                $cu = owa_coreAPI::getCurrentUser();
+                $cu = \owa_coreAPI::getCurrentUser();
                 
                 // set as new current user in service layer
                 $cu->loadNewUserByObject( $this->u );
@@ -219,14 +221,14 @@ class owa_auth extends owa_base {
     function authByCookies($user_id, $password) {
 
         // set credentials
-        $this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
+        $this->credentials['user_id'] = \owa_sanitize::cleanUserId( $user_id );
         $this->credentials['password'] = $password;
-		owa_coreAPI::debug('auth by cookies');
+		\owa_coreAPI::debug('auth by cookies');
         // lookup user if not already done.
         if ($this->_is_user == false) {
 
             // check to see if the current user has already been authenticated by something upstream
-            $cu = owa_coreAPI::getCurrentUser();
+            $cu = \owa_coreAPI::getCurrentUser();
             if (!$cu->isAuthenticated()) {
                 // check to see if they are a user.
                 $val = $this->isUser();
@@ -241,7 +243,7 @@ class owa_auth extends owa_base {
     function authByInput($user_id, $password) {
 
         // set credentials
-        $this->credentials['user_id'] = owa_sanitize::cleanUserId( $user_id );
+        $this->credentials['user_id'] = \owa_sanitize::cleanUserId( $user_id );
         // must encrypt password to see if it matches whats in the db
         $this->credentials['password'] = $this->generateAuthCredential( $this->credentials['user_id'], $this->encryptOldPassword( $password ) );
         // pass plain text password to test with password_verify
@@ -259,16 +261,16 @@ class owa_auth extends owa_base {
     /**
      * Looks up user by temporary Passkey Column in db
      *
-     * @param unknown_type $key
+     * @param mixed $key
      * @return unknown
      */
     function authenticateUserTempPasskey( $key ) {
 
-        $key = owa_sanitize::cleanMd5( $key );
+        $key = \owa_sanitize::cleanMd5( $key );
 
         if ( $key ) {
 
-            $this->u = owa_coreAPI::entityFactory('base.user');
+            $this->u = \owa_coreAPI::entityFactory('base.user');
             $this->u->getByColumn('temp_passkey', $key);
 
             $id = $this->u->get('id');
@@ -291,12 +293,12 @@ class owa_auth extends owa_base {
     /**
      * Authenticates user by a passkey
      *
-     * @param unknown_type $key
+     * @param mixed $key
      * @return unknown
      */
     function authenticateUserByUrlPasskey($user_id, $passkey) {
 
-        $passkey = owa_sanitize::cleanMd5( $passkey );
+        $passkey = \owa_sanitize::cleanMd5( $passkey );
 
         if ( $passkey ) {
 
@@ -333,7 +335,7 @@ class owa_auth extends owa_base {
      */
     function setTempPasskey($email_address) {
 
-        $this->u = owa_coreAPI::entityFactory('base.user');
+        $this->u = \owa_coreAPI::entityFactory('base.user');
         $this->u->getByColumn('email_address', $email_address);
 
         $id = $u->get('id');
@@ -365,10 +367,10 @@ class owa_auth extends owa_base {
      */
     function saveCredentials() {
 
-        owa_coreAPI::debug('saving user credentials to cookies');
+        \owa_coreAPI::debug('saving user credentials to cookies');
         
-        owa_coreAPI::createCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10 );
-        owa_coreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2 );
+        \owa_coreAPI::createCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10 );
+        \owa_coreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2 );
     }
 
     /**
@@ -377,7 +379,7 @@ class owa_auth extends owa_base {
      */
     function deleteCredentials() {
 
-        return owa_coreAPI::clearState('p');
+        return \owa_coreAPI::clearState('p');
     }
 
     /**
@@ -388,21 +390,21 @@ class owa_auth extends owa_base {
      */
     function encryptPassword($password) {
 
-        return owa_lib::encryptPassword($password);
+        return \owa_lib::encryptPassword($password);
 
     }
     function encryptOldPassword($password) {
 
-        return owa_lib::encryptOldPassword($password);
+        return \owa_lib::encryptOldPassword($password);
 
     }
 
     function getUser() {
 
         // fetch user object from the db
-        owa_coreAPI::debug('auth get user: '. $this->credentials['user_id'] );
+        \owa_coreAPI::debug('auth get user: '. $this->credentials['user_id'] );
         
-        $this->u = owa_coreAPI::entityFactory('base.user');
+        $this->u = \owa_coreAPI::entityFactory('base.user');
         $this->u->getByColumn('user_id', $this->credentials['user_id']);
     }
 
@@ -414,7 +416,7 @@ class owa_auth extends owa_base {
     function isUser() {
 
         // get current user
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \owa_coreAPI::getCurrentUser();
 
         // fetches user object from DB
         $this->getUser();
@@ -475,7 +477,7 @@ class owa_auth extends owa_base {
 
     function reconstructAuthCredential( $user_id ) {
 
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \owa_coreAPI::entityFactory('base.user');
 
         $u->getByColumn( 'user_id', $user_id );
 
@@ -488,7 +490,7 @@ class owa_auth extends owa_base {
 
         $frag = substr($password, 8, 4);
 
-        $key = owa_coreAPI::saltedHash( $user_id . $frag . $expiration, $scheme );
+        $key = \owa_coreAPI::saltedHash( $user_id . $frag . $expiration, $scheme );
 
         $algo = 'sha1';
 
@@ -498,7 +500,7 @@ class owa_auth extends owa_base {
 
         }
 
-        $hash = owa_lib::hash( $algo, $user_id . $expiration, $key );
+        $hash = \owa_lib::hash( $algo, $user_id . $expiration, $key );
 
         $credential = $hash; // could add other elements here.
 
@@ -524,13 +526,13 @@ class owa_auth extends owa_base {
     
     function isSignatureValid( $signature, $apiKey, $requestUrl ) {
 	    
-	    $requestUrl = owa_lib::removeQueryParamFromUrl( $requestUrl, 'owa_jsonpCallback' );
-		$requestUrl = owa_lib::removeQueryParamFromUrl( $requestUrl, '_' );
+	    $requestUrl = \owa_lib::removeQueryParamFromUrl( $requestUrl, 'owa_jsonpCallback' );
+		$requestUrl = \owa_lib::removeQueryParamFromUrl( $requestUrl, '_' );
 		
 	    
 	    if ( strpos( $requestUrl, 'owa_signature' ) ) {
 		    
-		    $requestUrl = owa_lib::removeQueryParamFromUrl( $requestUrl, 'owa_signature' );
+		    $requestUrl = \owa_lib::removeQueryParamFromUrl( $requestUrl, 'owa_signature' );
 	    }
 	    
 	    
@@ -539,17 +541,17 @@ class owa_auth extends owa_base {
 	    //$signature = base64_decode( $signature );
 	    
 	    $computed_signature = $this->generateSignature( $requestUrl, $apiKey );
-	    owa_coreAPI::debug( 'computed signature: ' . $computed_signature );
-	    owa_coreAPI::debug( 'request url: ' . $requestUrl );
+	    \owa_coreAPI::debug( 'computed signature: ' . $computed_signature );
+	    \owa_coreAPI::debug( 'request url: ' . $requestUrl );
 	    
 	    if ( $signature === $computed_signature ) {
 		    
-		    owa_coreAPI::debug('API request signature is valid.' );
+		    \owa_coreAPI::debug('API request signature is valid.' );
 		    return true;
 		    
 	    } else {
 		    
-		    owa_coreAPI::debug('API request signature failed validation.' );
+		    \owa_coreAPI::debug('API request signature failed validation.' );
 		    return false;
 	    }
     }

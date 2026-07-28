@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -11,7 +13,7 @@
  * Utility Functions
  * 
  */
-class owa_lib {
+class Lib {
 
     /**
      * Convert Associative Array to String
@@ -174,7 +176,7 @@ class owa_lib {
 
         if (empty($months)):
 
-            $months = owa_lib::months();
+            $months = \owa_lib::months();
 
         endif;
 
@@ -222,16 +224,16 @@ class owa_lib {
 
             case "day":
                 return sprintf("%s, %d%s %s",
-                            owa_lib::get_month_label($params['month']),
+                            \owa_lib::get_month_label($params['month']),
                             $params['day'],
-                            owa_lib::setDaySuffix($params['day']),
+                            \owa_lib::setDaySuffix($params['day']),
                             $params['year']
                         );
                 break;
 
             case "month":
                 return sprintf("%s %s",
-                            owa_lib::get_month_label($params['month']),
+                            \owa_lib::get_month_label($params['month']),
                             $params['year']
                         );
                 break;
@@ -243,13 +245,13 @@ class owa_lib {
                 break;
             case "date_range":
                 return sprintf("%s, %d%s %s - %s, %d%s %s",
-                            owa_lib::get_month_label($params['month']),
+                            \owa_lib::get_month_label($params['month']),
                             $params['day'],
-                            owa_lib::setDaySuffix($params['day']),
+                            \owa_lib::setDaySuffix($params['day']),
                             $params['year'],
-                            owa_lib::get_month_label($params['month2']),
+                            \owa_lib::get_month_label($params['month2']),
                             $params['day2'],
-                            owa_lib::setDaySuffix($params['day2']),
+                            \owa_lib::setDaySuffix($params['day2']),
                             $params['year2']
                         );
                 break;
@@ -309,12 +311,12 @@ class owa_lib {
     /**
      * Gets label for a particular reporting period
      *
-     * @param unknown_type $period
+     * @param mixed $period
      * @return unknown
      */
     public static function get_period_label($period) {
 
-        $periods = owa_lib::reporting_periods();
+        $periods = \owa_lib::reporting_periods();
 
         return $periods[$period]['label'];
     }
@@ -371,7 +373,7 @@ class owa_lib {
 
     public static function inputFilter($input, $options = array() ) {
 
-        return owa_sanitize::cleanInput( $input, $options );
+        return \owa_sanitize::cleanInput( $input, $options );
     }
 
     public static function fileInclusionFilter($str) {
@@ -417,13 +419,13 @@ class owa_lib {
          */
         if (!class_exists($class)) {
             if (!file_exists($classfile)) {
-                throw new Exception('Class File '.$classfile.' not existend!');
+                throw new \Exception('Class File '.$classfile.' not existend!');
             }
                require_once ($classfile);
         }
 
         if (!class_exists($class)) {
-                throw new Exception('Class '.$class.' does not exist!');
+                throw new \Exception('Class '.$class.' does not exist!');
         }
         return new $class($constructorArguments);
     }
@@ -434,7 +436,7 @@ class owa_lib {
 
             if ( ! file_exists( $file_path ) ) {
                 
-                throw new Exception("Factory cannot make $class_name because $file_path does not exist!");
+                throw new \Exception("Factory cannot make $class_name because $file_path does not exist!");
             
             } else {
             
@@ -445,7 +447,7 @@ class owa_lib {
        
         if ( ! class_exists( $class_name ) ) {
 
-            throw new Exception("Class $class_name still does not exist!");
+            throw new \Exception("Class $class_name still does not exist!");
         }
        
         return new $class_name( $args );
@@ -466,7 +468,7 @@ class owa_lib {
         
         if (!isset($instance)) {
             // below missing a reference becasue the static vriable can not handle a reference
-            $instance = owa_lib::factory($class_dir, $class_prefix, $class_name, $conf);
+            $instance = \owa_lib::factory($class_dir, $class_prefix, $class_name, $conf);
         }
         
         return $instance;
@@ -552,11 +554,11 @@ class owa_lib {
     /**
      * redirects borwser to a particular view
      *
-     * @param unknown_type $data
+     * @param mixed $data
      */
     public static function redirectToView($data) {
         //print_r($data);
-        $c = owa_coreAPI::configSingleton();
+        $c = \owa_coreAPI::configSingleton();
         $config = $c->fetch('base');
 
         $control_params = array('view_method', 'auth_status');
@@ -575,7 +577,7 @@ class owa_lib {
 
         $new_url = sprintf($config['link_template'], $config['main_url'], $get);
 
-        owa_lib::redirectBrowser($new_url);
+        \owa_lib::redirectBrowser($new_url);
     }
 
     /**
@@ -590,7 +592,7 @@ class owa_lib {
         if ( $string ) {
 
 
-            if ( owa_coreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_MAX == '9223372036854775807') {
+            if ( \owa_coreAPI::getSetting('base', 'use_64bit_hash') && PHP_INT_MAX == '9223372036854775807') {
                 // make 64 bit ID from partial sha1
                 return (string) (int) hexdec( substr( sha1( strtolower( $string ) ), 0, 16 ) );
             } else {
@@ -722,7 +724,7 @@ class owa_lib {
 
                 if (is_dir($filepath)):
                     if ($recursive === true):
-                        $files = array_merge($files, owa_lib::listDir($filepath));
+                        $files = array_merge($files, \owa_lib::listDir($filepath));
                     endif;
                 else:
                     array_push($files, array('name' => $file, 'path' => $filepath));
@@ -751,7 +753,7 @@ class owa_lib {
                 $timestamps[]= mktime(0,0,0,$row['month'],$row['day'],$row['year']);
             }
 
-            return owa_lib::makeDates($timestamps, $format);
+            return \owa_lib::makeDates($timestamps, $format);
 
         } else {
 
@@ -895,7 +897,7 @@ class owa_lib {
 
     public static function utf8Encode($string) {
 
-        if ( owa_lib::checkForUtf8( $string ) ) {
+        if ( \owa_lib::checkForUtf8( $string ) ) {
             return $string;
         } else {
             if (function_exists('iconv')) {
@@ -967,7 +969,7 @@ class owa_lib {
 
         if ( function_exists('numfmt_create') ) {
 
-            $numberFormatter = new NumberFormatter($local, NumberFormatter::CURRENCY);
+            $numberFormatter = new \NumberFormatter($local, \NumberFormatter::CURRENCY);
             return $numberFormatter->formatCurrency($value, $currency);
 
         } else {
@@ -1123,9 +1125,9 @@ class owa_lib {
     public static function generateRandomUid($seed='') {
 
         $time = (string) time();
-        $random = owa_lib::zeroFill( mt_rand( 0, 999999 ), 6 );
+        $random = \owa_lib::zeroFill( mt_rand( 0, 999999 ), 6 );
         if ( defined('OWA_SERVER_ID') ) {
-            $server = owa_lib::zeroFill( OWA_SERVER_ID, 3 );
+            $server = \owa_lib::zeroFill( OWA_SERVER_ID, 3 );
         } else {
             $server = substr( getmypid(), 0, 3);
         }

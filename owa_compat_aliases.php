@@ -81,6 +81,23 @@ function owa_compat_class_map(): array
 
         // root framework classes -> OWA\Core\ (Phase 6 stage 2, roots batch)
         'owa_base' => 'OWA\\Core\\Base',
+        'owa_coreAPI' => 'OWA\\Core\\CoreAPI',
+        'owa_db' => 'OWA\\Core\\Db',
+        'owa_lib' => 'OWA\\Core\\Lib',
+        'owa_auth' => 'OWA\\Core\\Auth',
+        'owa_caller' => 'OWA\\Core\\Caller',
+        'owa_install' => 'OWA\\Core\\Install',
+        'owa_location' => 'OWA\\Core\\Location',
+        'owa_observer' => 'OWA\\Core\\Observer',
+        'owa_template' => 'OWA\\Core\\Template',
+        'owa_requestContainer' => 'OWA\\Core\\RequestContainer',
+        'owa_http' => 'OWA\\Core\\Http',
+        'owa_controller' => 'OWA\\Core\\Controller',
+        'owa_adminController' => 'OWA\\Core\\AdminController',
+        'owa_reportController' => 'OWA\\Core\\ReportController',
+        'owa_entity' => 'OWA\\Core\\Entity',
+        'owa_metric' => 'OWA\\Core\\Metric',
+        'owa_module' => 'OWA\\Core\\Module',
 
         // modules/base/entities (Phase 6 stage 2)
         'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',

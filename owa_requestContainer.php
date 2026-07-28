@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@
 
 // TODO: replace with explicit property declarations (deprecated in PHP 8.2).
 #[\AllowDynamicProperties]
-class owa_requestContainer {
+class RequestContainer {
 
     var $cli_args;
     var $is_https;
@@ -53,7 +55,7 @@ class owa_requestContainer {
     function __construct() {
 
         $this->timestamp = time();
-        $this->guid = owa_lib::generateRandomUid();
+        $this->guid = \owa_lib::generateRandomUid();
 
         // php's server variables
         $this->server = $_SERVER;
@@ -96,7 +98,7 @@ class owa_requestContainer {
         }
 
         // populate owa_cookie container with just the cookies that have the owa namespace.
-        $this->owa_cookies = owa_lib::stripParams( $this->cookies, owa_coreAPI::getSetting('base', 'ns') );
+        $this->owa_cookies = \owa_lib::stripParams( $this->cookies, \owa_coreAPI::getSetting('base', 'ns') );
 
 
         // session
@@ -107,10 +109,10 @@ class owa_requestContainer {
         /* STATE CONTAINER */
 
         // state
-        $this->state = owa_coreAPI::supportClassFactory('base', 'state');
+        $this->state = \owa_coreAPI::supportClassFactory('base', 'state');
         // merges session
         if (!empty($this->session)) {
-            $this->state->addStores(owa_lib::stripParams($this->session, owa_coreAPI::getSetting('base', 'ns')));
+            $this->state->addStores(\owa_lib::stripParams($this->session, \owa_coreAPI::getSetting('base', 'ns')));
         }
 
         // merges cookies
@@ -121,7 +123,7 @@ class owa_requestContainer {
 
         // create request params and type
         $params = array();
-		owa_coreAPI::debug('request container says params are:');
+		\owa_coreAPI::debug('request container says params are:');
 		if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
 				
 				$this->request_type = $_SERVER['REQUEST_METHOD'];
@@ -129,7 +131,7 @@ class owa_requestContainer {
 			if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
 			
 				parse_str( trim(file_get_contents("php://input") ), $post_vars );
-				owa_coreAPI::debug($post_vars);
+				\owa_coreAPI::debug($post_vars);
 				$params = array_merge( $_GET, $post_vars);
 				
 			} else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
@@ -142,9 +144,9 @@ class owa_requestContainer {
 				$params = array_merge( $_GET, $_POST);
 			}
 			
-			$this->current_url = owa_lib::get_current_url();
+			$this->current_url = \owa_lib::get_current_url();
 			
-			owa_coreAPI::debug($params);
+			\owa_coreAPI::debug($params);
 			
 		} else {
 			
@@ -175,9 +177,9 @@ class owa_requestContainer {
         // Clean Input arrays
         if ( $params ) {
 
-            if ( ! owa_coreAPI::getSetting('base', 'tracking_mode') ) {
+            if ( ! \owa_coreAPI::getSetting('base', 'tracking_mode') ) {
 
-                $params = owa_sanitize::cleanInput( $params, array( 'remove_html' => true, 'escape_html' => false ) );
+                $params = \owa_sanitize::cleanInput( $params, array( 'remove_html' => true, 'escape_html' => false ) );
 
             }
             if ( is_array( $params ) && ! empty( $params ) ) {
@@ -187,26 +189,26 @@ class owa_requestContainer {
         }
 
         // get namespace
-        $ns = owa_coreAPI::getSetting('base', 'ns');
+        $ns = \owa_coreAPI::getSetting('base', 'ns');
         // strip action and do params of nasty include exploits.
         if (array_key_exists( $ns.'action', $this->request)) {
 
-            $this->request[$ns.'action'] = owa_lib::fileInclusionFilter($this->request[$ns.'action']);
+            $this->request[$ns.'action'] = \owa_lib::fileInclusionFilter($this->request[$ns.'action']);
         }
 
         if (array_key_exists($ns.'do', $this->request)) {
 
-            $this->request[$ns.'do'] = owa_lib::fileInclusionFilter($this->request[$ns.'do']);
+            $this->request[$ns.'do'] = \owa_lib::fileInclusionFilter($this->request[$ns.'do']);
         }
 
         // strip owa namespace
-        $this->owa_params = owa_lib::stripParams($this->request, $ns);
+        $this->owa_params = \owa_lib::stripParams($this->request, $ns);
 
         // translate certain request variables that are reserved in javascript
-        $this->owa_params = owa_lib::rekeyArray($this->owa_params, array_flip(owa_coreAPI::getSetting('base', 'reserved_words')));
+        $this->owa_params = \owa_lib::rekeyArray($this->owa_params, array_flip(\owa_coreAPI::getSetting('base', 'reserved_words')));
 
         // set https flag
-        if( owa_lib::isHttps() ) {
+        if( \owa_lib::isHttps() ) {
             $this->is_https = true;
         }
     }
@@ -289,7 +291,7 @@ class owa_requestContainer {
         // replace owa params
         $this->owa_params = $params;
         //debug
-        owa_coreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
+        \owa_coreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
         return;
 
     }

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -28,7 +30,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_observer extends owa_base {
+class Observer extends \owa_base {
 
      /**
      * The type of event that an observer would want to hear about.
@@ -61,15 +63,15 @@ class owa_observer extends owa_base {
     
     function handleEvent($action) {
     
-        $data = owa_coreAPI::performAction($action, array('event' => $this->m));
-        return owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
+        $data = \owa_coreAPI::performAction($action, array('event' => $this->m));
+        return \owa_coreAPI::debug(sprintf("Handled Event. Action: %s", $action));
 
     }
     
     function sendMail($email_address, $subject, $msg) {
 
         mail($email_address, $subject, $msg);
-        owa_coreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
+        \owa_coreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
         return;
     }
 

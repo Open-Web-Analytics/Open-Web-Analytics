@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -34,7 +36,7 @@ require_once(OWA_BASE_CLASS_DIR.'error.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_caller extends owa_base {
+class Caller extends \owa_base {
     
     /**
      * Request Params from get or post
@@ -57,14 +59,14 @@ class owa_caller extends owa_base {
      * Constructor
      *
      * @param array $config
-     * @return owa_caller
+     * @return \owa_caller
      */
     function __construct( $config = [] ) {
       
 		/* PHP ERROR LOGGING */
-        if ( owa_lib::inDebug() ) {
+        if ( \owa_lib::inDebug() ) {
 	        
-	        owa_error::phpErrorSettings();
+	        \owa_error::phpErrorSettings();
         }
         
         // Start time
@@ -76,25 +78,25 @@ class owa_caller extends owa_base {
         parent::__construct();
         
         // Log version debug
-        owa_coreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
+        \owa_coreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
         
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
-            owa_coreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
+            \owa_coreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
         }
         
         if ( array_key_exists('HTTP_USER_AGENT', $_SERVER ) ) {
-            owa_coreAPI::debug( 'User Agent: '.$_SERVER['HTTP_USER_AGENT'] );
+            \owa_coreAPI::debug( 'User Agent: '.$_SERVER['HTTP_USER_AGENT'] );
         }
         
         if ( array_key_exists('HTTP_HOST', $_SERVER ) ) {
-            owa_coreAPI::debug( 'Host: '.$_SERVER['HTTP_HOST'] );
+            \owa_coreAPI::debug( 'Host: '.$_SERVER['HTTP_HOST'] );
         }
              
         // load config values from DB
         // Applies config from db or cache
         // check here is needed for installs when the configuration table does not exist.
                
-        if ( $this->c->isConfigFilePresent() && ! owa_coreAPI::getSetting('base', 'useStaticConfigOnly') && ! defined( 'OWA_INSTALLING' ) )  {
+        if ( $this->c->isConfigFilePresent() && ! \owa_coreAPI::getSetting('base', 'useStaticConfigOnly') && ! defined( 'OWA_INSTALLING' ) )  {
             
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
         }
@@ -117,11 +119,11 @@ class owa_caller extends owa_base {
         $this->e->setHandler($this->c->get('base', 'error_handler'));
             
         /* LOAD SERVICE LAYER */
-        $this->service = owa_coreAPI::serviceSingleton();
+        $this->service = \owa_coreAPI::serviceSingleton();
         // initialize framework
         $this->service->initializeFramework();
         // notify handlers of 'init' action
-        $dispatch = owa_coreAPI::getEventDispatch();
+        $dispatch = \owa_coreAPI::getEventDispatch();
         $dispatch->notify($dispatch->makeEvent('init'));
         
         /* SET SITE ID */
@@ -163,17 +165,17 @@ class owa_caller extends owa_base {
      */
     function placeHelperPageTags($echo = true, $options = array()) {
         
-        if( ! owa_coreAPI::getRequestParam( 'is_robot' ) ) {
+        if( ! \owa_coreAPI::getRequestParam( 'is_robot' ) ) {
         
             if ( ! class_exists( 'owa_template' ) ) {
             
                 require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
             }
         
-            $t = new owa_template();
+            $t = new \owa_template();
             $t->set_template('js_helper_tags.php');
                 
-            $tracking_code = owa_coreAPI::getJsTrackerTag( $this->getSiteId(), $options );
+            $tracking_code = \owa_coreAPI::getJsTrackerTag( $this->getSiteId(), $options );
             $t->set('tracking_code', $tracking_code);
             $tag = $t->fetch();
             
@@ -201,7 +203,7 @@ class owa_caller extends owa_base {
      */
     function handleRequest($caller_params = null, $action = '') {
         
-        return owa_coreAPI::handleRequest($caller_params, $action);
+        return \owa_coreAPI::handleRequest($caller_params, $action);
                         
     }
     
@@ -212,37 +214,37 @@ class owa_caller extends owa_base {
      */
     function handleRestRequest() {
         
-        return owa_coreAPI::handleRestRequest();
+        return \owa_coreAPI::handleRestRequest();
     }
     
     function __destruct() {
         
         $this->end_time = microtime(true);
         $total_time = $this->end_time - $this->start_time;
-        owa_coreAPI::debug(sprintf('Total session time: %s',$total_time));
-        owa_coreAPI::debug("Goodbye from OWA");
-        owa_coreAPI::profileDisplay();
+        \owa_coreAPI::debug(sprintf('Total session time: %s',$total_time));
+        \owa_coreAPI::debug("Goodbye from OWA");
+        \owa_coreAPI::profileDisplay();
     }
         
     function setSetting($module, $name, $value) {
         
-        return owa_coreAPI::setSetting($module, $name, $value);
+        return \owa_coreAPI::setSetting($module, $name, $value);
     }
     
     function getSetting($module, $name) {
         
-        return owa_coreAPI::getSetting($module, $name);
+        return \owa_coreAPI::getSetting($module, $name);
     }
         
     function setCurrentUser($role, $login_name = '') {
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \owa_coreAPI::getCurrentUser();
         $cu->setRole($role);
         $cu->setAuthStatus(true);
     }
     
     function makeEvent($type = '') {
     
-        $event = owa_coreAPI::supportClassFactory('base', 'event');
+        $event = \owa_coreAPI::supportClassFactory('base', 'event');
         
         if ($type) {
             $event->setEventType($type);
@@ -267,7 +269,7 @@ class owa_caller extends owa_base {
     
     function isOwaInstalled() {
         
-        $version = owa_coreAPI::getSetting('base', 'schema_version');
+        $version = \owa_coreAPI::getSetting('base', 'schema_version');
         
         if ($version > 0) {
             return true;
@@ -280,12 +282,12 @@ class owa_caller extends owa_base {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
             $disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
-            owa_coreAPI::debug('Disabled endpoints:');
-            owa_coreAPI::debug($disabled_endpoints);
+            \owa_coreAPI::debug('Disabled endpoints:');
+            \owa_coreAPI::debug($disabled_endpoints);
             if ( ! in_array( $file_name, $disabled_endpoints ) ) {
                 return true;
             } else {
-                owa_coreAPI::debug('This endpoint is disabled.');
+                \owa_coreAPI::debug('This endpoint is disabled.');
             }
         }
     }
@@ -310,7 +312,7 @@ class owa_caller extends owa_base {
 				 $this->c->applyModuleOverrides('base', $config);
 			}
 			
-			owa_coreAPI::debug('Configuration overrides applied.');
+			\owa_coreAPI::debug('Configuration overrides applied.');
 		}
     }
 

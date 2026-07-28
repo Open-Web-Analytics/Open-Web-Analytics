@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -33,7 +35,7 @@ require_once(OWA_BASE_CLASSES_DIR.'owa_controller.php');
  */
 
 
-class owa_adminController extends owa_controller {
+class AdminController extends \owa_controller {
     
     var $is_admin = true;
     
@@ -41,7 +43,7 @@ class owa_adminController extends owa_controller {
      * Constructor
      *
      * @param array $params
-     * @return owa_controller
+     * @return \owa_controller
      */
     function __construct($params) {
     

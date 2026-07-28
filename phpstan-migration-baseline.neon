@@ -19,16 +19,10 @@ parameters:
 			path: conf/messages.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/apiRequest.php
-
-		-
-			message: '#^Class owa_coreAPI referenced with incorrect case\: owa_coreApi\.$#'
-			identifier: class.nameCase
-			count: 1
-			path: modules/base/changeUserPasswordCli.php
 
 		-
 			message: '#^Access to an undefined property owa_chartData\:\:\$series_label\.$#'
@@ -43,7 +37,7 @@ parameters:
 			path: modules/base/classes/chartData.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/cliController.php
@@ -91,7 +85,7 @@ parameters:
 			path: modules/base/classes/httpEventQueue.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/classes/installController.php
@@ -161,12 +155,6 @@ parameters:
 			identifier: return.missing
 			count: 1
 			path: modules/base/classes/sanitize.php
-
-		-
-			message: '#^Class owa_coreAPI referenced with incorrect case\: owa_coreApi\.$#'
-			identifier: class.nameCase
-			count: 3
-			path: modules/base/classes/serviceUser.php
 
 		-
 			message: '#^Method owa_serviceUser\:\:isSiteAccessRequiredForCapability\(\) should return bool but return statement is missing\.$#'
@@ -313,7 +301,7 @@ parameters:
 			path: modules/base/login.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/loginForm.php
@@ -325,37 +313,37 @@ parameters:
 			path: modules/base/loginForm.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/Actions.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/ActionsPerVisit.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/ActionsValue.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/BounceRate.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/Bounces.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/ClickBrowserTypes.php
@@ -373,145 +361,145 @@ parameters:
 			path: modules/base/metrics/ConfigurableMetric.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/ConfigurableMetric.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/DomClicks.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/EcommerceConversionRate.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/FeedReaders.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/FeedRequests.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/FeedSubscriptions.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalAbandonRateAll.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalCompletionsAll.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalConversionRateAll.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalNCompletions.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalNStarts.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalNValue.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalStartsAll.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/GoalValueAll.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/LatestDomstreams.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/LineItemQuantity.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/LineItemQuantityFromSessionFact.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/LineItemRevenue.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/LineItemRevenueFromSessionFact.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/NewVisitors.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/PagesPerVisit.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/RepeatVisitors.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/RevenuePerTransaction.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/RevenuePerVisit.php
@@ -523,25 +511,25 @@ parameters:
 			path: modules/base/metrics/SessionBrowserTypes.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/ShippingRevenue.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/ShippingRevenueFromSessionFact.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/TaxRevenue.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/TaxRevenueFromSessionFact.php
@@ -553,7 +541,7 @@ parameters:
 			path: modules/base/metrics/TopReferers.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/TopReferers.php
@@ -565,73 +553,73 @@ parameters:
 			path: modules/base/metrics/TopVisitors.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/TransactionRevenue.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/TransactionRevenueFromSessionFact.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/Transactions.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/TransactionsFromSessionFact.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/UniqueActions.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/UniqueLineItems.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/UniqueLineItemsFromSessionFact.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/UniquePageViews.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/VisitDuration.php
 
 		-
-			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/metrics/Visitors.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/module.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/moduleActivate.php
@@ -643,7 +631,7 @@ parameters:
 			path: modules/base/moduleActivateCli.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/moduleDeactivate.php
@@ -673,13 +661,13 @@ parameters:
 			path: modules/base/options.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/optionsFlushCache.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/optionsModules.php
@@ -691,13 +679,13 @@ parameters:
 			path: modules/base/optionsModules.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/optionsReset.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/optionsUpdate.php
@@ -715,7 +703,7 @@ parameters:
 			path: modules/base/pixel.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/processEvent.php
@@ -757,7 +745,7 @@ parameters:
 			path: modules/base/pruneEventQueueArchivesCli.php
 
 		-
-			message: '#^Result of method owa_reportController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\ReportController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/reportEcommerce.php
@@ -769,13 +757,13 @@ parameters:
 			path: modules/base/reportTransactionDetail.php
 
 		-
-			message: '#^Result of method owa_reportController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\ReportController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/reportVisitorsRoster.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/sitesAdd.php
@@ -787,13 +775,13 @@ parameters:
 			path: modules/base/sitesEdit.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/sitesInvocation.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/sitesProfile.php
@@ -835,31 +823,19 @@ parameters:
 			path: modules/base/updatesApplyCli.php
 
 		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/users.php
 
 		-
-			message: '#^Class owa_coreAPI referenced with incorrect case\: owa_coreApi\.$#'
-			identifier: class.nameCase
-			count: 1
-			path: modules/base/usersAdd.php
-
-		-
-			message: '#^Class owa_coreAPI referenced with incorrect case\: owa_coreApi\.$#'
-			identifier: class.nameCase
-			count: 1
-			path: modules/base/usersDelete.php
-
-		-
-			message: '#^Result of method owa_adminController\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersDelete.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersNewAccount.php
@@ -871,7 +847,7 @@ parameters:
 			path: modules/base/usersNewAccount.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersPasswordEntry.php
@@ -883,7 +859,7 @@ parameters:
 			path: modules/base/usersPasswordEntry.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersProfile.php
@@ -895,19 +871,13 @@ parameters:
 			path: modules/base/usersProfile.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersResetPassword.php
 
 		-
-			message: '#^Class owa_coreAPI referenced with incorrect case\: owa_coreApi\.$#'
-			identifier: class.nameCase
-			count: 1
-			path: modules/base/usersSetPassword.php
-
-		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/usersSetPassword.php
@@ -919,19 +889,19 @@ parameters:
 			path: modules/base/usersSetPassword.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/base/widgetOwaNews.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/domstream/module.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/fileCache/module.php
@@ -943,7 +913,7 @@ parameters:
 			path: modules/hello/exampleSettings.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/hello/module.php
@@ -955,13 +925,13 @@ parameters:
 			path: modules/maxmind_geoip/classes/maxmind.php
 
 		-
-			message: '#^Result of method owa_location\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Location\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/maxmind_geoip/classes/maxmind.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/maxmind_geoip/module.php
@@ -973,31 +943,31 @@ parameters:
 			path: modules/memcachedCache/classes/memcachedCache.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/memcachedCache/module.php
 
 		-
-			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/remoteQueue/module.php
 
 		-
-			message: '#^Result of method owa_caller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Caller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: owa.php
 
 		-
-			message: '#^Result of method owa_controller\:\:__construct\(\) \(void\) is used\.$#'
+			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: owa_adminController.php
 
 		-
-			message: '#^Method owa_auth\:\:authenticateUserByUrlPasskey\(\) invoked with 1 parameter, 2 required\.$#'
+			message: '#^Method OWA\\Core\\Auth\:\:authenticateUserByUrlPasskey\(\) invoked with 1 parameter, 2 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: owa_auth.php
@@ -1009,19 +979,19 @@ parameters:
 			path: owa_auth.php
 
 		-
-			message: '#^Call to an undefined method owa_controller\:\:action\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:action\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: owa_controller.php
 
 		-
-			message: '#^Call to an undefined method owa_controller\:\:errorAction\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:errorAction\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: owa_controller.php
 
 		-
-			message: '#^Method owa_coreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Core\\CoreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: owa_coreAPI.php
@@ -1033,25 +1003,25 @@ parameters:
 			path: owa_coreAPI.php
 
 		-
-			message: '#^Call to an undefined method owa_db\:\:get_results\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: owa_db.php
 
 		-
-			message: '#^Call to an undefined method owa_db\:\:query\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
 			identifier: method.notFound
 			count: 15
 			path: owa_db.php
 
 		-
-			message: '#^Call to an undefined method owa_entity\:\:getEntityPropertyList\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Core\\Entity\:\:getEntityPropertyList\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: owa_entity.php
 
 		-
-			message: '#^Access to an undefined property owa_install\:\:\$tables\.$#'
+			message: '#^Access to an undefined property OWA\\Core\\Install\:\:\$tables\.$#'
 			identifier: property.notFound
 			count: 1
 			path: owa_install.php
@@ -1063,13 +1033,13 @@ parameters:
 			path: owa_metric.php
 
 		-
-			message: '#^Method owa_module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
 			path: owa_module.php
 
 		-
-			message: '#^Access to an undefined property owa_requestContainer\:\:\$files\.$#'
+			message: '#^Access to an undefined property OWA\\Core\\RequestContainer\:\:\$files\.$#'
 			identifier: property.notFound
 			count: 1
 			path: owa_requestContainer.php

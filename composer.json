@@ -32,7 +32,7 @@
             "owa_base.php", "owa_coreAPI.php", "owa_db.php", "owa_lib.php",
             "owa_auth.php", "owa_caller.php", "owa_controller.php",
             "owa_adminController.php", "owa_reportController.php", "owa_entity.php",
-            "owa_httpRequest.php", "owa_install.php", "owa_location.php",
+            "Http.php", "owa_install.php", "owa_location.php",
             "owa_metric.php", "owa_module.php", "owa_observer.php",
             "owa_requestContainer.php", "owa_template.php", "owa_view.php",
             "modules/",

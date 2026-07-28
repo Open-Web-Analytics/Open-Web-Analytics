@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -40,7 +42,7 @@ if (!class_exists('owa_sanitize')) {
  * @since        owa 1.0.0
  */
 
-class owa_template extends Template {
+class Template extends \Template {
 
     /**
      * Configuration
@@ -72,10 +74,10 @@ class owa_template extends Template {
 
         $this->caller_params = $caller_params;
 
-        $c = owa_coreAPI::configSingleton();
+        $c = \owa_coreAPI::configSingleton();
         $this->config = $c->fetch('base');
 
-        $this->e = owa_coreAPI::errorSingleton();
+        $this->e = \owa_coreAPI::errorSingleton();
 
         // set template dirs
         if(!empty($caller_params['module'])):
@@ -84,7 +86,7 @@ class owa_template extends Template {
             $this->_setTemplateDir('base');
         endif;
 
-        $this->time_now = owa_lib::time_now();
+        $this->time_now = \owa_lib::time_now();
     }
 
     function _setTemplateDir($module) {
@@ -106,7 +108,7 @@ class owa_template extends Template {
         $this->_setTemplateDir($module);
 
         if ($file == null) {
-            owa_coreAPI::error('No template file was specified.');
+            \owa_coreAPI::error('No template file was specified.');
             return false;
         } else {
             // check module's local modification template Directory
@@ -141,7 +143,7 @@ class owa_template extends Template {
     function set_template($file = null) {
 
         if (!$file):
-            owa_coreAPI::error('No template file was specified.');
+            \owa_coreAPI::error('No template file was specified.');
             return false;
         else:
             // Normalize the requested filename before it is used in any
@@ -152,7 +154,7 @@ class owa_template extends Template {
             $file = self::sanitizeTemplateName( $file );
 
             if ( $file === '' ) {
-                owa_coreAPI::error('Invalid template file name.');
+                \owa_coreAPI::error('Invalid template file name.');
                 return false;
             }
 
@@ -216,18 +218,18 @@ class owa_template extends Template {
      */
     function truncate ($str, $length=10, $trailing='...')  {
 
-      return owa_lib::truncate ($str, $length, $trailing);
+      return \owa_lib::truncate ($str, $length, $trailing);
     }
 
     function get_month_label($month) {
 
-        return owa_lib::get_month_label($month);
+        return \owa_lib::get_month_label($month);
     }
 
     /**
      * Chooses the right icon based on browser type
      *
-     * @param unknown_type $browser_type
+     * @param mixed $browser_type
      * @return unknown
      */
     function choose_browser_icon($browser_type) {
@@ -318,9 +320,9 @@ class owa_template extends Template {
                 'container_element'     => 'nav'
             ];
             
-            $options = owa_lib::setDefaultParams( $defaults, $options );
+            $options = \owa_lib::setDefaultParams( $defaults, $options );
             
-            $nav = owa_coreAPI::getGroupNavigation( $menu_name );
+            $nav = \owa_coreAPI::getGroupNavigation( $menu_name );
             
             if ( $nav ) {
                 
@@ -419,7 +421,7 @@ class owa_template extends Template {
             require_once(OWA_BASE_DIR.'/owa_auth.php');
         }
 
-        $auth = &owa_auth::get_instance();
+        $auth = &\owa_auth::get_instance();
         return $auth->auth_status;
     }
 
@@ -461,7 +463,7 @@ class owa_template extends Template {
 
                 foreach ($all_params as $n => $v) {
 
-                    $get .= owa_coreAPI::getSetting('base','ns').$n.'='.$v;
+                    $get .= \owa_coreAPI::getSetting('base','ns').$n.'='.$v;
 
                     $i++;
 
@@ -476,7 +478,7 @@ class owa_template extends Template {
 
             case 'cookie':
 
-                $string = owa_lib::implode_assoc('=>', '|||', $all_params);
+                $string = \owa_lib::implode_assoc('=>', '|||', $all_params);
                 break;
 
             case 'json':
@@ -562,7 +564,7 @@ class owa_template extends Template {
                 $action = $all_params['action'];
             }
 
-            $all_params['nonce'] = owa_coreAPI::createNonce($action);
+            $all_params['nonce'] = \owa_coreAPI::createNonce($action);
         }
 
         $get = '';
@@ -575,7 +577,7 @@ class owa_template extends Template {
 
             foreach ($all_params as $n => $v) {
 
-                $get .= $this->config['ns'].owa_sanitize::escapeForDisplay($n).'='.owa_sanitize::escapeForDisplay($v);
+                $get .= $this->config['ns'].\owa_sanitize::escapeForDisplay($n).'='.\owa_sanitize::escapeForDisplay($v);
 
                 $i++;
 
@@ -603,7 +605,7 @@ class owa_template extends Template {
 
         $string = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
         // removes non-ascii chars
-        $string = owa_lib::escapeNonAsciiChars($string);
+        $string = \owa_lib::escapeNonAsciiChars($string);
         return $string;
     }
 
@@ -619,7 +621,7 @@ class owa_template extends Template {
     
     function getApiKey() {
 	    
-		return owa_coreAPI::getCurrentUserApiKey();
+		return \owa_coreAPI::getCurrentUserApiKey();
     }
 
     function makeApiLink($params = array(), $add_state = false, $add_apiKey = false) {
@@ -632,7 +634,7 @@ class owa_template extends Template {
             
         } else {
             
-            $params['nonce'] = owa_coreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
+            $params['nonce'] = \owa_coreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
         }
       
         $link = $this->makeLink($params, $add_state, $url);
@@ -649,7 +651,7 @@ class owa_template extends Template {
     
     function signRequestUrl( $url, $apiKey ) {
 	    
-	    return owa_coreAPI::signRequestUrl( $url, $apiKey );
+	    return \owa_coreAPI::signRequestUrl( $url, $apiKey );
     }
 
 
@@ -660,9 +662,9 @@ class owa_template extends Template {
         // denied by the deny-all .htaccess. images_url/images_absolute_url both
         // resolve to public/ (settings.php setupPaths()).
         if ($absolute === true) {
-            $url = owa_coreAPI::getSetting('base', 'images_absolute_url');
+            $url = \owa_coreAPI::getSetting('base', 'images_absolute_url');
         } else {
-            $url = owa_coreAPI::getSetting('base', 'images_url');
+            $url = \owa_coreAPI::getSetting('base', 'images_url');
         }
 
         return $url.$path;
@@ -712,12 +714,12 @@ class owa_template extends Template {
         // apply overides made via the template
         $final_params = array_merge($final_params, array_filter($params));
 
-        return owa_coreAPI::performAction($do, $final_params);
+        return \owa_coreAPI::performAction($do, $final_params);
     }
 
     function makeJson($array) {
 
-        $reserved_words = owa_coreAPI::getSetting('base', 'reserved_words');
+        $reserved_words = \owa_coreAPI::getSetting('base', 'reserved_words');
 
         $json = '{';
 
@@ -736,7 +738,7 @@ class owa_template extends Template {
                 $k = $reserved_words[$k];
             }
             
-            $json .= sprintf('%s: "%s", ', $k, owa_sanitize::escapeForDisplay( $v ) ) ;
+            $json .= sprintf('%s: "%s", ', $k, \owa_sanitize::escapeForDisplay( $v ) ) ;
 
         }
 
@@ -871,7 +873,7 @@ class owa_template extends Template {
 
         if (!empty($links) && !empty($currentSiteId)) {
 
-            $t = new owa_template;
+            $t = new \owa_template;
             $t->set('links', $links);
             $t->set('currentSiteId', $currentSiteId);
 			$t->set('params', array('do' => $current_action ));
@@ -889,7 +891,7 @@ class owa_template extends Template {
 
         if (!empty($data)) {
 
-            $t = new owa_template;
+            $t = new \owa_template;
             $t->set('dom_id', $id.'Chart');
             $t->set('data', $data);
             $t->set('width', $width);
@@ -908,7 +910,7 @@ class owa_template extends Template {
 
             $data_string = implode(',', $data);
 
-            $t = new owa_template;
+            $t = new \owa_template;
             $t->set('dom_id', $id.'Sparkline');
             $t->set('data', $data_string);
             $t->set('width', $width);
@@ -937,7 +939,7 @@ class owa_template extends Template {
 
     function makeTable($labels, $data, $table_class = '', $table_id = '', $is_sortable = true) {
 
-        $t = new owa_template;
+        $t = new \owa_template;
 
         if (!empty($table_id)) {
             $id = rand();
@@ -959,7 +961,7 @@ class owa_template extends Template {
 
     function subTemplate($template_name = '', $map = array(), $linkstate = array()) {
 
-        $t = new owa_template;
+        $t = new \owa_template;
 
         $t->set_template($template_name);
 
@@ -986,16 +988,16 @@ class owa_template extends Template {
 
     function displayMetricInfobox($params = array()) {
 
-        $t = new owa_template;
+        $t = new \owa_template;
 
         if (!empty($dom_id)) {
             $dom_id = rand();
         }
         $params['do'] = 'getResultSet';
-        $count = owa_coreAPI::executeApiCommand($params);
+        $count = \owa_coreAPI::executeApiCommand($params);
         $params['period'] = 'last_thirty_days';
         $params['dimensions'] = 'date';
-        $trend = owa_coreAPI::executeApiCommand($params);
+        $trend = \owa_coreAPI::executeApiCommand($params);
         $t->set('metric_name', $params['metrics']);
         $t->set('dom_id', $dom_id);
         $t->set('count', $count);
@@ -1008,7 +1010,7 @@ class owa_template extends Template {
 
     public function renderKpiInfobox($number, $label, $link = '', $class = '') {
 
-        $t = new owa_template;
+        $t = new \owa_template;
         $t->set_template( 'kpiInfobox.php' );
         $t->set( 'number', $number );
         $t->set( 'label', $label );
@@ -1027,7 +1029,7 @@ class owa_template extends Template {
 
     function renderDimension($template, $properties) {
 
-        $t = new owa_template;
+        $t = new \owa_template;
         $t->set('properties', $properties);
         $t->set_template($template);
         return $t->fetch();
@@ -1043,8 +1045,8 @@ class owa_template extends Template {
 
         return sprintf(
                 '<input type="hidden" name="%snonce" value="%s">',
-                owa_coreAPI::getSetting('base', 'ns'),
-                owa_coreAPI::createNonce($action));
+                \owa_coreAPI::getSetting('base', 'ns'),
+                \owa_coreAPI::createNonce($action));
     }
 
     function makeNonceLink() {
@@ -1060,7 +1062,7 @@ class owa_template extends Template {
     function out($output, $sanitize = true, $decode_special_entities = false) {
 
         if ( $sanitize ) {
-            $output = owa_sanitize::escapeForDisplay($output);
+            $output = \owa_sanitize::escapeForDisplay($output);
 
             if ( $decode_special_entities ) {
                 $output = strtr($output, array('&amp;'  => '&'));
@@ -1091,8 +1093,8 @@ class owa_template extends Template {
      */
     function safeHref( $url, $echo = true ) {
 
-        $safe = owa_sanitize::sanitizeHref( $url );
-        $safe = owa_sanitize::escapeForDisplay( $safe );
+        $safe = \owa_sanitize::sanitizeHref( $url );
+        $safe = \owa_sanitize::escapeForDisplay( $safe );
 
         if ( $echo ) {
             echo $safe;
@@ -1102,12 +1104,12 @@ class owa_template extends Template {
     }
 
     function formatCurrency($value) {
-        return owa_lib::formatCurrency( $value, owa_coreAPI::getSetting( 'base', 'currencyLocal' ), owa_coreAPI::getSetting( 'base', 'currencyISO3' ) );
+        return \owa_lib::formatCurrency( $value, \owa_coreAPI::getSetting( 'base', 'currencyLocal' ), \owa_coreAPI::getSetting( 'base', 'currencyISO3' ) );
     }
 
     function getCurrentUser() {
 
-        return owa_coreAPI::getCurrentUser();
+        return \owa_coreAPI::getCurrentUser();
     }
 
     public function getSiteThumbnail( $domain, $width = '200' ) {

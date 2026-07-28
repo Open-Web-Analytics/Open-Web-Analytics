@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@ require_once(OWA_BASE_CLASS_DIR.'sanitize.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_db extends owa_base {
+class Db extends \owa_base {
 
     /**
      * Whitelist of operators the query builder is allowed to interpolate
@@ -254,7 +256,7 @@ class owa_db extends owa_base {
 
     function where($name, $value, $operator = '=') {
 
-        if ( ! owa_lib::isEmpty( $value ) ) {
+        if ( ! \owa_lib::isEmpty( $value ) ) {
 
             // hack for intentional empty value
             if($value == ' '){
@@ -267,7 +269,7 @@ class owa_db extends owa_base {
 
     function having($name, $value, $operator = '=') {
 
-        if ( ! owa_lib::isEmpty( $value ) ) {
+        if ( ! \owa_lib::isEmpty( $value ) ) {
 
             // hack for intentional empty value
             if($value == ' ') {
@@ -283,7 +285,7 @@ class owa_db extends owa_base {
         if (!empty($where_array)):
 
             foreach ($where_array as $k => $v) {
-                if ( ! owa_lib::isEmpty($v) ):
+                if ( ! \owa_lib::isEmpty($v) ):
 
                     if (empty($v['operator'])):
                         $v['operator'] = '=';
@@ -410,7 +412,7 @@ class owa_db extends owa_base {
     }
 
     function _insertQuery() {
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         $params = $this->_fetchSqlParams('set_values');
 
         $count = count($params);
@@ -435,11 +437,11 @@ class owa_db extends owa_base {
 
             endif;
         }
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         $this->_setSql(sprintf(OWA_SQL_INSERT_ROW, $this->_sqlParams['table'], $sql_cols, $sql_values));
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         $ret = $this->_query();
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         return $ret;
 
     }
@@ -589,12 +591,12 @@ class owa_db extends owa_base {
             $constraint = $type.' ';
 
             foreach ($params as $k => $v) {
-                owa_coreAPI::debug($v);
+                \owa_coreAPI::debug($v);
 
                 $op = strtolower( $v['operator'] );
 
                 if ( ! in_array( $op, self::ALLOWED_OPERATORS, true ) ) {
-                    owa_coreAPI::debug( sprintf( 'Refusing constraint with disallowed operator: %s', $v['operator'] ) );
+                    \owa_coreAPI::debug( sprintf( 'Refusing constraint with disallowed operator: %s', $v['operator'] ) );
                     // still bump the counter so the AND-join positions stay correct
                     $i++;
                     continue;
@@ -668,7 +670,7 @@ class owa_db extends owa_base {
 
     function prepare ( $string ) {
 
-        return owa_sanitize::stripSql( $string );
+        return \owa_sanitize::stripSql( $string );
     }
 
     function _makeJoinClause() {
@@ -959,7 +961,7 @@ class owa_db extends owa_base {
                     return $results[0];
                     break;
                 case "inverted_array":
-                    return owa_lib::deconstruct_assoc($results);
+                    return \owa_lib::deconstruct_assoc($results);
                     break;
                 default:
                     return $results;

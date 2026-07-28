@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_location {
+class Location {
 
     /**
      * City
@@ -63,14 +65,14 @@ class owa_location {
     /**
      * Location of concrete class plugins
      *
-     * @var unknown_type
+     * @var mixed
      */
     var $plugin_dir;
 
     /**
      * Constructor
      *
-     * @return owa_location
+     * @return \owa_location
      */
     function __construct() {
 

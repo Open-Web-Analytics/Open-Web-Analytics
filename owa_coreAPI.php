@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_DIR.'/owa_lib.php');
  * @since        owa 1.0.0
  */
 
-class owa_coreAPI {
+class CoreAPI {
 
 
     // @depricated
@@ -40,7 +42,7 @@ class owa_coreAPI {
         static $api;
 
         if(!isset($api)):
-            $api = new owa_coreAPI();
+            $api = new \owa_coreAPI();
         endif;
 
         if(!empty($params)):
@@ -68,27 +70,27 @@ class owa_coreAPI {
 					
 	                 if ( ! require_once( $connection_class_path ) ) {
 	                     
-	                     owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
+	                     \owa_coreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
 	                     
 	                     return false;
 	                }
 	                
 				} else {
 					
-					owa_coreAPI::error("$type database connection class file not found.");
+					\owa_coreAPI::error("$type database connection class file not found.");
 				}
 			}
 
         } else {
 	        
-	        owa_coreAPI::error("$type is not a supported database.");
+	        \owa_coreAPI::error("$type is not a supported database.");
         }
 
          return true;
 
     }
     /**
-     * @return owa_db
+     * @return \owa_db
      */
     public static function dbSingleton() {
 
@@ -96,7 +98,7 @@ class owa_coreAPI {
 
         if (!isset($db)) {
 
-            $db = owa_coreAPI::dbFactory();
+            $db = \owa_coreAPI::dbFactory();
         }
 
         return $db;
@@ -104,22 +106,22 @@ class owa_coreAPI {
 
     public static function dbFactory() {
 
-        $db_type = owa_coreAPI::getSetting('base', 'db_type');
-        $ret = owa_coreAPI::setupStorageEngine($db_type);
+        $db_type = \owa_coreAPI::getSetting('base', 'db_type');
+        $ret = \owa_coreAPI::setupStorageEngine($db_type);
 
          if (!$ret) {
-             owa_coreAPI::error(sprintf('Failed to initialize db type %s. Exiting.', $db_type));
+             \owa_coreAPI::error(sprintf('Failed to initialize db type %s. Exiting.', $db_type));
              return;
         } else {
             $connection_class = 'owa_db_'.$db_type;
             $db = new $connection_class(
-                owa_coreAPI::getSetting('base','db_host'),
-                owa_coreAPI::getSetting('base','db_port'),
-                owa_coreAPI::getSetting('base','db_name'),
-                owa_coreAPI::getSetting('base','db_user'),
-                owa_coreAPI::getSetting('base','db_password'),
-                owa_coreAPI::getSetting('base','db_force_new_connections'),
-                owa_coreAPI::getSetting('base','db_make_persistant_connections')
+                \owa_coreAPI::getSetting('base','db_host'),
+                \owa_coreAPI::getSetting('base','db_port'),
+                \owa_coreAPI::getSetting('base','db_name'),
+                \owa_coreAPI::getSetting('base','db_user'),
+                \owa_coreAPI::getSetting('base','db_password'),
+                \owa_coreAPI::getSetting('base','db_force_new_connections'),
+                \owa_coreAPI::getSetting('base','db_make_persistant_connections')
             );
 
             return $db;
@@ -127,7 +129,7 @@ class owa_coreAPI {
     }
 
     /**
-     * @return owa_settings
+     * @return \owa_settings
      */
     public static function configSingleton() {
 
@@ -139,7 +141,7 @@ class owa_coreAPI {
                 require_once( OWA_BASE_CLASS_DIR.'settings.php' );
             }
 
-            $config = owa_coreAPI::supportClassFactory( 'base', 'settings' );
+            $config = \owa_coreAPI::supportClassFactory( 'base', 'settings' );
         }
 
         return $config;
@@ -155,7 +157,7 @@ class owa_coreAPI {
                 require_once( OWA_BASE_CLASS_DIR.'error.php' );
             }
 
-            $e = owa_coreAPI::supportClassFactory( 'base', 'error' );
+            $e = \owa_coreAPI::supportClassFactory( 'base', 'error' );
 
         }
 
@@ -164,13 +166,13 @@ class owa_coreAPI {
 
     public static function getSetting($module, $name) {
 
-        $s = owa_coreAPI::configSingleton();
+        $s = \owa_coreAPI::configSingleton();
         return $s->get($module, $name);
     }
 
     public static function setSetting($module, $name, $value, $persist = false) {
 
-        $s = owa_coreAPI::configSingleton();
+        $s = \owa_coreAPI::configSingleton();
 
         if ($persist === true) {
             $s->persistSetting($module, $name, $value);
@@ -182,14 +184,14 @@ class owa_coreAPI {
 
     public static function persistSetting($module, $name, $value) {
 
-        $s = owa_coreAPI::configSingleton();
+        $s = \owa_coreAPI::configSingleton();
         $s->persistSetting($module, $name, $value);
 
     }
 
     public static function getSiteSetting($site_id, $name) {
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \owa_coreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
 
         if ( $site->wasPersisted() ) {
@@ -203,7 +205,7 @@ class owa_coreAPI {
         static $psl;
 
         if ( ! $psl ) {
-            $psl = owa_coreAPI::supportClassFactory( 'base', 'pslReader' );
+            $psl = \owa_coreAPI::supportClassFactory( 'base', 'pslReader' );
         }
 
         return $psl->getRegisteredDomain( $full_domain );
@@ -211,7 +213,7 @@ class owa_coreAPI {
 
     public static function persistSiteSetting($site_id, $name, $value) {
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \owa_coreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
         if ( $site->wasPersisted() ) {
             $settings = $site->get('settings');
@@ -226,7 +228,7 @@ class owa_coreAPI {
 
     public static function getSiteSettings($site_id) {
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \owa_coreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
         if ( $site->wasPersisted() ) {
 
@@ -243,12 +245,12 @@ class owa_coreAPI {
 
     public static function getAllRoles() {
 
-        $caps = owa_coreAPI::getSetting('base', 'capabilities');
+        $caps = \owa_coreAPI::getSetting('base', 'capabilities');
         return array_keys($caps);
     }
 
     public static function getCapabilities($role) {
-        $caps = owa_coreAPI::getSetting('base', 'capabilities');
+        $caps = \owa_coreAPI::getSetting('base', 'capabilities');
         if (array_key_exists($role, $caps)) {
             return $caps[$role];
         } else {
@@ -257,10 +259,10 @@ class owa_coreAPI {
     }
 
     /**
-     * @return owa_serviceUser
+     * @return \owa_serviceUser
      */
     public static function getCurrentUser() {
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         return $s->getCurrentUser();
     }
 
@@ -271,28 +273,28 @@ class owa_coreAPI {
      */
     public static function isCurrentUserCapable($capability, $site_id = null) {
 
-        $cu = owa_coreAPI::getCurrentUser();
-        owa_coreAPI::debug("Current User Role: ".$cu->getRole());
-        owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
+        $cu = \owa_coreAPI::getCurrentUser();
+        \owa_coreAPI::debug("Current User Role: ".$cu->getRole());
+        \owa_coreAPI::debug("Current User Authentication: ".$cu->isAuthenticated());
         $ret = $cu->isCapable($capability, $site_id);
-        owa_coreAPI::debug("Is current User capable: ".$ret);
+        \owa_coreAPI::debug("Is current User capable: ".$ret);
         return $ret;
     }
 
     public static function isCurrentUserAuthenticated() {
 
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \owa_coreAPI::getCurrentUser();
         return $cu->isAuthenticated();
     }
     
     public static function getCurrentUserApiKey() {
 
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \owa_coreAPI::getCurrentUser();
         return $cu->getApiKey();
     }
     
     /**
-     * @return owa_service
+     * @return \owa_service
      */
     public static function serviceSingleton() {
 
@@ -304,7 +306,7 @@ class owa_coreAPI {
                 require_once(OWA_BASE_CLASS_DIR.'service.php');
             }
 
-            $s = owa_coreAPI::supportClassFactory('base', 'service');
+            $s = \owa_coreAPI::supportClassFactory('base', 'service');
 
         }
 
@@ -317,7 +319,7 @@ class owa_coreAPI {
 
         if ( empty ( $cache ) ) {
 	        
-            $cache = owa_lib::simpleFactory( 'owa_cache', OWA_BASE_CLASS_DIR.'cache.php', $params );
+            $cache = \owa_lib::simpleFactory( 'owa_cache', OWA_BASE_CLASS_DIR.'cache.php', $params );
         }
 
         return $cache;
@@ -326,7 +328,7 @@ class owa_coreAPI {
     public static function implementationFactory( $group, $implementation_name ) {
       
         // get implementation
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
     
         $mapValue = $s->getMapValue( $group, $implementation_name );
 		
@@ -353,11 +355,11 @@ class owa_coreAPI {
             }
 
             //owa_coreAPI::debug(print_r($implementation, true));
-            return owa_lib::simpleFactory( $class_name, $file, $params );
+            return \owa_lib::simpleFactory( $class_name, $file, $params );
 
         } else {
 
-            throw new Exception("No implementation by the name $implementation_name found in group $group.");
+            throw new \Exception("No implementation by the name $implementation_name found in group $group.");
         }
         
     }
@@ -373,7 +375,7 @@ class owa_coreAPI {
                 require_once(OWA_DIR.'owa_requestContainer.php');
             endif;
 
-            $request = owa_lib::factory(OWA_DIR, '', 'owa_requestContainer');
+            $request = \owa_lib::factory(OWA_DIR, '', 'owa_requestContainer');
 
         endif;
 
@@ -394,7 +396,7 @@ class owa_coreAPI {
         if (file_exists($full_file_path)) {
             return require_once($full_file_path);
         } else {
-            owa_coreAPI::debug("moduleRequireOnce says no file found at: $full_file_path");
+            \owa_coreAPI::debug("moduleRequireOnce says no file found at: $full_file_path");
             return false;
         }
     }
@@ -405,10 +407,10 @@ class owa_coreAPI {
         //print $class;
         // Require class file if class does not already exist
         if(!class_exists($class)):
-            owa_coreAPI::moduleRequireOnce($module, '', $file);
+            \owa_coreAPI::moduleRequireOnce($module, '', $file);
         endif;
 
-        $obj = owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
+        $obj = \owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
 
         //if (isset($obj->module)):
             $obj->module = $module;
@@ -423,10 +425,10 @@ class owa_coreAPI {
 
         // Require class file if class does not already exist
         if(!class_exists($class)):
-            owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
+            \owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
         endif;
 
-        $obj = owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.$sub_directory, '', $class, $params);
+        $obj = \owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.$sub_directory, '', $class, $params);
 
         return $obj;
     }
@@ -444,7 +446,7 @@ class owa_coreAPI {
 
         require_once(OWA_BASE_DIR.'/modules/'.$module.'/module.php');
 
-        return owa_lib::factory(OWA_BASE_CLASSES_DIR.$module, 'owa_', $module.'Module');
+        return \owa_lib::factory(OWA_BASE_CLASSES_DIR.$module, 'owa_', $module.'Module');
 
     }
 
@@ -458,10 +460,10 @@ class owa_coreAPI {
 
         // Require class file if class does not already exist
         if(!class_exists($class)):
-            owa_coreAPI::moduleRequireOnce($module, 'updates', $filename);
+            \owa_coreAPI::moduleRequireOnce($module, 'updates', $filename);
         endif;
 
-        $obj = owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.'updates', '', $class);
+        $obj = \owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.'updates', '', $class);
 
         $obj->module_name = $module;
         if (!$obj->schema_version) {
@@ -475,7 +477,7 @@ class owa_coreAPI {
         list($module, $class) = explode(".", $subview);
         //print_r($module.' ' . $class);
 
-        $subview =  owa_coreAPI::moduleFactory($subview, 'View', $params);
+        $subview =  \owa_coreAPI::moduleFactory($subview, 'View', $params);
         $subview->is_subview = true;
 
         return $subview;
@@ -483,7 +485,7 @@ class owa_coreAPI {
 
     public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 
-        $obj = owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
+        $obj = \owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
         //$obj->module = $module;
 
         return $obj;
@@ -492,7 +494,7 @@ class owa_coreAPI {
     /**
      * Convienence method for generating entities
      *
-     * @param unknown_type $entity_name
+     * @param mixed $entity_name
      * @return unknown
      */
     public static function entityFactory($entity_name) {
@@ -503,7 +505,7 @@ class owa_coreAPI {
 
         if (!defined('OWA_DTD_INT')) {
             if (defined('OWA_DB_TYPE')) {
-                owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
+                \owa_coreAPI::setupStorageEngine(OWA_DB_TYPE);
             } else {
                 //owa_coreAPI::setupStorageEngine('mysql');
                 self::error("OWA_DB_TYPE constant has not been set for some reason.");
@@ -517,7 +519,7 @@ class owa_coreAPI {
             require_once(OWA_BASE_CLASSES_DIR.'owa_entity.php');
         endif;
 
-        $entity = owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
+        $entity = \owa_coreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
         $entity->name = $entity_name;
         return $entity;
         //return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
@@ -527,14 +529,14 @@ class owa_coreAPI {
     /**
      * Convienence method for generating entities
      *
-     * @param unknown_type $entity_name
+     * @param mixed $entity_name
      * @return unknown
      * @depricated
      * @todo REMOVE
      */
     public static function rawEntityFactory($entity_name) {
 
-        return owa_coreAPI::entityFactory($entity_name);
+        return \owa_coreAPI::entityFactory($entity_name);
 
     }
 
@@ -554,10 +556,10 @@ class owa_coreAPI {
 
         // Require class file if class does not already exist
         if(!class_exists($class)):
-            owa_coreAPI::moduleRequireOnce($module, $class_dir, $file);
+            \owa_coreAPI::moduleRequireOnce($module, $class_dir, $file);
         endif;
 
-        $obj = owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$class_dir.'/'.$module, '', $class, $params);
+        $obj = \owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$class_dir.'/'.$module, '', $class, $params);
 
         if ($add_module_name == true):
             $obj->module = $module;
@@ -578,11 +580,11 @@ class owa_coreAPI {
 			if ( $route ) {
 				
 				//$params['rest_route'] = $route;
-				owa_coreAPI::debug('API params: ');
-				owa_coreAPI::debug($map);
-				owa_coreAPI::debug('API route: ');
-				owa_coreAPI::debug($route);
-				$controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $map );					
+				\owa_coreAPI::debug('API params: ');
+				\owa_coreAPI::debug($map);
+				\owa_coreAPI::debug('API route: ');
+				\owa_coreAPI::debug($route);
+				$controller = \owa_lib::simpleFactory( $route['class_name'], $route['file'], $map );					
 				$response = self::runController( $controller );
 				
 				$response = json_decode($response);
@@ -593,11 +595,11 @@ class owa_coreAPI {
 		
         if (!array_key_exists('do', $map)) {
             echo ("API Command missing from request.");
-            owa_coreAPI::debug('API Command missing from request. Aborting.');
+            \owa_coreAPI::debug('API Command missing from request. Aborting.');
             exit;
         } else {
             // load service
-            $s = owa_coreAPI::serviceSingleton();
+            $s = \owa_coreAPI::serviceSingleton();
             // lookup method class
             $do = $s->getApiMethodClass($map['do']);
 
@@ -646,7 +648,7 @@ class owa_coreAPI {
     public static function metricFactory($metric_name, $params = array()) {
 
         if (!strpos($metric_name, '.')) {
-            $s = owa_coreAPI::serviceSingleton();
+            $s = \owa_coreAPI::serviceSingleton();
             $metric_name = $s->getMetricClasses($metric_name);
         }
 
@@ -654,7 +656,7 @@ class owa_coreAPI {
             require_once(OWA_BASE_CLASSES_DIR.'owa_metric.php');
         }
 
-        return owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
+        return \owa_coreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
     }
 
     /**
@@ -666,7 +668,7 @@ class owa_coreAPI {
 
         $panels = array();
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         foreach ($service->modules as $k => $v) {
             $v->registerAdminPanels();
@@ -695,7 +697,7 @@ class owa_coreAPI {
 
         $links = array();
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         foreach ($service->modules as $k => $v) {
 
@@ -736,7 +738,7 @@ class owa_coreAPI {
 
         $links = array();
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         foreach ($service->modules as $k => $v) {
 
@@ -801,7 +803,7 @@ class owa_coreAPI {
 
     public static function getActiveModules() {
 
-        $c = owa_coreAPI::configSingleton();
+        $c = \owa_coreAPI::configSingleton();
 
         $config = $c->config->get('settings');
 
@@ -828,8 +830,8 @@ class owa_coreAPI {
         
 			// Filter out the current (.) and parent (..) directories
 			$files = array_diff($result, array('.', '..', 'index.php'));
-			owa_coreAPI::debug('Modules present are: ');
-			owa_coreAPI::debug( $files );
+			\owa_coreAPI::debug('Modules present are: ');
+			\owa_coreAPI::debug( $files );
 			
 			return $files;
 		}
@@ -837,7 +839,7 @@ class owa_coreAPI {
 
     public static function getModulesNeedingUpdates() {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         return $service->getModulesNeedingUpdates();
     }
@@ -850,7 +852,7 @@ class owa_coreAPI {
      */
     public static function performAction( $action, $params = array() ) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 			
 		// Load action controller from service map which uses the 'module.action' convention	
 		$action_map = $service->getMapValue('actions', $action );
@@ -858,22 +860,22 @@ class owa_coreAPI {
 		// create the controller object
         if ( $action_map ) {
 	    
-            $controller = owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
+            $controller = \owa_lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
         
         } else {
         
             // attempt to use old style convention
-            $controller = owa_coreAPI::moduleFactory($action, 'Controller', $params);
+            $controller = \owa_coreAPI::moduleFactory($action, 'Controller', $params);
         }
 		
-		return owa_coreAPI::runController( $controller );
+		return \owa_coreAPI::runController( $controller );
     }
     
     public static function runController( $controller ) {
 	    
 	    if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
 
-            owa_coreAPI::debug("Class is not a controller. no doAction method found.");
+            \owa_coreAPI::debug("Class is not a controller. no doAction method found.");
             return;
         }
 
@@ -887,21 +889,21 @@ class owa_coreAPI {
             // Redirect to a view
             if ( $data['view_method'] == 'redirect' ) {
 
-                return owa_lib::redirectToView( $data );
+                return \owa_lib::redirectToView( $data );
 
             // return an image . Will output headers and binary data.
             } elseif ( $data['view_method'] == 'image' ) {
 
-                return owa_coreAPI::displayImage( $data );
+                return \owa_coreAPI::displayImage( $data );
 
             } else {
 
-                return owa_coreAPI::displayView( $data );
+                return \owa_coreAPI::displayView( $data );
             }
 
         } elseif( ! empty( $data['do'] ) ) {
 
-            return owa_lib::redirectToView( $data );
+            return \owa_lib::redirectToView( $data );
         }
     }
 
@@ -916,22 +918,22 @@ class owa_coreAPI {
      */
     public static function logEvent( $event_type, $message = '') {
 
-        owa_coreAPI::debug("Logging new event $event_type");
+        \owa_coreAPI::debug("Logging new event $event_type");
 		
         // Check to ensure that the event is in fact a tracking event
-        if ( ! in_array( $event_type, owa_coreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+        if ( ! in_array( $event_type, \owa_coreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
             
-            owa_coreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
+            \owa_coreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
             return false;
         }
         
         // Check to see if named users should be logged
-        if (owa_coreAPI::getSetting('base', 'log_named_users') != true) {
-            $cu = owa_coreAPI::getCurrentUser();
+        if (\owa_coreAPI::getSetting('base', 'log_named_users') != true) {
+            $cu = \owa_coreAPI::getCurrentUser();
             $cu_user_id = $cu->getUserData('user_id');
 
             if( ! empty( $cu_user_id ) ) {
-				owa_coreAPI::debug("Not logging named user.");
+				\owa_coreAPI::debug("Not logging named user.");
                 return false;
             }
         }
@@ -942,7 +944,7 @@ class owa_coreAPI {
         
         if ( ! ( $message instanceof $class ) ) {
 	        
-            $event = owa_coreAPI::supportClassFactory( 'base', 'event' );
+            $event = \owa_coreAPI::supportClassFactory( 'base', 'event' );
             $event->setProperties( $message );
             $event->setEventType( $event_type );
             
@@ -951,11 +953,11 @@ class owa_coreAPI {
             $event = $message;
         }
         
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         
         // Tracking Event processing STAGE 1
         // sets any necessary environmental properties from SERVER global
-        $teh = owa_coreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \owa_coreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
 		
@@ -965,47 +967,47 @@ class owa_coreAPI {
         }
         
         // do not log if the request is robotic
-        owa_coreAPI::debug("Testing to see if event was generated by a robot");
-        owa_coreAPI::debug("User Agent: ". $event->get('HTTP_USER_AGENT') );
+        \owa_coreAPI::debug("Testing to see if event was generated by a robot");
+        \owa_coreAPI::debug("User Agent: ". $event->get('HTTP_USER_AGENT') );
 
         $bcap = $service->getBrowscap( $event->get('HTTP_USER_AGENT') );
        
-        if ( ! owa_coreAPI::getSetting('base', 'log_robots') ) {
+        if ( ! \owa_coreAPI::getSetting('base', 'log_robots') ) {
 
             if ( $bcap->robotCheck() ) {
 	            
-                owa_coreAPI::debug("ABORTING: request appears to be from a robot");
-                owa_coreAPI::setRequestParam('is_robot', true);
+                \owa_coreAPI::debug("ABORTING: request appears to be from a robot");
+                \owa_coreAPI::setRequestParam('is_robot', true);
 
                 return false;
             }
         }
 
         // check to see if IP should be excluded
-        if ( owa_coreAPI::isIpAddressExcluded( $event->get('ip_address') ) ) {
+        if ( \owa_coreAPI::isIpAddressExcluded( $event->get('ip_address') ) ) {
 	        
-            owa_coreAPI::debug("Not logging event. IP address found in exclusion list.");
+            \owa_coreAPI::debug("Not logging event. IP address found in exclusion list.");
             
             return false;
         }
         
         // queue for later or process event straight away
-        if ( owa_coreAPI::getSetting( 'base', 'queue_events' ) ||
-             owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
+        if ( \owa_coreAPI::getSetting( 'base', 'queue_events' ) ||
+             \owa_coreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
 
-            $q = owa_coreAPI::getEventQueue( 'incoming_tracking_events' );
-            owa_coreAPI::debug('Queuing '.$event->getEventType().' event with properties: '.print_r($event->getProperties(), true ) );
+            $q = \owa_coreAPI::getEventQueue( 'incoming_tracking_events' );
+            \owa_coreAPI::debug('Queuing '.$event->getEventType().' event with properties: '.print_r($event->getProperties(), true ) );
             $q->sendMessage( $event );
 
         } else {
 
             // lookup which event processor to use to process this event type
-            $processor_action = owa_coreAPI::getEventProcessor( $event->getEventType() );
+            $processor_action = \owa_coreAPI::getEventProcessor( $event->getEventType() );
            
-			owa_coreAPI::debug('About to perform action: '.$processor_action);
-			owa_coreAPI::debug($event);
+			\owa_coreAPI::debug('About to perform action: '.$processor_action);
+			\owa_coreAPI::debug($event);
 			
-			return owa_coreAPI::performAction( $processor_action, array( 'event' => $event ) );
+			return \owa_coreAPI::performAction( $processor_action, array( 'event' => $event ) );
         }
     }
 
@@ -1022,13 +1024,13 @@ class owa_coreAPI {
     public static function displayImage($data) {
 
         header('Content-type: image/gif');
-        header('P3P: CP="'.owa_coreAPI::getSetting('base', 'p3p_policy').'"');
+        header('P3P: CP="'.\owa_coreAPI::getSetting('base', 'p3p_policy').'"');
         header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Pragma: no-cache');
 
-        echo owa_coreAPI::displayView($data);
+        echo \owa_coreAPI::displayView($data);
     }
 
 
@@ -1046,7 +1048,7 @@ class owa_coreAPI {
             $viewfile = $data['view'];
         endif;
 
-        $view = owa_coreAPI::moduleFactory($viewfile, 'View');
+        $view = \owa_coreAPI::moduleFactory($viewfile, 'View');
       
         $view->setData($data);
         return $view->assembleView($data);
@@ -1059,7 +1061,7 @@ class owa_coreAPI {
             $viewfile = $data['view'];
         endif;
 
-        $view =  owa_coreAPI::subViewFactory($viewfile);
+        $view =  \owa_coreAPI::subViewFactory($viewfile);
 
         return $view->assembleView($data);
 
@@ -1073,18 +1075,18 @@ class owa_coreAPI {
      */
     function stripDocumentUrl($url) {
 
-        if (owa_coreAPI::getSetting('base', 'clean_query_string')):
+        if (\owa_coreAPI::getSetting('base', 'clean_query_string')):
 
-            if (owa_coreAPI::getSetting('base', 'query_string_filters')):
-                $filters = str_replace(' ', '', (string) owa_coreAPI::getSetting('base', 'query_string_filters'));
+            if (\owa_coreAPI::getSetting('base', 'query_string_filters')):
+                $filters = str_replace(' ', '', (string) \owa_coreAPI::getSetting('base', 'query_string_filters'));
                 $filters = explode(',', $filters);
             else:
                 $filters = array();
             endif;
 
             // OWA specific params to filter
-            array_push($filters, owa_coreAPI::getSetting('base', 'source_param'));
-            array_push($filters, owa_coreAPI::getSetting('base', 'ns').owa_coreAPI::getSetting('base', 'feed_subscription_param'));
+            array_push($filters, \owa_coreAPI::getSetting('base', 'source_param'));
+            array_push($filters, \owa_coreAPI::getSetting('base', 'ns').\owa_coreAPI::getSetting('base', 'feed_subscription_param'));
 
             //print_r($filters);
 
@@ -1113,27 +1115,27 @@ class owa_coreAPI {
 
     public static function getRequestParam($name) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
 
         return $service->request->getParam($name);
 
     }
 
     public static function getRequest() {
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->request;
     }
 
     public static function setRequestParam($name, $value) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->request->setParam($name, $value);
 
     }
 
     public static function makeTimePeriod($time_period, $params = array()) {
 
-        $period = owa_coreAPI::supportClassFactory('base', 'timePeriod');
+        $period = \owa_coreAPI::supportClassFactory('base', 'timePeriod');
 
         if ( ! array_key_exists('period', $params)) {
             $params['period'] = $time_period;
@@ -1153,27 +1155,27 @@ class owa_coreAPI {
             require_once(OWA_BASE_CLASS_DIR.'validation.php');
         endif;
 
-        return owa_lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
+        return \owa_lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
 
     }
 
     public static function debug($msg) {
 
-        $e = owa_coreAPI::errorSingleton();
+        $e = \owa_coreAPI::errorSingleton();
         $e->debug($msg);
         return;
     }
 
     public static function error($msg) {
 
-        $e = owa_coreAPI::errorSingleton();
+        $e = \owa_coreAPI::errorSingleton();
         $e->err($msg);
         return;
     }
 
     public static function notice($msg) {
 
-        $e = owa_coreAPI::errorSingleton();
+        $e = \owa_coreAPI::errorSingleton();
         $e->notice($msg);
     }
 
@@ -1181,30 +1183,30 @@ class owa_coreAPI {
 
         if ( $domain ) {
             // sanitizes the domain
-            $domain = owa_lib::sanitizeCookieDomain( $domain );
+            $domain = \owa_lib::sanitizeCookieDomain( $domain );
             
         } else {
 	        
-            $domain = owa_coreAPI::getSetting('base', 'cookie_domain');
+            $domain = \owa_coreAPI::getSetting('base', 'cookie_domain');
         }
         if (is_array($cookie_value)) {
 
-            $cookie_value = owa_lib::implode_assoc('=>', '|||', $cookie_value);
+            $cookie_value = \owa_lib::implode_assoc('=>', '|||', $cookie_value);
         }
 
         // add namespace
-        $cookie_name = sprintf('%s%s', owa_coreAPI::getSetting('base', 'ns'), $cookie_name);
+        $cookie_name = sprintf('%s%s', \owa_coreAPI::getSetting('base', 'ns'), $cookie_name);
 
         // debug
-        owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
+        \owa_coreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
 
         // makes cookie to session cookie only
-        if (!owa_coreAPI::getSetting('base', 'cookie_persistence')) {
+        if (!\owa_coreAPI::getSetting('base', 'cookie_persistence')) {
 	        
             $expires = 0;
         }
 		
-		$secure = owa_lib::isHttps();
+		$secure = \owa_lib::isHttps();
 	
         // PHP 7.3 has a different function signature.
         // @todo refactor usage to clean up once php 7.3 is min requirment.
@@ -1229,49 +1231,49 @@ class owa_coreAPI {
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
 
-        return owa_coreAPI::createCookie($cookie_name, false, time()-3600*25, $path, $domain);
+        return \owa_coreAPI::createCookie($cookie_name, false, time()-3600*25, $path, $domain);
     }
 
     public static function registerStateStore($name, $expiration, $length = '', $format = '', $type = 'cookie', $cdh_required = '') {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->request->state->registerStore( $name, $expiration, $length, $format, $type, $cdh_required );
     }
 
     public static function setState($store, $name, $value, $store_type = '', $is_perminent = '') {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
     }
 
     public static function getState($store, $name = '') {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->request->state->get($store, $name);
     }
 
     // depricated
     public static function getStateParam($store, $name = '') {
 
-        return owa_coreAPI::getState($store, $name);
+        return \owa_coreAPI::getState($store, $name);
     }
 
     public static function getServerParam($name = '') {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->request->getServerParam($name);
     }
 
     public static function clearState($store, $name = '') {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         $service->request->state->clear($store, $name);
 
     }
 
     public static function getEventProcessor($event_type) {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         $processor = $service->getMapValue('event_processors', $event_type);
 
         if ( $processor ) {
@@ -1280,7 +1282,7 @@ class owa_coreAPI {
         
         } else {
             
-            owa_coreAPI::debug("no event processor found for $event_type");
+            \owa_coreAPI::debug("no event processor found for $event_type");
         }
     }
 
@@ -1293,7 +1295,7 @@ class owa_coreAPI {
 
         static $init;
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         // Override request parsms with those passed by caller
         if (!empty($caller_params)) {
             $service->request->mergeParams($caller_params);
@@ -1302,7 +1304,7 @@ class owa_coreAPI {
         $params = $service->request->getAllOwaParams();
 
         if ($init != true) {
-            owa_coreAPI::debug('Handling request with params: '. print_r($params, true));
+            \owa_coreAPI::debug('Handling request with params: '. print_r($params, true));
         }
 
         // backwards compatability with old style view/controler scheme
@@ -1310,24 +1312,24 @@ class owa_coreAPI {
         if (array_key_exists('view', $params)) {
             // its a view request so the only data is in whats in the params
             $init = true;
-            return owa_coreAPI::displayView($params);
+            return \owa_coreAPI::displayView($params);
         }
 
         if (empty($action)) {
-            $action = owa_coreAPI::getRequestParam('action');
+            $action = \owa_coreAPI::getRequestParam('action');
             if (empty($action)) {
-                $action = owa_coreAPI::getRequestParam('do');
+                $action = \owa_coreAPI::getRequestParam('do');
 
                 if (empty($action)) {
-                    owa_coreAPI::debug('no action specified on request params');
+                    \owa_coreAPI::debug('no action specified on request params');
                     return; 
                 }
             }
         }
 		
         $init = true;
-        owa_coreAPI::debug('About to perform action: '.$action);
-        return owa_coreAPI::performAction($action, $params);
+        \owa_coreAPI::debug('About to perform action: '.$action);
+        return \owa_coreAPI::performAction($action, $params);
 
     }    
     
@@ -1338,23 +1340,23 @@ class owa_coreAPI {
      */
     public static function handleRestRequest() {
         
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         
         $params = $service->request->getAllOwaParams();
         
-        owa_coreAPI::debug('Handling REST request with params: '. print_r($params, true));
+        \owa_coreAPI::debug('Handling REST request with params: '. print_r($params, true));
         
-        $action = owa_coreAPI::getRequestParam('do');
+        $action = \owa_coreAPI::getRequestParam('do');
         
         if ( ! $action ) {
             
-            owa_coreAPI::debug('no action specified on REST request params');
+            \owa_coreAPI::debug('no action specified on REST request params');
             return; 
         }
              
         // REST API Requests
         // Lookup controller for REST API route.
-        if ( owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+        if ( \owa_coreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
             
             // get request method
             $request_method = $service->request->getRequestType();
@@ -1362,8 +1364,8 @@ class owa_coreAPI {
             // check to see if this is a CORS pre-flight Request
             if ($request_method == 'OPTIONS') {
                 
-                $controller = owa_lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );					
-                return owa_coreAPI::runController( $controller );
+                $controller = \owa_lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );					
+                return \owa_coreAPI::runController( $controller );
             }
             
             // check for rewriten rest params and set module, version, and do params from that
@@ -1385,9 +1387,9 @@ class owa_coreAPI {
             }
             
             
-            owa_coreAPI::debug('Generating REST API route controller...');
+            \owa_coreAPI::debug('Generating REST API route controller...');
             
-            if ( owa_lib::keyExistsNotEmpty( 'module', $params ) && owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
+            if ( \owa_lib::keyExistsNotEmpty( 'module', $params ) && \owa_lib::keyExistsNotEmpty( 'version', $params ) ) {
             
                 $route = self::lookupRestRoute( $request_method, $params['module'], $params['version'], $action );
                 
@@ -1407,24 +1409,24 @@ class owa_coreAPI {
                     }
                     
                     $params['rest_route'] = $route;
-                    $controller = owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
-                    return owa_coreAPI::runController( $controller );
+                    $controller = \owa_lib::simpleFactory( $route['class_name'], $route['file'], $params );					
+                    return \owa_coreAPI::runController( $controller );
                 
                 } else {
                     
-                    owa_coreAPI::debug('No REST API route found');
+                    \owa_coreAPI::debug('No REST API route found');
                     return;	
                 }
         
             } else {
                 
-                owa_coreAPI::debug('Could not generate controller because no version param was on request.');
+                \owa_coreAPI::debug('Could not generate controller because no version param was on request.');
                 return;
             }
             
         } else {
             
-            owa_coreAPI::debug('This is not a REST API request.');
+            \owa_coreAPI::debug('This is not a REST API request.');
         }
     }
     
@@ -1436,16 +1438,16 @@ class owa_coreAPI {
 	    	&& ! empty( $module )
 	    ){
 		    
-		    $service = owa_coreAPI::serviceSingleton();
+		    $service = \owa_coreAPI::serviceSingleton();
 		    $route = $service->getRestApiRoute($module, $version, $do, $request_method );
-			owa_coreAPI::debug($route);
+			\owa_coreAPI::debug($route);
 		    return $route;
 	    }
     }
 
     public static function isUpdateRequired() {
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \owa_coreAPI::serviceSingleton();
         return $service->isUpdateRequired();
     }
 
@@ -1453,7 +1455,7 @@ class owa_coreAPI {
      * @return array
      */
     public static function getSitesList() {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->selectFrom('owa_site');
         $db->selectColumn('*');
         $sites = $db->getAllRows();
@@ -1481,7 +1483,7 @@ class owa_coreAPI {
             require_once(OWA_BASE_CLASS_DIR.'eventDispatch.php');
         }
 
-        return owa_eventDispatch::get_instance();
+        return \owa_eventDispatch::get_instance();
 
     }
 
@@ -1493,7 +1495,7 @@ class owa_coreAPI {
         if ( ! isset( $queues[ $name ] ) ) {
 
             // get queue config
-            $s = owa_coreAPI::serviceSingleton();
+            $s = \owa_coreAPI::serviceSingleton();
             $map = $s->getMapValue('event_queues', $name);
 
             if ( $map ) {
@@ -1504,17 +1506,17 @@ class owa_coreAPI {
                      && isset( $implementation[0] )
                      && isset( $implementation[1] )
                 ) {
-                    owa_coreAPI::debug(print_r($implementation, true));
-                    $queues[ $name ] = owa_lib::simpleFactory( $implementation[0], $implementation[1], $map );
+                    \owa_coreAPI::debug(print_r($implementation, true));
+                    $queues[ $name ] = \owa_lib::simpleFactory( $implementation[0], $implementation[1], $map );
 
                 } else {
 
-                    throw new Exception("No event queue by that type found.");
+                    throw new \Exception("No event queue by that type found.");
                 }
 
             } else {
 
-                throw new Exception("No configuration found for event queue $name.");
+                throw new \Exception("No configuration found for event queue $name.");
             }
         }
             // return queue
@@ -1523,31 +1525,31 @@ class owa_coreAPI {
 
     public static function getCliCommandClass($command) {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         return $s->getCliCommandClass($command);
     }
 
     public static function getGeolocationFromIpAddress($ip_address) {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         $s->geolocation->getGeolocationFromIp($ip_address);
         return $s->geolocation;
     }
 
     public static function getNonceTimeInterval() {
 
-        return  ceil( time() / owa_coreAPI::getSetting( 'base', 'nonce_expiration_period') );
+        return  ceil( time() / \owa_coreAPI::getSetting( 'base', 'nonce_expiration_period') );
     }
 
     public static function createNonce($action) {
 
-        $time = owa_coreAPI::getNonceTimeInterval();
-        $cu = owa_coreAPI::getCurrentUser();
+        $time = \owa_coreAPI::getNonceTimeInterval();
+        $cu = \owa_coreAPI::getCurrentUser();
         $user_id = $cu->getUserData( 'user_id' );
 
         $full_nonce = $time . $action . $user_id . 'owa_nonce';
 
-        $nonce = substr( owa_coreAPI::saltedHash($full_nonce, 'nonce'), -12, 10);
+        $nonce = substr( \owa_coreAPI::saltedHash($full_nonce, 'nonce'), -12, 10);
 
         return $nonce;
     }
@@ -1559,8 +1561,8 @@ class owa_coreAPI {
 
     public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
 
-        $salt = owa_coreAPI::getSalt( $scheme );
-        return owa_lib::hash( $hash_type, $data, $salt );
+        $salt = \owa_coreAPI::getSalt( $scheme );
+        return \owa_lib::hash( $hash_type, $data, $salt );
     }
 
 
@@ -1574,7 +1576,7 @@ class owa_coreAPI {
         if ( ! $cached_salts ) {
 
             $cached_salts = array();
-            $ns = strtoupper( (string) owa_coreAPI::getSetting('base', 'ns') );
+            $ns = strtoupper( (string) \owa_coreAPI::getSetting('base', 'ns') );
 
             foreach (array('NONCE', 'SECRET', 'AUTH') as $f ) {
 
@@ -1619,7 +1621,7 @@ class owa_coreAPI {
 
         $password = '';
         for ( $i = 0; $i < $length; $i++ ) {
-            $password .= substr($chars, owa_coreAPI::random(0, strlen($chars) - 1), 1);
+            $password .= substr($chars, \owa_coreAPI::random(0, strlen($chars) - 1), 1);
         }
 
         return $password;
@@ -1678,8 +1680,8 @@ class owa_coreAPI {
 
     public static function summarize($map) {
 
-        $entity = owa_coreAPI::entityFactory($map['entity']);
-        $db = owa_coreAPI::dbSingleton();
+        $entity = \owa_coreAPI::entityFactory($map['entity']);
+        $db = \owa_coreAPI::dbSingleton();
         $db->selectFrom($entity->getTableName(), $entity->getTableAlias());
 
         foreach ($map['columns'] as $col => $action) {
@@ -1726,10 +1728,10 @@ class owa_coreAPI {
             require_once(OWA_BASE_CLASSES_DIR.'owa_template.php');
         }
 
-        $t = new owa_template();
+        $t = new \owa_template();
 
         $t->set( 'site_id', $site_id );
-        $cmds = owa_coreAPI::filter( 'tracker_tag_cmds', array() );
+        $cmds = \owa_coreAPI::filter( 'tracker_tag_cmds', array() );
         $t->set( 'cmds', $cmds );
         $t->set('options', $options);
         $t->set_template('js_log_tag.php');
@@ -1740,7 +1742,7 @@ class owa_coreAPI {
 
         if ( $module_name ) {
 
-            $m = owa_coreAPI::moduleClassFactory($module_name);
+            $m = \owa_coreAPI::moduleClassFactory($module_name);
             return $m->activate();
         }
     }
@@ -1754,7 +1756,7 @@ class owa_coreAPI {
             // setting on $this->name, so a boot-loaded instance is not needed --
             // and getModule() returned false (then fataled on false->deactivate())
             // for any module that was not already in the active/boot-loaded set.
-            $m = owa_coreAPI::moduleClassFactory($module_name);
+            $m = \owa_coreAPI::moduleClassFactory($module_name);
             return $m->deactivate();
         }
     }
@@ -1763,7 +1765,7 @@ class owa_coreAPI {
 
         if ($module_name) {
 
-            $m = owa_coreAPI::moduleClassFactory($module_name);
+            $m = \owa_coreAPI::moduleClassFactory($module_name);
             $status = $m->install();
             return $status;
         }
@@ -1790,7 +1792,7 @@ class owa_coreAPI {
 
     public static function getAllDimensions() {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
 
         $dims = $s->dimensions;
 
@@ -1805,7 +1807,7 @@ class owa_coreAPI {
 
     public static function getAllMetrics() {
 
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \owa_coreAPI::serviceSingleton();
         return $s->metrics;
     }
 
@@ -1819,7 +1821,7 @@ class owa_coreAPI {
         }
 
         if ( ! isset( $gm[$siteId] ) )  {
-            $gm[ $siteId ] = owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
+            $gm[ $siteId ] = \owa_coreAPI::supportClassFactory('base', 'goalManager', $siteId);
         }
 
         return $gm[$siteId];
@@ -1827,13 +1829,13 @@ class owa_coreAPI {
 
     public static function getRequestTimestamp() {
 
-        $r = owa_coreAPI::requestContainerSingleton();
+        $r = \owa_coreAPI::requestContainerSingleton();
         return $r->getTimestamp();
     }
 
     public static function isEveryoneCapable( $capability ) {
 
-        $caps = owa_coreAPI::getCapabilities('everyone');
+        $caps = \owa_coreAPI::getCapabilities('everyone');
 
         if ( in_array( $capability, $caps ) ) {
             return true;
@@ -1844,18 +1846,18 @@ class owa_coreAPI {
 
     public static function getCurrentUrl() {
 	    
-        $r = owa_coreAPI::requestContainerSingleton();
+        $r = \owa_coreAPI::requestContainerSingleton();
         return $r->getCurrentUrl();
     }
 
     public static function isIpAddressExcluded( $ip_address ) {
 
         // do not log if ip address is on the do not log list
-        $ips = owa_coreAPI::getSetting( 'base', 'excluded_ips' );
+        $ips = \owa_coreAPI::getSetting( 'base', 'excluded_ips' );
         
         if ( $ips ) {
 	        
-	        owa_coreAPI::debug('Excluded ip address list: '.$ips);
+	        \owa_coreAPI::debug('Excluded ip address list: '.$ips);
 
             $ips = trim( $ips );
 
@@ -1868,7 +1870,7 @@ class owa_coreAPI {
             foreach( $ips as $ip ) {
                 $ip = trim( $ip );
                 if ( $ip_address === $ip ) {
-                    owa_coreAPI::debug("Request is from excluded ip address: $ip.");
+                    \owa_coreAPI::debug("Request is from excluded ip address: $ip.");
                     return true;
                 }
             }
@@ -1902,7 +1904,7 @@ class owa_coreAPI {
 		    $filter_name = 'conf.' . $file_name;
 	    }
 	    
-	    return owa_coreAPI::filter( $filter_name, $conf );
+	    return \owa_coreAPI::filter( $filter_name, $conf );
     }
 
     /**
@@ -1915,13 +1917,13 @@ class owa_coreAPI {
      */
     public static function registerFilter( $filter_name, $callback, $priority = 10 ) {
 
-        $ed = owa_coreAPI::getEventDispatch();
+        $ed = \owa_coreAPI::getEventDispatch();
         $ed->attachFilter($filter_name, $callback, $priority);
     }
 
     public static function filter( $filter_name, $value ) {
 
-        $ed = owa_coreAPI::getEventDispatch();
+        $ed = \owa_coreAPI::getEventDispatch();
         return $ed->filter( $filter_name, $value );
     }
     
@@ -1933,7 +1935,7 @@ class owa_coreAPI {
 		    
 		    foreach ($items as $item ) {
 			    
-			    $entity = owa_coreAPI::entityFactory( $entity_name );
+			    $entity = \owa_coreAPI::entityFactory( $entity_name );
 			    $entity->setProperties( $item );
 			    $set[] = $entity;
 			    
@@ -1945,7 +1947,7 @@ class owa_coreAPI {
     
     public static function signRequestUrl( $url, $apiKey ) {
 	    
-	    $auth = owa_auth::get_instance();
+	    $auth = \owa_auth::get_instance();
 	    
 	    $signature = $auth->generateSignature( $url, $apiKey );
 	    

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -29,7 +31,7 @@ require_once (OWA_BASE_DIR.'/owa_base.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_install extends owa_base{
+class Install extends \owa_base{
 
     /**
      * Data access object
@@ -55,20 +57,20 @@ class owa_install extends owa_base{
     /**
      * Module name
      *
-     * @var unknown_type
+     * @var mixed
      */
     var $module;
 
     /**
      * Constructor
      *
-     * @return owa_install
+     * @return \owa_install
      */
 
     function __construct() {
 
         parent::__construct();
-        $this->db = owa_coreAPI::dbSingleton();
+        $this->db = \owa_coreAPI::dbSingleton();
     }
 
     /**

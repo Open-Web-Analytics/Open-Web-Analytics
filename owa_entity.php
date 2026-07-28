@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -35,7 +37,7 @@ endif;
 // TODO: replace with explicit property declarations; entities set columns as
 // dynamic properties (deprecated in PHP 8.2).
 #[\AllowDynamicProperties]
-class owa_entity {
+class Entity {
 
     var $name;
     var $properties = array();
@@ -52,7 +54,7 @@ class owa_entity {
         foreach ( $properties as $col_name => $col_props ) {
             
             // create the column obj with the proper name and data type
-            $col = new owa_dbColumn( $col_name, $col_props['dtd'] );
+            $col = new \owa_dbColumn( $col_name, $col_props['dtd'] );
             
             // Evaluate the type of column that needs to be created
             if ( array_key_exists( 'type', $col_props) ) {
@@ -178,7 +180,7 @@ class owa_entity {
     /**
      * Sets object attributes
      *
-     * @param unknown_type $array
+     * @param mixed $array
      */
     function setProperties($array, $apply_filters = false) {
         
@@ -197,7 +199,7 @@ class owa_entity {
     
     function setGuid($string) {
         
-        return owa_lib::setStringGuid($string);
+        return \owa_lib::setStringGuid($string);
         
     }
     
@@ -275,7 +277,7 @@ class owa_entity {
      */
     function create() {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $all_cols = $this->getColumns();
         
         $db->insertInto($this->getTableName());
@@ -318,7 +320,7 @@ class owa_entity {
     function addToCache($col = 'id') {
         
         if($this->isCachable()) {
-            $cache = owa_coreAPI::cacheSingleton();
+            $cache = \owa_coreAPI::cacheSingleton();
             $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
             $cache->set($this->getTableName(), $col.$this->get( $col ), $this, $this->getCacheExpirationPeriod());
         }
@@ -330,7 +332,7 @@ class owa_entity {
      */
     function update($where = '') {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->updateTable($this->getTableName());
         
         // get column list
@@ -376,7 +378,7 @@ class owa_entity {
      */
     function partialUpdate($named_properties, $where) {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->updateTable($this->getTableName());
         
         foreach ($named_properties as $v) {
@@ -410,7 +412,7 @@ class owa_entity {
      */
     function delete($value = '', $col = 'id') {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->deleteFrom($this->getTableName());
         
         if (empty($value)) {
@@ -424,8 +426,8 @@ class owa_entity {
         // Delete from Cache
         if ( $status ){
             if ($this->isCachable()) {
-                owa_coreAPI::debug('about to remove from cache');
-                $cache = owa_coreAPI::cacheSingleton();
+                \owa_coreAPI::debug('about to remove from cache');
+                $cache = \owa_coreAPI::cacheSingleton();
                 $cache->remove($this->getTableName(), $col.$value);
             }
         }
@@ -449,17 +451,17 @@ class owa_entity {
     function getByColumn($col, $value) {
                 
         if ( ! $col ) {
-            throw new Exception("No column name passed.");
+            throw new \Exception("No column name passed.");
         }
         
         if ( ! $value ) {
-            throw new Exception("No value passed.");
+            throw new \Exception("No value passed.");
         }
         
         $cache_obj = '';
         
         if ($this->isCachable()) {
-            $cache = owa_coreAPI::cacheSingleton();
+            $cache = \owa_coreAPI::cacheSingleton();
             $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
             $cache_obj = $cache->get($this->getTableName(), $col.$value);
         }
@@ -472,10 +474,10 @@ class owa_entity {
                     
         } else {
         
-            $db = owa_coreAPI::dbSingleton();
+            $db = \owa_coreAPI::dbSingleton();
             $db->selectFrom($this->getTableName());
             $db->selectColumn('*');
-            owa_coreAPI::debug("Col: $col, value: $value");
+            \owa_coreAPI::debug("Col: $col, value: $value");
             $db->where($col, $value);
             $properties = $db->getOneRow();
             
@@ -485,7 +487,7 @@ class owa_entity {
                 $this->wasPersisted = true;
                 // add to cache
                 $this->addToCache($col);
-                owa_coreAPI::debug('entity loaded from db');
+                \owa_coreAPI::debug('entity loaded from db');
             }
         }
     }
@@ -584,15 +586,15 @@ class owa_entity {
      */
     function createTable() {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         // Persist table
         $status = $db->createTable($this);
         
         if ($status == true):
-            owa_coreAPI::notice(sprintf("%s Table Created.", $this->getTableName()));
+            \owa_coreAPI::notice(sprintf("%s Table Created.", $this->getTableName()));
             return true;
         else:
-            owa_coreAPI::notice(sprintf("%s Table Creation Failed.", $this->getTableName()));
+            \owa_coreAPI::notice(sprintf("%s Table Creation Failed.", $this->getTableName()));
             return false;
         endif;
     
@@ -605,7 +607,7 @@ class owa_entity {
      */
     function dropTable() {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         // Persist table
         $status = $db->dropTable($this->getTableName());
         
@@ -621,7 +623,7 @@ class owa_entity {
         
         $def = $this->getColumnDefinition($column_name);
         // Persist table
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $status = $db->addColumn($this->getTableName(), $column_name, $def);
         
         if ($status == true):
@@ -634,7 +636,7 @@ class owa_entity {
     
     function dropColumn($column_name) {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $status = $db->dropColumn($this->getTableName(), $column_name);
         
         if ($status == true):
@@ -648,7 +650,7 @@ class owa_entity {
     function modifyColumn($column_name) {
     
         $def = $this->getColumnDefinition($column_name);
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $status = $db->modifyColumn($this->getTableName(), $column_name, $def);
         
         if ($status == true):
@@ -668,7 +670,7 @@ class owa_entity {
             $def = $this->getColumnDefinition($column_name);
         }
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $status = $db->renameColumn($this->getTableName(), $old_column_name, $column_name, $def);
         
         if ($status == true):
@@ -681,7 +683,7 @@ class owa_entity {
     
     function renameTable($new_table_name) {
         
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $status = $db->renameTable($this->getTableName(), $new_table_name);
         
         if ($status == true):
@@ -722,7 +724,7 @@ class owa_entity {
     
     function generateRandomUid($seed = '') {
         
-        return owa_lib::generateRandomUid();
+        return \owa_lib::generateRandomUid();
          
         //return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
     }
@@ -735,7 +737,7 @@ class owa_entity {
      */
     function generateId($string) {
         //require_once(OWA_DIR.'owa_lib.php');
-        return owa_lib::setStringGuid($string);
+        return \owa_lib::setStringGuid($string);
     }
     
     function setCacheExpirationPeriod($seconds) {

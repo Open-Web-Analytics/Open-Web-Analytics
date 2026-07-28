@@ -16,7 +16,7 @@
 // $Id$
 //
 
-require_once ( OWA_BASE_DIR. '/owa_httpRequest.php' );
+require_once ( OWA_BASE_DIR. '/Http.php' );
 
 
 /**

@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -30,7 +32,7 @@ require_once(OWA_BASE_CLASS_DIR.'timePeriod.php');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_metric extends owa_base {
+class Metric extends \owa_base {
 
     /**
      * Current Time
@@ -219,7 +221,7 @@ class owa_metric extends owa_base {
     */
     function setEntity($name) {
         
-        $this->entity = owa_coreAPI::entityFactory($name);
+        $this->entity = \owa_coreAPI::entityFactory($name);
     }
     
     function getTableName() {
@@ -248,7 +250,7 @@ class owa_metric extends owa_base {
             // old style metrics populate this explicitly.
             return $this->select;
         } else {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \owa_coreAPI::dbSingleton();
             switch ( $this->type ) {
                 
                 case 'count':
