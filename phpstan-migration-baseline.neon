@@ -328,331 +328,301 @@ parameters:
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/actions.php
+			path: modules/base/metrics/Actions.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/actionsPerVisit.php
+			path: modules/base/metrics/ActionsPerVisit.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/actionsValue.php
+			path: modules/base/metrics/ActionsValue.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/bounceRate.php
+			path: modules/base/metrics/BounceRate.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/bounces.php
-
-		-
-			message: '#^Result of method owa_clickBrowserTypes\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/metrics/clickBrowserTypes.php
+			path: modules/base/metrics/Bounces.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/clickBrowserTypes.php
+			path: modules/base/metrics/ClickBrowserTypes.php
 
 		-
-			message: '#^Call to an undefined method owa_configurableMetric\:\:setChildMetric\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Metric\\ConfigurableMetric\:\:setChildMetric\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: modules/base/metrics/configurableMetric.php
+			path: modules/base/metrics/ConfigurableMetric.php
 
 		-
-			message: '#^Call to an undefined method owa_configurableMetric\:\:setFormula\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Metric\\ConfigurableMetric\:\:setFormula\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: modules/base/metrics/configurableMetric.php
+			path: modules/base/metrics/ConfigurableMetric.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/configurableMetric.php
+			path: modules/base/metrics/ConfigurableMetric.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/domClicks.php
+			path: modules/base/metrics/DomClicks.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/ecommerceConversionRate.php
+			path: modules/base/metrics/EcommerceConversionRate.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/feedReaders.php
+			path: modules/base/metrics/FeedReaders.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/feedRequests.php
+			path: modules/base/metrics/FeedRequests.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/feedSubscriptions.php
+			path: modules/base/metrics/FeedSubscriptions.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalAbandonRateAll.php
+			path: modules/base/metrics/GoalAbandonRateAll.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalCompletionsAll.php
+			path: modules/base/metrics/GoalCompletionsAll.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalConversionRateAll.php
+			path: modules/base/metrics/GoalConversionRateAll.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalNCompletions.php
+			path: modules/base/metrics/GoalNCompletions.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalNStarts.php
+			path: modules/base/metrics/GoalNStarts.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalNValue.php
+			path: modules/base/metrics/GoalNValue.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalStartsAll.php
+			path: modules/base/metrics/GoalStartsAll.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/goalValueAll.php
-
-		-
-			message: '#^Result of method owa_latestDomstreams\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/metrics/latestDomstreams.php
+			path: modules/base/metrics/GoalValueAll.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/latestDomstreams.php
+			path: modules/base/metrics/LatestDomstreams.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/lineItemQuantity.php
+			path: modules/base/metrics/LineItemQuantity.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/lineItemQuantityFromSessionFact.php
+			path: modules/base/metrics/LineItemQuantityFromSessionFact.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/lineItemRevenue.php
+			path: modules/base/metrics/LineItemRevenue.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/lineItemRevenueFromSessionFact.php
+			path: modules/base/metrics/LineItemRevenueFromSessionFact.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/newVisitors.php
+			path: modules/base/metrics/NewVisitors.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/pagesPerVisit.php
+			path: modules/base/metrics/PagesPerVisit.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/repeatVisitors.php
+			path: modules/base/metrics/RepeatVisitors.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/revenuePerTransaction.php
+			path: modules/base/metrics/RevenuePerTransaction.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/revenuePerVisit.php
+			path: modules/base/metrics/RevenuePerVisit.php
 
 		-
-			message: '#^Call to an undefined method owa_sessionBrowserTypes\:\:getOrder\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Metric\\SessionBrowserTypes\:\:getOrder\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: modules/base/metrics/sessionBrowserTypes.php
-
-		-
-			message: '#^Result of method owa_sessionBrowserTypes\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/metrics/sessionBrowserTypes.php
+			path: modules/base/metrics/SessionBrowserTypes.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/shippingRevenue.php
+			path: modules/base/metrics/ShippingRevenue.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/shippingRevenueFromSessionFact.php
+			path: modules/base/metrics/ShippingRevenueFromSessionFact.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/taxRevenue.php
+			path: modules/base/metrics/TaxRevenue.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/taxRevenueFromSessionFact.php
+			path: modules/base/metrics/TaxRevenueFromSessionFact.php
 
 		-
-			message: '#^Call to an undefined method owa_topReferers\:\:getOrder\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Metric\\TopReferers\:\:getOrder\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: modules/base/metrics/topReferers.php
+			path: modules/base/metrics/TopReferers.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/topReferers.php
+			path: modules/base/metrics/TopReferers.php
 
 		-
-			message: '#^Result of method owa_topReferers\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/metrics/topReferers.php
-
-		-
-			message: '#^Call to an undefined method owa_topVisitors\:\:getOrder\(\)\.$#'
+			message: '#^Call to an undefined method OWA\\Module\\Base\\Metric\\TopVisitors\:\:getOrder\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: modules/base/metrics/topVisitors.php
-
-		-
-			message: '#^Result of method owa_topVisitors\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/base/metrics/topVisitors.php
+			path: modules/base/metrics/TopVisitors.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/transactionRevenue.php
+			path: modules/base/metrics/TransactionRevenue.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/transactionRevenueFromSessionFact.php
+			path: modules/base/metrics/TransactionRevenueFromSessionFact.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/transactions.php
+			path: modules/base/metrics/Transactions.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/transactionsFromSessionFact.php
+			path: modules/base/metrics/TransactionsFromSessionFact.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/uniqueActions.php
+			path: modules/base/metrics/UniqueActions.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/uniqueLineItems.php
+			path: modules/base/metrics/UniqueLineItems.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/uniqueLineItemsFromSessionFact.php
+			path: modules/base/metrics/UniqueLineItemsFromSessionFact.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/uniquePageViews.php
+			path: modules/base/metrics/UniquePageViews.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/visitDuration.php
+			path: modules/base/metrics/VisitDuration.php
 
 		-
 			message: '#^Result of method owa_metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/metrics/visitors.php
+			path: modules/base/metrics/Visitors.php
 
 		-
 			message: '#^Result of method owa_module\:\:__construct\(\) \(void\) is used\.$#'
