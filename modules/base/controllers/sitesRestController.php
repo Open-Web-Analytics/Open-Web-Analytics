@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 /**
  * Open Web Analytics - The Open Source Web Analytics Framework
@@ -14,7 +16,7 @@ require_once(OWA_BASE_MODULE_DIR.'sites.php');
  * A GET REST method for obtaiing the list of tracked web sites
  *
  */
-class owa_sitesRestController extends owa_sitesController {
+class SitesRest extends \owa_sitesController {
     
 
     function success() {
@@ -24,20 +26,3 @@ class owa_sitesRestController extends owa_sitesController {
         $this->setView( 'base.sitesRest' );
     }
 }
-
-
-require_once(OWA_DIR.'owa_view.php');
-
-/**
- * Sites Roster View
- * 
- */
-class owa_sitesRestView extends owa_restApiView {
-        
-    function render() {
-        
-        $this->setResponseData( $this->get('tracked_sites') );
-    }
-}
-
-?>

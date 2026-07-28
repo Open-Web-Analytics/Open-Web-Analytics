@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -23,7 +25,7 @@ require_once(OWA_BASE_CLASS_DIR . 'cliController.php');
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  */
-class owa_resetSecretsCliController extends owa_cliController {
+class ResetSecretsCli extends \owa_cliController {
     /**
      *  constructor.
      * @param $params
@@ -80,7 +82,7 @@ class owa_resetSecretsCliController extends owa_cliController {
 		        	
 		        	if ( $test === substr( $secret, 0, 12 ) ) {
 			        	// write new line
-			        	fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, owa_coreAPI::secureRandomString(64) ) );	
+			        	fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \owa_coreAPI::secureRandomString(64) ) );	
 	                    
 	                    $replaced = true;
 	                    $mod = true;
@@ -106,7 +108,7 @@ class owa_resetSecretsCliController extends owa_cliController {
 			if ( $mod ) {
 				
 			  rename( $temp_file, $config_file );
-			  owa_coreAPI::notice( "Secrets updated successfully." );
+			  \owa_coreAPI::notice( "Secrets updated successfully." );
 			
 			} else {
 				// else blow away any tmp file created.
@@ -116,7 +118,7 @@ class owa_resetSecretsCliController extends owa_cliController {
 	        
 	    } else {
 		    
-		    owa_coreAPI::debug( "Config file doesn't exist." );
+		    \owa_coreAPI::debug( "Config file doesn't exist." );
 	    }
     }
 
@@ -125,22 +127,5 @@ class owa_resetSecretsCliController extends owa_cliController {
         $this->setView('base.resetSecretsCli');
         $this->set('msgs', $this->getParam('validation_errors'));
     }
-
-}
-
-require_once(OWA_BASE_DIR.'/owa_view.php');
-
-/**
- * Crawl document cli View
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
- */
-class owa_resetSecretsCliView extends owa_cliView {
 
 }

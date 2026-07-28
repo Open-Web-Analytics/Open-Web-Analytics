@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 /**
  * Open Web Analytics - The Open Source Web Analytics Framework
@@ -14,7 +16,7 @@ require_once(OWA_BASE_DIR.'/owa_adminController.php');
  * Adds a new allowed user to a site.
  *
  */
-class owa_siteAddAllowedUserRestController extends owa_adminController {
+class SiteAddAllowedUserRest extends \owa_adminController {
 
     function __construct($params) {
 
@@ -49,11 +51,11 @@ class owa_siteAddAllowedUserRestController extends owa_adminController {
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $s = owa_coreAPI::entityFactory( 'base.site' );
+        $s = \owa_coreAPI::entityFactory( 'base.site' );
         $s->load( $site_id, 'site_id' );
 
         $user_id = $this->getParam( 'user_id' );
-        $u = owa_coreAPI::entityFactory( 'base.user' );
+        $u = \owa_coreAPI::entityFactory( 'base.user' );
         $u->load( $user_id, 'user_id' );
 
         // defense in depth: never write a relation with an unresolved foreign key.
@@ -68,7 +70,7 @@ class owa_siteAddAllowedUserRestController extends owa_adminController {
 	        return $this->data;
         }
 
-        $relation = owa_coreAPI::entityFactory( 'base.site_user' );
+        $relation = \owa_coreAPI::entityFactory( 'base.site_user' );
         $relation->set( 'user_id', $u->get( 'id' ) );
         $relation->set( 'site_id', $s->get( 'id' ) );
         $relation->save();
@@ -98,20 +100,3 @@ class owa_siteAddAllowedUserRestController extends owa_adminController {
     }
 
 }
-
-
-require_once(OWA_DIR.'owa_view.php');
-
-/**
- * View
- * 
- */
-class owa_siteAddAllowedUserRestView extends owa_restApiView {
-        
-    function render() {
-        
-        $this->setResponseData( $this->get('response') );
-    }
-}
-
-?>

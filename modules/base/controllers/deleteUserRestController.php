@@ -1,8 +1,10 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 require_once(OWA_BASE_MODULE_DIR.'usersDelete.php');
 
-class owa_deleteUserRestController extends owa_usersdeleteController {
+class DeleteUserRest extends \owa_usersdeleteController {
 	
 	function success() {
 		
@@ -19,15 +21,3 @@ class owa_deleteUserRestController extends owa_usersdeleteController {
 
 	}
 }	
-
-require_once(OWA_DIR.'owa_view.php');
-
-class owa_deleteUserRestView extends owa_restApiView {
-	
-	function render() {
-		
-		return;
-	}
-}
-
-?>

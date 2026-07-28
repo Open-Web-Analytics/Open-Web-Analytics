@@ -275,6 +275,34 @@ function owa_compat_class_map(): array
         'owa_exampleSettingsView' => 'OWA\\Module\\Hello\\ExampleSettingsView',
         'owa_maxmind' => 'OWA\\Module\\MaxmindGeoip\\Classes\\Maxmind',
         'owa_memcachedCache' => 'OWA\\Module\\MemcachedCache\\Classes\\MemcachedCache',
+
+        // modules/base/controllers (Phase 6 stage 3). AFFIX->NAMESPACE: the
+        // Controller/View suffix becomes the sub-namespace, so the class short
+        // name drops BOTH owa_ and the suffix. The 9 files were each a
+        // Controller+View PAIR sharing one file; split one-class-per-file (the
+        // View extracted to a sibling <name>View.php). Controllers reached by
+        // literal 'owa_*RestController'/'owa_*CliController' registration
+        // strings (registerRestApiRoute / registerAction) + the corsPreflight
+        // simpleFactory literal; Views by setView('base.<x>') -> moduleFactory
+        // synthesizing 'owa_'.<file>.'View'. All legacy names bridged here.
+        'owa_addSiteRestController' => 'OWA\\Module\\Base\\Controller\\AddSiteRest',
+        'owa_addSiteRestView' => 'OWA\\Module\\Base\\View\\AddSiteRest',
+        'owa_addUserRestController' => 'OWA\\Module\\Base\\Controller\\AddUserRest',
+        'owa_addUserRestView' => 'OWA\\Module\\Base\\View\\AddUserRest',
+        'owa_corsPreflightController' => 'OWA\\Module\\Base\\Controller\\CorsPreflight',
+        'owa_corsPreflightView' => 'OWA\\Module\\Base\\View\\CorsPreflight',
+        'owa_deleteUserRestController' => 'OWA\\Module\\Base\\Controller\\DeleteUserRest',
+        'owa_deleteUserRestView' => 'OWA\\Module\\Base\\View\\DeleteUserRest',
+        'owa_reportsRestController' => 'OWA\\Module\\Base\\Controller\\ReportsRest',
+        'owa_reportsRestView' => 'OWA\\Module\\Base\\View\\ReportsRest',
+        'owa_resetSecretsCliController' => 'OWA\\Module\\Base\\Controller\\ResetSecretsCli',
+        'owa_resetSecretsCliView' => 'OWA\\Module\\Base\\View\\ResetSecretsCli',
+        'owa_siteAddAllowedUserRestController' => 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',
+        'owa_siteAddAllowedUserRestView' => 'OWA\\Module\\Base\\View\\SiteAddAllowedUserRest',
+        'owa_sitesRestController' => 'OWA\\Module\\Base\\Controller\\SitesRest',
+        'owa_sitesRestView' => 'OWA\\Module\\Base\\View\\SitesRest',
+        'owa_usersRestController' => 'OWA\\Module\\Base\\Controller\\UsersRest',
+        'owa_usersRestView' => 'OWA\\Module\\Base\\View\\UsersRest',
     ];
 }
 

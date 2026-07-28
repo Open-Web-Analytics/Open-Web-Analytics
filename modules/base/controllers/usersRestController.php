@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 /**
  * Open Web Analytics - The Open Source Web Analytics Framework
@@ -14,7 +16,7 @@ require_once(OWA_BASE_MODULE_DIR.'users.php');
  * A GET REST method for obtaiing the list of tracked web sites
  *
  */
-class owa_usersRestController extends owa_usersController {
+class UsersRest extends \owa_usersController {
     
 
     function success() {
@@ -24,32 +26,3 @@ class owa_usersRestController extends owa_usersController {
         $this->setView( 'base.usersRest' );
     }
 }
-
-
-require_once(OWA_DIR.'owa_view.php');
-
-/**
- * Sites Roster View
- * 
- */
-class owa_usersRestView extends owa_restApiView {
-        
-    function render() {
-        
-        $users = $this->get('users_objs');
-       
-        $users_sanitized = [];
-        
-        if ( $users ) {
-	        
-	        foreach ( $users as $k => $user ) {
-		        
-		        $users_sanitized[ $k ] = $user->getProperties( ['temp_passkey', 'password', 'api_key'] );
-	        }
-        }
-        
-        $this->setResponseData( $users_sanitized );
-    }
-}
-
-?>

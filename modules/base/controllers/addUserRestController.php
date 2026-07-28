@@ -1,8 +1,10 @@
 <?php
+namespace OWA\Module\Base\Controller;
+
 
 require_once(OWA_BASE_MODULE_DIR.'usersAdd.php');
 
-class owa_addUserRestController extends owa_usersAddController {
+class AddUserRest extends \owa_usersAddController {
 	
 	function success() {
 		
@@ -19,15 +21,3 @@ class owa_addUserRestController extends owa_usersAddController {
 
 	}
 }	
-
-require_once(OWA_DIR.'owa_view.php');
-
-class owa_addUserRestView extends owa_restApiView {
-	
-	function render() {
-		
-		$this->setResponseData( $this->get('user') );
-	}
-}
-
-?>
