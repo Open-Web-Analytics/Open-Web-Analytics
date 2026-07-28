@@ -16,6 +16,9 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
  * Configuration Entity
  * 
@@ -28,15 +31,15 @@
  * @since        owa 1.0.0
  */
 
-class owa_configuration extends owa_entity {
+class Configuration extends \owa_entity {
 
     function __construct() {
 
         $this->setTableName('configuration');
-        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id'] = new \owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['settings'] = new owa_dbColumn;
+        $this->properties['settings'] = new \owa_dbColumn;
         $this->properties['settings']->setDataType(OWA_DTD_BLOB);
         $this->setCachable();
     }

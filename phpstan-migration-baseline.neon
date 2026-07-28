@@ -232,55 +232,49 @@ parameters:
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/action_fact.php
+			path: modules/base/entities/ActionFact.php
 
 		-
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/click.php
+			path: modules/base/entities/Click.php
 
 		-
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/commerce_line_item_fact.php
+			path: modules/base/entities/CommerceLineItemFact.php
 
 		-
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/commerce_transaction_fact.php
+			path: modules/base/entities/CommerceTransactionFact.php
 
 		-
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/domstream.php
+			path: modules/base/entities/Domstream.php
 
 		-
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/request.php
+			path: modules/base/entities/Request.php
 
 		-
 			message: '#^Result of method owa_factTable\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/base/entities/session.php
+			path: modules/base/entities/Session.php
 
 		-
-			message: '#^Class owa_coreAPI referenced with incorrect case\: owa_coreApi\.$#'
-			identifier: class.nameCase
-			count: 1
-			path: modules/base/entities/site.php
-
-		-
-			message: '#^Method owa_user\:\:isDefaultUser\(\) should return bool but return statement is missing\.$#'
+			message: '#^Method OWA\\Module\\Base\\Entity\\User\:\:isDefaultUser\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
-			path: modules/base/entities/user.php
+			path: modules/base/entities/User.php
 
 		-
 			message: '#^Result of method owa_cliController\:\:__construct\(\) \(void\) is used\.$#'

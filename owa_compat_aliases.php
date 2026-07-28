@@ -78,6 +78,34 @@ function owa_compat_class_map(): array
 {
     return [
         // --- populated as classes are migrated, one entry per rename ---
+
+        // modules/base/entities (Phase 6 stage 2)
+        'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
+        'owa_action_fact' => 'OWA\\Module\\Base\\Entity\\ActionFact',
+        'owa_ad_dim' => 'OWA\\Module\\Base\\Entity\\AdDim',
+        'owa_campaign_dim' => 'OWA\\Module\\Base\\Entity\\CampaignDim',
+        'owa_click' => 'OWA\\Module\\Base\\Entity\\Click',
+        'owa_commerce_line_item_fact' => 'OWA\\Module\\Base\\Entity\\CommerceLineItemFact',
+        'owa_commerce_transaction_fact' => 'OWA\\Module\\Base\\Entity\\CommerceTransactionFact',
+        'owa_configuration' => 'OWA\\Module\\Base\\Entity\\Configuration',
+        'owa_domstream' => 'OWA\\Module\\Base\\Entity\\Domstream',
+        'owa_exit' => 'OWA\\Module\\Base\\Entity\\ExitPage',
+        'owa_feed_request' => 'OWA\\Module\\Base\\Entity\\FeedRequest',
+        'owa_host' => 'OWA\\Module\\Base\\Entity\\Host',
+        'owa_impression' => 'OWA\\Module\\Base\\Entity\\Impression',
+        'owa_location_dim' => 'OWA\\Module\\Base\\Entity\\LocationDim',
+        'owa_os' => 'OWA\\Module\\Base\\Entity\\Os',
+        'owa_queue_item' => 'OWA\\Module\\Base\\Entity\\QueueItem',
+        'owa_referer' => 'OWA\\Module\\Base\\Entity\\Referer',
+        'owa_request' => 'OWA\\Module\\Base\\Entity\\Request',
+        'owa_search_term_dim' => 'OWA\\Module\\Base\\Entity\\SearchTermDim',
+        'owa_session' => 'OWA\\Module\\Base\\Entity\\Session',
+        'owa_site' => 'OWA\\Module\\Base\\Entity\\Site',
+        'owa_site_user' => 'OWA\\Module\\Base\\Entity\\SiteUser',
+        'owa_source_dim' => 'OWA\\Module\\Base\\Entity\\SourceDim',
+        'owa_ua' => 'OWA\\Module\\Base\\Entity\\Ua',
+        'owa_user' => 'OWA\\Module\\Base\\Entity\\User',
+        'owa_visitor' => 'OWA\\Module\\Base\\Entity\\Visitor',
     ];
 }
 

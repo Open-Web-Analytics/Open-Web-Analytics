@@ -16,8 +16,11 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
- * Host Entity
+ * Visitor Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,31 +31,29 @@
  * @since        owa 1.0.0
  */
 
-class owa_host extends owa_entity {
+class ExitPage extends \owa_entity {
 
     function __construct() {
 
-        $this->setTableName('host');
+        $this->setTableName('exit');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id'] = new \owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['ip_address'] = new owa_dbColumn;
-        $this->properties['ip_address']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['host'] = new owa_dbColumn;
-        $this->properties['host']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['full_host'] = new owa_dbColumn;
-        $this->properties['full_host']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['city'] = new owa_dbColumn;
-        $this->properties['city']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['country'] = new owa_dbColumn;
-        $this->properties['country']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['latitude'] = new owa_dbColumn;
-        $this->properties['latitude']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['longitude'] = new owa_dbColumn;
-        $this->properties['longitude']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['url'] = new \owa_dbColumn;
+        $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['site_name'] = new \owa_dbColumn;
+        $this->properties['site_name']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['site'] = new \owa_dbColumn;
+        $this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['anchortext'] = new \owa_dbColumn;
+        $this->properties['anchortext']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['page_title'] = new \owa_dbColumn;
+        $this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
+
     }
+
 
 
 }

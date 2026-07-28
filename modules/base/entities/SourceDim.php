@@ -16,8 +16,11 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
- * Ad Entity
+ * Source Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -28,20 +31,18 @@
  * @since        owa 1.4.0
  */
 
-class owa_ad_dim extends owa_entity {
-
+class SourceDim extends \owa_entity {
+    
     function __construct() {
-
-        $this->setTableName('ad_dim');
+        
+        $this->setTableName('source_dim');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id'] = new \owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['name'] = new owa_dbColumn;
-        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['type'] = new owa_dbColumn;
-        $this->properties['type']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['source_domain'] = new \owa_dbColumn;
+        $this->properties['source_domain']->setDataType(OWA_DTD_VARCHAR255);
     }
 }
 

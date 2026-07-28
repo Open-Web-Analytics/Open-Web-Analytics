@@ -16,6 +16,9 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
  * User Entity
  * 
@@ -28,7 +31,7 @@
  * @since        owa 1.0.0
  */
 
-class owa_user extends owa_entity {
+class User extends \owa_entity {
     
     const ADMIN_USER_REAL_NAME = 'default admin';
     const ADMIN_USER_ROLE = 'admin';
@@ -38,27 +41,27 @@ class owa_user extends owa_entity {
         $this->setTableName('user');
         
         // properties
-        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id'] = new \owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_SERIAL);
-        $this->properties['user_id'] = new owa_dbColumn;
+        $this->properties['user_id'] = new \owa_dbColumn;
         $this->properties['user_id']->setDataType(OWA_DTD_VARCHAR255);
         $this->properties['user_id']->setPrimaryKey();
-        $this->properties['password'] = new owa_dbColumn;
+        $this->properties['password'] = new \owa_dbColumn;
         $this->properties['password']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['role'] = new owa_dbColumn;
+        $this->properties['role'] = new \owa_dbColumn;
         $this->properties['role']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['real_name'] = new owa_dbColumn;
+        $this->properties['real_name'] = new \owa_dbColumn;
         $this->properties['real_name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['email_address'] = new owa_dbColumn;
+        $this->properties['email_address'] = new \owa_dbColumn;
         $this->properties['email_address']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['temp_passkey'] = new owa_dbColumn;
+        $this->properties['temp_passkey'] = new \owa_dbColumn;
         $this->properties['temp_passkey']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['creation_date'] = new owa_dbColumn;
+        $this->properties['creation_date'] = new \owa_dbColumn;
         $this->properties['creation_date']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['last_update_date'] = new owa_dbColumn;
+        $this->properties['last_update_date'] = new \owa_dbColumn;
         $this->properties['last_update_date']->setDataType(OWA_DTD_BIGINT);
         
-        $apiKey = new owa_dbColumn;
+        $apiKey = new \owa_dbColumn;
         $apiKey->setName('api_key');
         $apiKey->setDataType(OWA_DTD_VARCHAR255);
         $this->setProperty($apiKey);
@@ -76,7 +79,7 @@ class owa_user extends owa_entity {
         $this->set('real_name', $real_name);
         $this->set('email_address', $email_address);
         $this->set('temp_passkey', $this->generateTempPasskey($user_id));
-        $this->set('password', owa_lib::encryptPassword($password));
+        $this->set('password', \owa_lib::encryptPassword($password));
         $this->set('creation_date', time());
         $this->set('last_update_date', time());
         $this->set('api_key', $this->generateTempPasskey($user_id));
@@ -91,7 +94,7 @@ class owa_user extends owa_entity {
     }
     
     function generateRandomPassword() {
-        return substr(owa_lib::encryptPassword(microtime()),0,6);
+        return substr(\owa_lib::encryptPassword(microtime()),0,6);
     }
     
     /**

@@ -16,10 +16,13 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
- * Operating System Entity
+ * User to Site Relation Entity
  * 
- * @author      Peter Adams <peter@openwebanalytics.com>
+ * @author      Daniel Pötzinger <poetzinger@aoemedia.de>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
@@ -28,19 +31,16 @@
  * @since        owa 1.0.0
  */
 
-class owa_os extends owa_entity {
+class SiteUser extends \owa_entity {
 
-    function __construct() {
-
-        $this->setTableName('os');
-        $this->setCachable();
-        // properties
-        $this->properties['id'] = new owa_dbColumn;
-        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
-        $this->properties['id']->setPrimaryKey();
-        $this->properties['name'] = new owa_dbColumn;
-        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
+    public function __construct() {
+        $this->setTableName('site_user');
+        $this->setProperty( new \owa_dbColumn( 'site_id' , OWA_DTD_BIGINT ) );
+        $this->setProperty( new \owa_dbColumn( 'user_id' , OWA_DTD_INT ) );
     }
+
+
+
 }
 
 ?>

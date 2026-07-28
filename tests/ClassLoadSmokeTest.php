@@ -156,7 +156,16 @@ final class ClassLoadSmokeTest extends TestCase
                 continue; // no class/interface/trait declaration
             }
 
-            $files[$path] = $m[1];
+            // A migrated (PSR-4) file declares a namespace; its symbols resolve
+            // only by their fully-qualified name. Prepend the file's namespace
+            // so the resolution check matches how the class is actually loaded.
+            // Legacy global-namespace files have no namespace -> names as-is.
+            $ns = '';
+            if (preg_match('/^\s*namespace\s+([^;]+);/m', $src, $nm)) {
+                $ns = trim($nm[1]) . '\\';
+            }
+
+            $files[$path] = array_map(static fn (string $n): string => $ns . $n, $m[1]);
         }
 
         ksort($files);

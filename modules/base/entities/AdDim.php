@@ -16,8 +16,11 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
- * Visitor Entity
+ * Ad Entity
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -25,36 +28,24 @@
  * @category    owa
  * @package     owa
  * @version        $Revision$
- * @since        owa 1.0.0
+ * @since        owa 1.4.0
  */
 
-class owa_exit extends owa_entity {
+class AdDim extends \owa_entity {
 
     function __construct() {
 
-        $this->setTableName('exit');
+        $this->setTableName('ad_dim');
         $this->setCachable();
         // properties
-        $this->properties['id'] = new owa_dbColumn;
+        $this->properties['id'] = new \owa_dbColumn;
         $this->properties['id']->setDataType(OWA_DTD_BIGINT);
         $this->properties['id']->setPrimaryKey();
-        $this->properties['url'] = new owa_dbColumn;
-        $this->properties['url']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['site_name'] = new owa_dbColumn;
-        $this->properties['site_name']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['site'] = new owa_dbColumn;
-        $this->properties['site']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['anchortext'] = new owa_dbColumn;
-        $this->properties['anchortext']->setDataType(OWA_DTD_VARCHAR255);
-        $this->properties['page_title'] = new owa_dbColumn;
-        $this->properties['page_title']->setDataType(OWA_DTD_VARCHAR255);
-
+        $this->properties['name'] = new \owa_dbColumn;
+        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
+        $this->properties['type'] = new \owa_dbColumn;
+        $this->properties['type']->setDataType(OWA_DTD_VARCHAR255);
     }
-
-
-
 }
-
-
 
 ?>

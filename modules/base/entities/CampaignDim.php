@@ -16,28 +16,34 @@
 // $Id$
 //
 
+
+namespace OWA\Module\Base\Entity;
+
 /**
- * User to Site Relation Entity
+ * Campaign Entity
  * 
- * @author      Daniel Pötzinger <poetzinger@aoemedia.de>
+ * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
  * @version        $Revision$
- * @since        owa 1.0.0
+ * @since        owa 1.4.0
  */
 
-class owa_site_user extends owa_entity {
+class CampaignDim extends \owa_entity {
 
-    public function __construct() {
-        $this->setTableName('site_user');
-        $this->setProperty( new owa_dbColumn( 'site_id' , OWA_DTD_BIGINT ) );
-        $this->setProperty( new owa_dbColumn( 'user_id' , OWA_DTD_INT ) );
+    function __construct() {
+
+        $this->setTableName('campaign_dim');
+        $this->setCachable();
+        // properties
+        $this->properties['id'] = new \owa_dbColumn;
+        $this->properties['id']->setDataType(OWA_DTD_BIGINT);
+        $this->properties['id']->setPrimaryKey();
+        $this->properties['name'] = new \owa_dbColumn;
+        $this->properties['name']->setDataType(OWA_DTD_VARCHAR255);
     }
-
-
-
 }
 
 ?>
