@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\MaxmindGeoip\Classes;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -54,12 +56,12 @@ if ( ! defined( 'OWA_MAXMIND_DATA_DIR' ) ) {
  * @version        $Revision$
  * @since        owa 1.4.0
  */
-class owa_maxmind extends owa_location {
+class Maxmind extends \owa_location {
 
     /**
      * URL template for REST based web service
      *
-     * @var unknown_type
+     * @var mixed
      */
     var $ws_url = '';
     var $db_file_dir;
@@ -70,7 +72,7 @@ class owa_maxmind extends owa_location {
     /**
      * Constructor
      *
-     * @return owa_hostip
+     * @return \owa_hostip
      */
     function __construct() {
 
@@ -86,7 +88,7 @@ class owa_maxmind extends owa_location {
             $this->db_file_present = true;
         } else {
 
-            owa_coreAPI::notice('Maxmind DB file could is not present at: ' . OWA_MAXMIND_DATA_DIR);
+            \owa_coreAPI::notice('Maxmind DB file could is not present at: ' . OWA_MAXMIND_DATA_DIR);
         }
 
         return $this->db_file_present;
@@ -125,8 +127,8 @@ class owa_maxmind extends owa_location {
 
     function getLocationFromWebService($location_map) {
 
-        $license_key = owa_coreAPI::getSetting('maxmind_geoip', 'ws_license_key');
-        $user_name = owa_coreAPI::getSetting('maxmind_geoip', 'ws_user_name');
+        $license_key = \owa_coreAPI::getSetting('maxmind_geoip', 'ws_license_key');
+        $user_name = \owa_coreAPI::getSetting('maxmind_geoip', 'ws_user_name');
 
         if ( ! array_key_exists( 'ip_address', $location_map ) ) {
             return $location_map;
@@ -135,7 +137,7 @@ class owa_maxmind extends owa_location {
 
         //use GeoIp2\WebService\Client;
 
-        $client = new Client( $user_name, $license_key );
+        $client = new \Client( $user_name, $license_key );
 
         $record = $client->city( trim( $location_map['ip_address'] ) );
 

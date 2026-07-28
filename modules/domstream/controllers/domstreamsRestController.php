@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Domstream\Controller;
+
 
 /**
  * Open Web Analytics - The Open Source Web Analytics Framework
@@ -15,7 +17,7 @@ require_once(OWA_BASE_CLASS_DIR.'resultSetManager.php');
  * Lists available domstreams for a document
  * 
  */
-class owa_domstreamsRestController extends owa_adminController {
+class DomstreamsRestController extends \owa_adminController {
 	
 	function __construct($params) {
 		
@@ -41,7 +43,7 @@ class owa_domstreamsRestController extends owa_adminController {
         }
 		 
         // get resultSet Manager instance
-		$rsm = new owa_resultSetManager;
+		$rsm = new \owa_resultSetManager;
  
         $rsm->db->selectFrom('owa_domstream');
        
@@ -110,9 +112,9 @@ class owa_domstreamsRestController extends owa_adminController {
 
        
         // Fetch document object
-        $d = owa_coreAPI::entityFactory('base.domstream');
+        $d = \owa_coreAPI::entityFactory('base.domstream');
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \owa_coreAPI::dbSingleton();
         $db->select('*');
         $db->from( $d->getTableName() );
         $db->where( 'domstream_guid', $domstream_guid );
@@ -131,7 +133,7 @@ class owa_domstreamsRestController extends owa_adminController {
         } else {
             // no rows found for some reason?..
             $error = 'No domstream rows found for domstream_guid: ' . $domstream_guid;
-            owa_coreAPI::debug( $error );
+            \owa_coreAPI::debug( $error );
         }
 
         $this->set('response', $row);
@@ -168,7 +170,7 @@ require_once(OWA_DIR.'owa_view.php');
  * View
  * 
  */
-class owa_domstreamsRestView extends owa_restApiView {
+class DomstreamsRestView extends \owa_restApiView {
         
     function render() {
         

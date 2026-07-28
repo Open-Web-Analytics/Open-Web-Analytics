@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Domstream\Handler;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ if(!class_exists('owa_observer')) {
  * @since        owa 1.2.1
  */
 
-class owa_domstreamHandlers extends owa_observer {
+class DomstreamHandlers extends \owa_observer {
 
     /**
      * Notify method
@@ -42,7 +44,7 @@ class owa_domstreamHandlers extends owa_observer {
      */
     function notify($event) {
 
-        $ds = owa_coreAPI::entityFactory('base.domstream');
+        $ds = \owa_coreAPI::entityFactory('base.domstream');
         $ds->load( $event->get('guid') );
 
         if ( ! $ds->wasPersisted() ) {
@@ -63,7 +65,7 @@ class owa_domstreamHandlers extends owa_observer {
             if ( $ret ) {
 
                 // Tell others that "dom.stream" has been logged
-                $eq = owa_coreAPI::getEventDispatch();
+                $eq = \owa_coreAPI::getEventDispatch();
                 $nevent = $eq->makeEvent($event->getEventType().'_logged');
                 $nevent->setProperties($event->getProperties());
                 $eq->asyncNotify($nevent);
@@ -74,7 +76,7 @@ class owa_domstreamHandlers extends owa_observer {
             }
 
         } else {
-            owa_coreAPI::debug('No persisting. Domsteam  already exists.');
+            \owa_coreAPI::debug('No persisting. Domsteam  already exists.');
             return OWA_EHS_EVENT_HANDLED;
         }
     }

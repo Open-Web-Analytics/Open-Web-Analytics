@@ -260,6 +260,21 @@ function owa_compat_class_map(): array
         'owa_base_009_update' => 'OWA\\Module\\Base\\Update\\Update009',
         'owa_base_010_update' => 'OWA\\Module\\Base\\Update\\Update010',
         'owa_base_011_update' => 'OWA\\Module\\Base\\Update\\Update011',
+
+        // non-base modules' leaf classes (Phase 6 stage 2). Each is reached by a
+        // string-based factory lookup (registerImplementation / registerFilter /
+        // registerRestApiRoute / registerEventHandler / admin-panel 'do'), so the
+        // registration literals are untouched and these bridge keys cover them.
+        // module.php files (the module-registry classes themselves) stay global —
+        // deferred to the module.php special-case stage.
+        'owa_domstreamsRestController' => 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController',
+        'owa_domstreamsRestView' => 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestView',
+        'owa_domstreamHandlers' => 'OWA\\Module\\Domstream\\Handler\\DomstreamHandlers',
+        'owa_fileCache' => 'OWA\\Module\\FileCache\\Classes\\FileCache',
+        'owa_exampleSettingsController' => 'OWA\\Module\\Hello\\ExampleSettingsController',
+        'owa_exampleSettingsView' => 'OWA\\Module\\Hello\\ExampleSettingsView',
+        'owa_maxmind' => 'OWA\\Module\\MaxmindGeoip\\Classes\\Maxmind',
+        'owa_memcachedCache' => 'OWA\\Module\\MemcachedCache\\Classes\\MemcachedCache',
     ];
 }
 

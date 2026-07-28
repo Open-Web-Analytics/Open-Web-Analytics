@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Module\Hello;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -32,7 +34,7 @@ require_once(OWA_DIR.'owa_adminController.php');
  * @since        owa 1.3.0
  */
 
-class owa_exampleSettingsController extends owa_adminController {
+class ExampleSettingsController extends \owa_adminController {
 
     function __construct($params) {
 
@@ -62,7 +64,7 @@ class owa_exampleSettingsController extends owa_adminController {
  * @since        owa 1.0.0
  */
 
-class owa_exampleSettingsView extends owa_view {
+class ExampleSettingsView extends \owa_view {
 
     function __construct($params) {
         //set page type
