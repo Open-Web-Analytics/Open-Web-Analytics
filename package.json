@@ -38,6 +38,9 @@
     "webpack": "^5.66.0",
     "webpack-cli": "^4.9.1"
   },
+  "overrides": {
+    "brace-expansion": "^5.0.8"
+  },
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
