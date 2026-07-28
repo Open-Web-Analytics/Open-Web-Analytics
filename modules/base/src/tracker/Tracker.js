@@ -1994,6 +1994,29 @@ class OWATracker  {
      * Sends an OWA event to the server for processing using GET
      * inserts 1x1 pixel IMG tag into DOM
      */
+    /**
+     * Logs a custom event from an event type and a plain properties object.
+     *
+     * This is the queue-friendly path for custom events: the async owa_cmds
+     * command queue is fire-and-forget and cannot carry an Event instance built
+     * by makeEvent(), so it could not previously log a custom event. This builds
+     * the Event internally (like trackAction does) so a custom event can be
+     * logged with owa_cmds.push( ['trackCustomEvent', 'type', { ..props.. } ] ).
+     * For advanced use that needs the Event object directly, makeEvent() +
+     * trackEvent( event ) is still available.
+     */
+    trackCustomEvent(event_type, properties, block) {
+
+        var event = this.makeEvent();
+        event.setEventType( event_type );
+
+        if ( properties && typeof properties === 'object' ) {
+            event.merge( properties );
+        }
+
+        return this.trackEvent( event, block );
+    }
+
     trackEvent(event, block) {
         //OWA.debug('pre global event: %s', JSON.stringify(event));
 
