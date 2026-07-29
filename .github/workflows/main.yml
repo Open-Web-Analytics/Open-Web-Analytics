@@ -38,10 +38,18 @@ jobs:
         git -C ./ push --set-upstream origin release-${{ env.VERSION }}
     # install the composer vendor directory (production deps only — keep the
     # test/static-analysis tooling in require-dev out of the shipped vendor/).
-    - name: Install Composer Dependancies
-      uses: php-actions/composer@v1
+    #
+    # PHP is pinned to the floor in composer.json's require ("php": ">=8.2") so the
+    # packaging step runs on a supported version rather than whatever the runner
+    # happens to default to. What actually holds the floor is config.platform.php in
+    # composer.json, which fixes resolution regardless of the PHP in use.
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
       with:
-        dev: no
+        php-version: '8.2'
+        tools: composer:v2
+    - name: Install Composer Dependancies
+      run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
     # setup node and build js/asset bundles
     - name: Setup Node/npm 
       uses: actions/setup-node@v4
