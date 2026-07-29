@@ -34,8 +34,7 @@
         },
         "classmap": [
             "modules/MaxmindGeoip/includes/",
-            "plugins/",
-            "includes/"
+            "plugins/"
         ]
     },
 

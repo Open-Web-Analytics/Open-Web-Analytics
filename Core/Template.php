@@ -18,12 +18,6 @@ namespace OWA\Core;
 // $Id$
 //
 
-if (!class_exists('Template')) {
-    require_once(OWA_INCLUDE_DIR.'template_class.php');
-}
-
-
-
 /**
  * OWA Wrapper for template class
  * 
@@ -36,7 +30,7 @@ if (!class_exists('Template')) {
  * @since        owa 1.0.0
  */
 
-class Template extends \Template {
+class Template extends TemplateEngine {
 
     /**
      * Configuration

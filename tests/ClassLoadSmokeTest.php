@@ -115,8 +115,7 @@ final class ClassLoadSmokeTest extends TestCase
             '/vendor/',
             '/node_modules/',
             '/tests/',
-            '/includes/MaxMind',        // vendored, already namespaced
-            '/includes/template_class', // vendored template engine
+            '/includes/MaxMind',        // vendored MaxMind reader, already namespaced
             '/public/',                 // build output
             'owa-config',               // install-generated config
         ];

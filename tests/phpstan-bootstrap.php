@@ -26,7 +26,6 @@ $owa_stub_dirs = [
     'OWA_BASE_CLASSES_DIR' => OWA_DIR,              // depricated
     'OWA_BASE_MODULE_DIR'  => OWA_DIR . 'modules/Base/',
     'OWA_BASE_CLASS_DIR'   => OWA_DIR . 'modules/Base/Classes/',
-    'OWA_INCLUDE_DIR'      => OWA_DIR . 'includes/',
     'OWA_PLUGIN_DIR'       => OWA_DIR . 'plugins/',
     'OWA_CONF_DIR'         => OWA_DIR . 'conf/',
     'OWA_THEMES_DIR'       => OWA_DIR . 'themes/',

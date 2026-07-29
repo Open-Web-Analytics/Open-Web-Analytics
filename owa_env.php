@@ -38,7 +38,6 @@ define('OWA_BASE_DIR', OWA_PATH); // depricated
 define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
 define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules/Base/'); // PSR-4: base module dir is PascalCase on disk
 define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'Classes/');
-define('OWA_INCLUDE_DIR', OWA_DIR.'includes/');
 define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
 define('OWA_CONF_DIR', OWA_DIR.'conf/');
 define('OWA_THEMES_DIR', OWA_DIR.'themes/');
