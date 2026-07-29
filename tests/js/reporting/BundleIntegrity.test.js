@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 /**
  * Build-integrity characterization of the reporting bundle
- * (modules/base/dist/owa.reporting-combined-min.js).
+ * (modules/Base/dist/owa.reporting-combined-min.js).
  *
  * The reporting bundle is a REAL webpack module graph (formerly a flat
  * WebpackConcatPlugin concatenation), mirroring the tracker entry:
@@ -33,8 +33,8 @@ describe('reporting bundle build integrity', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
-    const manifestPath = path.join(repoRoot, 'modules/base/build.manifest.json');
-    const srcDir = path.join(repoRoot, 'modules/base/src/reporting/v1');
+    const manifestPath = path.join(repoRoot, 'modules/Base/build.manifest.json');
+    const srcDir = path.join(repoRoot, 'modules/Base/src/reporting/v1');
     const entryPath = path.join(srcDir, 'reporting-entry.js');
     const bundlePath = path.join(repoRoot, 'public/base/dist/owa.reporting-combined-min.js');
 
@@ -222,7 +222,7 @@ describe('reporting bundle build integrity', () => {
 
             // And no sibling vendors chunk is emitted alongside it. public/base/dist/
             // holds ONLY the reporting bundle now (the tracker's owa.vendors.js stays in
-            // modules/base/dist/), so ANY vendor-shaped file here means it was split.
+            // modules/Base/dist/), so ANY vendor-shaped file here means it was split.
             const distDir = path.dirname(bundlePath);
             const strays = fs.readdirSync(distDir).filter(
                 (f) => /vendor/i.test(f) && f !== 'owa.vendors.js'

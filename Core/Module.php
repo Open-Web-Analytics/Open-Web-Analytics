@@ -229,7 +229,8 @@ abstract class Module {
      */
     function __construct() {
 		
-		$this->path = OWA_MODULES_DIR . $this->name . '/';
+		// runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
+		$this->path = OWA_MODULES_DIR . \owa_lib::moduleDirName( $this->name ) . '/';
 		
         //parent::__construct();
 		
@@ -578,8 +579,8 @@ abstract class Module {
      */
     function update() {
 
-        // list files in a directory
-        $files = \owa_lib::listDir(OWA_DIR.'modules'.'/'.$this->name.'/'.'updates', false);
+        // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
+        $files = \owa_lib::listDir(OWA_DIR.'modules'.'/'.\owa_lib::moduleDirName($this->name).'/'.'Update', false);
         //print_r($files);
 
         $current_schema_version = \owa_coreAPI::getSetting($this->name, 'schema_version');

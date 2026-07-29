@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 
 /**
  * Beacon contract test — the anti-drift anchor for the whole tracker test

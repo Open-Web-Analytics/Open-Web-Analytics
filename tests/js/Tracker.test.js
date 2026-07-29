@@ -1,4 +1,4 @@
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 
 /**
  * Event-assembly tests for the tracker's public track* methods.

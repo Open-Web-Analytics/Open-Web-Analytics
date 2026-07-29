@@ -374,7 +374,8 @@ class CoreAPI {
 
         }
 
-        $full_file_path = OWA_BASE_DIR.'/modules/'.$module.'/'.$class_dir.$file.'.php';
+        // runtime module name is lowercase; on-disk dir is PascalCase (PSR-4)
+        $full_file_path = OWA_BASE_DIR.'/modules/'.\owa_lib::moduleDirName($module).'/'.$class_dir.$file.'.php';
 
         if (file_exists($full_file_path)) {
             return require_once($full_file_path);
@@ -393,7 +394,7 @@ class CoreAPI {
             \owa_coreAPI::moduleRequireOnce($module, '', $file);
         endif;
 
-        $obj = \owa_lib::factory(OWA_BASE_DIR.'/modules/'.$module, '', $class, $params);
+        $obj = \owa_lib::factory(OWA_BASE_DIR.'/modules/'.\owa_lib::moduleDirName($module), '', $class, $params);
 
         //if (isset($obj->module)):
             $obj->module = $module;
@@ -411,7 +412,7 @@ class CoreAPI {
             \owa_coreAPI::moduleRequireOnce($module, $sub_directory, $file);
         endif;
 
-        $obj = \owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.$sub_directory, '', $class, $params);
+        $obj = \owa_lib::factory(OWA_DIR.'modules'.'/'.\owa_lib::moduleDirName($module).'/'.$sub_directory, '', $class, $params);
 
         return $obj;
     }
@@ -423,8 +424,15 @@ class CoreAPI {
      */
     public static function moduleClassFactory($module) {
 
-        return \owa_lib::factory(OWA_BASE_CLASSES_DIR.$module, 'owa_', $module.'Module');
+        // Callers pass either the lowercase runtime name ('maxmind_geoip', from
+        // getActiveModules) or the on-disk dir name ('MaxmindGeoip', from a
+        // directory scan). moduleDirName() is idempotent on its own output, so
+        // it normalises both to the PascalCase PSR-4 segment, from which the
+        // module class FQCN (OWA\Module\<Seg>\Module) is directly derivable.
+        $seg   = \owa_lib::moduleDirName( $module );
+        $class = 'OWA\\Module\\' . $seg . '\\Module';
 
+        return \owa_lib::factory( OWA_BASE_CLASSES_DIR . $seg, '', $class );
     }
 
 
@@ -439,7 +447,7 @@ class CoreAPI {
             \owa_coreAPI::moduleRequireOnce($module, 'updates', $filename);
         endif;
 
-        $obj = \owa_lib::factory(OWA_DIR.'modules'.'/'.$module.'/'.'updates', '', $class);
+        $obj = \owa_lib::factory(OWA_DIR.'modules'.'/'.\owa_lib::moduleDirName($module).'/'.'Update', '', $class);
 
         $obj->module_name = $module;
         if (!$obj->schema_version) {
@@ -461,7 +469,7 @@ class CoreAPI {
 
     public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 
-        $obj = \owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$module.'/'.'classes'.'/', $class_ns, $class, $params);
+        $obj = \owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.\owa_lib::moduleDirName($module).'/'.'Classes'.'/', $class_ns, $class, $params);
         //$obj->module = $module;
 
         return $obj;
@@ -532,7 +540,7 @@ class CoreAPI {
             \owa_coreAPI::moduleRequireOnce($module, $class_dir, $file);
         endif;
 
-        $obj = \owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$class_dir.'/'.$module, '', $class, $params);
+        $obj = \owa_lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$class_dir.'/'.\owa_lib::moduleDirName($module), '', $class, $params);
 
         if ($add_module_name == true):
             $obj->module = $module;

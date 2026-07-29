@@ -85,8 +85,8 @@ class Template extends \Template {
 
     function _setTemplateDir($module) {
 
-        // set module template dir
-        $this->module_template_dir = OWA_DIR.'modules'.'/' . $module . '/'.'templates'.'/';
+        // set module template dir (on-disk module dir is PascalCase; PSR-4)
+        $this->module_template_dir = OWA_DIR.'modules'.'/' . \owa_lib::moduleDirName( $module ) . '/'.'templates'.'/';
 
         // set module local template override dir
         $this->module_local_template_dir = $this->module_template_dir.'local'.'/';
@@ -261,7 +261,9 @@ class Template extends \Template {
         }
 
 
-        if (file_exists(OWA_MODULES_DIR.$module.'/i/browsers/'.$size.'/'.$browser_family.'.png')) {
+        // FS existence check uses the PascalCase on-disk dir; the makeImageLink
+        // args stay lowercase 'base/...' (they resolve against public/, not modules/).
+        if (file_exists(OWA_MODULES_DIR.\owa_lib::moduleDirName($module).'/i/browsers/'.$size.'/'.$browser_family.'.png')) {
             return $this->makeImageLink('base/i/browsers/'.$size.'/'.$browser_family.'.png');
         } else {
             return $this->makeImageLink('base/i/browsers/'.$size.'/default.png');

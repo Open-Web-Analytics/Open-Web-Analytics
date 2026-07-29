@@ -16,6 +16,31 @@ namespace OWA\Core;
 class Lib {
 
     /**
+     * Translate a module's runtime name to its on-disk PSR-4 directory segment.
+     *
+     * The module runtime name ($module->name, the DB persist key, the dotted-id
+     * prefix, the ?do= route segment) stays lowercase forever -- e.g. 'base',
+     * 'maxmind_geoip', 'fileCache'. Its filesystem home, however, is now the
+     * PascalCase PSR-4 namespace segment: 'Base', 'MaxmindGeoip', 'FileCache'.
+     * This is the single seam that maps one to the other. The transform matches
+     * exactly how the top-level module namespaces were derived during the PSR-4
+     * migration: upper-case the first letter of each underscore-delimited word,
+     * then drop the underscores.
+     *
+     *   base          -> Base
+     *   fileCache     -> FileCache      (already camel; ucwords leaves it, _ strip is a no-op)
+     *   maxmind_geoip -> MaxmindGeoip
+     *   memcachedCache-> MemcachedCache
+     *   remoteQueue   -> RemoteQueue
+     *
+     * @param string $name lowercase module runtime name
+     * @return string PascalCase directory / namespace segment
+     */
+    public static function moduleDirName($name) {
+        return str_replace('_', '', ucwords($name, '_'));
+    }
+
+    /**
      * Convert Associative Array to String
      *
      * @param string $inner_glue

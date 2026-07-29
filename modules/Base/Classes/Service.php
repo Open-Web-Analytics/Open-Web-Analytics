@@ -116,7 +116,10 @@ class Service extends \owa_base {
 
         foreach ($am as $k => $v) {
 			
-			if ( in_array( $v, $present_modules ) ) {
+			// active-module names are lowercase runtime names; getPresentModules()
+			// returns on-disk dir names, which are PascalCase (PSR-4). Translate the
+			// runtime name to its dir name for the presence check.
+			if ( in_array( \owa_lib::moduleDirName( $v ), $present_modules ) ) {
 	            $m = \owa_coreAPI::moduleClassFactory($v);
 	
 	            $this->addModule($m);

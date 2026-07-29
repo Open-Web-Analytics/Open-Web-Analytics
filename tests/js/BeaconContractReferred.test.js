@@ -31,9 +31,9 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
-import { OWA_instance as OWA } from '../../modules/base/src/common/owa.js';
-import { StateManager } from '../../modules/base/src/common/StateManager.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
+import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { StateManager } from '../../modules/Base/src/common/StateManager.js';
 
 const CONTRACTS = JSON.parse(
     fs.readFileSync(path.join(__dirname, '../fixtures/beacon_contracts.json'), 'utf8')

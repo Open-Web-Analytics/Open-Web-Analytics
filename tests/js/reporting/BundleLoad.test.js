@@ -22,7 +22,7 @@ const path = require('path');
 describe('reporting bundle loads under jsdom', () => {
 
     const repoRoot = path.resolve(__dirname, '../../..');
-    const bundlePath = path.join(repoRoot, 'modules/base/dist/owa.reporting-combined-min.js');
+    const bundlePath = path.join(repoRoot, 'modules/Base/dist/owa.reporting-combined-min.js');
 
     let OWA;      // the OWA namespace as built by the bundle
     let jq;       // jQuery instance the bundle initialized

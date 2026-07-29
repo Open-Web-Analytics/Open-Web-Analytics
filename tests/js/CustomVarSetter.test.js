@@ -1,6 +1,6 @@
-import { OWATracker } from '../../modules/base/src/tracker/Tracker.js';
-import { OWA_instance as OWA } from '../../modules/base/src/common/owa.js';
-import { Event } from '../../modules/base/src/tracker/Event.js';
+import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
+import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { Event } from '../../modules/Base/src/tracker/Event.js';
 
 /**
  * Custom variables, sender side (setCustomVar / getCustomVar / deleteCustomVar).

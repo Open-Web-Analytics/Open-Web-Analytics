@@ -29,10 +29,11 @@
 
     "autoload": {
         "psr-4": {
-            "OWA\\Core\\": "Core/"
+            "OWA\\Core\\": "Core/",
+            "OWA\\Module\\": "modules/"
         },
         "classmap": [
-            "modules/",
+            "modules/MaxmindGeoip/includes/",
             "plugins/",
             "includes/"
         ]

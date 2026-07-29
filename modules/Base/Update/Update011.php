@@ -22,7 +22,7 @@ class Update011 extends \owa_update {
     function up($force = true) {
 		
 		$s = \owa_coreAPI::serviceSingleton();
-		$file = OWA_MODULES_DIR . 'fileCache/classes/fileCache.php';
+		$file = OWA_MODULES_DIR . 'FileCache/Classes/FileCache.php'; // PSR-4 on-disk path
         $class_info = array( 'owa_fileCache', $file, [] );
         $s->setMapValue( 'object_cache_types', 'file', $class_info);
         
