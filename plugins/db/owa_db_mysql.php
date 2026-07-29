@@ -1,4 +1,6 @@
 <?php
+namespace OWA\Core\Db;
+
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
@@ -88,7 +90,7 @@ define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s');
  * @version        $Revision$
  * @since        owa 1.0.0
  */
-class owa_db_mysql extends owa_db {
+class Mysql extends \owa_db {
 
     function connect() {
 
@@ -174,14 +176,14 @@ class owa_db_mysql extends owa_db {
   
           if ( $this->connection_status == false) {
 
-              owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+              \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 
               $this->connect();
 
-              owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+              \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
           }
   
-          owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+          \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
 
         $this->e->debug(sprintf('Query: %s', $sql));
 
@@ -194,12 +196,12 @@ class owa_db_mysql extends owa_db {
             mysqli_free_result($this->new_result);
         }
 
-        owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
+        \owa_coreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
        try {
         $result = @mysqli_query( $this->connection, $sql );
     
-            owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+            \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
             // Log Errors
     
             if ( mysqli_errno( $this->connection ) ) {
@@ -214,7 +216,7 @@ class owa_db_mysql extends owa_db {
                 );
             }
     
-            owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
+            \owa_coreAPI::profile($this, __FUNCTION__, __LINE__);
         } catch(\Exception $e) {
             $result = false;
            $this->e->debug(
