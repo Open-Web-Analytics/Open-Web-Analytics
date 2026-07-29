@@ -287,7 +287,7 @@ class EventDispatch {
     function log($event_params, $event_type = '') {
         //owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 
-        if (!is_a($event_params,'owa_event')) {
+        if (!is_a($event_params, \OWA\Module\Base\Classes\Event::class)) {
             $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setProperties($event_params);
             $event->setEventType($event_type);

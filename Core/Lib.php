@@ -454,9 +454,24 @@ class Lib {
      */
     public static function factory($class_dir, $class_prefix, $class_name, $constructorArguments = array(), $class_suffix = '') {
 
+        $class = $class_prefix . $class_name . $class_suffix;
+
+        // NAMESPACE-FIRST: if $class is a legacy owa_* name that maps to a
+        // migrated PSR-4 class, instantiate the new class directly (Composer
+        // autoloads it -- no require, no compat-bridge alias needed). This is
+        // what lets OWA run with the bridge disabled; the bridge stays only for
+        // third-party callers of the old names. See resolveNamespacedClass().
+        $nsClass = self::resolveNamespacedClass($class);
+        if ($nsClass !== null) {
+            return new $nsClass($constructorArguments);
+        }
+
+        // LEGACY FALLBACK: an old-style global-namespace class living in a file
+        // named <class_name>.php under $class_dir (the pre-PSR-4 convention).
+        // Reached only by classes NOT in the migration map -- i.e. third-party
+        // code -- so emit a deprecation notice.
         $class_dir = $class_dir.'/';
         $classfile = $class_dir . $class_name . '.php';
-        $class = $class_prefix . $class_name . $class_suffix;
 
         /*
          * Attempt to include a version of the named class, but don't treat
@@ -467,7 +482,8 @@ class Lib {
             if (!file_exists($classfile)) {
                 throw new \Exception('Class File '.$classfile.' not existend!');
             }
-               require_once ($classfile);
+            self::noticeLegacyClass($class);
+            require_once ($classfile);
         }
 
         if (!class_exists($class)) {
@@ -475,28 +491,107 @@ class Lib {
         }
         return new $class($constructorArguments);
     }
-    
+
     public static function simpleFactory( $class_name, $file_path = '', $args = '' ) {
+
+        // NAMESPACE-FIRST (see factory() above): resolve a legacy owa_* class
+        // name to its migrated PSR-4 class before touching the filesystem.
+        $nsClass = self::resolveNamespacedClass($class_name);
+        if ($nsClass !== null) {
+            return new $nsClass( $args );
+        }
 
         if ( ! class_exists( $class_name ) ) {
 
             if ( ! file_exists( $file_path ) ) {
-                
+
                 throw new \Exception("Factory cannot make $class_name because $file_path does not exist!");
-            
+
             } else {
-            
+
+                   self::noticeLegacyClass($class_name);
                    require_once( $file_path );
             }
-  
+
         }
-       
+
         if ( ! class_exists( $class_name ) ) {
 
             throw new \Exception("Class $class_name still does not exist!");
         }
-       
+
         return new $class_name( $args );
+    }
+
+    /**
+     * Resolve a legacy global-namespace `owa_*` class name to its migrated
+     * PSR-4 class, NAMESPACE-FIRST.
+     *
+     * Returns the new fully-qualified class name if $legacy is a migrated OWA
+     * class whose new class is loadable (Composer autoload), otherwise null so
+     * the caller falls back to its legacy require path. The owa_compat_class_map()
+     * (in owa_compat_aliases.php) is the authoritative old->new lookup and is
+     * available regardless of whether the aliasing autoloader is enabled -- so
+     * this works with OWA_DISABLE_COMPAT_BRIDGE set.
+     *
+     * @param string $legacy a synthesized/registered class name, e.g. 'owa_error'
+     * @return string|null new FQCN (e.g. 'OWA\\Module\\Base\\Classes\\Error') or null
+     */
+    public static function resolveNamespacedClass(string $legacy): ?string {
+
+        // Already a namespaced name (contains a backslash): nothing to map.
+        if (strpos($legacy, '\\') !== false) {
+            return null;
+        }
+
+        // Only legacy owa_* names are candidates.
+        if (strncmp($legacy, 'owa_', 4) !== 0) {
+            return null;
+        }
+
+        $map = \owa_compat_class_map();
+        $new = $map[$legacy] ?? null;
+
+        // Case-insensitive fallback -- legacy code references a couple of names
+        // in the "wrong" case (PHP class names are case-insensitive; namespaced
+        // names are not). Mirrors the bridge's own ci-fallback.
+        if ($new === null) {
+            static $ciMap = null;
+            if ($ciMap === null) {
+                $ciMap = [];
+                foreach ($map as $old => $target) {
+                    $ciMap[strtolower($old)] = $target;
+                }
+            }
+            $new = $ciMap[strtolower($legacy)] ?? null;
+        }
+
+        if ($new !== null && class_exists($new)) {
+            return $new;
+        }
+
+        return null;
+    }
+
+    /**
+     * Emit a one-time-per-name deprecation notice when a factory loads a class
+     * by its legacy global-namespace `owa_*` name (the pre-PSR-4 convention).
+     * OWA's own classes resolve namespace-first and never reach here; only
+     * un-migrated third-party classes do.
+     */
+    protected static function noticeLegacyClass(string $class): void {
+
+        static $seen = array();
+        if (isset($seen[$class])) {
+            return;
+        }
+        $seen[$class] = true;
+
+        \OWA\Core\CoreAPI::notice(
+            "Class '{$class}' was loaded by its DEPRECATED legacy global-namespace "
+            . "name. Migrate it to a PSR-4 namespaced class; the owa_* compatibility "
+            . "bridge will be removed in a future major version (v2.0)."
+        );
     }
 
     /**

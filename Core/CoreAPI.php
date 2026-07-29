@@ -75,11 +75,19 @@ class CoreAPI {
 		if ( $type ) {
         	$connection_class = "owa_db_" . $type;
 
-            if ( ! class_exists( $connection_class ) ) {
+            // NAMESPACE-FIRST: a bundled driver (owa_db_mysql) maps to a PSR-4
+            // class (OWA\Core\Db\Mysql) that Composer autoloads -- referencing
+            // it triggers the file's define() of the OWA_DTD_* column-type
+            // constants. resolveNamespacedClass() returns null for a
+            // third-party owa_db_<type>, which falls through to the plugins/
+            // seam below. class_exists() on the resolved name forces autoload.
+            $nsClass = \OWA\Core\Lib::resolveNamespacedClass( $connection_class );
+
+            if ( $nsClass === null && ! class_exists( $connection_class ) ) {
 
                 // Third-party driver seam: load a custom owa_db_<type> dropped
-                // in at plugins/db/. Guarded by class_exists above so bundled
-                // (autoloadable) drivers never reach this fallback.
+                // in at plugins/db/. Guarded above so bundled (autoloadable)
+                // drivers never reach this fallback.
                 $connection_class_path = OWA_PLUGIN_DIR.'db/' . $connection_class . ".php";
 
 				if ( file_exists( $connection_class_path ) ) {
@@ -129,7 +137,12 @@ class CoreAPI {
              \OWA\Core\CoreAPI::error(sprintf('Failed to initialize db type %s. Exiting.', $db_type));
              return;
         } else {
+            // NAMESPACE-FIRST: resolve the bundled driver (owa_db_mysql ->
+            // OWA\Core\Db\Mysql) via the migration map so OWA runs bridge-free;
+            // a third-party owa_db_<type> from the plugins/ seam keeps its
+            // legacy name (setupStorageEngine required it in).
             $connection_class = 'owa_db_'.$db_type;
+            $connection_class = \OWA\Core\Lib::resolveNamespacedClass($connection_class) ?? $connection_class;
             $db = new $connection_class(
                 \OWA\Core\CoreAPI::getSetting('base','db_host'),
                 \OWA\Core\CoreAPI::getSetting('base','db_port'),
@@ -963,8 +976,8 @@ class CoreAPI {
         
 		// backwards compatibility with old style messages
 		// @todo is this needed anymore?
-        $class= 'owa_event';
-        
+        $class = \OWA\Module\Base\Classes\Event::class;
+
         if ( ! ( $message instanceof $class ) ) {
 	        
             $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );

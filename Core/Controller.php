@@ -379,7 +379,7 @@ class Controller extends \OWA\Core\Base {
 
         $ed = \OWA\Core\CoreAPI::getEventDispatch();
 
-        if (!is_a($properties, 'owa_event')) {
+        if (!is_a($properties, \OWA\Module\Base\Classes\Event::class)) {
 
             $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setProperties($properties);

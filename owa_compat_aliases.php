@@ -544,6 +544,15 @@ function owa_compat_class_map(): array
     ];
 }
 
+// The aliasing autoloader can be disabled (for testing that OWA runs fully on
+// its new namespaced names, and to preview the v2.0 bridge drop) by defining
+// OWA_DISABLE_COMPAT_BRIDGE = true before this file loads. The map function
+// above stays available either way (the factories read it as their old->new
+// translator). Default is ON — the bridge remains the third-party contract.
+if (defined('OWA_DISABLE_COMPAT_BRIDGE') && OWA_DISABLE_COMPAT_BRIDGE) {
+    return;
+}
+
 spl_autoload_register(function (string $class): void {
 
     // Only ever act on legacy global-namespace owa_* names. A namespaced name

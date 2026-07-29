@@ -16,7 +16,7 @@ require_once('owa_env.php');
  * @author      Peter Adams <peter@openwebanalytics.com>
  */
 
-class owa extends owa_caller {
+class owa extends \OWA\Core\Caller {
 
     function __construct($config = null) {
 

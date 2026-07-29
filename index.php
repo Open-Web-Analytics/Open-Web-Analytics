@@ -42,14 +42,14 @@ $owa = new owa( $config );
 
 if (!$owa->isOwaInstalled()) {
     // redirect to install
-    owa_lib::redirectBrowser(owa_coreAPI::getSetting('base','public_url').'install.php');
+    \OWA\Core\Lib::redirectBrowser(\OWA\Core\CoreAPI::getSetting('base','public_url').'install.php');
 }
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     
     $params = [];
     
-    $do = owa_coreAPI::getRequestParam('do');
+    $do = \OWA\Core\CoreAPI::getRequestParam('do');
     
     if ( ! $do ) {
     
